@@ -15,6 +15,11 @@ export const CARDS = {
   mountain: { name: 'Mountain Anchor', type: 'Guard', cost: 1, effect: 'guard', value: 3, text: 'Absorb 3 steps of shove this exchange.' },
   slip: { name: 'Storm Step', type: 'Guard', cost: 1, effect: 'dodge', value: 1, text: 'Evade a rush or burst and gain 1 Spirit. Breaks a rival grip instead if held.' },
   quick: { name: 'Flash Breath', type: 'Charge', cost: 1, effect: 'charge', value: 1, text: 'Gain 1 Spirit immediately, even if you were shoved.' },
+  low: { name: 'Low Charge', type: 'Attack', cost: 1, effect: 'rush', value: 2, text: 'Push 2 steps if played first. A follow-up pushes 1.' },
+  aftershock: { name: 'Aftershock', type: 'Charge', cost: 1, effect: 'aftershock', value: 3, text: 'Gain 3 Spirit after absorbing a shove this exchange.' },
+  turn: { name: 'Slip and Turn', type: 'Guard', cost: 1, effect: 'dodge', counter: true, text: 'Evade a rush or burst. Your next shove this exchange pushes 1 extra step.' },
+  chain: { name: 'Rolling Palm', type: 'Attack', cost: 1, effect: 'chain', value: 1, text: 'Push 1 step, plus 1 if you already moved the rival this exchange.' },
+  break: { name: 'Breaking Wave', type: 'Special', cost: 2, spirit: 2, effect: 'pierce', value: 2, slow: true, text: 'Push 2 steps through guard. A shove can interrupt it.' },
   'thrust+': { name: 'Driving Palm', type: 'Attack', cost: 1, effect: 'push', value: 2, text: 'Push 2 steps. A lead shove can interrupt a charge.' },
   'plant+': { name: 'Stone Feet', type: 'Guard', cost: 1, effect: 'guard', value: 3, text: 'Absorb 3 steps of shove this exchange.' },
   'gather+': { name: 'Deep Focus', type: 'Charge', cost: 1, effect: 'charge', value: 3, slow: true, text: 'Gain 3 Spirit if you hold your ground this exchange.' },
@@ -36,7 +41,7 @@ export const RIVALS = [
   { name: 'Tetsumori', epithet: 'Iron Grove', stage: 'Semifinal', build: 'balanced', skin: 'warm', colour: 'charcoal', film: 'crest', walk: 'poised',
     scout: 'Works for a belt grip. A shove or sidestep can break his hold.' },
   { name: 'Koganeiwa', epithet: 'The Golden Comet', stage: 'Final', build: 'heavy', skin: 'deep', colour: 'ivory', film: 'ink', walk: 'brisk',
-    scout: 'Opens with Meteor Palm, then charges it again. Read the tell and guard or evade the blast.' },
+    scout: 'Starts with Spirit in reserve. Watch for heavy shoves and attacks that pierce guard.' },
 ];
 
 const INTENTS = {
@@ -48,18 +53,30 @@ const INTENTS = {
   gather: { name: 'Gather Spirit', kind: 'charge', value: 3, text: 'Charges 3 Spirit. A lead shove interrupts it.' },
   meteor: { name: 'Meteor Palm', kind: 'burst', value: 3, text: 'Spends 3 Spirit to push 3 steps. Lead with a sidestep or enough guard.' },
   throw: { name: 'Overarm Throw', kind: 'throw', text: 'Throws from a belt grip. Break the grip with your lead card.' },
-  recover: { name: 'Recover', kind: 'wait', text: 'Regains footing. Use the opening to move or charge.' },
+  recover: { name: 'Measured Breath', kind: 'charge', value: 1 },
+  breath: { name: 'Flash Breath', kind: 'charge', value: 2, quick: true },
+  anchor: { name: 'Mountain Anchor', kind: 'guard', value: 3 },
+  wave: { name: 'Breaking Wave', kind: 'burst', value: 2, pierce: true },
 };
+
+const RIVAL_TYPES = {
+  rush: 'Attack', push: 'Attack', grip: 'Attack', drive: 'Attack',
+  guard: 'Guard', charge: 'Charge', burst: 'Special', throw: 'Special',
+};
+const POOLS = [
+  [['rush', 'palm'], ['recover', 'breath'], ['palm', 'grip'], ['guard', 'anchor']],
+  [['grip', 'palm'], ['palm', 'rush'], ['guard', 'anchor'], ['grip', 'palm']],
+  [['gather', 'breath'], ['rush', 'palm'], ['guard', 'anchor'], ['gather', 'recover']],
+];
 
 export function intentFor(bout, round) {
   const turn = bout.turn - 1;
-  if (round === 0) return INTENTS[['rush', 'recover', 'palm', 'guard'][turn % 4]];
-  if (round === 1) {
-    if (bout.grip === 'west') return INTENTS[bout.position <= -2 ? 'throw' : 'drive'];
-    return INTENTS[['grip', 'palm', 'guard', 'grip'][turn % 4]];
-  }
-  if (bout.rivalSpirit >= 3) return INTENTS.meteor;
-  return INTENTS[['gather', 'rush', 'guard', 'gather'][turn % 4]];
+  const roll = (Math.imul(bout.rng ^ (bout.rng >>> 16), 0x45d9f3b) + Math.imul(turn, 0x9e3779b9)) >>> 0;
+  let pool = POOLS[round][turn % 4];
+  if (round === 1 && bout.grip === 'west') pool = bout.position <= -2 ? ['throw', 'drive'] : ['drive', 'palm'];
+  if (round === 2 && bout.rivalSpirit >= 3) pool = bout.grip === 'west' ? ['meteor', 'throw'] : ['meteor', 'wave'];
+  const intent = INTENTS[pool[(roll >>> 16) % pool.length]];
+  return { ...intent, type: RIVAL_TYPES[intent.kind] };
 }
 
 function shuffle(input, seed) {
@@ -114,7 +131,7 @@ export function planStatus(bout, plan) {
     stamina -= card.cost;
     spirit -= card.spirit ?? 0;
     if (card.effect === 'grip') grip = 'east';
-    if (card.effect === 'charge') spirit = Math.min(SPIRIT_CAP, spirit + card.value);
+    if (['charge', 'aftershock'].includes(card.effect)) spirit = Math.min(SPIRIT_CAP, spirit + card.value);
     spent.add(slot);
   }
   return { stamina, issue: null };
@@ -132,6 +149,8 @@ export function resolveExchange(run, plan) {
   let westGuard = 0;
   let sidestep = null;
   let guarded = false;
+  let eastAbsorbed = 0;
+  let counter = false;
   let eastMoved = false;
   let westMoved = false;
   let winner = null;
@@ -140,18 +159,24 @@ export function resolveExchange(run, plan) {
     events.push({ kind, side, move, text, from: bout.position, to: bout.position, ...details });
   }
 
-  function shove(side, amount, move, kind) {
+  function shove(side, amount, move, kind, pierce = false) {
     const east = side === 'east';
+    if (east && counter) {
+      amount += 1;
+      counter = false;
+    }
     if (!east && sidestep && ['rush', 'burst'].includes(kind)) {
       const bonus = Math.min(SPIRIT_CAP - bout.spirit, (sidestep.value ?? 0) + Number(run.gear === 'storm'));
       bout.spirit += bonus;
       emit('evade', 'east', sidestep.name, `You slip past ${rival}’s ${move}.${bonus ? ` +${bonus} Spirit.` : ''}`, { source: kind });
+      counter = Boolean(sidestep.counter);
       sidestep = null;
       return;
     }
 
     const guard = east ? westGuard : eastGuard;
-    const absorbed = Math.min(amount, guard);
+    const absorbed = pierce ? 0 : Math.min(amount, guard);
+    if (!east) eastAbsorbed += absorbed;
     const travel = amount - absorbed;
     if (east) westGuard -= absorbed;
     else eastGuard -= absorbed;
@@ -183,7 +208,7 @@ export function resolveExchange(run, plan) {
       { winner, source: side === 'east' ? 'burst' : 'throw' });
   }
 
-  function playCard(card) {
+  function playCard(card, isLead = false) {
     const { name, effect, value, spirit = 0 } = card;
     if ((card.slow && eastMoved) || (card.needsGrip && bout.grip !== 'east') || bout.spirit < spirit) {
       const reason = card.slow && eastMoved ? 'the shove breaks your stance' : card.needsGrip && bout.grip !== 'east' ? 'you lose the belt grip' : 'you lack the Spirit';
@@ -195,6 +220,12 @@ export function resolveExchange(run, plan) {
       case 'push':
       case 'burst':
         shove('east', value, name, effect);
+        break;
+      case 'rush':
+      case 'chain':
+      case 'pierce':
+        shove('east', effect === 'rush' ? (isLead ? 2 : 1) : value + Number(effect === 'chain' && westMoved),
+          name, effect === 'pierce' ? 'burst' : 'push', effect === 'pierce');
         break;
       case 'drive':
         shove('east', bout.grip === 'east' ? value + 1 : value, name, 'push');
@@ -219,6 +250,12 @@ export function resolveExchange(run, plan) {
           emit('dodge', 'east', name, 'You get ready to move off the line.');
         }
         break;
+      case 'aftershock':
+        if (!eastAbsorbed) {
+          emit('interrupt', 'east', name, 'Aftershock needs a shove absorbed by guard.');
+          break;
+        }
+        // Aftershock uses the normal Spirit gain once guard has absorbed a shove.
       case 'charge': {
         const gain = Math.min(SPIRIT_CAP - bout.spirit, value);
         bout.spirit += gain;
@@ -240,7 +277,7 @@ export function resolveExchange(run, plan) {
         break;
       case 'burst':
         bout.rivalSpirit -= 3;
-        shove('west', value, name, kind);
+        shove('west', value, name, kind, intent.pierce);
         break;
       case 'drive':
         shove('west', bout.grip === 'west' ? value : 1, name, 'push');
@@ -262,11 +299,11 @@ export function resolveExchange(run, plan) {
         emit('guard', 'west', name, `${rival} roots their feet.`);
         break;
       case 'charge':
-        if (westMoved) {
+        if (westMoved && !intent.quick) {
           emit('interrupt', 'west', name, 'Your lead shove interrupts the rival’s charge.');
         } else {
           bout.rivalSpirit = Math.min(SPIRIT_CAP, bout.rivalSpirit + value);
-          emit('charge', 'west', name, `${rival} gathers ${value} Spirit. A burst is coming.`);
+          emit('charge', 'west', name, `${rival} gathers ${value} Spirit.`);
         }
         break;
       case 'wait':
@@ -278,7 +315,7 @@ export function resolveExchange(run, plan) {
   const lead = cards.shift();
   const rivalActsFirst = intent.kind === 'guard' || lead.slow;
   if (rivalActsFirst) rivalAction();
-  if (!winner) playCard(lead);
+  if (!winner) playCard(lead, true);
   if (!winner && !rivalActsFirst) rivalAction();
   for (const card of cards) {
     if (winner) break;
@@ -286,14 +323,14 @@ export function resolveExchange(run, plan) {
   }
 
   if (!winner) {
-    return { ...run, bout: deal({ ...bout, turn: bout.turn + 1, discard: [...bout.discard, ...bout.hand] }), last: events };
+    return { ...run, bout: deal({ ...bout, turn: bout.turn + 1, discard: [...bout.discard, ...bout.hand] }), last: events, revealed: intent.name };
   }
   const phase = winner === 'west' ? 'lost' : ['draft', 'camp', 'won'][run.round];
-  return { ...run, bout, phase, last: events, winner };
+  return { ...run, bout, phase, last: events, winner, revealed: intent.name };
 }
 
 export function draftOptions(run) {
-  const pool = shuffle(['mountain', 'slip', 'quick'], run.seed ^ 0x61c88647).cards;
+  const pool = shuffle(['mountain', 'slip', 'quick', 'low', 'aftershock', 'turn', 'chain', 'break'], run.seed ^ 0x61c88647).cards;
   return ['comet', ...pool.slice(0, 2)];
 }
 

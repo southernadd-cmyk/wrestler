@@ -192,3 +192,29 @@ h1:focus { outline: none; }
   .gear { grid-template-columns: 1fr; }
   .names { inset: auto 9px 10px; }
 }
+
+/* Timber, clay and printed-paper cards. */
+:root {
+  --ink: #201911;
+  --panel: #302419;
+  --raised: #453123;
+  --line: #6d5035;
+  --muted: #dfc9ac;
+  --amber: #ffd19a;
+  --violet: #ddc5f6;
+  background: var(--ink);
+}
+body { background: radial-gradient(ellipse at 18% 0%, #513422, #201911 60%); }
+.site-header { background: #21170f; border-bottom: 3px double #8f6642; }
+.arena-panel, .play-panel, .side-panel { border-color: #87603d; }
+.play-panel { background: linear-gradient(145deg, #49301f, #2c2118 65%); }
+.side-panel, .arena-report { background: #2c2118; }
+.side-block { border-color: #5f452e; }
+.side-block.intent, .mobile-intent { background: #4c3021; border-color: #816047; }
+.card-art { display: block; height: 57px; width: 100%; background: #efdfbb; border: 1px solid #9c7a56; border-radius: 2px; }
+.move-card { --accent: #ffb69d; --fill: #593025; min-height: 165px; background: linear-gradient(160deg, var(--fill), #342419); }
+.move-card.guard { --accent: #b6dcdf; --fill: #30484a; }
+.move-card.charge { --accent: #ead4f8; --fill: #493751; }
+.move-card.special { --accent: #ffda91; --fill: #594027; }
+.type-icon { color: var(--accent, var(--amber)); }
+.reveal { color: var(--amber); font-size: .84rem; margin-bottom: 5px; }

@@ -1,4 +1,5 @@
 import './cup.css';
+import { cardArt, typeIcon } from './card-art.js';
 import { COLOURS, DEFAULT_WRESTLER, readCareer } from './career.js';
 import {
   BASIC_BRACE, BRACE, CARDS, EDGE, GEAR, RIVALS, SPIRIT_CAP, STAMINA, TRAINING,
@@ -132,7 +133,8 @@ function cardMarkup(card, options = {}) {
       data-action="${options.action}" data-pick="${options.pick}"
       ${options.action === 'queue' ? `aria-pressed="${Boolean(order)}"` : ''}
       ${options.issue ? `aria-disabled="true" title="${escape(options.issue)}"` : ''}>
-    <span class="card-meta"><span>${card.type}</span><span>${order ? `#${order}` : cost}</span></span>
+    <span class="card-meta"><span>${typeIcon(card.type)} ${card.type}</span><span>${order ? `#${order}` : cost}</span></span>
+    ${cardArt(card.name)}
     <strong>${card.name}</strong>
     <span class="card-description">${card.text}</span>
     ${order ? `<span class="selected-cost">${cost}</span>` : ''}
@@ -157,7 +159,7 @@ function handPanel(run) {
         <span class="spirit">SPIRIT <b>${bout.spirit}/${SPIRIT_CAP}</b></span>
       </div>
     </div>
-    <div class="mobile-intent"><span class="eyebrow">RIVAL INTENT</span><strong>${intent.name}</strong><p>${intent.text}</p></div>
+    <div class="mobile-intent"><span class="eyebrow">RIVAL INTENT</span><strong>${typeIcon(intent.type)} ${intent.type}</strong></div>
     <div class="hand">${cards.join('')}</div>
     <div class="plan" id="queued-moves">${queue || '<span>Tap cards in the order you want to play them.</span>'}</div>
     <p class="plan-feedback" id="plan-feedback" role="status">${escape(message || status.issue || '')}</p>
@@ -205,8 +207,8 @@ function sideContent(run) {
   const copies = Object.fromEntries([...new Set(deck)].map(id => [id, deck.filter(card => card === id).length]));
   return `<div class="side-block intent">
       <p class="eyebrow">${active ? 'RIVAL INTENT' : 'RIVAL DOSSIER'}</p>
-      <h2>${intent?.name ?? rival.name}</h2>
-      <p>${intent?.text ?? rival.scout}</p>
+      <h2>${intent ? typeIcon(intent.type) + " " + intent.type : rival.name}</h2>
+      <p>${intent ? "Exact move revealed when you commit." : rival.scout}</p>
       ${active ? `<div class="side-stats"><span>Rival Spirit <b>${run.bout.rivalSpirit}</b></span>
         <span>Grip <b>${grip === 'east' ? 'Yours' : grip === 'west' ? 'Rival’s' : 'Open'}</b></span></div>` : ''}
     </div>
@@ -223,7 +225,7 @@ function sideContent(run) {
       <p class="eyebrow">STABLE RECORD</p>
       <div class="side-stats"><span>Runs <b>${state.runs}</b></span><span>Best <b>${state.best}/3</b></span><span>Cups <b>${state.cups}</b></span></div>
     </div>
-    ${log.length ? `<div class="side-block"><p class="eyebrow">LAST EXCHANGE</p>
+    ${log.length ? `<div class="side-block"><p class="eyebrow">LAST EXCHANGE</p>${run.revealed ? `<p>Rival card · ${escape(run.revealed)}</p>` : ""}
       <ol class="exchange-log">${log.map(event => `<li>${escape(event.text)}</li>`).join('')}</ol>
     </div>` : ''}
     <div class="side-block">
@@ -240,7 +242,7 @@ function showPanel(run) {
   if (playback) {
     panel.innerHTML = `<div class="panel-head"><div><p class="eyebrow">EXCHANGE ${run.bout.turn}</p><h2>On the dohyō</h2></div>
       <button type="button" class="button outline" data-action="skip">Skip playback</button></div>
-      <div class="sequence">${playback.events.map((event, i) => `<span data-beat="${i}">${escape(event.move)}</span>`).join('')}</div>`;
+      <p class="reveal">Rival card · ${escape(playback.revealed)}</p><div class="sequence">${playback.events.map((event, i) => `<span data-beat="${i}">${escape(event.move)}</span>`).join('')}</div>`;
   } else if (!run) {
     panel.innerHTML = homePanel();
   } else {
@@ -252,7 +254,7 @@ function draw(event = null, progress = 1, run = playback?.before ?? state.run) {
   const terminal = run?.winner ? run.last.at(-1) : null;
   const profile = dressedProfile(run?.gear);
   const position = run?.bout.position ?? 0;
-  const charged = !event && !terminal && run?.phase === 'bout' && intentFor(run.bout, run.round).kind === 'burst';
+  const charged = !event && !terminal && run?.phase === 'bout' && intentFor(run.bout, run.round).type === 'Special';
   const tell = charged ? { kind: 'charge', side: 'west', from: position, to: position } : null;
   arena.draw(profile, RIVALS[run?.round ?? 0], event ?? terminal ?? tell, charged ? 0.42 : progress, position, motion.matches);
   $('camera-name').textContent = arena.view;
@@ -362,7 +364,7 @@ function resolve() {
   persist();
   plan = [];
   message = '';
-  playback = { before, events: next.last, index: 0, cue: -1, start: null };
+  playback = { before, events: next.last, revealed: next.revealed, index: 0, cue: -1, start: null };
   render();
   $('arena-screen').scrollIntoView({ block: 'nearest' });
   panel.querySelector('[data-action="skip"]').focus({ preventScroll: true });
