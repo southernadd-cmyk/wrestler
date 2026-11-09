@@ -31,8 +31,8 @@ function entrancePose(side, progress, walk) {
   };
 }
 
-export function createBroadcast(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+export function createBroadcast(canvas, context) {
+  const renderer = new THREE.WebGLRenderer({ canvas, context, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.65));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -47,6 +47,7 @@ export function createBroadcast(canvas) {
   const referee = makeReferee(scene);
   let previousEast;
   let previousWest;
+  let spiritRings;
 
   function dress(player, opponent) {
     if (player !== previousEast) east.dress(player);
@@ -205,5 +206,72 @@ export function createBroadcast(canvas) {
     }
   }
 
-  return { portrait, match };
+  function powerRings(event, p, centre, reducedMotion) {
+    const powered = event?.kind === 'charge' || event?.source === 'burst';
+    if (!powered) {
+      if (spiritRings) spiritRings.visible = false;
+      return;
+    }
+    if (!spiritRings) {
+      spiritRings = new THREE.Group();
+      const geometry = new THREE.TorusGeometry(1, 0.024, 8, 36);
+      for (let i = 0; i < 3; i += 1) {
+        const material = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, toneMapped: false });
+        const ring = new THREE.Mesh(geometry, material);
+        ring.rotation.x = -Math.PI / 2;
+        spiritRings.add(ring);
+      }
+      scene.add(spiritRings);
+    }
+    const side = event.kind === 'block' || event.kind === 'evade'
+      ? event.side === 'east' ? 'west' : 'east'
+      : event.side;
+    const burst = event.source === 'burst';
+    spiritRings.visible = p < 1;
+    spiritRings.position.x = centre + (side === 'east' ? -HALF_GAP : HALF_GAP);
+    spiritRings.children.forEach((ring, i) => {
+      const spread = burst ? ease((p - 0.25) / 0.7) : 1 - ease(p);
+      ring.scale.setScalar((reducedMotion ? 0.7 : 0.28 + spread * (burst ? 1.7 : 0.62)) + i * 0.10);
+      ring.position.y = 0.12 + i * (burst ? 0.15 : 0.37);
+      ring.material.color.set(side === 'east' ? '#f7b56f' : '#aa9cff');
+      ring.material.opacity = Math.sin(p * Math.PI) * (reducedMotion ? 0.32 : 0.76) * (1 - 0.18 * i);
+    });
+  }
+
+  function cardExchange(wrestler, opponent, event, progress, position, reducedMotion) {
+    dress(wrestler, opponent);
+    arena.billboard(0, wrestler.film, 'SPIRIT CUP', COLOURS[wrestler.colour].value);
+    const p = limit(progress);
+    const kind = event?.kind;
+    const cinematic = kind === 'out' || kind === 'throw';
+    let centre = 0.54 * (event ? lerp(event.from, event.to, ease((p - 0.16) / 0.74)) : position);
+    if (cinematic) {
+      const technique = kind === 'throw' ? 'uwatenage' : 'oshidashi';
+      centre = finish({ from: event.from * 0.54, winner: event.winner, technique }, p);
+    } else {
+      const pulse = Math.sin(Math.PI * p);
+      const strike = ['push', 'rush', 'burst', 'block'].includes(kind);
+      duel(centre, HALF_GAP, side => {
+        const acting = event?.side === side;
+        const pushing = kind === 'block' ? !acting : acting;
+        const dodging = acting && (kind === 'evade' || kind === 'dodge' || kind === 'escape');
+        return {
+          crouch: 0.29 + (acting && ['guard', 'block', 'charge'].includes(kind) ? pulse * 0.37 : 0),
+          reach: strike && pushing ? 0.25 + pulse * 0.58 : acting && kind === 'grip' ? pulse * 0.57 : 0.20,
+          grip: acting && kind === 'grip' ? pulse * 0.85 : 0,
+          step: strike && event.from !== event.to ? pulse * 0.83 : dodging ? pulse * 0.51 : 0,
+          gait: p * Math.PI * 5,
+          recoil: strike && !pushing && kind !== 'block' ? pulse * 0.8 : acting && kind === 'interrupt' ? pulse * 0.55 : 0,
+          twist: dodging ? pulse * 0.55 : 0,
+          z: dodging ? pulse * 0.57 * (side === 'east' ? 1 : -1) : 0,
+        };
+      });
+    }
+    powerRings(event, p, centre, reducedMotion);
+    const zoom = cinematic && !reducedMotion ? Math.sin(Math.PI * p) * 0.45 : 0;
+    const aspect = Math.min(1.5, camera.aspect);
+    shoot(centre * 0.42 + 0.26, 3.52, 7.3 + (1.5 - aspect) * 2.5 - zoom, centre * 0.66, 0.66, 0);
+  }
+
+  return { portrait, match, cardExchange };
 }

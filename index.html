@@ -3,70 +3,60 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#17171c">
-    <meta name="description" content="Create a rikishi and manage their sumo career from Jonokuchi to Yokozuna.">
-    <title>Dohyō — Sumo Career</title>
+    <meta name="theme-color" content="#161321">
+    <meta name="description" content="Build a deck, read your rival and fight through the Spirit Cup in a sumo roguelite.">
+    <title>Dohyō — Spirit Cup</title>
   </head>
   <body>
-    <header class="topbar">
-      <div class="shell topbar-content">
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true"><i></i></span>
-          <div><strong>DOHYŌ</strong><span>SUMO CAREER</span></div>
-        </div>
-        <div class="top-actions">
-          <span id="save-status" class="save-status"></span>
-          <button id="sound-toggle" class="quiet-button" type="button" aria-pressed="true">Sound on</button>
-        </div>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="wordmark" href="./" aria-label="Dohyō Spirit Cup">
+          <span class="ring-mark" aria-hidden="true"></span>
+          <span><strong>DOHYŌ</strong><small>SPIRIT CUP</small></span>
+        </a>
+        <nav class="site-nav" aria-label="Game options">
+          <a class="quiet" href="./career.html">Classic career</a>
+          <button class="quiet" id="sound-toggle" type="button" aria-pressed="true">Sound on</button>
+        </nav>
       </div>
     </header>
 
     <main class="shell">
       <div class="masthead">
         <div>
-          <p class="kicker" id="page-kicker"></p>
-          <h1 id="page-title" tabindex="-1"></h1>
-          <p class="page-description" id="page-description"></p>
+          <p class="eyebrow" id="page-kicker">THE STABLE</p>
+          <h1 id="page-title" tabindex="-1">Enter the Spirit Cup</h1>
+          <p class="subtitle" id="page-subtitle">Read the rival and build a sequence from the cards in your hand.</p>
         </div>
-        <ol class="steps" aria-label="Career workflow">
-          <li data-screen="creator"><span>01</span> Create</li>
-          <li data-screen="booking"><span>02</span> Prepare</li>
-          <li data-screen="broadcast"><span>03</span> Watch</li>
-          <li data-screen="report"><span>04</span> Review</li>
-        </ol>
+        <ol class="bracket" id="bracket" aria-label="Tournament rounds"></ol>
       </div>
 
       <div class="layout">
-        <section class="monitor" aria-label="Three-dimensional arena and commentary">
-          <div class="viewport">
-            <canvas id="arena" aria-hidden="true"></canvas>
-            <p class="viewport-fallback" id="viewport-fallback" hidden>The 3D arena needs WebGL. Bout commentary is available below.</p>
-            <div class="view-header">
-              <span class="view-tag"><i aria-hidden="true"></i><span id="view-mode">STABLE CAM</span></span>
-              <span class="view-location">DOHYŌ / HALL 01</span>
-            </div>
-            <div class="lower-third">
-              <p id="view-label"></p>
-              <div id="view-title"></div>
-              <p id="view-subtitle"></p>
+        <section class="arena-panel" aria-label="Sumo arena">
+          <div class="arena-screen" id="arena-screen">
+            <canvas id="arena-3d" aria-hidden="true"></canvas>
+            <canvas id="arena-overhead" aria-hidden="true" hidden></canvas>
+            <div class="camera-tag"><span></span><b id="camera-name">RINGSIDE</b></div>
+            <div class="names" aria-label="Rikishi in the ring">
+              <div class="name east"><small>EAST</small><strong id="east-name">Hoshimori</strong></div>
+              <span class="versus">VS</span>
+              <div class="name west"><small>WEST</small><strong id="west-name">Aonami</strong></div>
             </div>
           </div>
-          <div class="monitor-footer">
-            <div class="monitor-line">
-              <span class="monitor-index" aria-hidden="true">⦿</span>
-              <p id="commentary" role="status" aria-live="polite"></p>
-            </div>
-            <progress id="bout-progress" max="1" value="0" aria-label="Broadcast progress" hidden></progress>
+          <div class="arena-report">
+            <p id="arena-call" aria-live="polite">Both rikishi take their marks.</p>
+            <div id="position-track"></div>
           </div>
         </section>
-        <section class="panel" id="panel" aria-label="Career controls"></section>
+
+        <section class="play-panel" id="play-panel" aria-label="Player controls"></section>
+        <aside class="side-panel" id="side-panel" aria-label="Rival and run information"></aside>
       </div>
-      <footer class="page-footer">
-        <span>DOHYŌ <b>•</b> STABLE CAREER</span>
-        <span>Fictional rikishi and condensed three-bout meets</span>
+      <footer class="site-footer">
+        <span>DOHYŌ <b>•</b> SPIRIT CUP</span>
+        <span id="save-status">Progress saves in this browser.</span>
       </footer>
     </main>
-
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/cup.js"></script>
   </body>
 </html>

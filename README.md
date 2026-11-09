@@ -1,6 +1,6 @@
 # Dohyō
 
-A Three.js sumo career prototype. Create a rikishi, scout an opponent, train for the bout and watch the opening charge and finish from ringside.
+A sumo roguelite with Three.js bout playback. Build a deck and fight through the Spirit Cup. The classic career is available from the game header.
 
 ## Run locally
 
@@ -20,7 +20,15 @@ npm run preview
 
 The production build in `dist/` can be served by a static host.
 
-## The career
+## Spirit Cup
+
+- Enter with a ten-card deck. Draw five cards and spend up to three stamina on each exchange.
+- Read the rival's intent and queue cards in order. Quick leads act first. Slow leads and follow-ups can be interrupted by a shove. The rival sets a rooted stance before your lead.
+- Gather Spirit to fund specials. Use the belt grip to set up stronger drives and throws.
+- Win the qualifier to draft a card, then choose a dojo upgrade or a mawashi perk before the final. A loss ends the run.
+- The tournament saves after each resolved exchange. The overhead arena plays the same exchanges on browsers without WebGL.
+
+## Classic career
 
 - Give your rikishi a ring name, nickname, build and mawashi colour. Choose a wrestling style, two finishing techniques and a broadcast entrance.
 - Train power, grip or balance before each bout. Read your opponent and choose a tactic to match. The simulator resolves the exchanges and the Three.js broadcast plays them back.
