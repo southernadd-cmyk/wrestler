@@ -930,7 +930,8 @@ const Psy=(function installPsychology(){
    line(M,`${A.short} backs ${Df.short} against the ropes and hooks an arm, preparing a throw over the top.`);
    s.position='outside';s.down=null;
   }else if(outside){
-   line(M,`${A.short} sends ${Df.short} over the ropes to the floor and follows. The referee begins the count.`);
+   if(s.position==='outside')line(M,`${A.short} hauls ${Df.short} upright on the floor. The referee is still counting.`);
+   else line(M,`${A.short} sends ${Df.short} over the ropes to the floor and follows. The referee begins the count.`);
    if(/apron/.test(move))line(M,`${A.short} pulls ${Df.short} up onto the apron and takes hold of the head.`);
    else line(M,`${A.short} pulls ${Df.short} into position on the floor.`);
    s.position='outside';s.down=null;
@@ -1070,6 +1071,8 @@ function entrances(M){
 function tick(M){
  M.t+=10;const frac=M.t/M.len,ph=phaseFor(frac,M),w=M.w,f=M.f,plan=M.plan;
  if(!M.phase||M.phase.id!==ph.id){M.phase=ph;Psy.phase(M);onPhase(M);if(M.decision)return;}
+ // An outside exchange cannot continue indefinitely without a count-out.
+ if(Psy.get(M).position==='outside')Psy.recover(M);
  // momentum
  const target=Psy.get(M).control==='w'?52:Psy.get(M).control==='f'?-52:0;M.mom+=(target-M.mom)*.23+(M.r()*16-8);M.mom=clamp(M.mom,-100,100);
  // stamina
