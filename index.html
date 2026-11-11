@@ -1076,10 +1076,26 @@ const Graph=(function makeGraph(){
   escalation:{label:'Finishing stretch',phase:'stretch',control:'neutral',min:4,max:8,entry:['finish_tease','corner_whip','top_climb','counter_strike'],out:[e('nearfall',3),e('exchange',2),e('finish_setup',4)]},
   finish_setup:{label:'Final sequence',phase:'stretch',control:'neutral',min:2,max:8,entry:['finish_tease','counter_strike','clothesline','snap_suplex'],out:[e('finish_setup',4),e('escalation',1)]}
  };
- const starts={opening:1,chain:1,shine:1,cutoff:1,control:1,hope:1,denial:1,comeback:1,resurgence:1,exchange:1,nearfall:1,escalation:1,finish_setup:1};
+ // The outcome graph is gated by the contract and the manager's live decisions.
+ const OUTCOMES={
+  win_clean:{who:'w',method:'finisher or submission',legal:'booked clean victory'},
+  win_dirty:{who:'w',method:'illegal pin while official is distracted',legal:'booked dirty victory'},
+  lose_protected:{who:'f',method:'rope break followed by opportunistic pin',legal:'booked protected loss'},
+  lose_clean:{who:'f',method:'counter followed by decisive finisher',legal:'booked decisive loss'},
+  nc:{who:null,method:'medical stoppage',legal:'explicit injury decision'},
+  double:{who:'w',method:'refusing agreed finish',legal:'explicit off-script decision'}
+ };
+ const OUTCOME_EDGES={finish_setup:Object.keys(OUTCOMES)};
  const PHASE_NAMES={open:'Feeling out',shine:'Early advantage',heat:'Sustained control',comeback:'Comeback',stretch:'Finishing stretch'};
  function init(M){
-  const p=Psy.get(M),g={v:1,arc:'opening',age:0,node:null,visit:{opening:1},history:['opening'],events:[],transitions:0,steps:0,lastTags:[],consecutive:0,target:p.target,targets:{w:p.target,f:M.w.style==='Technical'?'shoulder':M.w.style==='Spectacle'?'left knee':M.w.style==='Brawl'?'ribs':'lower back'},damage:{w:0,f:0},nearfallCount:0,started:false};
+  const p=Psy.get(M);
+  const frac=M.t/Math.max(1,M.len);
+  // v2.6 saved bouts do not have graph state. Resume at the correct
+  // narrative stage instead of replaying the opening halfway through.
+  const current=M.t<=0?'opening':frac<.2?'chain':frac<.33?'shine':frac<.62?'control':frac<.77?'comeback':'escalation';
+  const g={v:1,arc:current,age:0,node:null,visit:{[current]:1},history:[current],events:[],transitions:0,steps:0,lastTags:[],consecutive:0,target:p.target,
+   targets:{w:p.target,f:M.w.style==='Technical'?'shoulder':M.w.style==='Spectacle'?'left knee':M.w.style==='Brawl'?'ribs':'lower back'},
+   damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0};
   M.graph=g;return g;
  }
  function get(M){return M.graph||init(M)}
@@ -1276,9 +1292,13 @@ const Graph=(function makeGraph(){
   g.node=null;
  }
  function finishCue(M){
-  const g=get(M);
-  if(!g)return;
-  g.events.push({id:'booked_finish',t:M.t,arc:g.arc,control:Psy.get(M).control,position:Psy.get(M).position});
+  const g=get(M),outcome=M.outcome==='nc'?'nc':M.outcome==='double'?'double':M.o.finish;
+  if(!OUTCOME_EDGES.finish_setup.includes(outcome))throw Error('Invalid match outcome: '+outcome);
+  const def=OUTCOMES[outcome];
+  if(outcome==='nc'&&!M.injury)throw Error('A no-contest medical stoppage requires a recorded injury.');
+  g.outcome={id:outcome,winner:def.who,method:def.method,reason:def.legal,booked:M.o.finish};
+  g.events.push({id:'outcome_'+outcome,t:M.t,arc:g.arc,control:Psy.get(M).control,position:Psy.get(M).position});
+  return g.outcome;
  }
  function validate(){
   const errors=[];
@@ -1289,9 +1309,9 @@ const Graph=(function makeGraph(){
    for(const [to] of a.out)if(!ARCS[to])errors.push('arc '+id+' -> '+to+' missing');
    for(const nodeId of a.entry)if(!A[nodeId])errors.push('entry '+id+' -> '+nodeId+' missing');
   }
-  return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),errors};
+  return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),errors};
  }
- return {A,ARCS,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc};
 })();
 
 function create(o){
@@ -1690,7 +1710,7 @@ function summary(M){
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
-  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(whole)+(frac===.25?'¼':frac===.5?'½':frac===.75?'¾':'')+(s===0?'DUD':'');}
 function liveStars(M){return stars(M,false)}
