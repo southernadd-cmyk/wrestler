@@ -1,4 +1,4 @@
-# The Office — Wrestling Manager v2.6
+# The Office — Wrestling Manager v2.7
 
 A standalone wrestling management game. Run a stable, take the bookings, and sit at ringside for every match.
 
@@ -21,6 +21,21 @@ Before each bout, choose a microphone approach (call them out, rally the fans, p
 ## Systems
 
 16-week regional season; contract negotiation; wrestler recruitment and coaching; pre-match promos with four meaningful approaches and original dialogue; context-sensitive and phase-specific match commentary; heat-driven storylines, rivalries and blow-offs; live text matches with ringside decisions; rival promotions; persistent title pyramid; export and import of career saves.
+
+## Causal event graph (v2.7)
+
+The match engine now uses a hierarchical, weighted **13-arc story graph**, a **59-node / 172-edge action graph** and a **six-outcome finish graph**. Matches vary based on wrestling style, current positioning, reversals, damage, crowd and contracted results. Chains of moves have explicit transitions (e.g., lock-up → wristlock → counter → takedown → hold → rope break) rather than independent random commentary.
+
+- Separate damage and selling for each wrestler; counters change control explicitly.
+- Floor, corner, apron and top-rope exchanges require appropriate setup and recovery.
+- Near-falls follow a meaningful move and a legal pinning attempt.
+- Booked wins/losses remain authoritative unless the manager makes an explicit off-script or medical stoppage decision.
+- Original lines are influenced by real-match analyses and performer interviews, not copied transcripts.
+- The v2.4/v2.5 interface and existing save keys remain intact, including migration of mid-bout v2.6 saves.
+
+**Details and primary research links:** [Match graph architecture and research](docs/match-graph.md).
+
+**Regression tests:** `node tests/match-flow.test.cjs` and `node tests/graph-flow.test.cjs`.
 
 ## Match psychology (v2.6)
 
