@@ -3,385 +3,489 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>The Office v2.3 — Territory Pyramid</title>
+<meta name="theme-color" content="#16225A">
+<title>The Office — Wrestling Management</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=VT323&display=swap" rel="stylesheet">
-<style>:root{
- --bg:#E4E8F2;--surface:#F7F8FC;--surface-2:#ECEFF7;--line:#C3CBE0;--ink:#121A38;--ink-2:#46527C;--ink-3:#6A769E;
- --accent:#1D3B9A;--accent-ink:#fff;--good:#17703F;--bad:#B3302A;--crowd:#0B7385;--cta-bg:#142257;--cta-ink:#FFD447;--sel:#DCE3F7;
- --tv-bg:#0A1230;--tv-panel:#101B44;--tv-line:#24346B;--tv-ink:#E8ECF7;--tv-dim:#8C98C4;--tv-hi:#FFD447;--tv-crowd:#72E0EE;--tv-bad:#FF7A6E;--tv-good:#6BD99A;--tv-you:#FFD447;--tv-them:#9DB0E8;
- --ui:'Archivo','Arial Narrow',Arial,sans-serif;--tv:'VT323','Courier New',monospace;
- color-scheme:light;
+<link href="https://fonts.googleapis.com/css2?family=Jersey+10&family=Jersey+15&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   THE OFFICE — interface v3
+   A 1990s management-sim desktop: dithered navy desk, bevelled stone
+   windows with crimson title bars, dark data wells for the numbers.
+   ===================================================================== */
+:root{
+ --desk:#22337A;--desk-dot:#1E2D6E;--deep:#16225A;
+ --well:#0E1744;--well-row:#132055;--well-hover:#1C2B6B;--well-line:#2A3A82;
+ --stone:#C8C1AE;--stone-2:#B8B09B;--stone-hi:#F3EDDC;--stone-lo:#776F5E;--paper:#EFE8D4;
+ --ink:#000;--ink-2:#463F33;--ink-3:#6B6352;
+ --blood:#9C1C25;--blood-hi:#CC3A40;--blood-lo:#560A10;
+ --gold:#F2C12E;--gold-hi:#FFE68E;--gold-lo:#8F6A0B;
+ --cyan:#7FE3F0;--white:#EEF1FF;--dim:#9DA8D8;
+ --good:#5BD06A;--good-ink:#1E7A2D;--bad:#FF6B5E;--bad-ink:#A3161C;--warn:#FFA53A;
+ --a5:#7CFF7A;--a4:#C6F36A;--a3:#EEF1FF;--a2:#FFB45C;--a1:#FF6B5E;
+ --px:'Jersey 15','Arial Narrow','Franklin Gothic Medium',sans-serif;
+ --jersey:'Jersey 10','Arial Narrow','Franklin Gothic Medium',Impact,sans-serif;
+ --tt:'VT323','Lucida Console','Courier New',monospace;
+ --bevel:inset 2px 2px 0 var(--stone-hi),inset -2px -2px 0 var(--stone-lo);
+ --bevel-in:inset 2px 2px 0 var(--stone-lo),inset -2px -2px 0 var(--stone-hi);
+ color-scheme:dark;
  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
- --bg:#0E1631;--surface:#151F45;--surface-2:#1A2652;--line:#2A3A73;--ink:#E8ECF7;--ink-2:#A3AED3;--ink-3:#7584B4;
- --accent:#FFD447;--accent-ink:#0E1631;--good:#6BD99A;--bad:#FF7A6E;--crowd:#72E0EE;--cta-bg:#FFD447;--cta-ink:#0E1631;--sel:#22306A;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0E1631;--surface:#151F45;--surface-2:#1A2652;--line:#2A3A73;--ink:#E8ECF7;--ink-2:#A3AED3;--ink-3:#7584B4;
- --accent:#FFD447;--accent-ink:#0E1631;--good:#6BD99A;--bad:#FF7A6E;--crowd:#72E0EE;--cta-bg:#FFD447;--cta-ink:#0E1631;--sel:#22306A;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 15px/1.45 var(--ui);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+*{font-synthesis:none}
+b,strong{font-weight:inherit}
+.lede b,.letter b,.outcome b,.crit b,.choice b,.opt b,.dlg>p b{color:var(--ink)}
+html,body{margin:0;height:100%}
+body{background:var(--desk);background-image:repeating-conic-gradient(var(--desk) 0 25%,var(--desk-dot) 0 50%);background-size:4px 4px;
+ color:var(--ink);font:400 19px/1.3 var(--px);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:90;background:var(--deep)}
 button,select,input{font:inherit;color:inherit}
 button{cursor:pointer}
-button:disabled{cursor:not-allowed;opacity:.4}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-h1,h2,h3{font-stretch:75%;font-weight:800;line-height:1;margin:0;letter-spacing:-.005em}
 p{margin:0 0 .6em}
-.dim{color:var(--ink-2)}.faint{color:var(--ink-3)}.good{color:var(--good)}.bad{color:var(--bad)}
+h1,h2,h3{margin:0;font-weight:400}
+:focus-visible{outline:2px dashed var(--gold);outline-offset:2px}
+.dim{color:var(--ink-3)}.good{color:var(--good-ink)}.bad{color:var(--bad-ink)}
+.well .dim,.tv .dim{color:var(--dim)}.well .good,.tv .good{color:var(--good)}.well .bad,.tv .bad{color:var(--bad)}
 .num{font-variant-numeric:tabular-nums}
+.tv .win .dim{color:var(--ink-3)}.tv .win .good{color:var(--good-ink)}.tv .win .bad{color:var(--bad-ink)}
+.tv .win .well .dim{color:var(--dim)}.tv .win .well .good{color:var(--good)}.tv .win .well .bad{color:var(--bad)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
-/* ---------- top bar ---------- */
-.bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:20px;padding:10px clamp(12px,3vw,28px);background:var(--surface);border-bottom:1px solid var(--line)}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
-.brand{display:flex;flex-direction:column;line-height:1;margin-right:auto}
-.brand b{font-size:26px;font-stretch:62%;font-weight:900;letter-spacing:.01em}
-.brand span{font-size:12px;color:var(--ink-3);margin-top:3px}
-.stat{display:flex;flex-direction:column;align-items:flex-end;line-height:1.05}
-.stat small{font-size:12px;color:var(--ink-3)}
-.stat strong{font-size:20px;font-stretch:80%;font-weight:700}
-.cta{background:var(--cta-bg);color:var(--cta-ink);border:0;padding:12px 22px;font-weight:800;font-stretch:80%;font-size:19px;min-width:170px;border-radius:2px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
-.cta:hover{filter:brightness(1.08)}
-.cta small{display:block;font-size:12px;font-weight:600;opacity:.8;font-stretch:100%}
-.tabs{display:flex;gap:2px;padding:0 clamp(12px,3vw,28px);background:var(--surface);border-bottom:1px solid var(--line);overflow-x:auto}
-.tab{background:none;border:0;border-bottom:3px solid transparent;padding:11px 16px 9px;font-weight:700;font-stretch:85%;font-size:16px;color:var(--ink-2);white-space:nowrap}
-.tab[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
-.tab .pill{display:inline-block;min-width:20px;margin-left:6px;padding:1px 6px;border-radius:9px;background:var(--bad);color:#fff;font-size:12px;font-stretch:100%;text-align:center}
-.tab .pill.soft{background:var(--surface-2);color:var(--ink-2)}
-main{max-width:1200px;margin:0 auto;padding:22px clamp(12px,3vw,28px) 60px}
-.section{margin-bottom:28px}
-.section>h2{font-size:24px;margin-bottom:4px}
-.section>.lede{color:var(--ink-2);margin-bottom:12px;max-width:68ch}
+/* ---------- bevelled chrome ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;padding:5px 14px;border:2px solid var(--ink);background:var(--stone);box-shadow:var(--bevel);color:var(--ink);font-weight:600;font-size:18px;line-height:1.1;text-align:center;border-radius:0}
+.btn:hover:not(:disabled){background:#D4CDBA}
+.btn:active:not(:disabled),.btn[aria-pressed="true"]{box-shadow:var(--bevel-in);padding-top:6px;padding-bottom:4px}
+.btn:disabled{color:var(--stone-lo);cursor:not-allowed;text-shadow:1px 1px 0 var(--stone-hi)}
+.btn.go{background:var(--gold);box-shadow:inset 2px 2px 0 var(--gold-hi),inset -2px -2px 0 var(--gold-lo)}
+.btn.go:hover:not(:disabled){background:#FFD149}
+.btn.go:active:not(:disabled){box-shadow:inset 2px 2px 0 var(--gold-lo),inset -2px -2px 0 var(--gold-hi)}
+.btn.red{background:var(--blood);color:#fff;box-shadow:inset 2px 2px 0 var(--blood-hi),inset -2px -2px 0 var(--blood-lo)}
+.btn.red:hover:not(:disabled){background:#B0242D}
+.btn.sm{min-height:28px;padding:3px 10px;font-size:17px}
+.btn.link{border:0;background:none;box-shadow:none;min-height:0;padding:2px 4px;text-decoration:underline;text-underline-offset:3px;color:inherit;font-weight:500}
+.well .btn.link{color:var(--cyan)}
 
-/* ---------- generic ---------- */
-.btn{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:2px;font-weight:600;font-size:14px}
-.btn:hover:not(:disabled){border-color:var(--ink-3)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.quiet{border-color:transparent;background:none;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;padding:7px 4px}
-.btn.danger{color:var(--bad)}
-select{border:1px solid var(--line);background:var(--surface);padding:6px 8px;border-radius:2px;max-width:100%}
-.meter{display:inline-block;width:64px;height:7px;background:var(--surface-2);border:1px solid var(--line);vertical-align:middle;position:relative}
-.meter i{position:absolute;inset:0 auto 0 0;background:var(--ink-2)}
-.meter.hot i{background:var(--good)}.meter.warn i{background:#D99A1E}.meter.danger i{background:var(--bad)}
-.tag{display:inline-block;font-size:12px;font-weight:700;padding:1px 7px;border-radius:2px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
-.tag.win{color:var(--good);border-color:currentColor;background:none}
-.tag.lose{color:var(--bad);border-color:currentColor;background:none}
-.tag.hot{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.empty{padding:26px;border:1px dashed var(--line);color:var(--ink-2);text-align:center}
-.portrait{image-rendering:pixelated;width:36px;height:45px;border:1px solid var(--line);background:var(--surface-2);flex:none}
+.win{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.45)}
+.tbar{flex:none;display:flex;align-items:center;gap:10px;min-height:34px;padding:2px 4px 2px 10px;background:var(--blood);color:#fff;border-bottom:2px solid var(--ink);box-shadow:inset 0 2px 0 var(--blood-hi)}
+.tbar h2,.tbar h3{font:26px/1 var(--jersey);letter-spacing:.02em;margin-right:auto;text-shadow:2px 2px 0 var(--blood-lo)}
+.tbar h3{font-size:22px}
+.tbar .note{font-size:16px;color:#F6D9D6}
+.tbar .btn{min-height:26px;padding:2px 9px;font-size:16px}
+.win.quiet .tbar{background:var(--deep);box-shadow:inset 0 2px 0 #2E3F92}
+.win.quiet .tbar h3{text-shadow:2px 2px 0 #000}
+.wbody{flex:1;min-height:0;overflow:auto;padding:12px 14px;scrollbar-color:var(--stone-lo) var(--stone-2)}
+.wbody.tight{padding:6px}
+.wbody.flush{padding:0}
+.lede{color:var(--ink-2);max-width:70ch;margin-bottom:10px}
+
+.well{background:var(--well);color:var(--white);border:2px solid;border-color:var(--stone-lo) var(--stone-hi) var(--stone-hi) var(--stone-lo);outline:2px solid var(--ink);outline-offset:-4px;scrollbar-color:var(--well-line) var(--well)}
+.well.pad{padding:10px 12px}
+.paper{background:var(--paper);border:2px solid;border-color:var(--stone-lo) var(--stone-hi) var(--stone-hi) var(--stone-lo)}
+
+.tag{display:inline-block;padding:0 6px;border:1px solid currentColor;font-size:16px;line-height:1.5;white-space:nowrap}
+.tag.tw{color:var(--good-ink)}.tag.tl{color:var(--bad-ink)}
+.tag.hot{background:var(--gold);color:var(--ink);border-color:var(--ink)}
+.well .tag.tw,.tv .tag.tw{color:var(--good)}.well .tag.tl,.tv .tag.tl{color:var(--bad)}
+.badge{display:inline-block;min-width:22px;padding:0 5px;background:var(--blood);color:#fff;border:1px solid var(--ink);font-size:16px;line-height:18px;text-align:center}
+.badge.soft{background:var(--stone-2);color:var(--ink)}
+.stars{color:var(--gold-lo);white-space:nowrap;letter-spacing:.04em}
+.well .stars,.tv .stars{color:var(--gold)}
+
+/* condition bar: pixel segments */
+.bar{display:inline-block;vertical-align:middle;width:72px;height:10px;background:var(--well);border:1px solid var(--ink);position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--good);background-image:repeating-linear-gradient(90deg,transparent 0 5px,rgba(0,0,0,.45) 5px 6px)}
+.bar.warn i{background-color:var(--warn)}.bar.danger i{background-color:var(--bad)}.bar.cool i{background-color:var(--cyan)}.bar.gold i{background-color:var(--gold)}
+.att{display:inline-block;min-width:2ch;text-align:right;font-weight:600}
+.a5{color:var(--a5)}.a4{color:var(--a4)}.a3{color:var(--a3)}.a2{color:var(--a2)}.a1{color:var(--a1)}
+
+.portrait{image-rendering:pixelated;width:36px;height:45px;border:1px solid var(--ink);background:var(--deep);flex:none;display:block}
+.portrait.x2{width:72px;height:90px;border-width:2px}
+.portrait.x3{width:144px;height:180px;border-width:2px}
+
+/* ---------- application frame ---------- */
+#app{height:100dvh;display:grid;grid-template-columns:210px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"top top" "nav view" "tick tick"}
+#app[hidden]{display:none}
+.top{grid-area:top;display:flex;align-items:center;gap:14px;padding:6px 10px 6px 12px;background:var(--deep);color:var(--white);border-bottom:2px solid var(--ink);box-shadow:0 2px 0 #2E3F92}
+.logo{font:38px/.9 var(--jersey);color:var(--gold);text-shadow:2px 2px 0 var(--blood),4px 4px 0 #000;letter-spacing:.02em;white-space:nowrap}
+.histnav{display:flex;gap:4px}
+.histnav .btn{min-width:34px;padding:2px 8px;font-size:18px}
+.readouts{display:flex;gap:2px;margin-left:auto;background:var(--ink);border:2px solid var(--ink)}
+.ro{display:flex;flex-direction:column;justify-content:center;padding:3px 12px;background:var(--well);min-width:96px}
+.ro small{font-size:15px;color:var(--dim)}
+.ro b{font:26px/1 var(--jersey);color:var(--white);font-weight:400;letter-spacing:.02em}
+.ro b.neg{color:var(--bad)}
+#continue{min-width:190px;min-height:52px;flex-direction:column;gap:0;font:28px/1 var(--jersey);letter-spacing:.03em}
+#continue small{font:400 16px/1.1 var(--px);letter-spacing:0}
+
+.nav{grid-area:nav;display:flex;flex-direction:column;gap:2px;margin:10px 0 10px 10px;padding:8px 6px 10px;overflow:auto;background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.45)}
+.nav h4{margin:10px 4px 4px;font:22px/1 var(--jersey);font-weight:400;color:var(--blood);letter-spacing:.02em}
+.nav h4:first-child{margin-top:0}
+.nav .item{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;padding:5px 8px;border:2px solid transparent;background:none;text-align:left;font-weight:500;font-size:18px;color:var(--ink)}
+.nav .item:hover{border-color:var(--ink);background:var(--stone-2)}
+.nav .item[aria-current="page"]{border-color:var(--ink);background:var(--gold);box-shadow:inset 2px 2px 0 var(--gold-lo),inset -2px -2px 0 var(--gold-hi);font-weight:700}
+
+#view{grid-area:view;min-height:0;min-width:0;padding:10px;overflow:hidden}
+.screen{height:100%;display:grid;gap:10px;min-height:0}
+
+.tick{grid-area:tick;display:flex;align-items:center;gap:12px;padding:3px 10px;background:var(--deep);border-top:2px solid var(--ink);font:20px/1.2 var(--tt);color:var(--cyan);overflow:hidden;white-space:nowrap}
+.tick b{font-weight:400;background:var(--blood);color:#fff;padding:0 6px}
+.tick button{border:0;background:none;color:inherit;padding:0;overflow:hidden;text-overflow:ellipsis;text-align:left;font:inherit}
+.tick button:hover{color:var(--gold)}
+.tick .keys{margin-left:auto;color:var(--dim);flex:none}
+
+/* ---------- data tables ---------- */
+.grid{width:100%;border-collapse:collapse;font-size:18px}
+.grid th{position:sticky;top:0;z-index:1;background:var(--deep);color:var(--cyan);font-weight:500;font-size:16px;text-align:left;padding:5px 8px;border-bottom:2px solid var(--ink);white-space:nowrap}
+.grid th.n,.grid td.n{text-align:right}
+.grid th.c,.grid td.c{text-align:center}
+.grid td{white-space:nowrap;padding:4px 8px;border-bottom:1px solid var(--well-line);vertical-align:middle}
+.grid tbody tr:nth-child(even) td{background:var(--well-row)}
+.grid tbody tr.pick{cursor:pointer}
+.grid tbody tr.pick:hover td{background:var(--well-hover)}
+.grid tbody tr[aria-selected="true"] td{background:var(--gold);color:var(--ink)}
+.grid tbody tr[aria-selected="true"] .att,.grid tbody tr[aria-selected="true"] .dim,.grid tbody tr[aria-selected="true"] .stars{color:var(--ink)}
+.grid tbody tr[aria-selected="true"] .tag.tw{color:var(--good-ink)}.grid tbody tr[aria-selected="true"] .tag.tl{color:var(--bad-ink)}
+.grid td.wrap,.who small{white-space:normal}
+.grid .sort{border:0;background:none;padding:0;color:inherit;font:inherit;white-space:nowrap}
+.grid .sort:hover{color:var(--gold)}
+.grid th[aria-sort="ascending"],.grid th[aria-sort="descending"]{color:var(--gold)}
+.who{display:flex;align-items:center;gap:8px;min-width:170px}
+.who b{display:block;font-weight:600}
+.who small{display:block;font-size:15px;color:var(--dim)}
+.grid tr[aria-selected="true"] .who small{color:var(--ink-2)}
+.empty{padding:22px 16px;text-align:center;color:var(--dim)}
+.paper .empty,.win>.wbody>.empty{color:var(--ink-3);border:2px dashed var(--stone-lo)}
+.empty .btn{margin-top:10px}
+
+/* key/value lists */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0}
+.kv dt{color:var(--ink-3)}
+.kv dd{margin:0;font-weight:600}
+.well .kv dt{color:var(--dim)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:2px;background:var(--ink);border:2px solid var(--ink)}
+.facts.three{grid-template-columns:repeat(3,1fr)}
+.facts.two{grid-template-columns:1fr 1fr}
+.wbody.tight>.well{min-height:100%}
+.wbody>.well{overflow-x:auto}
+.facts>div{background:var(--well);color:var(--white);padding:6px 10px}
+.facts small{display:block;font-size:15px;color:var(--dim)}
+.facts b{font:28px/1.05 var(--jersey);font-weight:400;letter-spacing:.02em}
+.facts b.pos{color:var(--good)}.facts b.neg{color:var(--bad)}
+
+/* ---------- office (desk) ---------- */
+.s-desk{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) minmax(0,1fr);grid-template-areas:"mission ledger" "tray dates" "tray squad"}
+.s-desk.nomission{grid-template-areas:"ledger ledger" "tray dates" "tray squad";grid-template-rows:auto minmax(0,1fr) minmax(0,1fr)}
+.criteria{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.crit{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;background:var(--stone-2);border:2px solid var(--ink)}
+.crit.met{background:#BFE3B3}
+.crit i{font-style:normal;font:22px/1 var(--jersey);width:18px;flex:none}
+.crit b{display:block;font-weight:600}
+.crit small{display:block;color:var(--ink-2);font-size:16px}
+.countdown{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.countdown b{font:34px/1 var(--jersey);color:var(--blood);font-weight:400}
+.tray{list-style:none;margin:0;padding:0}
+.tray li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--well-line)}
+.tray li:last-child{border-bottom:0}
+.tray .ic{font:24px/1 var(--jersey);text-align:center;color:var(--cyan)}
+.tray .urgent .ic{color:var(--bad)}
+.tray .ok .ic{color:var(--good)}
+.tray b{font-weight:600;display:block}
+.tray small{color:var(--dim);font-size:16px}
 
 /* ---------- inbox ---------- */
-.inbox{display:grid;grid-template-columns:minmax(260px,360px) 1fr;border:1px solid var(--line);background:var(--surface);min-height:420px}
-.msglist{list-style:none;margin:0;padding:0;border-right:1px solid var(--line);max-height:70vh;overflow:auto}
-.msglist button{display:grid;grid-template-columns:10px 1fr auto;gap:2px 10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 14px}
-.msglist button[aria-current="true"]{background:var(--sel)}
-.msglist .dot{width:8px;height:8px;border-radius:50%;margin-top:6px;background:transparent}
-.msglist .unread .dot{background:var(--accent)}
-.msglist .need .dot{background:var(--bad)}
-.msglist .from{font-size:13px;color:var(--ink-2)}
-.msglist .subj{grid-column:2/4;font-weight:600}
-.msglist .unread .subj{font-weight:800}
-.msglist .wk{font-size:12px;color:var(--ink-3)}
-.letter{padding:22px 26px;max-width:72ch}
-.letter h2{font-size:30px;margin:4px 0 14px}
-.letter .meta{font-size:13px;color:var(--ink-3)}
-.choices{display:grid;gap:8px;margin-top:18px}
-.choice{display:grid;grid-template-columns:1fr;text-align:left;padding:12px 14px;border:1px solid var(--line);background:var(--surface-2);border-radius:2px}
-.choice:hover{border-color:var(--accent)}
-.choice b{font-size:16px}
-.choice span{font-size:14px;color:var(--ink-2)}
-.outcome{margin-top:16px;padding:12px 14px;border-left:3px solid var(--accent);background:var(--surface-2)}
+.s-inbox{grid-template-columns:minmax(260px,380px) minmax(0,1fr)}
+.msglist{list-style:none;margin:0;padding:0}
+.msglist button{display:grid;grid-template-columns:12px 1fr auto;gap:0 8px;width:100%;padding:7px 10px;border:0;border-bottom:1px solid var(--well-line);background:none;color:var(--white);text-align:left}
+.msglist li:nth-child(even) button{background:var(--well-row)}
+.msglist button:hover{background:var(--well-hover)}
+.msglist button[aria-current="true"]{background:var(--gold);color:var(--ink)}
+.msglist .pip{width:8px;height:8px;margin-top:6px;background:transparent;border:1px solid transparent}
+.msglist .unread .pip{background:var(--cyan);border-color:var(--ink)}
+.msglist .need .pip{background:var(--bad);border-color:var(--ink)}
+.msglist .from{font-size:16px;color:var(--dim)}
+.msglist button[aria-current="true"] .from,.msglist button[aria-current="true"] .wk{color:var(--ink-2)}
+.msglist .wk{font-size:15px;color:var(--dim)}
+.msglist .subj{grid-column:2/4;font-weight:500}
+.msglist .unread .subj,.msglist .need .subj{font-weight:700}
+.letter{padding:18px 22px;max-width:74ch}
+.letter .meta{font-size:16px;color:var(--ink-3);border-bottom:2px solid var(--stone-lo);padding-bottom:8px;margin-bottom:12px}
+.letter h2{font:36px/1 var(--jersey);color:var(--blood);margin-bottom:12px}
+.choices{display:grid;gap:6px;margin-top:16px}
+.choice{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:8px 12px;border:2px solid var(--ink);background:var(--stone);box-shadow:var(--bevel);color:var(--ink)}
+.choice:hover:not(:disabled){background:var(--gold)}
+.choice:active:not(:disabled){box-shadow:var(--bevel-in)}
+.choice:disabled{opacity:.55;cursor:not-allowed}
+.choice b{font-weight:700}
+.choice span{font-size:17px;color:var(--ink-2)}
+.outcome{margin-top:14px;padding:10px 12px;background:var(--stone);border:2px solid var(--ink);border-left:8px solid var(--blood)}
 
-/* ---------- tables ---------- */
-.table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line)}
-.table th{font-size:12px;font-weight:600;color:var(--ink-3);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-.table td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
-.table tr:last-child td{border-bottom:0}
-.table td.n,.table th.n{text-align:right}
-.who{display:flex;align-items:center;gap:10px;min-width:180px}
-.who b{display:block;font-size:16px;font-stretch:85%}
-.who small{color:var(--ink-3);font-size:12px}
-.rowlink{background:none;border:0;padding:0;text-align:left}
-.rowlink:hover b{text-decoration:underline}
-.detail td{background:var(--surface-2)}
-.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;padding:8px 2px}
-.detail-grid h3{font-size:16px;margin-bottom:6px}
+/* ---------- roster / profile ---------- */
+.s-full{grid-template-rows:minmax(0,1fr)}
+.s-split{grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr)}
+.s-split.s-train{grid-template-columns:minmax(0,2.5fr) minmax(290px,1fr)}
+.s-split.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.s-profile{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"head head head" "atts train record"}
+.phead{grid-area:head}
+.phead .wbody{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
+.phead .name{font:52px/.9 var(--jersey);color:var(--blood);letter-spacing:.01em}
+.phead .handle{font-size:21px;font-weight:600;margin:4px 0 6px}
+.phead .acts{display:flex;flex-direction:column;gap:6px;align-self:stretch;justify-content:center}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:2px 8px;background:var(--stone-2);border:1px solid var(--ink);font-size:17px}
+.attrs{display:grid;gap:3px}
+.attr{display:grid;grid-template-columns:1fr auto 76px;gap:10px;align-items:center;padding:3px 4px;border-bottom:1px solid var(--well-line)}
+.attr span:first-child{color:var(--dim)}
+.attrs h4{margin:8px 4px 2px;font:20px/1 var(--jersey);font-weight:400;color:var(--cyan)}
+.attrs h4:first-child{margin-top:0}
+.section-h{font:22px/1 var(--jersey);color:var(--blood);margin:12px 0 6px}
+.section-h:first-child{margin-top:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select{border:2px solid var(--ink);background:var(--paper);color:var(--ink);padding:4px 6px;border-radius:0;box-shadow:var(--bevel-in);max-width:100%}
+.well select{background:var(--deep);color:var(--white);box-shadow:none;border-color:var(--well-line)}
+label.field{display:grid;gap:3px;font-size:16px;color:var(--ink-3)}
+label.field select{font-size:18px}
 
-/* ---------- bookings ---------- */
-.ledger{display:flex;flex-wrap:wrap;gap:6px 24px;align-items:baseline;padding:12px 16px;background:var(--surface);border:1px solid var(--line);margin-bottom:18px}
-.ledger strong{font-size:22px;font-stretch:80%}
-.offers{display:grid;gap:8px}
-.offer{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(190px,1.4fr) minmax(250px,1.6fr);gap:14px 20px;align-items:center;padding:14px 16px;background:var(--surface);border:1px solid var(--line)}
-.offer h3{font-size:20px}
-.offer .terms{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.offer .act{display:grid;gap:8px}
-.offer .act .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.offer .purse{font-size:24px;font-weight:800;font-stretch:80%}
-.fit{font-size:13px}
-.haggle{display:flex;gap:4px;flex-wrap:wrap;align-items:center;font-size:13px}
-.haggle .btn{padding:4px 8px;font-size:13px}
-.card-list{display:grid;gap:6px}
-.booked{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent)}
-.booked b{font-size:17px;font-stretch:85%}
+/* ---------- offers ---------- */
+.s-offers{grid-template-columns:minmax(0,1.4fr) minmax(360px,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"ledger ledger" "list detail"}
+.matchup{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;padding:10px;margin-bottom:10px}
+.matchup .side{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.matchup .side b{font:26px/1 var(--jersey);font-weight:400;color:var(--white)}
+.matchup .vs{font:40px/1 var(--jersey);color:var(--gold)}
+.purse{font:44px/1 var(--jersey);color:var(--blood)}
+.notes{list-style:none;margin:8px 0;padding:0;display:grid;gap:4px}
+.notes li{padding:4px 8px;border-left:6px solid var(--stone-lo);background:var(--stone-2);font-size:17px}
+.notes li.good{border-left-color:var(--good-ink);color:var(--ink)}
+.notes li.bad{border-left-color:var(--bad-ink);color:var(--ink)}
 
-/* ---------- records ---------- */
-.goals{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
-.goals li{padding:12px 14px;background:var(--surface);border:1px solid var(--line)}
-.goals li.done{border-color:var(--good)}
-.goals li.done::before{content:"✓ ";color:var(--good);font-weight:800}
-.stars{color:var(--accent);letter-spacing:.04em;white-space:nowrap}
+/* ---------- pyramid ---------- */
+.tiers{display:grid;gap:6px;padding:10px}
+.tier{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center}
+.tier>strong{font:22px/1 var(--jersey);font-weight:400;color:var(--cyan);text-align:right}
+.tier.apex>strong{color:var(--gold)}
+.tier .entries{display:flex;flex-wrap:wrap;gap:4px}
+.pent{display:flex;flex-direction:column;min-width:130px;padding:3px 8px;background:var(--well-row);border:1px solid var(--well-line);border-left:6px solid var(--dim)}
+.pent.mine{border-left-color:var(--gold);background:#2A3470}
+.pent b{font-weight:600}
+.pent small{font-size:15px;color:var(--dim)}
+.tier.apex .pent{border:2px solid var(--gold);border-left-width:6px;background:#3A3416}
 
-/* ---------- title ---------- */
-.title{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--tv-bg);color:var(--tv-ink);padding:24px}
+/* ---------- dialogs + toast ---------- */
+dialog{padding:0;border:2px solid var(--ink);background:var(--stone);color:var(--ink);max-width:min(760px,94vw);width:100%;box-shadow:var(--bevel),6px 6px 0 rgba(0,0,0,.55)}
+dialog::backdrop{background:rgba(8,12,40,.65)}
+dialog .dlg{padding:14px 16px;max-height:72vh;overflow:auto}
+dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;padding:10px 16px;border-top:2px solid var(--stone-lo)}
+.terms-compare{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}
+.terms-compare>div{padding:8px 10px;background:var(--well);color:var(--white);border:2px solid var(--ink)}
+.terms-compare small{display:block;color:var(--dim);font-size:15px}
+.terms-compare b{display:block;margin-top:2px;font-weight:600}
+.talk-log{max-height:34vh;overflow:auto;padding:4px 12px;font:20px/1.2 var(--tt)}
+.talk-line{padding:6px 0;border-bottom:1px solid var(--well-line)}
+.talk-line:last-child{border-bottom:0}
+.talk-line b{font-weight:400;color:var(--gold)}
+.talk-line p{margin:2px 0 0}
+.talk-actions{display:grid;gap:6px;margin-top:12px}
+.talk-actions p{margin:0 0 2px;font-weight:600}
+.talk-outcome{margin-top:12px;padding:10px 12px;background:var(--paper);border:2px solid var(--ink);border-left:8px solid var(--blood)}
+.talk-outcome b{font:24px/1 var(--jersey);font-weight:400;color:var(--blood)}
+#toast{position:fixed;right:16px;bottom:calc(46px + env(safe-area-inset-bottom,0px));z-index:80;max-width:min(420px,90vw);background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.5);padding:8px 12px 8px 14px;border-left:8px solid var(--gold);font-weight:600;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .15s,transform .15s}
+#toast.show{opacity:1;transform:none}
+
+/* ---------- title screen ---------- */
+.title{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:var(--desk);background-image:repeating-conic-gradient(var(--desk) 0 25%,var(--desk-dot) 0 50%);background-size:4px 4px;overflow:auto}
 .title[hidden]{display:none}
-.title .inner{max-width:640px;width:100%}
-.title .teletext{font:22px/1 var(--tv);color:var(--tv-bg);background:var(--tv-hi);display:inline-block;padding:4px 10px;margin-bottom:22px}
-.title h1{font-size:clamp(64px,14vw,150px);font-stretch:62%;font-weight:900;line-height:.82;letter-spacing:-.01em}
-.title p{font:24px/1.25 var(--tv);color:var(--tv-dim);margin:22px 0 30px;max-width:30ch}
-.title .row{display:flex;gap:12px;flex-wrap:wrap}
-.title .cta{background:var(--tv-hi);color:var(--tv-bg)}
-.title .alt{background:none;border:1px solid var(--tv-line);color:var(--tv-ink);padding:12px 20px;font-weight:700;font-stretch:80%;font-size:18px}
-.title .note{font:18px var(--tv);color:var(--tv-dim);margin-top:28px}
+.title .win{width:min(640px,100%)}
+.title .hero{padding:26px 26px 18px;text-align:center;background:var(--deep);border-bottom:2px solid var(--ink)}
+.title .ropes{height:6px;margin:0 -26px 18px;background:repeating-linear-gradient(0deg,var(--blood) 0 2px,transparent 2px 4px)}
+.title .ropes.b{margin:18px -26px 0}
+.title h1{font:clamp(84px,17vw,150px)/.78 var(--jersey);color:var(--gold);text-shadow:4px 4px 0 var(--blood),8px 8px 0 #000;letter-spacing:.01em}
+.title .sub{font:24px/1.1 var(--tt);color:var(--cyan);margin-top:14px}
+.title .menu{display:grid;gap:8px;padding:18px 26px}
+.title .menu .btn{min-height:48px;font:28px/1 var(--jersey);letter-spacing:.03em}
+.title .keys{padding:0 26px 18px;font-size:17px;color:var(--ink-2);text-align:center}
 
-/* ---------- toast + dialog ---------- */
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-weight:600;max-width:min(560px,92vw);opacity:0;pointer-events:none;transition:opacity .2s;z-index:60}
-#toast.show{opacity:1}
-dialog{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0;max-width:min(720px,94vw);width:100%;border-radius:2px}
-dialog::backdrop{background:rgba(5,10,30,.6)}
-dialog .dlg{padding:20px 22px;max-height:80vh;overflow:auto}
-dialog h2{font-size:26px;margin-bottom:10px}
-dialog .foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 22px;border-top:1px solid var(--line)}
-
-/* ---------- the TV: match night ---------- */
-.tv{position:fixed;inset:0;z-index:20;background:var(--tv-bg);color:var(--tv-ink);overflow:auto;display:flex;flex-direction:column}
+/* ---------- MATCH NIGHT ---------- */
+.tv{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;background:var(--desk);background-image:repeating-conic-gradient(var(--desk) 0 25%,var(--desk-dot) 0 50%);background-size:4px 4px;color:var(--white)}
 .tv[hidden]{display:none}
-.tv .strip{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:8px clamp(12px,3vw,28px);background:var(--tv-hi);color:var(--tv-bg);font:22px/1 var(--tv)}
-.tv .strip b{font-weight:400}
-.tv .wrap{width:100%;max-width:1100px;margin:0 auto;padding:18px clamp(12px,3vw,28px) 28px;flex:1;display:flex;flex-direction:column}
-.tv .btn{background:var(--tv-panel);border-color:var(--tv-line);color:var(--tv-ink)}
-.tv .btn:hover:not(:disabled){border-color:var(--tv-dim)}
-.tv .go{background:var(--tv-hi);color:var(--tv-bg);border:0;padding:13px 26px;font-weight:800;font-stretch:80%;font-size:20px;border-radius:2px}
-.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;margin:6px 0 16px}
-.vs .side{display:flex;align-items:center;gap:14px}
-.vs .side.them{flex-direction:row-reverse;text-align:right}
-.vs img{width:72px;height:90px;image-rendering:pixelated;border:1px solid var(--tv-line);background:var(--tv-panel)}
-.vs h2{font-size:clamp(26px,4vw,44px);font-stretch:62%;font-weight:900}
-.vs small{display:block;font:20px var(--tv);color:var(--tv-dim)}
-.vs .v{font:40px var(--tv);color:var(--tv-dim)}
-.contract{font:24px/1.2 var(--tv);color:var(--tv-ink);padding:10px 14px;border:1px solid var(--tv-line);background:var(--tv-panel);margin-bottom:16px}
-.contract em{font-style:normal;color:var(--tv-hi)}
-.scout{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
-.scout div{padding:10px 14px;border-left:2px solid var(--tv-line);font-size:15px;color:var(--tv-dim)}
-.scout b{color:var(--tv-ink)}
-.scout .warn{color:var(--tv-bad)}
-.decide{border:0;margin:0 0 18px;padding:0}
-.decide legend{font-size:20px;font-weight:800;font-stretch:80%;margin-bottom:8px;padding:0}
-.decide .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:6px}
-.opt{position:relative;text-align:left;border:1px solid var(--tv-line);background:var(--tv-panel);color:var(--tv-ink);padding:10px 12px;border-radius:2px;display:flex;flex-direction:column;gap:3px}
-.opt b{font-size:16px}
-.opt span{font-size:13px;color:var(--tv-dim)}
-.opt[aria-pressed="true"]{border-color:var(--tv-hi);box-shadow:inset 0 0 0 1px var(--tv-hi)}
-.opt .fits{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
-.opt .fits i{font-style:normal;font-size:12px;padding:0 6px;border:1px solid var(--tv-good);color:var(--tv-good)}
-.opt .fits i.no{border-color:var(--tv-bad);color:var(--tv-bad)}
-.prep-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
-.prep-foot .dim{color:var(--tv-dim)}
-
+.strip{flex:none;display:flex;align-items:center;gap:18px;padding:6px 14px;background:var(--blood);border-bottom:2px solid var(--ink);box-shadow:inset 0 2px 0 var(--blood-hi);font:24px/1 var(--jersey);letter-spacing:.03em}
+.strip b{font-weight:400;color:var(--gold);text-shadow:2px 2px 0 var(--blood-lo)}
+.strip span{color:#F6D9D6}
+.strip .r{margin-left:auto}
+.stage{flex:1;min-height:0;display:grid;gap:10px;padding:10px;overflow:auto}
+.stage .win{color:var(--ink)}
+.tv-foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;background:var(--deep);border-top:2px solid var(--ink);flex-wrap:wrap}
+.tv-foot .btn.go{min-height:48px;min-width:220px;font:28px/1 var(--jersey);letter-spacing:.03em}
+/* prep */
+.s-prep{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"tape contract" "plan plan"}
+.tape{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px 12px}
+.tape .nm{font:30px/1 var(--jersey);color:var(--gold);text-align:center;margin-top:4px}
+.tape .nm.them{color:var(--white)}
+.tape .side{display:flex;flex-direction:column;align-items:center}
+.cmp{display:grid;gap:5px}
+.cmpr{display:grid;grid-template-columns:2.4ch 1fr 6ch 1fr 2.4ch;gap:6px;align-items:center;font-size:17px}
+.cmpr .lab{text-align:center;color:var(--dim);font-size:15px}
+.cmpr .l,.cmpr .r{height:10px;background:var(--deep);border:1px solid var(--ink);position:relative}
+.cmpr .l i,.cmpr .r i{position:absolute;top:0;bottom:0;background-image:repeating-linear-gradient(90deg,transparent 0 5px,rgba(0,0,0,.45) 5px 6px)}
+.cmpr .l i{right:0;background-color:var(--gold)}.cmpr .r i{left:0;background-color:var(--dim)}
+.cmpr .v{text-align:right}.cmpr .v.r2{text-align:left}
+.cmpr .v.up{color:var(--a5)}
+.warnings{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:3px}
+.warnings li{padding:3px 8px;border-left:6px solid var(--bad-ink);background:var(--stone-2);font-size:17px}
+.planset{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr) minmax(0,1.5fr);gap:10px;min-height:0}
+.decide{border:0;margin:0;padding:0;min-width:0}
+.decide legend{font:22px/1 var(--jersey);color:var(--blood);margin-bottom:6px;padding:0}
+.decide .opts{display:grid;gap:5px}
+.opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:7px 10px;border:2px solid var(--ink);background:var(--stone);box-shadow:var(--bevel);color:var(--ink)}
+.opt:hover{background:#D4CDBA}
+.opt b{font-weight:700}
+.opt span{font-size:16px;color:var(--ink-2)}
+.opt[aria-pressed="true"]{background:var(--gold);box-shadow:inset 2px 2px 0 var(--gold-lo),inset -2px -2px 0 var(--gold-hi)}
+.opt .fits{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
+.opt .fits i{font-style:normal;font-size:15px;padding:0 5px;background:var(--well);color:var(--a5);border:1px solid var(--ink)}
 /* live */
-.score{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center}
+.score{flex:none;display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;padding:8px 14px;background:var(--deep);border-bottom:2px solid var(--ink)}
 .score .side{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center}
 .score .side.them{grid-template-columns:1fr auto;text-align:right}
-.score .side.them img{grid-column:2;grid-row:1/3}
-.score img{width:52px;height:65px;image-rendering:pixelated;border:1px solid var(--tv-line);grid-row:1/3}
-.score h2{font-size:clamp(22px,3.4vw,34px);font-stretch:62%;font-weight:900}
-.score .you h2{color:var(--tv-you)}
-.stam{height:6px;background:var(--tv-panel);border:1px solid var(--tv-line);position:relative}
-.stam i{position:absolute;top:0;bottom:0;left:0;background:var(--tv-good);transition:width .4s}
+.score .side.them .portrait{grid-column:2;grid-row:1/3}
+.score .side .portrait{grid-row:1/3}
+.score h2{font:40px/.9 var(--jersey);color:var(--gold)}
+.score .them h2{color:var(--white)}
+.stam{height:12px;background:var(--well);border:2px solid var(--ink);position:relative}
+.stam i{position:absolute;top:0;bottom:0;left:0;background:var(--good);background-image:repeating-linear-gradient(90deg,transparent 0 6px,rgba(0,0,0,.45) 6px 8px);transition:width .4s}
 .them .stam i{left:auto;right:0}
-.stam.low i{background:var(--tv-bad)}
-.score .mid{text-align:center;min-width:160px}
-.score .live-stars{font:42px/1 var(--tv);color:var(--tv-hi);letter-spacing:.05em;min-height:42px}
-.score .clock{font:34px/1 var(--tv)}
-.score .phase{font:20px var(--tv);color:var(--tv-dim)}
-.mom{margin:14px 0 4px;height:8px;display:flex;background:var(--tv-them)}
-.mom i{display:block;background:var(--tv-you);transition:width .5s}
-.momlab{display:flex;justify-content:space-between;font:18px var(--tv);color:var(--tv-dim)}
-.feed{flex:1;display:flex;flex-direction:column;margin:12px 0;min-height:260px}
-.now{min-height:3.2em;display:flex;align-items:center;gap:16px;font:clamp(28px,4.2vw,44px)/1.1 var(--tv);padding:16px 0;border-top:1px solid var(--tv-line);border-bottom:1px solid var(--tv-line)}
-.now .t{color:var(--tv-dim);font-size:.6em;flex:none;width:3.4em}
-.now.big{color:var(--tv-hi)}
-.now.count{justify-content:center;font-size:clamp(60px,11vw,120px);color:var(--tv-hi)}
+.stam.low i{background-color:var(--bad)}
+.score .mid{text-align:center;min-width:200px;padding:4px 14px;background:var(--well);border:2px solid var(--ink)}
+.score .live-stars{font:38px/1 var(--jersey);color:var(--gold);min-height:38px;letter-spacing:.04em}
+.score .clock{font:30px/1 var(--tt);color:var(--white)}
+.score .phase{font:20px/1 var(--tt);color:var(--cyan)}
+.mom{flex:none;height:12px;display:flex;background:var(--dim);border-bottom:2px solid var(--ink)}
+.mom i{display:block;background:var(--gold);transition:width .5s;border-right:2px solid var(--ink)}
+.s-live{grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr)}
+.feed{display:flex;flex-direction:column;min-height:0;height:100%}
+.now{flex:none;min-height:3.4em;display:flex;align-items:center;gap:16px;padding:14px 16px;font:clamp(26px,3.2vw,40px)/1.1 var(--tt);border-bottom:2px solid var(--well-line);background:var(--deep)}
+.now .t{color:var(--dim);font-size:.6em;flex:none;width:3.4em}
+.now.big{color:var(--gold)}
+.now.count{justify-content:center;font-size:clamp(56px,9vw,104px);color:var(--gold)}
 .now.count .t{display:none}
-.now.crowd{color:var(--tv-crowd)}.now.bad,.now.alert{color:var(--tv-bad)}.now.agent,.now.you{color:var(--tv-dim)}
-.now.rating{color:var(--tv-hi);justify-content:center}
-.now .tx{animation:land .18s ease-out}
+.now.crowd{color:var(--cyan)}.now.bad,.now.alert{color:var(--bad)}.now.agent,.now.you{color:var(--dim)}
+.now.rating{color:var(--gold);justify-content:center}
+.now .tx{animation:land .18s steps(3)}
 @keyframes land{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.past{list-style:none;margin:10px 0 0;padding:0;font:22px/1.25 var(--tv);color:var(--tv-dim);overflow:hidden;max-height:11.5em}
+.past{flex:1;min-height:0;overflow:auto;list-style:none;margin:0;padding:8px 16px;font:22px/1.25 var(--tt);color:var(--dim)}
 .past li{display:flex;gap:16px;padding:2px 0}
 .past li .t{flex:none;width:3.4em;opacity:.7}
-.past li.crowd{color:#5BAFBC}.past li.bad,.past li.alert{color:#C46A62}.past li.big{color:#CDB453}.past li.you{color:#B9C3E6}
-.past li:nth-child(n+5){opacity:.6}.past li:nth-child(n+7){opacity:.4}
-.bench{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:18px;padding-top:14px;border-top:1px solid var(--tv-line)}
+.past li.crowd{color:#63BFCB}.past li.bad,.past li.alert{color:#D9776E}.past li.big{color:#D9BC55}.past li.you{color:#BAC4EA}
+.past li:nth-child(n+6){opacity:.7}.past li:nth-child(n+9){opacity:.5}
+.bench{display:flex;flex-direction:column;gap:10px;min-height:0}
 .gauge{margin-bottom:10px}
-.gauge label{display:flex;justify-content:space-between;font:20px var(--tv);color:var(--tv-dim)}
-.gauge label b{font-weight:400;color:var(--tv-ink)}
-.gauge label b.warnv{color:var(--tv-bad)}
-.gbar{height:10px;background:var(--tv-panel);border:1px solid var(--tv-line);position:relative}
-.gbar i{position:absolute;inset:0 auto 0 0;background:var(--tv-crowd);transition:width .4s}
-.callsleft{font:20px var(--tv);color:var(--tv-dim)}
-.callsleft span{color:var(--tv-hi);letter-spacing:.2em}
-.calls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.call{text-align:left;padding:10px 12px;border:1px solid var(--tv-line);background:var(--tv-panel);color:var(--tv-ink);border-radius:2px;font-weight:700;font-size:15px;display:flex;gap:10px;align-items:baseline}
-.call kbd{font:16px var(--tv);color:var(--tv-dim);border:1px solid var(--tv-line);padding:0 5px}
-.call:hover:not(:disabled){border-color:var(--tv-hi)}
-.callhint{font:19px/1.2 var(--tv);color:var(--tv-dim);min-height:1.3em;margin-top:8px}
-.speed{display:flex;gap:4px;align-items:center;margin-top:10px;flex-wrap:wrap}
-.speed button{background:none;border:1px solid var(--tv-line);color:var(--tv-dim);padding:5px 10px;font:18px/1 var(--tv)}
-.speed button[aria-pressed="true"]{color:var(--tv-bg);background:var(--tv-ink);border-color:var(--tv-ink)}
-.speed .gap{flex:1}
-.decision{position:fixed;inset:0;z-index:25;display:grid;place-items:center;background:rgba(4,8,24,.72);padding:18px}
+.gauge label{display:flex;justify-content:space-between;font-size:17px;color:var(--ink-2);margin-bottom:3px}
+.gauge label b{font-weight:700;color:var(--ink)}
+.gauge label b.warnv{color:var(--bad-ink)}
+.gbar{height:14px;background:var(--well);border:2px solid var(--ink);position:relative}
+.gbar i{position:absolute;inset:0 auto 0 0;background:var(--cyan);background-image:repeating-linear-gradient(90deg,transparent 0 6px,rgba(0,0,0,.45) 6px 8px);transition:width .4s}
+.callsleft{display:flex;justify-content:space-between;font-size:17px;color:var(--ink-2)}
+.callsleft span{color:var(--blood);font-size:18px;letter-spacing:.2em}
+.calls{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.call{display:flex;gap:8px;align-items:center;justify-content:flex-start;text-align:left;min-height:40px}
+.call kbd{font:16px/1 var(--px);background:var(--well);color:var(--cyan);border:1px solid var(--ink);padding:2px 5px}
+.callhint{min-height:2.6em;margin-top:8px;padding:6px 8px;font:19px/1.15 var(--tt);color:var(--cyan)}
+.speed{display:flex;gap:4px;flex-wrap:wrap}
+.speed .btn{flex:1;min-width:0;padding:3px 6px;font-size:16px;min-height:30px}
+.decision{position:fixed;inset:0;z-index:45;display:grid;place-items:center;background:rgba(8,12,40,.72);padding:16px}
 .decision[hidden]{display:none}
-.decision .box{width:min(620px,100%);background:var(--tv-bg);border:2px solid var(--tv-bad);padding:20px 22px}
-.decision .flash{font:22px var(--tv);color:var(--tv-bg);background:var(--tv-bad);display:inline-block;padding:2px 8px;margin-bottom:10px}
-.decision h2{font-size:36px;font-stretch:62%;font-weight:900;margin-bottom:8px}
-.decision p{color:var(--tv-dim);font-size:16px}
-.decision .opts{display:grid;gap:8px;margin-top:14px}
+.decision .win{width:min(640px,100%);color:var(--ink)}
+.decision h2{font:40px/1 var(--jersey);color:var(--blood);margin:0 0 6px}
+.decision .opts{display:grid;gap:6px;margin-top:12px}
 /* result */
-.final{text-align:center;padding:10px 0 18px}
-.final .bigstars{font:clamp(64px,12vw,120px)/1 var(--tv);color:var(--tv-hi);letter-spacing:.04em}
-.final .verdict{font:28px var(--tv);color:var(--tv-dim)}
-.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--tv-line);border:1px solid var(--tv-line);margin-bottom:18px}
-.facts div{background:var(--tv-panel);padding:10px 12px}
-.facts small{display:block;font:18px var(--tv);color:var(--tv-dim)}
-.facts b{font:30px/1 var(--tv);font-weight:400}
-.cons{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:4px}
-.cons li{padding:7px 12px;border-left:3px solid var(--tv-line);background:var(--tv-panel)}
-.cons li.up{border-left-color:var(--tv-good)}.cons li.down{border-left-color:var(--tv-bad)}
-.fulllog{font:20px/1.3 var(--tv);color:var(--tv-dim);max-height:50vh;overflow:auto;border:1px solid var(--tv-line);padding:10px 14px;margin:0 0 18px;list-style:none}
+.s-result{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+.final{grid-column:1/-1;text-align:center;padding:10px 0 4px}
+.final .bigstars{font:clamp(70px,11vw,124px)/1 var(--jersey);color:var(--gold);text-shadow:4px 4px 0 var(--blood),8px 8px 0 #000;letter-spacing:.04em}
+.final .verdict{font:28px/1.2 var(--tt);color:var(--cyan);margin-top:6px}
+.cons{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.cons li{padding:5px 10px;background:var(--stone-2);border:1px solid var(--ink);border-left:8px solid var(--stone-lo)}
+.cons li.up{border-left-color:var(--good-ink)}.cons li.down{border-left-color:var(--bad-ink)}
+.fulllog{font:20px/1.3 var(--tt);color:var(--dim);margin:0;padding:8px 12px;list-style:none}
 .fulllog li{display:flex;gap:14px}.fulllog .t{flex:none;width:3.4em;opacity:.7}
-.fulllog .big{color:#CDB453}.fulllog .crowd{color:#5BAFBC}.fulllog .bad,.fulllog .alert{color:#C46A62}
+.fulllog .big{color:#D9BC55}.fulllog .crowd{color:#63BFCB}.fulllog .bad,.fulllog .alert{color:#D9776E}
 
-/* ---------- v2.1 director's desk & conversations ---------- */
-.desk-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
-.desk-head h2{font-size:38px;margin:6px 0}
-.desk-kicker{font:19px/1.15 var(--tv);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
-.desk-meet{border:1px solid var(--line);background:var(--surface);padding:11px 14px;display:flex;flex-direction:column;min-width:210px}
-.desk-meet b{font-size:28px;line-height:1}.desk-meet small{font-weight:800}.desk-meet span{font-size:12px;color:var(--ink-3);max-width:25ch;margin-top:2px}
-.desk-mission{border:2px solid var(--accent);background:var(--surface);padding:18px;margin-bottom:14px}
-.desk-mission h2{font-size:27px;margin:6px 0}.desk-mission p{max-width:80ch;color:var(--ink-2);margin:0 0 14px}
-.desk-criteria{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
-.desk-criteria>div{background:var(--surface-2);border:1px solid var(--line);padding:8px 11px;display:flex;flex-direction:column;gap:3px}
-.desk-criteria>div.met{border-color:var(--good)}.desk-criteria span{font-weight:800}.desk-criteria small{color:var(--ink-3)}
-.desk-finance{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:14px}
-.desk-finance>div{background:var(--surface);padding:12px 14px;min-width:0}.desk-finance small{display:block;color:var(--ink-3);font-size:12px}.desk-finance b{font-size:22px}
-.desk-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.desk-panel{border:1px solid var(--line);padding:16px;background:var(--surface);display:flex;flex-direction:column}
-.desk-panel h3{font-size:22px;margin-bottom:10px}.desk-panel p{min-height:2.8em}.desk-panel button{align-self:flex-start;margin-top:auto}
-.desk-foot{margin:14px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:var(--ink-2)}
-.train-pair{display:flex;gap:5px;flex-direction:column;min-width:195px}.train-pair select{font-size:13px}
-.terms-compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.terms-compare>div{padding:10px;background:var(--surface-2);border:1px solid var(--line)}.terms-compare small{display:block;color:var(--ink-3)}.terms-compare b{display:block;margin-top:3px;font-size:15px}
-.talk-log{border:1px solid var(--line);max-height:38vh;overflow:auto;padding:10px 12px;background:var(--surface-2)}
-.talk-line{border-bottom:1px solid var(--line);padding:8px 0}.talk-line:last-child{border-bottom:0}.talk-line b{color:var(--accent)}.talk-line p{margin:4px 0 0}
-.talk-actions{display:grid;gap:6px;margin-top:12px}.talk-actions p{margin:0 0 4px}.talk-outcome{padding:12px;margin-top:10px;border-left:3px solid var(--accent);background:var(--surface-2)}
-.talk-outcome p{margin:5px 0 12px}
-@media(max-width:900px){.desk-grid{grid-template-columns:1fr 1fr}.desk-finance{grid-template-columns:1fr 1fr}}
-@media(max-width:580px){.desk-grid,.desk-criteria,.terms-compare{grid-template-columns:1fr}.desk-finance{grid-template-columns:1fr 1fr}.desk-head h2{font-size:32px}.desk-meet{min-width:0;width:100%}.desk-panel p{min-height:0}}
-
-/* ---------- small screens ---------- */
-@media (max-width:860px){
- .bar{flex-wrap:wrap;gap:10px 16px}
- .brand{flex-basis:100%;flex-direction:row;align-items:baseline;gap:10px}
- .cta{margin-left:auto;min-width:0}
- .inbox{grid-template-columns:1fr}
- .msglist{border-right:0;border-bottom:1px solid var(--line);max-height:38vh}
- .letter{padding:18px 16px}
- .offer{grid-template-columns:1fr}
- .scout{grid-template-columns:1fr}
- .bench{grid-template-columns:1fr}
- .calls{grid-template-columns:repeat(2,1fr)}
- .score{grid-template-columns:1fr 1fr;}
- .score .mid{grid-column:1/3;grid-row:1;order:-1}
- .score img{width:40px;height:50px}
- .tv .wrap{padding-top:10px}
- .score .live-stars{font-size:30px;min-height:30px}.score .clock{font-size:26px}
- .now{font-size:24px;min-height:4.6em;padding:10px 0}
- .now.count{font-size:64px}
- .past{font-size:18px;max-height:5.2em}
- .feed{min-height:0;margin:8px 0}
- .call{padding:9px 10px;font-size:14px}
- .mom{margin-top:10px}
- .vs img{width:52px;height:65px}
- .resp thead{display:none}
- .resp tr{display:grid;grid-template-columns:repeat(4,1fr);gap:4px 10px;padding:10px 12px;border-bottom:1px solid var(--line)}
- .resp td{border:0;padding:2px 0}
- .resp td.lead{grid-column:1/-1}
- .resp td[data-l]::before{content:attr(data-l);display:block;font-size:11px;color:var(--ink-3)}
- .resp td.n{text-align:left}
- .resp td.wide{grid-column:span 2}
- .resp tr.detail{display:block}
+/* ---------- smaller screens: the desk becomes a scrolling page ---------- */
+@media (max-width:1100px){
+ .s-profile{grid-template-columns:1fr 1fr;grid-template-areas:"head head" "atts train" "record record";grid-template-rows:auto auto auto;height:auto}
+ .planset{grid-template-columns:1fr 1fr}
+ .planset .decide:first-child{grid-column:1/-1}
+}
+@media (max-width:900px){
+ body{overflow:auto}
+ #app{height:auto;min-height:100dvh;grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "view" "tick"}
+ .top{position:sticky;top:0;z-index:30;flex-wrap:wrap;gap:8px}
+ .logo{font-size:30px}
+ .readouts{order:3;margin-left:0;width:100%}
+ .readouts{display:grid;grid-template-columns:1fr 1fr}
+ .ro{min-width:0;padding:3px 8px}.ro b{font-size:22px}
+ .tbar .note{display:none}
+ .win{scroll-margin-top:180px}
+ #continue{margin-left:auto;min-width:150px;min-height:44px;font-size:24px}
+ .nav{flex-direction:row;align-items:center;margin:8px 8px 0;padding:6px;overflow-x:auto;gap:4px}
+ .nav h4{display:none}
+ .nav .item{width:auto;white-space:nowrap;flex:none}
+ #view{overflow:visible;padding:8px}
+ .screen{height:auto;grid-template-columns:1fr!important;grid-template-rows:none!important;grid-template-areas:none!important}
+ .screen>*{grid-area:auto!important}
+ .wbody{overflow:visible}
+ .wbody.tight,.wbody.flush{overflow-x:auto}
+ .phead .wbody{grid-template-columns:auto 1fr}
+ .phead .acts{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}
+ .phead .name{font-size:40px}
+ .portrait.x3{width:96px;height:120px}
+ .criteria{grid-template-columns:1fr}
+ .tier{grid-template-columns:1fr}.tier>strong{text-align:left}
+ .tick .keys{display:none}
+ #toast{left:12px;right:12px;bottom:56px}
+ .tv{overflow:auto}
+ .strip{flex-wrap:wrap;gap:4px 14px;font-size:20px}
+ .stage{overflow:visible;flex:none}
+ .planset{grid-template-columns:1fr}
+ .score{grid-template-columns:1fr 1fr;gap:8px}
+ .score .mid{grid-column:1/3;grid-row:1;min-width:0}
+ .score h2{font-size:28px}
+ .score .portrait{width:36px;height:45px}
+ .now{font-size:24px;min-height:4.4em}
+ .now.count{font-size:60px}
+ .past{max-height:9em;font-size:19px}
+ .tape{grid-template-columns:1fr 1fr}
+ .tape .cmp{grid-column:1/-1;grid-row:2}
+ .tv-foot{position:sticky;bottom:0}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-/* v2.2: clear calendar and development planning surfaces */
-.staff-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
-.staff-pick{display:flex;flex-direction:column;align-items:flex-start;gap:7px;border:1px solid var(--line);background:var(--surface);padding:14px}
-.staff-pick b{font-size:17px}.staff-pick span{font-size:13px}.staff-pick button{margin-top:auto}
-.program-actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
-.program-actions .btn{font-size:13px}
-@media(max-width:600px){.staff-options{grid-template-columns:1fr}.program-actions{display:grid;grid-template-columns:1fr}.program-actions .btn{width:100%}}
-
-.circuit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}.circuit-check{background:var(--surface);border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:5px}.circuit-check.met{border-color:var(--good)}.circuit-check small{color:var(--ink-3)}.circuit-check b{font-size:18px}.circuit-check span{font-size:13px}.circuit-check strong{font-size:20px}
-/* Strict viewport-managed screens: no browser-page scrolling */
-html,body{height:100%;overflow:hidden;overscroll-behavior:none}
-#app{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-#app>.bar,#app>.tabs{flex:none}
-#view{flex:1;min-height:0;overflow:hidden;scroll-behavior:auto}
-#page-controls{flex:none;display:flex;align-items:center;justify-content:center;gap:18px;padding:6px 12px;background:var(--surface);border-top:1px solid var(--line);z-index:3}
-#page-controls[hidden]{display:none}
-.page-controls button{padding:7px 13px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-weight:700;cursor:pointer}
-.page-controls button:disabled{opacity:.35}
-.page-counter{font:16px var(--tv)}
-.pyramid-section h2{margin:5px 0 3px}
-.pyr-tiers{display:grid;gap:7px;margin:10px auto;max-width:940px}
-.pyr-level{width:100%;border:1px solid var(--line);background:var(--surface);padding:8px 10px;text-align:center}
-.pyr-level:nth-child(1){width:44%;margin:auto;border-color:#d8a92b}
-.pyr-level:nth-child(2){width:58%;margin:auto}
-.pyr-level:nth-child(3){width:72%;margin:auto}
-.pyr-level:nth-child(4){width:86%;margin:auto}
-.pyr-level strong{display:block;font:16px var(--tv);letter-spacing:.07em;color:var(--ink-2)}
-.pyr-level.apex strong{color:#ae811b}
-.pyr-entries{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
-.pyr-entry{display:inline-flex;flex-direction:column;min-width:125px;background:var(--surface-2);border-left:3px solid var(--line);padding:4px 7px}
-.pyr-entry.mine{border-left-color:#d9a51d;background:var(--sel)}
-.pyr-entry b{font-size:13px}.pyr-entry small{font-size:10px;color:var(--ink-3)}
-.pyr-teams{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.pyr-team{display:flex;flex-direction:column;background:var(--surface-2);padding:12px;border:1px solid var(--line);gap:6px}
-.pyr-team small,.pyr-team span{color:var(--ink-2);font-size:12px}
-.pyr-news{border-bottom:1px solid var(--line);padding:6px}
-@media(max-width:660px){.pyr-level:nth-child(n){width:100%}.pyr-teams{grid-template-columns:1fr}.pyr-entry{min-width:100px}.pyr-level{padding:5px}}
-.tv{overflow:hidden;padding-bottom:37px}.tv .wrap{overflow:visible;flex:none}
-#tv-pages{position:fixed;z-index:22;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:12px;background:var(--tv-panel);border-top:1px solid var(--tv-line);padding:5px;color:var(--tv-ink)}
-#tv-pages[hidden]{display:none}#tv-pages button{background:var(--tv-bg);color:var(--tv-ink);border:1px solid var(--tv-line);padding:5px 12px;cursor:pointer}#tv-pages button:disabled{opacity:.3}
 </style>
 </head>
 <body>
-<div id="app">
- <header class="bar">
-  <div class="brand"><b>The Office</b><span>Wrestling management · v2.3</span></div>
-  <div class="stat" id="date"></div>
-  <div class="stat" id="cash"></div>
-  <div class="stat" id="rep"></div>
-  <button id="continue" class="cta">Continue</button>
+<div id="app" hidden>
+ <header class="top">
+  <div class="logo" aria-label="The Office">The Office</div>
+  <div class="histnav"><button class="btn" data-hist="back" aria-label="Back" title="Back">◀</button><button class="btn" data-hist="fwd" aria-label="Forward" title="Forward">▶</button></div>
+  <div class="readouts" id="readouts" aria-live="polite"></div>
+  <button id="continue" class="btn go">Continue</button>
  </header>
- <nav class="tabs" id="tabs" aria-label="Sections"></nav>
- <main id="view"></main><div id="page-controls" class="page-controls" hidden><button data-page="prev" aria-label="Previous screen">◀ Previous</button><span class="page-counter"></span><button data-page="next" aria-label="Next screen">Next ▶</button></div>
+ <nav class="nav" id="nav" aria-label="Screens"></nav>
+ <main id="view"></main>
+ <footer class="tick" id="tick"></footer>
 </div>
 <section id="tv" class="tv" hidden aria-label="Match night"></section>
 <div id="title" class="title" hidden>
- <div class="inner">
-  <div class="teletext">P302  WRESTLING  LIVE TEXT</div>
-  <h1>The<br>Office</h1>
-  <p>Run a stable of wrestlers. Take the bookings. Sit at ringside and live with the calls.</p>
-  <div class="row"><button class="cta" data-title="new">New career</button><button class="alt" id="loadBtn" data-title="load" hidden>Continue career</button></div>
-  <div class="note">Space pauses a match. Keys 1–6 make calls from ringside.</div>
+ <div class="win">
+  <div class="hero">
+   <div class="ropes"></div>
+   <h1>The<br>Office</h1>
+   <div class="sub">Wrestling management. A regional territory, 16 weeks a season.</div>
+   <div class="ropes b"></div>
+  </div>
+  <div class="menu">
+   <button class="btn go" data-title="new">New career</button>
+   <button class="btn" id="loadBtn" data-title="load" hidden>Continue career</button>
+  </div>
+  <div class="keys">At ringside: Space pauses the match, keys 1–6 make calls.</div>
  </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -1530,218 +1634,388 @@ G.applyResult=function(c,fin){const x=originalApply(c,fin);const t=ensure();if(t
 root.OfficeTerritory={ensure,rank,evolve};
 })(typeof window!=='undefined'?window:globalThis);
 
-/* THE OFFICE v2 — interface */
+/* THE OFFICE — interface v3
+   Management-sim desktop: persistent sidebar, back/forward history, one job per screen,
+   sortable data tables, master–detail lists and a full wrestler profile. */
 (function(){'use strict';
 const D=OfficeData,G=OfficeGame,Mx=OfficeMatch,Pt=OfficePortraits;
 const $=s=>document.querySelector(s);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=G.money;
-let tab='desk',openMsg=null,openW=null,pick={},night=null,toastT=0;
 const S=()=>G.S;
+let route={s:'desk',id:null},past=[],ahead=[];
+let openMsg=null,pick={},selOffer=null,selFree=null,night=null,toastT=0;
+const sorts={};
 
-/* ---------- helpers ---------- */
+/* ---------- small helpers ---------- */
 function face(type,id,name,cls='portrait'){return Pt.avatar({key:type+':'+id,name,type},null,cls)}
-function meter(v,kind=''){return `<span class="meter ${kind}" role="img" aria-label="${Math.round(v)} out of 100"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></span>`}
-function condKind(f){return f>=60?'danger':f>=40?'warn':''}
-function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3400)}
-function finishTag(k){const f=D.FINISHES[k];return `<span class="tag ${f.win?'win':'lose'}">${esc(f.name)}</span>`}
+function band(v){return v>=80?5:v>=65?4:v>=50?3:v>=35?2:1}
+function bandBar(v){return ['','danger','warn','gold','',''][band(v)]}
+function att(v){return `<span class="att a${band(v)}">${Math.round(v)}</span>`}
+function bar(v,kind=''){return `<span class="bar ${kind}" role="img" aria-label="${Math.round(v)} out of 100"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></span>`}
+function fatKind(f){return f>=60?'danger':f>=40?'warn':'cool'}
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3600)}
+function finishTag(k){const f=D.FINISHES[k];return `<span class="tag ${f.win?'tw':'tl'}">${esc(f.name)}</span>`}
 function starsText(s){return Mx.starText(s)}
-function weekLabel(a){return `S${Math.floor((a-1)/16)+1} W${(a-1)%16+1}`} 
+function weekLabel(a){return `S${Math.floor((a-1)/16)+1} W${(a-1)%16+1}`}
+function weekLong(a){return `Season ${Math.floor((a-1)/16)+1}, week ${(a-1)%16+1}`}
 function planFor(p){return D.PLANS[p.likes]}
-
-/* ---------- top bar ---------- */
-function renderBar(){
- const s=S();
- $('#date').innerHTML=`<small>Season ${s.season}</small><strong>Week ${s.week} of 16</strong>`;
- $('#cash').innerHTML=`<small>Bank</small><strong class="${s.cash<0?'bad':''}">${money(s.cash)}</strong>`;
- $('#rep').innerHTML=`<small>Reputation</small><strong>${s.rep}</strong>`;
- const need=G.pending().length,cards=s.card.length;
- $('#continue').innerHTML=need?`Continue<small>${need} ${need>1?'replies':'reply'} needed</small>`:cards?`Match night<small>${cards} on the card</small>`:`Continue<small>To week ${s.week===16?1:s.week+1}</small>`;
- const unread=s.inbox.filter(m=>!m.read).length;
- $('#tabs').innerHTML=[['desk','Director’s desk',s.season===1&&s.week<=4?'<span class="pill soft">4-week trial</span>':'<span class="pill soft">Regional season</span>'],['inbox','Inbox',need?`<span class="pill">${need}</span>`:unread?`<span class="pill soft">${unread}</span>`:''],['roster','Roster',`<span class="pill soft">${s.roster.length}/5</span>`],['bookings','Bookings',s.offers.length?`<span class="pill soft">${s.offers.length}</span>`:''],['pyramid','Card pyramid',''],['records','Records','']]
-  .map(([id,l,b])=>`<button class="tab" data-tab="${id}" ${tab===id?'aria-current="page"':''}>${l}${b}</button>`).join('');
+function plural(n,a,b){return n===1?a:(b||a+'s')}
+function win(title,body,o={}){
+ return `<section class="win ${o.cls||''}" ${o.area?`style="grid-area:${o.area}"`:''}><header class="tbar"><${o.h||'h2'}>${title}</${o.h||'h2'}>${o.note?`<span class="note">${o.note}</span>`:''}${o.actions||''}</header><div class="wbody ${o.body||''}" ${o.keep?`data-keep="${o.keep}"`:''}>${body}</div></section>`;
 }
-function render(){if(!S())return;renderBar();({desk:renderDesk,inbox:renderInbox,roster:renderRoster,bookings:renderBookings,records:renderRecords,pyramid:renderPyramid})[tab]();screenPage=0;setTimeout(updateScreen,0);}
+function status(w){
+ if(w.program?.type==='camp')return `<span class="tag hot">Camp, ${w.program.left} wk</span>`;
+ if(w.injury)return `<span class="bad">Injured, ${w.injury} wk</span>`;
+ if(G.booked(w.id))return '<span class="good">Booked</span>';
+ if(w.flags?.dive)return 'Planning a dive';
+ return '<span class="dim">Free</span>';
+}
 
+/* ---------- sortable tables ---------- */
+function sortRows(key,rows,cols,def){
+ const s=sorts[key]||def;sorts[key]=s;const get=cols[s.k];if(!get)return rows;
+ return rows.slice().sort((a,b)=>{const x=get(a),y=get(b);return (typeof x==='string'?x.localeCompare(y):x-y)*s.d});
+}
+function th(key,k,label,cls=''){
+ const s=sorts[key],on=s&&s.k===k;
+ return `<th class="${cls}" aria-sort="${on?(s.d>0?'ascending':'descending'):'none'}"><button class="sort" data-sort="${key}:${k}">${label}${on?(s.d>0?' ▲':' ▼'):''}</button></th>`;
+}
+
+/* ---------- navigation ---------- */
+const NAV=[
+ ['Office',[['desk','Desk'],['inbox','Inbox'],['objectives','Objectives']]],
+ ['Roster',[['squad','Your stable'],['training','Training'],['scouting','Free agents']]],
+ ['Bookings',[['offers','Offers'],['fixtures','Fixtures']]],
+ ['Territory',[['pyramid','Card pyramid'],['promoters','Promoters'],['rivalries','Rivalries'],['results','Results']]],
+ ['Game',[['game','Save and load']]]
+];
+const SECTION_OF={profile:'squad'};
+function go(s,id=null){
+ if(route.s===s&&route.id===id){render();return}
+ past.push(route);if(past.length>40)past.shift();ahead=[];
+ route={s,id};render(true);
+}
+function histMove(dir){
+ const from=dir<0?past:ahead,to=dir<0?ahead:past;
+ if(!from.length)return;to.push(route);route=from.pop();render(true);
+}
+
+function renderChrome(){
+ const s=S(),need=G.pending().length,cards=s.card.length,unread=s.inbox.filter(m=>!m.read).length;
+ $('#readouts').innerHTML=`<div class="ro"><small>Season ${s.season}</small><b>Week ${s.week} of 16</b></div><div class="ro"><small>Bank</small><b class="${s.cash<0?'neg':''}">${money(s.cash)}</b></div><div class="ro"><small>Reputation</small><b>${s.rep}</b></div><div class="ro"><small>Meetings left</small><b>${s.focus} of 2</b></div>`;
+ $('#continue').innerHTML=need?`Continue<small>${need} ${plural(need,'reply','replies')} needed first</small>`:cards?`Match night<small>${cards} on the card</small>`:`Continue<small>To week ${s.week===16?1:s.week+1}</small>`;
+ const badge={inbox:need?`<span class="badge">${need}</span>`:unread?`<span class="badge soft">${unread}</span>`:'',squad:`<span class="badge soft">${s.roster.length}/5</span>`,offers:s.offers.length?`<span class="badge soft">${s.offers.length}</span>`:'',fixtures:cards?`<span class="badge soft">${cards}</span>`:''};
+ const cur=SECTION_OF[route.s]||route.s;
+ $('#nav').innerHTML=NAV.map(([g,items])=>`<h4>${g}</h4>`+items.map(([id,l])=>`<button class="item" data-go="${id}" ${cur===id?'aria-current="page"':''}><span>${l}</span>${badge[id]||''}</button>`).join('')).join('');
+ $('#nav [aria-current]')?.scrollIntoView({block:'nearest',inline:'nearest'});
+ $('[data-hist="back"]').disabled=!past.length;$('[data-hist="fwd"]').disabled=!ahead.length;
+ const lead=G.pending()[0]||s.inbox.find(m=>!m.read)||s.inbox[0];
+ $('#tick').innerHTML=lead?`<b>${G.pending().length?'Action':'News'}</b><button data-tickmsg="${lead.id}">${esc(lead.subject)}. ${esc(lead.from)}.</button><span class="keys">${s.history.length} ${plural(s.history.length,'match','matches')} worked this career</span>`:'';
+}
+
+const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,training:renderTraining,scouting:renderScouting,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
+function render(reset=false){
+ if(!S())return;
+ const keep={};if(!reset)document.querySelectorAll('#view [data-keep]').forEach(el=>keep[el.dataset.keep]=el.scrollTop);
+ if(!SCREENS[route.s])route={s:'desk',id:null};
+ SCREENS[route.s]();renderChrome();
+ document.querySelectorAll('#view [data-keep]').forEach(el=>{if(keep[el.dataset.keep])el.scrollTop=keep[el.dataset.keep]});
+ if(reset){$('#view').scrollTop=0;window.scrollTo(0,0)}
+}
+function paint(cls,html){$('#view').innerHTML=`<div class="screen ${cls}">${html}</div>`}
+
+/* ======================= OFFICE ======================= */
+function ledgerFacts(){
+ const s=S(),income=s.card.reduce((v,c)=>v+c.purse,0),cost=G.wages()+G.overhead()+G.trainingBill(),end=s.cash+income-cost;
+ return `<div class="facts two"><div><small>Bank now</small><b>${money(s.cash)}</b></div><div><small>Purses this week</small><b>${money(income)}</b></div><div><small>Wages, overheads, coaching</small><b>${money(-cost)}</b></div><div><small>Projected end of week</small><b class="${end<0?'neg':'pos'}">${money(end)}</b></div></div>`;
+}
+function trialBlock(){
+ const s=S(),st=G.monthStatus();
+ const trials=[['Three-star match','One match rated 3★ or better. Required.',st.okMatch],['£750 reserve','Keep £750 in the bank at the review',st.cash],['Reputation 30','Build reputation through your shows',st.rep],['Develop a wrestler','Improve any one skill by two points',st.developed]];
+ const left=5-s.week;
+ return `<p class="lede">Deliver a 3★ match <b>and</b> meet two of the other three by the end of week 4. Pass, and your backer invests £450.</p><div class="criteria">${trials.map(x=>`<div class="crit ${x[2]?'met':''}"><i>${x[2]?'✓':'○'}</i><span><b>${esc(x[0])}</b><small>${esc(x[1])}</small></span></div>`).join('')}</div><div class="countdown"><b>${left} ${plural(left,'week')}</b><span class="dim">until the backer reviews the stable.</span></div>`;
+}
+function trayItems(){
+ const s=S(),out=[],need=G.pending();
+ if(need.length)out.push({k:'urgent',ic:'!',t:`${need.length} ${plural(need.length,'message needs','messages need')} a reply`,d:'You can’t continue until you answer.',go:'inbox',b:'Read'});
+ else{const u=s.inbox.filter(m=>!m.read).length;if(u)out.push({k:'',ic:'▸',t:`${u} unread ${plural(u,'message')}`,d:'Reports, results and news from the circuit.',go:'inbox',b:'Read'})}
+ if(!s.roster.length)out.push({k:'urgent',ic:'!',t:'Nobody under contract',d:'Sign a headliner, or two cheaper wrestlers.',go:'scouting',b:'Free agents'});
+ if(s.card.length)out.push({k:'ok',ic:'✓',t:`${s.card.length} ${plural(s.card.length,'match')} on this week’s card`,d:'Continue takes you to ringside.',go:'fixtures',b:'Fixtures'});
+ else if(s.roster.length&&s.offers.length)out.push({k:'',ic:'▸',t:`${s.offers.length} ${plural(s.offers.length,'offer')} on the table, nothing booked`,d:'An unbooked week earns nothing but still costs wages.',go:'offers',b:'Offers'});
+ for(const w of s.roster){
+  if(w.injury)out.push({k:'urgent',ic:'+',t:`${w.short} is injured`,d:`Out for ${w.injury} ${plural(w.injury,'week')}.`,go:'profile',id:w.id,b:'Profile'});
+  else if(w.fatigue>=45)out.push({k:'urgent',ic:'!',t:`${w.short} is tired`,d:`Fatigue ${w.fatigue}. Consider rest this week.`,go:'training',b:'Training'});
+  if(w.morale<35)out.push({k:'urgent',ic:'!',t:`${w.short}’s morale is low`,d:`Morale ${w.morale}. A private meeting may help.`,go:'profile',id:w.id,b:'Profile'});
+  if(w.promise?.status==='open')out.push({k:'',ic:'▸',t:`Promise to ${w.short}: a featured match`,d:`Due by ${weekLabel(w.promise.deadline)}.`,go:'offers',b:'Offers'});
+ }
+ if(s.roster.length&&s.focus>0)out.push({k:'',ic:'▸',t:`${s.focus} management ${plural(s.focus,'meeting')} left this week`,d:'Use them to haggle with promoters or talk to your wrestlers.',go:'offers',b:'Offers'});
+ if(!out.length)out.push({k:'ok',ic:'✓',t:'All quiet',d:'Press Continue to move on to next week.'});
+ return out;
+}
+function renderDesk(){
+ const s=S(),stakes=s.season===1&&s.week<=4;
+ let mission='';
+ if(stakes)mission=win('Sponsor trial',trialBlock(),{area:'mission',note:'Weeks 1 to 4'});
+ else if(s.monthReview&&s.season===1)mission=win(s.monthReview.passed?'Backer invested £450':'Backer declined funding',`<p>Best match in the trial: ${s.monthReview.best}★. Training and promos: ${money(s.monthReview.business?.training||0)}. Contract improvements: ${money(s.monthReview.business?.negotiated||0)}. Promises kept ${s.monthReview.business?.kept||0}, broken ${s.monthReview.business?.broken||0}.</p><p class="dim">The regional circuit runs to week 16. Checkpoints are under Objectives.</p><button class="btn sm" data-go="objectives">Objectives</button>`,{area:'mission',note:'Trial review'});
+ const tray=`<ul class="tray">${trayItems().map(x=>`<li class="${x.k}"><span class="ic">${x.ic}</span><span><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span>${x.go?`<button class="btn sm" data-go="${x.go}" ${x.id?`data-id="${x.id}"`:''}>${x.b}</button>`:'<span></span>'}</li>`).join('')}</ul>`;
+ const dates=[...s.card.map(c=>({...c,eventAbs:G.abs()})),...s.futureBookings].sort((a,b)=>a.eventAbs-b.eventAbs).slice(0,6);
+ const datesHtml=dates.length?`<table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th></tr></thead><tbody>${dates.map(c=>`<tr><td>${c.eventAbs===G.abs()?'<b>This week</b>':weekLabel(c.eventAbs)}</td><td>${esc(G.W(c.wid)?.short||'Departed')} v ${esc(G.F(c.rid).short)}</td><td class="dim">${esc(G.P(c.pid)?.name||'')}</td><td class="n">${money(c.purse)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">No dates signed.<br><button class="btn sm" data-go="offers">See offers</button></div>`;
+ const squad=s.roster.length?`<table class="grid"><thead><tr><th>Wrestler</th><th>Fatigue</th><th class="n">Morale</th><th>Status</th></tr></thead><tbody>${s.roster.map(w=>`<tr class="pick" data-openw="${w.id}"><td><b>${esc(w.name)}</b></td><td>${bar(w.fatigue,fatKind(w.fatigue))} ${w.fatigue}</td><td class="n">${att(w.morale)}</td><td>${status(w)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">An empty stable can’t take bookings.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`;
+ paint('s-desk'+(mission?'':' nomission'),
+  mission+
+  win('This week',ledgerFacts(),{area:'ledger',h:'h3',cls:'quiet',body:'tight'})+
+  win('In-tray',`<div class="well">${tray}</div>`,{area:'tray',body:'tight',keep:'tray'})+
+  win('Next dates',`<div class="well">${datesHtml}</div>`,{area:'dates',h:'h3',body:'tight',keep:'dates'})+
+  win('Stable condition',`<div class="well">${squad}</div>`,{area:'squad',h:'h3',body:'tight',keep:'cond',actions:'<button class="btn" data-go="training">Training</button>'})
+ );
+}
+
+function renderInbox(){
+ const s=S(),list=s.inbox;
+ if(!openMsg||!list.some(m=>m.id===openMsg))openMsg=(G.pending()[0]||list[0])?.id;
+ const m=list.find(x=>x.id===openMsg);if(m&&!m.read&&m.kind!=='decision'){m.read=true;G.save()}
+ const items=list.map(x=>`<li><button data-msg="${x.id}" class="${!x.read?'unread':''} ${x.kind==='decision'&&!x.answer?'need':''}" ${x.id===openMsg?'aria-current="true"':''}><span class="pip"></span><span class="from">${esc(x.from)}</span><span class="wk">S${x.season} W${x.week}</span><span class="subj">${esc(x.subject)}</span></button></li>`).join('');
+ let letter='<div class="empty">No messages.</div>';
+ if(m){
+  letter=`<article class="letter"><div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
+  if(m.kind==='decision'){
+   if(m.answer)letter+=`<div class="outcome"><b>You chose: ${esc(m.options.find(o=>o.id===m.answer)?.label)}</b><br>${esc(m.outcome)}</div>`;
+   else letter+=`<div class="choices">${m.options.map(o=>`<button class="choice" data-answer="${o.id}" data-mid="${m.id}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></button>`).join('')}</div>`;
+  }
+  letter+='</article>';
+ }
+ const need=G.pending().length;
+ paint('s-inbox',
+  win('Inbox',`<div class="well" style="min-height:100%"><ul class="msglist">${items}</ul></div>`,{body:'tight',keep:'msgs',note:need?`${need} awaiting reply`:`${list.length} ${plural(list.length,'message')}`})+
+  win(m?.kind==='decision'&&!m.answer?'Your decision':'Message',`<div class="paper" style="min-height:100%">${letter}</div>`,{body:'tight',keep:'letter',cls:'quiet',h:'h3'})
+ );
+}
+
+function renderObjectives(){
+ const s=S();
+ const goals=`<table class="grid"><thead><tr><th style="width:2em"></th><th>Objective</th><th class="n">Reward</th></tr></thead><tbody>${G.goalList().map(g=>`<tr><td class="c">${g.done?'<span class="good">✓</span>':'<span class="dim">○</span>'}</td><td>${esc(g.text)}</td><td class="n">£200</td></tr>`).join('')}</tbody></table>`;
+ let side='';
+ if(s.season===1&&s.week<=4)side=win('Sponsor trial',trialBlock(),{note:'Weeks 1 to 4'});
+ else if(s.season===1){
+  side=win('Regional circuit checkpoints',`<p class="lede">Bonuses for genuine results between weeks 5 and 16.</p><div class="well"><table class="grid"><thead><tr><th>Week</th><th>Target</th><th>Progress</th><th class="n">Bonus</th></tr></thead><tbody>${Object.keys(G.CIRCUIT_TARGETS).map(week=>{const r=G.circuitStatus(Number(week));const done=s.circuitReviews.find(x=>x.week===r.week);return `<tr><td>${r.week}</td><td class="wrap"><b>${esc(r.title)}</b><br><span class="dim">${r.required} matches, one at ${r.quality}★${r.feature?', a featured slot':''}</span></td><td>${done?done.met?'<span class="good">✓ Earned</span>':'<span class="bad">✗ Missed</span>':`${r.played}/${r.required} played${r.quality?'':', quality needed'}${r.feature&&!r.hasFeature?', feature needed':''}`}</td><td class="n">${money(r.reward)}</td></tr>`}).join('')}</tbody></table></div>`,{body:'',keep:'circ'});
+ }else side=win('Your career',`<p>Season ${s.season}. ${s.history.length} matches worked, reputation ${s.rep}.</p>`,{});
+ paint('s-split even',win(`Season ${s.season} objectives`,`<p class="lede">Checked at the end of week 16. Each one met is worth £200 on top of sponsorship.</p><div class="well">${goals}</div>`)+side);
+}
+
+/* ======================= ROSTER ======================= */
+const WCOLS={name:w=>w.name,style:w=>w.style,heat:w=>w.heat,ring:w=>w.ring,mic:w=>w.mic,psych:w=>w.psych,safe:w=>w.safe,fat:w=>w.fatigue,mor:w=>w.morale,wage:w=>w.wage,fee:w=>w.fee,tier:w=>w.tier};
+function renderSquad(){
+ const s=S();
+ const rows=sortRows('squad',s.roster,WCOLS,{k:'heat',d:-1});
+ const table=s.roster.length?`<div class="well"><table class="grid"><thead><tr>${th('squad','name','Wrestler')}${th('squad','style','Style')}${th('squad','heat','Heat','n')}${th('squad','ring','Ring','n')}${th('squad','mic','Mic','n')}${th('squad','psych','Psych','n')}${th('squad','safe','Safe','n')}${th('squad','fat','Fatigue')}${th('squad','mor','Morale','n')}<th>Status</th>${th('squad','wage','Wage','n')}</tr></thead><tbody>${rows.map(w=>`<tr class="pick" data-openw="${w.id}"><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b><small>${esc(w.tier)}. “${esc(w.handle)}”</small></span></span></td><td>${esc(w.style)}</td><td class="n">${att(w.heat)}</td><td class="n">${att(w.ring)}</td><td class="n">${att(w.mic)}</td><td class="n">${att(w.psych)}</td><td class="n">${att(w.safe)}</td><td>${bar(w.fatigue,fatKind(w.fatigue))} ${w.fatigue}</td><td class="n">${att(w.morale)}</td><td>${status(w)}</td><td class="n">${money(w.wage)}</td></tr>`).join('')}</tbody></table></div>`
+  :`<div class="empty">Nobody under contract. Sign a headliner, or two cheaper wrestlers.<br><button class="btn go" data-go="scouting">Go to free agents</button></div>`;
+ paint('s-full',win('Your stable',`${table}<p class="dim" style="margin-top:10px">Select a wrestler to open their profile. Click a column heading to sort.</p>`,{keep:'squad',note:`${s.roster.length} of 5 places filled. Wages ${money(G.wages())} a week.`,actions:'<button class="btn" data-go="training">Training</button><button class="btn" data-go="scouting">Free agents</button>'}));
+}
+
+function temperament(w){
+ const t=w.ego>=75?'Proud. Resents being told what to do.':w.ego>=60?'Has opinions about how matches should go.':'Takes direction well.';
+ const p=w.pro>=85?'Will never break a finish.':w.pro<60?'Unpredictable under pressure.':'Reliable.';
+ return t+' '+p;
+}
+function trainSelects(w){
+ return [`<select data-train="${w.id}" aria-label="Training for ${esc(w.name)}" ${w.injury||w.program?'disabled':''}>${Object.entries(D.TRAINING).map(([k,t])=>`<option value="${k}" ${(w.injury?'rest':w.training)===k?'selected':''}>${t.name}${t.cost?` (£${t.cost})`:''}</option>`).join('')}</select>`,`<select data-intensity="${w.id}" aria-label="Training intensity for ${esc(w.name)}" ${w.injury||w.program||w.training==='rest'||w.training==='promo'?'disabled':''}>${w.program?.type==='camp'?'<option selected>Residential camp, £185 a week</option>':Object.entries(G.INTENSITY).map(([key,v])=>`<option value="${key}" ${w.intensity===key?'selected':''}>${esc(v.name)} (${money(v.cost)})</option>`).join('')}</select>`];
+}
+function trainControls(w){
+ return `<div class="row"><label class="field">Focus<select data-train="${w.id}" aria-label="Training for ${esc(w.name)}" ${w.injury||w.program?'disabled':''}>${Object.entries(D.TRAINING).map(([k,t])=>`<option value="${k}" ${(w.injury?'rest':w.training)===k?'selected':''}>${t.name}${t.cost?` (£${t.cost})`:''}</option>`).join('')}</select></label><label class="field">Intensity<select data-intensity="${w.id}" aria-label="Training intensity for ${esc(w.name)}" ${w.injury||w.program||w.training==='rest'||w.training==='promo'?'disabled':''}>${w.program?.type==='camp'?'<option selected>Residential camp, £185 a week</option>':Object.entries(G.INTENSITY).map(([key,v])=>`<option value="${key}" ${w.intensity===key?'selected':''}>${esc(v.name)}, ${money(v.cost)} a week</option>`).join('')}</select></label></div>`;
+}
+function trainNote(w){return w.program?`${w.program.type==='camp'?'Away at camp':'Training block'}: ${w.program.left} ${plural(w.program.left,'week')} left, ${money(G.trainingCost(w))} a week.`:w.training==='rest'?'Resting. Recovers fatigue.':w.training==='promo'?'£40 to produce a promo.':`${G.INTENSITY[w.intensity||'light'].hint} ${money(G.trainingCost(w))} a week.`}
+function renderProfile(){
+ const s=S(),w=G.W(route.id);
+ if(!w){route={s:'squad',id:null};return renderSquad()}
+ const idx=s.roster.indexOf(w),prev=s.roster[(idx-1+s.roster.length)%s.roster.length],next=s.roster[(idx+1)%s.roster.length];
+ const start=w.startSkills||{};
+ const gain=k=>{const g=w[k]-(start[k]??w[k]);return g>0?` <span class="good">+${g}</span>`:''};
+ const row=(label,v,extra='')=>`<div class="attr"><span>${label}</span><span>${att(v)}${extra}</span>${bar(v,bandBar(v))}</div>`;
+ const atts=`<div class="well pad attrs"><h4>In the ring</h4>${row('Ring',w.ring,gain('ring'))}${row('Psychology',w.psych,gain('psych'))}${row('Safety',w.safe,gain('safe'))}<h4>On the mic</h4>${row('Mic',w.mic,gain('mic'))}${row('Heat',w.heat)}<h4>Condition</h4><div class="attr"><span>Fatigue</span><span class="att">${w.fatigue}</span>${bar(w.fatigue,fatKind(w.fatigue))}</div>${row('Morale',w.morale)}${row('Loyalty',w.loyal)}<h4>Character</h4><div class="attr"><span>Ego</span><span class="att a3">${w.ego}</span><span></span></div><div class="attr"><span>Professionalism</span><span class="att a3">${w.pro}</span><span></span></div></div><p class="dim" style="margin-top:8px">${esc(temperament(w))}${w.loyal<45?' Could be tempted away.':''}</p>`;
+ const block=['rest','promo'].includes(w.training)||w.injury;
+ const program=w.program?`<p><b>${w.program.type==='camp'?'Residential camp':`${w.program.total}-week block`}</b>: ${w.program.left} ${plural(w.program.left,'week')} remaining. ${w.program.gains} skill points so far.</p><p class="dim">${money(G.trainingCost(w))} a week.${w.program.type==='camp'?' Can’t be booked until camp ends.':''}</p><button class="btn red sm" data-cancelprogram="${w.id}">End programme early</button>`
+  :`<p class="dim">Commit the focus above to a fixed programme.${block?' Choose a skill first.':''}</p><div class="row"><button class="btn sm" data-program="block3" data-wid="${w.id}" ${block?'disabled':''}>3-week block</button><button class="btn sm" data-program="block6" data-wid="${w.id}" ${block?'disabled':''}>6-week block</button><button class="btn sm" data-program="camp" data-wid="${w.id}" ${block?'disabled':''}>Camp, £185/wk</button></div><p class="dim" style="margin-top:8px">Camp runs 3 weeks and blocks bookings. Faster progress, but still risks fatigue and injury.</p>`;
+ const promise=w.promise?.status==='open'?`<p class="bad">Promised a featured match by ${weekLabel(w.promise.deadline)}. Break it and loyalty falls.</p>`:w.promise?.status==='kept'?'<p class="good">Your last promise was kept.</p>':w.promise?.status==='broken'?'<p class="bad">Your last promise was broken.</p>':'';
+ const train=`<h3 class="section-h">This week</h3>${trainControls(w)}<p class="dim" style="margin-top:6px">${esc(trainNote(w))}</p><h3 class="section-h">Development programme</h3>${program}${w.prepHistory?.length?`<p class="dim" style="margin-top:8px">Last completed: ${esc(w.prepHistory[0].focus)} +${w.prepHistory[0].gains} (${weekLabel(w.prepHistory[0].week)}).</p>`:''}`;
+ const feuds=Object.values(s.feuds).filter(f=>f.wid===w.id&&f.heat>0&&!f.closed);
+ const hist=s.history.filter(x=>x.wid===w.id).slice(0,6);
+ const record=`<div class="facts"><div><small>Matches</small><b>${w.matches}</b></div><div><small>Wins</small><b>${w.wins}</b></div><div><small>Average</small><b>${w.matches?starsText(Math.round(w.starSum/w.matches*4)/4)||'DUD':'–'}</b></div><div><small>Best</small><b>${w.matches?starsText(w.best)||'DUD':'–'}</b></div></div>
+  <h3 class="section-h">Recent matches</h3>${hist.length?`<div class="well"><table class="grid"><tbody>${hist.map(x=>`<tr><td>S${x.season} W${x.week}</td><td>v ${esc(x.foe)}</td><td class="n"><span class="stars">${starsText(x.stars)||'DUD'}</span></td></tr>`).join('')}</tbody></table></div>`:'<p class="dim">No matches yet.</p>'}
+  <h3 class="section-h">Rivalries</h3>${feuds.length?feuds.map(f=>`<div class="row" style="justify-content:space-between"><span>${esc(G.F(f.rid).name)}</span><span>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</span></div>`).join(''):'<p class="dim">None yet. Good matches against the same opponent build one.</p>'}
+  <h3 class="section-h">Biography</h3><p>${esc(w.bio)}</p><p class="dim">Finisher: ${esc(w.finisher)}. Best game plan: ${esc(D.PLANS[D.STYLE_PLAN[w.style]].name.toLowerCase())}.</p>`;
+ const nav=s.roster.length>1?`<button class="btn" data-go="profile" data-id="${prev.id}" aria-label="Previous wrestler">◀ ${esc(prev.short)}</button><button class="btn" data-go="profile" data-id="${next.id}" aria-label="Next wrestler">${esc(next.short)} ▶</button>`:'';
+ paint('s-profile',
+  win('Wrestler profile',`${face('wrestler',w.id,w.name,'portrait x3')}<div><div class="name">${esc(w.name)}</div><div class="handle">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${money(w.wage)} a week</span><span class="chip">${status(w)}</span></div>${promise}</div><div class="acts"><button class="btn go" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting</button><span class="dim" style="font-size:13px">${s.focus} of 2 meetings left</span><button class="btn red" data-release="${w.id}">Release</button></div>`,{area:'head',cls:'phead',actions:nav})+
+  win('Attributes',atts,{area:'atts',h:'h3',cls:'quiet',keep:'atts'})+
+  win('Training',train,{area:'train',h:'h3',keep:'train'})+
+  win('Record',record,{area:'record',h:'h3',keep:'rec'})
+ );
+}
+
+function renderTraining(){
+ const s=S();
+ const table=s.roster.length?`<div class="well"><table class="grid"><thead><tr><th>Wrestler</th><th class="n">Ring</th><th class="n">Mic</th><th class="n">Psych</th><th class="n">Safe</th><th>Fatigue</th><th>Focus</th><th>Intensity</th></tr></thead><tbody>${s.roster.map(w=>{const [a,b]=trainSelects(w);return `<tr><td class="wrap" style="min-width:22ch;max-width:30ch"><button class="btn link" data-openw="${w.id}">${esc(w.name)}</button><br><span class="dim" style="font-size:16px">${esc(trainNote(w))}</span></td><td class="n">${att(w.ring)}</td><td class="n">${att(w.mic)}</td><td class="n">${att(w.psych)}</td><td class="n">${att(w.safe)}</td><td>${bar(w.fatigue,fatKind(w.fatigue))} ${w.fatigue}</td><td>${a}</td><td>${b}</td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">Sign someone before planning training.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`;
+ const coach=s.coach?`<div class="well pad"><dl class="kv"><dt>Employed</dt><dd>${esc(G.COACHES[s.coach].name)}</dd><dt>Salary</dt><dd>${money(G.coachWage())} a week</dd><dt>Specialism</dt><dd>${esc(G.COACHES[s.coach].stat)} training +${Math.round(G.COACHES[s.coach].boost*100)}%</dd></dl></div><p style="margin-top:10px"><button class="btn red" data-firecoach="1">End contract</button></p>`
+  :`<p class="lede">One specialist at a time. Wages are due even if nobody trains.</p><div class="well"><table class="grid"><thead><tr><th>Specialist</th><th class="n">Cost</th><th></th></tr></thead><tbody>${Object.entries(G.COACHES).map(([id,c])=>`<tr><td class="wrap">${esc(c.name)}<br><span class="dim">${esc(c.stat)} training +${Math.round(c.boost*100)}%</span></td><td class="n">${money(c.fee)}<br><span class="dim">${money(c.wage)}/wk</span></td><td class="n"><button class="btn sm" data-hirecoach="${id}" ${s.cash<c.fee?'disabled':''}>Hire</button></td></tr>`).join('')}</tbody></table></div>`;
+ paint('s-split s-train',
+  win('Training schedule',`<p class="lede">Set a focus and intensity once and it keeps running every week. Fixed blocks and camps are set from each wrestler’s profile.</p>${table}`,{keep:'train',note:`Weekly bill ${money(G.trainingBill())}`})+
+  win('Coaching staff',coach,{h:'h3',keep:'coach'})
+ );
+}
+
+function renderScouting(){
+ const s=S(),full=s.roster.length>=5;
+ const rows=sortRows('free',s.free,WCOLS,{k:'fee',d:-1});
+ if(!selFree||!s.free.some(w=>w.id===selFree))selFree=rows[0]?.id||null;
+ const w=s.free.find(x=>x.id===selFree);
+ const list=s.free.length?`<div class="well"><table class="grid"><thead><tr>${th('free','name','Wrestler')}${th('free','style','Style')}${th('free','heat','Heat','n')}${th('free','ring','Ring','n')}${th('free','mic','Mic','n')}${th('free','psych','Psych','n')}${th('free','safe','Safe','n')}${th('free','wage','Wage','n')}${th('free','fee','Fee','n')}</tr></thead><tbody>${rows.map(x=>`<tr class="pick" data-self="${x.id}" aria-selected="${x.id===selFree}"><td><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span></span></td><td>${esc(x.style)}</td><td class="n">${att(x.heat)}</td><td class="n">${att(x.ring)}</td><td class="n">${att(x.mic)}</td><td class="n">${att(x.psych)}</td><td class="n">${att(x.safe)}</td><td class="n">${money(x.wage)}</td><td class="n"><b>${money(x.fee)}</b></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nobody left on the market.</div>';
+ let detail='<div class="empty">Select a wrestler.</div>';
+ if(w){
+  const can=s.cash>=w.fee&&!full;
+  detail=`<div class="row" style="align-items:flex-start;gap:14px;flex-wrap:nowrap">${face('wrestler',w.id,w.name,'portrait x2')}<div><div style="font:36px/.9 var(--jersey);color:var(--blood)">${esc(w.name)}</div><div style="font-weight:600;margin:4px 0">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span></div></div></div>
+  <p style="margin-top:10px">${esc(w.bio)}</p>
+  <div class="well pad attrs">${[['Ring',w.ring],['Psychology',w.psych],['Safety',w.safe],['Mic',w.mic],['Heat',w.heat]].map(([l,v])=>`<div class="attr"><span>${l}</span>${att(v)}${bar(v,bandBar(v))}</div>`).join('')}</div>
+  <p class="dim" style="margin-top:8px">${esc(temperament(w))} Finisher: ${esc(w.finisher)}.</p>
+  <div class="facts" style="margin:10px 0"><div><small>Signing fee</small><b class="${s.cash<w.fee?'neg':''}">${money(w.fee)}</b></div><div><small>Weekly wage</small><b>${money(w.wage)}</b></div></div>
+  <button class="btn go" style="width:100%;min-height:44px" data-sign="${w.id}" ${can?'':'disabled'}>Sign ${esc(w.short)}</button>
+  <p class="dim" style="margin-top:6px">${full?'Your locker room is full. Release someone first.':s.cash<w.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'Wages are paid every week, booked or not.'}</p>`;
+ }
+ paint('s-split',
+  win('Free agents',list,{keep:'free',note:full?'Locker room full':`Bank ${money(s.cash)}`})+
+  win('Scouting report',detail,{h:'h3',keep:'scout'})
+ );
+}
+
+/* ======================= BOOKINGS ======================= */
+function fitNotes(o,w){
+ const p=G.P(o.pid),notes=[],best=D.STYLE_PLAN[w.style];
+ if(best===p.likes)notes.push(['good',`${p.name} crowds love a ${w.style.toLowerCase()} worker.`]);
+ else notes.push(['',`${p.name} crowds want “${planFor(p).name}”. ${w.short}’s best plan is “${D.PLANS[best].name}”.`]);
+ const f=G.F(o.rid);if(f.safe<55)notes.push(['bad',`${f.name} is an unsafe worker.`]);
+ if(w.fatigue>=45)notes.push(['bad',`${w.short} is tired (fatigue ${w.fatigue}).`]);
+ if(D.FINISHES[o.finish].heat<-3&&w.heat>=60)notes.push(['bad',`A clean loss will cost ${w.short} heat.`]);
+ const fd=G.feud(w.id,o.rid);if(fd&&!fd.closed&&fd.heat>0)notes.push(['good',`Rivalry heat ${fd.heat}: expect a hotter crowd.`]);
+ return `<ul class="notes">${notes.map(([k,t])=>`<li class="${k}">${esc(t)}</li>`).join('')}</ul>`;
+}
+function offerPick(o){
+ const s=S(),p=G.P(o.pid);
+ const options=s.roster.filter(w=>(!o.wid||o.wid===w.id)&&G.availableAt(w,o.eventAbs));
+ const sel=options.find(w=>w.id===o.talk?.wid)||options.find(w=>w.id===pick[o.id])||options.slice().sort((a,b)=>(D.STYLE_PLAN[b.style]===p.likes)-(D.STYLE_PLAN[a.style]===p.likes)||a.fatigue-b.fatigue)[0];
+ if(sel)pick[o.id]=sel.id;
+ return {options,sel};
+}
+function renderOffers(){
+ const s=S(),income=s.card.reduce((t,c)=>t+c.purse,0),out=G.wages()+G.overhead()+G.trainingBill();
+ const ledger=`<div class="facts"><div><small>Purses booked this week</small><b>${money(income)}</b></div><div><small>Wages, overheads, coaching</small><b>${money(-out)}</b></div><div><small>Net this week</small><b class="${income-out<0?'neg':'pos'}">${money(income-out)}</b></div><div><small>Meetings left</small><b>${s.focus} of 2</b></div></div>`;
+ const offers=s.offers.slice().sort((a,b)=>a.eventAbs-b.eventAbs||a.expiresAbs-b.expiresAbs);
+ if(!selOffer||!offers.some(o=>o.id===selOffer))selOffer=offers[0]?.id||null;
+ const rows=offers.map(o=>{const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);return `<tr class="pick" data-selo="${o.id}" aria-selected="${o.id===selOffer}"><td>${o.eventAbs===G.abs()?'This week':weekLabel(o.eventAbs)}${o.expiresAbs>G.abs()?`<br><span class="dim">Reply by ${weekLabel(o.expiresAbs)}</span>`:''}</td><td><b>${esc(p.name)}</b>${o.tag?` <span class="tag hot">${esc(o.tag)}</span>`:''}</td><td>v ${esc(f.name)}</td><td>${esc(D.SLOTS[o.slot].name)}</td><td>${finishTag(o.finish)}</td><td class="n">${sel?money(G.purse(o,sel)):'<span class="dim">–</span>'}</td></tr>`}).join('');
+ const list=!s.roster.length?`<div class="empty">You need someone under contract before you can take bookings.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`
+  :offers.length?`<div class="well"><table class="grid"><thead><tr><th>Show</th><th>Promoter</th><th>Opponent</th><th>Slot</th><th>Finish</th><th class="n">Purse</th></tr></thead><tbody>${rows}</tbody></table></div>`
+  :`<div class="empty">No offers left this week. Press Continue to move on.</div>`;
+ let detail='<div class="empty">Select an offer.</div>';
+ const o=offers.find(x=>x.id===selOffer);
+ if(o&&s.roster.length){
+  const p=G.P(o.pid),f=G.F(o.rid),{options,sel}=offerPick(o),negotiated=o.talk?.step==='done';
+  const mins=D.SLOTS[o.slot].mins+(o.tag==='Blow-off'?5:0);
+  detail=`<div class="row" style="flex-wrap:nowrap;gap:12px">${face('booker',p.id,p.voice,'portrait')}<div><div style="font:30px/.9 var(--jersey);color:var(--blood)">${esc(p.name)}</div><div class="dim">${esc(p.desc)}, ${esc(p.venue)}. Booker ${esc(p.voice)}.</div><div style="font-size:14px">Trust ${bar(p.trust,p.trust<30?'danger':p.trust>=65?'':'warn')} ${p.trust}</div></div></div>
+  <div class="well matchup" style="margin-top:10px"><div class="side">${sel?face('wrestler',sel.id,sel.name,'portrait x2'):''}${options.length?`<select data-pick="${o.id}" aria-label="Wrestler for this offer" ${o.wid||o.talk?'disabled':''}>${options.map(w=>`<option value="${w.id}" ${sel?.id===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select>`:'<span class="dim">Nobody free</span>'}</div><div class="vs">v</div><div class="side">${face('wrestler',f.id,f.name,'portrait x2')}<b>${esc(f.name)}</b><span class="dim">${esc(f.style)}</span></div></div>
+  <dl class="kv"><dt>Show</dt><dd>${weekLong(o.eventAbs)}</dd><dt>Slot</dt><dd>${esc(D.SLOTS[o.slot].name)}, ${mins} minutes</dd><dt>Finish</dt><dd>${finishTag(o.finish)}</dd><dt>Reply by</dt><dd>${weekLong(o.expiresAbs)}</dd></dl>
+  ${sel?fitNotes(o,sel):''}
+  ${options.length?`<div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(G.purse(o,sel))}</span><button class="btn go" style="min-height:44px;min-width:170px" data-book="${o.id}">${o.eventAbs>G.abs()?'Commit to date':'Book this week'}</button></div>
+  <div class="row" style="margin-top:8px"><button class="btn" data-talkopen="${o.id}" ${!negotiated&&s.focus<1?'disabled':''}>${negotiated?'Read the conversation':'Negotiate with '+esc(p.voice)}</button><span class="dim" style="font-size:13px">${negotiated?`${esc(o.talk.verdict)}. ${esc(o.talk.detail)}`:`Uses one of ${s.focus} meetings left`}</span></div>`
+  :`<p class="bad" style="margin-top:10px">${o.wid?`${esc(G.W(o.wid)?.name||'This wrestler')} isn’t available for this date.`:'Nobody is free on the event date. Check camps and signed bookings.'}</p>`}`;
+ }
+ paint('s-offers',
+  win('Bookings this week',ledger,{area:'ledger',h:'h3',cls:'quiet',body:'tight'})+
+  win('Offers',list,{area:'list',keep:'offers',note:'Promoters decide the finish. You can haggle the terms.'})+
+  win('Offer',detail,{area:'detail',h:'h3',keep:'offer'})
+ );
+}
+
+function renderFixtures(){
+ const s=S();
+ const card=s.card.length?`<div class="well"><table class="grid"><thead><tr><th>Match</th><th>Promoter</th><th>Slot</th><th>Finish</th><th class="n">Purse</th><th></th></tr></thead><tbody>${s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>{const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);return `<tr><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)} v ${esc(f.name)}</b><small>${c.minutes} minutes${c.tag?`, ${esc(c.tag)}`:''}</small></span></span></td><td>${esc(p.name)}</td><td>${esc(D.SLOTS[c.slot].name)}</td><td>${finishTag(c.finish)}</td><td class="n"><b>${money(c.purse)}</b></td><td class="n"><button class="btn link" data-unbook="${c.id}">Pull out</button></td></tr>`}).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Pulling out costs 6 trust with the promoter. Continue takes you to ringside.</p>`
+  :`<div class="empty">Nothing booked this week.<br><button class="btn sm" data-go="offers">See offers</button></div>`;
+ const fut=s.futureBookings.slice().sort((a,b)=>a.eventAbs-b.eventAbs);
+ const future=fut.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th><th></th></tr></thead><tbody>${fut.map(c=>`<tr><td>${weekLabel(c.eventAbs)}</td><td>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}<br><span class="dim">${esc(D.SLOTS[c.slot].name)}</span></td><td>${esc(G.P(c.pid)?.name||'')}</td><td class="n">${money(c.purse)}</td><td class="n"><button class="btn link" data-unbook="${c.id}">Cancel</button></td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Purses are paid after the match. Cancelling costs 6 trust. A booked wrestler can’t attend camp that week.</p>`
+  :'<div class="empty">No future dates signed.</div>';
+ paint('s-split even',win('This week’s card',card,{keep:'card',note:`Week ${s.week}`})+win('Future dates',future,{h:'h3',keep:'future'}));
+}
+
+/* ======================= TERRITORY ======================= */
 function renderPyramid(){
  const s=S(),t=OfficeTerritory.ensure(),ranked=OfficeTerritory.rank();
  const champion=ranked.find(w=>w.id===t.champion)||ranked[0];
  const rest=ranked.filter(w=>w.id!==champion?.id);
- const tiers=[['MAIN EVENT / NO. 1 CONTENDERS',rest.slice(0,2)],['UPPER CARD',rest.slice(2,5)],['MID-CARD',rest.slice(5,9)],['OPENING CARD',rest.slice(9)]];
- const label=w=>'<span class="pyr-entry '+(w.owned?'mine':'')+'"><b>'+esc(w.name)+'</b><small>'+ (w.owned?'YOUR STABLE':'CIRCUIT')+' · '+w.score+' pts</small></span>';
- const teams=t.teams.map(team=>'<article class="pyr-team"><b>'+esc(team.name)+'</b><small>'+team.wins+'W / '+team.losses+'L · Reputation '+team.rep+'</small><span>'+team.roster.map(id=>esc(D.FOES.find(f=>f.id===id)?.short||id)).join(' · ')+'</span></article>').join('');
- const reports=t.reports.slice(0,3).flatMap(r=>r.lines.slice(0,2).map(line=>'<div class="pyr-news">'+esc(line)+'</div>')).join('');
- $('#view').innerHTML='<section class="section pyramid-section"><div class="desk-kicker">THE REGIONAL TITLE PICTURE · SEASON '+s.season+' WEEK '+s.week+'</div><h2>The card pyramid</h2><p class="lede">Results and crowd heat change your standing. Gold marks your wrestlers. The territory champion defends the summit; contenders earn their way up the card.</p><div class="pyr-tiers"><div class="pyr-level apex"><strong>CHAMPION</strong><div class="pyr-entries">'+(champion?label(champion):'Vacant')+'</div></div>'+tiers.map(([title,ws])=>'<div class="pyr-level"><strong>'+title+'</strong><div class="pyr-entries">'+ws.map(label).join('')+'</div></div>').join('')+'</div></section><section class="section"><h2>Rival promotions</h2><div class="pyr-teams">'+teams+'</div><h3>Latest circuit news</h3>'+(reports||'<p class="dim">The rival circuit begins moving after the first week.</p>')+'</section>';
+ const tiers=[['Champion',champion?[champion]:[],true],['Contenders',rest.slice(0,2)],['Upper card',rest.slice(2,5)],['Mid-card',rest.slice(5,9)],['Opening card',rest.slice(9)]];
+ const label=w=>`<span class="pent ${w.owned?'mine':''}"><b>${esc(w.name)}</b><small>${w.owned?'Your stable':'Circuit'}, ${w.score} pts</small></span>`;
+ const pyr=`<div class="well tiers">${tiers.map(([n,ws,apex])=>`<div class="tier ${apex?'apex':''}"><strong>${n}</strong><div class="entries">${ws.length?ws.map(label).join(''):'<span class="dim">Vacant</span>'}</div></div>`).join('')}</div><p class="dim" style="margin-top:8px">Results and crowd heat move wrestlers up and down. Gold edges mark your stable.</p>`;
+ const teams=`<div class="well"><table class="grid"><thead><tr><th>Promotion</th><th class="n">W</th><th class="n">L</th><th class="n">Rep</th></tr></thead><tbody>${t.teams.map(team=>`<tr><td class="wrap"><b>${esc(team.name)}</b><br><span class="dim">${team.roster.map(id=>esc(D.FOES.find(f=>f.id===id)?.short||id)).join(', ')}</span></td><td class="n">${team.wins}</td><td class="n">${team.losses}</td><td class="n">${team.rep}</td></tr>`).join('')}</tbody></table></div>`;
+ const news=t.reports.slice(0,4).flatMap(r=>r.lines.slice(0,2)).map(l=>`<li>${esc(l)}</li>`).join('');
+ paint('s-split',
+  win('Card pyramid',pyr,{keep:'pyr',note:`Season ${s.season}, week ${s.week}`})+
+  win('Rival circuit',`${teams}<h3 class="section-h" style="margin-top:12px">Circuit news</h3>${news?`<ul class="fulllog well" style="color:var(--white)">${news}</ul>`:'<p class="dim">The rival circuit starts moving after week 1.</p>'}`,{h:'h3',keep:'rivals'})
+ );
 }
-let screenPage=0;
-function updateScreen(){
- const v=$('#view'),bar=$('#page-controls');if(!v||!bar)return;
- const pages=Math.max(1,Math.ceil(v.scrollHeight/Math.max(1,v.clientHeight)));
- screenPage=Math.max(0,Math.min(screenPage,pages-1));v.scrollTop=screenPage*v.clientHeight;
- bar.hidden=pages<=1;bar.querySelector('[data-page="prev"]').disabled=screenPage===0;
- bar.querySelector('[data-page="next"]').disabled=screenPage>=pages-1;
- bar.querySelector('.page-counter').textContent='Screen '+(screenPage+1)+' / '+pages;
-}
-window.addEventListener('resize',()=>{screenPage=0;updateScreen()});
-
-/* ---------- director's desk: the four-week decision loop ---------- */
-function renderDesk(){
- const s=S(),st=G.monthStatus(),need=G.pending(),income=s.card.reduce((v,c)=>v+c.purse,0),cost=G.wages()+G.overhead()+G.trainingBill();
- const stakes=s.season===1&&s.week<=4;
- const expenses=s.roster.map(w=>({w,fee:G.trainingCost(w)})).filter(x=>x.fee);
- const ledger=`<div class="desk-finance"><div><small>Bank available</small><b>${money(s.cash)}</b></div><div><small>Expected purses</small><b>${money(income)}</b></div><div><small>Wages + overhead + coaching</small><b>${money(-cost)}</b></div><div><small>Projected end of week</small><b class="${s.cash+income-cost<0?'bad':'good'}">${money(s.cash+income-cost)}</b></div></div>`;
- const trials=[['Three-star match','One actual match rated 3★ or better',st.okMatch],['£750 reserve','Keep £750 in the bank at the review',st.cash],['Reputation 30','Build a stronger reputation through your shows',st.rep],['Develop a wrestler','Improve any one skill by two points through coaching',st.developed]];
- const month=stakes?`<div class="desk-mission"><div class="desk-kicker">THE FIRST FOUR WEEKS — SPONSOR TRIAL</div><h2>Build a stable worth backing</h2><p>At the end of week 4, deliver a <b>3★ match</b> AND meet at least two of the other three conditions. You earn <b>£450</b>; otherwise the sponsor walks. Every booking, training session and contract affects the result.</p><div class="desk-criteria">${trials.map((x,i)=>`<div class="${x[2]?'met':''}"><span>${x[2]?'✓':'○'} ${esc(x[0])}</span><small>${esc(x[1])}</small></div>`).join('')}</div><div class="dim">Evaluation in ${5-s.week} week${5-s.week===1?'':'s'} · Your decisions: ${s.history.length} matches completed</div></div>`:
- s.monthReview?`<div class="desk-mission"><div class="desk-kicker">REGIONAL CIRCUIT · ${Math.max(0,17-s.week)} WEEKS REMAIN · FIRST MONTH REVIEW</div><h2>${s.monthReview.passed?'Backer invested £450':'Backer declined funding'}</h2><p>Best match: ${s.monthReview.best}★. Training and promo investment: ${money(s.monthReview.business?.training||0)}; contract improvements: ${money(s.monthReview.business?.negotiated||0)}. Promises kept: ${s.monthReview.business?.kept||0}, broken: ${s.monthReview.business?.broken||0}. The season continues and promoters remember your work.</p></div>`:'';
- const calendar=s.futureBookings.slice().sort((a,b)=>a.eventAbs-b.eventAbs).slice(0,4);
- const commitments=`<section class="section"><h2>Next dates on the circuit</h2><p class="lede">Future work is contracted now; you only earn the purse after the match. A booked wrestler cannot attend a residential camp covering that date.</p>${calendar.length?`<div class="card-list">${calendar.map(c=>`<div class="booked"><b>${esc(weekLabel(c.eventAbs))}</b><span>${esc(G.W(c.wid)?.name||'Departed wrestler')}</span><span class="dim">${esc(G.P(c.pid)?.name||'Promoter')} · ${esc(D.SLOTS[c.slot].name)}</span><b>${money(c.purse)}</b><button class="btn quiet" data-unbook="${c.id}">Cancel (trust −6)</button></div>`).join('')}</div>`:'<div class="empty">No future dates signed. Some promoter offers are for later weeks.</div>'}</section>`;
- const circuit=s.season===1&&s.week>=5?`<section class="section"><h2>Regional circuit checkpoints</h2><p class="lede">Three genuine career goals after the opening trial. Rewards depend on match results, not accepting tasks.</p><div class="circuit-grid">${Object.entries(G.CIRCUIT_TARGETS).map(([week,t])=>{const r=G.circuitStatus(Number(week));const past=s.circuitReviews.find(x=>x.week===r.week);return `<div class="circuit-check ${past?.met?'met':''}"><small>WEEK ${r.week}</small><b>${esc(r.title)}</b><span>${r.required} matches (weeks 5–${r.week}); one ${r.quality}★; ${r.feature?'featured slot required':'any slot'}.</span><span class="dim">${past?past.met?'✓ Bonus earned':'✗ Target missed':`${r.played}/${r.required} matches · ${r.quality?'quality met':'quality needed'} · ${r.feature&&!r.hasFeature?'featured booking needed':''}`}</span><strong>${money(r.reward)}</strong></div>`}).join('')}</div></section>`:'';
- const strain=s.roster.filter(w=>w.fatigue>=40||w.injury).map(w=>`${esc(w.short)} — ${w.injury?'injured':`fatigue ${w.fatigue}`}`).join('; ');
- $('#view').innerHTML=`<section class="section"><div class="desk-head"><div><div class="desk-kicker">SEASON ${s.season} · WEEK ${s.week}</div><h2>Director's desk</h2><p class="lede">Make the week count. Hiring, training and booking are competing investments, not a checklist.</p></div><div class="desk-meet"><b>${s.focus} / 2</b><small>Management meetings left</small><span>Spend meetings with promoters to improve terms, or with wrestlers to keep trust.</span></div></div>${month}${ledger}${!stakes?`<p class="lede">Regional circuit: weeks 5–16. Develop a signature act, manage future dates and work toward the season objectives in Records.</p>`:''}<div class="desk-grid"><article class="desk-panel"><h3>1 · Talent</h3><p>${s.roster.length?`${s.roster.length} under contract. ${expenses.length?`Planned coaching: ${money(G.trainingBill())}.`:'No paid coaching scheduled.'}`:'An empty stable cannot take bookings. One star or several prospects?'}</p><p class="dim">${strain||'No major fatigue or injuries recorded.'}</p><button class="btn primary" data-jump="roster">${s.roster.length?'Review training':'Recruit a wrestler'}</button></article><article class="desk-panel"><h3>2 · The promoters</h3><p>${s.card.length} matches agreed. ${s.offers.length} live offers. ${s.focus} meetings available to improve terms.</p><p class="dim">Booking a loss can fund a training programme, but costs a wrestler heat.</p><button class="btn primary" data-jump="bookings">Review offers and negotiate</button></article><article class="desk-panel"><h3>3 · People</h3><p>${need.length?`${need.length} conversations need your decision before you can advance.`:'No unanswered urgent requests.'}</p><p class="dim">Private meetings can resolve morale problems, but leave fewer chances to negotiate your fees. Broken relationships cost opportunities even when the books look healthy.</p><button class="btn ${need.length?'primary':''}" data-jump="inbox">Read the inbox${need.length?` (${need.length})`:''}</button></article></div><div class="desk-foot"><span>Press <b>${need.length?'Continue → inbox':s.card.length?'Match night':'Continue → next week'}</b> when you are ready. You don't have to accept every offer.</span><button class="btn" data-jump="records">Career records</button></div>${commitments}${circuit}</section>`;
-}
-
-/* ---------- inbox ---------- */
-function renderInbox(){
- const s=S();const list=s.inbox;
- if(!openMsg||!list.some(m=>m.id===openMsg))openMsg=(G.pending()[0]||list[0])?.id;
- const m=list.find(x=>x.id===openMsg);if(m&&!m.read&&m.kind!=='decision'){m.read=true;G.save();renderBar()}
- const items=list.map(x=>`<li><button data-msg="${x.id}" class="${!x.read?'unread':''} ${x.kind==='decision'&&!x.answer?'need':''}" ${x.id===openMsg?'aria-current="true"':''}><span class="dot"></span><span class="from">${esc(x.from)}</span><span class="wk">S${x.season} W${x.week}</span><span class="subj">${esc(x.subject)}</span></button></li>`).join('');
- let letter='<div class="letter"><p class="dim">No messages.</p></div>';
- if(m){letter=`<article class="letter"><div class="meta">From ${esc(m.from)}, season ${m.season} week ${m.week}</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
-  if(m.kind==='decision'){if(m.answer)letter+=`<div class="outcome"><b>You chose: ${esc(m.options.find(o=>o.id===m.answer)?.label)}</b><br>${esc(m.outcome)}</div>`;
-   else letter+=`<div class="choices">${m.options.map(o=>`<button class="choice" data-answer="${o.id}" data-mid="${m.id}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></button>`).join('')}</div>`;}
-  letter+='</article>';}
- $('#view').innerHTML=`<div class="inbox"><ul class="msglist">${items}</ul>${letter}</div>`;
-}
-
-/* ---------- roster ---------- */
-function status(w){if(w.program?.type==='camp')return `<span class="tag hot">Camp: ${w.program.left} weeks left</span>`;if(w.injury)return `<span class="bad">Injured, ${w.injury} wk</span>`;if(G.booked(w.id))return 'Booked';if(w.flags?.dive)return 'Planning a dive';return '<span class="faint">Free</span>'}
-function renderRoster(){
- const s=S();let h='';
- h+=`<section class="section"><h2>Your stable</h2><p class="lede">Assign a skill and intensity once: it keeps progressing every week. Open a wrestler dossier for a fixed three- or six-week training block, or a three-week residential camp that removes them from all bookings. Staff salaries are ongoing.</p>`;
- if(!s.roster.length)h+=`<div class="empty">Nobody under contract. Sign a headliner, or two cheaper wrestlers, from the list below.</div>`;
- else{h+=`<table class="table resp"><thead><tr><th>Wrestler</th><th class="n">Heat</th><th class="n">Ring</th><th class="n">Mic</th><th class="n">Psych</th><th class="n">Safe</th><th>Fatigue</th><th class="n">Morale</th><th>Status</th><th>This week</th></tr></thead><tbody>`;
-  for(const w of s.roster){
-   h+=`<tr><td class="lead"><button class="rowlink who" data-openw="${w.id}">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b><small>${esc(w.tier)}, ${esc(w.style.toLowerCase())}, ${money(w.wage)}/wk</small></span></button></td>
-   <td class="n" data-l="Heat"><b>${w.heat}</b></td><td class="n" data-l="Ring">${w.ring}</td><td class="n" data-l="Mic">${w.mic}</td><td class="n" data-l="Psych">${w.psych}</td><td class="n" data-l="Safe">${w.safe}</td>
-   <td data-l="Fatigue">${meter(w.fatigue,condKind(w.fatigue))} <span class="num">${w.fatigue}</span></td><td class="n" data-l="Morale"><span class="${w.morale<35?'bad':''}">${w.morale}</span></td>
-   <td data-l="Status">${status(w)}</td>
-   <td class="wide" data-l="This week"><div class="train-pair"><select data-train="${w.id}" aria-label="Training for ${esc(w.name)}" ${w.injury||w.program?'disabled':''}>${Object.entries(D.TRAINING).map(([k,t])=>`<option value="${k}" ${(w.injury?'rest':w.training)===k?'selected':''}>${t.name}${t.cost?` (£${t.cost})`:''}</option>`).join('')}</select><select data-intensity="${w.id}" aria-label="Training intensity for ${esc(w.name)}" ${w.injury||w.program||w.training==='rest'||w.training==='promo'?'disabled':''}>${w.program?.type==='camp'?'<option selected>Residential camp · £185/week</option>':Object.entries(G.INTENSITY).map(([key,v])=>`<option value="${key}" ${w.intensity===key?'selected':''}>${esc(v.name)} · ${money(v.cost)}/week</option>`).join('')}</select></div><small class="dim">${w.program?`${w.program.type==='camp'?'Away at camp':'Training block'} · ${w.program.left} weeks remain · ${money(G.trainingCost(w))}/week`:w.training==='rest'?'Recovers fatigue':w.training==='promo'?'£40 to produce a promo':`${esc(G.INTENSITY[w.intensity||'light'].hint)} Weekly cost ${money(G.trainingCost(w))}`}</small></td></tr>`;
-   if(openW===w.id)h+=`<tr class="detail"><td colspan="10">${detail(w)}</td></tr>`;
-  }
-  h+='</tbody></table>';}
- h+='</section>';
- h+=`<section class="section"><h2>Specialist coaching staff</h2><p class="lede">Hire one specialist at a time. Their expertise increases weekly progress in a chosen skill. Wages are due even if nobody trains.</p>${s.coach?`<div class="ledger"><b>${esc(G.COACHES[s.coach].name)}</b><span>Weekly salary ${money(G.coachWage())}</span><button class="btn danger" data-firecoach="1">End contract</button></div>`:`<div class="staff-options">${Object.entries(G.COACHES).map(([id,c])=>`<div class="staff-pick"><b>${esc(c.name)}</b><span>Hiring fee ${money(c.fee)} · ${money(c.wage)} weekly</span><span class="dim">Training improvement: ${esc(c.stat)} +${Math.round(c.boost*100)}%</span><button class="btn" data-hirecoach="${id}" ${s.cash<c.fee?'disabled':''}>Hire</button></div>`).join('')}</div>`}</section>`;
- h+=`<section class="section"><h2>Free agents</h2><p class="lede">${s.roster.length>=5?'Your locker room is full.':`You can afford anyone up to ${money(s.cash)}. Wages are paid every week, booked or not.`}</p><table class="table resp"><thead><tr><th>Wrestler</th><th>Style</th><th class="n">Heat</th><th class="n">Ring</th><th class="n">Mic</th><th class="n">Psych</th><th class="n">Wage</th><th class="n">Fee</th><th></th></tr></thead><tbody>`;
- for(const w of s.free){h+=`<tr><td class="lead"><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b><small>${esc(w.tier)}. ${esc(w.bio)}</small></span></span></td><td data-l="Style">${esc(w.style)}</td><td class="n" data-l="Heat">${w.heat}</td><td class="n" data-l="Ring">${w.ring}</td><td class="n" data-l="Mic">${w.mic}</td><td class="n" data-l="Psych">${w.psych}</td><td class="n" data-l="Wage">${money(w.wage)}</td><td class="n" data-l="Fee"><b>${money(w.fee)}</b></td><td><button class="btn primary" data-sign="${w.id}" ${s.cash<w.fee||s.roster.length>=5?'disabled':''}>Sign</button></td></tr>`}
- h+='</tbody></table></section>';
- $('#view').innerHTML=h;
-}
-function detail(w){
- const s=S();const feuds=Object.values(s.feuds).filter(f=>f.wid===w.id&&f.heat>0&&!f.closed);
- const hist=s.history.filter(x=>x.wid===w.id).slice(0,4);
- const temper=w.ego>=75?'Proud. Resents being told what to do.':w.ego>=60?'Has opinions about how matches should go.':'Takes direction well.';
- const pro=w.pro>=85?'Will never break a finish.':w.pro<60?'Unpredictable under pressure.':'Reliable.';
- return `<div class="detail-grid"><div><h3>${esc(w.handle)}</h3><p>${esc(w.bio)}</p><p class="dim">Finisher: ${esc(w.finisher)}. Best in a ${esc(D.PLANS[D.STYLE_PLAN[w.style]].name.toLowerCase())}.</p></div>
- <div><h3>Temperament</h3><p>${temper} ${pro}</p><p class="dim">Loyalty ${w.loyal}. ${w.loyal<45?'Could be tempted away.':''}</p></div>
- <div><h3>Record</h3><p>${w.matches} matches, ${w.wins} wins. ${w.matches?`Average ${starsText(Math.round(w.starSum/w.matches*4)/4)}, best ${starsText(w.best)}.`:''}</p>${hist.map(x=>`<div class="dim">S${x.season}W${x.week} vs ${esc(x.foe)}: <span class="stars">${starsText(x.stars)}</span></div>`).join('')}</div>
- <div><h3>Development plan</h3>${w.program?`<p><b>${w.program.type==='camp'?'Residential camp':`${w.program.total}-week block`}</b> · ${w.program.left} week${w.program.left===1?'':'s'} remaining.</p><p class="dim">${money(G.trainingCost(w))} per week. ${w.program.gains} skill points developed. ${w.program.type==='camp'?'Cannot be booked until camp ends.':''}</p><button class="btn danger" data-cancelprogram="${w.id}">End programme early</button>`:`<p class="dim">Select the skill and intensity in the roster row first. Plans progress automatically each week.</p><div class="program-actions"><button class="btn" data-program="block3" data-wid="${w.id}" ${w.injury||['rest','promo'].includes(w.training)?'disabled':''}>3-week block</button><button class="btn" data-program="block6" data-wid="${w.id}" ${w.injury||['rest','promo'].includes(w.training)?'disabled':''}>6-week block</button><button class="btn primary" data-program="camp" data-wid="${w.id}" ${w.injury||['rest','promo'].includes(w.training)?'disabled':''}>Residential camp · £185/week</button></div><p class="dim">Camp takes 3 weeks, prevents bookings, improves skills faster and builds match readiness. It still carries fatigue and injury risk.</p>`}${w.prepHistory?.length?`<p class="dim">Last completed: ${esc(w.prepHistory[0].focus)} +${w.prepHistory[0].gains} (${weekLabel(w.prepHistory[0].week)})</p>`:''}</div>
- <div><h3>Rivalries</h3>${feuds.length?feuds.map(f=>`<div>${esc(G.F(f.rid).name)} ${meter(f.heat,f.heat>=70?'hot':'')} ${f.heat}</div>`).join(''):'<p class="dim">None yet. Good matches against the same opponent build one.</p>'}<p class="dim">${w.promise?.status==='open'?`PROMISED: Featured match by ${weekLabel(w.promise.deadline)}. Break it and loyalty falls.`:w.promise?.status==='kept'?'Your last featured-match promise was kept.':w.promise?.status==='broken'?'Your last featured-match promise was broken.':''}</p><p><button class="btn primary" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting · 1 of ${s.focus} remaining</button></p><p style="margin-top:10px"><button class="btn danger" data-release="${w.id}">Release ${esc(w.short)}</button></p></div></div>`;
-}
-
-/* ---------- bookings ---------- */
-function fitNote(o,w){
- const p=G.P(o.pid),notes=[];
- const best=D.STYLE_PLAN[w.style];
- if(best===p.likes)notes.push(`<span class="good">${esc(p.name)} crowds love a ${esc(w.style.toLowerCase())} worker</span>`);
- else notes.push(`<span class="dim">${esc(p.name)} wants a ${esc(planFor(p).name.toLowerCase())}; ${esc(w.short)} prefers ${esc(D.PLANS[best].name.toLowerCase())}</span>`);
- const f=G.F(o.rid);if(f.safe<55)notes.push(`<span class="bad">${esc(f.name)} is an unsafe worker</span>`);
- if(w.fatigue>=45)notes.push(`<span class="bad">${esc(w.short)} is tired (${w.fatigue})</span>`);
- if(D.FINISHES[o.finish].heat<-3&&w.heat>=60)notes.push(`<span class="bad">A clean loss will cost ${esc(w.short)} heat</span>`);
- const fd=G.feud(w.id,o.rid);if(fd&&!fd.closed&&fd.heat>0)notes.push(`<span class="good">Rivalry heat ${fd.heat}: a hotter crowd</span>`);
- return notes.join('<br>');
-}
-function renderBookings(){
+function renderPromoters(){
  const s=S();
- const income=s.card.reduce((t,c)=>t+c.purse,0),out=G.wages()+G.overhead()+G.trainingBill();
- let h=`<div class="ledger"><span><span class="dim">Purses booked</span> <strong>${money(income)}</strong></span><span><span class="dim">Wages, overheads, coaching</span> <strong>${money(-out)}</strong></span><span><span class="dim">This week, if nothing goes wrong</span> <strong class="${income-out<0?'bad':'good'}">${money(income-out)}</strong></span></div>`;
- h+=`<section class="section"><h2>The card</h2><p class="lede">Your matches this week. Pulling out costs trust with the promoter.</p>`;
- if(!s.card.length)h+=`<div class="empty">Nothing booked yet. Pick an offer below.</div>`;
- else h+=`<div class="card-list">${s.card.map(c=>{const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);return `<div class="booked">${face('wrestler',w.id,w.name)}<b>${esc(w.name)} vs ${esc(f.name)}</b><span class="dim">${esc(p.name)}, ${esc(D.SLOTS[c.slot].name.toLowerCase())}, ${c.minutes} min</span>${finishTag(c.finish)}${c.tag?`<span class="tag hot">${esc(c.tag)}</span>`:''}<span class="num"><b>${money(c.purse)}</b></span><button class="btn quiet" data-unbook="${c.id}">Pull out</button></div>`}).join('')}</div>`;
- h+=`</section><section class="section"><h2>Future signed bookings</h2>${s.futureBookings.length?`<div class="card-list">${s.futureBookings.slice().sort((a,b)=>a.eventAbs-b.eventAbs).map(c=>`<div class="booked"><b>${weekLabel(c.eventAbs)}</b> ${esc(G.W(c.wid)?.name||'')} vs ${esc(G.F(c.rid).name)} · ${esc(G.P(c.pid).name)} · ${money(c.purse)}<button class="btn quiet" data-unbook="${c.id}">Cancel (trust −6)</button></div>`).join('')}</div>`:'<p class="dim">No future bookings yet.</p>'}</section><section class="section"><h2>Offers and deadlines</h2><p class="lede">Promoters issue dated opportunities. Some are this week; others are two or three weeks away. The reply deadline is shown on every offer. You can negotiate terms in conversation, but the calendar keeps moving.</p>`;
- if(!s.offers.length)h+=`<div class="empty">No offers left this week. Press Continue to move on.</div>`;
- else if(!s.roster.length)h+=`<div class="empty">You need someone under contract before you can take bookings. Go to Roster and sign a wrestler.</div>`;
- h+='<div class="offers">';
- for(const o of s.offers){
-  const p=G.P(o.pid),f=G.F(o.rid);
-  const options=s.roster.filter(w=>(!o.wid||o.wid===w.id)&&G.availableAt(w,o.eventAbs));
-  const sel=options.find(w=>w.id===o.talk?.wid)||options.find(w=>w.id===pick[o.id])||options.slice().sort((a,b)=>(D.STYLE_PLAN[b.style]===p.likes)-(D.STYLE_PLAN[a.style]===p.likes)||a.fatigue-b.fatigue)[0];
-  if(sel)pick[o.id]=sel.id;
-  const purse=sel?G.purse(o,sel):null;
-  const negotiated=o.talk?.step==='done';
-  h+=`<div class="offer"><div>${o.tag?`<span class="tag hot">${esc(o.tag)}</span> `:''}<h3>${esc(p.name)}</h3><div class="dim">${esc(p.desc)}, ${esc(p.venue)}</div><div class="faint" style="font-size:13px">Trust ${p.trust} · <b>Show ${weekLabel(o.eventAbs)}</b> · Reply by ${weekLabel(o.expiresAbs)}</div></div>
-  <div><div style="font-size:17px">vs <b>${esc(f.name)}</b> <span class="faint">(${esc(f.style.toLowerCase())})</span></div><div class="terms"><span class="tag">${esc(D.SLOTS[o.slot].name)}, ${D.SLOTS[o.slot].mins+(o.tag==='Blow-off'?5:0)} min</span>${finishTag(o.finish)}</div>${sel?`<div class="fit" style="margin-top:8px">${fitNote(o,sel)}</div>`:''}</div>
-  <div class="act">${options.length?`<div class="row"><select data-pick="${o.id}" aria-label="Wrestler for this offer" ${o.wid||o.talk?'disabled':''}>${options.map(w=>`<option value="${w.id}" ${sel?.id===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select><span class="purse num">${money(purse)}</span><button class="btn primary" data-book="${o.id}">${o.eventAbs>G.abs()?'Commit to date':'Book this week'}</button></div>
-   <div class="haggle"><button class="btn" data-talkopen="${o.id}">${negotiated?'Read conversation':'Talk to '+esc(p.voice)}</button><span class="faint">${negotiated?`${o.talk.verdict}. ${esc(o.talk.detail)}`:`${s.focus} meetings remaining this week`}</span></div>`
-   :`<div class="faint">${o.wid?`${esc(G.W(o.wid)?.name||'This wrestler')} isn’t available for this date.`:'Nobody free on the event date. Check camps and signed bookings.'}</div>`}</div></div>`;
- }
- h+='</div></section>';
- $('#view').innerHTML=h;
+ paint('s-full',win('Promoters',`<div class="well"><table class="grid"><thead><tr><th>Promoter</th><th>Wants</th><th class="n">Reach</th><th>Trust</th><th class="n">Matches</th><th class="n">Best</th><th>Status</th></tr></thead><tbody>${s.promoters.map(p=>`<tr><td><span class="who">${face('booker',p.id,p.voice)}<span><b>${esc(p.name)}</b><small>${esc(p.desc)}. Booker ${esc(p.voice)}.</small></span></span></td><td>${esc(planFor(p).name)}</td><td class="n">${att(p.reach)}</td><td>${bar(p.trust,p.trust<30?'danger':p.trust>=65?'':'warn')} ${p.trust}</td><td class="n">${p.matches}</td><td class="n"><span class="stars">${p.best?starsText(p.best):'–'}</span></td><td>${p.blacklist>0?`<span class="bad">Won’t book you for ${p.blacklist} wk</span>`:s.rep<p.minRep?`<span class="dim">Needs reputation ${p.minRep}</span>`:p.trust<15?'<span class="bad">Not returning calls</span>':'<span class="good">Booking</span>'}</td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Trust rises when you deliver what a promoter asked for and falls when you pull out or break a finish.</p>`,{keep:'proms'}));
 }
-
-/* ---------- records ---------- */
-function renderRecords(){
+function renderRivalries(){
+ const s=S(),feuds=Object.values(s.feuds).filter(f=>f.heat>0||f.closed).sort((a,b)=>b.heat-a.heat);
+ paint('s-full',win('Rivalries',`<p class="lede">Built by good matches against the same opponent. They cool by 7 a week. At 70 heat after two matches, a promoter offers the blow-off.</p>${feuds.length?`<div class="well"><table class="grid"><thead><tr><th>Rivalry</th><th>Heat</th><th class="n">Matches</th><th>State</th></tr></thead><tbody>${feuds.map(f=>{const w=s.roster.find(x=>x.id===f.wid)||D.TALENT.find(x=>x.id===f.wid);return `<tr><td><b>${esc(w?.name)} v ${esc(G.F(f.rid).name)}</b></td><td>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</td><td class="n">${f.matches}</td><td>${f.closed?'Finished':f.heat>=70&&f.matches>=2?'<span class="good">Ready for the blow-off</span>':'Building'}</td></tr>`}).join('')}</tbody></table></div>`:'<div class="empty">No rivalries yet.</div>'}`,{keep:'feuds'}));
+}
+function renderResults(){
  const s=S();
- let h=`<section class="section"><h2>Season ${s.season} objectives</h2><p class="lede">Checked at the end of week 16. Each one met is worth £200 on top of sponsorship.</p><ul class="goals">${G.goalList().map(g=>`<li class="${g.done?'done':''}">${esc(g.text)}</li>`).join('')}</ul></section>`;
- h+=`<section class="section"><h2>Promoters</h2><table class="table resp"><thead><tr><th>Promoter</th><th>Wants</th><th class="n">Reach</th><th>Trust</th><th class="n">Matches</th><th class="n">Best</th><th>Status</th></tr></thead><tbody>${s.promoters.map(p=>`<tr><td class="lead"><span class="who">${face('booker',p.id,p.voice)}<span><b>${esc(p.name)}</b><small>${esc(p.desc)}. Booker: ${esc(p.voice)}</small></span></span></td><td data-l="Wants">${esc(planFor(p).name)}</td><td class="n" data-l="Reach">${p.reach}</td><td data-l="Trust">${meter(p.trust,p.trust<30?'danger':p.trust>=65?'hot':'')} ${p.trust}</td><td class="n" data-l="Matches">${p.matches}</td><td class="n" data-l="Best"><span class="stars">${p.best?starsText(p.best):'–'}</span></td><td data-l="Status">${p.blacklist>0?`<span class="bad">Won’t book you for ${p.blacklist} wk</span>`:s.rep<p.minRep?`<span class="faint">Needs reputation ${p.minRep}</span>`:p.trust<15?'<span class="bad">Not returning calls</span>':'<span class="good">Booking</span>'}</td></tr>`).join('')}</tbody></table></section>`;
- const feuds=Object.values(s.feuds).filter(f=>f.heat>0||f.closed).sort((a,b)=>b.heat-a.heat);
- h+=`<section class="section"><h2>Rivalries</h2><p class="lede">Built by good matches against the same opponent; they cool off by 7 a week. At 70 heat after two matches, a promoter offers the blow-off.</p>${feuds.length?`<table class="table resp"><thead><tr><th>Rivalry</th><th>Heat</th><th class="n">Matches</th><th>State</th></tr></thead><tbody>${feuds.map(f=>{const w=s.roster.find(x=>x.id===f.wid)||D.TALENT.find(x=>x.id===f.wid);return `<tr><td class="lead"><b>${esc(w?.name)} vs ${esc(G.F(f.rid).name)}</b></td><td data-l="Heat">${meter(f.heat,f.heat>=70?'hot':'')} ${f.heat}</td><td class="n" data-l="Matches">${f.matches}</td><td data-l="State">${f.closed?'Finished':f.heat>=70&&f.matches>=2?'<span class="good">Ready for the blow-off</span>':'Building'}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No rivalries yet.</div>'}</section>`;
- h+=`<section class="section"><h2>Results</h2>${s.history.length?`<table class="table resp"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th>Finish</th><th class="n">Rating</th><th class="n">Crowd</th><th class="n">Paid</th><th></th></tr></thead><tbody>${s.history.map((x,i)=>`<tr><td data-l="When">S${x.season} W${x.week}</td><td class="lead"><b>${esc(x.name)} vs ${esc(x.foe)}</b></td><td data-l="Promoter">${esc(x.promoter)}</td><td data-l="Finish">${x.outcome==='double'?'<span class="tag hot">Double-cross</span>':x.outcome==='nc'?'<span class="tag">No contest</span>':finishTag(x.finish)}</td><td class="n" data-l="Rating"><span class="stars">${starsText(x.stars)}</span></td><td class="n" data-l="Crowd">${x.crowd}</td><td class="n" data-l="Paid">${money(x.purse)}</td><td><button class="btn quiet" data-replay="${i}">Commentary</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No matches yet.</div>'}</section>`;
- h+=`<section class="section"><h2>Career</h2><p><button class="btn" data-act="export">Export save</button> <button class="btn" data-act="import">Import save</button> <button class="btn danger" data-act="newgame">Start a new career</button></p></section>`;
- $('#view').innerHTML=h;
+ paint('s-full',win('Results',s.history.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th>Finish</th><th class="n">Rating</th><th class="n">Crowd</th><th class="n">Paid</th></tr></thead><tbody>${s.history.map((x,i)=>`<tr class="pick" data-replay="${i}"><td>S${x.season} W${x.week}</td><td><b>${esc(x.name)} v ${esc(x.foe)}</b></td><td>${esc(x.promoter)}</td><td>${x.outcome==='double'?'<span class="tag hot">Double-cross</span>':x.outcome==='nc'?'<span class="tag">No contest</span>':finishTag(x.finish)}</td><td class="n"><span class="stars">${starsText(x.stars)||'DUD'}</span></td><td class="n">${x.crowd}</td><td class="n">${money(x.purse)}</td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Select a match to read the commentary.</p>`:'<div class="empty">No matches yet.</div>',{keep:'res',note:`${s.history.length} ${plural(s.history.length,'match','matches')}`}));
+}
+function renderGame(){
+ paint('s-split even',
+  win('Save and load',`<p class="lede">Your career saves automatically in this browser after every action. Export a save file to move it to another device or browser.</p><div class="row"><button class="btn" data-act="export">Export save</button><button class="btn" data-act="import">Import save</button></div><h3 class="section-h" style="margin-top:20px">Start over</h3><p class="dim">Overwrites the current career.</p><button class="btn red" data-act="newgame">Start a new career</button>`)+
+  win('How a week works',`<ol style="margin:0;padding-left:1.3em;display:grid;gap:8px"><li>Read the inbox. Some messages need a decision before you can continue.</li><li>Set training for each wrestler. Rest anyone who is tired.</li><li>Book wrestlers onto offers. Promoters set the finish; negotiate the fee, billing or a protected loss using a management meeting.</li><li>Press Continue. If anyone is booked you go to match night: choose the game plan, then make up to three calls from ringside.</li><li>Wages and costs are paid, and the next week’s offers arrive.</li></ol><p class="dim" style="margin-top:12px">At ringside, Space pauses and keys 1 to 6 make calls.</p>`,{h:'h3'})
+ );
 }
 
-/* ---------- wrestler conversation: a management meeting that competes with haggling ---------- */
+/* ======================= CONVERSATIONS ======================= */
 function renderPrivateMeeting(id){
- const w=G.W(id);if(!w)return;const d=$('#modal');delete d.dataset.talkoid;
- d.innerHTML=`<div class="dlg"><div class="desk-kicker">PRIVATE CONVERSATION · YOUR STABLE</div><h2>Talk with ${esc(w.name)}</h2><p>${esc(w.bio)}</p><div class="terms-compare"><div><small>Morale</small><b>${w.morale}</b></div><div><small>Loyalty</small><b>${w.loyal}</b></div></div><p class="dim">You have ${S().focus} management meetings remaining this week. A wrestler meeting uses one, leaving fewer chances to improve contracts with promoters.</p><div class="talk-actions"><button class="choice" data-private="listen" data-wid="${id}" ${S().focus===0?'disabled':''}><b>Listen and reassure</b><span>Free, no specific promise. Morale +5, loyalty +4.</span></button><button class="choice" data-private="promise" data-wid="${id}" ${S().focus===0||w.promise?.status==='open'?'disabled':''}><b>Promise a featured match</b><span>Morale +8 now. Book a feature or main event within two weeks. Miss it and lose 14 morale / 12 loyalty.</span></button><button class="choice" data-private="bonus" data-wid="${id}" ${S().cash<120||S().focus===0?'disabled':''}><b>Offer a £120 loyalty bonus</b><span>Cash −£120; morale +6, loyalty +9. Guaranteed, but not cheap.</span></button></div></div><div class="foot"><button class="btn" data-dlg="close">Leave without a promise</button></div>`;
+ const w=G.W(id);if(!w)return;const d=$('#modal');delete d.dataset.talkoid;const s=S();
+ d.innerHTML=`<header class="tbar"><h2>Private meeting: ${esc(w.name)}</h2></header><div class="dlg"><p>${esc(w.bio)}</p><div class="terms-compare"><div><small>Morale</small><b>${w.morale}</b></div><div><small>Loyalty</small><b>${w.loyal}</b></div></div><p class="dim">Uses one of your ${s.focus} management meetings left this week, which means one less chance to haggle with a promoter.</p><div class="talk-actions"><button class="choice" data-private="listen" data-wid="${id}" ${s.focus===0?'disabled':''}><b>Listen and reassure</b><span>No promise. Morale +5, loyalty +4.</span></button><button class="choice" data-private="promise" data-wid="${id}" ${s.focus===0||w.promise?.status==='open'?'disabled':''}><b>Promise a featured match</b><span>Morale +8 now. Book a feature or main event within two weeks, or lose 14 morale and 12 loyalty.</span></button><button class="choice" data-private="bonus" data-wid="${id}" ${s.cash<120||s.focus===0?'disabled':''}><b>Pay a £120 loyalty bonus</b><span>Morale +6, loyalty +9. Guaranteed, but not cheap.</span></button></div></div><div class="foot"><button class="btn" data-dlg="close">Leave it for now</button></div>`;
  if(!d.open)d.showModal();
 }
-
-/* ---------- explicit promoter meeting ---------- */
 function renderMeeting(oid,wid){
  const res=G.meeting(oid,wid);if(res.error){toast(res.error);return}
  const o=res.offer,t=res.talk,w=G.W(wid),p=G.P(o.pid),f=G.F(o.rid),d=$('#modal');d.dataset.talkoid=oid;
- const term=(slot,fin,fee)=>`${esc(D.SLOTS[slot].name)} · ${esc(D.FINISHES[fin].name)} · ${money(fee)}`;
+ const term=(slot,fin,fee)=>`${esc(D.SLOTS[slot].name)}, ${esc(D.FINISHES[fin].name.toLowerCase())}, ${money(fee)}`;
  const transcript=t.log.map(x=>`<div class="talk-line"><b>${esc(x.who)}</b><p>${esc(x.text)}</p></div>`).join('');
  let opts='';
- if(t.step==='start')opts=`<div class="talk-actions"><p>What are you asking ${esc(p.voice)} to change?</p><button class="choice" data-talkaction="ask:fee" data-oid="${oid}" data-wid="${wid}"><b>Increase the fee</b><span>Ask for 20% more. A counteroffer may be smaller.</span></button>${o.finish==='lose_clean'?`<button class="choice" data-talkaction="ask:protect" data-oid="${oid}" data-wid="${wid}"><b>Protect the loss</b><span>Keep the loss, but negotiate a competitive finish. Expect lower pay.</span></button>`:''}${o.slot!=='main'?`<button class="choice" data-talkaction="ask:slot" data-oid="${oid}" data-wid="${wid}"><b>Better billing</b><span>Ask for a higher spot on the card, possibly at the expense of pay.</span></button>`:''}</div>`;
- else if(t.step==='reason')opts=`<div class="talk-actions"><p>Make your argument. The booker's trust, ${esc(w.short)}'s reputation, the crowd and the promoter's priorities all matter.</p><button class="choice" data-talkaction="arg:crowd" data-oid="${oid}" data-wid="${wid}"><b>Business case</b><span>${esc(w.short)} can attract viewers. Stronger with a popular wrestler and a showman booker.</span></button><button class="choice" data-talkaction="arg:reliability" data-oid="${oid}" data-wid="${wid}"><b>Track record</b><span>Promise dependable work and a cleanly executed finish. Suits a traditional booker.</span></button><button class="choice" data-talkaction="arg:trade" data-oid="${oid}" data-wid="${wid}"><b>Financial compromise</b><span>Show willingness to give ground on money for a better opportunity.</span></button></div>`;
- else opts=`<div class="talk-outcome"><b>${esc(t.verdict.toUpperCase())}</b><p>${esc(t.detail)}</p><p class="dim">The contract shown below is exactly what will be booked. Closing this meeting leaves the offer available.</p>${t.verdict!=='original'&&(o.slot!==t.original.slot||o.finish!==t.original.finish||G.purse(o,w)!==t.original.fee)?`<button class="btn" data-talkaction="revert" data-oid="${oid}" data-wid="${wid}">Keep the original offer instead</button>`:''}</div>`;
- d.innerHTML=`<div class="dlg"><div class="desk-kicker">PROMOTER'S OFFICE · ${esc(p.name)}</div><h2>Meeting with ${esc(p.voice)}</h2><p>${esc(w.name)} vs ${esc(f.name)}</p><div class="terms-compare"><div><small>Original offer</small><b>${term(t.original.slot,t.original.finish,t.original.fee)}</b></div><div><small>Current offer</small><b>${term(o.slot,o.finish,G.purse(o,w))}</b></div></div><div class="talk-log">${transcript}</div>${opts}</div><div class="foot"><button class="btn" data-dlg="close">Keep offer / close</button><button class="btn primary" data-talkbook="${oid}" data-wid="${wid}">Sign current terms</button></div>`;
- if(!d.open)d.showModal();d.querySelector('[data-talkaction], [data-talkbook]')?.focus();
+ if(t.step==='start')opts=`<div class="talk-actions"><p>What are you asking ${esc(p.voice)} to change?</p><button class="choice" data-talkaction="ask:fee" data-oid="${oid}" data-wid="${wid}"><b>Increase the fee</b><span>Ask for 20% more. A counteroffer may be smaller.</span></button>${o.finish==='lose_clean'?`<button class="choice" data-talkaction="ask:protect" data-oid="${oid}" data-wid="${wid}"><b>Protect the loss</b><span>Keep the loss, but make it competitive. Expect lower pay.</span></button>`:''}${o.slot!=='main'?`<button class="choice" data-talkaction="ask:slot" data-oid="${oid}" data-wid="${wid}"><b>Better billing</b><span>A higher spot on the card, possibly for less money.</span></button>`:''}</div>`;
+ else if(t.step==='reason')opts=`<div class="talk-actions"><p>Make your argument. Trust, ${esc(w.short)}’s reputation, the crowd and the promoter’s priorities all count.</p><button class="choice" data-talkaction="arg:crowd" data-oid="${oid}" data-wid="${wid}"><b>Business case</b><span>${esc(w.short)} brings viewers. Stronger with a popular wrestler and a showman booker.</span></button><button class="choice" data-talkaction="arg:reliability" data-oid="${oid}" data-wid="${wid}"><b>Track record</b><span>Dependable work and a clean finish. Suits a traditional booker.</span></button><button class="choice" data-talkaction="arg:trade" data-oid="${oid}" data-wid="${wid}"><b>Financial compromise</b><span>Give ground on money for a better opportunity.</span></button></div>`;
+ else opts=`<div class="talk-outcome"><b>${esc(t.verdict.charAt(0).toUpperCase()+t.verdict.slice(1))}</b><p>${esc(t.detail)}</p><p class="dim">The current terms are exactly what will be booked. Closing keeps the offer open.</p>${t.verdict!=='original'&&(o.slot!==t.original.slot||o.finish!==t.original.finish||G.purse(o,w)!==t.original.fee)?`<button class="btn sm" data-talkaction="revert" data-oid="${oid}" data-wid="${wid}">Go back to the original offer</button>`:''}</div>`;
+ d.innerHTML=`<header class="tbar"><h2>${esc(p.name)}: meeting with ${esc(p.voice)}</h2></header><div class="dlg"><p><b>${esc(w.name)} v ${esc(f.name)}</b></p><div class="terms-compare"><div><small>Original offer</small><b>${term(t.original.slot,t.original.finish,t.original.fee)}</b></div><div><small>Current terms</small><b>${term(o.slot,o.finish,G.purse(o,w))}</b></div></div><div class="talk-log well">${transcript}</div>${opts}</div><div class="foot"><button class="btn" data-dlg="close">Close, keep offer open</button><button class="btn go" data-talkbook="${oid}" data-wid="${wid}">Sign current terms</button></div>`;
+ if(!d.open)d.showModal();const lg=d.querySelector('.talk-log');if(lg)lg.scrollTop=lg.scrollHeight;d.querySelector('[data-talkaction], [data-talkbook]')?.focus();
 }
-
-/* ---------- dialogs ---------- */
 function dialog(title,html,buttons=[['Close','close']]){
- const d=$('#modal');delete d.dataset.talkoid;d.innerHTML=`<div class="dlg"><h2>${esc(title)}</h2>${html}</div><div class="foot">${buttons.map(([l,a,c])=>`<button class="btn ${c||''}" data-dlg="${a}">${l}</button>`).join('')}</div>`;
+ const d=$('#modal');delete d.dataset.talkoid;
+ d.innerHTML=`<header class="tbar"><h2>${esc(title)}</h2></header><div class="dlg">${html}</div><div class="foot">${buttons.map(([l,a,c])=>`<button class="btn ${c||''}" data-dlg="${a}">${l}</button>`).join('')}</div>`;
  d.showModal();return d;
 }
-function logList(log){return `<ol class="fulllog" style="background:var(--tv-bg)">${(log||[]).map(l=>`<li class="${l.kind} ${l.big?'big':''}"><span class="t">${esc(l.t)}</span><span>${esc(l.text)}</span></li>`).join('')}</ol>`}
+function logList(log){return `<ol class="fulllog">${(log||[]).map(l=>`<li class="${l.kind} ${l.big?'big':''}"><span class="t">${esc(l.t)}</span><span>${esc(l.text)}</span></li>`).join('')}</ol>`}
 
 /* ---------- continue ---------- */
 function proceed(){
  const s=S();
- if(G.pending().length){tab='inbox';openMsg=G.pending()[0].id;render();toast('Reply to the messages marked in red first.');return}
+ if(G.pending().length){openMsg=G.pending()[0].id;go('inbox');toast('Reply to the messages marked in red first.');return}
  if(s.card.length){startNight();return}
- if(!s.roster.length&&s.week===1){tab='roster';render();toast('Sign a wrestler first.');return}
+ if(!s.roster.length&&s.week===1){go('scouting');toast('Sign a wrestler first.');return}
  G.endWeek();
  if(s.over){gameOver();return}
- tab='desk';openMsg=null;render();window.scrollTo(0,0);
- toast(`Week ${s.week}. ${s.offers.length} offers on the table.`);
+ openMsg=null;past=[];ahead=[];route={s:'desk',id:null};render(true);
+ toast(`Week ${s.week}. ${s.offers.length} ${plural(s.offers.length,'offer')} on the table.`);
 }
 function gameOver(){
- dialog('The office is closed',`<p>The bank has called in your overdraft. After ${S().season>1?S().season-1+' seasons and ':''}${S().history.length} matches, the territory goes on without you.</p>`,[['Start again','newgame','primary']]);
+ dialog('The office is closed',`<p>The bank has called in your overdraft. After ${S().season>1?S().season-1+' seasons and ':''}${S().history.length} matches, the territory goes on without you.</p>`,[['Start again','newgame','go']]);
 }
 
 /* ======================= MATCH NIGHT ======================= */
@@ -1753,58 +2027,45 @@ function persistNight(){
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
-function updateTVPages(){
- const v=$('#tv');if(!v||v.hidden)return;
- let bar=v.querySelector('#tv-pages');if(!bar){bar=document.createElement('div');bar.id='tv-pages';bar.innerHTML='<button data-tvpage="prev">◀ Previous</button><span class="page-counter"></span><button data-tvpage="next">Next ▶</button>';v.appendChild(bar);}
- const total=Math.max(1,Math.ceil((v.scrollHeight-37)/Math.max(1,v.clientHeight-37)));
- const currentPage=Math.min(total-1,Math.floor(v.scrollTop/Math.max(1,v.clientHeight-37)+.01));
- bar.hidden=total<2;bar.querySelector('span').textContent='Screen '+(currentPage+1)+' / '+total;
- bar.querySelector('[data-tvpage="prev"]').disabled=currentPage===0;
- bar.querySelector('[data-tvpage="next"]').disabled=currentPage===total-1;
-}
+function openTV(){$('#toast').classList.remove('show');$('#tv').hidden=false;document.body.style.overflow='hidden'}
 function resumeNight(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(NIGHT_STORE)||'null')}catch(e){}
  if(!saved||!Array.isArray(saved.queue)||!S()?.card?.length)return false;
  night={...saved,paused:true};
  if(night.i>=night.queue.length){endNight();return true}
- $('#tv').hidden=false;document.body.style.overflow='hidden';
+ openTV();
  if(saved.stage==='live'&&saved.M){
   const restored=Mx.restore(saved.M);
   bell();clearTimeout(night.timer);night.M=restored;night.past=saved.past||[];night.paused=true;
   updateLive();const last=restored.log?.[restored.log.length-1];if(last)showLine(last,true);
   if(restored.decision&&!restored.queue.length)showDecision();
- }else if(saved.stage==='result'){
-  if(night.i>=night.queue.length)endNight();else prep();
  }else prep();
  persistNight();return true;
 }
-
 const SPEED={slow:{line:2600,pause:1100},normal:{line:1500,pause:750},fast:{line:520,pause:260},skip:{line:0,pause:0}};
 function startNight(){
  night={queue:S().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>c.id),i:0,speed:night?.speed||'normal',results:[]};
- $('#toast').classList.remove('show');$('#tv').hidden=false;document.body.style.overflow='hidden';night.stage='prep';prep();persistNight();
+ openTV();night.stage='prep';prep();persistNight();
 }
 function current(){return S().card.find(c=>c.id===night.queue[night.i])}
-function strip(c){const p=G.P(c.pid);return `<div class="strip"><b>${esc(p.name.toUpperCase())} LIVE</b><span>${esc(p.venue)}</span><span>Match ${night.i+1} of ${night.queue.length}</span></div>`}
+function strip(c,label){const p=G.P(c.pid);return `<div class="strip"><b>${esc(p.name)} ${label||'live'}</b><span>${esc(p.venue)}</span><span class="r">Match ${Math.min(night.i+1,night.queue.length)} of ${night.queue.length}</span></div>`}
+function cmpRow(label,a,b){const up=a>b;return `<div class="cmpr"><span class="v ${up?'up':''}">${a}</span><span class="l"><i style="width:${a}%"></i></span><span class="lab">${label}</span><span class="r"><i style="width:${b}%"></i></span><span class="v r2">${b}</span></div>`}
 function prep(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),best=D.STYLE_PLAN[w.style],foeBest=D.STYLE_PLAN[f.style];
  night.plan=night.plan&&night.plan.cid===c.id?night.plan:{cid:c.id,game:best,leash:w.psych>=75&&w.ego<75?'free':'script',talk:'none'};
  const P=night.plan;
- const warn=[];if(w.intensity==='hard'&&w.training!=='rest'&&w.training!=='promo')warn.push('Intensive training this week will leave them tired before the bell.');if(w.fatigue>=45)warn.push(`${w.short} is tired (fatigue ${w.fatigue}). Stamina will run out sooner.`);if(w.morale<35)warn.push(`${w.short}’s morale is low (${w.morale}). Less likely to listen.`);if(w.flags.pushThrough)warn.push(`${w.short} is carrying a bad back.`);if(w.flags.dive)warn.push(`${w.short} plans to dive off the balcony.`);
- const fnotes=[];if(f.safe<55)fnotes.push('Unsafe. Spots against them go wrong more often.');if(f.ego>=68)fnotes.push('Ego. May start getting stiff.');if(f.psych>=85)fnotes.push('A brilliant storyteller.');if(f.ring>=80)fnotes.push('Excellent in the ring.');
+ const warn=[];if(w.intensity==='hard'&&w.training!=='rest'&&w.training!=='promo')warn.push('Hard training this week will leave them tired before the bell.');if(w.fatigue>=45)warn.push(`${w.short} is tired (fatigue ${w.fatigue}). Stamina will run out sooner.`);if(w.morale<35)warn.push(`${w.short}’s morale is low (${w.morale}). Less likely to listen.`);if(w.flags.pushThrough)warn.push(`${w.short} is carrying a bad back.`);if(w.flags.dive)warn.push(`${w.short} plans to dive off the balcony.`);
+ const fnotes=[];if(f.safe<55)fnotes.push('Unsafe: spots against them go wrong more often.');if(f.ego>=68)fnotes.push('Big ego: may start getting stiff.');if(f.psych>=85)fnotes.push('A brilliant storyteller.');if(f.ring>=80)fnotes.push('Excellent in the ring.');
  const fits=g=>[g===p.likes?`<i>${esc(p.name)} crowd</i>`:'',g===best?`<i>${esc(w.short)}’s style</i>`:'',g===foeBest?`<i>${esc(f.short)}’s style</i>`:''].join('');
  const opts=(name,obj,val)=>Object.entries(obj).map(([k,o])=>`<button class="opt" data-plan="${name}" data-val="${k}" aria-pressed="${val===k}"><b>${esc(o.name)}</b><span>${esc(o.blurb)}</span>${name==='game'?`<span class="fits">${fits(k)}</span>`:''}</button>`).join('');
  const finishLine={win_clean:`${w.short} wins clean`,win_dirty:`${w.short} wins dirty`,lose_protected:`${w.short} loses, protected`,lose_clean:`${w.short} loses clean`}[c.finish];
- $('#tv').innerHTML=`${strip(c)}<div class="wrap">
-  <div class="vs"><div class="side you">${face('wrestler',w.id,w.name,'')}<div><h2>${esc(w.name)}</h2><small>${esc(w.style)}. Heat ${w.heat}</small></div></div><div class="v">v</div><div class="side them">${face('wrestler',f.id,f.name,'')}<div><h2>${esc(f.name)}</h2><small>${esc(f.style)}. Heat ${f.heat}</small></div></div></div>
-  <div class="contract">The finish is in the contract: <em>${esc(finishLine)}</em>. ${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes, ${money(c.purse)}.${c.tag?` ${esc(c.tag)}.`:''}</div>
-  <div class="scout"><div><b>${esc(w.short)} tonight.</b> Stamina ${Math.round(100-w.fatigue*.7)}, morale ${w.morale}. ${warn.length?`<span class="warn">${esc(warn.join(' '))}</span>`:'Fit and ready.'}</div><div><b>${esc(f.short)}.</b> ${esc(fnotes.join(' ')||'A steady, professional opponent.')} Finisher: ${esc(f.finisher)}.</div></div>
-  <fieldset class="decide"><legend>What is this match built on?</legend><div class="opts">${opts('game',D.PLANS,P.game)}</div></fieldset>
-  <fieldset class="decide"><legend>Who calls it in the ring?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset>
-  <fieldset class="decide"><legend>Last word before the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset>
-  <div class="prep-foot"><span class="dim">You get three calls from ringside once the bell goes.</span><button class="go" data-tv="bell">Send them out</button></div></div>`;
- $('#tv').scrollTop=0;night.stage='prep';persistNight();updateTVPages();
+ const stam=Math.round(100-w.fatigue*.7);
+ const tape=`<div class="well tape"><div class="side">${face('wrestler',w.id,w.name,'portrait x2')}<div class="nm">${esc(w.short)}</div></div><div class="cmp">${cmpRow('Ring',w.ring,f.ring)}${cmpRow('Psych',w.psych,f.psych)}${cmpRow('Safety',w.safe,f.safe)}${cmpRow('Heat',w.heat,f.heat)}${cmpRow('Pro',w.pro,f.pro)}${cmpRow('Stamina',stam,92)}</div><div class="side">${face('wrestler',f.id,f.name,'portrait x2')}<div class="nm them">${esc(f.short)}</div></div></div>`;
+ const contract=`<div style="font:32px/1 var(--jersey);color:var(--blood)">${esc(finishLine)}</div><p class="dim" style="margin:4px 0 8px">The finish is in the contract.</p><dl class="kv"><dt>Slot</dt><dd>${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes</dd><dt>Purse</dt><dd>${money(c.purse)}</dd>${c.tag?`<dt>Billing</dt><dd>${esc(c.tag)}</dd>`:''}<dt>Opponent</dt><dd>${esc(f.name)}, ${esc(f.style.toLowerCase())}. Finisher: ${esc(f.finisher)}.</dd></dl><p style="margin-top:8px">${esc(fnotes.join(' ')||'A steady, professional opponent.')}</p>${warn.length?`<ul class="warnings">${warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="good">${esc(w.short)} is fit and ready. Morale ${w.morale}.</p>`}`;
+ const plan=`<div class="planset"><fieldset class="decide"><legend>What is the match built on?</legend><div class="opts" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${opts('game',D.PLANS,P.game)}</div></fieldset><fieldset class="decide"><legend>Who calls it?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset><fieldset class="decide"><legend>Last word at the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset></div>`;
+ $('#tv').innerHTML=`${strip(c,'tonight')}<div class="stage screen s-prep">${win('Tale of the tape',tape,{area:'tape',h:'h3',cls:'quiet',body:'tight'})}${win('The contract',contract,{area:'contract',h:'h3'})}${win('Game plan',plan,{area:'plan',h:'h3'})}</div><div class="tv-foot"><span class="dim">Once the bell goes you get three calls from ringside.</span><button class="btn go" data-tv="bell">Send them out</button></div>`;
+ night.stage='prep';persistNight();
 }
 function bell(){
  const c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan;
@@ -1812,28 +2073,19 @@ function bell(){
  const preparation={...w.prep};const focus=D.TRAINING[w.training]?.stat;
  if(focus&&!w.injury){preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);}
  night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,slot:c.slot,minutes:c.minutes,finish:c.finish,feudHeat:c.feudHeat,blowoff:c.blowoff,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags},seed:Math.floor(Math.random()*2**31)});
- night.past=[];night.paused=false;night.hint='';
- const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
- $('#tv').innerHTML=`${strip(c)}<div class="wrap">
-  <header class="score"><div class="side you">${face('wrestler',w.id,w.name,'')}<h2>${esc(w.short)}</h2><div class="stam" id="sY"><i></i></div></div>
-   <div class="mid"><div class="live-stars" id="lStars" aria-label="Live rating">–</div><div class="clock" id="lClock">00:00</div><div class="phase" id="lPhase">Entrances</div></div>
-   <div class="side them">${face('wrestler',f.id,f.name,'')}<h2>${esc(f.short)}</h2><div class="stam" id="sT"><i></i></div></div></header>
-  <div class="mom" aria-hidden="true"><i id="lMom" style="width:50%"></i></div><div class="momlab"><span>${esc(w.short)} on top</span><span>${esc(f.short)} on top</span></div>
-  <div class="feed"><div class="now" id="lNow" aria-live="polite"><span class="t"></span><span class="tx"></span></div><ol class="past" id="lPast"></ol></div>
-  <div class="bench"><div><div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar"><i id="lCrowdBar"></i></div></div>
-   <div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div>
-   <div class="callsleft">Calls left <span id="lCalls">●●●</span></div></div>
-   <div><div class="calls">${callBtns}</div><div class="callhint" id="lHint">Your calls go to the wrestler. They don’t always listen.</div>
-   <div class="speed" role="group" aria-label="Commentary speed"><button data-pause>Pause</button><span class="gap"></span>${['slow','normal','fast','skip'].map(s=>`<button data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div></div></div></div>
-  <div class="decision" id="decision" hidden></div>`;
- night.stage='live';updateLive();persistNight();updateTVPages();schedule(300);
+ night.past=[];night.paused=false;
+ const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
+ const bench=`<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
+ $('#tv').innerHTML=`${strip(c)}<header class="score"><div class="side you">${face('wrestler',w.id,w.name,'portrait x2')}<h2>${esc(w.short)}</h2><div class="stam" id="sY" title="${esc(w.short)} stamina"><i></i></div></div><div class="mid"><div class="live-stars" id="lStars" aria-label="Live rating">–</div><div class="clock" id="lClock">00:00</div><div class="phase" id="lPhase">Entrances</div></div><div class="side them">${face('wrestler',f.id,f.name,'portrait x2')}<h2>${esc(f.short)}</h2><div class="stam" id="sT" title="${esc(f.short)} stamina"><i></i></div></div></header><div class="mom" title="Momentum" aria-hidden="true"><i id="lMom" style="width:50%"></i></div>
+ <div class="stage screen s-live">${win('Live commentary',`<div class="feed well"><div class="now" id="lNow" aria-live="polite"><span class="t"></span><span class="tx"></span></div><ol class="past" id="lPast"></ol></div>`,{h:'h3',cls:'quiet',body:'tight',note:`${esc(w.short)} on top: gold bar`})}${win('Ringside',bench,{h:'h3'})}</div><div class="decision" id="decision" hidden></div>`;
+ night.stage='live';updateLive();persistNight();schedule(300);
 }
 function schedule(ms){clearTimeout(night.timer);night.timer=setTimeout(pump,ms)}
 function pump(){
  const M=night?.M;if(!M||night.paused)return;
  if(M.decision&&!M.queue.length)return showDecision();
- if(night.speed==='skip'){let line,n=0;while(n++<4000){if(M.decision&&!M.queue.length)break;line=Mx.next(M);if(!line)break;night.past.unshift(line);}
-  if(night.past.length){showLine(night.past.shift(),true)}updateLive();if(M.decision)return showDecision();if(M.done)return schedule(500);return schedule(10)}
+ if(night.speed==='skip'){let line,n=0,got=0;while(n++<4000){if(M.decision&&!M.queue.length)break;line=Mx.next(M);if(!line)break;night.past.unshift(line);got++}
+  if(got)showLine(night.past.shift(),true);updateLive();if(M.decision)return showDecision();if(M.done){clearTimeout(night.timer);night.timer=setTimeout(()=>{if(night?.M===M)result()},900);return}return schedule(10)}
  const line=Mx.next(M);
  if(!line){if(M.done)return result();if(M.decision)return showDecision();return schedule(50)}
  showLine(line);updateLive();
@@ -1846,7 +2098,7 @@ function showLine(line,quiet){
  if(prev&&!quiet)night.past.unshift(prev);
  now.className='now '+line.kind+(line.big?' big':'');now.dataset.line=JSON.stringify(line);
  now.innerHTML=`<span class="t">${esc(line.t)}</span><span class="tx">${esc(line.text)}</span>`;
- night.past=night.past.filter(x=>x.kind!=='count'||x.text.length>8).slice(0,10);
+ night.past=night.past.filter(x=>x.kind!=='count'||x.text.length>8).slice(0,40);
  $('#lPast').innerHTML=night.past.map(l=>`<li class="${l.kind} ${l.big?'big':''}"><span class="t">${esc(l.t)}</span><span>${esc(l.text)}</span></li>`).join('');persistNight();
 }
 function updateLive(){
@@ -1860,11 +2112,11 @@ function updateLive(){
  $('#lSheet').textContent=M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the sheet';$('#lSheet').className=M.offScript?'warnv':'';
  $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
  document.querySelectorAll('[data-call]').forEach(b=>b.disabled=!Mx.canCall(M,b.dataset.call));
- const pb=document.querySelector('[data-pause]');if(pb)pb.textContent=night.paused?'Resume':'Pause';
+ const pb=document.querySelector('[data-pause]');if(pb){pb.textContent=night.paused?'Resume':'Pause';pb.setAttribute('aria-pressed',night.paused)}
 }
 function showDecision(){
  const d=night.M.decision,box=$('#decision');if(!d||!box)return;
- box.innerHTML=`<div class="box" role="alertdialog" aria-labelledby="dTitle"><span class="flash">${esc(Mx.fmt(night.M.t))}  DECISION</span><h2 id="dTitle">${esc(d.title)}</h2><p>${esc(d.body)}</p><div class="opts">${d.options.map(o=>`<button class="opt" data-decide="${o.id}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></button>`).join('')}</div></div>`;
+ box.innerHTML=`<div class="win" role="alertdialog" aria-labelledby="dTitle"><header class="tbar"><h3>Decision at ${esc(Mx.fmt(night.M.t))}</h3></header><div class="wbody"><h2 id="dTitle">${esc(d.title)}</h2><p>${esc(d.body)}</p><div class="opts">${d.options.map(o=>`<button class="choice" data-decide="${o.id}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></button>`).join('')}</div></div></div>`;
  box.hidden=false;box.querySelector('button')?.focus();
 }
 function decideNow(id){const M=night.M;Mx.resolve(M,id);persistNight();$('#decision').hidden=true;if(night.speed==='skip')night.speed='normal',document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===night.speed));updateLive();schedule(400)}
@@ -1876,56 +2128,54 @@ function result(){
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  night.i++;const more=night.i<night.queue.length;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name.toUpperCase())}: FULL TIME</b><span>${esc(w.name)} v ${esc(f.name)}</span></div><div class="wrap">
-  <div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>
-  <div class="facts"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the sheet</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>
-  <ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>
-  <details><summary class="dim" style="cursor:pointer;margin-bottom:10px">Full commentary</summary>${logList(fin.log)}</details>
-  <div class="prep-foot"><span class="dim">${more?`Next: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div></div>`;
- $('#tv').scrollTop=0;night.M=null;night.plan=null;night.stage='result';persistNight();updateTVPages();
+ const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the sheet</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${win('What happened',`${facts}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div>`;
+ night.M=null;night.plan=null;night.stage='result';persistNight();
 }
 function endNight(){
  clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';
  const res=night?.results||[];clearNight();night={speed:night?.speed||'normal'};
- if(res.length)G.S.inbox.unshift({id:'mn'+Date.now(),week:S().week,season:S().season,read:true,kind:'info',from:'Your road agent',subject:'Match night report',body:res.map(r=>`${r.name} v ${r.foe}: ${starsText(r.stars)||'DUD'}`)});
+ if(res.length)G.S.inbox.unshift({id:'mn'+Date.now(),week:S().week,season:S().season,read:false,kind:'info',from:'Your road agent',subject:'Match night report',body:res.map(r=>`${r.name} v ${r.foe}: ${starsText(r.stars)||'DUD'}`)});
  G.endWeek();
  if(S().over){render();return gameOver()}
- tab='inbox';openMsg=null;render();window.scrollTo(0,0);toast(`Week ${S().week}. ${S().offers.length} offers on the table.`);
+ openMsg=null;past=[];ahead=[];route={s:'desk',id:null};render(true);toast(`Week ${S().week}. ${S().offers.length} ${plural(S().offers.length,'offer')} on the table.`);
 }
 
-/* ---------- events ---------- */
+/* ======================= EVENTS ======================= */
+function startApp(screen){$('#title').hidden=true;$('#app').hidden=false;past=[];ahead=[];route={s:screen,id:null};render(true)}
 document.addEventListener('click',e=>{
- const t=e.target.closest('button,[data-tab]');if(!t)return;const d=t.dataset;
+ if(e.target.closest('select,option'))return;
+ const t=e.target.closest('button,[data-openw],[data-selo],[data-self],[data-replay]');if(!t||t.disabled)return;const d=t.dataset;
  if(t.id==='continue')return proceed();
- if(d.tvpage){const v=$('#tv'),step=Math.max(1,v.clientHeight-37);v.scrollTop=Math.max(0,v.scrollTop+(d.tvpage==='next'?step:-step));updateTVPages();return}
- if(d.page){screenPage+=d.page==='next'?1:-1;updateScreen();return}
- if(d.tab||d.jump){tab=d.tab||d.jump;openW=null;render();window.scrollTo(0,0);return}
- if(d.msg){openMsg=d.msg;renderInbox();return}
+ if(d.hist)return histMove(d.hist==='back'?-1:1);
+ if(d.go)return go(d.go,d.id||null);
+ if(d.openw)return go('profile',d.openw);
+ if(d.sort){const [key,k]=d.sort.split(':');const s=sorts[key];sorts[key]=s&&s.k===k?{k,d:-s.d}:{k,d:['name','style','tier'].includes(k)?1:-1};render();return}
+ if(d.selo||d.self){if(d.selo)selOffer=d.selo;else selFree=d.self;render();if(innerWidth<=900)document.querySelector('#view .screen>.win:last-child')?.scrollIntoView({behavior:'smooth',block:'start'});return}
+ if(d.tickmsg){openMsg=d.tickmsg;go('inbox');return}
+ if(d.msg){openMsg=d.msg;render();return}
  if(d.answer){const out=G.answer(d.mid,d.answer);render();if(out)toast(out);return}
- if(d.openw){openW=openW===d.openw?null:d.openw;renderRoster();return}
  if(d.checkin){renderPrivateMeeting(d.checkin);return}
  if(d.private){const r=G.checkIn(d.wid,d.private);if(r.error)return toast(r.error);$('#modal').close();render();toast(r.text);return}
- if(d.program){const err=G.startProgram(d.wid,d.program);if(err)toast(err);else toast(d.program==='camp'?'Three-week camp booked; wrestler unavailable.':'Development block committed.');renderRoster();return}
- if(d.cancelprogram){const err=G.cancelProgram(d.cancelprogram);if(err)toast(err);else toast('Programme ended. Future weeks freed, but training already paid for.');renderRoster();return}
- if(d.hirecoach){const err=G.hireCoach(d.hirecoach);if(err)toast(err);else toast('Coach hired. Weekly salary starts immediately.');renderRoster();return}
- if(d.firecoach){const err=G.fireCoach();if(err)toast(err);else toast('Coach released. Future salaries stop.');renderRoster();return}
- if(d.sign){const err=G.sign(d.sign);if(err)toast(err);else{const w=G.W(d.sign);toast(`${w.name} signed. Wages: ${money(w.wage)} a week.`)}render();return}
- if(d.release){const w=G.W(d.release);dialog(`Release ${w.name}?`,`<p>${esc(w.short)} leaves today and you get nothing back. Any booking for them is cancelled.</p>`,[['Keep them','close'],['Release','release:'+w.id,'danger']]);return}
+ if(d.program){const err=G.startProgram(d.wid,d.program);if(err)toast(err);else toast(d.program==='camp'?'Three-week camp booked. Unavailable for bookings until it ends.':'Development block committed.');render();return}
+ if(d.cancelprogram){const err=G.cancelProgram(d.cancelprogram);if(err)toast(err);else toast('Programme ended. Weeks already paid for are not refunded.');render();return}
+ if(d.hirecoach){const err=G.hireCoach(d.hirecoach);if(err)toast(err);else toast('Coach hired. Weekly salary starts now.');render();return}
+ if(d.firecoach){const err=G.fireCoach();if(err)toast(err);else toast('Coach released. Salary stops.');render();return}
+ if(d.sign){const err=G.sign(d.sign);if(err)toast(err);else{const w=G.W(d.sign);selFree=null;toast(`${w.name} signed. Wages ${money(w.wage)} a week.`)}render();return}
+ if(d.release){const w=G.W(d.release);dialog(`Release ${w.name}?`,`<p>${esc(w.short)} leaves today and you get nothing back. Any booking for them is cancelled.</p>`,[['Keep them','close'],['Release','release:'+w.id,'red']]);return}
  if(d.book){const o=S().offers.find(o=>o.id===d.book);const when=o?.eventAbs;const err=G.book(d.book,pick[d.book]);if(err)toast(err);else toast(when>G.abs()?`Signed for ${weekLabel(when)}. Purse paid after the match.`:'Booked on this week’s card.');render();return}
- if(d.unbook){G.unbook(d.unbook);render();toast('Booking cancelled; promoter trust −6.');return}
+ if(d.unbook){G.unbook(d.unbook);render();toast('Booking cancelled. Promoter trust −6.');return}
  if(d.talkopen){const o=S().offers.find(x=>x.id===d.talkopen);renderMeeting(d.talkopen,o?.talk?.wid||pick[d.talkopen]);return}
  if(d.talkaction){const res=G.talkMove(d.oid,d.wid,d.talkaction);if(res.error)return toast(res.error);renderMeeting(d.oid,d.wid);return}
- if(d.talkbook){const o=S().offers.find(o=>o.id===d.talkbook);const when=o?.eventAbs;const err=G.book(d.talkbook,d.wid);if(err)return toast(err);$('#modal').close();render();toast(when>G.abs()?`Future booking confirmed for ${weekLabel(when)}.`:'Contract signed with the exact agreed terms.');return} 
- if(d.replay){const x=S().history[+d.replay];dialog(`${x.name} vs ${x.foe}`,`<p class="dim">${esc(x.promoter)}, season ${x.season} week ${x.week}. ${starsText(x.stars)}</p>${x.notes.map(n=>`<p>${esc(n)}</p>`).join('')}${logList(x.log)}`);return}
+ if(d.talkbook){const o=S().offers.find(o=>o.id===d.talkbook);const when=o?.eventAbs;const err=G.book(d.talkbook,d.wid);if(err)return toast(err);$('#modal').close();render();toast(when>G.abs()?`Future booking confirmed for ${weekLabel(when)}.`:'Contract signed on the agreed terms.');return}
+ if(d.replay){const x=S().history[+d.replay];dialog(`${x.name} v ${x.foe}`,`<p class="dim">${esc(x.promoter)}, season ${x.season} week ${x.week}. <span class="stars">${starsText(x.stars)||'DUD'}</span></p>${x.notes.map(n=>`<p>${esc(n)}</p>`).join('')}<div class="well">${logList(x.log)}</div>`);return}
  if(d.act==='export'){const blob=new Blob([JSON.stringify(S())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`the-office-s${S().season}w${S().week}.json`;a.click();return}
- if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(![20,21,22].includes(x.v))throw 0;G.S=x;if(!G.S)throw 0;G.save();tab='inbox';render();toast('Save loaded.')}catch(err){toast('That file isn’t a valid v2–v2.2 save.')}})};i.click();return}
- if(d.act==='newgame'){dialog('Start a new career?','<p>Your current career will be overwritten.</p>',[['Cancel','close'],['Start again','newgame','danger']]);return}
- if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);openW=null;render();toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();tab='roster';openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';render()}return}
- // title
- if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();$('#title').hidden=true;tab='roster';render();toast('Sign your first wrestler.');return}
- if(d.title==='load'){if(!G.load())return toast('No saved career found.');$('#title').hidden=true;tab='inbox';render();if(resumeNight())toast('Match restored. Paused at your last saved decision.');return}
- // tv
- if(d.plan){night.plan[d.plan]=d.val;t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));return}
+ if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(![20,21,22].includes(x.v))throw 0;G.S=x;if(!G.S)throw 0;G.save();startApp('desk');toast('Save loaded.')}catch(err){toast('That file isn’t a valid save from v2 to v2.3.')}})};i.click();return}
+ if(d.act==='newgame'){dialog('Start a new career?','<p>Your current career will be overwritten.</p>',[['Cancel','close'],['Start again','newgame','red']]);return}
+ if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';startApp('scouting')}return}
+ if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
+ if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
+ if(d.plan){night.plan[d.plan]=d.val;t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
  if(d.tv==='bell')return bell();
  if(d.tv==='next'){prep();return}
  if(d.tv==='done')return endNight();
@@ -1936,9 +2186,9 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('change',e=>{
  const t=e.target,d=t.dataset;
- if(d.train){G.setTraining(d.train,t.value);renderRoster();toast(`${G.W(d.train).short}: ${D.TRAINING[t.value].name.toLowerCase()} this week.`);return}
- if(d.intensity){G.setIntensity(d.intensity,t.value);renderRoster();toast(`${G.W(d.intensity).short}: ${G.INTENSITY[t.value].name}, ${money(G.trainingCost(G.W(d.intensity)))}/week.`);return}
- if(d.pick){pick[d.pick]=t.value;renderBookings();return}
+ if(d.train){G.setTraining(d.train,t.value);render();toast(`${G.W(d.train).short}: ${D.TRAINING[t.value].name.toLowerCase()} this week.`);return}
+ if(d.intensity){G.setIntensity(d.intensity,t.value);render();toast(`${G.W(d.intensity).short}: ${G.INTENSITY[t.value].name}, ${money(G.trainingCost(G.W(d.intensity)))} a week.`);return}
+ if(d.pick){pick[d.pick]=t.value;render();return}
 });
 document.addEventListener('mouseover',e=>{const b=e.target.closest('[data-hint]');if(b&&$('#lHint'))$('#lHint').textContent=b.dataset.hint});
 document.addEventListener('focusin',e=>{const b=e.target.closest('[data-hint]');if(b&&$('#lHint'))$('#lHint').textContent=b.dataset.hint});
@@ -1951,21 +2201,14 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- boot ---------- */
-function boot(){
- if(G.hasSave())$('#loadBtn').hidden=false;
- $('#title').hidden=false;
-}
-window.OfficeUI={get night(){return night}};
+window.OfficeUI={get night(){return night},go};
 window.addEventListener('DOMContentLoaded',()=>{
  const d=$('#modal');d.addEventListener('close',()=>{
-  const oid=d.dataset.talkoid;if(oid&&S()){
-   const o=S().offers.find(x=>x.id===oid);
-   if(o?.talk?.step==='start'){o.talk=null;G.save();}
-  }
-  delete d.dataset.talkoid;
-  if(S())render();
+  const oid=d.dataset.talkoid;if(oid&&S()){const o=S().offers.find(x=>x.id===oid);if(o?.talk?.step==='start'){o.talk=null;G.save();}}
+  delete d.dataset.talkoid;if(S()&&!$('#app').hidden)render();
  });
- boot();
+ if(G.hasSave())$('#loadBtn').hidden=false;
+ $('#title').hidden=false;
 });
 })();
 </script>
