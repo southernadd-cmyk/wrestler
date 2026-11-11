@@ -1,4 +1,4 @@
-# The Office — Wrestling Manager v2.5
+# The Office — Wrestling Manager v2.6
 
 A standalone wrestling management game. Run a stable, take the bookings, and sit at ringside for every match.
 
@@ -21,6 +21,29 @@ Before each bout, choose a microphone approach (call them out, rally the fans, p
 ## Systems
 
 16-week regional season; contract negotiation; wrestler recruitment and coaching; pre-match promos with four meaningful approaches and original dialogue; context-sensitive and phase-specific match commentary; heat-driven storylines, rivalries and blow-offs; live text matches with ringside decisions; rival promotions; persistent title pyramid; export and import of career saves.
+
+## Match psychology (v2.6)
+
+The match engine now links moves into cause-and-effect sequences instead of choosing isolated actions. It remembers who is in control, whether the action is inside or outside the ring, who is down, and which body part is being worked.
+
+- Match types have different pacing: story, technical, brawl, high-flying and safe matches.
+- A phase change must be earned by a counter or cut-off, not an unexplained change of attacker.
+- Wrestlers sell damage through the match. Heat segments can contain false comebacks and consistent targeting of an injury.
+- Big moves require a realistic setup (ropes, corner, floor or apron), and a pin requires both wrestlers to be back inside.
+- Near-falls follow a move and a cover; dirty finishes now show the distraction, the illegal pin and the referee's count in the correct order.
+- The finish relates to the prior damage, with conditional consequences for injured or exhausted wrestlers.
+- The four booked finishes, ringside decisions, crowd ratings, promos, rivalries and mid-match save/resume remain intact.
+
+### Research basis
+
+Original match narration and event templates, informed by wrestling psychology and actual match breakdowns rather than copied transcripts:
+
+- [Matt Murphy — Match Structure](https://missouriwrestlingrevival.com/2009/12/23/chapter-15-match-structure-by-matt-murphy/)
+- [Savage vs Steamboat — WWE retrospective](https://www.wwe.com/inside/listthis/maniamatches/maniamatches7)
+- [Hart vs Austin — action and control analysis](https://www.prowrestlingmusings.com/post/greatest-matches-of-all-time-bret-hart-vs-steve-austin)
+- [Bayley vs Banks — targeted injury and match callbacks](https://www.cagesideseats.com/wwe/2016/7/25/12264730/making-history-bayleys-journey-part-5)
+
+Test without dependencies: `node tests/match-flow.test.cjs`.
 
 ## Existing saves
 
