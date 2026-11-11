@@ -996,6 +996,7 @@ const Graph=(function makeGraph(){
  const e=(id,w=1)=>[id,w];
  // Ring grappling. Transitions are drawn from common observed chain-wrestling sequences.
  node('circle','{A} and {D} circle, each testing the distance before committing.',{next:[e('lockup',5),e('probe_strike',2),e('waistlock',2),e('taunt',1)]});
+ node('taunt','{A} spreads their arms, daring {D} to step forward. {D} refuses to rush in.',{next:[e('lockup',4),e('cheap_shot',2),e('probe_strike',3)]});
  node('lockup','Collar-and-elbow. {A} drives forward and {D} fights to stay square.',{next:[e('headlock',4),e('wristlock',4),e('corner_push',2),e('waistlock',2),e('clean_break',1)]});
  node('headlock','{A} takes a side headlock, forcing {D} to carry the weight.',{next:[e('shove_ropes',4),e('headlock_takeover',3),e('headlock_escape',3)]});
  node('shove_ropes','{D} pushes {A} off the ropes to break the headlock. {A} rebounds back.',{next:[e('shoulder_tackle',4),e('duck_rebound',3),e('counter_strike',2)]});
@@ -1007,7 +1008,7 @@ const Graph=(function makeGraph(){
  node('hammerlock','{A} slides behind into a hammerlock and controls {D}’s arm.',{focus:1,next:[e('elbow_escape',4),e('mat_takedown',3),e('clean_break',1)]});
  node('elbow_escape','{D} throws a back elbow, slips the hammerlock and turns to face {A}.',{reverse:true,next:[e('probe_strike',4),e('waistlock',2),e('snap_suplex',2)]});
  node('waistlock','{A} gets behind with a waistlock. {D} widens their stance to resist.',{next:[e('mat_takedown',4),e('waist_escape',4),e('snap_suplex',2)]});
- node('waist_escape','{D} pries the fingers apart, spins through and takes the back!',{reverse:true,next:[e('mat_takedown',3),e('waistlock',3),e('rollup_counter',2)]});
+ node('waist_escape','{D} pries the fingers apart, spins through and takes the back!',{reverse:true,next:[e('mat_takedown',3),e('waistlock',3),e('counter_rollup',2)]});
  node('mat_takedown','{A} trips {D} cleanly and follows to the mat before {D} can regain a base.',{zone:'mat',down:'d',next:[e('mat_hold',4),e('target_hold',3),e('mat_scramble',2)]});
  node('arm_drag','{A} uses the momentum to snap {D} over with an arm drag.',{zone:'mat',down:'d',next:[e('mat_hold',2),e('stand_reset',4),e('early_cover',1)]});
  node('clean_break','The referee calls for a clean break. {A} releases and steps away.',{next:[e('circle',4),e('cheap_shot',2),e('probe_strike',2)]});
@@ -1033,7 +1034,7 @@ const Graph=(function makeGraph(){
  node('target_strike','{A} drives a short strike into {D}’s {part}, then drags {D} away from the ropes.',{focus:2,zone:'mat',down:'d',next:[e('target_hold',3),e('hope_elbows',3),e('rope_crawl',2)]});
  node('rope_crawl','{D} drags themselves towards the bottom rope while {A} keeps the pressure on.',{requires:'mat',zone:'mat',down:'d',next:[e('rope_break',4),e('hope_elbows',2)]});
  node('rope_break','{D} catches the bottom rope. The referee orders {A} to break the hold, and {A} releases.',{requires:'mat',zone:'standing',down:null,next:[e('stand_reset',4),e('cheap_shot',1)]});
- node('mat_scramble','{D} twists underneath and uses the leverage to reverse the hold.',{requires:'mat',reverse:true,zone:'mat',down:'d',next:[e('mat_hold',3),e('stand_reset',3),e('rollup_counter',2)]});
+ node('mat_scramble','{D} twists underneath and uses the leverage to reverse the hold.',{requires:'mat',reverse:true,zone:'mat',down:'d',next:[e('mat_hold',3),e('stand_reset',3),e('counter_rollup',2)]});
  node('hope_elbows','{D} fights towards their knees and throws two elbows, trying to get free.',{requires:'mat',zone:'standing',down:null,next:[e('hope_cutoff',4),e('counter_strike',2),e('strike_trade',2)]});
  node('hope_cutoff','{A} intercepts the escape with a knee to {D}’s {part}; the comeback is stopped.',{focus:1,zone:'mat',down:'d',next:[e('target_hold',3),e('mat_hold',2),e('stand_reset',2)]});
  node('stand_reset','{D} rolls clear and uses the ropes to rise. {A} gives ground to avoid a counter.',{requires:'mat',zone:'standing',down:null,next:[e('lockup',2),e('strike_trade',3),e('corner_whip',2),e('rope_run',2)]});
@@ -1160,6 +1161,7 @@ const Graph=(function makeGraph(){
  }
  function isValid(M,nodeId){
   const n=A[nodeId],p=Psy.get(M);if(!n)return false;
+  if((nodeId==='cover'||nodeId==='near_kickout')&&M.t/M.len<.58)return false;
   if(n.requires==='mat'&&p.position!=='mat')return false;
   if(n.requires==='outside'&&p.position!=='outside')return false;
   if(n.requires==='corner'&&p.position!=='corner')return false;
@@ -1197,6 +1199,7 @@ const Graph=(function makeGraph(){
   if(id==='aerial_attack'){M.spots++;M.spotHits++;M.bonus+=10;}
   if(id==='aerial_counter'){M.spots++;M.bonus-=5;}
   if(id==='cover')g.pendingCover=true;
+  if(id==='target_hold'||id==='target_strike'||id==='arm_wringer')g.lastTarget=M.t;
   if(id==='near_kickout')g.pendingCover=false;
   g.node=id;g.steps++;g.events.push({id,t:M.t,control:p.control,position:p.position,down:p.down,arc:g.arc});
   if(g.events.length>220)g.events.shift();
@@ -1216,6 +1219,7 @@ const Graph=(function makeGraph(){
    if(['outside_toss','floor_brawl','cheap_shot'].includes(id)&&M.planId==='brawl')n*=1.8;
    if(['cover','submission_set'].includes(id)&&g.arc==='nearfall')n*=2;
    if(id==='top_climb'&&M.wSt<27)n*=.25;
+   if(Psy.get(M).focusHits>=3&&Psy.get(M).target==='left knee'&&Psy.get(M).control==='w'&&['rope_run','top_climb','clothesline'].includes(id))n*=.35;
    weights.set(id,(weights.get(id)||0)+n);
   }
   return [...weights.entries()];
@@ -1240,6 +1244,27 @@ const Graph=(function makeGraph(){
   if(id){apply(M,id);return;}
   recover(M);
  }
+ function nearfall(M){
+  const g=get(M),p=Psy.get(M);
+  if(M.t/M.len<.59)return;
+  if(p.position==='outside'){say(M,fill(M,'{W} and {F} roll back into the ring before anyone can attempt a pin.'));p.position='standing';p.down=null;}
+  Psy.nearfall(M);
+  g.nearfallCount++;
+  g.events.push({id:'scheduled_nearfall',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
+  g.node='stand_reset';
+ }
+ function special(M){
+  const g=get(M),p=Psy.get(M);
+  if(p.position==='outside'){recover(M);return}
+  spot(M,false);
+  g.events.push({id:'special_spot',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
+  g.node=null;
+ }
+ function finishCue(M){
+  const g=get(M);
+  if(!g)return;
+  g.events.push({id:'booked_finish',t:M.t,arc:g.arc,control:Psy.get(M).control,position:Psy.get(M).position});
+ }
  function validate(){
   const errors=[];
   for(const [id,n] of Object.entries(A)){
@@ -1251,7 +1276,7 @@ const Graph=(function makeGraph(){
   }
   return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),errors};
  }
- return {A,ARCS,get,init,advance,step,validate,apply,selectArc};
+ return {A,ARCS,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc};
 })();
 
 function create(o){
@@ -1370,8 +1395,8 @@ function tick(M){
  // spots
  const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*(M.offScript==='showboat'?1.5:1);
  let spoke=false;
- if(M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Psy.nearfall(M);spoke=true;}
- else if(M.r()<spotP){spot(M,false);spoke=true;}
+ if(M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
+ else if(M.r()<spotP){Graph.special(M);spoke=true;}
  // crowd bands
  crowdBand(M);
  // producer hints
@@ -1598,6 +1623,7 @@ function decisive(M,A,Df,step,end){
 }
 /* ---- the finish ---- */
 function finish(M){
+ Graph.finishCue(M);
  const w=M.w,f=M.f,o=M.o;let at=M.t;const step=(n=4)=>(at+=n,{at});
  if(Psy.get(M).position==='outside'){say(M,`${w.short} and ${f.short} scramble back inside before the referee reaches ten.`,'play',{...step()});Psy.get(M).position='standing';}
  if(Psy.get(M).position==='mat'){say(M,'They fight back to their feet. Both know the next exchange can end it.','play',{...step()});Psy.get(M).position='standing';}
