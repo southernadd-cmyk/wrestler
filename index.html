@@ -917,7 +917,11 @@ const Psy=(function installPsychology(){
    line(M,`${A.short} and ${Df.short} climb back into the ring while the referee is counting.`);
    s.position='standing';s.down=null;
   }
-  sync(M,A===M.w?'w':'f');
+  const side=A===M.w?'w':'f';
+  if(s.control!=='neutral'&&s.control!==side){
+   line(M,`${A.short} blocks ${Df.short}'s next strike and creates just enough space for the big move!`);
+  }
+  sync(M,side);
   if(tope){
    line(M,`${A.short} sends ${Df.short} over the ropes. ${Df.short} staggers upright on the floor.`);
    line(M,`${A.short} stays inside, rebounds off the opposite ropes and launches through the air!`);
@@ -1142,7 +1146,7 @@ function crowdBand(M){
  }
  M.lastCrowdBand=band;
 }
-function actors(M){const yours=M.mom>=0;return yours?{A:M.w,D:M.f}:{A:M.f,D:M.w}}
+function actors(M){const c=M.story?.control;const yours=c==='w'?true:c==='f'?false:M.mom>=0;return yours?{A:M.w,D:M.f}:{A:M.f,D:M.w}}
 function playByPlay(M){
  const {A,D:Df}=Psy.get(M).control==='w'?{A:M.w,D:M.f}:Psy.get(M).control==='f'?{A:M.f,D:M.w}:actors(M);
  const context=[];
@@ -1194,6 +1198,7 @@ function spot(M,big,forced){
  Psy.spotAfter(M,A,Df,outside,M.botches>wasBotched);
 }
 function dive(M){
+ say(M,`${M.w.short} drives ${M.f.short} through the ropes. They spill towards the aisle, well away from the ring.`,'play',{pause:1});
  say(M,`${M.w.short} is climbing… not the turnbuckle. The balcony.`,'play',{pause:2,big:true});
  const botchP=(.12+(100-M.w.safe)*.004)*M.riskMul;
  M.spots++;
