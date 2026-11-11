@@ -2336,8 +2336,8 @@ root.OfficeTerritory={ensure,rank,evolve};
     'I have watched you wrestle. I know the things you do well. Now you get to see what I have learned.'
    ]},
    imagery:{label:'Paint a strange picture',hint:'Find an unforgettable metaphor. High upside, awkward if it falls flat.',identity:'imagery',risk:3,effect:{crowd:3,heat:3,cred:0,trust:0},lines:[
-    'See that clock above the entrance, {F}? The hands keep moving even when the crowd holds its breath.',
-    'That clock does not care how loud your name is. When it strikes, we all find out who still has something left.'
+    'Look at {PROP}, {F}. {MOTIF1}',
+    'You see {PROP}, {F}? {MOTIF2}'
    ]},
    accusation:{label:'Question their character',hint:'Personal confrontation and rivalry heat, with backstage consequences.',identity:'accusation',risk:3,effect:{crowd:1,heat:7,cred:-1,trust:-3},lines:[
     'You are very good at finding the cameras, {F}. I wonder how good you are when nobody is there to rescue you.',
@@ -2393,8 +2393,15 @@ root.OfficeTerritory={ensure,rank,evolve};
    ]}
   }
  };
+ const METAPHORS=[
+  {prop:'that old clock above the entrance',first:'Even when the entire room holds its breath, the hands keep moving.',second:'When time runs out, there is nowhere left to hide.'},
+  {prop:'the brass bell beside the ring',first:'It looks harmless when everything is quiet. Then it makes the whole building move.',second:'It does not ring for anyone who only knows how to talk.'},
+  {prop:'the lights above that ring',first:'They turn ordinary people into giants, and giants back into shadows.',second:'Tonight those lights will tell the truth about both of us.'},
+  {prop:'that curtain by the entrance',first:'Anybody can make an entrance through it. Not everybody leaves with something worth remembering.',second:'The hard part is walking back through after a fight you cannot talk your way out of.'},
+  {prop:'this microphone in my hand',first:'It can make a voice sound ten feet tall, but it cannot make a wrestler an inch better.',second:'After the bell the only sound I want to hear is the crowd reacting to what we do.'}
+ ];
  const thematic={
-  people:'the people in the seats',proof:'the question of who belongs',imagery:'that clock over the entrance',
+  people:'the people in the seats',proof:'the question of who belongs',imagery:'the opening image',
   accusation:'hiding behind the cameras',swagger:'whose name this crowd remembers'
  };
  const RESPONSES={
@@ -2409,8 +2416,8 @@ root.OfficeTerritory={ensure,rank,evolve};
    'That sounds very respectful. It will not help you when I take control.'
   ],
   imagery:[
-   'A clock? Really, {W}? You might want to check whether your time has already run out.',
-   'You can talk about clocks all night, {W}. I would rather talk about wrestling.',
+   'You want to talk about {PROP}, {W}? Try making that matter when the bell rings.',
+   'You can keep talking about {PROP} all night, {W}. I would rather talk about wrestling.',
    'That was a colourful speech. Now try telling me something I do not already know.'
   ],
   accusation:[
@@ -2451,19 +2458,26 @@ root.OfficeTerritory={ensure,rank,evolve};
  const rng=(s,k)=>hash(s+'|'+k)/4294967296;
  const pick=(arr,s,k)=>arr[Math.floor(rng(s,k)*arr.length)];
  const format=(text,st)=>String(text).replace(/\{W\}/g,st.w.short).replace(/\{F\}/g,st.f.short)
-  .replace(/\{FINISHER\}/g,st.w.finisher||'my finishing hold').replace(/\{THEME\}/g,thematic[st.thread]||'tonight');
+  .replace(/\{FINISHER\}/g,st.w.finisher||'my finishing hold').replace(/\{THEME\}/g,st.thread==='imagery'?st.motif.prop:(thematic[st.thread]||'tonight'))
+  .replace(/\{PROP\}/g,st.motif.prop).replace(/\{MOTIF1\}/g,st.motif.first).replace(/\{MOTIF2\}/g,st.motif.second);
  const limit=(x,a,b)=>Math.max(a,Math.min(b,x));
  const opts=stage=>Object.keys(NODES[stage]||{}).map(id=>({id,label:NODES[stage][id].label,hint:NODES[stage][id].hint}));
  function begin(c,w,f,rival){
   const seed=String(c.id)+'|'+String(c.eventAbs||0)+'|'+String(w.id)+'|'+String(f.id);
-  const st={v:2,cid:c.id,seed,w:{id:w.id,name:w.name,short:w.short,mic:w.mic||40,psych:w.psych||45,heat:w.heat||40,ego:w.ego||45,finisher:w.finisher},
+  const st={v:2,cid:c.id,seed,motif:pick(METAPHORS,seed,'metaphor'),w:{id:w.id,name:w.name,short:w.short,mic:w.mic||40,psych:w.psych||45,heat:w.heat||40,ego:w.ego||45,finisher:w.finisher},
    f:{id:f.id,name:f.name,short:f.short,psych:f.psych||45,heat:f.heat||45,ego:f.ego||45,style:f.style},
-   feudHeat:rival?.closed?0:Math.max(c.feudHeat||0,rival?.heat||0),hasHistory:!!rival?.matches,
+   feudHeat:rival?.closed?0:Math.max(c.feudHeat||0,rival?.heat||0),hasHistory:!!rival?.matches,priorPromise:rival?.lastPromo?.promise||null,
    stage:'open',steps:[],dialogue:[{speaker:'Interviewer',line:pick([
      'Both names are on tonight’s card. What do you have to say before the bell?',
      'The crowd can hear you backstage. What is this match really about?',
      'Your opponent is listening. Is there anything you want to say directly?'
    ],seed,'intro')}],thread:null,metrics:{crowd:0,heat:0,cred:0,trust:0,composure:0,pressure:0},result:null};
+  if(st.hasHistory){
+   const p=st.priorPromise;
+   st.dialogue[0].line=p?.type==='win'?'Last time you promised victory. How do you answer your rival tonight?':
+    p?.type==='clean'?'Your last words about a fair fight are still remembered. What happens now?':
+    'These two have unfinished business from their previous meeting. What do you say now?';
+  }
   return st;
  }
  function chooseStep(st,id){
@@ -2548,7 +2562,7 @@ root.OfficeTerritory={ensure,rank,evolve};
     s.rep=clamp(s.rep+(pr.repDelta||0));
    }
    if(fd){
-    fd.segments=(fd.segments||0)+1;fd.lastPromo={style:pr.styleName,quality:pr.quality,week:G.abs(),path:pr.path||[]};
+    fd.segments=(fd.segments||0)+1;fd.lastPromo={style:pr.styleName,quality:pr.quality,week:G.abs(),path:pr.path||[],promise:pr.promise||null,angle:pr.angle||null};
     fd.angle=pr.angle||pr.speaker+' called out '+pr.opponent+' ('+pr.styleName.toLowerCase()+'). '+(pr.quality>=70?'The crowd bought every word.':pr.quality<38?'The exchange did not land.':'The confrontation added another chapter.');
     if(!fd.closed){fd.heat=clamp(fd.heat+pr.heatDelta);fd.last=G.abs()}
    }
@@ -2563,7 +2577,7 @@ root.OfficeTerritory={ensure,rank,evolve};
      const line=kept?'The microphone promise was fulfilled in the ring.':'The microphone promise fell apart when the bell rang.';
      if(w){w.morale=clamp(w.morale+(kept?2:-3));w.heat=clamp(w.heat+(kept?3:-1))}
      if(!fd.closed)fd.heat=clamp(fd.heat+(kept?2:5));
-     h.promo.promise.kept=kept;h.notes.push(line);out.push({text:line,tone:kept?1:-1});
+     h.promo.promise.kept=kept;h.promo.promise.checked=true;h.notes.push(line);out.push({text:line,tone:kept?1:-1});
     }
     const mood=pr.trustDelta>1?'The promoter appreciated the restraint.':pr.trustDelta<0?'The promoter was unhappy about how personal it became.':'The promoter took note of the exchange.';
     h.notes.push(mood);out.push({text:mood,tone:Math.sign(pr.trustDelta||0)});
