@@ -910,17 +910,28 @@ const Psy=(function installPsychology(){
   line(M,v[1]);s.position=v[2];s.down=v[2]==='mat'?(defender===M.w?'w':'f'):null;
  }
  function spotSetup(M,A,Df,move){
-  const s=get(M),outside=/floor|ramp|barricade|tope con hilo|over the top rope to the floor|apron/.test(move),top=/top rope|450 splash|shooting star|diving elbow/.test(move);
-  if(s.position==='outside'&&!outside){line(M,`${A.short} brings ${Df.short} back through the ropes. The referee waves them on.`);s.position='standing';s.down=null;}
+  const s=get(M),tope=/tope con hilo/.test(move),backdrop=/backdrop over the top rope to the floor/.test(move),
+   outside=/floor|ramp|barricade|tope con hilo|over the top rope to the floor|apron/.test(move),
+   top=/top rope|450 splash|shooting star|diving elbow/.test(move);
+  if(s.position==='outside'&&(!outside||tope||backdrop)){
+   line(M,`${A.short} and ${Df.short} climb back into the ring while the referee is counting.`);
+   s.position='standing';s.down=null;
+  }
   sync(M,A===M.w?'w':'f');
-  if(outside){
+  if(tope){
+   line(M,`${A.short} sends ${Df.short} over the ropes. ${Df.short} staggers upright on the floor.`);
+   line(M,`${A.short} stays inside, rebounds off the opposite ropes and launches through the air!`);
+   s.position='outside';s.down=null;
+  }else if(backdrop){
+   line(M,`${A.short} backs ${Df.short} against the ropes and hooks an arm, preparing a throw over the top.`);
+   s.position='outside';s.down=null;
+  }else if(outside){
    line(M,`${A.short} sends ${Df.short} over the ropes to the floor and follows. The referee begins the count.`);
-   if(/tope con hilo/.test(move))line(M,`${A.short} sprints across the ring as ${Df.short} gets to their feet outside.`);
-   else if(/apron/.test(move))line(M,`${A.short} pulls ${Df.short} up onto the apron and takes hold of the head.`);
+   if(/apron/.test(move))line(M,`${A.short} pulls ${Df.short} up onto the apron and takes hold of the head.`);
    else line(M,`${A.short} pulls ${Df.short} into position on the floor.`);
    s.position='outside';s.down=null;
   }else if(top){
-   line(M,`${A.short} knocks ${Df.short} into position and climbs the ropes, taking time to find their balance.`);
+   line(M,/superplex|top-rope German/.test(move)?`${A.short} hoists ${Df.short} onto the turnbuckle and climbs up after them.`:`${A.short} knocks ${Df.short} down and climbs the ropes, carefully finding a footing.`);
    s.position='top';s.down=Df===M.w?'w':'f';
   }else{
    line(M,`${A.short} pulls ${Df.short} upright and measures the distance for the next move.`);
@@ -958,7 +969,7 @@ const Psy=(function installPsychology(){
    s.position='mat';s.down=Df===M.w?'w':'f';
   }else{
    const moves=D.MOVES[A.style]||D.MOVES.Story;
-   const allowed=moves.filter(x=>!/sleeper|crab|cross armbar|hammerlock/.test(x));
+   const allowed=moves.filter(x=>!/sleeper|crab|cross armbar|hammerlock|backslide|small package|forearms in the corner|running shooting star|moonsault press/.test(x));
    const strike=rnd(M,allowed.length?allowed:moves);
    line(M,`${A.short} catches ${Df.short} with ${strike}. ${Df.short} lands hard on the canvas!`,'play');
    line(M,`${A.short} immediately hooks the far leg. The referee drops into position.`,'count');
@@ -1164,7 +1175,7 @@ function spot(M,big,forced){
  let botchP=(.03+(100-A.safe)*.0018+(100-st)*.0015)*M.riskMul*(big?1.5:1);
  if(A.ring>=80)botchP*=.8;
  M.spots++;
- if(big||M.r()<.45)say(M,`${A.short} ${big?'heads for the top rope':'sets up'}…`,'play',{pause:1});
+ if(big||M.r()<.35)say(M,big?`${A.short} commits to the high-risk move!`:`${A.short} goes for it!`,'play',{pause:1});
  if(M.r()<botchP){
   M.botches++;M.bonus-=big?30:20;M.crowd=clamp(M.crowd-(big?9:6));
   say(M,`${move.charAt(0).toUpperCase()+move.slice(1)}… and it’s gone wrong. That looked nasty.`,'bad',{big:true});
