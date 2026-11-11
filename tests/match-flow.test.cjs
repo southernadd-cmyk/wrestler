@@ -48,7 +48,7 @@ for(let i=0;i<240;i++){
  const text=x.log.map(line=>line.text).join(' ');
  assert.ok(x.final,'every match has a final result');
  assert.ok(x.final.psychology.target,'a persistent target body part exists');
- assert.ok(x.final.psychology.targetingBeats>=1||x.final.shortened||x.final.outcome==='nc','targeted offense occurred in a complete match');
+ assert.ok(x.final.psychology.graph?.nodes>=1||x.final.shortened||x.final.outcome==='nc','graph generated connected actions in a complete match');
  assert.ok(x.final.psychology.controlChanges>=1||x.final.shortened||x.final.outcome==='nc','control changed via an event in a complete match');
  assert.ok(x.log.some(line=>/finisher|cover|TAPS|THREE!/i.test(line.text)),'finish narrative present');
  assert.doesNotMatch(text,/\{(?:W|F|A|D|move|part|fin)\}|undefined|NaN/,'no unfilled placeholders');
