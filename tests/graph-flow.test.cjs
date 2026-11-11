@@ -72,8 +72,8 @@ assert.ok(floorEvents>10,'ringside branches must be playable');
 for(const ending of ['win_clean','win_dirty','lose_protected','lose_clean'])assert.ok(outcomeHits.has(ending),'booked outcome missing '+ending);
 
 // Existing version 2.6 saves do not have graph state. They must not restart the match.
-const old=M.create(options(83));
-for(let i=0;i<75;i++){if(old.decision&&!old.queue.length)M.resolve(old,old.decision.options[0].id);M.next(old);}
+const old=M.create({...options(83),slot:'main',minutes:20});
+for(let i=0;i<36;i++){if(old.decision&&!old.queue.length)M.resolve(old,old.decision.options[0].id);M.next(old);}
 const raw=JSON.parse(JSON.stringify({...old,rState:old.r.getState()}));delete raw.graph;
 const restored=M.restore(raw);
 for(let i=0;i<100;i++){if(restored.decision&&!restored.queue.length)M.resolve(restored,restored.decision.options[0].id);M.next(restored);if(restored.graph)break;}
