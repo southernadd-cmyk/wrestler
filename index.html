@@ -1333,9 +1333,9 @@ function finish(M){
    say(M,`${w.short} pulls ${f.short} into position, then signals for ${the(w.finisher)}…`,'play',{...step(),pause:1});
    decisive(M,w,f,step,`${w.name} wins it clean.`);
   }else if(k==='win_dirty'){
-   say(M,`${f.short} has ${w.short} reeling, but a distraction pulls the referee's attention to the corner!`,'play',{...step(),pause:1});
-   say(M,'The referee turns back just as the illegal pin is secured. The cover is counted.','play',{...step(),pause:1});
-   say(M,`${w.short} grabs a fistful of tights. Roll-up!`,'play',{...step(),big:true,pause:1});
+   say(M,`${f.short} has ${w.short} reeling, but a commotion at ringside draws the referee's attention!`,'play',{...step(),pause:1});
+   say(M,`${w.short} catches ${f.short} with a sudden roll-up and grabs a fistful of tights while the referee is looking away!`,'play',{...step(),big:true,pause:1});
+   say(M,'The referee turns back, sees shoulders down, and drops to count. The illegal grip goes unnoticed.','play',{...step(),pause:1});
    say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});say(M,'THREE!','count',{...step(),big:true});
    say(M,`${w.short} steals it! ${M.crowd>=60?'The crowd let them have it.':'Scattered boos.'}`,'bell',{...step(),big:true});
   }else if(k==='lose_protected'){
