@@ -1721,7 +1721,7 @@ root.OfficeTerritory={ensure,rank,evolve};
    'You will need a lot more than those people cheering for you.'
   ]
  };
- function hash(s){let h=2166136261>>>0;for(const c of String(s)){h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;}return h>>>0}
+ function hash(s){let h=2166136261>>>0;for(const c of String(s)){h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;}h^=h>>>16;h=Math.imul(h,0x7feb352d);h^=h>>>15;h=Math.imul(h,0x846ca68b);return (h^(h>>>16))>>>0}
  function choose(arr,s){return arr[hash(s)%arr.length]}
  function fill(s,w,f){return s.replace(/\{W\}/g,w.short).replace(/\{F\}/g,f.short)}
  function create(c,w,f,style='challenge',rival=null){
@@ -1731,7 +1731,7 @@ root.OfficeTerritory={ensure,rank,evolve};
   const variance=hash(seed+'|quality')%25-12;
   const rating=clamp(Math.round(mic*.68+w.heat*.18+w.psych*.14+variance+st.risk*.25+(feudHeat>=35?5:0)),10,99);
   const rivalRating=clamp(Math.round(opMic*.75+(f.heat||40)*.25+(hash(seed+'|reply')%17-8)),10,99);
-  const pair=choose(speeches[style]||speeches.challenge,seed+'|speech');
+  const pool=speeches[style]||speeches.challenge;const pair=[choose(pool,seed+'|open')[0],choose(pool,seed+'|close')[1]];
   const opponentTone=feudHeat>=50?'hot':f.style==='Technical'?'technical':f.style==='Brawl'?'wild':'cool';
   const retort=choose(replies[opponentTone],seed+'|retort');
   const stumble=rating<38,star=rating>=76,scene=feudHeat>=55?'A grudge spills into the ring':feudHeat>=30?'Old scores are being settled':'Two names, one microphone';
@@ -2215,7 +2215,7 @@ function showPromos(){
  const pr=night.promo;night.stage='promo';
  const yours=`<div class="tape well" style="grid-template-columns:auto 1fr"><div>${face('wrestler',w.id,w.name,'portrait x2')}</div><div><h3 class="section-h">${esc(w.handle||w.name)}</h3><p>“${esc(pr.speech[0])}”</p><p>“${esc(pr.speech[1])}”</p></div></div><p class="dim" style="margin-top:12px">${esc(pr.reaction)}</p>`;
  const theirs=`<div class="tape well" style="grid-template-columns:auto 1fr"><div>${face('wrestler',f.id,f.name,'portrait x2')}</div><div><h3 class="section-h">${esc(f.name)}</h3><p>“${esc(pr.reply)}”</p></div></div><div class="facts two" style="margin-top:12px"><div><small>Promo rating</small><b>${pr.quality}/100</b></div><div><small>Crowd shift</small><b>${pr.crowdShift>=0?'+':''}${pr.crowdShift}</b></div></div>`;
- $('#tv').innerHTML=strip(c,'microphone time')+`<div class="stage screen" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">${win(w.name+' speaks',yours,{h:'h3'})}${win(f.name+' answers',theirs,{h:'h3'})}</div><div class="tv-foot"><span class="dim">${esc(pr.scene)} · ${esc(pr.styleName)} · Rivalry +${pr.heatDelta} after the match</span><button class="btn go" data-tv="bell">Ring the bell</button></div>`;
+ $('#tv').innerHTML=strip(c,'microphone time')+`<div class="stage screen" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">${win(w.name+' speaks',yours,{h:'h3'})}${win(f.name+' answers',theirs,{h:'h3'})}</div><div class="tv-foot"><span class="dim">${esc(pr.scene)} · ${esc(pr.styleName)} · ${c.blowoff?'The rivalry ends tonight':'Rivalry +'+pr.heatDelta+' after the match'}</span><button class="btn go" data-tv="bell">Ring the bell</button></div>`;
  persistNight();
 }
 function bell(){
