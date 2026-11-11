@@ -1,4 +1,4 @@
-# The Office — Wrestling Manager v2.7
+# The Office — Wrestling Manager v2.8
 
 A standalone wrestling management game. Run a stable, take the bookings, and sit at ringside for every match.
 
@@ -21,6 +21,21 @@ Before each bout, choose a microphone approach (call them out, rally the fans, p
 ## Systems
 
 16-week regional season; contract negotiation; wrestler recruitment and coaching; pre-match promos with four meaningful approaches and original dialogue; context-sensitive and phase-specific match commentary; heat-driven storylines, rivalries and blow-offs; live text matches with ringside decisions; rival promotions; persistent title pyramid; export and import of career saves.
+
+## Interactive microphone segments (v2.8)
+
+Promos are now genuine **three-part dialogue encounters**. Choose an opening angle, answer the opponent's interruption, and deliver a final line. Your choices become permanent once spoken and the opponent's response depends on what you said; there are no score previews to optimise.
+
+- 15 choice nodes and 125 combinations, with further variation from character, previous rivalry and creative metaphors
+- Separate tradeoffs: crowd support, feud heat, credibility, morale, and the promoter's trust
+- Promise a win, a named finisher, or clean wrestling; the match and its results determine whether you deliver
+- The in-ring commentary remembers the microphone promise
+- Full promo transcript in match history; autosave and restore midway through the conversation
+- The existing 1990s management interface and save storage are preserved
+
+Research includes the **Randy Savage** “Cream of the Crop” promo, the Mega Powers confrontation and the Steamboat/Warrior matches, plus real archived transcript references. See [promo graph design and research](docs/promo-graph.md).
+
+Test: `node tests/promo-flow.test.cjs`.
 
 ## Causal event graph (v2.7)
 
