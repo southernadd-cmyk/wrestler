@@ -1674,6 +1674,15 @@ function decisive(M,A,Df,step,end){
 function finish(M){
  Graph.finishCue(M);
  const w=M.w,f=M.f,o=M.o;let at=M.t;const step=(n=4)=>(at+=n,{at});
+ // The microphone story is a real obligation, not flavour text.
+ const promise=o.promo?.promise?.type;
+ if(promise==='win'){
+  say(M,o.finish.startsWith('win')||M.outcome==='double'?w.short+' promised a victory before the bell. This is the moment to deliver it.':w.short+' promised a victory before the bell. The match is slipping away from that promise.','story',{...step()});
+ }else if(promise==='finisher'){
+  say(M,o.finish==='win_clean'?w.short+' told everyone exactly which finishing move to expect. Now the opponent knows what is coming.':w.short+' named the finishing move in that earlier promo, but the chance to use it is disappearing.','story',{...step()});
+ }else if(promise==='clean'){
+  say(M,['win_clean','lose_clean'].includes(o.finish)?'Both wrestlers promised a straight contest. The official is watching closely.':'A clean fight was promised on the microphone. That promise is now being tested.','story',{...step()});
+ }
  if(Psy.get(M).position==='outside'){say(M,`${w.short} and ${f.short} scramble back inside before the referee reaches ten.`,'play',{...step()});Psy.get(M).position='standing';}
  if(Psy.get(M).position==='mat'){say(M,'They fight back to their feet. Both know the next exchange can end it.','play',{...step()});Psy.get(M).position='standing';}
  if(M.outcome==='nc'){
