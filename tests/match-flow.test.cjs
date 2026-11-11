@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-const inline=html.match(/<script>(?:\s[^>]*)?>([\s\S]*?)<\/script>/i)?.[1];
+const inline=html.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i)?.[1];
 assert.ok(inline,'standalone game should have an inline script');
 const cut=inline.indexOf('/* THE OFFICE — interface v3');
 assert.ok(cut>0,'engine boundary exists');
