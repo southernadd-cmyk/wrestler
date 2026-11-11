@@ -2323,6 +2323,211 @@ root.OfficeTerritory={ensure,rank,evolve};
    speaker:w.name,opponent:f.name,speech,reply:fill(retort,w,f),reaction,scene,
    hook:style==='challenge'?'The challenge is still hanging in the air.':style==='mindgames'?'The mind games have started early.':style==='rally'?'The crowd came into this one already invested.':'There is genuine respect before the bell.'};
  }
+ const PromoGraph=(function graphFactory(){
+ const STAGES=['open','answer','close'];
+ const NODES={
+  open:{
+   people:{label:'Speak for the crowd',hint:'Bring the fans into the story. Risks sounding like a slogan.',identity:'people',risk:1,effect:{crowd:6,heat:1,cred:1,trust:2},lines:[
+    'Every seat in this building has a story, {F}. Tonight I intend to give them a good ending.',
+    'They did not come to hear us recite our records. They came to find out which of us belongs in this ring.'
+   ]},
+   proof:{label:'Make it about the contest',hint:'A measured, credible argument. Less explosive, more respected.',identity:'proof',risk:0,effect:{crowd:2,heat:2,cred:5,trust:2},lines:[
+    'There is a reason they put our names on the same bill, {F}. Neither one of us has answered the question yet.',
+    'I have watched you wrestle. I know the things you do well. Now you get to see what I have learned.'
+   ]},
+   imagery:{label:'Paint a strange picture',hint:'Find an unforgettable metaphor. High upside, awkward if it falls flat.',identity:'imagery',risk:3,effect:{crowd:3,heat:3,cred:0,trust:0},lines:[
+    'See that clock above the entrance, {F}? The hands keep moving even when the crowd holds its breath.',
+    'That clock does not care how loud your name is. When it strikes, we all find out who still has something left.'
+   ]},
+   accusation:{label:'Question their character',hint:'Personal confrontation and rivalry heat, with backstage consequences.',identity:'accusation',risk:3,effect:{crowd:1,heat:7,cred:-1,trust:-3},lines:[
+    'You are very good at finding the cameras, {F}. I wonder how good you are when nobody is there to rescue you.',
+    'You do your talking from a comfortable distance. Tonight there is a ring between us and nowhere to hide.'
+   ]},
+   swagger:{label:'Own the spotlight',hint:'Big-personality showmanship. Can turn a crowd or lose it.',identity:'swagger',risk:2,effect:{crowd:4,heat:4,cred:-1,trust:-1},lines:[
+    'I did not come down that aisle to be somebody else’s supporting act, {F}. Look at the lights. Look at me.',
+    'The sign outside has both our names. When the people leave, I intend mine to be the one they remember.'
+   ]}
+  },
+  answer:{
+   turn:{label:'Turn their words against them',hint:'A sharp callback to their interruption. Rewards composure.',risk:1,effect:{crowd:4,heat:3,cred:4,trust:0},lines:[
+    'You think that answers what I said, {F}? You have only made the point for me.',
+    'Keep hold of those words. I will give them back to you when the bell rings.'
+   ]},
+   personal:{label:'Make it personal',hint:'Raise the stakes sharply. Risks an ugly exchange.',risk:4,effect:{crowd:1,heat:8,cred:-2,trust:-4},lines:[
+    'There it is, {F}. The part of you that comes out when the questions become uncomfortable.',
+    'You can insult my name. You still have to face me when there is no microphone between us.'
+   ]},
+   callback:{label:'Return to the opening image',hint:'Build a running theme. A skilled talker can make it memorable.',risk:2,effect:{crowd:4,heat:3,cred:2,trust:1},lines:[
+    'Remember what I said about {THEME}, {F}? You have not heard the end of it.',
+    'An arena remembers the moments that matter. I am going to make sure they remember this one.'
+   ]},
+   calm:{label:'Keep your composure',hint:'Avoid a shouting contest. Build credibility, possibly lose intensity.',risk:0,effect:{crowd:0,heat:1,cred:6,trust:4},lines:[
+    'I heard you, {F}. Now I want you to listen: the match is not won by the loudest voice.',
+    'If you are right about me, you can prove it in front of every one of these people.'
+   ]},
+   challenge:{label:'Ask for an answer in the ring',hint:'Turn the argument into a clear wrestling challenge.',risk:1,effect:{crowd:3,heat:5,cred:3,trust:1},lines:[
+    'Forget the speeches. I am asking you one question, {F}: can you beat me when it actually counts?',
+    'Your answer had better be ready by the time that bell rings.'
+   ]}
+  },
+  close:{
+   vow:{label:'Promise a victory',hint:'A bold promise creates stakes. Losing makes it harder to live down.',risk:3,effect:{crowd:5,heat:6,cred:-1,trust:0},promise:'win',lines:[
+    'This is not a prediction for the cameras. I am telling you I will leave that ring the winner.',
+    'When they raise my hand, remember who told you first.'
+   ]},
+   finisher:{label:'Call your finishing move',hint:'Make a specific promise the crowd will expect the match to deliver.',risk:3,effect:{crowd:4,heat:4,cred:2,trust:0},promise:'finisher',lines:[
+    'There will be a moment when you know exactly what is coming, {F}, and it still will not help.',
+    'I intend to finish this with {FINISHER}. Everybody here can hold me to it.'
+   ]},
+   clean:{label:'Demand a straight fight',hint:'Stake your reputation on fair play. A dirty result will undermine you.',risk:1,effect:{crowd:2,heat:1,cred:6,trust:5},promise:'clean',lines:[
+    'I am asking you for one thing, {F}: no excuses, no shortcuts, no one getting involved.',
+    'Let the result belong to the better wrestler. I will live with that.'
+   ]},
+   uncertainty:{label:'Leave them guessing',hint:'Avoid giving away your plan, but sacrifice the obvious crowd payoff.',risk:1,effect:{crowd:1,heat:3,cred:3,trust:1},promise:'none',lines:[
+    'You have heard quite enough from me, {F}. The rest of this conversation belongs in the ring.',
+    'Keep wondering what I have planned. That is exactly where I want you.'
+   ]},
+   question:{label:'Leave them with a question',hint:'A memorable final challenge, with little immediate reassurance.',risk:2,effect:{crowd:3,heat:5,cred:2,trust:0},promise:'none',lines:[
+    'When the lights go out tonight, {F}, what are you going to tell yourself about what happened here?',
+    'I know my answer. You have a few minutes to find yours.'
+   ]}
+  }
+ };
+ const thematic={
+  people:'the people in the seats',proof:'the question of who belongs',imagery:'that clock over the entrance',
+  accusation:'hiding behind the cameras',swagger:'whose name this crowd remembers'
+ };
+ const RESPONSES={
+  people:[
+   'You can stand there claiming to represent these people, {W}. I am the one who has to wrestle you.',
+   'The crowd does not make the decisions for me, {W}. Neither do you.',
+   'They can cheer as loudly as they like. I will still be standing opposite you.'
+  ],
+  proof:[
+   'I did not come here for a lesson, {W}. I came here for the result.',
+   'You know my record. Fine. You do not know what I have prepared for tonight.',
+   'That sounds very respectful. It will not help you when I take control.'
+  ],
+  imagery:[
+   'A clock? Really, {W}? You might want to check whether your time has already run out.',
+   'You can talk about clocks all night, {W}. I would rather talk about wrestling.',
+   'That was a colourful speech. Now try telling me something I do not already know.'
+  ],
+  accusation:[
+   'You are desperate to make this about my character because you do not want to talk about my ability.',
+   'Hiding? I am standing right here, {W}. Try making that accusation to my face.',
+   'Watch how you talk about me. Some things do not end when the bell rings.'
+  ],
+  swagger:[
+   'You like seeing your name under those lights. Let us see how you look with the lights on you in defeat.',
+   'I did not come here to admire you, {W}. I came here to get paid to beat you.',
+   'The loudest person in the room is not always the one they remember.'
+  ]
+ };
+ const OPP_AFTER={
+  turn:['You rehearsed that answer, did you? We will see how quick you are on your feet.',
+    'You think you have me figured out. That is the mistake you keep making.'],
+  personal:['Now you have crossed a line. I am not going to forget it.',
+    'I was ready for a match. Now I am ready for a fight.'],
+  callback:['You really are going to keep that going, aren’t you? I am looking forward to silencing it.',
+    'That was clever. I will give you that. You still have to wrestle.'],
+  calm:['You sound so confident because you have not had to get in there with me yet.',
+    'All right. No more talking. Show me.'],
+  challenge:['That is the first sensible thing you have said. I accept.',
+    'I was going to fight you anyway. You have only made it personal.']
+ };
+ const FINALE={
+  vow:['The opponent shakes their head and points at the mat: the challenge has been accepted.',
+       'The opponent laughs, then stares back without another word.'],
+  finisher:['The opponent gestures that they have the finisher scouted, then leaves for the ring.',
+            'The opponent nods slowly. Both know what move they will be watching for.'],
+  clean:['The opponent agrees to a straight fight, though neither seems fully convinced.',
+         'The opponent extends a hand, then withdraws it before you can shake.'],
+  uncertainty:['The opponent keeps watching, waiting for one more line that never comes.',
+               'The interviewer looks between them. Neither gives another word away.'],
+  question:['The opponent opens their mouth to answer, thinks again, and heads towards the curtain.',
+            'The opponent points at the ring. The answer will have to wait.']
+ };
+ const rng=(s,k)=>hash(s+'|'+k)/4294967296;
+ const pick=(arr,s,k)=>arr[Math.floor(rng(s,k)*arr.length)];
+ const format=(text,st)=>String(text).replace(/\{W\}/g,st.w.short).replace(/\{F\}/g,st.f.short)
+  .replace(/\{FINISHER\}/g,st.w.finisher||'my finishing hold').replace(/\{THEME\}/g,thematic[st.thread]||'tonight');
+ const limit=(x,a,b)=>Math.max(a,Math.min(b,x));
+ const opts=stage=>Object.keys(NODES[stage]||{}).map(id=>({id,label:NODES[stage][id].label,hint:NODES[stage][id].hint}));
+ function begin(c,w,f,rival){
+  const seed=String(c.id)+'|'+String(c.eventAbs||0)+'|'+String(w.id)+'|'+String(f.id);
+  const st={v:2,cid:c.id,seed,w:{id:w.id,name:w.name,short:w.short,mic:w.mic||40,psych:w.psych||45,heat:w.heat||40,ego:w.ego||45,finisher:w.finisher},
+   f:{id:f.id,name:f.name,short:f.short,psych:f.psych||45,heat:f.heat||45,ego:f.ego||45,style:f.style},
+   feudHeat:rival?.closed?0:Math.max(c.feudHeat||0,rival?.heat||0),hasHistory:!!rival?.matches,
+   stage:'open',steps:[],dialogue:[{speaker:'Interviewer',line:pick([
+     'Both names are on tonight’s card. What do you have to say before the bell?',
+     'The crowd can hear you backstage. What is this match really about?',
+     'Your opponent is listening. Is there anything you want to say directly?'
+   ],seed,'intro')}],thread:null,metrics:{crowd:0,heat:0,cred:0,trust:0,composure:0,pressure:0},result:null};
+  return st;
+ }
+ function chooseStep(st,id){
+  if(!st||st.v!==2||!NODES[st.stage]||!NODES[st.stage][id])throw Error('Invalid promo decision');
+  const stage=st.stage,act=NODES[stage][id],index=st.steps.length;
+  const roll=rng(st.seed,stage+'|'+id+'|'+index);
+  const skill=limit(st.w.mic*.66+st.w.psych*.28+st.w.heat*.06+st.metrics.composure,0,100);
+  const threshold=limit(.32+skill/190-act.risk*.085+(stage==='answer'&&id==='callback'&&st.thread==='imagery'?.13:0),.2,.94);
+  const landed=roll<threshold;
+  const effect=act.effect;
+  for(const [key,val] of Object.entries(effect))st.metrics[key]=(st.metrics[key]||0)+val*(landed?1:(key==='cred'||key==='trust'?-1:.38));
+  if(landed){st.metrics.composure+=stage==='answer'&&id==='calm'?4:1}
+  else{st.metrics.cred-=4+act.risk;st.metrics.crowd-=act.risk+2}
+  if(stage==='open')st.thread=act.identity;
+  if(stage==='answer'&&id==='callback'&&st.thread==='imagery')st.metrics.crowd+=3;
+  if(stage==='answer'&&id==='personal'&&st.thread==='accusation')st.metrics.heat+=3,st.metrics.trust-=2;
+  if(stage==='close'&&id==='clean'&&st.metrics.trust<0)st.metrics.cred-=3;
+  const line=pick(act.lines,st.seed,stage+'|'+id+'|text');
+  st.dialogue.push({speaker:st.w.name,line:format(line,st),kind:landed?'strong':'uneven',node:id,stage});
+  if(!landed)st.dialogue.push({speaker:'Crowd',line:pick([
+     'An uncertain reaction moves through the room; the words have not quite landed.',
+     'A few cheers break through, but the speech loses its rhythm for a moment.',
+     'The audience waits for the next line; that one did not convince everybody.'
+   ],st.seed,stage+'|'+id+'|stumble'),kind:'reaction'});
+  st.steps.push({stage,id,landed});
+  if(stage==='open'){
+   st.dialogue.push({speaker:st.f.name,line:format(pick(RESPONSES[id],st.seed,'reply-'+id),st),kind:'opponent'});
+   st.stage='answer';
+  }else if(stage==='answer'){
+   const lines=OPP_AFTER[id];
+   st.dialogue.push({speaker:st.f.name,line:format(pick(lines,st.seed,'rebuttal-'+id),st),kind:'opponent'});
+   st.stage='close';
+  }else{
+   st.dialogue.push({speaker:'Crowd',line:pick(FINALE[id],st.seed,'final-'+id),kind:'reaction'});
+   st.stage='done';st.result=finish(st);
+  }
+  return st;
+ }
+ function finish(st){
+  if(st.stage!=='done'||st.steps.length!==3)throw Error('Promo is not finished');
+  const m=st.metrics,close=st.steps[2].id,opening=st.steps[0].id;
+  const quality=limit(Math.round(st.w.mic*.52+st.w.psych*.20+st.w.heat*.08+25+m.cred*.75+m.crowd*.7
+    -st.steps.filter(x=>!x.landed).length*5),10,97);
+  const crowdShift=limit(Math.round(m.crowd*.55+(quality-48)/18),-8,13);
+  const heatDelta=limit(Math.round(m.heat*.65+st.feudHeat*.035),-3,16);
+  const trustDelta=limit(Math.round(m.trust/5),-4,4);
+  const moraleDelta=limit(Math.round((quality-55)/20)+(close==='clean'?1:0),-3,4);
+  const repDelta=limit(Math.round(m.cred/9),-2,3);
+  const speech=st.dialogue.filter(e=>e.speaker===st.w.name).map(e=>e.line);
+  const opponentLines=st.dialogue.filter(e=>e.speaker===st.f.name);
+  const promise={type:NODES.close[close].promise,claim:close,checked:false};
+  const broad=st.feudHeat>=50?'A heated personal confrontation':st.feudHeat>=25?'Unfinished business at the microphone':'A confrontation before the bell';
+  const crowdWord=quality>=76?'The crowd will remember that exchange.':quality>=56?'There is plenty of conversation around ringside.':'The exchange left parts of the audience unconvinced.';
+  const hook=close==='vow'?'A public promise of victory hangs over this match.':close==='finisher'?'Everyone knows the finishing move being promised tonight.':
+   close==='clean'?'They publicly demanded a clean contest.':'The last words at the microphone are still hanging in the air.';
+  return {v:2,cid:st.cid,style:opening,styleName:NODES.open[opening].label,quality,crowdShift,heatDelta,
+   trustDelta,moraleDelta,repDelta,pressure:Math.round(m.heat+m.crowd*.4),speaker:st.w.name,opponent:st.f.name,
+   speech,reply:opponentLines.at(-1)?.line||'',dialogue:st.dialogue.map(e=>({...e})),path:st.steps.map(x=>({...x})),
+   promise,reaction:crowdWord,scene:broad,hook,angle:st.w.short+' '+NODES.open[opening].label.toLowerCase()
+   +'; '+NODES.answer[st.steps[1].id].label.toLowerCase()+'; '+NODES.close[close].label.toLowerCase()+'.'};
+ }
+ function result(st){return st?.stage==='done'?st.result:null}
+ return {STAGES,NODES,begin,choose:chooseStep,choices:opts,result};
+})();
  const before=G.applyResult;
  G.applyResult=function(c,fin){
   const s=G.S;
@@ -2345,7 +2550,7 @@ root.OfficeTerritory={ensure,rank,evolve};
   }
   G.save();return out;
  };
- root.OfficeStory={STYLES,create};
+ root.OfficeStory={STYLES,create,Graph:PromoGraph};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* THE OFFICE — interface v3
