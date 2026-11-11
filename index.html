@@ -1274,7 +1274,7 @@ function resolve(M,choice){
  const opt=d.options.find(o=>o.id===choice)||d.options[0];
  say(M,`Your call: “${opt.label}”`,'you');
  if(d.id==='injury'){
-  if(choice==='home'){M.len=Math.min(M.len,M.t+50);if(M.t/M.len<.6)M.shortened=true;M.nearfallAt=[];say(M,`${w.short} nods through gritted teeth. Straight to the finish.`)}
+  if(choice==='home'){if(M.len-M.t>60)M.shortened=true;M.len=Math.min(M.len,M.t+50);M.nearfallAt=[];say(M,`${w.short} nods through gritted teeth. Straight to the finish.`)}
   if(choice==='work'){M.workingHurt=true;M.crowd=clamp(M.crowd+5);M.adj.heat+=3;say(M,`${w.short} waves off the referee. The crowd start clapping. Brave, or daft.`,'crowd')}
   if(choice==='stop'){M.outcome='nc';M.adj.purseMul=.5;M.adj.trust-=6;M.adj.morale+=5;M.injury=Math.max(1,M.injury-1);M.stage='finish';}
  }
