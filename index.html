@@ -1016,7 +1016,7 @@ const Graph=(function makeGraph(){
  node('corner_break','{A} backs out of the corner. {D} cautiously steps forward.',{requires:'corner',next:[e('circle',3),e('probe_strike',2)]});
  // Striking, Irish whips, ring positioning.
  node('probe_strike','{A} throws a measuring forearm. {D} stays balanced and watches for the next.',{next:[e('strike_trade',4),e('counter_strike',3),e('cheap_shot',1),e('corner_whip',2)]});
- node('strike_trade','{A} lands a forearm. {D} returns one. Both stay on their feet.',{next:[e('strike_trade',2),e('counter_strike',3),e('clothesline',2),e('corner_whip',2)]});
+ node('strike_trade','{A} lands a forearm. {D} returns one. Both stay on their feet.',{next:[e('strike_trade',2),e('counter_strike',3),e('clothesline',2),e('corner_whip',2),e('outside_toss',1)]});
  node('counter_strike','{D} ducks the next strike and answers with a sharp elbow!',{reverse:true,next:[e('clothesline',3),e('corner_whip',2),e('snap_suplex',2)]});
  node('cheap_shot','{A} catches {D} with a forearm on the break while the referee is looking away.',{crowd:-1,next:[e('corner_strikes',3),e('target_strike',3),e('clothesline',2)]});
  node('corner_strikes','{A} traps {D} against the turnbuckles and drives in two short forearms.',{requires:'corner',zone:'corner',next:[e('corner_whip',4),e('corner_escape',3),e('corner_charge',2)]});
@@ -1029,7 +1029,7 @@ const Graph=(function makeGraph(){
  node('clothesline','{A} catches {D} with a running clothesline. {D} crashes onto the mat.',{zone:'mat',down:'d',next:[e('cover',3),e('mat_hold',2),e('stand_reset',3)]});
  node('snap_suplex','{A} secures the head and arm, lifts {D} and lands a snap suplex.',{zone:'mat',down:'d',next:[e('cover',3),e('target_hold',3),e('stand_reset',2)]});
  // Mat offence and selling must be resolved before another standing exchange.
- node('mat_hold','{A} stays on top, pressing {D} against the canvas to stop an escape.',{requires:'mat',zone:'mat',down:'d',next:[e('target_hold',3),e('mat_scramble',3),e('rope_crawl',2),e('early_cover',1)]});
+ node('mat_hold','{A} stays on top, pressing {D} against the canvas to stop an escape.',{requires:'mat',zone:'mat',down:'d',next:[e('target_hold',3),e('mat_scramble',3),e('rope_crawl',2),e('early_cover',1),e('submission_set',1),e('dramatic_sell',1)]});
  node('target_hold','{A} isolates {D}’s {part}, applying steady pressure with the referee watching.',{requires:'mat',zone:'mat',down:'d',focus:2,next:[e('rope_crawl',3),e('mat_scramble',2),e('hope_elbows',3)]});
  node('target_strike','{A} drives a short strike into {D}’s {part}, then drags {D} away from the ropes.',{focus:2,zone:'mat',down:'d',next:[e('target_hold',3),e('hope_elbows',3),e('rope_crawl',2)]});
  node('rope_crawl','{D} drags themselves towards the bottom rope while {A} keeps the pressure on.',{requires:'mat',zone:'mat',down:'d',next:[e('rope_break',4),e('hope_elbows',2)]});
@@ -1198,6 +1198,10 @@ const Graph=(function makeGraph(){
   const victim=n.reverse?side:opp;
   const part=g.targets?.[victim]||p.target;
   const variant=n.lines[Math.floor(M.r()*n.lines.length)];
+  if(g.damage?.w>=3&&p.control==='w'&&['top_climb','rope_run','clothesline','snap_suplex'].includes(id)&&(!g.lastSell||M.t-g.lastSell>100)){
+   const effect=g.targets.w==='left knee'?'hesitates on the damaged knee':g.targets.w==='lower back'?'winces and steadies the lower back':g.targets.w==='ribs'?'takes a painful breath and protects the ribs':'favouring the damaged shoulder';
+   say(M,fill(M,'{W} '+effect+' before committing to the next move.'),'story');g.lastSell=M.t;
+  }
   const text=fill(M,variant,{A:attacker.short,D:defender.short,part,move:n.kind});
   say(M,text,n.kind); // all dialogue is original and event-led
   const originalDown=n.reverse?side:opp;
@@ -1211,7 +1215,7 @@ const Graph=(function makeGraph(){
   if(id==='cover')g.pendingCover=true;
   if(id==='target_hold'||id==='target_strike'||id==='arm_wringer')g.lastTarget=M.t;
   if(id==='near_kickout')g.pendingCover=false;
-  g.node=id;g.steps++;g.events.push({id,t:M.t,control:p.control,position:p.position,down:p.down,arc:g.arc});
+  g.node=id;g.steps++;g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part});
   if(g.events.length>220)g.events.shift();
  }
  function validPool(M){
@@ -1665,11 +1669,11 @@ function finish(M){
    say(M,`${w.short} hits ${the(w.finisher)}!`,'play',{...step(),big:true,pause:1});say(M,'Cover!','count',{...step(),pause:1});
    say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});
    say(M,`${f.short}’s foot is on the rope!`,'crowd',{...step(),big:true,pause:1});
-   say(M,`${w.short} argues with the referee, momentarily forgetting the injured ${Psy.get(M).target}. ${f.short} rolls up from behind with a handful of tights!`,'play',{...step(),pause:1});
+   say(M,M.graph?.damage?.w>=3?`${w.short} argues with the referee, momentarily forgetting the injured ${Psy.get(M).target}. ${f.short} rolls up from behind with a handful of tights!`:`${w.short} argues with the referee and turns away for a second. ${f.short} takes advantage with a roll-up and a fistful of tights!`,'play',{...step(),pause:1});
    say(M,'ONE! TWO! THREE!','count',{...step(),big:true});
    say(M,`${w.name} was robbed, and everyone saw it.`,'bell',{...step(),big:true});
   }else{
-   say(M,`${w.short} tries to plant on the battered ${Psy.get(M).target}, but hesitates just long enough for ${f.short} to duck the strike and catch ${w.short} off balance!`,'play',{...step(),pause:1});
+   say(M,M.graph?.damage?.w>=3?`${w.short} tries to plant on the battered ${Psy.get(M).target}, but hesitates just long enough for ${f.short} to duck the strike and catch ${w.short} off balance!`:`${w.short} lunges for another attack, but ${f.short} ducks beneath it and catches ${w.short} off balance!`,'play',{...step(),pause:1});
    decisive(M,f,w,step,`${f.name} wins, decisively. No excuses.`);
   }
  }
@@ -1682,7 +1686,7 @@ function summary(M){
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
-  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(whole)+(frac===.25?'¼':frac===.5?'½':frac===.75?'¾':'')+(s===0?'DUD':'');}
 function liveStars(M){return stars(M,false)}
