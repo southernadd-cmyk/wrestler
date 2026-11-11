@@ -1,62 +1,1936 @@
 <!doctype html>
 <html lang="en-GB">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#161321">
-    <meta name="description" content="Build a deck, read your rival and fight through the Spirit Cup in a sumo roguelite.">
-    <title>Dohyō — Spirit Cup</title>
-  </head>
-  <body>
-    <header class="site-header">
-      <div class="shell header-inner">
-        <a class="wordmark" href="./" aria-label="Dohyō Spirit Cup">
-          <span class="ring-mark" aria-hidden="true"></span>
-          <span><strong>DOHYŌ</strong><small>SPIRIT CUP</small></span>
-        </a>
-        <nav class="site-nav" aria-label="Game options">
-          <a class="quiet" href="./career.html">Classic career</a>
-          <button class="quiet" id="sound-toggle" type="button" aria-pressed="true">Sound on</button>
-        </nav>
-      </div>
-    </header>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Office v2.3 — Territory Pyramid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=VT323&display=swap" rel="stylesheet">
+<style>:root{
+ --bg:#E4E8F2;--surface:#F7F8FC;--surface-2:#ECEFF7;--line:#C3CBE0;--ink:#121A38;--ink-2:#46527C;--ink-3:#6A769E;
+ --accent:#1D3B9A;--accent-ink:#fff;--good:#17703F;--bad:#B3302A;--crowd:#0B7385;--cta-bg:#142257;--cta-ink:#FFD447;--sel:#DCE3F7;
+ --tv-bg:#0A1230;--tv-panel:#101B44;--tv-line:#24346B;--tv-ink:#E8ECF7;--tv-dim:#8C98C4;--tv-hi:#FFD447;--tv-crowd:#72E0EE;--tv-bad:#FF7A6E;--tv-good:#6BD99A;--tv-you:#FFD447;--tv-them:#9DB0E8;
+ --ui:'Archivo','Arial Narrow',Arial,sans-serif;--tv:'VT323','Courier New',monospace;
+ color-scheme:light;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --bg:#0E1631;--surface:#151F45;--surface-2:#1A2652;--line:#2A3A73;--ink:#E8ECF7;--ink-2:#A3AED3;--ink-3:#7584B4;
+ --accent:#FFD447;--accent-ink:#0E1631;--good:#6BD99A;--bad:#FF7A6E;--crowd:#72E0EE;--cta-bg:#FFD447;--cta-ink:#0E1631;--sel:#22306A;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E1631;--surface:#151F45;--surface-2:#1A2652;--line:#2A3A73;--ink:#E8ECF7;--ink-2:#A3AED3;--ink-3:#7584B4;
+ --accent:#FFD447;--accent-ink:#0E1631;--good:#6BD99A;--bad:#FF7A6E;--crowd:#72E0EE;--cta-bg:#FFD447;--cta-ink:#0E1631;--sel:#22306A;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 15px/1.45 var(--ui);font-variant-numeric:tabular-nums}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.4}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-stretch:75%;font-weight:800;line-height:1;margin:0;letter-spacing:-.005em}
+p{margin:0 0 .6em}
+.dim{color:var(--ink-2)}.faint{color:var(--ink-3)}.good{color:var(--good)}.bad{color:var(--bad)}
+.num{font-variant-numeric:tabular-nums}
 
-    <main class="shell">
-      <div class="masthead">
-        <div>
-          <p class="eyebrow" id="page-kicker">THE STABLE</p>
-          <h1 id="page-title" tabindex="-1">Enter the Spirit Cup</h1>
-          <p class="subtitle" id="page-subtitle">Read the rival and build a sequence from the cards in your hand.</p>
-        </div>
-        <ol class="bracket" id="bracket" aria-label="Tournament rounds"></ol>
-      </div>
+/* ---------- top bar ---------- */
+.bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:20px;padding:10px clamp(12px,3vw,28px);background:var(--surface);border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.brand{display:flex;flex-direction:column;line-height:1;margin-right:auto}
+.brand b{font-size:26px;font-stretch:62%;font-weight:900;letter-spacing:.01em}
+.brand span{font-size:12px;color:var(--ink-3);margin-top:3px}
+.stat{display:flex;flex-direction:column;align-items:flex-end;line-height:1.05}
+.stat small{font-size:12px;color:var(--ink-3)}
+.stat strong{font-size:20px;font-stretch:80%;font-weight:700}
+.cta{background:var(--cta-bg);color:var(--cta-ink);border:0;padding:12px 22px;font-weight:800;font-stretch:80%;font-size:19px;min-width:170px;border-radius:2px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.cta:hover{filter:brightness(1.08)}
+.cta small{display:block;font-size:12px;font-weight:600;opacity:.8;font-stretch:100%}
+.tabs{display:flex;gap:2px;padding:0 clamp(12px,3vw,28px);background:var(--surface);border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:11px 16px 9px;font-weight:700;font-stretch:85%;font-size:16px;color:var(--ink-2);white-space:nowrap}
+.tab[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .pill{display:inline-block;min-width:20px;margin-left:6px;padding:1px 6px;border-radius:9px;background:var(--bad);color:#fff;font-size:12px;font-stretch:100%;text-align:center}
+.tab .pill.soft{background:var(--surface-2);color:var(--ink-2)}
+main{max-width:1200px;margin:0 auto;padding:22px clamp(12px,3vw,28px) 60px}
+.section{margin-bottom:28px}
+.section>h2{font-size:24px;margin-bottom:4px}
+.section>.lede{color:var(--ink-2);margin-bottom:12px;max-width:68ch}
 
-      <div class="layout">
-        <section class="arena-panel" aria-label="Sumo arena">
-          <div class="arena-screen" id="arena-screen">
-            <canvas id="arena-3d" aria-hidden="true"></canvas>
-            <canvas id="arena-overhead" aria-hidden="true" hidden></canvas>
-            <div class="camera-tag"><span></span><b id="camera-name">RINGSIDE</b></div>
-            <div class="names" aria-label="Rikishi in the ring">
-              <div class="name east"><small>EAST</small><strong id="east-name">Hoshimori</strong></div>
-              <span class="versus">VS</span>
-              <div class="name west"><small>WEST</small><strong id="west-name">Aonami</strong></div>
-            </div>
-          </div>
-          <div class="arena-report">
-            <p id="arena-call" aria-live="polite">Both rikishi take their marks.</p>
-            <div id="position-track"></div>
-          </div>
-        </section>
+/* ---------- generic ---------- */
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:2px;font-weight:600;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.quiet{border-color:transparent;background:none;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;padding:7px 4px}
+.btn.danger{color:var(--bad)}
+select{border:1px solid var(--line);background:var(--surface);padding:6px 8px;border-radius:2px;max-width:100%}
+.meter{display:inline-block;width:64px;height:7px;background:var(--surface-2);border:1px solid var(--line);vertical-align:middle;position:relative}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--ink-2)}
+.meter.hot i{background:var(--good)}.meter.warn i{background:#D99A1E}.meter.danger i{background:var(--bad)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:1px 7px;border-radius:2px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+.tag.win{color:var(--good);border-color:currentColor;background:none}
+.tag.lose{color:var(--bad);border-color:currentColor;background:none}
+.tag.hot{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.empty{padding:26px;border:1px dashed var(--line);color:var(--ink-2);text-align:center}
+.portrait{image-rendering:pixelated;width:36px;height:45px;border:1px solid var(--line);background:var(--surface-2);flex:none}
 
-        <section class="play-panel" id="play-panel" aria-label="Player controls"></section>
-        <aside class="side-panel" id="side-panel" aria-label="Rival and run information"></aside>
-      </div>
-      <footer class="site-footer">
-        <span>DOHYŌ <b>•</b> SPIRIT CUP</span>
-        <span id="save-status">Progress saves in this browser.</span>
-      </footer>
-    </main>
-    <script type="module" src="/src/cup.js"></script>
-  </body>
+/* ---------- inbox ---------- */
+.inbox{display:grid;grid-template-columns:minmax(260px,360px) 1fr;border:1px solid var(--line);background:var(--surface);min-height:420px}
+.msglist{list-style:none;margin:0;padding:0;border-right:1px solid var(--line);max-height:70vh;overflow:auto}
+.msglist button{display:grid;grid-template-columns:10px 1fr auto;gap:2px 10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 14px}
+.msglist button[aria-current="true"]{background:var(--sel)}
+.msglist .dot{width:8px;height:8px;border-radius:50%;margin-top:6px;background:transparent}
+.msglist .unread .dot{background:var(--accent)}
+.msglist .need .dot{background:var(--bad)}
+.msglist .from{font-size:13px;color:var(--ink-2)}
+.msglist .subj{grid-column:2/4;font-weight:600}
+.msglist .unread .subj{font-weight:800}
+.msglist .wk{font-size:12px;color:var(--ink-3)}
+.letter{padding:22px 26px;max-width:72ch}
+.letter h2{font-size:30px;margin:4px 0 14px}
+.letter .meta{font-size:13px;color:var(--ink-3)}
+.choices{display:grid;gap:8px;margin-top:18px}
+.choice{display:grid;grid-template-columns:1fr;text-align:left;padding:12px 14px;border:1px solid var(--line);background:var(--surface-2);border-radius:2px}
+.choice:hover{border-color:var(--accent)}
+.choice b{font-size:16px}
+.choice span{font-size:14px;color:var(--ink-2)}
+.outcome{margin-top:16px;padding:12px 14px;border-left:3px solid var(--accent);background:var(--surface-2)}
+
+/* ---------- tables ---------- */
+.table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line)}
+.table th{font-size:12px;font-weight:600;color:var(--ink-3);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.table td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.table tr:last-child td{border-bottom:0}
+.table td.n,.table th.n{text-align:right}
+.who{display:flex;align-items:center;gap:10px;min-width:180px}
+.who b{display:block;font-size:16px;font-stretch:85%}
+.who small{color:var(--ink-3);font-size:12px}
+.rowlink{background:none;border:0;padding:0;text-align:left}
+.rowlink:hover b{text-decoration:underline}
+.detail td{background:var(--surface-2)}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;padding:8px 2px}
+.detail-grid h3{font-size:16px;margin-bottom:6px}
+
+/* ---------- bookings ---------- */
+.ledger{display:flex;flex-wrap:wrap;gap:6px 24px;align-items:baseline;padding:12px 16px;background:var(--surface);border:1px solid var(--line);margin-bottom:18px}
+.ledger strong{font-size:22px;font-stretch:80%}
+.offers{display:grid;gap:8px}
+.offer{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(190px,1.4fr) minmax(250px,1.6fr);gap:14px 20px;align-items:center;padding:14px 16px;background:var(--surface);border:1px solid var(--line)}
+.offer h3{font-size:20px}
+.offer .terms{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.offer .act{display:grid;gap:8px}
+.offer .act .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.offer .purse{font-size:24px;font-weight:800;font-stretch:80%}
+.fit{font-size:13px}
+.haggle{display:flex;gap:4px;flex-wrap:wrap;align-items:center;font-size:13px}
+.haggle .btn{padding:4px 8px;font-size:13px}
+.card-list{display:grid;gap:6px}
+.booked{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent)}
+.booked b{font-size:17px;font-stretch:85%}
+
+/* ---------- records ---------- */
+.goals{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+.goals li{padding:12px 14px;background:var(--surface);border:1px solid var(--line)}
+.goals li.done{border-color:var(--good)}
+.goals li.done::before{content:"✓ ";color:var(--good);font-weight:800}
+.stars{color:var(--accent);letter-spacing:.04em;white-space:nowrap}
+
+/* ---------- title ---------- */
+.title{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--tv-bg);color:var(--tv-ink);padding:24px}
+.title[hidden]{display:none}
+.title .inner{max-width:640px;width:100%}
+.title .teletext{font:22px/1 var(--tv);color:var(--tv-bg);background:var(--tv-hi);display:inline-block;padding:4px 10px;margin-bottom:22px}
+.title h1{font-size:clamp(64px,14vw,150px);font-stretch:62%;font-weight:900;line-height:.82;letter-spacing:-.01em}
+.title p{font:24px/1.25 var(--tv);color:var(--tv-dim);margin:22px 0 30px;max-width:30ch}
+.title .row{display:flex;gap:12px;flex-wrap:wrap}
+.title .cta{background:var(--tv-hi);color:var(--tv-bg)}
+.title .alt{background:none;border:1px solid var(--tv-line);color:var(--tv-ink);padding:12px 20px;font-weight:700;font-stretch:80%;font-size:18px}
+.title .note{font:18px var(--tv);color:var(--tv-dim);margin-top:28px}
+
+/* ---------- toast + dialog ---------- */
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:2px;font-weight:600;max-width:min(560px,92vw);opacity:0;pointer-events:none;transition:opacity .2s;z-index:60}
+#toast.show{opacity:1}
+dialog{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0;max-width:min(720px,94vw);width:100%;border-radius:2px}
+dialog::backdrop{background:rgba(5,10,30,.6)}
+dialog .dlg{padding:20px 22px;max-height:80vh;overflow:auto}
+dialog h2{font-size:26px;margin-bottom:10px}
+dialog .foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 22px;border-top:1px solid var(--line)}
+
+/* ---------- the TV: match night ---------- */
+.tv{position:fixed;inset:0;z-index:20;background:var(--tv-bg);color:var(--tv-ink);overflow:auto;display:flex;flex-direction:column}
+.tv[hidden]{display:none}
+.tv .strip{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:8px clamp(12px,3vw,28px);background:var(--tv-hi);color:var(--tv-bg);font:22px/1 var(--tv)}
+.tv .strip b{font-weight:400}
+.tv .wrap{width:100%;max-width:1100px;margin:0 auto;padding:18px clamp(12px,3vw,28px) 28px;flex:1;display:flex;flex-direction:column}
+.tv .btn{background:var(--tv-panel);border-color:var(--tv-line);color:var(--tv-ink)}
+.tv .btn:hover:not(:disabled){border-color:var(--tv-dim)}
+.tv .go{background:var(--tv-hi);color:var(--tv-bg);border:0;padding:13px 26px;font-weight:800;font-stretch:80%;font-size:20px;border-radius:2px}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;margin:6px 0 16px}
+.vs .side{display:flex;align-items:center;gap:14px}
+.vs .side.them{flex-direction:row-reverse;text-align:right}
+.vs img{width:72px;height:90px;image-rendering:pixelated;border:1px solid var(--tv-line);background:var(--tv-panel)}
+.vs h2{font-size:clamp(26px,4vw,44px);font-stretch:62%;font-weight:900}
+.vs small{display:block;font:20px var(--tv);color:var(--tv-dim)}
+.vs .v{font:40px var(--tv);color:var(--tv-dim)}
+.contract{font:24px/1.2 var(--tv);color:var(--tv-ink);padding:10px 14px;border:1px solid var(--tv-line);background:var(--tv-panel);margin-bottom:16px}
+.contract em{font-style:normal;color:var(--tv-hi)}
+.scout{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.scout div{padding:10px 14px;border-left:2px solid var(--tv-line);font-size:15px;color:var(--tv-dim)}
+.scout b{color:var(--tv-ink)}
+.scout .warn{color:var(--tv-bad)}
+.decide{border:0;margin:0 0 18px;padding:0}
+.decide legend{font-size:20px;font-weight:800;font-stretch:80%;margin-bottom:8px;padding:0}
+.decide .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:6px}
+.opt{position:relative;text-align:left;border:1px solid var(--tv-line);background:var(--tv-panel);color:var(--tv-ink);padding:10px 12px;border-radius:2px;display:flex;flex-direction:column;gap:3px}
+.opt b{font-size:16px}
+.opt span{font-size:13px;color:var(--tv-dim)}
+.opt[aria-pressed="true"]{border-color:var(--tv-hi);box-shadow:inset 0 0 0 1px var(--tv-hi)}
+.opt .fits{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.opt .fits i{font-style:normal;font-size:12px;padding:0 6px;border:1px solid var(--tv-good);color:var(--tv-good)}
+.opt .fits i.no{border-color:var(--tv-bad);color:var(--tv-bad)}
+.prep-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
+.prep-foot .dim{color:var(--tv-dim)}
+
+/* live */
+.score{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center}
+.score .side{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center}
+.score .side.them{grid-template-columns:1fr auto;text-align:right}
+.score .side.them img{grid-column:2;grid-row:1/3}
+.score img{width:52px;height:65px;image-rendering:pixelated;border:1px solid var(--tv-line);grid-row:1/3}
+.score h2{font-size:clamp(22px,3.4vw,34px);font-stretch:62%;font-weight:900}
+.score .you h2{color:var(--tv-you)}
+.stam{height:6px;background:var(--tv-panel);border:1px solid var(--tv-line);position:relative}
+.stam i{position:absolute;top:0;bottom:0;left:0;background:var(--tv-good);transition:width .4s}
+.them .stam i{left:auto;right:0}
+.stam.low i{background:var(--tv-bad)}
+.score .mid{text-align:center;min-width:160px}
+.score .live-stars{font:42px/1 var(--tv);color:var(--tv-hi);letter-spacing:.05em;min-height:42px}
+.score .clock{font:34px/1 var(--tv)}
+.score .phase{font:20px var(--tv);color:var(--tv-dim)}
+.mom{margin:14px 0 4px;height:8px;display:flex;background:var(--tv-them)}
+.mom i{display:block;background:var(--tv-you);transition:width .5s}
+.momlab{display:flex;justify-content:space-between;font:18px var(--tv);color:var(--tv-dim)}
+.feed{flex:1;display:flex;flex-direction:column;margin:12px 0;min-height:260px}
+.now{min-height:3.2em;display:flex;align-items:center;gap:16px;font:clamp(28px,4.2vw,44px)/1.1 var(--tv);padding:16px 0;border-top:1px solid var(--tv-line);border-bottom:1px solid var(--tv-line)}
+.now .t{color:var(--tv-dim);font-size:.6em;flex:none;width:3.4em}
+.now.big{color:var(--tv-hi)}
+.now.count{justify-content:center;font-size:clamp(60px,11vw,120px);color:var(--tv-hi)}
+.now.count .t{display:none}
+.now.crowd{color:var(--tv-crowd)}.now.bad,.now.alert{color:var(--tv-bad)}.now.agent,.now.you{color:var(--tv-dim)}
+.now.rating{color:var(--tv-hi);justify-content:center}
+.now .tx{animation:land .18s ease-out}
+@keyframes land{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.past{list-style:none;margin:10px 0 0;padding:0;font:22px/1.25 var(--tv);color:var(--tv-dim);overflow:hidden;max-height:11.5em}
+.past li{display:flex;gap:16px;padding:2px 0}
+.past li .t{flex:none;width:3.4em;opacity:.7}
+.past li.crowd{color:#5BAFBC}.past li.bad,.past li.alert{color:#C46A62}.past li.big{color:#CDB453}.past li.you{color:#B9C3E6}
+.past li:nth-child(n+5){opacity:.6}.past li:nth-child(n+7){opacity:.4}
+.bench{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:18px;padding-top:14px;border-top:1px solid var(--tv-line)}
+.gauge{margin-bottom:10px}
+.gauge label{display:flex;justify-content:space-between;font:20px var(--tv);color:var(--tv-dim)}
+.gauge label b{font-weight:400;color:var(--tv-ink)}
+.gauge label b.warnv{color:var(--tv-bad)}
+.gbar{height:10px;background:var(--tv-panel);border:1px solid var(--tv-line);position:relative}
+.gbar i{position:absolute;inset:0 auto 0 0;background:var(--tv-crowd);transition:width .4s}
+.callsleft{font:20px var(--tv);color:var(--tv-dim)}
+.callsleft span{color:var(--tv-hi);letter-spacing:.2em}
+.calls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.call{text-align:left;padding:10px 12px;border:1px solid var(--tv-line);background:var(--tv-panel);color:var(--tv-ink);border-radius:2px;font-weight:700;font-size:15px;display:flex;gap:10px;align-items:baseline}
+.call kbd{font:16px var(--tv);color:var(--tv-dim);border:1px solid var(--tv-line);padding:0 5px}
+.call:hover:not(:disabled){border-color:var(--tv-hi)}
+.callhint{font:19px/1.2 var(--tv);color:var(--tv-dim);min-height:1.3em;margin-top:8px}
+.speed{display:flex;gap:4px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.speed button{background:none;border:1px solid var(--tv-line);color:var(--tv-dim);padding:5px 10px;font:18px/1 var(--tv)}
+.speed button[aria-pressed="true"]{color:var(--tv-bg);background:var(--tv-ink);border-color:var(--tv-ink)}
+.speed .gap{flex:1}
+.decision{position:fixed;inset:0;z-index:25;display:grid;place-items:center;background:rgba(4,8,24,.72);padding:18px}
+.decision[hidden]{display:none}
+.decision .box{width:min(620px,100%);background:var(--tv-bg);border:2px solid var(--tv-bad);padding:20px 22px}
+.decision .flash{font:22px var(--tv);color:var(--tv-bg);background:var(--tv-bad);display:inline-block;padding:2px 8px;margin-bottom:10px}
+.decision h2{font-size:36px;font-stretch:62%;font-weight:900;margin-bottom:8px}
+.decision p{color:var(--tv-dim);font-size:16px}
+.decision .opts{display:grid;gap:8px;margin-top:14px}
+/* result */
+.final{text-align:center;padding:10px 0 18px}
+.final .bigstars{font:clamp(64px,12vw,120px)/1 var(--tv);color:var(--tv-hi);letter-spacing:.04em}
+.final .verdict{font:28px var(--tv);color:var(--tv-dim)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--tv-line);border:1px solid var(--tv-line);margin-bottom:18px}
+.facts div{background:var(--tv-panel);padding:10px 12px}
+.facts small{display:block;font:18px var(--tv);color:var(--tv-dim)}
+.facts b{font:30px/1 var(--tv);font-weight:400}
+.cons{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:4px}
+.cons li{padding:7px 12px;border-left:3px solid var(--tv-line);background:var(--tv-panel)}
+.cons li.up{border-left-color:var(--tv-good)}.cons li.down{border-left-color:var(--tv-bad)}
+.fulllog{font:20px/1.3 var(--tv);color:var(--tv-dim);max-height:50vh;overflow:auto;border:1px solid var(--tv-line);padding:10px 14px;margin:0 0 18px;list-style:none}
+.fulllog li{display:flex;gap:14px}.fulllog .t{flex:none;width:3.4em;opacity:.7}
+.fulllog .big{color:#CDB453}.fulllog .crowd{color:#5BAFBC}.fulllog .bad,.fulllog .alert{color:#C46A62}
+
+/* ---------- v2.1 director's desk & conversations ---------- */
+.desk-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.desk-head h2{font-size:38px;margin:6px 0}
+.desk-kicker{font:19px/1.15 var(--tv);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.desk-meet{border:1px solid var(--line);background:var(--surface);padding:11px 14px;display:flex;flex-direction:column;min-width:210px}
+.desk-meet b{font-size:28px;line-height:1}.desk-meet small{font-weight:800}.desk-meet span{font-size:12px;color:var(--ink-3);max-width:25ch;margin-top:2px}
+.desk-mission{border:2px solid var(--accent);background:var(--surface);padding:18px;margin-bottom:14px}
+.desk-mission h2{font-size:27px;margin:6px 0}.desk-mission p{max-width:80ch;color:var(--ink-2);margin:0 0 14px}
+.desk-criteria{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.desk-criteria>div{background:var(--surface-2);border:1px solid var(--line);padding:8px 11px;display:flex;flex-direction:column;gap:3px}
+.desk-criteria>div.met{border-color:var(--good)}.desk-criteria span{font-weight:800}.desk-criteria small{color:var(--ink-3)}
+.desk-finance{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:14px}
+.desk-finance>div{background:var(--surface);padding:12px 14px;min-width:0}.desk-finance small{display:block;color:var(--ink-3);font-size:12px}.desk-finance b{font-size:22px}
+.desk-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.desk-panel{border:1px solid var(--line);padding:16px;background:var(--surface);display:flex;flex-direction:column}
+.desk-panel h3{font-size:22px;margin-bottom:10px}.desk-panel p{min-height:2.8em}.desk-panel button{align-self:flex-start;margin-top:auto}
+.desk-foot{margin:14px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:var(--ink-2)}
+.train-pair{display:flex;gap:5px;flex-direction:column;min-width:195px}.train-pair select{font-size:13px}
+.terms-compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.terms-compare>div{padding:10px;background:var(--surface-2);border:1px solid var(--line)}.terms-compare small{display:block;color:var(--ink-3)}.terms-compare b{display:block;margin-top:3px;font-size:15px}
+.talk-log{border:1px solid var(--line);max-height:38vh;overflow:auto;padding:10px 12px;background:var(--surface-2)}
+.talk-line{border-bottom:1px solid var(--line);padding:8px 0}.talk-line:last-child{border-bottom:0}.talk-line b{color:var(--accent)}.talk-line p{margin:4px 0 0}
+.talk-actions{display:grid;gap:6px;margin-top:12px}.talk-actions p{margin:0 0 4px}.talk-outcome{padding:12px;margin-top:10px;border-left:3px solid var(--accent);background:var(--surface-2)}
+.talk-outcome p{margin:5px 0 12px}
+@media(max-width:900px){.desk-grid{grid-template-columns:1fr 1fr}.desk-finance{grid-template-columns:1fr 1fr}}
+@media(max-width:580px){.desk-grid,.desk-criteria,.terms-compare{grid-template-columns:1fr}.desk-finance{grid-template-columns:1fr 1fr}.desk-head h2{font-size:32px}.desk-meet{min-width:0;width:100%}.desk-panel p{min-height:0}}
+
+/* ---------- small screens ---------- */
+@media (max-width:860px){
+ .bar{flex-wrap:wrap;gap:10px 16px}
+ .brand{flex-basis:100%;flex-direction:row;align-items:baseline;gap:10px}
+ .cta{margin-left:auto;min-width:0}
+ .inbox{grid-template-columns:1fr}
+ .msglist{border-right:0;border-bottom:1px solid var(--line);max-height:38vh}
+ .letter{padding:18px 16px}
+ .offer{grid-template-columns:1fr}
+ .scout{grid-template-columns:1fr}
+ .bench{grid-template-columns:1fr}
+ .calls{grid-template-columns:repeat(2,1fr)}
+ .score{grid-template-columns:1fr 1fr;}
+ .score .mid{grid-column:1/3;grid-row:1;order:-1}
+ .score img{width:40px;height:50px}
+ .tv .wrap{padding-top:10px}
+ .score .live-stars{font-size:30px;min-height:30px}.score .clock{font-size:26px}
+ .now{font-size:24px;min-height:4.6em;padding:10px 0}
+ .now.count{font-size:64px}
+ .past{font-size:18px;max-height:5.2em}
+ .feed{min-height:0;margin:8px 0}
+ .call{padding:9px 10px;font-size:14px}
+ .mom{margin-top:10px}
+ .vs img{width:52px;height:65px}
+ .resp thead{display:none}
+ .resp tr{display:grid;grid-template-columns:repeat(4,1fr);gap:4px 10px;padding:10px 12px;border-bottom:1px solid var(--line)}
+ .resp td{border:0;padding:2px 0}
+ .resp td.lead{grid-column:1/-1}
+ .resp td[data-l]::before{content:attr(data-l);display:block;font-size:11px;color:var(--ink-3)}
+ .resp td.n{text-align:left}
+ .resp td.wide{grid-column:span 2}
+ .resp tr.detail{display:block}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* v2.2: clear calendar and development planning surfaces */
+.staff-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.staff-pick{display:flex;flex-direction:column;align-items:flex-start;gap:7px;border:1px solid var(--line);background:var(--surface);padding:14px}
+.staff-pick b{font-size:17px}.staff-pick span{font-size:13px}.staff-pick button{margin-top:auto}
+.program-actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.program-actions .btn{font-size:13px}
+@media(max-width:600px){.staff-options{grid-template-columns:1fr}.program-actions{display:grid;grid-template-columns:1fr}.program-actions .btn{width:100%}}
+
+.circuit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}.circuit-check{background:var(--surface);border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:5px}.circuit-check.met{border-color:var(--good)}.circuit-check small{color:var(--ink-3)}.circuit-check b{font-size:18px}.circuit-check span{font-size:13px}.circuit-check strong{font-size:20px}
+/* Strict viewport-managed screens: no browser-page scrolling */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+#app{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#app>.bar,#app>.tabs{flex:none}
+#view{flex:1;min-height:0;overflow:hidden;scroll-behavior:auto}
+#page-controls{flex:none;display:flex;align-items:center;justify-content:center;gap:18px;padding:6px 12px;background:var(--surface);border-top:1px solid var(--line);z-index:3}
+#page-controls[hidden]{display:none}
+.page-controls button{padding:7px 13px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-weight:700;cursor:pointer}
+.page-controls button:disabled{opacity:.35}
+.page-counter{font:16px var(--tv)}
+.pyramid-section h2{margin:5px 0 3px}
+.pyr-tiers{display:grid;gap:7px;margin:10px auto;max-width:940px}
+.pyr-level{width:100%;border:1px solid var(--line);background:var(--surface);padding:8px 10px;text-align:center}
+.pyr-level:nth-child(1){width:44%;margin:auto;border-color:#d8a92b}
+.pyr-level:nth-child(2){width:58%;margin:auto}
+.pyr-level:nth-child(3){width:72%;margin:auto}
+.pyr-level:nth-child(4){width:86%;margin:auto}
+.pyr-level strong{display:block;font:16px var(--tv);letter-spacing:.07em;color:var(--ink-2)}
+.pyr-level.apex strong{color:#ae811b}
+.pyr-entries{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
+.pyr-entry{display:inline-flex;flex-direction:column;min-width:125px;background:var(--surface-2);border-left:3px solid var(--line);padding:4px 7px}
+.pyr-entry.mine{border-left-color:#d9a51d;background:var(--sel)}
+.pyr-entry b{font-size:13px}.pyr-entry small{font-size:10px;color:var(--ink-3)}
+.pyr-teams{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.pyr-team{display:flex;flex-direction:column;background:var(--surface-2);padding:12px;border:1px solid var(--line);gap:6px}
+.pyr-team small,.pyr-team span{color:var(--ink-2);font-size:12px}
+.pyr-news{border-bottom:1px solid var(--line);padding:6px}
+@media(max-width:660px){.pyr-level:nth-child(n){width:100%}.pyr-teams{grid-template-columns:1fr}.pyr-entry{min-width:100px}.pyr-level{padding:5px}}
+.tv{overflow:hidden}.tv .wrap{overflow:hidden}
+</style>
+</head>
+<body>
+<div id="app">
+ <header class="bar">
+  <div class="brand"><b>The Office</b><span>Wrestling management · v2.3</span></div>
+  <div class="stat" id="date"></div>
+  <div class="stat" id="cash"></div>
+  <div class="stat" id="rep"></div>
+  <button id="continue" class="cta">Continue</button>
+ </header>
+ <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+ <main id="view"></main><div id="page-controls" class="page-controls" hidden><button data-page="prev" aria-label="Previous screen">◀ Previous</button><span class="page-counter"></span><button data-page="next" aria-label="Next screen">Next ▶</button></div>
+</div>
+<section id="tv" class="tv" hidden aria-label="Match night"></section>
+<div id="title" class="title" hidden>
+ <div class="inner">
+  <div class="teletext">P302  WRESTLING  LIVE TEXT</div>
+  <h1>The<br>Office</h1>
+  <p>Run a stable of wrestlers. Take the bookings. Sit at ringside and live with the calls.</p>
+  <div class="row"><button class="cta" data-title="new">New career</button><button class="alt" id="loadBtn" data-title="load" hidden>Continue career</button></div>
+  <div class="note">Space pauses a match. Keys 1–6 make calls from ringside.</div>
+ </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="modal"></dialog>
+<script>
+/* THE OFFICE / PIXEL PORTRAIT STUDIO v0.9
+   Original dependency-free layered sprite renderer. No generative models, no external assets.
+   Every look is determined by its character key plus a persisted appearance override.
+*/
+(function(root){'use strict';
+const hash=s=>{let h=2166136261>>>0;for(const c of String(s)){h=Math.imul(h^c.charCodeAt(0),16777619)>>>0}return h>>>0};
+const OPTIONS={
+ presentation:[['male','Male'],['female','Female'],['neutral','Androgynous']],
+ complexion:[['deep','#683f34'],['umber','#8a5543'],['bronze','#ac7355'],['tan','#c18d6d'],['warm','#d8a17e'],['peach','#e9bb94'],['fair','#f3d2aa'],['olive','#aa9669']],
+ face:[['square','Square'],['oval','Oval'],['round','Round'],['angular','Angular'],['heart','Heart'],['long','Long']],
+ hair:[['buzz','Buzz cut'],['crop','Cropped'],['swept','Swept'],['spikes','Spiked'],['mohawk','Mohawk'],['curly','Curls'],['afro','Afro'],['waves','Waves'],['long','Long'],['ponytail','Ponytail'],['braids','Braids'],['topknot','Top knot'],['undercut','Undercut'],['bald','Bald']],
+ hairColor:[['ink','#161925'],['brown','#55362c'],['chestnut','#8a503d'],['blond','#d9b376'],['silver','#b8bbc1'],['ginger','#ac5a33'],['auburn','#a14750'],['blue','#3872a4'],['pink','#b95c8f'],['white','#dfd6c8'],['green','#548a63']],
+ eyes:[['calm','Calm'],['sharp','Sharp'],['wide','Wide'],['sleepy','Sleepy'],['heavy','Heavy brow'],['bright','Bright']],
+ eyeColor:[['dark','#27242b'],['brown','#6b4234'],['hazel','#7e7751'],['green','#49776d'],['blue','#5379a7'],['grey','#7f9296']],
+ nose:[['short','Short'],['straight','Straight'],['broad','Broad'],['crooked','Crooked']],
+ mouth:[['neutral','Neutral'],['smile','Smiling'],['smirk','Smirking'],['frown','Frowning'],['grim','Grim'],['grin','Grinning']],
+ beard:[['none','None'],['shadow','Stubble'],['moustache','Moustache'],['goatee','Goatee'],['full','Full beard'],['sideburns','Sideburns']],
+ scars:[['none','None'],['cheek','Cheek scar'],['brow','Brow scar'],['nose','Nose scar']],
+ accessory:[['none','None'],['glasses','Glasses'],['shades','Sunglasses'],['earring','Earring'],['eyepatch','Eye patch'],['piercing','Piercing']],
+ headwear:[['none','None'],['headband','Headband'],['bandana','Bandana'],['mask','Ring mask'],['cap','Cap']],
+ gear:[['singlet','Singlet'],['jacket','Jacket'],['tee','T-shirt'],['vest','Vest'],['robe','Entrance robe'],['suit','Promoter suit']],
+ gearColor:[['crimson','#a83f4a'],['steel','#607f9f'],['gold','#b98b44'],['teal','#377d83'],['violet','#705b9e'],['forest','#47745d'],['charcoal','#34394b'],['cream','#ddd0aa'],['rose','#bc657e'],['orange','#bb7138']],
+ bg:[['navy','#242e46'],['rust','#553c39'],['teal','#284e50'],['violet','#4b3d5d'],['olive','#3e4a3d'],['slate','#3a464d'],['gold','#564b31']]
+};
+const items=Object.fromEntries(Object.entries(OPTIONS).map(([k,v])=>[k,v.map(x=>x[0])]));
+const presets={mara:'female',lyra:'female',juno:'female',roxy:'female',rex:'male',brick:'male',sol:'male',red:'male',silas:'male',rev:'male'};
+function generated(key,nonce=0,meta={}){
+ const o={};const base=String(key)+'|look-v9|'+(nonce||0);
+ for(const [k,opts] of Object.entries(items)){
+  const h=hash(base+'|'+k);o[k]=opts[h%opts.length];
+ }
+ const id=key.split(':').slice(1).join(':');if(nonce===0&&presets[id])o.presentation=presets[id];
+ if(meta.type==='booker')o.gear=hash(base+'|booker')%3?'suit':'jacket';
+ if(o.presentation==='female'&&hash(base+'|beard')%12!==0)o.beard='none';
+ if(o.presentation==='male'&&hash(base+'|hair')%4===0&&o.hair==='long')o.hair='ponytail';
+ if(o.gear==='suit'&&meta.type==='wrestler')o.gear='jacket';
+ return o;
+}
+function sanitize(val,key,fallback){return items[key].includes(val)?val:fallback}
+function getLook(actor){const raw=actor?.appearance||generated(actor?.key||'anon',actor?.portraitNonce||0,actor||{});const fallback=generated(actor?.key||'anon',actor?.portraitNonce||0,actor||{});const out={};for(const key in items)out[key]=sanitize(raw[key],key,fallback[key]);return out}
+function color(key,value){return OPTIONS[key].find(x=>x[0]===value)?.[1]||'#999999'}
+function shade(hex,amount){let n=parseInt(hex.slice(1),16);let r=Math.min(255,Math.max(0,(n>>16)+amount)),g=Math.min(255,Math.max(0,((n>>8)&255)+amount)),b=Math.min(255,Math.max(0,(n&255)+amount));return '#'+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('')}
+const cache=new Map();
+function renderCanvas(actor,appearance=null,scale=1){
+ const look=appearance||getLook(actor);const canvas=document.createElement('canvas');canvas.width=48*scale;canvas.height=60*scale;const g=canvas.getContext('2d');g.imageSmoothingEnabled=false;
+ g.setTransform(scale,0,0,scale,0,0);
+ const rect=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+ const pix=(x,y,c)=>rect(x,y,1,1,c);
+ const bg=color('bg',look.bg),skin=color('complexion',look.complexion),dark=shade(skin,-33),light=shade(skin,19),hair=color('hairColor',look.hairColor),hLight=shade(hair,28),suit=color('gearColor',look.gearColor),gearL=shade(suit,27),gearD=shade(suit,-30),eye=color('eyeColor',look.eyeColor);
+ rect(0,0,48,60,bg);rect(2,2,44,56,shade(bg,14));rect(4,4,40,52,bg);
+ // Pinstripes, arena lighting and a portrait-card border.
+ for(let j=0;j<5;j++)rect(4+j*9,4,1,8,shade(bg,25));rect(0,47,48,13,shade(bg,-20));rect(1,1,46,1,'#95816a');rect(1,58,46,1,'#655b56');
+ const male=look.presentation==='male',female=look.presentation==='female';
+ rect(8,50,32,10,gearD);rect(male?5:7,42,male?38:34,18,suit);rect(12,42,24,18,gearL);
+ if(look.gear==='suit'||look.gear==='jacket'||look.gear==='robe'){
+  rect(7,45,14,15,suit);rect(27,45,14,15,suit);rect(20,44,8,16,look.gear==='suit'?'#ded2bb':skin);
+  rect(21,48,6,12,look.gear==='suit'?'#2a2d36':suit);rect(23,47,2,10,look.gear==='suit'?'#ad8450':gearL);
+  if(look.gear==='robe'){rect(6,45,5,15,gearL);rect(37,45,5,15,gearL);}
+ } else if(look.gear==='singlet'){rect(13,43,5,15,gearD);rect(30,43,5,15,gearD);rect(19,45,10,5,skin)}
+ else if(look.gear==='vest'){rect(17,45,14,7,skin);rect(10,44,6,15,gearD);rect(32,44,6,15,gearD)}
+ else if(look.gear==='tee'){rect(8,44,9,10,gearD);rect(31,44,9,10,gearD);rect(18,44,12,10,suit)}
+ // Back hair for long styles, ponytail, braids, and afro.
+ const longHair=['long','ponytail','braids','waves'].includes(look.hair);
+ if(longHair){rect(12,9,24,32,hair);rect(11,21,5,29,shade(hair,-13));rect(32,21,5,29,hair)}
+ if(look.hair==='ponytail'){rect(32,21,7,26,hair);rect(33,35,5,16,hLight)}
+ if(look.hair==='braids'){for(const x of [10,35]){rect(x,19,3,30,hair);for(let y=23;y<49;y+=6)rect(x+1,y,2,2,hLight)}}
+ if(look.hair==='afro'){for(const [x,y,w,h] of [[9,9,30,16],[11,5,26,12],[6,14,8,18],[35,14,8,17]])rect(x,y,w,h,hair)}
+ // Neck and face silhouette: each face family has a different width/cheek/jaw pattern.
+ rect(20,38,8,9,dark);rect(21,38,6,8,skin);
+ let top=look.face==='long'?14:15;let jaw=look.face==='long'?41:look.face==='heart'?38:40;
+ let left=look.face==='square'?12:look.face==='round'?13:look.face==='angular'?14:look.face==='heart'?13:look.face==='long'?15:14;
+ let right=48-left;
+ rect(left+3,top-3,right-left-6,4,dark);
+ rect(left,top+3,right-left,jaw-top-7,dark);
+ rect(left+1,top,right-left-2,jaw-top-3,skin);
+ if(look.face==='square'){rect(13,34,22,7,skin);rect(12,29,2,7,dark);rect(34,29,2,7,dark)}
+ if(look.face==='round'){rect(12,25,24,10,skin);rect(14,35,20,5,skin)}
+ if(look.face==='oval'){rect(14,35,20,5,skin);rect(16,39,16,2,dark)}
+ if(look.face==='long'){rect(16,37,16,6,skin);rect(17,42,14,2,dark)}
+ if(look.face==='heart'){rect(13,24,22,9,skin);rect(17,36,14,4,skin);rect(20,40,8,2,dark)}
+ if(look.face==='angular'){rect(13,28,4,9,dark);rect(31,28,4,9,dark);rect(17,37,14,4,skin)}
+ // Ears, highlights, shadows.
+ rect(left-2,26,3,8,skin);rect(right-1,26,3,8,skin);rect(left-1,28,1,4,dark);rect(right+1,28,1,4,dark);
+ rect(left+2,19,3,14,light);rect(right-4,19,3,14,dark);
+ rect(18,35,12,3,shade(skin,-9));rect(19,37,10,2,skin);
+ // Hairline. All hair options available for every presentation.
+ if(look.hair==='bald'){rect(17,13,14,1,light)}
+ else if(look.hair==='buzz'){rect(13,12,22,6,hair);rect(15,17,18,2,hLight)}
+ else if(look.hair==='crop'){rect(12,10,24,9,hair);rect(16,16,12,3,hLight)}
+ else if(look.hair==='swept'){rect(11,10,27,9,hair);rect(13,14,21,4,hLight);rect(11,18,9,4,hair)}
+ else if(look.hair==='spikes'){for(let i=0;i<6;i++){let x=12+i*4;rect(x,7-(i%2)*3,3,13,hair);rect(x+1,8,1,5,hLight)}}
+ else if(look.hair==='mohawk'){rect(20,4,8,16,hair);rect(21,6,4,12,hLight);rect(13,14,7,2,dark);rect(28,14,7,2,dark)}
+ else if(look.hair==='curly'){for(let j=0;j<7;j++){const x=10+j*4;rect(x,9+(j%2)*2,6,9,hair);rect(x+1,9+(j%2)*2,3,3,hLight)}rect(12,16,22,4,hair)}
+ else if(look.hair==='afro'){rect(8,15,32,6,hair);rect(12,10,24,7,hair);for(let i=0;i<8;i++)rect(10+i*4,10+(i%3)*2,2,2,hLight)}
+ else if(look.hair==='topknot'){rect(17,4,14,9,hair);rect(13,12,22,7,hair);rect(21,6,6,4,hLight)}
+ else if(look.hair==='undercut'){rect(12,11,24,7,hair);rect(13,17,5,5,shade(hair,45));rect(20,13,13,4,hLight)}
+ else {rect(11,10,26,8,hair);rect(13,16,22,4,hair);rect(16,12,15,2,hLight)}
+ // Eye shapes and brows.
+ const eyey=26;
+ for(const x of [18,30]){
+  rect(x-3,eyey-5,6,1,shade(hair,-3));
+  if(look.eyes==='heavy')rect(x-4,eyey-6,8,3,hair);
+  if(look.eyes==='sharp'){rect(x-3,eyey-1,6,2,'#f6e5ce');rect(x-1,eyey,2,2,eye);pix(x+2,eyey-2,dark)}
+  else if(look.eyes==='wide'){rect(x-3,eyey-2,6,5,'#f3e7d7');rect(x-1,eyey-1,2,4,eye)}
+  else if(look.eyes==='sleepy'){rect(x-3,eyey,6,1,dark);rect(x-1,eyey-1,2,1,eye)}
+  else {rect(x-3,eyey-1,6,3,'#e7d6c2');rect(x-1,eyey,2,2,eye)}
+ }
+ if(look.eyes==='bright'){pix(17,26,'#fff');pix(29,26,'#fff')}
+ // Nose, lips and individual expression.
+ if(look.nose==='broad'){rect(22,29,5,6,dark);rect(21,34,7,2,light)}
+ else if(look.nose==='crooked'){rect(23,29,2,3,dark);rect(22,32,3,2,dark);rect(24,34,2,1,light)}
+ else if(look.nose==='straight'){rect(23,29,2,6,light);rect(24,35,2,1,dark)}
+ else {rect(23,32,2,3,dark)}
+ const lip=shade(skin,-42);
+ if(look.mouth==='smile'){rect(21,37,6,1,lip);pix(20,36,lip);pix(27,36,lip)}
+ else if(look.mouth==='smirk'){rect(22,37,6,1,lip);pix(28,36,lip)}
+ else if(look.mouth==='frown'){rect(20,38,8,1,lip);pix(21,37,lip);pix(27,37,lip)}
+ else if(look.mouth==='grin'){rect(19,37,10,3,lip);rect(21,38,7,1,'#e9d5bd')}
+ else if(look.mouth==='grim'){rect(19,37,10,2,lip)}
+ else rect(21,38,7,1,lip);
+ // Facial hair layered over lower face.
+ if(look.beard==='shadow'){rect(16,37,16,3,shade(skin,-23));rect(18,39,12,2,shade(skin,-25))}
+ if(look.beard==='moustache'||look.beard==='goatee'||look.beard==='full'){rect(19,36,10,2,hair);pix(19,38,hLight)}
+ if(look.beard==='goatee'||look.beard==='full'){rect(21,40,7,4,hair)}
+ if(look.beard==='full'){rect(15,31,3,10,hair);rect(30,31,3,10,hair);rect(17,39,14,4,hair)}
+ if(look.beard==='sideburns'){rect(13,24,3,13,hair);rect(32,24,3,13,hair)}
+ // Scars and accessories.
+ if(look.scars==='cheek'){rect(29,30,1,7,'#e2ab9b');pix(28,33,'#df9388')}
+ if(look.scars==='brow'){rect(16,19,2,5,'#d7afa0');pix(17,23,'#f4ddc5')}
+ if(look.scars==='nose'){rect(21,32,5,1,'#d58d83')}
+ if(['glasses','shades'].includes(look.accessory)){const glass=look.accessory==='shades'?'#101924':'#bbcaca';rect(13,22,10,7,'#201d22');rect(25,22,10,7,'#201d22');rect(23,24,2,2,'#201d22');rect(15,24,6,4,glass);rect(27,24,6,4,glass)}
+ if(look.accessory==='eyepatch'){rect(13,23,10,7,'#181923');rect(18,22,19,1,'#151820')}
+ if(look.accessory==='earring'){rect(10,32,3,5,'#d9b668');pix(11,37,'#e9c579')}
+ if(look.accessory==='piercing'){pix(27,35,'#e1bf85');pix(11,29,'#d5a866')}
+ if(look.headwear==='headband'){rect(12,15,24,4,gearL)}
+ if(look.headwear==='bandana'){rect(11,12,26,8,suit);rect(16,14,15,2,gearL);rect(35,19,5,10,suit)}
+ if(look.headwear==='mask'){rect(12,18,24,24,suit);rect(15,24,9,6,'#eee0cb');rect(26,24,9,6,'#eee0cb');rect(18,27,3,2,eye);rect(29,27,3,2,eye);rect(21,36,7,3,gearD);rect(23,18,2,24,gearL)}
+ if(look.headwear==='cap'){rect(11,9,26,11,suit);rect(9,19,28,3,gearD);rect(15,12,17,3,gearL)}
+ // Jersey emblem and bottom cut.
+ if(look.gear!=='suit'&&look.gear!=='robe'){rect(22,52,4,2,gearL);rect(23,53,2,3,gearD)}
+ rect(0,57,48,3,shade(bg,-30));rect(1,1,1,57,'#8d765d');rect(46,1,1,57,'#81715b');
+ return canvas;
+}
+function asData(actor,appearance=null){const look=appearance||getLook(actor),key=(actor?.key||'none')+'|'+JSON.stringify(look);if(cache.has(key))return cache.get(key);const url=renderCanvas(actor,look).toDataURL('image/png');if(cache.size>550)cache.clear();cache.set(key,url);return url}
+function avatar(actor,appearance=null,cssClass='pixel-avatar'){const safe=String(actor?.name||'Wrestler').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');return `<img class="${cssClass}" src="${asData(actor,appearance)}" alt="Pixel-art portrait of ${safe}" width="48" height="60" loading="lazy">`}
+function png(actor,appearance=null){const canvas=renderCanvas(actor,appearance||getLook(actor),8);const link=document.createElement('a');link.download='the-office-'+(actor.name||actor.key).replace(/[^a-z0-9-]+/gi,'-').toLowerCase()+'-portrait.png';link.href=canvas.toDataURL('image/png');link.click()}
+root.OfficePortraits={OPTIONS,items,generated,getLook,renderCanvas,asData,avatar,png,hash};
+})(typeof window!=='undefined'?window:globalThis);
+
+
+/* THE OFFICE v2 — data */
+(function(root){'use strict';
+const TALENT=[
+ {id:'mara',name:'Mara Vale',short:'Vale',handle:'The Last Word',tier:'Star',style:'Story',fee:1830,wage:315,ring:76,mic:92,psych:85,safe:71,heat:74,ego:86,pro:73,loyal:48,morale:67,fatigue:8,finisher:'Closing Argument',bio:'Talks like she already owns the building. Usually does.'},
+ {id:'rex',name:'Rex Titan',short:'Titan',handle:'King of the Yard',tier:'Star',style:'Brawl',fee:1880,wage:330,ring:84,mic:66,psych:72,safe:79,heat:77,ego:76,pro:85,loyal:55,morale:62,fatigue:15,finisher:'Yard Bomb',bio:'Twelve years of car parks and leisure centres. Hits hard, never misses a date.'},
+ {id:'lyra',name:'Lyra Knox',short:'Knox',handle:'Neon Ghost',tier:'Prospect',style:'Spectacle',fee:890,wage:165,ring:57,mic:62,psych:45,safe:47,heat:43,ego:65,pro:53,loyal:65,morale:79,fatigue:4,finisher:'Ghost Light',bio:'Will jump off anything. Has not yet learned when not to.'},
+ {id:'brick',name:'Brick Mercer',short:'Mercer',handle:'The Foundry',tier:'Veteran',style:'Brawl',fee:940,wage:180,ring:71,mic:45,psych:73,safe:88,heat:34,ego:35,pro:92,loyal:81,morale:61,fatigue:17,finisher:'Foundry Press',bio:'The safest pair of hands on the circuit. Bookers trust him with anyone.'},
+ {id:'juno',name:'Juno Stark',short:'Stark',handle:'The Fuse',tier:'Prospect',style:'Technical',fee:910,wage:170,ring:69,mic:36,psych:59,safe:75,heat:28,ego:50,pro:80,loyal:63,morale:74,fatigue:7,finisher:'Short Fuse',sub:true,bio:'Beautiful on the mat, silent on the microphone.'},
+ {id:'sol',name:'Sol Cruz',short:'Cruz',handle:'Daybreak',tier:'Prospect',style:'Story',fee:860,wage:170,ring:56,mic:74,psych:70,safe:66,heat:40,ego:57,pro:66,loyal:68,morale:78,fatigue:4,finisher:'First Light',bio:'Crowds want to believe in him. He needs matches that let them.'},
+ {id:'dee',name:'Dee Okafor',short:'Okafor',handle:'The Apprentice',tier:'Rookie',style:'Technical',fee:540,wage:110,ring:58,mic:40,psych:52,safe:70,heat:18,ego:30,pro:84,loyal:72,morale:80,fatigue:2,finisher:'Night School',bio:'Eleven matches in. Listens to every word you say.'},
+ {id:'kit',name:'Kit Marlowe',short:'Marlowe',handle:'Firecracker',tier:'Rookie',style:'Spectacle',fee:520,wage:105,ring:54,mic:58,psych:38,safe:44,heat:24,ego:62,pro:58,loyal:60,morale:82,fatigue:2,finisher:'Bonfire',bio:'Built like a gymnast, cuts promos like a pub landlord.'}
+];
+const FOES=[
+ {id:'red',name:'Red Doyle',short:'Doyle',style:'Brawl',ring:72,psych:66,safe:70,pro:82,ego:54,heat:55,finisher:'Doyle’s Hammer'},
+ {id:'roxy',name:'Roxy Rain',short:'Rain',style:'Story',ring:68,psych:80,safe:74,pro:76,ego:58,heat:60,finisher:'Downpour'},
+ {id:'silas',name:'Silas Rush',short:'Rush',style:'Technical',ring:85,psych:70,safe:62,pro:72,ego:84,heat:58,finisher:'Rush Lock',sub:true},
+ {id:'night',name:'Night Shift',short:'Shift',style:'Spectacle',ring:66,psych:48,safe:45,pro:55,ego:68,heat:46,finisher:'Graveyard'},
+ {id:'rev',name:'The Reverend',short:'the Reverend',style:'Story',ring:74,psych:92,safe:85,pro:93,ego:38,heat:70,finisher:'Last Rites'},
+ {id:'malik',name:'Malik Knight',short:'Knight',style:'Brawl',ring:70,psych:58,safe:60,pro:61,ego:70,heat:50,finisher:'Knightfall'}
+];
+const PROMOS=[
+ {id:'dock',name:'Dockside',desc:'Warehouse brawls',venue:'Shed 9',reach:25,trust:64,likes:'brawl',minRep:0,tv:false,personality:'aggressive',voice:'Gaz Pryor'},
+ {id:'pulse',name:'Pulse Underground',desc:'Viral indie circuit',venue:'the Pulse',reach:46,trust:55,likes:'spots',minRep:0,tv:false,personality:'showman',voice:'Nina Sato'},
+ {id:'crown',name:'North Crown',desc:'Regional television',venue:'the Crown Ballroom',reach:57,trust:49,likes:'story',minRep:20,tv:true,personality:'traditional',voice:'Harold Pike'},
+ {id:'union',name:'Grand Union',desc:'National broadcast',venue:'the Grand Union Arena',reach:85,trust:37,likes:'technical',minRep:45,tv:true,personality:'cold',voice:'Vivian Croft'}
+];
+const SLOTS={
+ opener:{name:'Opener',mins:8,mult:.85,crowd:-4,rank:0},
+ mid:{name:'Mid-card',mins:12,mult:1,crowd:0,rank:1},
+ feature:{name:'Featured bout',mins:15,mult:1.25,crowd:4,rank:2},
+ main:{name:'Main event',mins:20,mult:1.7,crowd:9,rank:3}
+};
+const SLOT_ORDER=['opener','mid','feature','main'];
+const FINISHES={
+ win_clean:{name:'Wins clean',short:'Win clean',win:true,heat:6,purse:.9,trust:0},
+ win_dirty:{name:'Wins dirty',short:'Win dirty',win:true,heat:3,purse:.95,trust:0},
+ lose_protected:{name:'Loses protected',short:'Lose protected',win:false,heat:-1,purse:1.05,trust:1},
+ lose_clean:{name:'Loses clean',short:'Lose clean',win:false,heat:-6,purse:1.25,trust:3}
+};
+// Game plans: what the match is built around.
+const PLANS={
+ story:{name:'Tell a story',blurb:'Slow build, big finish. Rewards psychology.',w:{ring:.35,psych:.65},crowd:1.0,late:1.35,risk:.6,drain:.85,spotRate:.045},
+ spots:{name:'Spot-fest',blurb:'Big moves, big pops, big risk.',w:{ring:.7,psych:.3},crowd:1.25,late:1.1,risk:1.3,drain:1.35,spotRate:.1},
+ technical:{name:'Technical showcase',blurb:'Ringcraft first. Purists love it; casual crowds drift.',w:{ring:.8,psych:.2},crowd:.8,late:1.1,risk:.7,drain:1,spotRate:.035,qual:4},
+ brawl:{name:'Brawl',blurb:'Fight all over the building. Loud, messy, tiring.',w:{ring:.55,psych:.45},crowd:1.15,late:1.05,risk:1.2,drain:1.15,spotRate:.09},
+ safe:{name:'Keep it safe',blurb:'Low risk, low ceiling. For tired or injured bodies.',w:{ring:.5,psych:.5},crowd:.75,late:1,risk:.35,drain:.7,spotRate:.02,qual:-2}
+};
+const STYLE_PLAN={Story:'story',Spectacle:'spots',Technical:'technical',Brawl:'brawl'};
+const LEASH={
+ script:{name:'Stick to the sheet',blurb:'You call the match. Proud workers may resent it.'},
+ free:{name:'Let them call it',blurb:'They call it live. Great minds shine; green ones get lost.'}
+};
+const TALKS={
+ none:{name:'Say nothing',blurb:'Leave them to it.'},
+ calm:{name:'Calm them down',blurb:'Fewer mistakes, a steadier start.'},
+ fire:{name:'Fire them up',blurb:'Hotter start, more risk, less listening.'},
+ money:{name:'Remind them who pays',blurb:'They will follow orders. They will not enjoy it.'}
+};
+const TRAINING={
+ ring:{name:'Ring',stat:'ring',fat:9,cost:0},
+ mic:{name:'Mic',stat:'mic',fat:3,cost:0},
+ psych:{name:'Psychology',stat:'psych',fat:5,cost:0},
+ safe:{name:'Safety',stat:'safe',fat:5,cost:0},
+ promo:{name:'Cut a promo',stat:null,fat:3,cost:40},
+ rest:{name:'Rest',stat:null,fat:-16,cost:0}
+};
+const MOVES={
+ Brawl:['a stiff right hand','a running lariat','a headbutt','a big boot','a back body drop','forearms in the corner','a spinebuster','a shoulder tackle'],
+ Technical:['a German suplex','an arm drag','a hammerlock','a dragon screw','a bridging suplex','a cross armbar','a single-leg crab','a snap suplex'],
+ Spectacle:['a springboard dropkick','a handspring elbow','a corkscrew crossbody','a hurricanrana','a superkick','a running shooting star','a moonsault press'],
+ Story:['a jawbreaker','a DDT','a sleeper hold','a backslide','a neckbreaker','a swinging side slam','a small package attempt']
+};
+const SPOTS={
+ Brawl:['a piledriver on the floor','a suplex onto the entrance ramp','a spear through the barricade'],
+ Technical:['a superplex from the top rope','a top-rope German suplex','a deadlift bridging suplex'],
+ Spectacle:['a 450 splash','a tope con hilo over the top rope','a shooting star press off the top'],
+ Story:['a diving elbow from the top','a DDT on the apron','a backdrop over the top rope to the floor']
+};
+const GOALS1=[
+ {id:'rep40',text:'Reach reputation 40'},
+ {id:'union',text:'Get a booking with Grand Union'},
+ {id:'four',text:'Produce a four-star match'},
+ {id:'solvent',text:'Finish the season in the black'}
+];
+root.OfficeData={TALENT,FOES,PROMOS,SLOTS,SLOT_ORDER,FINISHES,PLANS,STYLE_PLAN,LEASH,TALKS,TRAINING,MOVES,SPOTS,GOALS1};
+})(typeof window!=='undefined'?window:globalThis);
+
+/* THE OFFICE v2 — live match engine.
+   A tick is ten seconds of match time. The engine produces commentary lines one at a time;
+   the UI plays them back at a chosen speed and can interrupt with ringside calls.
+   The contracted finish is fixed unless the manager deliberately breaks it. */
+(function(root){'use strict';
+const D=root.OfficeData;
+const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
+function mulberry(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
+const PHASES=[{id:'open',to:.14,name:'Feeling out'},{id:'shine',to:.32,name:'The shine'},{id:'heat',to:.56,name:'Cut off'},{id:'comeback',to:.76,name:'Comeback'},{id:'stretch',to:1.01,name:'Finishing stretch'}];
+const CROWD_MUL={open:.45,shine:.8,heat:.6,comeback:1.25,stretch:1.45};
+const SPOT_MUL={open:.15,shine:.8,heat:.45,comeback:1.3,stretch:1.6};
+const MOM_TARGET={open:0,shine:50,heat:-55,comeback:55,stretch:0};
+const PARTS=['lower back','left knee','neck','shoulder','ribs','ankle'];
+const the=n=>/’s |'s /.test(n)?n:'the '+n;
+const THE=n=>the(n).toUpperCase();
+const fmt=s=>{s=Math.max(0,Math.round(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+
+const LINES={
+ open:['Lock-up in the centre. Neither gives an inch.','{A} grabs a side headlock. {D} shoots off the ropes.','Clean break in the corner. A few claps from the seats.','{A} takes {D} down with {move}. Early statement.','They trade wristlocks. Feeling each other out.','{D} rolls to the floor to reset. {A} waits in the ring.','Chop from {A}. That one echoed round the building.'],
+ shine:['{A} with {move}! {D} is reeling.','{A} is all over {D} early on.','{A} follows up with {move}. Quick cover. One, and out.','Three arm drags in a row from {A}. {D} bails to the corner.','{A} is moving well tonight.','{D} tries to slow it down. {A} won’t let it happen.'],
+ heat:['{A} cuts {D} off with {move}.','{A} slows this right down. Rest hold in the middle.','{A} rakes the eyes behind the referee’s back.','{D} is in trouble. {A} is working the {part}.','Choke on the bottom rope from {A}. The referee counts to four.','{A} stands on {D}’s hand and grins at the front row.','{A} with {move}. Cover. Two. {D} gets a shoulder up.'],
+ comeback:['{A} is firing up!','{A} ducks a clothesline. {move}!','{A} with {move}! And another!','Hope spot! {A} rolls {D} up. Two, and {D} escapes.','Fists flying from {A}. The crowd count along with every one.','{A} catches a boot and turns it into {move}.'],
+ stretch:['{A} goes for {fin}. {D} wriggles free!','Reversal after reversal. Neither can land the big one.','{A} with {move}! Both down. The referee starts a count.','Both on their knees, trading forearms in the middle.','{A} counters into {move}! Cover. Kick out at one.','{A} signals for {fin}. {D} sees it coming.']
+};
+const HOPE=['{A} fights from underneath with {move}!','Hope spot! {A} rolls {D} up. Two, and {D} escapes.','{A} slips out the back and hits {move}. {D} cuts it off straight away.','{A} tries to fire back. The crowd try to help.'];
+const NEUTRAL=['Both back to their feet at the same time.','Stand-off in the middle. The referee checks on both.','Strike exchange. Neither backs down.'];
+
+function create(o){
+ const r=mulberry(o.seed||Date.now());
+ const w=o.w,f=o.f,p=o.p,plan=D.PLANS[o.plan.game]||D.PLANS.story,slot=D.SLOTS[o.slot]||D.SLOTS.mid;
+ const ego=w.ego,talk=o.plan.talk||'none',leash=o.plan.leash||'script',prep=o.preparation||{};
+ let comply=48+w.pro*.32+w.loyal*.12+w.morale*.1-ego*.3;
+ if(leash==='script')comply+=ego>=75?2:14;
+ if(prep.psych)comply+=Math.min(6,prep.psych*1.3);if(talk==='money')comply+=15;if(talk==='fire')comply-=ego>=75?18:9;if(talk==='calm')comply+=4;
+ comply=clamp(Math.round(comply),12,96);
+ let crowd=22+w.heat*.27+(o.feudHeat||0)*.28+slot.crowd+p.reach*.06+(talk==='fire'?5:0)+(o.blowoff?8:0)+Math.min(3,(prep.mic||0)*.75);
+ const fit=(p.likes===o.plan.game?6:0)+(D.STYLE_PLAN[w.style]===o.plan.game?3:0)+(D.STYLE_PLAN[f.style]===o.plan.game?1.5:0)+Math.min(4,(prep.ring||0)*.95)+Math.min(3,(prep.psych||0)*.6);
+ let riskMul=plan.risk*(talk==='calm'?.7:talk==='fire'?1.2:1)*(o.flags?.pushThrough?1.4:1)*(1-Math.min(.22,(prep.safe||0)*.05));
+ const minutes=o.minutes||slot.mins;
+ const stretchStart=.78,nf=1+(minutes>=15?1:0)+(r()<.5?1:0);
+ const nearfallAt=Array.from({length:nf},(_,i)=>stretchStart+(.95-stretchStart)*(i+.5)/nf);
+ const reactions=talkReaction(w,talk);
+ const M={v:1,r,w,f,p,o,plan,planId:o.plan.game,leash,talk,len:minutes*60,minutes,t:0,stage:'entrance',phase:null,
+  crowd:clamp(Math.round(crowd),5,88),crowdStart:0,crowdPeak:0,crowdSum:0,lastCrowdBand:null,
+  wSt:clamp(100-w.fatigue*.7+(talk==='calm'?6:0)),fSt:92,mom:0,comply,listen:clamp(comply+(leash==='free'?10:0),15,97),resent:leash==='script'&&ego>=75,
+  fit,riskMul,mode:null,calls:3,callsUsed:[],ignored:0,offScript:null,scriptChecks:0,scriptHits:0,
+  qSum:0,qN:0,bonus:0,spots:0,spotHits:0,botches:0,nearfalls:0,nearfallAt,
+  injury:0,injuryPart:null,workingHurt:false,foeHurt:false,stiff:false,shortened:false,
+  offered:{},decision:null,outcome:'booked',refused:false,
+  adj:{trust:0,heat:0,morale:0,rep:0,purseMul:1,otherTrust:0,loyal:0},
+  queue:[],log:[],done:false,hints:{},reaction:reactions,prep:prep};
+ M.crowdStart=M.crowd;M.crowdPeak=M.crowd;
+ return M;
+}
+function talkReaction(w,talk){
+ const n=w.short;
+ if(talk==='none')return null;
+ if(talk==='calm')return w.morale<50||w.fatigue>40?`${n} breathes out. "Yeah. Steady. Got it."`:w.ego>=75?`${n} looks at you like you’ve said something obvious.`:`${n} nods. Focused.`;
+ if(talk==='fire')return w.ego>=75?`${n} is already bouncing on the spot. This could go either way.`:w.morale<45?`${n} manages a half-smile. Something’s there.`:`${n} slaps the wall twice. Ready to go.`;
+ if(talk==='money')return w.ego>=70?`${n}’s jaw tightens. "Understood." It isn’t.`:w.pro>=80?`${n} shrugs. "I always follow the sheet."`:`${n} nods quickly and looks at the floor.`;
+ return null;
+}
+const rnd=(M,a)=>a[Math.floor(M.r()*a.length)];
+function fresh(M,a){M.recent??=[];let c=a.filter(x=>!M.recent.includes(x));if(!c.length)c=a.filter(x=>!M.recent.slice(-2).includes(x));if(!c.length)c=a;const x=c[Math.floor(M.r()*c.length)];M.recent.push(x);if(M.recent.length>8)M.recent.shift();return x}
+function pick(M,who){const pool=D.MOVES[who.style]||D.MOVES.Story;return rnd(M,pool)}
+function names(M){return {W:M.w.short,F:M.f.short,WF:M.w.name,FF:M.f.name,wfin:M.w.finisher,ffin:M.f.finisher,venue:M.p.venue}}
+function fill(M,s,extra={}){const n={...names(M),...extra};return s.replace(/\{(\w+)\}/g,(m,k)=>n[k]??m).replace(/(^|[.!?]\s+)([a-z])/g,(m,a,b)=>a+b.toUpperCase())}
+function say(M,text,kind='play',opt={}){const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0};M.queue.push(line);M.log.push(line);return line}
+
+function phaseFor(frac){return PHASES.find(p=>frac<p.to)||PHASES[4]}
+function stars(M,final=false){
+ if(!M.qN)return 0;
+ const avgQ=(M.qSum+M.bonus)/M.qN;
+ let s=1.1+(avgQ-40)*.068+(M.crowdPeak-65)*.01+Math.min(3,M.nearfalls)*(M.crowdPeak>=65?.12:.04)-M.botches*.2;
+ if(M.shortened)s-=.45;
+ if(M.minutes>=15&&avgQ>=60)s+=.2;
+ if(M.outcome==='double')s+=.25;
+ if(M.outcome==='nc')s=Math.min(s,1.5);
+ if(!final){const frac=Math.min(1,M.t/M.len);s=s*(.6+.4*frac);}
+ return clamp(Math.round(s*4)/4,0,5);
+}
+
+/* ---- the main loop ---- */
+function next(M){
+ while(!M.queue.length&&!M.decision&&!M.done)simulate(M);
+ return M.queue.shift()||null;
+}
+function simulate(M){
+ if(M.stage==='entrance')return entrances(M);
+ if(M.stage==='finish')return finish(M);
+ if(M.stage==='over'){M.done=true;return}
+ tick(M);
+}
+function entrances(M){
+ const fh=M.f.heat,wh=M.w.heat;
+ say(M,`${M.f.name} comes out first. ${fh>=60?'Boos rain down.':'A smattering of jeers.'}`,'play',{at:0});
+ const pop=wh<30?'Polite applause. Not many know the name yet.':wh<55?'A decent reaction.':wh<75?`A big pop for ${M.w.short}.`:`The roof comes off for ${M.w.short}!`;
+ say(M,`Here comes ${M.w.name}. ${pop}`,wh>=75?'crowd':'play',{at:0,big:wh>=75});
+ if(M.o.blowoff)say(M,'This is the end of the road for these two. Everyone here knows it.','story',{at:0});
+ else if((M.o.feudHeat||0)>=35)say(M,'Bad blood here. These two have history.','story',{at:0});
+ if(M.reaction)say(M,M.reaction,'agent',{at:0});
+ const prepared=Object.entries(M.prep).filter(([skill,v])=>v>=1.5).sort((a,b)=>b[1]-a[1])[0];
+ if(prepared){const lines={ring:`Road agent: ${M.w.short}'s ring drills are evident in the opening exchanges.`,psych:`Road agent: ${M.w.short} looks composed after working on match psychology.`,safe:`Road agent: ${M.w.short} has drilled the safety sequences; they are less likely to go wrong.`,mic:`Road agent: ${M.w.short}'s recent promo work has warmed up this crowd.`};say(M,lines[prepared[0]],'agent',{at:0});}
+ say(M,`Ding ding. We’re under way at ${M.p.venue}.`,'bell',{at:0,big:true});
+ M.stage='live';
+}
+function tick(M){
+ M.t+=10;const frac=M.t/M.len,ph=phaseFor(frac),w=M.w,f=M.f,plan=M.plan;
+ if(!M.phase||M.phase.id!==ph.id){M.phase=ph;onPhase(M);if(M.decision)return;}
+ // momentum
+ const target=MOM_TARGET[ph.id];M.mom+=(target-M.mom)*.25+(M.r()*30-15);M.mom=clamp(M.mom,-100,100);
+ // stamina
+ const mode=M.mode?.type;
+ const drain=.55*plan.drain*(mode==='pickup'?1.7:mode==='slow'?.3:1)*(1+w.fatigue/250)*(M.workingHurt?1.5:1);
+ M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));M.fSt=clamp(M.fSt-.5*plan.drain+(mode==='slow'?1.2:0));
+ // quality of this ten seconds
+ const sk=(w.ring*plan.w.ring+w.psych*plan.w.psych)*(.55+.45*M.wSt/100);
+ const sf=(f.ring*plan.w.ring+f.psych*plan.w.psych)*(.55+.45*M.fSt/100);
+ let q=18+(sk*.55+sf*.45)*.6+M.fit+(plan.qual||0)+(M.crowd-50)*.1+(M.talk==='fire'?2:0);
+ if(M.leash==='free')q+=(M.r()*24-12)+(w.psych-62)*.18;else q+=M.r()*16-8;
+ if(M.offScript==='showboat')q-=4;if(M.offScript==='audible')q+=(w.psych-65)/3;
+ if(mode==='slow')q-=M.crowd<45?6:3;if(mode==='pickup')q+=M.wSt>45?3:-5;if(mode==='crowd')q-=3;
+ if(M.workingHurt)q-=6;if(M.stiff==='protect')q-=4;
+ if(M.wSt<25)q-=6;
+ q=clamp(q,5,100);M.qSum+=q;M.qN++;
+ // crowd
+ let dc=(q-55)/22*CROWD_MUL[ph.id]*plan.crowd*(ph.id==='stretch'?plan.late:1);
+ if(mode==='crowd')dc+=1.1*(w.mic/80);if(mode==='pickup')dc+=M.wSt>40?.6:-.4;if(mode==='slow')dc-=.5;
+ if(M.offScript==='showboat')dc+=.4;
+ dc-=(M.crowd-55)*.02;
+ M.crowd=clamp(M.crowd+dc);
+ // mode countdown
+ if(M.mode){M.mode.ticks--;if(M.mode.ticks<=0)M.mode=null;}
+ // the injured wrestler can make things worse
+ if(M.workingHurt&&M.r()<.04&&M.injury<4){M.injury++;say(M,`${w.short} winces again. That’s getting worse.`,'agent');}
+ // spots
+ const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*(M.offScript==='showboat'?1.5:1);
+ let spoke=false;
+ if(M.r()<spotP){spot(M,false);spoke=true;}
+ // near falls
+ if(M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();nearfall(M);spoke=true;}
+ // crowd bands
+ crowdBand(M);
+ // producer hints
+ if(!M.hints.dead&&M.crowd<33&&frac>.3){M.hints.dead=1;say(M,`In your ear: they’re dying out here. Change something.`,'agent');}
+ if(!M.hints.tired&&M.wSt<30){M.hints.tired=1;say(M,`In your ear: ${w.short} is blown up. Slow it down or take it home.`,'agent');}
+ // incidents
+ incidents(M,frac);
+ if(M.decision)return;
+ // play-by-play
+ if(!spoke&&M.r()<.42)playByPlay(M);
+ M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
+ if(M.t>=M.len){M.stage='finish';}
+}
+function onPhase(M){
+ const ph=M.phase,w=M.w;
+ if(M.leash==='script'&&ph.id!=='open'){
+  M.scriptChecks++;
+  if(M.r()*100<M.comply){M.scriptHits++;M.offScript=null;}
+  else{M.offScript=w.ego>=65?'showboat':'audible';
+   say(M,M.offScript==='showboat'?`${w.short} has gone off the sheet, playing to the crowd instead of the plan.`:`${w.short} is calling audibles. This wasn’t the plan.`,'agent');}
+ }
+ if(ph.id==='heat'&&!M.offered.stiff&&M.f.ego>=68&&M.r()<(M.f.ego-55)/60){M.offered.stiff=1;decide(M,'stiff');return;}
+ if(ph.id==='stretch'){
+  if(M.o.flags?.dive){M.o.flags.dive=false;dive(M);}
+  if(!M.offered.double&&M.o.finish.startsWith('lose')&&M.crowd>=82&&w.heat>=55&&M.outcome==='booked'){M.offered.double=1;if(M.r()<.5)decide(M,'double');}
+ }
+}
+function incidents(M,frac){
+ if(M.decision)return;
+ if(M.p.tv&&!M.offered.time&&frac>=.45&&frac<.62){M.offered.time=1;if(M.r()<.45&&M.len-M.t>300)decide(M,'time');}
+}
+function crowdBand(M){
+ const c=M.crowd,T=[35,55,70,85];let band=M.lastCrowdBand??T.filter(x=>c>=x).length;
+ if(M.lastCrowdBand===null){M.lastCrowdBand=band;return}
+ while(band<4&&c>=T[band]+2)band++;while(band>0&&c<T[band-1]-3)band--;
+ if(band===M.lastCrowdBand)return;
+ if(band>M.lastCrowdBand){
+  const t=[null,`A murmur round ${M.p.venue}. They’re starting to pay attention.`,'The place is warming up now.','Loud now. They’re stamping their feet.','THIS PLACE IS COMING UNSTUCK!'][band];
+  say(M,t,'crowd',{big:band>=3});
+ }else if(band<M.lastCrowdBand){
+  const t=['You could hear a pin drop. They’ve gone quiet.','The noise has dropped right off.','They’ve cooled a little.','Still loud, but not quite what it was.'][band];
+  say(M,t,'crowd');
+ }
+ M.lastCrowdBand=band;
+}
+function actors(M){const yours=M.mom>=0;return yours?{A:M.w,D:M.f}:{A:M.f,D:M.w}}
+function playByPlay(M){
+ const {A,D:Df}=actors(M);
+ if(Math.abs(M.mom)<12&&M.r()<.5)return say(M,fresh(M,NEUTRAL));
+ let pool=LINES[M.phase.id];const ph=M.phase.id;
+ if((ph==='shine'||ph==='comeback')&&A===M.f)pool=LINES.heat;
+ if(ph==='heat'&&A===M.w)pool=HOPE;
+ const line=fresh(M,pool);
+ say(M,fill(M,line,{A:A.short,D:Df.short,move:pick(M,A),fin:the(A.finisher),part:rnd(M,PARTS)}));
+}
+function spot(M,big,forced){
+ const {A,D:Df}=forced?{A:M.w,D:M.f}:actors(M);
+ const yours=A===M.w,st=yours?M.wSt:M.fSt;
+ const move=rnd(M,D.SPOTS[A.style]||D.SPOTS.Story);
+ let botchP=(.03+(100-A.safe)*.0018+(100-st)*.0015)*M.riskMul*(big?1.5:1);
+ if(A.ring>=80)botchP*=.8;
+ M.spots++;
+ if(big||M.r()<.45)say(M,`${A.short} ${big?'heads for the top rope':'sets up'}…`,'play',{pause:1});
+ if(M.r()<botchP){
+  M.botches++;M.bonus-=big?30:20;M.crowd=clamp(M.crowd-(big?9:6));
+  say(M,`${move.charAt(0).toUpperCase()+move.slice(1)}… and it’s gone wrong. That looked nasty.`,'bad',{big:true});
+  // who gets hurt: the taker or the one who went for it
+  const hurtYours=yours?M.r()<.55:M.r()<.45;
+  const injP=(.1+(100-(yours?M.w.safe:M.f.safe))/350)*(big?1.4:1);
+  if(M.r()<injP){
+   if(hurtYours&&!M.injury){M.injury=1+(M.r()<.4?1:0)+(big&&M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);decide(M,'injury');}
+   else if(!hurtYours&&!M.foeHurt){M.foeHurt=true;say(M,`${M.f.short} is holding the ${rnd(M,PARTS)}. The referee leans in.`,'agent');M.fSt=clamp(M.fSt-25);}
+  }
+ }else{
+  M.spotHits++;const pop=(big?7:3)+M.r()*(big?7:4);M.crowd=clamp(M.crowd+pop*M.plan.crowd);M.bonus+=big?18:10;
+  say(M,`${move.charAt(0).toUpperCase()+move.slice(1)} from ${A.short}!${M.crowd>=70?' The crowd come up out of their seats!':''}`,M.crowd>=70?'crowd':'play',{big:big||M.crowd>=75});
+  if(yours)M.wSt=clamp(M.wSt-(big?7:3));
+ }
+}
+function dive(M){
+ say(M,`${M.w.short} is climbing… not the turnbuckle. The balcony.`,'play',{pause:2,big:true});
+ const botchP=(.12+(100-M.w.safe)*.004)*M.riskMul;
+ M.spots++;
+ if(M.r()<botchP){M.botches++;M.bonus-=35;M.crowd=clamp(M.crowd-4);say(M,`${M.w.short} jumps… and comes up short. The front row scatters.`,'bad',{big:true});
+  if(!M.injury&&M.r()<.55){M.injury=2+(M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);decide(M,'injury');}}
+ else{M.spotHits++;M.bonus+=30;M.crowd=clamp(M.crowd+16);M.adj.heat+=4;say(M,`${M.w.short} FLIES off the balcony and wipes out ${M.f.short}! Phones are out everywhere!`,'crowd',{big:true});}
+}
+function nearfall(M){
+ const yoursFirst=!M.o.finish.startsWith('win');
+ const yours=M.nearfalls%2===0?!yoursFirst:yoursFirst;
+ const A=yours?M.w:M.f,Df=yours?M.f:M.w;
+ const late=M.nearfallAt.length===0&&M.crowd>=68;
+ const pop=3+M.crowd*.05*(late?1.4:1);
+ if(late&&A.sub){
+  say(M,`${A.short} locks in ${the(A.finisher)}!`,'play',{big:true,pause:1});
+  say(M,`${Df.short} is fading… reaching for the ropes…`,'play',{pause:2});
+  M.crowd=clamp(M.crowd+pop);
+  say(M,`ROPE BREAK! ${Df.short} SURVIVES ${THE(A.finisher)}!`,'crowd',{big:true});
+ }else{
+  const move=late?`${the(A.finisher)}`:rnd(M,D.SPOTS[A.style]||D.SPOTS.Story).replace(/^a /,'a ');
+  say(M,`${A.short} hits ${move}!`,'play',{big:true,pause:1});
+  say(M,'Cover!','count',{pause:1});
+  say(M,'ONE!','count',{pause:1,big:true});
+  say(M,'TWO!','count',{pause:2,big:true});
+  M.crowd=clamp(M.crowd+pop);
+  say(M,late?`NO! ${Df.short} KICKED OUT OF ${THE(A.finisher)}!`:`Kick out! ${Df.short} survives!`,'crowd',{big:true});
+ }
+ M.nearfalls++;M.bonus+=late?8:4;
+}
+
+/* ---- ringside calls ---- */
+const CALLS={
+ slow:{name:'Slow it down',hint:'Rest hold. Recover stamina; the crowd may cool.'},
+ pickup:{name:'Pick it up',hint:'Faster pace. Crowd up if they have the legs.'},
+ big:{name:'Hit the big spot',hint:'One big move now. Huge pop or a nasty botch.'},
+ crowd:{name:'Work the crowd',hint:'Play to the seats. Builds noise, stalls the match.'},
+ home:{name:'Take it home',hint:'Go to the finish now. Early means a shorter, weaker match.'},
+ sheet:{name:'Back to the sheet',hint:'Pull an improvising worker back to the plan.'}
+};
+function canCall(M,id){
+ if(M.done||M.stage!=='live'||M.decision||M.calls<=0)return false;
+ if(id==='sheet')return !!M.offScript;
+ if(id==='home')return M.len-M.t>45;
+ return true;
+}
+function call(M,id){
+ if(!canCall(M,id))return false;
+ M.calls--;M.callsUsed.push(id);const w=M.w;
+ say(M,`You shout from ringside: “${CALLS[id].name}.”`,'you');
+ const listen=M.listen+(id==='home'?20:0)+(id==='sheet'&&M.leash==='script'?10:0);
+ if(M.r()*100>listen){M.ignored++;say(M,rnd(M,[`${w.short} waves you away.`,`${w.short} doesn’t even look over.`,`${w.short} hears you. Does the opposite.`]),'bad');if(w.ego>=70)M.adj.morale-=1;return true}
+ if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`)}
+ if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`)}
+ if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
+ if(id==='big'){spot(M,true,true)}
+ if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back on the sheet.`)}
+ if(id==='home'){const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
+  M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
+  say(M,`${w.short} relays it to ${M.f.short}: take it home.`)}
+ return true;
+}
+
+/* ---- decisions: the match pauses until the manager chooses ---- */
+function decide(M,id){
+ const w=M.w,f=M.f,p=M.p;
+ const defs={
+  injury:{title:`${w.short} is hurt`,body:`${w.name} landed badly. That’s a real ${M.injuryPart} injury, not a sell. The referee is looking over at you.`,options:[
+   {id:'home',label:'Take it home now',hint:'Finish as booked within the minute. A short match, but the injury stays as it is.'},
+   {id:'work',label:'Work through it',hint:'Keep the match going. The crowd may rally behind it. It may get worse.'},
+   {id:'stop',label:'Stop the match',hint:'No contest. Half the purse, an unhappy booker, a protected wrestler.'}]},
+  stiff:{title:`${f.short} is getting stiff`,body:`Those shots from ${f.name} are landing for real. ${w.short} glances at you between blows.`,options:[
+   {id:'protect',label:'Cover up and ride it out',hint:'Keep the peace. The match loses a little.'},
+   {id:'fire',label:'Give it back',hint:'The crowd will love it. The booker won’t. Someone may get hurt.'},
+   {id:'ref',label:'Have the referee warn them',hint:'Calms it down, and takes the heat out of the match.'}]},
+  time:{title:`${p.voice}: cut it short`,body:`From the production truck: “TV’s running long. Lose four minutes or we lose the finish on air.”`,options:[
+   {id:'cut',label:'Cut four minutes',hint:'The booker is grateful. Less time to build to the finish.'},
+   {id:'keep',label:'Let them work',hint:'Full match. The booker is furious unless it’s worth it (four stars or more).'}]},
+  double:{title:`The crowd want ${w.short}`,body:`${p.venue.charAt(0).toUpperCase()+p.venue.slice(1)} is on its feet chanting for ${w.name}. The contract says ${w.short} loses tonight. ${f.short} is about to go for the cover.`,options:[
+   {id:'job',label:'Do the job',hint:`Finish as booked. ${p.name} will remember you did business.`},
+   {id:'kick',label:'Kick out. Win it.',hint:`Huge for ${w.short}. You will probably never work for ${p.name} again, and they won’t pay you.`}]}
+ };
+ M.decision={id,...defs[id]};
+ say(M,defs[id].title+'.','alert',{big:true});
+}
+function resolve(M,choice){
+ const d=M.decision;if(!d)return;M.decision=null;const w=M.w,f=M.f;
+ const opt=d.options.find(o=>o.id===choice)||d.options[0];
+ say(M,`Your call: “${opt.label}”`,'you');
+ if(d.id==='injury'){
+  if(choice==='home'){M.len=Math.min(M.len,M.t+50);if(M.t/M.len<.6)M.shortened=true;M.nearfallAt=[];say(M,`${w.short} nods through gritted teeth. Straight to the finish.`)}
+  if(choice==='work'){M.workingHurt=true;M.crowd=clamp(M.crowd+5);M.adj.heat+=3;say(M,`${w.short} waves off the referee. The crowd start clapping. Brave, or daft.`,'crowd')}
+  if(choice==='stop'){M.outcome='nc';M.adj.purseMul=.5;M.adj.trust-=6;M.adj.morale+=5;M.injury=Math.max(1,M.injury-1);M.stage='finish';}
+ }
+ if(d.id==='stiff'){
+  if(choice==='protect'){M.stiff='protect';M.mode={type:'slow',ticks:3};M.wSt=clamp(M.wSt-8);say(M,`${w.short} covers up and rides out the storm.`)}
+  if(choice==='fire'){M.stiff='fire';M.crowd=clamp(M.crowd+9);M.bonus+=10;M.adj.trust-=4;M.adj.morale+=4;say(M,`${w.short} fires back for real! This is a fight now!`,'crowd',{big:true});
+   if(M.r()<.25){if(M.r()<.5&&!M.injury){M.injury=1;M.injuryPart='jaw';say(M,`${w.short} took one flush on the jaw. Wobbly.`,'bad')}else{M.foeHurt=true;say(M,`${f.short} is bleeding from the nose. That was not planned.`,'bad')}}}
+  if(choice==='ref'){M.stiff='ref';M.crowd=clamp(M.crowd-4);say(M,`The referee has a word with ${f.short}. Things settle down.`)}
+ }
+ if(d.id==='time'){
+  if(choice==='cut'){M.len=Math.max(M.t+90,M.len-240);M.adj.trust+=4;M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t+20).slice(0,2);if(!M.nearfallAt.length)M.nearfallAt=[(M.len-30)/M.len];say(M,'The referee gets the signal. Four minutes come out of the match.')}
+  if(choice==='keep'){M.timeDefied=true;say(M,`${M.p.voice} is shouting in your headset. You take it off.`)}
+ }
+ if(d.id==='double'){
+  if(choice==='job'){M.adj.trust+=5;M.adj.heat+=2;say(M,'You stand still. Business is business.')}
+  if(choice==='kick'){
+   if(w.pro>=85){M.refused=true;M.adj.morale-=2;say(M,`${w.short} hears you… and shakes the head. ${w.short} is doing the job.`,'agent',{big:true})}
+   else{M.outcome='double';say(M,'You give the signal.','agent')}
+  }
+ }
+}
+
+function decisive(M,A,Df,step,end){
+ if(A.sub){
+  say(M,`${A.short} locks in ${the(A.finisher)}!`,'play',{...step(),big:true,pause:1});
+  say(M,`${Df.short} reaches for the ropes…`,'play',{...step(),pause:2});
+  say(M,`${Df.short} TAPS!`,'count',{...step(),big:true});
+ }else{
+  say(M,`${A.short} hits ${the(A.finisher)}!`,'play',{...step(),big:true,pause:1});
+  say(M,'The cover.','count',{...step(),pause:1});
+  say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});say(M,'THREE!','count',{...step(),big:true});
+ }
+ say(M,end,'bell',{...step(),big:true});
+}
+/* ---- the finish ---- */
+function finish(M){
+ const w=M.w,f=M.f,o=M.o;let at=M.t;const step=(n=4)=>(at+=n,{at});
+ if(M.outcome==='nc'){
+  say(M,'The referee waves it off. The doctor is in the ring.','bad',{...step(),big:true});
+  say(M,'No contest.','bell',{...step(),big:true});
+ }else if(M.outcome==='double'){
+  if(f.sub){say(M,`${f.short} locks in ${the(f.finisher)}!`,'play',{...step(),big:true,pause:1});say(M,`${w.short} should be tapping now…`,'play',{...step(),pause:2});
+   say(M,`${w.short} BREAKS THE HOLD! That was not the plan!`,'crowd',{...step(),big:true,pause:1});}
+  else{say(M,`${f.short} hits ${the(f.finisher)}! Cover!`,'play',{...step(),big:true,pause:1});
+   say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});
+   say(M,`${w.short} KICKS OUT! That was not the plan!`,'crowd',{...step(),big:true,pause:1});}
+  say(M,`${f.short} looks at the referee. The referee looks at the curtain.`,'agent',{...step(6),pause:1});
+  decisive(M,w,f,step,`${w.name} has gone into business!`);
+  say(M,`Chaos at ${M.p.venue}.`,'crowd',{...step(),big:true});
+ }else{
+  const k=o.finish;
+  if(k==='win_clean'){
+   say(M,`${w.short} sets up ${the(w.finisher)}…`,'play',{...step(),pause:1});
+   decisive(M,w,f,step,`${w.name} wins it clean.`);
+  }else if(k==='win_dirty'){
+   say(M,`${f.short} has ${w.short} reeling… the referee is down after a collision!`,'play',{...step(),pause:1});
+   say(M,`${w.short} grabs a fistful of tights. Roll-up!`,'play',{...step(),big:true,pause:1});
+   say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});say(M,'THREE!','count',{...step(),big:true});
+   say(M,`${w.short} steals it! ${M.crowd>=60?'The crowd let them have it.':'Scattered boos.'}`,'bell',{...step(),big:true});
+  }else if(k==='lose_protected'){
+   say(M,`${w.short} hits ${the(w.finisher)}!`,'play',{...step(),big:true,pause:1});say(M,'Cover!','count',{...step(),pause:1});
+   say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});
+   say(M,`${f.short}’s foot is on the rope!`,'crowd',{...step(),big:true,pause:1});
+   say(M,`${w.short} argues with the referee, and ${f.short} rolls up from behind with a handful of tights!`,'play',{...step(),pause:1});
+   say(M,'ONE! TWO! THREE!','count',{...step(),big:true});
+   say(M,`${w.name} was robbed, and everyone saw it.`,'bell',{...step(),big:true});
+  }else{
+   say(M,`${f.short} catches ${w.short} out of nowhere…`,'play',{...step(),pause:1});
+   decisive(M,f,w,step,`${f.name} wins, decisively. No excuses.`);
+  }
+ }
+ M.t=at;M.stage='over';
+ M.final=summary(M);
+ say(M,`Final rating: ${starText(M.final.stars)}`,'rating',{...step(2),big:true});
+}
+function summary(M){
+ const s=stars(M,true);
+ return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
+  script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
+  outcome:M.outcome,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
+  resent:M.resent,preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+}
+function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(whole)+(frac===.25?'¼':frac===.5?'½':frac===.75?'¾':'')+(s===0?'DUD':'');}
+function liveStars(M){return stars(M,false)}
+function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
+
+root.OfficeMatch={create,next,call,canCall,resolve,CALLS,liveStars,starText,fmt,phaseName,PHASES,_stars:stars};
+})(typeof window!=='undefined'?window:globalThis);
+
+/* THE OFFICE v2.2 — regional circuit management layer */
+(function(root){'use strict';
+const D=root.OfficeData;
+const STORE='the-office-v22';
+const PRIOR_STORE='the-office-v21';
+const LEGACY_STORE='the-office-v2';
+const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
+const r10=n=>Math.round(n/10)*10;
+const money=n=>(n<0?'−':'')+'£'+Math.abs(Math.round(n)).toLocaleString('en-GB');
+let S=null;
+
+function rand(){S.seed=(Math.imul(S.seed||1932,1664525)+1013904223)>>>0;return S.seed/4294967296}
+const ri=(a,b)=>Math.floor(rand()*(b-a+1))+a;
+const one=a=>a[Math.floor(rand()*a.length)];
+const uid=p=>p+'-'+S.week+'-'+Math.floor(rand()*1e9).toString(36);
+
+/* ---------- lifecycle ---------- */
+function fresh(){
+ S={v:22,seed:(Date.now()%100000)+7,season:1,week:1,cash:2250,rep:22,focus:2,monthReview:null,coach:null,futureBookings:[],circuitReviews:[],business:{training:0,negotiated:0,meetings:0,kept:0,broken:0},roster:[],free:D.TALENT.map(t=>({...t})),
+  promoters:D.PROMOS.map(p=>({...p,blacklist:0,matches:0,best:0})),offers:[],card:[],feuds:{},inbox:[],history:[],
+  goals:{},recentTypes:{},over:null};
+ msg({from:'The office',subject:'The keys are yours',kind:'info',body:[
+  'You have £2,250, an empty locker room and four promoters who might return your calls.',
+  'Sign talent from Roster. Book them on Bookings. Press Continue and you go to the ring with them.',
+  'Promoters decide who wins. You decide how it gets there, and what happens when it goes wrong.',
+  'You have TWO management meetings each week. Spend them wisely; training has a real cost and tired wrestlers make costly mistakes.'
+ ]});
+ msg({from:'Your backer',subject:'Four weeks to prove yourselves',kind:'info',body:['I will review the stable at the end of week four.',
+  'Put on at least one three-star match AND meet two of these three conditions: keep £750 in the bank, reach reputation 30, and develop one wrestler by at least two skill points.',
+  'Make it, and I will invest £450. Miss it, and the money goes elsewhere. We will still be here to discuss season objectives.']});
+ msg({from:'The office',subject:'Season 1 objectives',kind:'info',body:['This season, the business wants you to:',...goalList().map(g=>'• '+g.text)]});
+ makeOffers();save();return S;
+}
+function goalList(){const n=S.season;return [
+ {id:'rep',text:`Reach reputation ${40+(n-1)*15}`,done:S.rep>=40+(n-1)*15},
+ {id:'union',text:'Get a booking with Grand Union',done:!!S.goals.union},
+ {id:'four',text:'Produce a four-star match',done:!!S.goals.four},
+ {id:'solvent',text:'Finish the season in the black',done:S.cash>=0}
+]}
+function hydrate(x){
+ if(!x || ![20,21,22].includes(x.v) || !Array.isArray(x.roster)||!Array.isArray(x.offers))return null;
+ x.v=22;x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};
+ for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
+ return x;
+}
+function load(){
+ for(const key of [STORE,PRIOR_STORE,LEGACY_STORE]){
+  try{const x=hydrate(JSON.parse(localStorage.getItem(key)));if(x){S=x;save();return S}}catch(e){}
+ }
+ return null;
+}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(S))}catch(e){}}
+function hasSave(){try{return !!JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(PRIOR_STORE)||localStorage.getItem(LEGACY_STORE))?.v}catch(e){return false}}
+function wipe(){try{localStorage.removeItem(STORE)}catch(e){}}
+
+/* ---------- lookups ---------- */
+const W=id=>S.roster.find(w=>w.id===id);
+const F=id=>D.FOES.find(f=>f.id===id);
+const P=id=>S.promoters.find(p=>p.id===id);
+const feudKey=(wid,rid)=>wid+':'+rid;
+const feud=(wid,rid)=>S.feuds[feudKey(wid,rid)];
+function booked(wid){return S.card.some(c=>c.wid===wid)}
+function bookedAt(wid,when){return when===abs()?booked(wid):S.futureBookings.some(c=>c.wid===wid&&c.eventAbs===when)}
+function inCamp(w,when=abs()){return !!(w?.program?.type==='camp' && when>=abs() && when<abs()+w.program.left)}
+function availableAt(w,when=abs()){return !!(w && when>=abs() && (!w.injury||w.injury<=(when-abs())) && !bookedAt(w.id,when) && !inCamp(w,when))}
+function available(w){return availableAt(w)}
+function wages(){return S.roster.reduce((t,w)=>t+w.wage,0)}
+const OVERHEAD=100;function overhead(){return 60+S.roster.length*25}
+
+/* ---------- inbox ---------- */
+function msg(m){S.inbox.unshift({id:'m'+Math.floor(Math.random()*1e9).toString(36),week:S.week,season:S.season,read:false,answer:null,...m});S.inbox=S.inbox.slice(0,60)}
+function pending(){return S.inbox.filter(m=>m.kind==='decision'&&!m.answer)}
+
+/* ---------- signing ---------- */
+function sign(id){
+ const w=S.free.find(x=>x.id===id);
+ if(!w)return 'Not available.';
+ if(S.roster.length>=5)return 'Your locker room is full (five contracts).';
+ if(S.cash<w.fee)return `You need ${money(w.fee)} to sign ${w.name}.`;
+ S.cash-=w.fee;S.free=S.free.filter(x=>x.id!==id);
+ S.roster.push({...w,program:null,prep:{},prepHistory:[],training:'ring',intensity:'light',progress:{},startSkills:{ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe},promise:null,injury:0,matches:0,wins:0,starSum:0,best:0,lastRaise:0,flags:{},joined:abs()});
+ save();return null;
+}
+function release(id){
+ const w=W(id);if(!w)return;
+ for(const c of S.card.filter(c=>c.wid===id)){const promoter=P(c.pid);if(promoter)promoter.trust=clamp(promoter.trust-6)}
+ S.card=S.card.filter(c=>c.wid!==id);for(const c of S.futureBookings.filter(c=>c.wid===id)){const p=P(c.pid);if(p)p.trust=clamp(p.trust-6)}S.futureBookings=S.futureBookings.filter(c=>c.wid!==id);
+ S.roster=S.roster.filter(x=>x.id!==id);
+ const base=D.TALENT.find(t=>t.id===id);S.free.push({...base,heat:w.heat,ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe,fee:Math.round(base.fee*.9)});
+ msg({from:'The office',subject:`${w.name} released`,kind:'info',body:[`${w.name} cleared out the locker today. No hard feelings, on paper.`]});
+ save();
+}
+function setTraining(id,kind){const w=W(id);if(!w||!D.TRAINING[kind]||w.injury)return 'Unavailable for training.';if(w.program)return 'Finish or cancel the development programme first.';w.training=kind;save();return null;}
+const INTENSITY={
+ light:{name:'Light drills',cost:0,gain:.3,fat:1,risk:0,hint:'Free, slow progress; a little fatigue.'},
+ standard:{name:'Coached session',cost:55,gain:.85,fat:8,risk:.009,hint:'£55 per week; steady improvement and moderate fatigue.'},
+ hard:{name:'Intensive camp',cost:140,gain:1.6,fat:23,risk:.045,hint:'£140 per week; faster improvement, exhaustion and injury risk.'}
+};
+function setIntensity(id,mode){const w=W(id);if(!w||!INTENSITY[mode]||w.injury)return 'Unavailable for training.';if(w.program)return 'Finish or cancel the development programme first.';w.intensity=mode;save();return null;}
+const COACHES={technical:{name:'Technical coach',stat:'ring',fee:230,wage:65,boost:.35},psychology:{name:'Match psychology coach',stat:'psych',fee:230,wage:65,boost:.35},safety:{name:'Safety & conditioning coach',stat:'safe',fee:250,wage:70,boost:.4},microphone:{name:'Promo coach',stat:'mic',fee:200,wage:60,boost:.35}};
+function hireCoach(id){if(!COACHES[id])return 'Unknown specialist.';if(S.coach)return 'You already employ a specialist. Release them first.';if(S.cash<COACHES[id].fee)return 'Not enough cash for the hiring fee.';S.cash-=COACHES[id].fee;S.coach=id;msg({from:'The office',subject:'Specialist joins the stable',kind:'info',body:[`${COACHES[id].name} hired for ${money(COACHES[id].fee)} upfront and ${money(COACHES[id].wage)} each week. Training in ${COACHES[id].stat} is more effective.`]});save();return null}
+function fireCoach(){if(!S.coach)return 'No specialist employed.';const name=COACHES[S.coach].name;S.coach=null;msg({from:'The office',subject:'Coaching contract ended',kind:'info',body:[`${name} has left. Future weekly coaching wages stop.`]});save();return null}
+function coachWage(){return S.coach?COACHES[S.coach].wage:0}
+function startProgram(id,type){const w=W(id);if(!w||w.injury)return 'Unavailable for development.';if(w.program)return 'This wrestler already has an active programme.';if(!['block3','block6','camp'].includes(type))return 'Unknown programme.';if(w.training==='rest'||w.training==='promo')return 'Choose a skill to develop first.';
+ if(type==='camp'&&[0,1,2].some(delta=>bookedAt(w.id,abs()+delta)))return 'Cancel or complete the conflicting bookings first; a camp means three full weeks away.';
+ w.program={type,left:type==='block6'?6:3,total:type==='block6'?6:3,focus:w.training,intensity:w.intensity,start:abs(),gains:0};if(type==='camp')w.intensity='hard';save();return null;
+}
+function cancelProgram(id){const w=W(id);if(!w?.program)return 'No active development programme.';const camp=w.program.type==='camp';w.program=null;w.intensity='light';if(camp){w.morale=clamp(w.morale-3);w.fatigue=clamp(w.fatigue+5)}save();return null;}
+
+function trainingCost(w){return w.injury||w.training==='rest'?0:w.training==='promo'?40:w.program?.type==='camp'?185:INTENSITY[w.intensity||'light'].cost;}
+function trainingBill(){return S.roster.reduce((t,w)=>t+trainingCost(w),coachWage());}
+function monthStatus(){
+ const h=S.history.filter(h=>h.season===1&&h.week<=4),okMatch=h.some(x=>x.stars>=3),cash=S.cash>=750,rep=S.rep>=30;
+ const developed=S.roster.some(w=>['ring','mic','psych','safe'].some(k=>w[k]-(w.startSkills?.[k]??w[k])>=2));
+ return {okMatch,cash,rep,developed,passed:okMatch&&[cash,rep,developed].filter(Boolean).length>=2};
+}
+
+/* Two management meetings a week: spend them on a promoter OR a wrestler. */
+function checkIn(id,choice){
+ const w=W(id);if(!w)return {error:'That wrestler is no longer with your stable.'};
+ if(S.focus<=0)return {error:'No management meetings left this week.'};
+ if(!['listen','promise','bonus'].includes(choice))return {error:'Choose a conversation approach.'};
+ if(choice==='promise'&&w.promise?.status==='open')return {error:`You already promised ${w.short} a featured match. Honour or break that first.`};
+ if(choice==='bonus'&&S.cash<120)return {error:'A £120 bonus is beyond your available cash.'};
+ S.focus--;S.business.meetings++;
+ let result='';
+ if(choice==='listen'){
+  w.morale=clamp(w.morale+5);w.loyal=clamp(w.loyal+4);
+  result=`You listened to ${w.short} without making a promise. Morale +5, loyalty +4.`;
+ }else if(choice==='bonus'){
+  S.cash-=120;w.morale=clamp(w.morale+6);w.loyal=clamp(w.loyal+9);
+  result=`A £120 loyalty bonus reassures ${w.short}. Morale +6, loyalty +9. The money is gone.`;
+ }else{
+  w.promise={status:'open',type:'feature',start:abs(),deadline:abs()+2,matchesAt:w.matches};
+  w.morale=clamp(w.morale+8);
+  result=`You promised ${w.short} a future featured bout or main event within two weeks. Morale +8 now. Missing the deadline will damage trust.`;
+ }
+ msg({from:w.name,subject:'Private conversation',kind:'info',body:[result]});save();return {text:result};
+}
+function resolvePromises(){
+ for(const w of S.roster){
+  const pr=w.promise;if(!pr||pr.status!=='open')continue;
+  const fulfilled=w.matches>(pr.matchesAt||0)&&S.history.some(h=>h.wid===w.id&&((h.season-1)*16+h.week)>=pr.start&&((h.season-1)*16+h.week)<=pr.deadline&&D.SLOTS[h.slot]?.rank>=D.SLOTS.feature.rank);
+  if(fulfilled){pr.status='kept';w.morale=clamp(w.morale+6);w.loyal=clamp(w.loyal+7);S.business.kept++;
+   msg({from:w.name,subject:'You kept your word',kind:'info',body:[`“You told me you'd get me a featured match. You did. That matters.”`,`${w.short}: morale +6, loyalty +7.`]});}
+  else if(abs()>=pr.deadline){pr.status='broken';w.morale=clamp(w.morale-14);w.loyal=clamp(w.loyal-12);S.business.broken++;
+   msg({from:w.name,subject:'You broke your promise',kind:'info',body:[`“Two weeks. You said you'd get me a featured match. Nothing.”`,`${w.short}: morale −14, loyalty −12.`]});}
+ }
+}
+function abs(){return (S.season-1)*16+S.week}
+
+/* ---------- offers ---------- */
+function eligible(p){return p.blacklist<=0&&p.trust>=15&&S.rep>=p.minRep}
+function makeOffers(){
+ const now=abs();
+ S.offers=S.offers.filter(o=>o.eventAbs>=now&&o.expiresAbs>=now&&eligible(P(o.pid)));
+ const ps=S.promoters.filter(eligible);
+ // The calendar contains immediate work and limited-window future commitments.
+ if(S.season===1&&[6,10,14].includes(S.week)&&ps.length){
+  const target=S.week+2,p=ps.slice().sort((a,b)=>b.reach-a.reach)[0];
+  const labels={6:'Regional Showcase',10:'Television Audition',14:'Season Finale'};
+  const extra={...genOffer(p,2),tag:labels[S.week],slot:S.week===14?'main':'feature',boost:S.week===14?1.65:1.35,expiresAbs:abs()+1};
+  S.offers.unshift(extra);
+  msg({from:p.voice+', '+p.name,subject:`Invitation: ${labels[S.week]} in week ${target}`,kind:'info',body:[`A ${D.SLOTS[extra.slot].name.toLowerCase()} booking is available for week ${target}. Reply no later than week ${S.week+1}; the event slot will not be kept open for you.`,`The agreed finish is ${D.FINISHES[extra.finish].name.toLowerCase()}. A training camp covering that date would prevent your wrestler from accepting.`,`See Bookings for the offer and negotiate the exact terms if you wish.`]});
+ }
+ for(const p of ps){
+  S.offers.push(genOffer(p,0));
+  if(rand()<.52){const delay=2+Math.floor(rand()*2);S.offers.push(genOffer(p,delay));}
+ }
+ for(const fd of Object.values(S.feuds)){
+  if(fd.closed)continue;const w=W(fd.wid);if(!w||w.injury)continue;
+  if(fd.heat>=70&&fd.matches>=2&&ps.length){const p=ps.slice().sort((a,b)=>b.reach-a.reach)[0];S.offers.unshift({...genOffer(p,2),rid:fd.rid,wid:fd.wid,slot:'main',tag:'Blow-off',finish:rand()<.55?'win_clean':'lose_clean',boost:1.4});}
+  else if(fd.heat>=40&&rand()<.6&&ps.length){const p=one(ps),base=genOffer(p,1);S.offers.unshift({...base,rid:fd.rid,wid:fd.wid,slot:D.SLOT_ORDER[Math.min(3,D.SLOT_ORDER.indexOf(base.slot)+1)],tag:'Rematch',boost:1.15});}
+ }
+ // Keep a reliable route to weekly income, but offer future trade-offs too.
+ const today=S.offers.filter(o=>o.eventAbs===now).length;
+ for(let i=today;i<Math.min(3,ps.length);i++)S.offers.push(genOffer(one(ps),0));
+ S.offers=S.offers.sort((a,b)=>a.expiresAbs-b.expiresAbs||a.eventAbs-b.eventAbs).slice(0,11);
+}
+
+function genOffer(p,delay=0){
+ const ranks=S.rep<30?['opener','opener','mid','mid','feature']:S.rep<50?['opener','mid','mid','feature','feature','main']:['mid','feature','feature','main','main'];
+ const slot=one(ranks);
+ const pw=.28+p.trust/300+S.rep/400;
+ const finish=rand()<pw?(rand()<.55?'win_clean':'win_dirty'):(rand()<.5?'lose_protected':'lose_clean');
+ return {id:uid('o'),pid:p.id,rid:one(D.FOES).id,slot,finish,wid:null,tag:null,boost:1,haggled:false,eventAbs:abs()+delay,expiresAbs:abs()+(delay?1:0)};
+}
+function purse(o,w){
+ const p=P(o.pid),s=D.SLOTS[o.slot],fin=D.FINISHES[o.finish];
+ const tier={Star:1.5,Veteran:1.1,Prospect:1,Rookie:.8}[w?.tier]||1;
+ const base=100+p.reach*3.5+S.rep*1.5;
+ return r10(base*s.mult*fin.purse*tier*(1+((w?.heat||40)-40)/200)*(o.boost||1)*(o.bump||1));
+}
+/* Explicit promoter conversation; no one-shot dice roll and no reaction-time mechanic. */
+function meeting(oid,wid){
+ const o=S.offers.find(x=>x.id===oid),w=W(wid);if(!o||!w||!availableAt(w,o.eventAbs))return {error:'Choose a wrestler available on the event date.'};
+ if(o.wid&&o.wid!==wid)return {error:'This offer is reserved for another wrestler.'};
+ if(o.talk&&o.talk.wid!==wid)return {error:`These negotiated terms belong to ${W(o.talk.wid)?.name||'another wrestler'}.`};
+ const p=P(o.pid);
+ if(!o.talk){o.talk={wid,step:'start',topic:null,turns:0,original:{slot:o.slot,finish:o.finish,bump:o.bump||1,fee:purse(o,w)},log:[{who:p.voice,text:`${w.name} versus ${F(o.rid).name}. ${D.SLOTS[o.slot].name}, ${D.FINISHES[o.finish].name.toLowerCase()}, ${money(purse(o,w))}. That's the offer.`}]};save()}
+ return {talk:o.talk,offer:o};
+}
+const TALK_TOPICS={fee:'Increase the appearance fee',protect:'Protect a clean loss',slot:'Move higher on the card'};
+const ARGUMENTS={crowd:'Show the drawing power',reliability:'Promise a professional match',trade:'Offer a financial compromise'};
+function talkMove(oid,wid,move){
+ const found=meeting(oid,wid);if(found.error)return found;
+ const {talk:t,offer:o}=found,w=W(wid),p=P(o.pid);if(t.step==='done'){
+  if(move==='revert'&&t.verdict!=='original'){
+   o.slot=t.original.slot;o.finish=t.original.finish;o.bump=t.original.bump;t.verdict='original';t.detail=`Restored original terms, ${money(t.original.fee)}.`;
+   t.log.push({who:'You',text:"I'll take the original terms instead."},{who:p.voice,text:'Very well. The first offer still stands.'});save();return {talk:t,offer:o};
+  }
+  return {error:'That discussion is complete. Sign the terms or close the meeting.'};
+ }
+ if(t.step==='start'){
+  const topic=move.replace('ask:','');if(!move.startsWith('ask:')||!TALK_TOPICS[topic])return {error:'Choose what you want to negotiate.'};
+  if(topic==='protect'&&o.finish!=='lose_clean')return {error:'This loss is already protected, or the wrestler is booked to win.'};
+  if(topic==='slot'&&o.slot==='main')return {error:'This is already the main event.'};
+  if(S.focus<1)return {error:'No management meetings remain this week. You can accept the original offer.'};
+  S.focus--;t.topic=topic;t.step='reason';t.turns++;
+  const ask=topic==='fee'?`I'd like ${money(Math.round(purse(o,w)*1.2/10)*10)} for ${w.short}.`:
+    topic==='protect'?`${w.short} will take the loss, but needs to look competitive.`:`I want ${w.short} one place higher on the card.`;
+  t.log.push({who:'You',text:ask},{who:p.voice,text:p.personality==='cold'?`What do I get in return? Give me a business reason.`:p.personality==='aggressive'?`You want something, you have to sell me on it.`:p.personality==='traditional'?`Why would I change a card I've already written?`:`Go on. Make the case.`});
+  save();return {talk:t,offer:o};
+ }
+ if(t.step!=='reason'||!move.startsWith('arg:'))return {error:'Choose an argument.'};
+ const arg=move.slice(4);if(!ARGUMENTS[arg])return {error:'Unknown argument.'};
+ const topic=t.topic,base=p.trust*.38+w.heat*.27+w.pro*.13+S.rep*.12+(D.STYLE_PLAN[w.style]===p.likes?10:0);
+ const boost=arg==='crowd'?Math.round(w.heat*.20+(p.personality==='showman'?9:0)):
+   arg==='reliability'?Math.round(w.pro*.16+(p.personality==='traditional'?9:0)):
+   Math.round(13+(p.personality==='cold'?8:0));
+ const strength=base+boost-(p.personality==='cold'?7:0);
+ const threshold={fee:58,protect:62,slot:69}[topic];
+ t.log.push({who:'You',text:arg==='crowd'?`${w.name} gets a reaction, and a stronger position on this card will sell tickets.`:
+  arg==='reliability'?`You know ${w.short} will turn up, protect the finish and deliver what you paid for.`:
+  `I'll make the financial side easier if you give us the career opportunity.`});
+ const oldFee=purse(o,w);let verdict='refused',detail='';let c=0;
+ if(strength>=threshold){verdict='agreed';c=1}else if(strength>=threshold-17){verdict='counter';c=.5}
+ if(topic==='fee'){
+  if(c){o.bump=+( (o.bump||1)*(c===1?1.20:1.10)).toFixed(4);detail=`${money(purse(o,w))} instead of ${money(oldFee)}. ${c===1?'Twenty':'Ten'} per cent more for the appearance.`}
+  else detail=`The original fee of ${money(oldFee)} stands.`;
+ }else if(topic==='protect'){
+  if(c){o.finish='lose_protected';o.bump=+((o.bump||1)*(c===1?.92:.84)).toFixed(4);detail=`Protected loss, with a guaranteed fee of ${money(purse(o,w))} instead of ${money(oldFee)}.`}
+  else detail='The booked clean loss is unchanged.';
+ }else if(topic==='slot'){
+  if(c){o.slot=D.SLOT_ORDER[D.SLOT_ORDER.indexOf(o.slot)+1];if(c===.5)o.bump=+((o.bump||1)*.9).toFixed(4);detail=`Moved to ${D.SLOTS[o.slot].name}; appearance fee ${money(purse(o,w))} instead of ${money(oldFee)}.`}
+  else detail='The original card position stands.';
+ }
+ t.step='done';t.verdict=verdict;t.detail=detail;t.before=oldFee;
+ t.log.push({who:p.voice,text:verdict==='agreed'?`All right. ${detail} We have a deal if you want it.`:
+  verdict==='counter'?`I can't give you everything. Here's my counteroffer: ${detail} Take it or keep the original offer.`:
+  `No. ${detail} I have to look after my own show.`});
+ if(verdict==='refused'&&p.trust<35){p.trust=clamp(p.trust-1)}
+ save();return {talk:t,offer:o};
+}
+function book(oid,wid){
+ const o=S.offers.find(x=>x.id===oid),w=W(wid);
+ if(!o||!w)return 'Choose a wrestler.';if(!availableAt(w,o.eventAbs))return `${w.name} isn’t available on the offered date.`;if(o.expiresAbs<abs())return 'That offer has expired.';
+ if(o.wid&&o.wid!==wid)return 'This offer is for a specific wrestler.';if(o.talk&&o.talk.wid!==wid)return 'These terms were negotiated for a different wrestler.';
+ const fd=feud(wid,o.rid);
+ if(o.talk?.step==='done')S.business.negotiated+=purse(o,w)-(o.talk.original?.fee||purse(o,w));
+ const contract={id:uid('c'),pid:o.pid,rid:o.rid,wid,slot:o.slot,minutes:D.SLOTS[o.slot].mins+(o.tag==='Blow-off'?5:0),finish:o.finish,purse:purse(o,w),tag:o.tag,feudHeat:fd&&!fd.closed?fd.heat:0,blowoff:o.tag==='Blow-off',eventAbs:o.eventAbs};if(o.eventAbs===abs())S.card.push(contract);else S.futureBookings.push(contract);
+ S.offers=S.offers.filter(x=>x.id!==oid);
+ if(o.pid==='union')S.goals.union=true;
+ save();return null;
+}
+function unbook(cid){const c=[...S.card,...S.futureBookings].find(x=>x.id===cid);if(!c)return;const p=P(c.pid);p.trust=clamp(p.trust-6);S.card=S.card.filter(x=>x.id!==cid);S.futureBookings=S.futureBookings.filter(x=>x.id!==cid);
+ msg({from:p.voice+', '+p.name,subject:'Pulled from the card',kind:'info',body:[`“You’ve left me with a hole on the card. I’ll remember it.”`,`${p.name} trust −6.`]});save()}
+
+/* ---------- results ---------- */
+function applyResult(c,fin){
+ const w=W(c.wid),p=P(c.pid),f=F(c.rid),FN=D.FINISHES[c.finish],out=[];const add=(text,tone=0)=>out.push({text,tone});
+ const double=fin.outcome==='double',nc=fin.outcome==='nc',won=double||(!nc&&FN.win);
+ // money
+ let pay=double?0:Math.round(c.purse*fin.adj.purseMul);
+ if(!double&&!nc&&fin.stars>=4){const b=r10(c.purse*.15);pay+=b;add(`${p.name} paid a ${money(b)} bonus for a four-star match.`,1)}
+ S.cash+=pay;add(double?`${p.name} refused to pay the purse.`:`Purse: ${money(pay)}${nc?' (half, no contest)':''}.`,double?-1:1);
+ // reputation
+ const rep=Math.round((fin.stars-1.75)*1.1*(.6+p.reach/100))+(double?4:0)+fin.adj.rep;
+ S.rep=clamp(S.rep+rep);if(rep)add(`Reputation ${rep>0?'+':''}${rep}.`,Math.sign(rep));
+ // heat
+ let dh=(double?16:FN.heat)+(fin.crowd-55)/8+(fin.stars-2.5)*2+fin.adj.heat;dh=nc?0:Math.round(dh<0?dh*(.4+w.heat/100):dh*(1.25-w.heat/100));
+ w.heat=clamp(w.heat+dh);if(dh)add(`${w.short}’s heat ${dh>0?'+':''}${dh}${!FN.win&&!double&&c.finish==='lose_clean'?' (a clean loss costs)':''}.`,Math.sign(dh));
+ // booker trust
+ let dt=0;
+ if(double){dt=-45;p.blacklist=6;for(const o of S.promoters)if(o!==p&&o.personality!=='showman'){o.trust=clamp(o.trust-8)}
+  add(`${p.name} trust −45. They won’t book you for six weeks. Word spreads: other promoters −8.`,-1)}
+ else{
+  dt=Math.round((fin.stars-2.5)*3)+FN.trust-fin.botches*2+fin.adj.trust+(fin.script!==null&&fin.script>=.75?2:0)+(c.tag==='Favour'?6:0);
+  if(fin.timeDefied){if(fin.stars>=4)add(`${p.voice} forgave the overrun. Four stars buys a lot.`,0);else{dt-=8;add(`${p.voice} hasn’t forgiven the overrun.`,-1)}}
+ }
+ p.trust=clamp(p.trust+(double?0:dt)+(double?-45:0));if(!double&&dt)add(`${p.name} trust ${dt>0?'+':''}${dt}.`,Math.sign(dt));
+ p.matches++;p.best=Math.max(p.best,fin.stars);
+ // morale and loyalty
+ let dm=(won?4:c.finish==='lose_protected'?(w.ego>=70?-2:-1):(w.ego>=70?-6:-3))+(fin.stars>=3.5?3:0)+(fin.resent?-5:0)+fin.adj.morale+(double?8:0);
+ w.morale=clamp(w.morale+dm);if(fin.resent)add(`${w.short} resented being kept to the sheet.`,-1);
+ if(double){w.loyal=clamp(w.loyal+10);add(`${w.short} will never forget you backed them.`,1)}
+ if(fin.refused)add(`${w.short} refused to break the finish. Pros don’t.`,0);
+ // body
+ const tired=Math.round(fin.minutes*1.15+(fin.plan==='spots'?6:fin.plan==='brawl'?4:fin.plan==='safe'?-3:0)+(fin.stamina<25?5:0));
+ w.fatigue=clamp(w.fatigue+tired);
+ if(fin.injury){const wk=fin.injury+(fin.workingHurt?1:0);w.injury=Math.max(w.injury||0,wk);w.injurySince=abs();add(`${w.short} is injured (${fin.injuryPart}): out ${wk} week${wk>1?'s':''}.`,-1)}
+ if(fin.preparation?.note){add(fin.preparation.note,1);}
+ if(w.prep){for(const key in w.prep)w.prep[key]=Math.max(0,w.prep[key]-2);}
+ w.flags={};
+ w.matches++;if(won)w.wins++;w.starSum+=fin.stars;w.best=Math.max(w.best,fin.stars);
+ // rivalry
+ const k=feudKey(w.id,f.id);const fd=S.feuds[k]||(S.feuds[k]={wid:w.id,rid:f.id,heat:0,matches:0,closed:false,since:abs()});
+ if(c.blowoff){fd.closed=true;fd.matches++;const bonus=won?5:3;S.rep=clamp(S.rep+bonus);add(`The ${w.short}–${f.short} feud is over. A proper ending: reputation +${bonus}.`,1)}
+ else{const fh=Math.round(5+fin.stars*4+(fin.crowd-50)/6);fd.heat=clamp(fd.heat+fh);fd.matches++;fd.last=abs();
+  if(fd.heat>=70&&fd.matches>=2)add(`The ${w.short}–${f.short} rivalry is red hot. Expect a blow-off offer.`,1);
+  else if(fd.heat>=40)add(`A rivalry is building with ${f.short} (heat ${fd.heat}). Rematch offers likely.`,1);
+  else add(`Rivalry with ${f.short}: heat ${fd.heat}. Another good match and the promoters will want a rematch.`,0);}
+ if(fin.stars>=4)S.goals.four=true;
+ S.history.unshift({week:S.week,season:S.season,wid:w.id,name:w.name,rid:f.id,foe:f.name,pid:p.id,promoter:p.name,slot:c.slot,finish:c.finish,outcome:fin.outcome,stars:fin.stars,crowd:fin.crowd,purse:pay,tag:c.tag,notes:out.map(o=>o.text),log:(fin.log||[]).slice(-90)});
+ S.history=S.history.slice(0,40);
+ S.card=S.card.filter(x=>x.id!==c.id);
+ save();return out;
+}
+
+/* ---------- dilemmas ---------- */
+const DILEMMAS={
+ raise:{when:w=>w.heat>=60&&w.ego>=65&&abs()-w.lastRaise>=6,
+  make:w=>({from:w.name,subject:'About my money',body:[`“I’m the reason people buy tickets to these shows. I want that reflected in my pay. Another £50 a week.”`],
+   options:[{id:'yes',label:'Give the raise',hint:'Wage +£50 a week. Morale and loyalty up.'},{id:'no',label:'Not now',hint:'Morale and loyalty drop. Rivals may smell an opportunity.'}]}),
+  resolve:(m,w,o)=>{w.lastRaise=abs();if(o==='yes'){w.wage+=50;w.morale=clamp(w.morale+10);w.loyal=clamp(w.loyal+8);return `${w.short} shakes your hand.`}w.morale=clamp(w.morale-10);w.loyal=clamp(w.loyal-8);return `${w.short} walks out without a word.`}},
+ poach:{when:w=>w.loyal<45&&w.heat>=55,
+  make:w=>({from:'A friend at Grand Union',subject:`They’re talking to ${w.short}`,body:[`“Thought you should hear it from me. Our people have been on the phone to ${w.name}. Serious money.”`],
+   options:[{id:'bonus',label:'Pay a loyalty bonus (£400)',hint:'Loyalty +20. Costs £400 now.'},{id:'talk',label:'Talk them round',hint:'A coin flip. If it fails, they leave.'},{id:'sell',label:`Let them go, take the fee`,hint:`They leave today. You receive ${money(Math.round(w.fee*.6))}.`}]}),
+  resolve:(m,w,o)=>{if(o==='bonus'){S.cash-=400;w.loyal=clamp(w.loyal+20);w.morale=clamp(w.morale+5);return `${w.short} stays. For now.`}
+   if(o==='talk'){if(rand()<.35+w.morale/250){w.loyal=clamp(w.loyal+8);return `It works. ${w.short} turns them down.`}leave(w,0);return `${w.short} has signed with Grand Union.`}
+   leave(w,Math.round(w.fee*.6));return `${w.short} is gone. ${money(Math.round(w.fee*.6))} is in the account.`}},
+ dive:{when:w=>(w.style==='Spectacle'||w.ego>=70)&&!w.injury&&!w.flags.dive,
+  make:w=>({from:w.name,subject:'The balcony',body:[`“Next match, I want to dive off the balcony. Nobody on this circuit has done it. People will be talking about it for years.”`],
+   options:[{id:'yes',label:'Do it',hint:'A guaranteed huge moment in the next match. If it goes wrong, it goes very wrong.'},{id:'no',label:'Absolutely not',hint:'Morale −6.'}]}),
+  resolve:(m,w,o)=>{if(o==='yes'){w.flags.dive=true;return `${w.short} grins. The balcony it is.`}w.morale=clamp(w.morale-6);return `${w.short} sulks off.`}},
+ hurt:{when:w=>w.fatigue>=55&&!w.injury,
+  make:w=>({from:w.name,subject:'My back’s gone',body:[`“I can barely get out of the car. I’ll work if you need me, but I’m not right.”`],
+   options:[{id:'rest',label:'Rest this week',hint:'Training set to rest, fatigue −15 now. Any booking this week is pulled (booker trust −6).'},{id:'work',label:'You’re working',hint:'Morale +2. Their next match carries a much higher injury risk.'}]}),
+  resolve:(m,w,o)=>{if(o==='rest'){w.training='rest';w.fatigue=clamp(w.fatigue-15);const c=S.card.find(x=>x.wid===w.id);if(c){P(c.pid).trust=clamp(P(c.pid).trust-6);S.card=S.card.filter(x=>x!==c)}return `${w.short} is resting this week.`}
+   w.flags.pushThrough=true;w.morale=clamp(w.morale+2);return `${w.short} nods. “Your call.”`}},
+ unhappy:{when:w=>w.morale<25,
+  make:w=>({from:w.name,subject:'I’m done',body:[`“I don’t enjoy this any more. I don’t enjoy the matches, I don’t enjoy the drives, and I don’t enjoy you telling me what to do.”`],
+   options:[{id:'off',label:'Give them the week off',hint:'Training set to rest. Morale +12.'},{id:'pay',label:'Pay a £250 bonus',hint:'Morale +18. Costs £250.'},{id:'grow',label:'Tell them to grow up',hint:'Morale −5. They may walk out for good.'}]}),
+  resolve:(m,w,o)=>{if(o==='off'){w.training='rest';w.morale=clamp(w.morale+12);return `${w.short} says thanks, quietly.`}if(o==='pay'){S.cash-=250;w.morale=clamp(w.morale+18);return `${w.short} takes the money. Something thaws.`}
+   w.morale=clamp(w.morale-5);if(rand()<.4+(w.ego-50)/150){leave(w,0);return `${w.short} has walked out. The contract is torn up.`}return `${w.short} stays, barely speaking to you.`}},
+ clash:{pair:true,when:(a,b)=>a.ego>=60&&b.ego>=60,
+  make:(a,b)=>({from:'Your road agent',subject:`${a.short} and ${b.short} had words`,body:[`“They had to be pulled apart in the car park. Somebody needs to settle this, and both of them think it should be you.”`],
+   options:[{id:'a',label:`Back ${a.short}`,hint:`${a.short} morale +6, ${b.short} morale −8.`},{id:'b',label:`Back ${b.short}`,hint:`${b.short} morale +6, ${a.short} morale −8.`},{id:'fine',label:'Fine them both £50',hint:'Both lose morale. £100 into the account.'}]}),
+  resolve:(m,a,o,b)=>{if(o==='a'){a.morale=clamp(a.morale+6);b.morale=clamp(b.morale-8)}else if(o==='b'){b.morale=clamp(b.morale+6);a.morale=clamp(a.morale-8)}else{a.morale=clamp(a.morale-4);b.morale=clamp(b.morale-4);S.cash+=100}return 'The locker room goes quiet.'}},
+ favour:{promoter:true,when:p=>eligible(p)&&p.trust>=40,
+  make:(p,f)=>({from:`${p.voice}, ${p.name}`,subject:'I need a favour',body:[`“My new lad needs a win over someone credible this week. Lend me one of yours to lose clean in the opener. I’ll pay well and I won’t forget it.”`],
+   options:[{id:'yes',label:'Send someone',hint:'Your lowest-heat fit wrestler loses clean to Malik Knight. Good money, trust +6 after.'},{id:'no',label:'Not this week',hint:`${p.name} trust −4.`}]}),
+  resolve:(m,p,o)=>{if(o==='no'){p.trust=clamp(p.trust-4);return `${p.voice} hangs up.`}
+   const w=S.roster.filter(available).sort((a,b)=>a.heat-b.heat)[0];if(!w){p.trust=clamp(p.trust-2);return 'Nobody was free. They understood, mostly.'}
+   const o2={id:'fav',pid:p.id,rid:'malik',slot:'opener',finish:'lose_clean',boost:1.15};S.card.push({id:uid('c'),pid:p.id,rid:'malik',wid:w.id,slot:'opener',minutes:8,finish:'lose_clean',purse:purse(o2,w),tag:'Favour',feudHeat:0,blowoff:false});
+   return `${w.short} is on the card: opener, losing clean to Malik Knight.`}}
+};
+function leave(w,fee){S.cash+=fee;S.card=S.card.filter(c=>c.wid!==w.id);S.roster=S.roster.filter(x=>x!==w)}
+function makeDilemmas(){
+ let made=0;const recent=S.recentTypes;
+ const ok=t=>!recent[t]||abs()-recent[t]>=4;
+ const roster=S.roster.slice().sort(()=>rand()-.5);
+ const tryMake=(type,args,m)=>{msg({...m,kind:'decision',dtype:type,args});recent[type]=abs();made++};
+ for(const w of roster){if(made>=2)break;
+  for(const type of ['unhappy','hurt','poach','raise','dive']){const d=DILEMMAS[type];if(ok(type)&&d.when(w)&&rand()<({unhappy:.8,hurt:.65,poach:.4,raise:.45,dive:.3}[type])){tryMake(type,[w.id],d.make(w));break}}
+ }
+ if(made<2&&ok('clash')&&roster.length>=2&&rand()<.25){const [a,b]=roster;if(DILEMMAS.clash.when(a,b))tryMake('clash',[a.id,b.id],DILEMMAS.clash.make(a,b))}
+ if(made<2&&ok('favour')&&S.roster.length&&rand()<.3){const p=one(S.promoters.filter(x=>DILEMMAS.favour.when(x)));if(p)tryMake('favour',[p.id],DILEMMAS.favour.make(p))}
+}
+function answer(mid,opt){
+ const m=S.inbox.find(x=>x.id===mid);if(!m||m.answer)return null;
+ if(m.dtype==='poach'&&opt==='bonus'&&S.cash<400)return 'Not enough cash for the £400 bonus. Choose another response.';
+ if(m.dtype==='unhappy'&&opt==='pay'&&S.cash<250)return 'Not enough cash for a £250 bonus. Choose another response.';
+ const d=DILEMMAS[m.dtype];let text='';
+ if(m.dtype==='favour'){const p=P(m.args[0]);text=d.resolve(m,p,opt)}
+ else if(m.dtype==='clash'){const a=W(m.args[0]),b=W(m.args[1]);text=a&&b?d.resolve(m,a,opt,b):'They’ve both moved on.'}
+ else{const w=W(m.args[0]);text=w?d.resolve(m,w,opt):'That situation has resolved itself.'}
+ m.answer=opt;m.outcome=text;m.read=true;save();return text;
+}
+
+/* Twelve-week regional circuit follows the initial four-week sponsor trial.
+   Three checkpoints are evaluated against actual show results, not button presses. */
+const CIRCUIT_TARGETS={
+ 8:{title:'Regional Showcase',reward:250,required:2,quality:3,feature:false},
+ 12:{title:'Television Audition',reward:400,required:4,quality:3.5,feature:true},
+ 16:{title:'Season Finale',reward:650,required:6,quality:4,feature:true}
+};
+function circuitStatus(week=8){const t=CIRCUIT_TARGETS[week];if(!t)return null;
+ const hist=S.history.filter(h=>h.season===1&&h.week>=5&&h.week<=week),quality=hist.some(h=>h.stars>=t.quality),feature=hist.some(h=>D.SLOTS[h.slot]?.rank>=D.SLOTS.feature.rank);
+ return {...t,week,played:hist.length,quality,hasFeature:feature,met:hist.length>=t.required&&quality&&(!t.feature||feature)};
+}
+function reviewCircuit(){if(S.season!==1||!CIRCUIT_TARGETS[S.week]||S.circuitReviews.some(r=>r.week===S.week))return;
+ const r=circuitStatus(S.week);S.circuitReviews.push({...r});if(r.met)S.cash+=r.reward;
+ msg({from:'Your regional backer',subject:`${r.title} review — ${r.met?'bonus earned':'target missed'}`,kind:'info',body:[
+  `Required: ${r.required} matches from week 5 onward, at least one ${r.quality}-star performance${r.feature?', plus a featured/main-event booking':''}.`,
+  `Delivered: ${r.played} matches. Match quality: ${r.quality?'YES':'NO'}. Featured appearance: ${r.hasFeature?'YES':'NO'}.`,
+  r.met?`${money(r.reward)} earned. The territory has noticed your stable.`:'No milestone bonus. The next show is still an opportunity to recover.'
+ ]});
+}
+/* ---------- the week turns ---------- */
+function endWeek(){
+ const lines=[];const pay=wages(),oh=overhead(),cw=coachWage();S.cash-=pay+oh+cw;lines.push(`Wages ${money(pay)}, overheads ${money(oh)}${cw?`, coach ${money(cw)}`:''}.`);if(S.rep>30){S.rep--;}
+ for(const w of S.roster){
+  const worked=S.history.some(h=>h.wid===w.id&&h.week===S.week&&h.season===S.season);
+  const isInjured=!!w.injury,t=D.TRAINING[isInjured?'rest':w.training]||D.TRAINING.rest;
+  const intensity=INTENSITY[w.intensity||'light']||INTENSITY.light;
+  if(isInjured||w.training==='rest'){
+   w.fatigue=clamp(w.fatigue-(worked?6:24));if(!worked)w.morale=clamp(w.morale+2);
+  }else if(w.training==='promo'){
+   S.cash-=40;S.business.training+=40;const g=Math.round(1+w.mic/35);w.heat=clamp(w.heat+g);w.fatigue=clamp(w.fatigue+2);
+   const hot=Object.values(S.feuds).filter(f=>f.wid===w.id&&!f.closed).sort((a,b)=>b.heat-a.heat)[0];if(hot)hot.heat=clamp(hot.heat+6);
+   lines.push(`${w.short} recorded a promo: −£40, heat +${g}${hot?', rivalry +6':''}.`);
+  }else if(t.stat){
+   const spend=w.program?.type==='camp'?185:intensity.cost;S.cash-=spend;S.business.training+=spend;w.progress??={};const cur=w[t.stat];const camp=w.program?.type==='camp',specialist=S.coach&&COACHES[S.coach].stat===t.stat?COACHES[S.coach].boost:0;const growth=(camp?1.9:intensity.gain)*(1+specialist)*(cur>=88?.24:cur>=80?.5:1)*(w.fatigue>=70?.6:1);
+   w.progress[t.stat]=(w.progress[t.stat]||0)+growth;
+   const levels=Math.floor(w.progress[t.stat]);w.progress[t.stat]-=levels;
+   const gained=Math.min(99-cur,levels);w[t.stat]=clamp(cur+gained,0,99);
+   w.fatigue=clamp(w.fatigue+(camp?13:intensity.fat)+(worked?5:0));
+   w.prep??={};w.prep[t.stat]=Math.min(4,(w.prep[t.stat]||0)+1+(camp?1:0));
+   const risk=(camp?.015:intensity.risk)*(w.fatigue>=65?2.5:1)*(worked?1.5:1);
+   if(risk>0&&rand()<risk){w.injury=Math.max(w.injury||0,ri(1,3));w.injurySince=abs();lines.push(`${w.short} strained something in training. Out ${w.injury} week(s).`)}
+   const spent=camp?185:intensity.cost;if(spent||gained)lines.push(`${w.short}: ${camp?'residential camp':intensity.name.toLowerCase()} in ${t.name.toLowerCase()}, ${money(spent)}; ${gained?`${t.stat} +${gained}`:'progress banked'}, fatigue ${w.fatigue}.`);if(w.program)w.program.gains+=gained;
+  }
+  if(w.program&&!isInjured){w.program.left--;if(w.program.left<=0){const old=w.program;w.prepHistory??=[];w.prepHistory.unshift({week:abs(),focus:old.focus,type:old.type,gains:old.gains});w.prepHistory=w.prepHistory.slice(0,8);w.program=null;w.intensity='light';w.training='rest';lines.push(`${w.short} completes ${old.total}-week development (${old.gains} skill points gained). Rest scheduled next week.`);}}
+  if(isInjured&&w.injury && (w.injurySince??abs()-1)<abs()){w.injury--;if(!w.injury)lines.push(`${w.short} is fit again.`)}
+  w.morale=clamp(w.morale+(w.morale<60?2:w.morale>75?-1:0)+(w.fatigue>70?-2:0));
+ }
+ resolvePromises();
+ for(const fd of Object.values(S.feuds)){if(!fd.closed&&fd.last!==abs())fd.heat=clamp(fd.heat-7)}
+ for(const p of S.promoters){if(p.blacklist>0)p.blacklist--;p.trust=clamp(p.trust+(p.trust<45?1:p.trust>65?-1:0))}
+ if(S.season===1&&S.week===4&&!S.monthReview){
+  const st=monthStatus();S.monthReview={...st,season:1,week:4};
+  const grant=st.passed?450:0;S.cash+=grant;S.monthReview.best=Math.max(0,...S.history.filter(h=>h.season===1&&h.week<=4).map(h=>h.stars));S.monthReview.business={...S.business};
+  msg({from:'Your backer',subject:st.passed?'The first month — investment approved':'The first month — no investment',kind:'info',body:[
+   `Three-star match: ${st.okMatch?'YES':'NO'}. Cash of at least £750: ${st.cash?'YES':'NO'}. Reputation 30: ${st.rep?'YES':'NO'}. One wrestler develops by two skill points: ${st.developed?'YES':'NO'}.`,
+   st.passed?'You made the grade. £450 has been transferred to the stable.':`You didn't deliver the combination I asked for. No bonus this month. The campaign continues.`,
+   `Best match: ${S.monthReview.best} stars. Coaching/promo spent: ${money(S.business.training)}. Net negotiated contract improvements: ${money(S.business.negotiated)}. Wrestler promises kept: ${S.business.kept}, broken: ${S.business.broken}.`,
+   `Bank after review: ${money(S.cash)}.`]});
+ }
+ reviewCircuit();
+ S.focus=2;
+ S.week++;
+ if(S.week>16){seasonEnd();}
+ // Pre-signed bookings move onto the live card when their date arrives.
+ const due=S.futureBookings.filter(c=>c.eventAbs===abs());S.futureBookings=S.futureBookings.filter(c=>c.eventAbs>abs());
+ for(const c of due){const w=W(c.wid);if(!w||w.injury||inCamp(w)){const p=P(c.pid);if(p)p.trust=clamp(p.trust-4);msg({from:'Your road agent',subject:'Booking lost to unavailability',kind:'info',body:[`${w?.name||'A wrestler'} cannot fulfil the ${P(c.pid)?.name||'promoter'} booking this week. Trust −4. Plan around injuries and training commitments.`]});}else S.card.push(c)}
+ if(S.cash<-500){S.over={reason:'bankrupt'};save();return}
+ msg({from:'The accountant',subject:`Week ${S.week===1?16:S.week-1} accounts`,kind:'info',body:[...lines,`Balance: ${money(S.cash)}.`]});
+ makeDilemmas();makeOffers();save();
+}
+function seasonEnd(){
+ const g=goalList(),done=g.filter(x=>x.done).length,grant=S.rep*8+done*200;
+ S.cash+=grant;
+ msg({from:'The office',subject:`Season ${S.season} review`,kind:'info',body:[`${done} of 4 objectives met.`,...g.map(x=>(x.done?'✓ ':'✗ ')+x.text),`Sponsorship and bonuses: ${money(grant)}.`]});
+ S.season++;S.week=1;S.goals={};
+ msg({from:'The office',subject:`Season ${S.season} objectives`,kind:'info',body:['This season, the business wants you to:',...goalList().map(x=>'• '+x.text)]});
+}
+function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
+
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},fresh,load,save,hasSave,wipe,sign,release,setTraining,setIntensity,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,available,availableAt,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
+})(typeof window!=='undefined'?window:globalThis);
+
+/* THE OFFICE v2.3: independent territory and ranking ledger */
+(function(root){'use strict';
+const D=root.OfficeData,G=root.OfficeGame;
+const names=['Iron Borough Wrestling','Coastal Championship','Northern Pro Circuit'];
+function ensure(){const s=G.S;if(!s)return null;
+ if(!s.territory){s.territory={week:0,champion:'rev',teams:names.map((name,i)=>({name,rep:48+i*5,wins:0,losses:0,roster:D.FOES.filter((_,j)=>j%3===i).map(w=>w.id)})),reports:[],points:{},previous:{}};}
+ return s.territory;
+}
+const f=(id)=>D.FOES.find(w=>w.id===id);
+function rank(){const s=G.S,t=ensure();if(!s)return [];
+ const all=[...D.FOES.map(w=>({...w,owned:false})),...s.roster.map(w=>({...w,owned:true}))];
+ return all.map(w=>{const recent=s.history.filter(h=>h.wid===w.id).slice(0,8);
+ const form=recent.reduce((n,h)=>n+(h.outcome==='nc'?0:(h.finish||'').startsWith('win')?8:-5)+(h.stars>=3?Math.round(h.stars*2):0),0);
+ return {...w,score:Math.round(w.heat*.7+w.ring*.16+(w.psych||50)*.08+(t.points[w.id]||0)+form)};}).sort((a,b)=>b.score-a.score);
+}
+function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
+ const week=(s.season-1)*16+s.week;if(t.week===week)return;t.week=week;
+ const standings=rank();t.previous=Object.fromEntries(standings.map((w,i)=>[w.id,i]));
+ const reports=[];
+ for(const team of t.teams){
+ const members=team.roster.map(f).filter(Boolean);if(!members.length)continue;
+ const a=members[week%members.length],b=D.FOES[(week+team.roster.length+1)%D.FOES.length];
+ if(!a||!b||a.id===b.id)continue;
+ const result=((week*13+a.ring+b.psych+team.rep)%100)<52;
+ const winner=result?a:b,loser=result?b:a;
+ t.points[winner.id]=(t.points[winner.id]||0)+4;
+ t.points[loser.id]=(t.points[loser.id]||0)-2;
+ team.wins+=result?1:0;team.losses+=result?0:1;team.rep=Math.min(95,Math.max(10,team.rep+(result?2:-1)));
+ reports.push(team.name+': '+winner.name+' defeated '+loser.name+'.');
+ }
+ // Champion remains a real territory title rather than a temporary sorting label.
+ const leader=rank()[0];const champ=rank().find(w=>w.id===t.champion);
+ if(leader&&champ&&leader.id!==champ.id&&leader.score>champ.score+12&&week%4===0){t.champion=leader.id;reports.unshift(leader.name+' won the territory championship.');}
+ if(week%5===0){const team=t.teams[week%t.teams.length],free=D.FOES.find(w=>!t.teams.some(x=>x.roster.includes(w.id)));if(free){team.roster.push(free.id);reports.push(team.name+' recruited '+free.name+'.');}}
+ t.reports.unshift({week,lines:reports});t.reports=t.reports.slice(0,12);G.save();
+}
+const originalFresh=G.fresh, originalLoad=G.load, originalEnd=G.endWeek,originalApply=G.applyResult;
+G.fresh=function(...args){const x=originalFresh(...args);ensure();G.save();return x};
+G.load=function(...args){const x=originalLoad(...args);ensure();return x};
+G.endWeek=function(...args){const x=originalEnd(...args);evolve();return x};
+G.applyResult=function(c,fin){const x=originalApply(c,fin);const t=ensure();if(t&&c&&fin){const won=(c.finish||'').startsWith('win');t.points[c.wid]=(t.points[c.wid]||0)+(won?5:-2)+Math.max(0,Math.floor((fin.stars||0)-2));G.save();}return x};
+root.OfficeTerritory={ensure,rank,evolve};
+})(typeof window!=='undefined'?window:globalThis);
+
+/* THE OFFICE v2 — interface */
+(function(){'use strict';
+const D=OfficeData,G=OfficeGame,Mx=OfficeMatch,Pt=OfficePortraits;
+const $=s=>document.querySelector(s);
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=G.money;
+let tab='desk',openMsg=null,openW=null,pick={},night=null,toastT=0;
+const S=()=>G.S;
+
+/* ---------- helpers ---------- */
+function face(type,id,name,cls='portrait'){return Pt.avatar({key:type+':'+id,name,type},null,cls)}
+function meter(v,kind=''){return `<span class="meter ${kind}" role="img" aria-label="${Math.round(v)} out of 100"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></span>`}
+function condKind(f){return f>=60?'danger':f>=40?'warn':''}
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3400)}
+function finishTag(k){const f=D.FINISHES[k];return `<span class="tag ${f.win?'win':'lose'}">${esc(f.name)}</span>`}
+function starsText(s){return Mx.starText(s)}
+function weekLabel(a){return `S${Math.floor((a-1)/16)+1} W${(a-1)%16+1}`} 
+function planFor(p){return D.PLANS[p.likes]}
+
+/* ---------- top bar ---------- */
+function renderBar(){
+ const s=S();
+ $('#date').innerHTML=`<small>Season ${s.season}</small><strong>Week ${s.week} of 16</strong>`;
+ $('#cash').innerHTML=`<small>Bank</small><strong class="${s.cash<0?'bad':''}">${money(s.cash)}</strong>`;
+ $('#rep').innerHTML=`<small>Reputation</small><strong>${s.rep}</strong>`;
+ const need=G.pending().length,cards=s.card.length;
+ $('#continue').innerHTML=need?`Continue<small>${need} ${need>1?'replies':'reply'} needed</small>`:cards?`Match night<small>${cards} on the card</small>`:`Continue<small>To week ${s.week===16?1:s.week+1}</small>`;
+ const unread=s.inbox.filter(m=>!m.read).length;
+ $('#tabs').innerHTML=[['desk','Director’s desk',s.season===1&&s.week<=4?'<span class="pill soft">4-week trial</span>':'<span class="pill soft">Regional season</span>'],['inbox','Inbox',need?`<span class="pill">${need}</span>`:unread?`<span class="pill soft">${unread}</span>`:''],['roster','Roster',`<span class="pill soft">${s.roster.length}/5</span>`],['bookings','Bookings',s.offers.length?`<span class="pill soft">${s.offers.length}</span>`:''],['pyramid','Card pyramid',''],['records','Records','']]
+  .map(([id,l,b])=>`<button class="tab" data-tab="${id}" ${tab===id?'aria-current="page"':''}>${l}${b}</button>`).join('');
+}
+function render(){if(!S())return;renderBar();({desk:renderDesk,inbox:renderInbox,roster:renderRoster,bookings:renderBookings,records:renderRecords,pyramid:renderPyramid})[tab]();screenPage=0;setTimeout(updateScreen,0);}
+
+function renderPyramid(){
+ const s=S(),t=OfficeTerritory.ensure(),ranked=OfficeTerritory.rank();
+ const champion=ranked.find(w=>w.id===t.champion)||ranked[0];
+ const rest=ranked.filter(w=>w.id!==champion?.id);
+ const tiers=[['MAIN EVENT / NO. 1 CONTENDERS',rest.slice(0,2)],['UPPER CARD',rest.slice(2,5)],['MID-CARD',rest.slice(5,9)],['OPENING CARD',rest.slice(9)]];
+ const label=w=>'<span class="pyr-entry '+(w.owned?'mine':'')+'"><b>'+esc(w.name)+'</b><small>'+ (w.owned?'YOUR STABLE':'CIRCUIT')+' · '+w.score+' pts</small></span>';
+ const teams=t.teams.map(team=>'<article class="pyr-team"><b>'+esc(team.name)+'</b><small>'+team.wins+'W / '+team.losses+'L · Reputation '+team.rep+'</small><span>'+team.roster.map(id=>esc(D.FOES.find(f=>f.id===id)?.short||id)).join(' · ')+'</span></article>').join('');
+ const reports=t.reports.slice(0,3).flatMap(r=>r.lines.slice(0,2).map(line=>'<div class="pyr-news">'+esc(line)+'</div>')).join('');
+ $('#view').innerHTML='<section class="section pyramid-section"><div class="desk-kicker">THE REGIONAL TITLE PICTURE · SEASON '+s.season+' WEEK '+s.week+'</div><h2>The card pyramid</h2><p class="lede">Results and crowd heat change your standing. Gold marks your wrestlers. The territory champion defends the summit; contenders earn their way up the card.</p><div class="pyr-tiers"><div class="pyr-level apex"><strong>CHAMPION</strong><div class="pyr-entries">'+(champion?label(champion):'Vacant')+'</div></div>'+tiers.map(([title,ws])=>'<div class="pyr-level"><strong>'+title+'</strong><div class="pyr-entries">'+ws.map(label).join('')+'</div></div>').join('')+'</div></section><section class="section"><h2>Rival promotions</h2><div class="pyr-teams">'+teams+'</div><h3>Latest circuit news</h3>'+(reports||'<p class="dim">The rival circuit begins moving after the first week.</p>')+'</section>';
+}
+let screenPage=0;
+function updateScreen(){
+ const v=$('#view'),bar=$('#page-controls');if(!v||!bar)return;
+ const pages=Math.max(1,Math.ceil(v.scrollHeight/Math.max(1,v.clientHeight)));
+ screenPage=Math.max(0,Math.min(screenPage,pages-1));v.scrollTop=screenPage*v.clientHeight;
+ bar.hidden=pages<=1;bar.querySelector('[data-page="prev"]').disabled=screenPage===0;
+ bar.querySelector('[data-page="next"]').disabled=screenPage>=pages-1;
+ bar.querySelector('.page-counter').textContent='Screen '+(screenPage+1)+' / '+pages;
+}
+window.addEventListener('resize',()=>{screenPage=0;updateScreen()});
+
+/* ---------- director's desk: the four-week decision loop ---------- */
+function renderDesk(){
+ const s=S(),st=G.monthStatus(),need=G.pending(),income=s.card.reduce((v,c)=>v+c.purse,0),cost=G.wages()+G.overhead()+G.trainingBill();
+ const stakes=s.season===1&&s.week<=4;
+ const expenses=s.roster.map(w=>({w,fee:G.trainingCost(w)})).filter(x=>x.fee);
+ const ledger=`<div class="desk-finance"><div><small>Bank available</small><b>${money(s.cash)}</b></div><div><small>Expected purses</small><b>${money(income)}</b></div><div><small>Wages + overhead + coaching</small><b>${money(-cost)}</b></div><div><small>Projected end of week</small><b class="${s.cash+income-cost<0?'bad':'good'}">${money(s.cash+income-cost)}</b></div></div>`;
+ const trials=[['Three-star match','One actual match rated 3★ or better',st.okMatch],['£750 reserve','Keep £750 in the bank at the review',st.cash],['Reputation 30','Build a stronger reputation through your shows',st.rep],['Develop a wrestler','Improve any one skill by two points through coaching',st.developed]];
+ const month=stakes?`<div class="desk-mission"><div class="desk-kicker">THE FIRST FOUR WEEKS — SPONSOR TRIAL</div><h2>Build a stable worth backing</h2><p>At the end of week 4, deliver a <b>3★ match</b> AND meet at least two of the other three conditions. You earn <b>£450</b>; otherwise the sponsor walks. Every booking, training session and contract affects the result.</p><div class="desk-criteria">${trials.map((x,i)=>`<div class="${x[2]?'met':''}"><span>${x[2]?'✓':'○'} ${esc(x[0])}</span><small>${esc(x[1])}</small></div>`).join('')}</div><div class="dim">Evaluation in ${5-s.week} week${5-s.week===1?'':'s'} · Your decisions: ${s.history.length} matches completed</div></div>`:
+ s.monthReview?`<div class="desk-mission"><div class="desk-kicker">REGIONAL CIRCUIT · ${Math.max(0,17-s.week)} WEEKS REMAIN · FIRST MONTH REVIEW</div><h2>${s.monthReview.passed?'Backer invested £450':'Backer declined funding'}</h2><p>Best match: ${s.monthReview.best}★. Training and promo investment: ${money(s.monthReview.business?.training||0)}; contract improvements: ${money(s.monthReview.business?.negotiated||0)}. Promises kept: ${s.monthReview.business?.kept||0}, broken: ${s.monthReview.business?.broken||0}. The season continues and promoters remember your work.</p></div>`:'';
+ const calendar=s.futureBookings.slice().sort((a,b)=>a.eventAbs-b.eventAbs).slice(0,4);
+ const commitments=`<section class="section"><h2>Next dates on the circuit</h2><p class="lede">Future work is contracted now; you only earn the purse after the match. A booked wrestler cannot attend a residential camp covering that date.</p>${calendar.length?`<div class="card-list">${calendar.map(c=>`<div class="booked"><b>${esc(weekLabel(c.eventAbs))}</b><span>${esc(G.W(c.wid)?.name||'Departed wrestler')}</span><span class="dim">${esc(G.P(c.pid)?.name||'Promoter')} · ${esc(D.SLOTS[c.slot].name)}</span><b>${money(c.purse)}</b><button class="btn quiet" data-unbook="${c.id}">Cancel (trust −6)</button></div>`).join('')}</div>`:'<div class="empty">No future dates signed. Some promoter offers are for later weeks.</div>'}</section>`;
+ const circuit=s.season===1&&s.week>=5?`<section class="section"><h2>Regional circuit checkpoints</h2><p class="lede">Three genuine career goals after the opening trial. Rewards depend on match results, not accepting tasks.</p><div class="circuit-grid">${Object.entries(G.CIRCUIT_TARGETS).map(([week,t])=>{const r=G.circuitStatus(Number(week));const past=s.circuitReviews.find(x=>x.week===r.week);return `<div class="circuit-check ${past?.met?'met':''}"><small>WEEK ${r.week}</small><b>${esc(r.title)}</b><span>${r.required} matches (weeks 5–${r.week}); one ${r.quality}★; ${r.feature?'featured slot required':'any slot'}.</span><span class="dim">${past?past.met?'✓ Bonus earned':'✗ Target missed':`${r.played}/${r.required} matches · ${r.quality?'quality met':'quality needed'} · ${r.feature&&!r.hasFeature?'featured booking needed':''}`}</span><strong>${money(r.reward)}</strong></div>`}).join('')}</div></section>`:'';
+ const strain=s.roster.filter(w=>w.fatigue>=40||w.injury).map(w=>`${esc(w.short)} — ${w.injury?'injured':`fatigue ${w.fatigue}`}`).join('; ');
+ $('#view').innerHTML=`<section class="section"><div class="desk-head"><div><div class="desk-kicker">SEASON ${s.season} · WEEK ${s.week}</div><h2>Director's desk</h2><p class="lede">Make the week count. Hiring, training and booking are competing investments, not a checklist.</p></div><div class="desk-meet"><b>${s.focus} / 2</b><small>Management meetings left</small><span>Spend meetings with promoters to improve terms, or with wrestlers to keep trust.</span></div></div>${month}${ledger}${!stakes?`<p class="lede">Regional circuit: weeks 5–16. Develop a signature act, manage future dates and work toward the season objectives in Records.</p>`:''}<div class="desk-grid"><article class="desk-panel"><h3>1 · Talent</h3><p>${s.roster.length?`${s.roster.length} under contract. ${expenses.length?`Planned coaching: ${money(G.trainingBill())}.`:'No paid coaching scheduled.'}`:'An empty stable cannot take bookings. One star or several prospects?'}</p><p class="dim">${strain||'No major fatigue or injuries recorded.'}</p><button class="btn primary" data-jump="roster">${s.roster.length?'Review training':'Recruit a wrestler'}</button></article><article class="desk-panel"><h3>2 · The promoters</h3><p>${s.card.length} matches agreed. ${s.offers.length} live offers. ${s.focus} meetings available to improve terms.</p><p class="dim">Booking a loss can fund a training programme, but costs a wrestler heat.</p><button class="btn primary" data-jump="bookings">Review offers and negotiate</button></article><article class="desk-panel"><h3>3 · People</h3><p>${need.length?`${need.length} conversations need your decision before you can advance.`:'No unanswered urgent requests.'}</p><p class="dim">Private meetings can resolve morale problems, but leave fewer chances to negotiate your fees. Broken relationships cost opportunities even when the books look healthy.</p><button class="btn ${need.length?'primary':''}" data-jump="inbox">Read the inbox${need.length?` (${need.length})`:''}</button></article></div><div class="desk-foot"><span>Press <b>${need.length?'Continue → inbox':s.card.length?'Match night':'Continue → next week'}</b> when you are ready. You don't have to accept every offer.</span><button class="btn" data-jump="records">Career records</button></div>${commitments}${circuit}</section>`;
+}
+
+/* ---------- inbox ---------- */
+function renderInbox(){
+ const s=S();const list=s.inbox;
+ if(!openMsg||!list.some(m=>m.id===openMsg))openMsg=(G.pending()[0]||list[0])?.id;
+ const m=list.find(x=>x.id===openMsg);if(m&&!m.read&&m.kind!=='decision'){m.read=true;G.save();renderBar()}
+ const items=list.map(x=>`<li><button data-msg="${x.id}" class="${!x.read?'unread':''} ${x.kind==='decision'&&!x.answer?'need':''}" ${x.id===openMsg?'aria-current="true"':''}><span class="dot"></span><span class="from">${esc(x.from)}</span><span class="wk">S${x.season} W${x.week}</span><span class="subj">${esc(x.subject)}</span></button></li>`).join('');
+ let letter='<div class="letter"><p class="dim">No messages.</p></div>';
+ if(m){letter=`<article class="letter"><div class="meta">From ${esc(m.from)}, season ${m.season} week ${m.week}</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
+  if(m.kind==='decision'){if(m.answer)letter+=`<div class="outcome"><b>You chose: ${esc(m.options.find(o=>o.id===m.answer)?.label)}</b><br>${esc(m.outcome)}</div>`;
+   else letter+=`<div class="choices">${m.options.map(o=>`<button class="choice" data-answer="${o.id}" data-mid="${m.id}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></button>`).join('')}</div>`;}
+  letter+='</article>';}
+ $('#view').innerHTML=`<div class="inbox"><ul class="msglist">${items}</ul>${letter}</div>`;
+}
+
+/* ---------- roster ---------- */
+function status(w){if(w.program?.type==='camp')return `<span class="tag hot">Camp: ${w.program.left} weeks left</span>`;if(w.injury)return `<span class="bad">Injured, ${w.injury} wk</span>`;if(G.booked(w.id))return 'Booked';if(w.flags?.dive)return 'Planning a dive';return '<span class="faint">Free</span>'}
+function renderRoster(){
+ const s=S();let h='';
+ h+=`<section class="section"><h2>Your stable</h2><p class="lede">Assign a skill and intensity once: it keeps progressing every week. Open a wrestler dossier for a fixed three- or six-week training block, or a three-week residential camp that removes them from all bookings. Staff salaries are ongoing.</p>`;
+ if(!s.roster.length)h+=`<div class="empty">Nobody under contract. Sign a headliner, or two cheaper wrestlers, from the list below.</div>`;
+ else{h+=`<table class="table resp"><thead><tr><th>Wrestler</th><th class="n">Heat</th><th class="n">Ring</th><th class="n">Mic</th><th class="n">Psych</th><th class="n">Safe</th><th>Fatigue</th><th class="n">Morale</th><th>Status</th><th>This week</th></tr></thead><tbody>`;
+  for(const w of s.roster){
+   h+=`<tr><td class="lead"><button class="rowlink who" data-openw="${w.id}">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b><small>${esc(w.tier)}, ${esc(w.style.toLowerCase())}, ${money(w.wage)}/wk</small></span></button></td>
+   <td class="n" data-l="Heat"><b>${w.heat}</b></td><td class="n" data-l="Ring">${w.ring}</td><td class="n" data-l="Mic">${w.mic}</td><td class="n" data-l="Psych">${w.psych}</td><td class="n" data-l="Safe">${w.safe}</td>
+   <td data-l="Fatigue">${meter(w.fatigue,condKind(w.fatigue))} <span class="num">${w.fatigue}</span></td><td class="n" data-l="Morale"><span class="${w.morale<35?'bad':''}">${w.morale}</span></td>
+   <td data-l="Status">${status(w)}</td>
+   <td class="wide" data-l="This week"><div class="train-pair"><select data-train="${w.id}" aria-label="Training for ${esc(w.name)}" ${w.injury||w.program?'disabled':''}>${Object.entries(D.TRAINING).map(([k,t])=>`<option value="${k}" ${(w.injury?'rest':w.training)===k?'selected':''}>${t.name}${t.cost?` (£${t.cost})`:''}</option>`).join('')}</select><select data-intensity="${w.id}" aria-label="Training intensity for ${esc(w.name)}" ${w.injury||w.program||w.training==='rest'||w.training==='promo'?'disabled':''}>${w.program?.type==='camp'?'<option selected>Residential camp · £185/week</option>':Object.entries(G.INTENSITY).map(([key,v])=>`<option value="${key}" ${w.intensity===key?'selected':''}>${esc(v.name)} · ${money(v.cost)}/week</option>`).join('')}</select></div><small class="dim">${w.program?`${w.program.type==='camp'?'Away at camp':'Training block'} · ${w.program.left} weeks remain · ${money(G.trainingCost(w))}/week`:w.training==='rest'?'Recovers fatigue':w.training==='promo'?'£40 to produce a promo':`${esc(G.INTENSITY[w.intensity||'light'].hint)} Weekly cost ${money(G.trainingCost(w))}`}</small></td></tr>`;
+   if(openW===w.id)h+=`<tr class="detail"><td colspan="10">${detail(w)}</td></tr>`;
+  }
+  h+='</tbody></table>';}
+ h+='</section>';
+ h+=`<section class="section"><h2>Specialist coaching staff</h2><p class="lede">Hire one specialist at a time. Their expertise increases weekly progress in a chosen skill. Wages are due even if nobody trains.</p>${s.coach?`<div class="ledger"><b>${esc(G.COACHES[s.coach].name)}</b><span>Weekly salary ${money(G.coachWage())}</span><button class="btn danger" data-firecoach="1">End contract</button></div>`:`<div class="staff-options">${Object.entries(G.COACHES).map(([id,c])=>`<div class="staff-pick"><b>${esc(c.name)}</b><span>Hiring fee ${money(c.fee)} · ${money(c.wage)} weekly</span><span class="dim">Training improvement: ${esc(c.stat)} +${Math.round(c.boost*100)}%</span><button class="btn" data-hirecoach="${id}" ${s.cash<c.fee?'disabled':''}>Hire</button></div>`).join('')}</div>`}</section>`;
+ h+=`<section class="section"><h2>Free agents</h2><p class="lede">${s.roster.length>=5?'Your locker room is full.':`You can afford anyone up to ${money(s.cash)}. Wages are paid every week, booked or not.`}</p><table class="table resp"><thead><tr><th>Wrestler</th><th>Style</th><th class="n">Heat</th><th class="n">Ring</th><th class="n">Mic</th><th class="n">Psych</th><th class="n">Wage</th><th class="n">Fee</th><th></th></tr></thead><tbody>`;
+ for(const w of s.free){h+=`<tr><td class="lead"><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b><small>${esc(w.tier)}. ${esc(w.bio)}</small></span></span></td><td data-l="Style">${esc(w.style)}</td><td class="n" data-l="Heat">${w.heat}</td><td class="n" data-l="Ring">${w.ring}</td><td class="n" data-l="Mic">${w.mic}</td><td class="n" data-l="Psych">${w.psych}</td><td class="n" data-l="Wage">${money(w.wage)}</td><td class="n" data-l="Fee"><b>${money(w.fee)}</b></td><td><button class="btn primary" data-sign="${w.id}" ${s.cash<w.fee||s.roster.length>=5?'disabled':''}>Sign</button></td></tr>`}
+ h+='</tbody></table></section>';
+ $('#view').innerHTML=h;
+}
+function detail(w){
+ const s=S();const feuds=Object.values(s.feuds).filter(f=>f.wid===w.id&&f.heat>0&&!f.closed);
+ const hist=s.history.filter(x=>x.wid===w.id).slice(0,4);
+ const temper=w.ego>=75?'Proud. Resents being told what to do.':w.ego>=60?'Has opinions about how matches should go.':'Takes direction well.';
+ const pro=w.pro>=85?'Will never break a finish.':w.pro<60?'Unpredictable under pressure.':'Reliable.';
+ return `<div class="detail-grid"><div><h3>${esc(w.handle)}</h3><p>${esc(w.bio)}</p><p class="dim">Finisher: ${esc(w.finisher)}. Best in a ${esc(D.PLANS[D.STYLE_PLAN[w.style]].name.toLowerCase())}.</p></div>
+ <div><h3>Temperament</h3><p>${temper} ${pro}</p><p class="dim">Loyalty ${w.loyal}. ${w.loyal<45?'Could be tempted away.':''}</p></div>
+ <div><h3>Record</h3><p>${w.matches} matches, ${w.wins} wins. ${w.matches?`Average ${starsText(Math.round(w.starSum/w.matches*4)/4)}, best ${starsText(w.best)}.`:''}</p>${hist.map(x=>`<div class="dim">S${x.season}W${x.week} vs ${esc(x.foe)}: <span class="stars">${starsText(x.stars)}</span></div>`).join('')}</div>
+ <div><h3>Development plan</h3>${w.program?`<p><b>${w.program.type==='camp'?'Residential camp':`${w.program.total}-week block`}</b> · ${w.program.left} week${w.program.left===1?'':'s'} remaining.</p><p class="dim">${money(G.trainingCost(w))} per week. ${w.program.gains} skill points developed. ${w.program.type==='camp'?'Cannot be booked until camp ends.':''}</p><button class="btn danger" data-cancelprogram="${w.id}">End programme early</button>`:`<p class="dim">Select the skill and intensity in the roster row first. Plans progress automatically each week.</p><div class="program-actions"><button class="btn" data-program="block3" data-wid="${w.id}" ${w.injury||['rest','promo'].includes(w.training)?'disabled':''}>3-week block</button><button class="btn" data-program="block6" data-wid="${w.id}" ${w.injury||['rest','promo'].includes(w.training)?'disabled':''}>6-week block</button><button class="btn primary" data-program="camp" data-wid="${w.id}" ${w.injury||['rest','promo'].includes(w.training)?'disabled':''}>Residential camp · £185/week</button></div><p class="dim">Camp takes 3 weeks, prevents bookings, improves skills faster and builds match readiness. It still carries fatigue and injury risk.</p>`}${w.prepHistory?.length?`<p class="dim">Last completed: ${esc(w.prepHistory[0].focus)} +${w.prepHistory[0].gains} (${weekLabel(w.prepHistory[0].week)})</p>`:''}</div>
+ <div><h3>Rivalries</h3>${feuds.length?feuds.map(f=>`<div>${esc(G.F(f.rid).name)} ${meter(f.heat,f.heat>=70?'hot':'')} ${f.heat}</div>`).join(''):'<p class="dim">None yet. Good matches against the same opponent build one.</p>'}<p class="dim">${w.promise?.status==='open'?`PROMISED: Featured match by ${weekLabel(w.promise.deadline)}. Break it and loyalty falls.`:w.promise?.status==='kept'?'Your last featured-match promise was kept.':w.promise?.status==='broken'?'Your last featured-match promise was broken.':''}</p><p><button class="btn primary" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting · 1 of ${s.focus} remaining</button></p><p style="margin-top:10px"><button class="btn danger" data-release="${w.id}">Release ${esc(w.short)}</button></p></div></div>`;
+}
+
+/* ---------- bookings ---------- */
+function fitNote(o,w){
+ const p=G.P(o.pid),notes=[];
+ const best=D.STYLE_PLAN[w.style];
+ if(best===p.likes)notes.push(`<span class="good">${esc(p.name)} crowds love a ${esc(w.style.toLowerCase())} worker</span>`);
+ else notes.push(`<span class="dim">${esc(p.name)} wants a ${esc(planFor(p).name.toLowerCase())}; ${esc(w.short)} prefers ${esc(D.PLANS[best].name.toLowerCase())}</span>`);
+ const f=G.F(o.rid);if(f.safe<55)notes.push(`<span class="bad">${esc(f.name)} is an unsafe worker</span>`);
+ if(w.fatigue>=45)notes.push(`<span class="bad">${esc(w.short)} is tired (${w.fatigue})</span>`);
+ if(D.FINISHES[o.finish].heat<-3&&w.heat>=60)notes.push(`<span class="bad">A clean loss will cost ${esc(w.short)} heat</span>`);
+ const fd=G.feud(w.id,o.rid);if(fd&&!fd.closed&&fd.heat>0)notes.push(`<span class="good">Rivalry heat ${fd.heat}: a hotter crowd</span>`);
+ return notes.join('<br>');
+}
+function renderBookings(){
+ const s=S();
+ const income=s.card.reduce((t,c)=>t+c.purse,0),out=G.wages()+G.overhead()+G.trainingBill();
+ let h=`<div class="ledger"><span><span class="dim">Purses booked</span> <strong>${money(income)}</strong></span><span><span class="dim">Wages, overheads, coaching</span> <strong>${money(-out)}</strong></span><span><span class="dim">This week, if nothing goes wrong</span> <strong class="${income-out<0?'bad':'good'}">${money(income-out)}</strong></span></div>`;
+ h+=`<section class="section"><h2>The card</h2><p class="lede">Your matches this week. Pulling out costs trust with the promoter.</p>`;
+ if(!s.card.length)h+=`<div class="empty">Nothing booked yet. Pick an offer below.</div>`;
+ else h+=`<div class="card-list">${s.card.map(c=>{const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);return `<div class="booked">${face('wrestler',w.id,w.name)}<b>${esc(w.name)} vs ${esc(f.name)}</b><span class="dim">${esc(p.name)}, ${esc(D.SLOTS[c.slot].name.toLowerCase())}, ${c.minutes} min</span>${finishTag(c.finish)}${c.tag?`<span class="tag hot">${esc(c.tag)}</span>`:''}<span class="num"><b>${money(c.purse)}</b></span><button class="btn quiet" data-unbook="${c.id}">Pull out</button></div>`}).join('')}</div>`;
+ h+=`</section><section class="section"><h2>Future signed bookings</h2>${s.futureBookings.length?`<div class="card-list">${s.futureBookings.slice().sort((a,b)=>a.eventAbs-b.eventAbs).map(c=>`<div class="booked"><b>${weekLabel(c.eventAbs)}</b> ${esc(G.W(c.wid)?.name||'')} vs ${esc(G.F(c.rid).name)} · ${esc(G.P(c.pid).name)} · ${money(c.purse)}<button class="btn quiet" data-unbook="${c.id}">Cancel (trust −6)</button></div>`).join('')}</div>`:'<p class="dim">No future bookings yet.</p>'}</section><section class="section"><h2>Offers and deadlines</h2><p class="lede">Promoters issue dated opportunities. Some are this week; others are two or three weeks away. The reply deadline is shown on every offer. You can negotiate terms in conversation, but the calendar keeps moving.</p>`;
+ if(!s.offers.length)h+=`<div class="empty">No offers left this week. Press Continue to move on.</div>`;
+ else if(!s.roster.length)h+=`<div class="empty">You need someone under contract before you can take bookings. Go to Roster and sign a wrestler.</div>`;
+ h+='<div class="offers">';
+ for(const o of s.offers){
+  const p=G.P(o.pid),f=G.F(o.rid);
+  const options=s.roster.filter(w=>(!o.wid||o.wid===w.id)&&G.availableAt(w,o.eventAbs));
+  const sel=options.find(w=>w.id===o.talk?.wid)||options.find(w=>w.id===pick[o.id])||options.slice().sort((a,b)=>(D.STYLE_PLAN[b.style]===p.likes)-(D.STYLE_PLAN[a.style]===p.likes)||a.fatigue-b.fatigue)[0];
+  if(sel)pick[o.id]=sel.id;
+  const purse=sel?G.purse(o,sel):null;
+  const negotiated=o.talk?.step==='done';
+  h+=`<div class="offer"><div>${o.tag?`<span class="tag hot">${esc(o.tag)}</span> `:''}<h3>${esc(p.name)}</h3><div class="dim">${esc(p.desc)}, ${esc(p.venue)}</div><div class="faint" style="font-size:13px">Trust ${p.trust} · <b>Show ${weekLabel(o.eventAbs)}</b> · Reply by ${weekLabel(o.expiresAbs)}</div></div>
+  <div><div style="font-size:17px">vs <b>${esc(f.name)}</b> <span class="faint">(${esc(f.style.toLowerCase())})</span></div><div class="terms"><span class="tag">${esc(D.SLOTS[o.slot].name)}, ${D.SLOTS[o.slot].mins+(o.tag==='Blow-off'?5:0)} min</span>${finishTag(o.finish)}</div>${sel?`<div class="fit" style="margin-top:8px">${fitNote(o,sel)}</div>`:''}</div>
+  <div class="act">${options.length?`<div class="row"><select data-pick="${o.id}" aria-label="Wrestler for this offer" ${o.wid||o.talk?'disabled':''}>${options.map(w=>`<option value="${w.id}" ${sel?.id===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select><span class="purse num">${money(purse)}</span><button class="btn primary" data-book="${o.id}">${o.eventAbs>G.abs()?'Commit to date':'Book this week'}</button></div>
+   <div class="haggle"><button class="btn" data-talkopen="${o.id}">${negotiated?'Read conversation':'Talk to '+esc(p.voice)}</button><span class="faint">${negotiated?`${o.talk.verdict}. ${esc(o.talk.detail)}`:`${s.focus} meetings remaining this week`}</span></div>`
+   :`<div class="faint">${o.wid?`${esc(G.W(o.wid)?.name||'This wrestler')} isn’t available for this date.`:'Nobody free on the event date. Check camps and signed bookings.'}</div>`}</div></div>`;
+ }
+ h+='</div></section>';
+ $('#view').innerHTML=h;
+}
+
+/* ---------- records ---------- */
+function renderRecords(){
+ const s=S();
+ let h=`<section class="section"><h2>Season ${s.season} objectives</h2><p class="lede">Checked at the end of week 16. Each one met is worth £200 on top of sponsorship.</p><ul class="goals">${G.goalList().map(g=>`<li class="${g.done?'done':''}">${esc(g.text)}</li>`).join('')}</ul></section>`;
+ h+=`<section class="section"><h2>Promoters</h2><table class="table resp"><thead><tr><th>Promoter</th><th>Wants</th><th class="n">Reach</th><th>Trust</th><th class="n">Matches</th><th class="n">Best</th><th>Status</th></tr></thead><tbody>${s.promoters.map(p=>`<tr><td class="lead"><span class="who">${face('booker',p.id,p.voice)}<span><b>${esc(p.name)}</b><small>${esc(p.desc)}. Booker: ${esc(p.voice)}</small></span></span></td><td data-l="Wants">${esc(planFor(p).name)}</td><td class="n" data-l="Reach">${p.reach}</td><td data-l="Trust">${meter(p.trust,p.trust<30?'danger':p.trust>=65?'hot':'')} ${p.trust}</td><td class="n" data-l="Matches">${p.matches}</td><td class="n" data-l="Best"><span class="stars">${p.best?starsText(p.best):'–'}</span></td><td data-l="Status">${p.blacklist>0?`<span class="bad">Won’t book you for ${p.blacklist} wk</span>`:s.rep<p.minRep?`<span class="faint">Needs reputation ${p.minRep}</span>`:p.trust<15?'<span class="bad">Not returning calls</span>':'<span class="good">Booking</span>'}</td></tr>`).join('')}</tbody></table></section>`;
+ const feuds=Object.values(s.feuds).filter(f=>f.heat>0||f.closed).sort((a,b)=>b.heat-a.heat);
+ h+=`<section class="section"><h2>Rivalries</h2><p class="lede">Built by good matches against the same opponent; they cool off by 7 a week. At 70 heat after two matches, a promoter offers the blow-off.</p>${feuds.length?`<table class="table resp"><thead><tr><th>Rivalry</th><th>Heat</th><th class="n">Matches</th><th>State</th></tr></thead><tbody>${feuds.map(f=>{const w=s.roster.find(x=>x.id===f.wid)||D.TALENT.find(x=>x.id===f.wid);return `<tr><td class="lead"><b>${esc(w?.name)} vs ${esc(G.F(f.rid).name)}</b></td><td data-l="Heat">${meter(f.heat,f.heat>=70?'hot':'')} ${f.heat}</td><td class="n" data-l="Matches">${f.matches}</td><td data-l="State">${f.closed?'Finished':f.heat>=70&&f.matches>=2?'<span class="good">Ready for the blow-off</span>':'Building'}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No rivalries yet.</div>'}</section>`;
+ h+=`<section class="section"><h2>Results</h2>${s.history.length?`<table class="table resp"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th>Finish</th><th class="n">Rating</th><th class="n">Crowd</th><th class="n">Paid</th><th></th></tr></thead><tbody>${s.history.map((x,i)=>`<tr><td data-l="When">S${x.season} W${x.week}</td><td class="lead"><b>${esc(x.name)} vs ${esc(x.foe)}</b></td><td data-l="Promoter">${esc(x.promoter)}</td><td data-l="Finish">${x.outcome==='double'?'<span class="tag hot">Double-cross</span>':x.outcome==='nc'?'<span class="tag">No contest</span>':finishTag(x.finish)}</td><td class="n" data-l="Rating"><span class="stars">${starsText(x.stars)}</span></td><td class="n" data-l="Crowd">${x.crowd}</td><td class="n" data-l="Paid">${money(x.purse)}</td><td><button class="btn quiet" data-replay="${i}">Commentary</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No matches yet.</div>'}</section>`;
+ h+=`<section class="section"><h2>Career</h2><p><button class="btn" data-act="export">Export save</button> <button class="btn" data-act="import">Import save</button> <button class="btn danger" data-act="newgame">Start a new career</button></p></section>`;
+ $('#view').innerHTML=h;
+}
+
+/* ---------- wrestler conversation: a management meeting that competes with haggling ---------- */
+function renderPrivateMeeting(id){
+ const w=G.W(id);if(!w)return;const d=$('#modal');delete d.dataset.talkoid;
+ d.innerHTML=`<div class="dlg"><div class="desk-kicker">PRIVATE CONVERSATION · YOUR STABLE</div><h2>Talk with ${esc(w.name)}</h2><p>${esc(w.bio)}</p><div class="terms-compare"><div><small>Morale</small><b>${w.morale}</b></div><div><small>Loyalty</small><b>${w.loyal}</b></div></div><p class="dim">You have ${S().focus} management meetings remaining this week. A wrestler meeting uses one, leaving fewer chances to improve contracts with promoters.</p><div class="talk-actions"><button class="choice" data-private="listen" data-wid="${id}" ${S().focus===0?'disabled':''}><b>Listen and reassure</b><span>Free, no specific promise. Morale +5, loyalty +4.</span></button><button class="choice" data-private="promise" data-wid="${id}" ${S().focus===0||w.promise?.status==='open'?'disabled':''}><b>Promise a featured match</b><span>Morale +8 now. Book a feature or main event within two weeks. Miss it and lose 14 morale / 12 loyalty.</span></button><button class="choice" data-private="bonus" data-wid="${id}" ${S().cash<120||S().focus===0?'disabled':''}><b>Offer a £120 loyalty bonus</b><span>Cash −£120; morale +6, loyalty +9. Guaranteed, but not cheap.</span></button></div></div><div class="foot"><button class="btn" data-dlg="close">Leave without a promise</button></div>`;
+ if(!d.open)d.showModal();
+}
+
+/* ---------- explicit promoter meeting ---------- */
+function renderMeeting(oid,wid){
+ const res=G.meeting(oid,wid);if(res.error){toast(res.error);return}
+ const o=res.offer,t=res.talk,w=G.W(wid),p=G.P(o.pid),f=G.F(o.rid),d=$('#modal');d.dataset.talkoid=oid;
+ const term=(slot,fin,fee)=>`${esc(D.SLOTS[slot].name)} · ${esc(D.FINISHES[fin].name)} · ${money(fee)}`;
+ const transcript=t.log.map(x=>`<div class="talk-line"><b>${esc(x.who)}</b><p>${esc(x.text)}</p></div>`).join('');
+ let opts='';
+ if(t.step==='start')opts=`<div class="talk-actions"><p>What are you asking ${esc(p.voice)} to change?</p><button class="choice" data-talkaction="ask:fee" data-oid="${oid}" data-wid="${wid}"><b>Increase the fee</b><span>Ask for 20% more. A counteroffer may be smaller.</span></button>${o.finish==='lose_clean'?`<button class="choice" data-talkaction="ask:protect" data-oid="${oid}" data-wid="${wid}"><b>Protect the loss</b><span>Keep the loss, but negotiate a competitive finish. Expect lower pay.</span></button>`:''}${o.slot!=='main'?`<button class="choice" data-talkaction="ask:slot" data-oid="${oid}" data-wid="${wid}"><b>Better billing</b><span>Ask for a higher spot on the card, possibly at the expense of pay.</span></button>`:''}</div>`;
+ else if(t.step==='reason')opts=`<div class="talk-actions"><p>Make your argument. The booker's trust, ${esc(w.short)}'s reputation, the crowd and the promoter's priorities all matter.</p><button class="choice" data-talkaction="arg:crowd" data-oid="${oid}" data-wid="${wid}"><b>Business case</b><span>${esc(w.short)} can attract viewers. Stronger with a popular wrestler and a showman booker.</span></button><button class="choice" data-talkaction="arg:reliability" data-oid="${oid}" data-wid="${wid}"><b>Track record</b><span>Promise dependable work and a cleanly executed finish. Suits a traditional booker.</span></button><button class="choice" data-talkaction="arg:trade" data-oid="${oid}" data-wid="${wid}"><b>Financial compromise</b><span>Show willingness to give ground on money for a better opportunity.</span></button></div>`;
+ else opts=`<div class="talk-outcome"><b>${esc(t.verdict.toUpperCase())}</b><p>${esc(t.detail)}</p><p class="dim">The contract shown below is exactly what will be booked. Closing this meeting leaves the offer available.</p>${t.verdict!=='original'&&(o.slot!==t.original.slot||o.finish!==t.original.finish||G.purse(o,w)!==t.original.fee)?`<button class="btn" data-talkaction="revert" data-oid="${oid}" data-wid="${wid}">Keep the original offer instead</button>`:''}</div>`;
+ d.innerHTML=`<div class="dlg"><div class="desk-kicker">PROMOTER'S OFFICE · ${esc(p.name)}</div><h2>Meeting with ${esc(p.voice)}</h2><p>${esc(w.name)} vs ${esc(f.name)}</p><div class="terms-compare"><div><small>Original offer</small><b>${term(t.original.slot,t.original.finish,t.original.fee)}</b></div><div><small>Current offer</small><b>${term(o.slot,o.finish,G.purse(o,w))}</b></div></div><div class="talk-log">${transcript}</div>${opts}</div><div class="foot"><button class="btn" data-dlg="close">Keep offer / close</button><button class="btn primary" data-talkbook="${oid}" data-wid="${wid}">Sign current terms</button></div>`;
+ if(!d.open)d.showModal();d.querySelector('[data-talkaction], [data-talkbook]')?.focus();
+}
+
+/* ---------- dialogs ---------- */
+function dialog(title,html,buttons=[['Close','close']]){
+ const d=$('#modal');delete d.dataset.talkoid;d.innerHTML=`<div class="dlg"><h2>${esc(title)}</h2>${html}</div><div class="foot">${buttons.map(([l,a,c])=>`<button class="btn ${c||''}" data-dlg="${a}">${l}</button>`).join('')}</div>`;
+ d.showModal();return d;
+}
+function logList(log){return `<ol class="fulllog" style="background:var(--tv-bg)">${(log||[]).map(l=>`<li class="${l.kind} ${l.big?'big':''}"><span class="t">${esc(l.t)}</span><span>${esc(l.text)}</span></li>`).join('')}</ol>`}
+
+/* ---------- continue ---------- */
+function proceed(){
+ const s=S();
+ if(G.pending().length){tab='inbox';openMsg=G.pending()[0].id;render();toast('Reply to the messages marked in red first.');return}
+ if(s.card.length){startNight();return}
+ if(!s.roster.length&&s.week===1){tab='roster';render();toast('Sign a wrestler first.');return}
+ G.endWeek();
+ if(s.over){gameOver();return}
+ tab='desk';openMsg=null;render();window.scrollTo(0,0);
+ toast(`Week ${s.week}. ${s.offers.length} offers on the table.`);
+}
+function gameOver(){
+ dialog('The office is closed',`<p>The bank has called in your overdraft. After ${S().season>1?S().season-1+' seasons and ':''}${S().history.length} matches, the territory goes on without you.</p>`,[['Start again','newgame','primary']]);
+}
+
+/* ======================= MATCH NIGHT ======================= */
+const SPEED={slow:{line:2600,pause:1100},normal:{line:1500,pause:750},fast:{line:520,pause:260},skip:{line:0,pause:0}};
+function startNight(){
+ night={queue:S().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>c.id),i:0,speed:night?.speed||'normal',results:[]};
+ $('#toast').classList.remove('show');$('#tv').hidden=false;document.body.style.overflow='hidden';prep();
+}
+function current(){return S().card.find(c=>c.id===night.queue[night.i])}
+function strip(c){const p=G.P(c.pid);return `<div class="strip"><b>${esc(p.name.toUpperCase())} LIVE</b><span>${esc(p.venue)}</span><span>Match ${night.i+1} of ${night.queue.length}</span></div>`}
+function prep(){
+ const c=current();if(!c)return endNight();
+ const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),best=D.STYLE_PLAN[w.style],foeBest=D.STYLE_PLAN[f.style];
+ night.plan=night.plan&&night.plan.cid===c.id?night.plan:{cid:c.id,game:best,leash:w.psych>=75&&w.ego<75?'free':'script',talk:'none'};
+ const P=night.plan;
+ const warn=[];if(w.intensity==='hard'&&w.training!=='rest'&&w.training!=='promo')warn.push('Intensive training this week will leave them tired before the bell.');if(w.fatigue>=45)warn.push(`${w.short} is tired (fatigue ${w.fatigue}). Stamina will run out sooner.`);if(w.morale<35)warn.push(`${w.short}’s morale is low (${w.morale}). Less likely to listen.`);if(w.flags.pushThrough)warn.push(`${w.short} is carrying a bad back.`);if(w.flags.dive)warn.push(`${w.short} plans to dive off the balcony.`);
+ const fnotes=[];if(f.safe<55)fnotes.push('Unsafe. Spots against them go wrong more often.');if(f.ego>=68)fnotes.push('Ego. May start getting stiff.');if(f.psych>=85)fnotes.push('A brilliant storyteller.');if(f.ring>=80)fnotes.push('Excellent in the ring.');
+ const fits=g=>[g===p.likes?`<i>${esc(p.name)} crowd</i>`:'',g===best?`<i>${esc(w.short)}’s style</i>`:'',g===foeBest?`<i>${esc(f.short)}’s style</i>`:''].join('');
+ const opts=(name,obj,val)=>Object.entries(obj).map(([k,o])=>`<button class="opt" data-plan="${name}" data-val="${k}" aria-pressed="${val===k}"><b>${esc(o.name)}</b><span>${esc(o.blurb)}</span>${name==='game'?`<span class="fits">${fits(k)}</span>`:''}</button>`).join('');
+ const finishLine={win_clean:`${w.short} wins clean`,win_dirty:`${w.short} wins dirty`,lose_protected:`${w.short} loses, protected`,lose_clean:`${w.short} loses clean`}[c.finish];
+ $('#tv').innerHTML=`${strip(c)}<div class="wrap">
+  <div class="vs"><div class="side you">${face('wrestler',w.id,w.name,'')}<div><h2>${esc(w.name)}</h2><small>${esc(w.style)}. Heat ${w.heat}</small></div></div><div class="v">v</div><div class="side them">${face('wrestler',f.id,f.name,'')}<div><h2>${esc(f.name)}</h2><small>${esc(f.style)}. Heat ${f.heat}</small></div></div></div>
+  <div class="contract">The finish is in the contract: <em>${esc(finishLine)}</em>. ${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes, ${money(c.purse)}.${c.tag?` ${esc(c.tag)}.`:''}</div>
+  <div class="scout"><div><b>${esc(w.short)} tonight.</b> Stamina ${Math.round(100-w.fatigue*.7)}, morale ${w.morale}. ${warn.length?`<span class="warn">${esc(warn.join(' '))}</span>`:'Fit and ready.'}</div><div><b>${esc(f.short)}.</b> ${esc(fnotes.join(' ')||'A steady, professional opponent.')} Finisher: ${esc(f.finisher)}.</div></div>
+  <fieldset class="decide"><legend>What is this match built on?</legend><div class="opts">${opts('game',D.PLANS,P.game)}</div></fieldset>
+  <fieldset class="decide"><legend>Who calls it in the ring?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset>
+  <fieldset class="decide"><legend>Last word before the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset>
+  <div class="prep-foot"><span class="dim">You get three calls from ringside once the bell goes.</span><button class="go" data-tv="bell">Send them out</button></div></div>`;
+ $('#tv').scrollTop=0;
+}
+function bell(){
+ const c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan;
+ const trainingFatigue=w.training==='rest'?0:w.training==='promo'?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
+ const preparation={...w.prep};const focus=D.TRAINING[w.training]?.stat;
+ if(focus&&!w.injury){preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);}
+ night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,slot:c.slot,minutes:c.minutes,finish:c.finish,feudHeat:c.feudHeat,blowoff:c.blowoff,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags},seed:Math.floor(Math.random()*2**31)});
+ night.past=[];night.paused=false;night.hint='';
+ const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
+ $('#tv').innerHTML=`${strip(c)}<div class="wrap">
+  <header class="score"><div class="side you">${face('wrestler',w.id,w.name,'')}<h2>${esc(w.short)}</h2><div class="stam" id="sY"><i></i></div></div>
+   <div class="mid"><div class="live-stars" id="lStars" aria-label="Live rating">–</div><div class="clock" id="lClock">00:00</div><div class="phase" id="lPhase">Entrances</div></div>
+   <div class="side them">${face('wrestler',f.id,f.name,'')}<h2>${esc(f.short)}</h2><div class="stam" id="sT"><i></i></div></div></header>
+  <div class="mom" aria-hidden="true"><i id="lMom" style="width:50%"></i></div><div class="momlab"><span>${esc(w.short)} on top</span><span>${esc(f.short)} on top</span></div>
+  <div class="feed"><div class="now" id="lNow" aria-live="polite"><span class="t"></span><span class="tx"></span></div><ol class="past" id="lPast"></ol></div>
+  <div class="bench"><div><div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar"><i id="lCrowdBar"></i></div></div>
+   <div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div>
+   <div class="callsleft">Calls left <span id="lCalls">●●●</span></div></div>
+   <div><div class="calls">${callBtns}</div><div class="callhint" id="lHint">Your calls go to the wrestler. They don’t always listen.</div>
+   <div class="speed" role="group" aria-label="Commentary speed"><button data-pause>Pause</button><span class="gap"></span>${['slow','normal','fast','skip'].map(s=>`<button data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div></div></div></div>
+  <div class="decision" id="decision" hidden></div>`;
+ updateLive();schedule(300);
+}
+function schedule(ms){clearTimeout(night.timer);night.timer=setTimeout(pump,ms)}
+function pump(){
+ const M=night?.M;if(!M||night.paused)return;
+ if(M.decision&&!M.queue.length)return showDecision();
+ if(night.speed==='skip'){let line,n=0;while(n++<4000){if(M.decision&&!M.queue.length)break;line=Mx.next(M);if(!line)break;night.past.unshift(line);}
+  if(night.past.length){showLine(night.past.shift(),true)}updateLive();if(M.decision)return showDecision();if(M.done)return schedule(500);return schedule(10)}
+ const line=Mx.next(M);
+ if(!line){if(M.done)return result();if(M.decision)return showDecision();return schedule(50)}
+ showLine(line);updateLive();
+ if(M.decision&&!M.queue.length){return schedule(SPEED[night.speed].line*.6+300)}
+ const sp=SPEED[night.speed];schedule(sp.line+(line.pause||0)*sp.pause);
+}
+function showLine(line,quiet){
+ const now=$('#lNow');if(!now)return;
+ const prev=now.dataset.line?JSON.parse(now.dataset.line):null;
+ if(prev&&!quiet)night.past.unshift(prev);
+ now.className='now '+line.kind+(line.big?' big':'');now.dataset.line=JSON.stringify(line);
+ now.innerHTML=`<span class="t">${esc(line.t)}</span><span class="tx">${esc(line.text)}</span>`;
+ night.past=night.past.filter(x=>x.kind!=='count'||x.text.length>8).slice(0,10);
+ $('#lPast').innerHTML=night.past.map(l=>`<li class="${l.kind} ${l.big?'big':''}"><span class="t">${esc(l.t)}</span><span>${esc(l.text)}</span></li>`).join('');
+}
+function updateLive(){
+ const M=night.M;if(!$('#lClock'))return;
+ $('#lClock').textContent=Mx.fmt(M.t)+' / '+Mx.fmt(M.len);
+ $('#lPhase').textContent=Mx.phaseName(M);
+ $('#lStars').textContent=M.qN?starsText(Mx.liveStars(M))||'DUD':'–';
+ $('#lCrowd').textContent=Math.round(M.crowd);$('#lCrowdBar').style.width=M.crowd+'%';
+ $('#lMom').style.width=(50+M.mom/2)+'%';
+ const y=$('#sY'),t=$('#sT');y.querySelector('i').style.width=M.wSt+'%';t.querySelector('i').style.width=M.fSt+'%';y.classList.toggle('low',M.wSt<30);t.classList.toggle('low',M.fSt<30);
+ $('#lSheet').textContent=M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the sheet';$('#lSheet').className=M.offScript?'warnv':'';
+ $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
+ document.querySelectorAll('[data-call]').forEach(b=>b.disabled=!Mx.canCall(M,b.dataset.call));
+ const pb=document.querySelector('[data-pause]');if(pb)pb.textContent=night.paused?'Resume':'Pause';
+}
+function showDecision(){
+ const d=night.M.decision,box=$('#decision');if(!d||!box)return;
+ box.innerHTML=`<div class="box" role="alertdialog" aria-labelledby="dTitle"><span class="flash">${esc(Mx.fmt(night.M.t))}  DECISION</span><h2 id="dTitle">${esc(d.title)}</h2><p>${esc(d.body)}</p><div class="opts">${d.options.map(o=>`<button class="opt" data-decide="${o.id}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></button>`).join('')}</div></div>`;
+ box.hidden=false;box.querySelector('button')?.focus();
+}
+function decideNow(id){const M=night.M;Mx.resolve(M,id);$('#decision').hidden=true;if(night.speed==='skip')night.speed='normal',document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===night.speed));updateLive();schedule(400)}
+function doCall(id){const M=night.M;if(!Mx.canCall(M,id))return;Mx.call(M,id);updateLive();if(!night.paused)schedule(250);else{const l=Mx.next(M);if(l)showLine(l)}}
+function result(){
+ clearTimeout(night.timer);const M=night.M,c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
+ const fin={...M.final,log:M.log.map(({t,text,kind,big})=>({t,text,kind,big}))};
+ const cons=G.applyResult(c,fin);night.results.push({name:w.name,foe:f.name,stars:fin.stars});
+ const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
+ const pct=fin.script===null?'Called live':Math.round(fin.script*100)+'%';
+ night.i++;const more=night.i<night.queue.length;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name.toUpperCase())}: FULL TIME</b><span>${esc(w.name)} v ${esc(f.name)}</span></div><div class="wrap">
+  <div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>
+  <div class="facts"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the sheet</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>
+  <ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>
+  <details><summary class="dim" style="cursor:pointer;margin-bottom:10px">Full commentary</summary>${logList(fin.log)}</details>
+  <div class="prep-foot"><span class="dim">${more?`Next: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div></div>`;
+ $('#tv').scrollTop=0;night.M=null;night.plan=null;
+}
+function endNight(){
+ clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';
+ const res=night?.results||[];night={speed:night?.speed||'normal'};
+ if(res.length)G.S.inbox.unshift({id:'mn'+Date.now(),week:S().week,season:S().season,read:true,kind:'info',from:'Your road agent',subject:'Match night report',body:res.map(r=>`${r.name} v ${r.foe}: ${starsText(r.stars)||'DUD'}`)});
+ G.endWeek();
+ if(S().over){render();return gameOver()}
+ tab='inbox';openMsg=null;render();window.scrollTo(0,0);toast(`Week ${S().week}. ${S().offers.length} offers on the table.`);
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+ const t=e.target.closest('button,[data-tab]');if(!t)return;const d=t.dataset;
+ if(t.id==='continue')return proceed();
+ if(d.page){screenPage+=d.page==='next'?1:-1;updateScreen();return}
+ if(d.tab||d.jump){tab=d.tab||d.jump;openW=null;render();window.scrollTo(0,0);return}
+ if(d.msg){openMsg=d.msg;renderInbox();return}
+ if(d.answer){const out=G.answer(d.mid,d.answer);render();if(out)toast(out);return}
+ if(d.openw){openW=openW===d.openw?null:d.openw;renderRoster();return}
+ if(d.checkin){renderPrivateMeeting(d.checkin);return}
+ if(d.private){const r=G.checkIn(d.wid,d.private);if(r.error)return toast(r.error);$('#modal').close();render();toast(r.text);return}
+ if(d.program){const err=G.startProgram(d.wid,d.program);if(err)toast(err);else toast(d.program==='camp'?'Three-week camp booked; wrestler unavailable.':'Development block committed.');renderRoster();return}
+ if(d.cancelprogram){const err=G.cancelProgram(d.cancelprogram);if(err)toast(err);else toast('Programme ended. Future weeks freed, but training already paid for.');renderRoster();return}
+ if(d.hirecoach){const err=G.hireCoach(d.hirecoach);if(err)toast(err);else toast('Coach hired. Weekly salary starts immediately.');renderRoster();return}
+ if(d.firecoach){const err=G.fireCoach();if(err)toast(err);else toast('Coach released. Future salaries stop.');renderRoster();return}
+ if(d.sign){const err=G.sign(d.sign);if(err)toast(err);else{const w=G.W(d.sign);toast(`${w.name} signed. Wages: ${money(w.wage)} a week.`)}render();return}
+ if(d.release){const w=G.W(d.release);dialog(`Release ${w.name}?`,`<p>${esc(w.short)} leaves today and you get nothing back. Any booking for them is cancelled.</p>`,[['Keep them','close'],['Release','release:'+w.id,'danger']]);return}
+ if(d.book){const o=S().offers.find(o=>o.id===d.book);const when=o?.eventAbs;const err=G.book(d.book,pick[d.book]);if(err)toast(err);else toast(when>G.abs()?`Signed for ${weekLabel(when)}. Purse paid after the match.`:'Booked on this week’s card.');render();return}
+ if(d.unbook){G.unbook(d.unbook);render();toast('Booking cancelled; promoter trust −6.');return}
+ if(d.talkopen){const o=S().offers.find(x=>x.id===d.talkopen);renderMeeting(d.talkopen,o?.talk?.wid||pick[d.talkopen]);return}
+ if(d.talkaction){const res=G.talkMove(d.oid,d.wid,d.talkaction);if(res.error)return toast(res.error);renderMeeting(d.oid,d.wid);return}
+ if(d.talkbook){const o=S().offers.find(o=>o.id===d.talkbook);const when=o?.eventAbs;const err=G.book(d.talkbook,d.wid);if(err)return toast(err);$('#modal').close();render();toast(when>G.abs()?`Future booking confirmed for ${weekLabel(when)}.`:'Contract signed with the exact agreed terms.');return} 
+ if(d.replay){const x=S().history[+d.replay];dialog(`${x.name} vs ${x.foe}`,`<p class="dim">${esc(x.promoter)}, season ${x.season} week ${x.week}. ${starsText(x.stars)}</p>${x.notes.map(n=>`<p>${esc(n)}</p>`).join('')}${logList(x.log)}`);return}
+ if(d.act==='export'){const blob=new Blob([JSON.stringify(S())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`the-office-s${S().season}w${S().week}.json`;a.click();return}
+ if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(![20,21,22].includes(x.v))throw 0;G.S=x;if(!G.S)throw 0;G.save();tab='inbox';render();toast('Save loaded.')}catch(err){toast('That file isn’t a valid v2–v2.2 save.')}})};i.click();return}
+ if(d.act==='newgame'){dialog('Start a new career?','<p>Your current career will be overwritten.</p>',[['Cancel','close'],['Start again','newgame','danger']]);return}
+ if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);openW=null;render();toast(`${w.name} released.`)}if(d.dlg==='newgame'){G.wipe();G.fresh();tab='roster';openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';render()}return}
+ // title
+ if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;G.fresh();$('#title').hidden=true;tab='roster';render();toast('Sign your first wrestler.');return}
+ if(d.title==='load'){if(!G.load())return toast('No saved career found.');$('#title').hidden=true;tab='inbox';render();return}
+ // tv
+ if(d.plan){night.plan[d.plan]=d.val;t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));return}
+ if(d.tv==='bell')return bell();
+ if(d.tv==='next'){prep();return}
+ if(d.tv==='done')return endNight();
+ if(d.call)return doCall(d.call);
+ if(d.decide)return decideNow(d.decide);
+ if(d.speed!==undefined){night.speed=d.speed;document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===night.speed));if(!night.paused)schedule(50);return}
+ if(t.hasAttribute('data-pause')){night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}
+});
+document.addEventListener('change',e=>{
+ const t=e.target,d=t.dataset;
+ if(d.train){G.setTraining(d.train,t.value);renderRoster();toast(`${G.W(d.train).short}: ${D.TRAINING[t.value].name.toLowerCase()} this week.`);return}
+ if(d.intensity){G.setIntensity(d.intensity,t.value);renderRoster();toast(`${G.W(d.intensity).short}: ${G.INTENSITY[t.value].name}, ${money(G.trainingCost(G.W(d.intensity)))}/week.`);return}
+ if(d.pick){pick[d.pick]=t.value;renderBookings();return}
+});
+document.addEventListener('mouseover',e=>{const b=e.target.closest('[data-hint]');if(b&&$('#lHint'))$('#lHint').textContent=b.dataset.hint});
+document.addEventListener('focusin',e=>{const b=e.target.closest('[data-hint]');if(b&&$('#lHint'))$('#lHint').textContent=b.dataset.hint});
+document.addEventListener('keydown',e=>{
+ if(night?.M&&!$('#tv').hidden){
+  const box=$('#decision');if(box&&!box.hidden)return;
+  if(e.key===' '){e.preventDefault();night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}
+  const n=+e.key;if(n>=1&&n<=6){doCall(Object.keys(Mx.CALLS)[n-1]);return}
+ }
+});
+
+/* ---------- boot ---------- */
+function boot(){
+ if(G.hasSave())$('#loadBtn').hidden=false;
+ $('#title').hidden=false;
+}
+window.OfficeUI={get night(){return night}};
+window.addEventListener('DOMContentLoaded',()=>{
+ const d=$('#modal');d.addEventListener('close',()=>{
+  const oid=d.dataset.talkoid;if(oid&&S()){
+   const o=S().offers.find(x=>x.id===oid);
+   if(o?.talk?.step==='start'){o.talk=null;G.save();}
+  }
+  delete d.dataset.talkoid;
+  if(S())render();
+ });
+ boot();
+});
+})();
+</script>
+</body>
 </html>
