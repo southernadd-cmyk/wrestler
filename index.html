@@ -1254,6 +1254,7 @@ const Graph=(function makeGraph(){
  }
  function step(M){
   const g=get(M),p=Psy.get(M);
+  if(p.position==='outside'&&g.floorTicks>=4){apply(M,'roll_inside');g.floorTicks=0;return;}
   const candidates=validPool(M),id=pick(M,candidates);
   if(id){apply(M,id);return;}
   recover(M);
@@ -1269,7 +1270,7 @@ const Graph=(function makeGraph(){
  }
  function special(M){
   const g=get(M),p=Psy.get(M);
-  if(p.position==='outside'){recover(M);return}
+  if(p.position==='outside'){apply(M,'roll_inside');g.floorTicks=0;return}
   spot(M,false);
   g.events.push({id:'special_spot',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
   g.node=null;
@@ -1379,7 +1380,10 @@ function tick(M){
  M.t+=10;const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
  if(!M.phase||M.phase.name!==ph.name){M.phase=ph;onPhase(M);if(M.decision)return;}
  // An outside exchange cannot continue indefinitely without a count-out.
- if(Psy.get(M).position==='outside')Psy.recover(M);
+ if(Psy.get(M).position==='outside'){
+   const g=Graph.get(M);g.floorTicks=(g.floorTicks||0)+1;
+   if(g.floorTicks>=5){say(M,fill(M,'The referee reaches eight. {W} and {F} scramble back through the ropes.'),'play');Psy.get(M).position='standing';Psy.get(M).down=null;g.node=null;g.floorTicks=0;}
+  }else Graph.get(M).floorTicks=0;
  // momentum
  const target=Psy.get(M).control==='w'?52:Psy.get(M).control==='f'?-52:0;M.mom+=(target-M.mom)*.23+(M.r()*16-8);M.mom=clamp(M.mom,-100,100);
  // stamina
