@@ -2538,14 +2538,37 @@ root.OfficeTerritory={ensure,rank,evolve};
   const pr=fin?.promo;
   if(pr){
    const fd=s.feuds[c.wid+':'+c.rid],w=G.W(c.wid);
-   if(w)w.heat=clamp(w.heat+Math.max(0,Math.round((pr.quality-35)/14)));
+   if(w){
+    w.heat=clamp(w.heat+Math.max(0,Math.round((pr.quality-35)/14)));
+    if(pr.v===2)w.morale=clamp(w.morale+(pr.moraleDelta||0));
+   }
+   if(pr.v===2){
+    const p=G.P(c.pid);
+    if(p)p.trust=clamp(p.trust+(pr.trustDelta||0));
+    s.rep=clamp(s.rep+(pr.repDelta||0));
+   }
    if(fd){
-    fd.segments=(fd.segments||0)+1;fd.lastPromo={style:pr.styleName,quality:pr.quality,week:G.abs()};
-    fd.angle=pr.speaker+' called out '+pr.opponent+' ('+pr.styleName.toLowerCase()+'). '+(pr.quality>=70?'The crowd bought every word.':pr.quality<38?'The exchange did not land.':'The confrontation added another chapter.');
+    fd.segments=(fd.segments||0)+1;fd.lastPromo={style:pr.styleName,quality:pr.quality,week:G.abs(),path:pr.path||[]};
+    fd.angle=pr.angle||pr.speaker+' called out '+pr.opponent+' ('+pr.styleName.toLowerCase()+'). '+(pr.quality>=70?'The crowd bought every word.':pr.quality<38?'The exchange did not land.':'The confrontation added another chapter.');
     if(!fd.closed){fd.heat=clamp(fd.heat+pr.heatDelta);fd.last=G.abs()}
    }
-   h.promo={speaker:pr.speaker,opponent:pr.opponent,speech:pr.speech,reply:pr.reply,quality:pr.quality,style:pr.styleName,reaction:pr.reaction};
-   const msg=pr.speaker+' spoke before the match: promo '+pr.quality+'/100, rivalry '+(fd?.closed?'concluded':'+'+pr.heatDelta)+'.';
+   h.promo={speaker:pr.speaker,opponent:pr.opponent,speech:pr.speech,reply:pr.reply,quality:pr.quality,style:pr.styleName,reaction:pr.reaction,dialogue:pr.dialogue||null,path:pr.path||[],promise:pr.promise||null,angle:pr.angle||null};
+   if(pr.v===2){
+    const promise=pr.promise?.type||'none',won=fin.outcome==='double'||(fin.outcome!=='nc'&&c.finish.startsWith('win'));
+    const clean=fin.outcome!=='double'&&fin.outcome!=='nc'&&['win_clean','lose_clean'].includes(c.finish);
+    const finisher=won&&c.finish==='win_clean'&&!!G.W(c.wid)?.finisher
+     &&(fin.log||[]).some(line=>String(line.text||'').includes(G.W(c.wid).finisher));
+    const kept=promise==='win'?won:promise==='clean'?clean:promise==='finisher'?finisher:null;
+    if(kept!==null){
+     const line=kept?'The microphone promise was fulfilled in the ring.':'The microphone promise fell apart when the bell rang.';
+     if(w){w.morale=clamp(w.morale+(kept?2:-3));w.heat=clamp(w.heat+(kept?3:-1))}
+     if(!fd.closed)fd.heat=clamp(fd.heat+(kept?2:5));
+     h.promo.promise.kept=kept;h.notes.push(line);out.push({text:line,tone:kept?1:-1});
+    }
+    const mood=pr.trustDelta>1?'The promoter appreciated the restraint.':pr.trustDelta<0?'The promoter was unhappy about how personal it became.':'The promoter took note of the exchange.';
+    h.notes.push(mood);out.push({text:mood,tone:Math.sign(pr.trustDelta||0)});
+   }
+   const msg=pr.speaker+' spoke before the match: '+(pr.v===2?pr.path.map(x=>x.id).join(' → '):'promo '+pr.quality+'/100')+', rivalry '+(fd?.closed?'concluded':'+'+pr.heatDelta)+'.';
    h.notes.push(msg);out.push({text:msg,tone:pr.quality>=55?1:0});
   }
   G.save();return out;
