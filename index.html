@@ -357,7 +357,9 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 .pyr-team small,.pyr-team span{color:var(--ink-2);font-size:12px}
 .pyr-news{border-bottom:1px solid var(--line);padding:6px}
 @media(max-width:660px){.pyr-level:nth-child(n){width:100%}.pyr-teams{grid-template-columns:1fr}.pyr-entry{min-width:100px}.pyr-level{padding:5px}}
-.tv{overflow:hidden}.tv .wrap{overflow:hidden}
+.tv{overflow:hidden;padding-bottom:37px}.tv .wrap{overflow:visible;flex:none}
+#tv-pages{position:fixed;z-index:22;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:12px;background:var(--tv-panel);border-top:1px solid var(--tv-line);padding:5px;color:var(--tv-ink)}
+#tv-pages[hidden]{display:none}#tv-pages button{background:var(--tv-bg);color:var(--tv-ink);border:1px solid var(--tv-line);padding:5px 12px;cursor:pointer}#tv-pages button:disabled{opacity:.3}
 </style>
 </head>
 <body>
@@ -1751,6 +1753,15 @@ function persistNight(){
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
+function updateTVPages(){
+ const v=$('#tv');if(!v||v.hidden)return;
+ let bar=v.querySelector('#tv-pages');if(!bar){bar=document.createElement('div');bar.id='tv-pages';bar.innerHTML='<button data-tvpage="prev">◀ Previous</button><span class="page-counter"></span><button data-tvpage="next">Next ▶</button>';v.appendChild(bar);}
+ const total=Math.max(1,Math.ceil((v.scrollHeight-37)/Math.max(1,v.clientHeight-37)));
+ const currentPage=Math.min(total-1,Math.floor(v.scrollTop/Math.max(1,v.clientHeight-37)+.01));
+ bar.hidden=total<2;bar.querySelector('span').textContent='Screen '+(currentPage+1)+' / '+total;
+ bar.querySelector('[data-tvpage="prev"]').disabled=currentPage===0;
+ bar.querySelector('[data-tvpage="next"]').disabled=currentPage===total-1;
+}
 function resumeNight(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(NIGHT_STORE)||'null')}catch(e){}
  if(!saved||!Array.isArray(saved.queue)||!S()?.card?.length)return false;
@@ -1793,7 +1804,7 @@ function prep(){
   <fieldset class="decide"><legend>Who calls it in the ring?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset>
   <fieldset class="decide"><legend>Last word before the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset>
   <div class="prep-foot"><span class="dim">You get three calls from ringside once the bell goes.</span><button class="go" data-tv="bell">Send them out</button></div></div>`;
- $('#tv').scrollTop=0;night.stage='prep';persistNight();
+ $('#tv').scrollTop=0;night.stage='prep';persistNight();updateTVPages();
 }
 function bell(){
  const c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan;
@@ -1815,7 +1826,7 @@ function bell(){
    <div><div class="calls">${callBtns}</div><div class="callhint" id="lHint">Your calls go to the wrestler. They don’t always listen.</div>
    <div class="speed" role="group" aria-label="Commentary speed"><button data-pause>Pause</button><span class="gap"></span>${['slow','normal','fast','skip'].map(s=>`<button data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div></div></div></div>
   <div class="decision" id="decision" hidden></div>`;
- night.stage='live';updateLive();persistNight();schedule(300);
+ night.stage='live';updateLive();persistNight();updateTVPages();schedule(300);
 }
 function schedule(ms){clearTimeout(night.timer);night.timer=setTimeout(pump,ms)}
 function pump(){
@@ -1871,7 +1882,7 @@ function result(){
   <ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>
   <details><summary class="dim" style="cursor:pointer;margin-bottom:10px">Full commentary</summary>${logList(fin.log)}</details>
   <div class="prep-foot"><span class="dim">${more?`Next: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div></div>`;
- $('#tv').scrollTop=0;night.M=null;night.plan=null;night.stage='result';persistNight();
+ $('#tv').scrollTop=0;night.M=null;night.plan=null;night.stage='result';persistNight();updateTVPages();
 }
 function endNight(){
  clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';
@@ -1886,6 +1897,7 @@ function endNight(){
 document.addEventListener('click',e=>{
  const t=e.target.closest('button,[data-tab]');if(!t)return;const d=t.dataset;
  if(t.id==='continue')return proceed();
+ if(d.tvpage){const v=$('#tv'),step=Math.max(1,v.clientHeight-37);v.scrollTop=Math.max(0,v.scrollTop+(d.tvpage==='next'?step:-step));updateTVPages();return}
  if(d.page){screenPage+=d.page==='next'?1:-1;updateScreen();return}
  if(d.tab||d.jump){tab=d.tab||d.jump;openW=null;render();window.scrollTo(0,0);return}
  if(d.msg){openMsg=d.msg;renderInbox();return}
