@@ -736,7 +736,7 @@ root.OfficeData={TALENT,FOES,PROMOS,SLOTS,SLOT_ORDER,FINISHES,PLANS,STYLE_PLAN,L
 const D=root.OfficeData;
 const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 function mulberry(seed){let a=seed>>>0;const rng=()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296};rng.getState=()=>a;return rng}
-const PHASES=[{id:'open',to:.14,name:'Feeling out'},{id:'shine',to:.32,name:'The shine'},{id:'heat',to:.56,name:'Cut off'},{id:'comeback',to:.76,name:'Comeback'},{id:'stretch',to:1.01,name:'Finishing stretch'}];
+const PHASES=[{id:'open',to:.14,name:'Feeling out'},{id:'shine',to:.32,name:'Early advantage'},{id:'heat',to:.56,name:'Sustained control'},{id:'comeback',to:.76,name:'Comeback'},{id:'stretch',to:1.01,name:'Finishing stretch'}];
 const CROWD_MUL={open:.45,shine:.8,heat:.6,comeback:1.25,stretch:1.45};
 const SPOT_MUL={open:.15,shine:.8,heat:.45,comeback:1.3,stretch:1.6};
 const MOM_TARGET={open:0,shine:50,heat:-55,comeback:55,stretch:0};
@@ -763,6 +763,196 @@ LINES.stretch.push('A tired exchange of counters; neither wants to make the fina
 HOPE.push('{A} desperately rolls the shoulder and scrambles clear.','{A} lands {move}, but cannot turn the advantage into a cover.','A flash of offence from {A}. {D} stamps it out.','{A} catches the arm, twists through, and finds a moment to breathe.');
 NEUTRAL.push('The referee separates them. Neither looks happy about it.','A moment of hesitation — both know what a mistake could cost.','The audience can sense the balance changing.','One exchange too many and both need a moment to reset.');
 
+
+/* THE OFFICE v2.6 — match psychology, ring position and connected sequences */
+const Psy=(function installPsychology(){
+ const PHASE_ENDS={
+  story:[.14,.29,.60,.79,1.01],
+  technical:[.20,.36,.61,.77,1.01],
+  spots:[.10,.27,.49,.70,1.01],
+  brawl:[.09,.24,.60,.78,1.01],
+  safe:[.18,.34,.63,.81,1.01]
+ };
+ function make(M){
+  const target=M.o.flags?.pushThrough?'lower back':M.f.style==='Technical'?'left knee':M.f.style==='Brawl'?'ribs':M.f.style==='Spectacle'?'lower back':M.f.sub?'left knee':'shoulder';
+  return {position:'standing',control:'neutral',down:null,target,phase:'',heatBeats:0,hopeSpots:0,focusHits:0,changes:0,beats:0,last:'',archetype:M.planId};
+ }
+ function get(M){return M.story||(M.story=make(M))}
+ function sync(M,side){const s=get(M);if(s.control!==side&&s.control!=='neutral')s.changes++;s.control=side;M.mom=side==='w'?Math.max(18,M.mom):side==='f'?Math.min(-18,M.mom):M.mom;}
+ function line(M,words,kind='play'){say(M,fill(M,words),kind)}
+ function pair(M,words,kind='play'){for(const t of words)line(M,t,kind)}
+ function take(M,choices){const s=get(M),pool=choices.filter(x=>x[0]!==s.last);const choice=rnd(M,pool.length?pool:choices);s.last=choice[0];return choice}
+ function phase(M){
+  const s=get(M),p=M.phase.id;s.phase=p;
+  if(s.position==='outside'){pair(M,['The referee is up to six. Both wrestlers scramble back beneath the bottom rope.']);s.position='standing';s.down=null}
+  if(p==='open'){
+   sync(M,'neutral');s.position='standing';s.down=null;
+   line(M,M.planId==='brawl'?'No respectful lock-up here. Both rush forward throwing forearms.':M.planId==='technical'?'They begin with a cautious collar-and-elbow tie-up, testing balance and leverage.':'They circle, keeping their distance. The first lock-up will tell us plenty.');
+  }else if(p==='shine'){
+   sync(M,'w');s.position='mat';s.down='f';
+   pair(M,[`{F} reaches for control, but {W} slips behind and takes the wrist.`,`{W} takes {F} over with an arm drag. {F} backs away, reassessing.`]);
+  }else if(p==='heat'){
+   sync(M,'f');s.position='mat';s.down='w';s.focusHits++;
+   pair(M,[`{W} presses forward once too often. {F} catches the charge with a hard counter!`,`{F} immediately goes after {W}'s ${s.target}. {W} stays down, trying to protect it.`],'story');
+  }else if(p==='comeback'){
+   sync(M,'w');s.position='standing';s.down=null;
+   pair(M,[`{F} lunges at the damaged ${s.target}. {W} sees it coming and sidesteps!`,`{W} fires back with two forearms. {F} staggers and the crowd comes alive.`],'crowd');
+  }else{
+   sync(M,'neutral');s.position='standing';s.down=null;
+   pair(M,[`Both wrestlers struggle back to their feet. The early advantage means nothing now.`,`{W} and {F} stand opposite one another, breathing hard, each looking for the opening that ends it.`],'story');
+  }
+ }
+ function recover(M){
+  const s=get(M),A=s.control==='f'?M.f:M.w,Df=s.control==='f'?M.w:M.f;
+  if(s.position==='outside'){
+   pair(M,[`The referee has reached six. ${A.short} rolls ${Df.short} back under the bottom rope.`,`The count is broken. They are back inside, and ${A.short} stays close.`]);
+   s.position='standing';s.down=null;return true;
+  }
+  if(s.position==='mat'){
+   const fallen=s.down==='w'?M.w:M.f;
+   if(fallen){
+    line(M,rnd(M,[`${fallen.short} rolls to one knee, using the ropes to get upright.`,`${fallen.short} turns onto a shoulder and slowly pushes up off the canvas.`,`${fallen.short} drags themselves upright before the next attack can land.`]));
+    s.position='standing';s.down=null;return true;
+   }
+  }
+  if(s.position==='corner'){
+   line(M,`${Df.short} braces in the corner. ${A.short} closes in, but ${Df.short} manages to step sideways and get clear.`);
+   s.position='standing';return true;
+  }
+  return false;
+ }
+ function beat(M){
+  const s=get(M),ph=M.phase?.id||'open';s.beats++;
+  if(recover(M))return;
+  let actions;
+  if(ph==='open'){
+   if(M.planId==='brawl')actions=[
+    ['b1','{W} throws a forearm. {F} answers with one of their own. Neither gives ground.'],
+    ['b2','{F} pushes {W} into the ropes. The referee gets between them and orders a break.'],
+    ['b3','{W} ducks a swinging arm and takes {F} down with a shoulder tackle. {F} is straight back up.'],
+    ['b4','{F} shoves {W} in the face. {W} shoves back. This is going to be physical.']];
+   else actions=[
+    ['o1','{W} takes a side headlock. {F} pushes towards the ropes and {W} releases cleanly.'],
+    ['o2','{F} shoots in for a single leg; {W} sprawls, and they break apart.'],
+    ['o3','A test of strength. {W} briefly gets the better leverage before {F} steps around and escapes.'],
+    ['o4','{W} reaches for a wristlock. {F} rolls through and counters; both return to their feet.'],
+    ['o5','{F} lands a shoulder tackle. {W} springs up, ready to go again.'],
+    ['o6','A quick arm drag from {W}; {F} rolls through, and both stand off in the middle.']];
+   line(M,take(M,actions)[1]);s.position='standing';return;
+  }
+  if(ph==='shine'){
+   sync(M,'w');const v=take(M,[
+    ['s1','{W} catches {F} coming off the ropes with an arm drag. {F} lands on the mat.','mat'],
+    ['s2','{W} ducks a lariat and snaps {F} over with a hip toss. {F} rolls out of range.','standing'],
+    ['s3','{W} whips {F} towards the corner. {F} takes the turnbuckle hard.','corner'],
+    ['s4','{F} attempts a headlock. {W} turns it into a backslide, but {F} kicks free before one.','standing'],
+    ['s5','{W} takes the wrist and works a short armbar. {F} makes the ropes and {W} releases on the referee’s call.','standing'],
+    ['s6','{W} blocks a strike and lands a snap suplex. {F} is flat on their back.','mat']]);
+   line(M,v[1]);s.position=v[2];s.down=v[2]==='mat'?'f':null;return;
+  }
+  if(ph==='heat'){
+   sync(M,'f');s.heatBeats++;
+   if(s.heatBeats>=3&&s.heatBeats%4===3){
+    s.hopeSpots++;
+    const v=take(M,[
+     ['h1','{W} fights up with a pair of elbows — the crowd rises — but {F} catches the next shot and wrenches the injured '+s.target+'.'],
+     ['h2','{W} finds a backslide! {F} kicks out at one, then drives a knee into the '+s.target+' before {W} can follow up.'],
+     ['h3','{W} breaks free and reaches for the ropes. {F} yanks {W} back by the leg and cuts off the escape.'],
+     ['h4','A brief surge from {W}: a forearm, a second — then {F} catches the third and sends {W} down again.']]);
+    line(M,v[1],'story');s.position='mat';s.down='w';return;
+   }
+   const v=take(M,[
+    ['h5','{F} stamps on {W}’s '+s.target+' and takes a moment to listen to the boos.','mat'],
+    ['h6','{W} tries to stand. {F} sweeps the legs and drives an elbow into the '+s.target+'.','mat'],
+    ['h7','{F} drags {W} to the centre and twists the '+s.target+'. The referee checks for a submission.','mat'],
+    ['h8','{F} gives {W} a hard Irish whip, then cuts off the rebound with a knee to the '+s.target+'.','mat'],
+    ['h9','{W} reaches for the ropes. {F} releases the hold at four, then pulls {W} back into the ring.','standing'],
+    ['h10','{F} traps {W} in the corner and drives in another short strike to the '+s.target+'.','corner']]);
+   line(M,v[1]);s.focusHits++;s.position=v[2];s.down=v[2]==='mat'?'w':null;return;
+  }
+  if(ph==='comeback'){
+   sync(M,'w');const v=take(M,[
+    ['c1','{W} ducks a clothesline and catches {F} with a jawbreaker. {F} stumbles into the ropes.','standing'],
+    ['c2','{F} charges in, but {W} moves aside and connects with a running lariat.','mat'],
+    ['c3','{W} fights through the pain in the '+s.target+' and lands a DDT. {F} rolls onto a shoulder.','mat'],
+    ['c4','{W} sends {F} across the ring and catches the rebound with a back body drop.','mat'],
+    ['c5','{F} tries to grab the '+s.target+' again. {W} counters into a sharp neckbreaker!','mat'],
+    ['c6','A quick exchange of forearms, then {W} finally knocks {F} down with a hard clothesline.','mat']]);
+   line(M,v[1],M.crowd>=65?'crowd':'play');s.position=v[2];s.down=v[2]==='mat'?'f':null;return;
+  }
+  // The finishing stretch is a counter battle, not disconnected random moves.
+  let attacker=s.control==='w'?M.w:s.control==='f'?M.f:(M.r()<.5?M.w:M.f);
+  let defender=attacker===M.w?M.f:M.w;
+  if(M.r()<.39){const t=attacker;attacker=defender;defender=t;
+   line(M,`${defender.short} reaches for a big move. ${attacker.short} blocks it and turns the tables!`,'story');}
+  sync(M,attacker===M.w?'w':'f');
+  const v=take(M,[
+   ['f1',`${attacker.short} catches ${defender.short} with a short-arm clothesline. ${defender.short} lands heavily.`,'mat'],
+   ['f2',`${attacker.short} looks for the waistlock; ${defender.short} fights the grip, but ${attacker.short} manages a snap suplex.`,'mat'],
+   ['f3',`${attacker.short} hoists ${defender.short} towards the corner, but ${defender.short} clings to the ropes. Both step back.`,'standing'],
+   ['f4',`${attacker.short} attempts a backslide. ${defender.short} rolls a shoulder free before the count begins.`,'standing'],
+   ['f5',`${attacker.short} hits a backbreaker. ${defender.short} rolls towards the ropes, buying a few seconds.`,'mat'],
+   ['f6',`${attacker.short} drives forward with a forearm. ${defender.short} staggers, but does not go down.`,'standing']]);
+  line(M,v[1]);s.position=v[2];s.down=v[2]==='mat'?(defender===M.w?'w':'f'):null;
+ }
+ function spotSetup(M,A,Df,move){
+  const s=get(M),outside=/floor|ramp|barricade|tope con hilo|over the top rope to the floor|apron/.test(move),top=/top rope|450 splash|shooting star|diving elbow/.test(move);
+  if(s.position==='outside'&&!outside){line(M,`${A.short} brings ${Df.short} back through the ropes. The referee waves them on.`);s.position='standing';s.down=null;}
+  sync(M,A===M.w?'w':'f');
+  if(outside){
+   line(M,`${A.short} sends ${Df.short} over the ropes to the floor and follows. The referee begins the count.`);
+   if(/tope con hilo/.test(move))line(M,`${A.short} sprints across the ring as ${Df.short} gets to their feet outside.`);
+   else if(/apron/.test(move))line(M,`${A.short} pulls ${Df.short} up onto the apron and takes hold of the head.`);
+   else line(M,`${A.short} pulls ${Df.short} into position on the floor.`);
+   s.position='outside';s.down=null;
+  }else if(top){
+   line(M,`${A.short} knocks ${Df.short} into position and climbs the ropes, taking time to find their balance.`);
+   s.position='top';s.down=Df===M.w?'w':'f';
+  }else{
+   line(M,`${A.short} pulls ${Df.short} upright and measures the distance for the next move.`);
+   s.position='standing';s.down=null;
+  }
+  return outside;
+ }
+ function spotAfter(M,A,Df,outside,botch){
+  const s=get(M);if(outside){s.position='outside';s.down=null}
+  else{s.position='mat';s.down=botch?(A===M.w?'w':'f'):(Df===M.w?'w':'f')}
+ }
+ function nearfall(M){
+  const s=get(M);
+  const yoursFirst=!M.o.finish.startsWith('win');
+  const yours=M.nearfalls%2===0?!yoursFirst:yoursFirst;
+  const A=yours?M.w:M.f,Df=yours?M.f:M.w;
+  if(s.position==='outside'){
+   line(M,`${A.short} drags ${Df.short} back under the bottom rope. A pin only counts inside the ring.`);
+   s.position='standing';s.down=null;
+  }
+  if(s.control!==(yours?'w':'f')){
+   line(M,`${Df.short} swings for a strike, but ${A.short} ducks and turns the opening into a counter!`);
+  }
+  sync(M,yours?'w':'f');
+  const late=M.nearfallAt.length===0&&M.crowd>=67;
+  const pop=3+M.crowd*.05*(late?1.4:1);
+  if(late&&A.sub){
+   line(M,`${A.short} catches the leg and drags ${Df.short} down, trapping them in a submission near the ropes.`,'play');
+   line(M,`${Df.short} claws toward the bottom rope, inch by inch.`,'play');
+   line(M,`${Df.short} catches the bottom rope! The referee orders a break and ${A.short} releases at four.`,'crowd');
+   s.position='mat';s.down=Df===M.w?'w':'f';
+  }else{
+   const moves=D.MOVES[A.style]||D.MOVES.Story;
+   const allowed=moves.filter(x=>!/sleeper|crab|cross armbar|hammerlock/.test(x));
+   const strike=rnd(M,allowed.length?allowed:moves);
+   line(M,`${A.short} catches ${Df.short} with ${strike}. ${Df.short} lands hard on the canvas!`,'play');
+   line(M,`${A.short} immediately hooks the far leg. The referee drops into position.`,'count');
+   line(M,'ONE!','count');line(M,'TWO!','count');
+   line(M,rnd(M,[`${Df.short} gets the shoulder up just before three!`,`TWO AND A HALF! ${Df.short} escapes at the last moment.`,`NO! ${Df.short} kicks out. The crowd cannot believe it.`]),'crowd');
+   s.position='mat';s.down=Df===M.w?'w':'f';
+  }
+  M.nearfalls++;M.crowd=clamp(M.crowd+pop);M.bonus+=late?8:4;
+ }
+ return {PHASE_ENDS,make,get,phase,beat,recover,spotSetup,spotAfter,nearfall};
+})();
+
 function create(o){
  const r=mulberry(o.seed||Date.now());
  const w=o.w,f=o.f,p=o.p,plan=D.PLANS[o.plan.game]||D.PLANS.story,slot=D.SLOTS[o.slot]||D.SLOTS.mid;
@@ -787,6 +977,7 @@ function create(o){
   offered:{},decision:null,outcome:'booked',refused:false,
   adj:{trust:0,heat:0,morale:0,rep:0,purseMul:1,otherTrust:0,loyal:0},
   queue:[],log:[],done:false,hints:{},reaction:reactions,prep:prep};
+ M.story=Psy.make(M);
  M.crowdStart=M.crowd;M.crowdPeak=M.crowd;
  return M;
 }
@@ -805,7 +996,7 @@ function names(M){return {W:M.w.short,F:M.f.short,WF:M.w.name,FF:M.f.name,wfin:M
 function fill(M,s,extra={}){const n={...names(M),...extra};return s.replace(/\{(\w+)\}/g,(m,k)=>n[k]??m).replace(/(^|[.!?]\s+)([a-z])/g,(m,a,b)=>a+b.toUpperCase())}
 function say(M,text,kind='play',opt={}){const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0};M.queue.push(line);M.log.push(line);return line}
 
-function phaseFor(frac){return PHASES.find(p=>frac<p.to)||PHASES[4]}
+function phaseFor(frac,M){const ends=Psy.PHASE_ENDS[M?.planId]||Psy.PHASE_ENDS.story;return PHASES.find((p,i)=>frac<ends[i])||PHASES[4]}
 function stars(M,final=false){
  if(!M.qN)return 0;
  const avgQ=(M.qSum+M.bonus)/M.qN;
@@ -844,10 +1035,10 @@ function entrances(M){
  M.stage='live';
 }
 function tick(M){
- M.t+=10;const frac=M.t/M.len,ph=phaseFor(frac),w=M.w,f=M.f,plan=M.plan;
- if(!M.phase||M.phase.id!==ph.id){M.phase=ph;onPhase(M);if(M.decision)return;}
+ M.t+=10;const frac=M.t/M.len,ph=phaseFor(frac,M),w=M.w,f=M.f,plan=M.plan;
+ if(!M.phase||M.phase.id!==ph.id){M.phase=ph;Psy.phase(M);onPhase(M);if(M.decision)return;}
  // momentum
- const target=MOM_TARGET[ph.id];M.mom+=(target-M.mom)*.25+(M.r()*30-15);M.mom=clamp(M.mom,-100,100);
+ const target=Psy.get(M).control==='w'?52:Psy.get(M).control==='f'?-52:0;M.mom+=(target-M.mom)*.23+(M.r()*16-8);M.mom=clamp(M.mom,-100,100);
  // stamina
  const mode=M.mode?.type;
  const drain=.55*plan.drain*(mode==='pickup'?1.7:mode==='slow'?.3:1)*(1+w.fatigue/250)*(M.workingHurt?1.5:1);
@@ -875,9 +1066,8 @@ function tick(M){
  // spots
  const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*(M.offScript==='showboat'?1.5:1);
  let spoke=false;
- if(M.r()<spotP){spot(M,false);spoke=true;}
- // near falls
- if(M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();nearfall(M);spoke=true;}
+ if(M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Psy.nearfall(M);spoke=true;}
+ else if(M.r()<spotP){spot(M,false);spoke=true;}
  // crowd bands
  crowdBand(M);
  // producer hints
@@ -887,7 +1077,7 @@ function tick(M){
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
- if(!spoke&&M.r()<.42)playByPlay(M);
+ if(!spoke&&M.r()<.63)Psy.beat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  if(M.t>=M.len){M.stage='finish';}
 }
@@ -925,7 +1115,7 @@ function crowdBand(M){
 }
 function actors(M){const yours=M.mom>=0;return yours?{A:M.w,D:M.f}:{A:M.f,D:M.w}}
 function playByPlay(M){
- const {A,D:Df}=actors(M);
+ const {A,D:Df}=Psy.get(M).control==='w'?{A:M.w,D:M.f}:Psy.get(M).control==='f'?{A:M.f,D:M.w}:actors(M);
  const context=[];
  if(M.o.promo){
   if(M.o.promo.style==='challenge')context.push('Colour: That challenge from {W} before the match has raised the stakes.','The words at the microphone have given this one an edge.');
@@ -951,6 +1141,7 @@ function spot(M,big,forced){
  const {A,D:Df}=forced?{A:M.w,D:M.f}:actors(M);
  const yours=A===M.w,st=yours?M.wSt:M.fSt;
  const move=rnd(M,D.SPOTS[A.style]||D.SPOTS.Story);
+ const outside=Psy.spotSetup(M,A,Df,move);
  let botchP=(.03+(100-A.safe)*.0018+(100-st)*.0015)*M.riskMul*(big?1.5:1);
  if(A.ring>=80)botchP*=.8;
  M.spots++;
@@ -970,6 +1161,7 @@ function spot(M,big,forced){
   say(M,rnd(M,[`${move.charAt(0).toUpperCase()+move.slice(1)} from ${A.short}!${M.crowd>=70?' The crowd come up out of their seats!':''}`,`${A.short} connects with ${move}! ${Df.short} did not see it coming.`,`What a risk by ${A.short} — ${move} lands flush!`,`${A.short} gets all of ${move}! The front rows erupt.`]),M.crowd>=70?'crowd':'play',{big:big||M.crowd>=75});
   if(yours)M.wSt=clamp(M.wSt-(big?7:3));
  }
+ Psy.spotAfter(M,A,Df,outside,M.botches>M.spots-M.spotHits);
 }
 function dive(M){
  say(M,`${M.w.short} is climbing… not the turnbuckle. The balcony.`,'play',{pause:2,big:true});
@@ -980,6 +1172,7 @@ function dive(M){
  else{M.spotHits++;M.bonus+=30;M.crowd=clamp(M.crowd+16);M.adj.heat+=4;say(M,`${M.w.short} FLIES off the balcony and wipes out ${M.f.short}! Phones are out everywhere!`,'crowd',{big:true});}
 }
 function nearfall(M){
+ return Psy.nearfall(M);
  const yoursFirst=!M.o.finish.startsWith('win');
  const yours=M.nearfalls%2===0?!yoursFirst:yoursFirst;
  const A=yours?M.w:M.f,Df=yours?M.f:M.w;
@@ -1099,6 +1292,8 @@ function decisive(M,A,Df,step,end){
 /* ---- the finish ---- */
 function finish(M){
  const w=M.w,f=M.f,o=M.o;let at=M.t;const step=(n=4)=>(at+=n,{at});
+ if(Psy.get(M).position==='outside'){say(M,`${w.short} and ${f.short} scramble back inside before the referee reaches ten.`,'play',{...step()});Psy.get(M).position='standing';}
+ if(Psy.get(M).position==='mat'){say(M,'They fight back to their feet. Both know the next exchange can end it.','play',{...step()});Psy.get(M).position='standing';}
  if(M.outcome==='nc'){
   say(M,'The referee waves it off. The doctor is in the ring.','bad',{...step(),big:true});
   say(M,'No contest.','bell',{...step(),big:true});
@@ -1114,10 +1309,12 @@ function finish(M){
  }else{
   const k=o.finish;
   if(k==='win_clean'){
-   say(M,`${w.short} sets up ${the(w.finisher)}…`,'play',{...step(),pause:1});
+   say(M,`${f.short} reaches for the waistlock, but ${w.short} elbows free and turns into position!`,'play',{...step(),pause:1});
+   say(M,`${w.short} hooks the arms and sets up ${the(w.finisher)}…`,'play',{...step(),pause:1});
    decisive(M,w,f,step,`${w.name} wins it clean.`);
   }else if(k==='win_dirty'){
-   say(M,`${f.short} has ${w.short} reeling… the referee is down after a collision!`,'play',{...step(),pause:1});
+   say(M,`${f.short} has ${w.short} reeling, but a distraction pulls the referee's attention to the corner!`,'play',{...step(),pause:1});
+   say(M,'The referee turns back just as the illegal pin is secured. The cover is counted.','play',{...step(),pause:1});
    say(M,`${w.short} grabs a fistful of tights. Roll-up!`,'play',{...step(),big:true,pause:1});
    say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});say(M,'THREE!','count',{...step(),big:true});
    say(M,`${w.short} steals it! ${M.crowd>=60?'The crowd let them have it.':'Scattered boos.'}`,'bell',{...step(),big:true});
@@ -1129,7 +1326,7 @@ function finish(M){
    say(M,'ONE! TWO! THREE!','count',{...step(),big:true});
    say(M,`${w.name} was robbed, and everyone saw it.`,'bell',{...step(),big:true});
   }else{
-   say(M,`${f.short} catches ${w.short} out of nowhere…`,'play',{...step(),pause:1});
+   say(M,`${w.short} charges for another attack. ${f.short} ducks underneath and catches ${w.short} off balance!`,'play',{...step(),pause:1});
    decisive(M,f,w,step,`${f.name} wins, decisively. No excuses.`);
   }
  }
@@ -1142,7 +1339,7 @@ function summary(M){
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
-  resent:M.resent,promo:M.o.promo||null,preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(whole)+(frac===.25?'¼':frac===.5?'½':frac===.75?'¾':'')+(s===0?'DUD':'');}
 function liveStars(M){return stars(M,false)}
