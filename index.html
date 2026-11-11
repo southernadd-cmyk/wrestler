@@ -1079,7 +1079,7 @@ const Graph=(function makeGraph(){
  const starts={opening:1,chain:1,shine:1,cutoff:1,control:1,hope:1,denial:1,comeback:1,resurgence:1,exchange:1,nearfall:1,escalation:1,finish_setup:1};
  const PHASE_NAMES={open:'Feeling out',shine:'Early advantage',heat:'Sustained control',comeback:'Comeback',stretch:'Finishing stretch'};
  function init(M){
-  const p=Psy.get(M),g={v:1,arc:'opening',age:0,node:null,visit:{opening:1},history:['opening'],events:[],transitions:0,steps:0,lastTags:[],consecutive:0,target:p.target,nearfallCount:0};
+  const p=Psy.get(M),g={v:1,arc:'opening',age:0,node:null,visit:{opening:1},history:['opening'],events:[],transitions:0,steps:0,lastTags:[],consecutive:0,target:p.target,targets:{w:p.target,f:M.w.style==='Technical'?'shoulder':M.w.style==='Spectacle'?'left knee':M.w.style==='Brawl'?'ribs':'lower back'},damage:{w:0,f:0},nearfallCount:0,started:false};
   M.graph=g;return g;
  }
  function get(M){return M.graph||init(M)}
@@ -1134,7 +1134,14 @@ const Graph=(function makeGraph(){
   else if(id==='nearfall')words='They know one mistake could settle this. Every cover now matters.';
   else if(id==='escalation')words='The pace rises as both wrestlers start looking for their big attacks.';
   else words='{W} and {F} dig deep. The finishing sequence is close.';
-  if(words)say(M,fill(M,words),id==='heat'?'story':'play');
+  // Arc switches never teleport the wrestlers. Every needed reset is narrated.
+  if(prev){
+   if(p.position==='outside')say(M,fill(M,'{W} and {F} beat the referee’s count and slide back into the ring.'));
+   else if(p.position==='top')say(M,fill(M,'The wrestler on the turnbuckle drops back down as the counter threat develops.'));
+   else if(p.position==='corner')say(M,fill(M,'They separate in the corner and step out into open ring.'));
+   else if(p.position==='mat')say(M,fill(M,'The wrestler on the mat pushes back up as the next exchange begins.'));
+  }
+  if(words)say(M,fill(M,words),'story');
   if(arc.control==='w'||arc.control==='f'){
    const change=p.control!==arc.control;
    if(change) p.changes++;
@@ -1146,7 +1153,7 @@ const Graph=(function makeGraph(){
   g.node=null;
  }
  function advance(M,frac){
-  const g=get(M),a=ARCS[g.arc];g.age++;
+  const g=get(M),a=ARCS[g.arc];if(!g.started){g.started=true;enter(M,'opening',null);}g.age++;
   const force=frac>.93&&g.arc!=='finish_setup'||frac>.81&&!['nearfall','escalation','finish_setup'].includes(g.arc)||frac>.67&&['opening','chain','shine','cutoff','control','hope','denial'].includes(g.arc);
   if(force||g.age>=a.max||(g.age>=a.min&&M.r()<.16)){
    const next=selectArc(M,frac);
@@ -1186,14 +1193,17 @@ const Graph=(function makeGraph(){
   if(n.reverse){
    p.control=opp;p.changes++;M.mom=opp==='w'?30:-30;
   }
-  const Aname=n.reverse?defender.short:attacker.short,Dname=n.reverse?attacker.short:defender.short;
+  // The placeholders always name the pre-event attacker (A) and defender (D).
+  // A reversal is performed by D; control flips only AFTER the narration.
+  const victim=n.reverse?side:opp;
+  const part=g.targets?.[victim]||p.target;
   const variant=n.lines[Math.floor(M.r()*n.lines.length)];
-  const text=fill(M,variant,{A:Aname,D:Dname,part:p.target,move:n.kind});
+  const text=fill(M,variant,{A:attacker.short,D:defender.short,part,move:n.kind});
   say(M,text,n.kind); // all dialogue is original and event-led
   const originalDown=n.reverse?side:opp;
   p.position=n.zone;
   p.down=n.down==='d'?originalDown:n.down==='a'?p.control:null;
-  if(n.focus){p.focusHits+=n.focus;g.damage=n.focus+(g.damage||0);}
+  if(n.focus){g.damage[victim]=(g.damage[victim]||0)+n.focus;if(victim==='w')p.focusHits+=n.focus;}
   if(n.crowd)M.crowd=clamp(M.crowd+n.crowd);
   if(id==='near_kickout'||id==='counter_rollup') {M.nearfalls++;M.bonus+=5;g.nearfallCount++;}
   if(id==='aerial_attack'){M.spots++;M.spotHits++;M.bonus+=10;}
@@ -1672,7 +1682,7 @@ function summary(M){
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
-  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:M.graph?.damage||0,nearfallCount:M.graph?.nearfallCount||0}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(whole)+(frac===.25?'¼':frac===.5?'½':frac===.75?'¾':'')+(s===0?'DUD':'');}
 function liveStars(M){return stars(M,false)}
