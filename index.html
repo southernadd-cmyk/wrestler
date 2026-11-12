@@ -2822,7 +2822,7 @@ root.OfficeTerritory={ensure,rank,evolve};
  function begin(c,w,f,rival,sheet=null){
   const seed=String(c.id)+'|'+String(c.eventAbs||0)+'|'+String(w.id)+'|'+String(f.id);
   const record=(G.S?.history||[]).filter(h=>h.wid===w.id&&h.rid===f.id).slice(0,3);
-  const memory=root.OfficeMemory?.view(w.id).entries.find(e=>e.against===f.id)||null;
+  const memory=G.S?.roster?root.OfficeMemory?.view(w.id).entries.find(e=>e.against===f.id)||null:null;
   const sheetContext=sheet?.signed?{focus:sheet.focus||'authentic',payoff:sheet.nodes?.find(x=>x.id==='payoff')?.actions?.[0]||null}:null;
   const st={v:2,cid:c.id,seed,contractFinish:c.finish||null,history:record.map(x=>({finish:x.finish||null,stars:x.stars||null})),memory:memory?{kind:memory.kind,recall:memory.text}:null,sheet:sheetContext,motif:pick(METAPHORS,seed,'metaphor'),w:{id:w.id,name:w.name,short:w.short,mic:w.mic||40,psych:w.psych||45,heat:w.heat||40,ego:w.ego||45,pro:w.pro||60,finisher:w.finisher},
    f:{id:f.id,name:f.name,short:f.short,psych:f.psych||45,heat:f.heat||45,ego:f.ego||45,style:f.style},
