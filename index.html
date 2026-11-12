@@ -1144,6 +1144,7 @@ const Graph=(function makeGraph(){
  }
  function matchTexture(M){
   const gap=Math.abs((M.w.ring+M.w.psych)-(M.f.ring+M.f.psych));
+  if(M.o.memory?.rivalry<43&&M.r()<.75)return 'grudge';
   if((M.o.feudHeat||0)>=48&&M.r()<.78)return 'grudge';
   if(gap>=31&&M.r()<.75)return 'underdog';
   if(M.w.style==='Technical'&&M.f.style==='Technical')return 'chess';
@@ -1454,6 +1455,7 @@ function create(o){
  const ego=w.ego,talk=o.plan.talk||'none',leash=o.plan.leash||'script',prep=o.preparation||{};
  let comply=48+w.pro*.32+w.loyal*.12+w.morale*.1-ego*.3;
  if(leash==='script')comply+=ego>=75?2:14;
+ if(Number.isFinite(o.memory?.trust))comply+=(o.memory.trust-60)*.24;
  if(prep.psych)comply+=Math.min(6,prep.psych*1.3);if(talk==='money')comply+=15;if(talk==='fire')comply-=ego>=75?18:9;if(talk==='calm')comply+=4;
  comply=clamp(Math.round(comply),12,96);
  let crowd=22+w.heat*.27+(o.feudHeat||0)*.28+slot.crowd+p.reach*.06+(talk==='fire'?5:0)+(o.blowoff?8:0)+Math.min(3,(prep.mic||0)*.75)+(o.promo?.crowdShift||0);
@@ -1465,7 +1467,7 @@ function create(o){
  const reactions=talkReaction(w,talk);
  const M={v:1,r,w,f,p,o,plan,planId:o.plan.game,leash,talk,len:minutes*60,minutes,t:0,stage:'entrance',phase:null,
   crowd:clamp(Math.round(crowd),5,88),crowdStart:0,crowdPeak:0,crowdSum:0,lastCrowdBand:null,
-  wSt:clamp(100-w.fatigue*.7+(talk==='calm'?6:0)),fSt:92,mom:0,comply,listen:clamp(comply+(leash==='free'?10:0),15,97),resent:leash==='script'&&ego>=75,
+  wSt:clamp(100-w.fatigue*.7+(talk==='calm'?6:0)),fSt:92,mom:0,comply,listen:clamp(comply+(leash==='free'?10:0),15,97),resent:leash==='script'&&ego>=75&&(o.memory?.trust??60)<78,
   fit,riskMul,mode:null,calls:3,callsUsed:[],ignored:0,offScript:null,scriptChecks:0,scriptHits:0,
   qSum:0,qN:0,bonus:0,spots:0,spotHits:0,botches:0,nearfalls:0,nearfallAt,
   injury:0,injuryPart:null,workingHurt:false,foeHurt:false,stiff:false,shortened:false,
@@ -1524,6 +1526,7 @@ function entrances(M){
  if(M.o.blowoff)say(M,'This is the end of the road for these two. Everyone here knows it.','story',{at:0});
  else if((M.o.feudHeat||0)>=35)say(M,'Bad blood here. These two have history.','story',{at:0});
  if(M.o.promo)say(M,M.o.promo.hook,'story',{at:0});
+ if(M.o.memory?.recall)say(M,'Colour: '+M.o.memory.recall,'story',{at:0});
  const notes={
   grudge:'The talk is finished. These two have scores to settle, and neither wants to back down.',
   underdog:'There is a gulf in experience here, but a wrestling match is not won on paper.',
@@ -2744,6 +2747,164 @@ root.OfficeTerritory={ensure,rank,evolve};
  root.OfficeStory={STYLES,create,Graph:PromoGraph};
 })(typeof window!=='undefined'?window:globalThis);
 
+
+/* THE OFFICE v3.0 — The matches are scripted. The people aren't.
+   This small, deterministic memory layer uses the existing career save,
+   manager inbox, contract promises and match engine. No new navigation. */
+(function installOfficeMemory(root){'use strict';
+ const G=root.OfficeGame;
+ const clamp=(n)=>Math.max(0,Math.min(100,Math.round(n)));
+ const week=()=>G.abs();
+ function state(){
+  const s=G.S;if(!s)return null;
+  if(!s.officeMemory||typeof s.officeMemory!=='object')s.officeMemory={};
+  const m=s.officeMemory;
+  m.entries??={};m.trust??={};m.rivals??={};m.processed??={};m.lastConversation??={};
+  return m;
+ }
+ function worker(id){return G.W(id)}
+ function trust(id){
+  const m=state(),w=worker(id);if(!m)return 50;
+  if(!Number.isFinite(m.trust[id]))m.trust[id]=clamp((w?.loyal??55)*.5+(w?.pro??65)*.5);
+  return m.trust[id];
+ }
+ function rivalKey(wid,rid){return wid+':'+rid}
+ function rival(wid,rid){const m=state();return Number.isFinite(m?.rivals[rivalKey(wid,rid)])?m.rivals[rivalKey(wid,rid)]:50}
+ function remember(wid,kind,text,rid=null,shift=0,rivalShift=0,source=''){
+  const m=state();if(!m)return null;
+  const entry={id:String(source||kind+':'+week()+':'+(m.entries[wid]?.length||0)),week:week(),kind,text,against:rid,trustDelta:shift,rivalDelta:rivalShift};
+  m.entries[wid]??=[];
+  if(m.entries[wid].some(e=>e.id===entry.id))return null;
+  m.entries[wid].unshift(entry);m.entries[wid]=m.entries[wid].slice(0,12);
+  m.trust[wid]=clamp(trust(wid)+shift);
+  if(rid&&rivalShift)m.rivals[rivalKey(wid,rid)]=clamp(rival(wid,rid)+rivalShift);
+  return entry;
+ }
+ function view(id){
+  const m=state();
+  return {trust:trust(id),entries:(m?.entries[id]||[]).slice(),rivals:{...(m?.rivals||{})}};
+ }
+ function context(wid,rid){
+  const v=view(wid),rel=rid?rival(wid,rid):50;
+  const event=v.entries.find(e=>!rid||e.against===rid)||v.entries[0];
+  return {trust:v.trust,rivalry:rel,kind:event?.kind||null,
+   recall:event?.text||null,
+   promoPrompt:event?(rid&&event.against===rid?'Before the microphone, one question hangs over this rematch: ':'Before this match, a question from the last dressing-room conversation remains: ')+event.text:null};
+ }
+ const originalApply=G.applyResult;
+ function incident(c,fin,w,f){
+  if(fin.injury)return {kind:'hurt',text:w.short+' remembers the painful landing against '+f.short+' and the fear of being asked to work hurt again.',shift:-2,rivalShift:-3,prompt:true};
+  if(fin.outcome==='double')return {kind:'rebellion',text:w.short+' remembers breaking the agreed finish against '+f.short+'. The promoter has not forgotten either.',shift:8,rivalShift:-8,prompt:true};
+  if(fin.refused)return {kind:'discipline',text:w.short+' refused to double-cross '+f.short+' and worked the agreed finish.',shift:3,rivalShift:2,prompt:false};
+  if(c.finish==='lose_clean'&&w.ego>=65){
+   const count=view(w.id).entries.filter(e=>e.kind==='humiliation'&&e.against===f.id).length;
+   const detail=count>=2?'Another clean loss to '+f.short+' has turned an old grievance into a problem for the whole stable.':
+    count===1?'The second decisive defeat to '+f.short+' has made '+w.short+' question where their career is going.':
+    w.short+' remembers being asked to lose decisively to '+f.short+'. The dressing-room conversation is unfinished.';
+   return {kind:'humiliation',text:detail,shift:-4,rivalShift:-5,prompt:true};
+  }
+  if(c.finish==='lose_protected'&&w.ego>=70)return {kind:'protected',text:w.short+' remembers taking a protected loss to '+f.short+' — and that their reputation was protected.',shift:1,rivalShift:-2,prompt:true};
+  if(fin.resent&&(fin.ignored>0||(fin.script!==null&&fin.script<.6)))return {kind:'control',text:w.short+' remembers being denied room to improvise against '+f.short+'.',shift:-3,rivalShift:0,prompt:true};
+  if(fin.stars>=4&&!view(w.id).entries.some(e=>e.kind==='breakthrough'&&week()-e.week<4))
+   return {kind:'breakthrough',text:w.short+' remembers the '+fin.stars+'-star performance with '+f.short+'. The audience finally paid attention.',shift:3,rivalShift:3,prompt:true};
+  if(fin.ignored>=2)return {kind:'defiance',text:w.short+' remembers ignoring the signals from ringside against '+f.short+'.',shift:-2,rivalShift:0,prompt:true};
+  return null;
+ }
+ function conversation(c,fin,w,f,p,event){
+  const highEgo=(w.ego||0)>=70;
+  const veteran=(w.pro||0)>=75;
+  const subject=event.kind==='hurt'?'After the injury':event.kind==='rebellion'?'The finish was broken':event.kind==='breakthrough'?'After the big match':'About that match';
+  const opening=event.kind==='humiliation'?(highEgo?'"You sent me out there to lose like I was nobody. You had better explain why."':'"I did what was asked. But I need to know what comes next."'):
+   event.kind==='protected'?'"I did the job. You made sure I was protected. I noticed."':
+   event.kind==='hurt'?'"I went down badly out there. I need to know you are looking after me."':
+   event.kind==='rebellion'?'"I broke the finish and you were there. Now what happens to us?"':
+   event.kind==='control'?'"You kept calling from the curtain. It felt like you did not trust me."':
+   event.kind==='defiance'?'"I heard you from ringside. I just could not do what you wanted."':
+   '"They were chanting my name after that match. I do not want to go back to being just another name on the card."';
+  const options=event.kind==='hurt'?[
+   {id:'rest',label:'Put their recovery first',hint:'Set training to rest. More trust; the next payday may have to wait.'},
+   {id:'medical',label:'Help with treatment (£120)',hint:'Pay £120. A meaningful show of support, if you can afford it.'},
+   {id:'listen',label:'Hear them out',hint:'Rebuild some trust, but make no practical commitment.'}
+  ]:[
+   {id:'back',label:'Back your wrestler publicly',hint:'Their trust rises. The promoter may see it as interference.'},
+   {id:'business',label:'Explain the business',hint:'A professional may understand; a proud wrestler might not.'},
+   {id:'promise',label:w.promise?.status==='open'?'Listen without another promise':'Promise a featured opportunity',hint:w.promise?.status==='open'?'Hear the concern without making a second promise.':'A featured/main-event booking within two weeks, or your word is broken.'}
+  ];
+  return {from:w.name,subject,kind:'decision',dtype:'office_debrief',args:[w.id,p.id,f.id,event.id],
+   body:[opening,'Road agent: '+event.text,'The contract has been settled. Your response decides what happens when they return to the dressing room.'],
+   options,answer:null,outcome:null,read:false,week:G.S.week,season:G.S.season,
+   id:'debrief-'+c.id};
+ }
+ G.applyResult=function(c,fin){
+  const result=originalApply(c,fin);
+  if(!c||!fin||!G.S)return result;
+  const m=state();if(m.processed[c.id])return result;
+  m.processed[c.id]=true;
+  const w=worker(c.wid),f=G.F(c.rid),p=G.P(c.pid);
+  if(!w||!f||!p){G.save();return result}
+  const chosen=incident(c,fin,w,f);
+  if(chosen){
+   const entry=remember(w.id,chosen.kind,chosen.text,f.id,chosen.shift,chosen.rivalShift,c.id);
+   if(entry){
+    const notice='Memory: '+entry.text;
+    result.push({text:notice,tone:Math.sign(chosen.shift)});
+    const h=G.S.history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===G.S.season&&x.week===G.S.week);
+    if(h){h.notes??=[];h.notes.push(notice)}
+    const recent=G.S.inbox.some(x=>x.dtype==='office_debrief'&&x.week===G.S.week&&x.season===G.S.season)
+      ||(chosen.kind!=='hurt'&&chosen.kind!=='rebellion'&&Number.isFinite(m.lastConversation[w.id])&&week()-m.lastConversation[w.id]<3);
+    if(chosen.prompt&&!recent){
+     const msg=conversation(c,fin,w,f,p,entry);
+     G.S.inbox.unshift(msg);G.S.inbox=G.S.inbox.slice(0,60);m.lastConversation[w.id]=week();
+     result.push({text:w.short+' wants to speak with you. A post-match decision is waiting in the inbox.',tone:0});
+    }
+   }
+  }
+  G.save();return result;
+ };
+ const originalAnswer=G.answer;
+ G.answer=function(mid,opt){
+  const s=G.S,m=s?.inbox.find(x=>x.id===mid);if(!m||m.dtype!=='office_debrief')return originalAnswer(mid,opt);
+  if(m.answer)return null;
+  if(!m.options.some(o=>o.id===opt))return 'Choose one of the available responses.';
+  const [wid,pid,rid,source]=m.args,w=worker(wid),p=G.P(pid);
+  if(!w){m.answer=opt;m.outcome='That wrestler has left your stable.';m.read=true;G.save();return m.outcome;}
+  if(opt==='medical'&&s.cash<120)return 'You need £120 to help cover treatment. Choose another response.';
+  let result='',change=0,rel=0;
+  if(opt==='rest'){w.training='rest';w.intensity='light';w.morale=clamp(w.morale+5);w.loyal=clamp(w.loyal+3);change=8;result=w.short+' gets the time to recover. They know you prioritised their health.';}
+  else if(opt==='medical'){s.cash-=120;w.morale=clamp(w.morale+4);change=10;result='You paid £120 towards '+w.short+'’s treatment. They did not expect you to do that.';}
+  else if(opt==='listen'){w.morale=clamp(w.morale+2);change=3;result='You listened carefully without making another commitment. '+w.short+' leaves less angry.';}
+  else if(opt==='back'){change=8;rel=2;w.morale=clamp(w.morale+5);w.loyal=clamp(w.loyal+4);if(p)p.trust=clamp(p.trust-4);
+   result='You defended '+w.short+' in front of the promoter. '+w.short+' felt supported; '+(p?.name||'the promoter')+' trust fell by 4.';}
+  else if(opt==='business'){
+   if(w.pro>=75){change=3;w.morale=clamp(w.morale-1);result=w.short+' understands the booking, although the defeat still stings.';}
+   else{change=-6;w.morale=clamp(w.morale-4);result=w.short+' hears an excuse, not an explanation. The conversation ends badly.';}
+   if(p)p.trust=clamp(p.trust+2);
+  }
+  else if(opt==='promise'){
+   if(w.promise?.status==='open'){change=3;result='You listened to '+w.short+' without adding a promise you could not keep.';}
+   else{w.promise={status:'open',type:'feature',start:week(),deadline:week()+2,matchesAt:w.matches};
+    w.morale=clamp(w.morale+7);change=3;result='You promised '+w.short+' a featured match within two weeks. Now you have to deliver.';}
+  }
+  m.answer=opt;m.outcome=result;m.read=true;
+  remember(wid,'conversation',result,rid,change,rel,'reply:'+source);
+  G.save();return result;
+ };
+ const originalEnd=G.endWeek;
+ G.endWeek=function(...args){
+  const before=(G.S?.roster||[]).filter(w=>w.promise?.status==='open')
+    .map(w=>({id:w.id,start:w.promise.start}));
+  const result=originalEnd(...args);
+  for(const item of before){
+   const w=worker(item.id),pr=w?.promise;
+   if(!w||!pr||pr.status==='open')continue;
+   if(pr.status==='kept')remember(w.id,'promise_kept',w.short+' remembers that you delivered the featured opportunity you promised.',null,6,0,'promise:'+w.id+':'+item.start);
+   if(pr.status==='broken')remember(w.id,'promise_broken',w.short+' remembers the featured opportunity you promised but did not deliver.',null,-9,0,'promise:'+w.id+':'+item.start);
+  }
+  G.save();return result;
+ };
+ root.OfficeMemory={view,context,trust,rival,remember};
+})(typeof window!=='undefined'?window:globalThis);
+
 /* THE OFFICE — interface v3
    Management-sim desktop: persistent sidebar, back/forward history, one job per screen,
    sortable data tables, master–detail lists and a full wrestler profile. */
@@ -2952,6 +3113,7 @@ function renderProfile(){
  const hist=s.history.filter(x=>x.wid===w.id).slice(0,6);
  const record=`<div class="facts"><div><small>Matches</small><b>${w.matches}</b></div><div><small>Wins</small><b>${w.wins}</b></div><div><small>Average</small><b>${w.matches?starsText(Math.round(w.starSum/w.matches*4)/4)||'DUD':'–'}</b></div><div><small>Best</small><b>${w.matches?starsText(w.best)||'DUD':'–'}</b></div></div>
   <h3 class="section-h">Recent matches</h3>${hist.length?`<div class="well"><table class="grid"><tbody>${hist.map(x=>`<tr><td>S${x.season} W${x.week}</td><td>v ${esc(x.foe)}</td><td class="n"><span class="stars">${starsText(x.stars)||'DUD'}</span></td></tr>`).join('')}</tbody></table></div>`:'<p class="dim">No matches yet.</p>'}
+  <h3 class="section-h">What they remember</h3><p class="dim">Trust in your judgement: ${OfficeMemory.trust(w.id)}/100. Memories persist after matches and conversations.</p>${OfficeMemory.view(w.id).entries.slice(0,5).length?'<ul class="cons">'+OfficeMemory.view(w.id).entries.slice(0,5).map(e=>'<li>'+esc(e.text)+'</li>').join('')+'</ul>':'<p class="dim">No defining moments yet.</p>'}
   <h3 class="section-h">Rivalries</h3>${feuds.length?feuds.map(f=>`<div class="row" style="justify-content:space-between"><span>${esc(G.F(f.rid).name)}</span><span>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</span></div>`).join(''):'<p class="dim">None yet. Good matches against the same opponent build one.</p>'}
   <h3 class="section-h">Biography</h3><p>${esc(w.bio)}</p><p class="dim">Finisher: ${esc(w.finisher)}. Best game plan: ${esc(D.PLANS[D.STYLE_PLAN[w.style]].name.toLowerCase())}.</p>`;
  const nav=s.roster.length>1?`<button class="btn" data-go="profile" data-id="${prev.id}" aria-label="Previous wrestler">◀ ${esc(prev.short)}</button><button class="btn" data-go="profile" data-id="${next.id}" aria-label="Next wrestler">${esc(next.short)} ▶</button>`:'';
@@ -3178,7 +3340,8 @@ function prep(){
  const stam=Math.round(100-w.fatigue*.7);
  const tape=`<div class="well tape"><div class="side">${face('wrestler',w.id,w.name,'portrait x2')}<div class="nm">${esc(w.short)}</div></div><div class="cmp">${cmpRow('Ring',w.ring,f.ring)}${cmpRow('Psych',w.psych,f.psych)}${cmpRow('Safety',w.safe,f.safe)}${cmpRow('Heat',w.heat,f.heat)}${cmpRow('Pro',w.pro,f.pro)}${cmpRow('Stamina',stam,92)}</div><div class="side">${face('wrestler',f.id,f.name,'portrait x2')}<div class="nm them">${esc(f.short)}</div></div></div>`;
  const road=Mx.scout(w,f,P.game,Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0));
- const contract=`<div style="font:32px/1 var(--jersey);color:var(--blood)">${esc(finishLine)}</div><p class="dim" style="margin:4px 0 8px">The finish is in the contract.</p><dl class="kv"><dt>Slot</dt><dd>${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes</dd><dt>Purse</dt><dd>${money(c.purse)}</dd>${c.tag?`<dt>Billing</dt><dd>${esc(c.tag)}</dd>`:''}<dt>Opponent</dt><dd>${esc(f.name)}, ${esc(f.style.toLowerCase())}. Finisher: ${esc(f.finisher)}.</dd></dl><p style="margin-top:8px">${esc(fnotes.join(' ')||'A steady, professional opponent.')}</p>${warn.length?`<ul class="warnings">${warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="good">${esc(w.short)} is fit and ready. Morale ${w.morale}.</p>`}<div class="well" style="margin-top:10px"><b>Road agent's scouting</b><p style="margin:5px 0">${esc(road.brief)}</p><p class="dim">${esc(road.advice)}</p></div>`;
+ const mind=OfficeMemory.context(w.id,f.id);
+ const contract=`<div style="font:32px/1 var(--jersey);color:var(--blood)">${esc(finishLine)}</div><p class="dim" style="margin:4px 0 8px">The finish is in the contract.</p><dl class="kv"><dt>Slot</dt><dd>${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes</dd><dt>Purse</dt><dd>${money(c.purse)}</dd>${c.tag?`<dt>Billing</dt><dd>${esc(c.tag)}</dd>`:''}<dt>Opponent</dt><dd>${esc(f.name)}, ${esc(f.style.toLowerCase())}. Finisher: ${esc(f.finisher)}.</dd></dl><p style="margin-top:8px">${esc(fnotes.join(' ')||'A steady, professional opponent.')}</p>${warn.length?`<ul class="warnings">${warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="good">${esc(w.short)} is fit and ready. Morale ${w.morale}.</p>`}<div class="well" style="margin-top:10px"><b>Road agent's scouting</b><p style="margin:5px 0">${esc(road.brief)}</p><p class="dim">${esc(road.advice)}</p>${mind.recall?`<p style="margin-top:6px"><b>What they remember:</b> ${esc(mind.recall)}</p><p class="dim">Trust in your judgement: ${mind.trust}/100.</p>`:''}</div>`;
  const plan=`<div class="planset"><fieldset class="decide"><legend>What is the match built on?</legend><div class="opts" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${opts('game',D.PLANS,P.game)}</div></fieldset><fieldset class="decide"><legend>Who calls it?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset><fieldset class="decide"><legend>Last word at the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset></div>`;
 
  $('#tv').innerHTML=`${strip(c,'tonight')}<div class="stage screen s-prep">${win('Tale of the tape',tape,{area:'tape',h:'h3',cls:'quiet',body:'tight'})}${win('The contract',contract,{area:'contract',h:'h3'})}${win('Game plan',plan,{area:'plan',h:'h3'})}</div><div class="tv-foot"><span class="dim">Next: microphone time. Then three calls from ringside after the bell.</span><button class="btn go" data-tv="promos">Send them out</button></div>`;
@@ -3187,7 +3350,11 @@ function prep(){
 function showPromos(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid);
- if(!night.promo||night.promo.cid!==c.id)night.promo=OfficeStory.Graph.begin(c,w,f,G.feud(w.id,f.id));
+ if(!night.promo||night.promo.cid!==c.id){
+  night.promo=OfficeStory.Graph.begin(c,w,f,G.feud(w.id,f.id));
+  const recalled=OfficeMemory.context(w.id,f.id);
+  if(recalled.promoPrompt&&night.promo.v===2)night.promo.dialogue[0].line=recalled.promoPrompt+' '+night.promo.dialogue[0].line;
+ }
  const st=night.promo;night.stage='promo';
  if(st.v!==2){
   const yours=`<div class="tape well">${face('wrestler',w.id,w.name,'portrait x2')}<p>${st.speech.map(v=>'“'+esc(v)+'”').join(' ')}</p></div>`;
@@ -3216,7 +3383,7 @@ function bell(){
  const trainingFatigue=w.training==='rest'?0:w.training==='promo'?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
  const preparation={...w.prep};const focus=D.TRAINING[w.training]?.stat;
  if(focus&&!w.injury){preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);}
- night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,slot:c.slot,minutes:c.minutes,finish:c.finish,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:(night.promo?.v===2?OfficeStory.Graph.result(night.promo):night.promo),plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags},seed:Math.floor(Math.random()*2**31)});
+ night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,slot:c.slot,minutes:c.minutes,finish:c.finish,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:(night.promo?.v===2?OfficeStory.Graph.result(night.promo):night.promo),plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags},memory:OfficeMemory.context(w.id,f.id),seed:Math.floor(Math.random()*2**31)});
  night.past=[];night.paused=false;
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const bench=`<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
