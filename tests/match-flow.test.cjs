@@ -55,7 +55,7 @@ for(let i=0;i<240;i++){
  const times=x.log.map(line=>{const [m,s]=line.t.split(':').map(Number);return m*60+s;});
  for(let j=1;j<times.length;j++)assert.ok(times[j]>=times[j-1],'timestamps must be chronological');
  if(f==='win_dirty'){
-  const ix=x.log.findIndex(line=>line.text.includes('fistful of tights'));
+  const ix=x.log.findIndex(line=>/fistful of tights|feet on the ropes|thumb in the eye|holding the ropes for leverage/.test(line.text));
   const ref=x.log.findIndex(line=>line.text.includes('referee turns back'));
   const one=x.log.findIndex((line,j)=>j>ix&&line.text==='ONE!');
   assert.ok(ix>=0&&ix<ref&&ref<one,'dirty pin occurs before referee sees and counts it');

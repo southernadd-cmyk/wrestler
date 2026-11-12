@@ -64,7 +64,14 @@ for(let i=0;i<500;i++){
  assert.ok(s.damage.w>=0&&s.damage.f>=0,'both wrestlers have independent damage');
  fights++;
 }
-for(const name of Object.keys(graph.A))assert.ok(visited.has(name),'graph node never reached: '+name);
+// v3.3: the hand-authored backbone must still be reached in ordinary play. Some original
+// chains were already rare (one node appeared once in 500 bouts), so keep sampling the same
+// deterministic configurations up to 2000 bouts instead of relying on a lucky 500.
+// The 890 catalog nodes are covered in tests/catalog.test.cjs.
+const authored=Object.keys(graph.A).filter(name=>!graph.A[name].family);
+for(let i=500;i<2000&&authored.some(name=>!visited.has(name));i++)
+ for(const e of work(M.create(options(i))).graph.events)visited.add(e.id);
+for(const name of authored)assert.ok(visited.has(name),'graph node never reached: '+name);
 for(const name of Object.keys(graph.ARCS))assert.ok(arcs.has(name),'story arc never reached: '+name);
 assert.ok(fingerprints.size>=100,'matches must travel significantly different story paths');
 assert.ok(reversals>150,'counter wrestling must be common');
