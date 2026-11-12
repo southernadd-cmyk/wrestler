@@ -1595,6 +1595,7 @@ function entrances(M){
  else if((M.o.feudHeat||0)>=35)say(M,'Bad blood here. These two have history.','story',{at:0});
  if(M.o.promo)say(M,M.o.promo.hook,'story',{at:0});
  if(M.o.memory?.recall)say(M,'Colour: '+M.o.memory.recall,'story',{at:0});
+ if(M.sheet?.signed)say(M,'Road agent: '+M.sheet.method+' match sheet agreed. The finish is contracted; the action must be earned.','story',{at:0});
  const notes={
   grudge:'The talk is finished. These two have scores to settle, and neither wants to back down.',
   underdog:'There is a gulf in experience here, but a wrestling match is not won on paper.',
@@ -1817,7 +1818,7 @@ function call(M,id){
  if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`)}
  if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`)}
  if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
- if(id==='big'){spot(M,true,true)}
+ if(id==='big'){spot(M,true,true);root.OfficeSheets?.observe(M,'special_spot','w','spot')}
  if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back on the sheet.`)}
  if(id==='home'){const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
   M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
@@ -2996,7 +2997,8 @@ root.OfficeTerritory={ensure,rank,evolve};
   commit(M,event){
    if(!M.sheet)return null;
    const log=M.sheet.ledger??(M.sheet.ledger=[]);
-   const record={id:'evt-'+(log.length+1),at:M.t,action:event.action,actor:event.actor||null,kind:event.kind||'action',cause:event.cause||null};
+   M.sheet.eventSeq=(M.sheet.eventSeq||0)+1;
+   const record={id:'evt-'+M.sheet.eventSeq,at:M.t,action:event.action,actor:event.actor||null,kind:event.kind||'action',cause:event.cause||null};
    log.push(record);if(log.length>220)log.shift();return record;
   },
   validate(nodes){
@@ -3040,13 +3042,13 @@ root.OfficeTerritory={ensure,rank,evolve};
   const chosen=decision||'compromise';
   const lead=chosen==='worker'?a:chosen==='opponent'?b:null;
   const main=lead||a,guest=lead?lead===a?b:a:b;
-  const pressure=lead===a?a.pressure:b.pressure;
-  const payoff=lead===b?b.payoff:a.payoff;
   const wop=fp(w),fop=fp(f);
+  const pressure=chosen==='worker'?fop.pressure[1]:b.pressure;
+  const payoff=lead===b?b.payoff:a.payoff;
   // Each commitment names an intended performer, a real legal graph event,
   // an alternative and a causal predecessor. The booked finish is immutable.
   const first={id:'opening',owner:'w',title:w.short+' establishes the opening',actions:[a.opening],backup:[wop.open[1]],window:[.03,.32],requires:[]};
-  const second={id:'pressure',owner:lead===a?'w':'f',title:(lead===a?w.short:f.short)+' takes control',actions:[pressure],backup:[guest.pressure],window:[.20,.65],requires:['opening']};
+  const second={id:'pressure',owner:'f',title:f.short+' takes control',actions:[pressure],backup:[fop.pressure[0],fop.pressure[1]].filter(x=>x!==pressure),window:[.20,.65],requires:['opening']};
   const third={id:'reversal',owner:'w',title:w.short+' fights for a comeback',actions:[a.rally],backup:[wop.return[1]],window:[.43,.85],requires:['pressure']};
   const fourth={id:'payoff',owner:lead===b?'f':'w',title:(lead===b?f.short:w.short)+' attempts a signature turning point',actions:[payoff],backup:[lead===b?fop.spectacle[1]:wop.spectacle[1],'special_spot','scheduled_nearfall'],window:[.62,.96],requires:['reversal']};
   const final={id:'finish',owner:'either',title:'Deliver the contracted '+(c.finish.startsWith('win')?'victory':'defeat'),actions:['outcome_'+c.finish],backup:['outcome_double','outcome_nc'],window:[.89,1.2],requires:['payoff']};
@@ -3070,7 +3072,7 @@ root.OfficeTerritory={ensure,rank,evolve};
   if(b.status!=='pending')return false;
   const s=current(M);if(!s)return false;
   const map=Object.fromEntries(s.nodes.map(n=>[n.id,n]));
-  return (b.requires||[]).every(id=>map[id]?.status!=='pending');
+  return K.eligible(b,map).ok;
  }
  function boost(M,id,actor){
   const s=current(M);if(!s)return 1;
@@ -3089,7 +3091,8 @@ root.OfficeTerritory={ensure,rank,evolve};
   const event=K.commit(M,{action:id,actor,kind});
   const frac=M.t/Math.max(1,M.len);
   for(const b of s.nodes){
-   if(!eligibleBeat(M,b))continue;
+   if(kind!=='outcome'&&!eligibleBeat(M,b))continue;
+   if(kind==='outcome'&&b.id!=='finish')continue;
    if(frac<b.window[0]-.10||frac>b.window[1]+.12)continue;
    if(b.owner!=='either'&&b.owner!==actor&&kind!=='outcome')continue;
    const exact=b.actions.includes(id),alternate=b.backup?.includes(id);
