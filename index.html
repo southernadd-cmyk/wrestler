@@ -725,7 +725,25 @@ const GOALS1=[
  {id:'four',text:'Produce a four-star match'},
  {id:'solvent',text:'Finish the season in the black'}
 ];
-root.OfficeData={TALENT,FOES,PROMOS,SLOTS,SLOT_ORDER,FINISHES,PLANS,STYLE_PLAN,LEASH,TALKS,TRAINING,MOVES,SPOTS,GOALS1};
+// Fictional character-specific traits and weight classes. Lookups by stable ID
+// keep older local career saves valid, without changing their stored roster objects.
+const PROFILES={
+ mara:{kg:77,trait:'Showboat',preferred:['crowd_pose','finish_tease','counter_strike','cheap_shot']},
+ rex:{kg:125,trait:'Powerhouse',preferred:['power_spinebuster','corner_strikes','outside_toss','clothesline']},
+ lyra:{kg:64,trait:'Daredevil',preferred:['springboard_rise','top_climb','duck_rebound','aerial_attack']},
+ brick:{kg:115,trait:'Workhorse',preferred:['power_spinebuster','mat_hold','corner_strikes','stand_reset']},
+ juno:{kg:69,trait:'Submission specialist',preferred:['grapple_trip','wristlock','target_hold','submission_set']},
+ sol:{kg:84,trait:'Comeback artist',preferred:['hope_elbows','counter_strike','clothesline','crowd_pose']},
+ dee:{kg:75,trait:'Counter wrestler',preferred:['wrist_escape','mat_scramble','grapple_trip','waist_escape']},
+ kit:{kg:66,trait:'Daredevil',preferred:['springboard_rise','top_climb','aerial_attack','rope_run']},
+ red:{kg:105,trait:'Street brawler',preferred:['cheap_shot','corner_strikes','outside_toss','floor_brawl']},
+ roxy:{kg:74,trait:'Ring general',preferred:['finish_tease','crowd_pose','counter_strike','lockup']},
+ silas:{kg:91,trait:'Submission specialist',preferred:['submission_set','wristlock','grapple_trip','mat_takedown']},
+ night:{kg:68,trait:'Daredevil',preferred:['springboard_rise','aerial_attack','top_climb','duck_rebound']},
+ rev:{kg:108,trait:'Ring general',preferred:['mat_hold','crowd_pose','finish_tease','target_hold']},
+ malik:{kg:103,trait:'Opportunist',preferred:['cheap_shot','power_spinebuster','counter_strike','outside_toss']}
+};
+root.OfficeData={TALENT,FOES,PROMOS,SLOTS,SLOT_ORDER,FINISHES,PLANS,STYLE_PLAN,LEASH,TALKS,TRAINING,MOVES,SPOTS,GOALS1,PROFILES};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* THE OFFICE v2 — live match engine.
@@ -992,7 +1010,7 @@ const Psy=(function installPsychology(){
 const Graph=(function makeGraph(){
  const A={};
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
-     reverse:!!opts.reverse,kind:opts.kind||'play',focus:opts.focus||0,crowd:opts.crowd||0,weight:opts.weight||1,styles:opts.styles||null};};
+     reverse:!!opts.reverse,kind:opts.kind||'play',focus:opts.focus||0,crowd:opts.crowd||0,weight:opts.weight||1,styles:opts.styles||null,cost:opts.cost??null,lift:opts.lift??null};};
  const e=(id,w=1)=>[id,w];
  // Ring grappling. Transitions are drawn from common observed chain-wrestling sequences.
  node('circle','{A} and {D} circle, each testing the distance before committing.',{next:[e('lockup',5),e('probe_strike',2),e('waistlock',2),e('taunt',1)]});
@@ -1062,12 +1080,13 @@ const Graph=(function makeGraph(){
  node('dramatic_sell','{D} rolls towards the ropes, clutching the {part}. {A} watches for the next counter.',{requires:'mat',zone:'standing',down:null,next:[e('finish_tease',3),e('strike_trade',2)]});
 
 
- node('grapple_trip','{A} shoots for the leg, catches {D} off balance and drives them onto the mat.',{zone:'mat',down:'d',next:[e('target_hold',5),e('mat_hold',3),e('mat_scramble',2)]});
- node('power_spinebuster','{A} catches {D} coming forward and plants them with a heavy spinebuster!',{zone:'mat',down:'d',crowd:2,next:[e('cover',3),e('mat_hold',2),e('stand_reset',3)]});
- node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3)]});
- node('springboard_strike','{A} launches from the ropes and lands a springboard crossbody on {D}!',{requires:'top',zone:'mat',down:'d',crowd:4,next:[e('cover',4),e('stand_reset',2)]});
+ node('grapple_trip','{A} shoots for the leg, catches {D} off balance and drives them onto the mat.',{cost:1.1,zone:'mat',down:'d',next:[e('target_hold',5),e('mat_hold',3),e('mat_scramble',2)]});
+ node('power_spinebuster','{A} catches {D} coming forward and plants them with a heavy spinebuster!',{cost:3.5,lift:30,zone:'mat',down:'d',crowd:2,next:[e('cover',3),e('mat_hold',2),e('stand_reset',3)]});
+ node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{cost:1.8,zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3)]});
+ node('springboard_strike','{A} launches from the ropes and lands a springboard crossbody on {D}!',{cost:3.2,requires:'top',zone:'mat',down:'d',crowd:4,next:[e('cover',4),e('stand_reset',2)]});
  node('springboard_evaded','{D} rolls clear! {A} crashes into the canvas and {D} takes control.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:2,next:[e('mat_hold',2),e('cover',2),e('stand_reset',3)]});
- node('crowd_pose','{A} stops to play to the crowd. {D} watches, looking for an opening.',{next:[e('cheap_shot',2),e('counter_strike',3),e('probe_strike',3),e('lockup',2)]});
+ node('crowd_pose','{A} stops to play to the crowd. {D} watches, looking for an opening.',{cost:-0.7,next:[e('cheap_shot',2),e('counter_strike',3),e('probe_strike',3),e('lockup',2)]});
+ node('catch_breath','{A} steps away and catches a breath while {D} regroups.',{cost:-5.5,next:[e('lockup',3),e('probe_strike',3),e('counter_strike',2)]});
  const ARCS={
   opening:{label:'Opening exchanges',phase:'open',control:'neutral',min:2,max:5,entry:['circle','lockup','probe_strike'],out:[e('chain',5),e('shine',3),e('cutoff',1)]},
   chain:{label:'Chain wrestling',phase:'open',control:'neutral',min:3,max:7,entry:['lockup','waistlock','wristlock'],out:[e('chain',2),e('shine',5),e('cutoff',2)]},
@@ -1111,6 +1130,18 @@ const Graph=(function makeGraph(){
   Spectacle:{open:['springboard_rise','rope_run','top_climb','counter_strike'],bias:{springboard_rise:4,top_climb:3.2,rope_run:2.6,duck_rebound:2.2,aerial_attack:2.3,corner_whip:1.8,mat_hold:.5,target_hold:.6}},
   Story:{open:['crowd_pose','taunt','finish_tease','clean_break'],bias:{crowd_pose:3.8,taunt:2.6,finish_tease:2.3,hope_elbows:1.9,cheap_shot:1.6,near_kickout:1.5,top_climb:.75}}
  };
+ const MOVE_COST={top_climb:2.2,aerial_attack:3.6,aerial_counter:2,snap_suplex:2,clothesline:1.6,corner_charge:2.2,corner_strikes:1.5,submission_set:2,target_hold:1.2,finish_tease:1.6,outside_toss:2.1,floor_brawl:1.4,mat_takedown:1,strike_trade:1,rope_run:1.2};
+ function fighter(w){return D.PROFILES[w?.id]||{kg:85,trait:'Versatile',preferred:[]}}
+ function costOf(id){return A[id].cost??MOVE_COST[id]??.55}
+ function scout(w,f,plan,heat=0){
+  const me=fighter(w),them=fighter(f),gap=them.kg-me.kg;
+  const size=gap>=25?`${f.short} has a major size advantage (${gap} kg).`:gap<=-25?`${w.short} has the size advantage (${-gap} kg).`:'They are reasonably matched for size.';
+  const styles=`${w.short} favours ${me.trait.toLowerCase()} tactics; ${f.short} prefers ${them.trait.toLowerCase()} tactics.`;
+  const fatigue=(w.fatigue||0)>=40?` Fatigue is a serious concern for ${w.short} tonight.`:'';
+  const danger=gap>=25?'Avoid lifting the heavier opponent. Use counters and targeted holds.':f.style==='Technical'?'Avoid long mat exchanges. Prioritise clean escapes.':f.style==='Spectacle'?'Keep them off the ropes and make aerial attacks expensive.':f.style==='Brawl'?'Keep the action in the ring instead of brawling on the floor.':'Vary the pace and protect the finishing sequence.';
+  const advice={story:'Build patiently to the finish.',technical:'Target a limb and save energy for counters.',brawl:'Save the heavy strikes; a long brawl is exhausting.',spots:'Big aerial moves need setup and fresh legs.',safe:'Use rest holds and avoid unnecessary risks.'};
+  return {brief:styles+' '+size+(heat>=45?' There is personal history here.':'')+fatigue,advice:danger+' '+(advice[plan]||advice.story),you:me,opponent:them};
+ }
  function matchTexture(M){
   const gap=Math.abs((M.w.ring+M.w.psych)-(M.f.ring+M.f.psych));
   if((M.o.feudHeat||0)>=48&&M.r()<.78)return 'grudge';
@@ -1226,6 +1257,12 @@ const Graph=(function makeGraph(){
  function isValid(M,nodeId){
   const n=A[nodeId],p=Psy.get(M);if(!n)return false;
   if((nodeId==='cover'||nodeId==='near_kickout')&&M.t/M.len<.58)return false;
+  const attacker=p.control==='f'?M.f:M.w,defender=p.control==='f'?M.w:M.f,stamina=p.control==='f'?M.fSt:M.wSt;
+  const energy=costOf(nodeId);
+  if(energy>=2.2&&stamina<16+energy*3.2)return false;
+  const capacity=fighter(attacker).kg+Math.max(-5,((attacker.ring||60)-60)*.23);
+  if(n.lift!==null&&fighter(defender).kg>capacity+n.lift)return false;
+  if(nodeId==='snap_suplex'&&fighter(defender).kg>capacity+42)return false;
   if(n.requires==='mat'&&p.position!=='mat')return false;
   if(n.requires==='outside'&&p.position!=='outside')return false;
   if(n.requires==='corner'&&p.position!=='corner')return false;
@@ -1266,6 +1303,12 @@ const Graph=(function makeGraph(){
   p.down=n.down==='d'?originalDown:n.down==='a'?p.control:null;
   if(n.focus){g.damage[victim]=(g.damage[victim]||0)+n.focus;if(victim==='w')p.focusHits+=n.focus;}
   if(n.crowd)M.crowd=clamp(M.crowd+n.crowd);
+  const exertion=costOf(id),activeSide=n.reverse?opp:side,staminaKey=activeSide==='w'?'wSt':'fSt';
+  let effective=exertion;
+  if(exertion>0&&fighter(activeSide==='w'?M.w:M.f).trait==='Workhorse')effective*=.8;
+  M[staminaKey]=clamp(M[staminaKey]-effective);
+  if(exertion<0)g.rests=(g.rests||0)+1;
+  g.exertion=(g.exertion||0)+Math.max(0,effective);
   if(id==='near_kickout'||id==='counter_rollup') {M.nearfalls++;M.bonus+=5;g.nearfallCount++;}
   if(id==='aerial_attack'){M.spots++;M.spotHits++;M.bonus+=10;}
   if(id==='springboard_strike'){M.spots++;M.spotHits++;M.bonus+=5;}
@@ -1275,7 +1318,7 @@ const Graph=(function makeGraph(){
   if(id==='cover')g.pendingCover=true;
   if(id==='target_hold'||id==='target_strike'||id==='arm_wringer')g.lastTarget=M.t;
   if(id==='near_kickout')g.pendingCover=false;
-  g.node=id;g.steps++;g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part});
+  g.node=id;g.steps++;g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective});
   if(g.events.length>220)g.events.shift();
   if(M.t-(g.lastColourAt??-1000)>=100&&M.r()<.33){
    const reactions={
@@ -1299,11 +1342,26 @@ const Graph=(function makeGraph(){
   const style=STYLE_BEATS[liveSide.style]||STYLE_BEATS.Story;
   if(p.position==='standing'&&['opening','chain','shine','comeback','resurgence','exchange','escalation'].includes(g.arc))
    for(const id of style.open)selected.push([id,1.6]);
+  const prof=fighter(liveSide),stamina=p.control==='f'?M.fSt:M.wSt;
+  if(p.position==='standing'&&M.t/M.len>.12){
+   for(const id of prof.preferred)if(A[id])selected.push([id,1.4]);
+   if(stamina<48)selected.push(['catch_breath',5]);
+  }
   const weights=new Map();
   for(const [id,w] of selected) if(isValid(M,id)) {
    let n=w;
    if(pattern.actions.includes(id))n*=1.6;
    n*=style.bias[id]||1;
+   n*=prof.preferred.includes(id)?3.7:.82;
+   const energy=costOf(id);
+   if(energy>=2&&stamina<45)n*=Math.max(.15,stamina/70);
+   if(id==='catch_breath')n*=stamina<22?5:stamina<35?2.4:1;
+   if(A[id].reverse){
+    const defender=p.control==='f'?M.w:M.f;
+    const difference=(defender.ring*.65+defender.psych*.35)-(liveSide.ring*.65+liveSide.psych*.35);
+    const defenderStamina=p.control==='f'?M.wSt:M.fSt;
+    n*=Math.max(.6,Math.min(1.4,1+difference/140))*Math.max(.4,Math.min(1.2,defenderStamina/70));
+   }
    if(g.texture==='grudge'&&['cheap_shot','outside_toss','floor_brawl','counter_strike'].includes(id))n*=1.45;
    if(g.texture==='chess'&&['wristlock','grapple_trip','mat_takedown','mat_scramble','submission_set'].includes(id))n*=1.5;
    if(g.texture==='fight'&&['power_spinebuster','strike_trade','corner_strikes','outside_toss'].includes(id))n*=1.5;
@@ -1327,6 +1385,10 @@ const Graph=(function makeGraph(){
   if(p.position==='outside'){apply(M,'roll_inside');return}
   if(p.position==='corner'){apply(M,'corner_break');return}
   if(p.position==='top'){
+   if((p.control==='f'?M.fSt:M.wSt)<29){
+    say(M,'The wrestler on the ropes checks their balance and safely steps down.','play');
+    p.position='standing';p.down=null;g.node=null;return;
+   }
    apply(M,'aerial_attack');return;
   }
   if(p.position==='mat'){
@@ -1339,6 +1401,10 @@ const Graph=(function makeGraph(){
  function step(M){
   const g=get(M),p=Psy.get(M);
   if(p.position==='outside'&&g.floorTicks>=4){apply(M,'roll_inside');g.floorTicks=0;return;}
+  if(p.control==='neutral'){
+   const advantage=(M.w.ring-M.f.ring)+(M.wSt-M.fSt)*.3;
+   p.control=M.r()<Math.max(.3,Math.min(.7,.5+advantage/250))?'w':'f';p.changes++;
+  }
   const candidates=validPool(M),id=pick(M,candidates);
   if(id){apply(M,id);return;}
   recover(M);
@@ -1379,7 +1445,7 @@ const Graph=(function makeGraph(){
   }
   return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid};
 })();
 
 function create(o){
@@ -1797,13 +1863,13 @@ function summary(M){
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
-  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(whole)+(frac===.25?'¼':frac===.5?'½':frac===.75?'¾':'')+(s===0?'DUD':'');}
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,call,canCall,resolve,CALLS,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
+root.OfficeMatch={create,next,call,canCall,resolve,CALLS,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,scout:Graph.scout,restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* THE OFFICE v2.2 — regional circuit management layer */
@@ -3099,7 +3165,8 @@ function prep(){
  const finishLine={win_clean:`${w.short} wins clean`,win_dirty:`${w.short} wins dirty`,lose_protected:`${w.short} loses, protected`,lose_clean:`${w.short} loses clean`}[c.finish];
  const stam=Math.round(100-w.fatigue*.7);
  const tape=`<div class="well tape"><div class="side">${face('wrestler',w.id,w.name,'portrait x2')}<div class="nm">${esc(w.short)}</div></div><div class="cmp">${cmpRow('Ring',w.ring,f.ring)}${cmpRow('Psych',w.psych,f.psych)}${cmpRow('Safety',w.safe,f.safe)}${cmpRow('Heat',w.heat,f.heat)}${cmpRow('Pro',w.pro,f.pro)}${cmpRow('Stamina',stam,92)}</div><div class="side">${face('wrestler',f.id,f.name,'portrait x2')}<div class="nm them">${esc(f.short)}</div></div></div>`;
- const contract=`<div style="font:32px/1 var(--jersey);color:var(--blood)">${esc(finishLine)}</div><p class="dim" style="margin:4px 0 8px">The finish is in the contract.</p><dl class="kv"><dt>Slot</dt><dd>${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes</dd><dt>Purse</dt><dd>${money(c.purse)}</dd>${c.tag?`<dt>Billing</dt><dd>${esc(c.tag)}</dd>`:''}<dt>Opponent</dt><dd>${esc(f.name)}, ${esc(f.style.toLowerCase())}. Finisher: ${esc(f.finisher)}.</dd></dl><p style="margin-top:8px">${esc(fnotes.join(' ')||'A steady, professional opponent.')}</p>${warn.length?`<ul class="warnings">${warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="good">${esc(w.short)} is fit and ready. Morale ${w.morale}.</p>`}`;
+ const road=Mx.scout(w,f,P.game,Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0));
+ const contract=`<div style="font:32px/1 var(--jersey);color:var(--blood)">${esc(finishLine)}</div><p class="dim" style="margin:4px 0 8px">The finish is in the contract.</p><dl class="kv"><dt>Slot</dt><dd>${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes</dd><dt>Purse</dt><dd>${money(c.purse)}</dd>${c.tag?`<dt>Billing</dt><dd>${esc(c.tag)}</dd>`:''}<dt>Opponent</dt><dd>${esc(f.name)}, ${esc(f.style.toLowerCase())}. Finisher: ${esc(f.finisher)}.</dd></dl><p style="margin-top:8px">${esc(fnotes.join(' ')||'A steady, professional opponent.')}</p>${warn.length?`<ul class="warnings">${warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="good">${esc(w.short)} is fit and ready. Morale ${w.morale}.</p>`}<div class="well" style="margin-top:10px"><b>Road agent's scouting</b><p style="margin:5px 0">${esc(road.brief)}</p><p class="dim">${esc(road.advice)}</p></div>`;
  const plan=`<div class="planset"><fieldset class="decide"><legend>What is the match built on?</legend><div class="opts" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${opts('game',D.PLANS,P.game)}</div></fieldset><fieldset class="decide"><legend>Who calls it?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset><fieldset class="decide"><legend>Last word at the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset></div>`;
 
  $('#tv').innerHTML=`${strip(c,'tonight')}<div class="stage screen s-prep">${win('Tale of the tape',tape,{area:'tape',h:'h3',cls:'quiet',body:'tight'})}${win('The contract',contract,{area:'contract',h:'h3'})}${win('Game plan',plan,{area:'plan',h:'h3'})}</div><div class="tv-foot"><span class="dim">Next: microphone time. Then three calls from ringside after the bell.</span><button class="btn go" data-tv="promos">Send them out</button></div>`;
