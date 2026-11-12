@@ -1,4 +1,4 @@
-# The Office — Wrestling Manager v3.1
+# The Office — Wrestling Manager v3.2
 
 A standalone wrestling management game. Run a stable, take the bookings, and sit at ringside for every match.
 
@@ -21,6 +21,49 @@ Before each bout, choose a microphone approach (call them out, rally the fans, p
 ## Systems
 
 16-week regional season; contract negotiation; wrestler recruitment and coaching; pre-match promos with four meaningful approaches and original dialogue; context-sensitive and phase-specific match commentary; heat-driven storylines, rivalries and blow-offs; live text matches with ringside decisions; rival promotions; persistent title pyramid; export and import of career saves.
+
+## v3.2 — The meeting and the microphone now matter
+
+**The match contract sets the finish. The performers and their manager decide what
+the match must actually prove.**
+
+The match meeting is now a multi-step creative conversation rather than a
+one-click choice between default proposals:
+
+1. **Pick an evidence-based story objective.** Proposals use individual
+   repertoires, psychology, prior results, injury memories, fatigue and the
+   opponent's style. The actual options vary between pairings: scout a known
+   attack, rehabilitate a humiliating loss, protect a tired wrestler, build on
+   previously demonstrated chemistry, or earn a dramatic high-risk payoff.
+2. **Choose the amount of planning** (detailed, key moments, or called live).
+   This changes which specific commitments are made.
+3. **Negotiate the actual beats.** Where an objection is genuine, resolve
+   it without manufacturing a feud. Before signing, propose alternative
+   actions in the control, comeback or finishing stretch, and hear the affected
+   wrestler's response. Revisions alter the live causal sheet.
+4. **Sign the agreement.** Both performers' willingness affects cooperation.
+   The game displays their attitudes in words, not an exploitable ranking
+   of numerical choices.
+5. **Review what occurred.** The debrief distinguishes an achieved beat from
+   a legal substitute, explains knock-on effects when an earlier beat was
+   missed and records manager instructions that shortened or changed the
+   match. Exceptional success can form a future creative relationship.
+
+Promos now **test an argument and make public commitments** rather than merely
+awarding a crowd/heat bonus. The opponent responds to the actual claim,
+their wrestling strengths and relevant previous encounters. Unsupported
+accusations damage credibility; a direct answer can repair it.
+
+A public promise to **counter the opponent** is verified only if the wrestler
+actually reverses a relevant attack late in the match. An announced finisher
+allows a clever opponent to scout it; demanding clean wrestling suppresses
+dirty offence; withholding the plan can improve tactical misdirection. The
+commentary and post-match history recognise promises kept or broken.
+Statements from the promo influence legal tactical move selection, but
+never override the contracted result or physical safety checks.
+
+Full design: [creative-loop v3.2](docs/creative-loop-v3-2.md). Regress with
+`node tests/creative-loop.test.cjs` alongside the six existing suites.
 
 ## Cooperative match planning and connected graphs (v3.1)
 
