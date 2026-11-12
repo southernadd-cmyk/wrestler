@@ -1079,7 +1079,7 @@ const Graph=(function makeGraph(){
  node('lockup','Collar-and-elbow. {A} drives forward and {D} fights to stay square.',{next:[e('headlock',4),e('wristlock',4),e('corner_push',2),e('waistlock',2),e('clean_break',1)]});
  node('headlock','{A} takes a side headlock, forcing {D} to carry the weight.',{next:[e('shove_ropes',4),e('headlock_takeover',3),e('headlock_escape',3)]});
  node('shove_ropes','{D} pushes {A} off the ropes to break the headlock. {A} rebounds back.',{next:[e('shoulder_tackle',4),e('duck_rebound',3),e('counter_strike',2)]});
- node('headlock_takeover','{A} uses the headlock to take {D} down onto the mat.',{next:[e('mat_hold',4),e('headlock_escape',3),e('mat_scramble',2)],zone:'mat',down:'d'});
+ node('headlock_takeover','{A} uses the headlock to take {D} down onto the mat.',{next:[e('mat_hold',4),e('headlock_escape',3),e('armbar_roll',2),e('mat_scramble',2)],zone:'mat',down:'d'});
  node('headlock_escape','{D} bridges, rolls through the pressure and turns the headlock into a counter!',{requires:'any',reverse:true,next:[e('waistlock',3),e('mat_scramble',2),e('arm_drag',2)]});
  node('wristlock','{A} catches the wrist and turns it over, keeping {D} close.',{next:[e('arm_wringer',4),e('wrist_escape',4),e('hammerlock',2)]});
  node('arm_wringer','{A} twists {D}’s arm and steps across, making the shoulder work.',{focus:1,next:[e('wrist_escape',4),e('arm_drag',3),e('hammerlock',2)]});
@@ -1108,8 +1108,8 @@ const Graph=(function makeGraph(){
  node('clothesline','{A} catches {D} with a running clothesline. {D} crashes onto the mat.',{zone:'mat',down:'d',next:[e('cover',3),e('mat_hold',2),e('stand_reset',3)]});
  node('snap_suplex','{A} secures the head and arm, lifts {D} and lands a snap suplex.',{zone:'mat',down:'d',next:[e('cover',3),e('target_hold',3),e('stand_reset',2)]});
  // Mat offence and selling must be resolved before another standing exchange.
- node('mat_hold','{A} stays on top, pressing {D} against the canvas to stop an escape.',{requires:'mat',zone:'mat',down:'d',next:[e('target_hold',3),e('mat_scramble',3),e('rope_crawl',2),e('early_cover',1),e('submission_set',1),e('dramatic_sell',1)]});
- node('target_hold','{A} isolates {D}’s {part}, applying steady pressure with the referee watching.',{requires:'mat',zone:'mat',down:'d',focus:2,next:[e('rope_crawl',3),e('mat_scramble',2),e('hope_elbows',3)]});
+ node('mat_hold','{A} stays on top, pressing {D} against the canvas to stop an escape.',{requires:'mat',zone:'mat',down:'d',next:[e('target_hold',3),e('mat_scramble',3),e('rope_crawl',2),e('armbar_roll',2),e('grounded_switch',2),e('early_cover',1),e('submission_set',1),e('dramatic_sell',1)]});
+ node('target_hold','{A} isolates {D}’s {part}, applying steady pressure with the referee watching.',{requires:'mat',zone:'mat',down:'d',focus:2,next:[e('rope_crawl',3),e('mat_scramble',2),e('armbar_roll',3),e('handstand_escape',2),e('hope_elbows',3)]});
  node('target_strike','{A} drives a short strike into {D}’s {part}, then drags {D} away from the ropes.',{focus:2,zone:'mat',down:'d',next:[e('target_hold',3),e('hope_elbows',3),e('rope_crawl',2)]});
  node('rope_crawl','{D} drags themselves towards the bottom rope while {A} keeps the pressure on.',{requires:'mat',zone:'mat',down:'d',next:[e('rope_break',4),e('hope_elbows',2)]});
  node('rope_break','{D} catches the bottom rope. The referee orders {A} to break the hold, and {A} releases.',{requires:'mat',zone:'standing',down:null,next:[e('stand_reset',4),e('cheap_shot',1)]});
@@ -1226,7 +1226,7 @@ const Graph=(function makeGraph(){
  const STYLE_BEATS={
   Brawl:{open:['stiff_forearm','power_spinebuster','cheap_shot','outside_toss','strike_trade'],bias:{power_spinebuster:3.6,cheap_shot:2.1,strike_trade:2.2,corner_strikes:2.1,outside_toss:2.4,floor_brawl:2.5,top_climb:.32,wristlock:.55}},
   Technical:{open:['collar_snap','ankle_pick','grapple_trip','wristlock','waistlock','hammerlock'],bias:{grapple_trip:3.8,wristlock:2.5,arm_wringer:2.5,mat_takedown:2.2,submission_set:2.8,wrist_escape:2.5,waist_escape:2.4,outside_toss:.35,top_climb:.4}},
-  Spectacle:{open:['springboard_feint','rope_rebound','springboard_rise','rope_run','top_climb','counter_strike'],bias:{springboard_rise:4,top_climb:3.2,rope_run:2.6,duck_rebound:2.2,aerial_attack:2.3,corner_whip:1.8,mat_hold:.5,target_hold:.6}},
+  Spectacle:{open:['springboard_feint','rope_rebound','running_headscissors','springboard_rise','rope_run','top_climb','counter_strike'],bias:{springboard_rise:4,top_climb:3.2,rope_run:2.6,duck_rebound:2.2,aerial_attack:2.3,corner_whip:1.8,mat_hold:.5,target_hold:.6}},
   Story:{open:['false_handshake','opponent_study','baited_charge','crowd_pose','taunt','finish_tease','clean_break'],bias:{crowd_pose:3.8,taunt:2.6,finish_tease:2.3,hope_elbows:1.9,cheap_shot:1.6,near_kickout:1.5,top_climb:.75}}
  };
  const MOVE_COST={top_climb:2.2,aerial_attack:3.6,aerial_counter:2,snap_suplex:2,clothesline:1.6,corner_charge:2.2,corner_strikes:1.5,submission_set:2,target_hold:1.2,finish_tease:1.6,outside_toss:2.1,floor_brawl:1.4,mat_takedown:1,strike_trade:1,rope_run:1.2};
