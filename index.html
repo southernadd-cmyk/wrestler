@@ -3100,6 +3100,89 @@ root.OfficeTerritory={ensure,rank,evolve};
 
  const label=id=>id.replace(/_/g,' ');
 
+ // A match outline has a creative objective chosen for these two actual
+ // performers. An objective must have a reason and a distinct event-level plan.
+ function focusOptions(c,w,f,game){
+  const h=careerContext(c,w,f),opts=[],ww=fp(w),ff=fp(f);
+  const add=(id,title,why,tradeoff)=>opts.push({id,title,why,tradeoff});
+  add('authentic','Let their styles tell the story',
+   w.short+' prefers '+label(ww.open[0])+'; '+f.short+' prefers '+label(ff.pressure[0])+'. Build on what they actually do well.',
+   'Most reliable, but less of a deliberate callback.');
+  add('counter','Scout '+f.short+' and turn their strength against them',
+   f.short+' is a '+f.style.toLowerCase()+' wrestler. Build a specific counter to the pressure they favour.',
+   'The counter needs good timing and might be anticipated.');
+  if(h.losses||h.grievance) add('redemption','Answer the previous result',
+   w.short+' '+(h.losses?'has already lost to '+f.short+'.':'has unfinished business with '+f.short()+'.')+
+   ' Earn a real comeback before the contracted ending.',
+   'The emotional payoff depends on an actual counter landing.');
+  if(w.style==='Spectacle'||f.style==='Spectacle'||game==='spots')
+   add('spectacle','Build around a crowd-changing spectacular move',
+    (w.style==='Spectacle'?w.short:f.short)+' has an aerial style. Agree a setup, then pay it off in the closing stretch.',
+    'Poor safety, fatigue or an injury may make the moment too risky.');
+  if(w.fatigue>=35||w.injury||w.flags?.pushThrough||h.injuredBefore||f.safe<55)
+   add('protect','Protect the performers and get the finish home',
+    w.short+(h.injuredBefore?' was hurt in a previous encounter.':w.fatigue>=35?' is carrying fatigue.': ' needs a safer, more controlled layout.'),
+    'Less spectacle; a clean, credible counter becomes the high point.');
+  else add('pressure','Let '+f.short+' work a weakness, then escape it',
+   f.short+' can control the middle of the match; '+w.short+' has to find a believable way out.',
+   'Requires the escape to follow the hold, not an unearned comeback.');
+  return opts;
+ }
+ function applyFocus(nodes,focus,w,f,h){
+  if(focus==='authentic')return;
+  const find=id=>nodes.find(n=>n.id===id),opening=find('opening'),pressure=find('pressure'),reversal=find('reversal'),payoff=find('payoff');
+  if(focus==='counter'){
+   opening.actions=['opponent_study'];opening.backup=[fp(w).open[0]];
+   reversal.actions=['last_second_counter'];reversal.backup=['quiet_reversal','counter_strike'];
+   payoff.actions=['counter_strike'];payoff.backup=['counter_rollup','scheduled_nearfall'];
+   payoff.owner='w';payoff.title=w.short+' counters '+f.short+' after studying the earlier pressure';
+  }else if(focus==='redemption'){
+   pressure.actions=['target_strike'];pressure.backup=[fp(f).pressure[0]];
+   reversal.actions=['dramatic_rally'];reversal.backup=['counter_strike'];
+   payoff.actions=['last_second_counter'];payoff.backup=['scheduled_nearfall','counter_rollup'];
+   payoff.owner='w';payoff.title=w.short+' turns their previous failure into a comeback';
+  }else if(focus==='spectacle'){
+   // Never force a top-rope move as a standing action. Commit to the
+   // preparatory setup, and let the tactical graph require a legal followup.
+   opening.actions=[w.style==='Spectacle'?'springboard_feint':fp(w).open[0]];
+   payoff.actions=[w.style==='Spectacle'?'springboard_rise':f.style==='Spectacle'?'scheduled_nearfall':'special_spot'];
+   payoff.backup=['special_spot','scheduled_nearfall'];
+   payoff.owner=w.style==='Spectacle'?'w':f.style==='Spectacle'?'f':'w';
+   payoff.title=(payoff.owner==='w'?w.short:f.short)+' sets up the high-risk turning point';
+  }else if(focus==='protect'){
+   pressure.actions=['mat_hold'];pressure.backup=['target_hold'];
+   reversal.actions=['quiet_reversal'];reversal.backup=['counter_strike'];
+   payoff.actions=['finish_tease'];payoff.backup=['counter_strike','scheduled_nearfall'];
+   payoff.owner='w';payoff.title=w.short+' earns a controlled near-finish without a dangerous lift';
+  }else if(focus==='pressure'){
+   pressure.actions=['target_strike'];pressure.backup=['target_hold'];
+   reversal.actions=['counter_strike'];reversal.backup=['mat_scramble','quiet_reversal'];
+   payoff.actions=['counter_rollup'];payoff.backup=['scheduled_nearfall','finish_tease'];
+   payoff.owner='w';payoff.title=w.short+' escapes '+f.short+' and nearly steals the decision';
+  }
+ }
+ // Alternative beats are proposed before the wrestlers sign, with an explicit
+ // record of who conceded and why. No free universal numerical bonus.
+ function revise(sheet,beatId){
+  if(!sheet||!['pressure','reversal','payoff'].includes(beatId))return false;
+  const beat=sheet.nodes.find(x=>x.id===beatId),alt=beat?.backup?.find(x=>actions[x]||x==='special_spot'||x==='scheduled_nearfall');
+  if(!beat||!alt||alt===beat.actions[0]||sheet.confirmed)return false;
+  const prior=beat.actions[0];
+  beat.actions=[alt];beat.backup=[prior,...beat.backup.filter(x=>x!==alt&&x!==prior)];
+  if(K.validate(sheet.nodes).length){beat.actions=[prior];beat.backup=[alt,...beat.backup.filter(x=>x!==prior)];return false}
+  sheet.revisions??=[];
+  sheet.revisions.push({beat:beatId,from:prior,to:alt,reason:'Manager and performers reviewed a viable alternative to the initial '+beatId+'.'});
+  const owner=beat.owner==='f'?sheet.proposals.opponent:sheet.proposals.worker;
+  sheet.speakers.push({actor:owner.name,text:'I can work '+label(alt)+' instead of '+label(prior)+'. That changes how we earn the next beat.'});
+  // Replacing a contested high-risk payoff with an agreed safer beat can
+  // genuinely address a safety objection rather than merely changing flavour.
+  if(beatId==='payoff'&&sheet.issues?.some(x=>x.safety)&&!['aerial_attack','high_crossbody','missile_dropkick','power_spinebuster'].includes(alt)){
+   sheet.workerConsent=Math.min(95,sheet.workerConsent+5);
+   sheet.opponentConsent=Math.min(95,sheet.opponentConsent+5);
+  }
+  return true;
+ }
+
  function proposal(w,side,h){
   const st=fp(w),p=D.PROFILES[w.id],mine=side==='w';
   const defeated=mine?h.losses:Math.max(0,h.matches-h.losses);
@@ -3120,10 +3203,14 @@ root.OfficeTerritory={ensure,rank,evolve};
    rally:st.return[0],payoff,motive:goals[0],
    concern:goals.slice(1).join('; ')||'keep the timing natural',preferred:p?.preferred||[]};
  }
- function build(c,w,f,game,method='landmarks',decision=null){
+ function build(c,w,f,game,method='landmarks',decision=null,focus='authentic'){
+  if(!focusOptions(c,w,f,game).some(o=>o.id===focus))focus='authentic';
   if(!MODE[method])method='landmarks';
   const h=careerContext(c,w,f),a=proposal(w,'w',h),b=proposal(f,'f',h);
-  const issues=conflicts(c,w,f,h,game,a,b),disputed=issues.length>0;
+  const issues=conflicts(c,w,f,h,game,a,b);
+  if(focus==='spectacle'&&((w.fatigue||0)>=42||w.safe<58||h.injuredBefore)&&f.pro>=68&&!issues.some(x=>x.safety))
+   issues.push({actor:'f',why:f.short+' will only agree to the spectacle if '+w.short+' can execute it safely at their current fitness.',weight:4,safety:true});
+  const disputed=issues.length>0;
   const chosen=decision||(!disputed?'agreed':'pending');
   const lead=chosen==='worker'?a:chosen==='opponent'?b:chosen==='agreed'?(c.finish.startsWith('win')?a:b):null;
   const main=lead||a,guest=lead?lead===a?b:a:b;
@@ -3141,6 +3228,7 @@ root.OfficeTerritory={ensure,rank,evolve};
   const nodes=method==='detailed'?[first,second,third,fourth,final]:
    method==='live'?[{...first,actions:[a.opening,wop.open[1]]},second,{...fourth,requires:['pressure']}, {...final,requires:['payoff']}]:
    [first,second,third,fourth,final];
+  applyFocus(nodes,focus,w,f,h);
   const problems=K.validate(nodes);if(problems.length)throw Error('Sheet: '+problems.join(','));
   const signed=chosen!=='pending',dispute=disputed;
   let workerConsent=Math.min(90,Math.max(45,Math.round(74+(w.pro-70)*.24+(w.psych-65)*.1)));
@@ -3165,9 +3253,9 @@ root.OfficeTerritory={ensure,rank,evolve};
   }else lines.push({actor:'Road agent',text:'The proposed sequences work together. Both wrestlers agree; there is nothing to arbitrate.'});
   if(signed&&dispute&&workerConsent<55)lines.push({actor:w.short,text:'I will work the agreed finish, but I have reservations.'});
   if(signed&&dispute&&opponentConsent<55)lines.push({actor:f.short,text:'The finish is fine. I still have concerns about the layout.'});
-  return {v:2,contract:c.id,method,decision:chosen,signed,disputed,issues,history:{priorMatches:h.matches,priorLosses:h.losses,priorInjury:h.injuredBefore,reason:h.remembered},authority:chosen==='opponent'?'opponent':chosen==='worker'?'worker':'shared',
+  return {v:3,contract:c.id,method,focus,decision:chosen,signed,disputed,issues,history:{priorMatches:h.matches,priorLosses:h.losses,priorInjury:h.injuredBefore,reason:h.remembered},authority:chosen==='opponent'?'opponent':chosen==='worker'?'worker':'shared',
    w:w.id,f:f.id,workerConsent,opponentConsent,premise:w.short+' and '+f.short+' try to earn a '+game+' match without breaking the agreed '+c.finish.replace(/_/g,' ')+' finish.',
-   speakers:lines,proposals:{worker:a,opponent:b},nodes:nodes.map(x=>({...x,status:'pending',actual:null,at:null,why:''})),ledger:[],changes:[],finish:c.finish};
+   speakers:lines,proposals:{worker:a,opponent:b},nodes:nodes.map(x=>({...x,status:'pending',actual:null,at:null,why:''})),revisions:[],ledger:[],changes:[],finish:c.finish};
  }
  function current(M){return M.sheet?.signed?M.sheet:null}
  function eligibleBeat(M,b){
@@ -3229,7 +3317,7 @@ root.OfficeTerritory={ensure,rank,evolve};
    beats:s.nodes.map(b=>({id:b.id,title:b.title,status:b.status,expected:b.actions[0],actual:b.actual,reason:b.why,at:b.at})),
    eventCount:s.ledger.length};
  }
- root.OfficeGraphKernel=K;root.OfficeSheets={MODE,build,observe,boost,advance,finalize,report,proposal};
+ root.OfficeGraphKernel=K;root.OfficeSheets={MODE,build,focusOptions,revise,observe,boost,advance,finalize,report,proposal};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* THE OFFICE — interface v3
