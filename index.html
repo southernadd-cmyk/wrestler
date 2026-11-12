@@ -2759,7 +2759,7 @@ root.OfficeTerritory={ensure,rank,evolve};
   const s=G.S;if(!s)return null;
   if(!s.officeMemory||typeof s.officeMemory!=='object')s.officeMemory={};
   const m=s.officeMemory;
-  m.entries??={};m.trust??={};m.rivals??={};m.processed??={};
+  m.entries??={};m.trust??={};m.rivals??={};m.processed??={};m.lastConversation??={};
   return m;
  }
  function worker(id){return G.W(id)}
@@ -2796,10 +2796,17 @@ root.OfficeTerritory={ensure,rank,evolve};
   if(fin.injury)return {kind:'hurt',text:w.short+' remembers the painful landing against '+f.short+' and the fear of being asked to work hurt again.',shift:-2,rivalShift:-3,prompt:true};
   if(fin.outcome==='double')return {kind:'rebellion',text:w.short+' remembers breaking the agreed finish against '+f.short+'. The promoter has not forgotten either.',shift:8,rivalShift:-8,prompt:true};
   if(fin.refused)return {kind:'discipline',text:w.short+' refused to double-cross '+f.short+' and worked the agreed finish.',shift:3,rivalShift:2,prompt:false};
-  if(c.finish==='lose_clean'&&w.ego>=65)return {kind:'humiliation',text:w.short+' remembers being asked to lose decisively to '+f.short+'. The dressing-room conversation is unfinished.',shift:-4,rivalShift:-5,prompt:true};
+  if(c.finish==='lose_clean'&&w.ego>=65){
+   const count=view(w.id).entries.filter(e=>e.kind==='humiliation'&&e.against===f.id).length;
+   const detail=count>=2?'Another clean loss to '+f.short+' has turned an old grievance into a problem for the whole stable.':
+    count===1?'The second decisive defeat to '+f.short+' has made '+w.short+' question where their career is going.':
+    w.short+' remembers being asked to lose decisively to '+f.short+'. The dressing-room conversation is unfinished.';
+   return {kind:'humiliation',text:detail,shift:-4,rivalShift:-5,prompt:true};
+  }
   if(c.finish==='lose_protected'&&w.ego>=70)return {kind:'protected',text:w.short+' remembers taking a protected loss to '+f.short+' — and that their reputation was protected.',shift:1,rivalShift:-2,prompt:true};
-  if(fin.resent)return {kind:'control',text:w.short+' remembers being denied room to improvise against '+f.short+'.',shift:-3,rivalShift:0,prompt:true};
-  if(fin.stars>=4)return {kind:'breakthrough',text:w.short+' remembers the '+fin.stars+'-star performance with '+f.short+'. The audience finally paid attention.',shift:3,rivalShift:3,prompt:true};
+  if(fin.resent&&(fin.ignored>0||(fin.script!==null&&fin.script<.6)))return {kind:'control',text:w.short+' remembers being denied room to improvise against '+f.short+'.',shift:-3,rivalShift:0,prompt:true};
+  if(fin.stars>=4&&!view(w.id).entries.some(e=>e.kind==='breakthrough'&&week()-e.week<4))
+   return {kind:'breakthrough',text:w.short+' remembers the '+fin.stars+'-star performance with '+f.short+'. The audience finally paid attention.',shift:3,rivalShift:3,prompt:true};
   if(fin.ignored>=2)return {kind:'defiance',text:w.short+' remembers ignoring the signals from ringside against '+f.short+'.',shift:-2,rivalShift:0,prompt:true};
   return null;
  }
@@ -2843,10 +2850,11 @@ root.OfficeTerritory={ensure,rank,evolve};
     result.push({text:notice,tone:Math.sign(chosen.shift)});
     const h=G.S.history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===G.S.season&&x.week===G.S.week);
     if(h){h.notes??=[];h.notes.push(notice)}
-    const recent=G.S.inbox.some(x=>x.dtype==='office_debrief'&&x.week===G.S.week&&x.season===G.S.season);
+    const recent=G.S.inbox.some(x=>x.dtype==='office_debrief'&&x.week===G.S.week&&x.season===G.S.season)
+      ||(chosen.kind!=='hurt'&&chosen.kind!=='rebellion'&&Number.isFinite(m.lastConversation[w.id])&&week()-m.lastConversation[w.id]<3);
     if(chosen.prompt&&!recent){
      const msg=conversation(c,fin,w,f,p,entry);
-     G.S.inbox.unshift(msg);G.S.inbox=G.S.inbox.slice(0,60);
+     G.S.inbox.unshift(msg);G.S.inbox=G.S.inbox.slice(0,60);m.lastConversation[w.id]=week();
      result.push({text:w.short+' wants to speak with you. A post-match decision is waiting in the inbox.',tone:0});
     }
    }
