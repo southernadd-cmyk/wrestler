@@ -519,6 +519,20 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
  .tv-foot .btn.go{width:100%;min-width:0}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* V3.2: creative meetings and promos stay readable in short/narrow viewports. */
+.tv .s-meeting>.win{min-width:0}
+.tv .s-meeting .choice{min-height:56px}
+@media (max-width:1080px){
+ .tv .s-meeting{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:max-content max-content!important;align-content:start}
+ .tv .s-meeting>.win{height:auto}
+ .tv .s-meeting .wbody{overflow:visible}
+}
+@media (max-width:800px){
+ .tv .s-promo{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:max-content max-content!important;align-content:start}
+ .tv .s-promo>.win{height:auto}
+ .tv .s-promo .wbody{overflow:visible}
+}
 </style>
 </head>
 <body>
@@ -3423,7 +3437,7 @@ root.OfficeTerritory={ensure,rank,evolve};
    if(b.owner!=='either'&&b.owner!==actor&&kind!=='outcome')continue;
    const exact=b.actions.includes(id),alternate=b.backup?.includes(id);
    if(!exact&&!alternate)continue;
-   const missedBefore=(b.requires||[]).filter(dep=>s.nodes.some(x=>x.id===dep&&x.status==='missed'));
+   const missedBefore=b.id==='finish'?[]:(b.requires||[]).filter(dep=>s.nodes.some(x=>x.id===dep&&x.status==='missed'));
    b.status=missedBefore.length?'adapted':exact?'achieved':'adapted';b.actual=id;b.at=M.t;
    b.why=missedBefore.length?'The earlier '+missedBefore.join(', ')+' beat was missed; the performers rebuilt the sequence.':
     exact?'Agreed move performed.':'A legal alternative replaced the original beat.';
@@ -3955,7 +3969,9 @@ function showMeeting(){
   '<ol style="padding-left:1.3em;margin:10px 0">'+beats+'</ol>'+status+
   (!explore?(sh.disputed&&!sh.signed?
     '<h3 class="section-h">The objection</h3><p>'+sh.issues.map(x=>esc(x.why)).join('</p><p>')+'</p>'+votes:
-    '<p class="dim">Wrestler cooperation: '+sh.workerConsent+'/100 · Opponent cooperation: '+sh.opponentConsent+'/100. These represent willingness, not guaranteed obedience.</p>')+
+    '<p class="dim">Wrestler: '+(sh.workerConsent>=72?'confident in the plan':sh.workerConsent>=53?'willing, with reservations':'reluctant to follow the layout')+
+    '. Opponent: '+(sh.opponentConsent>=72?'confident in the plan':sh.opponentConsent>=53?'willing, with reservations':'reluctant to follow the layout')+
+    '. Their willingness changes performance; it never guarantees obedience.</p>')+
    (sh.revisions?.length?'<h3 class="section-h">Concessions</h3>'+sh.revisions.map(r=>'<p class="dim">'+esc(r.from.replace(/_/g,' '))+' → '+esc(r.to.replace(/_/g,' '))+'</p>').join(''):''):''),
   {h:'h3',keep:'sheet'});
  const footer=explore?'Choose a story objective.':
@@ -4000,7 +4016,7 @@ function showPromos(){
  const liveStake=st.result?.tactic?'<p><b>Public stake:</b> '+esc(st.result.tactic.stake)+'</p>':'';
  const left=win('Your next move',`<p class="lede">${esc(help[st.stage])}</p>${publicIssue}${decisions}${liveStake}${path}`,{h:'h3'});
  const right=win('At the microphone',`<div class="tape well" style="margin-bottom:10px">${face('wrestler',w.id,w.name,'portrait x2')}${face('wrestler',f.id,f.name,'portrait x2')}<b>${esc(w.short)} vs ${esc(f.short)}</b></div>${transcript}${mood}${tone}`,{h:'h3'});
- $('#tv').innerHTML=strip(c,'microphone time')+`<div class="stage screen" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">${left}${right}</div><div class="tv-foot"><span class="dim">${esc(titles[st.stage])} · Decisions cannot be reselected once spoken</span>${st.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<span class="dim">Choose the next line</span>'}</div>`;
+ $('#tv').innerHTML=strip(c,'microphone time')+`<div class="stage screen s-promo" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">${left}${right}</div><div class="tv-foot"><span class="dim">${esc(titles[st.stage])} · Decisions cannot be reselected once spoken</span>${st.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<span class="dim">Choose the next line</span>'}</div>`;
  persistNight();
 }
 function bell(){
