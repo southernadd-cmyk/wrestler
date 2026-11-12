@@ -3225,10 +3225,10 @@ root.OfficeTerritory={ensure,rank,evolve};
   const third={id:'reversal',owner:'w',title:w.short+' fights for a comeback',actions:[a.rally],backup:[wop.return[1]],window:[.43,.85],requires:['pressure']};
   const fourth={id:'payoff',owner:lead===b?'f':'w',title:(lead===b?f.short:w.short)+' attempts a signature turning point',actions:[payoff],backup:[lead===b?fop.spectacle[1]:wop.spectacle[1],'special_spot','scheduled_nearfall'],window:[.62,.96],requires:['reversal']};
   const final={id:'finish',owner:'either',title:'Deliver the contracted '+(c.finish.startsWith('win')?'victory':'defeat'),actions:['outcome_'+c.finish],backup:['outcome_double','outcome_nc'],window:[.89,1.2],requires:['payoff']};
+  applyFocus([first,second,third,fourth,final],focus,w,f,h);
   const nodes=method==='detailed'?[first,second,third,fourth,final]:
-   method==='live'?[{...first,actions:[a.opening,wop.open[1]]},second,{...fourth,requires:['pressure']}, {...final,requires:['payoff']}]:
+   method==='live'?[{...first,actions:[first.actions[0],wop.open[1]]},second,{...fourth,requires:['pressure']}, {...final,requires:['payoff']}]:
    [first,second,third,fourth,final];
-  applyFocus(nodes,focus,w,f,h);
   const problems=K.validate(nodes);if(problems.length)throw Error('Sheet: '+problems.join(','));
   const signed=chosen!=='pending',dispute=disputed;
   let workerConsent=Math.min(90,Math.max(45,Math.round(74+(w.pro-70)*.24+(w.psych-65)*.1)));
