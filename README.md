@@ -1,4 +1,4 @@
-# The Office — Wrestling Manager v2.8
+# The Office — Wrestling Manager v2.9
 
 A standalone wrestling management game. Run a stable, take the bookings, and sit at ringside for every match.
 
@@ -21,6 +21,19 @@ Before each bout, choose a microphone approach (call them out, rally the fans, p
 ## Systems
 
 16-week regional season; contract negotiation; wrestler recruitment and coaching; pre-match promos with four meaningful approaches and original dialogue; context-sensitive and phase-specific match commentary; heat-driven storylines, rivalries and blow-offs; live text matches with ringside decisions; rival promotions; persistent title pyramid; export and import of career saves.
+
+## Individual match personalities (v2.9)
+
+The v2.7 story/action/outcome graphs are retained, with four lightweight improvements to keep matches recognisable, believable and fun:
+
+- **Individual repertoires:** 14 original wrestlers now have personal in-ring tendencies, distinct from the five available booking plans. A brawler, technical wrestler, spectacle wrestler and storyteller favour different sequences even when assigned the same plan.
+- **Physical effort and size:** expensive moves drain stamina, fatigued wrestlers pause to recover, and unrealistic heavy lifts are blocked. Special spots also respect fatigue and major weight differences.
+- **Road-agent scouting:** a short pre-match note summarises the opponent's tendencies, size differences and a practical tactic. Changing the game plan changes the advice, but does not add menu complexity.
+- **Deterministic saves and contractual finishes:** match result contracts, the familiar Office UI, existing saves and live ringside calls remain intact. Wrestler profiles are keyed by IDs so old saved careers gain these identities without a save migration.
+
+The emphasis is on *different stories with the same simple controls*, not a hidden HP-based competitive fighting game. Design context and scope: [match variety](docs/match-variety.md).
+
+Run `node tests/match-variety.test.cjs` together with the three earlier test files to verify this extension.
 
 ## Interactive microphone segments (v2.8)
 
