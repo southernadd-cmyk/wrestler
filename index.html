@@ -1061,6 +1061,13 @@ const Graph=(function makeGraph(){
  node('finish_counter','{D} slips out of the finisher setup and catches {A} with an elbow!',{reverse:true,zone:'standing',down:null,next:[e('clothesline',3),e('finish_tease',2),e('corner_whip',2)]});
  node('dramatic_sell','{D} rolls towards the ropes, clutching the {part}. {A} watches for the next counter.',{requires:'mat',zone:'standing',down:null,next:[e('finish_tease',3),e('strike_trade',2)]});
 
+
+ node('grapple_trip','{A} shoots for the leg, catches {D} off balance and drives them onto the mat.',{zone:'mat',down:'d',next:[e('target_hold',5),e('mat_hold',3),e('mat_scramble',2)]});
+ node('power_spinebuster','{A} catches {D} coming forward and plants them with a heavy spinebuster!',{zone:'mat',down:'d',crowd:2,next:[e('cover',3),e('mat_hold',2),e('stand_reset',3)]});
+ node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3)]});
+ node('springboard_strike','{A} launches from the ropes and lands a springboard crossbody on {D}!',{requires:'top',zone:'mat',down:'d',crowd:4,next:[e('cover',4),e('stand_reset',2)]});
+ node('springboard_evaded','{D} rolls clear! {A} crashes into the canvas and {D} takes control.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:2,next:[e('mat_hold',2),e('cover',2),e('stand_reset',3)]});
+ node('crowd_pose','{A} stops to play to the crowd. {D} watches, looking for an opening.',{next:[e('cheap_shot',2),e('counter_strike',3),e('probe_strike',3),e('lockup',2)]});
  const ARCS={
   opening:{label:'Opening exchanges',phase:'open',control:'neutral',min:2,max:5,entry:['circle','lockup','probe_strike'],out:[e('chain',5),e('shine',3),e('cutoff',1)]},
   chain:{label:'Chain wrestling',phase:'open',control:'neutral',min:3,max:7,entry:['lockup','waistlock','wristlock'],out:[e('chain',2),e('shine',5),e('cutoff',2)]},
@@ -1096,6 +1103,23 @@ const Graph=(function makeGraph(){
   safe:{inspiredBy:'Conservative territory layout with clean holds and controlled pace',arcs:['chain','shine','cutoff','control','hope','comeback','exchange','finish_setup'],actions:['lockup','clean_break','wristlock','mat_hold','mat_scramble','rope_break','stand_reset']}
  };
  const PHASE_NAMES={open:'Feeling out',shine:'Early advantage',heat:'Sustained control',comeback:'Comeback',stretch:'Finishing stretch'};
+
+ // v2.9: wrestler identity and match temperament, fixed for the whole bout.
+ const STYLE_BEATS={
+  Brawl:{open:['power_spinebuster','cheap_shot','outside_toss','strike_trade'],bias:{power_spinebuster:3.6,cheap_shot:2.1,strike_trade:2.2,corner_strikes:2.1,outside_toss:2.4,floor_brawl:2.5,top_climb:.32,wristlock:.55}},
+  Technical:{open:['grapple_trip','wristlock','waistlock','hammerlock'],bias:{grapple_trip:3.8,wristlock:2.5,arm_wringer:2.5,mat_takedown:2.2,submission_set:2.8,wrist_escape:2.5,waist_escape:2.4,outside_toss:.35,top_climb:.4}},
+  Spectacle:{open:['springboard_rise','rope_run','top_climb','counter_strike'],bias:{springboard_rise:4,top_climb:3.2,rope_run:2.6,duck_rebound:2.2,aerial_attack:2.3,corner_whip:1.8,mat_hold:.5,target_hold:.6}},
+  Story:{open:['crowd_pose','taunt','finish_tease','clean_break'],bias:{crowd_pose:3.8,taunt:2.6,finish_tease:2.3,hope_elbows:1.9,cheap_shot:1.6,near_kickout:1.5,top_climb:.75}}
+ };
+ function matchTexture(M){
+  const gap=Math.abs((M.w.ring+M.w.psych)-(M.f.ring+M.f.psych));
+  if((M.o.feudHeat||0)>=48&&M.r()<.78)return 'grudge';
+  if(gap>=31&&M.r()<.75)return 'underdog';
+  if(M.w.style==='Technical'&&M.f.style==='Technical')return 'chess';
+  if(M.w.style==='Brawl'&&M.f.style==='Brawl')return 'fight';
+  if(M.w.style==='Spectacle'||M.f.style==='Spectacle')return M.r()<.77?'showcase':'fast';
+  return M.r()<.38?'fast':'classic';
+ }
  function init(M){
   const p=Psy.get(M);
   const frac=M.t/Math.max(1,M.len);
@@ -1104,7 +1128,7 @@ const Graph=(function makeGraph(){
   const current=M.t<=0?'opening':frac<.2?'chain':frac<.33?'shine':frac<.62?'control':frac<.77?'comeback':'escalation';
   const g={v:1,arc:current,age:0,node:null,visit:{[current]:1},history:[current],events:[],transitions:0,steps:0,lastTags:[],consecutive:0,target:p.target,
    targets:{w:p.target,f:M.w.style==='Technical'?'shoulder':M.w.style==='Spectacle'?'left knee':M.w.style==='Brawl'?'ribs':'lower back'},
-   damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0,pattern:M.planId};
+   damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0,pattern:M.planId,texture:matchTexture(M)};
   M.graph=g;return g;
  }
  function get(M){return M.graph||init(M)}
@@ -1140,6 +1164,13 @@ const Graph=(function makeGraph(){
    if(id==='comeback'&&M.crowd>65)weight*=1.6;
    if((g.visit[id]||0)>1)weight*=.6;
    if(frac>.53&&['comeback','exchange','escalation'].includes(id))weight*=2.5;
+   const t=g.texture;
+   if(t==='grudge'&&['cutoff','denial','escalation'].includes(id))weight*=1.75;
+   if(t==='chess'&&['chain','exchange','nearfall'].includes(id))weight*=1.8;
+   if(t==='fight'&&['cutoff','control','exchange'].includes(id))weight*=1.65;
+   if(t==='showcase'&&['resurgence','nearfall','escalation'].includes(id))weight*=1.55;
+   if(t==='underdog'&&['hope','denial','comeback'].includes(id))weight*=1.5;
+   if(t==='fast'&&['shine','exchange','comeback'].includes(id))weight*=1.6;
    return [id,weight];
   });
   return pick(M,weights)|| (frac>.75?'escalation':g.arc);
@@ -1237,29 +1268,55 @@ const Graph=(function makeGraph(){
   if(n.crowd)M.crowd=clamp(M.crowd+n.crowd);
   if(id==='near_kickout'||id==='counter_rollup') {M.nearfalls++;M.bonus+=5;g.nearfallCount++;}
   if(id==='aerial_attack'){M.spots++;M.spotHits++;M.bonus+=10;}
+  if(id==='springboard_strike'){M.spots++;M.spotHits++;M.bonus+=5;}
+  if(id==='springboard_evaded'){M.spots++;M.bonus-=2;}
+  if(id==='power_spinebuster'){M.bonus+=2;}
   if(id==='aerial_counter'){M.spots++;M.bonus-=5;}
   if(id==='cover')g.pendingCover=true;
   if(id==='target_hold'||id==='target_strike'||id==='arm_wringer')g.lastTarget=M.t;
   if(id==='near_kickout')g.pendingCover=false;
   g.node=id;g.steps++;g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part});
   if(g.events.length>220)g.events.shift();
+  if(M.t-(g.lastColourAt??-1000)>=100&&M.r()<.33){
+   const reactions={
+    grapple_trip:'Colour: That transition to the leg was perfectly timed.',
+    power_spinebuster:'The ring shook on that impact. {D} felt every bit of it.',
+    springboard_strike:'The timing was perfect! {A} took a chance and the crowd came with them.',
+    springboard_evaded:'A split second too late! That risk changed the whole exchange.',
+    crowd_pose:'Colour: There is confidence, and then there is giving an opponent time to think.',
+    floor_counter:'One mistake on the floor can cost the match. The referee is watching.',
+    submission_roll:'They knew the escape before the hold was even applied. Smart wrestling.'
+   };
+   if(reactions[id]){say(M,fill(M,reactions[id],{A:attacker.short,D:defender.short}),'story');g.lastColourAt=M.t;}
+  }
  }
  function validPool(M){
   const g=get(M),p=Psy.get(M),arc=ARCS[g.arc],current=A[g.node],pattern=PATTERNS[M.planId]||PATTERNS.story;
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
   const entries=arc.entry.map(id=>[id,1]);
   const selected=[...from,...entries];
+  const liveSide=p.control==='f'?M.f:M.w;
+  const style=STYLE_BEATS[liveSide.style]||STYLE_BEATS.Story;
+  if(p.position==='standing'&&['opening','chain','shine','comeback','resurgence','exchange','escalation'].includes(g.arc))
+   for(const id of style.open)selected.push([id,1.6]);
   const weights=new Map();
   for(const [id,w] of selected) if(isValid(M,id)) {
    let n=w;
    if(pattern.actions.includes(id))n*=1.6;
+   n*=style.bias[id]||1;
+   if(g.texture==='grudge'&&['cheap_shot','outside_toss','floor_brawl','counter_strike'].includes(id))n*=1.45;
+   if(g.texture==='chess'&&['wristlock','grapple_trip','mat_takedown','mat_scramble','submission_set'].includes(id))n*=1.5;
+   if(g.texture==='fight'&&['power_spinebuster','strike_trade','corner_strikes','outside_toss'].includes(id))n*=1.5;
+   if(g.texture==='showcase'&&['springboard_rise','top_climb','aerial_attack','aerial_counter'].includes(id))n*=1.5;
+   if(g.texture==='underdog'&&['hope_elbows','hope_cutoff','counter_strike','mat_scramble'].includes(id))n*=1.4;
+   if(g.texture==='fast'&&['duck_rebound','counter_strike','springboard_rise','clothesline'].includes(id))n*=1.3;
    if(g.events.slice(-4).some(x=>x.id===id))n*=.25;
    if(['submission_set','target_hold','target_strike'].includes(id)&&['control','denial','cutoff'].includes(g.arc))n*=2.5;
    if(['top_climb','aerial_attack','outside_toss'].includes(id)&&M.planId==='spots')n*=2;
    if(['counter_strike','wrist_escape','waist_escape','mat_scramble'].includes(id)&&M.planId==='technical')n*=1.8;
    if(['outside_toss','floor_brawl','cheap_shot'].includes(id)&&M.planId==='brawl')n*=1.8;
    if(['cover','submission_set'].includes(id)&&g.arc==='nearfall')n*=2;
-   if(id==='top_climb'&&M.wSt<27)n*=.25;
+   if((id==='top_climb'||id==='springboard_rise')&&(p.control==='f'?M.fSt:M.wSt)<30)n*=.22;
    if(Psy.get(M).focusHits>=3&&Psy.get(M).target==='left knee'&&Psy.get(M).control==='w'&&['rope_run','top_climb','clothesline'].includes(id))n*=.35;
    weights.set(id,(weights.get(id)||0)+n);
   }
@@ -1401,6 +1458,16 @@ function entrances(M){
  if(M.o.blowoff)say(M,'This is the end of the road for these two. Everyone here knows it.','story',{at:0});
  else if((M.o.feudHeat||0)>=35)say(M,'Bad blood here. These two have history.','story',{at:0});
  if(M.o.promo)say(M,M.o.promo.hook,'story',{at:0});
+ const notes={
+  grudge:'The talk is finished. These two have scores to settle, and neither wants to back down.',
+  underdog:'There is a gulf in experience here, but a wrestling match is not won on paper.',
+  chess:'Two technicians, one ring. This could come down to a single counter.',
+  fight:'Neither wrestler is known for taking a backwards step.',
+  showcase:'Keep an eye on the ropes tonight. A big risk could change everything.',
+  fast:'The word from the dressing room is pace. Neither intends to stand still.',
+  classic:'A straightforward contest on paper. The details will decide it.'
+ };
+ if(M.graph?.texture)say(M,notes[M.graph.texture],'story',{at:0});
  if(M.reaction)say(M,M.reaction,'agent',{at:0});
  const prepared=Object.entries(M.prep).filter(([skill,v])=>v>=1.5).sort((a,b)=>b[1]-a[1])[0];
  if(prepared){const lines={ring:`Road agent: ${M.w.short}'s ring drills are evident in the opening exchanges.`,psych:`Road agent: ${M.w.short} looks composed after working on match psychology.`,safe:`Road agent: ${M.w.short} has drilled the safety sequences; they are less likely to go wrong.`,mic:`Road agent: ${M.w.short}'s recent promo work has warmed up this crowd.`};say(M,lines[prepared[0]],'agent',{at:0});}
@@ -1730,7 +1797,7 @@ function summary(M){
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
-  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(whole)+(frac===.25?'¼':frac===.5?'½':frac===.75?'¾':'')+(s===0?'DUD':'');}
 function liveStars(M){return stars(M,false)}
