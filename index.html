@@ -3067,20 +3067,64 @@ root.OfficeTerritory={ensure,rank,evolve};
   Story:{open:['false_handshake','crowd_pose'],pressure:['opponent_study','target_strike'],return:['dramatic_rally','counter_strike'],spectacle:['last_second_counter','finish_tease']}
  };
  const fp=w=>STYLE[w.style]||STYLE.Story;
+ // The career ledger and real character state provide context. Style differences
+ // alone never justify a quarrel; without history, wrestlers can agree naturally.
+ function careerContext(c,w,f){
+  const G=root.OfficeGame,career=G?.S;
+  const past=(career?.history||[]).filter(x=>x.wid===w.id&&x.rid===f.id);
+  const memories=career?(root.OfficeMemory?.view(w.id).entries||[]).filter(x=>x.against===f.id):[];
+  return {matches:past.length,losses:past.filter(x=>(x.finish||'').startsWith('lose')).length,
+   injuredBefore:memories.some(x=>x.kind==='hurt'),
+   grievance:memories.some(x=>['humiliation','rebellion','promise_broken'].includes(x.kind)),
+   remembered:memories[0]?.text||null,
+   heat:Math.max(c.feudHeat||0,career?(G.feud(w.id,f.id)?.heat||0):0),
+   weightGap:(D.PROFILES[f.id]?.kg||85)-(D.PROFILES[w.id]?.kg||85)};
+ }
+ function conflicts(c,w,f,h,game){
+  const issues=[],add=(actor,why,weight)=>issues.push({actor,why,weight});
+  if(c.finish.startsWith('lose')&&w.ego>=73&&w.pro<96&&(h.losses||h.grievance))
+   add('w',w.short+' remembers losing to '+f.short+' and wants a convincing comeback before doing the job again.',3);
+  if(c.finish.startsWith('win')&&f.ego>=78&&f.pro<86&&h.matches&&h.heat>=30)
+   add('f',f.short+' is proud and does not want the rematch to make them look helpless.',2);
+  if(h.injuredBefore&&(game==='spots'||w.flags?.pushThrough))
+   add('w',w.short+' was injured against '+f.short+' and does not want to repeat that dangerous setup.',4);
+  if(game==='spots'&&(w.injury||w.flags?.pushThrough||w.fatigue>=58)&&w.pro>=65)
+   add('w',w.short+' is not fit enough for the ambitious high-risk layout.',4);
+  if(game==='spots'&&w.safe<58&&f.pro>=76)
+   add('f',f.short+' has concerns about taking a dangerous move from '+w.short+' given their safety record.',3);
+  if(game==='spots'&&f.safe<53&&w.pro>=74)
+   add('w',w.short+' does not trust '+f.short+' to execute a dangerous spot safely.',3);
+  return issues.sort((a,b)=>b.weight-a.weight);
+ }
+
  const label=id=>id.replace(/_/g,' ');
- function proposal(w,side){
-  const st=fp(w),p=D.PROFILES[w.id];
-  return {actor:side,name:w.short,style:w.style,opening:st.open[0],
-   pressure:st.pressure[0],rally:st.return[0],payoff:st.spectacle[0],
-   motive:w.ego>=70?'wants to look dominant':w.pro>=78?'wants a clean, safe finish':'wants a memorable reaction',
-   concern:w.fatigue>=40?'is worried about tired legs':w.safe<60?'wants to avoid dangerous high-risk spots':'wants the timing to feel natural',
-   preferred:p?.preferred||[]};
+
+ function proposal(w,side,h){
+  const st=fp(w),p=D.PROFILES[w.id],mine=side==='w';
+  const defeated=mine?h.losses:Math.max(0,h.matches-h.losses);
+  const tired=(w.fatigue||0)>=43||!!w.injury||!!w.flags?.pushThrough;
+  const smaller=mine?h.weightGap>=27:h.weightGap<=-27;
+  const opening=defeated&&w.psych>=55?st.open[1]:st.open[0];
+  let payoff=st.spectacle[0];
+  if((tired||smaller)&&['Brawl','Spectacle'].includes(w.style))payoff=st.return[1];
+  else if(defeated&&w.psych>=75)payoff=st.spectacle[1];
+  const goals=[];
+  if(mine&&h.injuredBefore)goals.push('protect the injury from our last match');
+  if(tired)goals.push('work safely with my current fatigue');
+  if(smaller)goals.push('use counters rather than trying to lift the heavier opponent');
+  if(defeated)goals.push('change the tactic that failed last time');
+  if(mine&&h.grievance)goals.push('restore my credibility after the last result');
+  if(!goals.length)goals.push(w.psych>=78?'build a believable story':w.ego>=75?'make my big moment matter':'give the crowd a good match');
+  return {actor:side,name:w.short,style:w.style,opening,pressure:st.pressure[0],
+   rally:st.return[0],payoff,motive:goals[0],
+   concern:goals.slice(1).join('; ')||'keep the timing natural',preferred:p?.preferred||[]};
  }
  function build(c,w,f,game,method='landmarks',decision=null){
   if(!MODE[method])method='landmarks';
-  const a=proposal(w,'w'),b=proposal(f,'f');
-  const chosen=decision||'compromise';
-  const lead=chosen==='worker'?a:chosen==='opponent'?b:null;
+  const h=careerContext(c,w,f),a=proposal(w,'w',h),b=proposal(f,'f',h);
+  const issues=conflicts(c,w,f,h,game),disputed=issues.length>0;
+  const chosen=decision||(!disputed?'agreed':'pending');
+  const lead=chosen==='worker'?a:chosen==='opponent'?b:chosen==='agreed'?(c.finish.startsWith('win')?a:b):null;
   const main=lead||a,guest=lead?lead===a?b:a:b;
   const wop=fp(w),fop=fp(f);
   const pressure=chosen==='worker'?fop.pressure[1]:b.pressure;
@@ -3096,20 +3140,30 @@ root.OfficeTerritory={ensure,rank,evolve};
    method==='live'?[{...first,actions:[a.opening,wop.open[1]]},second,{...fourth,requires:['pressure']}, {...final,requires:['payoff']}]:
    [first,second,third,fourth,final];
   const problems=K.validate(nodes);if(problems.length)throw Error('Sheet: '+problems.join(','));
-  const signed=!!decision,dispute=a.payoff!==b.payoff;
-  const workerConsent=chosen==='compromise'?75:chosen==='worker'?85:w.pro>=80?62:Math.max(20,72-w.ego*.62);
-  const opponentConsent=chosen==='compromise'?75:chosen==='opponent'?85:f.pro>=80?62:Math.max(20,72-f.ego*.62);
-  const lines=[
-   {actor:w.short,text:'I want to start with '+label(a.opening)+'. Later I want '+label(a.payoff)+'. I '+a.motive+'.'},
-   {actor:f.short,text:'I would rather build around '+label(b.pressure)+' and earn '+label(b.payoff)+'. I '+b.motive+'.'},
-   {actor:'Road agent',text:dispute?'Their preferred turning points are different. The choice determines whose idea carries the match.':'The performers agree on the main beat; settle who leads the execution.'}
-  ];
-  if(signed){
-   lines.push({actor:'Road agent',text:chosen==='worker'?'The stable takes the key beat. The opponent will still get a genuine control passage.':chosen==='opponent'?'The opponent gets the signature turning point. Your wrestler still earns their comeback.':'Both performers give ground and sign the key moments together.'});
-   if(workerConsent<50)lines.push({actor:w.short,text:'I will honour the result. I am not happy with who controls the moments before it.'});
-   if(opponentConsent<50)lines.push({actor:f.short,text:'I will work the finish, but do not expect me to enjoy that layout.'});
+  const signed=chosen!=='pending',dispute=disputed;
+  let workerConsent=Math.min(90,Math.max(45,Math.round(74+(w.pro-70)*.24+(w.psych-65)*.1)));
+  let opponentConsent=Math.min(90,Math.max(45,Math.round(74+(f.pro-70)*.24+(f.psych-65)*.1)));
+  if(dispute&&signed){
+   const importance=Math.max(...issues.map(x=>x.weight));
+   if(chosen==='worker'){workerConsent+=issues.some(x=>x.actor==='w')?importance*3:1;opponentConsent-=issues.some(x=>x.actor==='f')?importance*5:importance*2;}
+   if(chosen==='opponent'){opponentConsent+=issues.some(x=>x.actor==='f')?importance*3:1;workerConsent-=issues.some(x=>x.actor==='w')?importance*5:importance*2;}
+   if(chosen==='compromise'){workerConsent+=3;opponentConsent+=3;}
   }
-  return {v:1,contract:c.id,method,decision:chosen,signed,authority:chosen==='opponent'?'opponent':chosen==='worker'?'worker':'shared',
+  workerConsent=Math.max(20,Math.min(95,workerConsent));
+  opponentConsent=Math.max(20,Math.min(95,opponentConsent));
+
+  const lines=[
+   {actor:w.short,text:'I can open with '+label(a.opening)+' and work towards '+label(a.payoff)+'. I want to '+a.motive+'.'},
+   {actor:f.short,text:'I can take control with '+label(b.pressure)+' and aim for '+label(b.payoff)+'. I want to '+b.motive+'.'}
+  ];
+  if(h.remembered)lines.push({actor:'Road agent',text:'Last time: '+h.remembered});
+  if(dispute){
+   issues.slice(0,2).forEach(x=>lines.push({actor:x.actor==='w'?w.short:f.short,text:x.why}));
+   if(signed)lines.push({actor:'Road agent',text:chosen==='worker'?'The stable leads the disputed beat; the opponent may still object.':chosen==='opponent'?'The opponent’s concern takes priority; your wrestler may be unhappy.':'Both performers alter the disputed spot while keeping the contracted result.'});
+  }else lines.push({actor:'Road agent',text:'The proposed sequences work together. Both wrestlers agree; there is nothing to arbitrate.'});
+  if(signed&&dispute&&workerConsent<55)lines.push({actor:w.short,text:'I will work the agreed finish, but I have reservations.'});
+  if(signed&&dispute&&opponentConsent<55)lines.push({actor:f.short,text:'The finish is fine. I still have concerns about the layout.'});
+  return {v:2,contract:c.id,method,decision:chosen,signed,disputed,issues,history:{priorMatches:h.matches,priorLosses:h.losses,priorInjury:h.injuredBefore,reason:h.remembered},authority:chosen==='opponent'?'opponent':chosen==='worker'?'worker':'shared',
    w:w.id,f:f.id,workerConsent,opponentConsent,premise:w.short+' and '+f.short+' try to earn a '+game+' match without breaking the agreed '+c.finish.replace(/_/g,' ')+' finish.',
    speakers:lines,proposals:{worker:a,opponent:b},nodes:nodes.map(x=>({...x,status:'pending',actual:null,at:null,why:''})),ledger:[],changes:[],finish:c.finish};
  }
@@ -3630,7 +3684,7 @@ function showMeeting(){
  const methods=Object.entries(OfficeSheets.MODE).map(([id,mode])=>
   '<button class="opt" data-sheetmode="'+id+'" aria-pressed="'+(sh.method===id)+'"><b>'+esc(mode.label)+'</b><span>'+esc(mode.desc)+'</span></button>').join('');
  const spoken=sh.speakers.map(x=>'<div class="well" style="margin:0 0 8px"><b>'+esc(x.actor)+'</b><p style="margin:4px 0">'+esc(x.text)+'</p></div>').join('');
- const votes=sh.signed?'<p class="good">The agreed sheet is signed. The booked finish remains fixed.</p>':
+ const votes=sh.signed?'<p class="good">'+(sh.disputed?'A real disagreement was addressed.':'Both performers agree; no decision is necessary.')+' The booked finish remains fixed.</p>':
   '<div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px">'+
   [['compromise','Find a compromise','Share the control passage and comeback between the performers.'],
    ['worker','Back your wrestler','Give your wrestler greater creative control.'],
@@ -3644,7 +3698,7 @@ function showMeeting(){
   '<h3 class="section-h">In their own words</h3>'+spoken,{h:'h3',keep:'meeting'});
  const right=win(sh.signed?'Signed match sheet':'Proposed match sheet',
   '<p>'+esc(sh.premise)+'</p><ol style="padding-left:1.3em;margin:10px 0">'+beats+'</ol>'+
-  '<h3 class="section-h">Your decision</h3>'+votes,{h:'h3',keep:'sheet'});
+  '<h3 class="section-h">'+(sh.disputed?'Resolve their concern':'Agreed match sheet')+'</h3>'+votes,{h:'h3',keep:'sheet'});
  $('#tv').innerHTML=strip(c,'match meeting')+'<div class="stage screen" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">'+left+right+'</div>'+
   '<div class="tv-foot"><span class="dim">'+(sh.signed?'Signed by both wrestlers. They can adapt in the ring.':'Resolve their disagreement before the bell.')+
   '</span>'+(sh.signed?'<button class="btn go" data-tv="promos">Go to microphone time</button>':'<span class="dim">Awaiting your decision</span>')+'</div>';
