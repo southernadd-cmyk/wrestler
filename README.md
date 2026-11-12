@@ -1,4 +1,4 @@
-# The Office — Wrestling Manager v2.9
+# The Office — Wrestling Manager v3.0
 
 A standalone wrestling management game. Run a stable, take the bookings, and sit at ringside for every match.
 
@@ -21,6 +21,41 @@ Before each bout, choose a microphone approach (call them out, rally the fans, p
 ## Systems
 
 16-week regional season; contract negotiation; wrestler recruitment and coaching; pre-match promos with four meaningful approaches and original dialogue; context-sensitive and phase-specific match commentary; heat-driven storylines, rivalries and blow-offs; live text matches with ringside decisions; rival promotions; persistent title pyramid; export and import of career saves.
+
+## The USP — matches are scripted, people are not (v3.0)
+
+The player runs a regional wrestling **stable**, not a whole promotion.
+Promoters decide contractual results; wrestlers remember how those results
+affected them and whether the manager treated them fairly.
+
+A first, playable character-memory system now includes:
+
+- **Meaningful wrestler memories.** Injuries, humiliating clean defeats,
+  protected losses, off-script trouble, standout performances and promises
+  are recorded against the wrestler and opponent, not regenerated randomly.
+  Each wrestler remembers up to 12 significant moments in the existing save.
+- **Rex Titan's first backstage conflict.** Book Rex to lose clean and he
+  will challenge you afterwards through the existing Inbox. Publicly backing
+  him helps trust but risks promoter goodwill; explaining the business works
+  better with professionals; promising a featured match becomes a real
+  two-week contractual obligation.
+- **Persistent consequences.** Manager trust and personal rival feelings
+  carry into future appearances. Low trust reduces willingness to follow
+  the sheet; remembered grievances appear in scouting notes, microphone
+  conversations and ringside commentary.
+- **Promises matter.** The existing booking and calendar logic decides
+  whether a future featured opportunity was actually provided. Kept and
+  broken promises become new memories and alter trust.
+- **Respect for the player's time.** At most one new backstage confrontation
+  per show, a cooldown on routine discussions, and immediate exceptions for
+  major injuries or an intentional double-cross. No new menu or currency.
+
+Old v2.x local saves and mid-match saves are kept; the new state is optional
+and created only as needed. Original data and dialogue, no LLM/network calls.
+Detailed design: [wrestler memory](docs/wrestler-memory.md).
+
+Test with `node tests/memory-flow.test.cjs` alongside the four existing
+regression suites.
 
 ## Individual match personalities (v2.9)
 
