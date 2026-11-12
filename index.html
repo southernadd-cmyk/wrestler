@@ -1079,7 +1079,7 @@ const Graph=(function makeGraph(){
  node('lockup','Collar-and-elbow. {A} drives forward and {D} fights to stay square.',{next:[e('headlock',4),e('wristlock',4),e('corner_push',2),e('waistlock',2),e('clean_break',1)]});
  node('headlock','{A} takes a side headlock, forcing {D} to carry the weight.',{next:[e('shove_ropes',4),e('headlock_takeover',3),e('headlock_escape',3)]});
  node('shove_ropes','{D} pushes {A} off the ropes to break the headlock. {A} rebounds back.',{next:[e('shoulder_tackle',4),e('duck_rebound',3),e('counter_strike',2)]});
- node('headlock_takeover','{A} uses the headlock to take {D} down onto the mat.',{next:[e('mat_hold',4),e('headlock_escape',3),e('mat_scramble',2)],zone:'mat',down:'d'});
+ node('headlock_takeover','{A} uses the headlock to take {D} down onto the mat.',{next:[e('mat_hold',4),e('headlock_escape',3),e('armbar_roll',2),e('mat_scramble',2)],zone:'mat',down:'d'});
  node('headlock_escape','{D} bridges, rolls through the pressure and turns the headlock into a counter!',{requires:'any',reverse:true,next:[e('waistlock',3),e('mat_scramble',2),e('arm_drag',2)]});
  node('wristlock','{A} catches the wrist and turns it over, keeping {D} close.',{next:[e('arm_wringer',4),e('wrist_escape',4),e('hammerlock',2)]});
  node('arm_wringer','{A} twists {D}’s arm and steps across, making the shoulder work.',{focus:1,next:[e('wrist_escape',4),e('arm_drag',3),e('hammerlock',2)]});
@@ -1091,14 +1091,14 @@ const Graph=(function makeGraph(){
  node('mat_takedown','{A} trips {D} cleanly and follows to the mat before {D} can regain a base.',{zone:'mat',down:'d',next:[e('mat_hold',4),e('target_hold',3),e('mat_scramble',2)]});
  node('arm_drag','{A} uses the momentum to snap {D} over with an arm drag.',{zone:'mat',down:'d',next:[e('mat_hold',2),e('stand_reset',4),e('early_cover',1)]});
  node('clean_break','The referee calls for a clean break. {A} releases and steps away.',{next:[e('circle',4),e('cheap_shot',2),e('probe_strike',2)]});
- node('corner_push','{A} drives {D} into a corner; the referee orders the break.',{zone:'corner',next:[e('corner_break',3),e('corner_strikes',3),e('cheap_shot',2)]});
+ node('corner_push','{A} drives {D} into a corner; the referee orders the break.',{zone:'corner',next:[e('corner_break',3),e('corner_strikes',3),e('corner_knee',2),e('cheap_shot',2)]});
  node('corner_break','{A} backs out of the corner. {D} cautiously steps forward.',{requires:'corner',next:[e('circle',3),e('probe_strike',2)]});
  // Striking, Irish whips, ring positioning.
  node('probe_strike','{A} throws a measuring forearm. {D} stays balanced and watches for the next.',{next:[e('strike_trade',4),e('counter_strike',3),e('cheap_shot',1),e('corner_whip',2)]});
  node('strike_trade','{A} lands a forearm. {D} returns one. Both stay on their feet.',{next:[e('strike_trade',2),e('counter_strike',3),e('clothesline',2),e('corner_whip',2),e('outside_toss',1)]});
  node('counter_strike','{D} ducks the next strike and answers with a sharp elbow!',{reverse:true,next:[e('clothesline',3),e('corner_whip',2),e('snap_suplex',2)]});
  node('cheap_shot','{A} catches {D} with a forearm on the break while the referee is looking away.',{crowd:-1,next:[e('corner_strikes',3),e('target_strike',3),e('clothesline',2)]});
- node('corner_strikes','{A} traps {D} against the turnbuckles and drives in two short forearms.',{requires:'corner',zone:'corner',next:[e('corner_whip',4),e('corner_escape',3),e('corner_charge',2)]});
+ node('corner_strikes','{A} traps {D} against the turnbuckles and drives in two short forearms.',{requires:'corner',zone:'corner',next:[e('corner_whip',4),e('corner_escape',3),e('corner_charge',2),e('corner_knee',3)]});
  node('corner_whip','{A} whips {D} across the ring towards the opposite turnbuckles.',{zone:'corner',next:[e('corner_charge',4),e('corner_escape',4),e('corner_strikes',2)]});
  node('corner_charge','{A} charges the corner with a running attack. {D} braces for impact.',{requires:'corner',zone:'corner',next:[e('corner_escape',3),e('clothesline',2),e('snap_suplex',1)]});
  node('corner_escape','{D} slips out of the corner as {A} charges in, leaving {A} to hit the turnbuckles!',{requires:'corner',reverse:true,next:[e('clothesline',3),e('strike_trade',2),e('corner_whip',2)]});
@@ -1108,8 +1108,8 @@ const Graph=(function makeGraph(){
  node('clothesline','{A} catches {D} with a running clothesline. {D} crashes onto the mat.',{zone:'mat',down:'d',next:[e('cover',3),e('mat_hold',2),e('stand_reset',3)]});
  node('snap_suplex','{A} secures the head and arm, lifts {D} and lands a snap suplex.',{zone:'mat',down:'d',next:[e('cover',3),e('target_hold',3),e('stand_reset',2)]});
  // Mat offence and selling must be resolved before another standing exchange.
- node('mat_hold','{A} stays on top, pressing {D} against the canvas to stop an escape.',{requires:'mat',zone:'mat',down:'d',next:[e('target_hold',3),e('mat_scramble',3),e('rope_crawl',2),e('early_cover',1),e('submission_set',1),e('dramatic_sell',1)]});
- node('target_hold','{A} isolates {D}’s {part}, applying steady pressure with the referee watching.',{requires:'mat',zone:'mat',down:'d',focus:2,next:[e('rope_crawl',3),e('mat_scramble',2),e('hope_elbows',3)]});
+ node('mat_hold','{A} stays on top, pressing {D} against the canvas to stop an escape.',{requires:'mat',zone:'mat',down:'d',next:[e('target_hold',3),e('mat_scramble',3),e('rope_crawl',2),e('armbar_roll',2),e('grounded_switch',2),e('early_cover',1),e('submission_set',1),e('dramatic_sell',1)]});
+ node('target_hold','{A} isolates {D}’s {part}, applying steady pressure with the referee watching.',{requires:'mat',zone:'mat',down:'d',focus:2,next:[e('rope_crawl',3),e('mat_scramble',2),e('armbar_roll',3),e('handstand_escape',2),e('hope_elbows',3)]});
  node('target_strike','{A} drives a short strike into {D}’s {part}, then drags {D} away from the ropes.',{focus:2,zone:'mat',down:'d',next:[e('target_hold',3),e('hope_elbows',3),e('rope_crawl',2)]});
  node('rope_crawl','{D} drags themselves towards the bottom rope while {A} keeps the pressure on.',{requires:'mat',zone:'mat',down:'d',next:[e('rope_break',4),e('hope_elbows',2)]});
  node('rope_break','{D} catches the bottom rope. The referee orders {A} to break the hold, and {A} releases.',{requires:'mat',zone:'standing',down:null,next:[e('stand_reset',4),e('cheap_shot',1)]});
@@ -1118,7 +1118,7 @@ const Graph=(function makeGraph(){
  node('hope_cutoff','{A} intercepts the escape with a knee to {D}’s {part}; the comeback is stopped.',{focus:1,zone:'mat',down:'d',next:[e('target_hold',3),e('mat_hold',2),e('stand_reset',2)]});
  node('stand_reset','{D} rolls clear and uses the ropes to rise. {A} gives ground to avoid a counter.',{requires:'mat',zone:'standing',down:null,next:[e('lockup',2),e('strike_trade',3),e('corner_whip',2),e('rope_run',2)]});
  // High-risk branches include genuine preparation, payoff or failure.
- node('top_climb','{A} drops {D} with a strike, then climbs the turnbuckles, checking their footing.',{zone:'top',down:'d',next:[e('aerial_attack',5),e('aerial_counter',3)]});
+ node('top_climb','{A} drops {D} with a strike, then climbs the turnbuckles, checking their footing.',{zone:'top',down:'d',next:[e('aerial_attack',5),e('aerial_counter',3),e('missile_dropkick',3),e('high_crossbody',3),e('top_rope_hesitation',1)]});
  node('aerial_attack','{A} launches from the turnbuckle and connects with a diving elbow!',{requires:'top',zone:'mat',down:'d',crowd:5,next:[e('cover',5),e('stand_reset',2)]});
  node('aerial_counter','{D} rolls out of the way! {A} crashes onto the canvas and loses the advantage.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:3,next:[e('cover',2),e('mat_hold',2),e('stand_reset',3)]});
  // Ringside branches must return inside before a pin or submission.
@@ -1143,23 +1143,61 @@ const Graph=(function makeGraph(){
 
  node('grapple_trip','{A} shoots for the leg, catches {D} off balance and drives them onto the mat.',{cost:1.1,zone:'mat',down:'d',next:[e('target_hold',5),e('mat_hold',3),e('mat_scramble',2)]});
  node('power_spinebuster','{A} catches {D} coming forward and plants them with a heavy spinebuster!',{cost:3.5,lift:30,zone:'mat',down:'d',crowd:2,next:[e('cover',3),e('mat_hold',2),e('stand_reset',3)]});
- node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{cost:1.8,zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3)]});
+ node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{cost:1.8,zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3),e('missile_dropkick',2),e('top_rope_hesitation',2)]});
  node('springboard_strike','{A} launches from the ropes and lands a springboard crossbody on {D}!',{cost:3.2,requires:'top',zone:'mat',down:'d',crowd:4,next:[e('cover',4),e('stand_reset',2)]});
  node('springboard_evaded','{D} rolls clear! {A} crashes into the canvas and {D} takes control.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:2,next:[e('mat_hold',2),e('cover',2),e('stand_reset',3)]});
  node('crowd_pose','{A} stops to play to the crowd. {D} watches, looking for an opening.',{cost:-0.7,next:[e('cheap_shot',2),e('counter_strike',3),e('probe_strike',3),e('lockup',2)]});
  node('catch_breath','{A} steps away and catches a breath while {D} regroups.',{cost:-5.5,next:[e('lockup',3),e('probe_strike',3),e('counter_strike',2)]});
+
+ // v3.1 connected action motifs: setup -> vulnerability -> counter -> payoff.
+ // Each original line is conditioned by physical ring position and control.
+ // TECHNICAL: a deliberate limb attack has multiple credible counter-routes.
+ node('collar_snap','{A} snaps {D} into the clinch, searching for a grip rather than forcing a throw.',{next:[e('wristlock',3),e('ankle_pick',2),e('hip_toss',2)]});
+ node('ankle_pick','{A} changes levels and catches {D} by the ankle, dragging them down.',{zone:'mat',down:'d',cost:1.2,next:[e('leg_wrench',4),e('grapevine',2),e('mat_scramble',2)]});
+ node('leg_wrench','{A} folds {D}’s leg under pressure, making every attempt to stand more expensive.',{requires:'mat',zone:'mat',down:'d',focus:1,cost:1.5,next:[e('grapevine',3),e('rope_crawl',2),e('handstand_escape',1),e('mat_scramble',2)]});
+ node('grapevine','{A} hooks both legs to trap {D} and asks the referee to check for a submission.',{requires:'mat',zone:'mat',down:'d',cost:1.5,next:[e('submission_ropes',3),e('mat_scramble',2),e('leveraged_bridge',2)]});
+ node('hip_toss','{A} turns the locked arms into a hip toss that sends {D} to the canvas.',{zone:'mat',down:'d',cost:1.5,next:[e('mat_hold',3),e('early_cover',2),e('leveraged_bridge',2),e('stand_reset',2)]});
+ node('leveraged_bridge','{D} arches out of the hold and reverses the leverage, nearly catching {A} flat!',{requires:'mat',reverse:true,zone:'mat',down:'d',cost:1.2,crowd:2,next:[e('early_cover',2),e('mat_scramble',2),e('stand_reset',3)]});
+ node('armbar_roll','{D} rolls towards the trapped arm, reversing the pressure before {A} can cinch it in.',{requires:'mat',reverse:true,zone:'mat',down:'d',cost:1,next:[e('target_hold',2),e('rope_break',2),e('stand_reset',3)]});
+ node('grounded_switch','{A} shifts their hips to switch the hold without ever letting {D} back to their feet.',{requires:'mat',zone:'mat',down:'d',cost:1.2,next:[e('armbar_roll',2),e('grapevine',2),e('mat_hold',3)]});
+ // POWER/BRAWLING: strikes build real consequences, but no free power lift.
+ node('stiff_forearm','{A} fires a stiff forearm. {D} takes a step back and answers with a glare.',{cost:1.3,next:[e('rolling_elbow',2),e('body_shot',3),e('heavy_slam',1),e('counter_strike',3)]});
+ node('body_shot','{A} drives a short punch into {D}’s ribs, looking to take away the next breath.',{focus:1,cost:1.0,next:[e('rib_knee',2),e('heavy_slam',2),e('gutbuster',2),e('corner_whip',2),e('strike_trade',3)]});
+ node('rolling_elbow','{A} spins through and catches {D} with an elbow that stops the exchange cold.',{cost:2.2,crowd:2,next:[e('short_arm_lariat',2),e('counter_strike',3),e('snap_suplex',2)]});
+ node('short_arm_lariat','{A} pulls {D} back by the wrist and drops them with a short-arm lariat.',{zone:'mat',down:'d',cost:2.6,crowd:2,next:[e('cover',2),e('dramatic_sell',2),e('stand_reset',3)]});
+ node('rib_knee','{A} drops a knee against {D}’s ribs and keeps the pressure on.',{requires:'mat',zone:'mat',down:'d',focus:1,cost:1.5,next:[e('target_hold',3),e('grounded_switch',2),e('mat_scramble',2)]});
+ node('gutbuster','{A} lifts {D} across the knee for a gutbuster, targeting the midsection.',{cost:3.0,lift:22,focus:1,zone:'mat',down:'d',next:[e('rib_knee',3),e('cover',2),e('stand_reset',2)]});
+ node('heavy_slam','{A} controls the waist and slams {D} down with a heavy body slam.',{cost:3.2,lift:28,zone:'mat',down:'d',crowd:2,next:[e('near_kickout',1),e('mat_hold',2),e('stand_reset',3)]});
+ node('corner_knee','{A} pins {D} to the turnbuckles and digs a knee into the body as the referee counts.',{requires:'corner',zone:'corner',focus:1,cost:1.5,next:[e('corner_break',2),e('corner_escape',2),e('corner_whip',2)]});
+ // HIGH-FLYING: a spectacular move needs spatial setup and can be countered.
+ node('springboard_feint','{A} touches the second rope, drawing {D} towards the expected leap.',{cost:1,next:[e('rope_rebound',3),e('duck_rebound',2),e('springboard_rise',2)]});
+ node('rope_rebound','{A} changes direction twice off the ropes. {D} is a step behind.',{cost:1.3,next:[e('running_headscissors',2),e('rebound_counter',3),e('shoulder_tackle',2)]});
+ node('running_headscissors','{A} catches the rushing {D} with headscissors and sends them sprawling.',{zone:'mat',down:'d',cost:2.1,crowd:2,next:[e('stand_reset',3),e('early_cover',2),e('mat_scramble',2)]});
+ node('rebound_counter','{D} reads the next rope run, sidesteps and sends {A} stumbling into open space!',{reverse:true,cost:1.0,next:[e('clothesline',2),e('rope_run',2),e('strike_trade',2)]});
+ node('missile_dropkick','{A} launches from the top rope with a missile dropkick. {D} goes down hard!',{requires:'top',zone:'mat',down:'d',cost:3.8,crowd:4,next:[e('cover',3),e('stand_reset',3)]});
+ node('high_crossbody','{A} dives from the top rope with a crossbody, risking everything on the landing.',{requires:'top',zone:'mat',down:'d',cost:3.9,crowd:3,next:[e('cover',3),e('near_kickout',1),e('stand_reset',3)]});
+ node('top_rope_hesitation','{A} hesitates on the top rope as {D} rolls out of position. The moment has gone.',{requires:'top',zone:'standing',cost:-.8,next:[e('circle',3),e('counter_strike',2)]});
+ node('handstand_escape','{D} kicks up through a handstand and escapes the grip before {A} can trap the arm.',{requires:'mat',reverse:true,zone:'standing',cost:1.7,crowd:2,next:[e('rope_rebound',2),e('circle',3)]});
+ // DRAMA: crowd sympathy and expectation change how a tactic lands.
+ node('false_handshake','{A} offers a handshake, but keeps one eye on the referee and the next opening.',{next:[e('clean_break',2),e('cheap_shot',3),e('opponent_study',2)]});
+ node('opponent_study','{A} waits for {D} to show the next attack. Neither wants to reveal their plan.',{cost:-.5,next:[e('last_second_counter',2),e('baited_charge',3),e('lockup',2),e('probe_strike',2)]});
+ node('last_second_counter','{D} recognises the setup at the final instant and turns it into a counter!',{reverse:true,crowd:3,next:[e('counter_strike',3),e('grapple_trip',2),e('rope_rebound',2)]});
+ node('dramatic_rally','{A} staggers upright and refuses to stay down. The crowd senses one last rally.',{crowd:2,cost:1.3,next:[e('clothesline',3),e('last_second_counter',2),e('finish_tease',2)]});
+ node('baited_charge','{A} invites the charge and deliberately leaves a gap near the turnbuckle.',{next:[e('counter_strike',3),e('corner_whip',3),e('last_second_counter',2)]});
+ node('quiet_reversal','{D} calmly steps around the attack and takes control before anyone sees it coming.',{reverse:true,cost:.8,next:[e('wristlock',2),e('counter_strike',2),e('opponent_study',2)]});
+
  const ARCS={
-  opening:{label:'Opening exchanges',phase:'open',control:'neutral',min:2,max:5,entry:['circle','lockup','probe_strike'],out:[e('chain',5),e('shine',3),e('cutoff',1)]},
-  chain:{label:'Chain wrestling',phase:'open',control:'neutral',min:3,max:7,entry:['lockup','waistlock','wristlock'],out:[e('chain',2),e('shine',5),e('cutoff',2)]},
+  opening:{label:'Opening exchanges',phase:'open',control:'neutral',min:2,max:5,entry:['circle','lockup','probe_strike','collar_snap','false_handshake'],out:[e('chain',5),e('shine',3),e('cutoff',1)]},
+  chain:{label:'Chain wrestling',phase:'open',control:'neutral',min:3,max:7,entry:['lockup','waistlock','wristlock','ankle_pick','hip_toss'],out:[e('chain',2),e('shine',5),e('cutoff',2)]},
   shine:{label:'Early advantage',phase:'shine',control:'w',min:4,max:9,entry:['arm_drag','clothesline','rope_run','wristlock'],out:[e('shine',2),e('cutoff',7),e('exchange',1)]},
-  cutoff:{label:'A sudden cut-off',phase:'heat',control:'f',min:2,max:4,entry:['cheap_shot','counter_strike','corner_whip'],out:[e('control',6),e('hope',2)]},
-  control:{label:'Sustained pressure',phase:'heat',control:'f',min:5,max:11,entry:['target_strike','mat_hold','corner_strikes','snap_suplex'],out:[e('control',2),e('hope',5),e('exchange',1)]},
+  cutoff:{label:'A sudden cut-off',phase:'heat',control:'f',min:2,max:4,entry:['cheap_shot','counter_strike','corner_whip','stiff_forearm'],out:[e('control',6),e('hope',2)]},
+  control:{label:'Sustained pressure',phase:'heat',control:'f',min:5,max:11,entry:['target_strike','mat_hold','corner_strikes','snap_suplex','body_shot','gutbuster','heavy_slam'],out:[e('control',2),e('hope',5),e('exchange',1)]},
   hope:{label:'A hope spot',phase:'heat',control:'f',min:2,max:4,entry:['hope_elbows','mat_scramble','counter_strike'],out:[e('denial',6),e('comeback',3)]},
   denial:{label:'The comeback is cut off',phase:'heat',control:'f',min:3,max:6,entry:['hope_cutoff','mat_hold','target_strike'],out:[e('control',4),e('comeback',4)]},
-  comeback:{label:'The comeback',phase:'comeback',control:'w',min:4,max:9,entry:['counter_strike','clothesline','rope_run','snap_suplex'],out:[e('resurgence',4),e('exchange',5),e('cutoff',1)]},
+  comeback:{label:'The comeback',phase:'comeback',control:'w',min:4,max:9,entry:['counter_strike','clothesline','rope_run','snap_suplex','dramatic_rally','rope_rebound'],out:[e('resurgence',4),e('exchange',5),e('cutoff',1)]},
   resurgence:{label:'The crowd rises',phase:'comeback',control:'w',min:2,max:5,entry:['clothesline','snap_suplex','corner_whip','top_climb'],out:[e('exchange',7),e('cutoff',2)]},
-  exchange:{label:'Back-and-forth',phase:'stretch',control:'neutral',min:4,max:8,entry:['counter_strike','strike_trade','finish_tease','waistlock'],out:[e('nearfall',3),e('escalation',4),e('control',1)]},
-  nearfall:{label:'Near falls',phase:'stretch',control:'neutral',min:2,max:5,entry:['snap_suplex','cover','submission_set','counter_rollup'],out:[e('exchange',3),e('escalation',5),e('nearfall',1)]},
+  exchange:{label:'Back-and-forth',phase:'stretch',control:'neutral',min:4,max:8,entry:['counter_strike','strike_trade','finish_tease','waistlock','last_second_counter','quiet_reversal','baited_charge'],out:[e('nearfall',3),e('escalation',4),e('control',1)]},
+  nearfall:{label:'Near falls',phase:'stretch',control:'neutral',min:2,max:5,entry:['snap_suplex','cover','submission_set','counter_rollup','high_crossbody','short_arm_lariat'],out:[e('exchange',3),e('escalation',5),e('nearfall',1)]},
   escalation:{label:'Finishing stretch',phase:'stretch',control:'neutral',min:4,max:8,entry:['finish_tease','corner_whip','top_climb','counter_strike'],out:[e('nearfall',3),e('exchange',2),e('finish_setup',4)]},
   finish_setup:{label:'Final sequence',phase:'stretch',control:'neutral',min:2,max:8,entry:['finish_tease','counter_strike','clothesline','snap_suplex'],out:[e('finish_setup',4),e('escalation',1)]}
  };
@@ -1186,10 +1224,10 @@ const Graph=(function makeGraph(){
 
  // v2.9: wrestler identity and match temperament, fixed for the whole bout.
  const STYLE_BEATS={
-  Brawl:{open:['power_spinebuster','cheap_shot','outside_toss','strike_trade'],bias:{power_spinebuster:3.6,cheap_shot:2.1,strike_trade:2.2,corner_strikes:2.1,outside_toss:2.4,floor_brawl:2.5,top_climb:.32,wristlock:.55}},
-  Technical:{open:['grapple_trip','wristlock','waistlock','hammerlock'],bias:{grapple_trip:3.8,wristlock:2.5,arm_wringer:2.5,mat_takedown:2.2,submission_set:2.8,wrist_escape:2.5,waist_escape:2.4,outside_toss:.35,top_climb:.4}},
-  Spectacle:{open:['springboard_rise','rope_run','top_climb','counter_strike'],bias:{springboard_rise:4,top_climb:3.2,rope_run:2.6,duck_rebound:2.2,aerial_attack:2.3,corner_whip:1.8,mat_hold:.5,target_hold:.6}},
-  Story:{open:['crowd_pose','taunt','finish_tease','clean_break'],bias:{crowd_pose:3.8,taunt:2.6,finish_tease:2.3,hope_elbows:1.9,cheap_shot:1.6,near_kickout:1.5,top_climb:.75}}
+  Brawl:{open:['stiff_forearm','power_spinebuster','cheap_shot','outside_toss','strike_trade'],bias:{power_spinebuster:3.6,cheap_shot:2.1,strike_trade:2.2,corner_strikes:2.1,outside_toss:2.4,floor_brawl:2.5,top_climb:.32,wristlock:.55}},
+  Technical:{open:['collar_snap','ankle_pick','grapple_trip','wristlock','waistlock','hammerlock'],bias:{grapple_trip:3.8,wristlock:2.5,arm_wringer:2.5,mat_takedown:2.2,submission_set:2.8,wrist_escape:2.5,waist_escape:2.4,outside_toss:.35,top_climb:.4}},
+  Spectacle:{open:['springboard_feint','rope_rebound','running_headscissors','springboard_rise','rope_run','top_climb','counter_strike'],bias:{springboard_rise:4,top_climb:3.2,rope_run:2.6,duck_rebound:2.2,aerial_attack:2.3,corner_whip:1.8,mat_hold:.5,target_hold:.6}},
+  Story:{open:['false_handshake','opponent_study','baited_charge','crowd_pose','taunt','finish_tease','clean_break'],bias:{crowd_pose:3.8,taunt:2.6,finish_tease:2.3,hope_elbows:1.9,cheap_shot:1.6,near_kickout:1.5,top_climb:.75}}
  };
  const MOVE_COST={top_climb:2.2,aerial_attack:3.6,aerial_counter:2,snap_suplex:2,clothesline:1.6,corner_charge:2.2,corner_strikes:1.5,submission_set:2,target_hold:1.2,finish_tease:1.6,outside_toss:2.1,floor_brawl:1.4,mat_takedown:1,strike_trade:1,rope_run:1.2};
  function fighter(w){return D.PROFILES[w?.id]||{kg:85,trait:'Versatile',preferred:[]}}
@@ -1382,6 +1420,7 @@ const Graph=(function makeGraph(){
   if(id==='near_kickout')g.pendingCover=false;
   g.node=id;g.steps++;g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective});
   if(g.events.length>220)g.events.shift();
+  root.OfficeSheets?.observe(M,id,side,'action');
   if(M.t-(g.lastColourAt??-1000)>=100&&M.r()<.33){
    const reactions={
     grapple_trip:'Colour: That transition to the leg was perfectly timed.',
@@ -1438,6 +1477,7 @@ const Graph=(function makeGraph(){
    if(['cover','submission_set'].includes(id)&&g.arc==='nearfall')n*=2;
    if((id==='top_climb'||id==='springboard_rise')&&(p.control==='f'?M.fSt:M.wSt)<30)n*=.22;
    if(Psy.get(M).focusHits>=3&&Psy.get(M).target==='left knee'&&Psy.get(M).control==='w'&&['rope_run','top_climb','clothesline'].includes(id))n*=.35;
+   if(root.OfficeSheets?.boost)n*=root.OfficeSheets.boost(M,id,p.control==='f'?'f':'w');
    weights.set(id,(weights.get(id)||0)+n);
   }
   return [...weights.entries()];
@@ -1479,13 +1519,15 @@ const Graph=(function makeGraph(){
   g.nearfallCount++;
   g.events.push({id:'scheduled_nearfall',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
   g.node='stand_reset';
+  root.OfficeSheets?.observe(M,'scheduled_nearfall',p.control,'spot');
  }
  function special(M){
   const g=get(M),p=Psy.get(M);
   if(p.position==='outside'){apply(M,'roll_inside');g.floorTicks=0;return}
-  spot(M,false);
-  g.events.push({id:'special_spot',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
+  const prior=M.spots;spot(M,false);const occurred=M.spots>prior;
+  g.events.push({id:occurred?'special_spot':'special_deferred',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
   g.node=null;
+  if(occurred)root.OfficeSheets?.observe(M,'special_spot',p.control,'spot');
  }
  function finishCue(M){
   const g=get(M),outcome=M.outcome==='nc'?'nc':M.outcome==='double'?'double':M.o.finish;
@@ -1494,6 +1536,8 @@ const Graph=(function makeGraph(){
   if(outcome==='nc'&&!M.injury)throw Error('A no-contest medical stoppage requires a recorded injury.');
   g.outcome={id:outcome,winner:def.who,method:def.method,reason:def.legal,booked:M.o.finish};
   g.events.push({id:'outcome_'+outcome,t:M.t,arc:g.arc,control:Psy.get(M).control,position:Psy.get(M).position});
+  root.OfficeSheets?.observe(M,'outcome_'+outcome,'either','outcome');
+  root.OfficeSheets?.finalize(M);
   return g.outcome;
  }
  function validate(){
@@ -1517,11 +1561,13 @@ function create(o){
  let comply=48+w.pro*.32+w.loyal*.12+w.morale*.1-ego*.3;
  if(leash==='script')comply+=ego>=75?2:14;
  if(Number.isFinite(o.memory?.trust))comply+=(o.memory.trust-60)*.24;
+ if(o.sheet?.signed)comply+=(o.sheet.workerConsent-60)*.28;
  if(prep.psych)comply+=Math.min(6,prep.psych*1.3);if(talk==='money')comply+=15;if(talk==='fire')comply-=ego>=75?18:9;if(talk==='calm')comply+=4;
  comply=clamp(Math.round(comply),12,96);
  let crowd=22+w.heat*.27+(o.feudHeat||0)*.28+slot.crowd+p.reach*.06+(talk==='fire'?5:0)+(o.blowoff?8:0)+Math.min(3,(prep.mic||0)*.75)+(o.promo?.crowdShift||0);
  const fit=(p.likes===o.plan.game?6:0)+(D.STYLE_PLAN[w.style]===o.plan.game?3:0)+(D.STYLE_PLAN[f.style]===o.plan.game?1.5:0)+Math.min(4,(prep.ring||0)*.95)+Math.min(3,(prep.psych||0)*.6);
  let riskMul=plan.risk*(talk==='calm'?.7:talk==='fire'?1.2:1)*(o.flags?.pushThrough?1.4:1)*(1-Math.min(.22,(prep.safe||0)*.05));
+ if(o.sheet?.signed)riskMul*=1+Math.max(0,60-o.sheet.opponentConsent)*.002;
  const minutes=o.minutes||slot.mins;
  const stretchStart=.78,nf=1+(minutes>=15?1:0)+(r()<.5?1:0);
  const nearfallAt=Array.from({length:nf},(_,i)=>stretchStart+(.95-stretchStart)*(i+.5)/nf);
@@ -1536,6 +1582,7 @@ function create(o){
   adj:{trust:0,heat:0,morale:0,rep:0,purseMul:1,otherTrust:0,loyal:0},
   queue:[],log:[],done:false,hints:{},reaction:reactions,prep:prep};
  M.story=Psy.make(M);
+ if(o.sheet?.signed)M.sheet=JSON.parse(JSON.stringify(o.sheet));
  Graph.init(M);
  M.crowdStart=M.crowd;M.crowdPeak=M.crowd;
  return M;
@@ -1588,6 +1635,7 @@ function entrances(M){
  else if((M.o.feudHeat||0)>=35)say(M,'Bad blood here. These two have history.','story',{at:0});
  if(M.o.promo)say(M,M.o.promo.hook,'story',{at:0});
  if(M.o.memory?.recall)say(M,'Colour: '+M.o.memory.recall,'story',{at:0});
+ if(M.sheet?.signed)say(M,'Road agent: '+M.sheet.method+' match sheet agreed. The finish is contracted; the action must be earned.','story',{at:0});
  const notes={
   grudge:'The talk is finished. These two have scores to settle, and neither wants to back down.',
   underdog:'There is a gulf in experience here, but a wrestling match is not won on paper.',
@@ -1649,6 +1697,7 @@ function tick(M){
  if(!M.hints.dead&&M.crowd<33&&frac>.3){M.hints.dead=1;say(M,`In your ear: they’re dying out here. Change something.`,'agent');}
  if(!M.hints.tired&&M.wSt<30){M.hints.tired=1;say(M,`In your ear: ${w.short} is blown up. Slow it down or take it home.`,'agent');}
  // incidents
+ root.OfficeSheets?.advance(M);
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
@@ -1809,7 +1858,7 @@ function call(M,id){
  if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`)}
  if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`)}
  if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
- if(id==='big'){spot(M,true,true)}
+ if(id==='big'){const n=M.spots;spot(M,true,true);if(M.spots>n)root.OfficeSheets?.observe(M,'special_spot','w','spot')}
  if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back on the sheet.`)}
  if(id==='home'){const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
   M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
@@ -1945,7 +1994,7 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,call,canCall,resolve,CALLS,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,scout:Graph.scout,restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
+root.OfficeMatch={create,next,call,canCall,resolve,CALLS,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,scout:Graph.scout,note:(M,line)=>say(M,line,'story'),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* THE OFFICE v2.2 — regional circuit management layer */
@@ -2966,6 +3015,223 @@ root.OfficeTerritory={ensure,rank,evolve};
  root.OfficeMemory={view,context,trust,rival,remember};
 })(typeof window!=='undefined'?window:globalThis);
 
+
+/* THE OFFICE v3.1 — cooperative match planning and causal commitments.
+   Reusable registries and explicit event IDs connect the signed sheet to real moves.
+   The match's physical rules, not the planner, decide which moves can happen. */
+(function installOfficeSheets(root){'use strict';
+ const D=root.OfficeData,actions=root.OfficeMatch.GRAPH.A;
+ const K={
+  registry:{},register(kind,records){
+   if(!Array.isArray(records)||!records.length)throw Error('Graph requires nodes');
+   const map=Object.fromEntries(records.map(x=>[x.id,x]));
+   if(Object.keys(map).length!==records.length)throw Error('Duplicate graph node');
+   for(const node of records)for(const dep of node.requires||[])if(!map[dep])throw Error('Unknown prerequisite '+dep);
+   this.registry[kind]=map;return map;
+  },
+  eligible(node,state){
+   const reasons=[];
+   if(node.requires?.some(id=>state[id]?.status==='pending'))reasons.push('awaiting prior commitment');
+   return {ok:!reasons.length,reasons};
+  },
+  commit(M,event){
+   if(!M.sheet)return null;
+   const log=M.sheet.ledger??(M.sheet.ledger=[]);
+   M.sheet.eventSeq=(M.sheet.eventSeq||0)+1;
+   const record={id:'evt-'+M.sheet.eventSeq,at:M.t,action:event.action,actor:event.actor||null,kind:event.kind||'action',cause:event.cause||null};
+   log.push(record);if(log.length>220)log.shift();return record;
+  },
+  validate(nodes){
+   const by=Object.fromEntries(nodes.map(x=>[x.id,x]));
+   const bad=[];
+   for(const n of nodes){if(!n.id||!n.actions?.length)bad.push('Missing action '+n.id);
+    for(const a of [...n.actions,...(n.backup||[])])if(a!=='finish_cue'&&!actions[a]&&!a.startsWith('outcome_')&&!['special_spot','scheduled_nearfall'].includes(a))bad.push('Unknown action '+a);
+    for(const dep of n.requires||[])if(!by[dep])bad.push('Unknown dependency '+dep);
+   }
+   const visit=(id,stack=[])=>{
+    if(stack.includes(id)){bad.push('Cycle '+id);return}
+    const node=by[id];if(node)for(const dep of node.requires||[])visit(dep,[...stack,id]);
+   };
+   nodes.forEach(n=>visit(n.id));return bad;
+  }
+ };
+ const MODE={
+  detailed:{label:'Detailed layout',desc:'Both performers agree a sequence of specific beats. Highest commitment, less room for improvisation.',weight:13},
+  landmarks:{label:'Key moments',desc:'Agree the essential dramatic beats and call the transitions live. Recommended.',weight:8},
+  live:{label:'Call it in the ring',desc:'Agree the story, one meaningful turning point and the finish; adapt the details to the crowd.',weight:3.3}
+ };
+ const STYLE={
+  Technical:{open:['collar_snap','wristlock'],pressure:['leg_wrench','target_hold'],return:['leveraged_bridge','counter_strike'],spectacle:['submission_set','counter_rollup']},
+  Brawl:{open:['stiff_forearm','strike_trade'],pressure:['body_shot','target_strike'],return:['rolling_elbow','clothesline'],spectacle:['short_arm_lariat','power_spinebuster']},
+  Spectacle:{open:['springboard_feint','rope_run'],pressure:['rope_rebound','corner_whip'],return:['running_headscissors','duck_rebound'],spectacle:['high_crossbody','missile_dropkick']},
+  Story:{open:['false_handshake','crowd_pose'],pressure:['opponent_study','target_strike'],return:['dramatic_rally','counter_strike'],spectacle:['last_second_counter','finish_tease']}
+ };
+ const fp=w=>STYLE[w.style]||STYLE.Story;
+ // The career ledger and real character state provide context. Style differences
+ // alone never justify a quarrel; without history, wrestlers can agree naturally.
+ function careerContext(c,w,f){
+  const G=root.OfficeGame,career=G?.S;
+  const past=(career?.history||[]).filter(x=>x.wid===w.id&&x.rid===f.id);
+  const memories=career?(root.OfficeMemory?.view(w.id).entries||[]).filter(x=>x.against===f.id):[];
+  return {matches:past.length,losses:past.filter(x=>(x.finish||'').startsWith('lose')).length,
+   injuredBefore:memories.some(x=>x.kind==='hurt'),
+   grievance:memories.some(x=>['humiliation','rebellion','promise_broken'].includes(x.kind)),
+   remembered:memories[0]?.text||null,
+   heat:Math.max(c.feudHeat||0,career?(G.feud(w.id,f.id)?.heat||0):0),
+   weightGap:(D.PROFILES[f.id]?.kg||85)-(D.PROFILES[w.id]?.kg||85)};
+ }
+ function conflicts(c,w,f,h,game,a,b){
+  const issues=[],add=(actor,why,weight,safety=false)=>issues.push({actor,why,weight,safety});
+  const risky=id=>['high_crossbody','missile_dropkick','springboard_strike','aerial_attack','power_spinebuster','heavy_slam','gutbuster'].includes(id);
+  if(c.finish.startsWith('lose')&&w.ego>=73&&w.pro<96&&(h.losses||h.grievance))
+   add('w',w.short+' remembers losing to '+f.short+' and wants a convincing comeback before doing the job again.',3);
+  if(c.finish.startsWith('win')&&f.ego>=78&&f.pro<86&&h.matches&&h.heat>=30)
+   add('f',f.short+' is proud and does not want the rematch to make them look helpless.',2);
+  if(h.injuredBefore&&(game==='spots'||w.flags?.pushThrough))
+   add('w',w.short+' was injured against '+f.short+' and does not want to repeat that dangerous setup.',4,true);
+  if(game==='spots'&&(w.injury||w.flags?.pushThrough||w.fatigue>=58)&&w.pro>=65)
+   add('w',w.short+' is not fit enough for the ambitious high-risk layout.',4,true);
+  if(game==='spots'&&risky(a.payoff)&&w.safe<58&&f.pro>=76)
+   add('f',f.short+' has concerns about taking a dangerous move from '+w.short+' given their safety record.',3,true);
+  if(game==='spots'&&risky(b.payoff)&&f.safe<53&&w.pro>=74)
+   add('w',w.short+' does not trust '+f.short+' to execute a dangerous spot safely.',3,true);
+  return issues.sort((a,b)=>b.weight-a.weight);
+ }
+
+ const label=id=>id.replace(/_/g,' ');
+
+ function proposal(w,side,h){
+  const st=fp(w),p=D.PROFILES[w.id],mine=side==='w';
+  const defeated=mine?h.losses:Math.max(0,h.matches-h.losses);
+  const tired=(w.fatigue||0)>=43||!!w.injury||!!w.flags?.pushThrough;
+  const smaller=mine?h.weightGap>=27:h.weightGap<=-27;
+  const opening=defeated&&w.psych>=55?st.open[1]:st.open[0];
+  let payoff=st.spectacle[0];
+  if((tired||smaller)&&['Brawl','Spectacle'].includes(w.style))payoff=st.return[1];
+  else if(defeated&&w.psych>=75)payoff=st.spectacle[1];
+  const goals=[];
+  if(mine&&h.injuredBefore)goals.push('protect the injury from our last match');
+  if(tired)goals.push('work safely with my current fatigue');
+  if(smaller)goals.push('use counters rather than trying to lift the heavier opponent');
+  if(defeated)goals.push('change the tactic that failed last time');
+  if(mine&&h.grievance)goals.push('restore my credibility after the last result');
+  if(!goals.length)goals.push(w.psych>=78?'build a believable story':w.ego>=75?'make my big moment matter':'give the crowd a good match');
+  return {actor:side,name:w.short,style:w.style,opening,pressure:st.pressure[0],
+   rally:st.return[0],payoff,motive:goals[0],
+   concern:goals.slice(1).join('; ')||'keep the timing natural',preferred:p?.preferred||[]};
+ }
+ function build(c,w,f,game,method='landmarks',decision=null){
+  if(!MODE[method])method='landmarks';
+  const h=careerContext(c,w,f),a=proposal(w,'w',h),b=proposal(f,'f',h);
+  const issues=conflicts(c,w,f,h,game,a,b),disputed=issues.length>0;
+  const chosen=decision||(!disputed?'agreed':'pending');
+  const lead=chosen==='worker'?a:chosen==='opponent'?b:chosen==='agreed'?(c.finish.startsWith('win')?a:b):null;
+  const main=lead||a,guest=lead?lead===a?b:a:b;
+  const wop=fp(w),fop=fp(f);
+  const pressure=chosen==='worker'?fop.pressure[1]:b.pressure;
+  const safetyRevision=chosen==='compromise'&&issues.some(x=>x.safety);
+  const payoff=safetyRevision?(lead===b?fop.return[1]:wop.return[1]):lead===b?b.payoff:a.payoff;
+  // Each commitment names an intended performer, a real legal graph event,
+  // an alternative and a causal predecessor. The booked finish is immutable.
+  const first={id:'opening',owner:'w',title:w.short+' establishes the opening',actions:[a.opening],backup:[wop.open[1]],window:[.03,.32],requires:[]};
+  const second={id:'pressure',owner:'f',title:f.short+' takes control',actions:[pressure],backup:[fop.pressure[0],fop.pressure[1]].filter(x=>x!==pressure),window:[.20,.65],requires:['opening']};
+  const third={id:'reversal',owner:'w',title:w.short+' fights for a comeback',actions:[a.rally],backup:[wop.return[1]],window:[.43,.85],requires:['pressure']};
+  const fourth={id:'payoff',owner:lead===b?'f':'w',title:(lead===b?f.short:w.short)+' attempts a signature turning point',actions:[payoff],backup:[lead===b?fop.spectacle[1]:wop.spectacle[1],'special_spot','scheduled_nearfall'],window:[.62,.96],requires:['reversal']};
+  const final={id:'finish',owner:'either',title:'Deliver the contracted '+(c.finish.startsWith('win')?'victory':'defeat'),actions:['outcome_'+c.finish],backup:['outcome_double','outcome_nc'],window:[.89,1.2],requires:['payoff']};
+  const nodes=method==='detailed'?[first,second,third,fourth,final]:
+   method==='live'?[{...first,actions:[a.opening,wop.open[1]]},second,{...fourth,requires:['pressure']}, {...final,requires:['payoff']}]:
+   [first,second,third,fourth,final];
+  const problems=K.validate(nodes);if(problems.length)throw Error('Sheet: '+problems.join(','));
+  const signed=chosen!=='pending',dispute=disputed;
+  let workerConsent=Math.min(90,Math.max(45,Math.round(74+(w.pro-70)*.24+(w.psych-65)*.1)));
+  let opponentConsent=Math.min(90,Math.max(45,Math.round(74+(f.pro-70)*.24+(f.psych-65)*.1)));
+  if(dispute&&signed){
+   const importance=Math.max(...issues.map(x=>x.weight));
+   if(chosen==='worker'){workerConsent+=issues.some(x=>x.actor==='w')?importance*3:1;opponentConsent-=issues.some(x=>x.actor==='f')?importance*5:importance*2;}
+   if(chosen==='opponent'){opponentConsent+=issues.some(x=>x.actor==='f')?importance*3:1;workerConsent-=issues.some(x=>x.actor==='w')?importance*5:importance*2;}
+   if(chosen==='compromise'){workerConsent+=3;opponentConsent+=3;}
+  }
+  workerConsent=Math.max(20,Math.min(95,workerConsent));
+  opponentConsent=Math.max(20,Math.min(95,opponentConsent));
+
+  const lines=[
+   {actor:w.short,text:'I can open with '+label(a.opening)+' and work towards '+label(a.payoff)+'. I want to '+a.motive+'.'},
+   {actor:f.short,text:'I can take control with '+label(b.pressure)+' and aim for '+label(b.payoff)+'. I want to '+b.motive+'.'}
+  ];
+  if(h.remembered)lines.push({actor:'Road agent',text:'Last time: '+h.remembered});
+  if(dispute){
+   issues.slice(0,2).forEach(x=>lines.push({actor:x.actor==='w'?w.short:f.short,text:x.why}));
+   if(signed)lines.push({actor:'Road agent',text:chosen==='worker'?'The stable leads the disputed beat; the opponent may still object.':chosen==='opponent'?'The opponent’s concern takes priority; your wrestler may be unhappy.':'Both performers alter the disputed spot while keeping the contracted result.'});
+  }else lines.push({actor:'Road agent',text:'The proposed sequences work together. Both wrestlers agree; there is nothing to arbitrate.'});
+  if(signed&&dispute&&workerConsent<55)lines.push({actor:w.short,text:'I will work the agreed finish, but I have reservations.'});
+  if(signed&&dispute&&opponentConsent<55)lines.push({actor:f.short,text:'The finish is fine. I still have concerns about the layout.'});
+  return {v:2,contract:c.id,method,decision:chosen,signed,disputed,issues,history:{priorMatches:h.matches,priorLosses:h.losses,priorInjury:h.injuredBefore,reason:h.remembered},authority:chosen==='opponent'?'opponent':chosen==='worker'?'worker':'shared',
+   w:w.id,f:f.id,workerConsent,opponentConsent,premise:w.short+' and '+f.short+' try to earn a '+game+' match without breaking the agreed '+c.finish.replace(/_/g,' ')+' finish.',
+   speakers:lines,proposals:{worker:a,opponent:b},nodes:nodes.map(x=>({...x,status:'pending',actual:null,at:null,why:''})),ledger:[],changes:[],finish:c.finish};
+ }
+ function current(M){return M.sheet?.signed?M.sheet:null}
+ function eligibleBeat(M,b){
+  if(b.status!=='pending')return false;
+  const s=current(M);if(!s)return false;
+  const map=Object.fromEntries(s.nodes.map(n=>[n.id,n]));
+  return K.eligible(b,map).ok;
+ }
+ function boost(M,id,actor){
+  const s=current(M);if(!s)return 1;
+  const frac=M.t/Math.max(1,M.len);
+  let mult=1;
+  for(const b of s.nodes){
+   if(!eligibleBeat(M,b)||frac<b.window[0]-.07||frac>b.window[1])continue;
+   if(b.owner!=='either'&&b.owner!==actor)continue;
+   if(b.actions.includes(id))mult=Math.max(mult,MODE[s.method].weight);
+   else if(b.backup?.includes(id))mult=Math.max(mult,MODE[s.method].weight*.52);
+  }
+  return mult;
+ }
+ function observe(M,id,actor,kind='action'){
+  const s=current(M);if(!s)return;
+  const event=K.commit(M,{action:id,actor,kind});
+  const frac=M.t/Math.max(1,M.len);
+  for(const b of s.nodes){
+   if(kind!=='outcome'&&!eligibleBeat(M,b))continue;
+   if(kind==='outcome'&&b.id!=='finish')continue;
+   if(frac<b.window[0]-.10||frac>b.window[1]+.12)continue;
+   if(b.owner!=='either'&&b.owner!==actor&&kind!=='outcome')continue;
+   const exact=b.actions.includes(id),alternate=b.backup?.includes(id);
+   if(!exact&&!alternate)continue;
+   b.status=exact?'achieved':'adapted';b.actual=id;b.at=M.t;
+   b.why=exact?'Agreed move performed.':'A legal alternative replaced the original beat.';
+   event.cause=b.id;
+   if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?'The agreed '+b.title.toLowerCase()+' pays off.':'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'));
+   break;
+  }
+ }
+ function advance(M){
+  const s=current(M);if(!s)return;
+  const frac=M.t/Math.max(1,M.len);
+  for(const b of s.nodes){
+   if(b.status!=='pending'||b.id==='finish'||frac<=b.window[1])continue;
+   b.status='missed';b.why='The opportunity passed before the planned move could be performed.';
+   s.changes.push({beat:b.id,at:M.t,reason:b.why});
+   if(root.OfficeMatch?.note&&s.changes.length<=2)root.OfficeMatch.note(M,'Road agent: '+b.title+' did not happen. The wrestlers will need another route to the finish.');
+  }
+ }
+ function finalize(M){
+  const s=current(M);if(!s)return null;
+  advance(M);
+  for(const b of s.nodes)if(b.status==='pending'){b.status='missed';b.why='The bell came before this planned commitment.'}
+  return report(M);
+ }
+ function report(M){
+  const s=current(M);if(!s)return null;
+  const achieved=s.nodes.filter(b=>b.status==='achieved').length,adapted=s.nodes.filter(b=>b.status==='adapted').length,missed=s.nodes.filter(b=>b.status==='missed').length;
+  return {method:s.method,decision:s.decision,total:s.nodes.length,achieved,adapted,missed,
+   beats:s.nodes.map(b=>({id:b.id,title:b.title,status:b.status,expected:b.actions[0],actual:b.actual,reason:b.why,at:b.at})),
+   eventCount:s.ledger.length};
+ }
+ root.OfficeGraphKernel=K;root.OfficeSheets={MODE,build,observe,boost,advance,finalize,report,proposal};
+})(typeof window!=='undefined'?window:globalThis);
+
 /* THE OFFICE — interface v3
    Management-sim desktop: persistent sidebar, back/forward history, one job per screen,
    sortable data tables, master–detail lists and a full wrestler profile. */
@@ -3377,7 +3643,7 @@ function resumeNight(){
   bell();clearTimeout(night.timer);night.M=restored;night.past=saved.past||[];night.paused=true;
   updateLive();const last=restored.log?.[restored.log.length-1];if(last)showLine(last,true);
   if(restored.decision&&!restored.queue.length)showDecision();
- }else if(saved.stage==='promo')showPromos();else prep();
+ }else if(saved.stage==='promo')showPromos();else if(saved.stage==='meeting')showMeeting();else prep();
  persistNight();return true;
 }
 const SPEED={slow:{line:2600,pause:1100},normal:{line:1500,pause:750},fast:{line:520,pause:260},skip:{line:0,pause:0}};
@@ -3405,9 +3671,42 @@ function prep(){
  const contract=`<div style="font:32px/1 var(--jersey);color:var(--blood)">${esc(finishLine)}</div><p class="dim" style="margin:4px 0 8px">The finish is in the contract.</p><dl class="kv"><dt>Slot</dt><dd>${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes</dd><dt>Purse</dt><dd>${money(c.purse)}</dd>${c.tag?`<dt>Billing</dt><dd>${esc(c.tag)}</dd>`:''}<dt>Opponent</dt><dd>${esc(f.name)}, ${esc(f.style.toLowerCase())}. Finisher: ${esc(f.finisher)}.</dd></dl><p style="margin-top:8px">${esc(fnotes.join(' ')||'A steady, professional opponent.')}</p>${warn.length?`<ul class="warnings">${warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="good">${esc(w.short)} is fit and ready. Morale ${w.morale}.</p>`}<div class="well" style="margin-top:10px"><b>Road agent's scouting</b><p style="margin:5px 0">${esc(road.brief)}</p><p class="dim">${esc(road.advice)}</p>${mind.recall?`<p style="margin-top:6px"><b>What they remember:</b> ${esc(mind.recall)}</p><p class="dim">Trust in your judgement: ${mind.trust}/100.</p>`:''}</div>`;
  const plan=`<div class="prep-context"><b>${esc(w.short)} v ${esc(f.short)}</b><span>${esc(finishLine)} · ${esc(D.SLOTS[c.slot].name)} · ${c.minutes} minutes</span></div><div class="planset"><fieldset class="decide"><legend>What is the match built on?</legend><div class="opts plan-choices" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${opts('game',D.PLANS,P.game)}</div></fieldset><fieldset class="decide"><legend>Who calls it?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset><fieldset class="decide"><legend>Last word at the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset></div>`;
 
- $('#tv').innerHTML=`${strip(c,'tonight')}<div class="stage screen s-prep">${win('Tale of the tape',tape,{area:'tape',h:'h3',cls:'quiet',body:'tight'})}${win('The contract',contract,{area:'contract',h:'h3'})}${win('Game plan',plan,{area:'plan',h:'h3'})}</div><div class="tv-foot"><span class="dim">Next: microphone time. Then three calls from ringside after the bell.</span><button class="btn go" data-tv="promos">Send them out</button></div>`;
+ $('#tv').innerHTML=`${strip(c,'tonight')}<div class="stage screen s-prep">${win('Tale of the tape',tape,{area:'tape',h:'h3',cls:'quiet',body:'tight'})}${win('The contract',contract,{area:'contract',h:'h3'})}${win('Game plan',plan,{area:'plan',h:'h3'})}</div><div class="tv-foot"><span class="dim">Next: the wrestlers agree a match sheet before microphone time.</span><button class="btn go" data-tv="meeting">Meet the wrestlers</button></div>`;
  night.stage='prep';persistNight();
 }
+
+/* ---------- two-wrestler match planning ---------- */
+function showMeeting(){
+ const c=current();if(!c)return endNight();
+ const w=G.W(c.wid),f=G.F(c.rid),P=night.plan;
+ P.method??='landmarks';
+ if(!P.sheet||P.sheet.contract!==c.id||P.sheet.method!==P.method)
+  P.sheet=OfficeSheets.build(c,w,f,P.game,P.method);
+ const sh=P.sheet;
+ const methods=Object.entries(OfficeSheets.MODE).map(([id,mode])=>
+  '<button class="opt" data-sheetmode="'+id+'" aria-pressed="'+(sh.method===id)+'"><b>'+esc(mode.label)+'</b><span>'+esc(mode.desc)+'</span></button>').join('');
+ const spoken=sh.speakers.map(x=>'<div class="well" style="margin:0 0 8px"><b>'+esc(x.actor)+'</b><p style="margin:4px 0">'+esc(x.text)+'</p></div>').join('');
+ const votes=sh.signed?'<p class="good">'+(sh.disputed?'A real disagreement was addressed.':'Both performers agree; no decision is necessary.')+' The booked finish remains fixed.</p>':
+  '<div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px">'+
+  [['compromise',sh.issues.some(x=>x.safety)?'Replace the dangerous spot':'Find a compromise',sh.issues.some(x=>x.safety)?'Agree a lower-risk counter instead of the contested move.':'Share the control passage and comeback between the performers.'],
+   ['worker','Back your wrestler','Give your wrestler greater creative control.'],
+   ['opponent','Back the opponent','Accept the opponent’s preferred key spot.']]
+   .map(([id,title,hint])=>'<button class="choice" data-sheetvote="'+id+'"><b>'+esc(title)+'</b><span>'+esc(hint)+'</span></button>').join('')+'</div>';
+ const beats=sh.nodes.map((b,i)=>'<li style="margin-bottom:9px"><b>'+esc((i+1)+'. '+b.title)+'</b><span class="dim" style="display:block">'+
+  esc(b.actions.map(x=>x.replace(/_/g,' ')).join(' or '))+
+  ' · '+Math.round(b.window[0]*100)+'–'+Math.round(Math.min(1,b.window[1])*100)+'% of match</span></li>').join('');
+ const left=win('The match meeting','<p class="lede">The contract says who wins. The wrestlers decide how they get there.</p>'+
+  '<h3 class="section-h">How much detail?</h3><div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px">'+methods+'</div>'+
+  '<h3 class="section-h">In their own words</h3>'+spoken,{h:'h3',keep:'meeting'});
+ const right=win(sh.signed?'Signed match sheet':'Proposed match sheet',
+  '<p>'+esc(sh.premise)+'</p><ol style="padding-left:1.3em;margin:10px 0">'+beats+'</ol>'+
+  '<h3 class="section-h">'+(sh.disputed?'Resolve their concern':'Agreed match sheet')+'</h3>'+votes,{h:'h3',keep:'sheet'});
+ $('#tv').innerHTML=strip(c,'match meeting')+'<div class="stage screen" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">'+left+right+'</div>'+
+  '<div class="tv-foot"><span class="dim">'+(sh.signed?'Signed by both wrestlers. They can adapt in the ring.':'Resolve their disagreement before the bell.')+
+  '</span>'+(sh.signed?'<button class="btn go" data-tv="promos">Go to microphone time</button>':'<span class="dim">Awaiting your decision</span>')+'</div>';
+ night.stage='meeting';persistNight();
+}
+
 function showPromos(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid);
@@ -3444,7 +3743,7 @@ function bell(){
  const trainingFatigue=w.training==='rest'?0:w.training==='promo'?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
  const preparation={...w.prep};const focus=D.TRAINING[w.training]?.stat;
  if(focus&&!w.injury){preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);}
- night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,slot:c.slot,minutes:c.minutes,finish:c.finish,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:(night.promo?.v===2?OfficeStory.Graph.result(night.promo):night.promo),plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags},memory:OfficeMemory.context(w.id,f.id),seed:Math.floor(Math.random()*2**31)});
+ night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,slot:c.slot,minutes:c.minutes,finish:c.finish,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:(night.promo?.v===2?OfficeStory.Graph.result(night.promo):night.promo),plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags},memory:OfficeMemory.context(w.id,f.id),sheet:P.sheet?.signed?P.sheet:null,seed:Math.floor(Math.random()*2**31)});
  night.past=[];night.paused=false;
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const bench=`<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
@@ -3481,7 +3780,7 @@ function updateLive(){
  $('#lCrowd').textContent=Math.round(M.crowd);$('#lCrowdBar').style.width=M.crowd+'%';
  $('#lMom').style.width=(50+M.mom/2)+'%';
  const y=$('#sY'),t=$('#sT');y.querySelector('i').style.width=M.wSt+'%';t.querySelector('i').style.width=M.fSt+'%';y.classList.toggle('low',M.wSt<30);t.classList.toggle('low',M.fSt<30);
- $('#lSheet').textContent=M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the sheet';$('#lSheet').className=M.offScript?'warnv':'';
+ $('#lSheet').textContent=M.sheet?.signed?M.sheet.nodes.filter(b=>b.status==='achieved'||b.status==='adapted').length+'/'+M.sheet.nodes.length+' beats':M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the sheet';$('#lSheet').className=M.offScript?'warnv':'';
  $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
  document.querySelectorAll('[data-call]').forEach(b=>b.disabled=!Mx.canCall(M,b.dataset.call));
  const pb=document.querySelector('[data-pause]');if(pb){pb.textContent=night.paused?'Resume':'Pause';pb.setAttribute('aria-pressed',night.paused)}
@@ -3496,12 +3795,22 @@ function doCall(id){const M=night.M;if(!Mx.canCall(M,id))return;Mx.call(M,id);pe
 function result(){
  clearTimeout(night.timer);const M=night.M,c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
  const fin={...M.final,log:M.log.map(({t,text,kind,big})=>({t,text,kind,big}))};
- const cons=G.applyResult(c,fin);night.results.push({name:w.name,foe:f.name,stars:fin.stars});
+ const cons=G.applyResult(c,fin);
+ const sheetReport=OfficeSheets.report(M);
+ if(sheetReport){
+  const h=S().history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===S().season&&x.week===S().week);
+  if(h)h.sheet=sheetReport;
+  cons.push({text:'Signed sheet: '+sheetReport.achieved+' performed, '+sheetReport.adapted+' adapted, '+sheetReport.missed+' missed.',tone:sheetReport.missed>2?-1:1});
+  if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed sheet against '+f.short+'.',f.id,-2,0,c.id+':sheet');
+  G.save();
+ }
+ night.results.push({name:w.name,foe:f.name,stars:fin.stars});
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
- const pct=fin.script===null?'Called live':Math.round(fin.script*100)+'%';
+ const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  night.i++;const more=night.i<night.queue.length;
+ const sheetHtml=sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title)+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?b.actual.replace(/_/g,' '):b.reason)+'</span></li>').join('')+'</ol></div>':'';
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the sheet</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${win('What happened',`${facts}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${win('What happened',`${facts}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';persistNight();
 }
 function endNight(){
@@ -3547,9 +3856,12 @@ document.addEventListener('click',e=>{
  if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';startApp('scouting')}return}
  if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
  if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
- if(d.plan){night.plan[d.plan]=d.val;t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
+ if(d.plan){night.plan[d.plan]=d.val;if(d.plan==='game')night.plan.sheet=null;t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
+ if(d.sheetmode){if(!OfficeSheets.MODE[d.sheetmode])return;night.plan.method=d.sheetmode;night.plan.sheet=null;return showMeeting()}
+ if(d.sheetvote){if(!['compromise','worker','opponent'].includes(d.sheetvote))return;const c=current();night.plan.sheet=OfficeSheets.build(c,G.W(c.wid),G.F(c.rid),night.plan.game,night.plan.method||'landmarks',d.sheetvote);return showMeeting()}
  if(d.promochoice){if(night?.stage!=='promo'||night?.promo?.v!==2||night.promo.stage==='done')return;OfficeStory.Graph.choose(night.promo,d.promochoice);persistNight();return showPromos();}
- if(d.tv==='promos')return showPromos();
+ if(d.tv==='meeting')return showMeeting();
+ if(d.tv==='promos'){if(night?.stage==='meeting'&&!night.plan?.sheet?.signed)return;return showPromos();}
  if(d.tv==='bell'){if(night?.promo?.v===2&&night.promo.stage!=='done')return;return bell();}
  if(d.tv==='next'){prep();return}
  if(d.tv==='done')return endNight();
