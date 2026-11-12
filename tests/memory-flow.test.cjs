@@ -89,16 +89,22 @@ assert.equal(G.pending().filter(m=>m.dtype==='office_debrief').length,1);
 assert.ok(O.view('rex').entries.some(e=>e.kind==='hurt'),'injury still remembered');
 // The treatment option cannot spend money the stable does not have.
 x=setup();
+G.answer(x.msg.id,'business');
+G.endWeek();
 const injury={...x.c,id:'injury-first'};
 const finInjury={...x.fin,injury:2,injuryPart:'knee'};
 G.applyResult(injury,finInjury);
 const recovery=G.pending().find(m=>m.dtype==='office_debrief'&&m.args[3]==='injury-first');
-if(recovery){
- G.S.cash=0;
- assert.match(G.answer(recovery.id,'medical'),/need £120/);
- assert.equal(recovery.answer,null);
- assert.match(G.answer(recovery.id,'rest'),/recover/);
-}
+assert.ok(recovery,'urgent injury gets a debrief even within the usual cooldown');
+G.S.cash=0;
+assert.match(G.answer(recovery.id,'medical'),/need £120/);
+assert.equal(recovery.answer,null);
+assert.match(G.answer(recovery.id,'rest'),/recover/);
+// Repeating an ordinary loss in the following week adds history, not spam.
+x=setup();G.answer(x.msg.id,'business');G.endWeek();
+G.applyResult({...x.c,id:'repeat-clean-loss'},x.fin);
+assert.equal(G.pending().filter(m=>m.dtype==='office_debrief').length,0,'ordinary debrief has a cooldown');
+assert.ok(O.view('rex').entries.some(e=>e.text.includes('second decisive defeat')));
 // A real match plays through after a memory has been recorded.
 x=setup();G.answer(x.msg.id,'business');
 const encounter=M.create({...p,w:{...x.w,fatigue:x.w.fatigue},f:x.f,p:x.p,memory:O.context(x.w.id,x.f.id),seed:882});
