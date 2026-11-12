@@ -1561,11 +1561,13 @@ function create(o){
  let comply=48+w.pro*.32+w.loyal*.12+w.morale*.1-ego*.3;
  if(leash==='script')comply+=ego>=75?2:14;
  if(Number.isFinite(o.memory?.trust))comply+=(o.memory.trust-60)*.24;
+ if(o.sheet?.signed)comply+=(o.sheet.workerConsent-60)*.28;
  if(prep.psych)comply+=Math.min(6,prep.psych*1.3);if(talk==='money')comply+=15;if(talk==='fire')comply-=ego>=75?18:9;if(talk==='calm')comply+=4;
  comply=clamp(Math.round(comply),12,96);
  let crowd=22+w.heat*.27+(o.feudHeat||0)*.28+slot.crowd+p.reach*.06+(talk==='fire'?5:0)+(o.blowoff?8:0)+Math.min(3,(prep.mic||0)*.75)+(o.promo?.crowdShift||0);
  const fit=(p.likes===o.plan.game?6:0)+(D.STYLE_PLAN[w.style]===o.plan.game?3:0)+(D.STYLE_PLAN[f.style]===o.plan.game?1.5:0)+Math.min(4,(prep.ring||0)*.95)+Math.min(3,(prep.psych||0)*.6);
  let riskMul=plan.risk*(talk==='calm'?.7:talk==='fire'?1.2:1)*(o.flags?.pushThrough?1.4:1)*(1-Math.min(.22,(prep.safe||0)*.05));
+ if(o.sheet?.signed)riskMul*=1+Math.max(0,60-o.sheet.opponentConsent)*.002;
  const minutes=o.minutes||slot.mins;
  const stretchStart=.78,nf=1+(minutes>=15?1:0)+(r()<.5?1:0);
  const nearfallAt=Array.from({length:nf},(_,i)=>stretchStart+(.95-stretchStart)*(i+.5)/nf);
@@ -3095,14 +3097,20 @@ root.OfficeTerritory={ensure,rank,evolve};
    [first,second,third,fourth,final];
   const problems=K.validate(nodes);if(problems.length)throw Error('Sheet: '+problems.join(','));
   const signed=!!decision,dispute=a.payoff!==b.payoff;
+  const workerConsent=chosen==='compromise'?75:chosen==='worker'?85:w.pro>=80?62:Math.max(20,72-w.ego*.62);
+  const opponentConsent=chosen==='compromise'?75:chosen==='opponent'?85:f.pro>=80?62:Math.max(20,72-f.ego*.62);
   const lines=[
    {actor:w.short,text:'I want to start with '+label(a.opening)+'. Later I want '+label(a.payoff)+'. I '+a.motive+'.'},
    {actor:f.short,text:'I would rather build around '+label(b.pressure)+' and earn '+label(b.payoff)+'. I '+b.motive+'.'},
    {actor:'Road agent',text:dispute?'Their preferred turning points are different. The choice determines whose idea carries the match.':'The performers agree on the main beat; settle who leads the execution.'}
   ];
-  if(signed)lines.push({actor:lead?.name||'Road agent',text:chosen==='worker'?'The stable leads the sheet. The opponent agrees to work towards the finish.':chosen==='opponent'?'The opponent leads the crucial control and payoff. Your wrestler will have to adapt.':'Both compromise: the opponent gets a control passage, your wrestler gets the rally and final highlight.'});
+  if(signed){
+   lines.push({actor:'Road agent',text:chosen==='worker'?'The stable takes the key beat. The opponent will still get a genuine control passage.':chosen==='opponent'?'The opponent gets the signature turning point. Your wrestler still earns their comeback.':'Both performers give ground and sign the key moments together.'});
+   if(workerConsent<50)lines.push({actor:w.short,text:'I will honour the result. I am not happy with who controls the moments before it.'});
+   if(opponentConsent<50)lines.push({actor:f.short,text:'I will work the finish, but do not expect me to enjoy that layout.'});
+  }
   return {v:1,contract:c.id,method,decision:chosen,signed,authority:chosen==='opponent'?'opponent':chosen==='worker'?'worker':'shared',
-   w:w.id,f:f.id,premise:w.short+' and '+f.short+' try to earn a '+game+' match without breaking the agreed '+c.finish.replace(/_/g,' ')+' finish.',
+   w:w.id,f:f.id,workerConsent,opponentConsent,premise:w.short+' and '+f.short+' try to earn a '+game+' match without breaking the agreed '+c.finish.replace(/_/g,' ')+' finish.',
    speakers:lines,proposals:{worker:a,opponent:b},nodes:nodes.map(x=>({...x,status:'pending',actual:null,at:null,why:''})),ledger:[],changes:[],finish:c.finish};
  }
  function current(M){return M.sheet?.signed?M.sheet:null}
