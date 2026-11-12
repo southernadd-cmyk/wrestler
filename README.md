@@ -1,4 +1,4 @@
-# The Office — Wrestling Manager v3.0
+# The Office — Wrestling Manager v3.1
 
 A standalone wrestling management game. Run a stable, take the bookings, and sit at ringside for every match.
 
@@ -21,6 +21,38 @@ Before each bout, choose a microphone approach (call them out, rally the fans, p
 ## Systems
 
 16-week regional season; contract negotiation; wrestler recruitment and coaching; pre-match promos with four meaningful approaches and original dialogue; context-sensitive and phase-specific match commentary; heat-driven storylines, rivalries and blow-offs; live text matches with ringside decisions; rival promotions; persistent title pyramid; export and import of career saves.
+
+## Cooperative match planning and connected graphs (v3.1)
+
+**The match result is contracted. The route to it is negotiated and performed.**
+
+Before microphone time, both wrestlers now propose their preferred tactics and
+turning points. In a dedicated match meeting, the manager chooses how much to
+plan — **detailed layout**, **key moments** or **call it in the ring** — then
+resolves the disagreement by compromise, backing their wrestler or backing
+the opponent. Personality affects how happily each wrestler accepts the sheet.
+
+The agreement is a serialisable, directed graph of specific match commitments,
+with ordering constraints, owner, timing window and physically viable fallback.
+It changes real action selection in the ring; legal moves, stamina, mass
+differences, control and the contracted finish remain authoritative. The
+live commentary notes fulfilled, adapted and missed commitments; post-match
+results show the signed sheet against what actually happened. Reported events
+and the match-sheet summary survive save/resume and career history. An
+unusually disrupted sheet can also become a wrestler memory.
+
+The tactical graph now contains **96 connected action nodes and 297 edges**
+(up from 66 nodes and 192 edges), including limb attacks and escapes, heavyweight
+pressure, aerial setup/counter families and emotional comeback beats.
+
+The first shared kernel layer provides pure prerequisite checks, canonical
+event IDs, validation and causal event tracing. This is a working first slice,
+not yet the full seven-family graph system described in the research plan.
+Our next steps are integrating promos and long-term storylets with the same
+event language and growing authored quality-checked motifs.
+
+See [implemented graph-sheet design](docs/graph-sheet-v3-1.md). Run
+`node tests/graph-sheet.test.cjs` along with the five existing regression suites.
 
 ## The USP — matches are scripted, people are not (v3.0)
 
