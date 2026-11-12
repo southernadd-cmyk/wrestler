@@ -1467,7 +1467,7 @@ function create(o){
  const reactions=talkReaction(w,talk);
  const M={v:1,r,w,f,p,o,plan,planId:o.plan.game,leash,talk,len:minutes*60,minutes,t:0,stage:'entrance',phase:null,
   crowd:clamp(Math.round(crowd),5,88),crowdStart:0,crowdPeak:0,crowdSum:0,lastCrowdBand:null,
-  wSt:clamp(100-w.fatigue*.7+(talk==='calm'?6:0)),fSt:92,mom:0,comply,listen:clamp(comply+(leash==='free'?10:0),15,97),resent:leash==='script'&&ego>=75,
+  wSt:clamp(100-w.fatigue*.7+(talk==='calm'?6:0)),fSt:92,mom:0,comply,listen:clamp(comply+(leash==='free'?10:0),15,97),resent:leash==='script'&&ego>=75&&(o.memory?.trust??60)<78,
   fit,riskMul,mode:null,calls:3,callsUsed:[],ignored:0,offScript:null,scriptChecks:0,scriptHits:0,
   qSum:0,qN:0,bonus:0,spots:0,spotHits:0,botches:0,nearfalls:0,nearfallAt,
   injury:0,injuryPart:null,workingHurt:false,foeHurt:false,stiff:false,shortened:false,
@@ -2793,11 +2793,11 @@ root.OfficeTerritory={ensure,rank,evolve};
  }
  const originalApply=G.applyResult;
  function incident(c,fin,w,f){
-  if(fin.injury)return {kind:'hurt',text:w.short+' remembers the painful landing against '+f.short+' and the choice to protect their health.',shift:-2,rivalShift:-3,prompt:true};
+  if(fin.injury)return {kind:'hurt',text:w.short+' remembers the painful landing against '+f.short+' and the fear of being asked to work hurt again.',shift:-2,rivalShift:-3,prompt:true};
   if(fin.outcome==='double')return {kind:'rebellion',text:w.short+' remembers breaking the agreed finish against '+f.short+'. The promoter has not forgotten either.',shift:8,rivalShift:-8,prompt:true};
   if(fin.refused)return {kind:'discipline',text:w.short+' refused to double-cross '+f.short+' and worked the agreed finish.',shift:3,rivalShift:2,prompt:false};
   if(c.finish==='lose_clean'&&w.ego>=65)return {kind:'humiliation',text:w.short+' remembers being asked to lose decisively to '+f.short+'. The dressing-room conversation is unfinished.',shift:-4,rivalShift:-5,prompt:true};
-  if(c.finish==='lose_protected'&&w.ego>=70)return {kind:'protected',text:w.short+' remembers taking a protected loss to '+f.short+' — and that you negotiated for their reputation.',shift:1,rivalShift:-2,prompt:true};
+  if(c.finish==='lose_protected'&&w.ego>=70)return {kind:'protected',text:w.short+' remembers taking a protected loss to '+f.short+' — and that their reputation was protected.',shift:1,rivalShift:-2,prompt:true};
   if(fin.resent)return {kind:'control',text:w.short+' remembers being denied room to improvise against '+f.short+'.',shift:-3,rivalShift:0,prompt:true};
   if(fin.stars>=4)return {kind:'breakthrough',text:w.short+' remembers the '+fin.stars+'-star performance with '+f.short+'. The audience finally paid attention.',shift:3,rivalShift:3,prompt:true};
   if(fin.ignored>=2)return {kind:'defiance',text:w.short+' remembers ignoring the signals from ringside against '+f.short+'.',shift:-2,rivalShift:0,prompt:true};
