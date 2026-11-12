@@ -1524,10 +1524,10 @@ const Graph=(function makeGraph(){
  function special(M){
   const g=get(M),p=Psy.get(M);
   if(p.position==='outside'){apply(M,'roll_inside');g.floorTicks=0;return}
-  spot(M,false);
-  g.events.push({id:'special_spot',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
+  const prior=M.spots;spot(M,false);const occurred=M.spots>prior;
+  g.events.push({id:occurred?'special_spot':'special_deferred',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
   g.node=null;
-  root.OfficeSheets?.observe(M,'special_spot',p.control,'spot');
+  if(occurred)root.OfficeSheets?.observe(M,'special_spot',p.control,'spot');
  }
  function finishCue(M){
   const g=get(M),outcome=M.outcome==='nc'?'nc':M.outcome==='double'?'double':M.o.finish;
@@ -1856,7 +1856,7 @@ function call(M,id){
  if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`)}
  if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`)}
  if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
- if(id==='big'){spot(M,true,true);root.OfficeSheets?.observe(M,'special_spot','w','spot')}
+ if(id==='big'){const n=M.spots;spot(M,true,true);if(M.spots>n)root.OfficeSheets?.observe(M,'special_spot','w','spot')}
  if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back on the sheet.`)}
  if(id==='home'){const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
   M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
