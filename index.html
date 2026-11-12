@@ -3080,20 +3080,21 @@ root.OfficeTerritory={ensure,rank,evolve};
    heat:Math.max(c.feudHeat||0,career?(G.feud(w.id,f.id)?.heat||0):0),
    weightGap:(D.PROFILES[f.id]?.kg||85)-(D.PROFILES[w.id]?.kg||85)};
  }
- function conflicts(c,w,f,h,game){
-  const issues=[],add=(actor,why,weight)=>issues.push({actor,why,weight});
+ function conflicts(c,w,f,h,game,a,b){
+  const issues=[],add=(actor,why,weight,safety=false)=>issues.push({actor,why,weight,safety});
+  const risky=id=>['high_crossbody','missile_dropkick','springboard_strike','aerial_attack','power_spinebuster','heavy_slam','gutbuster'].includes(id);
   if(c.finish.startsWith('lose')&&w.ego>=73&&w.pro<96&&(h.losses||h.grievance))
    add('w',w.short+' remembers losing to '+f.short+' and wants a convincing comeback before doing the job again.',3);
   if(c.finish.startsWith('win')&&f.ego>=78&&f.pro<86&&h.matches&&h.heat>=30)
    add('f',f.short+' is proud and does not want the rematch to make them look helpless.',2);
   if(h.injuredBefore&&(game==='spots'||w.flags?.pushThrough))
-   add('w',w.short+' was injured against '+f.short+' and does not want to repeat that dangerous setup.',4);
+   add('w',w.short+' was injured against '+f.short+' and does not want to repeat that dangerous setup.',4,true);
   if(game==='spots'&&(w.injury||w.flags?.pushThrough||w.fatigue>=58)&&w.pro>=65)
-   add('w',w.short+' is not fit enough for the ambitious high-risk layout.',4);
-  if(game==='spots'&&w.safe<58&&f.pro>=76)
-   add('f',f.short+' has concerns about taking a dangerous move from '+w.short+' given their safety record.',3);
-  if(game==='spots'&&f.safe<53&&w.pro>=74)
-   add('w',w.short+' does not trust '+f.short+' to execute a dangerous spot safely.',3);
+   add('w',w.short+' is not fit enough for the ambitious high-risk layout.',4,true);
+  if(game==='spots'&&risky(a.payoff)&&w.safe<58&&f.pro>=76)
+   add('f',f.short+' has concerns about taking a dangerous move from '+w.short+' given their safety record.',3,true);
+  if(game==='spots'&&risky(b.payoff)&&f.safe<53&&w.pro>=74)
+   add('w',w.short+' does not trust '+f.short+' to execute a dangerous spot safely.',3,true);
   return issues.sort((a,b)=>b.weight-a.weight);
  }
 
@@ -3122,13 +3123,14 @@ root.OfficeTerritory={ensure,rank,evolve};
  function build(c,w,f,game,method='landmarks',decision=null){
   if(!MODE[method])method='landmarks';
   const h=careerContext(c,w,f),a=proposal(w,'w',h),b=proposal(f,'f',h);
-  const issues=conflicts(c,w,f,h,game),disputed=issues.length>0;
+  const issues=conflicts(c,w,f,h,game,a,b),disputed=issues.length>0;
   const chosen=decision||(!disputed?'agreed':'pending');
   const lead=chosen==='worker'?a:chosen==='opponent'?b:chosen==='agreed'?(c.finish.startsWith('win')?a:b):null;
   const main=lead||a,guest=lead?lead===a?b:a:b;
   const wop=fp(w),fop=fp(f);
   const pressure=chosen==='worker'?fop.pressure[1]:b.pressure;
-  const payoff=lead===b?b.payoff:a.payoff;
+  const safetyRevision=chosen==='compromise'&&issues.some(x=>x.safety);
+  const payoff=safetyRevision?(lead===b?fop.return[1]:wop.return[1]):lead===b?b.payoff:a.payoff;
   // Each commitment names an intended performer, a real legal graph event,
   // an alternative and a causal predecessor. The booked finish is immutable.
   const first={id:'opening',owner:'w',title:w.short+' establishes the opening',actions:[a.opening],backup:[wop.open[1]],window:[.03,.32],requires:[]};
@@ -3686,7 +3688,7 @@ function showMeeting(){
  const spoken=sh.speakers.map(x=>'<div class="well" style="margin:0 0 8px"><b>'+esc(x.actor)+'</b><p style="margin:4px 0">'+esc(x.text)+'</p></div>').join('');
  const votes=sh.signed?'<p class="good">'+(sh.disputed?'A real disagreement was addressed.':'Both performers agree; no decision is necessary.')+' The booked finish remains fixed.</p>':
   '<div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px">'+
-  [['compromise','Find a compromise','Share the control passage and comeback between the performers.'],
+  [['compromise',sh.issues.some(x=>x.safety)?'Replace the dangerous spot':'Find a compromise',sh.issues.some(x=>x.safety)?'Agree a lower-risk counter instead of the contested move.':'Share the control passage and comeback between the performers.'],
    ['worker','Back your wrestler','Give your wrestler greater creative control.'],
    ['opponent','Back the opponent','Accept the opponent’s preferred key spot.']]
    .map(([id,title,hint])=>'<button class="choice" data-sheetvote="'+id+'"><b>'+esc(title)+'</b><span>'+esc(hint)+'</span></button>').join('')+'</div>';
