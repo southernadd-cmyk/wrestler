@@ -3538,7 +3538,7 @@ function resumeNight(){
   bell();clearTimeout(night.timer);night.M=restored;night.past=saved.past||[];night.paused=true;
   updateLive();const last=restored.log?.[restored.log.length-1];if(last)showLine(last,true);
   if(restored.decision&&!restored.queue.length)showDecision();
- }else if(saved.stage==='promo')showPromos();else prep();
+ }else if(saved.stage==='promo')showPromos();else if(saved.stage==='meeting')showMeeting();else prep();
  persistNight();return true;
 }
 const SPEED={slow:{line:2600,pause:1100},normal:{line:1500,pause:750},fast:{line:520,pause:260},skip:{line:0,pause:0}};
@@ -3566,9 +3566,42 @@ function prep(){
  const contract=`<div style="font:32px/1 var(--jersey);color:var(--blood)">${esc(finishLine)}</div><p class="dim" style="margin:4px 0 8px">The finish is in the contract.</p><dl class="kv"><dt>Slot</dt><dd>${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes</dd><dt>Purse</dt><dd>${money(c.purse)}</dd>${c.tag?`<dt>Billing</dt><dd>${esc(c.tag)}</dd>`:''}<dt>Opponent</dt><dd>${esc(f.name)}, ${esc(f.style.toLowerCase())}. Finisher: ${esc(f.finisher)}.</dd></dl><p style="margin-top:8px">${esc(fnotes.join(' ')||'A steady, professional opponent.')}</p>${warn.length?`<ul class="warnings">${warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="good">${esc(w.short)} is fit and ready. Morale ${w.morale}.</p>`}<div class="well" style="margin-top:10px"><b>Road agent's scouting</b><p style="margin:5px 0">${esc(road.brief)}</p><p class="dim">${esc(road.advice)}</p>${mind.recall?`<p style="margin-top:6px"><b>What they remember:</b> ${esc(mind.recall)}</p><p class="dim">Trust in your judgement: ${mind.trust}/100.</p>`:''}</div>`;
  const plan=`<div class="prep-context"><b>${esc(w.short)} v ${esc(f.short)}</b><span>${esc(finishLine)} · ${esc(D.SLOTS[c.slot].name)} · ${c.minutes} minutes</span></div><div class="planset"><fieldset class="decide"><legend>What is the match built on?</legend><div class="opts plan-choices" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${opts('game',D.PLANS,P.game)}</div></fieldset><fieldset class="decide"><legend>Who calls it?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset><fieldset class="decide"><legend>Last word at the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset></div>`;
 
- $('#tv').innerHTML=`${strip(c,'tonight')}<div class="stage screen s-prep">${win('Tale of the tape',tape,{area:'tape',h:'h3',cls:'quiet',body:'tight'})}${win('The contract',contract,{area:'contract',h:'h3'})}${win('Game plan',plan,{area:'plan',h:'h3'})}</div><div class="tv-foot"><span class="dim">Next: microphone time. Then three calls from ringside after the bell.</span><button class="btn go" data-tv="promos">Send them out</button></div>`;
+ $('#tv').innerHTML=`${strip(c,'tonight')}<div class="stage screen s-prep">${win('Tale of the tape',tape,{area:'tape',h:'h3',cls:'quiet',body:'tight'})}${win('The contract',contract,{area:'contract',h:'h3'})}${win('Game plan',plan,{area:'plan',h:'h3'})}</div><div class="tv-foot"><span class="dim">Next: the wrestlers agree a match sheet before microphone time.</span><button class="btn go" data-tv="meeting">Meet the wrestlers</button></div>`;
  night.stage='prep';persistNight();
 }
+
+/* ---------- two-wrestler match planning ---------- */
+function showMeeting(){
+ const c=current();if(!c)return endNight();
+ const w=G.W(c.wid),f=G.F(c.rid),P=night.plan;
+ P.method??='landmarks';
+ if(!P.sheet||P.sheet.contract!==c.id||P.sheet.method!==P.method)
+  P.sheet=OfficeSheets.build(c,w,f,P.game,P.method);
+ const sh=P.sheet;
+ const methods=Object.entries(OfficeSheets.MODE).map(([id,mode])=>
+  '<button class="opt" data-sheetmode="'+id+'" aria-pressed="'+(sh.method===id)+'"><b>'+esc(mode.label)+'</b><span>'+esc(mode.desc)+'</span></button>').join('');
+ const spoken=sh.speakers.map(x=>'<div class="well" style="margin:0 0 8px"><b>'+esc(x.actor)+'</b><p style="margin:4px 0">'+esc(x.text)+'</p></div>').join('');
+ const votes=sh.signed?'<p class="good">The agreed sheet is signed. The booked finish remains fixed.</p>':
+  '<div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px">'+
+  [['compromise','Find a compromise','Share the control passage and comeback between the performers.'],
+   ['worker','Back your wrestler','Give your wrestler greater creative control.'],
+   ['opponent','Back the opponent','Accept the opponent’s preferred key spot.']]
+   .map(([id,title,hint])=>'<button class="choice" data-sheetvote="'+id+'"><b>'+esc(title)+'</b><span>'+esc(hint)+'</span></button>').join('')+'</div>';
+ const beats=sh.nodes.map((b,i)=>'<li style="margin-bottom:9px"><b>'+esc((i+1)+'. '+b.title)+'</b><span class="dim" style="display:block">'+
+  esc(b.actions.map(x=>x.replace(/_/g,' ')).join(' or '))+
+  ' · '+Math.round(b.window[0]*100)+'–'+Math.round(Math.min(1,b.window[1])*100)+'% of match</span></li>').join('');
+ const left=win('The match meeting','<p class="lede">The contract says who wins. The wrestlers decide how they get there.</p>'+
+  '<h3 class="section-h">How much detail?</h3><div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px">'+methods+'</div>'+
+  '<h3 class="section-h">In their own words</h3>'+spoken,{h:'h3',keep:'meeting'});
+ const right=win(sh.signed?'Signed match sheet':'Proposed match sheet',
+  '<p>'+esc(sh.premise)+'</p><ol style="padding-left:1.3em;margin:10px 0">'+beats+'</ol>'+
+  '<h3 class="section-h">Your decision</h3>'+votes,{h:'h3',keep:'sheet'});
+ $('#tv').innerHTML=strip(c,'match meeting')+'<div class="stage screen" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">'+left+right+'</div>'+
+  '<div class="tv-foot"><span class="dim">'+(sh.signed?'Signed by both wrestlers. They can adapt in the ring.':'Resolve their disagreement before the bell.')+
+  '</span>'+(sh.signed?'<button class="btn go" data-tv="promos">Go to microphone time</button>':'<span class="dim">Awaiting your decision</span>')+'</div>';
+ night.stage='meeting';persistNight();
+}
+
 function showPromos(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid);
@@ -3605,7 +3638,7 @@ function bell(){
  const trainingFatigue=w.training==='rest'?0:w.training==='promo'?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
  const preparation={...w.prep};const focus=D.TRAINING[w.training]?.stat;
  if(focus&&!w.injury){preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);}
- night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,slot:c.slot,minutes:c.minutes,finish:c.finish,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:(night.promo?.v===2?OfficeStory.Graph.result(night.promo):night.promo),plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags},memory:OfficeMemory.context(w.id,f.id),seed:Math.floor(Math.random()*2**31)});
+ night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,slot:c.slot,minutes:c.minutes,finish:c.finish,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:(night.promo?.v===2?OfficeStory.Graph.result(night.promo):night.promo),plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags},memory:OfficeMemory.context(w.id,f.id),sheet:P.sheet?.signed?P.sheet:null,seed:Math.floor(Math.random()*2**31)});
  night.past=[];night.paused=false;
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const bench=`<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
@@ -3642,7 +3675,7 @@ function updateLive(){
  $('#lCrowd').textContent=Math.round(M.crowd);$('#lCrowdBar').style.width=M.crowd+'%';
  $('#lMom').style.width=(50+M.mom/2)+'%';
  const y=$('#sY'),t=$('#sT');y.querySelector('i').style.width=M.wSt+'%';t.querySelector('i').style.width=M.fSt+'%';y.classList.toggle('low',M.wSt<30);t.classList.toggle('low',M.fSt<30);
- $('#lSheet').textContent=M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the sheet';$('#lSheet').className=M.offScript?'warnv':'';
+ $('#lSheet').textContent=M.sheet?.signed?M.sheet.nodes.filter(b=>b.status==='achieved'||b.status==='adapted').length+'/'+M.sheet.nodes.length+' beats':M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the sheet';$('#lSheet').className=M.offScript?'warnv':'';
  $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
  document.querySelectorAll('[data-call]').forEach(b=>b.disabled=!Mx.canCall(M,b.dataset.call));
  const pb=document.querySelector('[data-pause]');if(pb){pb.textContent=night.paused?'Resume':'Pause';pb.setAttribute('aria-pressed',night.paused)}
@@ -3657,12 +3690,22 @@ function doCall(id){const M=night.M;if(!Mx.canCall(M,id))return;Mx.call(M,id);pe
 function result(){
  clearTimeout(night.timer);const M=night.M,c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
  const fin={...M.final,log:M.log.map(({t,text,kind,big})=>({t,text,kind,big}))};
- const cons=G.applyResult(c,fin);night.results.push({name:w.name,foe:f.name,stars:fin.stars});
+ const cons=G.applyResult(c,fin);
+ const sheetReport=OfficeSheets.report(M);
+ if(sheetReport){
+  const h=S().history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===S().season&&x.week===S().week);
+  if(h)h.sheet=sheetReport;
+  cons.push({text:'Signed sheet: '+sheetReport.achieved+' performed, '+sheetReport.adapted+' adapted, '+sheetReport.missed+' missed.',tone:sheetReport.missed>2?-1:1});
+  if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed sheet against '+f.short+'.',f.id,-2,0,c.id+':sheet');
+  G.save();
+ }
+ night.results.push({name:w.name,foe:f.name,stars:fin.stars});
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
- const pct=fin.script===null?'Called live':Math.round(fin.script*100)+'%';
+ const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  night.i++;const more=night.i<night.queue.length;
+ const sheetHtml=sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title)+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?b.actual.replace(/_/g,' '):b.reason)+'</span></li>').join('')+'</ol></div>':'';
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the sheet</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${win('What happened',`${facts}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${win('What happened',`${facts}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';persistNight();
 }
 function endNight(){
@@ -3708,9 +3751,12 @@ document.addEventListener('click',e=>{
  if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';startApp('scouting')}return}
  if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
  if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
- if(d.plan){night.plan[d.plan]=d.val;t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
+ if(d.plan){night.plan[d.plan]=d.val;if(d.plan==='game')night.plan.sheet=null;t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
+ if(d.sheetmode){if(!OfficeSheets.MODE[d.sheetmode])return;night.plan.method=d.sheetmode;night.plan.sheet=null;return showMeeting()}
+ if(d.sheetvote){if(!['compromise','worker','opponent'].includes(d.sheetvote))return;const c=current();night.plan.sheet=OfficeSheets.build(c,G.W(c.wid),G.F(c.rid),night.plan.game,night.plan.method||'landmarks',d.sheetvote);return showMeeting()}
  if(d.promochoice){if(night?.stage!=='promo'||night?.promo?.v!==2||night.promo.stage==='done')return;OfficeStory.Graph.choose(night.promo,d.promochoice);persistNight();return showPromos();}
- if(d.tv==='promos')return showPromos();
+ if(d.tv==='meeting')return showMeeting();
+ if(d.tv==='promos'){if(night?.stage==='meeting'&&!night.plan?.sheet?.signed)return;return showPromos();}
  if(d.tv==='bell'){if(night?.promo?.v===2&&night.promo.stage!=='done')return;return bell();}
  if(d.tv==='next'){prep();return}
  if(d.tv==='done')return endNight();
