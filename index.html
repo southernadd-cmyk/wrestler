@@ -3112,7 +3112,7 @@ root.OfficeTerritory={ensure,rank,evolve};
    f.short+' is a '+f.style.toLowerCase()+' wrestler. Build a specific counter to the pressure they favour.',
    'The counter needs good timing and might be anticipated.');
   if(h.losses||h.grievance) add('redemption','Answer the previous result',
-   w.short+' '+(h.losses?'has already lost to '+f.short+'.':'has unfinished business with '+f.short()+'.')+
+   w.short+' '+(h.losses?'has already lost to '+f.short+'.':'has unfinished business with '+f.short+'.')+
    ' Earn a real comeback before the contracted ending.',
    'The emotional payoff depends on an actual counter landing.');
   if(w.style==='Spectacle'||f.style==='Spectacle'||game==='spots')
@@ -3768,30 +3768,60 @@ function showMeeting(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),P=night.plan;
  P.method??='landmarks';
- if(!P.sheet||P.sheet.contract!==c.id||P.sheet.method!==P.method)
-  P.sheet=OfficeSheets.build(c,w,f,P.game,P.method);
- const sh=P.sheet;
+ if(P.focus===undefined)P.focus=P.sheet?.focus||null;
+ if(P.confirmed===undefined)P.confirmed=!!P.sheet?.signed;
+ if(!P.sheet||P.sheet.contract!==c.id||P.sheet.method!==P.method||P.sheet.focus!==(P.focus||'authentic')){
+  P.sheet=OfficeSheets.build(c,w,f,P.game,P.method,null,P.focus||'authentic');
+  P.confirmed=false;
+ }
+ const sh=P.sheet,explore=P.focus===null;
  const methods=Object.entries(OfficeSheets.MODE).map(([id,mode])=>
   '<button class="opt" data-sheetmode="'+id+'" aria-pressed="'+(sh.method===id)+'"><b>'+esc(mode.label)+'</b><span>'+esc(mode.desc)+'</span></button>').join('');
  const spoken=sh.speakers.map(x=>'<div class="well" style="margin:0 0 8px"><b>'+esc(x.actor)+'</b><p style="margin:4px 0">'+esc(x.text)+'</p></div>').join('');
- const votes=sh.signed?'<p class="good">'+(sh.disputed?'A real disagreement was addressed.':'Both performers agree; no decision is necessary.')+' The booked finish remains fixed.</p>':
-  '<div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px">'+
-  [['compromise',sh.issues.some(x=>x.safety)?'Replace the dangerous spot':'Find a compromise',sh.issues.some(x=>x.safety)?'Agree a lower-risk counter instead of the contested move.':'Share the control passage and comeback between the performers.'],
-   ['worker','Back your wrestler','Give your wrestler greater creative control.'],
-   ['opponent','Back the opponent','Accept the opponent’s preferred key spot.']]
-   .map(([id,title,hint])=>'<button class="choice" data-sheetvote="'+id+'"><b>'+esc(title)+'</b><span>'+esc(hint)+'</span></button>').join('')+'</div>';
- const beats=sh.nodes.map((b,i)=>'<li style="margin-bottom:9px"><b>'+esc((i+1)+'. '+b.title)+'</b><span class="dim" style="display:block">'+
-  esc(b.actions.map(x=>x.replace(/_/g,' ')).join(' or '))+
-  ' · '+Math.round(b.window[0]*100)+'–'+Math.round(Math.min(1,b.window[1])*100)+'% of match</span></li>').join('');
- const left=win('The match meeting','<p class="lede">The contract says who wins. The wrestlers decide how they get there.</p>'+
-  '<h3 class="section-h">How much detail?</h3><div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px">'+methods+'</div>'+
-  '<h3 class="section-h">In their own words</h3>'+spoken,{h:'h3',keep:'meeting'});
- const right=win(sh.signed?'Signed match sheet':'Proposed match sheet',
-  '<p>'+esc(sh.premise)+'</p><ol style="padding-left:1.3em;margin:10px 0">'+beats+'</ol>'+
-  '<h3 class="section-h">'+(sh.disputed?'Resolve their concern':'Agreed match sheet')+'</h3>'+votes,{h:'h3',keep:'sheet'});
- $('#tv').innerHTML=strip(c,'match meeting')+'<div class="stage screen" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">'+left+right+'</div>'+
-  '<div class="tv-foot"><span class="dim">'+(sh.signed?'Signed by both wrestlers. They can adapt in the ring.':'Resolve their disagreement before the bell.')+
-  '</span>'+(sh.signed?'<button class="btn go" data-tv="promos">Go to microphone time</button>':'<span class="dim">Awaiting your decision</span>')+'</div>';
+ const offers=OfficeSheets.focusOptions(c,w,f,P.game);
+ const focusCards=offers.map(o=>'<button class="choice" data-sheetfocus="'+esc(o.id)+'" style="margin-bottom:7px"><b>'+esc(o.title)+'</b>'+
+  '<span>'+esc(o.why)+'</span><span style="margin-top:3px"><b>Trade-off:</b> '+esc(o.tradeoff)+'</span></button>').join('');
+ const selected=offers.find(o=>o.id===P.focus);
+ const votes=sh.signed?'':('<div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px">'+
+  [['compromise',sh.issues.some(x=>x.safety)?'Offer a safer counter':'Find common ground',sh.issues.some(x=>x.safety)?'Replace the contested high-risk moment with a safer beat.':'Keep the result, preserve both performers’ key roles.'],
+   ['worker','Back '+w.short,'Prioritise the wrestler’s stated concern. The opponent may object.'],
+   ['opponent','Back '+f.short,'Address the opponent’s stated concern. Your wrestler may resent it.']]
+   .map(([id,title,hint])=>'<button class="choice" data-sheetvote="'+id+'"><b>'+esc(title)+'</b><span>'+esc(hint)+'</span></button>').join('')+'</div>');
+ const beats=sh.nodes.map((b,i)=>{
+  const alt=b.backup?.find(x=>x!==b.actions[0]&&(!x.startsWith('outcome_')));
+  return '<li style="margin-bottom:10px"><b>'+esc((i+1)+'. '+b.title)+'</b>'+
+   '<span class="dim" style="display:block">'+esc(b.actions.map(x=>x.replace(/_/g,' ')).join(' / '))+
+   ' · '+Math.round(b.window[0]*100)+'–'+Math.round(Math.min(1,b.window[1])*100)+'% of match</span>'+
+   (!explore&&sh.signed&&!P.confirmed&&alt&&['pressure','reversal','payoff'].includes(b.id)?
+    '<button class="btn sm" style="margin-top:5px" data-sheetrevise="'+b.id+'">Propose alternative: '+esc(alt.replace(/_/g,' '))+'</button>':'')+
+   '</li>';
+ }).join('');
+ const status=P.confirmed?'<p class="good">Both performers have signed this version. It will be tested against events in the ring.</p>':
+  explore?'<p class="dim">Choose the story this particular pairing should tell. Both workers will react to that proposal.</p>':
+  sh.disputed&&!sh.signed?'<p class="bad">A specific concern needs resolving. Read the wrestlers’ reasons before choosing.</p>':
+  '<p class="dim">You can revise the action beats before signing. No disagreement is required when their interests align.</p>';
+ const left=win('The match meeting','<p class="lede">'+(explore?
+  'Both wrestlers have a preferred approach. What should tonight’s story prove?':
+  'This is what both performers have proposed. You can negotiate the sequence before signing.')+'</p>'+
+  '<h3 class="section-h">Planning detail</h3><div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px">'+methods+'</div>'+
+  '<h3 class="section-h">'+(explore?'Creative objective':'What the wrestlers say')+'</h3>'+(explore?focusCards:spoken),{h:'h3',keep:'meeting'});
+ const right=win(sh.signed?'Match sheet':'Negotiation in progress',
+  (selected?'<p><b>Story:</b> '+esc(selected.title)+'</p><p class="dim">'+esc(selected.tradeoff)+'</p>':'<p>'+esc(sh.premise)+'</p>')+
+  '<ol style="padding-left:1.3em;margin:10px 0">'+beats+'</ol>'+status+
+  (!explore?(sh.disputed&&!sh.signed?
+    '<h3 class="section-h">The objection</h3><p>'+sh.issues.map(x=>esc(x.why)).join('</p><p>')+'</p>'+votes:
+    '<p class="dim">Wrestler cooperation: '+sh.workerConsent+'/100 · Opponent cooperation: '+sh.opponentConsent+'/100. These represent willingness, not guaranteed obedience.</p>')+
+   (sh.revisions?.length?'<h3 class="section-h">Concessions</h3>'+sh.revisions.map(r=>'<p class="dim">'+esc(r.from.replace(/_/g,' '))+' → '+esc(r.to.replace(/_/g,' '))+'</p>').join(''):''):''),
+  {h:'h3',keep:'sheet'});
+ const footer=explore?'Choose a story objective.':
+  P.confirmed?'Match sheet agreed and signed.':
+  !sh.signed?'Resolve the evidence-based objection before signing.':
+  'Review the specific commitments, then get both signatures.';
+ const action=P.confirmed?'<button class="btn go" data-tv="promos">Go to microphone time</button>':
+  !explore&&sh.signed?'<button class="btn go" data-sheetconfirm="yes">Sign this sheet</button>':'<span class="dim">No signature yet</span>';
+ const restart=!explore&&!P.confirmed?'<button class="btn" data-sheetreset="yes">Change story objective</button>':'';
+ $('#tv').innerHTML=strip(c,'match meeting')+'<div class="stage screen s-meeting" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">'+left+right+'</div>'+
+  '<div class="tv-foot"><span class="dim">'+esc(footer)+'</span><div class="row">'+restart+action+'</div></div>';
  night.stage='meeting';persistNight();
 }
 
@@ -3944,12 +3974,17 @@ document.addEventListener('click',e=>{
  if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';startApp('scouting')}return}
  if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
  if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
- if(d.plan){night.plan[d.plan]=d.val;if(d.plan==='game')night.plan.sheet=null;t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
- if(d.sheetmode){if(!OfficeSheets.MODE[d.sheetmode])return;night.plan.method=d.sheetmode;night.plan.sheet=null;return showMeeting()}
- if(d.sheetvote){if(!['compromise','worker','opponent'].includes(d.sheetvote))return;const c=current();night.plan.sheet=OfficeSheets.build(c,G.W(c.wid),G.F(c.rid),night.plan.game,night.plan.method||'landmarks',d.sheetvote);return showMeeting()}
+ if(d.plan){night.plan[d.plan]=d.val;if(d.plan==='game'){night.plan.sheet=null;night.plan.focus=null;night.plan.confirmed=false;}t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
+ if(d.sheetmode){if(!OfficeSheets.MODE[d.sheetmode])return;night.plan.method=d.sheetmode;night.plan.sheet=null;night.plan.confirmed=false;return showMeeting()}
+ if(d.sheetfocus){const c=current(),w=G.W(c.wid),f=G.F(c.rid);if(!OfficeSheets.focusOptions(c,w,f,night.plan.game).some(x=>x.id===d.sheetfocus))return;
+  night.plan.focus=d.sheetfocus;night.plan.sheet=null;night.plan.confirmed=false;return showMeeting()}
+ if(d.sheetreset){night.plan.focus=null;night.plan.sheet=null;night.plan.confirmed=false;return showMeeting()}
+ if(d.sheetvote){if(!['compromise','worker','opponent'].includes(d.sheetvote))return;const c=current();night.plan.sheet=OfficeSheets.build(c,G.W(c.wid),G.F(c.rid),night.plan.game,night.plan.method||'landmarks',d.sheetvote,night.plan.focus||'authentic');night.plan.confirmed=false;return showMeeting()}
+ if(d.sheetrevise){if(!night.plan?.sheet||night.plan.confirmed)return;OfficeSheets.revise(night.plan.sheet,d.sheetrevise);return showMeeting()}
+ if(d.sheetconfirm){if(!night.plan?.sheet?.signed||!night.plan?.focus)return;night.plan.confirmed=true;night.plan.sheet.confirmed=true;return showMeeting()}
  if(d.promochoice){if(night?.stage!=='promo'||night?.promo?.v!==2||night.promo.stage==='done')return;OfficeStory.Graph.choose(night.promo,d.promochoice);persistNight();return showPromos();}
  if(d.tv==='meeting')return showMeeting();
- if(d.tv==='promos'){if(night?.stage==='meeting'&&!night.plan?.sheet?.signed)return;return showPromos();}
+ if(d.tv==='promos'){if(night?.stage==='meeting'&&(!night.plan?.sheet?.signed||!night.plan.confirmed))return;return showPromos();}
  if(d.tv==='bell'){if(night?.promo?.v===2&&night.promo.stage!=='done')return;return bell();}
  if(d.tv==='next'){prep();return}
  if(d.tv==='done')return endNight();
