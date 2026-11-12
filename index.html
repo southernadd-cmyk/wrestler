@@ -1651,7 +1651,17 @@ function playByPlay(M){
 function spot(M,big,forced){
  const {A,D:Df}=forced?{A:M.w,D:M.f}:actors(M);
  const yours=A===M.w,st=yours?M.wSt:M.fSt;
- const move=rnd(M,D.SPOTS[A.style]||D.SPOTS.Story);
+ const ap=D.PROFILES[A.id]||{kg:85},dp=D.PROFILES[Df.id]||{kg:85};
+ const strengthGap=dp.kg-ap.kg;
+ const moves=D.SPOTS[A.style]||D.SPOTS.Story;
+ const possible=moves.filter(x=>!(strengthGap>32&&/suplex|piledriver|backdrop|powerbomb/i.test(x)));
+ const move=rnd(M,possible.length?possible:['a running dropkick']);
+ if(st<28){
+  say(M,`${A.short} looks for a spectacular attack, but the tired legs will not cooperate. ${Df.short} gets a chance to recover.`,'agent');
+  M.crowd=clamp(M.crowd-(big?3:1));
+  M.bonus-=big?6:2;
+  return;
+ }
  const wasBotched=M.botches;
  const outside=Psy.spotSetup(M,A,Df,move);
  let botchP=(.03+(100-A.safe)*.0018+(100-st)*.0015)*M.riskMul*(big?1.5:1);
@@ -1671,8 +1681,10 @@ function spot(M,big,forced){
  }else{
   M.spotHits++;const pop=(big?7:3)+M.r()*(big?7:4);M.crowd=clamp(M.crowd+pop*M.plan.crowd);M.bonus+=big?18:10;
   say(M,rnd(M,[`${move.charAt(0).toUpperCase()+move.slice(1)} from ${A.short}!${M.crowd>=70?' The crowd come up out of their seats!':''}`,`${A.short} connects with ${move}! ${Df.short} did not see it coming.`,`What a risk by ${A.short} — ${move} lands flush!`,`${A.short} gets all of ${move}! The front rows erupt.`]),M.crowd>=70?'crowd':'play',{big:big||M.crowd>=75});
-  if(yours)M.wSt=clamp(M.wSt-(big?7:3));
  }
+ // Both wrestlers pay the physical cost of an attempted special, including botches.
+ if(yours)M.wSt=clamp(M.wSt-(big?7:4));
+ else M.fSt=clamp(M.fSt-(big?7:4));
  Psy.spotAfter(M,A,Df,outside,M.botches>wasBotched);
 }
 function dive(M){
