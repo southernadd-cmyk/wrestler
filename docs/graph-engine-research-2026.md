@@ -20,6 +20,16 @@ The match contract sets the fixed outcome, but a negotiated sheet, personal wres
 - The current memory overlay derives significant moments after match results. It cannot yet subscribe to actual setups, callbacks, missed planned spots or opponent intentions as they happen.
 - The regression tests check physical legality, deterministic resumes and story-path diversity, not the subjective quality of the emitted narrative.
 
+## Source corpus expansion (12 November 2026)
+
+The initial wrestling interviews and match studies are now complemented by three user-supplied resources. They have been inspected and evaluated in detail in [Wrestling source audit](wrestling-source-audit-2026.md):
+
+- [CAGEMATCH Promo Database](https://www.cagematch.net/?id=93): dated promo transcripts, performer and feud links. Use for argument structure and character intention, not as an unlicensed library of game dialogue or as proof that high-rated promos have one universal formula.
+- [Pro Wrestling Transcriptions](https://prowrestlingtranscriptions.com/): editorial move-by-move recaps and attributed show dialogue. Use for typed observed sequences and links between promos, matches and aftermath; account for omissions.
+- [The Official Wrestling Museum RAW script](https://www.theofficialwrestlingmuseum.com/full-raw-script.html): an April 14, 2014 production artifact. Use for show-level segment, time and production constraints, **not** as evidence every match move was written in advance. An academic case study of the script appears in Andrew Charles Tate's 2024 wrestling dissertation.
+
+The practical bridge from research to product is [two-wrestler match planning](match-planning-rfc.md), supported by a [shared kernel and event-ledger RFC](graph-kernel-rfc.md). These remain research artifacts, not deployed features.
+
 ## Research: authentic match construction
 
 Professional wrestling is collaborative but not uniformly choreographed.
