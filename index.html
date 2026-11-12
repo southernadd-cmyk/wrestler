@@ -1148,18 +1148,56 @@ const Graph=(function makeGraph(){
  node('springboard_evaded','{D} rolls clear! {A} crashes into the canvas and {D} takes control.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:2,next:[e('mat_hold',2),e('cover',2),e('stand_reset',3)]});
  node('crowd_pose','{A} stops to play to the crowd. {D} watches, looking for an opening.',{cost:-0.7,next:[e('cheap_shot',2),e('counter_strike',3),e('probe_strike',3),e('lockup',2)]});
  node('catch_breath','{A} steps away and catches a breath while {D} regroups.',{cost:-5.5,next:[e('lockup',3),e('probe_strike',3),e('counter_strike',2)]});
+
+ // v3.1 connected action motifs: setup -> vulnerability -> counter -> payoff.
+ // Each original line is conditioned by physical ring position and control.
+ // TECHNICAL: a deliberate limb attack has multiple credible counter-routes.
+ node('collar_snap','{A} snaps {D} into the clinch, searching for a grip rather than forcing a throw.',{next:[e('wristlock',3),e('ankle_pick',2),e('hip_toss',2)]});
+ node('ankle_pick','{A} changes levels and catches {D} by the ankle, dragging them down.',{zone:'mat',down:'d',cost:1.2,next:[e('leg_wrench',4),e('grapevine',2),e('mat_scramble',2)]});
+ node('leg_wrench','{A} folds {D}’s leg under pressure, making every attempt to stand more expensive.',{requires:'mat',zone:'mat',down:'d',focus:1,cost:1.5,next:[e('grapevine',3),e('rope_crawl',2),e('handstand_escape',1),e('mat_scramble',2)]});
+ node('grapevine','{A} hooks both legs to trap {D} and asks the referee to check for a submission.',{requires:'mat',zone:'mat',down:'d',cost:1.5,next:[e('submission_ropes',3),e('mat_scramble',2),e('leveraged_bridge',2)]});
+ node('hip_toss','{A} turns the locked arms into a hip toss that sends {D} to the canvas.',{zone:'mat',down:'d',cost:1.5,next:[e('mat_hold',3),e('early_cover',2),e('leveraged_bridge',2),e('stand_reset',2)]});
+ node('leveraged_bridge','{D} arches out of the hold and reverses the leverage, nearly catching {A} flat!',{requires:'mat',reverse:true,zone:'mat',down:'d',cost:1.2,crowd:2,next:[e('early_cover',2),e('mat_scramble',2),e('stand_reset',3)]});
+ node('armbar_roll','{D} rolls towards the trapped arm, reversing the pressure before {A} can cinch it in.',{requires:'mat',reverse:true,zone:'mat',down:'d',cost:1,next:[e('target_hold',2),e('rope_break',2),e('stand_reset',3)]});
+ node('grounded_switch','{A} shifts their hips to switch the hold without ever letting {D} back to their feet.',{requires:'mat',zone:'mat',down:'d',cost:1.2,next:[e('armbar_roll',2),e('grapevine',2),e('mat_hold',3)]});
+ // POWER/BRAWLING: strikes build real consequences, but no free power lift.
+ node('stiff_forearm','{A} fires a stiff forearm. {D} takes a step back and answers with a glare.',{cost:1.3,next:[e('rolling_elbow',2),e('body_shot',3),e('counter_strike',3)]});
+ node('body_shot','{A} drives a short punch into {D}’s ribs, looking to take away the next breath.',{focus:1,cost:1.0,next:[e('rib_knee',2),e('corner_whip',2),e('strike_trade',3)]});
+ node('rolling_elbow','{A} spins through and catches {D} with an elbow that stops the exchange cold.',{cost:2.2,crowd:2,next:[e('short_arm_lariat',2),e('counter_strike',3),e('snap_suplex',2)]});
+ node('short_arm_lariat','{A} pulls {D} back by the wrist and drops them with a short-arm lariat.',{zone:'mat',down:'d',cost:2.6,crowd:2,next:[e('cover',2),e('dramatic_sell',2),e('stand_reset',3)]});
+ node('rib_knee','{A} drops a knee against {D}’s ribs and keeps the pressure on.',{requires:'mat',zone:'mat',down:'d',focus:1,cost:1.5,next:[e('target_hold',3),e('grounded_switch',2),e('mat_scramble',2)]});
+ node('gutbuster','{A} lifts {D} across the knee for a gutbuster, targeting the midsection.',{cost:3.0,lift:22,focus:1,zone:'mat',down:'d',next:[e('rib_knee',3),e('cover',2),e('stand_reset',2)]});
+ node('heavy_slam','{A} controls the waist and slams {D} down with a heavy body slam.',{cost:3.2,lift:28,zone:'mat',down:'d',crowd:2,next:[e('near_kickout',1),e('mat_hold',2),e('stand_reset',3)]});
+ node('corner_knee','{A} pins {D} to the turnbuckles and digs a knee into the body as the referee counts.',{requires:'corner',zone:'corner',focus:1,cost:1.5,next:[e('corner_break',2),e('corner_escape',2),e('corner_whip',2)]});
+ // HIGH-FLYING: a spectacular move needs spatial setup and can be countered.
+ node('springboard_feint','{A} touches the second rope, drawing {D} towards the expected leap.',{cost:1,next:[e('rope_rebound',3),e('duck_rebound',2),e('springboard_rise',2)]});
+ node('rope_rebound','{A} changes direction twice off the ropes. {D} is a step behind.',{cost:1.3,next:[e('running_headscissors',2),e('rebound_counter',3),e('shoulder_tackle',2)]});
+ node('running_headscissors','{A} catches the rushing {D} with headscissors and sends them sprawling.',{zone:'mat',down:'d',cost:2.1,crowd:2,next:[e('stand_reset',3),e('early_cover',2),e('mat_scramble',2)]});
+ node('rebound_counter','{D} reads the next rope run, sidesteps and sends {A} stumbling into open space!',{reverse:true,cost:1.0,next:[e('clothesline',2),e('rope_run',2),e('strike_trade',2)]});
+ node('missile_dropkick','{A} launches from the top rope with a missile dropkick. {D} goes down hard!',{requires:'top',zone:'mat',down:'d',cost:3.8,crowd:4,next:[e('cover',3),e('stand_reset',3)]});
+ node('high_crossbody','{A} dives from the top rope with a crossbody, risking everything on the landing.',{requires:'top',zone:'mat',down:'d',cost:3.9,crowd:3,next:[e('cover',3),e('near_kickout',1),e('stand_reset',3)]});
+ node('top_rope_hesitation','{A} hesitates on the top rope as {D} rolls out of position. The moment has gone.',{requires:'top',zone:'standing',cost:-.8,next:[e('circle',3),e('counter_strike',2)]});
+ node('handstand_escape','{D} kicks up through a handstand and escapes the grip before {A} can trap the arm.',{requires:'mat',reverse:true,zone:'standing',cost:1.7,crowd:2,next:[e('rope_rebound',2),e('circle',3)]});
+ // DRAMA: crowd sympathy and expectation change how a tactic lands.
+ node('false_handshake','{A} offers a handshake, but keeps one eye on the referee and the next opening.',{next:[e('clean_break',2),e('cheap_shot',3),e('opponent_study',2)]});
+ node('opponent_study','{A} waits for {D} to show the next attack. Neither wants to reveal their plan.',{cost:-.5,next:[e('last_second_counter',2),e('lockup',2),e('probe_strike',2)]});
+ node('last_second_counter','{D} recognises the setup at the final instant and turns it into a counter!',{reverse:true,crowd:3,next:[e('counter_strike',3),e('grapple_trip',2),e('rope_rebound',2)]});
+ node('dramatic_rally','{A} staggers upright and refuses to stay down. The crowd senses one last rally.',{crowd:2,cost:1.3,next:[e('clothesline',3),e('last_second_counter',2),e('finish_tease',2)]});
+ node('baited_charge','{A} invites the charge and deliberately leaves a gap near the turnbuckle.',{next:[e('counter_strike',3),e('corner_whip',3),e('last_second_counter',2)]});
+ node('quiet_reversal','{D} calmly steps around the attack and takes control before anyone sees it coming.',{reverse:true,cost:.8,next:[e('wristlock',2),e('counter_strike',2),e('opponent_study',2)]});
+
  const ARCS={
-  opening:{label:'Opening exchanges',phase:'open',control:'neutral',min:2,max:5,entry:['circle','lockup','probe_strike'],out:[e('chain',5),e('shine',3),e('cutoff',1)]},
-  chain:{label:'Chain wrestling',phase:'open',control:'neutral',min:3,max:7,entry:['lockup','waistlock','wristlock'],out:[e('chain',2),e('shine',5),e('cutoff',2)]},
+  opening:{label:'Opening exchanges',phase:'open',control:'neutral',min:2,max:5,entry:['circle','lockup','probe_strike','collar_snap','false_handshake'],out:[e('chain',5),e('shine',3),e('cutoff',1)]},
+  chain:{label:'Chain wrestling',phase:'open',control:'neutral',min:3,max:7,entry:['lockup','waistlock','wristlock','ankle_pick','hip_toss'],out:[e('chain',2),e('shine',5),e('cutoff',2)]},
   shine:{label:'Early advantage',phase:'shine',control:'w',min:4,max:9,entry:['arm_drag','clothesline','rope_run','wristlock'],out:[e('shine',2),e('cutoff',7),e('exchange',1)]},
-  cutoff:{label:'A sudden cut-off',phase:'heat',control:'f',min:2,max:4,entry:['cheap_shot','counter_strike','corner_whip'],out:[e('control',6),e('hope',2)]},
-  control:{label:'Sustained pressure',phase:'heat',control:'f',min:5,max:11,entry:['target_strike','mat_hold','corner_strikes','snap_suplex'],out:[e('control',2),e('hope',5),e('exchange',1)]},
+  cutoff:{label:'A sudden cut-off',phase:'heat',control:'f',min:2,max:4,entry:['cheap_shot','counter_strike','corner_whip','stiff_forearm'],out:[e('control',6),e('hope',2)]},
+  control:{label:'Sustained pressure',phase:'heat',control:'f',min:5,max:11,entry:['target_strike','mat_hold','corner_strikes','snap_suplex','body_shot','gutbuster'],out:[e('control',2),e('hope',5),e('exchange',1)]},
   hope:{label:'A hope spot',phase:'heat',control:'f',min:2,max:4,entry:['hope_elbows','mat_scramble','counter_strike'],out:[e('denial',6),e('comeback',3)]},
   denial:{label:'The comeback is cut off',phase:'heat',control:'f',min:3,max:6,entry:['hope_cutoff','mat_hold','target_strike'],out:[e('control',4),e('comeback',4)]},
-  comeback:{label:'The comeback',phase:'comeback',control:'w',min:4,max:9,entry:['counter_strike','clothesline','rope_run','snap_suplex'],out:[e('resurgence',4),e('exchange',5),e('cutoff',1)]},
+  comeback:{label:'The comeback',phase:'comeback',control:'w',min:4,max:9,entry:['counter_strike','clothesline','rope_run','snap_suplex','dramatic_rally','rope_rebound'],out:[e('resurgence',4),e('exchange',5),e('cutoff',1)]},
   resurgence:{label:'The crowd rises',phase:'comeback',control:'w',min:2,max:5,entry:['clothesline','snap_suplex','corner_whip','top_climb'],out:[e('exchange',7),e('cutoff',2)]},
-  exchange:{label:'Back-and-forth',phase:'stretch',control:'neutral',min:4,max:8,entry:['counter_strike','strike_trade','finish_tease','waistlock'],out:[e('nearfall',3),e('escalation',4),e('control',1)]},
-  nearfall:{label:'Near falls',phase:'stretch',control:'neutral',min:2,max:5,entry:['snap_suplex','cover','submission_set','counter_rollup'],out:[e('exchange',3),e('escalation',5),e('nearfall',1)]},
+  exchange:{label:'Back-and-forth',phase:'stretch',control:'neutral',min:4,max:8,entry:['counter_strike','strike_trade','finish_tease','waistlock','last_second_counter','quiet_reversal'],out:[e('nearfall',3),e('escalation',4),e('control',1)]},
+  nearfall:{label:'Near falls',phase:'stretch',control:'neutral',min:2,max:5,entry:['snap_suplex','cover','submission_set','counter_rollup','high_crossbody','short_arm_lariat'],out:[e('exchange',3),e('escalation',5),e('nearfall',1)]},
   escalation:{label:'Finishing stretch',phase:'stretch',control:'neutral',min:4,max:8,entry:['finish_tease','corner_whip','top_climb','counter_strike'],out:[e('nearfall',3),e('exchange',2),e('finish_setup',4)]},
   finish_setup:{label:'Final sequence',phase:'stretch',control:'neutral',min:2,max:8,entry:['finish_tease','counter_strike','clothesline','snap_suplex'],out:[e('finish_setup',4),e('escalation',1)]}
  };
@@ -1186,10 +1224,10 @@ const Graph=(function makeGraph(){
 
  // v2.9: wrestler identity and match temperament, fixed for the whole bout.
  const STYLE_BEATS={
-  Brawl:{open:['power_spinebuster','cheap_shot','outside_toss','strike_trade'],bias:{power_spinebuster:3.6,cheap_shot:2.1,strike_trade:2.2,corner_strikes:2.1,outside_toss:2.4,floor_brawl:2.5,top_climb:.32,wristlock:.55}},
-  Technical:{open:['grapple_trip','wristlock','waistlock','hammerlock'],bias:{grapple_trip:3.8,wristlock:2.5,arm_wringer:2.5,mat_takedown:2.2,submission_set:2.8,wrist_escape:2.5,waist_escape:2.4,outside_toss:.35,top_climb:.4}},
-  Spectacle:{open:['springboard_rise','rope_run','top_climb','counter_strike'],bias:{springboard_rise:4,top_climb:3.2,rope_run:2.6,duck_rebound:2.2,aerial_attack:2.3,corner_whip:1.8,mat_hold:.5,target_hold:.6}},
-  Story:{open:['crowd_pose','taunt','finish_tease','clean_break'],bias:{crowd_pose:3.8,taunt:2.6,finish_tease:2.3,hope_elbows:1.9,cheap_shot:1.6,near_kickout:1.5,top_climb:.75}}
+  Brawl:{open:['stiff_forearm','power_spinebuster','cheap_shot','outside_toss','strike_trade'],bias:{power_spinebuster:3.6,cheap_shot:2.1,strike_trade:2.2,corner_strikes:2.1,outside_toss:2.4,floor_brawl:2.5,top_climb:.32,wristlock:.55}},
+  Technical:{open:['collar_snap','ankle_pick','grapple_trip','wristlock','waistlock','hammerlock'],bias:{grapple_trip:3.8,wristlock:2.5,arm_wringer:2.5,mat_takedown:2.2,submission_set:2.8,wrist_escape:2.5,waist_escape:2.4,outside_toss:.35,top_climb:.4}},
+  Spectacle:{open:['springboard_feint','rope_rebound','springboard_rise','rope_run','top_climb','counter_strike'],bias:{springboard_rise:4,top_climb:3.2,rope_run:2.6,duck_rebound:2.2,aerial_attack:2.3,corner_whip:1.8,mat_hold:.5,target_hold:.6}},
+  Story:{open:['false_handshake','opponent_study','crowd_pose','taunt','finish_tease','clean_break'],bias:{crowd_pose:3.8,taunt:2.6,finish_tease:2.3,hope_elbows:1.9,cheap_shot:1.6,near_kickout:1.5,top_climb:.75}}
  };
  const MOVE_COST={top_climb:2.2,aerial_attack:3.6,aerial_counter:2,snap_suplex:2,clothesline:1.6,corner_charge:2.2,corner_strikes:1.5,submission_set:2,target_hold:1.2,finish_tease:1.6,outside_toss:2.1,floor_brawl:1.4,mat_takedown:1,strike_trade:1,rope_run:1.2};
  function fighter(w){return D.PROFILES[w?.id]||{kg:85,trait:'Versatile',preferred:[]}}
@@ -3021,10 +3059,10 @@ root.OfficeTerritory={ensure,rank,evolve};
   live:{label:'Call it in the ring',desc:'Agree the story, one meaningful turning point and the finish; adapt the details to the crowd.',weight:3.3}
  };
  const STYLE={
-  Technical:{open:['wristlock','grapple_trip'],pressure:['target_hold','arm_wringer'],return:['counter_strike','grapple_trip'],spectacle:['submission_set','counter_rollup']},
-  Brawl:{open:['strike_trade','probe_strike'],pressure:['corner_strikes','target_strike'],return:['clothesline','counter_strike'],spectacle:['power_spinebuster','corner_charge']},
-  Spectacle:{open:['rope_run','duck_rebound'],pressure:['corner_whip','counter_strike'],return:['springboard_rise','duck_rebound'],spectacle:['springboard_strike','aerial_attack']},
-  Story:{open:['lockup','crowd_pose'],pressure:['mat_takedown','target_strike'],return:['hope_elbows','counter_strike'],spectacle:['finish_tease','counter_rollup']}
+  Technical:{open:['collar_snap','wristlock'],pressure:['leg_wrench','target_hold'],return:['leveraged_bridge','counter_strike'],spectacle:['submission_set','counter_rollup']},
+  Brawl:{open:['stiff_forearm','strike_trade'],pressure:['body_shot','target_strike'],return:['rolling_elbow','clothesline'],spectacle:['short_arm_lariat','power_spinebuster']},
+  Spectacle:{open:['springboard_feint','rope_run'],pressure:['rope_rebound','corner_whip'],return:['running_headscissors','duck_rebound'],spectacle:['high_crossbody','missile_dropkick']},
+  Story:{open:['false_handshake','crowd_pose'],pressure:['opponent_study','target_strike'],return:['dramatic_rally','counter_strike'],spectacle:['last_second_counter','finish_tease']}
  };
  const fp=w=>STYLE[w.style]||STYLE.Story;
  const label=id=>id.replace(/_/g,' ');
