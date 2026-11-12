@@ -37,6 +37,19 @@ const rex=D.TALENT.find(w=>w.id==='rex'),juno=D.TALENT.find(w=>w.id==='juno'),f=
 const compromise=P.build({id:'c',finish:'lose_clean'},rex,f,'brawl','landmarks','compromise');
 const opponent=P.build({id:'c',finish:'lose_clean'},rex,f,'brawl','landmarks','opponent');
 assert.notEqual(compromise.nodes.find(n=>n.id==='payoff').owner,opponent.nodes.find(n=>n.id==='payoff').owner,'dispute changes creative lead');
+const match={w:{...rex,flags:{},fatigue:0},f,p:D.PROMOS[0],slot:'mid',minutes:12,finish:'lose_clean',
+ plan:{game:'brawl',leash:'script',talk:'calm'},preparation:{},flags:{},seed:343};
+const backed=E.create({...match,sheet:P.build({id:'agree',finish:'lose_clean'},rex,f,'brawl','landmarks','worker')});
+const disputed=E.create({...match,sheet:P.build({id:'agree',finish:'lose_clean'},rex,f,'brawl','landmarks','opponent')});
+assert.ok(backed.comply>disputed.comply,'backing the wrestler affects actual willingness to follow the sheet');
+assert.ok(backed.sheet.workerConsent>disputed.sheet.workerConsent,'the two performers respond differently to managerial decisions');
+// A manager cannot claim to have delivered a planned stunt if it was refused for safety.
+const exhausted=E.create({...match,sheet:P.build({id:'exhausted',finish:'lose_clean'},rex,f,'brawl','landmarks','worker')});
+exhausted.stage='live';exhausted.wSt=5;exhausted.listen=100;
+const beforeSpots=exhausted.spots;
+assert.equal(E.call(exhausted,'big'),true);
+assert.equal(exhausted.spots,beforeSpots);
+assert.ok(!exhausted.sheet.ledger.some(x=>x.action==='special_spot'),'abandoned spot does not fulfil a causal commitment');
 const tiny={w:{...juno,flags:{},fatigue:0},f:rex,p:D.PROMOS[0],slot:'mid',minutes:12,finish:'win_clean',
  plan:{game:'story',leash:'script',talk:'calm'},preparation:{},flags:{},seed:121};
 const small=E.create({...tiny,sheet:P.build({id:'c',finish:'win_clean'},tiny.w,tiny.f,'story','detailed','worker')});
