@@ -1420,6 +1420,14 @@ const Graph=(function makeGraph(){
   if(id==='near_kickout')g.pendingCover=false;
   g.node=id;g.steps++;g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective});
   if(g.events.length>220)g.events.shift();
+  if(M.o.promo?.tactic?.kind==='counter'&&n.reverse&&side==='f'&&p.control==='w'&&!g.promoCounterPaid){
+   g.promoCounterPaid=true;
+   say(M,M.w.short+' reads '+M.f.short+' and turns the attack around! That is the counter promised at the microphone.','story');
+  }
+  if(M.o.promo?.tactic?.kind==='finisher'&&id==='finish_tease'&&!g.promoFinisherScouted){
+   g.promoFinisherScouted=true;
+   say(M,M.f.short+' recognises the advertised finishing setup! '+M.w.short+' has revealed the intention in advance.','story');
+  }
   root.OfficeSheets?.observe(M,id,side,'action');
   if(M.t-(g.lastColourAt??-1000)>=100&&M.r()<.33){
    const reactions={
@@ -1478,6 +1486,17 @@ const Graph=(function makeGraph(){
    if((id==='top_climb'||id==='springboard_rise')&&(p.control==='f'?M.fSt:M.wSt)<30)n*=.22;
    if(Psy.get(M).focusHits>=3&&Psy.get(M).target==='left knee'&&Psy.get(M).control==='w'&&['rope_run','top_climb','clothesline'].includes(id))n*=.35;
    if(root.OfficeSheets?.boost)n*=root.OfficeSheets.boost(M,id,p.control==='f'?'f':'w');
+   // The public promo is a tactical declaration. Counter promises favour
+   // genuine worker reversals of opponent control, not arbitrary bonuses.
+   const publicTactic=M.o.promo?.tactic;
+   if(publicTactic){
+    if(publicTactic.kind==='clean'&&['cheap_shot','outside_toss','floor_brawl'].includes(id))n*=.28;
+    if(publicTactic.kind==='counter'&&publicTactic.nodes.includes(id))
+     n*=p.control==='f'&&A[id].reverse?3.25:1.12;
+    if(publicTactic.kind==='finisher'&&id==='finish_tease')n*=M.f.psych>=78?.8:2.4;
+    if(publicTactic.kind==='misdirect'&&publicTactic.nodes.includes(id))n*=1.65;
+    if(publicTactic.kind==='win'&&publicTactic.nodes.includes(id)&&M.t/M.len>.58)n*=1.4;
+   }
    weights.set(id,(weights.get(id)||0)+n);
   }
   return [...weights.entries()];
@@ -1988,7 +2007,14 @@ function summary(M){
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
-  resent:M.resent,promo:M.o.promo||null,psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+  resent:M.resent,promo:M.o.promo||null,
+  promoSignals:{
+   workerCounter:!!M.graph?.events?.some(e=>e.reverse&&e.preControl==='f'&&e.control==='w'),
+   workerFinisherSetup:!!M.graph?.events?.some(e=>e.id==='finish_tease'&&e.preControl==='w'),
+   workerDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='w'),
+   opponentDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='f')
+  },
+  psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(whole)+(frac===.25?'¼':frac===.5?'½':frac===.75?'¾':'')+(s===0?'DUD':'');}
 function liveStars(M){return stars(M,false)}
@@ -3921,7 +3947,7 @@ function showPromos(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid);
  if(!night.promo||night.promo.cid!==c.id){
-  night.promo=OfficeStory.Graph.begin(c,w,f,G.feud(w.id,f.id));
+  night.promo=OfficeStory.Graph.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet);
   const recalled=OfficeMemory.context(w.id,f.id);
   if(recalled.promoPrompt&&night.promo.v===2)night.promo.dialogue[0].line=recalled.promoPrompt+' '+night.promo.dialogue[0].line;
  }
@@ -3934,16 +3960,18 @@ function showPromos(){
  }
  const titles={open:'1 / 3 · Make your opening statement',answer:'2 / 3 · Answer their interruption',close:'3 / 3 · Deliver the closing line',done:'The final word'};
  const help={open:'The opponent is listening. Choose the story you want the crowd to follow.',answer:'Your opponent has answered. Do you outwit them, raise the stakes or stay calm?',close:'This is the last thing the crowd will remember when the match begins.',done:'The exchange is committed. Its consequences depend on what happens in the ring.'};
- const options=OfficeStory.Graph.choices(st.stage);
+ const options=OfficeStory.Graph.choices(st.stage,st);
  const decisions=options.length?`<div class="opts" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px">${options.map(o=>`<button class="opt" data-promochoice="${esc(o.id)}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></button>`).join('')}</div>`:'<div class="well"><p><b>The words are on the record.</b> There is no changing them now.</p><p>The match will decide whether any promises are kept.</p></div>';
  const spoken=st.dialogue.filter(e=>e.speaker===w.name||e.speaker===f.name);
- const latest=spoken.slice(-2);
+ const latest=spoken.slice(-7);
  const transcript=latest.length?latest.map(e=>`<div class="well" style="margin-bottom:9px"><small class="dim">${esc(e.speaker)}</small><p style="margin:5px 0">“${esc(e.line)}”</p></div>`).join(''):`<div class="well"><p><b>Interviewer:</b> ${esc(st.dialogue[0].line)}</p><p class="dim">${esc(f.name)} waits to respond.</p></div>`;
  const reaction=st.dialogue.filter(e=>e.kind==='reaction').at(-1);
  const mood=reaction?`<p class="dim" style="margin-top:8px">${esc(reaction.line)}</p>`:'';
  const tone=st.stage==='done'?`<p style="margin-top:8px">${esc(st.result.reaction)}</p>`:'';
  const path=st.steps.length?`<p class="dim" style="margin-top:10px">Your choices: ${st.steps.map(x=>esc(OfficeStory.Graph.NODES[x.stage][x.id].label)).join(' · ')}</p>`:'';
- const left=win('Your next move',`<p class="lede">${esc(help[st.stage])}</p>${decisions}${path}`,{h:'h3'});
+ const publicIssue=st.claim?'<div class="well" style="margin:8px 0"><b>Argument being tested</b><p>'+esc(st.claim.thesis)+'</p><p class="dim">Evidence: '+esc(st.claim.evidence)+'</p></div>':'';
+ const liveStake=st.result?.tactic?'<p><b>Public stake:</b> '+esc(st.result.tactic.stake)+'</p>':'';
+ const left=win('Your next move',`<p class="lede">${esc(help[st.stage])}</p>${publicIssue}${decisions}${liveStake}${path}`,{h:'h3'});
  const right=win('At the microphone',`<div class="tape well" style="margin-bottom:10px">${face('wrestler',w.id,w.name,'portrait x2')}${face('wrestler',f.id,f.name,'portrait x2')}<b>${esc(w.short)} vs ${esc(f.short)}</b></div>${transcript}${mood}${tone}`,{h:'h3'});
  $('#tv').innerHTML=strip(c,'microphone time')+`<div class="stage screen" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">${left}${right}</div><div class="tv-foot"><span class="dim">${esc(titles[st.stage])} · Decisions cannot be reselected once spoken</span>${st.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<span class="dim">Choose the next line</span>'}</div>`;
  persistNight();
