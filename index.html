@@ -1091,14 +1091,14 @@ const Graph=(function makeGraph(){
  node('mat_takedown','{A} trips {D} cleanly and follows to the mat before {D} can regain a base.',{zone:'mat',down:'d',next:[e('mat_hold',4),e('target_hold',3),e('mat_scramble',2)]});
  node('arm_drag','{A} uses the momentum to snap {D} over with an arm drag.',{zone:'mat',down:'d',next:[e('mat_hold',2),e('stand_reset',4),e('early_cover',1)]});
  node('clean_break','The referee calls for a clean break. {A} releases and steps away.',{next:[e('circle',4),e('cheap_shot',2),e('probe_strike',2)]});
- node('corner_push','{A} drives {D} into a corner; the referee orders the break.',{zone:'corner',next:[e('corner_break',3),e('corner_strikes',3),e('cheap_shot',2)]});
+ node('corner_push','{A} drives {D} into a corner; the referee orders the break.',{zone:'corner',next:[e('corner_break',3),e('corner_strikes',3),e('corner_knee',2),e('cheap_shot',2)]});
  node('corner_break','{A} backs out of the corner. {D} cautiously steps forward.',{requires:'corner',next:[e('circle',3),e('probe_strike',2)]});
  // Striking, Irish whips, ring positioning.
  node('probe_strike','{A} throws a measuring forearm. {D} stays balanced and watches for the next.',{next:[e('strike_trade',4),e('counter_strike',3),e('cheap_shot',1),e('corner_whip',2)]});
  node('strike_trade','{A} lands a forearm. {D} returns one. Both stay on their feet.',{next:[e('strike_trade',2),e('counter_strike',3),e('clothesline',2),e('corner_whip',2),e('outside_toss',1)]});
  node('counter_strike','{D} ducks the next strike and answers with a sharp elbow!',{reverse:true,next:[e('clothesline',3),e('corner_whip',2),e('snap_suplex',2)]});
  node('cheap_shot','{A} catches {D} with a forearm on the break while the referee is looking away.',{crowd:-1,next:[e('corner_strikes',3),e('target_strike',3),e('clothesline',2)]});
- node('corner_strikes','{A} traps {D} against the turnbuckles and drives in two short forearms.',{requires:'corner',zone:'corner',next:[e('corner_whip',4),e('corner_escape',3),e('corner_charge',2)]});
+ node('corner_strikes','{A} traps {D} against the turnbuckles and drives in two short forearms.',{requires:'corner',zone:'corner',next:[e('corner_whip',4),e('corner_escape',3),e('corner_charge',2),e('corner_knee',3)]});
  node('corner_whip','{A} whips {D} across the ring towards the opposite turnbuckles.',{zone:'corner',next:[e('corner_charge',4),e('corner_escape',4),e('corner_strikes',2)]});
  node('corner_charge','{A} charges the corner with a running attack. {D} braces for impact.',{requires:'corner',zone:'corner',next:[e('corner_escape',3),e('clothesline',2),e('snap_suplex',1)]});
  node('corner_escape','{D} slips out of the corner as {A} charges in, leaving {A} to hit the turnbuckles!',{requires:'corner',reverse:true,next:[e('clothesline',3),e('strike_trade',2),e('corner_whip',2)]});
@@ -1118,7 +1118,7 @@ const Graph=(function makeGraph(){
  node('hope_cutoff','{A} intercepts the escape with a knee to {D}’s {part}; the comeback is stopped.',{focus:1,zone:'mat',down:'d',next:[e('target_hold',3),e('mat_hold',2),e('stand_reset',2)]});
  node('stand_reset','{D} rolls clear and uses the ropes to rise. {A} gives ground to avoid a counter.',{requires:'mat',zone:'standing',down:null,next:[e('lockup',2),e('strike_trade',3),e('corner_whip',2),e('rope_run',2)]});
  // High-risk branches include genuine preparation, payoff or failure.
- node('top_climb','{A} drops {D} with a strike, then climbs the turnbuckles, checking their footing.',{zone:'top',down:'d',next:[e('aerial_attack',5),e('aerial_counter',3)]});
+ node('top_climb','{A} drops {D} with a strike, then climbs the turnbuckles, checking their footing.',{zone:'top',down:'d',next:[e('aerial_attack',5),e('aerial_counter',3),e('missile_dropkick',3),e('high_crossbody',3),e('top_rope_hesitation',1)]});
  node('aerial_attack','{A} launches from the turnbuckle and connects with a diving elbow!',{requires:'top',zone:'mat',down:'d',crowd:5,next:[e('cover',5),e('stand_reset',2)]});
  node('aerial_counter','{D} rolls out of the way! {A} crashes onto the canvas and loses the advantage.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:3,next:[e('cover',2),e('mat_hold',2),e('stand_reset',3)]});
  // Ringside branches must return inside before a pin or submission.
@@ -1143,7 +1143,7 @@ const Graph=(function makeGraph(){
 
  node('grapple_trip','{A} shoots for the leg, catches {D} off balance and drives them onto the mat.',{cost:1.1,zone:'mat',down:'d',next:[e('target_hold',5),e('mat_hold',3),e('mat_scramble',2)]});
  node('power_spinebuster','{A} catches {D} coming forward and plants them with a heavy spinebuster!',{cost:3.5,lift:30,zone:'mat',down:'d',crowd:2,next:[e('cover',3),e('mat_hold',2),e('stand_reset',3)]});
- node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{cost:1.8,zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3)]});
+ node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{cost:1.8,zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3),e('missile_dropkick',2),e('top_rope_hesitation',2)]});
  node('springboard_strike','{A} launches from the ropes and lands a springboard crossbody on {D}!',{cost:3.2,requires:'top',zone:'mat',down:'d',crowd:4,next:[e('cover',4),e('stand_reset',2)]});
  node('springboard_evaded','{D} rolls clear! {A} crashes into the canvas and {D} takes control.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:2,next:[e('mat_hold',2),e('cover',2),e('stand_reset',3)]});
  node('crowd_pose','{A} stops to play to the crowd. {D} watches, looking for an opening.',{cost:-0.7,next:[e('cheap_shot',2),e('counter_strike',3),e('probe_strike',3),e('lockup',2)]});
@@ -1161,8 +1161,8 @@ const Graph=(function makeGraph(){
  node('armbar_roll','{D} rolls towards the trapped arm, reversing the pressure before {A} can cinch it in.',{requires:'mat',reverse:true,zone:'mat',down:'d',cost:1,next:[e('target_hold',2),e('rope_break',2),e('stand_reset',3)]});
  node('grounded_switch','{A} shifts their hips to switch the hold without ever letting {D} back to their feet.',{requires:'mat',zone:'mat',down:'d',cost:1.2,next:[e('armbar_roll',2),e('grapevine',2),e('mat_hold',3)]});
  // POWER/BRAWLING: strikes build real consequences, but no free power lift.
- node('stiff_forearm','{A} fires a stiff forearm. {D} takes a step back and answers with a glare.',{cost:1.3,next:[e('rolling_elbow',2),e('body_shot',3),e('counter_strike',3)]});
- node('body_shot','{A} drives a short punch into {D}’s ribs, looking to take away the next breath.',{focus:1,cost:1.0,next:[e('rib_knee',2),e('corner_whip',2),e('strike_trade',3)]});
+ node('stiff_forearm','{A} fires a stiff forearm. {D} takes a step back and answers with a glare.',{cost:1.3,next:[e('rolling_elbow',2),e('body_shot',3),e('heavy_slam',1),e('counter_strike',3)]});
+ node('body_shot','{A} drives a short punch into {D}’s ribs, looking to take away the next breath.',{focus:1,cost:1.0,next:[e('rib_knee',2),e('heavy_slam',2),e('gutbuster',2),e('corner_whip',2),e('strike_trade',3)]});
  node('rolling_elbow','{A} spins through and catches {D} with an elbow that stops the exchange cold.',{cost:2.2,crowd:2,next:[e('short_arm_lariat',2),e('counter_strike',3),e('snap_suplex',2)]});
  node('short_arm_lariat','{A} pulls {D} back by the wrist and drops them with a short-arm lariat.',{zone:'mat',down:'d',cost:2.6,crowd:2,next:[e('cover',2),e('dramatic_sell',2),e('stand_reset',3)]});
  node('rib_knee','{A} drops a knee against {D}’s ribs and keeps the pressure on.',{requires:'mat',zone:'mat',down:'d',focus:1,cost:1.5,next:[e('target_hold',3),e('grounded_switch',2),e('mat_scramble',2)]});
@@ -1180,7 +1180,7 @@ const Graph=(function makeGraph(){
  node('handstand_escape','{D} kicks up through a handstand and escapes the grip before {A} can trap the arm.',{requires:'mat',reverse:true,zone:'standing',cost:1.7,crowd:2,next:[e('rope_rebound',2),e('circle',3)]});
  // DRAMA: crowd sympathy and expectation change how a tactic lands.
  node('false_handshake','{A} offers a handshake, but keeps one eye on the referee and the next opening.',{next:[e('clean_break',2),e('cheap_shot',3),e('opponent_study',2)]});
- node('opponent_study','{A} waits for {D} to show the next attack. Neither wants to reveal their plan.',{cost:-.5,next:[e('last_second_counter',2),e('lockup',2),e('probe_strike',2)]});
+ node('opponent_study','{A} waits for {D} to show the next attack. Neither wants to reveal their plan.',{cost:-.5,next:[e('last_second_counter',2),e('baited_charge',3),e('lockup',2),e('probe_strike',2)]});
  node('last_second_counter','{D} recognises the setup at the final instant and turns it into a counter!',{reverse:true,crowd:3,next:[e('counter_strike',3),e('grapple_trip',2),e('rope_rebound',2)]});
  node('dramatic_rally','{A} staggers upright and refuses to stay down. The crowd senses one last rally.',{crowd:2,cost:1.3,next:[e('clothesline',3),e('last_second_counter',2),e('finish_tease',2)]});
  node('baited_charge','{A} invites the charge and deliberately leaves a gap near the turnbuckle.',{next:[e('counter_strike',3),e('corner_whip',3),e('last_second_counter',2)]});
@@ -1191,12 +1191,12 @@ const Graph=(function makeGraph(){
   chain:{label:'Chain wrestling',phase:'open',control:'neutral',min:3,max:7,entry:['lockup','waistlock','wristlock','ankle_pick','hip_toss'],out:[e('chain',2),e('shine',5),e('cutoff',2)]},
   shine:{label:'Early advantage',phase:'shine',control:'w',min:4,max:9,entry:['arm_drag','clothesline','rope_run','wristlock'],out:[e('shine',2),e('cutoff',7),e('exchange',1)]},
   cutoff:{label:'A sudden cut-off',phase:'heat',control:'f',min:2,max:4,entry:['cheap_shot','counter_strike','corner_whip','stiff_forearm'],out:[e('control',6),e('hope',2)]},
-  control:{label:'Sustained pressure',phase:'heat',control:'f',min:5,max:11,entry:['target_strike','mat_hold','corner_strikes','snap_suplex','body_shot','gutbuster'],out:[e('control',2),e('hope',5),e('exchange',1)]},
+  control:{label:'Sustained pressure',phase:'heat',control:'f',min:5,max:11,entry:['target_strike','mat_hold','corner_strikes','snap_suplex','body_shot','gutbuster','heavy_slam'],out:[e('control',2),e('hope',5),e('exchange',1)]},
   hope:{label:'A hope spot',phase:'heat',control:'f',min:2,max:4,entry:['hope_elbows','mat_scramble','counter_strike'],out:[e('denial',6),e('comeback',3)]},
   denial:{label:'The comeback is cut off',phase:'heat',control:'f',min:3,max:6,entry:['hope_cutoff','mat_hold','target_strike'],out:[e('control',4),e('comeback',4)]},
   comeback:{label:'The comeback',phase:'comeback',control:'w',min:4,max:9,entry:['counter_strike','clothesline','rope_run','snap_suplex','dramatic_rally','rope_rebound'],out:[e('resurgence',4),e('exchange',5),e('cutoff',1)]},
   resurgence:{label:'The crowd rises',phase:'comeback',control:'w',min:2,max:5,entry:['clothesline','snap_suplex','corner_whip','top_climb'],out:[e('exchange',7),e('cutoff',2)]},
-  exchange:{label:'Back-and-forth',phase:'stretch',control:'neutral',min:4,max:8,entry:['counter_strike','strike_trade','finish_tease','waistlock','last_second_counter','quiet_reversal'],out:[e('nearfall',3),e('escalation',4),e('control',1)]},
+  exchange:{label:'Back-and-forth',phase:'stretch',control:'neutral',min:4,max:8,entry:['counter_strike','strike_trade','finish_tease','waistlock','last_second_counter','quiet_reversal','baited_charge'],out:[e('nearfall',3),e('escalation',4),e('control',1)]},
   nearfall:{label:'Near falls',phase:'stretch',control:'neutral',min:2,max:5,entry:['snap_suplex','cover','submission_set','counter_rollup','high_crossbody','short_arm_lariat'],out:[e('exchange',3),e('escalation',5),e('nearfall',1)]},
   escalation:{label:'Finishing stretch',phase:'stretch',control:'neutral',min:4,max:8,entry:['finish_tease','corner_whip','top_climb','counter_strike'],out:[e('nearfall',3),e('exchange',2),e('finish_setup',4)]},
   finish_setup:{label:'Final sequence',phase:'stretch',control:'neutral',min:2,max:8,entry:['finish_tease','counter_strike','clothesline','snap_suplex'],out:[e('finish_setup',4),e('escalation',1)]}
@@ -1227,7 +1227,7 @@ const Graph=(function makeGraph(){
   Brawl:{open:['stiff_forearm','power_spinebuster','cheap_shot','outside_toss','strike_trade'],bias:{power_spinebuster:3.6,cheap_shot:2.1,strike_trade:2.2,corner_strikes:2.1,outside_toss:2.4,floor_brawl:2.5,top_climb:.32,wristlock:.55}},
   Technical:{open:['collar_snap','ankle_pick','grapple_trip','wristlock','waistlock','hammerlock'],bias:{grapple_trip:3.8,wristlock:2.5,arm_wringer:2.5,mat_takedown:2.2,submission_set:2.8,wrist_escape:2.5,waist_escape:2.4,outside_toss:.35,top_climb:.4}},
   Spectacle:{open:['springboard_feint','rope_rebound','springboard_rise','rope_run','top_climb','counter_strike'],bias:{springboard_rise:4,top_climb:3.2,rope_run:2.6,duck_rebound:2.2,aerial_attack:2.3,corner_whip:1.8,mat_hold:.5,target_hold:.6}},
-  Story:{open:['false_handshake','opponent_study','crowd_pose','taunt','finish_tease','clean_break'],bias:{crowd_pose:3.8,taunt:2.6,finish_tease:2.3,hope_elbows:1.9,cheap_shot:1.6,near_kickout:1.5,top_climb:.75}}
+  Story:{open:['false_handshake','opponent_study','baited_charge','crowd_pose','taunt','finish_tease','clean_break'],bias:{crowd_pose:3.8,taunt:2.6,finish_tease:2.3,hope_elbows:1.9,cheap_shot:1.6,near_kickout:1.5,top_climb:.75}}
  };
  const MOVE_COST={top_climb:2.2,aerial_attack:3.6,aerial_counter:2,snap_suplex:2,clothesline:1.6,corner_charge:2.2,corner_strikes:1.5,submission_set:2,target_hold:1.2,finish_tease:1.6,outside_toss:2.1,floor_brawl:1.4,mat_takedown:1,strike_trade:1,rope_run:1.2};
  function fighter(w){return D.PROFILES[w?.id]||{kg:85,trait:'Versatile',preferred:[]}}
