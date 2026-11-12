@@ -2654,9 +2654,9 @@ root.OfficeTerritory={ensure,rank,evolve};
     'You have heard quite enough from me, {F}. The rest of this conversation belongs in the ring.',
     'Keep wondering what I have planned. That is exactly where I want you.'
    ]},
-   question:{label:'Leave them with a question',hint:'A memorable final challenge, with little immediate reassurance.',risk:2,effect:{crowd:3,heat:5,cred:2,trust:0},promise:'none',lines:[
-    'When the lights go out tonight, {F}, what are you going to tell yourself about what happened here?',
-    'I know my answer. You have a few minutes to find yours.'
+   question:{label:'Promise to outwit their attack',hint:'Make an observable promise: counter their offence during the match. Miss the counter and you lose credibility.',risk:2,effect:{crowd:3,heat:5,cred:2,trust:0},promise:'counter',lines:[
+    'When you try to take over, {F}, I will be waiting with an answer. Let these people judge the counter.',
+    'You will commit to your favourite attack, {F}. I will turn it back on you before this match is done.'
    ]}
   }
  };
@@ -2722,19 +2722,86 @@ root.OfficeTerritory={ensure,rank,evolve};
   question:['The opponent opens their mouth to answer, thinks again, and heads towards the curtain.',
             'The opponent points at the ring. The answer will have to wait.']
  };
+
+ function claimContext(st,opening){
+  const historic=st.history?.length?st.history[0]:null;
+  const outcome=historic?.finish||'';
+  const lost=outcome.startsWith('lose');
+  const event=st.memory?.kind;
+  const strength={Technical:'holds and counters',Brawl:'hard strikes',Spectacle:'speed and aerial attacks',Story:'patience and ring psychology'}[st.f.style]||'wrestling';
+  const evidence=st.memory?.recall||(
+   historic?(st.w.short+(lost?' lost':' won')+' the last encounter with '+st.f.short+'.'):'This is their first recorded meeting.');
+  const thesis=opening==='proof'?'Who has actually learned from the opposition?':
+   opening==='accusation'?'Can that charge be supported by an actual incident?':
+   opening==='people'?'Can the performer deliver for the audience?':
+   opening==='imagery'?'Will the metaphor become a memorable in-ring event?':
+   'Can the wrestler back up the demand for the spotlight?';
+  return {opening,strength,evidence,thesis,hasEvidence:!!historic||!!st.memory?.recall,
+   priorLoss:lost,planFocus:st.sheet?.focus||null,planPayoff:st.sheet?.payoff||null,opponentStyle:st.f.style};
+ }
+ function reactionToClaim(st,id){
+  const c=st.claim,f=st.f.short,w=st.w.short;
+  if(id==='accusation'&&!c.hasEvidence)return 'You have never even worked a match with me, '+w+'. Name one thing I have done to deserve that accusation.';
+  if(id==='accusation')return 'You want to drag our last encounter into this? '+c.evidence+' We can settle the argument in the ring.';
+  if(id==='proof'&&c.priorLoss)return 'You studied the last match? Good. I won that one, '+w+'. Tell me exactly which of my '+c.strength+' you can stop this time.';
+  if(id==='proof'&&c.hasEvidence)return 'You beat me once, '+w+'. I have studied your counters too. What happens when I change my approach?';
+  if(id==='proof')return 'You are claiming you have me worked out before we have ever faced each other. How will you stop my '+c.strength+'?';
+  if(id==='people')return 'These people will still be here after the match, '+w+'. Can you give them a reason to remember the result, not just your speech?';
+  if(id==='imagery')return 'That is an interesting picture, '+w+'. My '+c.strength+' will be real when the bell rings. Where is your answer?';
+  return 'You want all of the attention, '+w+'. The difficult part is doing something worth watching when I start using my '+c.strength+'.';
+ }
+ function answerToClaim(st,id){
+  const c=st.claim||claimContext(st,'proof'),f=st.f.short;
+  if(id==='turn')return 'You are proud of your '+c.strength+', '+f+'. That tells me what I must prepare for. I do not need to pretend it does not exist.';
+  if(id==='personal')return c.hasEvidence?
+   'You remember what happened last time, '+f+'. '+c.evidence+' I will not pretend it meant nothing.':
+   'You asked for a specific example, '+f+'. I do not have one. What I do have is a match in front of me.';
+  if(id==='callback')return c.opening==='imagery'?
+   'I started with an image because there is a point beneath it, '+f+'. You will understand when we get to that ring.':
+   'The point from my opening has not changed, '+f+': '+c.thesis;
+  if(id==='calm')return 'You are asking how I will answer your '+c.strength+', '+f+'. By staying composed long enough to find the opening.';
+  return 'You want proof, '+f+'? Then try your usual attack when the bell rings. I will have to answer it where everyone can see.';
+ }
+ function answerQuality(st,id){
+  const claim=st.claim||claimContext(st,'proof');
+  let relevance=id==='turn'?5:id==='challenge'?4:id==='calm'?3:id==='callback'?2:-1;
+  if(id==='callback'&&claim.opening==='imagery')relevance+=5;
+  else if(id==='callback'&&!claim.hasEvidence&&claim.opening!=='imagery')relevance-=5;
+  if(id==='personal'&&claim.hasEvidence)relevance+=4;
+  if(id==='personal'&&!claim.hasEvidence)relevance-=5;
+  if(claim.opening==='accusation'&&!claim.hasEvidence&&id!=='calm'&&id!=='turn')relevance-=2;
+  return relevance;
+ }
  const rng=(s,k)=>hash(s+'|'+k)/4294967296;
  const pick=(arr,s,k)=>arr[Math.floor(rng(s,k)*arr.length)];
  const format=(text,st)=>String(text).replace(/\{W\}/g,st.w.short).replace(/\{F\}/g,st.f.short)
   .replace(/\{FINISHER\}/g,st.w.finisher||'my finishing hold').replace(/\{THEME\}/g,st.thread==='imagery'?st.motif.prop:(thematic[st.thread]||'tonight'))
   .replace(/\{PROP\}/g,st.motif.prop).replace(/\{MOTIF1\}/g,st.motif.first).replace(/\{MOTIF2\}/g,st.motif.second);
  const limit=(x,a,b)=>Math.max(a,Math.min(b,x));
- const opts=stage=>Object.keys(NODES[stage]||{}).map(id=>({id,label:NODES[stage][id].label,hint:NODES[stage][id].hint}));
- function begin(c,w,f,rival){
+ const opts=(stage,st)=>Object.keys(NODES[stage]||{}).map(id=>{
+  const entry=NODES[stage][id];let hint=entry.hint;
+  if(st&&stage==='answer'){
+   if(id==='personal'&&!st.claim?.hasEvidence)hint+=' You have no incident to substantiate it; the opponent may expose the bluff.';
+   if(id==='callback'&&st.claim?.opening!=='imagery'&&!st.claim?.hasEvidence)hint+=' The opening provided little to call back to.';
+   if(id==='turn')hint+=' Directly addresses the opponent’s argument about '+(st.claim?.strength||'their strengths')+'.';
+  }
+  if(st&&stage==='close'){
+   if(id==='vow'&&st.contractFinish?.startsWith('lose'))hint+=' The promoter has booked a loss; breaking this public vow will be remembered.';
+   if(id==='finisher'&&!st.contractFinish?.startsWith('win'))hint+=' You are booked to lose. A promised finishing victory is unlikely.';
+   if(id==='clean'&&st.contractFinish==='win_dirty')hint+=' The written finish is dirty. Your public demand is at risk.';
+   if(id==='question')hint+=' The game will verify an actual successful counter, not the match rating.';
+  }
+  return {id,label:entry.label,hint};
+ });
+ function begin(c,w,f,rival,sheet=null){
   const seed=String(c.id)+'|'+String(c.eventAbs||0)+'|'+String(w.id)+'|'+String(f.id);
-  const st={v:2,cid:c.id,seed,motif:pick(METAPHORS,seed,'metaphor'),w:{id:w.id,name:w.name,short:w.short,mic:w.mic||40,psych:w.psych||45,heat:w.heat||40,ego:w.ego||45,finisher:w.finisher},
+  const record=(G.S?.history||[]).filter(h=>h.wid===w.id&&h.rid===f.id).slice(0,3);
+  const memory=root.OfficeMemory?.view(w.id).entries.find(e=>e.against===f.id)||null;
+  const sheetContext=sheet?.signed?{focus:sheet.focus||'authentic',payoff:sheet.nodes?.find(x=>x.id==='payoff')?.actions?.[0]||null}:null;
+  const st={v:2,cid:c.id,seed,contractFinish:c.finish||null,history:record.map(x=>({finish:x.finish||null,stars:x.stars||null})),memory:memory?{kind:memory.kind,recall:memory.text}:null,sheet:sheetContext,motif:pick(METAPHORS,seed,'metaphor'),w:{id:w.id,name:w.name,short:w.short,mic:w.mic||40,psych:w.psych||45,heat:w.heat||40,ego:w.ego||45,pro:w.pro||60,finisher:w.finisher},
    f:{id:f.id,name:f.name,short:f.short,psych:f.psych||45,heat:f.heat||45,ego:f.ego||45,style:f.style},
    feudHeat:rival?.closed?0:Math.max(c.feudHeat||0,rival?.heat||0),hasHistory:!!rival?.matches,priorPromise:rival?.lastPromo?.promise||null,
-   stage:'open',steps:[],dialogue:[{speaker:'Interviewer',line:pick([
+   stage:'open',steps:[],claim:null,argument:0,dialogue:[{speaker:'Interviewer',line:pick([
      'Both names are on tonight’s card. What do you have to say before the bell?',
      'The crowd can hear you backstage. What is this match really about?',
      'Your opponent is listening. Is there anything you want to say directly?'
@@ -2758,12 +2825,28 @@ root.OfficeTerritory={ensure,rank,evolve};
   for(const [key,val] of Object.entries(effect))st.metrics[key]=(st.metrics[key]||0)+val*(landed?1:(key==='cred'||key==='trust'?-1:.38));
   if(landed){st.metrics.composure+=stage==='answer'&&id==='calm'?4:1}
   else{st.metrics.cred-=4+act.risk;st.metrics.crowd-=act.risk+2}
-  if(stage==='open')st.thread=act.identity;
+  if(stage==='open'){
+   st.thread=act.identity;st.claim=claimContext(st,id);
+   if(id==='accusation'&&!st.claim.hasEvidence){st.metrics.cred-=6;st.metrics.trust-=2;}
+   if(id==='proof'&&st.claim.hasEvidence){st.metrics.cred+=3;}
+   if(id==='people'&&st.sheet?.focus==='redemption')st.metrics.crowd+=2;
+  }
+  if(stage==='answer'){
+   const relevance=answerQuality(st,id);
+   st.argument+=relevance;st.metrics.cred+=relevance;
+   if(relevance<=-4)st.metrics.crowd-=3;
+   if(relevance>=4)st.metrics.crowd+=2;
+  }
   if(stage==='answer'&&id==='callback'&&st.thread==='imagery')st.metrics.crowd+=3;
   if(stage==='answer'&&id==='personal'&&st.thread==='accusation')st.metrics.heat+=3,st.metrics.trust-=2;
   if(stage==='close'&&id==='clean'&&st.metrics.trust<0)st.metrics.cred-=3;
   const line=pick(act.lines,st.seed,stage+'|'+id+'|text');
-  st.dialogue.push({speaker:st.w.name,line:format(line,st),kind:landed?'strong':'uneven',node:id,stage});
+  const contextual=stage==='answer'?answerToClaim(st,id):
+   stage==='open'&&id==='proof'&&st.claim?.hasEvidence?'The last match is on the record. '+st.claim.evidence:
+   stage==='open'&&id==='accusation'&&st.claim?.hasEvidence?'We both know what happened last time, '+st.f.short+'. '+st.claim.evidence:
+   stage==='close'&&id==='question'?'I have answered your argument. Now I will have to counter you when it counts.':
+   null;
+  st.dialogue.push({speaker:st.w.name,line:contextual||format(line,st),kind:landed?'strong':'uneven',node:id,stage});
   if(!landed)st.dialogue.push({speaker:'Crowd',line:pick([
      'An uncertain reaction moves through the room; the words have not quite landed.',
      'A few cheers break through, but the speech loses its rhythm for a moment.',
@@ -2771,11 +2854,15 @@ root.OfficeTerritory={ensure,rank,evolve};
    ],st.seed,stage+'|'+id+'|stumble'),kind:'reaction'});
   st.steps.push({stage,id,landed});
   if(stage==='open'){
-   st.dialogue.push({speaker:st.f.name,line:format(pick(RESPONSES[id],st.seed,'reply-'+id),st),kind:'opponent'});
+   st.dialogue.push({speaker:st.f.name,line:reactionToClaim(st,id),kind:'opponent',answerTo:st.claim.opening});
    st.stage='answer';
   }else if(stage==='answer'){
    const lines=OPP_AFTER[id];
-   st.dialogue.push({speaker:st.f.name,line:format(pick(lines,st.seed,'rebuttal-'+id),st),kind:'opponent'});
+   const response=id==='personal'&&!st.claim?.hasEvidence?'You still have no evidence, '+st.w.short+'. Now you are trying to make the insult louder.':
+    id==='turn'?'You have finally listened to what I actually said. Let us see if you can answer it.':
+    id==='calm'?'At least we know what we disagree about now. I will see you at the bell.':
+    format(pick(lines,st.seed,'rebuttal-'+id),st);
+   st.dialogue.push({speaker:st.f.name,line:response,kind:'opponent',answerTo:id});
    st.stage='close';
   }else{
    st.dialogue.push({speaker:'Crowd',line:pick(FINALE[id],st.seed,'final-'+id),kind:'reaction'});
@@ -2796,11 +2883,16 @@ root.OfficeTerritory={ensure,rank,evolve};
   const speech=st.dialogue.filter(e=>e.speaker===st.w.name).map(e=>e.line);
   const opponentLines=st.dialogue.filter(e=>e.speaker===st.f.name);
   const promise={type:NODES.close[close].promise,claim:close,checked:false};
+  const tactic=close==='question'?{kind:'counter',nodes:['last_second_counter','quiet_reversal','counter_strike','armbar_roll','waist_escape','wrist_escape'],stake:'A successful in-ring counter must happen.'}:
+   close==='finisher'?{kind:'finisher',nodes:['finish_tease','finish_counter'],stake:'An announced finishing attack is being scouted.'}:
+   close==='clean'?{kind:'clean',nodes:['clean_break','wristlock','grapple_trip'],stake:'Clean tactics are publicly demanded.'}:
+   close==='uncertainty'?{kind:'misdirect',nodes:['duck_rebound','quiet_reversal','counter_strike'],stake:'The opponent must read the unannounced approach.'}:
+   {kind:'win',nodes:['dramatic_rally','clothesline','finish_tease'],stake:'A public victory prediction increases pressure.'};
   const broad=st.feudHeat>=50?'A heated personal confrontation':st.feudHeat>=25?'Unfinished business at the microphone':'A confrontation before the bell';
   const crowdWord=quality>=76?'The crowd will remember that exchange.':quality>=56?'There is plenty of conversation around ringside.':'The exchange left parts of the audience unconvinced.';
   const hook=close==='vow'?'A public promise of victory hangs over this match.':close==='finisher'?'Everyone knows the finishing move being promised tonight.':
    close==='clean'?'They publicly demanded a clean contest.':'The last words at the microphone are still hanging in the air.';
-  return {v:2,cid:st.cid,style:opening,styleName:NODES.open[opening].label,quality,crowdShift,heatDelta,
+  return {v:2,cid:st.cid,style:opening,styleName:NODES.open[opening].label,claim:st.claim,argument:st.argument,tactic,quality,crowdShift,heatDelta,
    trustDelta,moraleDelta,repDelta,pressure:Math.round(m.heat+m.crowd*.4),speaker:st.w.name,opponent:st.f.name,
    speech,reply:opponentLines.at(-1)?.line||'',dialogue:st.dialogue.map(e=>({...e})),path:st.steps.map(x=>({...x})),
    promise,reaction:crowdWord,scene:broad,hook,angle:st.w.short+' '+NODES.open[opening].label.toLowerCase()
@@ -2833,13 +2925,13 @@ root.OfficeTerritory={ensure,rank,evolve};
     fd.angle=pr.angle||pr.speaker+' called out '+pr.opponent+' ('+pr.styleName.toLowerCase()+'). '+(pr.quality>=70?'The crowd bought every word.':pr.quality<38?'The exchange did not land.':'The confrontation added another chapter.');
     if(!fd.closed){fd.heat=clamp(fd.heat+pr.heatDelta);fd.last=G.abs()}
    }
-   h.promo={speaker:pr.speaker,opponent:pr.opponent,speech:pr.speech,reply:pr.reply,quality:pr.quality,style:pr.styleName,reaction:pr.reaction,dialogue:pr.dialogue||null,path:pr.path||[],promise:pr.promise||null,angle:pr.angle||null};
+   h.promo={speaker:pr.speaker,opponent:pr.opponent,speech:pr.speech,reply:pr.reply,quality:pr.quality,style:pr.styleName,reaction:pr.reaction,dialogue:pr.dialogue||null,path:pr.path||[],claim:pr.claim||null,tactic:pr.tactic||null,argument:pr.argument||0,promise:pr.promise||null,angle:pr.angle||null};
    if(pr.v===2){
     const promise=pr.promise?.type||'none',won=fin.outcome==='double'||(fin.outcome!=='nc'&&c.finish.startsWith('win'));
     const clean=fin.outcome!=='double'&&fin.outcome!=='nc'&&['win_clean','lose_clean'].includes(c.finish);
     const finisher=won&&c.finish==='win_clean'&&!!G.W(c.wid)?.finisher
      &&(fin.log||[]).some(line=>String(line.text||'').includes(G.W(c.wid).finisher));
-    const kept=promise==='win'?won:promise==='clean'?clean:promise==='finisher'?finisher:null;
+    const kept=promise==='win'?won:promise==='clean'?clean:promise==='finisher'?finisher:promise==='counter'?!!fin.promoSignals?.workerCounter:null;
     if(kept!==null){
      const line=kept?'The microphone promise was fulfilled in the ring.':'The microphone promise fell apart when the bell rang.';
      if(w){w.morale=clamp(w.morale+(kept?2:-3));w.heat=clamp(w.heat+(kept?3:-1))}
