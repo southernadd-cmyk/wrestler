@@ -65,8 +65,14 @@ const backed=E.create({...match,sheet:backedPlan}),disputed=E.create({...match,s
 assert.ok(backed.comply>disputed.comply,'historical dispute affects performance, not just dialogue');
 Game.fresh(); // Avoid leaking the controlled historical test into the seeded bouts.
 // Safety disagreements are backed by character facts, not a random argument.
-const risk=P.build({id:'risk',finish:'win_clean'},D.TALENT.find(x=>x.id==='lyra'),D.FOES.find(x=>x.id==='rev'),'spots','landmarks');
+const risk=P.build({id:'risk',finish:'win_clean'},D.TALENT.find(x=>x.id==='lyra'),D.FOES.find(x=>x.id==='roxy'),'spots','landmarks');
 assert.ok(risk.disputed&&risk.issues.some(x=>x.actor==='f'),'a seasoned opponent questions an unsafe flyer');
+const safeSize=P.build({id:'mismatch',finish:'win_clean'},D.TALENT.find(x=>x.id==='lyra'),D.FOES.find(x=>x.id==='rev'),'spots','landmarks');
+assert.equal(safeSize.disputed,false,'a safer plan against a giant needs no fake safety argument');
+assert.equal(safeSize.signed,true,'the wrestlers can agree without a click');
+const contested=P.build({id:'risk',finish:'win_clean'},D.TALENT.find(x=>x.id==='lyra'),D.FOES.find(x=>x.id==='roxy'),'spots','landmarks','worker');
+const safer=P.build({id:'risk',finish:'win_clean'},D.TALENT.find(x=>x.id==='lyra'),D.FOES.find(x=>x.id==='roxy'),'spots','landmarks','compromise');
+assert.notEqual(contested.nodes.find(n=>n.id==='payoff').actions[0],safer.nodes.find(n=>n.id==='payoff').actions[0],'the safer compromise must change the planned move');
 const exhausted=E.create({...match,sheet:backedPlan});
 exhausted.stage='live';exhausted.wSt=5;exhausted.listen=100;
 const beforeSpots=exhausted.spots;
