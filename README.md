@@ -28,9 +28,12 @@ Before each bout, choose a microphone approach (call them out, rally the fans, p
 
 Before microphone time, both wrestlers now propose their preferred tactics and
 turning points. In a dedicated match meeting, the manager chooses how much to
-plan — **detailed layout**, **key moments** or **call it in the ring** — then
-resolves the disagreement by compromise, backing their wrestler or backing
-the opponent. Personality affects how happily each wrestler accepts the sheet.
+plan — **detailed layout**, **key moments** or **call it in the ring** — then lets the wrestlers **agree without intervention** when their ideas fit.
+A manager only arbitrates a genuine conflict — such as an unsafe proposed move
+or a remembered humiliating loss. Personalities, prior results, injury memories,
+relative size, fatigue and the booked finish influence their proposals. Backing
+a side changes match cooperation; resolving a safety concern actually replaces
+the dangerous planned move with a lower-risk alternative.
 
 The agreement is a serialisable, directed graph of specific match commitments,
 with ordering constraints, owner, timing window and physically viable fallback.
