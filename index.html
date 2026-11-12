@@ -2786,6 +2786,7 @@ root.OfficeTerritory={ensure,rank,evolve};
   if(id==='accusation'&&!c.hasEvidence)return 'You have never even worked a match with me, '+w+'. Name one thing I have done to deserve that accusation.';
   if(id==='accusation')return 'You want to drag our last encounter into this? '+c.evidence+' We can settle the argument in the ring.';
   if(id==='proof'&&c.priorLoss)return 'You studied the last match? Good. I won that one, '+w+'. Tell me exactly which of my '+c.strength+' you can stop this time.';
+  if(id==='proof'&&c.planFocus==='counter')return 'I know you have prepared a counter for my '+c.strength+', '+w+'. I have been in the planning room too. Can you still find it when I change the timing?';
   if(id==='proof'&&c.hasEvidence)return 'You beat me once, '+w+'. I have studied your counters too. What happens when I change my approach?';
   if(id==='proof')return 'You are claiming you have me worked out before we have ever faced each other. How will you stop my '+c.strength+'?';
   if(id==='people')return 'These people will still be here after the match, '+w+'. Can you give them a reason to remember the result, not just your speech?';
