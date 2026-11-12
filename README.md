@@ -1,4 +1,4 @@
-# The Office — Wrestling Manager v3.2
+# The Office — Wrestling Manager v3.3
 
 A standalone wrestling management game. Run a stable, take the bookings, and sit at ringside for every match.
 
@@ -21,6 +21,37 @@ Before each bout, choose a microphone approach (call them out, rally the fans, p
 ## Systems
 
 16-week regional season; contract negotiation; wrestler recruitment and coaching; pre-match promos with four meaningful approaches and original dialogue; context-sensitive and phase-specific match commentary; heat-driven storylines, rivalries and blow-offs; live text matches with ringside decisions; rival promotions; persistent title pyramid; export and import of career saves.
+
+## v3.3 — Ten times the graph, still realistic and deterministic
+
+| Graph | v3.2 | v3.3 |
+| --- | --- | --- |
+| Action nodes / edges | 96 / 297 | **986 / 6,252** |
+| Story arcs | 13 | **25** |
+| Finish routes | 6 | **20** |
+| Promo choice nodes | 15 | **150** |
+
+- **336 authored moves in 20 families** (suplexes, power, DDTs, strikes, corner, top rope,
+  superplexes, dives, submissions, rest holds, lucha, roll-ups, ringside, heel tactics,
+  comeback fire and more). Each move has its own stamina cost, lift limit, body part,
+  earliest credible moment, risk and style affinity, plus a **reversal** and, where it
+  makes sense, a **block or abort**. Lift blocks become likelier as the size gap grows.
+- **Realism guards.** Heat segments work the targeted limb, "Keep it safe" suppresses
+  high-risk spots, nobody hits a tombstone in the first minute, and the arcs invite the move
+  families that suit them.
+- **12 new story sub-arcs**, for example limb work, heat on the floor, a slugfest, a
+  top-rope battle, a submission battle and false finishes. There are also **20 finish
+  routes**: the contract decides who wins, and the match decides how.
+- **Promos:** each of the 15 angles has about nine situation-specific versions, worded
+  for this pairing's history, memories, feud heat, styles and skills, and each gets its own
+  reply from the opponent. Specific counter vows ("I'll catch your punches") are only kept
+  by the matching kind of reversal.
+- **Deterministic:** the graph is wired with a fixed string hash, and seeds, saves and
+  mid-match or mid-promo resumes replay identically.
+
+Design and measurements: [graph expansion v3.3](docs/graph-expansion-v3-3.md). Regress with
+`node tests/catalog.test.cjs` and `node tests/promo-variants.test.cjs` alongside the seven
+existing suites.
 
 ## v3.2 — The meeting and the microphone now matter
 
