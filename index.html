@@ -1875,6 +1875,7 @@ function call(M,id){
  say(M,`You shout from ringside: “${CALLS[id].name}.”`,'you');
  const listen=M.listen+(id==='home'?20:0)+(id==='sheet'&&M.leash==='script'?10:0);
  if(M.r()*100>listen){M.ignored++;say(M,rnd(M,[`${w.short} waves you away.`,`${w.short} doesn’t even look over.`,`${w.short} hears you. Does the opposite.`]),'bad');if(w.ego>=70)M.adj.morale-=1;return true}
+ root.OfficeSheets?.intervention(M,id);
  if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`)}
  if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`)}
  if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
@@ -3197,6 +3198,7 @@ root.OfficeTerritory={ensure,rank,evolve};
   const past=(career?.history||[]).filter(x=>x.wid===w.id&&x.rid===f.id);
   const memories=career?(root.OfficeMemory?.view(w.id).entries||[]).filter(x=>x.against===f.id):[];
   return {matches:past.length,losses:past.filter(x=>(x.finish||'').startsWith('lose')).length,
+   chemistry:memories.some(x=>x.kind==='chemistry'),
    injuredBefore:memories.some(x=>x.kind==='hurt'),
    grievance:memories.some(x=>['humiliation','rebellion','promise_broken'].includes(x.kind)),
    remembered:memories[0]?.text||null,
@@ -3234,6 +3236,9 @@ root.OfficeTerritory={ensure,rank,evolve};
   add('counter','Scout '+f.short+' and turn their strength against them',
    f.short+' is a '+f.style.toLowerCase()+' wrestler. Build a specific counter to the pressure they favour.',
    'The counter needs good timing and might be anticipated.');
+  if(h.chemistry)add('chemistry','Build on their last strong performance',
+   w.short+' and '+f.short+' remember an excellent match together. Agree a more ambitious counter sequence without ignoring either performer.',
+   'A sequence that worked before may be scouted this time.');
   if(h.losses||h.grievance) add('redemption','Answer the previous result',
    w.short+' '+(h.losses?'has already lost to '+f.short+'.':'has unfinished business with '+f.short+'.')+
    ' Earn a real comeback before the contracted ending.',
@@ -3259,6 +3264,12 @@ root.OfficeTerritory={ensure,rank,evolve};
    reversal.actions=['last_second_counter'];reversal.backup=['quiet_reversal','counter_strike'];
    payoff.actions=['counter_strike'];payoff.backup=['counter_rollup','scheduled_nearfall'];
    payoff.owner='w';payoff.title=w.short+' counters '+f.short+' after studying the earlier pressure';
+  }else if(focus==='chemistry'){
+   opening.actions=['lockup'];opening.backup=[fp(w).open[0]];
+   pressure.actions=['target_strike'];pressure.backup=[fp(f).pressure[0]];
+   reversal.actions=['wrist_escape'];reversal.backup=['counter_strike'];
+   payoff.actions=['finish_tease'];payoff.backup=['last_second_counter','scheduled_nearfall'];
+   payoff.owner='w';payoff.title=w.short+' and '+f.short+' build on their previous counter sequence';
   }else if(focus==='redemption'){
    pressure.actions=['target_strike'];pressure.backup=[fp(f).pressure[0]];
    reversal.actions=['dramatic_rally'];reversal.backup=['counter_strike'];
@@ -3321,6 +3332,7 @@ root.OfficeTerritory={ensure,rank,evolve};
   if(smaller)goals.push('use counters rather than trying to lift the heavier opponent');
   if(defeated)goals.push('change the tactic that failed last time');
   if(mine&&h.grievance)goals.push('restore my credibility after the last result');
+  if(h.chemistry&&!h.grievance)goals.push('build on the strong match we worked together last time');
   if(!goals.length)goals.push(w.psych>=78?'build a believable story':w.ego>=75?'make my big moment matter':'give the crowd a good match');
   return {actor:side,name:w.short,style:w.style,opening,pressure:st.pressure[0],
    rally:st.return[0],payoff,motive:goals[0],
@@ -3356,6 +3368,7 @@ root.OfficeTerritory={ensure,rank,evolve};
   const signed=chosen!=='pending',dispute=disputed;
   let workerConsent=Math.min(90,Math.max(45,Math.round(74+(w.pro-70)*.24+(w.psych-65)*.1)));
   let opponentConsent=Math.min(90,Math.max(45,Math.round(74+(f.pro-70)*.24+(f.psych-65)*.1)));
+  if(h.chemistry&&!dispute){workerConsent+=4;opponentConsent+=4;}
   if(dispute&&signed){
    const importance=Math.max(...issues.map(x=>x.weight));
    if(chosen==='worker'){workerConsent+=issues.some(x=>x.actor==='w')?importance*3:1;opponentConsent-=issues.some(x=>x.actor==='f')?importance*5:importance*2;}
@@ -3410,8 +3423,10 @@ root.OfficeTerritory={ensure,rank,evolve};
    if(b.owner!=='either'&&b.owner!==actor&&kind!=='outcome')continue;
    const exact=b.actions.includes(id),alternate=b.backup?.includes(id);
    if(!exact&&!alternate)continue;
-   b.status=exact?'achieved':'adapted';b.actual=id;b.at=M.t;
-   b.why=exact?'Agreed move performed.':'A legal alternative replaced the original beat.';
+   const missedBefore=(b.requires||[]).filter(dep=>s.nodes.some(x=>x.id===dep&&x.status==='missed'));
+   b.status=missedBefore.length?'adapted':exact?'achieved':'adapted';b.actual=id;b.at=M.t;
+   b.why=missedBefore.length?'The earlier '+missedBefore.join(', ')+' beat was missed; the performers rebuilt the sequence.':
+    exact?'Agreed move performed.':'A legal alternative replaced the original beat.';
    event.cause=b.id;
    if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?'The agreed '+b.title.toLowerCase()+' pays off.':'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'));
    break;
@@ -3422,10 +3437,17 @@ root.OfficeTerritory={ensure,rank,evolve};
   const frac=M.t/Math.max(1,M.len);
   for(const b of s.nodes){
    if(b.status!=='pending'||b.id==='finish'||frac<=b.window[1])continue;
-   b.status='missed';b.why='The opportunity passed before the planned move could be performed.';
+   b.status='missed';b.why=M.shortened?'The match was cut short; this agreed sequence no longer fit before the finish.':'The opportunity passed before the planned move could be performed.';
    s.changes.push({beat:b.id,at:M.t,reason:b.why});
    if(root.OfficeMatch?.note&&s.changes.length<=2)root.OfficeMatch.note(M,'Road agent: '+b.title+' did not happen. The wrestlers will need another route to the finish.');
   }
+ }
+ function intervention(M,id){
+  const s=current(M);if(!s)return;
+  s.calls??=[];
+  s.calls.push({id,at:M.t,reason:id==='home'?'The manager ordered an early finish.':id==='big'?'The manager requested a risky highlight.':
+    id==='sheet'?'The manager asked the wrestlers to return to the agreed commitments.':
+    'The manager requested a change of pacing.'});
  }
  function finalize(M){
   const s=current(M);if(!s)return null;
@@ -3436,11 +3458,11 @@ root.OfficeTerritory={ensure,rank,evolve};
  function report(M){
   const s=current(M);if(!s)return null;
   const achieved=s.nodes.filter(b=>b.status==='achieved').length,adapted=s.nodes.filter(b=>b.status==='adapted').length,missed=s.nodes.filter(b=>b.status==='missed').length;
-  return {method:s.method,decision:s.decision,total:s.nodes.length,achieved,adapted,missed,
+  return {method:s.method,focus:s.focus,decision:s.decision,revisions:(s.revisions||[]).map(x=>({...x})),calls:(s.calls||[]).map(x=>({...x})),total:s.nodes.length,achieved,adapted,missed,
    beats:s.nodes.map(b=>({id:b.id,title:b.title,status:b.status,expected:b.actions[0],actual:b.actual,reason:b.why,at:b.at})),
    eventCount:s.ledger.length};
  }
- root.OfficeGraphKernel=K;root.OfficeSheets={MODE,build,focusOptions,revise,observe,boost,advance,finalize,report,proposal};
+ root.OfficeGraphKernel=K;root.OfficeSheets={MODE,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* THE OFFICE — interface v3
@@ -4044,6 +4066,8 @@ function result(){
   const h=S().history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===S().season&&x.week===S().week);
   if(h)h.sheet=sheetReport;
   cons.push({text:'Signed sheet: '+sheetReport.achieved+' performed, '+sheetReport.adapted+' adapted, '+sheetReport.missed+' missed.',tone:sheetReport.missed>2?-1:1});
+  if(sheetReport.achieved>=3&&sheetReport.missed===0&&fin.stars>=3.5)
+   OfficeMemory.remember(w.id,'chemistry',w.short+' remembers how well the agreed match with '+f.short+' came together.',f.id,3,4,c.id+':chemistry');
   if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed sheet against '+f.short+'.',f.id,-2,0,c.id+':sheet');
   G.save();
  }
@@ -4051,7 +4075,8 @@ function result(){
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  night.i++;const more=night.i<night.queue.length;
- const sheetHtml=sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title)+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?b.actual.replace(/_/g,' '):b.reason)+'</span></li>').join('')+'</ol></div>':'';
+ const sheetHtml=sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><p class="dim">Story: '+esc(OfficeSheets.focusOptions(c,w,f,night.plan?.game||'story').find(x=>x.id===sheetReport.focus)?.title||sheetReport.focus||'Performer-led')+
+  ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p><div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title)+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?b.actual.replace(/_/g,' '):b.reason)+'</span></li>').join('')+'</ol></div>':'';
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the sheet</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
  $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${win('What happened',`${facts}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';persistNight();
