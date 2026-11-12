@@ -10,12 +10,9 @@ better stories, not preserving identical seeded action choices from prior builds
 ### How to play
 
 1. Book a match, advance to match night and set the game plan.
-2. Select **Meet the wrestlers**. Both participants have distinct opening,
-   control and payoff proposals, informed by their style and personality.
+2. Select **Meet the wrestlers**. Both participants propose tactics informed by their wrestling style, safety and professionalism, ego, experience, physical matchup, earlier encounters and recorded memories.
 3. Choose **Detailed**, **Key moments** or **Call it in the ring**.
-4. Resolve the disagreement by compromise, backing your wrestler or backing
-   the opponent. Both performers sign a serialisable sheet. Where one is unhappy,
-   their response is visible and their cooperation changes in the match.
+4. If their ideas are compatible, both wrestlers **agree automatically**; no manager choice is required. If there is an actual objection grounded in injury risk, a previous humiliating result or match history, the manager can compromise or back either wrestler. The specific reason is spoken in the meeting. A safety compromise substitutes a lower-risk move, rather than merely changing the dialogue. Resentment and acceptance influence cooperation during the match.
 5. Work the existing microphone scene and live match. The sheet biases eligible
    move selection but cannot force a physically impossible or exhausted lift,
    or overwrite the contract without an explicit existing manager incident.
@@ -24,7 +21,7 @@ better stories, not preserving identical seeded action choices from prior builds
 
 ### Three related graphs
 
-**Planning graph**: a five-beat directed structure in detailed/key-moment
+**Planning graph**: plans and credible objections are derived from actual saved wrestler history and character traits, not an artificial always-on disagreement. A five-beat directed structure in detailed/key-moment
 modes, or four more flexible landmarks in call-live mode. Edges represent
 logical commitments. Each beat has an owning performer, intended moves,
 a safe fallback, a time window, and an achieved/adapted/missed result.
