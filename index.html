@@ -457,6 +457,67 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
  .tape .cmp{grid-column:1/-1;grid-row:2}
  .tv-foot{position:sticky;bottom:0}
 }
+
+/* ---------- MATCH PREPARATION: LAPTOP / TABLET / PHONE ----------
+   Keep the 90s chrome, but let one stage scroll instead of giving the
+   game-plan controls a postage-stamp internal scrollbar. Plan first. */
+.prep-context{display:none;align-items:center;flex-wrap:wrap;gap:4px 14px;margin:0 0 10px;padding:7px 10px;
+ background:var(--well);border:2px solid var(--ink);color:var(--white);font-size:18px}
+.prep-context b{color:var(--gold)}
+.prep-context span{color:var(--dim)}
+/* Landscape laptops with a short viewport: controls on the left, contract
+   alongside them, comparison below. Larger desktop layouts stay unchanged. */
+@media (min-width:1201px) and (max-height:980px){
+ .tv .s-prep{grid-template-columns:minmax(0,1.42fr) minmax(0,1fr);
+  grid-template-rows:max-content max-content;
+  grid-template-areas:"plan contract" "tape contract";
+  align-content:start;align-items:start}
+ .tv .s-prep>.win{height:auto;align-self:start}
+ .tv .s-prep>.win[style*="grid-area:contract"]{align-self:stretch}
+ .tv .s-prep .wbody{flex:0 0 auto;overflow:visible}
+ .tv .s-prep .planset{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr) minmax(0,1.15fr)}
+ .tv .s-prep .prep-context{display:flex}
+}
+/* A narrower laptop or tablet: put the decisions before the reference
+   information. The fixed-height stage itself supplies the only scrollbar. */
+@media (max-width:1200px){
+ .tv .s-prep{grid-template-columns:minmax(0,1fr);
+  grid-template-rows:max-content max-content max-content;
+  grid-template-areas:"plan" "contract" "tape";
+  align-content:start;align-items:start}
+ .tv .s-prep>.win{height:auto;align-self:start}
+ .tv .s-prep .wbody{flex:0 0 auto;overflow:visible}
+ .tv .s-prep .planset{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .tv .s-prep .planset .decide:first-child{grid-column:1/-1}
+ .tv .s-prep .prep-context{display:flex}
+}
+/* General mobile layout overrides grid areas with !important, so the
+   prep cards need explicit visual ordering independent of DOM order. */
+@media (max-width:900px){
+ .tv .s-prep>.win:nth-child(1){order:3}
+ .tv .s-prep>.win:nth-child(2){order:2}
+ .tv .s-prep>.win:nth-child(3){order:1}
+ .tv .s-prep{gap:8px;padding:8px;overflow:visible}
+ .tv .s-prep .wbody{overflow:visible}
+ .tv .s-prep .tape{grid-template-columns:1fr 1fr;gap:8px}
+ .tv .s-prep .tape .cmp{grid-column:1/-1;grid-row:2}
+ .tv .s-prep .tape .side:last-child{grid-column:2;grid-row:1}
+ .tv .s-prep .tape .side:first-child{grid-column:1;grid-row:1}
+}
+/* One-column choices remain comfortably tappable without sideways panning. */
+@media (max-width:620px){
+ .tv .s-prep .planset{grid-template-columns:minmax(0,1fr);gap:12px}
+ .tv .s-prep .planset .decide:first-child{grid-column:auto}
+ .tv .s-prep .plan-choices{grid-template-columns:minmax(0,1fr)!important}
+ .tv .s-prep .opt{min-height:46px}
+ .tv .s-prep .cmpr{grid-template-columns:2.4ch minmax(0,1fr) 5ch minmax(0,1fr) 2.4ch;gap:4px;font-size:16px}
+ .tv .s-prep .cmpr .lab{font-size:14px}
+ .tv .s-prep .tape .nm{font-size:23px}
+ .tv .s-prep .tape .portrait{width:56px;height:70px}
+ .tv .s-prep .prep-context{font-size:17px}
+ .tv-foot{gap:5px 10px}
+ .tv-foot .btn.go{width:100%;min-width:0}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -3342,7 +3403,7 @@ function prep(){
  const road=Mx.scout(w,f,P.game,Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0));
  const mind=OfficeMemory.context(w.id,f.id);
  const contract=`<div style="font:32px/1 var(--jersey);color:var(--blood)">${esc(finishLine)}</div><p class="dim" style="margin:4px 0 8px">The finish is in the contract.</p><dl class="kv"><dt>Slot</dt><dd>${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes</dd><dt>Purse</dt><dd>${money(c.purse)}</dd>${c.tag?`<dt>Billing</dt><dd>${esc(c.tag)}</dd>`:''}<dt>Opponent</dt><dd>${esc(f.name)}, ${esc(f.style.toLowerCase())}. Finisher: ${esc(f.finisher)}.</dd></dl><p style="margin-top:8px">${esc(fnotes.join(' ')||'A steady, professional opponent.')}</p>${warn.length?`<ul class="warnings">${warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="good">${esc(w.short)} is fit and ready. Morale ${w.morale}.</p>`}<div class="well" style="margin-top:10px"><b>Road agent's scouting</b><p style="margin:5px 0">${esc(road.brief)}</p><p class="dim">${esc(road.advice)}</p>${mind.recall?`<p style="margin-top:6px"><b>What they remember:</b> ${esc(mind.recall)}</p><p class="dim">Trust in your judgement: ${mind.trust}/100.</p>`:''}</div>`;
- const plan=`<div class="planset"><fieldset class="decide"><legend>What is the match built on?</legend><div class="opts" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${opts('game',D.PLANS,P.game)}</div></fieldset><fieldset class="decide"><legend>Who calls it?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset><fieldset class="decide"><legend>Last word at the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset></div>`;
+ const plan=`<div class="prep-context"><b>${esc(w.short)} v ${esc(f.short)}</b><span>${esc(finishLine)} · ${esc(D.SLOTS[c.slot].name)} · ${c.minutes} minutes</span></div><div class="planset"><fieldset class="decide"><legend>What is the match built on?</legend><div class="opts plan-choices" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${opts('game',D.PLANS,P.game)}</div></fieldset><fieldset class="decide"><legend>Who calls it?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset><fieldset class="decide"><legend>Last word at the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset></div>`;
 
  $('#tv').innerHTML=`${strip(c,'tonight')}<div class="stage screen s-prep">${win('Tale of the tape',tape,{area:'tape',h:'h3',cls:'quiet',body:'tight'})}${win('The contract',contract,{area:'contract',h:'h3'})}${win('Game plan',plan,{area:'plan',h:'h3'})}</div><div class="tv-foot"><span class="dim">Next: microphone time. Then three calls from ringside after the bell.</span><button class="btn go" data-tv="promos">Send them out</button></div>`;
  night.stage='prep';persistNight();
