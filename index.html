@@ -1382,6 +1382,7 @@ const Graph=(function makeGraph(){
   if(id==='near_kickout')g.pendingCover=false;
   g.node=id;g.steps++;g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective});
   if(g.events.length>220)g.events.shift();
+  root.OfficeSheets?.observe(M,id,side,'action');
   if(M.t-(g.lastColourAt??-1000)>=100&&M.r()<.33){
    const reactions={
     grapple_trip:'Colour: That transition to the leg was perfectly timed.',
@@ -1438,6 +1439,7 @@ const Graph=(function makeGraph(){
    if(['cover','submission_set'].includes(id)&&g.arc==='nearfall')n*=2;
    if((id==='top_climb'||id==='springboard_rise')&&(p.control==='f'?M.fSt:M.wSt)<30)n*=.22;
    if(Psy.get(M).focusHits>=3&&Psy.get(M).target==='left knee'&&Psy.get(M).control==='w'&&['rope_run','top_climb','clothesline'].includes(id))n*=.35;
+   if(root.OfficeSheets?.boost)n*=root.OfficeSheets.boost(M,id,p.control==='f'?'f':'w');
    weights.set(id,(weights.get(id)||0)+n);
   }
   return [...weights.entries()];
@@ -1479,6 +1481,7 @@ const Graph=(function makeGraph(){
   g.nearfallCount++;
   g.events.push({id:'scheduled_nearfall',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
   g.node='stand_reset';
+  root.OfficeSheets?.observe(M,'scheduled_nearfall',p.control,'spot');
  }
  function special(M){
   const g=get(M),p=Psy.get(M);
@@ -1486,6 +1489,7 @@ const Graph=(function makeGraph(){
   spot(M,false);
   g.events.push({id:'special_spot',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
   g.node=null;
+  root.OfficeSheets?.observe(M,'special_spot',p.control,'spot');
  }
  function finishCue(M){
   const g=get(M),outcome=M.outcome==='nc'?'nc':M.outcome==='double'?'double':M.o.finish;
@@ -1494,6 +1498,8 @@ const Graph=(function makeGraph(){
   if(outcome==='nc'&&!M.injury)throw Error('A no-contest medical stoppage requires a recorded injury.');
   g.outcome={id:outcome,winner:def.who,method:def.method,reason:def.legal,booked:M.o.finish};
   g.events.push({id:'outcome_'+outcome,t:M.t,arc:g.arc,control:Psy.get(M).control,position:Psy.get(M).position});
+  root.OfficeSheets?.observe(M,'outcome_'+outcome,'either','outcome');
+  root.OfficeSheets?.finalize(M);
   return g.outcome;
  }
  function validate(){
@@ -1536,6 +1542,7 @@ function create(o){
   adj:{trust:0,heat:0,morale:0,rep:0,purseMul:1,otherTrust:0,loyal:0},
   queue:[],log:[],done:false,hints:{},reaction:reactions,prep:prep};
  M.story=Psy.make(M);
+ if(o.sheet?.signed)M.sheet=JSON.parse(JSON.stringify(o.sheet));
  Graph.init(M);
  M.crowdStart=M.crowd;M.crowdPeak=M.crowd;
  return M;
@@ -1649,6 +1656,7 @@ function tick(M){
  if(!M.hints.dead&&M.crowd<33&&frac>.3){M.hints.dead=1;say(M,`In your ear: they’re dying out here. Change something.`,'agent');}
  if(!M.hints.tired&&M.wSt<30){M.hints.tired=1;say(M,`In your ear: ${w.short} is blown up. Slow it down or take it home.`,'agent');}
  // incidents
+ root.OfficeSheets?.advance(M);
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
@@ -1945,7 +1953,7 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,call,canCall,resolve,CALLS,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,scout:Graph.scout,restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
+root.OfficeMatch={create,next,call,canCall,resolve,CALLS,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,scout:Graph.scout,note:(M,line)=>say(M,line,'story'),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* THE OFFICE v2.2 — regional circuit management layer */
@@ -2964,6 +2972,159 @@ root.OfficeTerritory={ensure,rank,evolve};
   G.save();return result;
  };
  root.OfficeMemory={view,context,trust,rival,remember};
+})(typeof window!=='undefined'?window:globalThis);
+
+
+/* THE OFFICE v3.1 — cooperative match planning and causal commitments.
+   Reusable registries and explicit event IDs connect the signed sheet to real moves.
+   The match's physical rules, not the planner, decide which moves can happen. */
+(function installOfficeSheets(root){'use strict';
+ const D=root.OfficeData,actions=root.OfficeMatch.GRAPH.A;
+ const K={
+  registry:{},register(kind,records){
+   if(!Array.isArray(records)||!records.length)throw Error('Graph requires nodes');
+   const map=Object.fromEntries(records.map(x=>[x.id,x]));
+   if(Object.keys(map).length!==records.length)throw Error('Duplicate graph node');
+   for(const node of records)for(const dep of node.requires||[])if(!map[dep])throw Error('Unknown prerequisite '+dep);
+   this.registry[kind]=map;return map;
+  },
+  eligible(node,state){
+   const reasons=[];
+   if(node.requires?.some(id=>state[id]?.status==='pending'))reasons.push('awaiting prior commitment');
+   return {ok:!reasons.length,reasons};
+  },
+  commit(M,event){
+   if(!M.sheet)return null;
+   const log=M.sheet.ledger??(M.sheet.ledger=[]);
+   const record={id:'evt-'+(log.length+1),at:M.t,action:event.action,actor:event.actor||null,kind:event.kind||'action',cause:event.cause||null};
+   log.push(record);if(log.length>220)log.shift();return record;
+  },
+  validate(nodes){
+   const by=Object.fromEntries(nodes.map(x=>[x.id,x]));
+   const bad=[];
+   for(const n of nodes){if(!n.id||!n.actions?.length)bad.push('Missing action '+n.id);
+    for(const a of [...n.actions,...(n.backup||[])])if(a!=='finish_cue'&&!actions[a]&&!a.startsWith('outcome_')&&!['special_spot','scheduled_nearfall'].includes(a))bad.push('Unknown action '+a);
+    for(const dep of n.requires||[])if(!by[dep])bad.push('Unknown dependency '+dep);
+   }
+   const visit=(id,stack=[])=>{
+    if(stack.includes(id)){bad.push('Cycle '+id);return}
+    const node=by[id];if(node)for(const dep of node.requires||[])visit(dep,[...stack,id]);
+   };
+   nodes.forEach(n=>visit(n.id));return bad;
+  }
+ };
+ const MODE={
+  detailed:{label:'Detailed layout',desc:'Both performers agree a sequence of specific beats. Highest commitment, less room for improvisation.',weight:13},
+  landmarks:{label:'Key moments',desc:'Agree the essential dramatic beats and call the transitions live. Recommended.',weight:8},
+  live:{label:'Call it in the ring',desc:'Agree the story, one meaningful turning point and the finish; adapt the details to the crowd.',weight:3.3}
+ };
+ const STYLE={
+  Technical:{open:['wristlock','grapple_trip'],pressure:['target_hold','arm_wringer'],return:['counter_strike','grapple_trip'],spectacle:['submission_set','counter_rollup']},
+  Brawl:{open:['strike_trade','probe_strike'],pressure:['corner_strikes','target_strike'],return:['clothesline','counter_strike'],spectacle:['power_spinebuster','corner_charge']},
+  Spectacle:{open:['rope_run','duck_rebound'],pressure:['corner_whip','counter_strike'],return:['springboard_rise','duck_rebound'],spectacle:['springboard_strike','aerial_attack']},
+  Story:{open:['lockup','crowd_pose'],pressure:['mat_takedown','target_strike'],return:['hope_elbows','counter_strike'],spectacle:['finish_tease','counter_rollup']}
+ };
+ const fp=w=>STYLE[w.style]||STYLE.Story;
+ const label=id=>id.replace(/_/g,' ');
+ function proposal(w,side){
+  const st=fp(w),p=D.PROFILES[w.id];
+  return {actor:side,name:w.short,style:w.style,opening:st.open[0],
+   pressure:st.pressure[0],rally:st.return[0],payoff:st.spectacle[0],
+   motive:w.ego>=70?'wants to look dominant':w.pro>=78?'wants a clean, safe finish':'wants a memorable reaction',
+   concern:w.fatigue>=40?'is worried about tired legs':w.safe<60?'wants to avoid dangerous high-risk spots':'wants the timing to feel natural',
+   preferred:p?.preferred||[]};
+ }
+ function build(c,w,f,game,method='landmarks',decision=null){
+  if(!MODE[method])method='landmarks';
+  const a=proposal(w,'w'),b=proposal(f,'f');
+  const chosen=decision||'compromise';
+  const lead=chosen==='worker'?a:chosen==='opponent'?b:null;
+  const main=lead||a,guest=lead?lead===a?b:a:b;
+  const pressure=lead===a?a.pressure:b.pressure;
+  const payoff=lead===b?b.payoff:a.payoff;
+  const wop=fp(w),fop=fp(f);
+  // Each commitment names an intended performer, a real legal graph event,
+  // an alternative and a causal predecessor. The booked finish is immutable.
+  const first={id:'opening',owner:'w',title:w.short+' establishes the opening',actions:[a.opening],backup:[wop.open[1]],window:[.03,.32],requires:[]};
+  const second={id:'pressure',owner:lead===a?'w':'f',title:(lead===a?w.short:f.short)+' takes control',actions:[pressure],backup:[guest.pressure],window:[.20,.65],requires:['opening']};
+  const third={id:'reversal',owner:'w',title:w.short+' fights for a comeback',actions:[a.rally],backup:[wop.return[1]],window:[.43,.85],requires:['pressure']};
+  const fourth={id:'payoff',owner:lead===b?'f':'w',title:(lead===b?f.short:w.short)+' attempts a signature turning point',actions:[payoff],backup:[lead===b?fop.spectacle[1]:wop.spectacle[1],'special_spot','scheduled_nearfall'],window:[.62,.96],requires:['reversal']};
+  const final={id:'finish',owner:'either',title:'Deliver the contracted '+(c.finish.startsWith('win')?'victory':'defeat'),actions:['outcome_'+c.finish],backup:['outcome_double','outcome_nc'],window:[.89,1.2],requires:['payoff']};
+  const nodes=method==='detailed'?[first,second,third,fourth,final]:
+   method==='live'?[{...first,actions:[a.opening,wop.open[1]]},second,{...fourth,requires:['pressure']}, {...final,requires:['payoff']}]:
+   [first,second,third,fourth,final];
+  const problems=K.validate(nodes);if(problems.length)throw Error('Sheet: '+problems.join(','));
+  const signed=!!decision,dispute=a.payoff!==b.payoff;
+  const lines=[
+   {actor:w.short,text:'I want to start with '+label(a.opening)+'. Later I want '+label(a.payoff)+'. I '+a.motive+'.'},
+   {actor:f.short,text:'I would rather build around '+label(b.pressure)+' and earn '+label(b.payoff)+'. I '+b.motive+'.'},
+   {actor:'Road agent',text:dispute?'Their preferred turning points are different. The choice determines whose idea carries the match.':'The performers agree on the main beat; settle who leads the execution.'}
+  ];
+  if(signed)lines.push({actor:lead?.name||'Road agent',text:chosen==='worker'?'The stable leads the sheet. The opponent agrees to work towards the finish.':chosen==='opponent'?'The opponent leads the crucial control and payoff. Your wrestler will have to adapt.':'Both compromise: the opponent gets a control passage, your wrestler gets the rally and final highlight.'});
+  return {v:1,contract:c.id,method,decision:chosen,signed,authority:chosen==='opponent'?'opponent':chosen==='worker'?'worker':'shared',
+   w:w.id,f:f.id,premise:w.short+' and '+f.short+' try to earn a '+game+' match without breaking the agreed '+c.finish.replace(/_/g,' ')+' finish.',
+   speakers:lines,proposals:{worker:a,opponent:b},nodes:nodes.map(x=>({...x,status:'pending',actual:null,at:null,why:''})),ledger:[],changes:[],finish:c.finish};
+ }
+ function current(M){return M.sheet?.signed?M.sheet:null}
+ function eligibleBeat(M,b){
+  if(b.status!=='pending')return false;
+  const s=current(M);if(!s)return false;
+  const map=Object.fromEntries(s.nodes.map(n=>[n.id,n]));
+  return (b.requires||[]).every(id=>map[id]?.status!=='pending');
+ }
+ function boost(M,id,actor){
+  const s=current(M);if(!s)return 1;
+  const frac=M.t/Math.max(1,M.len);
+  let mult=1;
+  for(const b of s.nodes){
+   if(!eligibleBeat(M,b)||frac<b.window[0]-.07||frac>b.window[1])continue;
+   if(b.owner!=='either'&&b.owner!==actor)continue;
+   if(b.actions.includes(id))mult=Math.max(mult,MODE[s.method].weight);
+   else if(b.backup?.includes(id))mult=Math.max(mult,MODE[s.method].weight*.52);
+  }
+  return mult;
+ }
+ function observe(M,id,actor,kind='action'){
+  const s=current(M);if(!s)return;
+  const event=K.commit(M,{action:id,actor,kind});
+  const frac=M.t/Math.max(1,M.len);
+  for(const b of s.nodes){
+   if(!eligibleBeat(M,b))continue;
+   if(frac<b.window[0]-.10||frac>b.window[1]+.12)continue;
+   if(b.owner!=='either'&&b.owner!==actor&&kind!=='outcome')continue;
+   const exact=b.actions.includes(id),alternate=b.backup?.includes(id);
+   if(!exact&&!alternate)continue;
+   b.status=exact?'achieved':'adapted';b.actual=id;b.at=M.t;
+   b.why=exact?'Agreed move performed.':'A legal alternative replaced the original beat.';
+   event.cause=b.id;
+   if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?'The agreed '+b.title.toLowerCase()+' pays off.':'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'));
+   break;
+  }
+ }
+ function advance(M){
+  const s=current(M);if(!s)return;
+  const frac=M.t/Math.max(1,M.len);
+  for(const b of s.nodes){
+   if(b.status!=='pending'||b.id==='finish'||frac<=b.window[1])continue;
+   b.status='missed';b.why='The opportunity passed before the planned move could be performed.';
+   s.changes.push({beat:b.id,at:M.t,reason:b.why});
+   if(root.OfficeMatch?.note&&s.changes.length<=2)root.OfficeMatch.note(M,'Road agent: '+b.title+' did not happen. The wrestlers will need another route to the finish.');
+  }
+ }
+ function finalize(M){
+  const s=current(M);if(!s)return null;
+  advance(M);
+  for(const b of s.nodes)if(b.status==='pending'){b.status='missed';b.why='The bell came before this planned commitment.'}
+  return report(M);
+ }
+ function report(M){
+  const s=current(M);if(!s)return null;
+  const achieved=s.nodes.filter(b=>b.status==='achieved').length,adapted=s.nodes.filter(b=>b.status==='adapted').length,missed=s.nodes.filter(b=>b.status==='missed').length;
+  return {method:s.method,decision:s.decision,total:s.nodes.length,achieved,adapted,missed,
+   beats:s.nodes.map(b=>({id:b.id,title:b.title,status:b.status,expected:b.actions[0],actual:b.actual,reason:b.why,at:b.at})),
+   eventCount:s.ledger.length};
+ }
+ root.OfficeGraphKernel=K;root.OfficeSheets={MODE,build,observe,boost,advance,finalize,report,proposal};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* THE OFFICE — interface v3
