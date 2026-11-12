@@ -1420,7 +1420,8 @@ const Graph=(function makeGraph(){
   if(id==='near_kickout')g.pendingCover=false;
   g.node=id;g.steps++;g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective});
   if(g.events.length>220)g.events.shift();
-  if(M.o.promo?.tactic?.kind==='counter'&&n.reverse&&side==='f'&&p.control==='w'&&!g.promoCounterPaid){
+  if(M.o.promo?.tactic?.kind==='counter'&&n.reverse&&side==='f'&&p.control==='w'&&
+     M.t/M.len>=.58&&M.o.promo.tactic.nodes.includes(id)&&!g.promoCounterPaid){
    g.promoCounterPaid=true;
    say(M,M.w.short+' reads '+M.f.short+' and turns the attack around! That is the counter promised at the microphone.','story');
   }
@@ -1492,7 +1493,7 @@ const Graph=(function makeGraph(){
    if(publicTactic){
     if(publicTactic.kind==='clean'&&['cheap_shot','outside_toss','floor_brawl'].includes(id))n*=.28;
     if(publicTactic.kind==='counter'&&publicTactic.nodes.includes(id))
-     n*=p.control==='f'&&A[id].reverse?3.25:1.12;
+     n*=p.control==='f'&&A[id].reverse&&M.t/M.len>.45?(M.f.psych>=82?1.45:2.5):1;
     if(publicTactic.kind==='finisher'&&id==='finish_tease')n*=M.f.psych>=78?.8:2.4;
     if(publicTactic.kind==='misdirect'&&publicTactic.nodes.includes(id))n*=1.65;
     if(publicTactic.kind==='win'&&publicTactic.nodes.includes(id)&&M.t/M.len>.58)n*=1.4;
@@ -2009,7 +2010,7 @@ function summary(M){
   outcome:M.outcome,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
   resent:M.resent,promo:M.o.promo||null,
   promoSignals:{
-   workerCounter:!!M.graph?.events?.some(e=>e.reverse&&e.preControl==='f'&&e.control==='w'),
+   workerCounter:!!M.graph?.promoCounterPaid,
    workerFinisherSetup:!!M.graph?.events?.some(e=>e.id==='finish_tease'&&e.preControl==='w'),
    workerDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='w'),
    opponentDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='f')
@@ -2961,7 +2962,11 @@ root.OfficeTerritory={ensure,rank,evolve};
     if(kept!==null){
      const line=kept?'The microphone promise was fulfilled in the ring.':'The microphone promise fell apart when the bell rang.';
      if(w){w.morale=clamp(w.morale+(kept?2:-3));w.heat=clamp(w.heat+(kept?3:-1))}
-     if(!fd.closed)fd.heat=clamp(fd.heat+(kept?2:5));
+     if(fd&&!fd.closed)fd.heat=clamp(fd.heat+(kept?2:5));
+     if(root.OfficeMemory&&w)
+      root.OfficeMemory.remember(w.id,kept?'public_promise_kept':'public_promise_broken',
+       w.short+' '+(kept?'delivered':'failed to deliver')+' the public '+promise+' promise against '+G.F(c.rid).short+'.',
+       c.rid,kept?2:-3,kept?2:-2,c.id+':promo:'+promise);
      h.promo.promise.kept=kept;h.promo.promise.checked=true;h.notes.push(line);out.push({text:line,tone:kept?1:-1});
     }
     const mood=pr.trustDelta>1?'The promoter appreciated the restraint.':pr.trustDelta<0?'The promoter was unhappy about how personal it became.':'The promoter took note of the exchange.';
