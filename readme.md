@@ -93,7 +93,8 @@ To play locally, download the repository and open `index.html` in a modern brows
 
 | What’s on the sheet | Current count |
 | --- | ---: |
-| Ring action nodes and transitions | 969 / 6,152 |
+| In-ring actions and events (nodes) | 969 |
+| Links between actions and events (transitions) | 6,152 |
 | Match story arcs | 25 |
 | Routes across the four booked finishes | 18 |
 | Authored moves and move families | 336 / 20 |
