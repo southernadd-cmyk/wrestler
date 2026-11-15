@@ -2186,8 +2186,14 @@ const Graph=(function makeGraph(){
   const pool=[...weights.entries()];
   // An agreed beat is not one option among fifty. If it is legal right now, the wrestler takes it
   // with odds set by how willing they are, whatever their habits would otherwise suggest.
-  if(agreed){const i=pool.findIndex(x=>x[0]===agreed[0]);
-   if(i>=0){const rest=pool.reduce((t,x,j)=>j===i?t:t+x[1],0);pool[i][1]=Math.max(pool[i][1],rest*agreed[1]);}}
+  if(agreed){
+   const i=pool.findIndex(x=>x[0]===agreed[0]);
+   if(i>=0){
+    const rest=pool.reduce((total,x,j)=>j===i?total:total+x[1],0);
+    const notePenalty=Math.min(1,root.OfficeRoom.bias(M,agreed[0]));
+    pool[i][1]=Math.max(pool[i][1],rest*agreed[1]*notePenalty);
+   }
+  }
   return pool;
  }
  function recover(M){
@@ -4493,7 +4499,7 @@ root.OfficeTerritory={ensure,rank,evolve};
    stoic:['I’d sooner take the {move}. I’m forty-one. Be reasonable.','Make it the {move}. My back has asked me to pass that on.','The {move}, if it’s all the same. I’ve to drive home after.'],
    precise:['The {move} is safer by a measurable margin. I have measured it.','I will accept the {move}. The alternative has a non-zero dentistry risk.','I would counter-propose the {move}. Fewer variables.'],
    earnest:['Would the {move} be okay instead? I don’t want to be a bother.','If it’s the {move} I can make it look really good. I promise.','Maybe the {move}? Only if {them} doesn’t mind.'],
-   sermon:['Let {them} instead offer the {move}, that I may sell it with dignity.','I counsel the {move}. The other thing is how brother Clive lost his teeth.','I am at peace with the {move}. The other I am not at peace with.'],
+   sermon:['Let {them} instead offer the {move}, that I may sell it with dignity.','I counsel the {move}. The other thing cost Brother Clive two teeth.','I am at peace with the {move}. The other I am not at peace with.'],
    slippery:['Tell you what, {them} does the {move}, I owe you one. I’m good for it.','The {move}. Same reaction, half the chiropractor’s bill.','Make it the {move} and I’ll sell it like I’ve been shot. Promise.']
   },
   big:{
@@ -4516,6 +4522,16 @@ root.OfficeTerritory={ensure,rank,evolve};
    sermon:['Pride is a sin. I am nevertheless experiencing some.','I had prepared a moment. I shall carry it home again, like a casserole nobody touched.'],
    slippery:['Hang on, hang on. What’s in it for me?','I’m not being funny, but that’s a main-event spot, and I’m on mid-card money.']
   },
+  credibility:{
+   grand:['If {them} flattens me this early, what am I supposed to sell a comeback with?','I’ll give {them} the heat. I would prefer to look like a credible opponent first.'],
+   gruff:['I’ll sell it. Build to it first.','Too much, too soon. Give me a chance to fight back.'],
+   eager:['If I go down that hard now, how am I meant to get the crowd back?','Can we save that for later? I’ve barely got going by then.'],
+   stoic:['I’ll take the heat. Start smaller and make them earn it.','They’ll buy the comeback if I’ve still got something left.'],
+   precise:['That’s too decisive for this early. The comeback needs a believable opening.','Give {them} control, by all means. Leave me something to work with.'],
+   earnest:['Could I stay in the fight a little longer? I want the crowd to believe I can come back.','I’m happy to sell for {them}. Can we build to that move?'],
+   sermon:['There can be no resurrection if nobody believes I can get up.','Let the punishment build. We have a whole match to tell this story.'],
+   slippery:['If you want me to take that now, give me something the crowd can remember later.','I can make {them} look good. I’d like to look as if I belong in the match, too.']
+  },
   safety:{
    grand:['{them}? Doing that? To me? I’ve seen {them} miss a chair.','I will not be dropped on my head by somebody who cannot parallel park.'],
    gruff:['{them} is not doing that to me. {them} dropped Clive.','No. I’ve seen the training.'],
@@ -4529,7 +4545,7 @@ root.OfficeTerritory={ensure,rank,evolve};
   proud:{
    grand:['I do not tap out. I conclude.','Losing I can do. Losing like THAT has to be negotiated.'],
    gruff:['I’m not doing that. Not in this town.','No. Pick another way to lose.'],
-   eager:['Do I have to lose like that? It’s the embarrassing way.','My nan watches these. She’ll ring me.'],
+   eager:['Do I have to lose like that? It’s the embarrassing way.','My nan watches these. I’ll never hear the end of it.'],
    stoic:['I’ll lose. I’ve no problem losing. I’d just rather not look daft doing it.','Thirty years in, I’ve earned a better way down than that.'],
    precise:['That finish makes me look incompetent. I am many things. I am not that.','I can lose more credibly than that. I have options listed.'],
    earnest:['Could I lose a bit more… nobly?','I’ll do it. I just won’t enjoy it. I want that understood.'],
@@ -4557,14 +4573,14 @@ root.OfficeTerritory={ensure,rank,evolve};
    slippery:['You owe me. I’m writing it down. I’ve got a little book.','All right, all right. Keep your hair on.']
   },
   pleased:{
-   grand:['Naturally.','At last, a manager with taste.'],
-   gruff:['Good.','Yeah.'],
-   eager:['YES. Thank you! I won’t mess it up! Probably!','I’m going to text my mum.'],
-   stoic:['Sensible.','Good call.'],
-   precise:['Correct.','A rational decision. I’m almost moved.'],
-   earnest:['Really? Thank you! Thanks so much.','Oh, brilliant. Thank you.'],
-   sermon:['Blessed are the decisive.','It is good.'],
-   slippery:['Smart. I’ve always said you were smart.','That’s why you’re the gaffer.']
+   grand:['Naturally.','At last, a manager with taste.','Exactly as I pictured it.'],
+   gruff:['Good.','Yeah.','That works.'],
+   eager:['YES. Thank you! I won’t mess it up! Probably!','I’m going to text my mum.','Brilliant. I’ve already got the footwork in my head.'],
+   stoic:['Sensible.','Good call.','I can work with that.'],
+   precise:['Correct.','A rational decision. I’m almost moved.','I’ll update the diagram.'],
+   earnest:['Really? Thank you! Thanks so much.','Oh, brilliant. Thank you.','I’ll make it count.'],
+   sermon:['Blessed are the decisive.','It is good.','Then let us proceed with confidence.'],
+   slippery:['Smart. I’ve always said you were smart.','That’s why you’re the gaffer.','I had a feeling you’d see it my way.']
   },
   sweet:{
    grand:['Money. How vulgar. Thank you.','I accept, on the understanding that this was my idea.'],
@@ -4573,7 +4589,7 @@ root.OfficeTerritory={ensure,rank,evolve};
    stoic:['That’s the car park paid for. Go on, then.','Aye, all right.'],
    precise:['The incentive is adequate.','Payment received. Objection withdrawn.'],
    earnest:['You don’t have to do that! I mean, thank you.','Oh! That’s really kind.'],
-   sermon:['The labourer is worthy of his hire.','A generous offering. The answer is yes.'],
+   sermon:['A labourer deserves a wage.','A generous offering. The answer is yes.'],
    slippery:['Now we’re talking.','Pleasure doing business.']
   },
   loose:{
@@ -4587,11 +4603,22 @@ root.OfficeTerritory={ensure,rank,evolve};
    slippery:['Lovely. Nothing in writing. My favourite.','Leave it loose. Less to get wrong.']
   }
  };
- // Lines cycle through their variants, starting somewhere different each night, so nobody repeats themselves.
+ // A seeded rotation breaks ties between the least-used lines in the room.
  const turn=(st,key,n)=>{st.said??={};const i=(st.said[key]=(st.said[key]??hash(st.seed+'|'+key)%n)+1);return i%n;};
  const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
- const say=(st,type,w,k,vars={})=>{const arr=LINES[type][voice(w)],them=vars.them||(w.id===st.w.id?st.f.short:st.w.short);
-  return cap(arr[turn(st,type+'|'+w.id,arr.length)].replace(/\{move\}/g,vars.move||'').replace(/\{MOVE\}/g,(vars.move||'').toUpperCase()).replace(/\{them\}/g,them));};
+ const say=(st,type,w,k,vars={})=>{
+  const them=vars.them||(w.id===st.w.id?st.f.short:st.w.short),move=vars.move||'';
+  const lines=LINES[type][voice(w)].map(line=>cap(line.replace(/\{move\}/g,move).replace(/\{MOVE\}/g,move.toUpperCase()).replace(/\{them\}/g,them)));
+  const used=new Map();
+  for(const entry of st.log)used.set(entry.text,(used.get(entry.text)||0)+1);
+  const start=turn(st,type+'|'+w.id,lines.length);
+  let best=lines[start];
+  for(let i=1;i<lines.length;i++){
+   const line=lines[(start+i)%lines.length];
+   if((used.get(line)||0)<(used.get(best)||0))best=line;
+  }
+  return best;
+ };
  const from=(st,key,arr)=>arr[turn(st,key,arr.length)];
  const DAFT={
   grand:{pitch:'One more thing. I should be carried to the ring. On a litter. By four local men of your choosing.',
@@ -4672,7 +4699,7 @@ root.OfficeTerritory={ensure,rank,evolve};
  const appeal=(id,o)=>((D.PROFILES[o.id]?.signature||[]).includes(id)?4:0)+(A[id].styles?.includes(o.style)?1:0)+(A[id].crowd||0)*.4+(A[id].cost??1)*.3;
  // Three pitches for a slot: the performer's favourite, what the receiver would rather take,
  // and the road agent's sensible option.
- function pitches(st,slot){
+ function pitches(st,slot,{allowAmbition=true}={}){
   const {w,f,seed}=st,S=SLOTS.find(x=>x.id===slot);
   if(slot==='finish'){
    const all=(MX.FINISH_ROUTES[st.finish]||[]).map(r=>r.id).filter(id=>!ROUTE_STATIC[id]||ROUTE_STATIC[id](w,f));
@@ -4693,7 +4720,7 @@ root.OfficeTerritory={ensure,rank,evolve};
    const agent=mid.length?pick(mid,seed,slot+tag+'agent'):null;
    // A wrestler with more ambition than sense sometimes pitches something the body cannot do.
    const dream=all.filter(id=>!legal(id,o,r)&&A[id].lift!==null);
-   const deluded=slot==='payoff'&&dream.length&&(o.ego>=62||o.psych<50)&&rng(seed,slot+tag+'dream')<.6?pick(dream,seed,slot+tag+'which'):null;
+   const deluded=allowAmbition&&slot==='payoff'&&dream.length&&(o.ego>=62||o.psych<50)&&rng(seed,slot+tag+'dream')<.6?pick(dream,seed,slot+tag+'which'):null;
    return {owner,mine:deluded||mine,impossible:!!deluded,theirs,agent};
   };
   if(slot==='payoff'){
@@ -4741,8 +4768,8 @@ root.OfficeTerritory={ensure,rank,evolve};
    const pn=st.pending,o=[];
    if(pn.kind==='impossible')return [{id:'anyway',label:'“Let them try it.”',hint:'It will not work, and everyone will see it not work.'},{id:'fair',label:'“Fair point. What else is there?”',hint:'Take '+AGENT+'’s option instead.'}];
    o.push({id:'insist',label:'“It’s decided.”',hint:(pn.by==='w'?st.w.short:st.f.short)+' will go along with it, and will not be happy.'});
-   const payoffOpen=!st.board.payoff&&!st.promised&&SLOTS[st.slot].id!=='payoff'&&SLOTS[st.slot].id!=='finish';
-   if(payoffOpen)o.push({id:'trade',label:'“Do this, and the big spot is yours.”',hint:'A straight swap. You will not get to choose the big spot later.'});
+   const payoffOpen=st.clock>=3&&!st.board.payoff&&!st.promised;
+   if(pn.kind==='credibility'&&payoffOpen)o.push({id:'trade',label:'“Do this, and the big spot is yours.”',hint:'A straight swap. You will not get to choose the big spot later.'});
    if(pn.by==='w')o.push({id:'sweeten',label:'“There’s forty quid in it.”',hint:'A £40 bonus out of tonight’s purse.'});
    else o.push({id:'word',label:'“'+AGENT+', have a word.”',hint:'Costs two minutes. '+AGENT+' is persuasive about two times in three.'});
    o.push({id:'backdown',label:'“All right. Your way.”',hint:'Switch to what '+(pn.by==='w'?st.w.short:st.f.short)+' would rather do.'});
@@ -4769,7 +4796,7 @@ root.OfficeTerritory={ensure,rank,evolve};
  }
  function react(st,card){
   // The people in the room respond to what was just decided. Returns an objection, or null.
-  const S=SLOTS[st.slot],{w,f,seed}=st,k=S.id;
+  const S=SLOTS[st.slot],{w,f}=st;
   if(S.id==='finish'){
    const r=card.route;
    if(st.finish==='lose_clean'&&r==='submission_defeat'&&w.ego>=65)return {by:'w',kind:'proud'};
@@ -4781,6 +4808,10 @@ root.OfficeTerritory={ensure,rank,evolve};
   if(card.impossible)return {by:'agent',kind:'impossible'};
   const owner=card.owner==='either'?null:card.owner,recv=owner?other(owner):null;
   if(owner&&card.risk&&who(st,owner).safe<58&&who(st,recv).pro>=55)return {by:recv,kind:'safety'};
+  if(S.id==='pressure'&&card.by===owner&&pain(card.action)>=3){
+   const receiver=who(st,recv);
+   if(receiver.ego>=65&&receiver.pro<88)return {by:recv,kind:'credibility'};
+  }
   if(S.id==='payoff'&&owner){
    const loser=other(owner),L=who(st,loser);
    if(L.ego>=68&&L.pro<88&&st.wins[loser]<=st.wins[owner])return {by:loser,kind:'ego'};
@@ -4809,7 +4840,7 @@ root.OfficeTerritory={ensure,rank,evolve};
    }
    const S=SLOTS[st.slot];
    if(S.id==='payoff'&&st.promised){
-    const cs=pitches(st,'payoff'),mine=cs.find(c=>c.by===st.promised&&!c.impossible)||cs.find(c=>c.by==='agent');
+    const cs=pitches(st,'payoff',{allowAmbition:false}),mine=cs.find(c=>c.by===st.promised)||cs.find(c=>c.by==='agent');
     const X=who(st,st.promised);
     log(st,AGENT,'Big spot. That was promised to '+X.short+', so that’s that.','agent');
     log(st,X.short,say(st,'big',X,'promised',{move:mine.label}));

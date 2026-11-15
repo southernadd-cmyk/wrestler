@@ -45,12 +45,13 @@ const strategies={
  random:v=>v.options[Math.floor(rnd()*v.options.length)],
  planner:v=>{const cards=v.options.filter(o=>o.id.startsWith('card:'));return cards.length?cards[Math.floor(rnd()*cards.length)]:v.options[Math.floor(rnd()*v.options.length)];}
 };
+const strategyCount=Object.keys(strategies).length;
 
 // 2. Every pairing, every finish, four ways of running the meeting.
 const seenKinds=new Set(),seenOptions=new Set(),routes=new Set(),sheets=[];
 let meetings=0,i=0;
 for(const w of D.TALENT)for(const f of D.FOES)for(const finish of finishes)for(const [name,choose] of Object.entries(strategies)){
- const p=D.PROMOS[i%D.PROMOS.length],c=contract(i++,w,f,p,finish),game=['story','technical','brawl','spots','safe'][i%5];
+ const p=D.PROMOS[(i+Math.floor(i/strategyCount))%D.PROMOS.length],c=contract(i++,w,f,p,finish),game=['story','technical','brawl','spots','safe'][i%5];
  const {st,trail}=meet(c,w,f,p,game,choose);meetings++;
  for(const t of trail){if(t.pending)seenKinds.add(t.pending);seenOptions.add(t.id.split(':')[0]);}
  const text=st.log.map(l=>l.who+': '+l.text).join('\n');
@@ -68,7 +69,7 @@ for(const w of D.TALENT)for(const f of D.FOES)for(const finish of finishes)for(c
  routes.add(finish+'.'+sh.finishRoute);
  sheets.push({c,w,f,p,game,sh,name});
 }
-for(const kind of ['safety','ego','proud','impossible'])assert.ok(seenKinds.has(kind),'objection seen: '+kind);
+for(const kind of ['credibility','safety','ego','proud','impossible'])assert.ok(seenKinds.has(kind),'objection seen: '+kind);
 for(const o of ['honour','judgement','argue','card','open','insist','trade','sweeten','word','backdown','anyway','fair','no','yes','later','sign'])assert.ok(seenOptions.has(o),'option used: '+o);
 assert.ok(routes.size>=14,'most finish routes get pitched: '+routes.size);
 
@@ -127,18 +128,23 @@ assert.ok(safety,'a careful worker objects to a careless one doing something dan
  const careless=safety.pending.by==='w'?safety.f:safety.w;
  assert.ok(careless.safe<58&&A[safety.pending.card.action].risk,'the safety objection has a real cause');
 }
-// A trade promises the big spot, and the promise is kept automatically.
-let traded=null;
-for(let k=0;k<200&&!traded;k++){
- const w=D.TALENT[k%8],f=D.FOES[k%6],st=R.begin(contract(4000+k,w,f,D.PROMOS[0],'win_clean'),{...w,flags:{}},f,D.PROMOS[0],'story');
- for(let n=0;n<30&&st.stage!=='done';n++){
-  const o=R.options(st);
-  if(st.pending&&o.some(x=>x.id==='trade')){const by=st.pending.by;R.act(st,'trade');traded={st,by};continue;}
-  R.act(st,(o.find(x=>x.id.startsWith('card:')&&x.card.risk)||o.find(x=>x.id.startsWith('card:'))||o[0]).id);
- }
+// The objection to a heavy early move can be traded for a physically possible big spot.
+{
+ const malik=D.FOES.find(x=>x.id==='malik'),p=D.PROMOS[0];
+ const st=R.begin(contract(4000,mara,malik,p,'win_clean'),{...mara,flags:{}},malik,p,'story');
+ for(const id of ['honour','card:0','card:0'])R.act(st,id);
+ assert.equal(st.pending?.kind,'credibility','Vale objects to taking the gorilla press in the heat');
+ assert.equal(st.pending.by,'w');
+ assert.ok(R.pitches(st,'payoff').some(c=>c.owner==='w'&&c.impossible),'Vale’s usual pitch is an impossible lift');
+ assert.ok(!R.options({...st,clock:2}).some(o=>o.id==='trade'),'no promise when time could run out before the big spot');
+ st.clock=3;
+ assert.ok(R.options(st).some(o=>o.id==='trade'),'enough time to promise the big spot');
+ R.act(st,'trade');
+ assert.equal(st.promised,'w');
+ R.act(st,'card:0');
+ assert.equal(st.board.payoff.owner,'w','the traded big spot goes to the wrestler it was promised to');
+ assert.ok(R.legal(st.board.payoff.action,mara,malik),'the promised move is physically possible');
 }
-assert.ok(traded,'a trade is available somewhere');
-assert.equal(traded.st.board.payoff.owner==='either'?traded.by:traded.st.board.payoff.owner,traded.by,'the traded big spot goes to the wrestler it was promised to');
 
 // 5. Running out of time leaves the rest to be called in the ring.
 {
