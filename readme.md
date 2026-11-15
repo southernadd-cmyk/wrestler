@@ -4,7 +4,7 @@
 
 Manage a regional wrestling **stable**, sign performers, negotiate bookings, shape rivalries and guide matches from the desk to ringside. The promoter books the outcome; you and the wrestlers negotiate what the performance will mean.
 
-**Current documented version: v3.4** · Single-file HTML/JavaScript game · No install or account required
+**Current documented version: v3.5** · Single-file HTML/JavaScript game · No install or account required
 
 **[Play on GitHub Pages](https://southernadd-cmyk.github.io/wrestler/)** · **[View the source](https://github.com/southernadd-cmyk/wrestler/blob/main/index.html)**
 
@@ -22,6 +22,8 @@ Manage a regional wrestling **stable**, sign performers, negotiate bookings, sha
 The game runs entirely in the browser without a build step. Its game logic does not require a backend, an account or an AI API; Google Fonts are fetched when available, with local fallback fonts.
 
 ## What you can do
+
+The circuit has 28 wrestlers with pixel-art portraits and signature moves. Twelve start as signable free agents. Thirteen work for one of three AI managers, and three work independently. Each promotion has an opener-to-main-event card pyramid that responds to its own results.
 
 | Area | Gameplay |
 | --- | --- |

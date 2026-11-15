@@ -63,7 +63,7 @@ assert.deepEqual(impossible,[],'every move can legally happen for some pairing')
 
 // 5. Played matches: wide coverage, physical guards, timing, limb psychology, plan and style identity.
 function options(i){
- const w=D.TALENT[i%D.TALENT.length],f=D.FOES[(i*5)%D.FOES.length]; // 5 and 6 are coprime: every opponent appears
+ const w=D.TALENT[i%D.TALENT.length],f=D.FOES[(i*5)%D.FOES.length]; // This stride visits every opponent.
  const plan=['story','technical','brawl','spots','safe'][i%5],finish=['win_clean','win_dirty','lose_protected','lose_clean'][Math.floor(i/5)%4];
  const slot=['opener','mid','feature','main'][Math.floor(i/20)%4];
  return {w:{...w,flags:{},fatigue:i%27},f,p:D.PROMOS[i%D.PROMOS.length],slot,minutes:D.SLOTS[slot].mins,finish,
@@ -114,7 +114,7 @@ assert.ok(share('Brawl','heel')+share('Brawl','outside')>share('Technical','heel
 
 // Signature moves: real catalog moves, legal for their owner, and visibly part of who they are.
 const owners=Object.entries(D.PROFILES);
-assert.equal(owners.length,14);
+assert.equal(owners.length,D.TALENT.length+D.FOES.length);
 for(const [wid,prof] of owners){
  assert.equal(prof.signature.length,4,wid+' has four signature moves');
  for(const id of prof.signature){

@@ -14,7 +14,7 @@ vm.runInNewContext(script.slice(0,cut),{window:root,localStorage:storage,console
 const D=root.OfficeData,E=root.OfficeMatch,G=E.GRAPH;
 assert.deepEqual([...G.validate().errors],[]);
 assert.ok(G.validate().nodes>=66,'no missing graph nodes');
-assert.equal(Object.keys(D.PROFILES).length,14);
+assert.equal(Object.keys(D.PROFILES).length,D.TALENT.length+D.FOES.length);
 for(const talent of [...D.TALENT,...D.FOES]){
  const profile=D.PROFILES[talent.id];
  assert.ok(profile && profile.kg>50 && profile.kg<180,'physical profile '+talent.id);
