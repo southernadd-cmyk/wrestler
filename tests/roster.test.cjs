@@ -27,20 +27,29 @@ assert.equal(new Set(all.map(w => w.id)).size, 28);
 const atlas = Buffer.from(html.match(/\.roster-portrait\{[^}]*base64,([A-Za-z0-9+/=]+)/)[1], 'base64');
 assert.equal(atlas.subarray(12, 16).toString(), 'IHDR');
 assert.equal(atlas.readUInt32BE(16), 4 * 48);
-assert.equal(atlas.readUInt32BE(20), 7 * 60);
+assert.equal(atlas.readUInt32BE(20), 8 * 60);
+assert.match(html, /\.roster-portrait\{[^}]*background-size:400% 800%/);
 const positions = new Set();
+function checkPortrait(key, name) {
+  const markup = portraits.avatar({ key, name });
+  assert.match(markup, /roster-portrait/);
+  assert.ok(markup.includes(`aria-label="Pixel-art portrait of ${name}"`));
+  const position = markup.match(/background-position:([^"]+)/)[1];
+  positions.add(position);
+  return position;
+}
 for (const wrestler of all) {
   const profile = data.PROFILES[wrestler.id];
   assert.ok(profile?.signature.length, `${wrestler.name} has signature moves`);
   for (const id of [...profile.signature, ...profile.preferred]) {
     assert.ok(match.GRAPH.A[id], `${wrestler.name} uses known move ${id}`);
   }
-  const markup = portraits.avatar({ key: 'wrestler:' + wrestler.id, name: wrestler.name });
-  assert.match(markup, /roster-portrait/);
-  assert.ok(markup.includes(`aria-label="Pixel-art portrait of ${wrestler.name}"`));
-  positions.add(markup.match(/background-position:([^"]+)/)[1]);
+  checkPortrait('wrestler:' + wrestler.id, wrestler.name);
 }
-assert.equal(positions.size, all.length);
+for (const [column, promoter] of data.PROMOS.entries()) {
+  assert.equal(checkPortrait('booker:' + promoter.id, promoter.voice), `${100*column/3}% 100%`);
+}
+assert.equal(positions.size, all.length + data.PROMOS.length);
 
 game.fresh();
 assert.equal(game.S.free.length, 12);
