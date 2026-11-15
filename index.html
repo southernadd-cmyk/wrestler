@@ -5957,7 +5957,7 @@ function prep(){
  const contract=`<div style="font:32px/1 var(--jersey);color:var(--blood)">${esc(finishLine)}</div><p class="dim" style="margin:4px 0 8px">The finish is in the contract.</p><dl class="kv"><dt>Slot</dt><dd>${esc(D.SLOTS[c.slot].name)}, ${c.minutes} minutes</dd><dt>Purse</dt><dd>${money(c.purse)}</dd>${c.tag?`<dt>Billing</dt><dd>${esc(c.tag)}</dd>`:''}<dt>Opponent</dt><dd>${esc(f.name)}, ${esc(f.style.toLowerCase())}. Finisher: ${esc(f.finisher)}.</dd></dl><p style="margin-top:8px">${esc(fnotes.join(' ')||'A steady, professional opponent.')}</p>${warn.length?`<ul class="warnings">${warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="good">${esc(w.short)} is fit and ready. Morale ${w.morale}.</p>`}<div class="well" style="margin-top:10px"><b>Road agent's scouting</b><p style="margin:5px 0">${esc(road.brief)}</p><p class="dim">${esc(road.advice)}</p>${mind.recall?`<p style="margin-top:6px"><b>What they remember:</b> ${esc(mind.recall)}</p><p class="dim">Trust in your judgement: ${mind.trust}/100.</p>`:''}</div>`;
  const plan=`<div class="prep-context"><b>${esc(w.short)} v ${esc(f.short)}</b><span>${esc(finishLine)} · ${esc(D.SLOTS[c.slot].name)} · ${c.minutes} minutes</span></div><div class="planset"><fieldset class="decide"><legend>What is the match built on?</legend><div class="opts plan-choices" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${opts('game',D.PLANS,P.game)}</div></fieldset><fieldset class="decide"><legend>Who calls it?</legend><div class="opts">${opts('leash',D.LEASH,P.leash)}</div></fieldset><fieldset class="decide"><legend>Last word at the curtain</legend><div class="opts">${opts('talk',D.TALKS,P.talk)}</div></fieldset></div>`;
 
- $('#tv').innerHTML=`${strip(c,'tonight')}<div class="stage screen s-prep">${win('Tale of the tape',tape,{area:'tape',h:'h3',cls:'quiet',body:'tight'})}${win('The contract',contract,{area:'contract',h:'h3'})}${win('Game plan',plan,{area:'plan',h:'h3'})}</div><div class="tv-foot"><span class="dim">Next: ten minutes in the agents’ room to agree the match, then the microphone.</span><button class="btn go" data-tv="meeting">Into the agents’ room</button></div>`;
+ $('#tv').innerHTML=`${strip(c,'tonight')}<div class="stage screen s-prep">${win('Tale of the tape',tape,{area:'tape',h:'h3',cls:'quiet',body:'tight'})}${win('The contract',contract,{area:'contract',h:'h3'})}${win('Game plan',plan,{area:'plan',h:'h3'})}</div><div class="tv-foot"><span class="dim">Meet the road agent, ${esc(OfficeRoom.AGENT)}, and agree the match before microphone time.</span><button class="btn go" data-tv="meeting">Into the agents’ room</button></div>`;
  night.stage='prep';persistNight();
 }
 
@@ -5982,21 +5982,21 @@ function showMeeting(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan;
  if(!P.room||P.room.cid!==c.id||P.room.v!==1){P.room=OfficeRoom.begin(c,w,f,p,P.game);P.sheet=null;P.confirmed=false;}
- const st=P.room,v=OfficeRoom.view(st);
+ const st=P.room,v=OfficeRoom.view(st),agent=OfficeRoom.AGENT;
  if(v.stage==='done'){P.sheet=st.sheet;P.confirmed=true;}
- const whoTag=b=>b.open?'<span class="dim">called in the ring</span>':b.by==='agent'?'<span class="dim">Dennis’s call</span>':b.by==='w'?`<span class="dim">${esc(w.short)}’s idea</span>`:b.by==='f'?`<span class="dim">${esc(f.short)}’s idea</span>`:'';
+ const whoTag=b=>b.open?'<span class="dim">called in the ring</span>':b.by==='agent'?`<span class="dim">${esc(agent)}’s call</span>`:b.by==='w'?`<span class="dim">${esc(w.short)}’s idea</span>`:b.by==='f'?`<span class="dim">${esc(f.short)}’s idea</span>`:'';
  const board=`<div class="board">${v.board.map(b=>`<div class="slot${b.current?' now':''}"><b>${esc(b.name)}</b><span>${b.label?esc(b.label)+(b.impossible?' <span class="bad">(ambitious)</span>':''):'<span class="dim">'+(b.current?'being decided':'not yet')+'</span>'}</span>${b.label?whoTag(b):''}</div>`).join('')}</div>`;
  const moodCls=x=>x.value>=62?'good':x.value>=50?'':'bad';
  const noteState=v.note.waived?'withdrawn':v.note.honour===true?'promised':v.note.honour===false?'no promise made':'undecided';
  const status=`<dl class="kv roomkv"><dt>Doors</dt><dd>${pips(10,v.clock)} ${v.clock>0?v.clock+' '+plural(v.clock,'minute','minutes'):'<span class="bad">open. You are late</span>'}</dd>
   <dt>${esc(w.short)}</dt><dd class="${moodCls(v.moods.w)}">${esc(v.moods.w.word)}</dd><dt>${esc(f.short)}</dt><dd class="${moodCls(v.moods.f)}">${esc(v.moods.f.word)}</dd>
   <dt>${esc(p.voice)}’s note</dt><dd>${esc(v.note.short)} <span class="dim">(${noteState})</span></dd>${v.bonus?`<dt>Bonuses</dt><dd>${money(v.bonus)} promised</dd>`:''}</dl>`;
- const byChip=o=>o.by?`<span class="fits"><i>${esc(o.by==='agent'?'Dennis':o.by==='w'?w.short:f.short)}</i></span>`:'';
+ const byChip=o=>o.by?`<span class="fits"><i>${esc(o.by==='agent'?agent:o.by==='w'?w.short:f.short)}</i></span>`:'';
  const opts=v.options.length?`<div class="opts roomopts">${v.options.map(o=>`<button class="opt" data-room="${esc(o.id)}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span>${byChip(o)}</button>`).join('')}</div>`:
   '<div class="well pad"><p><b>Signed.</b> What is on the board is what they will try to do. Whether they manage it is another matter.</p></div>';
  const ask={note:'How do you answer the promoter?',slot:'Pick a pitch, or leave it open.',aob:'Well?',sign:'Happy with the board?',done:''}[v.stage];
  const left=win('The board',`${board}${status}<h3 class="section-h">${esc(v.title)}</h3>${ask?`<p class="lede">${esc(ask)}</p>`:''}${opts}`,{h:'h3'});
- const right=win('The agents’ room',talkLog(v.log,'roomTalk'),{h:'h3',body:'tight'});
+ const right=win(`The agents’ room · ${esc(agent)}, road agent`,talkLog(v.log,'roomTalk'),{h:'h3',body:'tight'});
  $('#tv').innerHTML=strip(c,'agents’ room')+'<div class="stage screen s-meeting" style="grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)">'+left+right+'</div>'+
   '<div class="tv-foot"><span class="dim">'+esc(v.stage==='done'?'Match sheet agreed and signed.':'Every decision costs a minute. Arguments cost more.')+'</span>'+
   (v.stage==='done'?'<button class="btn go" data-tv="promos">Go to microphone time</button>':'<span class="dim">'+esc(v.title)+'</span>')+'</div>';

@@ -49,7 +49,7 @@ The desktop layout keeps **Office**, **Roster**, **Bookings**, **Territory** and
 
 *From the agents’ room*
 
-Dennis has a card to get through. The two wrestlers pitch the shine, the heat, the comeback, the big spot and the route to the agreed finish. Some pairings agree quickly. Others object because the lift is wrong for the weight gap, the move is too risky for the wrestler pitching it, or somebody doesn’t fancy looking weak on the finish. Listen to the objection, change the beat, offer a sweetener or leave part of it to be called in the ring.
+Road agent Dennis runs the pre-match meeting and passes on the booker’s instructions. The two wrestlers pitch the shine, the heat, the comeback, the big spot and the route to the agreed finish. Some pairings agree quickly. Others object because the lift is wrong for the weight gap, the move is too risky for the wrestler pitching it, or somebody doesn’t fancy looking weak on the finish. Listen to the objection, change the beat, offer a sweetener or leave part of it to be called in the ring.
 
 The promoter can send a note of their own. The agents’ room runs on a clock, so an argument can eat the time you wanted for planning the finish. The signed board carries into the match. Consent affects how hard the wrestlers try to make it work, and the engine accounts for the position and setup a move needs.
 
