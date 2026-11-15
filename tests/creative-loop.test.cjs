@@ -11,12 +11,8 @@ const db=new Map(),root={addEventListener(){}};
 const localStorage={getItem:k=>db.get(k)||null,setItem:(k,v)=>db.set(k,String(v)),removeItem:k=>db.delete(k)};
 vm.runInNewContext(script.slice(0,cut),{window:root,localStorage,console,Math,Date,JSON});
 const D=root.OfficeData,G=root.OfficeGame,P=root.OfficeSheets,Promo=root.OfficeStory.Graph,M=root.OfficeMatch,K=root.OfficeGraphKernel;
-// v3.5: the match meeting is the agents' room; its buttons are data-room options.
-assert.ok(script.includes('data-room='),'a player chooses pitches in the agents’ room');
-assert.ok(script.includes("id:'backdown'")&&script.includes("id:'trade'"),'a player can renegotiate a concrete beat');
-assert.ok(script.includes("id:'sign'"),'both performers explicitly sign');
 assert.ok(script.includes('sheet:P.sheet?.signed?P.sheet:null'),'signed sheet is used at the bell');
-assert.ok(script.includes("Core.choices('open',st.core)")&&script.includes('data-mic='),'context-aware promo hints appear on screen');
+assert.ok(script.includes("pickCards(v.options,'mic',true)")&&script.includes('${claim}'),'promo choices and claim appear on screen');
 
 const rex=D.TALENT.find(w=>w.id==='rex'),brick=D.TALENT.find(w=>w.id==='brick');
 const rev=D.FOES.find(f=>f.id==='rev'),rush=D.FOES.find(f=>f.id==='silas');

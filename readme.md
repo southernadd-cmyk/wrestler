@@ -2,11 +2,17 @@
 
 **PRO WRESTLING MANAGEMENT NEWSLETTER**
 
-`ISSUE 3.5` · `15 NOVEMBER 2026` · `ROSTER & TERRITORY EDITION`
+`ISSUE 3.6` · `15 NOVEMBER 2026` · `MATCH NIGHT EDITION`
 
 **[Play The Office](https://southernadd-cmyk.github.io/wrestler/)** · [Read the game source](index.html)
 
 ---
+
+## DENNIS WANTS A WORD
+
+*Lead story*
+
+Match night now starts backstage. Dennis has the booked result, two wrestlers with opinions and a short list of things that need settling before they go out. One night it’s the big spot. The next it’s a cut to your match time, a wrestler refusing to lose clean, or someone who’s turned up without their gear. Then the microphones come out and both wrestlers get a shot at winning over the room.
 
 ## TWENTY-EIGHT WRESTLERS, FOUR DIFFERENT CARDS
 
@@ -40,7 +46,7 @@ You get **£2,250**, an empty locker room and four promoters with different idea
 1. Open the [game](https://southernadd-cmyk.github.io/wrestler/) and pick **New career**. It opens at **Roster → Free agents**. Check the signing fee, the weekly wage and what the wrestler does well before you sign anyone.
 2. Look under **Bookings → Offers**. The booker sets the spot on the card, the purse and the finish. You can negotiate the rate, ask for higher billing or try to protect a clean loss.
 3. Read the **Office** inbox. Promoter requests, injuries and backstage problems can all need a decision. Set training in **Roster** and keep an eye on fatigue and upcoming fixtures.
-4. Press **Continue** when the paperwork is in order. A booked card takes you to match night, where you’ll go from the agents’ room to the microphone to ringside.
+4. Press **Continue** when the paperwork is in order. A booked card takes you backstage with Dennis. From there you’ll go to the microphone and on to ringside. If the promo gets cut, you’ll go straight to the bell.
 5. Read the match report and check what ended up in **Territory → Results**. A good showing can build a programme. A promise you missed can come back to the office with you.
 
 The desktop layout keeps **Office**, **Roster**, **Bookings**, **Territory** and **Game** in the sidebar, with back and forward buttons at the top. Wrestler and free-agent lists are sortable. On a smaller screen the panels stack vertically.
@@ -49,17 +55,17 @@ The desktop layout keeps **Office**, **Roster**, **Bookings**, **Territory** and
 
 *From the agents’ room*
 
-Road agent Dennis runs the pre-match meeting and passes on the booker’s instructions. The two wrestlers pitch the shine, the heat, the comeback, the big spot and the route to the agreed finish. Some pairings agree quickly. Others object because the lift is wrong for the weight gap, the move is too risky for the wrestler pitching it, or somebody doesn’t fancy looking weak on the finish. Listen to the objection, change the beat, offer a sweetener or leave part of it to be called in the ring.
+Road agent Dennis starts with the booked result and asks how you want the match to work. Two or three situations come up from a pool of 24. The pairing, the promotion, the card position and the terms help decide what comes through the door. A wrestler might pitch a risky move, the booker might ask for four more minutes, or a scout might turn up in row F.
 
-The promoter can send a note of their own. The agents’ room runs on a clock, so an argument can eat the time you wanted for planning the finish. The signed board carries into the match. Consent affects how hard the wrestlers try to make it work, and the engine accounts for the position and setup a move needs.
+Read the choice cards for the stakes. A decision can change the starting crowd, the purse, trust, morale, match length or how much risk the wrestlers take. Their moods and the agreed plan stay on screen. Choose the route to the booked result and give them a last word at the curtain. The signed sheet carries the moves you agreed into the match. Leave the rest to the wrestlers and the report only judges the agreed beats.
 
 ## THE MIC IS OPEN
 
 *Pre-match report*
 
-The live exchange opens with **the hook** and **the grievance**. Then comes **the interruption**, followed by **something happens**, **the sell**, and **the closer**. What you say gives the opponent something specific to answer. A real grievance can get a crowd on your side. A weak accusation gives the other wrestler an opening, and a live interruption can change the whole pitch.
+Start with **Opening shot**, then take the mic back in **They hit back**. At **Push your luck?**, you can leave the exchange there or go after the crowd again. Playing to the town is a small lift. A good joke can win the room, and a bad one can give it away. A live meter follows every swing, with both wrestlers’ lines and the crowd’s reactions on screen.
 
-A televised-sounding vow still has to survive the bell. Promise to counter a particular attack and the match looks for the relevant reversal. Name a finisher and a sharp opponent can scout it. Demand a clean bout and the wrestlers are steered away from dirty tactics. The record keeps the exchange, including the promises that came back to bite.
+**Last word** is where a vow can follow you into the ring. Promise to counter a particular attack and the match looks for the relevant reversal. Name a finisher and a sharp opponent can scout it. Demand a clean bout and the wrestlers are steered away from dirty tactics. Check the warnings on each choice if the booked result makes the vow difficult to keep.
 
 ## RINGSIDE AND AFTER THE BELL
 
@@ -79,9 +85,9 @@ The report compares the signed board with the match. It shows beats performed, a
 
 *Save desk*
 
-The browser saves your career automatically, including a meeting, promo or live bout in progress. Use **Game → Export save** for a portable copy and **Game → Import save** to pick up elsewhere. A local copy and the hosted game use separate browser storage, as do different browsers or devices. Export before moving or clearing site data.
+The browser saves your career automatically, including v3.6 backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v2-era careers can be loaded. The current edition adds the expanded territory to existing saves and keeps your signed wrestlers, prior results and rival records.
+Earlier supported v2-era careers can still be loaded. Career progress carries into v3.6. If you upgrade halfway through a v3.5 backstage meeting or promo, that segment starts again in the new format.
 
 To play locally, download the repository and open `index.html` in a modern browser. The game is a single HTML file with its CSS, JavaScript and portraits built in. The simulation runs in the browser. Google Fonts load when available, with system fallbacks.
 
@@ -99,7 +105,8 @@ To play locally, download the repository and open `index.html` in a modern brows
 | Routes across the four booked finishes | 18 |
 | Authored moves and move families | 336 / 20 |
 | Promo graph angles and situational variants | 15 / 135 |
-| Beats in the live microphone exchange | 6 |
+| Backstage situations | 24 |
+| Rounds in the promo duel | 4 |
 
 The match graph and career simulation use seeded logic so a saved sequence can be resumed deterministically. Reversals and applicable blocks sit alongside the authored moves. Narration and wrestler dialogue are original, informed by match structure, performer interviews and wrestling history. [Match graph and research](docs/match-graph.md) · [Promo research](docs/promo-graph.md)
 
@@ -122,7 +129,7 @@ node tests/promo-variants.test.cjs
 node tests/catalog.test.cjs
 ```
 
-The suites cover the free-agent market and rival contracts, separate promotion ladders, older saves, signed boards, booked finishes, match legality, promo continuity and repeatable careers.
+The suites cover the free-agent market and rival contracts, separate promotion ladders, older saves, backstage situations, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
 
 ## BACK ISSUES
 
@@ -130,6 +137,7 @@ The suites cover the free-agent market and rival contracts, separate promotion l
 
 | Edition | What was reported |
 | --- | --- |
+| **3.6** | Dennis opens match night with a changing set of backstage decisions. The promo becomes a duel for the crowd, with a chance to push your luck before the last word. |
 | **3.5** | Dennis opens the agents’ room and the microphone goes live. The roster and territory edition doubles the cast, brings in the new portraits and gives all four bookers cards of their own. |
 | **3.4** | The narration gets a line edit, signature moves belong to individuals and a full-season test goes through the books. The 400-bout balance audit put the average at 2.04 stars and missed beats at 21%. |
 | **3.3** | The action catalog grows to 336 moves with distinct counters and physical limits. The promo desk adds replies grounded in the actual pairing. [Expansion notes](docs/graph-expansion-v3-3.md) |
