@@ -63,7 +63,7 @@ assert.deepEqual(impossible,[],'every move can legally happen for some pairing')
 
 // 5. Played matches: wide coverage, physical guards, timing, limb psychology, plan and style identity.
 function options(i){
- const w=D.TALENT[i%D.TALENT.length],f=D.FOES[(i*3)%D.FOES.length];
+ const w=D.TALENT[i%D.TALENT.length],f=D.FOES[(i*5)%D.FOES.length]; // 5 and 6 are coprime: every opponent appears
  const plan=['story','technical','brawl','spots','safe'][i%5],finish=['win_clean','win_dirty','lose_protected','lose_clean'][Math.floor(i/5)%4];
  const slot=['opener','mid','feature','main'][Math.floor(i/20)%4];
  return {w:{...w,flags:{},fatigue:i%27},f,p:D.PROMOS[i%D.PROMOS.length],slot,minutes:D.SLOTS[slot].mins,finish,
@@ -71,7 +71,7 @@ function options(i){
 }
 function work(x){for(let i=0;i<9000&&!x.done;i++){if(x.decision&&!x.queue.length){const o=x.decision.options.find(o=>['job','home','cut','protect'].includes(o.id))||x.decision.options[0];M.resolve(x,o.id);}M.next(x);}assert.ok(x.done);return x;}
 const kg=w=>D.PROFILES[w.id]?.kg||85;
-const routes=new Set(),reached=new Set(),risk={safe:[0,0],spots:[0,0]},limb={on:0,off:0},styleUse={};
+const sigUse={own:0,ownEvents:0,other:0,otherEvents:0},sigSeen=new Set(),sigCalls=new Set(),routes=new Set(),reached=new Set(),risk={safe:[0,0],spots:[0,0]},limb={on:0,off:0},styleUse={};
 let catalogEvents=0,events=0;
 const N=1000;
 for(let i=0;i<N;i++){
@@ -79,6 +79,7 @@ for(let i=0;i<N;i++){
  assert.equal(g.outcome.id,x.outcome==='nc'?'nc':x.outcome==='double'?'double':o.finish,'contract still decides the finish');
  assert.doesNotMatch(x.log.map(l=>l.text).join(' '),/undefined|NaN|\{(?:A|D|W|F|part|name)\}/);
  if(risk[o.plan.game])risk[o.plan.game][1]++;
+ if(x.log.some(l=>/nobody on this circuit does it quite like/.test(l.text)))sigCalls.add(i);
  if(x.final.finishRoute){routes.add(o.finish+'.'+x.final.finishRoute);assert.ok(M.FINISH_ROUTES[o.finish].some(r=>r.id===x.final.finishRoute),'route belongs to the booked finish');}
  for(const e of g.events){
   const n=A[e.id];if(!n)continue;events++;reached.add(e.id);
@@ -92,6 +93,12 @@ for(let i=0;i<N;i++){
    const want=G.PART_OF[g.targets?.[e.preControl==='w'?'f':'w']];
    if(want)limb[n.part===want?'on':'off']++;
   }
+  if(!n.counterOf&&!n.blockOf){
+   // Signature moves: how often the owner uses their four, against how often anyone else uses those same four.
+   const mine=D.PROFILES[att.id]?.signature||[],theirs=D.PROFILES[def.id]?.signature||[];
+   sigUse.ownEvents++;if(mine.includes(e.id)){sigUse.own++;sigSeen.add(att.id+':'+e.id);}
+   sigUse.otherEvents++;if(theirs.includes(e.id))sigUse.other++;
+  }
   if(!n.counterOf&&!n.blockOf){const st=att.style;styleUse[st]??={};styleUse[st][n.family]=(styleUse[st][n.family]||0)+1;}
  }
 }
@@ -99,11 +106,26 @@ const total=Object.keys(A).length,coverage=reached.size/total;
 assert.ok(coverage>=.9,'at least 90% of the graph appears in '+N+' ordinary matches, got '+(coverage*100).toFixed(1)+'%');
 assert.ok(catalogEvents/events>=.25,'the new vocabulary is a large share of real match action: '+(catalogEvents/events*100).toFixed(1)+'%');
 assert.ok(limb.on>limb.off,'heat segments mostly work the targeted body part ('+limb.on+' on / '+limb.off+' off)');
-assert.ok(risk.spots[0]/risk.spots[1]>2*risk.safe[0]/risk.safe[1],'"Keep it safe" suppresses high-risk spots relative to a spot-fest');
+assert.ok(risk.spots[0]/risk.spots[1]>2*risk.safe[0]/risk.safe[1],'"Keep it safe" suppresses high-risk spots relative to a spot-fest: '+JSON.stringify(risk));
 const share=(st,fam)=>{const u=styleUse[st]||{},t=Object.values(u).reduce((a,b)=>a+b,0);return (u[fam]||0)/Math.max(1,t);};
 assert.ok(share('Technical','submission')>share('Spectacle','submission'),'technical wrestlers favour submissions');
 assert.ok(share('Spectacle','aerial')+share('Spectacle','lucha')>share('Technical','aerial')+share('Technical','lucha'),'spectacle wrestlers favour aerial and lucha moves');
 assert.ok(share('Brawl','heel')+share('Brawl','outside')>share('Technical','heel')+share('Technical','outside'),'brawlers favour rough and ringside work');
+
+// Signature moves: real catalog moves, legal for their owner, and visibly part of who they are.
+const owners=Object.entries(D.PROFILES);
+assert.equal(owners.length,14);
+for(const [wid,prof] of owners){
+ assert.equal(prof.signature.length,4,wid+' has four signature moves');
+ for(const id of prof.signature){
+  assert.ok(A[id]?.name&&!A[id].counterOf&&!A[id].blockOf,wid+' signature is a real move: '+id);
+  assert.ok(!(A[id].agile&&prof.kg>=110),wid+' is too heavy for '+id);
+ }
+ assert.ok(prof.signature.some(id=>sigSeen.has(wid+':'+id)),wid+' lands a signature move in ordinary play');
+}
+const ownRate=sigUse.own/sigUse.ownEvents,otherRate=sigUse.other/sigUse.otherEvents;
+assert.ok(ownRate>4*otherRate,'wrestlers use their own signatures far more than their opponent’s ('+(ownRate*100).toFixed(1)+'% v '+(otherRate*100).toFixed(1)+'%)');
+assert.ok(sigCalls.size>N*.5,'commentary recognises signatures in most matches');
 
 // Finish routes: twenty in all, every contracted route reached, and the match so far picks it.
 assert.equal(M.FINISH_ROUTE_COUNT,20,'twenty finish routes');
@@ -122,6 +144,6 @@ for(let i=0;i<2000&&!(live.done&&copy.done);i++){
  if(copy.decision&&!copy.queue.length)M.resolve(copy,copy.decision.options[0].id);
  assert.equal(M.next(live)?.text,M.next(copy)?.text,'deterministic resume');
 }
-console.log('PASS catalog v3.3: '+v.nodes+' nodes, '+v.edges+' edges, '+v.families+' families, '+v.moves+' moves ('+v.reversals+' reversals, '+v.blocks+' blocks); '+
+console.log('PASS catalog v3.4: '+v.nodes+' nodes, '+v.edges+' edges, '+v.families+' families, '+v.moves+' moves ('+v.reversals+' reversals, '+v.blocks+' blocks); '+
  'all reachable and performable; '+(coverage*100).toFixed(1)+'% seen in '+N+' matches; catalog share '+(catalogEvents/events*100).toFixed(0)+'%; '+
- 'limb focus '+limb.on+'/'+limb.off+'; '+routes.size+'/'+allRoutes.length+' contracted finish routes; deterministic build, seeds and resume');
+ 'limb focus '+limb.on+'/'+limb.off+'; signatures '+(ownRate*100).toFixed(1)+'% own v '+(otherRate*100).toFixed(1)+'% other; '+routes.size+'/'+allRoutes.length+' contracted finish routes; deterministic build, seeds and resume');

@@ -12,6 +12,10 @@ simulation less believable or less reproducible.
 | Promo choice nodes | 15 | 150 | 10× |
 | Concrete promo paths | 125 | ~125,000 possible (2,157 seen in the test sample) | — |
 
+> **v3.4 note.** A narration audit removed reversals that made no sense and rebalanced
+> crowd reactions, so the action graph is now 969 nodes and 6,152 edges (324 reversals,
+> 209 blocks). The figures below are the v3.3 measurements. See the README for v3.4.
+
 ## Action graph: 336 authored moves in 20 families
 
 `CAT` in `index.html` (inside `OfficeMatch.GRAPH`) is a catalog of generic, widely used

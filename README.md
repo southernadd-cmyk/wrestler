@@ -4,7 +4,7 @@
 
 Manage a regional wrestling **stable**, sign performers, negotiate bookings, shape rivalries and guide matches from the desk to ringside. The promoter books the outcome; you and the wrestlers negotiate what the performance will mean.
 
-**Current documented version: v3.3** · Single-file HTML/JavaScript game · No install or account required
+**Current documented version: v3.4** · Single-file HTML/JavaScript game · No install or account required
 
 **[Play on GitHub Pages](https://southernadd-cmyk.github.io/wrestler/)** · **[View the source](https://github.com/southernadd-cmyk/wrestler/blob/main/index.html)**
 
@@ -54,7 +54,7 @@ Promos and match meetings have their own on-screen choices. The match-night expe
 - **Personalities and memory:** individual repertoires and traits influence tactics. Significant injuries, humiliations, protected defeats, exceptional performances, backstage decisions and kept/broken promises persist into later interactions.
 - **Planning and promos:** negotiated match commitments become a causal sheet, not merely flavour text. Public vows and opponent replies can influence tactics and later consequences without overriding safety or contractual results.
 - **Matches:** a hierarchical story graph selects plausible sequences based on style, control, position, fatigue, size, damage, psychology and the agreed plan. Reversals change control; major spots require credible setup. The game respects the booked finish except for explicit exceptional interventions.
-- **v3.3 graph:** **986 action nodes / 6,252 edges**, **25 story arcs**, **20 finish routes** and **150 promo choice nodes**. The action catalog includes **336 authored moves in 20 families**, plus reversals and applicable blocks. Graph construction and saved progression are designed to be deterministic.
+- **Graph (v3.4):** **969 action nodes / 6,152 edges**, **25 story arcs**, **20 finish routes** and **150 promo choice nodes**. The action catalog includes **336 authored moves in 20 families**, plus reversals and applicable blocks. Graph construction and saved progression are designed to be deterministic.
 
 See [the v3.3 graph notes](docs/graph-expansion-v3-3.md) for definitions, measurements and limitations behind these figures.
 
@@ -82,6 +82,7 @@ node tests/graph-sheet.test.cjs
 node tests/creative-loop.test.cjs
 node tests/catalog.test.cjs
 node tests/promo-variants.test.cjs
+node tests/season-soak.test.cjs
 ```
 
 These cover sequencing and finish logic, graph integrity, performer variety, promo continuity, career memory, negotiated sheets, move legality and deterministic variants. The presence of a test is not a claim that it was rerun for this documentation change.
@@ -101,6 +102,32 @@ All wrestler dialogue and narrated action are authored original material, inform
 ## Detailed version history
 
 The sections below describe how the current implementation evolved. Earlier versions are historical context; the summary above describes the current game.
+
+## v3.4 — Polish pass: narration, balance, signature moves and a season soak test
+
+- **Narration audit.** Reversal and block lines generated from templates now read properly.
+  Things that are not attempts (a kip-up, a double count) no longer have a "reversal",
+  stationary offence is countered differently from a charging attack, and 31 moves have
+  hand-written counters. The action graph is now 969 nodes and 6,152 edges.
+- **Balance restored to v3.2 levels.** The v3.3 catalog had inflated crowd reactions and
+  star ratings and made signed match sheets harder to deliver. Measured over 400 bouts:
+
+  | Per match | v3.2 | v3.3 | v3.4 |
+  | --- | --- | --- | --- |
+  | Star rating | 2.00 | 2.19 | 2.04 |
+  | Crowd at the bell | 52 | 64 | 55 |
+  | Near-falls | 2.25 | 2.62 | 2.42 |
+  | Agreed beats missed | 22% | 28% | 21% |
+
+- **Signature moves.** Each of the 14 wrestlers has four signature moves from the catalog,
+  suited to their style and weight. They use them as highlights (about 19% of their catalog
+  moves; an opponent's signatures 0.7%), commentary recognises the first one, the road agent
+  warns about the opponent's, and profiles list them under "Known for".
+- **"Keep it safe" is stricter** about high-risk moves, including a daredevil's own signatures.
+- **Season soak test.** `node tests/season-soak.test.cjs` plays six seeded careers
+  (155 weeks, 306 matches) through the same engine calls the interface makes, with a
+  mid-match save and restore in every bout. It checks for crashes, out-of-range stats,
+  corrupted saves and leaked placeholders, and that a seed replays identically.
 
 ## v3.3 — Ten times the graph, still realistic and deterministic
 
