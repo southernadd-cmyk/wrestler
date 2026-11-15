@@ -1,350 +1,157 @@
-# The Office — Wrestling Manager
+# THE OFFICE
 
-**A browser-based, text-led professional wrestling management game, inspired by classic 1990s management sims.**
+**PRO WRESTLING MANAGEMENT NEWSLETTER**
 
-Manage a regional wrestling **stable**, sign performers, negotiate bookings, shape rivalries and guide matches from the desk to ringside. The promoter books the outcome; you and the wrestlers negotiate what the performance will mean.
+`ISSUE 3.5` · `15 NOVEMBER 2026` · `ROSTER & TERRITORY EDITION`
 
-**Current documented version: v3.5** · Single-file HTML/JavaScript game · No install or account required
+**[Play The Office](https://southernadd-cmyk.github.io/wrestler/)** · [Read the game source](index.html)
 
-**[Play on GitHub Pages](https://southernadd-cmyk.github.io/wrestler/)** · **[View the source](https://github.com/southernadd-cmyk/wrestler/blob/main/index.html)**
+---
 
-> **The central idea: matches are scripted; people are not.** Winning is not the only objective. Trust, professionalism, prior encounters, injuries, promises and cooperation all shape the next match and the long-term career.
+## TWENTY-EIGHT WRESTLERS, FOUR DIFFERENT CARDS
 
-## Quick start
+*Territory report*
 
-1. Open the [game](https://southernadd-cmyk.github.io/wrestler/), or download this repository and open `index.html` in a modern browser.
-2. Start a career. You have a small budget, an empty roster and regional promoters to impress.
-3. Use **Roster** to sign and coach wrestlers, then **Bookings** to pursue offers and accept work.
-4. Check the **Office** inbox for decisions, and use **Continue** to advance the week or reach match night.
-5. Ahead of a match, agree on its story and important beats with the wrestlers, then deliver a multi-part promo. At ringside, watch the action and make live managerial calls.
-6. Review the finish, promises, performer reactions and career consequences before planning the next show.
+The circuit has doubled to **28 wrestlers**. Twelve are on the open market when you arrive, thirteen have signed with rival managers, and three take bookings independently. Everyone has a pixel-art portrait and four signature moves. The rival managers can sign someone off the same list you’re looking at.
 
-The game runs entirely in the browser without a build step. Its game logic does not require a backend, an account or an AI API; Google Fonts are fetched when available, with local fallback fonts.
+**The Office** is a text-led wrestling management game played in the browser. You look after one regional stable. Bookers call the result, then you and the wrestlers work out how to get there. Backstage, people remember who took the clean loss, who broke their word, and who made the other wrestler look good in front of a quiet room.
 
-## What you can do
+### Around the towns
 
-The circuit has 28 wrestlers with pixel-art portraits and signature moves. Twelve start as signable free agents. Thirteen work for one of three AI managers, and three work independently. Each promotion has an opener-to-main-event card pyramid that responds to its own results.
+| Promotion | What the booker wants | Main-event names at the start |
+| --- | --- | --- |
+| **Dockside** | A brawl that makes the warehouse crowd sit up. | Rocco Flint, Red Doyle |
+| **Pulse Underground** | A big spot worth passing around after the show. | Night Shift, Ace Cassidy |
+| **North Crown** | A story the regional television audience can follow. | The Reverend, Roxy Rain |
+| **Grand Union** | Technical work on the national broadcast. | Silas Rush, Nova Bell |
 
-| Area | Gameplay |
+Each booker keeps a separate card, from opener to main event. A result at Dockside goes on Dockside’s record. Repeat appearances can raise your fee there, and an established draw can bring higher billing. See who’s up, who’s down and who’s working elsewhere in **Territory → Card pyramid**.
+
+**Rival stable report.** Mo Devlin starts with five at Iron Borough. Ruth Anwar has four at Gold Coast, and Len Mercer has four at North Circuit. Their results and signings turn up in the circuit news as the weeks pass. If one of your wrestlers takes a rival’s offer, you may find yourself booking against them.
+
+---
+
+## FROM THE BOOKING OFFICE
+
+*First week on the job*
+
+You get **£2,250**, an empty locker room and four promoters with different ideas about what a good match looks like. There are **16 weeks to a season**, room for **five contracts**, and **two management meetings a week**. The wages come due whether you’ve booked a match or spent the week waiting for the phone.
+
+1. Open the [game](https://southernadd-cmyk.github.io/wrestler/) and pick **New career**. It opens at **Roster → Free agents**. Check the signing fee, the weekly wage and what the wrestler does well before you sign anyone.
+2. Look under **Bookings → Offers**. The booker sets the spot on the card, the purse and the finish. You can negotiate the rate, ask for higher billing or try to protect a clean loss.
+3. Read the **Office** inbox. Promoter requests, injuries and backstage problems can all need a decision. Set training in **Roster** and keep an eye on fatigue and upcoming fixtures.
+4. Press **Continue** when the paperwork is in order. A booked card takes you to match night, where you’ll go from the agents’ room to the microphone to ringside.
+5. Read the match report and check what ended up in **Territory → Results**. A good showing can build a programme. A promise you missed can come back to the office with you.
+
+The desktop layout keeps **Office**, **Roster**, **Bookings**, **Territory** and **Game** in the sidebar, with back and forward buttons at the top. Wrestler and free-agent lists are sortable. On a smaller screen the panels stack vertically.
+
+## TEN MINUTES TO DOORS
+
+*From the agents’ room*
+
+Dennis has a card to get through. The two wrestlers pitch the shine, the heat, the comeback, the big spot and the route to the agreed finish. Some pairings agree quickly. Others object because the lift is wrong for the weight gap, the move is too risky for the wrestler pitching it, or somebody doesn’t fancy looking weak on the finish. Listen to the objection, change the beat, offer a sweetener or leave part of it to be called in the ring.
+
+The promoter can send a note of their own. The agents’ room runs on a clock, so an argument can eat the time you wanted for planning the finish. The signed board carries into the match. Consent affects how hard the wrestlers try to make it work, and the engine accounts for the position and setup a move needs.
+
+## THE MIC IS OPEN
+
+*Pre-match report*
+
+The live exchange opens with **the hook** and **the grievance**. Then comes **the interruption**, followed by **something happens**, **the sell**, and **the closer**. What you say gives the opponent something specific to answer. A real grievance can get a crowd on your side. A weak accusation gives the other wrestler an opening, and a live interruption can change the whole pitch.
+
+A televised-sounding vow still has to survive the bell. Promise to counter a particular attack and the match looks for the relevant reversal. Name a finisher and a sharp opponent can scout it. Demand a clean bout and the wrestlers are steered away from dirty tactics. The record keeps the exchange, including the promises that came back to bite.
+
+## RINGSIDE AND AFTER THE BELL
+
+*Match report*
+
+The bout runs in original text commentary. Style, size, stamina, damage and position shape the action. A comeback needs a change of control. A dangerous spot needs the right setup. A near-fall needs a credible move and a cover. The booked winner remains the plan, with exceptional ringside decisions such as a stoppage handled explicitly.
+
+| At ringside | Control |
 | --- | --- |
-| **Office** | Work through an actionable inbox, see calendar and finances, and decide what needs attention. |
-| **Roster** | Recruit free agents, negotiate contracts, coach talent and inspect individual attributes, in-ring styles and personal histories. |
-| **Bookings** | Work with regional promoters, evaluate offers, negotiate and prepare for a booked result. |
-| **Territory** | Track rival promotions, relationships, career progress and the title hierarchy. |
-| **Match meeting** | Pick an evidence-based story objective, choose how detailed the plan should be, negotiate beats with the performers and sign the sheet. |
-| **Microphone** | Play a three-part promo exchange. Opponents respond to the actual claims and shared history; public promises can be tested by the ensuing match. |
-| **Ringside** | Watch original text commentary generated by a causal match graph; make tactical calls, respond to decisions and see whether the plan survives contact with the ring. |
-| **After the bell** | Compare planned and performed beats, review promises kept or broken, and follow ongoing memories, feuds and trust. |
+| Pause or resume | **Space** |
+| Make one of the current ringside calls | **1–6** or the matching on-screen button |
+| Resolve a decision prompt | Pick one of the choices on screen |
 
-**Scope:** You manage a *stable*, not an entire promotion. Promoters generally determine the booked result. This is a wrestling-story and relationship simulation, **not** an arcade fighting game or a system where you freely choose every result.
+The report compares the signed board with the match. It shows beats performed, adapted or missed, plus the effect on the crowd, purse and promoter. Wrestlers carry significant incidents into later conversations and matches. A humiliating loss, an injury, a protected finish or a broken promise can all matter next time. Rex Titan may want a word after a clean loss. If you promise him a featured match, check the fixture list before you say it.
 
-## Interface and controls
+## KEEP YOUR COPIES
 
-The interface uses a retro desktop-inspired design, with persistent **Office / Roster / Bookings / Territory / Game** navigation, back/forward buttons and a prominent **Continue** action. Wrestler and free-agent tables can be sorted, and wrestlers have detailed profile screens. Small screens use a vertically scrolling layout.
+*Save desk*
 
-During a live match:
+The browser saves your career automatically, including a meeting, promo or live bout in progress. Use **Game → Export save** for a portable copy and **Game → Import save** to pick up elsewhere. A local copy and the hosted game use separate browser storage, as do different browsers or devices. Export before moving or clearing site data.
 
-- **Space** — pause/resume the match.
-- **1–6** — activate the corresponding ringside call shown on screen.
-- **On-screen buttons** — provide the same ringside calls; decision prompts must be resolved when they appear.
+Earlier supported v2-era careers can be loaded. The current edition adds the expanded territory to existing saves and keeps your signed wrestlers, prior results and rival records.
 
-Promos and match meetings have their own on-screen choices. The match-night experience includes a pre-bout comparison, live commentary and a post-match report.
+To play locally, download the repository and open `index.html` in a modern browser. The game is a single HTML file with its CSS, JavaScript and portraits built in. The simulation runs in the browser. Google Fonts load when available, with system fallbacks.
 
-## How the simulation works
+---
 
-- **Career:** a 16-week regional season, recruitment, contracts, coaching, promoter relations, finance and progression. You have a limited number of management meetings per week.
-- **Personalities and memory:** individual repertoires and traits influence tactics. Significant injuries, humiliations, protected defeats, exceptional performances, backstage decisions and kept/broken promises persist into later interactions.
-- **Planning and promos:** negotiated match commitments become a causal sheet, not merely flavour text. Public vows and opponent replies can influence tactics and later consequences without overriding safety or contractual results.
-- **Matches:** a hierarchical story graph selects plausible sequences based on style, control, position, fatigue, size, damage, psychology and the agreed plan. Reversals change control; major spots require credible setup. The game respects the booked finish except for explicit exceptional interventions.
-- **Graph (v3.4):** **969 action nodes / 6,152 edges**, **25 story arcs**, **20 finish routes** and **150 promo choice nodes**. The action catalog includes **336 authored moves in 20 families**, plus reversals and applicable blocks. Graph construction and saved progression are designed to be deterministic.
+## BY THE NUMBERS
 
-See [the v3.3 graph notes](docs/graph-expansion-v3-3.md) for definitions, measurements and limitations behind these figures.
+*Engine desk*
 
-## Saves and compatibility
+| What’s on the sheet | Current count |
+| --- | ---: |
+| Ring action nodes and transitions | 969 / 6,152 |
+| Match story arcs | 25 |
+| Routes across the four booked finishes | 18 |
+| Authored moves and move families | 336 / 20 |
+| Promo graph angles and situational variants | 15 / 135 |
+| Beats in the live microphone exchange | 6 |
 
-Career progress is stored automatically in your browser's **localStorage**. Match-night progress can also be restored, including a partially completed meeting, promo or live bout. Use **Game → Export save** to download a portable save file, and **Game → Import save** to load one elsewhere.
+The match graph and career simulation use seeded logic so a saved sequence can be resumed deterministically. Reversals and applicable blocks sit alongside the authored moves. Narration and wrestler dialogue are original, informed by match structure, performer interviews and wrestling history. [Match graph and research](docs/match-graph.md) · [Promo research](docs/promo-graph.md)
 
-Browser saves belong to the site origin: a local `file://` copy and the GitHub Pages deployment do **not** automatically share progress. Export before switching browser, device, origin or clearing site data.
+### On the record
 
-The code retains compatibility handling for earlier v2.x career data; the game's newer memory and planning fields are hydrated as needed. As with any evolving prototype, keep an exported backup before switching versions.
-
-## Development and tests
-
-The game is implemented in `index.html` with embedded CSS and JavaScript. There is no package installation or build pipeline for playing it. The `tests/` directory contains dependency-free Node.js regression scripts (Node.js is needed **only** to run the tests).
-
-From the repository root, run the individual suites:
+Node.js is needed for the regression suites only. From the repository root, run any of the following:
 
 ```sh
+node tests/roster.test.cjs
+node tests/agents-room.test.cjs
+node tests/season-soak.test.cjs
 node tests/match-flow.test.cjs
 node tests/graph-flow.test.cjs
 node tests/match-variety.test.cjs
-node tests/promo-flow.test.cjs
-node tests/memory-flow.test.cjs
 node tests/graph-sheet.test.cjs
 node tests/creative-loop.test.cjs
-node tests/catalog.test.cjs
+node tests/memory-flow.test.cjs
+node tests/promo-flow.test.cjs
 node tests/promo-variants.test.cjs
-node tests/season-soak.test.cjs
+node tests/catalog.test.cjs
 ```
 
-These cover sequencing and finish logic, graph integrity, performer variety, promo continuity, career memory, negotiated sheets, move legality and deterministic variants. The presence of a test is not a claim that it was rerun for this documentation change.
+The suites cover the free-agent market and rival contracts, separate promotion ladders, older saves, signed boards, booked finishes, match legality, promo continuity and repeatable careers.
 
-## Design notes and research
+## BACK ISSUES
 
-- [v3.3 — action and promo graph expansion](docs/graph-expansion-v3-3.md)
-- [v3.2 — creative meetings and microphone promises](docs/creative-loop-v3-2.md)
-- [v3.1 — negotiated match sheets and common event language](docs/graph-sheet-v3-1.md)
-- [Wrestler memory and backstage consequences](docs/wrestler-memory.md)
-- [Match variety and individual psychology](docs/match-variety.md)
-- [Promo graph and wrestling promo research](docs/promo-graph.md)
-- [Match graph architecture and match research](docs/match-graph.md)
+*From the files*
 
-All wrestler dialogue and narrated action are authored original material, informed by wrestling structure and history rather than copied real-world promos.
+| Edition | What was reported |
+| --- | --- |
+| **3.5** | Dennis opens the agents’ room and the microphone goes live. The roster and territory edition doubles the cast, brings in the new portraits and gives all four bookers cards of their own. |
+| **3.4** | The narration gets a line edit, signature moves belong to individuals and a full-season test goes through the books. The 400-bout balance audit put the average at 2.04 stars and missed beats at 21%. |
+| **3.3** | The action catalog grows to 336 moves with distinct counters and physical limits. The promo desk adds replies grounded in the actual pairing. [Expansion notes](docs/graph-expansion-v3-3.md) |
+| **3.2** | The two wrestlers start pitching what the match ought to prove. A promo promise can turn into a real tactical commitment. [Creative meetings and microphone promises](docs/creative-loop-v3-2.md) |
+| **3.1** | Negotiated beats become a signed sheet with timing, a wrestler responsible for each beat and legal alternatives. The report distinguishes a missed beat from one the wrestlers rebuilt. [Match-sheet notes](docs/graph-sheet-v3-1.md) |
+| **3.0** | The locker room gets a memory. Protected losses, humiliations, injuries and promises follow a wrestler into the next show. [Wrestler memory](docs/wrestler-memory.md) |
+| **2.9** | Individual repertoires, credible size and stamina limits, and opponent scouting give wrestlers a recognisable way of working. [Match variety](docs/match-variety.md) |
+| **2.8** | The original three-part promo exchange introduces opponent replies, public promises and a saved transcript. |
+| **2.7** | Match commentary moves onto connected story, action and outcome graphs. |
+| **2.6** | Match psychology gets explicit control changes, body-part work and setups for the bigger spots. |
 
-## Detailed version history
+[Unabridged development archive](https://github.com/southernadd-cmyk/wrestler/blob/3fc3f5eaaef2203e65dfb5ed3ec91075f27a5d6f/readme.md) · [Original sumo game archive](https://github.com/southernadd-cmyk/wrestler/tree/archive/sumo-before-the-office-2026-11-11)
 
-The sections below describe how the current implementation evolved. Earlier versions are historical context; the summary above describes the current game.
+<details>
+<summary>Match research from the early issues</summary>
 
-## v3.4 — Polish pass: narration, balance, signature moves and a season soak test
+- [Matt Murphy on match structure](https://missouriwrestlingrevival.com/2009/12/23/chapter-15-match-structure-by-matt-murphy/)
+- [WWE retrospective on Savage vs Steamboat](https://www.wwe.com/inside/listthis/maniamatches/maniamatches7)
+- [Action and control analysis of Hart vs Austin](https://www.prowrestlingmusings.com/post/greatest-matches-of-all-time-bret-hart-vs-steve-austin)
+- [Bayley vs Banks and the use of injury callbacks](https://www.cagesideseats.com/wwe/2016/7/25/12264730/making-history-bayleys-journey-part-5)
 
-- **Narration audit.** Reversal and block lines generated from templates now read properly.
-  Things that are not attempts (a kip-up, a double count) no longer have a "reversal",
-  stationary offence is countered differently from a charging attack, and 31 moves have
-  hand-written counters. The action graph is now 969 nodes and 6,152 edges.
-- **Balance restored to v3.2 levels.** The v3.3 catalog had inflated crowd reactions and
-  star ratings and made signed match sheets harder to deliver. Measured over 400 bouts:
+</details>
 
-  | Per match | v3.2 | v3.3 | v3.4 |
-  | --- | --- | --- | --- |
-  | Star rating | 2.00 | 2.19 | 2.04 |
-  | Crowd at the bell | 52 | 64 | 55 |
-  | Near-falls | 2.25 | 2.62 | 2.42 |
-  | Agreed beats missed | 22% | 28% | 21% |
+---
 
-- **Signature moves.** Each of the 14 wrestlers has four signature moves from the catalog,
-  suited to their style and weight. They use them as highlights (about 19% of their catalog
-  moves; an opponent's signatures 0.7%), commentary recognises the first one, the road agent
-  warns about the opponent's, and profiles list them under "Known for".
-- **"Keep it safe" is stricter** about high-risk moves, including a daredevil's own signatures.
-- **Season soak test.** `node tests/season-soak.test.cjs` plays six seeded careers
-  (155 weeks, 306 matches) through the same engine calls the interface makes, with a
-  mid-match save and restore in every bout. It checks for crashes, out-of-range stats,
-  corrupted saves and leaked placeholders, and that a seed replays identically.
-
-## v3.3 — Ten times the graph, still realistic and deterministic
-
-| Graph | v3.2 | v3.3 |
-| --- | --- | --- |
-| Action nodes / edges | 96 / 297 | **986 / 6,252** |
-| Story arcs | 13 | **25** |
-| Finish routes | 6 | **20** |
-| Promo choice nodes | 15 | **150** |
-
-- **336 authored moves in 20 families** (suplexes, power, DDTs, strikes, corner, top rope,
-  superplexes, dives, submissions, rest holds, lucha, roll-ups, ringside, heel tactics,
-  comeback fire and more). Each move has its own stamina cost, lift limit, body part,
-  earliest credible moment, risk and style affinity, plus a **reversal** and, where it
-  makes sense, a **block or abort**. Lift blocks become likelier as the size gap grows.
-- **Realism guards.** Heat segments work the targeted limb, "Keep it safe" suppresses
-  high-risk spots, nobody hits a tombstone in the first minute, and the arcs invite the move
-  families that suit them.
-- **12 new story sub-arcs**, for example limb work, heat on the floor, a slugfest, a
-  top-rope battle, a submission battle and false finishes. There are also **20 finish
-  routes**: the contract decides who wins, and the match decides how.
-- **Promos:** each of the 15 angles has about nine situation-specific versions, worded
-  for this pairing's history, memories, feud heat, styles and skills, and each gets its own
-  reply from the opponent. Specific counter vows ("I'll catch your punches") are only kept
-  by the matching kind of reversal.
-- **Deterministic:** the graph is wired with a fixed string hash, and seeds, saves and
-  mid-match or mid-promo resumes replay identically.
-
-Design and measurements: [graph expansion v3.3](docs/graph-expansion-v3-3.md). Regress with
-`node tests/catalog.test.cjs` and `node tests/promo-variants.test.cjs` alongside the seven
-existing suites.
-
-## v3.2 — The meeting and the microphone now matter
-
-**The match contract sets the finish. The performers and their manager decide what
-the match must actually prove.**
-
-The match meeting is now a multi-step creative conversation rather than a
-one-click choice between default proposals:
-
-1. **Pick an evidence-based story objective.** Proposals use individual
-   repertoires, psychology, prior results, injury memories, fatigue and the
-   opponent's style. The actual options vary between pairings: scout a known
-   attack, rehabilitate a humiliating loss, protect a tired wrestler, build on
-   previously demonstrated chemistry, or earn a dramatic high-risk payoff.
-2. **Choose the amount of planning** (detailed, key moments, or called live).
-   This changes which specific commitments are made.
-3. **Negotiate the actual beats.** Where an objection is genuine, resolve
-   it without manufacturing a feud. Before signing, propose alternative
-   actions in the control, comeback or finishing stretch, and hear the affected
-   wrestler's response. Revisions alter the live causal sheet.
-4. **Sign the agreement.** Both performers' willingness affects cooperation.
-   The game displays their attitudes in words, not an exploitable ranking
-   of numerical choices.
-5. **Review what occurred.** The debrief distinguishes an achieved beat from
-   a legal substitute, explains knock-on effects when an earlier beat was
-   missed and records manager instructions that shortened or changed the
-   match. Exceptional success can form a future creative relationship.
-
-Promos now **test an argument and make public commitments** rather than merely
-awarding a crowd/heat bonus. The opponent responds to the actual claim,
-their wrestling strengths and relevant previous encounters. Unsupported
-accusations damage credibility; a direct answer can repair it.
-
-A public promise to **counter the opponent** is verified only if the wrestler
-actually reverses a relevant attack late in the match. An announced finisher
-allows a clever opponent to scout it; demanding clean wrestling suppresses
-dirty offence; withholding the plan can improve tactical misdirection. The
-commentary and post-match history recognise promises kept or broken.
-Statements from the promo influence legal tactical move selection, but
-never override the contracted result or physical safety checks.
-
-Full design: [creative-loop v3.2](docs/creative-loop-v3-2.md). Regress with
-`node tests/creative-loop.test.cjs` alongside the six existing suites.
-
-## Cooperative match planning and connected graphs (v3.1)
-
-**The match result is contracted. The route to it is negotiated and performed.**
-
-Before microphone time, both wrestlers now propose their preferred tactics and
-turning points. In a dedicated match meeting, the manager chooses how much to
-plan — **detailed layout**, **key moments** or **call it in the ring** — then lets the wrestlers **agree without intervention** when their ideas fit.
-A manager only arbitrates a genuine conflict — such as an unsafe proposed move
-or a remembered humiliating loss. Personalities, prior results, injury memories,
-relative size, fatigue and the booked finish influence their proposals. Backing
-a side changes match cooperation; resolving a safety concern actually replaces
-the dangerous planned move with a lower-risk alternative.
-
-The agreement is a serialisable, directed graph of specific match commitments,
-with ordering constraints, owner, timing window and physically viable fallback.
-It changes real action selection in the ring; legal moves, stamina, mass
-differences, control and the contracted finish remain authoritative. The
-live commentary notes fulfilled, adapted and missed commitments; post-match
-results show the signed sheet against what actually happened. Reported events
-and the match-sheet summary survive save/resume and career history. An
-unusually disrupted sheet can also become a wrestler memory.
-
-The tactical graph now contains **96 connected action nodes and 297 edges**
-(up from 66 nodes and 192 edges), including limb attacks and escapes, heavyweight
-pressure, aerial setup/counter families and emotional comeback beats.
-
-The first shared kernel layer provides pure prerequisite checks, canonical
-event IDs, validation and causal event tracing. This is a working first slice,
-not yet the full seven-family graph system described in the research plan.
-Our next steps are integrating promos and long-term storylets with the same
-event language and growing authored quality-checked motifs.
-
-See [implemented graph-sheet design](docs/graph-sheet-v3-1.md). Run
-`node tests/graph-sheet.test.cjs` along with the five existing regression suites.
-
-## The USP — matches are scripted, people are not (v3.0)
-
-The player runs a regional wrestling **stable**, not a whole promotion.
-Promoters decide contractual results; wrestlers remember how those results
-affected them and whether the manager treated them fairly.
-
-A first, playable character-memory system now includes:
-
-- **Meaningful wrestler memories.** Injuries, humiliating clean defeats,
-  protected losses, off-script trouble, standout performances and promises
-  are recorded against the wrestler and opponent, not regenerated randomly.
-  Each wrestler remembers up to 12 significant moments in the existing save.
-- **Rex Titan's first backstage conflict.** Book Rex to lose clean and he
-  will challenge you afterwards through the existing Inbox. Publicly backing
-  him helps trust but risks promoter goodwill; explaining the business works
-  better with professionals; promising a featured match becomes a real
-  two-week contractual obligation.
-- **Persistent consequences.** Manager trust and personal rival feelings
-  carry into future appearances. Low trust reduces willingness to follow
-  the sheet; remembered grievances appear in scouting notes, microphone
-  conversations and ringside commentary.
-- **Promises matter.** The existing booking and calendar logic decides
-  whether a future featured opportunity was actually provided. Kept and
-  broken promises become new memories and alter trust.
-- **Respect for the player's time.** At most one new backstage confrontation
-  per show, a cooldown on routine discussions, and immediate exceptions for
-  major injuries or an intentional double-cross. No new menu or currency.
-
-Old v2.x local saves and mid-match saves are kept; the new state is optional
-and created only as needed. Original data and dialogue, no LLM/network calls.
-Detailed design: [wrestler memory](docs/wrestler-memory.md).
-
-Test with `node tests/memory-flow.test.cjs` alongside the four existing
-regression suites.
-
-## Individual match personalities (v2.9)
-
-The v2.7 story/action/outcome graphs are retained, with four lightweight improvements to keep matches recognisable, believable and fun:
-
-- **Individual repertoires:** 14 original wrestlers now have personal in-ring tendencies, distinct from the five available booking plans. A brawler, technical wrestler, spectacle wrestler and storyteller favour different sequences even when assigned the same plan.
-- **Physical effort and size:** expensive moves drain stamina, fatigued wrestlers pause to recover, and unrealistic heavy lifts are blocked. Special spots also respect fatigue and major weight differences.
-- **Road-agent scouting:** a short pre-match note summarises the opponent's tendencies, size differences and a practical tactic. Changing the game plan changes the advice, but does not add menu complexity.
-- **Deterministic saves and contractual finishes:** match result contracts, the familiar Office UI, existing saves and live ringside calls remain intact. Wrestler profiles are keyed by IDs so old saved careers gain these identities without a save migration.
-
-The emphasis is on *different stories with the same simple controls*, not a hidden HP-based competitive fighting game. Design context and scope: [match variety](docs/match-variety.md).
-
-Run `node tests/match-variety.test.cjs` together with the three earlier test files to verify this extension.
-
-## Interactive microphone segments (v2.8)
-
-Promos are now genuine **three-part dialogue encounters**. Choose an opening angle, answer the opponent's interruption, and deliver a final line. Your choices become permanent once spoken and the opponent's response depends on what you said; there are no score previews to optimise.
-
-- 15 choice nodes and 125 combinations, with further variation from character, previous rivalry and creative metaphors
-- Separate tradeoffs: crowd support, feud heat, credibility, morale, and the promoter's trust
-- Promise a win, a named finisher, or clean wrestling; the match and its results determine whether you deliver
-- The in-ring commentary remembers the microphone promise
-- Full promo transcript in match history; autosave and restore midway through the conversation
-- The existing 1990s management interface and save storage are preserved
-
-Research includes the **Randy Savage** “Cream of the Crop” promo, the Mega Powers confrontation and the Steamboat/Warrior matches, plus real archived transcript references. See [promo graph design and research](docs/promo-graph.md).
-
-Test: `node tests/promo-flow.test.cjs`.
-
-## Causal event graph (v2.7)
-
-The match engine now uses a hierarchical, weighted **13-arc story graph**, a **59-node / 172-edge action graph** and a **six-outcome finish graph**. Matches vary based on wrestling style, current positioning, reversals, damage, crowd and contracted results. Chains of moves have explicit transitions (e.g., lock-up → wristlock → counter → takedown → hold → rope break) rather than independent random commentary.
-
-- Separate damage and selling for each wrestler; counters change control explicitly.
-- Floor, corner, apron and top-rope exchanges require appropriate setup and recovery.
-- Near-falls follow a meaningful move and a legal pinning attempt.
-- Booked wins/losses remain authoritative unless the manager makes an explicit off-script or medical stoppage decision.
-- Original lines are influenced by real-match analyses and performer interviews, not copied transcripts.
-- The v2.4/v2.5 interface and existing save keys remain intact, including migration of mid-bout v2.6 saves.
-
-**Details and primary research links:** [Match graph architecture and research](docs/match-graph.md).
-
-**Regression tests:** `node tests/match-flow.test.cjs` and `node tests/graph-flow.test.cjs`.
-
-## Match psychology (v2.6)
-
-The match engine now links moves into cause-and-effect sequences instead of choosing isolated actions. It remembers who is in control, whether the action is inside or outside the ring, who is down, and which body part is being worked.
-
-- Match types have different pacing: story, technical, brawl, high-flying and safe matches.
-- A phase change must be earned by a counter or cut-off, not an unexplained change of attacker.
-- Wrestlers sell damage through the match. Heat segments can contain false comebacks and consistent targeting of an injury.
-- Big moves require a realistic setup (ropes, corner, floor or apron), and a pin requires both wrestlers to be back inside.
-- Near-falls follow a move and a cover; dirty finishes now show the distraction, the illegal pin and the referee's count in the correct order.
-- The finish relates to the prior damage, with conditional consequences for injured or exhausted wrestlers.
-- The four booked finishes, ringside decisions, crowd ratings, promos, rivalries and mid-match save/resume remain intact.
-
-### Research basis
-
-Original match narration and event templates, informed by wrestling psychology and actual match breakdowns rather than copied transcripts:
-
-- [Matt Murphy — Match Structure](https://missouriwrestlingrevival.com/2009/12/23/chapter-15-match-structure-by-matt-murphy/)
-- [Savage vs Steamboat — WWE retrospective](https://www.wwe.com/inside/listthis/maniamatches/maniamatches7)
-- [Hart vs Austin — action and control analysis](https://www.prowrestlingmusings.com/post/greatest-matches-of-all-time-bret-hart-vs-steve-austin)
-- [Bayley vs Banks — targeted injury and match callbacks](https://www.cagesideseats.com/wwe/2016/7/25/12264730/making-history-bayleys-journey-part-5)
-
-Test without dependencies: `node tests/match-flow.test.cjs`.
-
-## Existing saves
-
-The game loads local v2, v2.1, v2.2 and v2.3 careers on the same origin, including a match night in progress. The same local save storage keys have been retained. Save files can be exported and imported manually when moving between origins.
-
-## Archive
-
-The original sumo game is preserved on the `archive/sumo-before-the-office-2026-11-11` branch.
+*Layout references* · [Pro Wrestling Torch print covers](https://www.pwtorch.com/artman2/publish/wadekellerdotcom/46258.shtml) · [Wrestling Observer back issues](https://www.f4wonline.com/news/daily-updates/first-decade-wrestling-observer-hall-of-fame-issues-special-157576/)
