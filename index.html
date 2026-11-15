@@ -313,17 +313,16 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 #toast.show{opacity:1;transform:none}
 
 /* ---------- title screen ---------- */
-.title{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:var(--desk);background-image:repeating-conic-gradient(var(--desk) 0 25%,var(--desk-dot) 0 50%);background-size:4px 4px;overflow:auto}
+.title{position:fixed;inset:0;z-index:50;display:grid;place-items:safe center;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:var(--desk);background-image:repeating-conic-gradient(var(--desk) 0 25%,var(--desk-dot) 0 50%);background-size:4px 4px;overflow:auto}
 .title[hidden]{display:none}
-.title .win{width:min(640px,100%)}
-.title .hero{padding:26px 26px 18px;text-align:center;background:var(--deep);border-bottom:2px solid var(--ink)}
-.title .ropes{height:6px;margin:0 -26px 18px;background:repeating-linear-gradient(0deg,var(--blood) 0 2px,transparent 2px 4px)}
-.title .ropes.b{margin:18px -26px 0}
-.title h1{font:clamp(84px,17vw,150px)/.78 var(--jersey);color:var(--gold);text-shadow:4px 4px 0 var(--blood),8px 8px 0 #000;letter-spacing:.01em}
-.title .sub{font:24px/1.1 var(--tt);color:var(--cyan);margin-top:14px}
-.title .menu{display:grid;gap:8px;padding:18px 26px}
+.title .win{width:min(720px,100%)}
+.title .hero{text-align:center;background:var(--deep);border-bottom:2px solid var(--ink)}
+.title .hero img{display:block;width:100%;height:auto;max-height:max(100px,calc(100dvh - 220px));object-fit:contain}
+.title h1:not(.sr){padding:22px 12px 8px;font:clamp(50px,17vw,130px)/.82 var(--jersey);color:var(--gold);text-shadow:4px 4px 0 var(--blood),8px 8px 0 #000;letter-spacing:.01em}
+.title .sub{padding:8px 12px;margin:0;font:clamp(16px,3vw,22px)/1.1 var(--tt);color:var(--cyan)}
+.title .menu{display:grid;gap:8px;padding:14px 20px}
 .title .menu .btn{min-height:48px;font:28px/1 var(--jersey);letter-spacing:.03em}
-.title .keys{padding:0 26px 18px;font-size:17px;color:var(--ink-2);text-align:center}
+.title .keys{padding:0 16px 14px;font-size:17px;color:var(--ink-2);text-align:center}
 
 /* ---------- MATCH NIGHT ---------- */
 .tv{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;background:var(--desk);background-image:repeating-conic-gradient(var(--desk) 0 25%,var(--desk-dot) 0 50%);background-size:4px 4px;color:var(--white)}
@@ -639,10 +638,9 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 <div id="title" class="title" hidden>
  <div class="win">
   <div class="hero">
-   <div class="ropes"></div>
-   <h1>The<br>Office</h1>
-   <div class="sub">Wrestling management. A regional territory, 16 weeks a season.</div>
-   <div class="ropes b"></div>
+   <h1 id="startHeading">The<br>Office</h1>
+   <img id="startCard" src="assets/share-card.png" width="1200" height="630" alt="Pixel-art wrestlers Mara Vale, Rex Titan and Lyra Knox in a wrestling arena" hidden>
+   <p class="sub">A regional territory, 16 weeks a season.</p>
   </div>
   <div class="menu">
    <button class="btn go" data-title="new">New career</button>
@@ -6462,6 +6460,14 @@ document.addEventListener('keydown',e=>{
 /* ---------- boot ---------- */
 window.OfficeUI={get night(){return night},go};
 window.addEventListener('DOMContentLoaded',()=>{
+ const card=$('#startCard');
+ function showTitleCard(){
+  if(!card.naturalWidth)return;
+  $('#startHeading').classList.add('sr');
+  card.hidden=false;
+ }
+ if(card.complete)showTitleCard();
+ else card.addEventListener('load',showTitleCard,{once:true});
  const d=$('#modal');d.addEventListener('close',()=>{
   const oid=d.dataset.talkoid;if(oid&&S()){const o=S().offers.find(x=>x.id===oid);if(o?.talk?.step==='start'){o.talk=null;G.save();}}
   delete d.dataset.talkoid;if(S()&&!$('#app').hidden)render();
