@@ -1,4 +1,4 @@
-# The Office — Wrestling Manager v3.3
+# The Office — Wrestling Manager v3.4
 
 A standalone wrestling management game. Run a stable, take the bookings, and sit at ringside for every match.
 
@@ -21,6 +21,32 @@ Before each bout, choose a microphone approach (call them out, rally the fans, p
 ## Systems
 
 16-week regional season; contract negotiation; wrestler recruitment and coaching; pre-match promos with four meaningful approaches and original dialogue; context-sensitive and phase-specific match commentary; heat-driven storylines, rivalries and blow-offs; live text matches with ringside decisions; rival promotions; persistent title pyramid; export and import of career saves.
+
+## v3.4 — Polish pass: narration, balance, signature moves and a season soak test
+
+- **Narration audit.** Reversal and block lines generated from templates now read properly.
+  Things that are not attempts (a kip-up, a double count) no longer have a "reversal",
+  stationary offence is countered differently from a charging attack, and 31 moves have
+  hand-written counters. The action graph is now 969 nodes and 6,152 edges.
+- **Balance restored to v3.2 levels.** The v3.3 catalog had inflated crowd reactions and
+  star ratings and made signed match sheets harder to deliver. Measured over 400 bouts:
+
+  | Per match | v3.2 | v3.3 | v3.4 |
+  | --- | --- | --- | --- |
+  | Star rating | 2.00 | 2.19 | 2.04 |
+  | Crowd at the bell | 52 | 64 | 55 |
+  | Near-falls | 2.25 | 2.62 | 2.42 |
+  | Agreed beats missed | 22% | 28% | 21% |
+
+- **Signature moves.** Each of the 14 wrestlers has four signature moves from the catalog,
+  suited to their style and weight. They use them as highlights (about 19% of their catalog
+  moves; an opponent's signatures 0.7%), commentary recognises the first one, the road agent
+  warns about the opponent's, and profiles list them under "Known for".
+- **"Keep it safe" is stricter** about high-risk moves, including a daredevil's own signatures.
+- **Season soak test.** `node tests/season-soak.test.cjs` plays six seeded careers
+  (155 weeks, 306 matches) through the same engine calls the interface makes, with a
+  mid-match save and restore in every bout. It checks for crashes, out-of-range stats,
+  corrupted saves and leaked placeholders, and that a seed replays identically.
 
 ## v3.3 — Ten times the graph, still realistic and deterministic
 
