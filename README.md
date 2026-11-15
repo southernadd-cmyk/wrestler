@@ -12,7 +12,7 @@ Manage a regional wrestling **stable**, sign performers, negotiate bookings, sha
 
 ## Quick start
 
-1. Open the [game](https://southernadd-cmyk.github.io/wrestler/), or download this repository and open \`index.html\` in a modern browser.
+1. Open the [game](https://southernadd-cmyk.github.io/wrestler/), or download this repository and open `index.html` in a modern browser.
 2. Start a career. You have a small budget, an empty roster and regional promoters to impress.
 3. Use **Roster** to sign and coach wrestlers, then **Bookings** to pursue offers and accept work.
 4. Check the **Office** inbox for decisions, and use **Continue** to advance the week or reach match night.
@@ -62,17 +62,17 @@ See [the v3.3 graph notes](docs/graph-expansion-v3-3.md) for definitions, measur
 
 Career progress is stored automatically in your browser's **localStorage**. Match-night progress can also be restored, including a partially completed meeting, promo or live bout. Use **Game → Export save** to download a portable save file, and **Game → Import save** to load one elsewhere.
 
-Browser saves belong to the site origin: a local \`file://\` copy and the GitHub Pages deployment do **not** automatically share progress. Export before switching browser, device, origin or clearing site data.
+Browser saves belong to the site origin: a local `file://` copy and the GitHub Pages deployment do **not** automatically share progress. Export before switching browser, device, origin or clearing site data.
 
 The code retains compatibility handling for earlier v2.x career data; the game's newer memory and planning fields are hydrated as needed. As with any evolving prototype, keep an exported backup before switching versions.
 
 ## Development and tests
 
-The game is implemented in \`index.html\` with embedded CSS and JavaScript. There is no package installation or build pipeline for playing it. The \`tests/\` directory contains dependency-free Node.js regression scripts (Node.js is needed **only** to run the tests).
+The game is implemented in `index.html` with embedded CSS and JavaScript. There is no package installation or build pipeline for playing it. The `tests/` directory contains dependency-free Node.js regression scripts (Node.js is needed **only** to run the tests).
 
 From the repository root, run the individual suites:
 
-\`\`\`sh
+```sh
 node tests/match-flow.test.cjs
 node tests/graph-flow.test.cjs
 node tests/match-variety.test.cjs
@@ -82,7 +82,7 @@ node tests/graph-sheet.test.cjs
 node tests/creative-loop.test.cjs
 node tests/catalog.test.cjs
 node tests/promo-variants.test.cjs
-\`\`\`
+```
 
 These cover sequencing and finish logic, graph integrity, performer variety, promo continuity, career memory, negotiated sheets, move legality and deterministic variants. The presence of a test is not a claim that it was rerun for this documentation change.
 
