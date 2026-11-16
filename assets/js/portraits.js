@@ -24,12 +24,27 @@ const OPTIONS={
 };
 const items=Object.fromEntries(Object.entries(OPTIONS).map(([k,v])=>[k,v.map(x=>x[0])]));
 const presets={mara:'female',lyra:'female',juno:'female',roxy:'female',rex:'male',brick:'male',sol:'male',red:'male',silas:'male',rev:'male'};
+// The first four atlas cells have baked-in backgrounds; regenerate only those
+// four plus the new v4 performers as transparent 48x60 sprites in the browser.
+const legacyCutouts=new Set(['mara','rex','lyra','brick']);
+function transparentPortrait(key){
+ if(!key?.startsWith('wrestler:'))return false;
+ const id=key.slice(9);
+ return legacyCutouts.has(id)||!!root.OfficeData?.V4?.newCast?.some(w=>w.id===id);
+}
+const legacyLooks={
+ mara:{presentation:'female',hair:'long',hairColor:'ink',complexion:'fair',gear:'jacket',gearColor:'crimson'},
+ rex:{presentation:'male',hair:'bald',beard:'none',complexion:'tan',gear:'vest',gearColor:'steel'},
+ lyra:{presentation:'female',hair:'long',headwear:'mask',gear:'jacket',gearColor:'violet',complexion:'warm'},
+ brick:{presentation:'male',hair:'swept',hairColor:'ginger',beard:'full',complexion:'peach',gear:'vest',gearColor:'orange'}
+};
 function generated(key,nonce=0,meta={}){
  const o={};const base=String(key)+'|look-v9|'+(nonce||0);
  for(const [k,opts] of Object.entries(items)){
   const h=hash(base+'|'+k);o[k]=opts[h%opts.length];
  }
  const id=key.split(':').slice(1).join(':');if(nonce===0&&presets[id])o.presentation=presets[id];
+ if(nonce===0&&legacyLooks[id])Object.assign(o,legacyLooks[id]);
  if(meta.type==='booker')o.gear=hash(base+'|booker')%3?'suit':'jacket';
  if(o.presentation==='female'&&hash(base+'|beard')%12!==0)o.beard='none';
  if(o.presentation==='male'&&hash(base+'|hair')%4===0&&o.hair==='long')o.hair='ponytail';
@@ -42,14 +57,14 @@ function color(key,value){return OPTIONS[key].find(x=>x[0]===value)?.[1]||'#9999
 function shade(hex,amount){let n=parseInt(hex.slice(1),16);let r=Math.min(255,Math.max(0,(n>>16)+amount)),g=Math.min(255,Math.max(0,((n>>8)&255)+amount)),b=Math.min(255,Math.max(0,(n&255)+amount));return '#'+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('')}
 const cache=new Map();
 function renderCanvas(actor,appearance=null,scale=1){
- const look=appearance||getLook(actor);const canvas=document.createElement('canvas');canvas.width=48*scale;canvas.height=60*scale;const g=canvas.getContext('2d');g.imageSmoothingEnabled=false;
+ const look=appearance||getLook(actor),cutout=transparentPortrait(actor?.key);const canvas=document.createElement('canvas');canvas.width=48*scale;canvas.height=60*scale;const g=canvas.getContext('2d');g.imageSmoothingEnabled=false;
  g.setTransform(scale,0,0,scale,0,0);
  const rect=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
  const pix=(x,y,c)=>rect(x,y,1,1,c);
  const bg=color('bg',look.bg),skin=color('complexion',look.complexion),dark=shade(skin,-33),light=shade(skin,19),hair=color('hairColor',look.hairColor),hLight=shade(hair,28),suit=color('gearColor',look.gearColor),gearL=shade(suit,27),gearD=shade(suit,-30),eye=color('eyeColor',look.eyeColor);
- rect(0,0,48,60,bg);rect(2,2,44,56,shade(bg,14));rect(4,4,40,52,bg);
+ if(!cutout){rect(0,0,48,60,bg);rect(2,2,44,56,shade(bg,14));rect(4,4,40,52,bg);}
  // Pinstripes, arena lighting and a portrait-card border.
- for(let j=0;j<5;j++)rect(4+j*9,4,1,8,shade(bg,25));rect(0,47,48,13,shade(bg,-20));rect(1,1,46,1,'#95816a');rect(1,58,46,1,'#655b56');
+ if(!cutout){for(let j=0;j<5;j++)rect(4+j*9,4,1,8,shade(bg,25));rect(0,47,48,13,shade(bg,-20));rect(1,1,46,1,'#95816a');rect(1,58,46,1,'#655b56');}
  const male=look.presentation==='male',female=look.presentation==='female';
  rect(8,50,32,10,gearD);rect(male?5:7,42,male?38:34,18,suit);rect(12,42,24,18,gearL);
  if(look.gear==='suit'||look.gear==='jacket'||look.gear==='robe'){
@@ -138,7 +153,7 @@ function renderCanvas(actor,appearance=null,scale=1){
  if(look.headwear==='cap'){rect(11,9,26,11,suit);rect(9,19,28,3,gearD);rect(15,12,17,3,gearL)}
  // Jersey emblem and bottom cut.
  if(look.gear!=='suit'&&look.gear!=='robe'){rect(22,52,4,2,gearL);rect(23,53,2,3,gearD)}
- rect(0,57,48,3,shade(bg,-30));rect(1,1,1,57,'#8d765d');rect(46,1,1,57,'#81715b');
+ if(!cutout){rect(0,57,48,3,shade(bg,-30));rect(1,1,1,57,'#8d765d');rect(46,1,1,57,'#81715b');}
  return canvas;
 }
 function asData(actor,appearance=null){const look=appearance||getLook(actor),key=(actor?.key||'none')+'|'+JSON.stringify(look);if(cache.has(key))return cache.get(key);const url=renderCanvas(actor,look).toDataURL('image/png');if(cache.size>550)cache.clear();cache.set(key,url);return url}
@@ -159,7 +174,7 @@ function avatar(actor,appearance=null,cssClass='portrait'){
  const safe=String(actor?.name||'Wrestler').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
  const label='Pixel-art portrait of '+safe;
  const position=appearance===null&&portraitCells.get(actor?.key);
- if(position)return `<span class="${cssClass} roster-portrait" role="img" aria-label="${label}" style="background-position:${position}"></span>`;
+ if(position&&!(typeof document!=='undefined'&&transparentPortrait(actor?.key)))return `<span class="${cssClass} roster-portrait" role="img" aria-label="${label}" style="background-position:${position}"></span>`;
  return `<img class="${cssClass}" src="${asData(actor,appearance)}" alt="${label}" width="48" height="60" loading="lazy">`;
 }
 function png(actor,appearance=null){const canvas=renderCanvas(actor,appearance||getLook(actor),8);const link=document.createElement('a');link.download='the-office-'+(actor.name||actor.key).replace(/[^a-z0-9-]+/gi,'-').toLowerCase()+'-portrait.png';link.href=canvas.toDataURL('image/png');link.click()}
