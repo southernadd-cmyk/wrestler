@@ -29,13 +29,13 @@ assert.equal(P.curatedLooks.winnie.accessory,'glasses');
 assert.equal(P.curatedLooks.nikita.hair,'mohawk');
 assert.equal(P.curatedLooks.leandro.headwear,'mask');
 assert.equal(P.curatedLooks.faye.scars,'brow');
-const poster=fs.readFileSync(path.join(__dirname,'..','docs','readme','living-roster-v4.svg'),'utf8');
-assert.match(poster,/80 WRESTLERS/);
-const posterNames=[...poster.matchAll(/data-wrestler-name="([^"]+)"/g)].map(m=>m[1].replace(/&amp;/g,'&'));
-assert.equal(posterNames.length,80,'poster must contain exactly 80 portrait cards');
-assert.equal(new Set(posterNames).size,80,'poster portraits must be uniquely named');
-assert.equal([...posterNames].sort().join('|'),D.ALL.map(w=>w.name).sort().join('|'),'poster names must match game roster');
-assert.doesNotMatch(poster,/52 NEW FACES|ORIGINAL 28|OPENING CONTRACT ALLOCATIONS|FREE AGENTS|INDEPENDENTS|RIVAL AGENCIES/i);
-
-for(const w of D.ALL)assert.ok(poster.includes(w.name.replace(/&/g,'&amp;')),'missing poster '+w.name);
-console.log('PASS portraits: 52 cast-specific identities, 4 transparent redraws, README roster art');
+const readme=fs.readFileSync(path.join(__dirname,'..','readme.md'),'utf8');
+for(const w of D.ALL){
+ assert.ok(readme.includes('assets/portraits/'+w.id+'.png'),'missing README portrait '+w.name);
+ assert.ok(fs.existsSync(path.join(__dirname,'..','assets','portraits',w.id+'.png')),'missing sprite '+w.id);
+}
+for(const w of D.V4.newCast){
+ const markup=P.avatar({key:'wrestler:'+w.id,name:w.name});
+ assert.match(markup,/roster-portrait/,'packed face absent '+w.id);
+}
+console.log('PASS portraits: 52 cast-specific identities, 4 transparent redraws, README portraits from actual game assets');

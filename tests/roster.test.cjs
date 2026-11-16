@@ -27,9 +27,9 @@ assert.equal(new Set(all.map(w => w.id)).size, 28);
 const atlas = fs.readFileSync(path.join(__dirname,'..','assets','portrait-atlas.png'));
 assert.equal(atlas.subarray(12, 16).toString(), 'IHDR');
 assert.equal(atlas.readUInt32BE(16), 4 * 48);
-assert.equal(atlas.readUInt32BE(20), 8 * 60);
+assert.equal(atlas.readUInt32BE(20), 21 * 60);
 const css = fs.readFileSync(path.join(__dirname,'..','assets','css','core.css'),'utf8');
-assert.match(css, /\.roster-portrait\{[^}]*background-size:400% 800%/);
+assert.match(css, /\.roster-portrait\{[^}]*background-size:400% 2100%/);
 const positions = new Set();
 function checkPortrait(key, name) {
   const markup = portraits.avatar({ key, name });
@@ -48,7 +48,7 @@ for (const wrestler of all) {
   checkPortrait('wrestler:' + wrestler.id, wrestler.name);
 }
 for (const [column, promoter] of data.PROMOS.entries()) {
-  assert.equal(checkPortrait('booker:' + promoter.id, promoter.voice), `${100*column/3}% 100%`);
+  assert.equal(checkPortrait('booker:' + promoter.id, promoter.voice), `${100*column/3}% 35%`);
 }
 assert.equal(positions.size, all.length + data.PROMOS.length);
 
