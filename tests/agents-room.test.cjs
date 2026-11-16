@@ -8,7 +8,7 @@ assert.ok(script,'standalone script present');
 const cut=script.indexOf('/* THE OFFICE — interface v3');
 const root={addEventListener(){}};
 vm.runInNewContext(script.slice(0,cut),{window:root,Date,Math,JSON,console});
-const {OfficeData:D,OfficeMatch:M,OfficeRoom:Room,OfficeMic:Mic,OfficeGraphKernel:Graph}=root;
+const {OfficeData:D,OfficeMatch:M,OfficeRoom:Room,OfficeMic:Mic,OfficeGraphKernel:Graph,OfficeSheets:Sheets}=root;
 const finishes=Object.keys(D.FINISHES);
 const clone=state=>JSON.parse(JSON.stringify(state));
 const cleanText=/undefined|NaN|\{\w+\}|\[object/;
@@ -193,12 +193,36 @@ for(const sample of matches.slice(0,60))for(const mood of ['happy','sulking']){
 }
 const rate=x=>x.hit/Math.max(1,x.all);
 assert.ok(rate(adherence.happy)-rate(adherence.sulking)>.25,'unhappy wrestlers stray from the sheet ('+rate(adherence.happy).toFixed(2)+' v '+rate(adherence.sulking).toFixed(2)+')');
+let strips=0;
+const STATES=['waiting','due','achieved','adapted','missed'];
+function checkStrip(match,final){
+ const strip=Sheets.strip(match,{final});
+ assert.ok(strip,'a signed sheet always has a strip');
+ assert.equal(strip.beats.length,match.sheet.nodes.length,'one strip entry per agreed beat');
+ for(const beat of strip.beats){
+  assert.ok(STATES.includes(beat.state),beat.state);
+  assert.ok(beat.start>=0&&beat.start+beat.width<=104,'beats sit on the clock');
+  if(beat.mark!==null)assert.ok(beat.mark>=0&&beat.mark<=100,'the landing mark sits inside its beat');
+  assert.ok(beat.slot&&beat.move&&beat.title&&!/undefined|NaN/.test(beat.title));
+  if(['achieved','adapted','missed'].includes(beat.state))assert.notEqual(beat.mark,null,'a settled beat shows when it was settled');
+ }
+ for(const lane of [0,1]){
+  const row=strip.beats.filter(beat=>beat.lane===lane).sort((a,b)=>a.start-b.start);
+  for(let i=1;i<row.length;i++)assert.ok(row[i-1].start+row[i-1].width-row[i].start<=6,'beats in one lane barely overlap');
+ }
+ if(final){
+  assert.equal(strip.head,null);
+  assert.ok(strip.beats.every(beat=>['achieved','adapted','missed'].includes(beat.state)),'nothing is left waiting at the bell');
+ }else assert.ok(strip.head>=0&&strip.head<=100);
+ strips++;
+}
 for(const sample of matches){
  const {booking,worker,opponent,promoter,sheet,promo}=sample;
  const match=M.create({w:{...worker,flags:{},fatigue:5},f:opponent,p:promoter,slot:booking.slot,minutes:sheet.minutes,
   finish:booking.finish,plan:{game:sheet.game,leash:sheet.leash||'script',talk:sheet.talk},
   preparation:{},flags:sheet.flags,sheet,promo,seed:7000+completed});
  for(let tick=0;tick<9000&&!match.done;tick++){
+  if(tick===40&&!match.done)checkStrip(match,false);
   if(match.decision&&!match.queue.length){
    const options=match.decision.options;
    const choice=options.find(option=>['job','home','cut','protect'].includes(option.id))||options[0];
@@ -207,6 +231,7 @@ for(const sample of matches){
   M.next(match);
  }
  assert.ok(match.done,'the signed sheet plays to a result');
+ checkStrip(match,true);
  if(!['double','nc'].includes(match.outcome)){
   assert.equal(match.outcome,'booked');
   assert.equal(match.final.finishRoute,sheet.finishRoute,'the agreed finish plays out');
@@ -214,4 +239,4 @@ for(const sample of matches){
  }
 }
 assert.ok(completed>=100,'booked finishes are exercised at scale');
-console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings).toFixed(2)} beats a sheet, ${swaps} running-order changes, ${reworked} rewritten by situations, ${situations.size} situations, ${promos} duels, ${skippedPromos} canceled promos, ${completed} booked finishes; agreed beats land ${Math.round(100*rate(adherence.happy))}% happy v ${Math.round(100*rate(adherence.sulking))}% sulking`);
+console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings).toFixed(2)} beats a sheet, ${swaps} running-order changes, ${reworked} rewritten by situations, ${situations.size} situations, ${promos} duels, ${skippedPromos} canceled promos, ${completed} booked finishes; agreed beats land ${Math.round(100*rate(adherence.happy))}% happy v ${Math.round(100*rate(adherence.sulking))}% sulking; ${strips} match strips checked`);
