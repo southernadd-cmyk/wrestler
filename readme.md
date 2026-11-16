@@ -35,14 +35,13 @@ Dennis has also rearranged the agents’ room. On wide desktop screens, his conv
 
 <p align="center"><img src="docs/readme/03-territory.svg" alt="TERRITORY REPORT — FOUR INDEPENDENT PROMOTION CARDS (ARCHIVAL ART)" width="100%"></p>
 
-## EIGHTY WRESTLERS, SIX COMPETING AGENCIES
+## THE LIVING ROSTER
 
-*Territory report*
+*From the picture desk*
 
-The circuit now has **80 wrestlers**: 20 free agents, 44 signed to six AI-managed agencies, and 16 who work independently. Four promotions have separate card ladders. Every wrestler has a named identity and a compatible match profile. The **52 newcomers now have character-directed 48×60 pixel-art cutouts** based on their casting notes—hair, masks, scars, spectacles and ring colours—rendered in the same pixel system as the game. The original roster keeps its established atlas artwork, except the first four wrestlers are redrawn with truly transparent backgrounds. AI managers sign, release and renew contracts independently, and existing careers are migrated without resetting their history.
+All 80 wrestlers, together in one roster. Each has a named pixel-art portrait.
 
-<p align="center"><img src="docs/readme/living-roster-v4.svg" alt="The Office 80-person roster poster, showing the original 28 performers and 52 new characters across free agents, independents and six agencies" width="100%"></p>
-<p align="center"><sub><em>ROSTER PHOTO DESK:</em> All 80 named wrestlers and their opening contract affiliations, redrawn for this issue as an old-school pixel-art wrestling bulletin. The actual game uses the matching 48×60 portrait studio for its 52 newcomers.</sub></p>
+<p align="center"><img src="docs/readme/living-roster-v4.svg" alt="The Office living roster — 80 named pixel-art wrestler portraits in one alphabetical grid" width="100%"></p>
 
 **The Office** is a text-led wrestling management game played in the browser. You look after one regional stable. Bookers call the result, then you and the wrestlers work out how to get there. Backstage, people remember who took the clean loss, who broke their word, and who made the other wrestler look good in front of a quiet room.
 
