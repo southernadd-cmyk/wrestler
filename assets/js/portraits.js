@@ -1,6 +1,8 @@
-/* THE OFFICE / PIXEL PORTRAIT STUDIO v0.9
-   The portrait sheet supplies the default wrestler and booker portraits.
-   The original layered renderer handles explicit overrides and other characters.
+/* THE OFFICE / PIXEL PORTRAIT STUDIO v1.0
+   assets/portrait-atlas.png supplies the default portrait for all 80 wrestlers
+   and the 4 promoters (built by tools/build_portraits.py).
+   The layered renderer below only draws explicit appearance overrides and any
+   character that has no atlas cell.
 */
 (function(root){'use strict';
 const hash=s=>{let h=2166136261>>>0;for(const c of String(s)){h=Math.imul(h^c.charCodeAt(0),16777619)>>>0}return h>>>0};
@@ -206,7 +208,6 @@ const portraitRows=[
  ['wrestler:sasha','wrestler:morgan','wrestler:noelle','wrestler:ash'],
  ['wrestler:zane','wrestler:elodie','wrestler:bashir','wrestler:cleo'],
 ];
-const packedPortraitIds=new Set(["faye","bao","zara","miro","aisha","ellis","anya","nolan","ivo","rina","priya","nate","cass","jun","sylvia","kofi","mae","theo","soraya","milo","winnie","bronte","gus","nikita","jett","alina","cedric","marisol","felix","eira","gideon","vera","tomas","ari","tomasash","kezia","dev","liya","emmett","nadia","leandro","iris","kellan","ayla","sasha","morgan","noelle","ash","zane","elodie","bashir","cleo"]);
 const portraitCells=new Map(portraitRows.flatMap((row,y)=>row.map((key,x)=>[
  key,`${100*x/(row.length-1)}% ${100*y/(portraitRows.length-1)}%`
 ])));
@@ -214,7 +215,7 @@ function avatar(actor,appearance=null,cssClass='portrait'){
  const safe=String(actor?.name||'Wrestler').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
  const label='Pixel-art portrait of '+safe;
  const position=appearance===null&&portraitCells.get(actor?.key);
- if(position&&!(typeof document!=='undefined'&&transparentPortrait(actor?.key)&&!packedPortraitIds.has(actor?.key?.slice(9))))return `<span class="${cssClass} roster-portrait" role="img" aria-label="${label}" style="background-position:${position}"></span>`;
+ if(position)return `<span class="${cssClass} roster-portrait" role="img" aria-label="${label}" style="background-position:${position}"></span>`;
  return `<img class="${cssClass}" src="${asData(actor,appearance)}" alt="${label}" width="48" height="60" loading="lazy">`;
 }
 function png(actor,appearance=null){const canvas=renderCanvas(actor,appearance||getLook(actor),8);const link=document.createElement('a');link.download='the-office-'+(actor.name||actor.key).replace(/[^a-z0-9-]+/gi,'-').toLowerCase()+'-portrait.png';link.href=canvas.toDataURL('image/png');link.click()}

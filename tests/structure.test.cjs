@@ -11,7 +11,7 @@ assert.ok(core.includes('OfficeMatch')&&core.includes('OfficeGame'));
 for(const f of ['core.css','match-night.css','mobile.css','backstage.css'])assert.ok(fs.statSync(path.join(root,'assets','css',f)).size>0&&html.includes(f));
 const png=fs.readFileSync(path.join(root,'assets','portrait-atlas.png'));
 assert.equal(png.subarray(1,4).toString(),'PNG');
-assert.equal(png.readUInt32BE(16),192);assert.equal(png.readUInt32BE(20),1260);
+assert.equal(png.readUInt32BE(16),576);assert.equal(png.readUInt32BE(20),3780);
 assert.ok(fs.readFileSync(path.join(root,'assets','css','core.css'),'utf8').includes('../portrait-atlas.png'));
 // Desktop overview regression: tables must not collapse beneath the finance chart.
 const deskCss=fs.readFileSync(path.join(root,'assets','css','core.css'),'utf8');

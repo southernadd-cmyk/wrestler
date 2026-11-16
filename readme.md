@@ -44,104 +44,104 @@ All 80 wrestlers, together in one roster. Each has a named pixel-art portrait.
 <!-- LIVING ROSTER START -->
 <table align="center">
 <tr>
-<td align="center"><img src="assets/portraits/ace.png" alt="Pixel-art portrait of Ace Cassidy" width="48" height="60"><br><sub>Ace Cassidy</sub></td>
-<td align="center"><img src="assets/portraits/aisha.png" alt="Pixel-art portrait of Aisha Moreno" width="48" height="60"><br><sub>Aisha Moreno</sub></td>
-<td align="center"><img src="assets/portraits/alina.png" alt="Pixel-art portrait of Alina Fox" width="48" height="60"><br><sub>Alina Fox</sub></td>
-<td align="center"><img src="assets/portraits/anya.png" alt="Pixel-art portrait of Anya Ortez" width="48" height="60"><br><sub>Anya Ortez</sub></td>
-<td align="center"><img src="assets/portraits/ari.png" alt="Pixel-art portrait of Ari Keats" width="48" height="60"><br><sub>Ari Keats</sub></td>
-<td align="center"><img src="assets/portraits/ash.png" alt="Pixel-art portrait of Ash Carter" width="48" height="60"><br><sub>Ash Carter</sub></td>
-<td align="center"><img src="assets/portraits/ayla.png" alt="Pixel-art portrait of Ayla Bay" width="48" height="60"><br><sub>Ayla Bay</sub></td>
-<td align="center"><img src="assets/portraits/bao.png" alt="Pixel-art portrait of Bao Merrick" width="48" height="60"><br><sub>Bao Merrick</sub></td>
+<td align="center"><img src="assets/portraits/ace.png" alt="Pixel-art portrait of Ace Cassidy" width="72" height="90"><br><sub>Ace Cassidy</sub></td>
+<td align="center"><img src="assets/portraits/aisha.png" alt="Pixel-art portrait of Aisha Moreno" width="72" height="90"><br><sub>Aisha Moreno</sub></td>
+<td align="center"><img src="assets/portraits/alina.png" alt="Pixel-art portrait of Alina Fox" width="72" height="90"><br><sub>Alina Fox</sub></td>
+<td align="center"><img src="assets/portraits/anya.png" alt="Pixel-art portrait of Anya Ortez" width="72" height="90"><br><sub>Anya Ortez</sub></td>
+<td align="center"><img src="assets/portraits/ari.png" alt="Pixel-art portrait of Ari Keats" width="72" height="90"><br><sub>Ari Keats</sub></td>
+<td align="center"><img src="assets/portraits/ash.png" alt="Pixel-art portrait of Ash Carter" width="72" height="90"><br><sub>Ash Carter</sub></td>
+<td align="center"><img src="assets/portraits/ayla.png" alt="Pixel-art portrait of Ayla Bay" width="72" height="90"><br><sub>Ayla Bay</sub></td>
+<td align="center"><img src="assets/portraits/bao.png" alt="Pixel-art portrait of Bao Merrick" width="72" height="90"><br><sub>Bao Merrick</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/portraits/bashir.png" alt="Pixel-art portrait of Bashir Lowe" width="48" height="60"><br><sub>Bashir Lowe</sub></td>
-<td align="center"><img src="assets/portraits/brick.png" alt="Pixel-art portrait of Brick Mercer" width="48" height="60"><br><sub>Brick Mercer</sub></td>
-<td align="center"><img src="assets/portraits/bronte.png" alt="Pixel-art portrait of Brontë Hayes" width="48" height="60"><br><sub>Brontë Hayes</sub></td>
-<td align="center"><img src="assets/portraits/cal.png" alt="Pixel-art portrait of Cal Rourke" width="48" height="60"><br><sub>Cal Rourke</sub></td>
-<td align="center"><img src="assets/portraits/cass.png" alt="Pixel-art portrait of Cass Rae" width="48" height="60"><br><sub>Cass Rae</sub></td>
-<td align="center"><img src="assets/portraits/cedric.png" alt="Pixel-art portrait of Cedric Bloom" width="48" height="60"><br><sub>Cedric Bloom</sub></td>
-<td align="center"><img src="assets/portraits/cleo.png" alt="Pixel-art portrait of Cleo Watt" width="48" height="60"><br><sub>Cleo Watt</sub></td>
-<td align="center"><img src="assets/portraits/dax.png" alt="Pixel-art portrait of Dax Hollis" width="48" height="60"><br><sub>Dax Hollis</sub></td>
+<td align="center"><img src="assets/portraits/bashir.png" alt="Pixel-art portrait of Bashir Lowe" width="72" height="90"><br><sub>Bashir Lowe</sub></td>
+<td align="center"><img src="assets/portraits/brick.png" alt="Pixel-art portrait of Brick Mercer" width="72" height="90"><br><sub>Brick Mercer</sub></td>
+<td align="center"><img src="assets/portraits/bronte.png" alt="Pixel-art portrait of Brontë Hayes" width="72" height="90"><br><sub>Brontë Hayes</sub></td>
+<td align="center"><img src="assets/portraits/cal.png" alt="Pixel-art portrait of Cal Rourke" width="72" height="90"><br><sub>Cal Rourke</sub></td>
+<td align="center"><img src="assets/portraits/cass.png" alt="Pixel-art portrait of Cass Rae" width="72" height="90"><br><sub>Cass Rae</sub></td>
+<td align="center"><img src="assets/portraits/cedric.png" alt="Pixel-art portrait of Cedric Bloom" width="72" height="90"><br><sub>Cedric Bloom</sub></td>
+<td align="center"><img src="assets/portraits/cleo.png" alt="Pixel-art portrait of Cleo Watt" width="72" height="90"><br><sub>Cleo Watt</sub></td>
+<td align="center"><img src="assets/portraits/dax.png" alt="Pixel-art portrait of Dax Hollis" width="72" height="90"><br><sub>Dax Hollis</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/portraits/dean.png" alt="Pixel-art portrait of Dean Blackwell" width="48" height="60"><br><sub>Dean Blackwell</sub></td>
-<td align="center"><img src="assets/portraits/dee.png" alt="Pixel-art portrait of Dee Okafor" width="48" height="60"><br><sub>Dee Okafor</sub></td>
-<td align="center"><img src="assets/portraits/dev.png" alt="Pixel-art portrait of Dev Hart" width="48" height="60"><br><sub>Dev Hart</sub></td>
-<td align="center"><img src="assets/portraits/eira.png" alt="Pixel-art portrait of Eira Solis" width="48" height="60"><br><sub>Eira Solis</sub></td>
-<td align="center"><img src="assets/portraits/ellis.png" alt="Pixel-art portrait of Ellis Quade" width="48" height="60"><br><sub>Ellis Quade</sub></td>
-<td align="center"><img src="assets/portraits/elodie.png" alt="Pixel-art portrait of Elodie Quinn" width="48" height="60"><br><sub>Elodie Quinn</sub></td>
-<td align="center"><img src="assets/portraits/emmett.png" alt="Pixel-art portrait of Emmett Briggs" width="48" height="60"><br><sub>Emmett Briggs</sub></td>
-<td align="center"><img src="assets/portraits/ezra.png" alt="Pixel-art portrait of Ezra Quill" width="48" height="60"><br><sub>Ezra Quill</sub></td>
+<td align="center"><img src="assets/portraits/dean.png" alt="Pixel-art portrait of Dean Blackwell" width="72" height="90"><br><sub>Dean Blackwell</sub></td>
+<td align="center"><img src="assets/portraits/dee.png" alt="Pixel-art portrait of Dee Okafor" width="72" height="90"><br><sub>Dee Okafor</sub></td>
+<td align="center"><img src="assets/portraits/dev.png" alt="Pixel-art portrait of Dev Hart" width="72" height="90"><br><sub>Dev Hart</sub></td>
+<td align="center"><img src="assets/portraits/eira.png" alt="Pixel-art portrait of Eira Solis" width="72" height="90"><br><sub>Eira Solis</sub></td>
+<td align="center"><img src="assets/portraits/ellis.png" alt="Pixel-art portrait of Ellis Quade" width="72" height="90"><br><sub>Ellis Quade</sub></td>
+<td align="center"><img src="assets/portraits/elodie.png" alt="Pixel-art portrait of Elodie Quinn" width="72" height="90"><br><sub>Elodie Quinn</sub></td>
+<td align="center"><img src="assets/portraits/emmett.png" alt="Pixel-art portrait of Emmett Briggs" width="72" height="90"><br><sub>Emmett Briggs</sub></td>
+<td align="center"><img src="assets/portraits/ezra.png" alt="Pixel-art portrait of Ezra Quill" width="72" height="90"><br><sub>Ezra Quill</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/portraits/faye.png" alt="Pixel-art portrait of Faye Calder" width="48" height="60"><br><sub>Faye Calder</sub></td>
-<td align="center"><img src="assets/portraits/felix.png" alt="Pixel-art portrait of Felix Orr" width="48" height="60"><br><sub>Felix Orr</sub></td>
-<td align="center"><img src="assets/portraits/gideon.png" alt="Pixel-art portrait of Gideon Frost" width="48" height="60"><br><sub>Gideon Frost</sub></td>
-<td align="center"><img src="assets/portraits/gus.png" alt="Pixel-art portrait of Gus Marr" width="48" height="60"><br><sub>Gus Marr</sub></td>
-<td align="center"><img src="assets/portraits/imani.png" alt="Pixel-art portrait of Imani King" width="48" height="60"><br><sub>Imani King</sub></td>
-<td align="center"><img src="assets/portraits/iris.png" alt="Pixel-art portrait of Iris Vaughan" width="48" height="60"><br><sub>Iris Vaughan</sub></td>
-<td align="center"><img src="assets/portraits/ivo.png" alt="Pixel-art portrait of Ivo Serrano" width="48" height="60"><br><sub>Ivo Serrano</sub></td>
-<td align="center"><img src="assets/portraits/jett.png" alt="Pixel-art portrait of Jett Harlow" width="48" height="60"><br><sub>Jett Harlow</sub></td>
+<td align="center"><img src="assets/portraits/faye.png" alt="Pixel-art portrait of Faye Calder" width="72" height="90"><br><sub>Faye Calder</sub></td>
+<td align="center"><img src="assets/portraits/felix.png" alt="Pixel-art portrait of Felix Orr" width="72" height="90"><br><sub>Felix Orr</sub></td>
+<td align="center"><img src="assets/portraits/gideon.png" alt="Pixel-art portrait of Gideon Frost" width="72" height="90"><br><sub>Gideon Frost</sub></td>
+<td align="center"><img src="assets/portraits/gus.png" alt="Pixel-art portrait of Gus Marr" width="72" height="90"><br><sub>Gus Marr</sub></td>
+<td align="center"><img src="assets/portraits/imani.png" alt="Pixel-art portrait of Imani King" width="72" height="90"><br><sub>Imani King</sub></td>
+<td align="center"><img src="assets/portraits/iris.png" alt="Pixel-art portrait of Iris Vaughan" width="72" height="90"><br><sub>Iris Vaughan</sub></td>
+<td align="center"><img src="assets/portraits/ivo.png" alt="Pixel-art portrait of Ivo Serrano" width="72" height="90"><br><sub>Ivo Serrano</sub></td>
+<td align="center"><img src="assets/portraits/jett.png" alt="Pixel-art portrait of Jett Harlow" width="72" height="90"><br><sub>Jett Harlow</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/portraits/jun.png" alt="Pixel-art portrait of Jun Park" width="48" height="60"><br><sub>Jun Park</sub></td>
-<td align="center"><img src="assets/portraits/juno.png" alt="Pixel-art portrait of Juno Stark" width="48" height="60"><br><sub>Juno Stark</sub></td>
-<td align="center"><img src="assets/portraits/kellan.png" alt="Pixel-art portrait of Kellan Ryu" width="48" height="60"><br><sub>Kellan Ryu</sub></td>
-<td align="center"><img src="assets/portraits/kezia.png" alt="Pixel-art portrait of Kezia North" width="48" height="60"><br><sub>Kezia North</sub></td>
-<td align="center"><img src="assets/portraits/kira.png" alt="Pixel-art portrait of Kira Sato" width="48" height="60"><br><sub>Kira Sato</sub></td>
-<td align="center"><img src="assets/portraits/kit.png" alt="Pixel-art portrait of Kit Marlowe" width="48" height="60"><br><sub>Kit Marlowe</sub></td>
-<td align="center"><img src="assets/portraits/kofi.png" alt="Pixel-art portrait of Kofi Hale" width="48" height="60"><br><sub>Kofi Hale</sub></td>
-<td align="center"><img src="assets/portraits/leandro.png" alt="Pixel-art portrait of Leandro Moya" width="48" height="60"><br><sub>Leandro Moya</sub></td>
+<td align="center"><img src="assets/portraits/jun.png" alt="Pixel-art portrait of Jun Park" width="72" height="90"><br><sub>Jun Park</sub></td>
+<td align="center"><img src="assets/portraits/juno.png" alt="Pixel-art portrait of Juno Stark" width="72" height="90"><br><sub>Juno Stark</sub></td>
+<td align="center"><img src="assets/portraits/kellan.png" alt="Pixel-art portrait of Kellan Ryu" width="72" height="90"><br><sub>Kellan Ryu</sub></td>
+<td align="center"><img src="assets/portraits/kezia.png" alt="Pixel-art portrait of Kezia North" width="72" height="90"><br><sub>Kezia North</sub></td>
+<td align="center"><img src="assets/portraits/kira.png" alt="Pixel-art portrait of Kira Sato" width="72" height="90"><br><sub>Kira Sato</sub></td>
+<td align="center"><img src="assets/portraits/kit.png" alt="Pixel-art portrait of Kit Marlowe" width="72" height="90"><br><sub>Kit Marlowe</sub></td>
+<td align="center"><img src="assets/portraits/kofi.png" alt="Pixel-art portrait of Kofi Hale" width="72" height="90"><br><sub>Kofi Hale</sub></td>
+<td align="center"><img src="assets/portraits/leandro.png" alt="Pixel-art portrait of Leandro Moya" width="72" height="90"><br><sub>Leandro Moya</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/portraits/liya.png" alt="Pixel-art portrait of Liya Fen" width="48" height="60"><br><sub>Liya Fen</sub></td>
-<td align="center"><img src="assets/portraits/lyra.png" alt="Pixel-art portrait of Lyra Knox" width="48" height="60"><br><sub>Lyra Knox</sub></td>
-<td align="center"><img src="assets/portraits/mae.png" alt="Pixel-art portrait of Mae Okoro" width="48" height="60"><br><sub>Mae Okoro</sub></td>
-<td align="center"><img src="assets/portraits/magnus.png" alt="Pixel-art portrait of Magnus Graves" width="48" height="60"><br><sub>Magnus Graves</sub></td>
-<td align="center"><img src="assets/portraits/malik.png" alt="Pixel-art portrait of Malik Knight" width="48" height="60"><br><sub>Malik Knight</sub></td>
-<td align="center"><img src="assets/portraits/mara.png" alt="Pixel-art portrait of Mara Vale" width="48" height="60"><br><sub>Mara Vale</sub></td>
-<td align="center"><img src="assets/portraits/marisol.png" alt="Pixel-art portrait of Marisol Tide" width="48" height="60"><br><sub>Marisol Tide</sub></td>
-<td align="center"><img src="assets/portraits/milo.png" alt="Pixel-art portrait of Milo Ember" width="48" height="60"><br><sub>Milo Ember</sub></td>
+<td align="center"><img src="assets/portraits/liya.png" alt="Pixel-art portrait of Liya Fen" width="72" height="90"><br><sub>Liya Fen</sub></td>
+<td align="center"><img src="assets/portraits/lyra.png" alt="Pixel-art portrait of Lyra Knox" width="72" height="90"><br><sub>Lyra Knox</sub></td>
+<td align="center"><img src="assets/portraits/mae.png" alt="Pixel-art portrait of Mae Okoro" width="72" height="90"><br><sub>Mae Okoro</sub></td>
+<td align="center"><img src="assets/portraits/magnus.png" alt="Pixel-art portrait of Magnus Graves" width="72" height="90"><br><sub>Magnus Graves</sub></td>
+<td align="center"><img src="assets/portraits/malik.png" alt="Pixel-art portrait of Malik Knight" width="72" height="90"><br><sub>Malik Knight</sub></td>
+<td align="center"><img src="assets/portraits/mara.png" alt="Pixel-art portrait of Mara Vale" width="72" height="90"><br><sub>Mara Vale</sub></td>
+<td align="center"><img src="assets/portraits/marisol.png" alt="Pixel-art portrait of Marisol Tide" width="72" height="90"><br><sub>Marisol Tide</sub></td>
+<td align="center"><img src="assets/portraits/milo.png" alt="Pixel-art portrait of Milo Ember" width="72" height="90"><br><sub>Milo Ember</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/portraits/miro.png" alt="Pixel-art portrait of Miro Lane" width="48" height="60"><br><sub>Miro Lane</sub></td>
-<td align="center"><img src="assets/portraits/morgan.png" alt="Pixel-art portrait of Morgan Alder" width="48" height="60"><br><sub>Morgan Alder</sub></td>
-<td align="center"><img src="assets/portraits/nadia.png" alt="Pixel-art portrait of Nadia Park" width="48" height="60"><br><sub>Nadia Park</sub></td>
-<td align="center"><img src="assets/portraits/nate.png" alt="Pixel-art portrait of Nate Barr" width="48" height="60"><br><sub>Nate Barr</sub></td>
-<td align="center"><img src="assets/portraits/nico.png" alt="Pixel-art portrait of Nico Vega" width="48" height="60"><br><sub>Nico Vega</sub></td>
-<td align="center"><img src="assets/portraits/night.png" alt="Pixel-art portrait of Night Shift" width="48" height="60"><br><sub>Night Shift</sub></td>
-<td align="center"><img src="assets/portraits/nikita.png" alt="Pixel-art portrait of Nikita Rowe" width="48" height="60"><br><sub>Nikita Rowe</sub></td>
-<td align="center"><img src="assets/portraits/noelle.png" alt="Pixel-art portrait of Noelle Stroud" width="48" height="60"><br><sub>Noelle Stroud</sub></td>
+<td align="center"><img src="assets/portraits/miro.png" alt="Pixel-art portrait of Miro Lane" width="72" height="90"><br><sub>Miro Lane</sub></td>
+<td align="center"><img src="assets/portraits/morgan.png" alt="Pixel-art portrait of Morgan Alder" width="72" height="90"><br><sub>Morgan Alder</sub></td>
+<td align="center"><img src="assets/portraits/nadia.png" alt="Pixel-art portrait of Nadia Park" width="72" height="90"><br><sub>Nadia Park</sub></td>
+<td align="center"><img src="assets/portraits/nate.png" alt="Pixel-art portrait of Nate Barr" width="72" height="90"><br><sub>Nate Barr</sub></td>
+<td align="center"><img src="assets/portraits/nico.png" alt="Pixel-art portrait of Nico Vega" width="72" height="90"><br><sub>Nico Vega</sub></td>
+<td align="center"><img src="assets/portraits/night.png" alt="Pixel-art portrait of Night Shift" width="72" height="90"><br><sub>Night Shift</sub></td>
+<td align="center"><img src="assets/portraits/nikita.png" alt="Pixel-art portrait of Nikita Rowe" width="72" height="90"><br><sub>Nikita Rowe</sub></td>
+<td align="center"><img src="assets/portraits/noelle.png" alt="Pixel-art portrait of Noelle Stroud" width="72" height="90"><br><sub>Noelle Stroud</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/portraits/nolan.png" alt="Pixel-art portrait of Nolan Pike" width="48" height="60"><br><sub>Nolan Pike</sub></td>
-<td align="center"><img src="assets/portraits/nova.png" alt="Pixel-art portrait of Nova Bell" width="48" height="60"><br><sub>Nova Bell</sub></td>
-<td align="center"><img src="assets/portraits/otis.png" alt="Pixel-art portrait of Otis Ward" width="48" height="60"><br><sub>Otis Ward</sub></td>
-<td align="center"><img src="assets/portraits/priya.png" alt="Pixel-art portrait of Priya Gale" width="48" height="60"><br><sub>Priya Gale</sub></td>
-<td align="center"><img src="assets/portraits/red.png" alt="Pixel-art portrait of Red Doyle" width="48" height="60"><br><sub>Red Doyle</sub></td>
-<td align="center"><img src="assets/portraits/rex.png" alt="Pixel-art portrait of Rex Titan" width="48" height="60"><br><sub>Rex Titan</sub></td>
-<td align="center"><img src="assets/portraits/rina.png" alt="Pixel-art portrait of Rina Moss" width="48" height="60"><br><sub>Rina Moss</sub></td>
-<td align="center"><img src="assets/portraits/rocco.png" alt="Pixel-art portrait of Rocco Flint" width="48" height="60"><br><sub>Rocco Flint</sub></td>
+<td align="center"><img src="assets/portraits/nolan.png" alt="Pixel-art portrait of Nolan Pike" width="72" height="90"><br><sub>Nolan Pike</sub></td>
+<td align="center"><img src="assets/portraits/nova.png" alt="Pixel-art portrait of Nova Bell" width="72" height="90"><br><sub>Nova Bell</sub></td>
+<td align="center"><img src="assets/portraits/otis.png" alt="Pixel-art portrait of Otis Ward" width="72" height="90"><br><sub>Otis Ward</sub></td>
+<td align="center"><img src="assets/portraits/priya.png" alt="Pixel-art portrait of Priya Gale" width="72" height="90"><br><sub>Priya Gale</sub></td>
+<td align="center"><img src="assets/portraits/red.png" alt="Pixel-art portrait of Red Doyle" width="72" height="90"><br><sub>Red Doyle</sub></td>
+<td align="center"><img src="assets/portraits/rex.png" alt="Pixel-art portrait of Rex Titan" width="72" height="90"><br><sub>Rex Titan</sub></td>
+<td align="center"><img src="assets/portraits/rina.png" alt="Pixel-art portrait of Rina Moss" width="72" height="90"><br><sub>Rina Moss</sub></td>
+<td align="center"><img src="assets/portraits/rocco.png" alt="Pixel-art portrait of Rocco Flint" width="72" height="90"><br><sub>Rocco Flint</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/portraits/roxy.png" alt="Pixel-art portrait of Roxy Rain" width="48" height="60"><br><sub>Roxy Rain</sub></td>
-<td align="center"><img src="assets/portraits/sasha.png" alt="Pixel-art portrait of Sasha Wynn" width="48" height="60"><br><sub>Sasha Wynn</sub></td>
-<td align="center"><img src="assets/portraits/silas.png" alt="Pixel-art portrait of Silas Rush" width="48" height="60"><br><sub>Silas Rush</sub></td>
-<td align="center"><img src="assets/portraits/sol.png" alt="Pixel-art portrait of Sol Cruz" width="48" height="60"><br><sub>Sol Cruz</sub></td>
-<td align="center"><img src="assets/portraits/soraya.png" alt="Pixel-art portrait of Soraya Idris" width="48" height="60"><br><sub>Soraya Idris</sub></td>
-<td align="center"><img src="assets/portraits/sylvia.png" alt="Pixel-art portrait of Sylvia Rook" width="48" height="60"><br><sub>Sylvia Rook</sub></td>
-<td align="center"><img src="assets/portraits/rev.png" alt="Pixel-art portrait of The Reverend" width="48" height="60"><br><sub>The Reverend</sub></td>
-<td align="center"><img src="assets/portraits/theo.png" alt="Pixel-art portrait of Theo Voss" width="48" height="60"><br><sub>Theo Voss</sub></td>
+<td align="center"><img src="assets/portraits/roxy.png" alt="Pixel-art portrait of Roxy Rain" width="72" height="90"><br><sub>Roxy Rain</sub></td>
+<td align="center"><img src="assets/portraits/sasha.png" alt="Pixel-art portrait of Sasha Wynn" width="72" height="90"><br><sub>Sasha Wynn</sub></td>
+<td align="center"><img src="assets/portraits/silas.png" alt="Pixel-art portrait of Silas Rush" width="72" height="90"><br><sub>Silas Rush</sub></td>
+<td align="center"><img src="assets/portraits/sol.png" alt="Pixel-art portrait of Sol Cruz" width="72" height="90"><br><sub>Sol Cruz</sub></td>
+<td align="center"><img src="assets/portraits/soraya.png" alt="Pixel-art portrait of Soraya Idris" width="72" height="90"><br><sub>Soraya Idris</sub></td>
+<td align="center"><img src="assets/portraits/sylvia.png" alt="Pixel-art portrait of Sylvia Rook" width="72" height="90"><br><sub>Sylvia Rook</sub></td>
+<td align="center"><img src="assets/portraits/rev.png" alt="Pixel-art portrait of The Reverend" width="72" height="90"><br><sub>The Reverend</sub></td>
+<td align="center"><img src="assets/portraits/theo.png" alt="Pixel-art portrait of Theo Voss" width="72" height="90"><br><sub>Theo Voss</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/portraits/tomas.png" alt="Pixel-art portrait of Tomas Keene" width="48" height="60"><br><sub>Tomas Keene</sub></td>
-<td align="center"><img src="assets/portraits/tomasash.png" alt="Pixel-art portrait of Tomás Ash" width="48" height="60"><br><sub>Tomás Ash</sub></td>
-<td align="center"><img src="assets/portraits/tori.png" alt="Pixel-art portrait of Tori Kade" width="48" height="60"><br><sub>Tori Kade</sub></td>
-<td align="center"><img src="assets/portraits/val.png" alt="Pixel-art portrait of Val Vance" width="48" height="60"><br><sub>Val Vance</sub></td>
-<td align="center"><img src="assets/portraits/vera.png" alt="Pixel-art portrait of Vera Cho" width="48" height="60"><br><sub>Vera Cho</sub></td>
-<td align="center"><img src="assets/portraits/winnie.png" alt="Pixel-art portrait of Winnie March" width="48" height="60"><br><sub>Winnie March</sub></td>
-<td align="center"><img src="assets/portraits/zane.png" alt="Pixel-art portrait of Zane Varley" width="48" height="60"><br><sub>Zane Varley</sub></td>
-<td align="center"><img src="assets/portraits/zara.png" alt="Pixel-art portrait of Zara Finch" width="48" height="60"><br><sub>Zara Finch</sub></td>
+<td align="center"><img src="assets/portraits/tomas.png" alt="Pixel-art portrait of Tomas Keene" width="72" height="90"><br><sub>Tomas Keene</sub></td>
+<td align="center"><img src="assets/portraits/tomasash.png" alt="Pixel-art portrait of Tomás Ash" width="72" height="90"><br><sub>Tomás Ash</sub></td>
+<td align="center"><img src="assets/portraits/tori.png" alt="Pixel-art portrait of Tori Kade" width="72" height="90"><br><sub>Tori Kade</sub></td>
+<td align="center"><img src="assets/portraits/val.png" alt="Pixel-art portrait of Val Vance" width="72" height="90"><br><sub>Val Vance</sub></td>
+<td align="center"><img src="assets/portraits/vera.png" alt="Pixel-art portrait of Vera Cho" width="72" height="90"><br><sub>Vera Cho</sub></td>
+<td align="center"><img src="assets/portraits/winnie.png" alt="Pixel-art portrait of Winnie March" width="72" height="90"><br><sub>Winnie March</sub></td>
+<td align="center"><img src="assets/portraits/zane.png" alt="Pixel-art portrait of Zane Varley" width="72" height="90"><br><sub>Zane Varley</sub></td>
+<td align="center"><img src="assets/portraits/zara.png" alt="Pixel-art portrait of Zara Finch" width="72" height="90"><br><sub>Zara Finch</sub></td>
 </tr>
 </table>
 <!-- LIVING ROSTER END -->
