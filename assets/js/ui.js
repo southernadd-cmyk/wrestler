@@ -660,13 +660,21 @@ function showPromos(){
  scrollTalk('micTalk');
  persistNight();
 }
+// Where both wrestlers sit on this promoter's card pyramid, so the commentary can talk about it.
+function ladderFor(pid,wid,fid){
+ try{
+  const r=OfficeTerritory.promotionRank(pid),t=OfficeTerritory.ensure();
+  const at=id=>{const i=r.findIndex(x=>x.id===id);return i<0?null:{rank:i+1,slot:r[i].slot,stable:r[i].stable||null}};
+  return {size:r.length,w:at(wid),f:at(fid),champ:t?.champion===wid?'w':t?.champion===fid?'f':null};
+ }catch(e){return null}
+}
 function bell(){
  const c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan;
  const trainingFatigue=w.training==='rest'?0:w.training==='promo'?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
  const preparation={...w.prep};const focus=D.TRAINING[w.training]?.stat;
  if(focus&&!w.injury){preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);}
  const promoRes=P.sheet?.skipPromo?null:night.promo?.v>=4?OfficeMic.result(night.promo):night.promo?.v===2?OfficeStory.Graph.result(night.promo):null;
- night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:P.sheet?.signed?OfficeRoom.addVow(P.sheet,promoRes,w,f):null,seed:Math.floor(Math.random()*2**31)});
+ night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:P.sheet?.signed?OfficeRoom.addVow(P.sheet,promoRes,w,f):null,seed:Math.floor(Math.random()*2**31)});
  night.past=[];night.paused=false;
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const bench=`<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;

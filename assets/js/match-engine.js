@@ -1533,16 +1533,69 @@ const VIC={
   'Quiet one so far. Nothing a bit of violence will not fix. Professionally speaking.',
   'Tough crowd. I have been booed out of better buildings than this, and I enjoyed every minute.'
  ],
+ feud:[
+  'I have watched this rivalry from the start, {pbp}. It has never once been friendly.',
+  '{W} and {F} do not like each other. You can see it in every lock-up.',
+  'Every time these two meet, somebody leaves with a grudge and a limp.',
+  'There is no handshake coming tonight. I would put money on it.',
+  'You could sell tickets to these two arguing in a car park.'
+ ],
+ blowoff:[
+  'They say this settles it. In my experience nothing ever settles it, but I hope they are right.',
+  'Last chapter, {pbp}. Whoever wins this one gets to stop looking over their shoulder.',
+  'If this really is the end of it, I want to remember every second.'
+ ],
+ loud:[
+  'Listen to them. They have forgotten all about last orders.',
+  'The whole building is on its feet, {pbp}. Even the bar staff are watching.',
+  'I have not heard a crowd like this since they put the ticket prices up.',
+  'You cannot buy noise like this. Believe me, I have tried.'
+ ],
+ flat:[
+  'Somebody wake this lot up. They have paid good money to sit on their hands.',
+  'It has gone quiet, {pbp}. I can hear the hot dogs.',
+  'These two need to find the crowd again, and fast.',
+  'I have heard livelier crowds at a funeral. I have wrestled at one, actually. Long story.'
+ ],
  great:['That is one for the scrapbook. I will be telling people I was here.','I am not ashamed to say I stood up for that, {pbp}.'],
- good:['Solid. Honest. The sort of match that pays the rent.','Nobody is going home disappointed. That is the job done.'],
+ good:['Solid. Honest. The sort of match that pays the rent.','Nobody is going home disappointed. That will do nicely.'],
  poor:['Well. They cannot all be classics.','I have seen better matches in a car park. I have wrestled in a few.']
 };
 function vicRoll(M,tag){let h=2166136261>>>0;for(const c of String(M.o.seed)+'|'+M.t+'|'+tag)h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h/4294967296}
-function vic(M,tag,chance=1,opt={}){
- const pool=VIC[tag];if(!pool||vicRoll(M,tag)>=chance)return null;
+function vic(M,tag,chance=1,opt={},list=null){
+ const pool=list||VIC[tag];if(!pool?.length||vicRoll(M,tag)>=chance)return null;
  M.vicSaid??=[];let c=pool.filter(x=>!M.vicSaid.includes(x));if(!c.length)c=pool;
  const x=c[Math.floor(vicRoll(M,tag+'#')*c.length)];M.vicSaid.push(x);M.vicAt=M.t;
  return say(M,fill(M,x,{pbp:D.BOOTH?.pbp.short||'partner'}),'story',{...opt,who:'colour'});
+}
+// Where the two of them sit on tonight's card and on this promoter's card pyramid.
+function vicCard(M){
+ const out=[],L=M.o.ladder,promo=M.p.name;
+ if(M.o.slot==='main')out.push('Main event at {venue}. This is what they all came for.');
+ if(M.o.slot==='opener')out.push('Opening match, {pbp}. Set the tone and get them warmed up.');
+ if(!L)return out;
+ const w=L.w,f=L.f;
+ if(L.champ)out.push('That is the circuit champion in there, {pbp}. Everyone on every card wants what '+(L.champ==='w'?'{W}':'{F}')+' has.');
+ if(w&&f){
+  if(w.slot==='main'&&f.slot==='main')out.push('The top two on the '+promo+' card, {pbp}. It does not get bigger than this round here.');
+  else if(w.rank<f.rank-2)out.push('{W} sits well above {F} on the '+promo+' card. {F} would love to drag {W} down a rung or two.');
+  else if(f.rank<w.rank-2)out.push('{F} is further up the '+promo+' card than {W}. Beat {F} tonight and people start asking questions.');
+  else out.push('{W} and {F} are neck and neck on the '+promo+' card. Whoever wins this takes the next rung.');
+ }
+ if(!w)out.push('{W} is not even on the '+promo+' rankings yet. A good night here changes that.');
+ else if(w.slot==='opener')out.push('{W} is down among the openers at the moment, {pbp}. Nights like this are how you climb.');
+ else if(w.slot==='main')out.push('{W} is main-event material on this card now. You can tell by the walk to the ring.');
+ if(f?.stable)out.push('{F} has '+f.stable+' behind them. Somebody from that lot will be watching from the back.');
+ return out;
+}
+// Between exchanges Vic picks something to talk about: the stage of the match, the feud, the crowd or the card.
+function vicChat(M){
+ const card=vicCard(M),heat=M.o.feudHeat||0,said=M.vicSaid||[];
+ const topics=[M.phase?.id,M.o.blowoff?'blowoff':heat>=35?'feud':null,M.crowd>=75?'loud':M.crowd<35?'flat':null,'card'].filter(Boolean);
+ const open=topics.filter(t=>(t==='card'?card:VIC[t]||[]).some(x=>!said.includes(x)));
+ if(!open.length)return null;
+ const tag=open[Math.floor(vicRoll(M,'topic')*open.length)];
+ return vic(M,tag,1,{},tag==='card'?card:null);
 }
 function fresh(M,a){M.recent??=[];let c=a.filter(x=>!M.recent.includes(x));if(!c.length)c=a.filter(x=>!M.recent.slice(-2).includes(x));if(!c.length)c=a;const x=c[Math.floor(M.r()*c.length)];M.recent.push(x);if(M.recent.length>8)M.recent.shift();return x}
 function pick(M,who){const pool=D.MOVES[who.style]||D.MOVES.Story;return rnd(M,pool)}
@@ -1661,7 +1714,7 @@ function tick(M){
  if(M.decision)return;
  // play-by-play
  if(!spoke&&M.r()<.64)Graph.step(M);
- if(!spoke&&M.t-(M.vicAt??-200)>=110)vic(M,M.phase?.id,.22);
+ if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  if(M.t>=M.len){M.stage='finish';}
 }
@@ -1710,7 +1763,7 @@ function playByPlay(M){
  if((M.o.feudHeat||0)>=35)context.push('There is a lot of history under every exchange here.','Colour: {W} and {F} remember every previous meeting.','Neither wrestler has forgotten what happened last time.');
  if(M.wSt<35)context.push('Colour: {W} is running on fumes. This is the dangerous part.','{W} is working from instinct now. There is not much left in the tank.');
  if(M.crowd>75)context.push('The floor is shaking with the noise of the crowd.','Colour: Nobody in the building is sitting down for this.','You could feel that reaction at the back of the arena.');
- if(M.phase?.id==='stretch')context.push('Colour: Somebody has to take a chance now.','One good counter could settle this.','Both wrestlers know they are reaching the last page of the plan.');
+ if(M.phase?.id==='stretch')context.push('Colour: Somebody has to take a chance now.','One good counter could settle this.','Road agent: They are on the last page of the match layout now.');
  if(context.length&&M.r()<.21&&(!M.lastContextTick||M.t-M.lastContextTick>=70)){
   M.lastContextTick=M.t;return say(M,fill(M,fresh(M,context)),'story');
  }
@@ -1816,14 +1869,14 @@ function call(M,id){
  const listen=M.listen+(id==='home'?20:0)+(id==='sheet'&&M.leash==='script'?10:0);
  if(M.r()*100>listen){M.ignored++;say(M,rnd(M,[`${w.short} waves you away.`,`${w.short} doesn’t even look over.`,`${w.short} hears you. Does the opposite.`]),'bad');if(w.ego>=70)M.adj.morale-=1;return true}
  root.OfficeSheets?.intervention(M,id);
- if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`)}
- if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`)}
+ if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`,'play',{who:'runner'})}
+ if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`,'play',{who:'runner'})}
  if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
  if(id==='big'){const n=M.spots;spot(M,true,true);if(M.spots>n)root.OfficeSheets?.observe(M,'special_spot','w','spot')}
- if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back to the match layout.`)}
+ if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back to the match layout.`,'play',{who:'runner'})}
  if(id==='home'){const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
   M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
-  say(M,`${w.short} relays it to ${M.f.short}: take it home.`)}
+  say(M,`${w.short} relays it to ${M.f.short}: take it home.`,'play',{who:'runner'})}
  return true;
 }
 
@@ -1854,7 +1907,7 @@ function resolve(M,choice){
  const opt=d.options.find(o=>o.id===choice)||d.options[0];
  say(M,`Your call: “${opt.label}”`,'you');
  if(d.id==='injury'){
-  if(choice==='home'){if(M.len-M.t>60)M.shortened=true;M.len=Math.min(M.len,M.t+50);M.nearfallAt=[];say(M,`${w.short} nods through gritted teeth. Straight to the finish.`)}
+  if(choice==='home'){if(M.len-M.t>60)M.shortened=true;M.len=Math.min(M.len,M.t+50);M.nearfallAt=[];say(M,`${w.short} nods through gritted teeth. Straight to the finish.`,'play',{who:'runner'})}
   if(choice==='work'){M.workingHurt=true;M.crowd=clamp(M.crowd+5);M.adj.heat+=3;say(M,`${w.short} waves off the referee. The crowd start clapping. Brave, or daft.`,'crowd')}
   if(choice==='stop'){M.outcome='nc';M.adj.purseMul=.5;M.adj.trust-=6;M.adj.morale+=5;M.injury=Math.max(1,M.injury-1);M.stage='finish';}
  }
@@ -2019,12 +2072,13 @@ function finish(M){
   say(M,'No contest.','bell',{...step(),big:true});
  }else if(M.outcome==='double'){
   if(f.sub){say(M,`${f.short} locks in ${the(f.finisher)}!`,'play',{...step(),big:true,pause:1});say(M,`${w.short} should be tapping now…`,'play',{...step(),pause:2});
-   say(M,`${w.short} BREAKS THE HOLD! That was not the plan!`,'crowd',{...step(),big:true,pause:1});}
+   say(M,`${w.short} BREAKS THE HOLD! Nobody saw that coming!`,'crowd',{...step(),big:true,pause:1});}
   else{say(M,`${f.short} hits ${the(f.finisher)}! Cover!`,'play',{...step(),big:true,pause:1});
    say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});
-   say(M,`${w.short} KICKS OUT! That was not the plan!`,'crowd',{...step(),big:true,pause:1});}
+   say(M,`${w.short} KICKS OUT! Nobody saw that coming!`,'crowd',{...step(),big:true,pause:1});}
   say(M,`${f.short} looks at the referee. The referee looks at the curtain.`,'agent',{...step(6),pause:1,who:'pbp'});
-  decisive(M,w,f,step,`${w.name} has gone into business!`);
+  say(M,`That was not the plan. ${M.p.name} will want a word.`,'agent',{...step(0)});
+  decisive(M,w,f,step,`${w.name} has pulled off the upset!`);
   say(M,`Chaos at ${M.p.venue}.`,'crowd',{...step(),big:true});
  }else{
   // v3.3: twenty finish routes. The contract chooses who wins; the match so far chooses how.
