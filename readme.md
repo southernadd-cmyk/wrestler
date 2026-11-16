@@ -151,6 +151,12 @@ node tests/catalog.test.cjs
 
 The suites cover the free-agent market and rival contracts, separate promotion ladders, older saves, backstage situations, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
 
+**Continuous integration:** All 14 suites run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
+
+### Small print
+
+The software implementation (HTML/CSS/JavaScript source and test code) is available under the [MIT License](LICENSE). The game's original writing, dialogue, characters, portraits, artwork, branding and other creative content are **not** licensed for reuse under MIT, even where embedded in `index.html`. See [Content and copyright](CONTENT-LICENSE.md) for the distinction. Third-party material remains subject to its own licences.
+
 ## BACK ISSUES
 
 *From the files*
