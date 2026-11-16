@@ -170,6 +170,37 @@ h1,h2,h3{margin:0;font-weight:400}
 /* ---------- office (desk) ---------- */
 .s-desk{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) minmax(0,1fr);grid-template-areas:"mission ledger" "tray dates" "tray squad"}
 .s-desk.nomission{grid-template-areas:"ledger ledger" "tray dates" "tray squad";grid-template-rows:auto minmax(0,1fr) minmax(0,1fr)}
+/* Desk: the finance chart must not decide how little room the fixture and
+   stable tables receive. The lower rows share a guaranteed readable area.
+   Keep these rules desktop-only: phones have their own stacked layout. */
+@media (min-width:901px){
+ .s-desk,.s-desk.nomission{
+  grid-template-rows:minmax(0,1.85fr) minmax(150px,1fr) minmax(150px,1fr);
+ }
+ .s-desk>.win{min-width:0;min-height:0}
+ .s-desk .wbody{overscroll-behavior:contain}
+ .s-desk .wbody.tight>.well{min-height:0}
+ .s-desk .facts>div{padding:5px 8px}
+ .s-desk .facts small{font-size:14px}
+ .s-desk .facts b{font-size:25px}
+ .s-desk .chart{margin:4px 0;padding:5px 8px 5px 3px}
+ .s-desk .ch-legend{gap:3px 8px;font-size:14px}
+ .s-desk .criteria{gap:5px;margin:6px 0}
+ .s-desk .crit{padding:5px 7px}
+ .s-desk .crit small{font-size:15px}
+}
+/* Short laptop windows and browser zoom: let the desk itself scroll as one
+   page instead of reducing the bottom panels to table headings. */
+@media (min-width:901px) and (max-height:760px){
+ #view:has(> .s-desk){overflow-y:auto;overscroll-behavior:contain}
+ #view>.s-desk{height:auto;grid-template-rows:minmax(290px,auto) minmax(175px,auto) minmax(175px,auto)}
+ #view>.s-desk>.win .wbody{overflow-y:visible}
+}
+@media (min-width:901px) and (max-height:950px){
+ .nav{gap:0;padding:6px 4px 8px}
+ .nav h4{margin:7px 4px 3px;font-size:20px}
+ .nav .item{min-height:28px;padding:3px 7px;font-size:16px;line-height:1.15}
+}
 .criteria{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
 .crit{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;background:var(--stone-2);border:2px solid var(--ink)}
 .crit.met{background:#BFE3B3}

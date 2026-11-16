@@ -59,7 +59,7 @@ function booksChart(){
  const b=S().books||[];if(b.length<2)return '';
  const cash=b.map(x=>x.cash),bill=b.map(x=>x.wages+x.other),y=niceRange([...cash,...bill,0],100);
  const x=[b[0].a-.5,b.at(-1).a+.5],w=Math.min(6,70/b.length);
- return chart({h:96,x,y,lines:[{pts:b.map(p=>[p.a,p.cash]),col:'gold',label:'Bank'}],bars:b.map(p=>({x:p.a,y:p.wages+p.other,w,col:'blood'})),barLabel:['Weekly bill','blood'],
+ return chart({h:80,x,y,lines:[{pts:b.map(p=>[p.a,p.cash]),col:'gold',label:'Bank'}],bars:b.map(p=>({x:p.a,y:p.wages+p.other,w,col:'blood'})),barLabel:['Weekly bill','blood'],
   yTicks:[y[0],0,y[1]].filter((v,i,a)=>a.indexOf(v)===i).map(v=>[v,shortMoney(v)]),xTicks:[[b[0].a,weekLabel(b[0].a)],[b.at(-1).a,weekLabel(b.at(-1).a)]],
   aria:`Bank from ${money(cash[0])} to ${money(cash.at(-1))} over ${b.length} weeks; the weekly bill was ${money(bill.at(-1))} last week.`});
 }
