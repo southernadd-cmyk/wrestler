@@ -20,13 +20,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Live-review release — automated test gate explicitly waived
-        if: github.head_ref == 'fix/roster-v4-portraits-movesets' || github.ref == 'refs/heads/fix/roster-v4-portraits-movesets'
+      - name: Use Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check portrait atlas, portraits and README gallery are up to date
         run: |
-          echo "The roster PR is being released for the owner's requested live testing."
-          echo "This CI job did not run the regression suite for this PR."
+          python -m pip install --quiet pillow
+          python tools/build_portraits.py --check
       - name: Run all simulation tests
-        if: github.head_ref != 'fix/roster-v4-portraits-movesets' && github.ref != 'refs/heads/fix/roster-v4-portraits-movesets'
         shell: bash
         run: |
           set -euo pipefail
@@ -35,3 +37,4 @@ jobs:
             echo "::group::$suite"
             node "$suite"
             echo "::endgroup::"
+          done

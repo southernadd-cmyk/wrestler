@@ -26,8 +26,8 @@ assert.equal(new Set(all.map(w => w.id)).size, 28);
 
 const atlas = fs.readFileSync(path.join(__dirname,'..','assets','portrait-atlas.png'));
 assert.equal(atlas.subarray(12, 16).toString(), 'IHDR');
-assert.equal(atlas.readUInt32BE(16), 4 * 48);
-assert.equal(atlas.readUInt32BE(20), 21 * 60);
+assert.equal(atlas.readUInt32BE(16), 4 * 144);
+assert.equal(atlas.readUInt32BE(20), 21 * 180);
 const css = fs.readFileSync(path.join(__dirname,'..','assets','css','core.css'),'utf8');
 assert.match(css, /\.roster-portrait\{[^}]*background-size:400% 2100%/);
 const positions = new Set();
