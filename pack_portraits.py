@@ -112,7 +112,7 @@ def main():
     # Keep both dimension-pinning tests aligned with the packed atlas.
     roster_test=repo/'tests/roster.test.cjs'
     s=roster_test.read_text(encoding='utf8')
-    s=s.replace('8 * 60','21 * 60').replace('background-size:400% 800%','background-size:400% 2100%')
+    s=s.replace('8 * 60','21 * 60').replace('background-size:400% 800%','background-size:400% 2100%').replace('100*column/3}% 100%','100*column/3}% 35%')
     set_if_changed(roster_test,s)
     structure=repo/'tests/structure.test.cjs'
     s=structure.read_text(encoding='utf8').replace('readUInt32BE(20),480','readUInt32BE(20),1260')
@@ -152,7 +152,7 @@ for(const w of D.V4.newCast){
         if not match: raise RuntimeError(f'Missing original wrestler name for {id}')
         old_names[id]=match.group(1)
     names.update(old_names)
-    ordered=original_ids+ids
+    ordered=sorted(original_ids+ids,key=lambda id:names[id].casefold())
     lines=['<!-- LIVING ROSTER START -->','<table align="center">']
     for start in range(0,80,8):
         lines.append('<tr>')
