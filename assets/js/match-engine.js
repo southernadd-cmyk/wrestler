@@ -1469,7 +1469,7 @@ function talkReaction(w,talk){
  if(talk==='none')return null;
  if(talk==='calm')return w.morale<50||w.fatigue>40?`${n} breathes out. "Yeah. Steady. Got it."`:w.ego>=75?`${n} looks at you like you’ve said something obvious.`:`${n} nods. Focused.`;
  if(talk==='fire')return w.ego>=75?`${n} is already bouncing on the spot. This could go either way.`:w.morale<45?`${n} manages a half-smile. Something’s there.`:`${n} slaps the wall twice. Ready to go.`;
- if(talk==='money')return w.ego>=70?`${n}’s jaw tightens. "Understood." It isn’t.`:w.pro>=80?`${n} shrugs. "I always follow the sheet."`:`${n} nods quickly and looks at the floor.`;
+ if(talk==='money')return w.ego>=70?`${n}’s jaw tightens. "Understood." It isn’t.`:w.pro>=80?`${n} shrugs. "I always follow the layout."`:`${n} nods quickly and looks at the floor.`;
  return null;
 }
 const rnd=(M,a)=>a[Math.floor(M.r()*a.length)];
@@ -1513,7 +1513,7 @@ function entrances(M){
  else if((M.o.feudHeat||0)>=35)say(M,'Bad blood here. These two have history.','story',{at:0});
  if(M.o.promo)say(M,M.o.promo.hook,'story',{at:0});
  if(M.o.memory?.recall)say(M,'Colour: '+M.o.memory.recall,'story',{at:0});
- if(M.sheet?.signed)say(M,'Road agent: '+M.sheet.method+' match sheet agreed. The finish is contracted; the action must be earned.','story',{at:0});
+ if(M.sheet?.signed)say(M,'Road agent: '+M.sheet.method+' match layout agreed. The finish is contracted; the action must be earned.','story',{at:0});
  const notes={
   grudge:'The talk is finished. These two have scores to settle, and neither wants to back down.',
   underdog:'There is a gulf in experience here, but a wrestling match is not won on paper.',
@@ -1590,7 +1590,7 @@ function onPhase(M){
   M.scriptChecks++;
   if(M.r()*100<M.comply){M.scriptHits++;M.offScript=null;}
   else{M.offScript=w.ego>=65?'showboat':'audible';
-   say(M,M.offScript==='showboat'?`${w.short} has gone off the sheet, playing to the crowd instead of the plan.`:`${w.short} is calling audibles. This wasn’t the plan.`,'agent');}
+   say(M,M.offScript==='showboat'?`${w.short} has gone off the layout, playing to the crowd instead of the plan.`:`${w.short} is calling audibles. This wasn’t the plan.`,'agent');}
  }
  if(ph.id==='heat'&&!M.offered.stiff&&M.f.ego>=68&&M.r()<(M.f.ego-55)/60){M.offered.stiff=1;decide(M,'stiff');return;}
  if(ph.id==='stretch'){
@@ -1720,7 +1720,7 @@ const CALLS={
  big:{name:'Hit the big spot',hint:'One big move now. Huge pop or a nasty botch.'},
  crowd:{name:'Work the crowd',hint:'Play to the seats. Builds noise, stalls the match.'},
  home:{name:'Take it home',hint:'Go to the finish now. Early means a shorter, weaker match.'},
- sheet:{name:'Back to the sheet',hint:'Pull an improvising worker back to the plan.'}
+ sheet:{name:'Back to the layout',hint:'Pull an improvising worker back to the plan.'}
 };
 function canCall(M,id){
  if(M.done||M.stage!=='live'||M.decision||M.calls<=0)return false;
@@ -1739,7 +1739,7 @@ function call(M,id){
  if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`)}
  if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
  if(id==='big'){const n=M.spots;spot(M,true,true);if(M.spots>n)root.OfficeSheets?.observe(M,'special_spot','w','spot')}
- if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back on the sheet.`)}
+ if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back to the match layout.`)}
  if(id==='home'){const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
   M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
   say(M,`${w.short} relays it to ${M.f.short}: take it home.`)}

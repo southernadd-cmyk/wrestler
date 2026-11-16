@@ -315,7 +315,7 @@
   if(fx.flags?.pushThrough)t.push('Injury risk');
   if(fx.repStake)t.push('Reputation at stake');
   if(fx.skipPromo)t.push('No promo tonight');
-  if(fx.plan){const cur=st.board[fx.plan.slot],S=SLOTS.find(x=>x.id===fx.plan.slot);t.push(!cur?'Goes on the sheet':cur.action===fx.plan.action?'Keeps the running order':'Changes '+S.name.toLowerCase());}
+  if(fx.plan){const cur=st.board[fx.plan.slot],S=SLOTS.find(x=>x.id===fx.plan.slot);t.push(!cur?'Goes in the match layout':cur.action===fx.plan.action?'Keeps the running order':'Changes '+S.name.toLowerCase());}
   if(fx.route)t.push('Fixes the finish');
   if(fx.leash)t.push(fx.leash==='free'?'They call it':'You call it');
   return t;
@@ -386,7 +386,7 @@
     const c=st.debut,plan={slot:'payoff',owner:'w',by:'w',action:c.action,label:c.label,impossible:c.impossible};
     const b={moodW:-3,morale:-1},d={moodW:1,spice:-1,plan};
     return [
-     {id:'try',label:'“Tonight’s the night.”',hint:'If the '+c.label+' lands, they will talk about it. If it does not, they will also talk about it.',tags:['Gamble',st.w.short+' ▲','Crowd ▲ or ▼',st.board.payoff?'Changes the big spot':'Goes on the sheet'],
+     {id:'try',label:'“Tonight’s the night.”',hint:'If the '+c.label+' lands, they will talk about it. If it does not, they will also talk about it.',tags:['Gamble',st.w.short+' ▲','Crowd ▲ or ▼',st.board.payoff?'Changes the big spot':'Goes in the match layout'],
       run(st){st.mood.w+=4;apply(st,{plan,crowd:rng(st.seed,'debut')<.35+st.w.ring/200?3:-2});log(st,'w',say(st,'pleased',st.w,'debut'));}},
      {id:'wait',label:'“Save it for a bigger night.”',hint:'Sensible. Deflating.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'grumble',st.w,'debut'));}},
      {id:'walk',label:'“Show '+AGENT+' first.”',hint:'A walk-through in the corridor. Safer, and a little less special.',fx:d,tags:tagsOf(st,d),run(st){log(st,'agent','We’ve walked it through. I’ve only got the one bruise.');}}];}},
@@ -497,19 +497,19 @@
     return [
      {id:'pep',label:'“You’ve done this a hundred times.”',hint:'A pep talk. They work about half the time.',tags:['Gamble',st.w.short+' ▲ or ▼'],
       run(st){if(rng(st.seed,'pep')<.55){st.mood.w+=5;apply(st,{crowd:1});log(st,'w','Right. Yes. A hundred times. I’ve got this.');}else{st.mood.w-=2;log(st,'w','I’ve done it eleven times. Two of them went well.');}}},
-     {id:'sheet',label:'“Stick to the sheet. I’ll call it from ringside.”',hint:'Nothing fancy and nothing left to chance.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'accept',st.w,'nerves'));}},
+     {id:'sheet',label:'“Stick to the match layout. I’ll call it from ringside.”',hint:'Nothing fancy and nothing left to chance.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'accept',st.w,'nerves'));}},
      pro?{id:'carry',label:'“{F} will look after you out there.”',hint:st.f.short+' is a professional. A slightly put-upon one.',fx:c,tags:tagsOf(st,c),run(st){log(st,'f',say(st,'grumble',st.f,'carry'));}}
       :{id:'brew',label:'“Have a brew and breathe.”',hint:'It helps. The crowd wait.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','Milk, two sugars, and a digestive for the shock.');}}];}},
   {id:'leash',kind:'match',weight:2,when:x=>x.st.w.psych>=70||x.st.w.ego>=75,
-   open(st){log(st,'w',tone(st,'w',{grand:'Am I to follow a script, or may I be brilliant?',gruff:'Sheet, or do I call it?',eager:'Can I just feel it out there? I feel things really well!',stoic:'Do you want it by the sheet, or shall I read the room?',
+   open(st){log(st,'w',tone(st,'w',{grand:'Am I to follow a script, or may I be brilliant?',gruff:'Layout, or do I call it?',eager:'Can I just feel it out there? I feel things really well!',stoic:'Do you want it by the layout, or shall I read the room?',
      precise:'I need to know the decision rights. Yours or mine?',earnest:'Should I stick to the plan, or go with the crowd?',sermon:'Shall I follow the text, or the spirit?',slippery:'How tightly are we sticking to this, out of interest?'}));},
-   title:'Who calls the match?',ask:'Sheet, or feel?',
+   title:'Who calls the match?',ask:'Layout, or feel?',
    options(st){
     const a={leash:'script',moodW:st.w.ego>=75?-4:0},b={leash:'free',moodW:2,spice:st.w.psych>=75?0:1},c={leash:'free',moodW:1,moodF:2};
     return [
-     {id:'script',label:'“By the sheet.”',hint:'You call it. Proud workers resent it.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,a.moodW?'grumble':'accept',st.w,'leash'));}},
+     {id:'script',label:'“By the layout.”',hint:'You call it. Proud workers resent it.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,a.moodW?'grumble':'accept',st.w,'leash'));}},
      {id:'free',label:'“Read the room.”',hint:st.w.psych>=75?st.w.short+' is good at this.':st.w.short+' thinks they are good at this.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'pleased',st.w,'leash'));}},
-     {id:'both',label:'“Call it between you.”',hint:'The shine and the heat come off the sheet. The comeback and the big spot stay.',fx:c,tags:[...tagsOf(st,c),'Fewer beats'],
+     {id:'both',label:'“Call it between you.”',hint:'The shine and the heat come out of the layout. The comeback and the big spot stay.',fx:c,tags:[...tagsOf(st,c),'Fewer beats'],
       run(st){for(const k of ['opening','pressure'])delete st.board[k];log(st,'agent','Half a plan. Lovely. I’ll just stand here for the first ten minutes, then.');}}];}},
   {id:'crowd',kind:'match',weight:3,when:()=>true,
    open(st){const r=rng(st.seed,'crowd');st.crowdMood=st.w.heat<35?'who':r<.5?'cold':'hot';
@@ -558,12 +558,12 @@
      precise:'My expenses tonight total £41.60. I have receipts.',earnest:'I hate to ask, but the train was quite a lot.',sermon:'Even a prophet must pay for parking.',slippery:'About my expenses. They’ve gone up. Inflation.'}));},
    title:'{W} wants expenses',ask:'Do you pay?',
    options(st){
-    const win=st.finish.startsWith('win'),a={cash:-40,moodW:5,morale:2},b={moodW:-2,morale:-1},c=win?{moodW:2}:{moodW:-4};
+    const a={cash:-40,moodW:5,morale:2},b={moodW:-2,morale:-1},c={moodW:-1};
     return [
      {id:'pay',label:'“Here’s forty.”',hint:'Out of tonight’s purse.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'sweet',st.w,'petrol'));}},
      {id:'next',label:'“Next time.”',hint:'They have heard this before.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'grumble',st.w,'petrol'));}},
-     {id:'win',label:'“Win tonight and we’ll talk.”',hint:win?st.w.short+' is booked to win, so this is easy to say.':st.w.short+' is booked to lose, and knows it.',fx:c,tags:tagsOf(st,c),
-      run(st){log(st,'w',win?'Then we’ll be talking.':'I’m booked to lose.');if(!win)log(st,'you','“Then we won’t be talking.”');}}];}},
+     {id:'win',label:'“Tear the house down and we’ll talk.”',hint:'A promise. You both know how those go.',fx:c,tags:tagsOf(st,c),
+      run(st){log(st,'w','Then you’d better be watching.');}}];}},
   {id:'scruples',kind:'match',weight:4,when:x=>x.st.finish==='win_dirty'&&x.st.w.pro>=78,
    open(st){log(st,'w',tone(st,'w',{gruff:'I don’t cheat.',earnest:'Cheating? In front of the kids?',precise:'I would prefer a legitimate victory. Statistically, I’ve earned one.',stoic:'Thirty years and I’ve never grabbed the tights. I’ve thought about it.',
      grand:'A dirty win? I? Have you seen my reviews?',eager:'I don’t know how to cheat! Nobody’s shown me!',sermon:'Thou shalt not hold the tights. It is in there somewhere.',slippery:'I’ve no objection to cheating. I object to being seen doing it.'}),'objection');
@@ -791,7 +791,7 @@
   }
   if(st.stage==='curtain'){
    if(st.reworked)log(st,'agent','The running order’s had a few rubbings-out. '+verdict(st));
-   log(st,'agent','That’s the sheet. '+st.w.short+' is '+word(consent(st,'w'))+'. '+st.f.short+' is '+word(consent(st,'f'))+'. Last word before '+st.w.short+' goes through the curtain?');
+   log(st,'agent','That’s the match layout. '+st.w.short+' is '+word(consent(st,'w'))+'. '+st.f.short+' is '+word(consent(st,'f'))+'. Last word before '+st.w.short+' goes through the curtain?');
   }
  }
  function act(st,id){
@@ -866,7 +866,7 @@
    // Alternatives the same wrestler could reach for if the agreed move will not come.
    n.backup=b.action==='scheduled_nearfall'?[]:cardsFor(st,n.id).filter(c=>c.action!==b.action&&!c.impossible&&c.owner===b.owner&&!banned(st,c.action)).map(c=>c.action).slice(0,2);
    if(n.id==='payoff'&&b.action!=='scheduled_nearfall')n.backup.push('scheduled_nearfall');
-   n.title=n.id==='opening'?O.short+' opens with the '+b.label:n.id==='pressure'?O.short+' takes over with the '+b.label:
+   n.title=n.id==='opening'?O.short+' gets the early edge with the '+b.label:n.id==='pressure'?O.short+' takes over with the '+b.label:
     n.id==='reversal'?O.short+' comes back with the '+b.label:O?O.short+' hits the '+b.label:'A run of near-falls';
    n.planned=true;n.impossible=!!b.impossible;if(b.action!=='scheduled_nearfall')planned++;
   }
