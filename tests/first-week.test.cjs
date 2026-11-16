@@ -1,0 +1,26 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const js=fs.readFileSync(path.join(__dirname,'../assets/first-week.js'),'utf8');
+const root={};vm.runInNewContext(js,{window:root,console});
+const Guide=root.OfficeOnboarding;
+const original={season:1,week:1,roster:[],card:[],futureBookings:[],inbox:[],history:[]};
+assert.equal(Guide.progress(original).done,0);
+assert.equal(Guide.progress(original).steps.length,5);
+assert.match(Guide.note(original),/territory/i);
+assert.ok(original.firstWeek&&typeof original.firstWeek==='object','old saves gain guide state on demand');
+original.roster.push({id:'mara'});assert.equal(Guide.progress(original).done,1);
+assert.match(Guide.note(original),/booker/);
+original.card.push({id:'booking-1'});assert.equal(Guide.progress(original).done,2);
+original.inbox.push({read:true});assert.equal(Guide.progress(original).done,3);
+original.firstWeek.trained=true;assert.equal(Guide.progress(original).done,4);
+original.history.push({id:'match-1'});assert.equal(Guide.progress(original).done,5);
+assert.equal(Guide.progress(original).finished,true);
+assert.match(Guide.note(original),/territory is yours/);
+original.week=2;assert.equal(Guide.progress(original).firstWeek,false);
+assert.equal(Guide.progress(original).done,5);
+// A first-week checklist remains marked after a cancelled booking, a release or a reload.
+const prior=JSON.parse(JSON.stringify(original));prior.roster=[];prior.card=[];prior.history=[];prior.firstWeek.signed=true;prior.firstWeek.booked=true;prior.firstWeek.match=true;
+assert.equal(Guide.progress(prior).done,5);
+assert.equal(Guide.tasks.filter(t=>['scouting','offers','inbox','training','fixtures'].includes(t.go)).length,5);
+console.log('PASS first-week onboarding: 5 tracked steps, legacy saves, persisted progress and exit');

@@ -37,6 +37,12 @@ Each booker keeps a separate card, from opener to main event. A result at Docksi
 
 ---
 
+## FIRST WEEK WITH DENNIS
+
+*From the road agent*
+
+The splash screen still takes you straight to Free agents, but Dennis now gives you an in-game welcome before the figures take over. A collapsible **First Week** guide stays within reach while you sign a wrestler, book a match, read your inbox, choose a training focus and work your first bout. Steps update from what you actually do; they are not scripted gates. The guide folds away after the first week and can be reopened from **Game → How a week works**. Its state lives inside the normal career save, including older careers.
+
 ## FROM THE BOOKING OFFICE
 
 *First week on the job*
