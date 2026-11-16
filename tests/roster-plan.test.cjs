@@ -1,0 +1,34 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const root=path.join(__dirname,'..');
+const spec=JSON.parse(fs.readFileSync(path.join(root,'docs/living-roster-v4.json'),'utf8'));
+const context={};vm.runInNewContext(fs.readFileSync(path.join(root,'assets/js/data.js'),'utf8'),{window:context});
+const d=context.OfficeData;
+const old=[...d.TALENT,...d.FOES],next=spec.new_wrestlers,all=[...old,...next];
+assert.equal(old.length,28);assert.equal(next.length,52);assert.equal(all.length,80);
+assert.deepEqual([...spec.preserved_originals.talent_ids],d.TALENT.map(x=>x.id));
+assert.deepEqual([...spec.preserved_originals.opponent_ids],d.FOES.map(x=>x.id));
+assert.equal(new Set(all.map(x=>x.id)).size,80,'all IDs unique');
+assert.equal(new Set(all.map(x=>x.name.toLowerCase())).size,80,'all names unique');
+const allocation={free:12,independent:3,iron:5,coastal:4,northern:4,eastbank:0,meridian:0,redwood:0};
+for(const w of next){
+ assert.match(w.id,/^[a-z][a-z0-9]*$/);
+ assert.ok(['Rookie','Prospect','Veteran','Star'].includes(w.tier));
+ assert.ok(['Brawl','Story','Technical','Spectacle'].includes(w.style));
+ assert.ok(w.age>=19&&w.age<=60);
+ for(const stat of ['ring','mic','psych','safe','ego','pro','loyal'])assert.ok(Number.isInteger(w[stat])&&w[stat]>=0&&w[stat]<=100,w.name+': '+stat);
+ assert.ok(Number.isInteger(w.fee)&&w.fee>0&&Number.isInteger(w.wage)&&w.wage>0);
+ for(const key of ['name','short','handle','ambition','voice','appearance_brief','finisher','bio'])assert.ok(typeof w[key]==='string'&&w[key].trim().length>=3,w.id+' missing '+key);
+ assert.ok(Object.hasOwn(allocation,w.initial_allocation),w.id+' unknown allocation');
+ allocation[w.initial_allocation]++;
+}
+assert.equal(allocation.free,20);assert.equal(allocation.independent,16);
+assert.equal(Object.entries(allocation).filter(([id])=>!['free','independent'].includes(id)).reduce((s,[,n])=>s+n,0),44);
+assert.deepEqual(Object.entries(allocation).filter(([id])=>!['free','independent'].includes(id)).map(([id,n])=>[id,n]),[['iron',9],['coastal',8],['northern',8],['eastbank',6],['meridian',6],['redwood',7]]);
+assert.equal(spec.allocations.filter(g=>g.kind==='ai').length,6);
+assert.equal(d.PROMOS.length,4,'preserve the four promoters');
+assert.equal(spec.game_design_limits.player_contract_cap_initial,5);
+const existing=new Map(old.map(w=>[w.id,w.name]));
+for(const w of old)assert.equal(existing.get(w.id),w.name);
+console.log('PASS living-roster v4 cast bible: 52 authored characters, 80 unique IDs, 6 AI agencies, preserved legacy cast');
