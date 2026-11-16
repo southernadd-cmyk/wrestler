@@ -67,14 +67,21 @@ function rank(){const s=G.S,t=ensure();if(!s)return [];
  const form=recent.reduce((n,h)=>n+(h.outcome==='nc'?0:(h.finish||'').startsWith('win')?8:-5)+(h.stars>=3?Math.round(h.stars*2):0),0);
  return {...w,score:Math.round(w.heat*.7+w.ring*.16+(w.psych||50)*.08+(t.points[w.id]||0)+form)};}).sort((a,b)=>b.score-a.score);
 }
+// Returns true only when the wrestler really joined the team.
 function signRival(team,w){
  const s=G.S,t=ensure();
- if(!team||G.W(w.id)||stableFor(w.id))return;
+ if(!team||G.W(w.id)||stableFor(w.id))return false;
  if(s.worldV4?.version===4)return root.OfficeWorldV4.hire(s,team.id,w.id);
  team.roster.push(w.id);s.free=s.free.filter(agent=>agent.id!==w.id);
  for(const p of D.PROMOS)if(D.STYLE_PLAN[w.style]===p.likes||p.id==='crown')t.cards[p.id][w.id]??={score:23,matches:0,wins:0};
+ return true;
 }
-function poach(w){const team=ensure()?.teams.find(t=>t.id==='northern');signRival(team,w);return team?.name;}
+const poacher=()=>ensure()?.teams.find(t=>t.id==='northern');
+// Can North Circuit actually take this wrestler off your hands (roster room and budget)?
+function canPoach(w){const team=poacher(),s=G.S;if(!team)return false;
+ return s.worldV4?.version===4?root.OfficeWorldV4.canAfford(s,team.id,w.id):true;}
+// Sign a wrestler who has already left your stable. Returns the team name, or null if the signing failed.
+function poach(w){const team=poacher();return signRival(team,w)?team.name:null;}
 function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  const week=(s.season-1)*16+s.week;if(t.week===week)return;t.week=week;
  const standings=rank();t.previous=Object.fromEntries(standings.map((w,i)=>[w.id,i]));
@@ -122,5 +129,5 @@ G.applyResult=function(c,fin){
  if(won!==null)t.points[c.wid]=(t.points[c.wid]||0)+(won?5:-2)+Math.max(0,Math.floor((fin.stars||0)-2));
  G.save();return x;
 };
-root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poach,evolve};
+root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve};
 })(typeof window!=='undefined'?window:globalThis);
