@@ -321,8 +321,9 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .title[hidden]{display:none}
 .title .win{width:min(720px,100%)}
 .title .hero{text-align:center;background:var(--deep);border-bottom:2px solid var(--ink)}
-.title .hero img{display:block;width:100%;height:auto;max-height:max(100px,calc(100dvh - 220px));object-fit:contain}
+.title .hero img{display:block;width:100%;height:auto;max-height:max(100px,calc(100dvh - 260px));object-fit:contain}
 .title h1:not(.sr){padding:22px 12px 8px;font:clamp(50px,17vw,130px)/.82 var(--jersey);color:var(--gold);text-shadow:4px 4px 0 var(--blood),8px 8px 0 #000;letter-spacing:.01em}
+.title .tagline{padding:8px 12px 0;margin:0;font:clamp(20px,3vw,30px)/1.08 var(--jersey);letter-spacing:.02em;color:var(--gold);text-wrap:balance}
 .title .sub{padding:8px 12px;margin:0;font:clamp(16px,3vw,22px)/1.1 var(--tt);color:var(--cyan)}
 .title .menu{display:grid;gap:8px;padding:14px 20px}
 .title .menu .btn{min-height:48px;font:28px/1 var(--jersey);letter-spacing:.03em}
