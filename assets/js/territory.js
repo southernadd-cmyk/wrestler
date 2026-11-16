@@ -52,14 +52,17 @@ function promotionRank(pid){
   .map((w,i)=>({...w,slot:i<2?'main':i<5?'feature':i<9?'mid':'opener'}));
 }
 function opponents(pid,slot){
- const pool=promotionRank(pid).filter(w=>!w.owned&&(w.stable||D.FOES.some(f=>f.id===w.id)));
+ const liveV4=G.S?.worldV4?.version===4;
+ const pool=promotionRank(pid).filter(w=>!w.owned&&(liveV4?['ai','independent'].includes(G.S.worldV4.contracts[w.id]?.owner):w.stable||D.FOES.some(f=>f.id===w.id)));
  const exact=pool.filter(w=>w.slot===slot);
  if(exact.length)return exact;
- return pool.length?pool:D.FOES;
+ return pool.length?pool:(liveV4?D.ALL.filter(w=>['ai','independent'].includes(G.S.worldV4.contracts[w.id]?.owner)):D.FOES);
 }
 function rank(){const s=G.S,t=ensure();if(!s)return [];
  const rivals=D.TALENT.filter(w=>stableFor(w.id));
- const all=[...[...D.FOES,...rivals].map(w=>({...w,owned:false})),...s.roster.map(w=>({...w,owned:true}))];
+ const all=s.worldV4?.version===4
+  ? D.ALL.filter(w=>s.worldV4.contracts[w.id]?.owner!=='market').map(w=>({...w,...(G.W(w.id)||{}),owned:s.worldV4.contracts[w.id]?.owner==='player'}))
+  : [...[...D.FOES,...rivals].map(w=>({...w,owned:false})),...s.roster.map(w=>({...w,owned:true}))];
  return all.map(w=>{const recent=s.history.filter(h=>h.wid===w.id).slice(0,8);
  const form=recent.reduce((n,h)=>n+(h.outcome==='nc'?0:(h.finish||'').startsWith('win')?8:-5)+(h.stars>=3?Math.round(h.stars*2):0),0);
  return {...w,score:Math.round(w.heat*.7+w.ring*.16+(w.psych||50)*.08+(t.points[w.id]||0)+form)};}).sort((a,b)=>b.score-a.score);
@@ -67,6 +70,7 @@ function rank(){const s=G.S,t=ensure();if(!s)return [];
 function signRival(team,w){
  const s=G.S,t=ensure();
  if(!team||G.W(w.id)||stableFor(w.id))return;
+ if(s.worldV4?.version===4)return root.OfficeWorldV4.hire(s,team.id,w.id);
  team.roster.push(w.id);s.free=s.free.filter(agent=>agent.id!==w.id);
  for(const p of D.PROMOS)if(D.STYLE_PLAN[w.style]===p.likes||p.id==='crown')t.cards[p.id][w.id]??={score:23,matches:0,wins:0};
 }
@@ -77,7 +81,8 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  const reports=[];
  const busy=new Set(s.card.map(c=>c.rid));
  for(const [i,p] of D.PROMOS.entries()){
-  const entries=promotionRank(p.id).filter(w=>!busy.has(w.id)&&!w.owned&&(w.stable||D.FOES.some(f=>f.id===w.id)));
+  const entries=promotionRank(p.id).filter(w=>!busy.has(w.id)&&!w.owned&&
+    (s.worldV4?.version===4?['ai','independent'].includes(s.worldV4.contracts[w.id]?.owner):w.stable||D.FOES.some(f=>f.id===w.id)));
   const signed=entries.filter(w=>w.stable);if(!signed.length)continue;
   const a=signed[(week+i*3)%signed.length],rivals=entries.filter(w=>w.id!==a.id&&w.stable!==a.stable);
   if(!rivals.length)continue;
@@ -97,7 +102,8 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  // Champion remains a real territory title rather than a temporary sorting label.
  const leader=rank()[0];const champ=rank().find(w=>w.id===t.champion);
  if(leader&&champ&&leader.id!==champ.id&&leader.score>champ.score+12&&week%4===0){t.champion=leader.id;reports.unshift(leader.name+' won the territory championship.');}
- if(week%5===0){
+ if(s.worldV4?.version===4)root.OfficeWorldV4.evolve(s,t,week,reports);
+ else if(week%5===0){
   const team=t.teams.filter(x=>x.roster.length<5).sort((a,b)=>a.roster.length-b.roster.length||b.rep-a.rep)[0];
   if(team){
    const pool=[...s.free,...D.FOES.filter(w=>!stableFor(w.id))];

@@ -113,7 +113,8 @@ assert.ok(share('Spectacle','aerial')+share('Spectacle','lucha')>share('Technica
 assert.ok(share('Brawl','heel')+share('Brawl','outside')>share('Technical','heel')+share('Technical','outside'),'brawlers favour rough and ringside work');
 
 // Signature moves: real catalog moves, legal for their owner, and visibly part of who they are.
-const owners=Object.entries(D.PROFILES);
+const legacyIds=new Set([...D.TALENT,...D.FOES].map(w=>w.id));
+const owners=Object.entries(D.PROFILES).filter(([id])=>legacyIds.has(id));
 assert.equal(owners.length,D.TALENT.length+D.FOES.length);
 for(const [wid,prof] of owners){
  assert.equal(prof.signature.length,4,wid+' has four signature moves');

@@ -53,9 +53,11 @@ for (const [column, promoter] of data.PROMOS.entries()) {
 assert.equal(positions.size, all.length + data.PROMOS.length);
 
 game.fresh();
-assert.equal(game.S.free.length, 12);
-assert.equal(game.S.territory.teams.flatMap(team => team.roster).length, 13);
-assert.equal(territory.rank().length, 16);
+assert.equal(game.S.free.length, 20);
+assert.equal(game.S.territory.teams.flatMap(team => team.roster).length, 44);
+assert.equal(territory.rank().length, 60);
+assert.equal(data.ALL.length,80);
+assert.equal(game.S.worldV4.version,4);
 assert.equal(game.sign('dax'), 'Not available.');
 assert.equal(territory.stableFor('dax').name, 'Iron Borough');
 assert.equal(territory.promotionRank('dock')[0].id, 'rocco');
@@ -66,6 +68,7 @@ assert.ok(game.S.offers.every(o => territory.opponents(o.pid, o.slot).some(w => 
 
 assert.equal(game.sign('mara'), null);
 const oldSave = JSON.parse(JSON.stringify(game.S));
+delete oldSave.worldV4;
 oldSave.free = oldSave.free.filter(w => data.TALENT.findIndex(x => x.id === w.id) < 8 && w.id !== 'sol');
 oldSave.free[0].fee = 1234;
 oldSave.territory.teams = data.STABLES.map((team, i) => ({
@@ -76,16 +79,17 @@ delete oldSave.territory.stablesReady;
 delete oldSave.territory.cards;
 storage.set('the-office-v22', JSON.stringify(oldSave));
 game.load();
-assert.equal(game.S.free.length, 10);
+assert.equal(game.S.free.length, 18);
 assert.equal(game.S.free[0].fee, 1234);
 assert.equal(game.S.roster[0].id, 'mara');
 assert.equal(game.S.territory.champion, oldSave.territory.champion);
 assert.equal(game.S.territory.teams[0].rep, 57);
 assert.ok(game.S.free.some(w => w.id === 'nico'));
 assert.ok(!game.S.free.some(w => w.id === 'sol'));
-assert.equal(new Set(game.S.territory.teams.flatMap(team => team.roster)).size, 13);
+assert.equal(new Set(game.S.territory.teams.flatMap(team => team.roster)).size, 44);
+assert.equal(game.S.territory.teams.length,6);
 game.load();
-assert.equal(game.S.free.length, 10);
+assert.equal(game.S.free.length, 18);
 
 const contract = {id:'pyramid-test',wid:'mara',rid:'red',pid:'dock',slot:'mid',minutes:12,
   finish:'win_clean',purse:300,feudHeat:0,blowoff:false,eventAbs:1};
@@ -107,10 +111,10 @@ const market = game.S.free.length;
 territory.evolve();
 assert.ok(data.PROMOS.every(p => Object.values(game.S.territory.cards[p.id]).some(row => row.matches > 0)));
 assert.ok(game.S.territory.reports[0].lines.some(line => line.includes(' signed ')));
-assert.equal(game.S.free.length, market - 1);
+assert.ok(game.S.free.length < market,'multiple AI managers can sign on week five');
 assert.ok(game.S.free.every(w => !territory.stableFor(w.id)));
 const weekFive = JSON.stringify(game.S.territory);
 territory.evolve();
 assert.equal(JSON.stringify(game.S.territory), weekFive);
 
-console.log('roster: 28 portraits, four independent card ladders, AI transfers, and save migration passed');
+console.log('roster: 80 wrestlers, six agencies, four promotion ladders, AI transfers and save migration passed');

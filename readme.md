@@ -33,16 +33,16 @@ The entire territory used to work out of one **973 KB** HTML file. The front doo
 
 Dennis has also rearranged the agents’ room. On wide desktop screens, his conversation and the running-order board sit side by side with independent scrolling. On smaller screens they stack, keeping the plan readable while the wrestlers have their say. The regression suite now tests the same scripts the browser loads, in the same order, rather than reading a giant inline script from `index.html`. [See the technical floor plan](docs/architecture.md).
 
-<p align="center"><img src="docs/readme/03-territory.svg" alt="TERRITORY REPORT — 28 WRESTLERS, FOUR CARDS" width="100%"></p>
+<p align="center"><img src="docs/readme/03-territory.svg" alt="TERRITORY REPORT — FOUR INDEPENDENT PROMOTION CARDS (ARCHIVAL ART)" width="100%"></p>
 
-## TWENTY-EIGHT WRESTLERS, FOUR DIFFERENT CARDS
+## EIGHTY WRESTLERS, SIX COMPETING AGENCIES
 
 *Territory report*
 
-The circuit has doubled to **28 wrestlers**. Twelve are on the open market when you arrive, thirteen have signed with rival managers, and three take bookings independently. Everyone has a pixel-art portrait and four signature moves. The rival managers can sign someone off the same list you’re looking at.
+The circuit now has **80 wrestlers**: 20 free agents, 44 signed to six AI-managed agencies, and 16 who work independently. Four promotions have separate card ladders. Every wrestler has a named identity and a compatible match profile; new characters use interim generated portraits until the dedicated 80-person art set is finished. AI managers sign, release and renew contracts independently, and existing careers are migrated without resetting their history.
 
-<p align="center"><img src="assets/portrait-atlas.png" alt="Original 28-wrestler pixel-art portrait atlas used by the game" width="192"></p>
-<p align="center"><sub><em>ROSTER PHOTO DESK:</em> The game's original pixel-art portrait atlas.</sub></p>
+<p align="center"><img src="docs/readme/living-roster-v4.svg" alt="The Office 80-person roster poster, showing the original 28 performers and 52 new characters across free agents, independents and six agencies" width="100%"></p>
+<p align="center"><sub><em>ROSTER PHOTO DESK:</em> All 80 named performers in the new living circuit. Game portraits are being refreshed separately.</sub></p>
 
 **The Office** is a text-led wrestling management game played in the browser. You look after one regional stable. Bookers call the result, then you and the wrestlers work out how to get there. Backstage, people remember who took the clean loss, who broke their word, and who made the other wrestler look good in front of a quiet room.
 
