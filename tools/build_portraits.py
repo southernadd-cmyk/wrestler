@@ -8,6 +8,10 @@ Usage (from the repository root):
 Inputs (committed, never modified by this script):
     art/source/original-atlas-v3.png  48x60 cells: the 28 original wrestlers and
                                       the 4 promoters, exactly as shipped in v3.
+    art/source/original-cutouts/<id>.png
+                                      hand-checked transparent cutouts of the
+                                      four originals that were drawn with painted
+                                      backgrounds (Mara, Rex, Lyra, Brick).
     art/source/new52-sheet.png        the 52 newcomer paintings, 8 per row, in the
                                       same order as the v4 cast in
                                       docs/living-roster-v4.json.
@@ -21,8 +25,7 @@ Outputs:
     readme.md                         the LIVING ROSTER gallery between its
                                       START/END markers.
 
-Originals are scaled 3x with nearest-neighbour, so they look exactly as before
-(Mara, Rex, Lyra and Brick keep the painted backgrounds they were drawn with).
+Originals are scaled 3x with nearest-neighbour, so they look exactly as before.
 Requires Pillow (python -m pip install pillow).
 """
 import argparse
@@ -140,9 +143,15 @@ def fit_newcomer(master, ref_h):
     return cell
 
 
-def original_cell(atlas, index):
-    x, y = (index % COLS) * 48, (index // COLS) * 60
-    cell = atlas.crop((x, y, x + 48, y + 60))
+def original_cell(atlas, index, wid=None):
+    cutout = ROOT / 'art' / 'source' / 'original-cutouts' / f'{wid}.png'
+    if wid and cutout.exists():
+        cell = Image.open(cutout).convert('RGBA')
+        if cell.size != (48, 60):
+            sys.exit(f'{cutout} must be 48x60')
+    else:
+        x, y = (index % COLS) * 48, (index // COLS) * 60
+        cell = atlas.crop((x, y, x + 48, y + 60))
     return cell.resize((CELL_W, CELL_H), Image.Resampling.NEAREST)
 
 
@@ -164,7 +173,7 @@ def build():
 
     cells = {}
     for i, wid in enumerate(ORIGINAL_ORDER):
-        cells['wrestler:' + wid] = original_cell(old, i)
+        cells['wrestler:' + wid] = original_cell(old, i, wid)
     for i, bid in enumerate(BOOKERS):
         cells['booker:' + bid] = original_cell(old, 28 + i)
     for wid in ids:
