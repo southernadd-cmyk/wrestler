@@ -1,0 +1,19 @@
+/* Optional, collapsible guidance. Keep the management grid untouched. */
+.first-week-dock{position:fixed;right:12px;bottom:38px;z-index:28;display:flex;flex-direction:column;align-items:flex-end;max-width:calc(100vw - 24px);font:16px/1.35 'Atkinson Hyperlegible Next',sans-serif}
+.first-week-dock[hidden]{display:none}
+.first-week-tab{background:#efc957;color:#14204c;border:2px solid #080e26;padding:6px 11px;box-shadow:3px 3px 0 rgba(0,0,0,.55);font:23px/1 'Jersey 15',sans-serif;white-space:nowrap}
+.first-week-tab b{font:700 14px/1 'Atkinson Hyperlegible Next',sans-serif;background:#14204c;color:#fff;padding:3px 5px;margin:0 5px}
+.first-week-panel{width:min(355px,calc(100vw - 24px));max-height:min(65vh,590px);overflow-y:auto;overscroll-behavior:contain;background:#e8e4d6;border:3px solid #101833;box-shadow:5px 5px 0 rgba(0,0,0,.45);padding:0;color:#101833}
+.first-week-title{background:#a12237;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:5px 9px;font:25px/1 'Jersey 15',sans-serif}
+.first-week-title button{background:transparent;color:#fff;border:1px solid #e7b0af;font:22px/1 sans-serif;width:30px;height:28px}
+.first-week-note{padding:9px 10px 2px;margin:0;font-size:14px}
+.first-week-panel ol{margin:0;padding:6px 9px 10px;list-style:none;display:grid;gap:5px}
+.first-week-panel li{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:6px;align-items:center;border:1px solid #a6a6a4;padding:5px;background:#f7f4ec}
+.first-week-panel li>span{font-size:20px;color:#94293b}.first-week-panel li.checked>span{color:#247f48}
+.first-week-panel li b{display:block;font-size:14px;font-weight:700}.first-week-panel li small{display:block;font-size:12px;color:#424857}
+.first-week-panel li button,.first-week-welcome button{background:#1a2855;border:2px solid #101833;color:#fff;padding:5px 8px;font-size:13px;min-height:34px}
+.first-week-panel li.checked button{opacity:.65}
+.first-week-welcome{background:#f7edc9;border:2px solid #101833;border-left:7px solid #a12237;margin:0 0 9px;padding:9px;display:flex;align-items:flex-start;gap:10px;justify-content:space-between;flex-wrap:wrap;font:15px/1.35 'Atkinson Hyperlegible Next',sans-serif}
+.first-week-welcome b{color:#8b2338}.first-week-welcome p{margin:3px 0 0}
+.first-week-reopen{margin-top:12px}
+@media(max-width:720px){.first-week-dock{bottom:calc(63px + env(safe-area-inset-bottom,0px));right:9px}.first-week-panel{max-height:53dvh}.first-week-welcome{font-size:14px}.first-week-tab{font-size:20px}}
