@@ -69,6 +69,12 @@ Training still runs on a weekly focus and intensity, with blocks, camps and a sp
 
 Dennis suggests a session for each wrestler from their last report: a rehearsal after a match that drifted off the sheet, mic work after losing the room, a move for somebody with no big spot of their own. Set sessions in **Roster → Training** or on a wrestler’s profile.
 
+## THE FIGURES
+
+*Statistics desk*
+
+The office keeps its own records now, and draws them. **Desk → This week** shows the bank balance against the weekly bill. **Territory → Results** charts every match the stable has worked this season, wrestler by wrestler. Each **wrestler profile** shows their ring, mic, psychology and safety week by week, and their star ratings match by match. The **match report** draws the crowd through the bout, with every beat of the running order marked where it landed, changed or slipped away.
+
 ## TEN MINUTES TO DOORS
 
 *From the agents’ room*
@@ -152,6 +158,7 @@ node tests/promo-flow.test.cjs
 node tests/promo-variants.test.cjs
 node tests/promo-read.test.cjs
 node tests/training-sessions.test.cjs
+node tests/records.test.cjs
 node tests/catalog.test.cjs
 ```
 
@@ -169,7 +176,7 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
-| **3.8** | Sessions with Dennis. Two a week across the stable: rehearse for the next match, learn a big-spot move, or work on one style at the microphone. Each feeds straight into the agents’ room, the promo or the ring. |
+| **3.8** | Charts on the desk, the results, every profile and every match report. The running order is three across on a phone, and the training table fits a laptop screen. Sessions with Dennis. Two a week across the stable: rehearse for the next match, learn a big-spot move, or work on one style at the microphone. Each feeds straight into the agents’ room, the promo or the ring. |
 | **3.7** | The planning spine. Every match night has a running order of four beats that you can change, Dennis judges whether it tells a story, situations rewrite beats they rule out, and the wrestlers’ mood and condition decide how much of it actually happens. The match strip shows the running order on the clock as it plays out, and again on the report. At the microphone, Dennis reads the night first, opponents take an angle you can answer, pushing your luck can pay, and counter and finisher vows go on the strip. |
 | **3.6** | Dennis opens match night with a changing set of backstage decisions. The promo becomes a duel for the crowd, with a chance to push your luck before the last word. |
 | **3.5** | Dennis opens the agents’ room and the microphone goes live. The roster and territory edition doubles the cast, brings in the new portraits and gives all four bookers cards of their own. |
