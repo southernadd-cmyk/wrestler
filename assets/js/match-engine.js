@@ -1385,7 +1385,7 @@ const Graph=(function makeGraph(){
  function nearfall(M){
   const g=get(M),p=Psy.get(M);
   if(M.t/M.len<.59)return;
-  if(p.position==='outside'){say(M,fill(M,'{W} and {F} roll back into the ring before anyone can attempt a pin.'));p.position='standing';p.down=null;}
+  if(p.position==='outside'){say(M,fill(M,'{W} and {F} beat the referee’s count back into the ring.'));p.position='standing';p.down=null;}
   Psy.nearfall(M);
   g.nearfallCount++;
   g.events.push({id:'scheduled_nearfall',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
