@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   tests:
@@ -16,10 +16,26 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
       - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Use Python for roster assets
+        if: github.ref != 'refs/heads/main'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image packing dependency
+        if: github.ref != 'refs/heads/main'
+        run: python -m pip install pillow
+      - name: Export curated real-ID 48x60 portraits
+        if: github.ref != 'refs/heads/main'
+        run: node tools/export-roster-portraits.cjs assets/portraits
+      - name: Pack new atlas and unified README gallery
+        if: github.ref != 'refs/heads/main'
+        run: python pack_portraits.py assets/portraits --repo . --strict
       - name: Run all simulation tests
         shell: bash
         run: |
@@ -30,3 +46,15 @@ jobs:
             node "$suite"
             echo "::endgroup::"
           done
+      - name: Commit generated portraits after all tests pass
+        if: github.event_name == 'push' && github.ref == 'refs/heads/fix/roster-v4-portraits-movesets'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/portrait-atlas.png assets/portraits/ assets/js/portraits.js assets/css/core.css readme.md tests/roster.test.cjs tests/structure.test.cjs tests/portrait-art.test.cjs
+          if ! git diff --cached --quiet; then
+            git commit -m "Include verified 52 new portraits and unified 80-person roster gallery"
+            git push origin HEAD:fix/roster-v4-portraits-movesets
+          fi
