@@ -7,8 +7,8 @@ const context={};vm.runInNewContext(fs.readFileSync(path.join(root,'assets/js/da
 const d=context.OfficeData;
 const old=[...d.TALENT,...d.FOES],next=spec.new_wrestlers,all=[...old,...next];
 assert.equal(old.length,28);assert.equal(next.length,52);assert.equal(all.length,80);
-assert.deepEqual([...spec.preserved_originals.talent_ids],d.TALENT.map(x=>x.id));
-assert.deepEqual([...spec.preserved_originals.opponent_ids],d.FOES.map(x=>x.id));
+assert.deepEqual(spec.preserved_originals.talent_ids,Array.from(d.TALENT,w=>w.id));
+assert.deepEqual(spec.preserved_originals.opponent_ids,Array.from(d.FOES,w=>w.id));
 assert.equal(new Set(all.map(x=>x.id)).size,80,'all IDs unique');
 assert.equal(new Set(all.map(x=>x.name.toLowerCase())).size,80,'all names unique');
 const allocation={free:12,independent:3,iron:5,coastal:4,northern:4,eastbank:0,meridian:0,redwood:0};
