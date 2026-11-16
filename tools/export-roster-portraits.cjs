@@ -20,7 +20,7 @@ function createCanvas(){
  const ctx={fillStyle:'#000000',scale:1,imageSmoothingEnabled:false,
   setTransform(s){this.scale=s;},
   fillRect(x,y,w,h){
-   const color=String(this.fillStyle);if(!/^#[0-9a-f]{6}$/i.test(color))throw Error('Unexpected drawing colour '+color);
+   let color=String(this.fillStyle);if(/^#[0-9a-f]{3}$/i.test(color))color='#'+[...color.slice(1)].map(x=>x+x).join('');if(!/^#[0-9a-f]{6}$/i.test(color))throw Error('Unexpected drawing colour '+color);
    const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
    const s=this.scale,W=canvas.width,H=canvas.height,p=canvas.pixels;
    for(let j=Math.max(0,Math.round(y*s));j<Math.min(H,Math.round((y+h)*s));j++)
