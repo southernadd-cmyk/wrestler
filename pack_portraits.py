@@ -167,7 +167,7 @@ for(const w of D.V4.newCast){
     if '<!-- LIVING ROSTER START -->' in readme:
         readme=replace_once(readme,r'<!-- LIVING ROSTER START -->.*?<!-- LIVING ROSTER END -->',gallery,'readme.md')
     else:
-        readme=replace_once(readme,r'<p align="center"><img src="docs/readme/living-roster-v4.svg".*?</p>\s*<p align="center"><sub>.*?</sub></p>',gallery,'readme.md')
+        readme=replace_once(readme,r'<p align="center"><img src="docs/readme/living-roster-v4.svg"[^>]*></p>',gallery,'readme.md')
     set_if_changed(readme_path,readme)
 
     if output.size!=(192,1260):raise RuntimeError('Atlas dimensions incorrect')
