@@ -1,6 +1,6 @@
-/* THE OFFICE v4 — living world, opt-in until the new portrait atlas is approved.
+/* THE OFFICE v4 — living roster: automatic migration on new career and on load.
    One wrestler ID => one contract state. All saves stay on the v22 storage key.
-   Legacy careers are migrated only when activate(save) is called. */
+   Legacy save migration is idempotent and preserves prior in-game results. */
 (function(root){'use strict';
 const D=root.OfficeData,G=root.OfficeGame;
 const baseWeek=s=>(s.season-1)*16+s.week;

@@ -25,8 +25,9 @@ function verifyOwnership(s){
 }
 assert.equal(D.ALL.length,80);assert.equal(D.REGISTRY.size,80);assert.equal(D.V4.newCast.length,52);
 for(const w of D.ALL)assert.equal(D.findWrestler(w.id).name,w.name);
-assert.equal(Object.keys(D.PROFILES).length,80,'all 80 workers have active profiles');
-G.fresh();assert.equal(G.S.free.length,20,'all 20 free agents visible by default');
+assert.equal(Object.keys(D.PROFILES).length,28,'legacy profiles load before new-career activation');
+G.fresh();
+assert.equal(Object.keys(D.PROFILES).length,80,'all 80 workers have active profiles');assert.equal(G.S.free.length,20,'all 20 free agents visible by default');
 assert.equal(G.S.worldV4.version,4,'v4 world enabled on every new career');
 const leader=T.promotionRank('dock')[0].id,cardScore=G.S.territory.cards.dock.rocco.score;
 V.activate(G.S);
