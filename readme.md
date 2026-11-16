@@ -195,7 +195,7 @@ Training still runs on a weekly focus and intensity, with blocks, camps and a sp
 - **Learn a big-spot move.** Each wrestler has up to three moves that suit their style and their body. Two weeks for a safe one, three for a risky one, paused when they’re exhausted. Once learned, it’s the move they pitch for the big spot, marked *Learned in training*.
 - **Mic work.** Practise one style of opening. A practised style suits the wrestler better at the microphone, Dennis mentions it in his read, and it fades if it isn’t kept up.
 
-Dennis suggests a session for each wrestler from their last report: a rehearsal after a match that drifted off the sheet, mic work after losing the room, a move for somebody with no big spot of their own. Set sessions in **Roster → Training** or on a wrestler’s profile.
+Dennis suggests a session for each wrestler from their last report: a rehearsal after a match that drifted from the match layout, mic work after losing the room, a move for somebody with no big spot of their own. Set sessions in **Roster → Training** or on a wrestler’s profile.
 
 <p align="center"><img src="docs/readme/06-statistics.svg" alt="STATISTICS DESK — THE FIGURES" width="100%"></p>
 
@@ -259,7 +259,7 @@ To play locally, download the **whole repository** and open `index.html` in a mo
 
 *Engine desk*
 
-| What’s on the sheet | Current count |
+| What’s in the match layout | Current count |
 | --- | ---: |
 | In-ring actions and events (nodes) | 969 |
 | Links between actions and events (transitions) | 6,152 |

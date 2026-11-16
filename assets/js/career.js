@@ -118,7 +118,7 @@ function sessionsTaken(except){return S.roster.filter(w=>w.id!==except&&w.sessio
 function sessionOptions(w){
  const room=root.OfficeRoom,out=[{value:'none',label:'No session',hint:'Dennis has other things to do.'}];
  const busy=!!w.injury||w.program?.type==='camp';
- out.push({value:'rehearse',label:'Rehearse for the next match',hint:'Goes into the next match keener and better at sticking to the sheet. Counts for '+REHEARSAL_WEEKS+' weeks.',disabled:busy});
+ out.push({value:'rehearse',label:'Rehearse for the next match',hint:'Goes into the next match keener and better at sticking to the match layout. Counts for '+REHEARSAL_WEEKS+' weeks.',disabled:busy});
  for(const m of room?room.learnable(w):[]){
   const prog=w.learning?.move===m.id?w.learning.done:0;
   out.push({value:'learn:'+m.id,label:'Learn the '+m.label,hint:(prog?prog+' of '+m.weeks:m.weeks)+' weeks. Becomes '+w.short+'’s own big spot.'+(m.risk?' A risky move.':''),disabled:busy});
@@ -134,7 +134,7 @@ function sessionOptions(w){
 function sessionTip(w){
  const last=S.history.find(h=>h.wid===w.id),room=root.OfficeRoom;
  const soon=booked(w.id)||S.futureBookings.some(c=>c.wid===w.id&&c.eventAbs<=abs()+1);
- if(last?.sheet&&last.sheet.missed+last.sheet.adapted>=2&&!rehearsed(w))return {value:'rehearse',why:'The last match drifted off the sheet.'};
+ if(last?.sheet&&last.sheet.missed+last.sheet.adapted>=2&&!rehearsed(w))return {value:'rehearse',why:'The last match drifted from the match layout.'};
  if(last?.promo&&(last.promo.quality||60)<50){
   const v=room?.VOICE[w.id]||'stoic',style={grand:'imagery',sermon:'imagery',precise:'proof',stoic:'proof',eager:'people',earnest:'people',gruff:'accusation',slippery:'swagger'}[v];
   if(micLevel(w,style)<2)return {value:'mic:'+style,why:'Lost the room at the microphone last time.'};
@@ -386,7 +386,7 @@ function applyResult(c,fin){
  p.matches++;p.best=Math.max(p.best,fin.stars);
  // morale and loyalty
  let dm=(won?4:c.finish==='lose_protected'?(w.ego>=70?-2:-1):(w.ego>=70?-6:-3))+(fin.stars>=3.5?3:0)+(fin.resent?-5:0)+fin.adj.morale+(double?8:0);
- w.morale=clamp(w.morale+dm);if(fin.resent)add(`${w.short} resented being kept to the sheet.`,-1);
+ w.morale=clamp(w.morale+dm);if(fin.resent)add(`${w.short} resented being kept to the match layout.`,-1);
  if(double){w.loyal=clamp(w.loyal+10);add(`${w.short} will never forget you backed them.`,1)}
  if(fin.refused)add(`${w.short} refused to break the finish. Pros don’t.`,0);
  // body

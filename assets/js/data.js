@@ -72,7 +72,7 @@ const PLANS={
 };
 const STYLE_PLAN={Story:'story',Spectacle:'spots',Technical:'technical',Brawl:'brawl'};
 const LEASH={
- script:{name:'Stick to the sheet',blurb:'You call the match. Proud workers may resent it.'},
+ script:{name:'Stick to the match layout',blurb:'You call the match. Proud workers may resent it.'},
  free:{name:'Let them call it',blurb:'They call it live. Great minds shine; green ones get lost.'}
 };
 const TALKS={
