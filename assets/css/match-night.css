@@ -91,6 +91,15 @@
 .past li{display:flex;gap:16px;padding:2px 0}
 .past li .t{flex:none;width:3.4em;opacity:.7}
 .past li.crowd{color:#63BFCB}.past li.bad,.past li.alert{color:#D9776E}.past li.big{color:#D9BC55}.past li.you{color:#BAC4EA}
+/* The commentary booth. Gloria (play-by-play) keeps the default text with a teal tag;
+   Vic (colour) is rose, Ravi (production runner) is olive. Big, crowd and warning lines keep their own colours. */
+.now .spk-pf{flex:none;width:48px;height:60px;image-rendering:pixelated;border:2px solid var(--well-line);align-self:center}
+.now .tx small.spk{display:block;font-size:.42em;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;color:#5FC8B2}
+.past b.spk,.fulllog b.spk{font-weight:400;margin-right:.6em;color:#5FC8B2}
+.now.v-colour .tx small.spk,.past li.v-colour b.spk,.fulllog li.v-colour b.spk{color:#E87A95}
+.now.v-runner .tx small.spk,.past li.v-runner b.spk,.fulllog li.v-runner b.spk{color:#D9A04A}
+.now.v-colour:not(.big):not(.crowd),.past li.v-colour:not(.big):not(.crowd),.fulllog li.v-colour:not(.big):not(.crowd){color:#F0B3C2}
+.now.v-runner:not(.big):not(.crowd):not(.bad),.past li.v-runner:not(.big):not(.crowd):not(.bad),.fulllog li.v-runner:not(.big):not(.crowd):not(.bad){color:#C9D38A}
 .past li:nth-child(n+6){opacity:.7}.past li:nth-child(n+9){opacity:.5}
 .bench{display:flex;flex-direction:column;gap:10px;min-height:0}
 .gauge{margin-bottom:10px}

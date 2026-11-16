@@ -1238,8 +1238,8 @@ const Graph=(function makeGraph(){
     springboard_strike:'The timing was perfect! {A} took a chance and the crowd came with them.',
     springboard_evaded:'A split second too late! That risk changed the whole exchange.',
     crowd_pose:'Colour: There is confidence, and then there is giving an opponent time to think.',
-    floor_counter:'One mistake on the floor can cost the match. The referee is watching.',
-    submission_roll:'They knew the escape before the hold was even applied. Smart wrestling.'
+    floor_counter:'Colour: One mistake on the floor can cost you the match. The referee is watching.',
+    submission_roll:'Colour: They knew the escape before the hold was even on. Smart wrestling.'
    };
    if(reactions[id]){say(M,fill(M,reactions[id],{A:attacker.short,D:defender.short}),'story');g.lastColourAt=M.t;}
   }
@@ -1387,6 +1387,7 @@ const Graph=(function makeGraph(){
   if(M.t/M.len<.59)return;
   if(p.position==='outside'){say(M,fill(M,'{W} and {F} roll back into the ring before anyone can attempt a pin.'));p.position='standing';p.down=null;}
   Psy.nearfall(M);
+  vic(M,'nearfall',.45);
   g.nearfallCount++;
   g.events.push({id:'scheduled_nearfall',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
   g.node='stand_reset';
@@ -1396,6 +1397,7 @@ const Graph=(function makeGraph(){
   const g=get(M),p=Psy.get(M);
   if(p.position==='outside'){apply(M,'roll_inside');g.floorTicks=0;return}
   const prior=M.spots;spot(M,false);const occurred=M.spots>prior;
+  if(occurred)vic(M,'spot',.4);
   g.events.push({id:occurred?'special_spot':'special_deferred',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
   g.node=null;
   if(occurred)root.OfficeSheets?.observe(M,'special_spot',p.control,'spot');
@@ -1473,11 +1475,73 @@ function talkReaction(w,talk){
  return null;
 }
 const rnd=(M,a)=>a[Math.floor(M.r()*a.length)];
+// ---- Vic Bellamy, colour commentary ----
+const VIC={
+ nearfall:[
+  'I had that at three from here. Somebody get the referee an eye test.',
+  'That is what a near-fall is for. That is why you buy a ticket.',
+  'Every kick-out costs you something. I should know, I paid for a few.',
+  'Two and nine-tenths, {pbp}. You will not see closer than that.',
+  'Watch their faces. That kick-out changed what they think is possible.',
+  'If that had been me, I would have stayed down and had a lie-in.'
+ ],
+ spot:[
+  'In my day you did that once a year, and only at Christmas.',
+  'That is going on the poster. Somebody find a photographer.',
+  'I felt that one in my knees, and I am sitting down.',
+  'You do not teach that. You either have the nerve or you do not.',
+  'The front row have spilled their drinks. That is the review written.',
+  'Somebody will be walking funny tomorrow, {pbp}.'
+ ],
+ open:[
+  'They are feeling each other out. Nobody wants to make the first mistake.',
+  'I like this. Old-fashioned. Nobody in a hurry.',
+  'Look at the footwork on {W}. That is years of leisure centres and church halls.'
+ ],
+ shine:[
+  '{W} is listening to the crowd. The good ones always do.',
+  'Never trust a wrestler who smiles in a headlock, {pbp}.',
+  '{W} has that look. I had that look once. Then I had the knee operation.'
+ ],
+ heat:[
+  '{F} is slowing it right down. Smart. Annoying, but smart.',
+  'If I had a pound for every chinlock I have sat through, I would own this building.',
+  'This is the part the crowd pretends not to enjoy. They are loving it.'
+ ],
+ comeback:[
+  'Here it comes. You can hear the building change.',
+  '{W} has been waiting for this. So have I. So have my knees.',
+  'Momentum is a funny thing, {pbp}. You cannot buy it, but you can lose it in a second.'
+ ],
+ stretch:[
+  'Nobody is thinking about the drive home now.',
+  'One mistake ends it. Both of them know it.',
+  'I would not want to be the one who blinks first.'
+ ],
+ great:['That is one for the scrapbook. I will be telling people I was here.','I am not ashamed to say I stood up for that, {pbp}.'],
+ good:['Solid. Honest. The sort of match that pays the rent.','Nobody is going home disappointed. That is the job done.'],
+ poor:['Well. They cannot all be classics.','I have seen better matches in a car park. I have wrestled in a few.']
+};
+function vicRoll(M,tag){let h=2166136261>>>0;for(const c of String(M.o.seed)+'|'+M.t+'|'+tag)h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h/4294967296}
+function vic(M,tag,chance=1,opt={}){
+ const pool=VIC[tag];if(!pool||vicRoll(M,tag)>=chance)return null;
+ M.vicSaid??=[];let c=pool.filter(x=>!M.vicSaid.includes(x));if(!c.length)c=pool;
+ const x=c[Math.floor(vicRoll(M,tag+'#')*c.length)];M.vicSaid.push(x);M.vicAt=M.t;
+ return say(M,fill(M,x,{pbp:D.BOOTH?.pbp.short||'partner'}),'story',{...opt,who:'colour'});
+}
 function fresh(M,a){M.recent??=[];let c=a.filter(x=>!M.recent.includes(x));if(!c.length)c=a.filter(x=>!M.recent.slice(-2).includes(x));if(!c.length)c=a;const x=c[Math.floor(M.r()*c.length)];M.recent.push(x);if(M.recent.length>8)M.recent.shift();return x}
 function pick(M,who){const pool=D.MOVES[who.style]||D.MOVES.Story;return rnd(M,pool)}
 function names(M){return {W:M.w.short,F:M.f.short,WF:M.w.name,FF:M.f.name,wfin:M.w.finisher,ffin:M.f.finisher,venue:M.p.venue}}
 function fill(M,s,extra={}){const n={...names(M),...extra};return s.replace(/\{(\w+)\}/g,(m,k)=>n[k]??m).replace(/(^|[.!?]\s+)([a-z])/g,(m,a,b)=>a+b.toUpperCase())}
-function say(M,text,kind='play',opt={}){const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0};M.queue.push(line);M.log.push(line);return line}
+// Who is talking. Gloria calls the action, Vic adds colour, Ravi brings word from backstage.
+// A "Colour:" or "Road agent:"/"In your ear:" prefix picks the speaker and is dropped from the text.
+const VOICE_PREFIX=[[/^Colour: /,'colour'],[/^(?:Road agent|In your ear): /,'runner']];
+const KIND_VOICE={play:'pbp',story:'pbp',crowd:'pbp',agent:'runner'};
+function say(M,text,kind='play',opt={}){
+ let who=opt.who;
+ for(const [re,v] of VOICE_PREFIX)if(re.test(text)){text=text.replace(re,'');text=text.charAt(0).toUpperCase()+text.slice(1);if(who===undefined)who=v;break}
+ if(who===undefined)who=KIND_VOICE[kind]||null;
+ const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0,who};M.queue.push(line);M.log.push(line);return line}
 
 function phaseFor(frac,M){const ends=Psy.PHASE_ENDS[M?.planId]||Psy.PHASE_ENDS.story;return PHASES.find((p,i)=>frac<ends[i])||PHASES[4]}
 function stars(M,final=false){
@@ -1523,8 +1587,8 @@ function entrances(M){
   fast:'The word from the dressing room is pace. Neither intends to stand still.',
   classic:'A straightforward contest on paper. The details will decide it.'
  };
- if(M.graph?.texture)say(M,notes[M.graph.texture],'story',{at:0});
- if(M.reaction)say(M,M.reaction,'agent',{at:0});
+ if(M.graph?.texture)say(M,notes[M.graph.texture],'story',{at:0,who:M.graph.texture==='fast'?'runner':'pbp'});
+ if(M.reaction)say(M,M.reaction,'agent',{at:0,who:null});
  const prepared=Object.entries(M.prep).filter(([skill,v])=>v>=1.5).sort((a,b)=>b[1]-a[1])[0];
  if(prepared){const lines={ring:`Road agent: ${M.w.short}'s ring drills are evident in the opening exchanges.`,psych:`Road agent: ${M.w.short} looks composed after working on match psychology.`,safe:`Road agent: ${M.w.short} has drilled the safety sequences; they are less likely to go wrong.`,mic:`Road agent: ${M.w.short}'s recent promo work has warmed up this crowd.`};say(M,lines[prepared[0]],'agent',{at:0});}
  say(M,`Ding ding. We’re under way at ${M.p.venue}.`,'bell',{at:0,big:true});
@@ -1581,6 +1645,7 @@ function tick(M){
  if(M.decision)return;
  // play-by-play
  if(!spoke&&M.r()<.64)Graph.step(M);
+ if(!spoke&&M.t-(M.vicAt??-200)>=110)vic(M,M.phase?.id,.22);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  if(M.t>=M.len){M.stage='finish';}
 }
@@ -1649,7 +1714,7 @@ function spot(M,big,forced){
  const possible=moves.filter(x=>!(strengthGap>32&&/suplex|piledriver|backdrop|powerbomb/i.test(x)));
  const move=rnd(M,possible.length?possible:['a running dropkick']);
  if(st<28){
-  say(M,`${A.short} looks for a spectacular attack, but the tired legs will not cooperate. ${Df.short} gets a chance to recover.`,'agent');
+  say(M,`${A.short} looks for a spectacular attack, but the tired legs will not cooperate. ${Df.short} gets a chance to recover.`,'agent',{who:'pbp'});
   M.crowd=clamp(M.crowd-(big?3:1));
   M.bonus-=big?6:2;
   return;
@@ -1668,7 +1733,7 @@ function spot(M,big,forced){
   const injP=(.1+(100-(yours?M.w.safe:M.f.safe))/350)*(big?1.4:1);
   if(M.r()<injP){
    if(hurtYours&&!M.injury){M.injury=1+(M.r()<.4?1:0)+(big&&M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);decide(M,'injury');}
-   else if(!hurtYours&&!M.foeHurt){M.foeHurt=true;say(M,`${M.f.short} is holding the ${rnd(M,PARTS)}. The referee leans in.`,'agent');M.fSt=clamp(M.fSt-25);}
+   else if(!hurtYours&&!M.foeHurt){M.foeHurt=true;say(M,`${M.f.short} is holding the ${rnd(M,PARTS)}. The referee leans in.`,'agent',{who:'pbp'});M.fSt=clamp(M.fSt-25);}
   }
  }else{
   M.spotHits++;const pop=(big?7:3)+M.r()*(big?7:4);M.crowd=clamp(M.crowd+pop*M.plan.crowd);M.bonus+=big?18:10;
@@ -1788,10 +1853,10 @@ function resolve(M,choice){
   if(choice==='keep'){M.timeDefied=true;say(M,`${M.p.voice} is shouting in your headset. You take it off.`)}
  }
  if(d.id==='double'){
-  if(choice==='job'){M.adj.trust+=5;M.adj.heat+=2;say(M,'You stand still. Business is business.')}
+  if(choice==='job'){M.adj.trust+=5;M.adj.heat+=2;say(M,'You stand still. Business is business.','play',{who:null})}
   if(choice==='kick'){
    if(w.pro>=85){M.refused=true;M.adj.morale-=2;say(M,`${w.short} hears you… and shakes the head. ${w.short} is doing the job.`,'agent',{big:true})}
-   else{M.outcome='double';say(M,'You give the signal.','agent')}
+   else{M.outcome='double';say(M,'You give the signal.','agent',{who:null})}
   }
  }
 }
@@ -1942,7 +2007,7 @@ function finish(M){
   else{say(M,`${f.short} hits ${the(f.finisher)}! Cover!`,'play',{...step(),big:true,pause:1});
    say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});
    say(M,`${w.short} KICKS OUT! That was not the plan!`,'crowd',{...step(),big:true,pause:1});}
-  say(M,`${f.short} looks at the referee. The referee looks at the curtain.`,'agent',{...step(6),pause:1});
+  say(M,`${f.short} looks at the referee. The referee looks at the curtain.`,'agent',{...step(6),pause:1,who:'pbp'});
   decisive(M,w,f,step,`${w.name} has gone into business!`);
   say(M,`Chaos at ${M.p.venue}.`,'crowd',{...step(),big:true});
  }else{
@@ -1953,6 +2018,7 @@ function finish(M){
  }
  M.t=at;M.stage='over';
  M.final=summary(M);
+ if(M.outcome!=='nc'&&M.outcome!=='double')vic(M,M.final.stars>=4?'great':M.final.stars>=2.5?'good':'poor',1,{...step(3)});
  say(M,`Final rating: ${starText(M.final.stars)}`,'rating',{...step(2),big:true});
 }
 function summary(M){
@@ -1974,5 +2040,5 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,scout:Graph.scout,note:(M,line)=>say(M,line,'story'),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
+root.OfficeMatch={create,next,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,scout:Graph.scout,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
 })(typeof window!=='undefined'?window:globalThis);

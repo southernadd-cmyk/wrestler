@@ -139,5 +139,11 @@ const PROFILES={
  magnus:{kg:145,trait:'Ring general',preferred:['finish_tease','corner_strikes','mat_hold','power_spinebuster'],signature:['st_big_boot','pw_sidewalk','gd_knee_drop','pw_scoop_powerslam']},
  tori:{kg:63,trait:'Daredevil',preferred:['outside_toss','duck_rebound','aerial_attack','springboard_rise'],signature:['dv_suicide','lc_headscissors','nk_bulldog','st_enzuigiri']}
 };
-root.OfficeData={TALENT,FOES,PROMOS,STABLES,CARD_LINEUPS,SLOTS,SLOT_ORDER,FINISHES,PLANS,STYLE_PLAN,LEASH,TALKS,TRAINING,MOVES,SPOTS,GOALS1,PROFILES};
+// The commentary booth. Each commentary line carries one of these keys as `who`.
+const BOOTH={
+ pbp:{name:'Gloria Mensah',short:'Gloria',role:'Play-by-play',img:'assets/portraits/booth-pbp.png'},
+ colour:{name:'Vic Bellamy',short:'Vic',role:'Colour commentary',img:'assets/portraits/booth-colour.png'},
+ runner:{name:'Ravi Kapoor',short:'Ravi',role:'Production runner',img:'assets/portraits/booth-runner.png'}
+};
+root.OfficeData={TALENT,FOES,PROMOS,STABLES,CARD_LINEUPS,SLOTS,SLOT_ORDER,FINISHES,PLANS,STYLE_PLAN,LEASH,TALKS,TRAINING,MOVES,SPOTS,GOALS1,PROFILES,BOOTH};
 })(typeof window!=='undefined'?window:globalThis);

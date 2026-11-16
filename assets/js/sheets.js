@@ -294,7 +294,7 @@
     // Stars for doing what was agreed, more if the running order told a story.
     M.sheetAdj=(M.sheetAdj||0)+(hit?.01+.035*sc:0);M.crowd=Math.min(100,(M.crowd||0)+(hit?2:1));
    }
-   if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?(s.v>=4?'Just as agreed backstage: '+b.title+'.':'The agreed '+b.title.toLowerCase()+' pays off.'):'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'));
+   if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?(s.v>=4?'Just as agreed backstage: '+b.title+'.':'The agreed '+b.title.toLowerCase()+' pays off.'):'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'),'runner');
    break;
   }
  }
@@ -306,7 +306,7 @@
    if(s.v>=4)M.sheetAdj=(M.sheetAdj||0)-.15;
    b.status='missed';b.why=M.shortened?'The match was cut short; this agreed sequence no longer fit before the finish.':'The opportunity passed before the planned move could be performed.';
    s.changes.push({beat:b.id,at:M.t,reason:b.why});
-   if(root.OfficeMatch?.note&&s.changes.length<=2)root.OfficeMatch.note(M,'Road agent: '+b.title+' did not happen. The wrestlers will need another route to the finish.');
+   if(root.OfficeMatch?.note&&s.changes.length<=2)root.OfficeMatch.note(M,'Road agent: '+b.title+' did not happen. The wrestlers will need another route to the finish.','runner');
   }
  }
  function intervention(M,id){
