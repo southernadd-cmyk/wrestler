@@ -311,6 +311,25 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .talk-line p{margin:2px 0 0}
 .talk-actions{display:grid;gap:6px;margin-top:12px}
 .talk-actions p{margin:0 0 2px;font-weight:600}
+/* promoter meeting: the deal on the table + self-describing footer buttons */
+.deal{margin:10px 0;background:var(--well);color:var(--white);border:2px solid var(--ink)}
+.deal.is-new{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold-lo)}
+.deal>header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--well-line)}
+.deal>header small{color:var(--dim);font-size:15px}
+.deal-chip{padding:1px 8px;border:1px solid var(--dim);color:var(--white);font-size:15px}
+.deal-chip.good{border-color:var(--good);color:var(--good)}.deal-chip.warn{border-color:var(--warn);color:var(--warn)}.deal-chip.bad{border-color:var(--bad);color:var(--bad)}
+.deal dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0}
+.deal dl>div{padding:6px 10px;border-right:1px solid var(--well-line)}
+.deal dl>div:last-child{border-right:0}
+.deal dt{color:var(--dim);font-size:15px}
+.deal dd{margin:2px 0 0;font-weight:600}
+.deal .changed{background:#2A2A3A}
+.deal .changed dd b{color:var(--gold)}
+.deal s{color:var(--dim);font-weight:400;text-decoration-thickness:2px}
+.talk-next{margin:12px 0 0;font-weight:600}
+.btn.two{flex-direction:column;align-items:flex-start;gap:1px;text-align:left}
+.btn.two small{font-size:15px;font-weight:400;color:var(--ink-2)}
+.btn.two.later{margin-right:auto}
 .talk-outcome{margin-top:12px;padding:10px 12px;background:var(--paper);border:2px solid var(--ink);border-left:8px solid var(--blood)}
 .talk-outcome b{font:24px/1 var(--jersey);font-weight:400;color:var(--blood)}
 #toast{position:fixed;right:16px;bottom:calc(46px + env(safe-area-inset-bottom,0px));z-index:80;max-width:min(420px,90vw);background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.5);padding:8px 12px 8px 14px;border-left:8px solid var(--gold);font-weight:600;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .15s,transform .15s}
