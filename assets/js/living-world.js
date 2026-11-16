@@ -101,6 +101,12 @@ function hire(s,teamId,id,week=baseWeek(s)){
  agency.cash-=worker.fee||1000;
  w.contracts[id]=createContract('ai',id,teamId,week);
  agency.hires++;
+ // A transfer must put the worker onto at least one promotion's actual card.
+ const primary={Brawl:'dock',Spectacle:'pulse',Story:'crown',Technical:'union'}[worker.style];
+ for(const p of D.PROMOS)if(p.id===primary||p.id==='crown'){
+  s.territory.cards[p.id]??={};
+  s.territory.cards[p.id][id]??={score:23,matches:0,wins:0};
+ }
  reconcile(s);
  event(w,week,team.manager+' signed '+worker.name+' to '+team.name+'.');
  return true;

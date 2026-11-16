@@ -55,6 +55,23 @@ assert.equal(snapshot(G.S),evolved,'AI decision must run once per week');
 assert.ok(Object.values(G.S.worldV4.agencies).every(a=>Number.isFinite(a.cash)&&Number.isFinite(a.weeklyPayroll)));
 assert.ok(G.S.territory.teams.every(t=>t.roster.length<=12));
 G.save();G.load();verifyOwnership(G.S);
+// A former opponent can become an AI signing, then a free agent,
+// without an undefined signing price or corrupting the player's bank.
+const oldOpponent='red';
+assert.ok(Number.isFinite(D.findWrestler(oldOpponent).fee));
+assert.ok(Number.isFinite(D.findWrestler(oldOpponent).wage));
+const oldContract=V.ownership(G.S,oldOpponent);
+if(oldContract.owner==='ai')assert.ok(V.releaseAI(G.S,oldOpponent,6));
+else if(oldContract.owner==='independent')assert.equal(V.ownership(G.S,oldOpponent).owner,'independent');
+if(V.ownership(G.S,oldOpponent).owner==='market'){
+ assert.ok(G.S.free.some(w=>w.id===oldOpponent));
+ const beforeCash=G.S.cash;
+ if(beforeCash<D.findWrestler(oldOpponent).fee)G.S.cash=D.findWrestler(oldOpponent).fee+1000;
+ assert.equal(G.sign(oldOpponent),null,'released legacy opponent can be signed');
+ assert.ok(Number.isFinite(G.S.cash)&&G.S.cash>=0,'legacy wrestler signing must preserve finite balance');
+ assert.ok(G.S.roster.some(w=>w.id===oldOpponent));
+ verifyOwnership(G.S);
+}
 // A played legacy career must retain its player roster, progression and ranking history.
 G.fresh();assert.equal(G.sign('mara'),null);
 G.S.roster[0].ring=81;G.S.territory.cards.dock.rocco.score=97;

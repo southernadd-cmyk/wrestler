@@ -33,10 +33,10 @@ function transparentPortrait(key){
  return legacyCutouts.has(id)||!!root.OfficeData?.V4?.newCast?.some(w=>w.id===id);
 }
 const legacyLooks={
- mara:{presentation:'female',hair:'long',hairColor:'ink',complexion:'fair',gear:'jacket',gearColor:'crimson'},
- rex:{presentation:'male',hair:'bald',beard:'none',complexion:'tan',gear:'vest',gearColor:'steel'},
+ mara:{presentation:'female',hair:'long',hairColor:'ink',complexion:'fair',gear:'jacket',gearColor:'crimson',headwear:'none',accessory:'none'},
+ rex:{presentation:'male',hair:'bald',beard:'none',complexion:'tan',gear:'vest',gearColor:'steel',headwear:'none',accessory:'none'},
  lyra:{presentation:'female',hair:'long',headwear:'mask',gear:'jacket',gearColor:'violet',complexion:'warm'},
- brick:{presentation:'male',hair:'swept',hairColor:'ginger',beard:'full',complexion:'peach',gear:'vest',gearColor:'orange'}
+ brick:{presentation:'male',hair:'swept',hairColor:'ginger',beard:'full',complexion:'peach',gear:'vest',gearColor:'orange',headwear:'none',accessory:'none'}
 };
 function generated(key,nonce=0,meta={}){
  const o={};const base=String(key)+'|look-v9|'+(nonce||0);
