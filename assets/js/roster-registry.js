@@ -85,7 +85,7 @@ const characterMovePlan={
  cleo:['silas','sm_kneebar']
 };
 const relatedMoves={
- Story:['nk_ddt','pn_inside_cradle','pn_backslide','nk_bulldog','sm_sleeper','st_open_slap','nk_russian_sweep','fr_flying_forearm','fr_atomic_drop','nk_swinging_neckbreaker','pn_small_package','hl_ref_argue'],
+ Story:['nk_ddt','pn_inside_cradle','pn_backslide','nk_bulldog','sm_sleeper','st_open_slap','nk_russian_sweep','fr_flying_forearm','fr_atomic_drop','nk_swinging_neckbreaker','pn_small_package','hl_ref_argue','hl_fake_injury'],
  Technical:['sm_ankle_lock','sm_crossface','sm_kneebar','sm_fujiwara','sm_cross_armbreaker','ch_dragon_screw','ch_drop_toehold','ch_top_wristlock','sx_fisherman','sx_german','pn_backslide','pn_inside_cradle','sm_sleeper','sm_cobra'],
  Brawl:['st_discus','st_big_boot','st_headbutt','pw_gorilla_press','pw_scoop_powerslam','pw_spinebuster_running','pw_sidewalk','gd_ground_pound','gd_elbow_drop','st_throat_thrust','os_barricade','nk_ddt','sx_gutwrench'],
  Spectacle:['ar_450','ar_frog','ar_moonsault','sb_moonsault','sb_dropkick','dv_tope_con_hilo','dv_suicide','lc_tornillo','lc_hurricanrana','lc_headscissors','st_enzuigiri','st_superkick','fr_flying_forearm']
