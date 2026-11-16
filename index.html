@@ -381,6 +381,27 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .score .phase{font:20px/1 var(--tt);color:var(--cyan)}
 .mom{flex:none;height:12px;display:flex;background:var(--dim);border-bottom:2px solid var(--ink)}
 .mom i{display:block;background:var(--gold);transition:width .5s;border-right:2px solid var(--ink)}
+.plan-strip{flex:none;padding:5px 12px 6px;background:var(--deep);border-bottom:2px solid var(--ink)}
+.plan-strip.final{margin:6px 0 8px;border:2px solid var(--ink)}
+.ps-track{position:relative;display:flex;flex-direction:column;gap:3px}
+.ps-lane{position:relative;height:28px;background:var(--well);border:1px solid var(--well-line)}
+.ps-beat{position:absolute;top:2px;bottom:2px;display:flex;align-items:center;gap:6px;padding:0 6px;overflow:hidden;white-space:nowrap;border:2px dashed var(--well-line);border-left:5px solid;color:var(--dim);font-size:16px}
+.ps-beat b{flex:none;font-family:var(--px);font-weight:400;font-size:18px;color:var(--white)}
+.ps-beat span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ps-beat.s-due{border-style:solid;border-color:var(--gold);background:var(--well-hover);color:var(--white)}
+.ps-beat.s-due b{color:var(--gold)}
+.ps-beat.s-achieved{border-style:solid;border-color:var(--good-ink);background:rgba(91,208,106,.2);color:var(--white)}
+.ps-beat.s-achieved b{color:var(--good)}
+.ps-beat.s-adapted{border-style:solid;border-color:var(--gold-lo);background:rgba(255,165,58,.2);color:var(--white)}
+.ps-beat.s-adapted b{color:var(--warn)}
+.ps-beat.s-missed{border-style:solid;border-color:var(--bad-ink);background:repeating-linear-gradient(135deg,rgba(255,107,94,.16) 0 6px,transparent 6px 12px);color:var(--bad)}
+.ps-beat.s-missed b{color:var(--bad)}
+.ps-beat.own-w{border-left-color:var(--gold)}.ps-beat.own-f{border-left-color:var(--white)}.ps-beat.own-either{border-left-color:var(--cyan)}
+.ps-mark{position:absolute;bottom:0;height:6px;width:4px;margin-left:-2px;background:currentColor}
+.s-achieved .ps-mark{background:var(--good)}.s-adapted .ps-mark{background:var(--warn)}.s-missed .ps-mark{background:var(--bad)}
+.ps-head{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--white);box-shadow:0 0 0 1px var(--ink);transition:left .4s linear;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.ps-head{transition:none}}
+@media (max-width:720px){.plan-strip{padding:4px 6px}.ps-lane{height:26px}.ps-beat{padding:0 4px;font-size:14px}.ps-beat b{font-size:15px}.ps-beat span{display:none}}
 .s-live{grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr)}
 .feed{display:flex;flex-direction:column;min-height:0;height:100%}
 .now{flex:none;min-height:3.4em;display:flex;align-items:center;gap:16px;padding:14px 16px;font:clamp(26px,3.2vw,40px)/1.1 var(--tt);border-bottom:2px solid var(--well-line);background:var(--deep)}
@@ -4824,7 +4845,7 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
     // Stars for doing what was agreed, more if the running order told a story.
     M.sheetAdj=(M.sheetAdj||0)+(hit?.01+.035*sc:0);M.crowd=Math.min(100,(M.crowd||0)+(hit?2:1));
    }
-   if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?'The agreed '+b.title.toLowerCase()+' pays off.':'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'));
+   if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?(s.v>=4?'Just as agreed backstage: '+b.title+'.':'The agreed '+b.title.toLowerCase()+' pays off.'):'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'));
    break;
   }
  }
@@ -4859,7 +4880,33 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
    beats:s.nodes.map(b=>({id:b.id,title:b.title,status:b.status,expected:b.actions[0],actual:b.actual,reason:b.why,at:b.at})),
    eventCount:s.ledger.length};
  }
- root.OfficeGraphKernel=K;root.OfficeSheets={MODE,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal};
+ // v3.7 THE MATCH STRIP. The running order laid along the match clock: where each beat is due,
+ // whose it is, and what became of it. Pure data, so the screen only has to draw it.
+ const STRIP_NAME={opening:'Shine',pressure:'Heat',reversal:'Comeback',payoff:'Big spot',finish:'Finish'};
+ function strip(M,{final=false}={}){
+  const s=M?.sheet;if(!s?.signed||!s.nodes?.length)return null;
+  const len=Math.max(1,M.len),frac=Math.min(1,(M.t||0)/len),pct=x=>Math.round(Math.max(0,Math.min(1,x))*1000)/10;
+  const clock=t=>(root.OfficeMatch?.fmt||(x=>Math.round(x)+'s'))(t);
+  const who=o=>o==='w'?M.w?.short:o==='f'?M.f?.short:null;
+  const beats=s.nodes.map((b,i)=>{
+   const start=Math.max(0,b.window[0]),end=Math.min(1,b.window[1]),slot=STRIP_NAME[b.id]||b.id;
+   const move=b.id==='finish'?label(b.actions[0]):b.actions[0]==='scheduled_nearfall'?'a run of near-falls':label(b.actions[0]);
+   const open=frac>=b.window[0]-.07&&frac<=b.window[1];
+   const state=b.status!=='pending'?b.status:final?'missed':open?'due':'waiting';
+   // Where the mark goes: when it happened, or where the chance ran out.
+   const at=b.at!=null?b.at/len:b.status==='missed'||state==='missed'?end:null;
+   const mark=at==null?null:Math.round(Math.max(0,Math.min(1,(at-start)/Math.max(.01,end-start)))*1000)/10;
+   const owner=who(b.owner),whose=owner?owner+'’s ':'';
+   const title=slot+': '+whose+move+'. '+(
+    state==='achieved'?'Landed at '+clock(b.at)+'.':
+    state==='adapted'?'Audible at '+clock(b.at)+': '+label(b.actual)+' instead.':
+    state==='missed'?(b.why||'It never happened.'):
+    state==='due'?'Due now.':'Due between '+clock(b.window[0]*len)+' and '+clock(Math.min(1,b.window[1])*len)+'.');
+   return {id:b.id,slot,move,owner:b.owner,ownerName:owner,lane:i%2,start:pct(start),width:Math.max(4,pct(end)-pct(start)),state,mark,title};
+  });
+  return {beats,head:final?null:pct(frac),done:beats.filter(b=>b.state==='achieved'||b.state==='adapted').length,total:beats.length};
+ }
+ root.OfficeGraphKernel=K;root.OfficeSheets={MODE,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* THE OFFICE v3.5 — the agents' room.
@@ -6680,7 +6727,7 @@ function bell(){
  night.past=[];night.paused=false;
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const bench=`<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
- $('#tv').innerHTML=`${strip(c)}<header class="score"><div class="side you">${face('wrestler',w.id,w.name,'portrait x2')}<h2>${esc(w.short)}</h2><div class="stam" id="sY" title="${esc(w.short)} stamina"><i></i></div></div><div class="mid"><div class="live-stars" id="lStars" aria-label="Live rating">–</div><div class="clock" id="lClock">00:00</div><div class="phase" id="lPhase">Entrances</div></div><div class="side them">${face('wrestler',f.id,f.name,'portrait x2')}<h2>${esc(f.short)}</h2><div class="stam" id="sT" title="${esc(f.short)} stamina"><i></i></div></div></header><div class="mom" title="Momentum" aria-hidden="true"><i id="lMom" style="width:50%"></i></div>
+ $('#tv').innerHTML=`${strip(c)}<header class="score"><div class="side you">${face('wrestler',w.id,w.name,'portrait x2')}<h2>${esc(w.short)}</h2><div class="stam" id="sY" title="${esc(w.short)} stamina"><i></i></div></div><div class="mid"><div class="live-stars" id="lStars" aria-label="Live rating">–</div><div class="clock" id="lClock">00:00</div><div class="phase" id="lPhase">Entrances</div></div><div class="side them">${face('wrestler',f.id,f.name,'portrait x2')}<h2>${esc(f.short)}</h2><div class="stam" id="sT" title="${esc(f.short)} stamina"><i></i></div></div></header><div class="mom" title="Momentum" aria-hidden="true"><i id="lMom" style="width:50%"></i></div><div class="plan-strip" id="lPlan" hidden></div>
  <div class="stage screen s-live">${win('Live commentary',`<div class="feed well"><div class="now" id="lNow" aria-live="polite"><span class="t"></span><span class="tx"></span></div><ol class="past" id="lPast"></ol></div>`,{h:'h3',cls:'quiet',body:'tight',note:`${esc(w.short)} on top: gold bar`})}${win('Ringside',bench,{h:'h3'})}</div><div class="decision" id="decision" hidden></div>`;
  night.stage='live';updateLive();persistNight();schedule(300);
 }
@@ -6714,9 +6761,25 @@ function updateLive(){
  $('#lMom').style.width=(50+M.mom/2)+'%';
  const y=$('#sY'),t=$('#sT');y.querySelector('i').style.width=M.wSt+'%';t.querySelector('i').style.width=M.fSt+'%';y.classList.toggle('low',M.wSt<30);t.classList.toggle('low',M.fSt<30);
  $('#lSheet').textContent=M.sheet?.signed?M.sheet.nodes.filter(b=>b.status==='achieved'||b.status==='adapted').length+'/'+M.sheet.nodes.length+' beats':M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the sheet';$('#lSheet').className=M.offScript?'warnv':'';
+ updateStrip(M);
  $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
  document.querySelectorAll('[data-call]').forEach(b=>b.disabled=!Mx.canCall(M,b.dataset.call));
  const pb=document.querySelector('[data-pause]');if(pb){pb.textContent=night.paused?'Resume':'Pause';pb.setAttribute('aria-pressed',night.paused)}
+}
+// The running order along the match clock. Two lanes so neighbouring beats never sit on top of each other.
+const STRIP_ICON={achieved:'✓',adapted:'↻',missed:'✗',due:'▸'};
+function stripInner(m){
+ const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+ return `<div class="ps-track">${[0,1].map(l=>`<div class="ps-lane">${m.beats.filter(b=>b.lane===l).map(b=>
+  `<div class="ps-beat s-${b.state} own-${b.owner}" style="left:${b.start}%;width:${b.width}%" title="${esc(b.title)}" role="img" aria-label="${esc(b.title)}"><b>${STRIP_ICON[b.state]?STRIP_ICON[b.state]+' ':''}${esc(b.slot)}</b><span>${esc(cap(b.move))}</span>${b.mark!=null?`<em class="ps-mark" style="left:${b.mark}%"></em>`:''}</div>`).join('')}</div>`).join('')}${m.head!=null?`<i class="ps-head" style="left:${m.head}%"></i>`:''}</div>`;
+}
+function stripKey(m){return m?JSON.stringify(m.beats.map(b=>[b.state,b.mark])):''}
+function updateStrip(M){
+ const ps=$('#lPlan');if(!ps)return;
+ const m=OfficeSheets.strip(M);ps.hidden=!m;if(!m)return;
+ const key=stripKey(m);
+ if(ps.dataset.key!==key){ps.innerHTML=stripInner(m);ps.dataset.key=key;}
+ const h=ps.querySelector('.ps-head');if(h)h.style.left=m.head+'%';
 }
 function showDecision(){
  const d=night.M.decision,box=$('#decision');if(!d||!box)return;
@@ -6729,7 +6792,7 @@ function result(){
  clearTimeout(night.timer);const M=night.M,c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
  const fin={...M.final,log:M.log.map(({t,text,kind,big})=>({t,text,kind,big}))};
  const cons=G.applyResult(c,fin);
- const sheetReport=OfficeSheets.report(M);
+ const sheetReport=OfficeSheets.report(M),finalStrip=OfficeSheets.strip(M,{final:true});
  if(sheetReport){
   const h=S().history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===S().season&&x.week===S().week);
   if(h)h.sheet=sheetReport;
@@ -6744,7 +6807,7 @@ function result(){
  const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  night.i++;const more=night.i<night.queue.length;
  const sheetHtml=sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><p class="dim">'+(sheetReport.room?esc(sheetReport.room.premise):'Story: '+esc(OfficeSheets.focusOptions(c,w,f,night.plan?.game||'story').find(x=>x.id===sheetReport.focus)?.title||sheetReport.focus||'Performer-led'))+
-  ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p><div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title)+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span></li>').join('')+'</ol></div>':'';
+  ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p>'+(finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+'<div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title.charAt(0).toUpperCase()+b.title.slice(1))+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span></li>').join('')+'</ol></div>':'';
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the sheet</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
  $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${win('What happened',`${facts}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';persistNight();
