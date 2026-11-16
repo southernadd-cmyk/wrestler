@@ -29,7 +29,7 @@ Match night now starts backstage. Dennis has the booked result, two wrestlers wi
 
 *Production desk*
 
-The entire territory used to work out of one **973 KB** HTML file. The front door is now just **4.6 KB**: the match engine, career, rivals, memory, promos and screens have moved into **11 ordered JavaScript files**, with **four stylesheets** and a separate pixel-art portrait atlas. It is still the same browser game, served directly from GitHub Pages, with **no build step or runtime dependencies**. Match rules and existing career saves are unchanged.
+The entire territory used to work out of one **973 KB** HTML file. The front door is now just **4.6 KB**: the match engine, career, rivals, memory, promos, living-roster contracts and screens now sit in ordered JavaScript files, with separate stylesheets and a pixel-art portrait atlas. It is still the same browser game, served directly from GitHub Pages, with **no build step or runtime dependencies**. Match rules and existing career saves are unchanged.
 
 Dennis has also rearranged the agents’ room. On wide desktop screens, his conversation and the running-order board sit side by side with independent scrolling. On smaller screens they stack, keeping the plan readable while the wrestlers have their say. The regression suite now tests the same scripts the browser loads, in the same order, rather than reading a giant inline script from `index.html`. [See the technical floor plan](docs/architecture.md).
 
@@ -39,10 +39,10 @@ Dennis has also rearranged the agents’ room. On wide desktop screens, his conv
 
 *Territory report*
 
-The circuit now has **80 wrestlers**: 20 free agents, 44 signed to six AI-managed agencies, and 16 who work independently. Four promotions have separate card ladders. Every wrestler has a named identity and a compatible match profile; new characters use interim generated portraits until the dedicated 80-person art set is finished. AI managers sign, release and renew contracts independently, and existing careers are migrated without resetting their history.
+The circuit now has **80 wrestlers**: 20 free agents, 44 signed to six AI-managed agencies, and 16 who work independently. Four promotions have separate card ladders. Every wrestler has a named identity and a compatible match profile. The **52 newcomers now have character-directed 48×60 pixel-art cutouts** based on their casting notes—hair, masks, scars, spectacles and ring colours—rendered in the same pixel system as the game. The original roster keeps its established atlas artwork, except the first four wrestlers are redrawn with truly transparent backgrounds. AI managers sign, release and renew contracts independently, and existing careers are migrated without resetting their history.
 
 <p align="center"><img src="docs/readme/living-roster-v4.svg" alt="The Office 80-person roster poster, showing the original 28 performers and 52 new characters across free agents, independents and six agencies" width="100%"></p>
-<p align="center"><sub><em>ROSTER PHOTO DESK:</em> All 80 named performers in the new living circuit. Game portraits are being refreshed separately.</sub></p>
+<p align="center"><sub><em>ROSTER PHOTO DESK:</em> All 80 named wrestlers and their opening contract affiliations, redrawn for this issue as an old-school pixel-art wrestling bulletin. The actual game uses the matching 48×60 portrait studio for its 52 newcomers.</sub></p>
 
 **The Office** is a text-led wrestling management game played in the browser. You look after one regional stable. Bookers call the result, then you and the wrestlers work out how to get there. Backstage, people remember who took the clean loss, who broke their word, and who made the other wrestler look good in front of a quiet room.
 
@@ -57,7 +57,7 @@ The circuit now has **80 wrestlers**: 20 free agents, 44 signed to six AI-manage
 
 Each booker keeps a separate card, from opener to main event. A result at Dockside goes on Dockside’s record. Repeat appearances can raise your fee there, and an established draw can bring higher billing. See who’s up, who’s down and who’s working elsewhere in **Territory → Card pyramid**.
 
-**Rival stable report.** Mo Devlin starts with five at Iron Borough. Ruth Anwar has four at Gold Coast, and Len Mercer has four at North Circuit. Their results and signings turn up in the circuit news as the weeks pass. If one of your wrestlers takes a rival’s offer, you may find yourself booking against them.
+**Rival stable report.** Mo Devlin starts with nine at Iron Borough, Ruth Anwar has eight at Gold Coast, and Len Mercer has eight at North Circuit. Three more managers are on the road: Dina Kestrel at Eastbank Athletic (six wrestlers), Pavel Singh at Meridian International (six), and Cleo Kells at Redwood Wrestling Agency (seven). Their results, wages, signings and releases change the circuit from week to week. If one of your wrestlers takes a rival’s offer, you may find yourself booking against them.
 
 ---
 
@@ -180,6 +180,8 @@ Node.js is needed for the regression suites only. From the repository root, run 
 
 ```sh
 node tests/roster.test.cjs
+node tests/portrait-art.test.cjs
+node tests/world-v4.test.cjs
 node tests/agents-room.test.cjs
 node tests/season-soak.test.cjs
 node tests/match-flow.test.cjs
