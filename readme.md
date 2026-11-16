@@ -2,7 +2,7 @@
 
 **PRO WRESTLING MANAGEMENT NEWSLETTER**
 
-`ISSUE 3.6` · `15 NOVEMBER 2026` · `MATCH NIGHT EDITION`
+`ISSUE 3.7` · `16 NOVEMBER 2026` · `MATCH NIGHT EDITION`
 
 **[Play The Office](https://southernadd-cmyk.github.io/wrestler/)** · [Read the game source](index.html)
 
@@ -55,9 +55,11 @@ The desktop layout keeps **Office**, **Roster**, **Bookings**, **Territory** and
 
 *From the agents’ room*
 
-Road agent Dennis starts with the booked result and asks how you want the match to work. Two or three situations come up from a pool of 24. The pairing, the promotion, the card position and the terms help decide what comes through the door. A wrestler might pitch a risky move, the booker might ask for four more minutes, or a scout might turn up in row F.
+Road agent Dennis starts with the booked result and asks how you want the match to work. Then he hands you **the running order**: the shine, the heat, the comeback and the big spot, already pencilled in. Each beat has two or three pitches beside it — one from each wrestler and Dennis’s middle-of-the-road option — and you can swap any of them before you agree it. Dennis tells you whether the order tells a story the booked finish can pay off. A clean loser with the big spot, or a comeback from nothing, will get a look.
 
-Read the choice cards for the stakes. A decision can change the starting crowd, the purse, trust, morale, match length or how much risk the wrestlers take. Their moods and the agreed plan stay on screen. Choose the route to the booked result and give them a last word at the curtain. The signed sheet carries the moves you agreed into the match. Leave the rest to the wrestlers and the report only judges the agreed beats.
+Then two or three situations come up from a pool of 24, and they push on the plan you’ve just agreed. The pairing, the promotion, the card position and the terms help decide what comes through the door. A wrestler might pitch a risky move, the booker might ask for four more minutes, or a scout might turn up in row F.
+
+A situation can change a beat (the card will say *Changes the heat*), and some decisions rule moves out altogether. Stay away from the soft corner, or keep everyone off a slack top rope, and Dennis rubs out whatever no longer works and pencils in the nearest thing that does. Read the choice cards for the stakes. A decision can change the starting crowd, the purse, trust, morale, match length or how much risk the wrestlers take. Their moods and the agreed plan stay on screen. Choose the route to the booked result and give them a last word at the curtain. The signed sheet carries the whole running order into the match, with a legal alternative for each beat in case the wrestlers need to call an audible. How faithfully they follow it depends on how they feel about it, how tired they are, how good they are at keeping a match on track and whether the room is giving anything back. Happy, fresh wrestlers land about nine agreed beats in ten. A pair who are sulking land about four. Landed beats lift the star rating, more so when the order tells a story; missed ones cost you.
 
 ## THE MIC IS OPEN
 
@@ -87,7 +89,7 @@ The report compares the signed board with the match. It shows beats performed, a
 
 The browser saves your career automatically, including v3.6 backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v2-era careers can still be loaded. Career progress carries into v3.6. If you upgrade halfway through a v3.5 backstage meeting or promo, that segment starts again in the new format.
+Earlier supported v2-era careers can still be loaded. Career progress carries into v3.6. If you upgrade halfway through a v3.5 backstage meeting or promo, or a v3.6 backstage meeting, that segment starts again in the new format.
 
 To play locally, download the repository and open `index.html` in a modern browser. The game is a single HTML file with its CSS, JavaScript and portraits built in. The simulation runs in the browser. Google Fonts load when available, with system fallbacks.
 
@@ -137,6 +139,7 @@ The suites cover the free-agent market and rival contracts, separate promotion l
 
 | Edition | What was reported |
 | --- | --- |
+| **3.7** | The planning spine. Every match night has a running order of four beats that you can change, Dennis judges whether it tells a story, situations rewrite beats they rule out, and the wrestlers’ mood and condition decide how much of it actually happens. |
 | **3.6** | Dennis opens match night with a changing set of backstage decisions. The promo becomes a duel for the crowd, with a chance to push your luck before the last word. |
 | **3.5** | Dennis opens the agents’ room and the microphone goes live. The roster and territory edition doubles the cast, brings in the new portraits and gives all four bookers cards of their own. |
 | **3.4** | The narration gets a line edit, signature moves belong to individuals and a full-season test goes through the books. The 400-bout balance audit put the average at 2.04 stars and missed beats at 21%. |

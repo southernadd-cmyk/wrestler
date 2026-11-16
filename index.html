@@ -601,6 +601,18 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .tags i.up{color:var(--good)}.tags i.down{color:var(--bad)}.tags i.warn{color:var(--warn)}
 .sheetline{flex:none;display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:6px 12px;background:var(--well);color:var(--white);border-top:2px solid var(--ink)}
 .sheetline b{color:var(--gold);margin-right:4px}.sheetline i{font-style:normal;padding:0 6px;border:1px solid var(--well-line);color:var(--dim)}
+.sheetline i.good{color:var(--good);border-color:var(--good-ink)}.sheetline i.bad{color:var(--bad);border-color:var(--bad-ink)}
+.rorder{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.rorder-row{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px;align-items:stretch}
+.rorder-slot{display:flex;flex-direction:column;justify-content:center;padding:4px 8px;background:var(--well);color:var(--white);border:2px solid var(--ink)}
+.rorder-slot b{color:var(--gold);font-family:var(--px);font-size:20px;font-weight:400}.rorder-slot small{color:var(--dim);font-size:15px;line-height:1.1}
+.rorder-picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:6px}
+.rorder-pick{padding:6px 9px}.decide2.runorder{max-height:74%}.rorder-pick.on{background:var(--gold-hi);box-shadow:var(--bevel-in);outline:2px solid var(--gold-lo);outline-offset:-4px}
+.rorder-pick.on>b::before{content:'✎ ';color:var(--gold-lo)}
+.rorder-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-top:8px}
+.rorder-verdict{margin:0;flex:1 1 260px;padding:5px 9px;border:2px solid var(--ink);background:var(--paper);color:var(--ink)}
+.rorder-verdict.good{border-left:6px solid var(--good-ink)}.rorder-verdict.bad{border-left:6px solid var(--bad-ink)}
+@media (max-width:720px){.decide2.runorder{max-height:none}.rorder-row{grid-template-columns:minmax(0,1fr)}.rorder-picks{grid-template-columns:minmax(0,1fr)}.rorder-foot .btn{width:100%}}
 @media (max-width:700px){
  .match-night-matchup{grid-template-columns:minmax(0,1fr) minmax(0,1fr);row-gap:6px}.match-night-matchup .mid{grid-column:1/-1;grid-row:1}
  .match-night-matchup .portrait.x2{width:44px;height:44px}.match-night-matchup .mu b{font-size:22px}
@@ -2621,6 +2633,7 @@ function stars(M,final=false){
  const avgQ=(M.qSum+M.bonus)/M.qN;
  let s=1.1+(avgQ-40)*.068+(M.crowdPeak-65)*.01+Math.min(3,M.nearfalls)*(M.crowdPeak>=65?.12:.04)-M.botches*.2;
  if(M.shortened)s-=.45;
+ s+=M.sheetAdj||0;
  if(M.minutes>=15&&avgQ>=60)s+=.2;
  if(M.outcome==='double')s+=.25;
  if(M.outcome==='nc')s=Math.min(s,1.5);
@@ -4806,6 +4819,11 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
    b.why=missedBefore.length?'The earlier '+missedBefore.join(', ')+' beat was missed; the performers rebuilt the sequence.':
     exact?'Agreed move performed.':'A legal alternative replaced the original beat.';
    event.cause=b.id;
+   if(s.v>=4&&b.id!=='finish'){
+    const sc=Math.max(0,s.story?.score||0),hit=b.status==='achieved';
+    // Stars for doing what was agreed, more if the running order told a story.
+    M.sheetAdj=(M.sheetAdj||0)+(hit?.01+.035*sc:0);M.crowd=Math.min(100,(M.crowd||0)+(hit?2:1));
+   }
    if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?'The agreed '+b.title.toLowerCase()+' pays off.':'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'));
    break;
   }
@@ -4815,6 +4833,7 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
   const frac=M.t/Math.max(1,M.len);
   for(const b of s.nodes){
    if(b.status!=='pending'||b.id==='finish'||frac<=b.window[1])continue;
+   if(s.v>=4)M.sheetAdj=(M.sheetAdj||0)-.15;
    b.status='missed';b.why=M.shortened?'The match was cut short; this agreed sequence no longer fit before the finish.':'The opportunity passed before the planned move could be performed.';
    s.changes.push({beat:b.id,at:M.t,reason:b.why});
    if(root.OfficeMatch?.note&&s.changes.length<=2)root.OfficeMatch.note(M,'Road agent: '+b.title+' did not happen. The wrestlers will need another route to the finish.');
@@ -5150,7 +5169,7 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
   if(fx.flags?.pushThrough)t.push('Injury risk');
   if(fx.repStake)t.push('Reputation at stake');
   if(fx.skipPromo)t.push('No promo tonight');
-  if(fx.plan)t.push('Goes on the sheet');
+  if(fx.plan){const cur=st.board[fx.plan.slot],S=SLOTS.find(x=>x.id===fx.plan.slot);t.push(!cur?'Goes on the sheet':cur.action===fx.plan.action?'Keeps the running order':'Changes '+S.name.toLowerCase());}
   if(fx.route)t.push('Fixes the finish');
   if(fx.leash)t.push(fx.leash==='free'?'They call it':'You call it');
   return t;
@@ -5183,28 +5202,32 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
     {id:'argue',label:'“Give me the phone.”',hint:'Argue the note away. It works about two times in five.',tags:['Gamble',first(st)+' ▼ if it fails'],
      run(st){st.note.honour=false;if(rng(st.seed,'argue')<.4){st.note.waived=true;log(st,'agent','I don’t know what you said, but '+st.promoter.voice+' has gone very quiet and the note is withdrawn.');}
       else{st.note.argued=true;log(st,'agent','That went well. The note stands, and '+st.promoter.voice+' is now in a mood.');}}}]},
-  {id:'big_spot',kind:'match',weight:3,when:x=>!!(pitchFor(x.st,'payoff','w')||pitchFor(x.st,'payoff','f')),
-   open(st){log(st,'agent','The big spot. One thing they talk about on the drive home. Whose is it?');
-    for(const side of ['w','f']){const c=pitches(st,'payoff').find(k=>k.by===side);if(c)log(st,side,say(st,'big',who(st,side),'big',{move:c.label}));}},
-   title:'The big spot',ask:'Whose moment is it?',
+  {id:'big_spot',kind:'match',weight:3,when:x=>!!(pitchFor(x.st,'payoff','w')&&pitchFor(x.st,'payoff','f')),
+   open(st){
+    // Whoever does not have the big spot on the running order wants it.
+    const cur=st.board.payoff,holder=cur&&cur.owner!=='either'?cur.owner:null;
+    const s=holder?other(holder):(st.w.ego>=st.f.ego?'w':'f');st.rival=s;st.rivalPitch=pitchFor(st,'payoff',s);
+    log(st,'agent',holder?nameOf(st,s)+' has read the running order. '+nameOf(st,s)+' has opinions about the big spot.':'Near-falls for the big spot. Not everybody is happy about that.');
+    log(st,s,say(st,'big',who(st,s),'big',{move:st.rivalPitch.label}),'objection');},
+   title:'Somebody wants the big spot',ask:'Whose moment is it?',
    options(st){
-    const out=[];
-    for(const side of ['w','f']){
-     const c=pitches(st,'payoff').find(k=>k.by===side);if(!c)continue;
-     const O=who(st,side),R=who(st,other(side)),sore=R.ego>=68&&R.pro<88,unsafe=c.risk&&O.safe<58;
-     const fx={[side==='w'?'moodW':'moodF']:3,[side==='w'?'moodF':'moodW']:-((sore?4:0)+(unsafe?3:0))||undefined,crowd:c.risk?2:1,
-      plan:{slot:'payoff',owner:side,by:side,action:c.action,label:c.label,impossible:c.impossible}};
-     out.push({id:'spot_'+side,label:'The '+c.label,hint:O.short+'’s idea.'+(unsafe?' '+R.short+' does not trust '+O.short+' with it.':''),fx,
-      tags:[...tagsOf(st,fx),...(c.risk?['High risk']:[]),...(c.impossible?['Will not work']:[])],
+    const s=st.rival,c=st.rivalPitch,X=who(st,s),Y=who(st,other(s)),cur=st.board.payoff,held=cur&&cur.owner===other(s);
+    const m=s==='w'?'moodW':'moodF',o=s==='w'?'moodF':'moodW',unsafe=c.risk&&X.safe<58;
+    const keep={[m]:X.ego>=68?-5:-2};
+    const give={[m]:4,[o]:held?(Y.ego>=68?-5:-2):undefined,crowd:c.risk?2:1,plan:{slot:'payoff',owner:s,by:s,action:c.action,label:c.label,impossible:c.impossible}};
+    const none={[m]:1,[o]:held?-1:undefined,spice:-1,plan:{slot:'payoff',owner:'either',by:'agent',action:'scheduled_nearfall',label:'A run of near-falls'}};
+    const out=[
+     {id:'keep',label:cur&&cur.action!=='scheduled_nearfall'?'“The '+cur.label+' stays.”':'“Near-falls. As agreed.”',hint:'The running order stands. '+X.short+' takes it badly.',fx:keep,tags:tagsOf(st,keep),
+      run(st){log(st,s,say(st,'grumble',X,'spot'));}},
+     {id:'give',label:'“Fine. The '+c.label+'.”',hint:X.short+' gets the moment.'+(unsafe?' '+Y.short+' does not trust '+X.short+' with it.':''),fx:give,
+      tags:[...tagsOf(st,give),...(c.risk?['High risk']:[]),...(c.impossible?['Will not work']:[])],
       run(st){
-       if(c.impossible)log(st,'agent',pick(['With respect, '+R.short+' weighs the same as a Ford Fiesta. '+O.short+' is not lifting a Ford Fiesta.','I’ll say what nobody else will. '+O.short+' cannot physically do that to '+R.short+'. I’ve seen '+O.short+' struggle with the kit bag.'],st.seed,'imp'));
-       else if(unsafe)log(st,other(side),say(st,'safety',R,'spot'),'objection');
-       else if(sore)log(st,other(side),say(st,'ego',R,'spot'),'objection');
-       log(st,side,say(st,'pleased',O,'spot'));}});
-    }
-    const fx={spice:-1};
-    out.push({id:'spot_none',label:'A run of near-falls instead',hint:AGENT+'’s suggestion. Nobody gets a big spot, and nobody gets dropped.',fx,tags:tagsOf(st,fx),
-     run(st){st.board.payoff={by:'agent',owner:'either',action:'scheduled_nearfall',label:'A run of near-falls'};log(st,'agent','Cheaper on the knees. I approve.');}});
+       if(c.impossible)log(st,'agent',pick(['With respect, '+Y.short+' weighs the same as a Ford Fiesta. '+X.short+' is not lifting a Ford Fiesta.','I’ll say what nobody else will. '+X.short+' cannot physically do that to '+Y.short+'. I’ve seen '+X.short+' struggle with the kit bag.'],st.seed,'imp'));
+       else if(unsafe)log(st,other(s),say(st,'safety',Y,'spot'),'objection');
+       else if(held&&Y.ego>=68)log(st,other(s),say(st,'ego',Y,'spot'),'objection');
+       log(st,s,say(st,'pleased',X,'spot'));}}];
+    if(cur?.action!=='scheduled_nearfall')out.push({id:'nobody',label:'“Then nobody gets it. Near-falls.”',hint:AGENT+'’s compromise. Nobody is thrilled.',fx:none,tags:tagsOf(st,none),
+     run(st){log(st,'agent','Cheaper on the knees. I approve.');}});
     return out;}},
   {id:'debut',kind:'match',weight:3,when:x=>!!pitchFor(x.st,'payoff','w'),
    open(st){const c=pitchFor(st,'payoff','w');st.debut=c;
@@ -5217,7 +5240,7 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
     const c=st.debut,plan={slot:'payoff',owner:'w',by:'w',action:c.action,label:c.label,impossible:c.impossible};
     const b={moodW:-3,morale:-1},d={moodW:1,spice:-1,plan};
     return [
-     {id:'try',label:'“Tonight’s the night.”',hint:'If the '+c.label+' lands, they will talk about it. If it does not, they will also talk about it.',tags:['Gamble',st.w.short+' ▲','Crowd ▲ or ▼','Goes on the sheet'],
+     {id:'try',label:'“Tonight’s the night.”',hint:'If the '+c.label+' lands, they will talk about it. If it does not, they will also talk about it.',tags:['Gamble',st.w.short+' ▲','Crowd ▲ or ▼',st.board.payoff?'Changes the big spot':'Goes on the sheet'],
       run(st){st.mood.w+=4;apply(st,{plan,crowd:rng(st.seed,'debut')<.35+st.w.ring/200?3:-2});log(st,'w',say(st,'pleased',st.w,'debut'));}},
      {id:'wait',label:'“Save it for a bigger night.”',hint:'Sensible. Deflating.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'grumble',st.w,'debut'));}},
      {id:'walk',label:'“Show '+AGENT+' first.”',hint:'A walk-through in the corridor. Safer, and a little less special.',fx:d,tags:tagsOf(st,d),run(st){log(st,'agent','We’ve walked it through. I’ve only got the one bruise.');}}];}},
@@ -5340,8 +5363,8 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
     return [
      {id:'script',label:'“By the sheet.”',hint:'You call it. Proud workers resent it.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,a.moodW?'grumble':'accept',st.w,'leash'));}},
      {id:'free',label:'“Read the room.”',hint:st.w.psych>=75?st.w.short+' is good at this.':st.w.short+' thinks they are good at this.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'pleased',st.w,'leash'));}},
-     {id:'both',label:'“Call it between you.”',hint:'Nothing specific is planned. Both of them like the freedom.',fx:c,tags:[...tagsOf(st,c),'Nothing planned'],
-      run(st){for(const k of ['opening','pressure','reversal','payoff'])delete st.board[k];log(st,'agent','No plan. Lovely. I’ll just stand here, then.');}}];}},
+     {id:'both',label:'“Call it between you.”',hint:'The shine and the heat come off the sheet. The comeback and the big spot stay.',fx:c,tags:[...tagsOf(st,c),'Fewer beats'],
+      run(st){for(const k of ['opening','pressure'])delete st.board[k];log(st,'agent','Half a plan. Lovely. I’ll just stand here for the first ten minutes, then.');}}];}},
   {id:'crowd',kind:'match',weight:3,when:()=>true,
    open(st){const r=rng(st.seed,'crowd');st.crowdMood=st.w.heat<35?'who':r<.5?'cold':'hot';
     log(st,'agent',{who:'I’ve been out front. They don’t know who '+st.w.short+' is. One of them asked me if '+st.w.short+' was the caretaker.',
@@ -5458,6 +5481,92 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
      {id:'accuse',label:'“'+X.short+'. Give it back.”',hint:'If you are right, the promoter is grateful. If you are wrong…',tags:['Gamble',first(st)+' ▲ or '+X.short+' ▼'],
       run(st){if(rng(st.seed,'meat')<.5){apply(st,{trust:2});st.mood[s]-=3;log(st,s,'It was going to waste.');}else{st.mood[s]-=5;log(st,s,'I have never seen a meat tray in my life.');log(st,'agent','That was said with a mouth full of sausage, but I can’t prove anything.');}}}];}}
  ];
+ // ---------------------------------------------------------------------------------------------
+ // v3.7 THE RUNNING ORDER. Every meeting now has a spine: the shine, the heat, the comeback and the
+ // big spot, pencilled in by Dennis and changeable by you. The situations that follow push on that
+ // spine rather than being the only way anything gets planned.
+ // ---------------------------------------------------------------------------------------------
+ const SPINE=SLOTS.filter(S=>S.id!=='finish');
+ const winSideOf=st=>st.finish.startsWith('win')?'w':'f';
+ const slotOwner=(S,c)=>S.id==='payoff'?c.owner:S.owner;
+ const cardsFor=(st,slot)=>pitches(st,slot).filter(c=>c.action);
+ // Anything ruled out tonight: the ring, the promoter's note (if promised) or "nothing risky".
+ function banned(st,id){
+  const n=A[id];if(!n||id==='scheduled_nearfall')return false;
+  const L=st.limits;if(L.banIds.includes(id)||(n.family&&L.ban.includes(n.family)))return true;
+  const N=st.note&&st.note.honour&&!st.note.waived?st.note:null;
+  if(N&&((N.banIds||[]).includes(id)||(n.family&&(N.ban||[]).includes(n.family))))return true;
+  return st.spice<0&&!!n.risk;
+ }
+ function seedBoard(st){
+  // Dennis's pencil: his own middle option for the first three, and the booked winner's big spot
+  // if it is safe and physically possible, otherwise a run of near-falls.
+  const win=winSideOf(st);
+  for(const S of SPINE){
+   const cards=cardsFor(st,S.id);
+   const c=S.id==='payoff'?(cards.find(k=>k.by===win&&!k.risk&&!k.impossible)||cards.find(k=>k.by==='agent')):(cards.find(k=>k.by==='agent')||cards[0]);
+   if(c)st.board[S.id]={by:'agent',owner:c.owner,action:c.action,label:c.label,impossible:!!c.impossible};
+  }
+ }
+ function slotTags(st,S,c){
+  const t=[],owner=slotOwner(S,c);
+  if(c.by==='agent')t.push(c.action==='scheduled_nearfall'?'Safer':'Middle of the road');
+  else if(c.by===owner)t.push(nameOf(st,owner)+' ▲');
+  else t.push(nameOf(st,c.by)+' ▲',nameOf(st,owner)+' ▼');
+  if(S.id==='payoff'&&owner!=='either'&&owner!==winSideOf(st)&&['win_clean','lose_clean'].includes(st.finish))t.push('Then loses clean');
+  if(c.risk)t.push('High risk');
+  if(c.impossible)t.push('Will not work');
+  return t;
+ }
+ function boardView(st){
+  return SPINE.map(S=>{
+   const cur=st.board[S.id];
+   const cards=cardsFor(st,S.id).map((c,i)=>({id:'slot_'+S.id+'_'+i,label:c.label,by:c.by,who:c.by==='agent'?AGENT:nameOf(st,c.by),
+    selected:!!cur&&cur.action===c.action,risk:!!c.risk,impossible:!!c.impossible,tags:slotTags(st,S,c)}));
+   return {slot:S.id,name:S.name,ask:fmt(st,S.ask.replace(/\{O\}/g,S.owner==='f'?'{F}':'{W}')),cards,current:cur?.label||null};
+  });
+ }
+ // Some decisions wreck a beat that was already agreed. Dennis swaps in the nearest thing that still works.
+ function reconcile(st){
+  for(const S of SPINE){
+   const b=st.board[S.id];if(!b||!banned(st,b.action))continue;
+   const alt=cardsFor(st,S.id).find(c=>c.action!==b.action&&!c.impossible&&!banned(st,c.action)&&(S.id==='payoff'||c.owner===b.owner));
+   if(alt){
+    st.board[S.id]={by:'agent',owner:alt.owner,action:alt.action,label:alt.label};
+    log(st,'agent','That rules out the '+b.label+'. '+(alt.action==='scheduled_nearfall'?'The big spot becomes a run of near-falls.':nameOf(st,alt.owner)+' does the '+alt.label+' instead.'));
+   }else{delete st.board[S.id];log(st,'agent','That rules out the '+b.label+', and there’s nothing sensible to put in its place. '+S.name+' will be called in the ring.');}
+   st.reworked=(st.reworked||0)+1;
+  }
+ }
+ // Does the running order tell a story the booked finish can pay off?
+ function story(st){
+  const b=st.board,win=winSideOf(st),notes=[],has=k=>!!b[k]?.action;let score=0;
+  if(has('pressure')&&has('reversal')){score++;notes.push({good:true,text:'Heat, then the comeback. In that order. Lovely.'});}
+  else if(has('reversal')){score--;notes.push({good:false,text:'A comeback from what? Nobody’s been beaten up yet.'});}
+  else if(has('pressure')&&win==='w'){score--;notes.push({good:false,text:st.w.short+' wins without ever fighting back from the heat. It’ll look like a fluke.'});}
+  const p=b.payoff;
+  if(p?.action&&p.owner!=='either'){
+   if(p.impossible){score--;notes.push({good:false,text:'The '+p.label+' won’t work. I’d like that minuted.'});}
+   else if(p.owner===win){score++;notes.push({good:true,text:nameOf(st,p.owner)+' hits the '+p.label+' and wins. The big spot sells the finish.'});}
+   else if(st.finish==='lose_protected'){score++;notes.push({good:true,text:st.w.short+' hits the '+p.label+' and still loses. They’ll go home thinking it could have gone either way.'});}
+   else if(['win_clean','lose_clean'].includes(st.finish)){score--;notes.push({good:false,text:nameOf(st,p.owner)+' hits the '+p.label+', then loses clean. The crowd will feel short-changed.'});}
+  }
+  return {score:clamp(score,-2,2),notes};
+ }
+ function verdict(st){
+  const v=story(st),bad=v.notes.find(n=>!n.good),good=v.notes.find(n=>n.good);
+  return bad?bad.text:good?good.text:'It’s a match. I’ve seen worse. I’ve booked worse.';
+ }
+ function settleBoard(st){
+  // Feelings about the running order land when you agree it, not every time you change your mind.
+  for(const S of SPINE){
+   const b=st.board[S.id];if(!b||b.by==='agent')continue;
+   const owner=S.id==='payoff'?b.owner:S.owner;
+   if(b.by===owner)st.mood[owner]+=2;else{st.mood[b.by]+=2;st.mood[owner]-=2;}
+  }
+  const p=st.board.payoff;
+  if(p&&p.owner!=='either'){const o=other(p.owner),O=who(st,o);if(O.ego>=68&&O.pro<88)st.mood[o]-=3;}
+ }
  const PLAN_HINT={story:'Slow build, big finish.',spots:'Big moves, big pops, big risk.',technical:'Ringcraft first. Purists love it.',brawl:'Loud, messy, tiring.',safe:'Low risk, low ceiling.'};
  function context(st,p){
   const winnerSide=st.finish.startsWith('win')?'w':'f',loserSide=other(winnerSide);
@@ -5483,7 +5592,7 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
   const seed=String(c.id)+'|room|'+w.id+'|'+f.id+'|'+(c.eventAbs||0);
   const lite=x=>({id:x.id,name:x.name,short:x.short,style:x.style,tier:x.tier||null,ring:x.ring||60,psych:x.psych||50,safe:x.safe||65,pro:x.pro||60,ego:x.ego||50,mic:x.mic||50,heat:x.heat||40,fatigue:x.fatigue||0,finisher:x.finisher});
   const pid=p?.id&&NOTES[p.id]?p.id:'dock';
-  const st={v:2,cid:c.id,seed,game:null,finish:c.finish,slot:c.slot,minutes:c.minutes||10,heat:Math.max(c.feudHeat||0,opts.heat||0),
+  const st={v:3,cid:c.id,seed,game:null,finish:c.finish,slot:c.slot,minutes:c.minutes||10,heat:Math.max(c.feudHeat||0,opts.heat||0),
    w:lite(w),f:lite(f),promoter:{id:pid,name:p?.name||'the promoter',voice:p?.voice||'The promoter',likes:p?.likes||null,tv:!!p?.tv},
    stage:'plan',at:0,queue:[],mood:{w:0,f:0},consent:{w:70,f:70},board:{},note:null,limits:{ban:[],banIds:[]},fx:{},flags:{},entrance:[],
    spice:0,leash:null,talk:null,stunt:null,lockRoute:null,skipPromo:false,repStake:0,decided:[],log:[],said:{},base:null,contract:{...c}};
@@ -5512,6 +5621,12 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
    if(id===best)tags.push(st.w.short+'’s style');if(id===foeBest)tags.push(st.f.short+'’s style');
    if(id==='spots')tags.push('More risk');if(id==='safe')tags.push('Safer');
    return {id:'plan_'+id,label:pl.name,hint:PLAN_HINT[id]||pl.blurb||'',tags};});
+  if(st.stage==='board'){
+   const out=[];
+   for(const r of boardView(st))for(const c of r.cards)out.push({id:c.id,label:c.label,hint:r.name+': '+c.who+'’s idea.',tags:c.tags,slot:r.slot,selected:c.selected});
+   out.push({id:'board_ok',label:'Agree the running order',hint:'Then deal with whatever comes up.',tags:[]});
+   return out;
+  }
   if(st.stage==='scene'){const s=current(st);return s.options(st).map(o=>({id:o.id,label:fmt(st,o.label),hint:fmt(st,o.hint||''),tags:(o.tags||tagsOf(st,o.fx||{})).map(t=>fmt(st,t))}));}
   if(st.stage==='finish')return finishCards(st).map((c,i)=>({id:'route_'+i,label:c.label,hint:c.by==='agent'?AGENT+'’s suggestion. It has never let anyone down.':who(st,c.by).short+'’s idea.',
    tags:[...c.hate.map(s=>who(st,s).short+' ▼'),'Fixes the finish']}));
@@ -5528,6 +5643,7 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
    return;
   }
   if(st.stage==='curtain'){
+   if(st.reworked)log(st,'agent','The running order’s had a few rubbings-out. '+verdict(st));
    log(st,'agent','That’s the sheet. '+st.w.short+' is '+word(consent(st,'w'))+'. '+st.f.short+' is '+word(consent(st,'f'))+'. Last word before '+st.w.short+' goes through the curtain?');
   }
  }
@@ -5535,6 +5651,22 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
   if(!st||st.stage==='done')throw Error('The meeting is over');
   const o=options(st).find(x=>x.id===id);
   if(!o)throw Error('Not an option backstage: '+id);
+  if(st.stage==='board'){
+   if(id==='board_ok'){
+    log(st,'you','“That’ll do.”');st.decided.push({stage:'board',situation:'board',id,label:o.label,tags:[]});
+    settleBoard(st);log(st,'agent',verdict(st)+' Right. Now for the things that always come up.');
+    st.stage='scene';st.at=0;enter(st);return st;
+   }
+   const m=id.match(/^slot_(\w+)_(\d+)$/),S=SPINE.find(x=>x.id===m[1]),c=cardsFor(st,S.id)[+m[2]];
+   if(st.board[S.id]?.action===c.action)return st;
+   log(st,'you','“'+S.name+': the '+c.label+'.”');
+   st.decided.push({stage:'board',situation:S.id,id,label:c.label,tags:o.tags});
+   st.board[S.id]={by:c.by,owner:c.owner,action:c.action,label:c.label,impossible:!!c.impossible};
+   if(c.impossible)log(st,'agent','I’ll write it down. I’ll also write down that it won’t work.');
+   else if(c.by!=='agent')log(st,c.by,say(st,'pleased',who(st,c.by),'board'));
+   else log(st,'agent',from(st,'board-agent',['Sensible.','My pick. Obviously the right one.','Good. Nobody gets hurt.']));
+   return st;
+  }
   log(st,'you',/^[“"]/.test(o.label)?o.label:'“'+o.label+'.”');
   st.decided.push({stage:st.stage,situation:st.stage==='scene'?st.queue[st.at]:st.stage,id,label:o.label,tags:o.tags});
   if(st.stage==='plan'){
@@ -5544,12 +5676,15 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
    if(st.game===st.promoter.likes)apply(st,{crowd:2});
    log(st,'agent',{story:'A story. Good. Beginning, middle, end. Try to do them in that order.',spots:'Spots. I’ll move my car away from the building.',technical:'Technical. Lovely. Six people will be in heaven.',
     brawl:'A brawl. I’ll warn the front row and the caretaker.',safe:'Safe. Nobody ever got sued for a headlock.'}[st.game]||'Right.');
-   st.stage='scene';st.at=0;enter(st);return st;
+   seedBoard(st);st.stage='board';
+   log(st,'agent','I’ve pencilled in a running order. Change anything you don’t like. It’s only pencil.');
+   return st;
   }
   if(st.stage==='scene'){
    const s=current(st),real=s.options(st).find(x=>x.id===id);
    if(real.fx)apply(st,real.fx);
    real.run?.(st);
+   reconcile(st);
    st.at++;enter(st);return st;
   }
   if(st.stage==='finish'){
@@ -5578,8 +5713,11 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
    const b=st.board[n.id];
    if(n.id==='finish'){n.route=st.lockRoute||b?.route||null;continue;}
    if(!b||!b.action){n.open=true;n.title=n.title+' (called in the ring)';continue;}
-   n.actions=[b.action];n.owner=b.owner;n.backup=[];
+   n.actions=[b.action];n.owner=b.owner;
    const O=b.owner==='w'?w:b.owner==='f'?f:null;
+   // Alternatives the same wrestler could reach for if the agreed move will not come.
+   n.backup=b.action==='scheduled_nearfall'?[]:cardsFor(st,n.id).filter(c=>c.action!==b.action&&!c.impossible&&c.owner===b.owner&&!banned(st,c.action)).map(c=>c.action).slice(0,2);
+   if(n.id==='payoff'&&b.action!=='scheduled_nearfall')n.backup.push('scheduled_nearfall');
    n.title=n.id==='opening'?O.short+' opens with the '+b.label:n.id==='pressure'?O.short+' takes over with the '+b.label:
     n.id==='reversal'?O.short+' comes back with the '+b.label:O?O.short+' hits the '+b.label:'A run of near-falls';
    n.planned=true;n.impossible=!!b.impossible;if(b.action!=='scheduled_nearfall')planned++;
@@ -5593,8 +5731,8 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
    workerConsent:consent(st,'w'),opponentConsent:consent(st,'f'),finishRoute:st.lockRoute||st.board.finish?.route||null,note,
    limits:{ban:[...new Set(st.limits.ban)],banIds:[...new Set(st.limits.banIds)]},spice:st.spice,fx:{...st.fx},repStake:st.repStake,entrance:st.entrance.slice(),
    game:st.game,leash:st.leash,talk:st.talk||'none',flags:{...st.flags},minutes:Math.max(5,st.minutes+(st.fx.minutes||0)),skipPromo:st.skipPromo,
-   stunt:null,bonus:0,situations:st.queue.slice(),decided:st.decided.map(d=>({...d})),
-   premise:st.queue.length+' things came up backstage; '+planned+' '+(planned===1?'move was':'moves were')+' agreed.',
+   stunt:null,bonus:0,story:story(st),situations:st.queue.slice(),decided:st.decided.map(d=>({...d})),
+   premise:'A running order of '+planned+' '+(planned===1?'move':'moves')+'; '+st.queue.length+' things came up backstage'+(st.reworked?' and '+st.reworked+' '+(st.reworked===1?'beat was':'beats were')+' rewritten':'')+'.',
    speakers:st.log.filter(x=>x.kind!=='you').slice(-6).map(x=>({actor:x.who,text:x.text}))};
  }
  function agreed(st){
@@ -5613,12 +5751,13 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
   return out;
  }
  function view(st){
-  const s=current(st),total=1+st.queue.length+(st.lockRoute?0:1)+1;
-  const done=st.stage==='plan'?0:st.stage==='scene'?1+st.at:st.stage==='finish'?1+st.queue.length:st.stage==='curtain'?total-1:total;
+  const s=current(st),total=2+st.queue.length+(st.lockRoute?0:1)+1;
+  const done=st.stage==='plan'?0:st.stage==='board'?1:st.stage==='scene'?2+st.at:st.stage==='finish'?2+st.queue.length:st.stage==='curtain'?total-1:total;
   return {stage:st.stage,situation:s?.id||null,
-   title:fmt(st,st.stage==='plan'?'What sort of match?':s?s.title:st.stage==='finish'?'The finish':st.stage==='curtain'?'Last word at the curtain':'Signed'),
-   ask:fmt(st,st.stage==='plan'?'The promoter books the result. You decide what kind of match gets there.':s?s.ask:st.stage==='finish'?'How do you get to the booked result?':st.stage==='curtain'?'What do you say as they go out?':''),
+   title:fmt(st,st.stage==='plan'?'What sort of match?':st.stage==='board'?'The running order':s?s.title:st.stage==='finish'?'The finish':st.stage==='curtain'?'Last word at the curtain':'Signed'),
+   ask:fmt(st,st.stage==='plan'?'The promoter books the result. You decide what kind of match gets there.':st.stage==='board'?AGENT+' has pencilled it in. Change anything you like, then agree it.':s?s.ask:st.stage==='finish'?'How do you get to the booked result?':st.stage==='curtain'?'What do you say as they go out?':''),
    step:Math.min(done+1,total),total,options:options(st),log:st.log.slice(),agreed:agreed(st),
+   board:st.stage==='board'?boardView(st):null,story:st.stage==='plan'?null:{...story(st),verdict:verdict(st)},
    moods:{w:{value:consent(st,'w'),word:word(consent(st,'w'))},f:{value:consent(st,'f'),word:word(consent(st,'f'))}}};
  }
  // ---- match-engine hooks ----
@@ -5647,7 +5786,10 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
    return [];
   }
   const id=b.actions[0],n=A[id];if(!n)return [];
-  const keen=clamp((willing(M,side)-35)/11,.3,5);
+  // How hard they chase the agreed move: their mood about the sheet, how tired they are,
+  // how good they are at keeping a match on track, and whether the room is giving anything back.
+  const O=side==='w'?M.w:M.f,tired=clamp(1.15-(O.fatigue||0)/100,.45,1),head=clamp(.55+(O.psych||50)/160,.7,1.15),room=(M.crowd??50)<35?.7:1;
+  const keen=clamp((willing(M,side)-40)/11*tired*head*room,.2,5);
   if(b.impossible){
    if(A[id+'_blk']&&n.requires===position&&!(M.graph?.events||[]).some(e=>e.id===id+'_blk'))return [[id+'_blk',3]];
    return [];
@@ -5710,6 +5852,7 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
   for(const line of o.sheet?.entrance||[])MX.note(M,line);
   if(fx?.crowd){M.crowd=clamp(M.crowd+fx.crowd,0,100);M.crowdStart=M.crowd;}
   if(fx?.bonus)M.bonus=(M.bonus||0)+fx.bonus;
+  const sc=o.sheet?.story?.score||0;if(sc<0)M.sheetAdj=(M.sheetAdj||0)+sc*.12;
   return M;
  };
  // After the bell: the promoter's note is checked and any bonus promised in the room is paid.
@@ -5742,7 +5885,7 @@ root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,poac
   }
   G.save();return out;
  };
- root.OfficeRoom={begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
+ root.OfficeRoom={begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
 })(typeof window!=='undefined'?window:globalThis);
 
 /* THE OFFICE v3.6 — the promo duel.
@@ -6451,7 +6594,7 @@ function beatLabel(x){if(x.startsWith('outcome_')){const k=x.slice(8);return 'fi
 function scrollTalk(id){const el=document.getElementById(id);if(el)el.scrollTop=el.scrollHeight;if(phoneLayout())$('#tv').scrollTop=0}
 function tagChips(tags){
  // What an option will do, at a glance: green helps, red costs, amber is a risk or a gamble.
- const cls=t=>/▲ or ▼|Gamble|risk|Risk|Risky|stake|if |Unlikely|booked|Will not work|either way/.test(t)?'warn':/▼|−£|Shorter|Limits|No promo/.test(t)?'down':/▲|\+£|Safe|Safer|Better|Wins|Builds|Steady/.test(t)?'up':'';
+ const cls=t=>/▲ or ▼|Gamble|risk|Risk|Risky|stake|if |Unlikely|booked|Will not work|either way|loses clean/.test(t)?'warn':/▼|−£|Shorter|Limits|No promo/.test(t)?'down':/▲|\+£|Safe|Safer|Better|Wins|Builds|Steady/.test(t)?'up':'';
  return tags?.length?`<span class="tags">${tags.map(t=>`<i class="${cls(t)}">${esc(t)}</i>`).join('')}</span>`:'';
 }
 function sceneLog(entries,id,w,f,pid){
@@ -6476,7 +6619,7 @@ function matchupBar(c,w,f,middle,wNote,fNote){
 function showMeeting(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan,S0=S();
- if(!P.room||P.room.cid!==c.id||P.room.v!==2){
+ if(!P.room||P.room.cid!==c.id||P.room.v!==3){
   P.room=OfficeRoom.begin(c,w,f,p,{recent:S0.roomRecent||[],heat:G.feud(w.id,f.id)?.heat||0});P.sheet=null;P.confirmed=false;
  }
  const st=P.room,v=OfficeRoom.view(st);
@@ -6489,9 +6632,14 @@ function showMeeting(){
  const wNote=`<span class="${moodCls(v.moods.w)}">${esc(v.moods.w.word)}</span>${w.fatigue>=45?'<span class="bad">tired</span>':''}${w.morale<35?'<span class="bad">low morale</span>':''}`;
  const fNote=`<span class="${moodCls(v.moods.f)}">${esc(v.moods.f.word)}</span>${f.safe<55?'<span class="bad">careless</span>':''}${f.ego>=68?'<span class="bad">big ego</span>':''}${f.psych>=85?'<span class="good">storyteller</span>':''}`;
  const middle=`<b class="fin">${esc(finishLine)}</b><span>${esc(D.SLOTS[c.slot].name)} · ${st.sheet?.minutes||Math.max(5,c.minutes+(st.fx.minutes||0))} minutes · ${esc(p.name)}</span>`;
- const agreed=v.agreed.length?`<div class="sheetline"><b>On the sheet</b>${v.agreed.map(x=>`<i>${esc(x)}</i>`).join('')}</div>`:'';
- const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is on the sheet is what they will try to do. Whether they manage it is another matter.</p></div>`:
-  `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`;
+ const verdictBad=v.story?.notes?.some(n=>!n.good);
+ const agreed=v.agreed.length&&v.stage!=='board'?`<div class="sheetline"><b>On the sheet</b>${v.agreed.map(x=>`<i>${esc(x)}</i>`).join('')}${v.story&&v.stage!=='board'?`<i class="${verdictBad?'bad':'good'}">${esc(OfficeRoom.AGENT)}: ${esc(v.story.verdict)}</i>`:''}</div>`:'';
+ // The running order: four beats down the side, the pitches for each across, Dennis's pencil already in.
+ const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>
+  <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span>${esc(c.who)}’s idea</span>${tagChips(c.tags)}</button>`).join('')}</div></div>`).join('')}</div>
+  <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the running order</button></div></div>`:'';
+ const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is on the sheet is what they will try to do. Whether they manage it is another matter.</p></div>`:
+  `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
  const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
  $('#tv').innerHTML=strip(c,'backstage')+'<div class="stage screen s-back">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
