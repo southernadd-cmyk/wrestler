@@ -1,0 +1,32 @@
+name: Simulation tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Regression suite (Node 22)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run all simulation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          for suite in tests/*.test.cjs; do
+            echo "::group::$suite"
+            node "$suite"
+            echo "::endgroup::"
+          done
