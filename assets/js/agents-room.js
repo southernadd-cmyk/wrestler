@@ -16,7 +16,15 @@
  const VOICE={mara:'grand',roxy:'grand',rex:'gruff',red:'gruff',lyra:'eager',kit:'eager',night:'eager',brick:'stoic',
   juno:'precise',silas:'precise',sol:'earnest',dee:'earnest',rev:'sermon',malik:'slippery',
   dax:'grand',val:'stoic',nico:'eager',cal:'precise',imani:'earnest',otis:'stoic',kira:'gruff',ezra:'precise',
-  dean:'slippery',rocco:'gruff',nova:'precise',ace:'grand',magnus:'slippery',tori:'eager'};
+  dean:'slippery',rocco:'gruff',nova:'precise',ace:'grand',magnus:'slippery',tori:'eager',
+  // v4 newcomers, read from each "voice" line in docs/living-roster-v4.json.
+  faye:'precise',bao:'stoic',zara:'eager',miro:'earnest',aisha:'gruff',ellis:'precise',anya:'grand',nolan:'stoic',
+  ivo:'precise',rina:'grand',priya:'grand',nate:'gruff',cass:'slippery',jun:'precise',sylvia:'gruff',kofi:'eager',
+  mae:'earnest',theo:'precise',soraya:'grand',milo:'eager',winnie:'precise',bronte:'gruff',gus:'stoic',nikita:'gruff',
+  jett:'eager',alina:'grand',cedric:'slippery',marisol:'stoic',felix:'earnest',eira:'precise',gideon:'precise',vera:'precise',
+  tomas:'slippery',ari:'earnest',tomasash:'stoic',kezia:'earnest',dev:'grand',liya:'eager',emmett:'precise',nadia:'grand',
+  leandro:'eager',iris:'stoic',kellan:'eager',ayla:'grand',sasha:'grand',morgan:'slippery',noelle:'precise',ash:'gruff',
+  zane:'earnest',elodie:'grand',bashir:'stoic',cleo:'precise'};
  const voice=w=>VOICE[w.id]||'stoic';
  const LINES={
   pitch:{

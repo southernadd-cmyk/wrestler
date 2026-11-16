@@ -92,12 +92,19 @@ function markMarket(s,id){
  w.contracts[id]=createContract('market',id,null,baseWeek(s));
  reconcile(s);
 }
+// Whether an agency has the room and the budget to take on this worker.
+function canAfford(s,teamId,id){
+ const w=activeWorld(s),worker=D.findWrestler(id),agency=w?.agencies[teamId];
+ if(!agency||!worker||!club(s,teamId))return false;
+ const count=Object.values(w.contracts).filter(c=>c.owner==='ai'&&c.agencyId===teamId).length;
+ return count<agency.cap&&agency.cash>=(worker.fee||1000)+agency.weeklyPayroll*2;
+}
 function hire(s,teamId,id,week=baseWeek(s)){
  const w=activeWorld(s),team=club(s,teamId),worker=D.findWrestler(id);
  if(!w||!team||!worker||!w.agencies[teamId])return false;
  if(!['market','independent'].includes(w.contracts[id]?.owner))return false;
- const agency=w.agencies[teamId],count=Object.values(w.contracts).filter(c=>c.owner==='ai'&&c.agencyId===teamId).length;
- if(count>=agency.cap||agency.cash<(worker.fee||1000)+agency.weeklyPayroll*2)return false;
+ const agency=w.agencies[teamId];
+ if(!canAfford(s,teamId,id))return false;
  agency.cash-=worker.fee||1000;
  w.contracts[id]=createContract('ai',id,teamId,week);
  agency.hires++;
@@ -158,5 +165,5 @@ function evolve(s,t,week,reports){
  if(w.events.length>80)w.events.length=80;
 }
 function ownership(s,id){return activeWorld(s)?.contracts[id]||null}
-root.OfficeWorldV4={activate,reconcile,markPlayer,markMarket,hire,releaseAI,evolve,ownership,activeWorld};
+root.OfficeWorldV4={activate,reconcile,markPlayer,markMarket,canAfford,hire,releaseAI,evolve,ownership,activeWorld};
 })(typeof window!=='undefined'?window:globalThis);

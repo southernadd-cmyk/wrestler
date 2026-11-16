@@ -417,13 +417,18 @@ const DILEMMAS={
   make:w=>({from:w.name,subject:'About my money',body:[`“I’m the reason people buy tickets to these shows. I want that reflected in my pay. Another £50 a week.”`],
    options:[{id:'yes',label:'Give the raise',hint:'Wage +£50 a week. Morale and loyalty up.'},{id:'no',label:'Not now',hint:'Morale and loyalty drop. Rivals may smell an opportunity.'}]}),
   resolve:(m,w,o)=>{w.lastRaise=abs();if(o==='yes'){w.wage+=50;w.morale=clamp(w.morale+10);w.loyal=clamp(w.loyal+8);return `${w.short} shakes your hand.`}w.morale=clamp(w.morale-10);w.loyal=clamp(w.loyal-8);return `${w.short} walks out without a word.`}},
- poach:{when:w=>w.loyal<45&&w.heat>=55,
+ poach:{when:w=>w.loyal<45&&w.heat>=55&&root.OfficeTerritory.canPoach(w),
   make:w=>({from:'A friend at Grand Union',subject:`They’re talking to ${w.short}`,body:[`“Thought you should hear it from me. Our people have been on the phone to ${w.name}. Serious money.”`],
    options:[{id:'bonus',label:'Pay a loyalty bonus (£400)',hint:'Loyalty +20. Costs £400 now.'},{id:'talk',label:'Talk them round',hint:'A coin flip. If it fails, they leave.'},{id:'sell',label:`Let them go, take the fee`,hint:`They leave today. You receive ${money(Math.round(w.fee*.6))}.`}]}),
   resolve:(m,w,o)=>{if(o==='bonus'){S.cash-=400;w.loyal=clamp(w.loyal+20);w.morale=clamp(w.morale+5);return `${w.short} stays. For now.`}
    if(o==='talk'){if(rand()<.35+w.morale/250){w.loyal=clamp(w.loyal+8);return `It works. ${w.short} turns them down.`}
-    leave(w,0);return `${w.short} has signed with ${root.OfficeTerritory.poach(w)}.`;}
-   const fee=Math.round(w.fee*.6);leave(w,fee);return `${w.short} joined ${root.OfficeTerritory.poach(w)}. ${money(fee)} is in the account.`;}},
+    leave(w,0);const team=root.OfficeTerritory.poach(w);
+    return team?`${w.short} has signed with ${team}.`:`${w.short} walks out and is now a free agent.`;}
+   // Only sell if the buyer can still complete the deal; the fee is paid once the signing goes through.
+   if(!root.OfficeTerritory.canPoach(w))return `North Circuit can no longer afford ${w.short}. The offer is withdrawn and ${w.short} stays.`;
+   const fee=Math.round(w.fee*.6);leave(w,0);const team=root.OfficeTerritory.poach(w);
+   if(!team)return `${w.short} has left, but the deal collapsed. No fee was paid and ${w.short} is now a free agent.`;
+   S.cash+=fee;return `${w.short} joined ${team}. ${money(fee)} is in the account.`;}},
  dive:{when:w=>(w.style==='Spectacle'||w.ego>=70)&&!w.injury&&!w.flags.dive,
   make:w=>({from:w.name,subject:'The balcony',body:[`“Next match, I want to dive off the balcony. Nobody on this circuit has done it. People will be talking about it for years.”`],
    options:[{id:'yes',label:'Do it',hint:'A guaranteed huge moment in the next match. If it goes wrong, it goes very wrong.'},{id:'no',label:'Absolutely not',hint:'Morale −6.'}]}),
@@ -481,14 +486,14 @@ const CIRCUIT_TARGETS={
  16:{title:'Season Finale',reward:650,required:6,quality:4,feature:true}
 };
 function circuitStatus(week=8){const t=CIRCUIT_TARGETS[week];if(!t)return null;
- const hist=S.history.filter(h=>h.season===1&&h.week>=5&&h.week<=week),quality=hist.some(h=>h.stars>=t.quality),feature=hist.some(h=>D.SLOTS[h.slot]?.rank>=D.SLOTS.feature.rank);
- return {...t,week,played:hist.length,quality,hasFeature:feature,met:hist.length>=t.required&&quality&&(!t.feature||feature)};
+ const hist=S.history.filter(h=>h.season===1&&h.week>=5&&h.week<=week),qualityMet=hist.some(h=>h.stars>=t.quality),feature=hist.some(h=>D.SLOTS[h.slot]?.rank>=D.SLOTS.feature.rank);
+ return {...t,week,played:hist.length,qualityMet,hasFeature:feature,met:hist.length>=t.required&&qualityMet&&(!t.feature||feature)};
 }
 function reviewCircuit(){if(S.season!==1||!CIRCUIT_TARGETS[S.week]||S.circuitReviews.some(r=>r.week===S.week))return;
  const r=circuitStatus(S.week);S.circuitReviews.push({...r});if(r.met)S.cash+=r.reward;
  msg({from:'Your regional backer',subject:`${r.title} review — ${r.met?'bonus earned':'target missed'}`,kind:'info',body:[
   `Required: ${r.required} matches from week 5 onward, at least one ${r.quality}-star performance${r.feature?', plus a featured/main-event booking':''}.`,
-  `Delivered: ${r.played} matches. Match quality: ${r.quality?'YES':'NO'}. Featured appearance: ${r.hasFeature?'YES':'NO'}.`,
+  `Delivered: ${r.played} matches. Match quality: ${r.qualityMet?'YES':'NO'}. Featured appearance: ${r.hasFeature?'YES':'NO'}.`,
   r.met?`${money(r.reward)} earned. The territory has noticed your stable.`:'No milestone bonus. The next show is still an opportunity to recover.'
  ]});
 }
