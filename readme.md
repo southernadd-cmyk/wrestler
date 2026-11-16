@@ -2,9 +2,9 @@
 
 **PRO WRESTLING MANAGEMENT NEWSLETTER**
 
-`ISSUE 3.8` · `16 NOVEMBER 2026` · `MATCH NIGHT EDITION`
+`ISSUE 3.8.1` · `16 NOVEMBER 2026` · `MATCH NIGHT / PRODUCTION EDITION`
 
-**[Play The Office](https://southernadd-cmyk.github.io/wrestler/)** · [Read the game source](index.html)
+**[Play The Office](https://southernadd-cmyk.github.io/wrestler/)** · [Inside the engine](docs/architecture.md)
 
 ---
 
@@ -13,6 +13,14 @@
 *Lead story*
 
 Match night now starts backstage. Dennis has the booked result, two wrestlers with opinions and a short list of things that need settling before they go out. One night it’s the big spot. The next it’s a cut to your match time, a wrestler refusing to lose clean, or someone who’s turned up without their gear. Then the microphones come out and both wrestlers get a shot at winning over the room.
+
+## A NEW FLOOR PLAN FOR THE OFFICE
+
+*Production desk*
+
+The entire territory used to work out of one **973 KB** HTML file. The front door is now just **4.6 KB**: the match engine, career, rivals, memory, promos and screens have moved into **11 ordered JavaScript files**, with **four stylesheets** and a separate pixel-art portrait atlas. It is still the same browser game, served directly from GitHub Pages, with **no build step or runtime dependencies**. Match rules and existing career saves are unchanged.
+
+Dennis has also rearranged the agents’ room. On wide desktop screens, his conversation and the running-order board sit side by side with independent scrolling. On smaller screens they stack, keeping the plan readable while the wrestlers have their say. The regression suite now tests the same scripts the browser loads, in the same order, rather than reading a giant inline script from `index.html`. [See the technical floor plan](docs/architecture.md).
 
 ## TWENTY-EIGHT WRESTLERS, FOUR DIFFERENT CARDS
 
@@ -115,11 +123,11 @@ The report compares the signed board with the match, starting with the strip as 
 
 *Save desk*
 
-The browser saves your career automatically, including v3.6 backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
+The browser saves your career automatically, including backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v2-era careers can still be loaded. Career progress carries into v3.6. If you upgrade halfway through a v3.5 backstage meeting or promo, or a v3.6 backstage meeting, that segment starts again in the new format.
+Earlier supported v2-era careers can still be loaded. Career progress carries into v3.8.1. If you upgrade halfway through a v3.5 backstage meeting or promo, or a v3.6 backstage meeting, that segment starts again in the new format.
 
-To play locally, download the repository and open `index.html` in a modern browser. The game is a single HTML file with its CSS, JavaScript and portraits built in. The simulation runs in the browser. Google Fonts load when available, with system fallbacks.
+To play locally, download the **whole repository** and open `index.html` in a modern browser. Keep the `assets/` directory alongside it: the page loads the JavaScript, CSS and portrait atlas as separate files. The simulation still runs in the browser, with no installer or build step. Google Fonts load when available, with system fallbacks.
 
 ---
 
@@ -164,15 +172,16 @@ node tests/promo-read.test.cjs
 node tests/training-sessions.test.cjs
 node tests/records.test.cjs
 node tests/catalog.test.cjs
+node tests/structure.test.cjs
 ```
 
 The suites cover the free-agent market and rival contracts, separate promotion ladders, older saves, backstage situations, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
 
-**Continuous integration:** All 14 suites run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
+**Continuous integration:** All 16 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
 
 ### Small print
 
-The software implementation (HTML/CSS/JavaScript source and test code) is available under the [MIT License](LICENSE). The game's original writing, dialogue, characters, portraits, artwork, branding and other creative content are **not** licensed for reuse under MIT, even where embedded in `index.html`. See [Content and copyright](CONTENT-LICENSE.md) for the distinction. Third-party material remains subject to its own licences.
+The software implementation (HTML/CSS/JavaScript source and test code) is available under the [MIT License](LICENSE). The game's original writing, dialogue, characters, portraits, artwork, branding and other creative content are **not** licensed for reuse under MIT, including creative material held in the separate `assets/` files. See [Content and copyright](CONTENT-LICENSE.md) for the distinction. Third-party material remains subject to its own licences.
 
 ## BACK ISSUES
 
@@ -180,6 +189,7 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
+| **3.8.1** | The production desk is rebuilt: 11 JavaScript files, four stylesheets and a separate portrait atlas replace the giant HTML file. The agents’ room gets independent scrolling columns on desktop and a stacked plan on smaller screens. Tests now run against the scripts that ship to players, while existing saves and match rules stay intact. |
 | **3.8** | Charts on the desk, the results, every profile and every match report. The running order is three across on a phone, and the training table fits a laptop screen. Sessions with Dennis. Two a week across the stable: rehearse for the next match, learn a big-spot move, or work on one style at the microphone. Each feeds straight into the agents’ room, the promo or the ring. |
 | **3.7** | The planning spine. Every match night has a running order of four beats that you can change, Dennis judges whether it tells a story, situations rewrite beats they rule out, and the wrestlers’ mood and condition decide how much of it actually happens. The match strip shows the running order on the clock as it plays out, and again on the report. At the microphone, Dennis reads the night first, opponents take an angle you can answer, pushing your luck can pay, and counter and finisher vows go on the strip. |
 | **3.6** | Dennis opens match night with a changing set of backstage decisions. The promo becomes a duel for the crowd, with a chance to push your luck before the last word. |
