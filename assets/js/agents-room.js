@@ -866,7 +866,7 @@
    // Alternatives the same wrestler could reach for if the agreed move will not come.
    n.backup=b.action==='scheduled_nearfall'?[]:cardsFor(st,n.id).filter(c=>c.action!==b.action&&!c.impossible&&c.owner===b.owner&&!banned(st,c.action)).map(c=>c.action).slice(0,2);
    if(n.id==='payoff'&&b.action!=='scheduled_nearfall')n.backup.push('scheduled_nearfall');
-   n.title=n.id==='opening'?O.short+' opens with the '+b.label:n.id==='pressure'?O.short+' takes over with the '+b.label:
+   n.title=n.id==='opening'?O.short+' gets the early edge with the '+b.label:n.id==='pressure'?O.short+' takes over with the '+b.label:
     n.id==='reversal'?O.short+' comes back with the '+b.label:O?O.short+' hits the '+b.label:'A run of near-falls';
    n.planned=true;n.impossible=!!b.impossible;if(b.action!=='scheduled_nearfall')planned++;
   }
