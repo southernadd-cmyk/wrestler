@@ -558,12 +558,12 @@
      precise:'My expenses tonight total £41.60. I have receipts.',earnest:'I hate to ask, but the train was quite a lot.',sermon:'Even a prophet must pay for parking.',slippery:'About my expenses. They’ve gone up. Inflation.'}));},
    title:'{W} wants expenses',ask:'Do you pay?',
    options(st){
-    const win=st.finish.startsWith('win'),a={cash:-40,moodW:5,morale:2},b={moodW:-2,morale:-1},c=win?{moodW:2}:{moodW:-4};
+    const a={cash:-40,moodW:5,morale:2},b={moodW:-2,morale:-1},c={moodW:-1};
     return [
      {id:'pay',label:'“Here’s forty.”',hint:'Out of tonight’s purse.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'sweet',st.w,'petrol'));}},
      {id:'next',label:'“Next time.”',hint:'They have heard this before.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'grumble',st.w,'petrol'));}},
-     {id:'win',label:'“Win tonight and we’ll talk.”',hint:win?st.w.short+' is booked to win, so this is easy to say.':st.w.short+' is booked to lose, and knows it.',fx:c,tags:tagsOf(st,c),
-      run(st){log(st,'w',win?'Then we’ll be talking.':'I’m booked to lose.');if(!win)log(st,'you','“Then we won’t be talking.”');}}];}},
+     {id:'win',label:'“Tear the house down and we’ll talk.”',hint:'A promise. You both know how those go.',fx:c,tags:tagsOf(st,c),
+      run(st){log(st,'w','Then you’d better be watching.');}}];}},
   {id:'scruples',kind:'match',weight:4,when:x=>x.st.finish==='win_dirty'&&x.st.w.pro>=78,
    open(st){log(st,'w',tone(st,'w',{gruff:'I don’t cheat.',earnest:'Cheating? In front of the kids?',precise:'I would prefer a legitimate victory. Statistically, I’ve earned one.',stoic:'Thirty years and I’ve never grabbed the tights. I’ve thought about it.',
      grand:'A dirty win? I? Have you seen my reviews?',eager:'I don’t know how to cheat! Nobody’s shown me!',sermon:'Thou shalt not hold the tights. It is in there somewhere.',slippery:'I’ve no objection to cheating. I object to being seen doing it.'}),'objection');
