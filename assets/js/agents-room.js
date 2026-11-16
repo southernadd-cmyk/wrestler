@@ -347,7 +347,7 @@
  const SITUATIONS=[
   {id:'note',kind:'room',weight:3,when:x=>!!NOTES[x.st.promoter.id],
    open(st){const n=pick(NOTES[st.promoter.id],st.seed,'note');st.note={...n,honour:null};log(st,'agent','A note from '+st.promoter.voice+'. '+n.text);},
-   title:'The promoter’s note',ask:'How do you answer?',
+   title:st=>'The promoter’s note'+(st.note?.short?': '+st.note.short:''),ask:st=>st.promoter.voice+' sent it down from the office. How do you answer?',
    options:st=>[
     {id:'honour',label:'“Tell them we’ll do it.”',hint:'The match is steered to keep the promise.',tags:[first(st)+' ▲ if kept',first(st)+' ▼▼ if broken','Limits the match'],
      run(st){st.note.honour=true;log(st,'agent','I’ll tell them. They’ll be thrilled. They won’t, but I’ll tell them.');}},
@@ -910,8 +910,8 @@
   const s=current(st),total=2+st.queue.length+(st.lockRoute?0:1)+1;
   const done=st.stage==='plan'?0:st.stage==='board'?1:st.stage==='scene'?2+st.at:st.stage==='finish'?2+st.queue.length:st.stage==='curtain'?total-1:total;
   return {stage:st.stage,situation:s?.id||null,
-   title:fmt(st,st.stage==='plan'?'What sort of match?':st.stage==='board'?'The running order':s?s.title:st.stage==='finish'?'The finish':st.stage==='curtain'?'Last word at the curtain':'Signed'),
-   ask:fmt(st,st.stage==='plan'?'The promoter books the result. You decide what kind of match gets there.':st.stage==='board'?AGENT+' has pencilled it in. Change anything you like, then agree it.':s?s.ask:st.stage==='finish'?'How do you get to the booked result?':st.stage==='curtain'?'What do you say as they go out?':''),
+   title:fmt(st,st.stage==='plan'?'What sort of match?':st.stage==='board'?'The running order':s?(typeof s.title==='function'?s.title(st):s.title):st.stage==='finish'?'The finish':st.stage==='curtain'?'Last word at the curtain':'Signed'),
+   ask:fmt(st,st.stage==='plan'?'The promoter books the result. You decide what kind of match gets there.':st.stage==='board'?AGENT+' has pencilled it in. Change anything you like, then agree it.':s?(typeof s.ask==='function'?s.ask(st):s.ask):st.stage==='finish'?'How do you get to the booked result?':st.stage==='curtain'?'What do you say as they go out?':''),
    step:Math.min(done+1,total),total,options:options(st),log:st.log.slice(),agreed:agreed(st),
    board:st.stage==='board'?boardView(st):null,story:st.stage==='plan'?null:{...story(st),verdict:verdict(st)},
    moods:{w:{value:consent(st,'w'),word:word(consent(st,'w'))},f:{value:consent(st,'f'),word:word(consent(st,'f'))}}};
