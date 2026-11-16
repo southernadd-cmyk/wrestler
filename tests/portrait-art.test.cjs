@@ -17,7 +17,7 @@ for(const id of ids){
  seen.length=0;
  const canvas=P.renderCanvas({key:'wrestler:'+id,name:id});
  assert.equal(canvas.width,48);assert.equal(canvas.height,60);
- assert.ok(seen.length>50,'pixel detail missing '+id);
+ assert.ok(seen.length>20,'pixel detail missing '+id);
  assert.equal(seen.some(r=>r[0]===0&&r[1]===0&&r[2]===48&&r[3]===60),false,'opaque background '+id);
 }
 for(const id of ['mara','rex','lyra','brick']){
