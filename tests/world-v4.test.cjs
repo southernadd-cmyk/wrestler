@@ -32,6 +32,10 @@ assert.equal(G.S.worldV4.version,4,'v4 world enabled on every new career');
 const leader=T.promotionRank('dock')[0].id,cardScore=G.S.territory.cards.dock.rocco.score;
 V.activate(G.S);
 for(const w of D.ALL)assert.equal(D.PROFILES[w.id].signature.length,4);
+const newSignatureKeys=D.V4.newCast.map(w=>D.PROFILES[w.id].signature.join('|'));
+assert.equal(new Set(newSignatureKeys).size,52,'every newcomer must have a distinct signature sequence');
+for(const w of D.V4.newCast)assert.ok(D.PROFILES[w.id].preferred.length>=4,'personal preferred moves '+w.id);
+
 assert.deepEqual(sizes(G.S),{market:20,ai:44,independent:16,player:0});
 assert.equal(G.S.territory.teams.length,6);
 assert.deepEqual(Array.from(G.S.territory.teams,t=>t.roster.length),[9,8,8,6,6,7]);
