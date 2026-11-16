@@ -131,6 +131,7 @@
  #tv .score .portrait{width:30px;height:38px}
  #tv .score .stam{height:8px}
  #tv .s-live .now{padding:8px 10px;min-height:72px;gap:7px;font-size:24px}
+ #tv .s-live .now .spk-pf{width:36px;height:45px}
  #tv .s-live .past{max-height:8.5rem;padding:4px 9px;font-size:18px}
  #tv .s-live .call{font-size:14px;min-height:43px;justify-content:center;padding:3px}
  #tv .s-live .call kbd{display:none}

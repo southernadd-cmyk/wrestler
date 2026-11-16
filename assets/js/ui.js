@@ -509,7 +509,12 @@ function dialog(title,html,buttons=[['Close','close']]){
  d.innerHTML=`<header class="tbar"><h2>${esc(title)}</h2></header><div class="dlg">${html}</div><div class="foot">${buttons.map(([l,a,c])=>`<button class="btn ${c||''}" data-dlg="${a}">${l}</button>`).join('')}</div>`;
  d.showModal();return d;
 }
-function logList(log){return `<ol class="fulllog">${(log||[]).map(l=>`<li class="${l.kind} ${l.big?'big':''}"><span class="t">${esc(l.t)}</span><span>${esc(l.text)}</span></li>`).join('')}</ol>`}
+// The commentary booth: whoever is speaking gets a name tag, and the live line gets their portrait.
+function booth(l){return l&&l.who?D.BOOTH?.[l.who]||null:null}
+function voiceCls(l){return booth(l)?' v-'+l.who:''}
+function voiceTag(l){const b=booth(l);return b?`<b class="spk" title="${esc(b.name)}, ${esc(b.role.toLowerCase())}">${esc(b.short)}</b>`:''}
+function voiceFace(l){const b=booth(l);return b?`<img class="spk-pf" src="${esc(b.img)}" alt="${esc(b.name)}" title="${esc(b.name)}, ${esc(b.role.toLowerCase())}" width="48" height="60">`:''}
+function logList(log){return `<ol class="fulllog">${(log||[]).map(l=>`<li class="${l.kind} ${l.big?'big':''}${voiceCls(l)}"><span class="t">${esc(l.t)}</span><span>${voiceTag(l)}${esc(l.text)}</span></li>`).join('')}</ol>`}
 
 /* ---------- continue ---------- */
 function proceed(){
@@ -685,10 +690,10 @@ function showLine(line,quiet){
  const now=$('#lNow');if(!now)return;
  const prev=now.dataset.line?JSON.parse(now.dataset.line):null;
  if(prev&&!quiet)night.past.unshift(prev);
- now.className='now '+line.kind+(line.big?' big':'');now.dataset.line=JSON.stringify(line);
- now.innerHTML=`<span class="t">${esc(line.t)}</span><span class="tx">${esc(line.text)}</span>`;
+ now.className='now '+line.kind+(line.big?' big':'')+voiceCls(line);now.dataset.line=JSON.stringify(line);
+ now.innerHTML=`<span class="t">${esc(line.t)}</span>${voiceFace(line)}<span class="tx">${booth(line)?`<small class="spk">${esc(booth(line).name)}</small>`:''}${esc(line.text)}</span>`;
  night.past=night.past.filter(x=>x.kind!=='count'||x.text.length>8).slice(0,40);
- $('#lPast').innerHTML=night.past.map(l=>`<li class="${l.kind} ${l.big?'big':''}"><span class="t">${esc(l.t)}</span><span>${esc(l.text)}</span></li>`).join('');persistNight();
+ $('#lPast').innerHTML=night.past.map(l=>`<li class="${l.kind} ${l.big?'big':''}${voiceCls(l)}"><span class="t">${esc(l.t)}</span><span>${voiceTag(l)}${esc(l.text)}</span></li>`).join('');persistNight();
 }
 function updateLive(){
  const M=night.M;if(!$('#lClock'))return;
@@ -729,7 +734,7 @@ function decideNow(id){const M=night.M;Mx.resolve(M,id);persistNight();$('#decis
 function doCall(id){const M=night.M;if(!Mx.canCall(M,id))return;Mx.call(M,id);persistNight();updateLive();if(!night.paused)schedule(250);else{const l=Mx.next(M);if(l)showLine(l)}}
 function result(){
  clearTimeout(night.timer);const M=night.M,c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
- const fin={...M.final,log:M.log.map(({t,text,kind,big})=>({t,text,kind,big}))};
+ const fin={...M.final,log:M.log.map(({t,text,kind,big,who})=>({t,text,kind,big,who}))};
  const cons=G.applyResult(c,fin);
  const sheetReport=OfficeSheets.report(M),finalStrip=OfficeSheets.strip(M,{final:true});
  if(sheetReport){
