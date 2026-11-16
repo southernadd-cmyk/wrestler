@@ -380,15 +380,20 @@ function offerPick(o){
  if(sel)pick[o.id]=sel.id;
  return {options,sel};
 }
+// Which of your wrestlers an offer is for: the one it names, or whoever is picked for it in the offer panel.
+function offerWho(o,sel){
+ if(!sel)return `<span class="dim">${o.wid?esc(G.W(o.wid)?.name||'Unavailable')+' (unavailable)':'Nobody free'}</span>`;
+ return o.wid||o.talk?`<b>${esc(sel.name)}</b>`:`<span title="Suggested. Change it in the offer panel.">${esc(sel.name)}</span>`;
+}
 function renderOffers(){
  const s=S(),income=s.card.reduce((t,c)=>t+c.purse,0),out=G.wages()+G.overhead()+G.trainingBill();
  const ledger=`<div class="facts"><div><small>Purses booked this week</small><b>${money(income)}</b></div><div><small>Wages, overheads, coaching</small><b>${money(-out)}</b></div><div><small>Net this week</small><b class="${income-out<0?'neg':'pos'}">${money(income-out)}</b></div><div><small>Meetings left</small><b>${s.focus} of 2</b></div></div>`;
  const offers=s.offers.slice().sort((a,b)=>a.eventAbs-b.eventAbs||a.expiresAbs-b.expiresAbs);
  if(phoneLayout()&&offers.some(o=>o.id===route.id))selOffer=route.id;
  if(!selOffer||!offers.some(o=>o.id===selOffer))selOffer=offers[0]?.id||null;
- const rows=offers.map(o=>{const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);return `<tr class="pick" data-selo="${o.id}" aria-selected="${o.id===selOffer}"><td>${o.eventAbs===G.abs()?'This week':weekLabel(o.eventAbs)}${o.expiresAbs>G.abs()?`<br><span class="dim">Reply by ${weekLabel(o.expiresAbs)}</span>`:''}</td><td><b>${esc(p.name)}</b>${o.tag?` <span class="tag hot">${esc(o.tag)}</span>`:''}</td><td>v ${esc(f.name)}</td><td>${esc(D.SLOTS[o.slot].name)}</td><td>${finishTag(o.finish)}</td><td class="n">${sel?money(G.purse(o,sel)):'<span class="dim">–</span>'}</td></tr>`}).join('');
+ const rows=offers.map(o=>{const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);return `<tr class="pick" data-selo="${o.id}" aria-selected="${o.id===selOffer}"><td>${o.eventAbs===G.abs()?'This week':weekLabel(o.eventAbs)}${o.expiresAbs>G.abs()?`<br><span class="dim">Reply by ${weekLabel(o.expiresAbs)}</span>`:''}</td><td><b>${esc(p.name)}</b>${o.tag?` <span class="tag hot">${esc(o.tag)}</span>`:''}</td><td class="wrap">${offerWho(o,sel)}</td><td class="wrap">v ${esc(f.name)}</td><td>${esc(D.SLOTS[o.slot].name)}</td><td>${finishTag(o.finish)}</td><td class="n">${sel?money(G.purse(o,sel)):'<span class="dim">–</span>'}</td></tr>`}).join('');
  const list=!s.roster.length?`<div class="empty">You need someone under contract before you can take bookings.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`
-  :offers.length?`<div class="well"><table class="grid"><thead><tr><th>Show</th><th>Promoter</th><th>Opponent</th><th>Slot</th><th>Finish</th><th class="n">Purse</th></tr></thead><tbody>${rows}</tbody></table></div>`
+  :offers.length?`<div class="well"><table class="grid"><thead><tr><th>Show</th><th>Promoter</th><th>Wrestler</th><th>Opponent</th><th>Slot</th><th>Finish</th><th class="n">Purse</th></tr></thead><tbody>${rows}</tbody></table></div>`
   :`<div class="empty">No offers left this week. Press Continue to move on.</div>`;
  let detail='<div class="empty">Select an offer.</div>';
  const o=offers.find(x=>x.id===selOffer);
@@ -405,7 +410,7 @@ function renderOffers(){
  }
  const cards=s.roster.length?offers.map(o=>{
   const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);
-  return `<button class="phone-card" data-selo="${o.id}"><span class="phone-card-line"><b>${esc(p.name)}</b><span>${o.eventAbs===G.abs()?'This week':weekLabel(o.eventAbs)}</span></span><span>v ${esc(f.name)} · ${esc(D.SLOTS[o.slot].name)}</span><span class="phone-card-line"><small>${esc(D.FINISHES[o.finish].name)}</small><b>${sel?money(G.purse(o,sel)):'Unavailable'}</b></span></button>`;
+  return `<button class="phone-card" data-selo="${o.id}"><span class="phone-card-line"><b>${esc(p.name)}</b><span>${o.eventAbs===G.abs()?'This week':weekLabel(o.eventAbs)}</span></span><span>${sel?esc(sel.short)+' ':''}v ${esc(f.name)} · ${esc(D.SLOTS[o.slot].name)}</span><span class="phone-card-line"><small>${esc(D.FINISHES[o.finish].name)}</small><b>${sel?money(G.purse(o,sel)):'Unavailable'}</b></span></button>`;
  }).join(''):'';
  paint('s-offers'+phonePane(route.id,o?.id),
   win('Bookings this week',ledger,{area:'ledger',h:'h3',cls:'quiet phone-overview',body:'tight'})+
