@@ -1,0 +1,22 @@
+/* Keep the backstage conversation and the full running order visible and scrollable. */
+@media (min-width:1181px) and (min-height:600px){
+ #tv .s-back>.win{max-width:1520px;min-height:0;height:100%}
+ #tv .s-back .wbody{display:grid;grid-template-columns:minmax(280px,1fr) minmax(0,2.15fr);grid-template-rows:auto minmax(0,1fr) auto;gap:0;overflow:hidden;min-height:0;padding:0}
+ #tv .s-back .match-night-matchup{grid-column:1/-1;grid-row:1;min-width:0}
+ #tv .s-back .scene{grid-column:1;grid-row:2;min-height:0;height:auto;max-height:none;overflow:auto;overscroll-behavior:contain;padding:12px}
+ #tv .s-back .decide2{grid-column:2;grid-row:2;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain;border-top:0;border-left:2px solid var(--ink)}
+ #tv .s-back .sheetline{grid-column:1/-1;grid-row:3;max-height:80px;min-height:0;overflow:auto}
+}
+@media (max-width:1180px), (max-height:599px){
+ #tv .s-back>.win{max-width:1100px;min-height:0}
+ #tv .s-back .wbody{display:flex;flex-direction:column;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0}
+ #tv .s-back .scene{flex:0 0 auto;min-height:105px;height:auto;max-height:min(220px,28dvh);overflow-y:auto;overscroll-behavior:contain}
+ #tv .s-back .decide2{flex:0 0 auto;min-height:0;max-height:none;overflow:visible;border-left:0;border-top:2px solid var(--ink)}
+ #tv .s-back .sheetline{flex:0 0 auto;max-height:none}
+}
+@media (max-width:900px){
+ #tv .s-back>.win{height:auto}
+ #tv .s-back .wbody{overflow:visible}
+ #tv .s-back .scene{min-height:100px;max-height:190px}
+ #tv .s-back .decide2{overflow:visible;max-height:none}
+}

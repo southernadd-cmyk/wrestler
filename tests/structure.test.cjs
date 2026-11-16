@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const root=path.join(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const {allFiles,core,script}=require('./_source.cjs');
+const tags=[...html.matchAll(/<script src="assets\/js\/([^"]+)" defer><\/script>/g)].map(x=>x[1]);
+assert.deepEqual(tags,allFiles,'loaded browser modules must match test order');
+assert.ok(!/<script>/.test(html)&&!/<style>/.test(html),'HTML must not contain the engine or CSS');
+for(const file of allFiles)new vm.Script(fs.readFileSync(path.join(root,'assets','js',file),'utf8'),{filename:file});
+new vm.Script(script);
+assert.ok(core.includes('OfficeMatch')&&core.includes('OfficeGame'));
+for(const f of ['core.css','match-night.css','mobile.css','backstage.css'])assert.ok(fs.statSync(path.join(root,'assets','css',f)).size>0&&html.includes(f));
+const png=fs.readFileSync(path.join(root,'assets','portrait-atlas.png'));
+assert.equal(png.subarray(1,4).toString(),'PNG');
+assert.equal(png.readUInt32BE(16),192);assert.equal(png.readUInt32BE(20),480);
+assert.ok(fs.readFileSync(path.join(root,'assets','css','core.css'),'utf8').includes('../portrait-atlas.png'));
+console.log('PASS modular structure: 11 ordered JavaScript files, 4 CSS files, atlas PNG');

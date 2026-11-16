@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const script = html.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i)[1];
+const {script}=require('./_source.cjs');
 const storage = new Map();
 const localStorage = {
   getItem: key => storage.get(key) ?? null,
@@ -24,11 +24,12 @@ assert.equal(data.TALENT.length, 16);
 assert.equal(data.FOES.length, 12);
 assert.equal(new Set(all.map(w => w.id)).size, 28);
 
-const atlas = Buffer.from(html.match(/\.roster-portrait\{[^}]*base64,([A-Za-z0-9+/=]+)/)[1], 'base64');
+const atlas = fs.readFileSync(path.join(__dirname,'..','assets','portrait-atlas.png'));
 assert.equal(atlas.subarray(12, 16).toString(), 'IHDR');
 assert.equal(atlas.readUInt32BE(16), 4 * 48);
 assert.equal(atlas.readUInt32BE(20), 8 * 60);
-assert.match(html, /\.roster-portrait\{[^}]*background-size:400% 800%/);
+const css = fs.readFileSync(path.join(__dirname,'..','assets','css','core.css'),'utf8');
+assert.match(css, /\.roster-portrait\{[^}]*background-size:400% 800%/);
 const positions = new Set();
 function checkPortrait(key, name) {
   const markup = portraits.avatar({ key, name });

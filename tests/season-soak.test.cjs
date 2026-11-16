@@ -6,7 +6,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-const script=html.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i)?.[1];
+const {script}=require('./_source.cjs');
 const cut=script.indexOf('/* THE OFFICE — interface v3');
 
 function career(seed,style){

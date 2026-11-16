@@ -1,0 +1,9 @@
+'use strict';
+// The headless regression suites execute the exact scripts shipped to the browser, in order.
+const fs=require('node:fs'),path=require('node:path');
+const engineFiles=["portraits.js","data.js","match-engine.js","career.js","territory.js","story.js","memory.js","sheets.js","agents-room.js","promo-duel.js"];
+const allFiles=[...engineFiles,'ui.js'];
+const read=name=>fs.readFileSync(path.join(__dirname,'..','assets','js',name),'utf8');
+const core=engineFiles.map(read).join('\n');
+const script=allFiles.map(read).join('\n');
+module.exports={core,script,engineFiles,allFiles};

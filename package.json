@@ -1,0 +1,9 @@
+{
+  "name": "the-office-wrestling-manager",
+  "version": "3.8.1",
+  "private": true,
+  "description": "Static, deterministic wrestling management game; no runtime or build dependencies",
+  "scripts": {
+    "test": "node tests/run-tests.cjs"
+  }
+}
