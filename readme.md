@@ -1,18 +1,29 @@
-# THE OFFICE
+<p align="center">
+  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue 3.8.1" width="100%">
+</p>
 
-**PRO WRESTLING MANAGEMENT NEWSLETTER**
+<p align="center"><strong>ISSUE 3.8.1</strong> &nbsp; • &nbsp; 16 NOVEMBER 2026 &nbsp; • &nbsp; MATCH NIGHT / PRODUCTION EDITION</p>
 
-`ISSUE 3.8.1` · `16 NOVEMBER 2026` · `MATCH NIGHT / PRODUCTION EDITION`
+<p align="center">
+  <strong><a href="https://southernadd-cmyk.github.io/wrestler/">ENTER THE OFFICE — PLAY THE GAME</a></strong>
+  &nbsp; · &nbsp; <a href="docs/architecture.md">Inside the engine</a>
+  &nbsp; · &nbsp; <a href="#back-issues">Back issues</a>
+</p>
 
-**[Play The Office](https://southernadd-cmyk.github.io/wrestler/)** · [Inside the engine](docs/architecture.md)
+<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
----
+<p align="center"><img src="docs/readme/01-lead-story.svg" alt="LEAD STORY — DENNIS WANTS A WORD" width="100%"></p>
 
 ## DENNIS WANTS A WORD
 
 *Lead story*
 
 Match night now starts backstage. Dennis has the booked result, two wrestlers with opinions and a short list of things that need settling before they go out. One night it’s the big spot. The next it’s a cut to your match time, a wrestler refusing to lose clean, or someone who’s turned up without their gear. Then the microphones come out and both wrestlers get a shot at winning over the room.
+
+<p align="center"><img src="assets/share-card.png" alt="Original pixel-art cover illustration for The Office: wrestlers pictured in an arena" width="100%"></p>
+<p align="center"><sub><em>FROM THE PICTURE DESK:</em> The original game's pixel-art cover. Artwork, not a gameplay screenshot.</sub></p>
+
+<p align="center"><img src="docs/readme/02-production.svg" alt="PRODUCTION DESK — BEHIND THE CURTAIN" width="100%"></p>
 
 ## A NEW FLOOR PLAN FOR THE OFFICE
 
@@ -22,11 +33,16 @@ The entire territory used to work out of one **973 KB** HTML file. The front doo
 
 Dennis has also rearranged the agents’ room. On wide desktop screens, his conversation and the running-order board sit side by side with independent scrolling. On smaller screens they stack, keeping the plan readable while the wrestlers have their say. The regression suite now tests the same scripts the browser loads, in the same order, rather than reading a giant inline script from `index.html`. [See the technical floor plan](docs/architecture.md).
 
+<p align="center"><img src="docs/readme/03-territory.svg" alt="TERRITORY REPORT — 28 WRESTLERS, FOUR CARDS" width="100%"></p>
+
 ## TWENTY-EIGHT WRESTLERS, FOUR DIFFERENT CARDS
 
 *Territory report*
 
 The circuit has doubled to **28 wrestlers**. Twelve are on the open market when you arrive, thirteen have signed with rival managers, and three take bookings independently. Everyone has a pixel-art portrait and four signature moves. The rival managers can sign someone off the same list you’re looking at.
+
+<p align="center"><img src="assets/portrait-atlas.png" alt="Original 28-wrestler pixel-art portrait atlas used by the game" width="192"></p>
+<p align="center"><sub><em>ROSTER PHOTO DESK:</em> The game's original pixel-art portrait atlas.</sub></p>
 
 **The Office** is a text-led wrestling management game played in the browser. You look after one regional stable. Bookers call the result, then you and the wrestlers work out how to get there. Backstage, people remember who took the clean loss, who broke their word, and who made the other wrestler look good in front of a quiet room.
 
@@ -44,6 +60,8 @@ Each booker keeps a separate card, from opener to main event. A result at Docksi
 **Rival stable report.** Mo Devlin starts with five at Iron Borough. Ruth Anwar has four at Gold Coast, and Len Mercer has four at North Circuit. Their results and signings turn up in the circuit news as the weeks pass. If one of your wrestlers takes a rival’s offer, you may find yourself booking against them.
 
 ---
+
+<p align="center"><img src="docs/readme/04-first-week.svg" alt="FIRST WEEK GUIDE — NEW CAREER" width="100%"></p>
 
 ## FIRST WEEK WITH DENNIS
 
@@ -77,11 +95,15 @@ Training still runs on a weekly focus and intensity, with blocks, camps and a sp
 
 Dennis suggests a session for each wrestler from their last report: a rehearsal after a match that drifted off the sheet, mic work after losing the room, a move for somebody with no big spot of their own. Set sessions in **Roster → Training** or on a wrestler’s profile.
 
+<p align="center"><img src="docs/readme/06-statistics.svg" alt="STATISTICS DESK — THE FIGURES" width="100%"></p>
+
 ## THE FIGURES
 
 *Statistics desk*
 
 The office keeps its own records now, and draws them. **Desk → This week** shows the bank balance against the weekly bill. **Territory → Results** charts every match the stable has worked this season, wrestler by wrestler. Each **wrestler profile** shows their ring, mic, psychology and safety week by week, and their star ratings match by match. The **match report** draws the crowd through the bout, with every beat of the running order marked where it landed, changed or slipped away.
+
+<p align="center"><img src="docs/readme/05-match-night.svg" alt="MATCH NIGHT — BACKSTAGE TO RINGSIDE" width="100%"></p>
 
 ## TEN MINUTES TO DOORS
 
@@ -183,6 +205,8 @@ The suites cover the free-agent market and rival contracts, separate promotion l
 
 The software implementation (HTML/CSS/JavaScript source and test code) is available under the [MIT License](LICENSE). The game's original writing, dialogue, characters, portraits, artwork, branding and other creative content are **not** licensed for reuse under MIT, including creative material held in the separate `assets/` files. See [Content and copyright](CONTENT-LICENSE.md) for the distinction. Third-party material remains subject to its own licences.
 
+<p align="center"><img src="docs/readme/07-archive.svg" alt="BACK ISSUES — THE DEVELOPMENT ARCHIVE" width="100%"></p>
+
 ## BACK ISSUES
 
 *From the files*
@@ -216,6 +240,6 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 </details>
 
----
+<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
 *Layout references* · [Pro Wrestling Torch print covers](https://www.pwtorch.com/artman2/publish/wadekellerdotcom/46258.shtml) · [Wrestling Observer back issues](https://www.f4wonline.com/news/daily-updates/first-decade-wrestling-observer-hall-of-fame-issues-special-157576/)

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 140" role="img" aria-labelledby="t d">
+<title id="t">FROM THE ARCHIVE</title><desc id="d">BACK ISSUES / THE PAPER TRAIL — an illustrated vintage wrestling newsletter section heading.</desc>
+<defs><pattern id="halftone" width="11" height="11" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.5" fill="#101c2b" opacity=".24"/></pattern></defs>
+<rect width="1200" height="140" fill="#efe1c3"/><rect x="5" y="5" width="1190" height="130" fill="none" stroke="#152239" stroke-width="6"/>
+<rect x="17" y="17" width="118" height="106" fill="#c52c26"/><rect x="19" y="19" width="114" height="102" fill="none" stroke="#efe1c3" stroke-width="2"/>
+<text x="76" y="94" text-anchor="middle" fill="#fff6dc" font-family="Impact,Arial,sans-serif" font-weight="900" font-size="74">07</text>
+<rect x="145" y="15" width="1040" height="23" fill="#152239"/>
+<text x="162" y="32" fill="#efe1c3" font-size="14" font-family="Georgia,serif" font-weight="700" letter-spacing="3">BACK ISSUES / THE PAPER TRAIL</text>
+<text x="161" y="100" fill="#152239" font-size="63" font-weight="900" letter-spacing=".4" font-family="Impact,'Arial Narrow',Arial,sans-serif">FROM THE ARCHIVE</text>
+<rect x="159" y="110" width="810" height="7" fill="#c52c26"/>
+<rect x="986" y="45" width="200" height="76" fill="url(#halftone)"/>
+<polygon points="1082.0,53.0 1087.1,69.9 1101.9,60.3 1095.0,76.5 1112.5,78.6 1096.8,86.6 1108.8,99.5 1091.6,95.5 1092.6,113.1 1082.0,99.0 1071.4,113.1 1072.4,95.5 1055.2,99.5 1067.2,86.6 1051.5,78.6 1069.0,76.5 1062.1,60.3 1076.9,69.9" fill="#c52c26" stroke="#152239" stroke-width="3"/>
+<text x="1082" y="90" text-anchor="middle" fill="#fff6dc" font-size="23" font-family="Georgia,serif" font-weight="900">★</text>
+</svg>
