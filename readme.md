@@ -140,6 +140,10 @@ To play locally, download the repository and open `index.html` in a modern brows
 
 The match graph and career simulation use seeded logic so a saved sequence can be resumed deterministically. Reversals and applicable blocks sit alongside the authored moves. Narration and wrestler dialogue are original, informed by match structure, performer interviews and wrestling history. [Match graph and research](docs/match-graph.md) · [Promo research](docs/promo-graph.md)
 
+### Source files
+
+The game is now structured as a small HTML entry point, ordered JavaScript modules in `assets/js/`, CSS files in `assets/css/`, and a separate portrait atlas PNG. It stays a static GitHub Pages game with **no build step**. See the [architecture guide](docs/architecture.md) and run all tests with `npm test` or `node tests/run-tests.cjs`.
+
 ### On the record
 
 Node.js is needed for the regression suites only. From the repository root, run any of the following:

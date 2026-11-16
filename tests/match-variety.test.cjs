@@ -3,7 +3,7 @@
 // No external dependencies: node tests/match-variety.test.cjs
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-const script=html.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i)?.[1];
+const {script}=require('./_source.cjs');
 assert.ok(script,'inline game present');
 new vm.Script(script); // The entire game, including the Office UI, must parse.
 const cut=script.indexOf('/* THE OFFICE — interface v3');

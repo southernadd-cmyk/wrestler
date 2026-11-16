@@ -6,7 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-const script=html.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i)?.[1];
+const {script}=require('./_source.cjs');
 assert.ok(script,'standalone game has inline logic');
 const cut=script.indexOf('/* THE OFFICE — interface v3');
 assert.ok(cut>0);
