@@ -2,7 +2,7 @@
 
 **PRO WRESTLING MANAGEMENT NEWSLETTER**
 
-`ISSUE 3.7` · `16 NOVEMBER 2026` · `MATCH NIGHT EDITION`
+`ISSUE 3.8` · `16 NOVEMBER 2026` · `MATCH NIGHT EDITION`
 
 **[Play The Office](https://southernadd-cmyk.github.io/wrestler/)** · [Read the game source](index.html)
 
@@ -50,6 +50,18 @@ You get **£2,250**, an empty locker room and four promoters with different idea
 5. Read the match report and check what ended up in **Territory → Results**. A good showing can build a programme. A promise you missed can come back to the office with you.
 
 The desktop layout keeps **Office**, **Roster**, **Bookings**, **Territory** and **Game** in the sidebar, with back and forward buttons at the top. Wrestler and free-agent lists are sortable. On a smaller screen the panels stack vertically.
+
+## A WORD WITH DENNIS
+
+*Training ground*
+
+Training still runs on a weekly focus and intensity, with blocks, camps and a specialist coach. On top of that, a wrestler can spend **a session with Dennis**. He has time for **two sessions a week across the whole stable**, so somebody always misses out.
+
+- **Rehearse for the next match.** The wrestler walks into the agents’ room keener, Dennis tells the room they’ve been through it, and they stick closer to the running order in the ring. One rehearsal lasts two weeks or one match.
+- **Learn a big-spot move.** Each wrestler has up to three moves that suit their style and their body. Two weeks for a safe one, three for a risky one, paused when they’re exhausted. Once learned, it’s the move they pitch for the big spot, marked *Learned in training*.
+- **Mic work.** Practise one style of opening. A practised style suits the wrestler better at the microphone, Dennis mentions it in his read, and it fades if it isn’t kept up.
+
+Dennis suggests a session for each wrestler from their last report: a rehearsal after a match that drifted off the sheet, mic work after losing the room, a move for somebody with no big spot of their own. Set sessions in **Roster → Training** or on a wrestler’s profile.
 
 ## TEN MINUTES TO DOORS
 
@@ -133,6 +145,7 @@ node tests/memory-flow.test.cjs
 node tests/promo-flow.test.cjs
 node tests/promo-variants.test.cjs
 node tests/promo-read.test.cjs
+node tests/training-sessions.test.cjs
 node tests/catalog.test.cjs
 ```
 
@@ -144,6 +157,7 @@ The suites cover the free-agent market and rival contracts, separate promotion l
 
 | Edition | What was reported |
 | --- | --- |
+| **3.8** | Sessions with Dennis. Two a week across the stable: rehearse for the next match, learn a big-spot move, or work on one style at the microphone. Each feeds straight into the agents’ room, the promo or the ring. |
 | **3.7** | The planning spine. Every match night has a running order of four beats that you can change, Dennis judges whether it tells a story, situations rewrite beats they rule out, and the wrestlers’ mood and condition decide how much of it actually happens. The match strip shows the running order on the clock as it plays out, and again on the report. At the microphone, Dennis reads the night first, opponents take an angle you can answer, pushing your luck can pay, and counter and finisher vows go on the strip. |
 | **3.6** | Dennis opens match night with a changing set of backstage decisions. The promo becomes a duel for the crowd, with a chance to push your luck before the last word. |
 | **3.5** | Dennis opens the agents’ room and the microphone goes live. The roster and territory edition doubles the cast, brings in the new portraits and gives all four bookers cards of their own. |
