@@ -44,6 +44,7 @@ function hydrate(x){
  x.v=22;x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];
  for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
  root.OfficeTerritory?.prepare(x);
+ if(x.worldV4)root.OfficeWorldV4?.reconcile(x);
  return x;
 }
 function load(){
@@ -58,7 +59,7 @@ function wipe(){try{localStorage.removeItem(STORE)}catch(e){}}
 
 /* ---------- lookups ---------- */
 const W=id=>S.roster.find(w=>w.id===id);
-const F=id=>D.FOES.find(f=>f.id===id)||D.TALENT.find(f=>f.id===id);
+const F=id=>D.findWrestler?.(id)||D.FOES.find(f=>f.id===id)||D.TALENT.find(f=>f.id===id);
 const P=id=>S.promoters.find(p=>p.id===id);
 const feudKey=(wid,rid)=>wid+':'+rid;
 const feud=(wid,rid)=>S.feuds[feudKey(wid,rid)];
@@ -83,6 +84,7 @@ function sign(id){
  S.cash-=w.fee;S.free=S.free.filter(x=>x.id!==id);
  S.roster.push({...w,trend:[],program:null,prep:{},prepHistory:[],session:null,learned:[],learning:null,micWork:{},rehearsedAt:null,training:'ring',intensity:'light',progress:{},startSkills:{ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe},promise:null,injury:0,matches:0,wins:0,starSum:0,best:0,lastRaise:0,flags:{},joined:abs()});
  snapshot(S.roster.at(-1));
+ if(S.worldV4)root.OfficeWorldV4?.markPlayer(S,id);
  save();return null;
 }
 function release(id){
@@ -90,7 +92,9 @@ function release(id){
  for(const c of S.card.filter(c=>c.wid===id)){const promoter=P(c.pid);if(promoter)promoter.trust=clamp(promoter.trust-6)}
  S.card=S.card.filter(c=>c.wid!==id);for(const c of S.futureBookings.filter(c=>c.wid===id)){const p=P(c.pid);if(p)p.trust=clamp(p.trust-6)}S.futureBookings=S.futureBookings.filter(c=>c.wid!==id);
  S.roster=S.roster.filter(x=>x.id!==id);
- const base=D.TALENT.find(t=>t.id===id);S.free.push({...base,heat:w.heat,ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe,fee:Math.round(base.fee*.9)});
+ const base=D.findWrestler?.(id)||D.TALENT.find(t=>t.id===id);
+ S.free.push({...base,heat:w.heat,ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe,fee:Math.round(base.fee*.9)});
+ if(S.worldV4)root.OfficeWorldV4?.markMarket(S,id);
  msg({from:'The office',subject:`${w.name} released`,kind:'info',body:[`${w.name} cleared out the locker today. No hard feelings, on paper.`]});
  save();
 }
@@ -445,7 +449,7 @@ const DILEMMAS={
    const o2={id:'fav',pid:p.id,rid:'malik',slot:'opener',finish:'lose_clean',boost:1.15};S.card.push({id:uid('c'),pid:p.id,rid:'malik',wid:w.id,slot:'opener',minutes:8,finish:'lose_clean',purse:purse(o2,w),tag:'Favour',feudHeat:0,blowoff:false});
    return `${w.short} is on the card: opener, losing clean to Malik Knight.`}}
 };
-function leave(w,fee){S.cash+=fee;S.card=S.card.filter(c=>c.wid!==w.id);S.futureBookings=S.futureBookings.filter(c=>c.wid!==w.id);S.roster=S.roster.filter(x=>x!==w)}
+function leave(w,fee){S.cash+=fee;S.card=S.card.filter(c=>c.wid!==w.id);S.futureBookings=S.futureBookings.filter(c=>c.wid!==w.id);S.roster=S.roster.filter(x=>x!==w);if(S.worldV4)root.OfficeWorldV4?.markMarket(S,w.id)}
 function makeDilemmas(){
  let made=0;const recent=S.recentTypes;
  const ok=t=>!recent[t]||abs()-recent[t]>=4;
