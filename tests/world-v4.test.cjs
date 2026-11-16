@@ -25,9 +25,9 @@ function verifyOwnership(s){
 }
 assert.equal(D.ALL.length,80);assert.equal(D.REGISTRY.size,80);assert.equal(D.V4.newCast.length,52);
 for(const w of D.ALL)assert.equal(D.findWrestler(w.id).name,w.name);
-assert.equal(Object.keys(D.PROFILES).length,28,'pre-activation match signatures remain unchanged');
-G.fresh();assert.equal(G.S.free.length,12,'original start remains unchanged');
-assert.equal(G.S.worldV4,undefined,'world v4 is opt-in before portrait release');
+assert.equal(Object.keys(D.PROFILES).length,80,'all 80 workers have active profiles');
+G.fresh();assert.equal(G.S.free.length,20,'all 20 free agents visible by default');
+assert.equal(G.S.worldV4.version,4,'v4 world enabled on every new career');
 const leader=T.promotionRank('dock')[0].id,cardScore=G.S.territory.cards.dock.rocco.score;
 V.activate(G.S);
 for(const w of D.ALL)assert.equal(D.PROFILES[w.id].signature.length,4);
@@ -58,11 +58,17 @@ G.save();G.load();verifyOwnership(G.S);
 G.fresh();assert.equal(G.sign('mara'),null);
 G.S.roster[0].ring=81;G.S.territory.cards.dock.rocco.score=97;
 const priorHistory=snapshot(G.S.history);
+// Simulate a prior v22 career without a six-agency contract ledger.
+delete G.S.worldV4;
+G.S.territory.teams=G.S.territory.teams.slice(0,3);
+G.S.territory.teams.forEach(t=>{t.roster=t.roster.filter(id=>D.TALENT.some(w=>w.id===id)||D.FOES.some(w=>w.id===id))});
+G.S.territory.stablesReady=true;
+G.S.free=G.S.free.filter(w=>D.TALENT.some(x=>x.id===w.id));
 V.activate(G.S);
 assert.equal(G.S.roster[0].ring,81);
 assert.equal(G.S.territory.cards.dock.rocco.score,97);
 assert.equal(snapshot(G.S.history),priorHistory);
-assert.equal(G.S.free.length,19);
+assert.equal(G.S.free.length,19,'11 legacy market workers plus 8 new');
 verifyOwnership(G.S);
 V.activate(G.S);G.save();const migrated=snapshot(G.S);G.load();
 assert.equal(snapshot(G.S),migrated);

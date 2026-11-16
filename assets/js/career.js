@@ -18,7 +18,7 @@ const uid=p=>p+'-'+S.week+'-'+Math.floor(rand()*1e9).toString(36);
 function fresh(){
  S={v:22,seed:(Date.now()%100000)+7,season:1,week:1,cash:2250,rep:22,focus:2,monthReview:null,coach:null,futureBookings:[],circuitReviews:[],business:{training:0,negotiated:0,meetings:0,kept:0,broken:0},roster:[],free:D.TALENT.map(t=>({...t})),
   promoters:D.PROMOS.map(p=>({...p,blacklist:0,matches:0,best:0})),offers:[],card:[],feuds:{},inbox:[],history:[],
-  goals:{},recentTypes:{},over:null};
+  goals:{},recentTypes:{},books:[],over:null};
  msg({from:'The office',subject:'The keys are yours',kind:'info',body:[
   'You have £2,250, an empty locker room and four promoters who might return your calls.',
   'Sign talent from Roster. Book them on Bookings. Press Continue and you go to the ring with them.',
@@ -30,6 +30,7 @@ function fresh(){
   'Make it, and I will invest £450. Miss it, and the money goes elsewhere. We will still be here to discuss season objectives.']});
  msg({from:'The office',subject:'Season 1 objectives',kind:'info',body:['This season, the business wants you to:',...goalList().map(g=>'• '+g.text)]});
  root.OfficeTerritory?.prepare(S,true);
+ root.OfficeWorldV4?.activate(S);
  makeOffers();save();return S;
 }
 function goalList(){const n=S.season;return [
@@ -44,7 +45,7 @@ function hydrate(x){
  x.v=22;x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];
  for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
  root.OfficeTerritory?.prepare(x);
- if(x.worldV4)root.OfficeWorldV4?.reconcile(x);
+ root.OfficeWorldV4?.activate(x);
  return x;
 }
 function load(){

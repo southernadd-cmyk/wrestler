@@ -58,3 +58,7 @@ The unified 80-wrestler registry is available through `OfficeData.ALL` / `Office
 `OfficeWorldV4.activate(OfficeGame.S)` explicitly migrates a career to six AI agencies. Contracts, agency budgets, transfer records, market and independent status live under `worldV4` in the existing v22 save. Activation is idempotent and preserves existing owned wrestlers, their progress, pending bookings, historical results and promotion card ledgers. Player signings, releases and AI recruitment synchronize ownership; agency finance updates are applied once per week.
 
 **This is not the v4 public rollout.** The live New Career route remains on 28 wrestlers pending the new portrait atlas, full integration tests and in-browser QA.
+
+### v4 default launch
+
+Every new career now automatically activates the 80-wrestler world, including 20 market workers, 44 AI-contract workers across six agencies and 16 independents. Every old v20–v22 career migrates on load without losing player contracts or recorded history. Six agency budgets and independent promotion-card ladders continue to evolve every week. The former v4 activation switch is no longer necessary for players.
