@@ -191,8 +191,22 @@ const portraitRows=[
  ['wrestler:red','wrestler:roxy','wrestler:silas','wrestler:night'],
  ['wrestler:rev','wrestler:malik','wrestler:dean','wrestler:rocco'],
  ['wrestler:nova','wrestler:ace','wrestler:magnus','wrestler:tori'],
- ['booker:dock','booker:pulse','booker:crown','booker:union']
+ ['booker:dock','booker:pulse','booker:crown','booker:union'],
+ ['wrestler:faye','wrestler:bao','wrestler:zara','wrestler:miro'],
+ ['wrestler:aisha','wrestler:ellis','wrestler:anya','wrestler:nolan'],
+ ['wrestler:ivo','wrestler:rina','wrestler:priya','wrestler:nate'],
+ ['wrestler:cass','wrestler:jun','wrestler:sylvia','wrestler:kofi'],
+ ['wrestler:mae','wrestler:theo','wrestler:soraya','wrestler:milo'],
+ ['wrestler:winnie','wrestler:bronte','wrestler:gus','wrestler:nikita'],
+ ['wrestler:jett','wrestler:alina','wrestler:cedric','wrestler:marisol'],
+ ['wrestler:felix','wrestler:eira','wrestler:gideon','wrestler:vera'],
+ ['wrestler:tomas','wrestler:ari','wrestler:tomasash','wrestler:kezia'],
+ ['wrestler:dev','wrestler:liya','wrestler:emmett','wrestler:nadia'],
+ ['wrestler:leandro','wrestler:iris','wrestler:kellan','wrestler:ayla'],
+ ['wrestler:sasha','wrestler:morgan','wrestler:noelle','wrestler:ash'],
+ ['wrestler:zane','wrestler:elodie','wrestler:bashir','wrestler:cleo'],
 ];
+const packedPortraitIds=new Set(["faye","bao","zara","miro","aisha","ellis","anya","nolan","ivo","rina","priya","nate","cass","jun","sylvia","kofi","mae","theo","soraya","milo","winnie","bronte","gus","nikita","jett","alina","cedric","marisol","felix","eira","gideon","vera","tomas","ari","tomasash","kezia","dev","liya","emmett","nadia","leandro","iris","kellan","ayla","sasha","morgan","noelle","ash","zane","elodie","bashir","cleo"]);
 const portraitCells=new Map(portraitRows.flatMap((row,y)=>row.map((key,x)=>[
  key,`${100*x/(row.length-1)}% ${100*y/(portraitRows.length-1)}%`
 ])));
@@ -200,7 +214,7 @@ function avatar(actor,appearance=null,cssClass='portrait'){
  const safe=String(actor?.name||'Wrestler').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
  const label='Pixel-art portrait of '+safe;
  const position=appearance===null&&portraitCells.get(actor?.key);
- if(position&&!(typeof document!=='undefined'&&transparentPortrait(actor?.key)))return `<span class="${cssClass} roster-portrait" role="img" aria-label="${label}" style="background-position:${position}"></span>`;
+ if(position&&!(typeof document!=='undefined'&&transparentPortrait(actor?.key)&&!packedPortraitIds.has(actor?.key?.slice(9))))return `<span class="${cssClass} roster-portrait" role="img" aria-label="${label}" style="background-position:${position}"></span>`;
  return `<img class="${cssClass}" src="${asData(actor,appearance)}" alt="${label}" width="48" height="60" loading="lazy">`;
 }
 function png(actor,appearance=null){const canvas=renderCanvas(actor,appearance||getLook(actor),8);const link=document.createElement('a');link.download='the-office-'+(actor.name||actor.key).replace(/[^a-z0-9-]+/gi,'-').toLowerCase()+'-portrait.png';link.href=canvas.toDataURL('image/png');link.click()}

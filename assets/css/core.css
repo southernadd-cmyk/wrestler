@@ -92,7 +92,7 @@ h1,h2,h3{margin:0;font-weight:400}
 
 .portrait{image-rendering:pixelated;width:36px;height:45px;border:1px solid var(--ink);background:var(--deep);flex:none;display:block}
 /* Portrait sheet with four 48×60 cells per row and eight rows. */
-.roster-portrait{image-rendering:pixelated;background-image:url('../portrait-atlas.png');background-size:400% 800%;background-origin:content-box;background-clip:content-box;background-repeat:no-repeat}
+.roster-portrait{image-rendering:pixelated;background-image:url('../portrait-atlas.png');background-size:400% 2100%;background-origin:content-box;background-clip:content-box;background-repeat:no-repeat}
 .portrait.x2{width:72px;height:90px;border-width:2px}
 .portrait.x3{width:144px;height:180px;border-width:2px}
 

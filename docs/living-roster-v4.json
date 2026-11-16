@@ -1,6 +1,6 @@
 {
   "schema_version": "4.0-roster-design-1",
-  "status": "cast-approved-for-integration-not-yet-loaded-in-game",
+  "status": "live-v4-roster-enabled-in-game",
   "design_principle": "The matches are scripted. The people aren't.",
   "preserved_originals": {
     "talent_ids": [

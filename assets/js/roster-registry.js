@@ -28,14 +28,99 @@ const extra=newCast.map(w=>{
  return {...w,heat:defaults[w.tier]??35,morale:72,fatigue:0,sub:w.style==='Technical'};
 });
 if(seen.size!==80)throw Error('Expected 80 unique wrestlers');
-const archetype={Brawl:'rex',Story:'mara',Spectacle:'lyra',Technical:'juno'};
+/* Each v4 performer has a character-selected move anchor and signature finishing move.
+   Only existing match-graph action IDs are used. Avoid four generic cloned movesets. */
+const characterMovePlan={
+ faye:['roxy','pn_inside_cradle'],
+ bao:['juno','sm_ankle_lock'],
+ zara:['kit','st_enzuigiri'],
+ miro:['sol','nk_bulldog'],
+ aisha:['red','st_discus'],
+ ellis:['dee','ch_top_wristlock'],
+ anya:['lyra','sb_dropkick'],
+ nolan:['brick','gd_elbow_drop'],
+ ivo:['silas','sm_crossface'],
+ rina:['tori','ar_moonsault'],
+ priya:['mara','nk_ddt'],
+ nate:['otis','pw_sidewalk'],
+ cass:['ace','hl_fake_injury'],
+ jun:['dee','ch_drop_toehold'],
+ sylvia:['red','st_big_boot'],
+ kofi:['nico','dv_suicide'],
+ mae:['roxy','sm_sleeper'],
+ theo:['silas','sm_kneebar'],
+ soraya:['kira','pw_gorilla_press'],
+ milo:['night','ar_frog'],
+ winnie:['imani','pn_backslide'],
+ bronte:['brick','nk_ddt'],
+ gus:['otis','gd_ground_pound'],
+ nikita:['red','st_throat_thrust'],
+ jett:['kit','ar_450'],
+ alina:['sol','fr_flying_forearm'],
+ cedric:['rev','hl_ref_argue'],
+ marisol:['juno','sm_fujiwara'],
+ felix:['dax','pn_backslide'],
+ eira:['cal','sx_fisherman'],
+ gideon:['cal','sm_cobra'],
+ vera:['silas','sm_cross_armbreaker'],
+ tomas:['roxy','pn_small_package'],
+ ari:['mara','nk_russian_sweep'],
+ tomasash:['red','st_headbutt'],
+ kezia:['juno','sm_ankle_lock'],
+ dev:['sol','fr_atomic_drop'],
+ liya:['lyra','dv_tope_con_hilo'],
+ emmett:['cal','sm_sleeper'],
+ nadia:['night','lc_tornillo'],
+ leandro:['tori','dv_suicide'],
+ iris:['juno','ch_dragon_screw'],
+ kellan:['nico','ar_450'],
+ ayla:['roxy','pn_inside_cradle'],
+ sasha:['kit','sb_moonsault'],
+ morgan:['mara','nk_swinging_neckbreaker'],
+ noelle:['imani','sm_crossface'],
+ ash:['rex','pw_spinebuster_running'],
+ zane:['brick','pw_scoop_powerslam'],
+ elodie:['mara','st_open_slap'],
+ bashir:['otis','os_barricade'],
+ cleo:['silas','sm_kneebar']
+};
+const relatedMoves={
+ Story:['nk_ddt','pn_inside_cradle','pn_backslide','nk_bulldog','sm_sleeper','st_open_slap','nk_russian_sweep','fr_flying_forearm','fr_atomic_drop','nk_swinging_neckbreaker','pn_small_package','hl_ref_argue','hl_fake_injury'],
+ Technical:['sm_ankle_lock','sm_crossface','sm_kneebar','sm_fujiwara','sm_cross_armbreaker','ch_dragon_screw','ch_drop_toehold','ch_top_wristlock','sx_fisherman','sx_german','pn_backslide','pn_inside_cradle','sm_sleeper','sm_cobra'],
+ Brawl:['st_discus','st_big_boot','st_headbutt','pw_gorilla_press','pw_scoop_powerslam','pw_spinebuster_running','pw_sidewalk','gd_ground_pound','gd_elbow_drop','st_throat_thrust','os_barricade','nk_ddt','sx_gutwrench'],
+ Spectacle:['ar_450','ar_frog','ar_moonsault','sb_moonsault','sb_dropkick','dv_tope_con_hilo','dv_suicide','lc_tornillo','lc_hurricanrana','lc_headscissors','st_enzuigiri','st_superkick','fr_flying_forearm']
+};
+const knownSignatureIds=new Set(Object.values(D.PROFILES).flatMap(p=>p.signature));
+for(const [style,moves] of Object.entries(relatedMoves))
+ for(const move of moves)if(!knownSignatureIds.has(move))throw Error('Unknown '+style+' signature '+move);
+const hashMoveKey=s=>{let n=2166136261>>>0;for(const c of s)n=Math.imul(n^c.charCodeAt(0),16777619)>>>0;return n>>>0};
 function enableProfiles(){
+ const signatures=new Set(Object.entries(D.PROFILES).map(([id,p])=>p.signature.join('|')));
  for(const w of extra){
   if(D.PROFILES[w.id])continue;
-  const p=D.PROFILES[archetype[w.style]];
-  if(!p)throw Error('Missing move archetype '+w.style);
-  // Interim valid movesets; unique signatures follow after bespoke roster review.
-  D.PROFILES[w.id]={...p,preferred:[...p.preferred],signature:[...p.signature]};
+  const [anchor,lead]=characterMovePlan[w.id]||[];
+  const base=D.PROFILES[anchor],pool=relatedMoves[w.style];
+  if(!base||!pool||!pool.includes(lead))throw Error('Missing curated move plan '+w.id);
+  const salt=hashMoveKey(w.id+'|'+w.finisher+'|'+w.bio);
+  let chosen=null;
+  for(let offset=0;offset<pool.length;offset++){
+   const signature=[lead];
+   for(let j=0;signature.length<4&&j<pool.length;j++){
+    const move=pool[(salt+j*5+offset)%pool.length];
+    if(!signature.includes(move))signature.push(move);
+   }
+   if(signature.length===4&&!signatures.has(signature.join('|'))){chosen=signature;break;}
+  }
+  if(!chosen)throw Error('No distinct signature sequence for '+w.id);
+  signatures.add(chosen.join('|'));
+  const prefSeed={
+   Story:['finish_tease',w.mic>=80?'crowd_pose':'counter_strike'],
+   Technical:[w.safe>=85?'wrist_escape':'grapple_trip','submission_set'],
+   Brawl:[w.safe>=85?'counter_strike':'corner_strikes','floor_brawl'],
+   Spectacle:[w.safe>=70?'duck_rebound':'top_climb','aerial_attack']
+  }[w.style];
+  const preferred=[...new Set([...prefSeed,...base.preferred])].slice(0,4);
+  D.PROFILES[w.id]={kg:base.kg,trait:base.trait,preferred,signature:chosen};
  }
 }
 const registry=new Map([...existing,...extra].map(w=>[w.id,w]));
