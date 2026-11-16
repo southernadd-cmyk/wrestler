@@ -1518,6 +1518,21 @@ const VIC={
   'One mistake ends it. Both of them know it.',
   'I would not want to be the one who blinks first.'
  ],
+ hot:[
+  'Listen to this place, {pbp}. {venue} is rocking before anyone has touched the ropes.',
+  'They are hanging off the balcony tonight. I have not seen it this full since my farewell tour. The first one.',
+  'You can feel the floor going. This crowd came to shout.'
+ ],
+ warm:[
+  'A good honest crowd in tonight. They will tell you exactly what they think.',
+  'The people of {venue} have turned out. Somebody give them a reason to stand up.',
+  'They have paid their money and found their seats. Now it is up to these two.'
+ ],
+ cold:[
+  'A few empty seats tonight, {pbp}. These two will have to win the rest over.',
+  'Quiet one so far. Nothing a bit of violence will not fix. Professionally speaking.',
+  'Tough crowd. I have been booed out of better buildings than this, and I enjoyed every minute.'
+ ],
  great:['That is one for the scrapbook. I will be telling people I was here.','I am not ashamed to say I stood up for that, {pbp}.'],
  good:['Solid. Honest. The sort of match that pays the rent.','Nobody is going home disappointed. That is the job done.'],
  poor:['Well. They cannot all be classics.','I have seen better matches in a car park. I have wrestled in a few.']
@@ -1576,7 +1591,7 @@ function entrances(M){
  if(M.o.blowoff)say(M,'This is the end of the road for these two. Everyone here knows it.','story',{at:0});
  else if((M.o.feudHeat||0)>=35)say(M,'Bad blood here. These two have history.','story',{at:0});
  if(M.o.promo)say(M,M.o.promo.hook,'story',{at:0});
- if(M.o.memory?.recall)say(M,'Colour: '+M.o.memory.recall,'story',{at:0});
+ if(M.o.memory?.recall)say(M,M.o.memory.recall,'story',{at:0,who:'runner'});
  if(M.sheet?.signed)say(M,'Road agent: '+M.sheet.method+' match layout agreed. The finish is contracted; the action must be earned.','story',{at:0});
  const notes={
   grudge:'The talk is finished. These two have scores to settle, and neither wants to back down.',
@@ -1591,6 +1606,7 @@ function entrances(M){
  if(M.reaction)say(M,M.reaction,'agent',{at:0,who:null});
  const prepared=Object.entries(M.prep).filter(([skill,v])=>v>=1.5).sort((a,b)=>b[1]-a[1])[0];
  if(prepared){const lines={ring:`Road agent: ${M.w.short}'s ring drills are evident in the opening exchanges.`,psych:`Road agent: ${M.w.short} looks composed after working on match psychology.`,safe:`Road agent: ${M.w.short} has drilled the safety sequences; they are less likely to go wrong.`,mic:`Road agent: ${M.w.short}'s recent promo work has warmed up this crowd.`};say(M,lines[prepared[0]],'agent',{at:0});}
+ vic(M,M.crowd>=60?'hot':M.crowd<40?'cold':'warm',1,{at:0});
  say(M,`Ding ding. We’re under way at ${M.p.venue}.`,'bell',{at:0,big:true});
  M.stage='live';
 }
