@@ -19,6 +19,7 @@ function agencyBalance(team){return 6500+team.rep*70}
 function activeWorld(s){return s?.worldV4?.version===4?s.worldV4:null}
 function reconcile(s){
  const world=activeWorld(s);if(!world)return null;
+ root.OfficeRosterV4.enableProfiles();
  const t=s.territory;
  if(!t||!Array.isArray(t.teams))throw Error('No circuit when migrating roster');
  const teamSet=new Map(t.teams.map(team=>[team.id,team]));

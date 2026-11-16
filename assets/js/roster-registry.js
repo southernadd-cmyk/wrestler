@@ -14,11 +14,14 @@ const extra=newCast.map(w=>{
 });
 if(seen.size!==80)throw Error('Expected 80 unique wrestlers');
 const archetype={Brawl:'rex',Story:'mara',Spectacle:'lyra',Technical:'juno'};
-for(const w of extra){
- const p=D.PROFILES[archetype[w.style]];
- if(!p)throw Error('Missing move archetype '+w.style);
- // Interim valid movesets; unique signature/visual treatment follows in the art pass.
- D.PROFILES[w.id]={...p,preferred:[...p.preferred],signature:[...p.signature]};
+function enableProfiles(){
+ for(const w of extra){
+  if(D.PROFILES[w.id])continue;
+  const p=D.PROFILES[archetype[w.style]];
+  if(!p)throw Error('Missing move archetype '+w.style);
+  // Interim valid movesets; unique signatures follow after bespoke roster review.
+  D.PROFILES[w.id]={...p,preferred:[...p.preferred],signature:[...p.signature]};
+ }
 }
 const registry=new Map([...existing,...extra].map(w=>[w.id,w]));
 function findWrestler(id){return registry.get(id)||null}
@@ -26,5 +29,5 @@ D.V4={newCast:extra,agencyDefinitions};
 D.ALL=[...existing,...extra];
 D.REGISTRY=registry;
 D.findWrestler=findWrestler;
-root.OfficeRosterV4={all:D.ALL,find:findWrestler,cast:extra,agencies:agencyDefinitions};
+root.OfficeRosterV4={all:D.ALL,find:findWrestler,cast:extra,agencies:agencyDefinitions,enableProfiles};
 })(typeof window!=='undefined'?window:globalThis);

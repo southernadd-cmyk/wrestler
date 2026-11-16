@@ -24,11 +24,13 @@ function verifyOwnership(s){
  for(const a of s.roster)assert.equal(world.contracts[a.id].owner,'player');
 }
 assert.equal(D.ALL.length,80);assert.equal(D.REGISTRY.size,80);assert.equal(D.V4.newCast.length,52);
-for(const w of D.ALL){assert.equal(D.findWrestler(w.id).name,w.name);assert.equal(D.PROFILES[w.id].signature.length,4);}
+for(const w of D.ALL)assert.equal(D.findWrestler(w.id).name,w.name);
+assert.equal(Object.keys(D.PROFILES).length,28,'pre-activation match signatures remain unchanged');
 G.fresh();assert.equal(G.S.free.length,12,'original start remains unchanged');
 assert.equal(G.S.worldV4,undefined,'world v4 is opt-in before portrait release');
 const leader=T.promotionRank('dock')[0].id,cardScore=G.S.territory.cards.dock.rocco.score;
 V.activate(G.S);
+for(const w of D.ALL)assert.equal(D.PROFILES[w.id].signature.length,4);
 assert.deepEqual(sizes(G.S),{market:20,ai:44,independent:16,player:0});
 assert.equal(G.S.territory.teams.length,6);
 assert.deepEqual(Array.from(G.S.territory.teams,t=>t.roster.length),[9,8,8,6,6,7]);
