@@ -85,17 +85,18 @@
  // nights and some speakers better than others, so the best opening is a judgement, not a constant.
  const READ={
   room:{hot:'It’s heaving out there. They’ll go with anything big.',cold:'They’re quiet tonight. Shouting at a quiet room makes it quieter.',who:'Half of them don’t know who {W} is. Records won’t mean much to them. Give them a reason to care.'},
-  feud:{yes:'There’s real bad blood between these two. If {W} has something on {F}, now’s the time.',no:'No history between these two. An accusation will sound made up.'},
+  feud:{yes:'There’s real bad blood between these two. If {W} has something on {F}, now’s the time.',no:'No history between these two. An accusation will sound made up.',
+   record:'These two have history, and some of it is on the record. Use what actually happened.'},
   opp:{good:'{F} can talk. Don’t get into a slanging match unless you’re sure.',fair:'{F} talks a decent game. Nothing special.',poor:'{F} is no talker. Keep it tidy and let {F} dig the hole.'},
   voice:{grand:'{W} can carry a big, strange picture.',sermon:'{W} can carry a big, strange picture.',precise:'{W} is better with facts than fireworks.',stoic:'{W} is better with facts than fireworks.',
    eager:'{W} is likeable. Let {W} be likeable.',earnest:'{W} is likeable. Let {W} be likeable.',gruff:'{W} has an edge. Use it on somebody who deserves it.',slippery:'{W} has an edge. Use it on somebody who deserves it.'}
  };
- function readFor(c,w,f,rival,sheet,fmic,seed){
+ function readFor(c,w,f,rival,sheet,fmic,seed,core){
   const r=rng(seed,'room'),big=['feature','main'].includes(c.slot);
   const room=sheet?.crowdMood||((w.heat||40)<35?'who':r<(big?.7:.4)?'hot':'cold');
   const feud=Math.max(c.feudHeat||0,rival&&!rival.closed?rival.heat||0:0)>=35;
   const opp=fmic>=65?'good':fmic<45?'poor':'fair';
-  return {room,feud,opp,voice:voice(w)};
+  return {room,feud,opp,voice:voice(w),record:!!core?.cases?.length};
  }
  const PRACTICE={people:'{W} has been practising talking to the crowd with me.',proof:'{W} has been drilling the facts with me. Results, dates, the lot.',
   imagery:'{W} has been working on the big pictures with me. Some of them are very strange.',accusation:'{W} has been practising going after people. I’ve had worse weeks. Not many.',
@@ -107,7 +108,7 @@
    people:(r.room==='hot'?1:0)-(r.room==='who'?1:0)+(['eager','earnest'].includes(v)?1:0),
    proof:(r.room==='cold'?1:r.room==='who'?-1:0)-(r.room==='hot'?1:0)+(['precise','stoic'].includes(v)?1:0)+(r.opp==='good'?1:0),
    imagery:(['grand','sermon'].includes(v)?2:-1)+(r.room==='hot'?1:r.room==='cold'?-1:0),
-   accusation:(r.feud?2:-1)+(['gruff','slippery'].includes(v)?1:0)-(r.room==='who'?1:0),
+   accusation:(r.feud?2:r.record?1:-1)+(['gruff','slippery'].includes(v)?1:0)-(r.room==='who'?1:0),
    swagger:(r.room==='who'?1:r.room==='cold'?-1:0)+(['grand','slippery','eager'].includes(v)?1:0)-(r.opp==='good'?1:0),
    hometown:(r.room==='hot'?1:r.room==='who'?1:-1)+(['gruff','slippery','grand'].includes(v)?1:-1)+(r.feud?1:0),
    numbers:(['precise','slippery'].includes(v)?2:-1)+(r.room==='hot'?1:0)-(r.opp==='good'?1:0)
@@ -115,14 +116,24 @@
  }
  // The opponent's angle in reply, and the answer that beats each one.
  const ANGLE_CUE={personal:'{F} has gone straight for the personal stuff.',mock:'{F} is laughing at {W}, and some of the crowd are laughing along.',
-  facts:'{F} has come armed with facts. Results, dates, the lot.',crowd:'{F} is playing to the crowd now, and they’re enjoying it.'};
+  facts:'{F} has come armed with facts. Results, dates, the lot.',crowd:'{F} is playing to the crowd now, and they’re enjoying it.',
+  // v0.3.12 When the argument is about something on the record, the cue says how {F} answered it.
+  case_evidence:'{F} has answered with what actually happened. Deal with the point, not the person.',
+  case_dismiss:'{F} won’t even engage with it. Make {F} engage.',
+  case_concede:'{F} has given a little ground, but not the conclusion.',
+  case_deflect:'{F} has changed the angle. Bring it back.'};
  const ANSWER_FIT={
+  case_evidence:{calm:2,turn:1,challenge:1,callback:-1,personal:-2,confession:0,fakeout:-2},
+  case_dismiss:{turn:2,challenge:1,calm:0,callback:-1,personal:0,confession:0,fakeout:1},
+  case_concede:{calm:2,challenge:1,turn:0,callback:0,personal:-2,confession:1,fakeout:-1},
+  case_deflect:{turn:2,challenge:1,calm:0,callback:-1,personal:-1,confession:0,fakeout:1},
   personal:{calm:2,challenge:1,turn:0,callback:0,personal:-1,confession:1,fakeout:-1},
   mock:{turn:2,callback:1,challenge:0,calm:-1,personal:0,confession:-1,fakeout:2},
   facts:{challenge:2,turn:1,calm:0,callback:-1,personal:-2,confession:0,fakeout:-1},
   crowd:{callback:2,turn:1,challenge:0,calm:-1,personal:-1,confession:2,fakeout:1}
  };
  function angleFor(st,opening){
+  if(st.core?.case?.mode)return 'case_'+st.core.case.mode;
   const F=st.fRaw,v=Room.VOICE[F.id]||'stoic',w={personal:1,mock:1,facts:1,crowd:1};
   if((F.ego||50)>=68)w.personal+=2;if(['slippery','grand','eager'].includes(v))w.mock+=2;
   if(['precise','stoic'].includes(v)||(F.pro||60)>=80)w.facts+=2;if(['earnest','sermon'].includes(v)||(F.heat||40)>=60)w.crowd+=2;
@@ -141,7 +152,7 @@
  const riskWord=r=>r<=0?'Safe':r===1?'Steady':r===2?'Risky':'Very risky';
  const meterWord=m=>m>=25?'The room is yours':m>=8?'With you':m>-8?'Even':m>-25?'With them':'The room is theirs';
  const fmt=(text,st)=>String(text).replace(/\{W\}/g,st.w.short).replace(/\{F\}/g,st.f.short).replace(/\{VENUE\}/g,st.venue).replace(/\{P\}/g,st.promoterVoice).replace(/\{PROMO\}/g,st.promoterName);
- const push=(st,side,line,kind,swing)=>st.log.push({speaker:side==='w'?st.w.name:side==='f'?st.f.name:side==='host'?'Interviewer':side==='crowd'?'Crowd':'',side,line,kind,swing:swing||0});
+ const push=(st,side,line,kind,swing)=>st.log.push({speaker:side==='w'?st.w.name:side==='f'?st.f.name:side==='host'?'Interviewer':side==='crowd'?'Crowd':'',side,line:String(line).charAt(0).toUpperCase()+String(line).slice(1),kind,swing:swing||0});
  function begin(c,w,f,rival,sheet,p){
   const core=Core.begin(c,w,f,rival,sheet);
   const fmic=f.mic||Math.round((f.psych||50)*.55+(f.heat||50)*.45);
@@ -150,10 +161,10 @@
    venue:p?.venue||'this hall',promoterVoice:p?.voice||'the promoter',promoterName:p?.name||'the promotion',finish:c.finish||null,
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
-  st.read=readFor(c,w,f,rival,sheet,fmic,st.seed);
+  st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
   st.practice={};for(const [k,v] of Object.entries(w.micWork||{}))if(Math.floor(v)>0)st.practice[k]=Math.min(2,Math.floor(v));
   const drilled=Object.entries(st.practice).sort((a,b)=>b[1]-a[1])[0];
-  st.readLines=[READ.room[st.read.room],READ.feud[st.read.feud?'yes':'no'],READ.opp[st.read.opp],READ.voice[st.read.voice],
+  st.readLines=[READ.room[st.read.room],READ.feud[st.read.feud?'yes':st.read.record?'record':'no'],READ.opp[st.read.opp],READ.voice[st.read.voice],
    ...(drilled?[PRACTICE[drilled[0]]]:[])].map(t=>fmt(t,st));
   push(st,'host',core.dialogue[0].line,'interviewer');
   return st;
@@ -180,10 +191,16 @@
   return hit;
  }
  function riskOf(st,stage,id){return (Core.NODES[stage][id].risk||0)+(Core.variantFor(st.core,stage,id)?.fx?.risk||0);}
- function stakes(st,stage,id){
+ function stakes(st,stage,id,shown){
   const node=Core.NODES[stage][id],v=Core.variantFor(st.core,stage,id),fx={...node.effect};
-  for(const k of ['crowd','heat','cred','trust'])if(v?.fx?.[k])fx[k]=(fx[k]||0)+v.fx[k];
+  const r=shown?.caseResponse?st.core.case.responses[id]:null;
+  const extra=r?r.fx:shown?.evidence?{}:v?.fx;
+  for(const k of ['crowd','heat','cred','trust'])if(extra?.[k])fx[k]=(fx[k]||0)+extra[k];
   const tags=[riskWord(riskOf(st,stage,id))];
+  if(shown?.evidence)tags.unshift('On the record');
+  if(r){tags.push({conceded:'Concedes a point',defended:'Stands by it',reframed:'Changes the question',unresolved:'Escalates',withdrawn:'Drops it'}[r.res]||'Answers it');
+   if(r.commit)tags.push(r.commit.node?'Leads to a promise':'A test the match can answer');if(r.expose)tags.push('Can be thrown back');}
+  if(shown?.followsCase)tags.unshift('Follows from your words');
   const names={crowd:'Wins the crowd',heat:'Stokes the rivalry',cred:'Builds credibility'};
   const top=Object.entries(names).map(([k,label])=>[fx[k]||0,label]).sort((a,b)=>b[0]-a[0]).filter(x=>x[0]>=3).slice(0,stage==='close'?1:2);
   for(const [,label] of top)tags.push(label);
@@ -203,10 +220,17 @@
  function choices(st){
   if(!st||st.stage==='done')return [];
   const r=ROUNDS[st.round].id;
+  if(r==='push'&&st.core.case?.exposed){
+   // {F} threw your own record back at you. Hold the line, change your position, or let it stand.
+   const P=st.core.case.push||{};
+   return [{id:'firm',label:P.firm?.label||'Stand firm',hint:P.firm?.hint||'Hold the line.',tags:['Risky','Stands by it','Big swing either way']},
+    {id:'revise',label:P.revise?.label||'Revise your position',hint:P.revise?.hint||'Change what you are asking for.',tags:['Steady','Changes the question','Builds credibility']},
+    {id:'leave',label:'Let it stand',hint:'Say nothing more. The argument stays open, and it will come back.',tags:['Safe','Leaves it unresolved']}];
+  }
   if(r==='push')return [{id:'leave',label:'Leave it there',hint:st.meter>0?'Quit while you are ahead.':'Cut your losses.',tags:['Safe','Shorter promo']},
    ...Object.entries(PUSH).map(([id,o])=>({id,label:fmt(o.label,st),hint:o.hint,tags:[riskWord(o.risk),o.gain>=9?'Big swing either way':'Small gain']}))];
   const stage=r==='open'?'open':r==='answer'?'answer':'close';
-  return Core.choices(stage,st.core).map(o=>({id:o.id,label:o.label,hint:o.hint,tags:stakes(st,stage,o.id)}));
+  return Core.choices(stage,st.core).map(o=>({id:o.id,label:o.label,hint:o.hint,tags:stakes(st,stage,o.id,o),evidence:o.evidence||null,caseResponse:!!o.caseResponse,followsCase:!!o.followsCase}));
  }
  function fitOf(st,stage,id){return stage==='open'?openFit(st,id):stage==='answer'?answerFit(st,id):0;}
  function coreRound(st,stage,id,key){
@@ -243,6 +267,22 @@
   let rec={round:r,id,label:o.label,landed:true};
   if(r==='open')rec={round:r,...coreRound(st,'open',id,'open')};
   else if(r==='answer')rec={round:r,...coreRound(st,'answer',id,'answer')};
+  else if(r==='push'&&st.core.case?.exposed){
+   const cs=st.core.case,P=cs.push||{};st.pushed=id==='leave'?'leave':'argue';
+   if(id==='firm'){
+    const ok=roll(st,2,'firm',st.meter>=8?.08:0),d=swing(st,ok?7:-7);
+    push(st,'w',P.firm?.line||'I know what I did.',ok?'strong':'uneven',d);
+    st.core.metrics.cred+=ok?2:-3;cs.resolution=ok?'defended':'unresolved';cs.followup=ok?'Stood firm, and it held.':'Stood firm, and it did not hold.';
+    theirTurn(st,ok?P.firm?.ok:P.firm?.fail,'firm',ok,0);crowdSays(st,d,'firm');rec.landed=ok;
+   }else if(id==='revise'){
+    const d=swing(st,3);
+    push(st,'w',P.revise?.line||'Fine. Tonight neither of us does.','strong',d);
+    st.core.metrics.cred+=3;cs.resolution='reframed';
+    if(!cs.commit)cs.commit={kind:'nocheat',node:'clean',say:'win without cheating',label:'Promise to do it without cheating',hint:'Follows from what you just said. Kept only if you do not cheat tonight.'};
+    cs.followup='Revised the charge: neither of them cheats tonight.';
+    push(st,'f',P.revise?.reply||'I will hold you to that.','opponent',0);
+   }else{push(st,'stage',fmt('{W} lets it hang there. Nobody concedes anything.',st),'stage',0);cs.followup='Left it hanging.';}
+  }
   else if(r==='push'){
    st.pushed=id;
    if(id==='leave'){const d=swing(st,st.meter>0?2:0);push(st,'stage',fmt('{W} lets it hang in the air and lowers the microphone.',st),'stage',d);}
@@ -283,7 +323,10 @@
   const r=ROUNDS[Math.min(st.round,ROUNDS.length-1)];
   return {stage:st.stage,round:st.round,total:ROUNDS.length,name:st.stage==='done'?'The final word':r.name,help:fmt(st.stage==='done'?'It is said. The match decides whether any of it was true.':r.help,st),
    meter:st.meter,meterWord:meterWord(st.meter),options:choices(st),log:st.log.slice(),claim:st.core.claim||null,result:st.result,
-   read:st.round===0&&st.stage!=='done'?st.readLines:null,cue:st.round===1&&st.angle?fmt(ANGLE_CUE[st.angle],st):null};
+   read:st.round===0&&st.stage!=='done'?st.readLines:null,cue:st.round===1&&st.angle?fmt(ANGLE_CUE[st.angle],st):null,
+   // v0.3.12 What the rivalry has on record before the first line, and any argument still open.
+   record:st.round===0?(st.core.cases||[]).map(c=>c.evidence):null,
+   unresolved:st.round===0?((st.core.cases||[]).find(c=>c.continuation)?.reminder||null):st.core.case?.continuation?st.core.case.reminder:null};
  }
  const result=st=>st?.stage==='done'?st.result:null;
  root.OfficeMic={ROUNDS,PUSH,HOOK,FLUFF,CROWD,begin,choose,choices,view,result,meterWord,riskWord,openFit,answerFit,pushFit,READ,ANSWER_FIT};

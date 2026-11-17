@@ -47,12 +47,19 @@
   discipline:[10,'Refused to go into business against the other.'],chemistry:[8,'An agreed match that came together beautifully.']};
  const originalApply=G.applyResult;
  G.applyResult=function(c,fin){
+  // v0.3.12 Once per contract: a result applied again (a reload, a replay) must not move a bond twice.
+  const seen=!!(c&&G.S?.history?.some(h=>h.cid===c.id));
   const out=originalApply(c,fin);
-  try{if(c&&fin&&G.S)afterMatch(c,fin,out);}catch(e){}
+  try{if(!seen&&c&&fin&&G.S)afterMatch(c,fin,out);}catch(e){}
   return out;
  };
  function afterMatch(c,fin,out){
   const w=G.W(c.wid),f=G.F(c.rid);if(!w||!f)return;
+  // v0.3.12 An agreed match that came together is remembered here, before the bond is read, so the
+  // chemistry it built counts the first time (the match screen's later note of it is the same memory).
+  const beats=fin.evidence?.beats;
+  if(beats?.length&&fin.stars>=3.5&&beats.filter(b=>b.status==='achieved').length>=3&&!beats.some(b=>b.status==='missed'))
+   Mem?.remember(w.id,'chemistry',w.short+' remembers how well the agreed match with '+f.short+' came together.',f.id,3,4,c.id+':chemistry');
   const mem=Mem?.view(w.id).entries.filter(e=>e.against===f.id&&String(e.id).startsWith(c.id))||[];
   // The rating first, then the memory, so the reason on the profile is the one that mattered.
   if(fin.stars>=3.5)shift(w.id,f.id,6,'match','A good night’s work together.',c.id+':stars');

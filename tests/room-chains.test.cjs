@@ -10,9 +10,10 @@ const {OfficeData:D,OfficeRoom:Room,OfficeGame:G}=root;
 const clean=/undefined|NaN|\{\w+\}|\[object/;
 const byId=id=>Room.SITUATIONS.find(s=>s.id===id);
 
-// The deck: 36 drawable situations and 9 follow-ups that are never drawn on their own.
+// The deck: 36 drawable situations and 11 follow-ups that are never drawn on their own (v0.3.12 adds the
+// rivalry counter-proposal and its reply, which only open when there is a real reason for them).
 const followups=Room.SITUATIONS.filter(s=>s.followup).map(s=>s.id);
-assert.equal(Room.SITUATIONS.length,45);assert.equal(followups.length,9);
+assert.equal(Room.SITUATIONS.length,47);assert.equal(followups.length,11);
 const W=D.ALL.find(w=>w.id==='rex'),F=D.ALL.find(w=>w.id==='silas'),F2=D.ALL.find(w=>w.id==='night'),P=D.PROMOS[0],P2=D.PROMOS[2];
 let n=0;
 const booking=(w,f,p,o={})=>({id:'chain-'+(n++),wid:w.id,rid:f.id,pid:p.id,finish:'lose_protected',slot:'main',minutes:15,eventAbs:o.at??10,feudHeat:40,...o});

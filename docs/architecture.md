@@ -23,6 +23,7 @@ assets/js/
   agents-room.js            Dennis and backstage decisions
   promo-duel.js             Mic battles and vows
   relationships.js          Bonds, grudges, backstage scenes and betrayals between wrestlers
+  rivalry.js                Each pairing's record, evidence-backed promo arguments, counter-proposal reasons
   ui.js                     Screens, controls and browser events
 assets/portrait-atlas.png   Wrestler sprite sheet (previously embedded in CSS)
 assets/first-week.css       Existing onboarding guide CSS
@@ -77,3 +78,12 @@ Every new career now automatically activates the 80-wrestler world, including 20
 
 - **Ring profiles** (`roster-registry.js`). `RING_PROFILES` gives each of the 52 newcomers a weight, trait, four preferred moments and four signature moves from the catalog; `enableProfiles()` installs them into `OfficeData.PROFILES` for new and migrated careers.
 - **The locker room** (`relationships.js`, `window.OfficeBonds`). Bonds from −100 to 100 between pairs of wrestlers live in `S.bonds.pairs` in the existing save, each with its recent reasons. The module wraps `applyResult` (bonds from the memories a match leaves, and a friend turning after a clean loss), `OfficeRoom.begin` (friends, enemies and leaked plans in Dennis’s room), `endWeek` (journeys, jealousy, grudges boiling over and at most one backstage scene every other week) and `answer` (the four `bond_*` scenes, and the existing car-park row). Every change is recorded once per source, so replays and reloads never double-count.
+
+## v0.3.12 additions
+
+- **Match evidence** (`match-engine.js`). `final.evidence` records, from the graph events, counters and late counters by side and move family, cheap shots by side, stamina at the bell, injuries and each sheet beat's outcome; `final.roomNegotiation` carries any agreed change. It is read-only and draws no random numbers.
+- **The rivalry ledger** (`rivalry.js`, `window.OfficeRivalry`). `S.rivalries["wid:rid"]` holds the last 10 meetings (how each was won), 12 argued claims and 8 negotiations, keyed by contract id so a result is recorded once. Facts are derived on demand, ranked and faded; stance is computed from the existing bond, regard and ledger rather than stored. Older careers rebuild the ledger from `history` on first access. The module wraps `applyResult` last and awards nothing itself.
+- **Promo cases** (`story.js`, `promo-duel.js`). `Graph.begin` asks `casesFor` for up to two evidence-backed arguments; each rides on an existing open node, the five answer nodes become positions on the counterclaim, and a close node can make a commitment official (`nocheat` is a new promise type). What is shown is what is played. The duel's push round becomes stand firm / revise / let it stand when a charge is thrown back.
+- **Counter-proposals** (`agents-room.js`). `rival_counter` and `rival_counter_reply` are follow-ups placed first in the meeting when a reason is possible, and skipped (a scene's `open` may now return `false`) when the board already avoids the problem. The sheet carries `negotiation` and marks changed beats `negotiated`.
+- **Locker room fix** (`relationships.js`). Bond changes now run once per contract, and the chemistry memory is written before the bond is read.
+- **Five-bout harness** (`tools/five-bouts.cjs`). Drives the shipped modules through five full nights for one pairing and writes a markdown report.

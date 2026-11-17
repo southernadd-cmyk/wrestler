@@ -997,6 +997,171 @@
  // big spot, pencilled in by Dennis and changeable by you. The situations that follow push on that
  // spine rather than being the only way anything gets planned.
  // ---------------------------------------------------------------------------------------------
+
+ // ---------------------------------------------------------------------------------------------
+ // v0.3.12 COUNTER-PROPOSALS. One wrestler asks for a specific change to the pencilled running order,
+ // for a reason that is actually true: the other wrestler turned that kind of move round last time,
+ // the move is unsafe for somebody tired or hurt, or a wrestler who keeps losing to this opponent
+ // needs a real beating before a comeback will be believed. No reason, no negotiation: if the board
+ // already avoids the problem, the scene is skipped. The other wrestler then answers the change in
+ // character: agreement, a condition, or a reservation they carry into the match.
+ // ---------------------------------------------------------------------------------------------
+ const SLOT_NAME=id=>(SLOTS.find(x=>x.id===id)?.name||id).replace(/^The /,'the ');
+ const famOf=id=>A[id]?.family||null;
+ const FAMWORD=f=>root.OfficeRivalry?.FAMILY_WORD?.[f]||f||'moves';
+ function scout(st){return root.OfficeRivalry?.scoutedFamilies?.(st.w.id,st.f.id)||{byF:[],byW:[],reversedFinisher:false,injuredW:false,lostRun:0,lastTalk:null,meetings:0};}
+ // Could there be a reason at all tonight? Checked when the meeting is drawn, before the board exists.
+ function negotiable(st){
+  const x=scout(st);
+  return x.byF.length>0||x.byW.length>0||x.injuredW||x.lostRun>=2||(st.w.fatigue||0)>=45||!!st.w.injury;
+ }
+ function cardFor(st,slot,owner,test){return cardsFor(st,slot).find(c=>c.owner===owner&&!c.impossible&&!banned(st,c.action)&&(!c.risk||slot!=='payoff'||test?.allowRisk)&&test(c))||null;}
+ function negotiationFor(st){
+  const x=scout(st),b=st.board,out=[];
+  const mk=(issue,by,slot,proposal,reason,extra={})=>{const cur=b[slot];if(!cur||!proposal||proposal.action===cur.action)return;
+   out.push({issue,by,slot,original:{action:cur.action,label:cur.label,owner:cur.owner,by:cur.by},proposal:{action:proposal.action,label:proposal.label,owner:proposal.owner,by:proposal.by},reason,...extra});};
+  // Safety: a risky big spot for somebody who is tired, carrying an injury, or was hurt in this rivalry.
+  const p=b.payoff;
+  if(p?.action&&p.owner&&p.owner!=='either'&&A[p.action]?.risk){
+   const O=who(st,p.owner),hurt=p.owner==='w'&&(x.injuredW||!!st.w.injury),tired=(O.fatigue||0)>=45;
+   if(hurt||tired){
+    const alt=cardFor(st,'payoff',p.owner,c=>!c.risk)||{action:'scheduled_nearfall',label:'A run of near-falls',owner:'either',by:'agent'};
+    mk('safety',p.owner,'payoff',{...alt,by:p.owner},hurt?(p.owner==='w'&&x.injuredW?'The last time '+st.w.short+' and '+st.f.short+' met, '+st.w.short+' went home hurt.':st.w.short+' is not fully fit.'):O.short+' is running on empty this week.',
+     {credible:hurt||(O.fatigue||0)>=60});
+   }
+  }
+  // Scouting: the move on the board belongs to a family the other wrestler turned round last time.
+  for(const slot of ['payoff','reversal','opening']){
+   const cur=b[slot];if(!cur?.action||cur.owner!=='w')continue;
+   const fam=famOf(cur.action);if(!fam||!x.byF.includes(fam))continue;
+   const alt=cardFor(st,slot,'w',c=>famOf(c.action)!==fam);
+   if(alt)mk('scouted','w',slot,alt,st.f.short+' turned '+st.w.short+'’s '+FAMWORD(fam)+' round the last time they met.',{family:fam});
+  }
+  for(const slot of ['pressure','payoff']){
+   const cur=b[slot];if(!cur?.action||cur.owner!=='f')continue;
+   const fam=famOf(cur.action);if(!fam||!x.byW.includes(fam))continue;
+   const alt=cardFor(st,slot,'f',c=>famOf(c.action)!==fam);
+   if(alt)mk('scouted','f',slot,alt,st.w.short+' turned '+st.f.short+'’s '+FAMWORD(fam)+' round the last time they met.',{family:fam});
+  }
+  // Credibility: a long losing run to this opponent, booked to win tonight. The win has to look earned.
+  if(x.lostRun>=2&&st.finish.startsWith('win')&&b.pressure?.owner==='f'){
+   const alt=cardsFor(st,'pressure').find(c=>c.by==='f'&&c.action!==b.pressure.action&&!c.impossible&&!banned(st,c.action));
+   if(alt)mk('comeback','w','pressure',alt,st.w.short+' has lost '+x.lostRun+' in a row to '+st.f.short+'. If '+st.w.short+' wins tonight, it has to look earned.');
+  }
+  // The most serious reason wins: safety, then a scouted move, then the comeback.
+  const rank={safety:3,scouted:2,comeback:1};
+  return out.sort((a,b)=>rank[b.issue]-rank[a.issue]||String(a.slot).localeCompare(String(b.slot)))[0]||null;
+ }
+ // How the other wrestler takes the change. Personality and condition, not dice.
+ function replyFor(st,n,how){
+  const changedOwner=n.original.owner,side=n.by===changedOwner?other(n.by):changedOwner,O=who(st,side);
+  const stance=root.OfficeRivalry?.stance?.(st.w.id,st.f.id)||{w:'competitive',f:'competitive'};
+  const hostile=['hostile','resentful'].includes(stance[side]);
+  // The wrestler whose own move was taken away is the one with something to say.
+  if(side===changedOwner&&how!=='agent'&&(O.ego||50)>=72&&(O.pro||60)<88&&n.issue!=='safety'){
+   const pay=st.board.payoff,theirs=pitchFor(st,'payoff',side);
+   const demand=pay&&pay.owner!==side&&theirs&&!theirs.risk&&!theirs.impossible&&!banned(st,theirs.action)?{kind:'payoff',action:theirs.action,label:theirs.label}:{kind:'minutes'};
+   return {side,kind:'conditional',demand};
+  }
+  if(hostile&&(O.pro||60)<85)return {side,kind:'reservation'};
+  return {side,kind:'agreed'};
+ }
+ const NEGO_LINES={
+  scouted:{grand:'{them} turned my {fam} round last time. I refuse to be a repeat performance. Give me the {alt} instead.',gruff:'{them} has seen my {fam}. {alt}. Not the other thing.',
+   eager:'{them} totally read my {fam} last time! What if I do the {alt}? They won’t see it coming! Probably!',stoic:'{them} has my {fam} sussed. I’d swap it for the {alt}.',
+   precise:'{them} reversed my {fam} last time. Doing it again is a mistake with a known outcome. The {alt} is not something they have seen.',
+   earnest:'I don’t want to make a fuss, but {them} read my {fam} last time. Could I do the {alt} instead?',sermon:'{them} has seen through my {fam}. Let me come with the {alt}, which they have not.',
+   slippery:'Between us, {them} has my {fam} figured. Swap in the {alt}. They’ll never know. Well. They’ll know when it hits them.'},
+  safety:{grand:'I would adore the {orig}. My body, regrettably, would not. The {alt}.',gruff:'Not the {orig}. Not this week. {alt}.',eager:'I want to do the {orig}! I really do! But my everything hurts. Could we do the {alt}?',
+   stoic:'I’m not doing the {orig} on what I’ve got left this week. Give me the {alt}.',precise:'The {orig} carries a risk I cannot justify this week. The {alt} carries almost none.',
+   earnest:'I’m sorry. I don’t think I can do the {orig} safely tonight. Is the {alt} all right?',sermon:'The flesh is weak this week. Let it be the {alt}, not the {orig}.',slippery:'Funny story about the {orig}. Long story short: the {alt}.'},
+  comeback:{grand:'I have lost to {them} {n} times. If I win tonight, I want it to look like a conquest. Let {them} do the {alt} to me first.',gruff:'{n} losses to {them}. If I win, it has to hurt first. Let them do the {alt}.',
+   eager:'I’ve lost to {them} {n} times! If I win tonight I want it to be HUGE. Can {them} do the {alt} to me first?',stoic:'I’ve lost to {them} {n} times. A cheap win fools nobody. Let {them} do the {alt}.',
+   precise:'{n} consecutive losses to {them}. A win without a proper beating first will not be believed. The {alt} fixes that.',earnest:'I’ve lost to {them} {n} times. If I win, I want people to believe it. Could {them} do the {alt}?',
+   sermon:'I have been humbled by {them} {n} times. The resurrection needs a crucifixion first. Let it be the {alt}.',slippery:'Look, {n} losses to {them}. If I win cheap, nobody buys it. Let {them} rough me up with the {alt}. For the story.'}
+ };
+ const REPLY_LINES={
+  agreed:{grand:'Acceptable. I shall be magnificent regardless.',gruff:'Fine.',eager:'Yeah! Okay! That works!',stoic:'Fair enough.',precise:'Agreed. The change is sound.',earnest:'Yes, of course. Whatever keeps everyone safe.',sermon:'So be it.',slippery:'Done. Easy.'},
+  reservation:{grand:'I shall do it. Under protest. Write “under protest”.',gruff:'I’ll do it. Don’t like it.',eager:'Okay. I mean, okay. I’m fine. I’m not fine.',stoic:'I’ll work it. I won’t pretend I’m happy.',precise:'I will comply. I note my objection for the record.',earnest:'It’s fine. Honestly. It’s fine.',sermon:'I will bear it. I will not pretend to like it.',slippery:'Fine. But you owe me. I’m keeping count.'},
+  payoff:{grand:'If my {orig} goes, I want the big spot. The {move}. I am not a prop.',gruff:'Then I get the big spot. The {move}.',eager:'Okay but if I lose the {orig} can I do the {move}? Please? Big spot?',stoic:'I’ll give up the {orig}. Then the big spot’s mine. The {move}.',
+   precise:'I will give up the {orig} in exchange for the big spot: the {move}. A fair trade.',earnest:'I don’t mind changing the {orig}. Could I have the big spot, though? The {move}?',sermon:'I give up the {orig}. In return, let me have the {move} for the big spot.',slippery:'I lose the {orig}, I get the big spot. The {move}. That’s how trades work.'},
+  minutes:{grand:'If my {orig} goes, I want time to work. Two more minutes.',gruff:'Then I want two more minutes.',eager:'Okay, but can we have two more minutes? I’ll fill them!',stoic:'Fine. Give us two more minutes to make it work.',
+   precise:'Then the match needs two more minutes for the change to read.',earnest:'Could we have a couple more minutes, then? So it makes sense?',sermon:'Grant us two more minutes, and it will be done right.',slippery:'Two more minutes and it’s a deal.'}
+ };
+ const tline=(map,st,side,vars)=>{const W=who(st,side);let t=map[voice(W)]||map.stoic;for(const [k,v] of Object.entries(vars))t=t.split('{'+k+'}').join(v);return cap(t);};
+ function negoLog(st,side,text,kind){log(st,side,text,kind);st.negotiation?.turns.push({who:nameOf(st,side),text});}
+ function negoSettle(st,how,final){
+  const n=st.negotiation;n.choice=how;n.final=final?{action:final.action,label:final.label,owner:final.owner}:{...n.original};
+  const r=how==='keep'?null:replyFor(st,n,how);
+  n.reply=r?{side:r.side,who:nameOf(st,r.side),kind:r.kind,demand:r.demand||null,text:null}:null;
+  if(r&&r.kind==='conditional'){
+   const t=tline(REPLY_LINES[r.demand.kind],st,r.side,{orig:n.original.label,move:r.demand.label||''});
+   n.reply.text=t;negoLog(st,r.side,t,'objection');chain(st,'rival_counter_reply');
+  }else if(r){
+   const t=tline(REPLY_LINES[r.kind],st,r.side,{});n.reply.text=t;negoLog(st,r.side,t,r.kind==='reservation'?'objection':'talk');
+   if(r.kind==='reservation')st.mood[r.side]-=3;
+  }
+  n.summary=nameOf(st,n.by)+' asked to change '+SLOT_NAME(n.slot)+': '+n.original.label+(n.final.action!==n.original.action?' became '+n.final.label:' stayed')+(n.reply?'; '+n.reply.who+' '+({agreed:'agreed',reservation:'went along with reservations',conditional:'asked for something back'}[n.reply.kind]):'')+'.';
+ }
+ SITUATIONS.push(
+  {id:'rival_counter',kind:'match',weight:0,followup:true,when:()=>true,
+   open(st){
+    const n=negotiationFor(st);if(!n)return false;
+    st.negotiation={...n,turns:[],choice:null,final:null,reply:null,demand:null,summary:''};
+    const prev=scout(st).lastTalk;
+    log(st,'agent',(prev&&prev.issue===n.issue&&prev.slot===n.slot?'Same conversation as last time, near enough. ':'')+n.reason);
+    const t=tline(NEGO_LINES[n.issue],st,n.by,{them:nameOf(st,other(n.by)),fam:FAMWORD(n.family),orig:n.original.label,alt:n.proposal.label,n:String(scout(st).lostRun)});
+    negoLog(st,n.by,t,'objection');
+    return true;
+   },
+   title:st=>st.negotiation?nameOf(st,st.negotiation.by)+' wants to change '+SLOT_NAME(st.negotiation.slot):'A change to the running order',
+   ask:st=>{const n=st.negotiation;return n?SLOT_NAME(n.slot).replace(/^t/,'T')+': the '+n.original.label+' or the '+n.proposal.label+'?':'';},
+   options(st){
+    const n=st.negotiation;if(!n)return [];
+    const by=n.by,m=by==='w'?'moodW':'moodF';
+    const agentAlt=n.slot==='payoff'?{action:'scheduled_nearfall',label:'A run of near-falls',owner:'either',by:'agent'}:
+     cardsFor(st,n.slot).find(c=>c.by==='agent'&&c.action!==n.original.action&&c.action!==n.proposal.action&&!banned(st,c.action))||null;
+    const yes={[m]:3,plan:{slot:n.slot,owner:n.proposal.owner,by:n.proposal.by,action:n.proposal.action,label:n.proposal.label}};
+    const mid=agentAlt?{[m]:1,plan:{slot:n.slot,owner:agentAlt.owner,by:'agent',action:agentAlt.action,label:agentAlt.label}}:null;
+    const credible=n.issue==='safety'&&n.credible;
+    const no={[m]:credible?-2:-4};
+    const out=[{id:'accept',label:'“Do it '+nameOf(st,by)+'’s way.”',hint:'The '+n.proposal.label+' goes in instead of the '+n.original.label+'. The other side gets a say.',fx:yes,tags:tagsOf(st,yes),
+      run(st){log(st,'agent',from(st,'nego-yes',['Rubbing it out. There.','Changed. In pen, this time.','Fine. That’s the running order.']));negoSettle(st,'accept',n.proposal);}}];
+    if(mid)out.push({id:'agent',label:'“Neither. '+AGENT+', what have you got?”',hint:AGENT+'’s middle option: the '+agentAlt.label+'.',fx:mid,tags:tagsOf(st,mid),
+      run(st){log(st,'agent','The '+agentAlt.label+'. Nobody gets exactly what they wanted, which is how you know it’s fair.');negoSettle(st,'agent',agentAlt);}});
+    out.push({id:'keep',label:'“It stays as it is.”',hint:credible?nameOf(st,by)+' will refuse to do it, and '+AGENT+' will have to change it anyway.':nameOf(st,by)+' takes it badly, and works the match with a grudge.',fx:no,tags:[...tagsOf(st,no),...(credible?['They will refuse']:[])],
+      run(st){
+       if(credible){
+        const t=tline({grand:'Then I decline. Politely. Absolutely.',gruff:'No. I’m not doing it.',eager:'I can’t. I really can’t. Sorry!',stoic:'No. I’m not doing it on this body.',precise:'I decline. That is not negotiable.',earnest:'I’m sorry, I just can’t do it safely.',sermon:'I will not.',slippery:'Yeah, that’s a no from me.'},st,by,{});
+        negoLog(st,by,t,'objection');
+        const safe={action:'scheduled_nearfall',label:'A run of near-falls',owner:'either',by:'agent'};
+        apply(st,{plan:{slot:n.slot,...safe}});log(st,'agent','Then it’s near-falls. I’m not having anybody carried out on my watch.');
+        negoSettle(st,'refused',safe);st.negotiation.reply={side:by,who:nameOf(st,by),kind:'refused',text:t};
+        st.negotiation.summary=nameOf(st,by)+' refused the '+n.original.label+'; it became '+safe.label+'.';
+       }else{log(st,by,say(st,'grumble',who(st,by),'nego'),'objection');negoSettle(st,'keep',null);st.negotiation.reply={side:by,who:nameOf(st,by),kind:'reservation',text:null};
+        st.negotiation.summary=nameOf(st,by)+' asked to change '+SLOT_NAME(n.slot)+'; it stayed the '+n.original.label+', with '+nameOf(st,by)+' unhappy.';}
+      }});
+    return out;
+   }},
+  {id:'rival_counter_reply',kind:'match',weight:0,followup:true,when:()=>true,
+   open(st){if(!st.negotiation?.reply?.demand)return false;log(st,'agent','And now the other half of the conversation.');return true;},
+   title:st=>st.negotiation?.reply?nameOf(st,st.negotiation.reply.side)+' wants something back':'Something back',
+   ask:st=>st.negotiation?.reply?.demand?(st.negotiation.reply.demand.kind==='payoff'?'Give '+nameOf(st,st.negotiation.reply.side)+' the big spot?':'Two more minutes?'):'',
+   options(st){
+    const r=st.negotiation?.reply;if(!r?.demand)return [];
+    const d=r.demand,side=r.side,m=side==='w'?'moodW':'moodF';
+    const grant=d.kind==='payoff'?{[m]:4,plan:{slot:'payoff',owner:side,by:side,action:d.action,label:d.label}}:{[m]:3,minutes:2};
+    const half=d.kind==='payoff'?{[m]:1,plan:{slot:'payoff',owner:'either',by:'agent',action:'scheduled_nearfall',label:'A run of near-falls'}}:{[m]:1,minutes:1};
+    const no={[m]:-4};
+    return [
+     {id:'grant',label:d.kind==='payoff'?'“The big spot’s yours.”':'“Two more minutes.”',hint:d.kind==='payoff'?nameOf(st,side)+' gets the '+d.label+'.':'The match runs two minutes longer.',fx:grant,tags:tagsOf(st,grant),
+      run(st){log(st,side,say(st,'pleased',who(st,side),'nego'));st.negotiation.demand={...d,granted:'yes'};st.negotiation.summary+=' '+(d.kind==='payoff'?nameOf(st,side)+' got the big spot in return.':'The match got two more minutes.');}},
+     {id:'split',label:d.kind==='payoff'?'“Nobody gets it. Near-falls.”':'“One minute.”',hint:'Meet in the middle.',fx:half,tags:tagsOf(st,half),
+      run(st){log(st,side,say(st,'grumble',who(st,side),'nego'));st.negotiation.demand={...d,granted:'half'};st.negotiation.summary+=' They met in the middle.';}},
+     {id:'refuse',label:'“No. The change stands on its own.”',hint:nameOf(st,side)+' works the match unhappy.',fx:no,tags:tagsOf(st,no),
+      run(st){log(st,side,tline(REPLY_LINES.reservation,st,side,{}),'objection');st.negotiation.demand={...d,granted:'no'};st.negotiation.reply.kind='reservation';st.negotiation.summary+=' The condition was refused.';}}];
+   }}
+ );
  const SPINE=SLOTS.filter(S=>S.id!=='finish');
  const winSideOf=st=>st.finish.startsWith('win')?'w':'f';
  const slotOwner=(S,c)=>S.id==='payoff'?c.owner:S.owner;
@@ -1102,7 +1267,7 @@
  }
  function begin(c,w,f,p,opts={}){
   const seed=String(c.id)+'|room|'+w.id+'|'+f.id+'|'+(c.eventAbs||0);
-  const lite=x=>({id:x.id,name:x.name,short:x.short,style:x.style,tier:x.tier||null,ring:x.ring||60,psych:x.psych||50,safe:x.safe||65,pro:x.pro||60,ego:x.ego||50,mic:x.mic||50,heat:x.heat||40,fatigue:x.fatigue||0,finisher:x.finisher,learned:(x.learned||[]).slice()});
+  const lite=x=>({id:x.id,name:x.name,short:x.short,style:x.style,tier:x.tier||null,ring:x.ring||60,psych:x.psych||50,safe:x.safe||65,pro:x.pro||60,ego:x.ego||50,mic:x.mic||50,heat:x.heat||40,fatigue:x.fatigue||0,injury:x.injury||0,finisher:x.finisher,learned:(x.learned||[]).slice()});
   const pid=p?.id&&NOTES[p.id]?p.id:'dock';
   const st={v:3,cid:c.id,seed,game:null,finish:c.finish,slot:c.slot,minutes:c.minutes||10,heat:Math.max(c.feudHeat||0,opts.heat||0),
    w:lite(w),f:lite(f),promoter:{id:pid,name:p?.name||'the promoter',voice:p?.voice||'The promoter',likes:p?.likes||null,tv:!!p?.tv},
@@ -1113,9 +1278,16 @@
   // The oldest thread due with this wrestler, opponent or promoter comes up first.
   const due=(opts.threads||[]).find(t=>{const x=SITUATIONS.find(q=>q.id===t.sit);return x&&(t.sid?t.sid===w.id||(!x.ownWrestler&&t.sid===f.id):true)&&(t.pid?t.pid===p?.id:true);});
   if(due){st.thread={...due,side:due.sid===f.id&&due.sid!==w.id?'f':'w'};st.queue=[due.sit,...st.queue.filter(id=>id!==due.sit)].slice(0,st.queue.length);}
+  // v0.3.12 If the rivalry or the wrestlers' condition gives somebody a reason to ask for a change, that
+  // conversation happens straight after the running order is agreed (and is skipped if the board
+  // already avoids the problem).
+  if(negotiable(st))st.queue=['rival_counter',...st.queue.filter(id=>id!=='rival_counter')];
   const fin={win_clean:w.short+' wins clean',win_dirty:w.short+' wins dirty',lose_protected:w.short+' loses, but protected',lose_clean:w.short+' loses clean'}[c.finish];
   log(st,'agent',pick(['Evening. Doors in ten, so let’s not make a meal of it.','Right. I’ve a flask going cold, so shall we?','The urn’s on. Let’s get this agreed before the raffle starts.'],seed,'hello'));
   log(st,'agent','Contract says '+fin+'. That part isn’t up for discussion. So, what sort of match are we having?');
+  const last=scout(st).lastTalk;
+  if(last&&last.original&&last.final)log(st,'agent','Last time these two worked, '+(last.by==='w'?w.short:f.short)+' asked to change '+SLOT_NAME(last.slot)+': the '+last.original+(last.final!==last.original?' became the '+last.final:' stayed')+'. '+
+   (last.delivered==='achieved'?'It came off.':last.delivered==='adapted'?'They had to adapt it in the ring.':last.delivered==='missed'?'It never happened.':'')+'');
   return st;
  }
  const current=st=>st.stage==='scene'?SITUATIONS.find(s=>s.id===st.queue[st.at]):null;
@@ -1150,7 +1322,7 @@
  }
  function enter(st){
   // Move to whatever comes next, and let the people in the room say their piece.
-  if(st.stage==='scene'&&st.at<st.queue.length){current(st).open(st);return;}
+  while(st.stage==='scene'&&st.at<st.queue.length){if(current(st).open(st)!==false)return;st.queue.splice(st.at,1);}
   if(st.stage==='scene'){st.stage=st.lockRoute?'curtain':'finish';}
   if(st.stage==='finish'){
    log(st,'agent','The finish. The result is in the contract. How do we get there?');
@@ -1247,6 +1419,7 @@
    n.planned=true;n.impossible=!!b.impossible;if(b.action!=='scheduled_nearfall')planned++;
   }
   // Only what was actually agreed is a commitment. Everything else is left to the wrestlers, and is not judged.
+  if(st.negotiation?.final){for(const n of base.nodes)if(n.id===st.negotiation.slot||(st.negotiation.demand?.granted==='yes'&&st.negotiation.demand.kind==='payoff'&&n.id==='payoff'))n.negotiated=true;}
   base.nodes=base.nodes.filter(n=>n.id==='finish'||n.planned);
   base.nodes.forEach((n,i)=>{n.requires=i?[base.nodes[i-1].id]:[];});
   const problems=K.validate(base.nodes);if(problems.length)throw Error('Backstage sheet: '+problems.join(', '));
@@ -1255,7 +1428,7 @@
    workerConsent:consent(st,'w'),opponentConsent:consent(st,'f'),finishRoute:st.lockRoute||st.board.finish?.route||null,note,
    limits:{ban:[...new Set(st.limits.ban)],banIds:[...new Set(st.limits.banIds)]},spice:st.spice,fx:{...st.fx},repStake:st.repStake,entrance:st.entrance.slice(),
    game:st.game,leash:st.leash,talk:st.talk||'none',flags:{...st.flags},crowdMood:st.crowdMood||null,minutes:Math.max(5,st.minutes+(st.fx.minutes||0)),skipPromo:st.skipPromo,
-   stunt:null,bonus:0,story:story(st),rehearsed:!!st.rehearsed,situations:st.queue.slice(),threads:(st.carry||[]).map(t=>({...t})),threadUsed:st.thread?.id||null,decided:st.decided.map(d=>({...d})),
+   stunt:null,bonus:0,story:story(st),negotiation:st.negotiation?JSON.parse(JSON.stringify(st.negotiation)):null,rehearsed:!!st.rehearsed,situations:st.queue.slice(),threads:(st.carry||[]).map(t=>({...t})),threadUsed:st.thread?.id||null,decided:st.decided.map(d=>({...d})),
    premise:'A running order of '+planned+' '+(planned===1?'move':'moves')+'; '+st.queue.length+' things came up backstage'+(st.reworked?' and '+st.reworked+' '+(st.reworked===1?'beat was':'beats were')+' rewritten':'')+'.',
    speakers:st.log.filter(x=>x.kind!=='you').slice(-6).map(x=>({actor:x.who,text:x.text}))};
  }
@@ -1265,6 +1438,7 @@
   if(st.game)out.push(D.PLANS[st.game].name);
   for(const S of SLOTS){const b=st.board[S.id];if(b&&S.id!=='finish'&&b.label)out.push(S.name+': '+b.label);}
   if(st.note&&st.note.honour!==null)out.push('Note: '+st.note.short+(st.note.waived?' (withdrawn)':st.note.honour?' (promised)':' (no promise)'));
+  const ng=st.negotiation;if(ng?.final)out.push('Changed at '+nameOf(st,ng.by)+'’s request: '+(ng.final.action!==ng.original.action?ng.original.label+' → '+ng.final.label:ng.original.label+' kept')+(ng.reply?.kind==='reservation'?' (reservations)':''));
   if(st.limits.ban.length)out.push('Parts of the ring are off limits');
   if(st.spice)out.push(st.spice>0?'Working with more risk':'Working safe');
   if(st.fx.minutes)out.push((st.fx.minutes>0?'+':'−')+Math.abs(st.fx.minutes)+' minutes');
@@ -1425,5 +1599,5 @@
   }
   G.save();return out;
  };
- root.OfficeRoom={DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
+ root.OfficeRoom={negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
 })(typeof window!=='undefined'?window:globalThis);

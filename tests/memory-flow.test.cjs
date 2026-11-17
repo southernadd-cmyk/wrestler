@@ -49,7 +49,8 @@ assert.ok(good.comply>bad.comply,'manager trust influences willingness to follow
 assert.equal(good.resent,false,'high trust eases a proud wrestler’s resentment');
 assert.equal(bad.resent,true,'low trust leaves the resentment intact');
 assert.ok(script.includes('M.o.memory?.recall'),'remembered events enter commentary');
-assert.ok(script.includes('recalled.promoPrompt'),'remembered events enter promos');
+// v0.3.12: the promo is introduced from the rivalry's public record; backstage memories stay backstage.
+assert.ok(script.includes('OfficeRivalry?.introFor(night.promo.core)'),'remembered events enter promos, in public words');
 assert.ok(script.includes('What they remember</h3>'),'memory appears on profile');
 // Duplicate result callbacks cannot generate duplicate memories or inbox choices.
 const oldCount=O.view('rex').entries.length;

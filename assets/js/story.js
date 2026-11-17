@@ -270,8 +270,11 @@
   const lost=outcome.startsWith('lose');
   const event=st.memory?.kind;
   const strength={Technical:'holds and counters',Brawl:'hard strikes',Spectacle:'speed and aerial attacks',Story:'patience and ring psychology'}[st.f.style]||'wrestling';
-  const evidence=st.memory?.recall||(
-   historic?(st.w.short+(lost?' lost':' won')+' the last encounter with '+st.f.short+'.'):'This is their first recorded meeting.');
+  // v0.3.12 Only public facts are said at the microphone. A backstage memory ("X remembers being asked
+  // to lose") is never read out; the rivalry ledger supplies what the crowd actually saw.
+  const top=st.cases?.[0]||null;
+  const evidence=top?.evidence||(historic?(st.w.short+(lost?' lost':' won')+' the last encounter with '+st.f.short+'.'):'This is their first recorded meeting.');
+  const said=historic?(lost?'You beat me last time, '+st.f.short+'.':'I beat you last time, '+st.f.short+'.'):'';
   const thesis=opening==='proof'?'Who has actually learned from the opposition?':
    opening==='accusation'?'Can that charge be supported by an actual incident?':
    opening==='people'?'Can the performer deliver for the audience?':
@@ -279,7 +282,7 @@
    opening==='hometown'?'Can the wrestler survive the town they just insulted?':
    opening==='numbers'?'Do the sums hold up once the bell rings?':
    'Can the wrestler back up the demand for the spotlight?';
-  return {opening,strength,evidence,thesis,hasEvidence:!!historic||!!st.memory?.recall,
+  return {opening,strength,evidence,said,thesis,hasEvidence:!!historic||!!st.memory?.recall,
    priorLoss:lost,planFocus:st.sheet?.focus||null,planPayoff:st.sheet?.payoff||null,opponentStyle:st.f.style};
  }
  function reactionToClaim(st,id){
@@ -300,13 +303,13 @@
   const c=st.claim||claimContext(st,'proof'),f=st.f.short;
   if(id==='turn')return 'You are proud of your '+c.strength+', '+f+'. That tells me what I must prepare for. I do not need to pretend it does not exist.';
   if(id==='personal')return c.hasEvidence?
-   'You remember what happened last time, '+f+'. '+c.evidence+' I will not pretend it meant nothing.':
+   'You remember what happened last time, '+f+'. '+(c.said||c.evidence)+' I will not pretend it meant nothing.':
    'You asked for a specific example, '+f+'. I do not have one. What I do have is a match in front of me.';
   if(id==='callback')return c.opening==='imagery'?
    'I started with an image because there is a point beneath it, '+f+'. You will understand when we get to that ring.':
    'The point from my opening has not changed, '+f+': '+c.thesis;
   if(id==='calm')return 'You are asking how I will answer your '+c.strength+', '+f+'. By staying composed long enough to find the opening.';
-  if(id==='confession')return c.hasEvidence?'You want to know what you have done to me, '+f+'? '+c.evidence+' I have not been the same since. Tonight you meet who I became.':
+  if(id==='confession')return c.hasEvidence?'You want to know what you have done to me, '+f+'? '+(c.said||c.evidence)+' I have not been the same since. Tonight you meet who I became.':
    'I will be honest with you, '+f+'. I am not sure I am all right. That should worry you more than it worries me.';
   if(id==='fakeout')return 'Nobody is coming, '+f+'. Not for you, not for me. Just the two of us and a referee.';
   return 'You want proof, '+f+'? Then try your usual attack when the bell rings. I will have to answer it where everyone can see.';
@@ -328,7 +331,7 @@
  const format=(text,st)=>String(text).replace(/\{W\}/g,st.w.short).replace(/\{F\}/g,st.f.short)
   .replace(/\{VENUE\}/g,st.venue||'this hall').replace(/\{FINISHER\}/g,st.w.finisher||'my finishing hold').replace(/\{THEME\}/g,st.thread==='imagery'?st.motif.prop:(thematic[st.thread]||'tonight'))
   .replace(/\{PROP\}/g,st.motif.prop).replace(/\{MOTIF1\}/g,st.motif.first).replace(/\{MOTIF2\}/g,st.motif.second)
-   .replace(/\{EVIDENCE\}/g,st.claim?.evidence||'').replace(/\{STRENGTH\}/g,st.claim?.strength||({Technical:'holds and counters',Brawl:'hard strikes',Spectacle:'speed and aerial attacks',Story:'patience and ring psychology'}[st.f?.style]||'wrestling')).trim();
+   .replace(/\{EVIDENCE\}/g,st.claim?.said||st.claim?.evidence||'').replace(/\{RECN\}/g,String(st.record?.n??(st.history?.length||0))).replace(/\{RECW\}/g,String(st.record?.w??(st.history||[]).filter(x=>String(x.finish||'').startsWith('win')).length)).replace(/\{STRENGTH\}/g,st.claim?.strength||({Technical:'holds and counters',Brawl:'hard strikes',Spectacle:'speed and aerial attacks',Story:'patience and ring psychology'}[st.f?.style]||'wrestling')).trim();
  const limit=(x,a,b)=>Math.max(a,Math.min(b,x));
  /* v3.3 PROMO VARIANTS — each of the fifteen angles has concrete, situation-specific versions.
     A variant is offered only when its condition is true for this pairing (history, memories,
@@ -344,7 +347,7 @@
     V('p_second_chance',c=>c.lost,'Ask the crowd for a second chance','Own the defeat in front of the people who saw it.',['You saw me lose to {F}. I am asking you for one more chance to show you what really happened.'],['They saw it the first time, {W}. They will see it again.'],{crowd:2,cred:1}),
     V('p_working',c=>c.pro>=80,'Speak to the working people','A blue-collar appeal. Credible from a professional.',['Everybody here worked a full week to buy a ticket. I owe them a full night’s effort, and so do you, {F}.'],['A full night’s effort, {W}? I will give them that. You will be the one who cannot keep up.'],{cred:2,trust:1}),
     V('p_rally',c=>c.grudge,'Rally them against the opponent','Turn the room on {F}. More heat, a little less dignity.',['Every one of you knows what {F} has done. Help me make sure it ends tonight.'],['Listen to them cheer for you, {W}. They will be quiet soon enough.'],{heat:2,crowd:1}),
-    V('p_injury',c=>c.mem==='hurt','Tell them you came back from the injury','A comeback story with a real wound behind it.',['The last time {F} and I met, I left on a stretcher. I came back for these people, and I came back for that.'],['I remember that night too, {W}. I am not sorry, and I will not be gentle.'],{crowd:3,heat:2}),
+    V('p_injury',c=>c.mem==='hurt','Tell them you came back from the injury','A comeback story with a real wound behind it.',['The last time {F} and I met, I went home hurt. I came back for these people, and I came back for that.'],['I remember that night too, {W}. I am not sorry, and I will not be gentle.'],{crowd:3,heat:2}),
     V('p_chant',c=>c.micHigh,'Start a chant','Showy crowd work. Strong if the room is ready.',['Let me hear you! Louder! That noise is for you, {F}. It will be there for every count tonight.'],['Shout all you like. Noise has never pinned anybody.'],{crowd:2,risk:1}),
     V('p_short',c=>c.micLow,'Keep it short for the fans','Plain words. Hard to get wrong.',['I am not much of a talker. I will do my talking in the ring, for all of you.'],['Not much of a talker, {W}? Then let me do the talking. You can do the losing.'],{cred:2,crowd:-1,risk:-1}),
     V('p_show',c=>c.opp==='Spectacle','Promise them a show','Speak to fans who came to see something special.',['You came to see something you will never forget. {F} can fly. I will make sure you see them come down.'],['I will give them a show, {W}. You will have the best view of it from the mat.'],{crowd:2})
@@ -365,7 +368,7 @@
     V('im_chess',c=>c.opp==='Technical','Compare it to chess','Meet the technician on their own terms.',['You think this is chess, {F}. Then you know what happens when the king runs out of squares.'],['Then you should know I am always three moves ahead.'],{cred:1}),
     V('im_bull',c=>c.opp==='Brawl','Compare them to a charging bull','Turn their aggression into a weakness.',['You charge like a bull, {F}. All I need is to step aside at the right moment.'],['Step aside if you can, {W}. Most people cannot.'],{}),
     V('im_fall',c=>c.opp==='Spectacle','Talk about flying and falling','Every high flyer has to come down.',['You fly higher than anyone, {F}. That only means the fall is longer.'],['I land on my feet, {W}. I always have.'],{}),
-    V('im_scar',c=>c.mem==='hurt'||c.mem==='humiliation','Talk about the scar it left','A memorable image backed by a real memory.',['I still carry the mark from our last match, {F}. Every morning I see it, and I think about tonight.'],['Then I will give you a matching one, {W}.'],{heat:3,cred:1}),
+    V('im_scar',c=>c.mem==='hurt','Talk about the scar it left','A memorable image backed by a real injury.',['I still carry the mark from our last match, {F}. Every morning I see it, and I think about tonight.'],['Then I will give you a matching one, {W}.'],{heat:3,cred:1}),
     V('im_ladder',c=>c.fresh&&!c.micLow,'Talk about climbing the ladder','Present the match as a step up.',['Every name on this card is a rung on a ladder, {F}. You are the next one I step on.'],['Plenty of people have tried to step over me, {W}. They all fell.'],{}),
     V('im_cage',c=>c.micHigh,'Describe the ring as a cage','A strong image, if you can sell it.',['Four ropes, four corners, nowhere to run. That ring is the only place where neither of us can lie, {F}.'],['Fine with me, {W}. I have nothing to hide.'],{crowd:1,risk:1}),
     V('im_debt',c=>c.lost,'Talk about a debt being repaid','A promise of repayment for the last loss.',['You took something from me last time, {F}. I keep a list. Tonight I start paying it back.'],['You can keep your list, {W}. I am adding to it tonight.'],{heat:2}),
@@ -375,12 +378,12 @@
     V('ac_injury',c=>c.mem==='hurt','Blame them for the injury','A specific charge with evidence behind it.',['You hurt me, {F}. Not by accident, either. You were careless, and you knew it.'],['It was an accident and you know it, {W}. But if you want a fight, you have one.'],{heat:3,evidence:true}),
     V('ac_survived',c=>c.lost,'Say they did not really beat you','Dispute the last result.',['You did not beat me last time, {F}. You survived me, and everyone here saw how.'],['The referee counted three, {W}. That is all anybody remembers.'],{heat:2}),
     V('ac_politics',c=>c.ego>=70,'Accuse them of backstage politics','Unprovable claims can backfire.',['You did not get this spot with your wrestling, {F}. Everyone in the back knows who you talk to.'],['Name one person, {W}. You cannot, because it is not true.'],{heat:3,trust:-2,risk:1}),
-    V('ac_coward',c=>c.grudge,'Call them a coward','Escalate a running feud.',['Every time this got serious, {F}, you found a reason to leave. Not tonight.'],['I have never run from you, {W}. I have never needed to.'],{heat:3}),
-    V('ac_cheat',c=>c.opp==='Story'||c.opp==='Brawl','Call out their cheating','Their style gives you material.',['A thumb in the eye, feet on the ropes, a fistful of tights. That is all you have ever had, {F}.'],['I win, {W}. That is all anybody needs to know.'],{heat:2,crowd:1}),
+    V('ac_coward',c=>c.grudge,'Call them a coward','Escalate a running feud.',['You talk a big fight, {F}. Tonight there is a ring round you and nowhere to go.'],['I have never run from you, {W}. I have never needed to.'],{heat:3}),
+    V('ac_cheat',c=>c.opp==='Story'||c.opp==='Brawl','Say they wrestle like a rulebreaker','A charge about their style, not about anything they did to you.',['You wrestle like somebody who is always checking where the referee is, {F}. Tonight he is checking on you.'],['I win, {W}. That is all anybody needs to know.'],{heat:2,crowd:1}),
     V('ac_reckless',c=>c.opp==='Spectacle','Call them reckless','Safety is a fair charge against a risk-taker.',['You throw yourself around without caring who gets hurt, {F}. I care. Somebody has to.'],['Nobody has ever been hurt by me, {W}. Do not start lying now.'],{cred:1,heat:1}),
     V('ac_words',c=>c.prior,'Bring up what was said last time','A callback to your last confrontation.',['Last time we stood here, words were spoken, {F}. I remember every one of them.'],['So do I, {W}. I meant every one.'],{heat:2,evidence:true}),
-    V('ac_fake',c=>c.won,'Say their respect was fake','A charge drawn from your last win.',['You shook my hand after our last match, {F}. Then you went backstage and complained. I heard.'],['You heard wrong, {W}. But fine. No handshake tonight.'],{heat:2}),
-    V('ac_humiliation',c=>c.mem==='humiliation','Bring up how they treated you last time','A real grievance from a humiliating loss.',['You stood over me last time and laughed, {F}. You will not be laughing tonight.'],['I laughed because it was easy, {W}.'],{heat:4,evidence:true})
+    V('ac_fake',c=>c.won,'Say they have been telling themselves a story','A charge drawn from your last win.',['You lost to me last time, {F}, and you have been telling yourself a story about it ever since.'],['The only story is tonight’s, {W}. No handshake.'],{heat:2}),
+    V('ac_humiliation',c=>c.mem==='humiliation','Bring up the decisive defeat','A real grievance from a humiliating loss.',['You beat me decisively last time, {F}. I have had to hear about it every day since. You will not enjoy tonight as much.'],['It was easy, {W}. It will be easy again.'],{heat:4,evidence:true})
    ],
    swagger:[
     V('sw_main',c=>c.ego>=75,'Declare yourself the main event','Pure ego. Works if the crowd buys it.',['Whatever slot they gave me, the main event starts when I walk out.'],['Main event? You are lucky to be on the card, {W}.'],{crowd:1,heat:1}),
@@ -407,8 +410,8 @@
     V('tu_strength',c=>true,'Answer the strength they named','Directly address their claim.',['You are proud of your {STRENGTH}, {F}. That tells me exactly what I have to prepare for.'],['Prepare all you like, {W}.'],{})
    ],
    personal:[
-    V('pe_injury',c=>c.mem==='hurt','Bring up the injury','A real grievance. Very personal.',['I spent weeks unable to lift my arm because of you, {F}. You never called once.'],['I am not your nurse, {W}.'],{heat:3,evidence:true}),
-    V('pe_humiliation',c=>c.mem==='humiliation','Bring up the humiliation','Personal history the crowd will feel.',['You laughed while I lay there after our last match, {F}. I heard every second of it.'],['Then do not give me a reason to laugh again.'],{heat:3,evidence:true}),
+    V('pe_injury',c=>c.mem==='hurt','Bring up the injury','A real grievance. Very personal.',['I went home hurt after our last match, {F}. I have thought about you every day since. Not fondly.'],['I am not your nurse, {W}.'],{heat:3,evidence:true}),
+    V('pe_humiliation',c=>c.mem==='humiliation','Bring up the humiliation','Personal history the crowd will feel.',['Everybody in this building saw you beat me last time, {F}. I have not been allowed to forget it.'],['Then do not give me a reason to do it again.'],{heat:3,evidence:true}),
     V('pe_respect',c=>c.hist,'Say they never respected you','Draw on your shared history.',['You have never respected me, {F}. Not once, not in the ring, not in the back.'],['Respect is earned, {W}. Earn it tonight.'],{heat:2,evidence:true}),
     V('pe_jealous',c=>c.ego>=70,'Say they are jealous','Ego meets ego.',['You are jealous of me, {F}. Everyone can see it.'],['Jealous? Of what, exactly?'],{heat:2}),
     V('pe_grudge',c=>c.grudge,'Make it clear this is a grudge','Admit this is no longer about wrestling.',['This stopped being about wrestling a long time ago, {F}.'],['For once we agree.'],{heat:3}),
@@ -504,7 +507,7 @@
     V('qu_studied',c=>c.hist,'Say you know their offence by heart','A counter vow based on your history.',['I know your offence by heart now, {F}. Every move has a counter.'],['Then you know how much it hurts.'],{cred:1}),
     V('qu_reverse_loss',c=>c.lost,'Promise to reverse what beat you','Redemption through a counter.',['What beat me last time will not work again, {F}. I will reverse it.'],['It worked once. It will work again.'],{heat:1}),
     V('qu_watch',c=>c.thread==='people','Ask the fans to watch for the counter','Make the counter a public moment.',['Watch closely tonight. When {F} goes for their best move, I will turn it around.'],['They will be watching you fall.'],{crowd:2}),
-    V('qu_big_move',c=>c.won,'Promise to counter their biggest move','A bold vow from the last winner.',['When you go for your big move, {F}, I will turn it around. Just like last time.'],['Not this time.'],{heat:1}),
+    V('qu_big_move',c=>c.won,'Promise to counter their biggest move','A bold vow from the last winner.',['When you go for your big move, {F}, I will turn it around. I beat you once already.'],['Not this time.'],{heat:1}),
     V('qu_simple',c=>c.micLow,'Say you will counter them','Short and plain.',['You attack, I counter. Simple.'],['We will see.'],{risk:-1})
    ]
   }
@@ -513,14 +516,15 @@
   const h=st.history?.[0],fin=h?.finish||'',heat=st.feudHeat||0;
   return {hist:!!h||!!st.hasHistory,noHist:!h&&!st.hasHistory,won:fin.startsWith('win'),lost:fin.startsWith('lose'),
    grudge:heat>=50,fresh:heat<25,opp:st.f.style,micHigh:st.w.mic>=75,micLow:st.w.mic<50,ego:st.w.ego,pro:st.w.pro,psych:st.w.psych,
-   finisher:!!st.w.finisher,mem:st.memory?.kind||null,prior:!!st.priorPromise,thread:st.steps[0]?.id||null,booked:st.contractFinish||''};
+   finisher:!!st.w.finisher,mem:st.memory?.kind||null,prior:!!st.priorPromise,thread:st.steps[0]?.id||null,booked:st.contractFinish||'',
+   recN:st.record?.n??(st.history?.length||0),recW:st.record?.w??(st.history||[]).filter(x=>String(x.finish||'').startsWith('win')).length};
  }
  // The variant offered for an angle is a pure function of the saved promo state, so the
  // choice the player sees is exactly the one that is played, before and after a reload.
  Object.assign(VARIANTS.open,{
   hometown:[
    V('ht_song',c=>c.micHigh,'Sing them a song about the town','A cruel little song. It has more verses.',['“Oh, {VENUE}, your car park floods, your chip shop shuts at nine…” I wrote that in the van, {F}. There are more verses. You do not deserve them.'],['Nice song, {W}. By the end of the night this town will be singing mine.'],{crowd:-1,heat:2,risk:1}),
-   V('ht_hero',c=>c.hist,'Remind them their favourite lost to you','Reopen an old wound. Every boo is earned.',['You remember the last time I was here? Your favourite, {F}, went home early. None of you have forgiven me. Good.'],['They have not forgiven you, {W}, because I have not finished with you.'],{heat:2}),
+   V('ht_hero',c=>c.won,'Remind them their favourite lost to you','Reopen an old wound. Every boo is earned.',['You remember the last time I wrestled {F}? Your favourite went home beaten. None of you have forgiven me. Good.'],['They have not forgiven you, {W}, because I have not finished with you.'],{heat:2}),
    V('ht_fake',c=>c.ego>=70,'Tell them someone special is coming','Get their hopes up. Then don’t.',['I have a surprise for you, {VENUE}. Someone very special is here tonight… No. Of course not. Who would come here?'],['This town does not need anybody to save it from you, {W}. It has me.'],{heat:2,crowd:-1}),
    V('ht_journey',c=>c.noHist,'Complain about the journey','Petty, specific, very effective.',['Three hours on the motorway to get here, {F}, and the services had run out of sandwiches. Somebody is paying for that tonight.'],['You can have a sandwich afterwards, {W}. You will be eating it lying down.'],{crowd:1}),
    V('ht_carpark',c=>c.opp==='Brawl','Say this town only respects a brawler','Sneer at the local hero’s style.',['This is a town that settles things in car parks, so I understand why you all like {F}. I settle things in the ring, where the rules are written down.'],['Rules or no rules, {W}, you are still in my town.'],{cred:1,heat:1}),
@@ -529,10 +533,10 @@
    V('ht_plain',c=>c.micLow,'Just say you hate it here','Short and nasty.',['I do not like it here. I will not be staying.'],['Then do everyone a favour and lose quickly, {W}.'],{cred:1,risk:-1})
   ],
   numbers:[
-   V('nu_record',c=>c.hist&&c.won,'Quote the head-to-head','A hundred per cent is hard to argue with.',['One match, one win, {F}. That is a hundred per cent. You cannot beat a hundred per cent. I have checked.'],['One match is a sample of one, {W}. Ask anyone with a calculator.'],{cred:1}),
+   V('nu_record',c=>c.hist&&c.won&&c.recN>0&&c.recW===c.recN,'Quote the head-to-head','A hundred per cent is hard to argue with.',['Played {RECN}, won {RECW}, {F}. That is a hundred per cent. You cannot beat a hundred per cent. I have checked.'],['A small sample, {W}. Ask anyone with a calculator.'],{cred:1}),
    V('nu_lost',c=>c.lost,'Explain why the last loss doesn’t count','Creative accounting with a straight face.',['Yes, you won last time, {F}. But take away the bit where I lost and I was ahead for most of it. Statistically, I won that match.'],['Statistically you were on your back for three seconds, {W}.'],{crowd:2,cred:-1}),
    V('nu_flight',c=>c.opp==='Spectacle','Work out their flight path','Physics, delivered badly.',['You come off the top rope at about forty miles an hour, {F}. I weigh more than a fridge. That is physics, and physics is on my side.'],['Then physics had better catch me, {W}.'],{crowd:1}),
-   V('nu_minutes',c=>c.psych>=75,'Count the minutes they can last','The one sum that actually adds up.',['You fade at the eleven-minute mark, {F}. I have timed it on four tapes. We are booked for fifteen. Do the subtraction.'],['Four minutes is plenty of time to beat you, {W}.'],{cred:2}),
+   V('nu_minutes',c=>c.psych>=75,'Count the minutes they can last','A bluff about their stamina. It lands if they believe you have done the sums.',['I have timed you, {F}. I know roughly when you start to fade, and we are booked for long enough. Do the subtraction.'],['Time me tonight, {W}. Bring a calendar.'],{cred:2}),
    V('nu_poll',c=>c.micHigh,'Poll the crowd','Hands up. Interactive maths.',['Hands up who thinks {F} wins tonight. Now hands up who can count. Thank you. My point exactly.'],['They can count, {W}. They will be counting to three over you.'],{crowd:2,risk:1}),
    V('nu_wages',c=>c.ego>=75,'Work out what they are worth','It is just basic economics.',['I get paid more than {F}. That means I am worth more than {F}. That means I win. It is basic economics.'],['Then I will cost you money tonight, {W}.'],{heat:2}),
    V('nu_odds',c=>c.noHist,'Give them odds','A bookie’s confidence.',['The bookies have {F} at eleven to one. I have them at never. I am a better bookie.'],['Put your money on it, {W}. I will collect.'],{crowd:1}),
@@ -587,23 +591,50 @@
   if(!st?.w||!VARIANTS[stage]?.[id])return null;
   const c=context(st),list=VARIANTS[stage][id].filter(v=>{try{return !!v.when(c)}catch(e){return false}});
   if(!list.length)return null;
-  return list[Math.floor(rng(st.seed,stage+'|'+id+'|variant|'+st.steps.map(s=>s.id).join('>'))*list.length)];
+  // v0.3.12 A wrestler does not reuse the exact lines from their last promo against this opponent
+  // when they have something else that fits; a deliberate repeat comes through the rivalry case.
+  const fresh=list.filter(v=>!(st.avoid||[]).includes(v.id));
+  const pool=fresh.length?fresh:list;
+  return pool[Math.floor(rng(st.seed,stage+'|'+id+'|variant|'+st.steps.map(s=>s.id).join('>'))*pool.length)];
  }
  const offered=(stage,st)=>Object.keys(NODES[stage]||{}).filter(id=>{const w=NODES[stage][id].when;if(!w||!st)return true;try{return !!w(context(st))}catch(e){return false}});
+ // v0.3.12 THE ARGUMENT UNDERNEATH. A rivalry case rides on one of the existing nodes, so the flow and
+ // the button count stay the same: an opening that raises (or pre-empts) a recorded issue, five answers
+ // that each take a different position on the other wrestler's actual reply, and a close that can make
+ // the commitment official. What is shown is exactly what is played.
+ function caseOption(st,stage,id){
+  if(!st)return null;
+  if(stage==='open'){
+   const k=(st.cases||[]).find(x=>x.angle===id);if(!k)return null;
+   return {id,label:k.label,hint:k.hint+(k.owner==='f'?' '+st.f.short+' will bring it up whatever you open with.':''),variant:'case:'+k.issue,evidence:k.evidence,case:k.issue};
+  }
+  if(stage==='answer'){
+   const r=st.case?.responses?.[id];if(!r)return null;
+   return {id,label:r.label,hint:r.hint+(r.expose?' Your own record can be thrown back at you.':''),variant:'case:'+st.case.issue+':'+id,caseResponse:true};
+  }
+  if(stage==='close'){
+   const k=st.case?.commit;if(!k?.node||k.node!==id)return null;
+   return {id,label:k.label,hint:k.hint,variant:'case-commit:'+k.kind,followsCase:true};
+  }
+  return null;
+ }
  const opts=(stage,st)=>offered(stage,st).map(id=>{
-  const entry=NODES[stage][id],v=st?variantFor(st,stage,id):null;let hint=v?format(v.hint,st):entry.hint;
+  const entry=NODES[stage][id],v=st?variantFor(st,stage,id):null;let hint=v?format(v.hint,st):entry.hint;let warn='';
   if(st&&stage==='answer'){
    if(id==='personal'&&!st.claim?.hasEvidence)hint+=' You have no incident to substantiate it; the opponent may expose the bluff.';
    if(id==='callback'&&st.claim?.opening!=='imagery'&&!st.claim?.hasEvidence)hint+=' The opening provided little to call back to.';
    if(id==='turn')hint+=' Directly addresses the opponent’s argument about '+(st.claim?.strength||'their strengths')+'.';
   }
   if(st&&stage==='close'){
-   if(id==='vow'&&st.contractFinish?.startsWith('lose'))hint+=' The promoter has booked a loss; breaking this public vow will be remembered.';
-   if(id==='finisher'&&!st.contractFinish?.startsWith('win'))hint+=' You are booked to lose. A promised finishing victory is unlikely.';
-   if(id==='clean'&&st.contractFinish==='win_dirty')hint+=' The written finish is dirty. Your public demand is at risk.';
-   if(id==='question')hint+=' The game will verify an actual successful counter, not the match rating.';
+   if(id==='vow'&&st.contractFinish?.startsWith('lose'))warn+=' The promoter has booked a loss; breaking this public vow will be remembered.';
+   if(id==='finisher'&&!st.contractFinish?.startsWith('win'))warn+=' You are booked to lose. A promised finishing victory is unlikely.';
+   if(id==='clean'&&st.contractFinish==='win_dirty')warn+=' The written finish is dirty. Your public demand is at risk.';
+   if(id==='question')warn+=' The game will verify an actual successful counter, not the match rating.';
+   if(st.case?.noPromise&&NODES.close[id].promise!=='none')warn+=' You just told them: no promises tonight.';
   }
-  return {id,label:v?format(v.label,st):entry.label,hint,variant:v?.id||null};
+  const k=caseOption(st,stage,id);
+  if(k)return {...k,hint:k.hint+warn};
+  return {id,label:v?format(v.label,st):entry.label,hint:hint+warn,variant:v?.id||null};
  });
  function begin(c,w,f,rival,sheet=null){
   const seed=String(c.id)+'|'+String(c.eventAbs||0)+'|'+String(w.id)+'|'+String(f.id);
@@ -612,7 +643,7 @@
   const sheetContext=sheet?.signed?{focus:sheet.focus||'authentic',payoff:sheet.nodes?.find(x=>x.id==='payoff')?.actions?.[0]||null}:null;
   const st={v:2,cid:c.id,seed,venue:D.PROMOS?.find(x=>x.id===c.pid)?.venue||null,contractFinish:c.finish||null,history:record.map(x=>({finish:x.finish||null,stars:x.stars||null})),memory:memory?{kind:memory.kind,recall:memory.text}:null,sheet:sheetContext,motif:pick(METAPHORS,seed,'metaphor'),w:{id:w.id,name:w.name,short:w.short,mic:w.mic||40,psych:w.psych||45,heat:w.heat||40,ego:w.ego||45,pro:w.pro||60,finisher:w.finisher},
    f:{id:f.id,name:f.name,short:f.short,psych:f.psych||45,heat:f.heat||45,ego:f.ego||45,style:f.style},
-   feudHeat:rival?.closed?0:Math.max(c.feudHeat||0,rival?.heat||0),hasHistory:!!rival?.matches,priorPromise:rival?.lastPromo?.promise||null,
+   feudHeat:rival?.closed?0:Math.max(c.feudHeat||0,rival?.heat||0),hasHistory:!!rival?.matches,priorPromise:rival?.lastPromo?.promise||null,avoid:(rival?.lastPromo?.path||[]).map(x=>x.variant).filter(Boolean),
    stage:'open',steps:[],claim:null,argument:0,dialogue:[{speaker:'Interviewer',line:pick([
      'Both names are on tonight’s card. What do you have to say before the bell?',
      'The crowd can hear you backstage. What is this match really about?',
@@ -624,11 +655,20 @@
     p?.type==='clean'?'Your last words about a fair fight are still remembered. What happens now?':
     'These two have unfinished business from their previous meeting. What do you say now?';
   }
+  // v0.3.12 What the rivalry has on record, and the arguments it supports tonight.
+  const Riv=root.OfficeRivalry;
+  st.cases=[];st.case=null;
+  if(Riv&&G.S){const r=Riv.record(w.id,f.id);st.record={n:r.meetings||0,w:r.w||0,f:r.f||0};try{st.cases=Riv.casesFor(st,c,w,f)||[];}catch(e){if(root.OFFICE_STRICT)throw e;st.cases=[];}}
   return st;
  }
  function chooseStep(st,id){
   if(!st||st.v!==2||!NODES[st.stage]||!NODES[st.stage][id])throw Error('Invalid promo decision');
-  const stage=st.stage,act=NODES[stage][id],index=st.steps.length,v=variantFor(st,stage,id),vfx=v?.fx||{};
+  const stage=st.stage,act=NODES[stage][id],index=st.steps.length,v=variantFor(st,stage,id),shown=caseOption(st,stage,id);
+  const kOpen=stage==='open'&&shown?(st.cases||[]).find(x=>x.angle===id):null;
+  const kResp=stage==='answer'&&shown?st.case.responses[id]:null;
+  const kClose=stage==='close'&&shown?st.case.commit:null;
+  // A pre-emption of the other side's point is an honest opening; pressing your own is a strong one.
+  const vfx=kOpen?(kOpen.owner==='f'?{cred:3,heat:-1}:{cred:2,heat:1}):kResp?{...kResp.fx}:kClose?{}:(v?.fx||{});
   const roll=rng(st.seed,stage+'|'+id+'|'+index);
   const skill=limit(st.w.mic*.66+st.w.psych*.28+st.w.heat*.06+st.metrics.composure,0,100);
   const threshold=limit(.32+skill/190-(act.risk+(vfx.risk||0))*.085+(stage==='answer'&&id==='callback'&&st.thread==='imagery'?.13:0),.2,.94);
@@ -640,12 +680,18 @@
   else{st.metrics.cred-=4+act.risk;st.metrics.crowd-=act.risk+2}
   if(stage==='open'){
    st.thread=act.identity;st.claim=claimContext(st,id);
+   const raise=kOpen||(st.cases||[]).find(x=>x.owner==='f')||null;
+   if(raise){
+    st.case=JSON.parse(JSON.stringify(raise));st.case.used=true;st.case.raisedBy=kOpen?'w':'f';
+    st.claim.evidence=raise.evidence;st.claim.thesis=raise.thesis;if(kOpen)st.claim.hasEvidence=true;
+   }
    if(id==='accusation'&&!st.claim.hasEvidence){st.metrics.cred-=6;st.metrics.trust-=2;}
    if(id==='proof'&&st.claim.hasEvidence){st.metrics.cred+=3;}
    if(id==='people'&&st.sheet?.focus==='redemption')st.metrics.crowd+=2;
   }
   if(stage==='answer'){
-   const relevance=answerQuality(st,id);
+   const relevance=kResp?kResp.rel:st.case?answerQuality(st,id)-2:answerQuality(st,id);
+   if(st.case&&!kResp){st.case.response=id;st.case.resolution='unresolved';}
    st.argument+=relevance;st.metrics.cred+=relevance;
    if(relevance<=-4)st.metrics.crowd-=3;
    if(relevance>=4)st.metrics.crowd+=2;
@@ -655,24 +701,34 @@
   if(stage==='close'&&id==='clean'&&st.metrics.trust<0)st.metrics.cred-=3;
   const line=pick(v?v.lines:act.lines,st.seed,stage+'|'+id+'|text');
   const contextual=v?null:stage==='answer'?answerToClaim(st,id):
-   stage==='open'&&id==='proof'&&st.claim?.hasEvidence?'The last match is on the record. '+st.claim.evidence:
-   stage==='open'&&id==='accusation'&&st.claim?.hasEvidence?'We both know what happened last time, '+st.f.short+'. '+st.claim.evidence:
+   stage==='open'&&id==='proof'&&st.claim?.hasEvidence?'The last match is on the record. '+(st.claim.said||st.claim.evidence):
+   stage==='open'&&id==='accusation'&&st.claim?.hasEvidence?'We both know what happened last time, '+st.f.short+'. '+(st.claim.said||st.claim.evidence):
    stage==='close'&&id==='question'?'I have answered your argument. Now I will have to counter you when it counts.':
    null;
-  st.dialogue.push({speaker:st.w.name,line:contextual||format(line,st),kind:landed?'strong':'uneven',node:id,stage});
+  const custom=kOpen?kOpen.prop:kResp?kResp.line:kClose?'Then let me make it official: I will '+(kClose.sayW||kClose.say)+' tonight. Hold me to it.':null;
+  st.dialogue.push({speaker:st.w.name,line:custom||contextual||format(line,st),kind:landed?'strong':'uneven',node:id,stage,...(custom?{case:st.case?.issue||kOpen?.issue}:{})});
   if(!landed)st.dialogue.push({speaker:'Crowd',line:pick([
      'An uncertain reaction moves through the room; the words have not quite landed.',
      'A few cheers break through, but the speech loses its rhythm for a moment.',
      'The audience waits for the next line; that one did not convince everybody.'
    ],st.seed,stage+'|'+id+'|stumble'),kind:'reaction'});
-  st.steps.push({stage,id,landed,variant:v?.id||null,label:v?format(v.label,st):act.label});
+  st.steps.push({stage,id,landed,variant:shown?shown.variant:v?.id||null,label:shown?shown.label:v?format(v.label,st):act.label});
   if(stage==='open'){
    // An opponent answers real history with real history; otherwise they answer the specific line.
   const exposed=(id==='accusation'&&!st.claim.hasEvidence)||(['proof','accusation'].includes(id)&&st.claim.hasEvidence)||(id==='proof'&&st.claim.planFocus==='counter');
-   st.dialogue.push({speaker:st.f.name,line:v&&!exposed?format(pick(v.reply,st.seed,'reply-'+v.id),st):reactionToClaim(st,id),kind:'opponent',answerTo:st.claim.opening});
+   if(st.case)st.dialogue.push({speaker:st.f.name,line:st.case.raisedBy==='f'?(st.case.lead?st.case.lead+' ':'')+st.case.counter:st.case.counter,kind:'opponent',answerTo:st.claim.opening,case:st.case.issue});
+   else st.dialogue.push({speaker:st.f.name,line:v&&!exposed?format(pick(v.reply,st.seed,'reply-'+v.id),st):reactionToClaim(st,id),kind:'opponent',answerTo:st.claim.opening});
    st.stage='answer';
   }else if(stage==='answer'){
    const lines=OPP_AFTER[id];
+   if(kResp){
+    const c=st.case;c.response=id;c.resolution=kResp.res;c.commit=kResp.commit?{...kResp.commit}:null;c.noPromise=!!kResp.noPromise;
+    if(kResp.expose){c.exposed=true;c.exposedBy=kResp.expose.kind;}
+    else c.fConceded=c.mode==='concede'&&(kResp.res==='defended'||kResp.res==='reframed');
+    st.dialogue.push({speaker:st.f.name,line:kResp.expose?kResp.expose.line:kResp.reply,kind:'opponent',answerTo:id,case:c.issue});
+    st.stage='close';
+    return st;
+   }
    const response=id==='personal'&&!st.claim?.hasEvidence?'You still have no evidence, '+st.w.short+'. Now you are trying to make the insult louder.':
     v?format(pick(v.reply,st.seed,'reply-'+v.id),st):
     id==='turn'?'You have finally listened to what I actually said. Let us see if you can answer it.':
@@ -681,7 +737,14 @@
    st.dialogue.push({speaker:st.f.name,line:response,kind:'opponent',answerTo:id});
    st.stage='close';
   }else{
-   if(v)st.dialogue.push({speaker:st.f.name,line:format(pick(v.reply,st.seed,'reply-'+v.id),st),kind:'opponent',answerTo:id});
+   if(kClose){
+    st.case.commit.official=true;
+    st.dialogue.push({speaker:st.f.name,line:{evidence:'Everybody heard that, '+st.w.short+'. So did I.',dismiss:'Go on, then.',concede:'Then I will be watching for it. Properly.',deflect:'Write it on your hand so you do not forget.'}[st.case.mode]||'Everybody heard that.',kind:'opponent',answerTo:id,case:st.case.issue});
+   }else if(v)st.dialogue.push({speaker:st.f.name,line:format(pick(v.reply,st.seed,'reply-'+v.id),st),kind:'opponent',answerTo:id});
+   if(st.case?.noPromise&&NODES.close[id].promise!=='none'){
+    st.metrics.cred-=4;st.case.brokeWord=true;
+    st.dialogue.push({speaker:st.f.name,line:'So much for no promises, '+st.w.short+'.',kind:'opponent',answerTo:id,case:st.case.issue});
+   }
    st.dialogue.push({speaker:'Crowd',line:pick(FINALE[id],st.seed,'final-'+id),kind:'reaction'});
    st.stage='done';st.result=finish(st);
   }
@@ -709,11 +772,19 @@
    {kind:'win',nodes:['dramatic_rally','clothesline','finish_tease'],stake:'A public victory prediction increases pressure.'};
   const closeVariant=VARIANTS.close[close]?.find(x=>x.id===st.steps[2].variant);
   if(tactic.kind==='counter'&&closeVariant?.fx?.counter)tactic.families=closeVariant.fx.counter.slice();
+  const official=st.case?.commit?.official?st.case.commit:null;
+  if(official?.kind==='counter'){if(official.families)tactic.families=official.families.slice();else delete tactic.families;if(official.tacticLabel)tactic.label=official.tacticLabel;tactic.stake='A public promise: '+(official.sayX||official.say)+'.';}
+  if(official?.kind==='nocheat'){promise.type='nocheat';tactic.stake='A public promise to win without cheating.';}
+  if(official)promise.say=official.say;
+  const cs=st.case?{id:st.case.id,issue:st.case.issue,factId:st.case.factId,factCid:st.case.factCid,family:st.case.family,owner:st.case.owner,raisedBy:st.case.raisedBy,used:!!st.case.used,
+   thesis:st.case.thesis,evidence:st.case.evidence,intent:st.case.intent,target:st.case.target,prop:st.case.prop,counter:st.case.counter,mode:st.case.mode,continuation:!!st.case.continuation,
+   response:st.case.response,resolution:st.case.resolution||'unresolved',exposed:!!st.case.exposed,exposedBy:st.case.exposedBy||null,fConceded:!!st.case.fConceded,followup:st.case.followup||null,brokeWord:!!st.case.brokeWord,
+   commit:st.case.commit?{kind:st.case.commit.kind,say:st.case.commit.say,families:st.case.commit.families||null,node:st.case.commit.node||null,official:!!st.case.commit.official}:null}:null;
   const broad=st.feudHeat>=50?'A heated personal confrontation':st.feudHeat>=25?'Unfinished business at the microphone':'A confrontation before the bell';
   const crowdWord=quality>=76?'The crowd will remember that exchange.':quality>=56?'There is plenty of conversation around ringside.':'The exchange left parts of the audience unconvinced.';
   const hook=close==='vow'?'A public promise of victory hangs over this match.':close==='finisher'?'Everyone knows the finishing move being promised tonight.':
    close==='clean'?'They publicly demanded a clean contest.':close==='legacy'?'They have said how they want to be remembered.':close==='grateful'?'The room has been thanked, and it is on their side.':'The last words at the microphone are still hanging in the air.';
-  return {v:2,cid:st.cid,style:opening,styleName:NODES.open[opening].label,claim:st.claim,argument:st.argument,tactic,quality,crowdShift,heatDelta,
+  return {v:2,cid:st.cid,style:opening,styleName:NODES.open[opening].label,claim:st.claim,argument:st.argument,tactic,quality,crowdShift,heatDelta,case:cs,
    trustDelta,moraleDelta,repDelta,pressure:Math.round(m.heat+m.crowd*.4),speaker:st.w.name,opponent:st.f.name,
    speech,reply:opponentLines.at(-1)?.line||'',dialogue:st.dialogue.map(e=>({...e})),path:st.steps.map(x=>({...x})),
    promise,reaction:crowdWord,scene:broad,hook,variants:st.steps.map(x=>x.variant||null),
@@ -722,7 +793,7 @@
  function result(st){return st?.stage==='done'?st.result:null}
  const size=()=>({angles:Object.values(NODES).reduce((n,x)=>n+Object.keys(x).length,0),
   variants:Object.values(VARIANTS).reduce((n,x)=>n+Object.values(x).reduce((m,l)=>m+l.length,0),0)});
- return {STAGES,NODES,VARIANTS,variantFor,context,size,begin,choose:chooseStep,choices:opts,result};
+ return {STAGES,NODES,VARIANTS,variantFor,context,size,begin,choose:chooseStep,choices:opts,result,caseOption};
 })();
  const before=G.applyResult;
  G.applyResult=function(c,fin){
@@ -748,13 +819,14 @@
     fd.angle=pr.angle||pr.speaker+' called out '+pr.opponent+' ('+pr.styleName.toLowerCase()+'). '+(pr.quality>=70?'The crowd bought every word.':pr.quality<38?'The exchange did not land.':'The confrontation added another chapter.');
     if(!fd.closed){fd.heat=clamp(fd.heat+pr.heatDelta);fd.last=G.abs()}
    }
-   h.promo={speaker:pr.speaker,opponent:pr.opponent,speech:pr.speech,reply:pr.reply,quality:pr.quality,style:pr.styleName,reaction:pr.reaction,dialogue:pr.dialogue||null,path:pr.path||[],claim:pr.claim||null,tactic:pr.tactic||null,argument:pr.argument||0,promise:pr.promise||null,angle:pr.angle||null};
+   h.promo={speaker:pr.speaker,opponent:pr.opponent,speech:pr.speech,reply:pr.reply,quality:pr.quality,style:pr.styleName,reaction:pr.reaction,dialogue:pr.dialogue||null,path:pr.path||[],claim:pr.claim||null,tactic:pr.tactic||null,argument:pr.argument||0,promise:pr.promise?{...pr.promise}:null,angle:pr.angle||null,case:pr.case||null};
    if(pr.v===2){
     const promise=pr.promise?.type||'none',won=fin.outcome==='double'||(fin.outcome!=='nc'&&c.finish.startsWith('win'));
     const clean=fin.outcome!=='double'&&fin.outcome!=='nc'&&['win_clean','lose_clean'].includes(c.finish);
     const finisher=won&&c.finish==='win_clean'&&!!G.W(c.wid)?.finisher
      &&(fin.log||[]).some(line=>String(line.text||'').includes(G.W(c.wid).finisher));
-    const kept=promise==='win'?won:promise==='clean'?clean:promise==='finisher'?finisher:promise==='counter'?!!fin.promoSignals?.workerCounter:null;
+    const nocheat=fin.outcome!=='nc'&&c.finish!=='win_dirty'&&!fin.promoSignals?.workerDirty&&!fin.evidence?.dirty?.w;
+    const kept=promise==='win'?won:promise==='clean'?clean:promise==='finisher'?finisher:promise==='counter'?!!fin.promoSignals?.workerCounter:promise==='nocheat'?nocheat:null;
     if(kept!==null){
      const sure=(promise==='win'&&c.finish.startsWith('win'))||(promise==='clean'&&['win_clean','lose_clean'].includes(c.finish));
      const line=kept?(sure?'The microphone promise was kept, though the booking never put it in doubt.':'The microphone promise was fulfilled in the ring. Nobody could be sure it would be.'):'The microphone promise fell apart when the bell rang.';
