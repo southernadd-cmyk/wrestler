@@ -336,17 +336,73 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 #toast.show{opacity:1;transform:none}
 
 /* ---------- title screen ---------- */
-.title{position:fixed;inset:0;z-index:50;display:grid;place-items:safe center;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:var(--desk);background-image:repeating-conic-gradient(var(--desk) 0 25%,var(--desk-dot) 0 50%);background-size:4px 4px;overflow:auto}
+/* v0.3.10 START SCREEN: tonight's show poster, pasted on the wall outside the hall. */
+.title{position:fixed;inset:0;z-index:50;display:grid;place-items:safe center;overflow:auto;
+ padding:max(16px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+ background:radial-gradient(ellipse 60% 55% at 50% 38%,rgba(255,226,150,.22),transparent 70%),
+  linear-gradient(#0c1336 0 0) 0 0/100% 100%;background-color:#0c1336}
+.title::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.55;
+ background:repeating-linear-gradient(0deg,transparent 0 22px,rgba(0,0,0,.45) 22px 24px),
+  repeating-linear-gradient(90deg,transparent 0 46px,rgba(0,0,0,.35) 46px 48px)}
 .title[hidden]{display:none}
-.title .win{width:min(720px,100%)}
-.title .hero{text-align:center;background:var(--deep);border-bottom:2px solid var(--ink)}
-.title .hero img{display:block;width:100%;height:auto;max-height:max(100px,calc(100dvh - 260px));object-fit:contain}
-.title h1:not(.sr){padding:22px 12px 8px;font:clamp(50px,17vw,130px)/.82 var(--jersey);color:var(--gold);text-shadow:4px 4px 0 var(--blood),8px 8px 0 #000;letter-spacing:.01em}
-.title .tagline{padding:8px 12px 0;margin:0;font:clamp(20px,3vw,30px)/1.08 var(--jersey);letter-spacing:.02em;color:var(--gold);text-wrap:balance}
-.title .sub{padding:8px 12px;margin:0;font:clamp(16px,3vw,22px)/1.1 var(--tt);color:var(--cyan)}
-.title .menu{display:grid;gap:8px;padding:14px 20px}
-.title .menu .btn{min-height:48px;font:28px/1 var(--jersey);letter-spacing:.03em}
-.title .keys{padding:0 16px 14px;font-size:17px;color:var(--ink-2);text-align:center}
+.poster-wall{position:relative;width:min(640px,100%);display:grid;gap:14px;justify-items:center}
+.poster{--torn:12px;position:relative;width:100%;margin:var(--torn) 0;padding:18px clamp(14px,4vw,30px) 16px;text-align:center;color:#1b1410;
+ background:radial-gradient(rgba(0,0,0,.09) 1px,transparent 1.3px) 0 0/6px 6px,linear-gradient(170deg,#f6efd9,#e9dcb7);
+ box-shadow:0 18px 40px rgba(0,0,0,.6);transform:rotate(-1deg)}
+.poster::before,.poster::after{content:"";position:absolute;left:0;right:0;height:var(--torn);
+ background:linear-gradient(135deg,transparent 50%,#f4ecd5 50%) 0 0/var(--torn) var(--torn) repeat-x,linear-gradient(225deg,transparent 50%,#f4ecd5 50%) 0 0/var(--torn) var(--torn) repeat-x}
+.poster::before{top:calc(-1 * var(--torn))}
+.poster::after{bottom:calc(-1 * var(--torn));transform:scaleY(-1)}
+.poster-kicker{margin:0;font:clamp(18px,3.6vw,24px)/1 var(--px);letter-spacing:.08em;text-transform:uppercase;color:var(--blood)}
+.poster-title{margin:6px 0 0;font:clamp(64px,17vw,132px)/.8 var(--jersey);letter-spacing:.02em;text-transform:uppercase;color:var(--gold);
+ text-shadow:3px 3px 0 var(--blood),6px 6px 0 #1b1410;-webkit-text-stroke:1px #1b1410}
+.poster-strap{margin:4px 0 12px;font:clamp(16px,3vw,20px)/1 var(--px);letter-spacing:.3em;text-transform:uppercase;color:#1b1410}
+.poster-bout{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:clamp(6px,2vw,16px)}
+.poster-side{margin:0;display:grid;justify-items:center;gap:6px}
+.poster-side img{width:clamp(96px,26vw,160px);height:auto;aspect-ratio:4/5;image-rendering:pixelated;background:#16225a;border:3px solid #1b1410;box-shadow:4px 4px 0 var(--blood)}
+.poster-side figcaption{font:clamp(22px,4.6vw,34px)/.9 var(--jersey);text-transform:uppercase;letter-spacing:.02em;text-wrap:balance}
+.poster-vs{display:grid;justify-items:center;gap:4px;align-self:center}
+.poster-vs span{font:clamp(40px,9vw,68px)/.8 var(--jersey);color:var(--blood);text-shadow:2px 2px 0 #1b1410}
+.poster-vs img{width:clamp(96px,22vw,150px);height:auto;filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
+.poster-stakes{margin:10px 0 0;font:clamp(17px,3.4vw,22px)/1.1 var(--px);letter-spacing:.04em;text-transform:uppercase;color:var(--blood)}
+.poster-under{list-style:none;margin:10px auto 0;padding:8px 0 0;border-top:2px solid #1b1410;display:grid;gap:2px;max-width:30em;font:clamp(15px,3vw,18px)/1.15 'Atkinson Hyperlegible Next',sans-serif}
+.poster-under:empty{display:none}
+.poster-under b{font-weight:700}
+.poster-foot{margin:10px 0 0;font-size:clamp(13px,2.6vw,15px);letter-spacing:.04em;color:#4b3d2c}
+.poster .tagline{margin:8px 0 0;font:clamp(20px,3.8vw,26px)/1.05 var(--jersey);color:#1b1410;text-wrap:balance}
+.stubs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;width:100%}
+.title .stub{display:grid;justify-items:start;gap:2px;min-height:64px;padding:10px 16px;text-align:left;color:#1b1410;background:var(--gold);
+ border:none;border-left:3px dashed #1b1410;box-shadow:inset 0 0 0 2px #1b1410,4px 4px 0 rgba(0,0,0,.55);
+ font:inherit;transition:transform .12s ease}
+.title .stub.go{background:var(--gold)}
+.title .stub:not(.go){background:var(--paper)}
+.title .stub small{font:14px/1 var(--px);letter-spacing:.12em;text-transform:uppercase;color:var(--blood)}
+.title .stub b{font:30px/.9 var(--jersey);text-transform:uppercase;letter-spacing:.02em}
+.title .stub span{font-size:14px;color:#3b3024}
+.title .stub:hover,.title .stub:focus-visible{transform:translateY(-2px) rotate(-.5deg)}
+.title .stub:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.stub-save{display:flex;align-items:center;gap:8px}
+.stub-save img{width:30px;height:auto;aspect-ratio:4/5;image-rendering:pixelated;border:1px solid #1b1410}
+.title .keys{margin:0;font-size:15px;color:var(--dim);text-align:center}
+@media (prefers-reduced-motion:no-preference){
+ .title:not([hidden]) .poster{animation:poster-in .55s cubic-bezier(.2,.9,.3,1.2) both}
+ .title:not([hidden]) .poster-title{animation:title-slam .5s .25s cubic-bezier(.3,1.6,.5,1) both}
+ .title:not([hidden]) .poster-side.left{animation:side-in-l .45s .55s ease-out both}
+ .title:not([hidden]) .poster-side.right{animation:side-in-r .45s .65s ease-out both}
+ .title:not([hidden]) .poster-vs{animation:vs-pop .4s .95s cubic-bezier(.3,1.8,.5,1) both}
+ .title:not([hidden]) .stubs{animation:stubs-up .4s 1.15s ease-out both}
+ .title:not([hidden])::after{content:"";position:fixed;inset:-20%;pointer-events:none;
+  background:conic-gradient(from 200deg at 30% -10%,transparent 0 8deg,rgba(255,236,170,.10) 10deg 18deg,transparent 20deg),
+   conic-gradient(from 140deg at 70% -10%,transparent 0 8deg,rgba(255,236,170,.08) 10deg 18deg,transparent 20deg);
+  animation:spot-sweep 9s ease-in-out infinite alternate}
+}
+@keyframes poster-in{from{opacity:0;transform:translateY(-40px) rotate(-4deg)}to{opacity:1;transform:rotate(-1deg)}}
+@keyframes title-slam{0%{opacity:0;transform:scale(1.9)}70%{opacity:1;transform:scale(.96)}85%{transform:scale(1.02) translateX(-2px)}100%{transform:none}}
+@keyframes side-in-l{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:none}}
+@keyframes side-in-r{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:none}}
+@keyframes vs-pop{from{opacity:0;transform:scale(.3) rotate(-12deg)}to{opacity:1;transform:none}}
+@keyframes stubs-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes spot-sweep{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
 /* Championship belts on the card pyramid, the champions list and title offers. */
 .belt-img{display:block;height:auto;max-width:100%}
 .belt-hero{display:grid;grid-template-columns:minmax(0,210px) 1fr;gap:12px;align-items:center;padding:10px;margin-bottom:8px;border:2px solid var(--gold)}

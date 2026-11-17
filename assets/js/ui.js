@@ -885,17 +885,47 @@ document.addEventListener('keydown',e=>{
  }
 });
 
+/* ---------- start screen: tonight's poster ----------
+   A new bill on every visit. With a saved career, your top wrestler headlines against the holder
+   of a belt in their division; otherwise two of the hottest names in one division meet for a belt. */
+function savedCareer(){
+ for(const k of ['the-office-v22','the-office-v21']){try{const raw=localStorage.getItem(k);if(raw)return JSON.parse(raw)}catch(e){}}
+ return null;
+}
+function posterBill(){
+ const pick=a=>a[Math.floor(Math.random()*a.length)];
+ const stars=div=>D.ALL.filter(w=>D.divisionOf(w)===div).sort((a,b)=>(b.heat||0)-(a.heat||0)).slice(0,14);
+ const saved=savedCareer(),p=pick(D.PROMOS),top=saved?.roster?.slice().sort((x,y)=>(y.heat||0)-(x.heat||0)).find(w=>D.findWrestler(w.id));
+ let div=pick(D.DIVISION_ORDER),a,b;
+ if(top){
+  div=D.divisionOf(top.id);a=D.findWrestler(top.id);
+  const holder=saved.territory?.titles?.[p.id]?.[div]?.holder;
+  b=holder&&holder!==a.id?D.findWrestler(holder):pick(stars(div).filter(w=>w.id!==a.id));
+ }else{const pool=stars(div);a=pick(pool);b=pick(pool.filter(w=>w.id!==a.id));}
+ const belt=D.belt(p.id,div),used=new Set([a.id,b.id]);
+ const side=(img,cap,w)=>{const i=$(img);i.src='assets/portraits/'+w.id+'.png';i.alt='Pixel-art portrait of '+w.name;$(cap).textContent=w.name;};
+ $('#posterPromo').textContent=p.name;$('#posterVenue').textContent=p.venue.replace(/^the /,'The ');
+ side('#posterW','#posterWName',a);side('#posterF','#posterFName',b);
+ $('#posterBelt').src=belt.img;$('#posterBelt').alt=belt.name+' belt';
+ $('#posterStakes').textContent='for the '+belt.name;
+ const under=[];
+ for(let n=0;n<2;n++){
+  const pool=stars(pick(D.DIVISION_ORDER)).filter(w=>!used.has(w.id)),x=pick(pool),y=pick(pool.filter(w=>w.id!==x.id));
+  if(!x||!y)continue;used.add(x.id);used.add(y.id);under.push(`<li><b>${esc(x.name)}</b> v <b>${esc(y.name)}</b></li>`);
+ }
+ $('#posterUnder').innerHTML=under.join('');
+ // Continue shows what you are going back to.
+ if(saved&&G.hasSave()){
+  const parts=[`Season ${saved.season||1}, week ${saved.week||1}`];
+  if(Number.isFinite(saved.cash))parts.push(money(saved.cash));
+  $('#loadSummary').innerHTML=`<span class="stub-save">${top?`<img src="assets/portraits/${esc(top.id)}.png" alt="">`:''}${esc(parts.join(' · '))}${top?' · '+esc(top.name):''}</span>`;
+ }
+}
+
 /* ---------- boot ---------- */
 window.OfficeUI={get night(){return night},go};
 window.addEventListener('DOMContentLoaded',()=>{
- const card=$('#startCard');
- function showTitleCard(){
-  if(!card.naturalWidth)return;
-  $('#startHeading').classList.add('sr');
-  card.hidden=false;
- }
- if(card.complete)showTitleCard();
- else card.addEventListener('load',showTitleCard,{once:true});
+ posterBill();
  const d=$('#modal');d.addEventListener('close',()=>{
   const oid=d.dataset.talkoid;if(oid&&S()){const o=S().offers.find(x=>x.id===oid);if(o?.talk?.step==='start'){o.talk=null;G.save();}}
   delete d.dataset.talkoid;if(S()&&!$('#app').hidden)render();

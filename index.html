@@ -47,18 +47,26 @@
 </div>
 <section id="tv" class="tv" hidden aria-label="Match night"></section>
 <div id="title" class="title" hidden>
- <div class="win">
-  <div class="hero">
-   <h1 id="startHeading">The<br>Office</h1>
-   <img id="startCard" src="assets/share-card.png" width="1200" height="630" alt="Pixel-art wrestlers Mara Vale, Rex Titan and Lyra Knox in a wrestling arena" hidden>
-   <p class="tagline">The matches are scripted. The people aren't.</p>
-   <p class="sub">A regional territory, 16 weeks a season.</p>
+ <div class="poster-wall">
+  <article class="poster" aria-labelledby="startHeading">
+   <p class="poster-kicker"><span id="posterPromo">Dockside</span> presents · <span id="posterVenue">Shed 9</span></p>
+   <h1 id="startHeading" class="poster-title">The Office</h1>
+   <p class="poster-strap">Wrestling management</p>
+   <div class="poster-bout" id="posterBout" aria-live="off">
+    <figure class="poster-side left"><img id="posterW" src="assets/portraits/mara.png" width="144" height="180" alt=""><figcaption id="posterWName">Mara Vale</figcaption></figure>
+    <div class="poster-vs"><span>VS</span><img id="posterBelt" src="assets/belts/dockside-womens.webp" width="640" height="250" alt=""></div>
+    <figure class="poster-side right"><img id="posterF" src="assets/portraits/ayla.png" width="144" height="180" alt=""><figcaption id="posterFName">Ayla Bay</figcaption></figure>
+   </div>
+   <p class="poster-stakes" id="posterStakes">for the Dockside Women’s Championship</p>
+   <ul class="poster-under" id="posterUnder"></ul>
+   <p class="poster-foot">Doors 7pm · Raffle at the interval · Bar open · £6 on the door</p>
+   <p class="tagline">The matches are scripted. The people aren’t.</p>
+  </article>
+  <div class="stubs" role="group" aria-label="Start">
+   <button class="btn stub go" data-title="new"><small>Admit one</small><b>New career</b><span>A regional territory, 16 weeks a season.</span></button>
+   <button class="btn stub" id="loadBtn" data-title="load" hidden><small>Back at the office</small><b>Continue career</b><span id="loadSummary"></span></button>
   </div>
-  <div class="menu">
-   <button class="btn go" data-title="new">New career</button>
-   <button class="btn" id="loadBtn" data-title="load" hidden>Continue career</button>
-  </div>
-  <div class="keys">At ringside: Space pauses the match, keys 1–6 make calls.</div>
+  <p class="keys">At ringside: Space pauses the match, keys 1–6 make calls.</p>
  </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
