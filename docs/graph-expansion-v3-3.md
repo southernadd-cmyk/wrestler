@@ -1,9 +1,9 @@
-# The Office v3.3 — ten times the graph, still realistic and deterministic
+# The Office v0.3.3 — ten times the graph, still realistic and deterministic
 
-v3.3 grows the match and promo graphs by an order of magnitude without making the
+v0.3.3 grows the match and promo graphs by an order of magnitude without making the
 simulation less believable or less reproducible.
 
-| Graph | v3.2 | v3.3 | Growth |
+| Graph | v0.3.2 | v0.3.3 | Growth |
 | --- | --- | --- | --- |
 | Action nodes | 96 | 986 | 10.3× |
 | Action edges | 297 | 6,252 | 21× |
@@ -12,9 +12,9 @@ simulation less believable or less reproducible.
 | Promo choice nodes | 15 | 150 | 10× |
 | Concrete promo paths | 125 | ~125,000 possible (2,157 seen in the test sample) | — |
 
-> **v3.4 note.** A narration audit removed reversals that made no sense and rebalanced
+> **v0.3.4 note.** A narration audit removed reversals that made no sense and rebalanced
 > crowd reactions, so the action graph is now 969 nodes and 6,152 edges (324 reversals,
-> 209 blocks). The figures below are the v3.3 measurements. See the README for v3.4.
+> 209 blocks). The figures below are the v0.3.3 measurements. See the README for v0.3.4.
 
 ## Action graph: 336 authored moves in 20 families
 
@@ -113,7 +113,7 @@ node tests/promo-variants.test.cjs   # 150 promo nodes, every variant reachable,
 The seven earlier suites pass unchanged except for two deliberate edits:
 
 - `graph-flow` still requires every hand-authored node to be reached, but it keeps sampling
-  up to 2,000 deterministic bouts instead of relying on a lucky 500. One v3.2 node was
+  up to 2,000 deterministic bouts instead of relying on a lucky 500. One v0.3.2 node was
   reached exactly once in 500.
 - The `match-flow` dirty-finish ordering check accepts any of the illegal acts, not only
   "fistful of tights".

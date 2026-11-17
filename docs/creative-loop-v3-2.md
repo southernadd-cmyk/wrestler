@@ -1,4 +1,4 @@
-# The Office v3.2 — Creative meetings and public stakes
+# The Office v0.3.2 — Creative meetings and public stakes
 
 **Product question:** can a player explain what was agreed in the meeting,
 what was asserted at the microphone, and what actually happened in the ring?

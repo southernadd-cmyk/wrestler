@@ -1,4 +1,4 @@
-# The Office v2.8 — Promo dialogue graph
+# The Office v0.2.8 — Promo dialogue graph
 
 The promo system is a branching interactive **three-act encounter**, not a menu that shows four computed scores and lets the player choose the largest.
 
@@ -67,5 +67,5 @@ The promo suite covers 625 generated scenes, all 125 paths, adversary responses,
 
 - This is an additive engine upgrade. The established theme, sidebar, office layout and ring-display styling are unchanged.
 - Existing saved careers and mid-match saves continue under the existing storage keys.
-- Old saved v2.5 single-shot promo scenes display their original words and can proceed to the bell.
+- Old saved v0.2.5 single-shot promo scenes display their original words and can proceed to the bell.
 - Existing bout flow and contracted finishes remain under the match graph.
