@@ -222,7 +222,7 @@ Each booker keeps a separate card, from opener to main event, with a men’s and
 
 *From the road agent*
 
-The start screen is tonight’s fight poster, and **New career** still takes you straight to Free agents. Dennis gives you an in-game welcome before the figures take over. A collapsible **First Week** guide stays within reach while you sign a wrestler, book a match, read your inbox, choose a training focus and work your first bout. Steps update from what you actually do; they are not scripted gates. The guide folds away after the first week and can be reopened from **Game → How a week works**. Its state lives inside the normal career save, including older careers.
+The start screen is tonight’s fight poster, and every match on it is real: with a saved career it bills your next booked match, and without one it bills a match from the first circuit show a new career will put on. **New career** still takes you straight to Free agents. Dennis gives you an in-game welcome before the figures take over. A collapsible **First Week** guide stays within reach while you sign a wrestler, book a match, read your inbox, choose a training focus and work your first bout. Steps update from what you actually do; they are not scripted gates. The guide folds away after the first week and can be reopened from **Game → How a week works**. Its state lives inside the normal career save, including older careers.
 
 ## FROM THE BOOKING OFFICE
 
@@ -375,6 +375,7 @@ node tests/promos-requests.test.cjs
 node tests/ring-profiles.test.cjs
 node tests/relationships.test.cjs
 node tests/rivalry.test.cjs
+node tests/start-poster.test.cjs
 node tests/structure.test.cjs
 ```
 
@@ -382,7 +383,7 @@ The suites cover the free-agent market and rival contracts, separate promotion l
 
 `node tools/five-bouts.cjs` plays five consecutive meetings between the same two wrestlers in one career and writes a report of every argument, negotiation, match and memory; sample reports are in [docs/reports](docs/reports/).
 
-**Continuous integration:** All 29 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
+**Continuous integration:** All 30 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
 
 ### Small print
 

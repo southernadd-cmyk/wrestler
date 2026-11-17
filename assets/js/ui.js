@@ -897,11 +897,27 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- start screen: tonight's poster ----------
-   A new bill on every visit. With a saved career, your top wrestler headlines against the holder
-   of a belt in their division; otherwise two of the hottest names in one division meet for a belt. */
+   Only real matches. With a saved career: your next booked match, then the rest of your bookings
+   and the circuit's next show. Without one: a match from the first circuit show a new career will
+   book (week 2), worked out from the same world a new career builds. Built on a copy, never saved. */
 function savedCareer(){
  for(const k of ['the-office-v22','the-office-v21']){try{const raw=localStorage.getItem(k);if(raw)return JSON.parse(raw)}catch(e){}}
  return null;
+}
+function showRealBill(bill){
+ const h=bill.head,p=D.PROMOS.find(x=>x.id===h.pid);if(!p)return false;
+ const side=(img,cap,w)=>{const i=$(img);i.src='assets/portraits/'+w.id+'.png';i.alt='Pixel-art portrait of '+w.name;$(cap).textContent=w.name;};
+ $('#posterPromo').textContent=p.name;$('#posterVenue').textContent=p.venue.replace(/^the /,'The ');
+ side('#posterW','#posterWName',h.a);side('#posterF','#posterFName',h.b);
+ const belt=h.title?D.belt(h.pid,h.div):null,img=$('#posterBelt');
+ if(belt){img.src=belt.img;img.alt=belt.name+' belt';img.hidden=false;}else{img.hidden=true;img.alt='';}
+ const when=h.yours?(h.tonight?'Tonight':'Week '+(((h.week-1)%16)+1)):'Week '+(((h.week-1)%16)+1);
+ const what=belt?'for the '+belt.name:h.yours?(D.SLOTS[h.slot]?.name||'Booked')+(h.minutes?' · '+h.minutes+' minutes':''):D.DIVISIONS[h.div].name+' division';
+ $('#posterStakes').textContent=when+' · '+what+(h.tag&&!belt?' · '+h.tag:'');
+ const short=pid=>D.PROMOS.find(x=>x.id===pid)?.name||'';
+ $('#posterUnder').innerHTML=bill.under.map(m=>`<li><b>${esc(m.a.name)}</b> v <b>${esc(m.b.name)}</b>${m.pid!==h.pid||m.week!==h.week?` <small>${[m.pid!==h.pid?'at '+esc(short(m.pid)):'',m.week!==h.week?(m.tonight?'tonight':'week '+(((m.week-1)%16)+1)):''].filter(Boolean).join(', ')}</small>`:''}</li>`).join('');
+ $('#posterBout').setAttribute('aria-label',(h.yours?'Your booked match: ':bill.saved?'On the circuit: ':'On the first show of a new career: ')+h.a.name+' versus '+h.b.name+', '+$('#posterStakes').textContent);
+ return true;
 }
 function posterBill(){
  const pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -913,7 +929,10 @@ function posterBill(){
   const holder=saved.territory?.titles?.[p.id]?.[div]?.holder;
   b=holder&&holder!==a.id?D.findWrestler(holder):pick(stars(div).filter(w=>w.id!==a.id));
  }else{const pool=stars(div);a=pick(pool);b=pick(pool.filter(w=>w.id!==a.id));}
- const belt=D.belt(p.id,div),used=new Set([a.id,b.id]);
+ let real=null;try{real=OfficeTerritory.startBill?.(saved)||null;}catch(e){real=null;}
+ if(real&&showRealBill(real)){summary(saved,top);return;}
+ // Fallback if the career cannot be read: two real names from one division meet for a belt.
+ const belt=D.belt(p.id,div),used=new Set([a.id,b.id]);$('#posterBelt').hidden=false;
  const side=(img,cap,w)=>{const i=$(img);i.src='assets/portraits/'+w.id+'.png';i.alt='Pixel-art portrait of '+w.name;$(cap).textContent=w.name;};
  $('#posterPromo').textContent=p.name;$('#posterVenue').textContent=p.venue.replace(/^the /,'The ');
  side('#posterW','#posterWName',a);side('#posterF','#posterFName',b);
@@ -925,7 +944,10 @@ function posterBill(){
   if(!x||!y)continue;used.add(x.id);used.add(y.id);under.push(`<li><b>${esc(x.name)}</b> v <b>${esc(y.name)}</b></li>`);
  }
  $('#posterUnder').innerHTML=under.join('');
- // Continue shows what you are going back to.
+ summary(saved,top);
+}
+// Continue shows what you are going back to.
+function summary(saved,top){
  if(saved&&G.hasSave()){
   const parts=[`Season ${saved.season||1}, week ${saved.week||1}`];
   if(Number.isFinite(saved.cash))parts.push(money(saved.cash));
