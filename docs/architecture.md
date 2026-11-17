@@ -22,6 +22,7 @@ assets/js/
   sheets.js                 Match planning and shared graph kernel
   agents-room.js            Dennis and backstage decisions
   promo-duel.js             Mic battles and vows
+  relationships.js          Bonds, grudges, backstage scenes and betrayals between wrestlers
   ui.js                     Screens, controls and browser events
 assets/portrait-atlas.png   Wrestler sprite sheet (previously embedded in CSS)
 assets/first-week.css       Existing onboarding guide CSS
@@ -53,7 +54,7 @@ Local storage keys and save formats are unchanged. The refactor is a source reor
 
 ## v0.4 roster integration (pre-release)
 
-The unified 80-wrestler registry is available through `OfficeData.ALL` / `OfficeData.findWrestler(id)`; the original 28 template objects remain unchanged. New workers currently have compatible interim move archetypes, not their final bespoke move signatures.
+The unified 80-wrestler registry is available through `OfficeData.ALL` / `OfficeData.findWrestler(id)`; the original 28 template objects remain unchanged. Since v0.3.11 every new worker has a written ring profile of their own (`RING_PROFILES` in `roster-registry.js`); the interim move archetypes are gone.
 
 `OfficeWorldV4.activate(OfficeGame.S)` explicitly migrates a career to six AI agencies. Contracts, agency budgets, transfer records, market and independent status live under `worldV4` in the existing v22 save. Activation is idempotent and preserves existing owned wrestlers, their progress, pending bookings, historical results and promotion card ledgers. Player signings, releases and AI recruitment synchronize ownership; agency finance updates are applied once per week.
 
@@ -71,3 +72,8 @@ Every new career now automatically activates the 80-wrestler world, including 20
 - **Contextual promo angles** (`story.js`, `promo-duel.js`). A promo node may carry a `when(context)` test; the choices on screen are the core five for each stage plus any extra angle whose test passes.
 - **Entrance ideas** (`agents-room.js`). `DAFT_OWN` gives every wrestler a personal idea, and `DAFT_MORE` adds three shared ones for each voice type.
 - **Start screen** (`index.html`, `ui.js`, `core.css`). `posterBill()` picks tonight’s bill, reading the saved career directly without loading it. The motion only runs under `prefers-reduced-motion: no-preference`.
+
+## v0.3.11 additions
+
+- **Ring profiles** (`roster-registry.js`). `RING_PROFILES` gives each of the 52 newcomers a weight, trait, four preferred moments and four signature moves from the catalog; `enableProfiles()` installs them into `OfficeData.PROFILES` for new and migrated careers.
+- **The locker room** (`relationships.js`, `window.OfficeBonds`). Bonds from −100 to 100 between pairs of wrestlers live in `S.bonds.pairs` in the existing save, each with its recent reasons. The module wraps `applyResult` (bonds from the memories a match leaves, and a friend turning after a clean loss), `OfficeRoom.begin` (friends, enemies and leaked plans in Dennis’s room), `endWeek` (journeys, jealousy, grudges boiling over and at most one backstage scene every other week) and `answer` (the four `bond_*` scenes, and the existing car-park row). Every change is recorded once per source, so replays and reloads never double-count.

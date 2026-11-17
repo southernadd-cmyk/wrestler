@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 435" role="img" aria-labelledby="t d">
-<title id="t">THE OFFICE — Pro Wrestling Management Newsletter</title><desc id="d">An old-school wrestling newsletter masthead printed in cream, navy, black and red, issue v0.3.10.</desc>
+<title id="t">THE OFFICE — Pro Wrestling Management Newsletter</title><desc id="d">An old-school wrestling newsletter masthead printed in cream, navy, black and red, issue v0.3.11.</desc>
 <defs><pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#0f2035" opacity=".22"/></pattern><pattern id="diagonals" patternUnits="userSpaceOnUse" width="14" height="14" patternTransform="rotate(35)"><rect width="14" height="14" fill="#c52c26"/><rect width="6" height="14" fill="#af2321"/></pattern></defs>
 <rect width="1440" height="435" fill="#efe1c3"/><rect x="17" y="18" width="1406" height="399" fill="none" stroke="#162338" stroke-width="7"/>
 <rect x="30" y="31" width="1380" height="371" fill="none" stroke="#162338" stroke-width="2"/>
 <rect x="43" y="43" width="1354" height="52" fill="#152239"/>
 <text x="66" y="76" fill="#efe1c3" font-size="24" font-family="Georgia,serif" font-weight="700" letter-spacing="3">RINGSIDE PRESS</text>
 <text x="720" y="76" fill="#efe1c3" font-size="19" font-family="Arial,sans-serif" font-weight="700" letter-spacing="2" text-anchor="middle">INDEPENDENT TERRITORY REPORTING SINCE 2026</text>
-<text x="1370" y="76" fill="#efe1c3" font-size="22" font-family="Georgia,serif" font-weight="700" text-anchor="end">VOL. 0 / NO. 3.10</text>
+<text x="1370" y="76" fill="#efe1c3" font-size="22" font-family="Georgia,serif" font-weight="700" text-anchor="end">VOL. 0 / NO. 3.11</text>
 <rect x="44" y="106" width="126" height="206" fill="url(#dots)"/><rect x="1270" y="106" width="126" height="206" fill="url(#dots)"/>
 <polygon points="106.0,128.0 121.0,149.0 144.5,138.3 147.0,164.0 172.7,166.5 162.0,190.0 183.0,205.0 162.0,220.0 172.7,243.5 147.0,246.0 144.5,271.7 121.0,261.0 106.0,282.0 91.0,261.0 67.5,271.7 65.0,246.0 39.3,243.5 50.0,220.0 29.0,205.0 50.0,190.0 39.3,166.5 65.0,164.0 67.5,138.3 91.0,149.0" fill="#c52c26" stroke="#152239" stroke-width="5"/><circle cx="106" cy="205" r="37" fill="#efe1c3" stroke="#152239" stroke-width="4"/>
-<text x="106" y="198" text-anchor="middle" font-family="Impact,'Arial Narrow',sans-serif" font-size="31" font-weight="900" fill="#152239">NO.</text><text x="106" y="224" text-anchor="middle" font-family="Impact,'Arial Narrow',sans-serif" font-size="18" font-weight="900" fill="#152239">v0.3.10</text>
+<text x="106" y="198" text-anchor="middle" font-family="Impact,'Arial Narrow',sans-serif" font-size="31" font-weight="900" fill="#152239">NO.</text><text x="106" y="224" text-anchor="middle" font-family="Impact,'Arial Narrow',sans-serif" font-size="18" font-weight="900" fill="#152239">v0.3.11</text>
 <polygon points="1333.0,136.0 1344.1,163.5 1367.5,145.2 1363.4,174.6 1392.8,170.5 1374.5,193.9 1402.0,205.0 1374.5,216.1 1392.8,239.5 1363.4,235.4 1367.5,264.8 1344.1,246.5 1333.0,274.0 1321.9,246.5 1298.5,264.8 1302.6,235.4 1273.2,239.5 1291.5,216.1 1264.0,205.0 1291.5,193.9 1273.2,170.5 1302.6,174.6 1298.5,145.2 1321.9,163.5" fill="#152239" stroke="#c52c26" stroke-width="5"/>
 <text x="1333" y="201" fill="#efe1c3" text-anchor="middle" font-size="21" font-family="Georgia,serif" font-weight="800">MATCH</text><text x="1333" y="225" fill="#efe1c3" text-anchor="middle" font-size="21" font-family="Georgia,serif" font-weight="800">NIGHT</text>
 <text x="206" y="292" font-family="Impact,'Arial Narrow',Arial,sans-serif" font-size="192" font-weight="900" letter-spacing="-6" fill="#c52c26">THE OFFICE</text>
