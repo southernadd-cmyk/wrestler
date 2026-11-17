@@ -15,9 +15,10 @@ const D=root.OfficeData,G=root.OfficeGame,M=root.OfficeMatch,Graph=root.OfficeSt
 assert.deepEqual(Array.from(Graph.STAGES),['open','answer','close']);
 assert.equal(Object.keys(Graph.NODES).length,3);
 const options={open:Object.keys(Graph.NODES.open),answer:Object.keys(Graph.NODES.answer),close:Object.keys(Graph.NODES.close)};
-assert.equal(options.open.length,5);
-assert.equal(options.answer.length,5);
-assert.equal(options.close.length,5);
+// Five core angles per stage, plus two that only appear on nights that suit them.
+assert.equal(options.open.length,7);
+assert.equal(options.answer.length,7);
+assert.equal(options.close.length,7);
 
 const sequences=new Set(),promises=new Set(),dialogues=new Set(),spectra=new Set();
 let count=0;
@@ -27,7 +28,8 @@ for(let i=0;i<625;i++){
  const pathIds=[options.open[i%5],options.answer[Math.floor(i/5)%5],options.close[Math.floor(i/25)%5]];
  const state=JSON.stringify(st);
  assert.equal(Graph.result(st),null,'no preview outcome');
- assert.equal(Graph.choices(st.stage).length,5);
+ assert.equal(Graph.choices(st.stage).length,7,'without a promo, every angle is listed');
+ assert.ok(Graph.choices(st.stage,st).length>=5,'with one, the core five plus any that suit it');
  for(let step=0;step<3;step++){
   const oldStep=st.steps.length,action=pathIds[step];
   Graph.choose(st,action);

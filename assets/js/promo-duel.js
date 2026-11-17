@@ -108,23 +108,25 @@
    proof:(r.room==='cold'?1:r.room==='who'?-1:0)-(r.room==='hot'?1:0)+(['precise','stoic'].includes(v)?1:0)+(r.opp==='good'?1:0),
    imagery:(['grand','sermon'].includes(v)?2:-1)+(r.room==='hot'?1:r.room==='cold'?-1:0),
    accusation:(r.feud?2:-1)+(['gruff','slippery'].includes(v)?1:0)-(r.room==='who'?1:0),
-   swagger:(r.room==='who'?1:r.room==='cold'?-1:0)+(['grand','slippery','eager'].includes(v)?1:0)-(r.opp==='good'?1:0)
+   swagger:(r.room==='who'?1:r.room==='cold'?-1:0)+(['grand','slippery','eager'].includes(v)?1:0)-(r.opp==='good'?1:0),
+   hometown:(r.room==='hot'?1:r.room==='who'?1:-1)+(['gruff','slippery','grand'].includes(v)?1:-1)+(r.feud?1:0),
+   numbers:(['precise','slippery'].includes(v)?2:-1)+(r.room==='hot'?1:0)-(r.opp==='good'?1:0)
   }[id]||0)+(st.practice?.[id]||0));
  }
  // The opponent's angle in reply, and the answer that beats each one.
  const ANGLE_CUE={personal:'{F} has gone straight for the personal stuff.',mock:'{F} is laughing at {W}, and some of the crowd are laughing along.',
   facts:'{F} has come armed with facts. Results, dates, the lot.',crowd:'{F} is playing to the crowd now, and they’re enjoying it.'};
  const ANSWER_FIT={
-  personal:{calm:2,challenge:1,turn:0,callback:0,personal:-1},
-  mock:{turn:2,callback:1,challenge:0,calm:-1,personal:0},
-  facts:{challenge:2,turn:1,calm:0,callback:-1,personal:-2},
-  crowd:{callback:2,turn:1,challenge:0,calm:-1,personal:-1}
+  personal:{calm:2,challenge:1,turn:0,callback:0,personal:-1,confession:1,fakeout:-1},
+  mock:{turn:2,callback:1,challenge:0,calm:-1,personal:0,confession:-1,fakeout:2},
+  facts:{challenge:2,turn:1,calm:0,callback:-1,personal:-2,confession:0,fakeout:-1},
+  crowd:{callback:2,turn:1,challenge:0,calm:-1,personal:-1,confession:2,fakeout:1}
  };
  function angleFor(st,opening){
   const F=st.fRaw,v=Room.VOICE[F.id]||'stoic',w={personal:1,mock:1,facts:1,crowd:1};
   if((F.ego||50)>=68)w.personal+=2;if(['slippery','grand','eager'].includes(v))w.mock+=2;
   if(['precise','stoic'].includes(v)||(F.pro||60)>=80)w.facts+=2;if(['earnest','sermon'].includes(v)||(F.heat||40)>=60)w.crowd+=2;
-  w[{accusation:'personal',imagery:'mock',proof:'facts',people:'crowd',swagger:'mock'}[opening]]+=2;
+  w[{accusation:'personal',imagery:'mock',proof:'facts',people:'crowd',swagger:'mock',hometown:'crowd',numbers:'facts'}[opening]]+=2;
   const total=Object.values(w).reduce((a,b)=>a+b,0);let x=rng(st.seed,'angle')*total;
   for(const [k,n] of Object.entries(w)){x-=n;if(x<0)return k;}
   return 'facts';

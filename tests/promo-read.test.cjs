@@ -52,7 +52,7 @@ for(let k=1;k<openCurve.length;k++)assert.ok(openCurve[k]>openCurve[k-1],'a bett
 for(let k=1;k<answerCurve.length;k++)assert.ok(answerCurve[k]>answerCurve[k-1],'a better-suited answer is worth more on average');
 const share=Math.max(...Object.values(bestOpen))/scenes;
 assert.ok(share<.5,'no opening is the best choice on most nights ('+Math.round(share*100)+'%)');
-assert.ok(Object.keys(bestOpen).length===5,'every opening is sometimes the best one');
+assert.ok(['people','proof','imagery','accusation','swagger','hometown','numbers'].every(id=>bestOpen[id]),'every opening is sometimes the best one: '+JSON.stringify(bestOpen));
 assert.ok(clearRight/clear>.6,'when one opening clearly suits the night, it is usually the best ('+clearRight+'/'+clear+')');
 const winners=new Set(Object.values(bestAnswer).map(t=>Object.entries(t).sort((a,b)=>b[1]-a[1])[0][0]));
 assert.ok(winners.size>=3,'different angles call for different answers');
