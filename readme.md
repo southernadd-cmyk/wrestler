@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue 3.8.1" width="100%">
+  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.3.10" width="100%">
 </p>
 
-<p align="center"><strong>ISSUE v0.3.8.1</strong> &nbsp; • &nbsp; 16 NOVEMBER 2026 &nbsp; • &nbsp; MATCH NIGHT / PRODUCTION EDITION</p>
+<p align="center"><strong>ISSUE v0.3.10</strong> &nbsp; • &nbsp; 17 NOVEMBER 2026 &nbsp; • &nbsp; CHAMPIONSHIP EDITION</p>
 
 <p align="center">
   <strong><a href="https://southernadd-cmyk.github.io/wrestler/">ENTER THE OFFICE — PLAY THE GAME</a></strong>
@@ -12,16 +12,44 @@
 
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
-<p align="center"><img src="docs/readme/01-lead-story.svg" alt="LEAD STORY — DENNIS WANTS A WORD" width="100%"></p>
+<p align="center"><img src="docs/readme/01-lead-story.svg" alt="THE MAIN EVENT — THE BELTS ARE ON THE TABLE" width="100%"></p>
 
-## DENNIS WANTS A WORD
+## THE BELTS ARE ON THE TABLE
 
 *Lead story*
 
-Match night now starts backstage. Dennis has the booked result, two wrestlers with opinions and a short list of things that need settling before they go out. One night it’s the big spot. The next it’s a cut to your match time, a wrestler refusing to lose clean, or someone who’s turned up without their gear. Then the microphones come out and both wrestlers get a shot at winning over the room.
+Every promotion now runs two rankings: a **men’s division** and a **women’s division**, each with its own **championship**. That is eight belts across the circuit, and every one of them can change hands. Matches stay within a division, from the offers on your desk to the results that come in from the other towns.
 
-<p align="center"><img src="assets/share-card.png" alt="Original pixel-art cover illustration for The Office: wrestlers pictured in an arena" width="100%"></p>
-<p align="center"><sub><em>FROM THE PICTURE DESK:</em> The original game's pixel-art cover. Artwork, not a gameplay screenshot.</sub></p>
+Get one of your wrestlers to the top of a division’s main event and that promoter will offer a **title match** against the champion. As ever, the booker decides the result before you sign. Win the belt and the defences start coming in. Champions you don’t manage defend it every few weeks in the circuit results, and a belt whose holder leaves the promotion is handed to whoever tops the ranking. Careers that started before the belts get them the first time they load: each goes to whoever leads that division.
+
+<table align="center">
+<tr>
+<td align="center"><img src="assets/belts/dockside-mens.webp" alt="Dockside Men’s Championship belt" width="200"><br><sub>Dockside Men’s</sub></td>
+<td align="center"><img src="assets/belts/dockside-womens.webp" alt="Dockside Women’s Championship belt" width="200"><br><sub>Dockside Women’s</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/belts/pulse-underground-mens.webp" alt="Pulse Underground Men’s Championship belt" width="200"><br><sub>Pulse Underground Men’s</sub></td>
+<td align="center"><img src="assets/belts/pulse-underground-womens.webp" alt="Pulse Underground Women’s Championship belt" width="200"><br><sub>Pulse Underground Women’s</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/belts/north-crown-mens.webp" alt="North Crown Men’s Championship belt" width="200"><br><sub>North Crown Men’s</sub></td>
+<td align="center"><img src="assets/belts/north-crown-womens.webp" alt="North Crown Women’s Championship belt" width="200"><br><sub>North Crown Women’s</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/belts/grand-union-mens.webp" alt="Grand Union Men’s Championship belt" width="200"><br><sub>Grand Union Men’s</sub></td>
+<td align="center"><img src="assets/belts/grand-union-womens.webp" alt="Grand Union Women’s Championship belt" width="200"><br><sub>Grand Union Women’s</sub></td>
+</tr>
+</table>
+<p align="center"><sub><em>FROM THE PICTURE DESK:</em> The eight championships, two for each promotion.</sub></p>
+
+## ALSO IN THIS ISSUE
+
+- **Every newcomer talks like themself.** The 52 wrestlers who joined in the living roster each have their own lines in the agents’ room and at the microphone, written from their own story.
+- **One thing leads to another backstage.** Some of Dennis’s situations now start something later in the meeting, and some come back at a later show. Promise somebody the big spot next time and they will hold you to it. Twenty-one new situations and follow-ups join the pool.
+- **Six new ways to work the microphone.** Insult the town, do the maths, admit what the feud is doing to you, tease a surprise that never comes, say how you want to be remembered, or thank the room like it might be the last time.
+- **Any other business.** Every wrestler on the roster has their own daft idea for their walk to the ring, from a pallet truck to an abseil down the climbing wall.
+- **Tonight’s poster.** The start screen is now the bill for tonight’s show, with a different main event every time you open the game. With a saved career, your top wrestler headlines.
+- **Version numbers start with a nought.** The game is still in development, so this is issue v0.3.10.
 
 <p align="center"><img src="docs/readme/02-production.svg" alt="PRODUCTION DESK — BEHIND THE CURTAIN" width="100%"></p>
 
@@ -157,7 +185,7 @@ All 80 wrestlers, together in one roster. Each has a named pixel-art portrait.
 | **North Crown** | A story the regional television audience can follow. | The Reverend, Roxy Rain |
 | **Grand Union** | Technical work on the national broadcast. | Silas Rush, Nova Bell |
 
-Each booker keeps a separate card, from opener to main event. A result at Dockside goes on Dockside’s record. Repeat appearances can raise your fee there, and an established draw can bring higher billing. See who’s up, who’s down and who’s working elsewhere in **Territory → Card pyramid**.
+Each booker keeps a separate card, from opener to main event, with a men’s and a women’s ranking and a champion at the top of each. A result at Dockside goes on Dockside’s record. Repeat appearances can raise your fee there, and an established draw can bring higher billing. See who’s up, who’s down and who’s working elsewhere in **Territory → Card pyramid**.
 
 **Rival stable report.** Mo Devlin starts with nine at Iron Borough, Ruth Anwar has eight at Gold Coast, and Len Mercer has eight at North Circuit. Three more managers are on the road: Dina Kestrel at Eastbank Athletic (six wrestlers), Pavel Singh at Meridian International (six), and Cleo Kells at Redwood Wrestling Agency (seven). Their results, wages, signings and releases change the circuit from week to week. If one of your wrestlers takes a rival’s offer, you may find yourself booking against them.
 
@@ -169,7 +197,7 @@ Each booker keeps a separate card, from opener to main event. A result at Docksi
 
 *From the road agent*
 
-The splash screen still takes you straight to Free agents, but Dennis now gives you an in-game welcome before the figures take over. A collapsible **First Week** guide stays within reach while you sign a wrestler, book a match, read your inbox, choose a training focus and work your first bout. Steps update from what you actually do; they are not scripted gates. The guide folds away after the first week and can be reopened from **Game → How a week works**. Its state lives inside the normal career save, including older careers.
+The start screen is tonight’s fight poster, and **New career** still takes you straight to Free agents. Dennis gives you an in-game welcome before the figures take over. A collapsible **First Week** guide stays within reach while you sign a wrestler, book a match, read your inbox, choose a training focus and work your first bout. Steps update from what you actually do; they are not scripted gates. The guide folds away after the first week and can be reopened from **Game → How a week works**. Its state lives inside the normal career save, including older careers.
 
 ## FROM THE BOOKING OFFICE
 
@@ -213,15 +241,21 @@ The office keeps its own records now, and draws them. **Desk → This week** sho
 
 Road agent Dennis starts with the booked result and asks how you want the match to work. Then he hands you **the running order**: the shine, the heat, the comeback and the big spot, already pencilled in. Each beat has two or three pitches beside it — one from each wrestler and Dennis’s middle-of-the-road option — and you can swap any of them before you agree it. Dennis tells you whether the order tells a story the booked finish can pay off. A clean loser with the big spot, or a comeback from nothing, will get a look.
 
-Then two or three situations come up from a pool of 24, and they push on the plan you’ve just agreed. The pairing, the promotion, the card position and the terms help decide what comes through the door. A wrestler might pitch a risky move, the booker might ask for four more minutes, or a scout might turn up in row F.
+Then two or three situations come up from a pool of 36, and they push on the plan you’ve just agreed. The pairing, the promotion, the card position and the terms help decide what comes through the door. A wrestler might pitch a risky move, the booker might ask for four more minutes, or a scout might turn up in row F.
 
 A situation can change a beat (the card will say *Changes the heat*), and some decisions rule moves out altogether. Stay away from the soft corner, or keep everyone off a slack top rope, and Dennis rubs out whatever no longer works and pencils in the nearest thing that does. Read the choice cards for the stakes. A decision can change the starting crowd, the purse, trust, morale, match length or how much risk the wrestlers take. Their moods and the agreed plan stay on screen. Choose the route to the booked result and give them a last word at the curtain. The signed sheet carries the whole running order into the match, with a legal alternative for each beat in case the wrestlers need to call an audible. How faithfully they follow it depends on how they feel about it, how tired they are, how good they are at keeping a match on track and whether the room is giving anything back. Happy, fresh wrestlers land about nine agreed beats in ten. A pair who are sulking land about four. Landed beats lift the star rating, more so when the order tells a story; missed ones cost you.
+
+**One thing leads to another.** Some answers start something. Trust the stand-in referee and he’ll be back with a question. Let your wrestler show off for a rival manager and they’ll be tapped up by the fire exit. Others come back at a later show: promise somebody the big spot *next time*, tell a hurt wrestler to walk it off, or put off a money talk, and it opens the next meeting with them. Take a time cut without a fuss and that promoter owes you a favour. Choice cards that do this say *Comes back next time*.
+
+**Any other business.** At the end of the meeting somebody usually has an idea for their entrance. Every wrestler has one of their own, so it is the Legion bugler for one and a borrowed pallet truck for another. Say yes and it goes down a storm or goes wrong in front of everyone.
 
 ## THE MIC IS OPEN
 
 *Pre-match report*
 
 Before the first line, Dennis gives you **his read**: whether the room is hot, quiet or doesn’t know your wrestler, whether there’s real history between the two, whether the opponent can talk, and what sort of talker your wrestler is. No opening is right every night. A quiet room punishes shouting, an accusation with no history sounds made up, and a big strange picture only works for somebody who can carry it. Choose the line that suits the night and it lands more often and counts for more. The risky lines are the big ones when the night is right for them.
+
+**Six more ways to talk.** Some nights also offer an opening that **insults the town** or **does the maths** (badly, with total confidence); an answer that **admits what this is doing to you** or **teases a surprise** that never arrives; and a last word that says **how you want to be remembered** or **thanks the room like it might be the last time**. They only appear when they suit the night, and the two new last words promise nothing the match has to check. The 52 newer wrestlers say it all in their own words.
 
 Start with **Opening shot**, then take the mic back in **They hit back**. When the opponent replies, they take an angle — personal, mocking, armed with facts, or playing to the crowd — and the commentary tells you which. Each angle has an answer that beats it: keep your composure against the personal stuff, turn the words round on somebody laughing at you, ask for an answer in the ring when they quote the record. At **Push your luck?**, you can leave the exchange there or go after the crowd again. Going again pays when the room is already with you and the gamble suits the speaker. Otherwise, walk away. Playing to the town is a small lift. A good joke can win the room, and a bad one can give it away. A live meter follows every swing, with both wrestlers’ lines and the crowd’s reactions on screen.
 
@@ -249,7 +283,7 @@ The report compares the signed board with the match, starting with the strip as 
 
 The browser saves your career automatically, including backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.8.1. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
+Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.10, and older careers pick up the eight belts on their first load. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
 
 To play locally, download the **whole repository** and open `index.html` in a modern browser. Keep the `assets/` directory alongside it: the page loads the JavaScript, CSS and portrait atlas as separate files. The simulation still runs in the browser, with no installer or build step. Google Fonts load when available, with system fallbacks.
 
@@ -266,8 +300,11 @@ To play locally, download the **whole repository** and open `index.html` in a mo
 | Match story arcs | 25 |
 | Routes across the four booked finishes | 18 |
 | Authored moves and move families | 336 / 20 |
-| Promo graph angles and situational variants | 15 / 135 |
-| Backstage situations | 24 |
+| Promo graph angles and situational variants | 21 / 183 |
+| Backstage situations and follow-ups | 36 / 9 |
+| Championship belts | 8 |
+| Wrestlers with lines of their own | 52 |
+| Entrance ideas, personal and shared | 80 / 32 |
 | Rounds in the promo duel | 4 |
 
 The match graph and career simulation use seeded logic so a saved sequence can be resumed deterministically. Reversals and applicable blocks sit alongside the authored moves. Narration and wrestler dialogue are original, informed by match structure, performer interviews and wrestling history. [Match graph and research](docs/match-graph.md) · [Promo research](docs/promo-graph.md)
@@ -298,12 +335,16 @@ node tests/promo-read.test.cjs
 node tests/training-sessions.test.cjs
 node tests/records.test.cjs
 node tests/catalog.test.cjs
+node tests/divisions.test.cjs
+node tests/voices.test.cjs
+node tests/room-chains.test.cjs
+node tests/promos-requests.test.cjs
 node tests/structure.test.cjs
 ```
 
-The suites cover the free-agent market and rival contracts, separate promotion ladders, older saves, backstage situations, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
+The suites cover the free-agent market and rival contracts, separate promotion ladders, divisions and title changes, older saves, backstage situations and their follow-ups, personal voices, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
 
-**Continuous integration:** All 16 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
+**Continuous integration:** All 26 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
 
 ### Small print
 
@@ -317,6 +358,8 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
+| **v0.3.10** | Six new ways to work the microphone, from insulting the town to thanking the room, offered when they suit the night. Every wrestler gets their own daft entrance idea. The start screen becomes tonight’s fight poster. Version numbers move to the pre-release 0.x scheme. |
+| **v0.3.9** | Championship edition. Every promotion splits into men’s and women’s divisions with eight belts won and lost in title matches. The 52 newcomers speak in their own words. Backstage choices start chains within a meeting and threads that return at later shows, with 21 new situations and follow-ups. |
 | **v0.3.8.1** | The production desk is rebuilt: 11 JavaScript files, four stylesheets and a separate portrait atlas replace the giant HTML file. The agents’ room gets independent scrolling columns on desktop and a stacked plan on smaller screens. Tests now run against the scripts that ship to players, while existing saves and match rules stay intact. |
 | **v0.3.8** | Charts on the desk, the results, every profile and every match report. The running order is three across on a phone, and the training table fits a laptop screen. Sessions with Dennis. Two a week across the stable: rehearse for the next match, learn a big-spot move, or work on one style at the microphone. Each feeds straight into the agents’ room, the promo or the ring. |
 | **v0.3.7** | The planning spine. Every match night has a running order of four beats that you can change, Dennis judges whether it tells a story, situations rewrite beats they rule out, and the wrestlers’ mood and condition decide how much of it actually happens. The match strip shows the running order on the clock as it plays out, and again on the report. At the microphone, Dennis reads the night first, opponents take an angle you can answer, pushing your luck can pay, and counter and finisher vows go on the strip. |
