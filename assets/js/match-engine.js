@@ -1113,9 +1113,9 @@ const Graph=(function makeGraph(){
   // Arc switches never teleport the wrestlers. Every needed reset is narrated.
   if(prev){
    if(p.position==='outside')say(M,fill(M,'{W} and {F} beat the referee’s count and slide back into the ring.'));
-   else if(p.position==='top')say(M,fill(M,'The wrestler on the turnbuckle drops back down as the counter threat develops.'));
+   else if(p.position==='top')say(M,fill(M,p.down==='w'?'{F} drops back down from the turnbuckle as the counter threat develops.':p.down==='f'?'{W} drops back down from the turnbuckle as the counter threat develops.':'The wrestler on the turnbuckle drops back down as the counter threat develops.'));
    else if(p.position==='corner')say(M,fill(M,'They separate in the corner and step out into open ring.'));
-   else if(p.position==='mat')say(M,fill(M,'The wrestler on the mat pushes back up as the next exchange begins.'));
+   else if(p.position==='mat')say(M,fill(M,p.down==='w'?'{W} pushes back up off the mat as the next exchange begins.':p.down==='f'?'{F} pushes back up off the mat as the next exchange begins.':'Both wrestlers push back up off the mat as the next exchange begins.'));
   }
   if(words)say(M,fill(M,words),'story');
   if(arc.control==='w'||arc.control==='f'){
