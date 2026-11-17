@@ -1,4 +1,4 @@
-# THE OFFICE — Living roster v4.0: cast bible
+# THE OFFICE — Living roster v0.4.0: cast bible
 
 > **The matches are scripted. The people aren't.**
 
@@ -8,7 +8,7 @@
 
 ## Starting population
 
-| Initial status | Existing | Additional | v4.0 target |
+| Initial status | Existing | Additional | v0.4.0 target |
 | --- | ---: | ---: | ---: |
 | Free-agent market | 12 | 8 | 20 |
 | Six AI agencies | 13 | 31 | 44 |

@@ -1,4 +1,4 @@
-# The Office v2.9 — Match variety without control bloat
+# The Office v0.2.9 — Match variety without control bloat
 
 ## Goal
 

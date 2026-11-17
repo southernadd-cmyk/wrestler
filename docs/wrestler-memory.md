@@ -1,4 +1,4 @@
-# The Office v3.0 — Living wrestlers, not an unrestricted booking sandbox
+# The Office v0.3.0 — Living wrestlers, not an unrestricted booking sandbox
 
 **Tagline:** The matches are scripted. The people aren't.
 
@@ -14,7 +14,7 @@ next encounter.
 
 ## Event -> interpretation -> memory -> conversation -> next match
 
-1. An actual match concludes using the existing v2.9 match graph.
+1. An actual match concludes using the existing v0.2.9 match graph.
 2. The memory layer picks one genuinely meaningful event, such as injury,
    humiliation for a proud worker, a protected loss, a shoot double-cross, a
    standout performance or an ignored ringside instruction.
@@ -87,7 +87,7 @@ node tests/memory-flow.test.cjs
 ```
 
 The tests cover the original action graph, 500 match outcomes, 625 promo scenes,
-600 v2.9 variety bouts, a memory-driven live match, legacy saves, a
+600 v0.2.9 variety bouts, a memory-driven live match, legacy saves, a
 confrontation with three choices, injured-worker support, repeated-loss
 cooldowns, and promises which are actually met or missed.
 

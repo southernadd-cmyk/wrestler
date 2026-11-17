@@ -1,4 +1,4 @@
-# The Office v3.1 — Negotiated match sheets and causal event graph
+# The Office v0.3.1 — Negotiated match sheets and causal event graph
 
 ## What actually ships
 

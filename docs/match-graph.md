@@ -1,4 +1,4 @@
-# The Office — causal match graph (v2.7)
+# The Office — causal match graph (v0.2.7)
 
 This is a **wrestling-psychology simulation model**, not a recreation of actual matches, a licensed move library, or a machine-learning model trained on wrestling footage. The original node sequences are informed by documented match breakdowns and wrestler interviews, with the finish still governed by the player's contract and permitted mid-match choices.
 
@@ -112,6 +112,6 @@ The graph suite checks all node and arc reachability, action legality, reversal 
 
 ## Compatibility
 
-- Existing v2, v2.1, v2.2, v2.3 and v2.5/v2.6 career saves remain under the existing storage keys.
-- In-progress v2.6 bouts lacking graph fields migrate at the current match clock and stage.
-- The v2.5 interface, match-night chrome, colours and page layout are intentionally unchanged.
+- Existing v0.2, v0.2.1, v0.2.2, v0.2.3 and v0.2.5/v2.6 career saves remain under the existing storage keys.
+- In-progress v0.2.6 bouts lacking graph fields migrate at the current match clock and stage.
+- The v0.2.5 interface, match-night chrome, colours and page layout are intentionally unchanged.
