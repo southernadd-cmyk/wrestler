@@ -66,7 +66,7 @@ Every new career now automatically activates the 80-wrestler world, including 20
 ## v0.3.9–v0.3.10 additions
 
 - **Divisions and belts** (`data.js`, `territory.js`). `OfficeData.divisionOf(id)` puts every wrestler in the men’s or women’s division, and `OfficeData.belt(pid, div)` names each of the eight championships and points at its art in `assets/belts/`. `promotionRank(pid, div)` ranks one division. Title holders, defences and the title history live in `territory.titles` and `territory.titleLog` in the existing save. Older saves are migrated once, guarded by `divisionsReady` and `titles`.
-- **Personal voices** (`roster-registry.js`). `OfficeData.VOICE_PACKS` holds 17 lines for each of the 52 newcomers. The agents’ room and the promo duel use a wrestler’s own line about two times in three, alongside the eight shared voice types.
+- **Personal voices** (`roster-registry.js`). `OfficeData.VOICE_PACKS` holds 17 lines for each of the 80 wrestlers. The agents’ room and the promo duel use a wrestler’s own line about two times in three, alongside the eight shared voice types.
 - **Room chains and threads** (`agents-room.js`). Follow-up situations are marked `followup` and are never drawn on their own. `chain()` puts one later in the same meeting; `carry()` saves a thread on the signed match layout, and the post-match hook keeps it in `S.roomThreads` for up to eight weeks.
 - **Contextual promo angles** (`story.js`, `promo-duel.js`). A promo node may carry a `when(context)` test; the choices on screen are the core five for each stage plus any extra angle whose test passes.
 - **Entrance ideas** (`agents-room.js`). `DAFT_OWN` gives every wrestler a personal idea, and `DAFT_MORE` adds three shared ones for each voice type.
