@@ -17,3 +17,14 @@
 .first-week-welcome b{color:#8b2338}.first-week-welcome p{margin:3px 0 0}
 .first-week-reopen{margin-top:12px}
 @media(max-width:720px){.first-week-dock{bottom:calc(63px + env(safe-area-inset-bottom,0px));right:9px}.first-week-panel{max-height:53dvh}.first-week-welcome{font-size:14px}.first-week-tab{font-size:20px}}
+/* Keep the guide off the management screens.
+   Desktop: the tab lives in the news ticker strip and the checklist opens upward from it.
+   Phone: the tab floats above the section tabs, and the view reserves room so nothing is stuck under it. */
+@media(min-width:721px){
+ .first-week-dock{bottom:calc(2px + env(safe-area-inset-bottom,0px));flex-direction:column-reverse}
+ .first-week-tab{font-size:19px;padding:2px 9px;box-shadow:2px 2px 0 rgba(0,0,0,.55)}
+ .first-week-tab b{font-size:13px;padding:2px 5px}
+ .first-week-panel{max-height:min(65vh,590px,calc(100dvh - 120px))}
+ body.first-week-on #tick{padding-right:var(--first-week-room,210px)}
+}
+@media(max-width:720px){body.first-week-on #view{padding-bottom:calc(12px + 50px)}}

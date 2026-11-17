@@ -33,11 +33,12 @@
  function dock(){let el=$('#firstWeekDock');if(el)return el;
   el=document.createElement('aside');el.id='firstWeekDock';el.className='first-week-dock';el.setAttribute('aria-label','First-week guide');document.body.append(el);return el;
  }
- function guide(){const s=current(),el=dock();if(!s||$('#app')?.hidden||!$('#tv')?.hidden){el.hidden=true;return}
+ function guide(){const s=current(),el=dock(),show=v=>{el.hidden=!v;document.body.classList.toggle('first-week-on',v)};if(!s||$('#app')?.hidden||!$('#tv')?.hidden){show(false);return}
   const m=ensure(s),p=progress(s),visible=p.firstWeek||(m.open===true&&$('#view')?.textContent.includes('How a week works'));
-  el.hidden=!visible;if(!visible)return;
+  show(visible);if(!visible)return;
   el.innerHTML=`<button class="first-week-tab" type="button" data-firstweek="toggle" aria-expanded="${!!m.open}" aria-controls="firstWeekDetails">FIRST WEEK <b>${p.done}/${p.total}</b> <span aria-hidden="true">${m.open?'▾':'▴'}</span></button>`+
    (m.open?`<section id="firstWeekDetails" class="first-week-panel"><div class="first-week-title"><b>Dennis’s checklist</b><button type="button" data-firstweek="toggle" aria-label="Close first-week checklist">×</button></div><p class="first-week-note">${esc(note(s))}</p><ol>${p.steps.map(t=>`<li class="${t.done?'checked':''}"><span aria-hidden="true">${t.done?'✓':'○'}</span><div><b>${esc(t.title)}</b><small>${esc(t.detail)}</small></div><button type="button" data-go="${esc(t.go)}">Go</button></li>`).join('')}</ol></section>`:'');
+  const tab=el.querySelector('.first-week-tab');if(tab)document.body.style.setProperty('--first-week-room',(tab.offsetWidth+24)+'px');
  }
  function welcome(){const s=current(),v=$('#view');if(!s||!v||s.season!==1||s.week!==1||progress(s).steps[0].done)return;
   const screen=v.querySelector('.screen.s-split'),body=screen?.querySelector('.win .wbody');
