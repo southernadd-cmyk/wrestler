@@ -5,6 +5,16 @@
 (function(root){'use strict';
 const D=root.OfficeData;
 const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
+// v0.3.13 Crowd noise has a ceiling the way a room does: each gain shrinks as the place gets louder,
+// so a hot crowd needs sustained good work to stay hot and a full 100 is a rare, earned night.
+// Losses always land in full. Every change to the crowd during a match goes through here.
+const CROWD_EASE=28,CROWD_FLOOR=.05;
+function lift(M,d){
+ if(d>0)d*=Math.max(CROWD_FLOOR,Math.min(1,(100-M.crowd)/CROWD_EASE));
+ M.crowd=clamp(M.crowd+d);return M.crowd;
+}
+// Moments the post-match report pins to the match clock: [seconds, kind, 1 if it was your wrestler].
+function mark(M,k,yours){(M.marks??=[]).push([M.t,k,yours?1:0])}
 function mulberry(seed){let a=seed>>>0;const rng=()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296};rng.getState=()=>a;return rng}
 const PHASES=[{id:'open',to:.14,name:'Feeling out'},{id:'shine',to:.32,name:'Early advantage'},{id:'heat',to:.56,name:'Sustained control'},{id:'comeback',to:.76,name:'Comeback'},{id:'stretch',to:1.01,name:'Finishing stretch'}];
 const CROWD_MUL={open:.45,shine:.8,heat:.6,comeback:1.25,stretch:1.45};
@@ -252,7 +262,7 @@ const Psy=(function installPsychology(){
    line(M,rnd(M,[`${Df.short} gets the shoulder up just before three!`,`TWO AND A HALF! ${Df.short} escapes at the last moment.`,`NO! ${Df.short} kicks out. The crowd cannot believe it.`]),'crowd');
    s.position='mat';s.down=Df===M.w?'w':'f';
   }
-  M.nearfalls++;M.crowd=clamp(M.crowd+pop);M.bonus+=late?8:4;
+  M.nearfalls++;lift(M,pop);mark(M,'nf',yours);M.bonus+=late?8:4;
  }
  return {PHASE_ENDS,make,get,phase,beat,recover,spotSetup,spotAfter,nearfall};
 })();
@@ -1196,7 +1206,7 @@ const Graph=(function makeGraph(){
   // A limb-specific move only adds to the worked body part when it hits that part.
   const onTarget=!n.part||!PART_OF[part]||n.part===PART_OF[part];
   if(n.focus&&onTarget){g.damage[victim]=(g.damage[victim]||0)+n.focus;if(victim==='w')p.focusHits+=n.focus;}
-  if(n.crowd)M.crowd=clamp(M.crowd+n.crowd*(n.family?CROWD_SCALE:1));
+  if(n.crowd)lift(M,n.crowd*(n.family?CROWD_SCALE:1));
   const exertion=costOf(id),activeSide=n.reverse?opp:side,staminaKey=activeSide==='w'?'wSt':'fSt';
   let effective=exertion;
   if(exertion>0&&fighter(activeSide==='w'?M.w:M.f).trait==='Workhorse')effective*=.8;
@@ -1613,14 +1623,21 @@ function say(M,text,kind='play',opt={}){
  const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0,who};M.queue.push(line);M.log.push(line);return line}
 
 function phaseFor(frac,M){const ends=Psy.PHASE_ENDS[M?.planId]||Psy.PHASE_ENDS.story;return PHASES.find((p,i)=>frac<ends[i])||PHASES[4]}
+// The rating, itemised: what each part added to (or took off) the stars. stars() is their sum.
+function starParts(M){
+ if(!M.qN)return [];
+ const avgQ=(M.qSum+M.bonus)/M.qN;
+ const parts=[['work','The wrestling',1.1+(M.qSum/M.qN-40)*.068],['moments','Big moments',M.bonus/M.qN*.068],
+  ['crowd','The crowd',(M.crowdPeak-65)*.01],['nearfalls','Near falls',Math.min(3,M.nearfalls)*(M.crowdPeak>=65?.12:.04)],['botches','Mistakes',-M.botches*.2]];
+ if(M.shortened)parts.push(['short','Cut short',-.45]);
+ if(M.sheetAdj)parts.push(['layout','The agreed layout',M.sheetAdj]);
+ if(M.minutes>=15&&avgQ>=60)parts.push(['length','Long match, held together',.2]);
+ if(M.outcome==='double')parts.push(['double','Double count-out',.25]);
+ return parts;
+}
 function stars(M,final=false){
  if(!M.qN)return 0;
- const avgQ=(M.qSum+M.bonus)/M.qN;
- let s=1.1+(avgQ-40)*.068+(M.crowdPeak-65)*.01+Math.min(3,M.nearfalls)*(M.crowdPeak>=65?.12:.04)-M.botches*.2;
- if(M.shortened)s-=.45;
- s+=M.sheetAdj||0;
- if(M.minutes>=15&&avgQ>=60)s+=.2;
- if(M.outcome==='double')s+=.25;
+ let s=starParts(M).reduce((t,p)=>t+p[2],0);
  if(M.outcome==='nc')s=Math.min(s,1.5);
  if(!final){const frac=Math.min(1,M.t/M.len);s=s*(.6+.4*frac);}
  return clamp(Math.round(s*4)/4,0,5);
@@ -1693,8 +1710,9 @@ function tick(M){
  let dc=(q-55)/22*CROWD_MUL[ph.id]*plan.crowd*(ph.id==='stretch'?plan.late:1);
  if(mode==='crowd')dc+=1.1*(w.mic/80);if(mode==='pickup')dc+=M.wSt>40?.6:-.4;if(mode==='slow')dc-=.5;
  if(M.offScript==='showboat')dc+=.4;
- dc-=(M.crowd-55)*.02;
- M.crowd=clamp(M.crowd+dc);
+ lift(M,dc);
+ // A room cannot hold a roar: the louder it is, the faster it settles without something new.
+ M.crowd=clamp(M.crowd-(M.crowd-55)*.02-Math.max(0,M.crowd-84)*.025);
  // mode countdown
  if(M.mode){M.mode.ticks--;if(M.mode.ticks<=0)M.mode=null;}
  // the injured wrestler can make things worse
@@ -1717,6 +1735,9 @@ function tick(M){
  if(!spoke&&M.r()<.64)Graph.step(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
+ // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
+ // upper hand, which part of the match it was and how good the work was.
+ (M.flow??=[]).push([M.t,Math.round(M.crowd),Math.round(M.mom),PHASES.findIndex(x=>x.id===ph.id),Math.round(q)]);
  if(M.t>=M.len){M.stage='finish';}
 }
 function onPhase(M){
@@ -1785,7 +1806,7 @@ function spot(M,big,forced){
  const move=rnd(M,possible.length?possible:['a running dropkick']);
  if(st<28){
   say(M,`${A.short} looks for a spectacular attack, but the tired legs will not cooperate. ${Df.short} gets a chance to recover.`,'agent',{who:'pbp'});
-  M.crowd=clamp(M.crowd-(big?3:1));
+  lift(M,-(big?3:1));mark(M,'tired',yours);
   M.bonus-=big?6:2;
   return;
  }
@@ -1796,7 +1817,7 @@ function spot(M,big,forced){
  M.spots++;
  if(big||M.r()<.35)say(M,big?`${A.short} commits to the high-risk move!`:`${A.short} goes for it!`,'play',{pause:1});
  if(M.r()<botchP){
-  M.botches++;M.bonus-=big?30:20;M.crowd=clamp(M.crowd-(big?9:6));
+  M.botches++;M.bonus-=big?30:20;lift(M,-(big?9:6));mark(M,'botch',yours);
   say(M,`${move.charAt(0).toUpperCase()+move.slice(1)}… and it’s gone wrong. That looked nasty.`,'bad',{big:true});
   // who gets hurt: the taker or the one who went for it
   const hurtYours=yours?M.r()<.55:M.r()<.45;
@@ -1806,7 +1827,7 @@ function spot(M,big,forced){
    else if(!hurtYours&&!M.foeHurt){M.foeHurt=true;say(M,`${M.f.short} is holding the ${rnd(M,PARTS)}. The referee leans in.`,'agent',{who:'pbp'});M.fSt=clamp(M.fSt-25);}
   }
  }else{
-  M.spotHits++;const pop=(big?7:3)+M.r()*(big?7:4);M.crowd=clamp(M.crowd+pop*M.plan.crowd);M.bonus+=big?18:10;
+  M.spotHits++;const pop=(big?7:3)+M.r()*(big?7:4);lift(M,pop*M.plan.crowd);mark(M,big?'big':'spot',yours);M.bonus+=big?18:10;
   say(M,rnd(M,[`${move.charAt(0).toUpperCase()+move.slice(1)} from ${A.short}!${M.crowd>=70?' The crowd come up out of their seats!':''}`,`${A.short} connects with ${move}! ${Df.short} did not see it coming.`,`What a risk by ${A.short} — ${move} lands flush!`,`${A.short} gets all of ${move}! The front rows erupt.`]),M.crowd>=70?'crowd':'play',{big:big||M.crowd>=75});
  }
  // Both wrestlers pay the physical cost of an attempted special, including botches.
@@ -1819,9 +1840,9 @@ function dive(M){
  say(M,`${M.w.short} is climbing… not the turnbuckle. The balcony.`,'play',{pause:2,big:true});
  const botchP=(.12+(100-M.w.safe)*.004)*M.riskMul;
  M.spots++;
- if(M.r()<botchP){M.botches++;M.bonus-=35;M.crowd=clamp(M.crowd-4);say(M,`${M.w.short} jumps… and comes up short. The front row scatters.`,'bad',{big:true});
+ if(M.r()<botchP){M.botches++;M.bonus-=35;lift(M,-4);mark(M,'botch',1);say(M,`${M.w.short} jumps… and comes up short. The front row scatters.`,'bad',{big:true});
   if(!M.injury&&M.r()<.55){M.injury=2+(M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);decide(M,'injury');}}
- else{M.spotHits++;M.bonus+=30;M.crowd=clamp(M.crowd+16);M.adj.heat+=4;say(M,`${M.w.short} FLIES off the balcony and wipes out ${M.f.short}! Phones are out everywhere!`,'crowd',{big:true});}
+ else{M.spotHits++;M.bonus+=30;lift(M,16);mark(M,'big',1);M.adj.heat+=4;say(M,`${M.w.short} FLIES off the balcony and wipes out ${M.f.short}! Phones are out everywhere!`,'crowd',{big:true});}
  Psy.get(M).position='outside';Psy.get(M).down=null;
 }
 function nearfall(M){
@@ -1834,7 +1855,7 @@ function nearfall(M){
  if(late&&A.sub){
   say(M,`${A.short} locks in ${the(A.finisher)}!`,'play',{big:true,pause:1});
   say(M,`${Df.short} is fading… reaching for the ropes…`,'play',{pause:2});
-  M.crowd=clamp(M.crowd+pop);
+  lift(M,pop);
   say(M,`ROPE BREAK! ${Df.short} SURVIVES ${THE(A.finisher)}!`,'crowd',{big:true});
  }else{
   const move=late?`${the(A.finisher)}`:rnd(M,D.SPOTS[A.style]||D.SPOTS.Story).replace(/^a /,'a ');
@@ -1842,7 +1863,7 @@ function nearfall(M){
   say(M,'Cover!','count',{pause:1});
   say(M,'ONE!','count',{pause:1,big:true});
   say(M,'TWO!','count',{pause:2,big:true});
-  M.crowd=clamp(M.crowd+pop);
+  lift(M,pop);
   say(M,late?rnd(M,[`NO! ${Df.short} KICKED OUT OF ${THE(A.finisher)}!`,`HOW? ${Df.short} survived ${THE(A.finisher)}!`,`A SHOULDER UP! ${Df.short} escaped the finisher!`]):rnd(M,[`Kick out! ${Df.short} survives!`,`Two and a half! ${Df.short} kicks free!`,`The referee's hand almost hit three — ${Df.short} is still in this!`,`A last-second escape from ${Df.short}!`]),'crowd',{big:true});
  }
  M.nearfalls++;M.bonus+=late?8:4;
@@ -1865,7 +1886,7 @@ function canCall(M,id){
 }
 function call(M,id){
  if(!canCall(M,id))return false;
- M.calls--;M.callsUsed.push(id);const w=M.w;
+ M.calls--;M.callsUsed.push(id);const w=M.w;mark(M,'call:'+id,1);
  say(M,`You shout from ringside: “${CALLS[id].name}.”`,'you');
  const listen=M.listen+(id==='home'?20:0)+(id==='sheet'&&M.leash==='script'?10:0);
  if(M.r()*100>listen){M.ignored++;say(M,rnd(M,[`${w.short} waves you away.`,`${w.short} doesn’t even look over.`,`${w.short} hears you. Does the opposite.`]),'bad');if(w.ego>=70)M.adj.morale-=1;return true}
@@ -1909,14 +1930,14 @@ function resolve(M,choice){
  say(M,`Your call: “${opt.label}”`,'you');
  if(d.id==='injury'){
   if(choice==='home'){if(M.len-M.t>60)M.shortened=true;M.len=Math.min(M.len,M.t+50);M.nearfallAt=[];say(M,`${w.short} nods through gritted teeth. Straight to the finish.`,'play',{who:'runner'})}
-  if(choice==='work'){M.workingHurt=true;M.crowd=clamp(M.crowd+5);M.adj.heat+=3;say(M,`${w.short} waves off the referee. The crowd start clapping. Brave, or daft.`,'crowd')}
+  if(choice==='work'){M.workingHurt=true;lift(M,5);M.adj.heat+=3;say(M,`${w.short} waves off the referee. The crowd start clapping. Brave, or daft.`,'crowd')}
   if(choice==='stop'){M.outcome='nc';M.adj.purseMul=.5;M.adj.trust-=6;M.adj.morale+=5;M.injury=Math.max(1,M.injury-1);M.stage='finish';}
  }
  if(d.id==='stiff'){
   if(choice==='protect'){M.stiff='protect';M.mode={type:'slow',ticks:3};M.wSt=clamp(M.wSt-8);say(M,`${w.short} covers up and rides out the storm.`)}
-  if(choice==='fire'){M.stiff='fire';M.crowd=clamp(M.crowd+9);M.bonus+=10;M.adj.trust-=4;M.adj.morale+=4;say(M,`${w.short} fires back for real! This is a fight now!`,'crowd',{big:true});
+  if(choice==='fire'){M.stiff='fire';lift(M,9);M.bonus+=10;M.adj.trust-=4;M.adj.morale+=4;say(M,`${w.short} fires back for real! This is a fight now!`,'crowd',{big:true});
    if(M.r()<.25){if(M.r()<.5&&!M.injury){M.injury=1;M.injuryPart='jaw';say(M,`${w.short} took one flush on the jaw. Wobbly.`,'bad')}else{M.foeHurt=true;say(M,`${f.short} is bleeding from the nose. That was not planned.`,'bad')}}}
-  if(choice==='ref'){M.stiff='ref';M.crowd=clamp(M.crowd-4);say(M,`The referee has a word with ${f.short}. Things settle down.`)}
+  if(choice==='ref'){M.stiff='ref';lift(M,-4);say(M,`The referee has a word with ${f.short}. Things settle down.`)}
  }
  if(d.id==='time'){
   if(choice==='cut'){M.len=Math.max(M.t+90,M.len-240);M.adj.trust+=4;M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t+20).slice(0,2);if(!M.nearfallAt.length)M.nearfallAt=[(M.len-30)/M.len];say(M,'The referee gets the signal. Four minutes come out of the match.')}
@@ -2097,7 +2118,7 @@ function summary(M){
  const s=stars(M,true);
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
-  outcome:M.outcome,finishRoute:M.finishRoute||null,crowdTrace:[...(M.crowdTrace||[]),[M.t,Math.round(M.crowd)]],rehearsed:!!M.o.sheet?.rehearsed,roomNote:root.OfficeRoom?.verify(M)||null,roomBonus:M.o.sheet?.bonus||0,roomFx:M.o.sheet?.fx||null,roomThreads:M.o.sheet?.threads||null,roomThreadUsed:M.o.sheet?.threadUsed||null,roomRepStake:M.o.sheet?.repStake||0,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
+  outcome:M.outcome,finishRoute:M.finishRoute||null,crowdTrace:[...(M.crowdTrace||[]),[M.t,Math.round(M.crowd)]],flow:(M.flow||[]).slice(),marks:(M.marks||[]).slice(),starParts:starParts(M).map(([k,label,v])=>[k,label,Math.round(v*100)/100]),len:M.len,rehearsed:!!M.o.sheet?.rehearsed,roomNote:root.OfficeRoom?.verify(M)||null,roomBonus:M.o.sheet?.bonus||0,roomFx:M.o.sheet?.fx||null,roomThreads:M.o.sheet?.threads||null,roomThreadUsed:M.o.sheet?.threadUsed||null,roomRepStake:M.o.sheet?.repStake||0,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
   resent:M.resent,promo:M.o.promo||null,
   promoSignals:{
    workerCounter:!!M.graph?.promoCounterPaid,
@@ -2132,5 +2153,5 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,scout:Graph.scout,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
+root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,scout:Graph.scout,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
 })(typeof window!=='undefined'?window:globalThis);

@@ -396,3 +396,80 @@
  .tv .s-promo>.win{height:auto}
  .tv .s-promo .wbody{overflow:visible}
 }
+/* v0.3.13 How the match went: phases, crowd, who was on top, moments and the rating itemised. */
+.s-result:has(.mf-win){height:auto;grid-template-rows:auto max-content 520px}
+.mf-win{grid-column:1/-1;min-height:max-content}
+.mf-win>.wbody{overflow:visible;flex:none}
+.mf-head{display:flex;flex-wrap:wrap;gap:4px 22px;margin:0 0 6px;font-size:19px;color:var(--ink-2)}
+.mf-head b.up{color:var(--good-ink)}.mf-head b.down{color:var(--bad-ink)}
+.mflow{margin:0 0 10px;padding:8px 12px 8px 4px;background:var(--well);border:2px solid var(--ink);font:16px/1 var(--tt);color:var(--dim)}
+.mf-row{display:grid;grid-template-columns:62px minmax(0,1fr)}
+.mf-lab{position:relative;padding-right:8px;text-align:right;color:var(--dim)}
+.mf-track{position:relative}
+.mf-track svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.mf-phases .mf-track{height:26px;margin-bottom:3px}
+.mf-phases .mf-lab{line-height:26px}
+.mf-ph{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;overflow:hidden;border-right:2px solid var(--well);color:var(--ink);font:15px/1 var(--px);white-space:nowrap}
+.mf-ph b{overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+.mf-ph.w-good{background:var(--good)}.mf-ph.w-ok{background:var(--stone-2)}.mf-ph.w-poor{background:var(--bad)}
+.mf-crowd .mf-track{height:150px;background:var(--deep);border:1px solid var(--well-line)}
+.mf-crowd .mf-lab{line-height:1.1}
+.mf-lab small{position:absolute;right:8px;font-size:15px;line-height:1;background:none;border:0;box-shadow:none;padding:0;color:var(--dim)}
+.mf-lab small.top{top:0}.mf-lab small.mid{top:50%;transform:translateY(-50%)}.mf-lab small.bot{bottom:0}
+.mf-grid{stroke:var(--well-line);stroke-width:1;vector-effect:non-scaling-stroke;stroke-dasharray:4 4}
+.mf-sep{stroke:var(--dim);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.35}
+.mf-area{fill:var(--cyan);opacity:.16}
+.mf-line{fill:none;stroke:var(--cyan);stroke-width:2.5;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.mf-peak{position:absolute;transform:translate(-50%,-160%);z-index:1;font-style:normal;font-size:15px;color:var(--white);background:var(--blood);padding:1px 4px;border:1px solid var(--ink);pointer-events:auto}
+.mf-mark{position:absolute;transform:translate(-50%,-50%);font-style:normal;font-size:16px;line-height:1;text-shadow:1px 1px 0 #000;cursor:default}
+.mf-mark.k-spot.you,.mf-mark.k-big.you,.mf-key .k-spot.you{color:var(--gold)}
+.mf-mark.k-spot.foe,.mf-mark.k-big.foe,.mf-key .k-spot.foe{color:#E98A9A}
+.mf-mark.k-big{font-size:21px}
+.mf-mark.k-nf,.mf-key .k-nf{color:var(--white)}
+.mf-mark.k-botch,.mf-key .k-botch{color:var(--bad);font-size:19px}
+.mf-mark.k-tired{color:var(--warn)}
+.mf-call,.mf-key .k-call{color:var(--cyan)}
+.mf-call{position:absolute;top:2px;transform:translateX(-50%);font-style:normal;font-size:13px;cursor:default}
+.mf-mom .mf-track{height:44px;margin-top:4px;background:var(--deep);border:1px solid var(--well-line)}
+.mf-mom .mf-lab small{font-size:14px;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mf-mom .mf-lab small.you{top:2px;color:var(--gold)}.mf-mom .mf-lab small.them{bottom:2px;color:#E98A9A}
+.mf-you{fill:var(--gold);opacity:.85}.mf-them{fill:var(--blood-hi);opacity:.85}
+.mf-mid{stroke:var(--dim);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.6}
+.mf-x .mf-track{height:18px;margin-top:4px}
+.mf-x .mf-track span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.mf-x .mf-track span:first-child{transform:none}.mf-x .mf-track span:last-child{transform:translateX(-100%)}
+.mf-key{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 0 62px}
+.mf-key i{display:inline-block;width:14px;height:9px;vertical-align:middle;margin-right:5px}
+.mf-key b{margin-right:5px}
+.mf-key .k-line{height:3px;background:var(--cyan)}.mf-key .k-you{background:var(--gold)}.mf-key .k-them{background:var(--blood-hi)}
+.mf-key .k-good{background:var(--good)}.mf-key .k-poor{background:var(--bad)}
+.mf-cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px}
+.mf-table-wrap{overflow-x:auto}
+.mf-table th small{display:block;font-size:14px;color:var(--dim)}
+.mf-table td{vertical-align:middle;white-space:nowrap}
+.mf-table td.v{white-space:normal}
+.mf-table tr.t-up td.v{color:var(--good)}.mf-table tr.t-down td.v{color:var(--bad)}
+.mf-bar{display:inline-block;width:70px;height:10px;background:var(--deep);border:1px solid var(--well-line);vertical-align:middle;position:relative}
+.mf-bar i{position:absolute;inset:0 auto 0 0}
+.mf-bar.w-good i{background:var(--good)}.mf-bar.w-ok i{background:var(--stone-2)}.mf-bar.w-poor i{background:var(--bad)}
+.mf-win .chip{display:inline-block;min-width:2.6em;text-align:center;padding:0 5px;font-size:16px;border:1px solid var(--ink)}
+.mf-win .chip.up{background:var(--good);color:var(--ink)}.mf-win .chip.down{background:var(--bad);color:var(--ink)}.mf-win .chip.flat{background:var(--stone-2);color:var(--ink)}
+.mf-moments{list-style:none;margin:0;padding:6px 10px;font:19px/1.25 var(--tt);color:var(--white);display:grid;gap:6px}
+.mf-moments li{display:grid;grid-template-columns:3.2em 3.4em minmax(0,1fr);gap:8px;align-items:start}
+.mf-moments .t{color:var(--dim)}
+.mf-parts{padding:6px 10px;display:grid;gap:4px;font:18px/1.2 var(--tt);color:var(--white)}
+.mf-part{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr) 4.2em;gap:8px;align-items:center}
+.mf-part b{text-align:right}
+.mf-part.pos b{color:var(--good)}.mf-part.neg b{color:var(--bad)}
+.mf-pbar{position:relative;height:10px;background:linear-gradient(var(--well-line),var(--well-line)) 50% 0/1px 100% no-repeat}
+.mf-pbar i{position:absolute;top:0;bottom:0}
+.mf-part.pos .mf-pbar i{background:var(--good)}.mf-part.neg .mf-pbar i{background:var(--bad)}
+.mf-part.total{border-top:1px solid var(--well-line);padding-top:4px}.mf-part.total b{color:var(--gold);font:24px/1 var(--jersey);white-space:nowrap}
+@media (max-width:900px){
+ .s-result:has(.mf-win){grid-template-rows:none}
+ .mf-cols{grid-template-columns:minmax(0,1fr)}
+ .mf-row{grid-template-columns:44px minmax(0,1fr)}.mf-key{margin-left:44px}
+ .mf-crowd .mf-track{height:120px}
+ .mf-ph{font-size:13px}
+ .mf-mom .mf-lab small{max-width:42px;font-size:12px}
+}

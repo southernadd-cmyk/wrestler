@@ -292,7 +292,7 @@
    if(s.v>=4&&b.id!=='finish'){
     const sc=Math.max(0,s.story?.score||0),hit=b.status==='achieved';
     // Stars for doing what was agreed, more if the running order told a story.
-    M.sheetAdj=(M.sheetAdj||0)+(hit?.01+.035*sc:0);M.crowd=Math.min(100,(M.crowd||0)+(hit?2:1));
+    M.sheetAdj=(M.sheetAdj||0)+(hit?.01+.035*sc:0);if(root.OfficeMatch?.lift)root.OfficeMatch.lift(M,hit?2:1);else M.crowd=Math.min(100,(M.crowd||0)+(hit?2:1));
    }
    if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?(s.v>=4?'Just as agreed backstage: '+b.title+'.':'The agreed '+b.title.toLowerCase()+' pays off.'):'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'),'runner');
    break;
