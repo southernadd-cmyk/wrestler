@@ -211,9 +211,13 @@ const portraitRows=[
 const portraitCells=new Map(portraitRows.flatMap((row,y)=>row.map((key,x)=>[
  key,`${100*x/(row.length-1)}% ${100*y/(portraitRows.length-1)}%`
 ])));
+// Painted portraits for people who are not on the atlas. Dennis, the road agent, has his own.
+const imagePortraits={'booker:dennis':'assets/portraits/dennis.png'};
 function avatar(actor,appearance=null,cssClass='portrait'){
  const safe=String(actor?.name||'Wrestler').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
  const label='Pixel-art portrait of '+safe;
+ const painted=appearance===null&&imagePortraits[actor?.key];
+ if(painted)return `<img class="${cssClass}" src="${painted}" alt="${label}" width="48" height="60" loading="lazy">`;
  const position=appearance===null&&portraitCells.get(actor?.key);
  if(position)return `<span class="${cssClass} roster-portrait" role="img" aria-label="${label}" style="background-position:${position}"></span>`;
  return `<img class="${cssClass}" src="${asData(actor,appearance)}" alt="${label}" width="48" height="60" loading="lazy">`;

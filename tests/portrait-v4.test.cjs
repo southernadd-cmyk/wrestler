@@ -32,4 +32,11 @@ const override=P.avatar({key:'wrestler:faye',name:'Faye Calder'},P.getLook({key:
 assert.match(override,/^<img [^>]*data:image\/png;base64,portrait/,'appearance overrides still use the renderer');
 const stranger=P.avatar({key:'manager:someone',name:'Someone'});
 assert.match(stranger,/^<img /,'characters without an atlas cell use the renderer');
-console.log('PASS portraits: 80 wrestlers and 4 promoters use painted atlas cells; overrides still render');
+// Dennis, the road agent, has a painted portrait of his own: 144×180 with a transparent background.
+const dennis=P.avatar({key:'booker:dennis',name:'Dennis'});
+assert.match(dennis,/^<img [^>]*src="assets\/portraits\/dennis\.png"/,'Dennis uses his painted portrait');
+assert.match(dennis,/alt="Pixel-art portrait of Dennis"/);
+const dennisPng=fs.readFileSync(path.join(__dirname,'..','assets','portraits','dennis.png'));
+assert.equal(dennisPng.subarray(1,4).toString(),'PNG');assert.equal(dennisPng.readUInt32BE(16),144);assert.equal(dennisPng.readUInt32BE(20),180);
+assert.equal(dennisPng[25],6,'with an alpha channel');
+console.log('PASS portraits: 80 wrestlers and 4 promoters use painted atlas cells; Dennis has his own painted portrait; overrides still render');
