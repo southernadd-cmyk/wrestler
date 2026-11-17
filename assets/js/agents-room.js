@@ -313,6 +313,15 @@
  const tone=(st,side,map)=>map[voice(who(st,side))]||map.stoic||Object.values(map)[0];
  const fmt=(st,t)=>String(t).replace(/\{W\}/g,st.w.short).replace(/\{F\}/g,st.f.short).replace(/\{P\}/g,st.promoter.voice).replace(/\{PN\}/g,st.promoter.name).replace(/\{PF\}/g,st.promoter.voice.split(' ')[0]);
  const first=st=>st.promoter.voice.split(' ')[0];
+ // A follow-up later in this meeting: it takes the place of the next situation not yet reached,
+ // or is added on the end once if the meeting has nothing left to replace.
+ function chain(st,id){
+  if(st.queue.includes(id))return;
+  if(st.at+1<st.queue.length)st.queue[st.at+1]=id;
+  else if(!st.extra){st.queue.push(id);st.extra=1;}
+ }
+ // A thread that comes back at a later show: with the same wrestler (sid) or the same promoter (pid).
+ function carry(st,t){(st.carry??=[]).push({id:st.seed+'|'+t.sit,at:st.contract.eventAbs||0,...t});}
  // What an option will do, stated before it is chosen. Built from the same numbers that are applied.
  function tagsOf(st,fx={}){
   const t=[],W=st.w.short,F=st.f.short;
@@ -388,6 +397,9 @@
        else if(unsafe)log(st,other(s),say(st,'safety',Y,'spot'),'objection');
        else if(held&&Y.ego>=68)log(st,other(s),say(st,'ego',Y,'spot'),'objection');
        log(st,s,say(st,'pleased',X,'spot'));}}];
+    const later={[m]:-1};
+    out.push({id:'later',label:'“Not tonight. Next time it’s yours.”',hint:X.short+' takes the promise, and will hold you to it.',fx:later,tags:[...tagsOf(st,later),'Comes back next time'],
+     run(st){log(st,s,say(st,'accept',X,'later'));carry(st,{sit:'promise_due',sid:X.id});}});
     if(cur?.action!=='scheduled_nearfall')out.push({id:'nobody',label:'“Then nobody gets it. Near-falls.”',hint:AGENT+'’s compromise. Nobody is thrilled.',fx:none,tags:tagsOf(st,none),
      run(st){log(st,'agent','Cheaper on the knees. I approve.');}});
     return out;}},
@@ -432,9 +444,9 @@
    options(st){
     const a={minutes:-3,trust:2,moodW:-2,moodF:-2},c={skipPromo:true,trust:1,crowd:-2};
     return [
-     {id:'cut',label:'“Fine. We’ll cut it.”',hint:'Three minutes come out of the match.',fx:a,tags:tagsOf(st,a),run(st){log(st,'agent','I’ll tell them. They’ve already started arguing about which three.');}},
+     {id:'cut',label:'“Fine. We’ll cut it.”',hint:'Three minutes come out of the match. '+first(st)+' will owe you one.',fx:a,tags:[...tagsOf(st,a),'Comes back next time'],run(st){log(st,'agent','I’ll tell them. They’ve already started arguing about which three.');carry(st,{sit:'favour_owed',pid:st.promoter.id});}},
      {id:'refuse',label:'“Tell {PF} we’re doing our time.”',hint:'It works about two times in five.',tags:['Gamble',first(st)+' ▼','Shorter match if it fails'],
-      run(st){if(rng(st.seed,'timecut')<.4){apply(st,{trust:-1});log(st,'agent','You’ve kept your time. '+st.promoter.voice+' did a sort of sigh down the phone.');}
+      run(st){if(rng(st.seed,'timecut')<.4){apply(st,{trust:-1});log(st,'agent','You’ve kept your time. '+st.promoter.voice+' did a sort of sigh down the phone.');chain(st,'raffle_payback');}
        else{apply(st,{minutes:-3,trust:-3});log(st,'agent','No. And now '+st.promoter.voice+' is cross as well. Three minutes gone.');}}},
      {id:'talk',label:'“Cut the talking, keep the wrestling.”',hint:'The promo is dropped. The match keeps its length.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','No microphone. Somewhere a sound engineer is weeping with relief.');}}];}},
   {id:'time_extra',kind:'room',weight:2,when:x=>['feature','main'].includes(x.st.slot),
@@ -458,7 +470,7 @@
     return [
      {id:'around',label:'“We’ll work around it.”',hint:'Nothing risky tonight.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'accept',st.w,'hurt'));}},
      {id:'sell',label:'“Work it into the match.”',hint:st.f.short+' goes after it and the crowd can see it is real.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','Selling a real injury. Bold. Stupid, but bold.');}},
-     {id:'fine',label:'“You’re fine. Walk it off.”',hint:'Costs nothing. Fixes nothing.',fx:c,tags:tagsOf(st,c),run(st){log(st,'w',say(st,'grumble',st.w,'hurt'));}}];}},
+     {id:'fine',label:'“You’re fine. Walk it off.”',hint:'Costs nothing. Fixes nothing. It may still hurt next time.',fx:c,tags:[...tagsOf(st,c),'Comes back next time'],run(st){log(st,'w',say(st,'grumble',st.w,'hurt'));carry(st,{sit:'still_hurting',sid:st.w.id});}}];}},
   {id:'daft',kind:'flavour',weight:3,when:()=>true,
    open(st){const score=x=>x.ego-(x.psych||50)*.4+rng(st.seed,'aob'+x.id)*30;st.daftSide=score(st.w)>=score(st.f)?'w':'f';
     log(st,'agent','Any other business? No? Good. Oh. '+nameOf(st,st.daftSide)+' has a hand up.');log(st,st.daftSide,DAFT[voice(who(st,st.daftSide))].pitch);},
@@ -641,7 +653,221 @@
      {id:'buy',label:'“Buy another one.”',hint:'£15 to the butcher on the corner.',fx:a,tags:tagsOf(st,a),run(st){log(st,'agent','Sorted. I got the one with the black pudding. We’re heroes.');}},
      {id:'shrug',label:'“Not our problem.”',hint:'It becomes '+st.promoter.voice+'’s problem.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','I’ll say we were never here.');}},
      {id:'accuse',label:'“'+X.short+'. Give it back.”',hint:'If you are right, the promoter is grateful. If you are wrong…',tags:['Gamble',first(st)+' ▲ or '+X.short+' ▼'],
-      run(st){if(rng(st.seed,'meat')<.5){apply(st,{trust:2});st.mood[s]-=3;log(st,s,'It was going to waste.');}else{st.mood[s]-=5;log(st,s,'I have never seen a meat tray in my life.');log(st,'agent','That was said with a mouth full of sausage, but I can’t prove anything.');}}}];}}
+      run(st){if(rng(st.seed,'meat')<.5){apply(st,{trust:2});st.mood[s]-=3;log(st,s,'It was going to waste.');}else{st.mood[s]-=5;log(st,s,'I have never seen a meat tray in my life.');log(st,'agent','That was said with a mouth full of sausage, but I can’t prove anything.');}}}];}},
+  // ---------------------------------------------------------------------------------------------
+  // v3.9 CHAINS. Some answers start something. A follow-up marked `followup` is never drawn on its
+  // own: chain() puts it later in the same meeting, carry() saves a thread that comes back at a
+  // later show with the same wrestler, opponent or promoter.
+  // ---------------------------------------------------------------------------------------------
+  {id:'ref_cover',kind:'match',weight:2.5,when:()=>true,
+   open(st){log(st,'agent','The usual referee has gone down with something. The stand-in is '+st.promoter.voice+'’s nephew. He has brought a whistle. Nobody has told him referees don’t use whistles.');},
+   title:'There’s a stand-in referee',ask:'How much do you tell him?',
+   options(st){
+    const a={minutes:-2,bonus:1},c={moodF:3,trust:-2};
+    return [
+     {id:'brief',label:'“Sit him down and go through it.”',hint:'Two minutes off the match to teach him the finish.',fx:a,tags:tagsOf(st,a),run(st){log(st,'agent','He’s written it on his hand. Both hands. And a bit of his arm.');}},
+     {id:'trust',label:'“He’ll be fine.”',hint:'Costs nothing now.',tags:['Saves time','He may come back with questions'],run(st){log(st,'agent','He gave me a thumbs-up. He’s still holding the whistle.');chain(st,'ref_question');}},
+     {id:'mate',label:'“{F} knows a ref. Ring them.”',hint:st.f.short+' is pleased. The promoter pays for the new ref.',fx:c,tags:tagsOf(st,c),run(st){log(st,'f',say(st,'pleased',st.f,'ref'));}}];}},
+  {id:'ref_question',kind:'match',weight:0,followup:true,when:()=>true,
+   open(st){log(st,'agent','The stand-in’s back. He wants to know how many he counts to. And whether he’s allowed to join in.');},
+   title:'The referee has a question',ask:'What do you tell him?',
+   options(st){
+    const b={moodW:2},c={trust:-1,bonus:1};
+    return [
+     {id:'three',label:'“Three. Just three.”',hint:'Simple. Probably enough.',tags:['Gamble','Crowd ▼ if he fluffs it'],
+      run(st){if(rng(st.seed,'refcount')<.6)log(st,'agent','Three. He’s practising on the tea urn.');else{apply(st,{crowd:-3});log(st,'agent','He counted to three, then four, then asked the front row if that was right.');}}},
+     {id:'steer',label:'“{W} steers him through it.”',hint:st.w.short+' calls it to him in the ring.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'pleased',st.w,'ref'));}},
+     {id:'timekeeper',label:'“Swap him with the timekeeper.”',hint:'The timekeeper has done it before. In 1983.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','The timekeeper is seventy-one and has his own shirt. The nephew is doing the bell. He’s thrilled. He’s got the whistle as well.');}}];}},
+  {id:'family',kind:'flavour',weight:1.5,when:()=>true,
+   open(st){log(st,'agent',st.w.short+'’s family are in the front row. Their nan has brought a sign. It is spelled correctly, which is a first for this building.');},
+   title:'{W}’s family are in',ask:'Does it change anything?',
+   options(st){
+    const a={crowd:2,moodW:3},b={moodW:-2,bonus:1};
+    return [
+     {id:'wave',label:'“Give them a wave on the way in.”',hint:'The front row warms up. So does '+st.w.short+'.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'pleased',st.w,'family'));}},
+     {id:'focus',label:'“Business as usual.”',hint:st.w.short+' keeps their head. Slightly sulky about it.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'grumble',st.w,'family'));}},
+     {id:'nan',label:'“Get Nan a seat by the timekeeper.”',hint:'Nan has opinions.',tags:['Gamble','Crowd ▲ or '+first(st)+' ▼'],
+      run(st){if(rng(st.seed,'nan')<.5){apply(st,{crowd:4});log(st,'agent','Nan hit '+st.f.short+' with the sign. Lightly. They’ll talk about it for weeks.');}
+       else{apply(st,{trust:-2,moodF:-2});log(st,'agent','Nan heckled the promoter. Specifically. By name.');}}}];}},
+  {id:'filming',kind:'room',weight:2,when:()=>true,
+   open(st){log(st,'agent','Someone in row two is filming the whole show on their phone. Landscape. With the flash on.');},
+   title:'Someone’s filming',ask:'What do you do about it?',
+   options(st){
+    const a={crowd:2,rep:1,moodF:-2},b={trust:1,crowd:-1};
+    return [
+     {id:'play',label:'“Play to the camera.”',hint:'Free publicity. '+st.f.short+' hates being filmed from that side.',fx:a,tags:tagsOf(st,a),run(st){log(st,'agent','If it goes round the internet, I want it noted I was against it.');}},
+     {id:'stop',label:'“Ask them to put it away.”',hint:'The promoter likes a tidy hall.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','They’ve put it away. They’ve got a second phone.');}},
+     {id:'leave',label:'“Leave it.”',hint:'Nothing changes. Probably.',tags:['Nothing changes'],run(st){log(st,'agent','Fine. Nobody watches those anyway. Except everyone.');}}];}},
+  {id:'scout_rival',kind:'room',weight:2,when:()=>true,
+   open(st){const m=D.STABLES[hash(st.seed+'|mgr')%D.STABLES.length];st.mgr={name:m.manager,team:m.name};
+    log(st,'agent',m.manager+' from '+m.name+' is stood at the back with a notebook. They only come to these when they’re shopping.');},
+   title:'A rival manager is watching',ask:'How do you play it?',
+   options(st){
+    const a={moodW:3,crowd:1},b={moodW:-2},c={trust:-1};
+    return [
+     {id:'show',label:'“Let {W} show them what they’re missing.”',hint:st.w.short+' works harder. They may also get ideas.',fx:a,tags:[...tagsOf(st,a),'They may come back for a word'],run(st){log(st,'w',say(st,'pleased',st.w,'scout2'));chain(st,'scout_approach');}},
+     {id:'hide',label:'“Keep it simple. Show them nothing.”',hint:'A careful match nobody would want to steal.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','Lovely and boring. Like a building society.');}},
+     {id:'chat',label:'“I’ll have a word with them myself.”',hint:AGENT+' has opinions about poaching.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent',(st.mgr?.name||'They')+' says they’re just here for the pies. Nobody comes here for the pies.');}}];}},
+  {id:'scout_approach',kind:'room',weight:0,followup:true,when:()=>true,
+   open(st){log(st,'agent',(st.mgr?.name||'That manager')+' has cornered '+st.w.short+' by the fire exit. They’re talking money.');},
+   title:'{W} is being tapped up',ask:'Do you step in?',
+   options(st){
+    const a={moodW:-3},c={morale:3,moodW:3,cash:-30};
+    return [
+     {id:'step',label:'“Get {W} back in here.”',hint:'Interrupts a conversation '+st.w.short+' was enjoying.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'grumble',st.w,'tapped'));}},
+     {id:'let',label:'“Let them talk.”',hint:'Flattery is good for morale. Unless it isn’t.',tags:['Gamble',st.w.short+' morale ▲ or ▼'],
+      run(st){if(rng(st.seed,'tapped')<.5){apply(st,{morale:4});log(st,'agent','Nothing came of it. '+st.w.short+' is walking two inches taller.');}
+       else{apply(st,{morale:-4,moodW:-3});log(st,'agent',st.w.short+' now knows what '+(st.mgr?.team||'they')+' pay. It’s more than you.');}}},
+     {id:'counter',label:'“Tell them {W} is worth twice that.”',hint:st.w.short+' hears you say it. Thirty quid on account.',fx:c,tags:tagsOf(st,c),run(st){log(st,'w',say(st,'sweet',st.w,'tapped'));}}];}},
+  {id:'local_lad',kind:'match',weight:2,when:()=>true,
+   open(st){log(st,'agent',st.promoter.voice+' wants a local lad at ringside. He trains at the leisure centre on Thursdays. He is very keen.');},
+   title:'The promoter’s local lad',ask:'What does he get to do?',
+   options(st){
+    const a={trust:2},b={trust:3,crowd:2,moodF:-3},c={trust:-3,moodW:1,moodF:1};
+    return [
+     {id:'ringside',label:'“He can sit at ringside.”',hint:'Harmless. Mostly.',fx:a,tags:tagsOf(st,a),run(st){log(st,'agent','He’s brought his own chair. And a cool box.');}},
+     {id:'finish',label:'“Put him in the finish.”',hint:'The town loves it. '+st.f.short+' has to take a shot from him.',fx:b,tags:[...tagsOf(st,b),'He will want more'],run(st){log(st,'f',say(st,'grumble',st.f,'lad'));chain(st,'lad_move');}},
+     {id:'no',label:'“No outsiders.”',hint:'The ring stays professional.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','He’s taken it well. He’s crying in the car park, but well.');}}];}},
+  {id:'lad_move',kind:'match',weight:0,followup:true,when:()=>true,
+   open(st){log(st,'agent','The local lad has been practising. He wants to do a dropkick. He has never done a dropkick.');},
+   title:'The local lad wants a dropkick',ask:'Does he get it?',
+   options(st){
+    const b={crowd:1},c={trust:-1};
+    return [
+     {id:'yes',label:'“Go on, then.”',hint:'Thirty seconds of chaos.',tags:['Gamble','Crowd ▲ or '+st.f.short+' ▼'],
+      run(st){if(rng(st.seed,'lad')<.45){apply(st,{crowd:5});log(st,'agent','He did it. Mostly with his shin. The place came unglued.');}
+       else{apply(st,{crowd:-2,moodF:-4});log(st,'agent','He landed on '+st.f.short+'. Not in a wrestling way.');}}},
+     {id:'shove',label:'“He can give {F} a shove.”',hint:'Safe. Small. A shove.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','A shove. He’s practising it on the curtain.');}},
+     {id:'point',label:'“He points. That’s all.”',hint:'The promoter wanted more than a point.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','He’ll point. He’s not happy about it. He’s pointing at me now.');}}];}},
+  {id:'heckler',kind:'match',weight:2,when:()=>true,
+   open(st){log(st,'agent','The man in the bobble hat is in again. Front row, by the bar. He has views on everyone, and he shares them.');},
+   title:'The heckler is back',ask:'What do you do with him?',
+   options(st){
+    const a={crowd:3,moodW:2},b={trust:-1,crowd:-1},c={moodW:-1};
+    return [
+     {id:'use',label:'“Let {W} work him into the match.”',hint:'Cheap heat, real laughs. He may get ideas.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'pleased',st.w,'heckler'));chain(st,'heckler_back');}},
+     {id:'move',label:'“Get him moved.”',hint:'The promoter has to find him another seat.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','He’s been moved two rows back. He’s louder now. Acoustics.');}},
+     {id:'ignore',label:'“Ignore him.”',hint:st.w.short+' will hear every word.',fx:c,tags:tagsOf(st,c),run(st){log(st,'w',say(st,'grumble',st.w,'heckler'));}}];}},
+  {id:'heckler_back',kind:'match',weight:0,followup:true,when:()=>true,
+   open(st){log(st,'agent','Bobble Hat has taken it personally. He’s asking if he can get in the ring “for a go”.');},
+   title:'The heckler wants a go',ask:'Well?',
+   options(st){
+    const a={crowd:-1},b={crowd:2,moodW:1},c={trust:-2};
+    return [
+     {id:'no',label:'“Absolutely not.”',hint:'He sulks. Loudly.',fx:a,tags:tagsOf(st,a),run(st){log(st,'agent','He’s sulking. Into a pint. Somebody else’s pint.');}},
+     {id:'stare',label:'“{W} stares him down after the bell.”',hint:'A look, not a fight.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','The stare worked. He’s sat down. He’s also bought a '+st.w.short+' T-shirt.');}},
+     {id:'security',label:'“That’s security’s problem.”',hint:'The promoter is the security.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent',st.promoter.voice+' has had to stand next to him all night. That will be mentioned.');}}];}},
+  {id:'same_gear',kind:'flavour',weight:1.5,when:()=>true,
+   open(st){log(st,'agent','They’ve both turned up in the same colour. Same shade. The back row won’t know who’s winning.');},
+   title:'They’re wearing the same colour',ask:'Who changes?',
+   options(st){
+    const a={moodW:-3,moodF:1},b={moodF:-3,moodW:1},c={cash:-5,crowd:-1};
+    return [
+     {id:'w',label:'“{W} changes.”',hint:st.w.short+' has a spare set. It is the old set.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'grumble',st.w,'gear2'));}},
+     {id:'f',label:'“{F} changes.”',hint:st.f.short+' was here first. Technically.',fx:b,tags:tagsOf(st,b),run(st){log(st,'f',say(st,'grumble',st.f,'gear2'));}},
+     {id:'tape',label:'“Coloured tape on one of them.”',hint:'£5 of electrical tape. It will look like £5 of electrical tape.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','I’ve gone with red. It’s the only colour the hardware shop had. Apart from red.');}}];}},
+  {id:'car_park',kind:'match',weight:2,when:x=>x.st.f.pro>=55,
+   open(st){log(st,'agent',st.f.short+' wants to walk through the finish in the car park first. It is raining. It is always raining in the car park.');},
+   title:'{F} wants a walk-through',ask:'Do they get one?',
+   options(st){
+    const a={bonus:1,moodW:-2,moodF:2},b={moodF:-3,crowd:1},c={bonus:1,trust:-1};
+    return [
+     {id:'yes',label:'“Go on, run it.”',hint:'A sharper finish. '+st.w.short+' gets wet.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'grumble',st.w,'rain'));}},
+     {id:'no',label:'“No. Save it for the ring.”',hint:'Fresher, rougher.',fx:b,tags:tagsOf(st,b),run(st){log(st,'f',say(st,'grumble',st.f,'rain'));}},
+     {id:'corridor',label:'“Do it in the corridor.”',hint:'Dry. Also the catering corridor.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','They knocked the urn over. Twice. Tea is off.');}}];}},
+  {id:'money_talk',kind:'room',weight:2.5,when:x=>x.st.w.ego>=50,
+   open(st){log(st,'agent',st.w.short+' has caught me by the kettle. They want to talk about money. Now. Before going out.');},
+   title:'{W} wants to talk money',ask:'Now?',
+   options(st){
+    const a={cash:-20,moodW:4,morale:2},b={moodW:1},c={moodW:-4,morale:-2};
+    return [
+     {id:'pay',label:'“Twenty quid on top tonight.”',hint:'Cheap, for now.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'sweet',st.w,'money'));}},
+     {id:'later',label:'“After the show. I promise.”',hint:st.w.short+' will hold you to it next time.',fx:b,tags:[...tagsOf(st,b),'Comes back next time'],
+      run(st){log(st,'w',say(st,'accept',st.w,'money'));carry(st,{sit:'money_due',sid:st.w.id});}},
+     {id:'no',label:'“Not tonight.”',hint:'Not tonight, not ever, as far as '+st.w.short+' is concerned.',fx:c,tags:tagsOf(st,c),run(st){log(st,'w',say(st,'grumble',st.w,'money'));}}];}},
+  {id:'money_due',kind:'room',weight:0,followup:true,ownWrestler:true,when:()=>true,
+   open(st){log(st,'agent',st.w.short+' hasn’t forgotten. “After the show,” you said. That was last time.');},
+   title:'{W} wants that money talk',ask:'Do you keep your word?',
+   options(st){
+    const a={cash:-40,morale:5,moodW:4},b={morale:-4,moodW:-4};
+    return [
+     {id:'pay',label:'“You’re right. Forty quid, and thanks.”',hint:'A promise kept.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'sweet',st.w,'money2'));}},
+     {id:'again',label:'“Next time. Really.”',hint:'Twice is a pattern.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'grumble',st.w,'money2'));}},
+     {id:'honest',label:'“There isn’t any. I’m sorry.”',hint:'Honesty works on professionals.',tags:['Gamble',st.w.short+' morale ▲ or ▼'],
+      run(st){if(rng(st.seed,'honest')<.3+st.w.pro/200){apply(st,{morale:1});log(st,'agent',st.w.short+' appreciated the honesty. Not the money situation. The honesty.');}
+       else{apply(st,{morale:-3,moodW:-2});log(st,'agent',st.w.short+' has gone very quiet and is looking at the job adverts on the noticeboard.');}}}];}},
+  {id:'power',kind:'flavour',weight:1,when:()=>true,
+   open(st){log(st,'agent','The lights keep dipping. The fuse box is in the ladies’ toilets and nobody wants to be the one who goes in.');},
+   title:'The lights keep going',ask:'What do you do?',
+   options(st){
+    const a={crowd:-1},b={cash:-10,crowd:2},c={minutes:-2,trust:1};
+    return [
+     {id:'on',label:'“Carry on. It adds atmosphere.”',hint:'It adds darkness.',fx:a,tags:tagsOf(st,a),run(st){log(st,'agent','Atmosphere. Right. I’ll stand by the switch with a torch in my mouth.');}},
+     {id:'torches',label:'“Buy every torch in the garage.”',hint:'£10 of torches. Torch-lit wrestling.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','We’ve got eleven torches and a bike lamp. It looks like a film.');}},
+     {id:'short',label:'“Keep it short before it all goes.”',hint:'Two minutes off. The promoter is grateful.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','Short and lit. The two things I want from any match.');}}];}},
+  {id:'paper',kind:'room',weight:2,when:()=>true,
+   open(st){log(st,'agent','The local paper has sent someone. Work experience, I think. They want a quote before the match.');},
+   title:'The local paper wants a quote',ask:'Who talks?',
+   options(st){
+    const b={moodF:3},c={rep:1};
+    return [
+     {id:'w',label:'“{W} talks to them.”',hint:'Depends entirely on whether '+st.w.short+' can talk.',tags:['Gamble','Reputation ▲ or Crowd ▼'],
+      run(st){if(rng(st.seed,'paper')<.2+st.w.mic/130){apply(st,{rep:2,crowd:1});log(st,'agent','They’ve got a headline. They read it back to '+st.w.short+'. '+st.w.short+' asked for a copy. Three copies.');}
+       else{apply(st,{crowd:-2});log(st,'agent','They printed exactly what '+st.w.short+' said. That was the problem.');}}},
+     {id:'f',label:'“Let {F} have it.”',hint:st.f.short+' gets the attention.',fx:b,tags:tagsOf(st,b),run(st){log(st,'f',say(st,'pleased',st.f,'paper'));}},
+     {id:'dennis',label:'“Dennis will do it.”',hint:'Safe. Dull. Accurate.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','I told them it would be a technically sound contest. They’ve written “a bloodbath”. Fine.');}}];}},
+  {id:'music',kind:'flavour',weight:1.5,when:()=>true,
+   open(st){log(st,'agent','The sound man has '+st.w.short+'’s entrance music on a CD that says “Wedding Disco”. It is not '+st.w.short+'’s music.');},
+   title:'The wrong entrance music',ask:'What does {W} walk out to?',
+   options(st){
+    const b={moodW:-2,crowd:1},c={moodW:-3,crowd:-1};
+    return [
+     {id:'roll',label:'“Whatever’s on the CD.”',hint:'Track one is something everybody knows.',tags:['Gamble','Crowd ▲ or '+st.w.short+' ▼'],
+      run(st){if(rng(st.seed,'disco')<.5){apply(st,{crowd:3,entrance:'{W} walks out to a wedding-disco classic. The whole hall sings the chorus. {W} pretends this was the plan.'});log(st,'agent','They’re singing. I didn’t know this crowd could sing.');}
+       else{apply(st,{moodW:-3,entrance:'{W} walks out to the slow dance. Somebody in row three proposes.'});log(st,'agent','It was the slow one. Somebody has proposed. She said yes, which is something.');}}},
+     {id:'hum',label:'“The crowd can hum it.”',hint:'They will, badly.',fx:b,tags:tagsOf(st,b),run(st){apply(st,{entrance:'{W} walks out to the front row humming their music, about a third of it in tune.'});log(st,'w',say(st,'grumble',st.w,'music'));}},
+     {id:'silence',label:'“Walk out in silence.”',hint:'Moody. Awkward.',fx:c,tags:tagsOf(st,c),run(st){apply(st,{entrance:'{W} walks out in total silence. A crisp packet rustles. It is the loudest crisp packet in history.'});log(st,'w',say(st,'grumble',st.w,'music'));}}];}},
+  // Threads that come back at a later show.
+  {id:'promise_due',kind:'match',weight:0,followup:true,when:()=>true,
+   open(st){const s=st.thread?.side||'w',X=who(st,s);st.promised=s;st.promisedPitch=pitchFor(st,'payoff',s);
+    log(st,'agent',X.short+' remembers what you said last time. The big spot. “Next time.” This is next time.');},
+   title:st=>who(st,st.promised||'w').short+' was promised the big spot',ask:'Do you keep the promise?',
+   options(st){
+    const s=st.promised||'w',X=who(st,s),c=st.promisedPitch,m=s==='w'?'moodW':'moodF';
+    const keep={[m]:5,crowd:1,...(c?{plan:{slot:'payoff',owner:s,by:s,action:c.action,label:c.label,impossible:c.impossible}}:{})};
+    const brk={[m]:-7,...(s==='w'?{morale:-4}:{})},none={[m]:-3,plan:{slot:'payoff',owner:'either',by:'agent',action:'scheduled_nearfall',label:'A run of near-falls'}};
+    return [
+     {id:'keep',label:'“A promise is a promise.”',hint:X.short+' gets the big spot'+(c?': the '+c.label+'.':'.'),fx:keep,tags:tagsOf(st,keep),run(st){log(st,s,say(st,'pleased',X,'promise'));}},
+     {id:'break',label:'“Things have changed.”',hint:X.short+' will remember this one too.',fx:brk,tags:tagsOf(st,brk),run(st){log(st,s,say(st,'grumble',X,'promise'),'objection');}},
+     {id:'nobody',label:'“Near-falls for both of you.”',hint:'Nobody gets it. Nobody gets it over anybody.',fx:none,tags:tagsOf(st,none),run(st){log(st,'agent','Fair to everyone. Thrilling for no one.');}}];}},
+  {id:'still_hurting',kind:'match',weight:0,followup:true,ownWrestler:true,when:()=>true,
+   open(st){log(st,'agent',st.w.short+' is still carrying that knock from last time. The one you said to walk off. It has not been walked off.');},
+   title:'{W}’s knock is worse',ask:'Now what?',
+   options(st){
+    const a={spice:-1,crowd:-2,moodW:2},b={cash:-10,moodW:-1},c={flags:{pushThrough:true},morale:-5,moodW:-5};
+    return [
+     {id:'rest',label:'“Nothing risky. Nothing at all.”',hint:'A careful match. Probably a flat one.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'accept',st.w,'hurt2'));}},
+     {id:'strap',label:'“Strap it and go.”',hint:'£10 of strapping from the chemist.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','Strapped. It looks professional. It isn’t, but it looks it.');}},
+     {id:'again',label:'“Walk it off. Again.”',hint:'Twice now.',fx:c,tags:tagsOf(st,c),run(st){log(st,'w',say(st,'grumble',st.w,'hurt2'),'objection');}}];}},
+  {id:'favour_owed',kind:'room',weight:0,followup:true,when:()=>true,
+   open(st){log(st,'agent','Last time you gave '+st.promoter.voice+' three minutes back without a fuss. Tonight you can call that in.');},
+   title:'{PF} owes you one',ask:'What do you ask for?',
+   options(st){
+    const a={minutes:3,trust:-1},b={cash:30,trust:-1},c={crowd:2,trust:-1};
+    return [
+     {id:'time',label:'“Three minutes back.”',hint:'With interest, if you can get it.',fx:a,tags:tagsOf(st,a),run(st){log(st,'agent','Three minutes. '+first(st)+' says we’re square. We are not square.');}},
+     {id:'money',label:'“Thirty quid.”',hint:'Out of the bar float, probably.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','Thirty quid. In fifty-pences. I’ll need a bag.');}},
+     {id:'poster',label:'“Top of the poster next time.”',hint:'The town will know the name.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','Top of the poster. In a bigger font. I asked about the font specifically.');}},
+     {id:'save',label:'“Keep it for a rainy day.”',hint:'The favour stays owed.',tags:['Comes back next time'],run(st){log(st,'agent','Banked. I’ve written it on the back of a beer mat. That is a legal document round here.');carry(st,{sit:'favour_owed',pid:st.promoter.id});}}];}},
+  {id:'raffle_payback',kind:'room',weight:0,followup:true,when:()=>true,
+   open(st){log(st,'agent',st.promoter.voice+' let you keep your time. Now they want '+st.w.short+' to draw the raffle at the interval. In gear.');},
+   title:'The promoter wants something back',ask:'Does {W} draw the raffle?',
+   options(st){
+    const a={trust:2,moodW:-2},b={trust:1,moodF:-3},c={trust:-3};
+    return [
+     {id:'yes',label:'“Fine. {W} draws the raffle.”',hint:'In gear. In front of everyone. With the bucket.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'grumble',st.w,'raffle'));}},
+     {id:'f',label:'“{F} can do it.”',hint:st.f.short+' was not consulted.',fx:b,tags:tagsOf(st,b),run(st){log(st,'f',say(st,'grumble',st.f,'raffle'));}},
+     {id:'no',label:'“No. We kept our time fair and square.”',hint:'You did. The promoter remembers it differently.',fx:c,tags:tagsOf(st,c),run(st){log(st,'agent','I’ll tell them. I’ll tell them from the other side of the car park.');}}];}},
  ];
  // ---------------------------------------------------------------------------------------------
  // v3.7 THE RUNNING ORDER. Every meeting now has a spine: the shine, the heat, the comeback and the
@@ -738,7 +964,7 @@
  function draw(st,p,recent){
   // A seeded, weighted draw without replacement, skipping what this career has seen lately.
   const x=context(st,p),want=['feature','main'].includes(st.slot)?3:2;
-  let poolS=SITUATIONS.filter(s=>{try{return s.when(x)}catch(e){return false}});
+  let poolS=SITUATIONS.filter(s=>{if(s.followup)return false;try{return s.when(x)}catch(e){return false}});
   const fresh=poolS.filter(s=>!recent.includes(s.id));if(fresh.length>=want)poolS=fresh;
   const out=[];let flavour=0;
   for(let n=0;n<want&&poolS.length;n++){
@@ -761,6 +987,9 @@
    spice:0,leash:null,talk:null,stunt:null,lockRoute:null,skipPromo:false,repStake:0,decided:[],log:[],said:{},base:null,contract:{...c},rehearsed:!!opts.rehearsed};
   st.loserSide=st.finish.startsWith('win')?'f':'w';
   st.queue=draw(st,p,opts.recent||[]);
+  // The oldest thread due with this wrestler, opponent or promoter comes up first.
+  const due=(opts.threads||[]).find(t=>{const x=SITUATIONS.find(q=>q.id===t.sit);return x&&(t.sid?t.sid===w.id||(!x.ownWrestler&&t.sid===f.id):true)&&(t.pid?t.pid===p?.id:true);});
+  if(due){st.thread={...due,side:due.sid===f.id&&due.sid!==w.id?'f':'w'};st.queue=[due.sit,...st.queue.filter(id=>id!==due.sit)].slice(0,st.queue.length);}
   const fin={win_clean:w.short+' wins clean',win_dirty:w.short+' wins dirty',lose_protected:w.short+' loses, but protected',lose_clean:w.short+' loses clean'}[c.finish];
   log(st,'agent',pick(['Evening. Doors in ten, so let’s not make a meal of it.','Right. I’ve a flask going cold, so shall we?','The urn’s on. Let’s get this agreed before the raffle starts.'],seed,'hello'));
   log(st,'agent','Contract says '+fin+'. That part isn’t up for discussion. So, what sort of match are we having?');
@@ -867,6 +1096,14 @@
   }
   return st;
  }
+ // Threads last eight weeks. One per situation and person: a newer promise replaces an older one.
+ const THREAD_WEEKS=8;
+ function keepThreads(old,add,used,now){
+  const out=(old||[]).filter(t=>t.id!==used&&now-t.at<=THREAD_WEEKS);
+  for(const t of add||[]){const k=x=>x.sit+'|'+(x.sid||'')+'|'+(x.pid||'');const i=out.findIndex(x=>k(x)===k(t));if(i>=0)out.splice(i,1);out.push({...t});}
+  return out.slice(-12);
+ }
+ function liveThreads(list,now){return (list||[]).filter(t=>now-t.at<=THREAD_WEEKS);}
  function consent(st,side){return clamp(Math.round(st.consent[side]+st.mood[side]),20,95);}
  const word=v=>v>=76?'happy with it':v>=62?'fine':v>=50?'grumbling':'sulking';
  function sheet(st){
@@ -895,7 +1132,7 @@
    workerConsent:consent(st,'w'),opponentConsent:consent(st,'f'),finishRoute:st.lockRoute||st.board.finish?.route||null,note,
    limits:{ban:[...new Set(st.limits.ban)],banIds:[...new Set(st.limits.banIds)]},spice:st.spice,fx:{...st.fx},repStake:st.repStake,entrance:st.entrance.slice(),
    game:st.game,leash:st.leash,talk:st.talk||'none',flags:{...st.flags},crowdMood:st.crowdMood||null,minutes:Math.max(5,st.minutes+(st.fx.minutes||0)),skipPromo:st.skipPromo,
-   stunt:null,bonus:0,story:story(st),rehearsed:!!st.rehearsed,situations:st.queue.slice(),decided:st.decided.map(d=>({...d})),
+   stunt:null,bonus:0,story:story(st),rehearsed:!!st.rehearsed,situations:st.queue.slice(),threads:(st.carry||[]).map(t=>({...t})),threadUsed:st.thread?.id||null,decided:st.decided.map(d=>({...d})),
    premise:'A running order of '+planned+' '+(planned===1?'move':'moves')+'; '+st.queue.length+' things came up backstage'+(st.reworked?' and '+st.reworked+' '+(st.reworked===1?'beat was':'beats were')+' rewritten':'')+'.',
    speakers:st.log.filter(x=>x.kind!=='you').slice(-6).map(x=>({actor:x.who,text:x.text}))};
  }
@@ -1046,6 +1283,7 @@
    p.trust=G.clamp(p.trust+d);
    add(note.promoter+'’s note (“'+note.short+'”) was '+(note.kept?'kept':'broken')+(note.honour&&!note.kept?', after you said it would be kept':'')+'. '+p.name+' trust '+(d>=0?'+':'')+d+'.',Math.sign(d));
   }
+  if(G.S&&(fin?.roomThreads||fin?.roomThreadUsed))G.S.roomThreads=keepThreads(G.S.roomThreads,fin.roomThreads,fin.roomThreadUsed,c.eventAbs??G.abs());
   if(fin?.roomBonus){G.S.cash-=fin.roomBonus;add('Bonus promised in the agents’ room: −£'+fin.roomBonus+'.',-1);}
   const fx=fin?.roomFx,w=G.W(c.wid);
   if(fx){
@@ -1064,5 +1302,5 @@
   }
   G.save();return out;
  };
- root.OfficeRoom={learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
+ root.OfficeRoom={keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
 })(typeof window!=='undefined'?window:globalThis);

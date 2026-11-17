@@ -116,7 +116,7 @@ for(const worker of D.TALENT)for(const opponent of D.FOES)for(const finish of fi
  else skippedPromos++;
  if(index%7===0)matches.push({booking,worker,opponent,promoter,sheet:state.sheet,promo});
 }
-assert.equal(situations.size,Room.SITUATIONS.length,'every backstage situation is reachable');
+assert.equal(situations.size,Room.SITUATIONS.filter(s=>!s.followup).length,'every drawable backstage situation is reachable');
 assert.ok(routes.size>=14,'different pairings pitch different legal routes');
 assert.ok(skippedPromos>0,'a backstage decision can skip the promo');
 assert.ok(spineBeats/meetings>=3,'a meeting plans a real running order, not just the finish ('+(spineBeats/meetings).toFixed(2)+' beats)');

@@ -638,7 +638,7 @@ function showMeeting(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan,S0=S();
  if(!P.room||P.room.cid!==c.id||P.room.v!==3){
-  P.room=OfficeRoom.begin(c,w,f,p,{recent:S0.roomRecent||[],heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)});P.sheet=null;P.confirmed=false;
+  P.room=OfficeRoom.begin(c,w,f,p,{recent:S0.roomRecent||[],threads:OfficeRoom.liveThreads(S0.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)});P.sheet=null;P.confirmed=false;
  }
  const st=P.room,v=OfficeRoom.view(st);
  if(v.stage==='done'&&!P.confirmed){
