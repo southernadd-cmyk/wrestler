@@ -156,7 +156,10 @@
   push(st,'host',core.dialogue[0].line,'interviewer');
   return st;
  }
- function fluff(st){const arr=FLUFF[voice(st.w)];st.fluffs=(st.fluffs??hash(st.seed+'|fluff')%arr.length)+1;return fmt(arr[st.fluffs%arr.length],st);}
+ const own=(st,slot)=>{const line=D.VOICE_PACKS?.[st.w.id]?.promo?.[slot];return line&&rng(st.seed,'own|'+slot+'|'+(st.ownUsed?.[slot]||0))<2/3?line:null;};
+ function fluff(st){
+  const mine=!st.ownUsed?.fluff&&own(st,'fluff');if(mine){(st.ownUsed??={}).fluff=1;return fmt(mine,st);}
+  const arr=FLUFF[voice(st.w)];st.fluffs=(st.fluffs??hash(st.seed+'|fluff')%arr.length)+1;return fmt(arr[st.fluffs%arr.length],st);}
  function roll(st,risk,key,edge=0){
   const skill=clamp(st.w.mic*.7+st.w.psych*.2+st.w.heat*.1,0,100);
   return rng(st.seed,key)<clamp(.38+skill/170-risk*.09+edge,.12,.96);
@@ -243,7 +246,7 @@
    if(id==='leave'){const d=swing(st,st.meter>0?2:0);push(st,'stage',fmt('{W} lets it hang in the air and lowers the microphone.',st),'stage',d);}
    else{
     const p=PUSH[id],h=HOOK[p.src],fit=pushFit(st,id),edge=.07*fit+(st.meter>=8?.1:st.meter<=-8?-.06:0);
-    const ok=roll(st,p.risk,'push|'+id,edge),d=swing(st,ok?Math.round(p.gain*(1+.15*Math.max(0,fit))):-p.loss),line=fmt(h.lines[v],st);
+    const ok=roll(st,p.risk,'push|'+id,edge),d=swing(st,ok?Math.round(p.gain*(1+.15*Math.max(0,fit))):-p.loss),line=fmt(own(st,p.src)||h.lines[v],st);
     push(st,/^“/.test(line)?'w':'stage',line,ok?'strong':'uneven',d);
     if(!ok)push(st,'stage',fluff(st),'fluff');
     crowdSays(st,d,'push');rec.landed=ok;
