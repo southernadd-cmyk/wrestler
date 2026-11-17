@@ -289,6 +289,12 @@ function trainControls(w){
  return `<div class="row"><label class="field">Session with Dennis${sessionSelect(w)}</label></div><div class="row"><label class="field">Focus<select data-train="${w.id}" aria-label="Training for ${esc(w.name)}" ${w.injury||w.program?'disabled':''}>${Object.entries(D.TRAINING).map(([k,t])=>`<option value="${k}" ${(w.injury?'rest':w.training)===k?'selected':''}>${t.name}${t.cost?` (£${t.cost})`:''}</option>`).join('')}</select></label><label class="field">Intensity<select data-intensity="${w.id}" aria-label="Training intensity for ${esc(w.name)}" ${w.injury||w.program||w.training==='rest'||w.training==='promo'?'disabled':''}>${w.program?.type==='camp'?'<option selected>Residential camp, £185 a week</option>':Object.entries(G.INTENSITY).map(([key,v])=>`<option value="${key}" ${w.intensity===key?'selected':''}>${esc(v.name)}, ${money(v.cost)} a week</option>`).join('')}</select></label></div>`;
 }
 function trainNote(w){return w.program?`${w.program.type==='camp'?'Away at camp':'Training block'}: ${w.program.left} ${plural(w.program.left,'week')} left, ${money(G.trainingCost(w))} a week.`:w.training==='rest'?'Resting. Recovers fatigue.':w.training==='promo'?'£40 to produce a promo.':`${G.INTENSITY[w.intensity||'light'].hint} ${money(G.trainingCost(w))} a week.`}
+// Who this wrestler is close to, who they can't stand, and the memory behind it.
+function lockerRoom(w){
+ const rows=window.OfficeBonds?.list(w.id).slice(0,6)||[];
+ if(!rows.length)return '<p class="dim">No strong feelings about anyone yet. Give it a few shows.</p>';
+ return '<ul class="cons">'+rows.map(r=>`<li class="${r.score>0?'up':'down'}"><b>${esc(r.name)}</b> · ${esc(r.label)}${r.betrayed?' · <span class="tag hot">Betrayed</span>':''}${r.reason?`<br><span class="dim">${esc(r.reason)}</span>`:''}</li>`).join('')+'</ul>';
+}
 function renderProfile(){
  const s=S(),w=G.W(route.id);
  if(!w){route={s:'squad',id:null};return renderSquad()}
@@ -309,6 +315,7 @@ function renderProfile(){
  const record=`<div class="facts"><div><small>Matches</small><b>${w.matches}</b></div><div><small>Wins</small><b>${w.wins}</b></div><div><small>Average</small><b>${w.matches?starsText(Math.round(w.starSum/w.matches*4)/4)||'DUD':'–'}</b></div><div><small>Best</small><b>${w.matches?starsText(w.best)||'DUD':'–'}</b></div></div>
   ${ratingsChart(w,s.history.filter(x=>x.wid===w.id))}<h3 class="section-h">Recent matches</h3>${hist.length?`<div class="well"><table class="grid"><tbody>${hist.map(x=>`<tr><td>S${x.season} W${x.week}</td><td>v ${esc(x.foe)}</td><td class="n"><span class="stars">${starsText(x.stars)||'DUD'}</span></td></tr>`).join('')}</tbody></table></div>`:'<p class="dim">No matches yet.</p>'}
   <h3 class="section-h">What they remember</h3><p class="dim">Trust in your judgement: ${OfficeMemory.trust(w.id)}/100. Memories persist after matches and conversations.</p>${OfficeMemory.view(w.id).entries.slice(0,5).length?'<ul class="cons">'+OfficeMemory.view(w.id).entries.slice(0,5).map(e=>'<li>'+esc(e.text)+'</li>').join('')+'</ul>':'<p class="dim">No defining moments yet.</p>'}
+  <h3 class="section-h">Locker room</h3>${lockerRoom(w)}
   <h3 class="section-h">Rivalries</h3>${feuds.length?feuds.map(f=>`<div class="row" style="justify-content:space-between"><span>${esc(G.F(f.rid).name)}</span><span>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</span></div>`).join(''):'<p class="dim">None yet. Good matches against the same opponent build one.</p>'}
   <h3 class="section-h">Biography</h3><p>${esc(w.bio)}</p><p class="dim">Finisher: ${esc(w.finisher)}. Best game plan: ${esc(D.PLANS[D.STYLE_PLAN[w.style]].name.toLowerCase())}.${esc(signatureText(w))}</p>`;
  const nav=s.roster.length>1?`<button class="btn" data-go="profile" data-id="${prev.id}" aria-label="Previous wrestler">◀ ${esc(prev.short)}</button><button class="btn" data-go="profile" data-id="${next.id}" aria-label="Next wrestler">${esc(next.short)} ▶</button>`:'';
