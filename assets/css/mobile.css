@@ -36,18 +36,21 @@
  .phone-sections:empty{display:none}
  .phone-tabs{grid-area:phone;grid-template-columns:repeat(5,minmax(0,1fr));padding:5px 7px;border-top:2px solid #44517b}
  .phone-tab{
-  min-width:0;min-height:43px;border:1px solid transparent;background:none;
+  min-width:0;min-height:48px;border:1px solid transparent;background:none;
   padding:4px 5px;color:var(--white);font-weight:700;font-size:13px;
  }
  .phone-tab[aria-current="true"]{background:var(--gold);color:var(--ink);border-color:var(--ink);box-shadow:var(--bevel)}
- .phone-sections .phone-tab{min-height:36px;white-space:nowrap;background:#202d59}
+ .phone-sections .phone-tab{min-height:44px;white-space:nowrap;background:#202d59}
  .phone-sections .phone-tab[aria-current="page"]{background:#3b4b79;border-color:var(--gold);color:#ffe08a}
  .phone-badge{display:inline-block;margin-left:3px;padding:0 4px;background:var(--blood);color:#fff;font-size:11px}
  #view{padding:12px;scroll-padding:10px;overscroll-behavior:contain}
  #view .screen{gap:12px}
  #view .win,#tv .win{box-shadow:2px 3px 0 rgba(0,0,0,.35)}
  #view .tbar{min-height:40px;padding:4px 9px;gap:6px;flex-wrap:wrap}
- #view .tbar .btn{min-height:34px}
+ #view .tbar .btn{min-height:44px}
+ /* Comfortable thumb targets for every in-view button, including the small ones. */
+ #view .btn,#view .btn.sm{min-height:44px}
+ .top .histnav .btn{min-width:44px;min-height:44px}
  #view .wbody{padding:10px}
  #view .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
  #view .facts b{font-size:24px}
@@ -67,6 +70,7 @@
   padding:9px 11px;background:var(--well);color:var(--white);
   border:2px solid var(--ink);border-left:4px solid #536596;
  }
+ #view .phone-card.unbookable{color:var(--dim);border-left-color:#2A3A82;border-style:dashed solid dashed dashed}
  #view .phone-card:hover,#view .phone-card:focus-visible{border-left-color:var(--gold);background:var(--well-hover)}
  #view .phone-card b{font-weight:700;color:var(--gold)}
  #view .phone-card small,#view .phone-card-meta{font-size:13px;color:var(--dim)}
