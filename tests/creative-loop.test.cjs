@@ -87,7 +87,8 @@ G.fresh();G.sign('rex');
 G.S.history.unshift({wid:'rex',rid:'silas',finish:'lose_clean',week:1,season:1});
 const memory=Promo.begin(c,G.W('rex'),rush,null,focusB);
 Promo.choose(memory,'proof');
-assert.match(memory.dialogue.find(x=>x.kind==='opponent').line,/won that one/i);
+// v0.3.12: the rivalry ledger now turns that result into the argument itself (a clean defeat to answer).
+assert.match(memory.dialogue.find(x=>x.kind==='opponent').line,/won that one|beat you/i);
 assert.equal(memory.claim.hasEvidence,true);
 G.fresh();
 

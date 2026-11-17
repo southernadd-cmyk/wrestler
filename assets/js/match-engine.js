@@ -1219,7 +1219,7 @@ const Graph=(function makeGraph(){
   if(M.o.promo?.tactic?.kind==='counter'&&n.reverse&&side==='f'&&p.control==='w'&&
      M.t/M.len>=.58&&(M.o.promo.tactic.nodes.includes(id)||(!!n.counterOf&&(!M.o.promo.tactic.families||M.o.promo.tactic.families.includes(n.family))))&&!g.promoCounterPaid){
    g.promoCounterPaid=true;
-   say(M,M.w.short+' reads '+M.f.short+' and turns the attack around! That is the counter promised at the microphone.','story');
+   say(M,M.w.short+' reads '+M.f.short+' and turns the attack around! That is the counter promised at the microphone'+(M.o.promo.tactic.label?', '+M.o.promo.tactic.label:'')+'.','story');
    root.OfficeSheets?.settleVow?.(M,'counter',id);
   }
   if(M.o.promo?.tactic?.kind==='finisher'&&id==='finish_tease'&&!g.promoFinisherScouted){
@@ -2105,7 +2105,28 @@ function summary(M){
    workerDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='w'),
    opponentDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='f')
   },
+  evidence:evidenceOf(M),roomNegotiation:M.o.sheet?.negotiation||null,
   psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+}
+// v0.3.12 What happened, as structured facts a rivalry can cite later: who reversed whom and which kind
+// of attack, who cheated, who was spent at the bell, who was hurt, and what became of each agreed beat.
+// Read-only: it draws no random numbers and changes nothing about the match.
+function evidenceOf(M){
+ const ev=M.graph?.events||[],len=Math.max(1,M.len||1);
+ const out={len:Math.round(len),counters:{w:0,f:0},late:{w:0,f:0},families:{w:[],f:[]},dirty:{w:false,f:false},
+  stamina:{w:Math.round(M.wSt),f:Math.round(M.fSt)},injured:{w:M.injury?(M.injuryPart||'body'):null,f:!!M.foeHurt},
+  damage:{w:M.graph?.damage?.w||0,f:M.graph?.damage?.f||0},route:M.finishRoute||null,beats:null};
+ for(const e of ev){
+  const n=Graph.A[e.id];if(!n)continue;
+  if(n.reverse&&e.control&&e.preControl&&e.control!==e.preControl){
+   const by=e.control==='w'?'w':'f';out.counters[by]++;if(e.t/len>=.58)out.late[by]++;
+   if(n.counterOf&&n.family&&!out.families[by].includes(n.family))out.families[by].push(n.family);
+  }
+  if(e.id==='cheap_shot'&&(e.preControl==='w'||e.preControl==='f'))out.dirty[e.preControl]=true;
+ }
+ const s=M.sheet?.signed?M.sheet:null;
+ if(s)out.beats=s.nodes.map(b=>({id:b.id,status:b.status,expected:b.actions?.[0]||null,actual:b.actual||null,negotiated:!!b.negotiated}));
+ return out;
 }
 function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(whole)+(frac===.25?'¼':frac===.5?'½':frac===.75?'¾':'')+(s===0?'DUD':'');}
 function liveStars(M){return stars(M,false)}

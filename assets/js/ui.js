@@ -679,20 +679,24 @@ function showPromos(){
  if(night.plan?.sheet?.skipPromo)return bell();
  if(!night.promo||night.promo.cid!==c.id||night.promo.v!==5){
   night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p);
-  const recalled=OfficeMemory.context(w.id,f.id);
-  if(recalled.promoPrompt)night.promo.log[0].line=recalled.promoPrompt+' '+night.promo.log[0].line;
+  // v0.3.12 The interviewer asks about what the crowd saw: the rivalry's public record. A backstage
+  // memory (recalled.promoPrompt) stays backstage; it is no longer read out on air.
+  const intro=window.OfficeRivalry?.introFor(night.promo.core);
+  if(intro)night.promo.log[0].line=intro;
  }
  const st=night.promo,v=OfficeMic.view(st);night.stage='promo';
  const quote=t=>/^[“"]/.test(t)?t:'“'+t+'”';
  const entries=v.log.map(e=>({who:e.speaker,side:e.side==='host'?'host':e.side==='crowd'||e.side==='stage'?'c':e.side,text:e.side==='w'||e.side==='f'||e.side==='host'?quote(e.line):e.line,kind:e.kind,swing:e.swing}));
  const m=v.meter,pct=Math.abs(m);
  const meter=`<div class="tug" role="img" aria-label="Crowd: ${esc(v.meterWord)}"><div class="half you"><i style="width:${m>0?pct*2:0}%"></i></div><div class="half them"><i style="width:${m<0?pct*2:0}%"></i></div></div><span class="tugword ${m>=8?'good':m<=-8?'bad':''}">${esc(v.meterWord)}</span>`;
- const claim=v.claim&&v.stage!=='done'?`<p class="dim claim"><b>Your argument:</b> ${esc(v.claim.thesis)} <span>On record: ${esc(v.claim.evidence)}</span></p>`:'';
+ const claim=v.claim&&v.stage!=='done'?`<p class="dim claim"><b>Your argument:</b> ${esc(v.claim.thesis)} <span>On record: ${esc(v.claim.evidence)}</span></p>`:
+  v.record?.length&&v.stage!=='done'?`<p class="dim claim"><b>On the record between them</b>${v.record.map(x=>`<span>${esc(x)}</span>`).join('')}</p>`:'';
+ const open=v.unresolved&&v.stage!=='done'?`<p class="mic-open"><b>Unsettled</b> ${esc(v.unresolved)}</p>`:'';
  // Dennis's read of the night before the first line, and the opponent's angle before the answer.
  const read=v.read?`<div class="mic-read"><b>${esc(OfficeRoom.AGENT)}’s read</b>${v.read.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:'';
  const cue=v.cue?`<p class="mic-cue">${esc(v.cue)}</p>`:'';
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">The final word</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.tactic?.stake||'')}</p></div>`:
-  `<div class="decide2"><h3 class="section-h">${esc(v.name)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${read}${cue}${claim}${pickCards(v.options,'mic',true)}</div>`;
+  `<div class="decide2"><h3 class="section-h">${esc(v.name)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${read}${cue}${open}${claim}${pickCards(v.options,'mic',true)}</div>`;
  const body=matchupBar(c,w,f,meter)+sceneLog(entries,'micTalk',w,f,p.id)+decide;
  $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win('The promo: '+w.short+' against '+f.short+' for the room',body,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'It is said.':'Once it is out of your mouth, it stays said.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
