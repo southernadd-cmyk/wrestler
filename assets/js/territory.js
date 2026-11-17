@@ -27,9 +27,69 @@ function prepare(s,fresh=false){
   ]))]));
   for(const h of [...s.history].reverse())record(t,h.pid,h.wid,h.rid,h.slot,h.outcome==='nc'?null:h.outcome==='double'||D.FINISHES[h.finish]?.win,h.stars);
  }
+ if(!t.divisionsReady){seedDivisions(s,t);t.divisionsReady=true;}
+ if(!t.titles){
+  // Existing careers: each new belt goes to whoever currently tops that promotion's division.
+  t.titles={};t.titleLog=[];
+  for(const p of D.PROMOS)for(const div of D.DIVISION_ORDER)crown(s,t,p.id,div,'inaugural');
+ }
  return t;
 }
 function ensure(){return G.S?prepare(G.S):null;}
+// Who can be booked against the player's wrestlers: rival-stable and independent workers.
+function contracted(s,id){
+ if(s.worldV4?.version===4)return ['ai','independent'].includes(s.worldV4.contracts[id]?.owner);
+ return !!(s.territory?.teams.some(team=>team.roster.includes(id))||D.FOES.some(f=>f.id===id));
+}
+// Each promotion needs enough workers in both divisions for a real ranking.
+function seedDivisions(s,t){
+ const owned=new Set(s.roster.map(w=>w.id));
+ const pool=[...D.FOES,...D.TALENT,...(D.ALL||[])].filter((w,i,a)=>a.findIndex(x=>x.id===w.id)===i&&!owned.has(w.id)&&contracted(s,w.id));
+ for(const p of D.PROMOS)for(const div of D.DIVISION_ORDER){
+  const card=t.cards[p.id]??={};
+  let count=Object.keys(card).filter(id=>D.divisionOf(id)===div).length;
+  for(const w of pool){
+   if(count>=4)break;
+   if(D.divisionOf(w)!==div||card[w.id])continue;
+   card[w.id]={score:30-count,matches:0,wins:0};count++;
+  }
+ }
+}
+function absWeek(s){return (s.season-1)*16+s.week;}
+function holderValid(s,t,pid,div,id){
+ if(!id||D.divisionOf(id)!==div||!t.cards[pid]?.[id])return false;
+ return s.roster.some(w=>w.id===id)||contracted(s,id);
+}
+// Award a belt to the highest-ranked eligible worker in that division.
+function crown(s,t,pid,div,how){
+ const top=promotionRank(pid,div,t,s).find(w=>holderValid(s,t,pid,div,w.id));
+ const titles=t.titles[pid]??={};
+ titles[div]={holder:top?.id||null,since:absWeek(s),defences:0};
+ if(top){t.titleLog.unshift({week:absWeek(s),pid,div,from:null,to:top.id,how});t.titleLog=t.titleLog.slice(0,40);}
+ return top||null;
+}
+function title(pid,div){return ensure()?.titles?.[pid]?.[div]||null;}
+// The belts a wrestler currently holds.
+function titlesOf(id){
+ const t=ensure();if(!t||!id)return [];
+ return D.PROMOS.flatMap(p=>D.DIVISION_ORDER.filter(div=>t.titles[p.id]?.[div]?.holder===id).map(div=>D.belt(p.id,div)));
+}
+function changeTitle(t,pid,div,to,from,how){
+ const s=G.S,b=t.titles[pid][div];
+ if(b.holder===to){b.defences++;return false;}
+ t.titles[pid][div]={holder:to,since:absWeek(s),defences:0};
+ t.titleLog.unshift({week:absWeek(s),pid,div,from,to,how});t.titleLog=t.titleLog.slice(0,40);
+ return true;
+}
+// Vacate any belt whose holder has left the division or the circuit, then fill it.
+function checkTitles(s,t,reports){
+ for(const p of D.PROMOS)for(const div of D.DIVISION_ORDER){
+  const b=t.titles[p.id]?.[div];
+  if(b?.holder&&holderValid(s,t,p.id,div,b.holder))continue;
+  const top=crown(s,t,p.id,div,'vacant');
+  if(top)reports.unshift(top.name+' was awarded the vacant '+D.belt(p.id,div).name+'.');
+ }
+}
 function stableFor(id){return ensure()?.teams.find(team=>team.roster.includes(id));}
 function record(t,pid,a,b,slot,won,stars){
  const card=t.cards[pid];if(!card||!a||!b||a===b)return;
@@ -42,21 +102,29 @@ function record(t,pid,a,b,slot,won,stars){
   row.score=G.clamp(row.score+(win?weight+2:-2)+Math.max(0,Math.floor((stars||0)-2)));
  }
 }
-function promotionRank(pid){
- const card=ensure()?.cards[pid];if(!card)return [];
- return Object.entries(card).flatMap(([id,line])=>{
-  const owned=G.W(id),w=owned||G.F(id);if(!w)return [];
-  const stable=stableFor(id);
-  return [{...w,...line,owned:!!owned,stable:stable?.name??null}];
- }).sort((a,b)=>b.score-a.score||b.wins-a.wins||a.name.localeCompare(b.name))
-  .map((w,i)=>({...w,slot:i<2?'main':i<5?'feature':i<9?'mid':'opener'}));
+// Slots scale with the size of the division: twelve workers gives 2 main, 3 feature, 4 mid, 3 openers.
+function ladder(rows){const n=rows.length;return rows.map((w,i)=>({...w,slot:i*12<2*n?'main':i*12<5*n?'feature':i*12<9*n?'mid':'opener'}));}
+// One division's ranking at a promotion. Without a division, both rankings one after the other.
+function promotionRank(pid,div,t=ensure(),s=G.S){
+ const card=t?.cards[pid];if(!card)return [];
+ if(!div)return D.DIVISION_ORDER.flatMap(d=>promotionRank(pid,d,t,s));
+ const holder=t.titles?.[pid]?.[div]?.holder;
+ return ladder(Object.entries(card).flatMap(([id,line])=>{
+  if(D.divisionOf(id)!==div)return [];
+  const owned=s?.roster.find(x=>x.id===id),w=owned||G.F(id);if(!w)return [];
+  const stable=t.teams.find(team=>team.roster.includes(id));
+  return [{...w,...line,division:div,owned:!!owned,stable:stable?.name??null,champion:id===holder}];
+ }).sort((a,b)=>b.score-a.score||b.wins-a.wins||a.name.localeCompare(b.name)));
 }
-function opponents(pid,slot){
- const liveV4=G.S?.worldV4?.version===4;
- const pool=promotionRank(pid).filter(w=>!w.owned&&(liveV4?['ai','independent'].includes(G.S.worldV4.contracts[w.id]?.owner):w.stable||D.FOES.some(f=>f.id===w.id)));
+function opponents(pid,slot,div){
+ const s=G.S,liveV4=s?.worldV4?.version===4;
+ const fits=w=>!div||D.divisionOf(w)===div;
+ const pool=promotionRank(pid,div).filter(w=>!w.owned&&contracted(s,w.id));
  const exact=pool.filter(w=>w.slot===slot);
  if(exact.length)return exact;
- return pool.length?pool:(liveV4?D.ALL.filter(w=>['ai','independent'].includes(G.S.worldV4.contracts[w.id]?.owner)):D.FOES);
+ if(pool.length)return pool;
+ const spare=(liveV4?D.ALL.filter(w=>contracted(s,w.id)):D.FOES).filter(fits);
+ return spare.length?spare:D.FOES;
 }
 function rank(){const s=G.S,t=ensure();if(!s)return [];
  const rivals=D.TALENT.filter(w=>stableFor(w.id));
@@ -87,16 +155,27 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  const standings=rank();t.previous=Object.fromEntries(standings.map((w,i)=>[w.id,i]));
  const reports=[];
  const busy=new Set(s.card.map(c=>c.rid));
- for(const [i,p] of D.PROMOS.entries()){
-  const entries=promotionRank(p.id).filter(w=>!busy.has(w.id)&&!w.owned&&
-    (s.worldV4?.version===4?['ai','independent'].includes(s.worldV4.contracts[w.id]?.owner):w.stable||D.FOES.some(f=>f.id===w.id)));
-  const signed=entries.filter(w=>w.stable);if(!signed.length)continue;
-  const a=signed[(week+i*3)%signed.length],rivals=entries.filter(w=>w.id!==a.id&&w.stable!==a.stable);
-  if(!rivals.length)continue;
-  const b=rivals[(week*3+i)%rivals.length];busy.add(a.id);busy.add(b.id);
-  const won=((week*13+a.ring+b.psych+p.reach)%100)<52;
+ checkTitles(s,t,reports);
+ for(const [i,p] of D.PROMOS.entries())for(const [j,div] of D.DIVISION_ORDER.entries()){
+  const entries=promotionRank(p.id,div).filter(w=>!busy.has(w.id)&&!w.owned&&contracted(s,w.id));
+  const champ=entries.find(w=>w.id===t.titles[p.id][div].holder);
+  let a,b,onTheLine=false;
+  // AI champions defend every third week against the best-placed challenger.
+  if(champ&&(week+i+j)%3===0){
+   b=entries.find(w=>w.id!==champ.id);
+   if(b){a=champ;onTheLine=true;}
+  }
+  if(!onTheLine){
+   const signed=entries.filter(w=>w.stable);if(!signed.length)continue;
+   a=signed[(week+i*3+j*5)%signed.length];
+   const rivals=entries.filter(w=>w.id!==a.id&&w.stable!==a.stable);
+   if(!rivals.length)continue;
+   b=rivals[(week*3+i+j*7)%rivals.length];
+  }
+  busy.add(a.id);busy.add(b.id);
+  const won=((week*13+a.ring+b.psych+p.reach+j*37)%100)<(onTheLine?58:52);
   const winner=won?a:b,loser=won?b:a;
-  record(t,p.id,a.id,b.id,a.slot,won,2.5);
+  record(t,p.id,a.id,b.id,a.slot,won,onTheLine?3:2.5);
   t.points[winner.id]=(t.points[winner.id]||0)+4;
   t.points[loser.id]=(t.points[loser.id]||0)-2;
   for(const [w,win] of [[winner,true],[loser,false]]){
@@ -104,11 +183,11 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
    if(win)team.wins++;else team.losses++;
    team.rep=G.clamp(team.rep+(win?2:-1),10,95);
   }
-  reports.push(p.name+': '+winner.name+' defeated '+loser.name+'.');
+  const name=D.belt(p.id,div).name;
+  if(onTheLine&&changeTitle(t,p.id,div,winner.id,loser.id,'match'))reports.unshift(p.name+': '+winner.name+' defeated '+loser.name+' to win the '+name+'.');
+  else if(onTheLine)reports.push(p.name+': '+winner.name+' retained the '+name+' against '+loser.name+'.');
+  else reports.push(p.name+': '+winner.name+' defeated '+loser.name+'.');
  }
- // Champion remains a real territory title rather than a temporary sorting label.
- const leader=rank()[0];const champ=rank().find(w=>w.id===t.champion);
- if(leader&&champ&&leader.id!==champ.id&&leader.score>champ.score+12&&week%4===0){t.champion=leader.id;reports.unshift(leader.name+' won the territory championship.');}
  if(s.worldV4?.version===4)root.OfficeWorldV4.evolve(s,t,week,reports);
  else if(week%5===0){
   const team=t.teams.filter(x=>x.roster.length<5).sort((a,b)=>a.roster.length-b.roster.length||b.rep-a.rep)[0];
@@ -127,7 +206,28 @@ G.applyResult=function(c,fin){
  const won=fin.outcome==='nc'?null:fin.outcome==='double'||D.FINISHES[c.finish].win;
  record(t,c.pid,c.wid,c.rid,c.slot,won,fin.stars);
  if(won!==null)t.points[c.wid]=(t.points[c.wid]||0)+(won?5:-2)+Math.max(0,Math.floor((fin.stars||0)-2));
+ if(c.title&&t.titles[c.title.pid]?.[c.title.div]){
+  const {pid,div}=c.title,b=D.belt(pid,div),w=G.W(c.wid)||G.F(c.wid),f=G.F(c.rid),held=t.titles[pid][div];
+  if(won===null){if(held.holder===c.wid||held.holder===c.rid)held.defences++;}
+  else{
+   const winner=won?c.wid:c.rid,loser=won?c.rid:c.wid;
+   if(changeTitle(t,pid,div,winner,loser,'match'))G.msg?.({from:'The Office',subject:`New ${b.short} holder`,kind:'info',body:[`${(won?w:f).name} beat ${(won?f:w).name} for the ${b.name}.`,won?'The belt comes home with your wrestler. Expect promoters to want it defended.':'Your wrestler leaves without the belt.']});
+  }
+ }
  G.save();return x;
 };
-root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve};
+// The title match a promoter would offer the player for one belt, if any.
+function titleMatch(pid,div){
+ const s=G.S,t=ensure();if(!s||!t)return null;
+ const belt=t.titles[pid]?.[div];if(!belt?.holder)return null;
+ const ranked=promotionRank(pid,div);
+ if(G.W(belt.holder)){
+  const challenger=ranked.find(w=>!w.owned&&contracted(s,w.id));
+  return challenger?{kind:'defence',wid:belt.holder,rid:challenger.id}:null;
+ }
+ if(!contracted(s,belt.holder))return null;
+ const contender=ranked.find(w=>w.owned&&w.matches>0&&w.slot==='main');
+ return contender?{kind:'shot',wid:contender.id,rid:belt.holder}:null;
+}
+root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve,title,titlesOf,titleMatch,contracted};
 })(typeof window!=='undefined'?window:globalThis);

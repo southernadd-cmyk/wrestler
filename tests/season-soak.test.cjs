@@ -51,7 +51,7 @@ function career(seed,style){
   }
   // Book whatever the roster can work.
   for(const o of S.offers.slice()){
-   const w=S.roster.find(x=>G.availableAt(x,o.eventAbs)&&(!o.wid||o.wid===x.id)&&(!o.talk||o.talk.wid===x.id)&&!G.bookedAt?.(x,o.eventAbs));
+   const w=S.roster.find(x=>D.divisionOf(x)===D.divisionOf(o.rid)&&G.availableAt(x,o.eventAbs)&&(!o.wid||o.wid===x.id)&&(!o.talk||o.talk.wid===x.id)&&!G.bookedAt?.(x,o.eventAbs));
    if(w&&(style!=='lean'||o.finish!=='lose_clean')){const err=G.book(o.id,w.id);assert.ok(err===null||typeof err==='string');}
   }
   // Match night, in the order the interface uses.

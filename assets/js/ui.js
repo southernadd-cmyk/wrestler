@@ -375,14 +375,21 @@ function fitNotes(o,w){
 }
 function offerPick(o){
  const s=S(),p=G.P(o.pid);
- const options=s.roster.filter(w=>(!o.wid||o.wid===w.id)&&G.availableAt(w,o.eventAbs));
+ const div=D.divisionOf(o.rid);
+ const options=s.roster.filter(w=>(!o.wid||o.wid===w.id)&&D.divisionOf(w)===div&&G.availableAt(w,o.eventAbs));
  const sel=options.find(w=>w.id===o.talk?.wid)||options.find(w=>w.id===pick[o.id])||options.slice().sort((a,b)=>(D.STYLE_PLAN[b.style]===p.likes)-(D.STYLE_PLAN[a.style]===p.likes)||a.fatigue-b.fatigue)[0];
  if(sel)pick[o.id]=sel.id;
  return {options,sel};
 }
+// Why nobody can take an offer: no one in that division, or no one free.
+function noneFor(o){
+ const div=D.divisionOf(o.rid);
+ return S().roster.some(w=>D.divisionOf(w)===div)?'Nobody free':`No ${D.DIVISIONS[div].name.toLowerCase()} wrestler`;
+}
+function beltBadge(b,size=''){return b?`<span class="belt-badge ${size}"><img class="belt-img" src="${esc(b.img)}" alt="" loading="lazy"><span>${esc(b.name)}</span></span>`:''}
 // Which of your wrestlers an offer is for: the one it names, or whoever is picked for it in the offer panel.
 function offerWho(o,sel){
- if(!sel)return `<span class="dim">${o.wid?esc(G.W(o.wid)?.name||'Unavailable')+' (unavailable)':'Nobody free'}</span>`;
+ if(!sel)return `<span class="dim">${o.wid?esc(G.W(o.wid)?.name||'Unavailable')+' (unavailable)':noneFor(o)}</span>`;
  return o.wid||o.talk?`<b>${esc(sel.name)}</b>`:`<span title="Suggested. Change it in the offer panel.">${esc(sel.name)}</span>`;
 }
 function renderOffers(){
@@ -402,11 +409,12 @@ function renderOffers(){
   const mins=D.SLOTS[o.slot].mins+(o.tag==='Blow-off'?5:0);
   detail=`<div class="row" style="flex-wrap:nowrap;gap:12px">${face('booker',p.id,p.voice,'portrait')}<div><div style="font:30px/.9 var(--jersey);color:var(--blood)">${esc(p.name)}</div><div class="dim">${esc(p.desc)}, ${esc(p.venue)}. Booker ${esc(p.voice)}.</div><div style="font-size:14px">Trust ${bar(p.trust,p.trust<30?'danger':p.trust>=65?'':'warn')} ${p.trust}</div></div></div>
   <div class="well matchup" style="margin-top:10px"><div class="side">${sel?face('wrestler',sel.id,sel.name,'portrait x2'):''}${options.length?`<select data-pick="${o.id}" aria-label="Wrestler for this offer" ${o.wid||o.talk?'disabled':''}>${options.map(w=>`<option value="${w.id}" ${sel?.id===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select>`:'<span class="dim">Nobody free</span>'}</div><div class="vs">v</div><div class="side">${face('wrestler',f.id,f.name,'portrait x2')}<b>${esc(f.name)}</b><span class="dim">${esc(f.style)}</span></div></div>
+  ${o.title?`<div class="title-line">${beltBadge(D.belt(o.title.pid,o.title.div))}<small>${o.tag==='Title defence'?'Your champion defends the belt.':'A shot at the champion.'} The promoter has already decided the result.</small></div>`:''}
   <dl class="kv"><dt>Show</dt><dd>${weekLong(o.eventAbs)}</dd><dt>Slot</dt><dd>${esc(D.SLOTS[o.slot].name)}, ${mins} minutes</dd><dt>Finish</dt><dd>${finishTag(o.finish)}</dd><dt>Reply by</dt><dd>${weekLong(o.expiresAbs)}</dd></dl>
   ${sel?fitNotes(o,sel):''}
   ${options.length?`<div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(G.purse(o,sel))}</span><button class="btn go" style="min-height:44px;min-width:170px" data-book="${o.id}">${o.eventAbs>G.abs()?'Commit to date':'Book this week'}</button></div>
   <div class="row" style="margin-top:8px"><button class="btn" data-talkopen="${o.id}" ${!negotiated&&s.focus<1?'disabled':''}>${negotiated?'Read the conversation':'Negotiate with '+esc(p.voice)}</button><span class="dim" style="font-size:13px">${negotiated?`${esc(o.talk.verdict)}. ${esc(o.talk.detail)}`:`Uses one of ${s.focus} meetings left`}</span></div>`
-  :`<p class="bad" style="margin-top:10px">${o.wid?`${esc(G.W(o.wid)?.name||'This wrestler')} isn’t available for this date.`:'Nobody is free on the event date. Check camps and signed bookings.'}</p>`}`;
+  :`<p class="bad" style="margin-top:10px">${o.wid?`${esc(G.W(o.wid)?.name||'This wrestler')} isn’t available for this date.`:noneFor(o)==='Nobody free'?'Nobody is free on the event date. Check camps and signed bookings.':`This is a ${esc(D.DIVISIONS[D.divisionOf(o.rid)].name.toLowerCase())} match, and nobody in your stable works that division.`}</p>`}`;
  }
  const cards=s.roster.length?offers.map(o=>{
   const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);
@@ -432,21 +440,27 @@ function renderFixtures(){
 
 /* ======================= TERRITORY ======================= */
 function renderPyramid(){
- const s=S(),t=OfficeTerritory.ensure(),p=D.PROMOS.find(x=>x.id===route.id)||D.PROMOS[0];
- const ranked=OfficeTerritory.promotionRank(p.id);
- const tabs=`<div class="row" role="group" aria-label="Promotion" style="margin-bottom:10px">${D.PROMOS.map(x=>`<button class="btn sm ${x.id===p.id?'go':''}" data-go="pyramid" data-id="${x.id}" aria-pressed="${x.id===p.id}">${esc(x.name)}</button>`).join('')}</div>`;
- const label=w=>`<span class="pent ${w.owned?'mine':''}"><b>${esc(w.name)}</b><small>${esc(w.owned?'Your stable':w.stable||'Independent')} · ${w.score} pts</small></span>`;
+ const s=S(),t=OfficeTerritory.ensure(),[pid,dv]=String(route.id||'').split(':');
+ const p=D.PROMOS.find(x=>x.id===pid)||D.PROMOS[0],div=D.DIVISIONS[dv]?dv:'men';
+ const ranked=OfficeTerritory.promotionRank(p.id,div),held=OfficeTerritory.title(p.id,div),belt=D.belt(p.id,div);
+ const tab=(id,label,on)=>`<button class="btn sm ${on?'go':''}" data-go="pyramid" data-id="${id}" aria-pressed="${on}">${esc(label)}</button>`;
+ const tabs=`<div class="row" role="group" aria-label="Promotion" style="margin-bottom:6px">${D.PROMOS.map(x=>tab(x.id+':'+div,x.name,x.id===p.id)).join('')}</div>
+  <div class="row" role="group" aria-label="Division" style="margin-bottom:10px">${D.DIVISION_ORDER.map(d=>tab(p.id+':'+d,D.DIVISIONS[d].name+' division',d===div)).join('')}</div>`;
+ const champ=held?.holder?G.W(held.holder)||G.F(held.holder):null;
+ const label=w=>`<span class="pent ${w.owned?'mine':''} ${w.champion?'champ':''}"><b>${esc(w.name)}${w.champion?' <span class="tag">Champion</span>':''}</b><small>${esc(w.owned?'Your stable':w.stable||'Independent')} · ${w.score} pts</small></span>`;
+ const hero=`<div class="belt-hero well"><img class="belt-img" src="${esc(belt.img)}" alt="${esc(belt.name)} belt"><div><small class="dim">${esc(belt.name)}</small><b>${champ?esc(champ.name):'Vacant'}</b>${champ?`<small>${G.W(champ.id)?'Your stable':esc(OfficeTerritory.stableFor(champ.id)?.name||'Independent')} · ${held.defences} ${plural(held.defences,'defence')}</small>`:''}</div></div>`;
  const tiers=D.SLOT_ORDER.slice().reverse().map(slot=>{
   const wrestlers=ranked.filter(w=>w.slot===slot);
   return `<div class="tier ${slot==='main'?'apex':''}" data-card-tier="${slot}"><strong>${esc(D.SLOTS[slot].name)}</strong><div class="entries">${wrestlers.length?wrestlers.map(label).join(''):'<span class="dim">Vacant</span>'}</div></div>`;
  }).join('');
- const pyr=`${tabs}<div class="well tiers">${tiers}</div><p class="dim" style="margin-top:8px">Wrestlers advance through results on this promoter’s shows.</p>`;
+ const pyr=`${tabs}${hero}<div class="well tiers">${tiers}</div><p class="dim" style="margin-top:8px">Wrestlers advance through results on this promoter’s shows. Reach the main event and the promoter will offer a title match.</p>`;
+ const belts=`<div class="belt-list">${D.PROMOS.map(x=>D.DIVISION_ORDER.map(d=>{const b=D.belt(x.id,d),h=OfficeTerritory.title(x.id,d)?.holder,w=h?G.W(h)||G.F(h):null;
+  return `<button class="belt-row ${w&&G.W(w.id)?'mine':''}" data-go="pyramid" data-id="${x.id}:${d}"><img class="belt-img" src="${esc(b.img)}" alt=""><span><small>${esc(b.name)}</small><b>${w?esc(w.name):'Vacant'}</b></span></button>`}).join('')).join('')}</div>`;
  const teams=`<div class="well"><table class="grid"><thead><tr><th>Stable and manager</th><th class="n">W</th><th class="n">L</th><th class="n">Rep</th></tr></thead><tbody>${t.teams.map(team=>`<tr><td class="wrap"><b>${esc(team.name)} · ${esc(team.manager)}</b><br><span class="dim">${team.roster.map(id=>esc(G.F(id)?.name||id)).join(', ')}</span></td><td class="n">${team.wins}</td><td class="n">${team.losses}</td><td class="n">${team.rep}</td></tr>`).join('')}</tbody></table></div>`;
  const news=t.reports.slice(0,4).flatMap(r=>r.lines).map(l=>`<li>${esc(l)}</li>`).join('');
- const champion=G.W(t.champion)||G.F(t.champion);
  paint('s-split',
-  win(esc(p.name)+' card pyramid',pyr,{keep:'pyr',note:`Season ${s.season}, week ${s.week}`})+
-  win('Rival stables',`${teams}<h3 class="section-h" style="margin-top:12px">Circuit news</h3>${champion?`<p class="dim">Circuit champion · ${esc(champion.name)}</p>`:''}${news?`<ul class="fulllog well" style="color:var(--white)">${news}</ul>`:'<p class="dim">Other promotions report their results after you advance the week.</p>'}`,{h:'h3',keep:'rivals'})
+  win(esc(p.name)+' '+esc(D.DIVISIONS[div].name.toLowerCase())+' pyramid',pyr,{keep:'pyr',note:`Season ${s.season}, week ${s.week}`})+
+  win('Champions',`${belts}<h3 class="section-h" style="margin-top:12px">Rival stables</h3>${teams}<h3 class="section-h" style="margin-top:12px">Circuit news</h3>${news?`<ul class="fulllog well" style="color:var(--white)">${news}</ul>`:'<p class="dim">Other promotions report their results after you advance the week.</p>'}`,{h:'h3',keep:'rivals'})
  );
 }
 function promoterState(p,rep){
@@ -681,9 +695,10 @@ function showPromos(){
 // Where both wrestlers sit on this promoter's card pyramid, so the commentary can talk about it.
 function ladderFor(pid,wid,fid){
  try{
-  const r=OfficeTerritory.promotionRank(pid),t=OfficeTerritory.ensure();
+  const div=D.divisionOf(fid),r=OfficeTerritory.promotionRank(pid,div),holder=OfficeTerritory.title(pid,div)?.holder,c=current();
   const at=id=>{const i=r.findIndex(x=>x.id===id);return i<0?null:{rank:i+1,slot:r[i].slot,stable:r[i].stable||null}};
-  return {size:r.length,w:at(wid),f:at(fid),champ:t?.champion===wid?'w':t?.champion===fid?'f':null};
+  return {size:r.length,w:at(wid),f:at(fid),champ:holder===wid?'w':holder===fid?'f':null,
+   champName:G.P(pid)?.name+' '+D.DIVISIONS[div].name+' Champion',belt:c?.title?D.belt(c.title.pid,c.title.div)?.name:null};
  }catch(e){return null}
 }
 function bell(){
