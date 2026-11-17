@@ -17,7 +17,7 @@ assert.ok(fs.readFileSync(path.join(root,'assets','css','core.css'),'utf8').incl
 const deskCss=fs.readFileSync(path.join(root,'assets','css','core.css'),'utf8');
 assert.match(deskCss,/\.s-desk,\.s-desk\.nomission\s*\{\s*grid-template-rows:minmax\(0,1\.85fr\) minmax\(150px,1fr\) minmax\(150px,1fr\)/);
 assert.match(deskCss,/#view:has\(> \.s-desk\)\{overflow-y:auto/);
-assert.match(deskCss,/@media \(min-width:901px\) and \(max-height:760px\)/);
+assert.match(deskCss,/@media \(min-width:901px\) and \(max-height:880px\)/);
 assert.match(deskCss,/\.nav \.item\{min-height:28px;padding:3px 7px/);
 console.log('PASS desk layout: reserved table rows, short-window scrolling, compact navigation');
 console.log('PASS modular structure: 14 ordered JavaScript files, 4 CSS files, atlas PNG');
