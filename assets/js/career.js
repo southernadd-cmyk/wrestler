@@ -256,9 +256,17 @@ function makeOffers(){
   if(rand()<.52){const delay=2+Math.floor(rand()*2);S.offers.push(genOffer(p,delay));}
  }
  for(const fd of Object.values(S.feuds)){
-  if(fd.closed||W(fd.rid))continue;const w=W(fd.wid);if(!w||w.injury)continue;
+  if(fd.closed||W(fd.rid))continue;const w=W(fd.wid);if(!w||w.injury||D.divisionOf(w)!==D.divisionOf(fd.rid))continue;
   if(fd.heat>=70&&fd.matches>=2&&ps.length){const p=ps.slice().sort((a,b)=>b.reach-a.reach)[0];S.offers.unshift({...genOffer(p,2),rid:fd.rid,wid:fd.wid,slot:'main',tag:'Blow-off',finish:rand()<.55?'win_clean':'lose_clean',boost:1.4});}
   else if(fd.heat>=40&&rand()<.6&&ps.length){const p=one(ps),base=genOffer(p,1);S.offers.unshift({...base,rid:fd.rid,wid:fd.wid,slot:D.SLOT_ORDER[Math.min(3,D.SLOT_ORDER.indexOf(base.slot)+1)],tag:'Rematch',boost:1.15});}
+ }
+ const T=root.OfficeTerritory;
+ if(T?.titleMatch)for(const p of ps)for(const div of D.DIVISION_ORDER){
+  const open=[...S.offers,...S.card,...S.futureBookings].some(x=>x.title?.pid===p.id&&x.title?.div===div);
+  const m=!open&&T.titleMatch(p.id,div);if(!m||!availableAt(W(m.wid),abs()+1))continue;
+  const champion=m.kind==='defence',keep=rand()<(champion?.55:.3)+p.trust/300;
+  S.offers.unshift({...genOffer(p,1,'main'),rid:m.rid,wid:m.wid,tag:champion?'Title defence':'Title match',title:{pid:p.id,div},boost:1.5,
+   finish:champion?(keep?(rand()<.6?'win_clean':'win_dirty'):'lose_clean'):(keep?'win_clean':(rand()<.5?'lose_protected':'lose_clean'))});
  }
  // Keep a reliable route to weekly income, but offer future trade-offs too.
  const today=S.offers.filter(o=>o.eventAbs===now).length;
@@ -273,7 +281,8 @@ function genOffer(p,delay=0,requestedSlot){
  const slot=requestedSlot||one(ranks);
  const pw=.28+p.trust/300+S.rep/400;
  const finish=rand()<pw?(rand()<.55?'win_clean':'win_dirty'):(rand()<.5?'lose_protected':'lose_clean');
- const opponents=root.OfficeTerritory?.opponents(p.id,slot)||D.FOES;
+ const div=S.roster.length?D.divisionOf(one(S.roster)):one(D.DIVISION_ORDER);
+ const opponents=root.OfficeTerritory?.opponents(p.id,slot,div)||D.FOES;
  return {id:uid('o'),pid:p.id,rid:one(opponents).id,slot,finish,wid:null,tag:null,boost:1,haggled:false,eventAbs:abs()+delay,expiresAbs:abs()+(delay?1:0)};
 }
 function purse(o,w){
@@ -288,6 +297,7 @@ function purse(o,w){
 function meeting(oid,wid){
  const o=S.offers.find(x=>x.id===oid),w=W(wid);if(!o||!w||!availableAt(w,o.eventAbs))return {error:'Choose a wrestler available on the event date.'};
  if(o.wid&&o.wid!==wid)return {error:'This offer is reserved for another wrestler.'};
+ if(D.divisionOf(w)!==D.divisionOf(o.rid))return {error:`This is a ${D.DIVISIONS[D.divisionOf(o.rid)].name.toLowerCase()} match.`};
  if(o.talk&&o.talk.wid!==wid)return {error:`These negotiated terms belong to ${W(o.talk.wid)?.name||'another wrestler'}.`};
  const p=P(o.pid);
  if(!o.talk){o.talk={wid,step:'start',topic:null,turns:0,original:{slot:o.slot,finish:o.finish,bump:o.bump||1,fee:purse(o,w)},log:[{who:p.voice,text:`${w.name} versus ${F(o.rid).name}. ${D.SLOTS[o.slot].name}, ${D.FINISHES[o.finish].name.toLowerCase()}, ${money(purse(o,w))}. That's the offer.`}]};save()}
@@ -348,10 +358,10 @@ function talkMove(oid,wid,move){
 function book(oid,wid){
  const o=S.offers.find(x=>x.id===oid),w=W(wid);
  if(!o||!w)return 'Choose a wrestler.';if(!availableAt(w,o.eventAbs))return `${w.name} isn’t available on the offered date.`;if(o.expiresAbs<abs())return 'That offer has expired.';
- if(o.wid&&o.wid!==wid)return 'This offer is for a specific wrestler.';if(o.talk&&o.talk.wid!==wid)return 'These terms were negotiated for a different wrestler.';
+ if(o.wid&&o.wid!==wid)return 'This offer is for a specific wrestler.';if(D.divisionOf(w)!==D.divisionOf(o.rid))return `This is a ${D.DIVISIONS[D.divisionOf(o.rid)].name.toLowerCase()} match.`;if(o.talk&&o.talk.wid!==wid)return 'These terms were negotiated for a different wrestler.';
  const fd=feud(wid,o.rid);
  if(o.talk?.step==='done')S.business.negotiated+=purse(o,w)-(o.talk.original?.fee||purse(o,w));
- const contract={id:uid('c'),pid:o.pid,rid:o.rid,wid,slot:o.slot,minutes:D.SLOTS[o.slot].mins+(o.tag==='Blow-off'?5:0),finish:o.finish,purse:purse(o,w),tag:o.tag,feudHeat:fd&&!fd.closed?fd.heat:0,blowoff:o.tag==='Blow-off',eventAbs:o.eventAbs};if(o.eventAbs===abs())S.card.push(contract);else S.futureBookings.push(contract);
+ const contract={id:uid('c'),pid:o.pid,rid:o.rid,wid,slot:o.slot,minutes:D.SLOTS[o.slot].mins+(o.tag==='Blow-off'?5:0),finish:o.finish,purse:purse(o,w),tag:o.tag,feudHeat:fd&&!fd.closed?fd.heat:0,blowoff:o.tag==='Blow-off',eventAbs:o.eventAbs,...(o.title?{title:{...o.title}}:{})};if(o.eventAbs===abs())S.card.push(contract);else S.futureBookings.push(contract);
  S.offers=S.offers.filter(x=>x.id!==oid);
  if(o.pid==='union')S.goals.union=true;
  save();return null;
@@ -449,11 +459,12 @@ const DILEMMAS={
   resolve:(m,a,o,b)=>{if(o==='a'){a.morale=clamp(a.morale+6);b.morale=clamp(b.morale-8)}else if(o==='b'){b.morale=clamp(b.morale+6);a.morale=clamp(a.morale-8)}else{a.morale=clamp(a.morale-4);b.morale=clamp(b.morale-4);S.cash+=100}return 'The locker room goes quiet.'}},
  favour:{promoter:true,when:p=>eligible(p)&&p.trust>=40,
   make:(p,f)=>({from:`${p.voice}, ${p.name}`,subject:'I need a favour',body:[`“My new lad needs a win over someone credible this week. Lend me one of yours to lose clean in the opener. I’ll pay well and I won’t forget it.”`],
-   options:[{id:'yes',label:'Send someone',hint:'Your lowest-heat fit wrestler loses clean to Malik Knight. Good money, trust +6 after.'},{id:'no',label:'Not this week',hint:`${p.name} trust −4.`}]}),
+   options:[{id:'yes',label:'Send someone',hint:'Your lowest-heat fit wrestler loses clean in the opener. Good money, trust +6 after.'},{id:'no',label:'Not this week',hint:`${p.name} trust −4.`}]}),
   resolve:(m,p,o)=>{if(o==='no'){p.trust=clamp(p.trust-4);return `${p.voice} hangs up.`}
    const w=S.roster.filter(available).sort((a,b)=>a.heat-b.heat)[0];if(!w){p.trust=clamp(p.trust-2);return 'Nobody was free. They understood, mostly.'}
-   const o2={id:'fav',pid:p.id,rid:'malik',slot:'opener',finish:'lose_clean',boost:1.15};S.card.push({id:uid('c'),pid:p.id,rid:'malik',wid:w.id,slot:'opener',minutes:8,finish:'lose_clean',purse:purse(o2,w),tag:'Favour',feudHeat:0,blowoff:false});
-   return `${w.short} is on the card: opener, losing clean to Malik Knight.`}}
+   const div=D.divisionOf(w),rid=div==='men'?'malik':(root.OfficeTerritory?.opponents(p.id,'opener','women')||[])[0]?.id||'roxy';
+   const o2={id:'fav',pid:p.id,rid,slot:'opener',finish:'lose_clean',boost:1.15};S.card.push({id:uid('c'),pid:p.id,rid,wid:w.id,slot:'opener',minutes:8,finish:'lose_clean',purse:purse(o2,w),tag:'Favour',feudHeat:0,blowoff:false});
+   return `${w.short} is on the card: opener, losing clean to ${F(rid).name}.`}}
 };
 function leave(w,fee){S.cash+=fee;S.card=S.card.filter(c=>c.wid!==w.id);S.futureBookings=S.futureBookings.filter(c=>c.wid!==w.id);S.roster=S.roster.filter(x=>x!==w);if(S.worldV4)root.OfficeWorldV4?.markMarket(S,w.id)}
 function makeDilemmas(){
@@ -566,5 +577,5 @@ function seasonEnd(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},fresh,load,save,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,available,availableAt,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,available,availableAt,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
 })(typeof window!=='undefined'?window:globalThis);

@@ -145,5 +145,16 @@ const BOOTH={
  colour:{name:'Vic Bellamy',short:'Vic',role:'Colour commentary',img:'assets/portraits/booth-colour.png'},
  runner:{name:'Ravi Kapoor',short:'Ravi',role:'Production runner',img:'assets/portraits/booth-runner.png'}
 };
-root.OfficeData={TALENT,FOES,PROMOS,STABLES,CARD_LINEUPS,SLOTS,SLOT_ORDER,FINISHES,PLANS,STYLE_PLAN,LEASH,TALKS,TRAINING,MOVES,SPOTS,GOALS1,PROFILES,BOOTH};
+// Every promotion runs separate men's and women's rankings, each with its own championship.
+// Cass Rae and Ari Keats work the women's division; Miro Lane and Morgan Alder work the men's.
+const DIVISIONS={men:{id:'men',name:'Men’s'},women:{id:'women',name:'Women’s'}};
+const DIVISION_ORDER=['men','women'];
+const WOMEN=new Set(['mara','lyra','juno','val','imani','kira','roxy','nova','tori','faye','zara','aisha','anya','rina','priya','cass','sylvia','mae','soraya','winnie','bronte','nikita','alina','marisol','eira','vera','ari','kezia','liya','nadia','iris','ayla','sasha','noelle','elodie','cleo']);
+function divisionOf(w){const id=typeof w==='string'?w:w?.id;return WOMEN.has(id)?'women':'men';}
+const BELT_ART={dock:'dockside',pulse:'pulse-underground',crown:'north-crown',union:'grand-union'};
+function belt(pid,div){
+ const p=PROMOS.find(x=>x.id===pid);if(!p||!DIVISIONS[div])return null;
+ return {pid,div,name:`${p.name} ${DIVISIONS[div].name} Championship`,short:`${p.name} ${DIVISIONS[div].name} title`,img:`assets/belts/${BELT_ART[pid]}-${div==='women'?'womens':'mens'}.webp`};
+}
+root.OfficeData={TALENT,FOES,PROMOS,STABLES,CARD_LINEUPS,SLOTS,SLOT_ORDER,FINISHES,PLANS,STYLE_PLAN,LEASH,TALKS,TRAINING,MOVES,SPOTS,GOALS1,PROFILES,BOOTH,DIVISIONS,DIVISION_ORDER,WOMEN,divisionOf,belt};
 })(typeof window!=='undefined'?window:globalThis);

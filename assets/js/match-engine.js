@@ -1575,7 +1575,8 @@ function vicCard(M){
  if(M.o.slot==='opener')out.push('Opening match, {pbp}. Set the tone and get them warmed up.');
  if(!L)return out;
  const w=L.w,f=L.f;
- if(L.champ)out.push('That is the circuit champion in there, {pbp}. Everyone on every card wants what '+(L.champ==='w'?'{W}':'{F}')+' has.');
+ if(L.belt)out.push('The '+L.belt+' is on the line tonight, {pbp}. Win here and you walk out with the gold.');
+ else if(L.champ)out.push('That is the '+(L.champName||'circuit champion')+' in there, {pbp}. Everyone in that division wants what '+(L.champ==='w'?'{W}':'{F}')+' has.');
  if(w&&f){
   if(w.slot==='main'&&f.slot==='main')out.push('The top two on the '+promo+' card, {pbp}. It does not get bigger than this round here.');
   else if(w.rank<f.rank-2)out.push('{W} sits well above {F} on the '+promo+' card. {F} would love to drag {W} down a rung or two.');
