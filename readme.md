@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.3.11" width="100%">
+  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.3.12" width="100%">
 </p>
 
-<p align="center"><strong>ISSUE v0.3.11</strong> &nbsp; • &nbsp; 17 NOVEMBER 2026 &nbsp; • &nbsp; LOCKER ROOM EDITION</p>
+<p align="center"><strong>ISSUE v0.3.12</strong> &nbsp; • &nbsp; 17 NOVEMBER 2026 &nbsp; • &nbsp; RIVALRY EDITION</p>
 
 <p align="center">
   <strong><a href="https://southernadd-cmyk.github.io/wrestler/">ENTER THE OFFICE — PLAY THE GAME</a></strong>
@@ -12,11 +12,31 @@
 
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
-<p align="center"><img src="docs/readme/01-lead-story.svg" alt="THE MAIN EVENT — THE LOCKER ROOM TALKS BACK" width="100%"></p>
+<p align="center"><img src="docs/readme/01-lead-story.svg" alt="THE MAIN EVENT — THEY REMEMBER WHAT HAPPENED" width="100%"></p>
+
+## THEY REMEMBER WHAT HAPPENED
+
+*Lead story*
+
+Rematches used to start from scratch. Now every pairing keeps **its own record**: who won and how, who grabbed the tights, who tapped, who reversed whom, who was out on their feet at the bell, who got hurt, and which promises made at the microphone actually came true. The next time the two of them meet, that is what they argue about.
+
+Before the first line, the interviewer asks about what the crowd actually saw (“Last time, King beat Titan with a handful of tights”), and the promo screen shows what is **on the record** between them. Openings that use it are marked. Raise it yourself, or pre-empt the point you know is coming, because the other wrestler will bring it up either way. Their answer takes a position of its own: some cite the facts, some refuse to engage, some give a little ground and keep the conclusion, and some change the angle.
+
+Then you choose what your wrestler actually thinks. **Concede the fair part**, **defend it with the evidence**, **turn it into a public test**, **make it personal** or **change the subject**, and each one ends the argument somewhere different. Owning up is often the strongest play. Accuse somebody of cheating when you won with your feet on the ropes last month and you will hear about it. Say “no promises tonight” and then make one, and everyone notices. A test can go on the match strip (“I will reverse the Rush Lock”), and only the real thing, late in the match, counts.
+
+Arguments that were settled stay settled. One left open comes back next time. Old results fade; betrayals and injuries don’t. Five meetings in, two wrestlers can be bitter enemies, grudging equals or two professionals who just want to top their last match.
+
+## ALSO IN THIS ISSUE
+
+- **Changes in Dennis’s room, for a reason.** A wrestler can now ask to change a beat on the running order, but only when there is something real behind it. The opponent turned that kind of move round last time; the big spot is unsafe for somebody tired or hurt; or a wrestler who keeps losing to this opponent wants a proper beating first so the win looks earned. The other wrestler answers in character: agrees, asks for something back, or goes along with it unhappily. A worn-out wrestler can simply refuse. Agreed changes go onto the signed sheet, and Dennis remembers whether they came off.
+- **Backstage stays backstage.** Notes from the office (“remembers being asked to lose”) are no longer read out on air, and a dozen promo lines that claimed things that never happened (a stretcher, a phone call, a laugh over a beaten opponent) now say only what the record shows.
+- **Last issue:** wrestlers’ bonds, grudges and betrayals, and the newcomers’ own ring profiles. See [The locker room talks back](#the-locker-room-talks-back) and [Back issues](#back-issues).
+
+<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
 ## THE LOCKER ROOM TALKS BACK
 
-*Lead story*
+*Locker room desk*
 
 Wrestlers now have feelings about each other, and they don’t come from nowhere. A classic match builds respect. A bad landing leaves a grudge. Two stablemates who share the drive to every show start looking out for each other, unless both of them want the front seat. A proud wrestler left at home while a stablemate headlines takes it personally. Every wrestler’s profile has a **Locker room** panel: who they’re close to, who they can’t stand, and the memory behind it.
 
@@ -24,10 +44,7 @@ It shows up in Dennis’s room. Friends agree more easily and put on a better ma
 
 Ignore a grudge and it doesn’t go away. It comes out in the car park after a show, or as a match plan that somehow reaches the other locker room before the bell (Dennis will find out who talked). And a friend with an ego, beaten clean, may not stay a friend once the bell goes.
 
-## ALSO IN THIS ISSUE
-
-- **The newcomers wrestle like themselves.** The 52 wrestlers who joined in the living roster were working borrowed weights and stock moves for their style. Each now has a weight, trait, favourite moments and four signature moves of their own, picked from the full catalog: Zara Finch’s shooting star press, Nate Barr’s chokeslam, Cleo Watt’s figure-four.
-- **Last issue:** eight championships across men’s and women’s divisions, every wrestler talking in their own words, backstage chains and threads, six new ways to work the microphone, personal entrance ideas and the fight-poster start screen. See [Back issues](#back-issues).
+The 52 wrestlers who joined in the living roster also wrestle like themselves now, each with a weight, trait, favourite moments and four signature moves of their own: Zara Finch’s shooting star press, Nate Barr’s chokeslam, Cleo Watt’s figure-four.
 
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
@@ -255,6 +272,8 @@ A situation can change a beat (the card will say *Changes the heat*), and some d
 
 **One thing leads to another.** Some answers start something. Trust the stand-in referee and he’ll be back with a question. Let your wrestler show off for a rival manager and they’ll be tapped up by the fire exit. Others come back at a later show: promise somebody the big spot *next time*, tell a hurt wrestler to walk it off, or put off a money talk, and it opens the next meeting with them. Take a time cut without a fuss and that promoter owes you a favour. Choice cards that do this say *Comes back next time*.
 
+**Something to change.** If there is a real reason, a wrestler speaks up straight after you agree the running order and asks for one beat to be swapped: the opponent reversed that kind of move last time, the big spot is too much for somebody tired or carrying an injury, or a wrestler on a losing run to this opponent wants the heat to hurt so the win is believed. Do it their way, take Dennis’s middle option, or keep it as it is. The other wrestler then has their say, and a proud one may want the big spot or two more minutes in return. Nobody is made to do something unsafe: insist, and an exhausted wrestler will refuse and Dennis will pencil in near-falls. No reason, no conversation. The next time those two work together, Dennis remembers whether the change came off.
+
 **Friends and enemies.** If the two wrestlers get on, Dennis says so and the meeting starts warmer, with a better match in it. If they can’t stand each other, it starts sour, but the crowd senses it’s real. If somebody has leaked the plan, you’ll hear about it here first.
 
 **Any other business.** At the end of the meeting somebody usually has an idea for their entrance. Every wrestler has one of their own, so it is the Legion bugler for one and a borrowed pallet truck for another. Say yes and it goes down a storm or goes wrong in front of everyone.
@@ -266,6 +285,8 @@ A situation can change a beat (the card will say *Changes the heat*), and some d
 Before the first line, Dennis gives you **his read**: whether the room is hot, quiet or doesn’t know your wrestler, whether there’s real history between the two, whether the opponent can talk, and what sort of talker your wrestler is. No opening is right every night. A quiet room punishes shouting, an accusation with no history sounds made up, and a big strange picture only works for somebody who can carry it. Choose the line that suits the night and it lands more often and counts for more. The risky lines are the big ones when the night is right for them.
 
 **Six more ways to talk.** Some nights also offer an opening that **insults the town** or **does the maths** (badly, with total confidence); an answer that **admits what this is doing to you** or **teases a surprise** that never arrives; and a last word that says **how you want to be remembered** or **thanks the room like it might be the last time**. They only appear when they suit the night, and the two new last words promise nothing the match has to check. Every wrestler says it in their own words.
+
+**On the record.** In a rematch, the promo screen lists what actually happened between the two, and the openings that use it are marked *On the record*. The other wrestler will raise their side of it whatever you open with, so you may want to get in first. Your answer then takes a position on what they said, and the choice card says which: *Concedes a point*, *Stands by it*, *Changes the question*, *Escalates* or *Drops it*. A challenge can be made official at the last word (*Follows from your words*). If they throw your own record back at you, **Push your luck?** becomes stand firm, revise your position, or let it stand. Anything left unsettled is flagged next time.
 
 Start with **Opening shot**, then take the mic back in **They hit back**. When the opponent replies, they take an angle — personal, mocking, armed with facts, or playing to the crowd — and the commentary tells you which. Each angle has an answer that beats it: keep your composure against the personal stuff, turn the words round on somebody laughing at you, ask for an answer in the ring when they quote the record. At **Push your luck?**, you can leave the exchange there or go after the crowd again. Going again pays when the room is already with you and the gamble suits the speaker. Otherwise, walk away. Playing to the town is a small lift. A good joke can win the room, and a bad one can give it away. A live meter follows every swing, with both wrestlers’ lines and the crowd’s reactions on screen.
 
@@ -285,7 +306,7 @@ The bout runs in original text commentary. Style, size, stamina, damage and posi
 | Make one of the current ringside calls | **1–6** or the matching on-screen button |
 | Resolve a decision prompt | Pick one of the choices on screen |
 
-The report compares the signed board with the match, starting with the strip as it stood at the bell. It shows beats performed, adapted or missed, plus the effect on the crowd, purse and promoter. Wrestlers carry significant incidents into later conversations and matches. A humiliating loss, an injury, a protected finish or a broken promise can all matter next time. Rex Titan may want a word after a clean loss. If you promise him a featured match, check the fixture list before you say it.
+The report compares the signed board with the match, starting with the strip as it stood at the bell. It shows beats performed, adapted or missed, plus the effect on the crowd, purse and promoter. Wrestlers carry significant incidents into later conversations and matches. A humiliating loss, an injury, a protected finish or a broken promise can all matter next time. The consequences also say how the argument at the microphone came out, whether any test set there was met, and where the rivalry now stands. Rex Titan may want a word after a clean loss. If you promise him a featured match, check the fixture list before you say it.
 
 ## KEEP YOUR COPIES
 
@@ -293,7 +314,7 @@ The report compares the signed board with the match, starting with the strip as 
 
 The browser saves your career automatically, including backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.11. Older careers pick up the eight belts on their first load, and start with an empty locker room that fills as they play. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
+Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.12. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
 
 To play locally, download the **whole repository** and open `index.html` in a modern browser. Keep the `assets/` directory alongside it: the page loads the JavaScript, CSS and portrait atlas as separate files. The simulation still runs in the browser, with no installer or build step. Google Fonts load when available, with system fallbacks.
 
@@ -311,7 +332,8 @@ To play locally, download the **whole repository** and open `index.html` in a mo
 | Routes across the four booked finishes | 18 |
 | Authored moves and move families | 336 / 20 |
 | Promo graph angles and situational variants | 21 / 183 |
-| Backstage situations and follow-ups | 36 / 9 |
+| Backstage situations and follow-ups | 36 / 11 |
+| Kinds of rivalry argument, and ways to answer each | 20 / 5 |
 | Championship belts | 8 |
 | Wrestlers with lines and move sets of their own | 80 |
 | Entrance ideas, personal and shared | 80 / 32 |
@@ -352,12 +374,15 @@ node tests/room-chains.test.cjs
 node tests/promos-requests.test.cjs
 node tests/ring-profiles.test.cjs
 node tests/relationships.test.cjs
+node tests/rivalry.test.cjs
 node tests/structure.test.cjs
 ```
 
-The suites cover the free-agent market and rival contracts, separate promotion ladders, divisions and title changes, older saves, backstage situations and their follow-ups, personal voices and move sets, relationships and betrayals, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
+The suites cover the free-agent market and rival contracts, separate promotion ladders, divisions and title changes, older saves, backstage situations and their follow-ups, personal voices and move sets, relationships and betrayals, rivalry arguments and counter-proposals, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
 
-**Continuous integration:** All 28 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
+`node tools/five-bouts.cjs` plays five consecutive meetings between the same two wrestlers in one career and writes a report of every argument, negotiation, match and memory; sample reports are in [docs/reports](docs/reports/).
+
+**Continuous integration:** All 29 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
 
 ### Small print
 
@@ -371,6 +396,7 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
+| **v0.3.12** | Rivalry edition. Every pairing keeps a record of how their matches went, and rematches argue about it: claims backed by what happened, replies that take a position, five ways to answer, concessions, tests the match can check, and arguments that are settled or come back. Wrestlers can ask Dennis to change a beat when there is a real reason, and the other wrestler answers. Backstage notes no longer reach the microphone. [Design and results](docs/rivalries-v3-12.md). |
 | **v0.3.11** | Locker room edition. Wrestlers form bonds and grudges from what they remember, which change Dennis’s meetings, bring backstage scenes to the inbox and, left alone, end in car-park attacks, leaked plans or a friend turning after the bell. Every profile shows the locker room. The 52 newcomers get their own weights, traits and signature moves. |
 | **v0.3.10** | Six new ways to work the microphone, from insulting the town to thanking the room, offered when they suit the night. Every wrestler gets their own daft entrance idea, and the original 28 get their own voices too, so all 80 speak in their own words. The start screen becomes tonight’s fight poster. Version numbers move to the pre-release 0.x scheme. |
 | **v0.3.9** | Championship edition. Every promotion splits into men’s and women’s divisions with eight belts won and lost in title matches. The 52 newcomers speak in their own words. Backstage choices start chains within a meeting and threads that return at later shows, with 21 new situations and follow-ups. |
