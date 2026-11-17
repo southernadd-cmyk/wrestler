@@ -44,7 +44,7 @@ Get one of your wrestlers to the top of a division’s main event and that promo
 
 ## ALSO IN THIS ISSUE
 
-- **Every newcomer talks like themself.** The 52 wrestlers who joined in the living roster each have their own lines in the agents’ room and at the microphone, written from their own story.
+- **Every wrestler talks like themself.** All 80 wrestlers have their own lines in the agents’ room and at the microphone, written from their own story.
 - **One thing leads to another backstage.** Some of Dennis’s situations now start something later in the meeting, and some come back at a later show. Promise somebody the big spot next time and they will hold you to it. Twenty-one new situations and follow-ups join the pool.
 - **Six new ways to work the microphone.** Insult the town, do the maths, admit what the feud is doing to you, tease a surprise that never comes, say how you want to be remembered, or thank the room like it might be the last time.
 - **Any other business.** Every wrestler on the roster has their own daft idea for their walk to the ring, from a pallet truck to an abseil down the climbing wall.
@@ -255,7 +255,7 @@ A situation can change a beat (the card will say *Changes the heat*), and some d
 
 Before the first line, Dennis gives you **his read**: whether the room is hot, quiet or doesn’t know your wrestler, whether there’s real history between the two, whether the opponent can talk, and what sort of talker your wrestler is. No opening is right every night. A quiet room punishes shouting, an accusation with no history sounds made up, and a big strange picture only works for somebody who can carry it. Choose the line that suits the night and it lands more often and counts for more. The risky lines are the big ones when the night is right for them.
 
-**Six more ways to talk.** Some nights also offer an opening that **insults the town** or **does the maths** (badly, with total confidence); an answer that **admits what this is doing to you** or **teases a surprise** that never arrives; and a last word that says **how you want to be remembered** or **thanks the room like it might be the last time**. They only appear when they suit the night, and the two new last words promise nothing the match has to check. The 52 newer wrestlers say it all in their own words.
+**Six more ways to talk.** Some nights also offer an opening that **insults the town** or **does the maths** (badly, with total confidence); an answer that **admits what this is doing to you** or **teases a surprise** that never arrives; and a last word that says **how you want to be remembered** or **thanks the room like it might be the last time**. They only appear when they suit the night, and the two new last words promise nothing the match has to check. Every wrestler says it in their own words.
 
 Start with **Opening shot**, then take the mic back in **They hit back**. When the opponent replies, they take an angle — personal, mocking, armed with facts, or playing to the crowd — and the commentary tells you which. Each angle has an answer that beats it: keep your composure against the personal stuff, turn the words round on somebody laughing at you, ask for an answer in the ring when they quote the record. At **Push your luck?**, you can leave the exchange there or go after the crowd again. Going again pays when the room is already with you and the gamble suits the speaker. Otherwise, walk away. Playing to the town is a small lift. A good joke can win the room, and a bad one can give it away. A live meter follows every swing, with both wrestlers’ lines and the crowd’s reactions on screen.
 
@@ -303,7 +303,7 @@ To play locally, download the **whole repository** and open `index.html` in a mo
 | Promo graph angles and situational variants | 21 / 183 |
 | Backstage situations and follow-ups | 36 / 9 |
 | Championship belts | 8 |
-| Wrestlers with lines of their own | 52 |
+| Wrestlers with lines of their own | 80 |
 | Entrance ideas, personal and shared | 80 / 32 |
 | Rounds in the promo duel | 4 |
 
@@ -358,7 +358,7 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
-| **v0.3.10** | Six new ways to work the microphone, from insulting the town to thanking the room, offered when they suit the night. Every wrestler gets their own daft entrance idea. The start screen becomes tonight’s fight poster. Version numbers move to the pre-release 0.x scheme. |
+| **v0.3.10** | Six new ways to work the microphone, from insulting the town to thanking the room, offered when they suit the night. Every wrestler gets their own daft entrance idea, and the original 28 get their own voices too, so all 80 speak in their own words. The start screen becomes tonight’s fight poster. Version numbers move to the pre-release 0.x scheme. |
 | **v0.3.9** | Championship edition. Every promotion splits into men’s and women’s divisions with eight belts won and lost in title matches. The 52 newcomers speak in their own words. Backstage choices start chains within a meeting and threads that return at later shows, with 21 new situations and follow-ups. |
 | **v0.3.8.1** | The production desk is rebuilt: 11 JavaScript files, four stylesheets and a separate portrait atlas replace the giant HTML file. The agents’ room gets independent scrolling columns on desktop and a stacked plan on smaller screens. Tests now run against the scripts that ship to players, while existing saves and match rules stay intact. |
 | **v0.3.8** | Charts on the desk, the results, every profile and every match report. The running order is three across on a phone, and the training table fits a laptop screen. Sessions with Dennis. Two a week across the stable: rehearse for the next match, learn a big-spot move, or work on one style at the microphone. Each feeds straight into the agents’ room, the promo or the ring. |
