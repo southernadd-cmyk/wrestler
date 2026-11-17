@@ -28,99 +28,68 @@ const extra=newCast.map(w=>{
  return {...w,heat:defaults[w.tier]??35,morale:72,fatigue:0,sub:w.style==='Technical'};
 });
 if(seen.size!==80)throw Error('Expected 80 unique wrestlers');
-/* Each v4 performer has a character-selected move anchor and signature finishing move.
-   Only existing match-graph action IDs are used. Avoid four generic cloned movesets. */
-const characterMovePlan={
- faye:['roxy','pn_inside_cradle'],
- bao:['juno','sm_ankle_lock'],
- zara:['kit','st_enzuigiri'],
- miro:['sol','nk_bulldog'],
- aisha:['red','st_discus'],
- ellis:['dee','ch_top_wristlock'],
- anya:['lyra','sb_dropkick'],
- nolan:['brick','gd_elbow_drop'],
- ivo:['silas','sm_crossface'],
- rina:['tori','ar_moonsault'],
- priya:['mara','nk_ddt'],
- nate:['otis','pw_sidewalk'],
- cass:['ace','hl_fake_injury'],
- jun:['dee','ch_drop_toehold'],
- sylvia:['red','st_big_boot'],
- kofi:['nico','dv_suicide'],
- mae:['roxy','sm_sleeper'],
- theo:['silas','sm_kneebar'],
- soraya:['kira','pw_gorilla_press'],
- milo:['night','ar_frog'],
- winnie:['imani','pn_backslide'],
- bronte:['brick','nk_ddt'],
- gus:['otis','gd_ground_pound'],
- nikita:['red','st_throat_thrust'],
- jett:['kit','ar_450'],
- alina:['sol','fr_flying_forearm'],
- cedric:['rev','hl_ref_argue'],
- marisol:['juno','sm_fujiwara'],
- felix:['dax','pn_backslide'],
- eira:['cal','sx_fisherman'],
- gideon:['cal','sm_cobra'],
- vera:['silas','sm_cross_armbreaker'],
- tomas:['roxy','pn_small_package'],
- ari:['mara','nk_russian_sweep'],
- tomasash:['red','st_headbutt'],
- kezia:['juno','sm_ankle_lock'],
- dev:['sol','fr_atomic_drop'],
- liya:['lyra','dv_tope_con_hilo'],
- emmett:['cal','sm_sleeper'],
- nadia:['night','lc_tornillo'],
- leandro:['tori','dv_suicide'],
- iris:['juno','ch_dragon_screw'],
- kellan:['nico','ar_450'],
- ayla:['roxy','pn_inside_cradle'],
- sasha:['kit','sb_moonsault'],
- morgan:['mara','nk_swinging_neckbreaker'],
- noelle:['imani','sm_crossface'],
- ash:['rex','pw_spinebuster_running'],
- zane:['brick','pw_scoop_powerslam'],
- elodie:['mara','st_open_slap'],
- bashir:['otis','os_barricade'],
- cleo:['silas','sm_kneebar']
+// v0.3.11 Each newcomer's own ring profile: their weight, trait, the moments they steer a match
+// towards and the four moves they are known for (the first is the most famous). These replace the
+// interim profiles that borrowed an original wrestler's weight and a style's stock moves.
+const RING_PROFILES={
+ faye:{"kg":64,"trait":"Ring general","preferred":["finish_tease","counter_strike","wrist_escape","target_hold"],"signature":["pn_jackknife","sm_octopus","nk_inverted_ddt","st_open_slap"]},
+ bao:{"kg":82,"trait":"Submission specialist","preferred":["grapple_trip","mat_takedown","submission_set","wristlock"],"signature":["sm_triangle","ch_hip_toss_chain","sm_kimura","ch_leg_trip"]},
+ zara:{"kg":58,"trait":"Daredevil","preferred":["top_climb","aerial_attack","springboard_rise","rope_run"],"signature":["ar_shooting_star","sb_cutter","dv_somersault","lc_dropkick_flip"]},
+ miro:{"kg":78,"trait":"Comeback artist","preferred":["hope_elbows","crowd_pose","counter_strike","rope_run"],"signature":["nk_cutter","fr_crowd_clap","pn_sunset","fr_back_body_drop"]},
+ aisha:{"kg":92,"trait":"Powerhouse","preferred":["clothesline","power_spinebuster","corner_strikes","counter_strike"],"signature":["rp_rebound_lariat","pw_sitout","st_forearm","cn_clothesline"]},
+ ellis:{"kg":74,"trait":"Workhorse","preferred":["lockup","wristlock","mat_hold","stand_reset"],"signature":["sm_short_arm_scissors","ch_rolling_wristlock","sx_cradle","pn_bridge_rollup"]},
+ anya:{"kg":63,"trait":"Showboat","preferred":["crowd_pose","springboard_rise","aerial_attack","rope_run"],"signature":["lc_head_kick","sb_moonsault","lc_arm_drag_wheel","cn_backflip"]},
+ nolan:{"kg":108,"trait":"Workhorse","preferred":["clothesline","stand_reset","corner_strikes","mat_hold"],"signature":["pw_uranage","st_lariat_standing","pw_side_slam","sm_abdominal"]},
+ ivo:{"kg":88,"trait":"Ring general","preferred":["target_hold","submission_set","mat_hold","counter_strike"],"signature":["sm_muffler","sm_bow_arrow","sx_northern","st_uppercut"]},
+ rina:{"kg":60,"trait":"Aerial specialist","preferred":["aerial_attack","top_climb","duck_rebound","crowd_pose"],"signature":["ar_corkscrew","lc_hurricanrana","dv_crossbody","pn_victory_roll"]},
+ priya:{"kg":70,"trait":"Showboat","preferred":["crowd_pose","finish_tease","counter_strike","lockup"],"signature":["nk_snap_ddt","st_superkick","pn_schoolboy","sm_sleeper"]},
+ nate:{"kg":110,"trait":"Powerhouse","preferred":["power_spinebuster","clothesline","outside_toss","corner_strikes"],"signature":["pw_chokeslam","st_big_boot","os_steps","pw_pumphandle"]},
+ cass:{"kg":66,"trait":"Opportunist","preferred":["cheap_shot","counter_strike","finish_tease","crowd_pose"],"signature":["pn_magistral","pn_oconnor","nk_stunner","hl_mock"]},
+ jun:{"kg":80,"trait":"Counter wrestler","preferred":["counter_strike","wrist_escape","waist_escape","mat_scramble"],"signature":["pn_crucifix","standing_switch","sm_anaconda","ch_rollthrough"]},
+ sylvia:{"kg":80,"trait":"Street brawler","preferred":["counter_strike","corner_strikes","clothesline","hope_elbows"],"signature":["st_spinning_backfist","st_elbow_smash","sx_exploder","cn_knee"]},
+ kofi:{"kg":72,"trait":"Aerial specialist","preferred":["springboard_rise","aerial_attack","top_climb","rope_run"],"signature":["ar_cross_arm","lc_rope_walk","dv_asai","sb_elbow"]},
+ mae:{"kg":72,"trait":"Ring general","preferred":["lockup","finish_tease","crowd_pose","target_hold"],"signature":["sm_sleeper","nk_bulldog","rs_front_chancery","pn_small_package"]},
+ theo:{"kg":90,"trait":"Submission specialist","preferred":["mat_takedown","mat_hold","submission_set","lockup"],"signature":["sm_stf","ch_double_leg","sm_surfboard","sx_butterfly"]},
+ soraya:{"kg":95,"trait":"Powerhouse","preferred":["power_spinebuster","clothesline","corner_strikes","outside_toss"],"signature":["pw_military_press","pw_torture_rack","pw_fallaway","pw_bearhug"]},
+ milo:{"kg":70,"trait":"Daredevil","preferred":["rope_run","aerial_attack","top_climb","floor_brawl"],"signature":["dv_moonsault","ar_senton","rn_dropkick","rp_slingshot"]},
+ winnie:{"kg":66,"trait":"Counter wrestler","preferred":["wrist_escape","counter_strike","grapple_trip","submission_set"],"signature":["sx_rolling_german","ch_japanese_arm_drag","sm_cloverleaf","ch_headlock_escape"]},
+ bronte:{"kg":98,"trait":"Workhorse","preferred":["clothesline","power_spinebuster","stand_reset","corner_strikes"],"signature":["pw_samoan_drop","rn_cannonball_mid","st_ripcord","sx_belly_belly"]},
+ gus:{"kg":112,"trait":"Ring general","preferred":["stand_reset","mat_hold","clothesline","hope_elbows"],"signature":["st_jab","pw_body_slam","gd_elbow_neck","rs_nerve_hold"]},
+ nikita:{"kg":76,"trait":"Street brawler","preferred":["floor_brawl","cheap_shot","corner_strikes","outside_toss"],"signature":["pw_powerbomb","os_crowd_brawl","os_apron_ddt","st_headbutt"]},
+ jett:{"kg":70,"trait":"Aerial specialist","preferred":["aerial_attack","rope_run","duck_rebound","springboard_rise"],"signature":["ar_knee","rn_bicycle_knee","lc_wheelbarrow","sb_dropkick"]},
+ alina:{"kg":72,"trait":"Comeback artist","preferred":["hope_elbows","crowd_pose","finish_tease","counter_strike"],"signature":["nk_facebuster","fr_second_wind","fr_shake_ropes","pn_backslide"]},
+ cedric:{"kg":96,"trait":"Ring general","preferred":["finish_tease","target_hold","counter_strike","lockup"],"signature":["nk_inverted_ddt","pn_jackknife","rs_front_chancery","st_elbow_smash"]},
+ marisol:{"kg":61,"trait":"Counter wrestler","preferred":["wrist_escape","waist_escape","mat_scramble","counter_strike"],"signature":["pn_bridge_rollup","sm_triangle","ch_rollthrough","ch_headlock_escape"]},
+ felix:{"kg":80,"trait":"Comeback artist","preferred":["hope_elbows","crowd_pose","clothesline","duck_rebound"],"signature":["nk_jumping_neckbreaker","fr_fight_on_knees","fr_shake_ropes","pn_schoolboy"]},
+ eira:{"kg":62,"trait":"Ring general","preferred":["target_hold","finish_tease","counter_strike","wristlock"],"signature":["sm_kimura","ch_rolling_wristlock","sx_double_underhook","gd_arm_elbows"]},
+ gideon:{"kg":112,"trait":"Ring general","preferred":["mat_hold","lockup","target_hold","stand_reset"],"signature":["sm_stf","sx_saito","ch_cravate","rs_leg_lace"]},
+ vera:{"kg":58,"trait":"Submission specialist","preferred":["grapple_trip","mat_takedown","submission_set","target_hold"],"signature":["sm_arm_triangle","ch_single_leg","sx_butterfly","st_palm"]},
+ tomas:{"kg":84,"trait":"Opportunist","preferred":["cheap_shot","counter_strike","finish_tease","crowd_pose"],"signature":["nk_cutter","hl_distraction_apron","hl_low_blow_tease","pn_small_package"]},
+ ari:{"kg":63,"trait":"Ring general","preferred":["lockup","target_hold","hope_elbows","finish_tease"],"signature":["pn_crucifix","sm_octopus","rs_seated_chinlock","st_forearm"]},
+ tomasash:{"kg":92,"trait":"Counter wrestler","preferred":["counter_strike","stand_reset","corner_strikes","duck_rebound"],"signature":["st_jab","st_gut_punch","cn_mounted_punches","st_spinning_backfist"]},
+ kezia:{"kg":66,"trait":"Workhorse","preferred":["lockup","grapple_trip","mat_hold","waist_escape"],"signature":["sx_fisherman","knuckle_break","ch_hip_toss_chain","ch_snapmare"]},
+ dev:{"kg":88,"trait":"Comeback artist","preferred":["hope_elbows","crowd_pose","finish_tease","clothesline"],"signature":["st_superkick","fr_second_wind","nk_facebuster","fr_back_body_drop"]},
+ liya:{"kg":57,"trait":"Aerial specialist","preferred":["top_climb","aerial_attack","rope_run","springboard_rise"],"signature":["ar_shooting_star","cn_backflip","lc_arm_drag_wheel","st_spin_kick"]},
+ emmett:{"kg":90,"trait":"Workhorse","preferred":["lockup","mat_hold","wristlock","stand_reset"],"signature":["sm_boston","ch_headlock_takedown","rs_hammerlock_mat","st_uppercut"]},
+ nadia:{"kg":60,"trait":"Daredevil","preferred":["top_climb","aerial_attack","crowd_pose","springboard_rise"],"signature":["ar_corkscrew","dv_asai","st_spin_kick","sp_hurricanrana"]},
+ leandro:{"kg":74,"trait":"Aerial specialist","preferred":["rope_run","top_climb","aerial_attack","springboard_rise"],"signature":["dv_moonsault","lc_rana_pin","sb_clothesline","ar_missile_low"]},
+ iris:{"kg":67,"trait":"Counter wrestler","preferred":["wrist_escape","counter_strike","stand_reset","wristlock"],"signature":["sm_short_arm_scissors","go_behind","rs_wrist_mat","sm_wristlock_ground"]},
+ kellan:{"kg":68,"trait":"Daredevil","preferred":["springboard_rise","rope_run","aerial_attack","crowd_pose"],"signature":["sb_cutter","lc_rope_walk","rp_springboard_feint","lc_handspring"]},
+ ayla:{"kg":64,"trait":"Workhorse","preferred":["lockup","mat_hold","hope_elbows","finish_tease"],"signature":["pn_backslide","rs_reverse_chinlock","nk_snap_ddt","fr_crowd_clap"]},
+ sasha:{"kg":62,"trait":"Showboat","preferred":["crowd_pose","finish_tease","top_climb","rope_run"],"signature":["sx_northern","pn_victory_roll","st_standing_dropkick","ar_cross_arm"]},
+ morgan:{"kg":89,"trait":"Ring general","preferred":["finish_tease","cheap_shot","target_hold","crowd_pose"],"signature":["nk_piledriver","hl_stall","st_backhand","gd_elbow_neck"]},
+ noelle:{"kg":70,"trait":"Ring general","preferred":["lockup","target_hold","counter_strike","submission_set"],"signature":["sm_sharpshooter","front_facelock","sx_belly_back","st_side_kick"]},
+ ash:{"kg":108,"trait":"Powerhouse","preferred":["power_spinebuster","corner_strikes","clothesline","outside_toss"],"signature":["pw_sitout","rn_spear","os_steps","cn_shoulders"]},
+ zane:{"kg":112,"trait":"Workhorse","preferred":["power_spinebuster","lockup","mat_hold","clothesline"],"signature":["pw_uranage","pw_body_slam","pw_bearhug","rn_flying_shoulder"]},
+ elodie:{"kg":66,"trait":"Opportunist","preferred":["cheap_shot","finish_tease","counter_strike","crowd_pose"],"signature":["sm_camel","nk_jawbreaker","st_open_slap","hl_ref_argue"]},
+ bashir:{"kg":104,"trait":"Street brawler","preferred":["floor_brawl","corner_strikes","clothesline","hope_elbows"],"signature":["st_ripcord","st_headbutt","os_floor_chop","fr_ten_punches"]},
+ cleo:{"kg":63,"trait":"Submission specialist","preferred":["target_hold","submission_set","mat_takedown","wristlock"],"signature":["sm_figure_four","gd_knee_stomp","os_post_leg","ch_leg_trip"]}
 };
-const relatedMoves={
- Story:['nk_ddt','pn_inside_cradle','pn_backslide','nk_bulldog','sm_sleeper','st_open_slap','nk_russian_sweep','fr_flying_forearm','fr_atomic_drop','nk_swinging_neckbreaker','pn_small_package','hl_ref_argue','hl_fake_injury'],
- Technical:['sm_ankle_lock','sm_crossface','sm_kneebar','sm_fujiwara','sm_cross_armbreaker','ch_dragon_screw','ch_drop_toehold','ch_top_wristlock','sx_fisherman','sx_german','pn_backslide','pn_inside_cradle','sm_sleeper','sm_cobra'],
- Brawl:['st_discus','st_big_boot','st_headbutt','pw_gorilla_press','pw_scoop_powerslam','pw_spinebuster_running','pw_sidewalk','gd_ground_pound','gd_elbow_drop','st_throat_thrust','os_barricade','nk_ddt','sx_gutwrench'],
- Spectacle:['ar_450','ar_frog','ar_moonsault','sb_moonsault','sb_dropkick','dv_tope_con_hilo','dv_suicide','lc_tornillo','lc_hurricanrana','lc_headscissors','st_enzuigiri','st_superkick','fr_flying_forearm']
-};
-const knownSignatureIds=new Set(Object.values(D.PROFILES).flatMap(p=>p.signature));
-for(const [style,moves] of Object.entries(relatedMoves))
- for(const move of moves)if(!knownSignatureIds.has(move))throw Error('Unknown '+style+' signature '+move);
-const hashMoveKey=s=>{let n=2166136261>>>0;for(const c of s)n=Math.imul(n^c.charCodeAt(0),16777619)>>>0;return n>>>0};
 function enableProfiles(){
- const signatures=new Set(Object.entries(D.PROFILES).map(([id,p])=>p.signature.join('|')));
  for(const w of extra){
   if(D.PROFILES[w.id])continue;
-  const [anchor,lead]=characterMovePlan[w.id]||[];
-  const base=D.PROFILES[anchor],pool=relatedMoves[w.style];
-  if(!base||!pool||!pool.includes(lead))throw Error('Missing curated move plan '+w.id);
-  const salt=hashMoveKey(w.id+'|'+w.finisher+'|'+w.bio);
-  let chosen=null;
-  for(let offset=0;offset<pool.length;offset++){
-   const signature=[lead];
-   for(let j=0;signature.length<4&&j<pool.length;j++){
-    const move=pool[(salt+j*5+offset)%pool.length];
-    if(!signature.includes(move))signature.push(move);
-   }
-   if(signature.length===4&&!signatures.has(signature.join('|'))){chosen=signature;break;}
-  }
-  if(!chosen)throw Error('No distinct signature sequence for '+w.id);
-  signatures.add(chosen.join('|'));
-  const prefSeed={
-   Story:['finish_tease',w.mic>=80?'crowd_pose':'counter_strike'],
-   Technical:[w.safe>=85?'wrist_escape':'grapple_trip','submission_set'],
-   Brawl:[w.safe>=85?'counter_strike':'corner_strikes','floor_brawl'],
-   Spectacle:[w.safe>=70?'duck_rebound':'top_climb','aerial_attack']
-  }[w.style];
-  const preferred=[...new Set([...prefSeed,...base.preferred])].slice(0,4);
-  D.PROFILES[w.id]={kg:base.kg,trait:base.trait,preferred,signature:chosen};
+  const p=RING_PROFILES[w.id];if(!p)throw Error('Missing ring profile '+w.id);
+  D.PROFILES[w.id]={kg:p.kg,trait:p.trait,preferred:p.preferred.slice(),signature:p.signature.slice()};
  }
 }
 // Personal lines for all 80 wrestlers: the 52 newcomers from their briefs in docs/living-roster-v4.json, the original 28 from their bios, traits and stats.
