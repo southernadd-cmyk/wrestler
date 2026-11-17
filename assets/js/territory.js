@@ -150,15 +150,15 @@ function canPoach(w){const team=poacher(),s=G.S;if(!team)return false;
  return s.worldV4?.version===4?root.OfficeWorldV4.canAfford(s,team.id,w.id):true;}
 // Sign a wrestler who has already left your stable. Returns the team name, or null if the signing failed.
 function poach(w){const team=poacher();return signRival(team,w)?team.name:null;}
-function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
- const week=(s.season-1)*16+s.week;if(t.week===week)return;t.week=week;
- const standings=rank();t.previous=Object.fromEntries(standings.map((w,i)=>[w.id,i]));
- const reports=[];
- const busy=new Set(s.card.map(c=>c.rid));
- checkTitles(s,t,reports);
+// The circuit's card for one week: who each promotion books in each division, exactly as evolve()
+// books it. Pure: it reads the career and changes nothing, so the start screen can show a real bill.
+// (Each pairing only depends on its own promotion and division's ranking, so booking them all first
+// gives the same matches as booking and scoring them one at a time.)
+function circuitBill(s,t,week,busy=new Set((s.card||[]).map(c=>c.rid))){
+ busy=new Set(busy);const out=[];
  for(const [i,p] of D.PROMOS.entries())for(const [j,div] of D.DIVISION_ORDER.entries()){
-  const entries=promotionRank(p.id,div).filter(w=>!busy.has(w.id)&&!w.owned&&contracted(s,w.id));
-  const champ=entries.find(w=>w.id===t.titles[p.id][div].holder);
+  const entries=promotionRank(p.id,div,t,s).filter(w=>!busy.has(w.id)&&!w.owned&&contracted(s,w.id));
+  const champ=entries.find(w=>w.id===t.titles?.[p.id]?.[div]?.holder);
   let a,b,onTheLine=false;
   // AI champions defend every third week against the best-placed challenger.
   if(champ&&(week+i+j)%3===0){
@@ -173,6 +173,17 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
    b=rivals[(week*3+i+j*7)%rivals.length];
   }
   busy.add(a.id);busy.add(b.id);
+  out.push({i,j,pid:p.id,div,a,b,title:onTheLine});
+ }
+ return out;
+}
+function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
+ const week=(s.season-1)*16+s.week;if(t.week===week)return;t.week=week;
+ const standings=rank();t.previous=Object.fromEntries(standings.map((w,i)=>[w.id,i]));
+ const reports=[];
+ checkTitles(s,t,reports);
+ for(const {i,j,div,a,b,title:onTheLine} of circuitBill(s,t,week)){
+  const p=D.PROMOS[i];
   const won=((week*13+a.ring+b.psych+p.reach+j*37)%100)<(onTheLine?58:52);
   const winner=won?a:b,loser=won?b:a;
   record(t,p.id,a.id,b.id,a.slot,won,onTheLine?3:2.5);
@@ -229,5 +240,37 @@ function titleMatch(pid,div){
  const contender=ranked.find(w=>w.owned&&w.matches>0&&w.slot==='main');
  return contender?{kind:'shot',wid:contender.id,rid:belt.holder}:null;
 }
-root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve,title,titlesOf,titleMatch,contracted};
+// v0.3.13 THE START SCREEN'S BILL. Only real matches: a saved career's next booking (and its other
+// bookings and next circuit show), or a match from the first circuit show a new career will book.
+// The world a new career starts with, built the way G.fresh() builds it but without saving anything.
+function newCareerWorld(){
+ const s={v:22,season:1,week:1,roster:[],free:D.TALENT.map(t=>({...t})),promoters:D.PROMOS.map(p=>({...p,blacklist:0,matches:0,best:0})),
+  offers:[],card:[],futureBookings:[],feuds:{},inbox:[],history:[]};
+ prepare(s,true);root.OfficeWorldV4?.activate(s);
+ return s;
+}
+function startBill(saved,rand=Math.random){
+ const T=root.OfficeTerritory;
+ const who=(s,id)=>D.findWrestler(id);
+ const circuit=(s,week,busy)=>T.circuitBill(s,T.prepare(s),week,busy).map(m=>({pid:m.pid,div:m.div,a:D.findWrestler(m.a.id),b:D.findWrestler(m.b.id),title:m.title,week}))
+  .filter(m=>m.a&&m.b).sort((x,y)=>Number(y.title)-Number(x.title));
+ const pick=a=>a[Math.floor(rand()*a.length)];
+ if(saved?.v&&Array.isArray(saved.roster)){
+  const s=JSON.parse(JSON.stringify(saved)),now=T.absWeek(s);
+  const rank=c=>D.SLOTS[c.slot]?.rank??0;
+  const mine=[...(s.card||[]).map(c=>({...c,when:now})),...(s.futureBookings||[]).map(c=>({...c,when:c.eventAbs??now}))]
+   .filter(c=>who(s,c.wid)&&D.findWrestler(c.rid)).sort((x,y)=>x.when-y.when||rank(y)-rank(x));
+  const own=mine.map(c=>({pid:c.pid,div:D.divisionOf(c.rid),a:who(s,c.wid),b:D.findWrestler(c.rid),title:!!c.title,week:c.when,slot:c.slot,minutes:c.minutes,tag:c.tag||null,yours:true,tonight:c.when===now}));
+  const next=circuit(s,now+1,new Set((s.futureBookings||[]).filter(c=>c.eventAbs===now+1).map(c=>c.rid)));
+  const head=own[0]||pick(next.filter(m=>m.title).length?next.filter(m=>m.title):next);
+  if(!head)return null;
+  // The undercard is the same night: your other bookings if you are headlining, otherwise that show.
+  return {head,under:own.length?own.slice(1,3):next.filter(m=>m!==head).slice(0,2),saved:true};
+ }
+ const s=newCareerWorld(),show=circuit(s,2,new Set());
+ if(!show.length)return null;
+ const head=pick(show.filter(m=>m.title).length?show.filter(m=>m.title):show);
+ return {head,under:show.filter(m=>m!==head&&m.pid===head.pid).concat(show.filter(m=>m!==head&&m.pid!==head.pid)).slice(0,2),saved:false};
+}
+root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve,title,titlesOf,titleMatch,contracted,circuitBill,absWeek,startBill,newCareerWorld};
 })(typeof window!=='undefined'?window:globalThis);
