@@ -354,16 +354,16 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .poster::before{top:calc(-1 * var(--torn))}
 .poster::after{bottom:calc(-1 * var(--torn));transform:scaleY(-1)}
 .poster-kicker{margin:0;font:clamp(18px,3.6vw,24px)/1 var(--px);letter-spacing:.08em;text-transform:uppercase;color:var(--blood)}
-.poster-title{margin:6px 0 0;font:clamp(64px,17vw,132px)/.8 var(--jersey);letter-spacing:.02em;text-transform:uppercase;color:var(--gold);
+.poster-title{margin:6px 0 0;font:clamp(52px,min(15vw,12vh),112px)/.8 var(--jersey);white-space:nowrap;letter-spacing:.02em;text-transform:uppercase;color:var(--gold);
  text-shadow:3px 3px 0 var(--blood),6px 6px 0 #1b1410;-webkit-text-stroke:1px #1b1410}
 .poster-strap{margin:4px 0 12px;font:clamp(16px,3vw,20px)/1 var(--px);letter-spacing:.3em;text-transform:uppercase;color:#1b1410}
 .poster-bout{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:clamp(6px,2vw,16px)}
 .poster-side{margin:0;display:grid;justify-items:center;gap:6px}
-.poster-side img{width:clamp(96px,26vw,160px);height:auto;aspect-ratio:4/5;image-rendering:pixelated;background:#16225a;border:3px solid #1b1410;box-shadow:4px 4px 0 var(--blood)}
+.poster-side img{width:clamp(84px,min(26vw,20vh),160px);height:auto;aspect-ratio:4/5;image-rendering:pixelated;background:#16225a;border:3px solid #1b1410;box-shadow:4px 4px 0 var(--blood)}
 .poster-side figcaption{font:clamp(22px,4.6vw,34px)/.9 var(--jersey);text-transform:uppercase;letter-spacing:.02em;text-wrap:balance}
 .poster-vs{display:grid;justify-items:center;gap:4px;align-self:center}
-.poster-vs span{font:clamp(40px,9vw,68px)/.8 var(--jersey);color:var(--blood);text-shadow:2px 2px 0 #1b1410}
-.poster-vs img{width:clamp(96px,22vw,150px);height:auto;filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
+.poster-vs span{font:clamp(36px,min(9vw,8vh),68px)/.8 var(--jersey);color:var(--blood);text-shadow:2px 2px 0 #1b1410}
+.poster-vs img{width:clamp(84px,min(22vw,18vh),150px);height:auto;filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
 .poster-stakes{margin:10px 0 0;font:clamp(17px,3.4vw,22px)/1.1 var(--px);letter-spacing:.04em;text-transform:uppercase;color:var(--blood)}
 .poster-under{list-style:none;margin:10px auto 0;padding:8px 0 0;border-top:2px solid #1b1410;display:grid;gap:2px;max-width:30em;font:clamp(15px,3vw,18px)/1.15 'Atkinson Hyperlegible Next',sans-serif}
 .poster-under:empty{display:none}
@@ -384,6 +384,21 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .stub-save{display:flex;align-items:center;gap:8px}
 .stub-save img{width:30px;height:auto;aspect-ratio:4/5;image-rendering:pixelated;border:1px solid #1b1410}
 .title .keys{margin:0;font-size:15px;color:var(--dim);text-align:center}
+/* Laptops: wide but short. The ticket stubs move beside the poster and the spacing tightens,
+   so the whole bill fits without scrolling. */
+@media (max-height:820px){
+ .poster{padding-top:12px;padding-bottom:12px}
+ .poster-strap{margin-bottom:8px}
+ .poster-stakes,.poster-under,.poster-foot{margin-top:6px}
+ .poster-under{padding-top:6px}
+}
+@media (min-width:900px) and (max-height:900px){
+ .poster-wall{width:min(940px,100%);grid-template-columns:minmax(0,620px) minmax(220px,260px);grid-template-rows:auto auto;column-gap:28px;row-gap:10px;align-items:center}
+ .poster{grid-row:1 / span 2}
+ .stubs{grid-column:2;grid-template-columns:1fr;align-self:end}
+ .title .keys{grid-column:2;align-self:start;text-align:left}
+}
+@media (max-height:620px){.poster-foot{display:none}}
 @media (prefers-reduced-motion:no-preference){
  .title:not([hidden]) .poster{animation:poster-in .55s cubic-bezier(.2,.9,.3,1.2) both}
  .title:not([hidden]) .poster-title{animation:title-slam .5s .25s cubic-bezier(.3,1.6,.5,1) both}
