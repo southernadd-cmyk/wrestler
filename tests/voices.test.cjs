@@ -1,19 +1,19 @@
 'use strict';
-// The 52 newcomers speak in their own voices in Dennis's room and on the microphone.
+// All 80 wrestlers speak in their own voices in Dennis's room and on the microphone.
 const assert=require('node:assert/strict'),vm=require('node:vm');
 const {script}=require('./_source.cjs');
 const cut=script.indexOf('/* THE OFFICE — interface v3');
 const root={addEventListener(){}};
 vm.runInNewContext(script.slice(0,cut),{window:root,Date,Math,JSON,console});
 const {OfficeData:D,OfficeRoom:Room,OfficeMic:Mic}=root;
-const packs=D.VOICE_PACKS,cast=D.V4.newCast;
+const packs=D.VOICE_PACKS,cast=D.ALL;
 
 // Every newcomer has a complete pack that only uses the placeholders its moment can fill.
 const ROOM={pitch:[2,['move'],['move','them']],counter:[1,['move'],['move','them']],big:[1,['move'],['move','them']],
  ego:[1,['them'],['them']],credibility:[1,[],['them']],safety:[1,['them'],['them']],proud:[1,[],[]],accept:[1,[],['them']],
  grumble:[1,[],['them']],pleased:[1,[],['them']],sweet:[1,[],[]],loose:[1,[],['them']]};
 const PROMO={quiet:[['W'],['W','F','VENUE']],pop:[['VENUE'],['W','F','VENUE']],bit:[['F'],['W','F','VENUE']],fluff:[['W'],['W','F','VENUE']]};
-assert.equal(Object.keys(packs).length,52,'one pack per newcomer');
+assert.equal(Object.keys(packs).length,80,'one pack per wrestler');
 const all=new Set();let lines=0;
 function ok(id,where,line,need,allow){
  assert.equal(typeof line,'string',`${id} ${where}`);
@@ -35,7 +35,7 @@ for(const w of cast){
  assert.ok(p.promo.quiet.startsWith('{W} ')&&p.promo.fluff.startsWith('{W} '));
  assert.ok(/^“.*”$/.test(p.promo.pop)&&/^“.*”$/.test(p.promo.bit));
 }
-assert.equal(lines,52*17);
+assert.equal(lines,80*17);
 
 // In play: newcomers mostly use their own lines, and the shared ones still turn up.
 const pattern=line=>new RegExp('^'+line.charAt(0).toUpperCase().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+line.slice(1).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\\\{(move|MOVE|them)\\\}/g,'.+?')+'$');
@@ -58,7 +58,7 @@ for(const [i,w] of cast.entries())for(let k=0;k<6;k++){
  }
  assert.doesNotMatch(state.log.map(e=>e.text).join('\n'),/undefined|NaN|\{\w+\}/);
 }
-assert.ok(heard.size>=48,`most newcomers were heard in their own words (${heard.size}/52)`);
+assert.ok(heard.size>=74,`almost every wrestler was heard in their own words (${heard.size}/80)`);
 const share=own/(own+common);
 assert.ok(share>.5&&share<.9,`personal lines about two times in three (${Math.round(share*100)}%)`);
 
@@ -77,4 +77,4 @@ for(const [i,w] of cast.entries())for(let k=0;k<4;k++){
 }
 assert.ok(promoOwn>=10,`newcomers use their own microphone lines (${promoOwn} in ${promoLines} promos)`);
 
-console.log(`PASS voices: 52 newcomers × 17 personal lines (${lines}); ${meetings} meetings, ${heard.size}/52 heard in their own words, ${Math.round(share*100)}% personal; ${promoOwn} personal mic lines in ${promoLines} promos`);
+console.log(`PASS voices: 80 wrestlers × 17 personal lines (${lines}); ${meetings} meetings, ${heard.size}/80 heard in their own words, ${Math.round(share*100)}% personal; ${promoOwn} personal mic lines in ${promoLines} promos`);
