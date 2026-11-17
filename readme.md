@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.3.10" width="100%">
+  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.3.11" width="100%">
 </p>
 
-<p align="center"><strong>ISSUE v0.3.10</strong> &nbsp; • &nbsp; 17 NOVEMBER 2026 &nbsp; • &nbsp; CHAMPIONSHIP EDITION</p>
+<p align="center"><strong>ISSUE v0.3.11</strong> &nbsp; • &nbsp; 17 NOVEMBER 2026 &nbsp; • &nbsp; LOCKER ROOM EDITION</p>
 
 <p align="center">
   <strong><a href="https://southernadd-cmyk.github.io/wrestler/">ENTER THE OFFICE — PLAY THE GAME</a></strong>
@@ -12,11 +12,28 @@
 
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
-<p align="center"><img src="docs/readme/01-lead-story.svg" alt="THE MAIN EVENT — THE BELTS ARE ON THE TABLE" width="100%"></p>
+<p align="center"><img src="docs/readme/01-lead-story.svg" alt="THE MAIN EVENT — THE LOCKER ROOM TALKS BACK" width="100%"></p>
+
+## THE LOCKER ROOM TALKS BACK
+
+*Lead story*
+
+Wrestlers now have feelings about each other, and they don’t come from nowhere. A classic match builds respect. A bad landing leaves a grudge. Two stablemates who share the drive to every show start looking out for each other, unless both of them want the front seat. A proud wrestler left at home while a stablemate headlines takes it personally. Every wrestler’s profile has a **Locker room** panel: who they’re close to, who they can’t stand, and the memory behind it.
+
+It shows up in Dennis’s room. Friends agree more easily and put on a better match. Enemies dig in, and the crowd can tell it’s real. Every so often a scene lands in your inbox: a grudge between stablemates that needs settling, a wrestler who wants another go at a rival, a friend on the free-agent market who could be had for less if the right person asks.
+
+Ignore a grudge and it doesn’t go away. It comes out in the car park after a show, or as a match plan that somehow reaches the other locker room before the bell (Dennis will find out who talked). And a friend with an ego, beaten clean, may not stay a friend once the bell goes.
+
+## ALSO IN THIS ISSUE
+
+- **The newcomers wrestle like themselves.** The 52 wrestlers who joined in the living roster were working borrowed weights and stock moves for their style. Each now has a weight, trait, favourite moments and four signature moves of their own, picked from the full catalog: Zara Finch’s shooting star press, Nate Barr’s chokeslam, Cleo Watt’s figure-four.
+- **Last issue:** eight championships across men’s and women’s divisions, every wrestler talking in their own words, backstage chains and threads, six new ways to work the microphone, personal entrance ideas and the fight-poster start screen. See [Back issues](#back-issues).
+
+<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
 ## THE BELTS ARE ON THE TABLE
 
-*Lead story*
+*Championship desk*
 
 Every promotion now runs two rankings: a **men’s division** and a **women’s division**, each with its own **championship**. That is eight belts across the circuit, and every one of them can change hands. Matches stay within a division, from the offers on your desk to the results that come in from the other towns.
 
@@ -41,15 +58,6 @@ Get one of your wrestlers to the top of a division’s main event and that promo
 </tr>
 </table>
 <p align="center"><sub><em>FROM THE PICTURE DESK:</em> The eight championships, two for each promotion.</sub></p>
-
-## ALSO IN THIS ISSUE
-
-- **Every wrestler talks like themself.** All 80 wrestlers have their own lines in the agents’ room and at the microphone, written from their own story.
-- **One thing leads to another backstage.** Some of Dennis’s situations now start something later in the meeting, and some come back at a later show. Promise somebody the big spot next time and they will hold you to it. Twenty-one new situations and follow-ups join the pool.
-- **Six new ways to work the microphone.** Insult the town, do the maths, admit what the feud is doing to you, tease a surprise that never comes, say how you want to be remembered, or thank the room like it might be the last time.
-- **Any other business.** Every wrestler on the roster has their own daft idea for their walk to the ring, from a pallet truck to an abseil down the climbing wall.
-- **Tonight’s poster.** The start screen is now the bill for tonight’s show, with a different main event every time you open the game. With a saved career, your top wrestler headlines.
-- **Version numbers start with a nought.** The game is still in development, so this is issue v0.3.10.
 
 <p align="center"><img src="docs/readme/02-production.svg" alt="PRODUCTION DESK — BEHIND THE CURTAIN" width="100%"></p>
 
@@ -247,6 +255,8 @@ A situation can change a beat (the card will say *Changes the heat*), and some d
 
 **One thing leads to another.** Some answers start something. Trust the stand-in referee and he’ll be back with a question. Let your wrestler show off for a rival manager and they’ll be tapped up by the fire exit. Others come back at a later show: promise somebody the big spot *next time*, tell a hurt wrestler to walk it off, or put off a money talk, and it opens the next meeting with them. Take a time cut without a fuss and that promoter owes you a favour. Choice cards that do this say *Comes back next time*.
 
+**Friends and enemies.** If the two wrestlers get on, Dennis says so and the meeting starts warmer, with a better match in it. If they can’t stand each other, it starts sour, but the crowd senses it’s real. If somebody has leaked the plan, you’ll hear about it here first.
+
 **Any other business.** At the end of the meeting somebody usually has an idea for their entrance. Every wrestler has one of their own, so it is the Legion bugler for one and a borrowed pallet truck for another. Say yes and it goes down a storm or goes wrong in front of everyone.
 
 ## THE MIC IS OPEN
@@ -283,7 +293,7 @@ The report compares the signed board with the match, starting with the strip as 
 
 The browser saves your career automatically, including backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.10, and older careers pick up the eight belts on their first load. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
+Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.11. Older careers pick up the eight belts on their first load, and start with an empty locker room that fills as they play. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
 
 To play locally, download the **whole repository** and open `index.html` in a modern browser. Keep the `assets/` directory alongside it: the page loads the JavaScript, CSS and portrait atlas as separate files. The simulation still runs in the browser, with no installer or build step. Google Fonts load when available, with system fallbacks.
 
@@ -303,9 +313,10 @@ To play locally, download the **whole repository** and open `index.html` in a mo
 | Promo graph angles and situational variants | 21 / 183 |
 | Backstage situations and follow-ups | 36 / 9 |
 | Championship belts | 8 |
-| Wrestlers with lines of their own | 80 |
+| Wrestlers with lines and move sets of their own | 80 |
 | Entrance ideas, personal and shared | 80 / 32 |
 | Rounds in the promo duel | 4 |
+| Kinds of backstage relationship scene | 4 |
 
 The match graph and career simulation use seeded logic so a saved sequence can be resumed deterministically. Reversals and applicable blocks sit alongside the authored moves. Narration and wrestler dialogue are original, informed by match structure, performer interviews and wrestling history. [Match graph and research](docs/match-graph.md) · [Promo research](docs/promo-graph.md)
 
@@ -339,12 +350,14 @@ node tests/divisions.test.cjs
 node tests/voices.test.cjs
 node tests/room-chains.test.cjs
 node tests/promos-requests.test.cjs
+node tests/ring-profiles.test.cjs
+node tests/relationships.test.cjs
 node tests/structure.test.cjs
 ```
 
-The suites cover the free-agent market and rival contracts, separate promotion ladders, divisions and title changes, older saves, backstage situations and their follow-ups, personal voices, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
+The suites cover the free-agent market and rival contracts, separate promotion ladders, divisions and title changes, older saves, backstage situations and their follow-ups, personal voices and move sets, relationships and betrayals, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
 
-**Continuous integration:** All 26 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
+**Continuous integration:** All 28 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
 
 ### Small print
 
@@ -358,6 +371,7 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
+| **v0.3.11** | Locker room edition. Wrestlers form bonds and grudges from what they remember, which change Dennis’s meetings, bring backstage scenes to the inbox and, left alone, end in car-park attacks, leaked plans or a friend turning after the bell. Every profile shows the locker room. The 52 newcomers get their own weights, traits and signature moves. |
 | **v0.3.10** | Six new ways to work the microphone, from insulting the town to thanking the room, offered when they suit the night. Every wrestler gets their own daft entrance idea, and the original 28 get their own voices too, so all 80 speak in their own words. The start screen becomes tonight’s fight poster. Version numbers move to the pre-release 0.x scheme. |
 | **v0.3.9** | Championship edition. Every promotion splits into men’s and women’s divisions with eight belts won and lost in title matches. The 52 newcomers speak in their own words. Backstage choices start chains within a meeting and threads that return at later shows, with 21 new situations and follow-ups. |
 | **v0.3.8.1** | The production desk is rebuilt: 11 JavaScript files, four stylesheets and a separate portrait atlas replace the giant HTML file. The agents’ room gets independent scrolling columns on desktop and a stacked plan on smaller screens. Tests now run against the scripts that ship to players, while existing saves and match rules stay intact. |
