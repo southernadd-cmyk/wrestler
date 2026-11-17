@@ -153,9 +153,17 @@
  const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
  const say=(st,type,w,k,vars={})=>{
   const them=vars.them||(w.id===st.w.id?st.f.short:st.w.short),move=vars.move||'';
-  const lines=LINES[type][voice(w)].map(line=>cap(line.replace(/\{move\}/g,move).replace(/\{MOVE\}/g,move.toUpperCase()).replace(/\{them\}/g,them)));
+  const fill=line=>cap(line.replace(/\{move\}/g,move).replace(/\{MOVE\}/g,move.toUpperCase()).replace(/\{them\}/g,them));
+  const lines=LINES[type][voice(w)].map(fill);
   const used=new Map();
   for(const entry of st.log)used.set(entry.text,(used.get(entry.text)||0)+1);
+  // Wrestlers with a personal voice pack use their own line about two times in three.
+  const own=D.VOICE_PACKS?.[w.id]?.room?.[type];
+  if(own?.length){
+   st.said??={};const key='own|'+type+'|'+w.id,n=st.said[key]=(st.said[key]||0)+1;
+   const mine=own.map(fill).filter(line=>!used.has(line));
+   if(mine.length&&rng(st.seed,key+'|'+n)<2/3)return mine[n%mine.length];
+  }
   const start=turn(st,type+'|'+w.id,lines.length);
   let best=lines[start];
   for(let i=1;i<lines.length;i++){
