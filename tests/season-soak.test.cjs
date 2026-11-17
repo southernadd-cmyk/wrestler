@@ -63,8 +63,8 @@ function career(seed,style){
    if(sheet.disputed&&!sheet.signed)sheet=P.build(c,w,f,game,method,'compromise',sheet.focus||'authentic');
    const st=Promo.begin(c,w,f,G.feud(w.id,f.id),sheet);
    while(st.stage!=='done'){
-    const shown=Promo.choices(st.stage,st);assert.equal(shown.length,5);
-    const o=shown[pick(5)];Promo.choose(st,o.id);if(o.variant)stats.variants.add(o.variant);
+    const shown=Promo.choices(st.stage,st);assert.ok(shown.length>=5&&shown.length<=7);
+    const o=shown[pick(shown.length)];Promo.choose(st,o.id);if(o.variant)stats.variants.add(o.variant);
    }
    const x=M.create({w:{...w,fatigue:G.clamp(w.fatigue)},f,p,slot:c.slot,minutes:c.minutes,finish:c.finish,
     feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:Promo.result(st),

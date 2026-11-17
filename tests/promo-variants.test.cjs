@@ -13,7 +13,7 @@ const D=root.OfficeData,M=root.OfficeMatch,Graph=root.OfficeStory.Graph;
 
 // 1. Size: ten times the 15 v3.2 choice nodes.
 const size=Graph.size();
-assert.equal(size.angles,15);
+assert.equal(size.angles,21);
 assert.ok(size.angles+size.variants>=150,'at least 150 promo nodes, got '+(size.angles+size.variants));
 const allVariants=[];
 for(const [stage,angles] of Object.entries(Graph.VARIANTS))for(const [angle,list] of Object.entries(angles)){
@@ -47,7 +47,7 @@ situations.forEach((s,i)=>{
  for(const id of ids){
   // What the player is shown is exactly what is played.
   const shown=Graph.choices(st.stage,st);
-  assert.equal(shown.length,5,'five angles on screen');
+  assert.ok(shown.length>=5&&shown.length<=7,'five core angles, plus any that suit the night');
   const offer=shown.find(o=>o.id===id);
   for(const o of shown)if(o.variant)seen.add(st.stage+'.'+o.id+'.'+o.variant);
   Graph.choose(st,id);
