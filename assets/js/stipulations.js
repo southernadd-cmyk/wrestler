@@ -125,7 +125,7 @@
   anywhere:[(A,B)=>`They spill over the barrier and fight up the steps into the crowd. ${A} slams ${B} on the concrete. The referee counts two up there!`,
    (A,B)=>`${A} drags ${B} to the bar. Two pints go over. A cover by the till: ONE, TWO, no!`],
   submission:[(A,B)=>`${A} has ${B} stretched in the middle of the ring. The referee asks if they want to quit. ${B} screams no.`,
-   (A,B)=>`${B} is reaching for the ropes, but the ropes don't help tonight. ${A} drags them back to the middle.`]
+   (A,B)=>`${B} catches the rope and the referee calls for a break. ${A} must release, then drags ${B} back towards the centre.`]
  };
  function fireSpot(M,s){
   s.done=true;const w=M.w,f=M.f,at=M.t;
