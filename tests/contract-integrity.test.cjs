@@ -101,9 +101,28 @@ function pendingProgramme(s,id){return P.state(s.territory).live.some(p=>p.id===
  A.weekly(now());
  const email=s.inbox.find(m=>m.subject==='You promised');
  assert.ok(email,'expired promise produces the expected email');
- assert.match(email.body[0],/lighter weeks/i);
+ assert.match(email.body[0],/lighter schedule/i);
  assert.match(email.body[0],/6 weeks/i);
  assert.doesNotMatch(email.body[0],/money|better pay/i);
  assert.ok(!e.promise);
  console.log('PASS expired promise email names original ambition and six-week deadline');
 }
+
+
+// Promoter favours must have a legitimate, unbooked opponent and a current-week date.
+{
+ const s=fresh(),p=G.P('crown');
+ const msg={id:'favour-test',from:p.name,subject:'A favour',kind:'decision',dtype:'favour',
+  args:['crown'],options:[{id:'yes',label:'Agree'},{id:'no',label:'Refuse'}],answer:null};
+ s.inbox.unshift(msg);
+ const outcome=G.answer('favour-test','yes');
+ assert.ok(outcome,'the promoter's request resolves');
+ const c=s.card.find(c=>c.tag==='Favour');
+ if(c){
+  assert.equal(c.eventAbs,G.abs(),'the contract has a real current show date');
+  assert.equal(D.divisionOf(c.wid),D.divisionOf(c.rid));
+  assert.ok(!G.W(c.rid),'your own wrestler cannot be their favour opponent');
+  assert.ok(c.rid!=='malik'||D.divisionOf(c.rid)===D.divisionOf(c.wid));
+ }else assert.match(outcome,/could not secure|Nobody was free/);
+}
+console.log('PASS promoter favours never create undated or own-stable contracts');
