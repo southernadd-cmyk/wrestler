@@ -766,7 +766,7 @@ const NIGHT_STORE='the-office-v23-match'; // same key: preserve existing mid-mat
 function persistNight(){
  if(!night?.queue)return;
  try{const m=night.M?{...night.M,rState:night.M.r?.getState?.()}:null;
- localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,resultHTML:night.stage==='result'?night.resultHTML||null:null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,signing:night.signing||null,after:night.after||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
+ localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,resultHTML:night.stage==='result'?night.resultHTML||null:null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,signing:night.signing||null,after:night.after||null,afterReady:night.afterReady||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
@@ -1051,6 +1051,8 @@ function doCall(id){const M=night.M;if(!Mx.canCall(M,id))return;Mx.call(M,id);pe
 function result(){
  clearTimeout(night.timer);const M=night.M,c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
  const fin={...M.final,log:M.log.map(({t,text,kind,big,who})=>({t,text,kind,big,who}))};
+ // A planned post-bell segment replaces spontaneous, contradictory improvisations.
+ c.afterPlan=night.plan?.after||'none';
  const cons=G.applyResult(c,fin);
  if(window.OfficeRingside)cons.push(...OfficeRingside.settle(c,M));
  const sheetReport=OfficeSheets.report(M),finalStrip=OfficeSheets.strip(M,{final:true});
@@ -1063,8 +1065,11 @@ function result(){
   if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed match layout against '+f.short+'.',f.id,-2,0,c.id+':sheet');
   G.save();
  }
- night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,actualOutcome:fin.outcome,bookedFinish:c.finish,consequences:cons.map(x=>x.text)});
- night.after=window.OfficeAfter?OfficeAfter.begin(c,fin,night.plan?.after||'none'):null;
+ const baseConsequences=cons.map(x=>x.text);
+ night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,actualOutcome:fin.outcome,bookedFinish:c.finish,baseConsequences,consequences:baseConsequences.slice()});
+ // No angle or microphone mutations occur while the result screen is merely open.
+ night.after=null;
+ night.afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish},fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome},plan:c.afterPlan}:null;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  night.i++;const more=night.i<night.queue.length;
@@ -1072,8 +1077,13 @@ function result(){
   ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p>'+(finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+'<div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title.charAt(0).toUpperCase()+b.title.slice(1))+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span></li>').join('')+'</ol></div>':'';
  const story=flowReport(fin,w,f);
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the layout</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What happened',`${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.after?.stage==='mic'?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Skip to the next match':'Skip, back to the office'}</button><button class="btn go" data-tv="after">After the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What happened',`${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.afterReady?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Skip after the bell · next match':'Skip after the bell · office'}</button><button class="btn go" data-tv="after" title="Play the post-bell angle and microphone">Play after the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';night.resultHTML=$('#tv').innerHTML;persistNight();
+}
+function syncAfterEvidence(){
+ const st=night?.after;if(!st)return;
+ const r=night.results?.find(x=>x.cid===st.cid),h=S().history?.find(x=>x.cid===st.cid);
+ if(r)r.consequences=[...(r.baseConsequences||r.consequences||[]),...(h?.after?.effects||[])];
 }
 function endNight(){
  clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';
@@ -1154,8 +1164,17 @@ document.addEventListener('click',e=>{
  if(d.cornerjob){if(night?.stage!=='meeting'||!night.plan)return;const x=OfficeRingside.parse(d.cornerjob);if(!x)return;night.plan.cornerWho=x.id;night.plan.corner=night.plan.corner===d.cornerjob?null:d.cornerjob;return showMeeting()}
  if(d.arcchoice){if(night?.stage!=='meeting'||night.plan?.room?.stage!=='done')return;const v=window.OfficeProgrammeArcs?.options(current());if(!v?.choices.some(x=>x.id===d.arcchoice))return;night.plan.arcChoice=d.arcchoice;return showMeeting()}
  if(d.afterplan){if(night?.stage!=='meeting'||!night.plan||!OfficeAfter.PLANS[d.afterplan])return;night.plan.after=d.afterplan;return showMeeting()}
- if(d.aftermic){const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='mic')return;OfficeAfter.speak(st,d.aftermic);return showAfter()}
- if(d.tv==='after')return showAfter();
+ if(d.aftermic){const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='mic')return;OfficeAfter.speak(st,d.aftermic);syncAfterEvidence();return showAfter()}
+ if(d.tv==='after'){
+  if(!night||!['result','after'].includes(night.stage))return;
+  if(!night.after&&night.afterReady){
+   const {c,fin,plan}=night.afterReady;
+   night.after=OfficeAfter.begin(c,fin,plan);
+   syncAfterEvidence();
+  }
+  if(night.after)return showAfter();
+  return;
+ }
  if(d.mouth){if(night?.stage!=='mouth')return;const c=current();if(!c)return;night.mouth={cid:c.id,id:d.mouth};return showPromos()}
  if(d.contract){const st=night?.signing;if(night?.stage!=='signing'||!st||st.stage!=='live')return;OfficeSigning.choose(st,d.contract);return showSigning()}
  if(d.tv==='signing'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showSigning();}
@@ -1164,8 +1183,8 @@ document.addEventListener('click',e=>{
  if(d.tv==='meeting')return showMeeting();
  if(d.tv==='promos'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showPromos();}
  if(d.tv==='bell'){if(window.OfficeSigning?.eligible(current())&&night?.signing?.stage!=='done')return;if(!night?.plan?.sheet?.skipPromo&&!night?.signing&&night?.promo?.v>=4&&night.promo.stage!=='done')return;if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return bell();}
- if(d.tv==='next'){night.after=null;night.signing=null;prep();return}
- if(d.tv==='done')return endNight();
+ if(d.tv==='next'){night.after=null;night.afterReady=null;night.signing=null;prep();return}
+ if(d.tv==='done'){night.afterReady=null;return endNight();}
  if(d.call)return doCall(d.call);
  if(d.decide)return decideNow(d.decide);
  if(d.speed!==undefined){night.speed=d.speed;document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===night.speed));if(!night.paused)schedule(50);return}
