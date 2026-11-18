@@ -65,6 +65,7 @@ console.log('PASS ticket and sponsorship income, production and talent costs are
 {
  G.fresh();const t=G.S.territory,id='silas';
  const dock=D.PROMOS.find(p=>p.id==='dock'),pulse=D.PROMOS.find(p=>p.id==='pulse'),union=D.PROMOS.find(p=>p.id==='union');
+ for(const p of D.PROMOS)if(!['dock','union'].includes(p.id))delete t.cards[p.id]?.[id];
  t.cards.dock[id]??={score:45,matches:0,wins:0};
  t.cards.union[id]??={score:60,matches:0,wins:0};
  assert.equal(Biz.topPromotion(t,id).id,union.id,'highest-prestige association is authoritative');
