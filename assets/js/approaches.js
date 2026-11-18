@@ -43,8 +43,10 @@
   const e=amb(s,id),sat=e?.sat??50,loyal=info(id).loyal??55;
   if(sat>=55)return 0;
   const team=contract(s,id)?.agencyId,grudge=state(s.territory)?.grudge?.[team]||0;
-  const score=(60-sat)+(60-loyal)*.5+((s.rep||20)-30)*.4+pitch(s,id).bonus-grudge*4;
-  return clamp(score/60,0,.9);
+  // Unhappiness does most of the work; loyalty to their stable pulls the other way; your name and what
+  // you can offer help. Even a wrestler desperate to leave is a good bet, never a sure thing.
+  const score=(60-sat)+(55-loyal)*.6+((s.rep||20)-30)*.25+pitch(s,id).bonus-grudge*5;
+  return clamp(score/90,0,.8);
  }
  function read(c){return c<=0?'Happy where they are':c<.35?'Might hear you out':c<.65?'Will listen':'Keen to talk';}
 
