@@ -102,9 +102,9 @@ console.log('PASS different careers play different seeded worlds, and a save kee
 // training; a developed star does not get the same catch-up multiplier.
 {
  G.fresh();const s=G.S;s.cash=100000;
- assert.equal(G.sign('sol'),null);
+ assert.equal(G.sign('dee'),null);
  assert.equal(G.sign('mara'),null);
- const young=G.W('sol'),senior=G.W('mara');
+ const young=G.W('dee'),senior=G.W('mara');
  assert.ok(young.tier==='Rookie'&&young.ring<68,'rookie test setup');
  for(const w of [young,senior]){w.training='ring';w.intensity='light';w.fatigue=0;}
  const y0=young.ring,v0=senior.ring;
