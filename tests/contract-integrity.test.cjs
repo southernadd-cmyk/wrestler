@@ -28,7 +28,7 @@ function pendingProgramme(s,id){return P.state(s.territory).live.some(p=>p.id===
 {
  const s=fresh(),target=s.free.find(w=>D.divisionOf(w.id)===D.divisionOf('rex')&&w.id!=='rex');
  assert.ok(target,'a player-signable opponent exists');
- const pr=programme(s,{rid:target.id,n:3}),p=G.P(pr.pid),old=p.trust;
+ const pr=programme(s,{rid:target.id,n:3}),p=G.P(pr.pid),old=p.trust,dockBefore=G.P('dock').trust;
  const other={id:'ordinary-opponent',pid:'dock',wid:'rex',rid:target.id,eventAbs:now()+7,
   slot:'opener',finish:'win_clean',purse:180};
  s.futureBookings.push(other);
@@ -44,7 +44,7 @@ function pendingProgramme(s,id){return P.state(s.territory).live.some(p=>p.id===
  assert.ok(!pendingProgramme(s,pr.id));
  assert.equal(P.state(s.territory).done.find(p=>p.id===pr.id)?.status,'walked');
  assert.equal(p.trust,old-15,'one penalty for the full contract');
- assert.equal(G.P('dock').trust,55,'ordinary booked opponent gets its own -6 trust at Dockside (default 61)');
+ assert.equal(G.P('dock').trust,Math.max(0,dockBefore-6),'ordinary booked opponent costs -6 trust');
  assert.ok(!s.offers.some(x=>x.rid===target.id||x.programme?.id==='offer-pr'));
  assert.ok(!P.state(s.territory).offered.some(x=>x.id==='offer-pr'));
  const c={id:'test-bout',wid:'rex',rid:target.id,eventAbs:now(),pid:'crown',finish:'win_clean'};
