@@ -35,6 +35,7 @@ function programme(s,c,beats,type='grudge'){
 // Explicitly distinguish an agreed DQ finish from a surprise referee DQ.
 assert.equal(O.interpret({finish:'win_dq'},{outcome:'booked'}).contractHonoured,true);
 assert.equal(O.interpret({finish:'win_dq'},{outcome:'booked'}).beltChangeAllowed,false);
+assert.equal(O.interpret({finish:'win_clean'},{outcome:'dq'}).winner,'f','an unexpected referee DQ is a loss, not the booked win');
 assert.equal(O.interpret({finish:'lose_dq'},{outcome:'booked',actualOutcome:'dq',bookedFinish:'win_clean',contractHonoured:false}).contractHonoured,false);
 console.log('PASS canonical match outcomes distinguish match winner, compliance and belt movement');
 
