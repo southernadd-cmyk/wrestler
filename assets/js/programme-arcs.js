@@ -92,10 +92,10 @@
  }
  // A public claim and an entertaining segment are not the same achievement.
  // The booker's finish still stands. A wrestler may entertain the crowd but fail a promise.
- function claimResult(prog,step,id,spoken,won){
+ function claimResult(prog,step,id,spoken,won,wonTitle){
   if(id!=='gamble'||!spoken)return null;
   if(prog.type==='title'&&step===0)return 'pending'; // "I will take the title" is settled at the finale.
-  if(step===prog.beats.length-1&&['title','grudge','rise'].includes(prog.type))return won?'kept':'broken';
+  if(step===prog.beats.length-1&&['title','grudge','rise'].includes(prog.type))return (prog.type==='title'?wonTitle:won)?'kept':'broken';
   return null; // Other gambles promise a standout performance, measured by stars and promo quality.
  }
  function settle(c,fin){
@@ -111,7 +111,9 @@
   const spoken=Number.isFinite(quality); // No microphone performance cannot pass a microphone-dependent gamble.
   const passed=endedNormally&&(id==='steady'?stars>=2.5:id==='needle'?stars>=2.75&&spoken&&quality>=55:stars>=3.5&&spoken&&quality>=65);
   const final=step===prog.beats.length-1,won=outcome?.winner==='w';
-  let claim=claimResult(prog,step,id,spoken,won);
+  // Winning a match by DQ is not the same as winning the championship.
+  const wonTitle=prog.type==='title'&&root.OfficeTerritory?.title?.(prog.pid,prog.div)?.holder===prog.wid;
+  let claim=claimResult(prog,step,id,spoken,won,wonTitle);
   // An emphatic public claim of a win must be proved by the result, not by the star rating.
   if(claim==='kept'&&!endedNormally)claim='broken';
   const claimDelta=claim==='kept'?3:claim==='broken'?-6:0;
@@ -129,7 +131,7 @@
   if(final){
    // Resolve an earlier title promise against the actual championship result.
    for(const prev of a.timeline.filter(e=>e.claim==='pending')){
-    prev.claim=won&&endedNormally?'kept':'broken';
+    prev.claim=wonTitle&&endedNormally?'kept':'broken';
     prev.recap=prev.recap.replace('The promise is still outstanding.',claimWords[prev.claim]+'.');
     a.momentum=clamp(a.momentum+(prev.claim==='kept'?3:-6));
    }
