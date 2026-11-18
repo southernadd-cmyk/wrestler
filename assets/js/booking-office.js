@@ -54,7 +54,9 @@
   const desperate=pid=>!!t.business?.[pid]?.desperate;
   const cfgFor=p=>{const c=styleOf(p);return desperate(p.id)?{...c,titleLen:Math.max(2,c.titleLen-1),swerve:Math.min(.45,c.swerve*1.5)}:c;};
   const pref=(p,w,salt)=>w.score+(w.heat||50)*.3+pressure(w.id)*.15+lobby(p.id,w.id)*.15+(p.personality==='cold'?(w.ring||60)*.3:0)+hash(salt+':'+w.id)*styleOf(p).noise;
-  const cast=new Set(Object.values(st.promos).flatMap(x=>x.live.flatMap(y=>[y.a,y.b])));
+  // Your programmes (v0.3.18) have first call on their belt and their opponents.
+  const claim=root.OfficeProgrammes?.claims(s,t)||{belts:new Set(),cast:new Set()};
+  const cast=new Set([...Object.values(st.promos).flatMap(x=>x.live.flatMap(y=>[y.a,y.b])),...claim.cast]);
   const per={};const count=(pid,div)=>per[pid+':'+div]||0;
   const add=(m)=>{bill.push(m);busy.add(m.a.id);busy.add(m.b.id);per[m.pid+':'+m.div]=count(m.pid,m.div)+1;};
   const pIndex=Object.fromEntries(D.PROMOS.map((p,i)=>[p.id,i])),dIndex=Object.fromEntries(D.DIVISION_ORDER.map((d,j)=>[d,j]));
@@ -92,7 +94,7 @@
    const cfg=cfgFor(p),id=`${p.id}-${div}-${wk}-${type}`,base={id,pid:p.id,div,type,start:wk,delays:0};
    if(type==='title'){
     const holder=t.titles?.[p.id]?.[div]?.holder;
-    if(!holder||!pool.some(w=>w.id===holder)||cast.has(holder))return null;
+    if(!holder||!pool.some(w=>w.id===holder)||cast.has(holder)||claim.belts.has(p.id+':'+div))return null;
     const champ=row(p.id,div,holder);
     const who=free.filter(w=>w.id!==holder&&['main','feature'].includes(w.slot)&&w.stable!==champ.stable)
      .map(w=>({w,v:pref(p,w,id)+(amb(w.id)?.kind==='title'?25:0)+pressure(w.id)*.3+lobby(p.id,w.id)*.4+(w.slot==='main'?10:0)}))
@@ -231,7 +233,7 @@
    const holder=t.titles?.[p.id]?.[div]?.holder,chase=st.promos[p.id].live.some(x=>x.div===div&&x.type==='title');
    const champ=entries.find(w=>w.id===holder);
    let a,b,title=false;
-   if(champ&&!chase&&!titleBooked&&(week+i+j)%3===0){
+   if(champ&&!chase&&!titleBooked&&!claim.belts.has(p.id+':'+div)&&(week+i+j)%3===0){
     b=entries.find(w=>w.id!==champ.id&&!cast.has(w.id))||entries.find(w=>w.id!==champ.id);
     if(b){a=champ;title=true;}
    }
