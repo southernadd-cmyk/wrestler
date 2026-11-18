@@ -116,7 +116,7 @@ function pendingProgramme(s,id){return P.state(s.territory).live.some(p=>p.id===
   args:['crown'],options:[{id:'yes',label:'Agree'},{id:'no',label:'Refuse'}],answer:null};
  s.inbox.unshift(msg);
  const outcome=G.answer('favour-test','yes');
- assert.ok(outcome,'the promoter's request resolves');
+ assert.ok(outcome,'the promoter request resolves');
  const c=s.card.find(c=>c.tag==='Favour');
  if(c){
   assert.equal(c.eventAbs,G.abs(),'the contract has a real current show date');
