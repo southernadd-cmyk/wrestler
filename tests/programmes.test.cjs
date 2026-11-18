@@ -118,7 +118,7 @@ console.log('PASS a change of ending can be accepted, argued or walked out on');
  assert.equal(P.state(s.territory).done[0].status,'collapsed');assert.equal(p.trust,trust-8);
  s=career();o=offerFor(s);G.book(o.id,'rex');
  G.release('rex');P.weekly();
- assert.equal(P.state(s.territory).done[0].status,'collapsed','a released wrestler’s programme ends');
+ assert.equal(P.state(s.territory).done[0].status,'walked','a released wrestler ends the programme once, rather than silently collapsing later');
  assert.equal(P.state(s.territory).live.length,0);
  console.log('PASS missed and abandoned programmes collapse');
 }
