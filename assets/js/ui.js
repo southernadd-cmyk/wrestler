@@ -686,8 +686,9 @@ function renderResults(){
  paint('s-full',win('Results',`<h3 class="section-h">Season ${s.season} so far</h3>${seasonChart()}${phoneList(table,cards)}`,{keep:'res',note:`${s.history.length} ${plural(s.history.length,'match','matches')}`}));
 }
 function renderGame(){
+ const saved=G.saveStatus(),status=saved.ok===false?'Save FAILED — recent changes are not stored. Export your career immediately.':saved.ok===true?'Last saved successfully in this session at '+new Date(saved.lastSaved).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'.':'No save confirmation this session.';
  paint('s-split even',
-  win('Save and load',`<p class="lede">Your career saves automatically in this browser after every action. Export a save file to move it to another device or browser.</p><div class="row"><button class="btn" data-act="export">Export save</button><button class="btn" data-act="import">Import save</button></div><h3 class="section-h" style="margin-top:20px">Start over</h3><p class="dim">Overwrites the current career.</p><button class="btn red" data-act="newgame">Start a new career</button>`)+
+  win('Save and load',`<p class="lede">Your career saves automatically in this browser after every action. Export a save file to move it to another device or browser.</p><p class="${saved.ok===false?'bad':'dim'}" role="status">${esc(status)}</p><div class="row"><button class="btn" data-act="export">Export save</button><button class="btn" data-act="import">Import save</button></div><h3 class="section-h" style="margin-top:20px">Start over</h3><p class="dim">Overwrites the current career.</p><button class="btn red" data-act="newgame">Start a new career</button>`)+
   win('How a week works',`<ol style="margin:0;padding-left:1.3em;display:grid;gap:8px"><li>Read the inbox. Some messages need a decision before you can continue.</li><li>Set training for each wrestler. Rest anyone who is tired.</li><li>Book wrestlers onto offers. Promoters set the finish; negotiate the fee, billing or a protected loss using a management meeting.</li><li>Press Continue. Choose the match plan and your wrestler’s promo approach, hear both wrestlers speak, then work the match with up to three calls from ringside.</li><li>Wages and costs are paid, and the next week’s offers arrive.</li></ol><p class="dim" style="margin-top:12px">At ringside, Space pauses and keys 1 to 6 make calls.</p>`,{h:'h3'})
  );
 }
@@ -1084,6 +1085,10 @@ function endNight(){
 }
 
 /* ======================= EVENTS ======================= */
+function showSaveStatus(){
+ const el=$('#saveWarning'),status=G.saveStatus();
+ if(el)el.hidden=status.ok!==false;
+}
 function startApp(screen){$('#title').hidden=true;$('#app').hidden=false;past=[];ahead=[];route={s:screen,id:null};render(true)}
 document.addEventListener('click',e=>{
  if(e.target.closest('select,option'))return;
@@ -1243,8 +1248,9 @@ function summary(saved,top){
 
 /* ---------- boot ---------- */
 window.OfficeUI={get night(){return night},go};
+window.addEventListener('office-save-status',showSaveStatus);
 window.addEventListener('DOMContentLoaded',()=>{
- posterBill();
+ posterBill();showSaveStatus();
  const d=$('#modal');d.addEventListener('close',()=>{
   const oid=d.dataset.talkoid;if(oid&&S()){const o=S().offers.find(x=>x.id===oid);if(o?.talk?.step==='start'){o.talk=null;G.save();}}
   delete d.dataset.talkoid;if(S()&&!$('#app').hidden)render();
