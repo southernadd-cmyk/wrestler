@@ -44,7 +44,7 @@ const paths=new Set(),textures=new Set(),signatures={Story:0,Technical:0,Brawl:0
 let rests=0,staminaMoves=0;
 for(let i=0;i<600;i++){
  const o=config(i),m=drain(E.create(o)),g=m.graph;
- const result=m.outcome==='nc'?'nc':m.outcome==='double'?'double':o.finish;
+ const result=m.outcome==='nc'?'nc':m.outcome==='double'?'double':m.outcome==='dq'?'dq':o.finish;
  assert.ok(m.final,'every bout reaches a result');
  assert.equal(g.outcome.id,result,'booking remains authoritative');
  assert.ok(Number.isFinite(m.wSt)&&Number.isFinite(m.fSt),'valid stamina');

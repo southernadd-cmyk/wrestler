@@ -8,7 +8,9 @@ const {script}=require('./_source.cjs');
 const root={addEventListener(){}};
 vm.runInNewContext(script.slice(0,script.indexOf('/* THE OFFICE — interface v3')),{window:root,Date,Math,JSON,console});
 const {OfficeData:D,OfficeMatch:M,OfficeRoom:Room,OfficeMic:Mic,OfficeSheets:Sheets}=root;
-const finishes=Object.keys(D.FINISHES),clone=x=>JSON.parse(JSON.stringify(x));
+// The statistics below sample the four original finishes, as they always have; v0.3.22's disqualification
+// finishes are checked separately for a clean read at the end.
+const finishes=['win_clean','win_dirty','lose_protected','lose_clean'],clone=x=>JSON.parse(JSON.stringify(x));
 const mean=a=>a.reduce((x,y)=>x+y,0)/Math.max(1,a.length);
 const leftovers=/undefined|NaN|\{\w+\}|\[object/;
 // The swing a choice is worth on average, over several rolls of the dice.
@@ -88,3 +90,11 @@ for(const worker of D.TALENT)for(const opponent of D.FOES.slice(0,6))for(const f
 assert.ok(vows.counter.n>20&&vows.finisher.n>20,'both kinds of vow are exercised');
 assert.ok(vows.counter.kept>0&&vows.counter.kept<vows.counter.n,'a counter vow can go either way');
 console.log(`PASS promo read v3.7: ${scenes} scenes; opening fit ${openCurve.map(x=>x.toFixed(1)).join(' < ')}; best opening ${Object.entries(bestOpen).map(([k,v])=>k+' '+Math.round(100*v/scenes)+'%').join(', ')}; clear reads right ${clearRight}/${clear}; answer fit ${answerCurve.map(x=>x.toFixed(1)).join(' < ')}; push ${pushLow.toFixed(1)} / leave ${mean(leave).toFixed(1)} / ${pushTop.toFixed(1)}; vows counter ${vows.counter.kept}/${vows.counter.n}, finisher ${vows.finisher.kept}/${vows.finisher.n}`);
+// v0.3.22 The disqualification finishes read cleanly too.
+{let n=0;for(const finish of ['win_dq','lose_dq'])for(const worker of D.TALENT.slice(0,6))for(const opponent of D.FOES.slice(0,4)){
+ const booking={id:'read-dq-'+(n++),wid:worker.id,rid:opponent.id,pid:D.PROMOS[n%4].id,finish,slot:'main',minutes:12,eventAbs:n,feudHeat:30};
+ const duel=Mic.begin(booking,worker,opponent,null,null,D.PROMOS[n%4]);const view=Mic.view(duel);
+ assert.equal(view.read.length,4);assert.doesNotMatch(view.read.join(' '),leftovers);
+ for(const o of Mic.choices(duel))assert.doesNotMatch(o.label+' '+(o.hint||''),leftovers);}
+ console.log('PASS disqualification finishes read cleanly ('+n+' scenes)');}
+

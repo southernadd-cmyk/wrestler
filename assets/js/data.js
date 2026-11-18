@@ -60,7 +60,10 @@ const FINISHES={
  win_clean:{name:'Wins clean',short:'Win clean',win:true,heat:6,purse:.9,trust:0},
  win_dirty:{name:'Wins dirty',short:'Win dirty',win:true,heat:3,purse:.95,trust:0},
  lose_protected:{name:'Loses protected',short:'Lose protected',win:false,heat:-1,purse:1.05,trust:1},
- lose_clean:{name:'Loses clean',short:'Lose clean',win:false,heat:-6,purse:1.25,trust:3}
+ lose_clean:{name:'Loses clean',short:'Lose clean',win:false,heat:-6,purse:1.25,trust:3},
+ // v0.3.22 The referee sees it this time. A cheap win; a loss that makes them look dangerous.
+ win_dq:{name:'Wins by DQ',short:'Win by DQ',win:true,heat:-1,purse:.9,trust:0},
+ lose_dq:{name:'Loses by DQ',short:'Lose by DQ',win:false,heat:3,purse:1.05,trust:1}
 };
 // Game plans: what the match is built around.
 const PLANS={

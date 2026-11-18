@@ -825,7 +825,7 @@
     const clean=fin.outcome!=='double'&&fin.outcome!=='nc'&&['win_clean','lose_clean'].includes(c.finish);
     const finisher=won&&c.finish==='win_clean'&&!!G.W(c.wid)?.finisher
      &&(fin.log||[]).some(line=>String(line.text||'').includes(G.W(c.wid).finisher));
-    const nocheat=fin.outcome!=='nc'&&c.finish!=='win_dirty'&&!fin.promoSignals?.workerDirty&&!fin.evidence?.dirty?.w;
+    const nocheat=fin.outcome!=='nc'&&c.finish!=='win_dirty'&&c.finish!=='lose_dq'&&!fin.promoSignals?.workerDirty&&!fin.evidence?.dirty?.w;
     const kept=promise==='win'?won:promise==='clean'?clean:promise==='finisher'?finisher:promise==='counter'?!!fin.promoSignals?.workerCounter:promise==='nocheat'?nocheat:null;
     if(kept!==null){
      const sure=(promise==='win'&&c.finish.startsWith('win'))||(promise==='clean'&&['win_clean','lose_clean'].includes(c.finish));

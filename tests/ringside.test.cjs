@@ -75,7 +75,8 @@ function night(c,choice,seed=7){
   career();const c=contract({finish,feudHeat:40});
   const job=finish==='win_dirty'?'runin':'distract';
   const M=night(c,'lyra:'+job,55);
-  assert.ok(M.final&&['booked','nc','double'].includes(M.final.outcome));
+  assert.ok(M.final&&['booked','nc','double','dq'].includes(M.final.outcome));
+  if(M.final.outcome==='dq')assert.ok(M.sheet.corner.dq||M.ref,'a DQ only from a caught run-in or the referee');
   if(M.final.outcome==='booked')assert.equal(M.o.finish,finish);
  }
  console.log('PASS the booked finish is untouched');

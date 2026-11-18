@@ -110,8 +110,10 @@ for(let i=0;i<480;i++){
  assert.ok(report&&report.eventCount>10,'canonical ledger captures actual ring events');
  assert.equal(report.beats.length,opts.sheet.nodes.length);
  assert.equal(report.achieved+report.adapted+report.missed,report.total,'every agreed beat resolved');
- assert.equal(report.beats.at(-1).status,'achieved','contractual finish is honoured on the sheet');
- assert.equal(m.graph.outcome.id,opts.finish,'the written finish stays authoritative');
+ // v0.3.22 A wrestler let off the leash can be thrown out by the referee; otherwise the contract stands.
+ if(m.outcome==='dq'){assert.ok(m.leash==='free'||m.talk==='fire'||m.offScript,'only a wrestler off the leash is disqualified');assert.equal(m.graph.outcome.id,'dq');}
+ else{assert.equal(report.beats.at(-1).status,'achieved','contractual finish is honoured on the sheet');
+ assert.equal(m.graph.outcome.id,opts.finish,'the written finish stays authoritative');}
  assert.ok(m.log.every(l=>!(/\{(?:A|D|W|F|part)\}|undefined|NaN/).test(l.text)));
  assert.equal(new Set(m.sheet.ledger.map(x=>x.id)).size,m.sheet.ledger.length,'unique event IDs');
  assert.ok(m.sheet.ledger.every(x=>x.action&&x.kind),'event types recorded');
