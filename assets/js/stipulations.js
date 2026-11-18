@@ -21,7 +21,7 @@
    announce:'Submission only. No pinfalls tonight: one of them has to give up.'},
   anywhere:{name:'Falls count anywhere',short:'Anywhere',hint:'The fight goes into the crowd, the bar, the car park. A pin counts wherever it lands.',
    taste:{aggressive:10,showman:14,traditional:-10,cold:-12},fit:{Brawl:4,Spectacle:4,Story:1,Technical:-3},risk:1.2,tired:5,crowd:6,
-   announce:'Falls count anywhere. The ring is only where it starts.'},
+   announce:'Falls count anywhere. No count-outs or disqualifications: the ring is only where it starts.'},
   falls:{name:'Two out of three falls',short:'2 of 3 falls',hint:'Three chances to tell the story. Longer, and the crowd rides every fall.',
    taste:{aggressive:-6,showman:4,traditional:14,cold:8},fit:{Story:4,Technical:4,Brawl:0,Spectacle:1},risk:1,tired:4,crowd:4,
    announce:'Two out of three falls. Win two and it is yours.'}
@@ -45,7 +45,7 @@
    if(!STIPS[kind])return {error:'Unknown stipulation.'};
    if(o.stip)return {error:'This match already has a stipulation.'};
    if(o.programme)return {error:'A programme is signed as it stands.'};
-   if(kind==='nodq'&&isDQ(o.finish))return {error:'This match is booked to end in a disqualification. It cannot be a no disqualification match.'};
+   if(['nodq','anywhere'].includes(kind)&&isDQ(o.finish))return {error:'This match is booked to end in a disqualification. It cannot be played without disqualifications.'};
    if(s.focus<1)return {error:'No management meetings remain this week. You can accept the original offer.'};
    s.focus--;t.topic='stip';t.stip=kind;t.step='reason';t.turns++;t.original.stip=o.stip||null;
    t.log.push({who:'You',text:`I want it made a ${name(kind).toLowerCase()} match.`},
@@ -74,7 +74,7 @@
    arg==='reliability'?`${w.short} will keep it safe and keep it on the layout. You will not regret it.`:`Keep the fee where it is. Just give us the stipulation.`});
   let verdict='refused',detail='The match stays as it is.';
   let fav=favourite(p);
-  if(fav==='nodq'&&isDQ(o.finish))fav=Object.keys(STIPS).filter(k=>k!=='nodq').sort((a,b)=>tasteOf(p,b)-tasteOf(p,a))[0];
+  if(['nodq','anywhere'].includes(fav)&&isDQ(o.finish))fav=Object.keys(STIPS).filter(k=>!['nodq','anywhere'].includes(k)).sort((a,b)=>tasteOf(p,b)-tasteOf(p,a))[0];
   if(strength>=need){verdict='agreed';o.stip=kind;if(arg!=='trade')o.bump=+((o.bump||1)*1.1).toFixed(4);detail=`${name(kind)}${arg!=='trade'?`, and ${G.money(G.purse(o,w))} instead of ${G.money(fee)}: it will draw`:''}.`;}
   else if(strength>=need-14&&fav!==kind&&tasteOf(p,fav)>0){verdict='counter';o.stip=fav;detail=`Not that. A ${name(fav).toLowerCase()} match instead.`;}
   t.step='done';t.verdict=verdict;t.detail=detail;t.before=fee;
@@ -87,7 +87,7 @@
  const originalEnd=G.endWeek;
  G.endWeek=function(...args){
   const r=originalEnd.apply(this,args);
-  try{for(const o of G.S?.offers||[])if(o.tag==='Blow-off'&&o.stip===undefined){const p=G.P(o.pid),fav=favourite(p);o.stip=hash(o.id+'|stip')<.7&&!(fav==='nodq'&&isDQ(o.finish))?fav:null;}}catch(e){}
+  try{for(const o of G.S?.offers||[])if(o.tag==='Blow-off'&&o.stip===undefined){const p=G.P(o.pid),fav=favourite(p);o.stip=hash(o.id+'|stip')<.7&&!(['nodq','anywhere'].includes(fav)&&isDQ(o.finish))?fav:null;}}catch(e){}
   return r;
  };
  // Signing carries the stipulation onto the contract. Two out of three falls runs five minutes longer.
@@ -125,7 +125,7 @@
   anywhere:[(A,B)=>`They spill over the barrier and fight up the steps into the crowd. ${A} slams ${B} on the concrete. The referee counts two up there!`,
    (A,B)=>`${A} drags ${B} to the bar. Two pints go over. A cover by the till: ONE, TWO, no!`],
   submission:[(A,B)=>`${A} has ${B} stretched in the middle of the ring. The referee asks if they want to quit. ${B} screams no.`,
-   (A,B)=>`${B} is reaching for the ropes, but the ropes don't help tonight. ${A} drags them back to the middle.`]
+   (A,B)=>`${B} catches the rope and the referee calls for a break. ${A} must release, then drags ${B} back towards the centre.`]
  };
  function fireSpot(M,s){
   s.done=true;const w=M.w,f=M.f,at=M.t;

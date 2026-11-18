@@ -86,12 +86,51 @@ function offer(o={}){const s=G.S,x={id:'so-'+(n++),pid:'dock',rid:'silas',slot:'
   else{
    assert.equal(M.final.finishRoute,X.FINISH[stip][finish][0],'the rivalry reads a route with the same meaning');
    assert.ok(end.includes(winner.short)||end.includes(winner.name),'the booked winner wins: '+end);
-   if(stip==='submission')assert.doesNotMatch(text.split(X.STIPS.submission.announce)[1].split('\n').filter(l=>/ONE! TWO! THREE!|^THREE!$/.test(l)).join(),/THREE/,'no pinfalls in a submission match');
+   if(stip==='submission'){
+    const live=M.log.filter(l=>l.kind!=='story'||l.text!==X.STIPS.submission.announce).filter(l=>l.kind!=='bell');
+    assert.doesNotMatch(live.map(l=>l.text).join('\n'),
+     /\b(?:cover|cradle|backslide|roll[- ]?up|pinfall|kicks? out|shoulder up|near.?fall)\b|ONE! TWO!/i,
+     'submission-only cannot narrate any live pin or nearfall');
+    assert.ok(!M.graph.events.some(e=>/^(cover|early_cover|near_kickout|counter_rollup|scheduled_nearfall)$/.test(e.id)),
+     'submission-only cannot enter a pin graph node');
+    assert.equal(M.nearfalls,0,'a submission escape is not a statistical pin nearfall');
+   }
+   if(['nodq','submission','anywhere'].includes(stip)){
+    assert.doesNotMatch(M.log.map(l=>l.text).join('\n'),
+     /referee (?:is up to six|has reached six|reaches eight|begins the count|starts counting|is still counting)|before the referee reaches ten|beat the referee.s count|count is broken/i,
+     stip+' cannot narrate a normal countout');
+   }
   }
  }
  assert.ok(played>=40,'played '+played);
  console.log('PASS every stipulation and finish plays by the rules ('+played+' matches)');
 }
+
+// 6b. Falls Count Anywhere also has no DQ, and real near-falls may happen on the floor.
+{
+ career();
+ const o=offer({finish:'win_dq'});
+ assert.match(G.talkMove(o.id,'rex','ask:stip:anywhere').error||'',/disqualification/i,
+  'a DQ finish cannot be agreed for Falls Count Anywhere');
+ const w=G.W('rex'),f=G.F('silas'),p=G.P('pulse');
+ const M=MX.create({w:{...w},f,p,slot:'main',minutes:14,finish:'win_clean',
+  stip:'anywhere',plan:{game:'brawl',leash:'free',talk:'fire'},seed:43890});
+ M.stage='live';M.t=Math.floor(M.len*.81);M.story.position='outside';M.story.control='w';
+ const n=M.nearfalls;
+ MX.GRAPH.nearfall(M);
+ assert.equal(M.nearfalls,n+1);
+ assert.equal(M.story.position,'outside','the nearfall took place and counted outside');
+ assert.match(M.log.map(x=>x.text).join(' '),/hooks .* leg on the floor/);
+ for(let i=0;i<80;i++){
+  const m=MX.create({w:{...w,pro:20},f,p,slot:'main',minutes:12,
+   finish:'win_clean',stip:'anywhere',plan:{game:'brawl',leash:'free',talk:'fire'},seed:8000+i});
+  for(let n=0;n<12000&&!m.done;n++){if(m.decision&&!m.queue.length)MX.resolve(m,m.decision.options[0].id);MX.next(m);}
+  assert.ok(m.done);
+  assert.equal(m.outcome==='dq',false,'no DQ in Falls Count Anywhere');
+  assert.equal(m.ref,undefined,'no disciplinary warnings in Falls Count Anywhere');
+ }
+}
+console.log('PASS Falls Count Anywhere: pinfalls on the floor, no count-outs or disqualifications');
 
 // 7. Afterwards: extra fatigue, the feud turned up, once.
 {

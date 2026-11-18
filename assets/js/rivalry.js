@@ -51,10 +51,10 @@
   const rows=(G.S.history||[]).filter(h=>h.wid===L.w&&h.rid===L.f&&h.cid!==skip).slice().reverse();
   for(const h of rows){
    const cid=h.cid||('legacy:'+h.season+':'+h.week);if(L.done[cid])continue;L.done[cid]=1;
-   const winner=h.outcome==='nc'?null:h.outcome==='double'?'w':String(h.finish||'').startsWith('win')?'w':'f';
+   const winner=h.outcome==='nc'?null:h.outcome==='double'?'w':h.outcome==='dq'?'f':String(h.finish||'').startsWith('win')?'w':'f';
    const promise=h.promo?.promise?.checked?{type:h.promo.promise.type,kept:!!h.promo.promise.kept,say:sayPromise(h.promo.promise.type,h.promo.tactic,null,G.F(L.f),G.W(L.w))}:null;
-   L.meetings.push({cid,n:L.meetings.length+1,abs:(h.season-1)*52+(h.week||0),finish:h.finish||null,outcome:h.outcome||'booked',winner,
-    how:h.finish==='win_dirty'?'dirty':h.finish==='lose_protected'?'protected':'clean',cheat:h.finish==='win_dirty'?'w':null,cheatDetail:null,route:null,
+   L.meetings.push({cid,n:L.meetings.length+1,abs:(h.season-1)*16+(h.week||0),finish:h.finish||null,outcome:h.outcome||'booked',winner,
+    how:h.outcome==='dq'||/_dq$/.test(h.finish||'')?'dq':h.finish==='win_dirty'?'dirty':h.finish==='lose_protected'?'protected':'clean',cheat:h.finish==='win_dirty'?'w':null,cheatDetail:null,route:null,
     minutes:null,stars:h.stars||0,counters:{w:0,f:0},late:{w:0,f:0},families:{w:[],f:[]},stamina:null,injured:{w:null,f:false},promise,commit:null,legacy:true});
   }
   L.meetings=L.meetings.slice(-LIMIT.meetings);
@@ -85,12 +85,13 @@
  // engine records. Nothing here reads commentary text.
  function meetingFrom(c,fin,w,f,n){
   const route=fin.finishRoute||null,R=ROUTE[route]||{},ev=fin.evidence||null;
-  const winner=fin.outcome==='nc'?null:fin.outcome==='double'?'w':String(c.finish).startsWith('win')?'w':'f';
-  const booked=fin.outcome!=='nc'&&fin.outcome!=='double';
+  const resolution=root.OfficeOutcome?.interpret?.(c,fin);
+  const winner=resolution?resolution.winner:fin.outcome==='nc'?null:fin.outcome==='double'?'w':String(c.finish).startsWith('win')?'w':'f';
+  const booked=resolution?resolution.contractHonoured:fin.outcome!=='nc'&&fin.outcome!=='double';
   const cheat=booked&&R.cheat?winner:null;
   const submission=booked&&winner&&(R.submission||(['finisher','duck_finisher','finisher_reversed','limb_finish'].includes(route)&&isSub(winner==='w'?w:f)))?winner:null;
   const tired=ev?.stamina?{w:ev.stamina.w<30,f:ev.stamina.f<30}:{w:false,f:false};
-  return {cid:c.id,n,abs:c.eventAbs??G.abs(),finish:c.finish,bookedFinish:fin.bookedFinish||c.finish,outcome:fin.actualOutcome||fin.outcome||'booked',winner,how:fin.outcome==='double'?'upset':R.how||(String(c.finish).includes('dirty')?'dirty':'clean'),
+  return {cid:c.id,n,abs:c.eventAbs??G.abs(),finish:c.finish,bookedFinish:fin.bookedFinish||c.finish,outcome:resolution?.actualOutcome||fin.actualOutcome||fin.outcome||'booked',winner,how:resolution?.disqualification?'dq':fin.outcome==='double'?'upset':R.how||(String(c.finish).includes('dirty')?'dirty':'clean'),
    route,cheat,cheatDetail:booked&&R.cheat?R.cheat:null,cheapShots:ev?{...ev.dirty}:{w:false,f:false},argued:!!R.argued,slow:booked&&!!R.slow,exhausted:booked&&!!R.exhausted,
    submission,reversedFinisher:booked&&R.reversedFinisher?winner:null,stolen:booked&&R.stolen?winner:null,worked:booked&&!!R.worked?winner:null,
    outlasted:booked&&(R.outlasted||R.exhausted)?winner:null,minutes:fin.minutes||null,stars:fin.stars||0,
@@ -831,6 +832,21 @@
    lostRun:streak(L).side==='f'?streak(L).n:0,lastTalk:L.talks.at(-1)||null,meetings:L.meetings.length};
  }
 
- root.OfficeRivalry={ledger,profile,facts:(w,f)=>profile(w,f).facts,casesFor,introFor,stance:(wid,rid)=>profile(wid,rid).stance,record:(wid,rid)=>G.S?record(ledger(wid,rid)):{w:0,f:0},
+ // A completed result exists before the optional post-bell scene. Append only facts that
+ // actually happened, and never create a second meeting for the same contract.
+ function recordAfter(st){
+  if(!st?.cid||!st.c)return null;
+  const L=ledger(st.c.wid,st.c.rid),m=L?.meetings.find(x=>x.cid===st.cid);
+  if(!m)return null;
+  m.after={plan:st.plan,angle:st.angle?{...st.angle}:null,said:st.said||null,
+   call:st.call?{...st.call}:null,demand:st.demand?{...st.demand}:null};
+  if(st.said&&!L.talks.some(x=>x.cid===st.cid&&x.issue==='after')){
+   L.talks.push({cid:st.cid,n:m.n,issue:'after',by:'w',slot:'after the bell',
+    original:st.plan,final:st.said,reply:st.angle?.ok===false?'failed':'played',delivered:'performed'});
+   L.talks=L.talks.slice(-LIMIT.talks);
+  }
+  return m.after;
+ }
+ root.OfficeRivalry={recordAfter,ledger,profile,facts:(w,f)=>profile(w,f).facts,casesFor,introFor,stance:(wid,rid)=>profile(wid,rid).stance,record:(wid,rid)=>G.S?record(ledger(wid,rid)):{w:0,f:0},
   scoutedFamilies,ISSUES,ROUTE,FAMILY_WORD,modeOf,deliver,verdict,meetingFrom,keyOf,sayPromise,voiced};
 })(typeof window!=='undefined'?window:globalThis);
