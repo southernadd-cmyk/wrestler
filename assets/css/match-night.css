@@ -473,3 +473,9 @@
  .mf-ph{font-size:13px}
  .mf-mom .mf-lab small{max-width:42px;font-size:12px}
 }
+/* v0.3.20 after the bell */
+.after-h{margin-top:12px}
+.after-picks .decision-option.on{background:var(--gold-hi);box-shadow:var(--bevel-in);outline:2px solid var(--gold-lo);outline-offset:-4px}
+.after-picks .decision-option.on>b::before{content:'✓ ';color:var(--gold-lo)}
+.foot-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+@media (max-width:720px){.foot-btns{width:100%}.foot-btns .btn{flex:1 1 auto}}

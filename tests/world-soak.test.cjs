@@ -20,4 +20,5 @@ assert.ok(totals.approaches>=2,'approaches were made: '+totals.approaches);
 assert.ok(totals.bids>=2,'managers bid for your wrestlers: '+totals.bids);
 assert.ok(totals.titleChanges>=10,'belts changed hands: '+totals.titleChanges);
 assert.ok(totals.released>=4,'wrestlers were released: '+totals.released);
-console.log(`PASS world soak: ${SEEDS.length} careers × 48 weeks, every system on, checked weekly (${totals.weeks} weeks, ${totals.matches} of your matches, ${totals.programmes} programmes, ${totals.approaches} approaches, ${totals.bids} bids, ${totals.titleChanges} title changes, ${totals.raids} raids; circuit prediction checked ${totals.predicted} times)`);
+assert.ok(totals.afters>=40&&totals.callouts>=3,'after the bell ran: '+totals.afters+' segments, '+totals.callouts+' callouts landed');
+console.log(`PASS world soak: ${SEEDS.length} careers × 48 weeks, every system on, checked weekly (${totals.weeks} weeks, ${totals.matches} of your matches, ${totals.programmes} programmes, ${totals.approaches} approaches, ${totals.bids} bids, ${totals.titleChanges} title changes, ${totals.raids} raids, ${totals.afters} post-match segments, ${totals.callouts} callouts; circuit prediction checked ${totals.predicted} times)`);

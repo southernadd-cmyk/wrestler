@@ -742,15 +742,18 @@ const NIGHT_STORE='the-office-v23-match'; // same key: preserve existing mid-mat
 function persistNight(){
  if(!night?.queue)return;
  try{const m=night.M?{...night.M,rState:night.M.r?.getState?.()}:null;
- localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,plan:night.plan,promo:night.promo,stage:night.stage||'prep',M:m,past:night.past||[]}));
+ localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,plan:night.plan,promo:night.promo,after:night.after||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
 function openTV(){$('#toast').classList.remove('show');$('#tv').hidden=false;document.body.style.overflow='hidden'}
 function resumeNight(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(NIGHT_STORE)||'null')}catch(e){}
- if(!saved||!Array.isArray(saved.queue)||!S()?.card?.length)return false;
+ // After the last match the card is empty, but a post-match segment still waiting for its last word comes back.
+ const afterOpen=saved?.stage==='after'&&saved.after?.stage==='mic';
+ if(!saved||!Array.isArray(saved.queue)||(!S()?.card?.length&&!afterOpen))return false;
  night={...saved,paused:true};
+ if(afterOpen){openTV();showAfter();return true}
  if(night.i>=night.queue.length){endNight();return true}
  openTV();
  if(saved.stage==='live'&&saved.M){
@@ -758,7 +761,7 @@ function resumeNight(){
   bell();clearTimeout(night.timer);night.M=restored;night.past=saved.past||[];night.paused=true;
   updateLive();const last=restored.log?.[restored.log.length-1];if(last)showLine(last,true);
   if(restored.decision&&!restored.queue.length)showDecision();
- }else if(saved.stage==='promo')showPromos();else if(saved.stage==='meeting')showMeeting();else prep();
+ }else if(saved.stage==='after'&&saved.after)showAfter();else if(saved.stage==='promo')showPromos();else if(saved.stage==='meeting')showMeeting();else prep();
  persistNight();return true;
 }
 const SPEED={slow:{line:2600,pause:1100},normal:{line:1500,pause:750},fast:{line:520,pause:260},skip:{line:0,pause:0}};
@@ -775,6 +778,25 @@ function prep(){
  const w=G.W(c.wid);
  night.plan=night.plan&&night.plan.cid===c.id?night.plan:{cid:c.id,game:D.STYLE_PLAN[w.style],leash:w.psych>=75&&w.ego<75?'free':'script',talk:'none'};
  return showMeeting();
+}
+
+/* ---------- after the bell (v0.3.20) ---------- */
+function afterPicker(c,w,f){
+ if(!window.OfficeAfter)return '';
+ const on=night.plan?.after||'none';
+ return `<h3 class="section-h after-h">After the bell</h3><p class="dim">${esc(OfficeRoom.AGENT)}: “And when it’s over? Decide now. They need to know before they go out.”</p><div class="picks after-picks">${OfficeAfter.plans(c,w,f).map(o=>`<button class="decision-option${o.id===on?' on':''}" data-afterplan="${esc(o.id)}" aria-pressed="${o.id===on}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span>${tagChips(o.tags)}</button>`).join('')}</div>`;
+}
+function afterNext(){const more=night.i<night.queue.length;return `<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}
+function showAfter(){
+ const st=night.after;if(!st)return night.i<night.queue.length?prep():endNight();
+ const w=G.W(st.c.wid)||D.findWrestler(st.c.wid),f=G.F(st.c.rid)||D.findWrestler(st.c.rid),p=G.P(st.c.pid);
+ const v=OfficeAfter.view(st);night.stage='after';
+ const entries=v.log.map(e=>({who:e.who,side:e.side==='stage'?'c':e.side,text:e.text}));
+ const cons=v.cons.length?`<h3 class="section-h">What it did</h3><ul class="cons">${v.cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`:'';
+ const decide=v.stage==='mic'?`<div class="decide2"><h3 class="section-h">${esc(v.title)}</h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'aftermic')}</div>`:'';
+ const middle=`<b class="fin">${esc(v.plan==='none'?'Straight to the microphone':v.planLabel)}</b><span>${esc(p?.venue||'')}</span>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p?.name||'')}: after the bell</b><span>${esc(w?.name||'')} v ${esc(f?.name||'')}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-back">${win('After the bell',matchupBar({},w,f,middle)+sceneLog(entries,'afterTalk',w,f,p?.id)+decide+cons,{h:'h3',body:'tight'})}</div><div class="tv-foot"><span class="dim">${esc(v.stage==='mic'?'The microphone is live.':'The crowd starts filing out.')}</span>${v.stage==='mic'?'':afterNext()}</div>`;
+ scrollTalk('afterTalk');persistNight();
 }
 
 /* ---------- backstage and the promo duel ---------- */
@@ -830,7 +852,7 @@ function showMeeting(){
  const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>
   <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span>${esc(c.who)}’s idea</span>${tagChips(c.tags)}</button>`).join('')}</div></div>`).join('')}</div>
   <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the running order</button></div></div>`:'';
- const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p></div>`:
+ const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
  const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
@@ -966,6 +988,7 @@ function result(){
   G.save();
  }
  night.results.push({name:w.name,foe:f.name,stars:fin.stars});
+ night.after=window.OfficeAfter?OfficeAfter.begin(c,fin,night.plan?.after||'none'):null;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  night.i++;const more=night.i<night.queue.length;
@@ -973,7 +996,7 @@ function result(){
   ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p>'+(finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+'<div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title.charAt(0).toUpperCase()+b.title.slice(1))+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span></li>').join('')+'</ol></div>':'';
  const story=flowReport(fin,w,f);
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the layout</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What happened',`${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What happened',`${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.after?.stage==='mic'?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Skip to the next match':'Skip, back to the office'}</button><button class="btn go" data-tv="after">After the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';persistNight();
 }
 function endNight(){
@@ -1035,12 +1058,15 @@ document.addEventListener('click',e=>{
  if(d.sheetmode){if(!OfficeSheets.MODE[d.sheetmode])return;night.plan.method=d.sheetmode;night.plan.sheet=null;night.plan.confirmed=false;return showMeeting()}
  if(d.room){const st=night?.plan?.room;if(night?.stage!=='meeting'||!st||st.stage==='done')return;
   if(!OfficeRoom.options(st).some(o=>o.id===d.room))return;OfficeRoom.act(st,d.room);return showMeeting()}
+ if(d.afterplan){if(night?.stage!=='meeting'||!night.plan||!OfficeAfter.PLANS[d.afterplan])return;night.plan.after=d.afterplan;return showMeeting()}
+ if(d.aftermic){const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='mic')return;OfficeAfter.speak(st,d.aftermic);return showAfter()}
+ if(d.tv==='after')return showAfter();
  if(d.mic){const st=night?.promo;if(night?.stage!=='promo'||st?.v!==5||st.stage==='done')return;
   if(!OfficeMic.choices(st).some(o=>o.id===d.mic))return;OfficeMic.choose(st,d.mic);return showPromos()}
  if(d.tv==='meeting')return showMeeting();
  if(d.tv==='promos'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showPromos();}
  if(d.tv==='bell'){if(!night?.plan?.sheet?.skipPromo&&night?.promo?.v>=4&&night.promo.stage!=='done')return;if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return bell();}
- if(d.tv==='next'){prep();return}
+ if(d.tv==='next'){night.after=null;prep();return}
  if(d.tv==='done')return endNight();
  if(d.call)return doCall(d.call);
  if(d.decide)return decideNow(d.decide);

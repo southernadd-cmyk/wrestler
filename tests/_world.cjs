@@ -67,9 +67,9 @@ function check(root,s,label){
 function play(seed,weeks=48,hook=null){
  const {root,random}=engine(seed);
  if(hook)hook(root);
- const {OfficeData:D,OfficeGame:G,OfficeTerritory:T,OfficeApproaches:X}=root;
+ const {OfficeData:D,OfficeGame:G,OfficeTerritory:T,OfficeApproaches:X,OfficeAfter:A}=root;
  const pick=n=>Math.floor(random()*n);
- const problems=[],stats={weeks:0,matches:0,programmes:0,approaches:0,joined:0,bids:0,sold:0,released:0,predicted:0,skipped:0,decisions:0,titleChanges:0,raids:0,struggling:0};
+ const problems=[],stats={weeks:0,matches:0,programmes:0,approaches:0,joined:0,bids:0,sold:0,released:0,predicted:0,skipped:0,decisions:0,titleChanges:0,raids:0,struggling:0,afters:0,callouts:0};
  G.fresh();const s=G.S;s.cash+=6000;
  const fin=()=>{const roll=random();return {stars:Math.round((1.5+random()*3)*4)/4,crowd:45+pick(40),crowdPeak:60+pick(35),outcome:roll<.02?'double':roll<.05?'nc':'booked',botches:pick(3),script:.6+random()*.4,
   adj:{purseMul:1,rep:0,trust:0,heat:0,morale:0},minutes:8+pick(14),plan:['brawl','story','technical','spots','safe'][pick(5)],stamina:20+pick(60),injury:random()<.05?1+pick(3):0,injuryPart:'shoulder',ignored:0,callsUsed:[],log:[]};};
@@ -102,7 +102,12 @@ function play(seed,weeks=48,hook=null){
    if(x)G.book(o.id,x.id);
   }
   // Match night.
-  for(const c of s.card.slice()){if(G.W(c.wid)){G.applyResult(c,fin());stats.matches++;}}
+  for(const c of s.card.slice()){if(G.W(c.wid)){
+   const f=fin(),w=G.W(c.wid),o=G.F(c.rid);G.applyResult(c,f);stats.matches++;
+   // After the bell: a planned angle and something said on the microphone.
+   if(A&&w&&o){const plans=A.plans(c,w,o),st=A.begin(c,f,plans[pick(plans.length)].id),opts=A.micOptions(st);
+    if(opts.length){A.speak(st,opts[pick(opts.length)].id);stats.afters++;if(st.call?.ok)stats.callouts++;}}
+  }}
   s.card=s.card.filter(c=>G.W(c.wid));
   // Predict next week's circuit from a copy, as the start screen does; then play the week.
   const copy=JSON.parse(JSON.stringify(s)),next=T.absWeek(s)+1;
