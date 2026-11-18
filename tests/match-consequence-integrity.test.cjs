@@ -153,6 +153,7 @@ console.log('PASS legacy rivalry dates use the real sixteen-week career season')
  assert.doesNotMatch(section,/night\.after=window\.OfficeAfter\?OfficeAfter\.begin/);
  assert.match(ui,/if\(d\.tv==='after'\)\{[\s\S]*?OfficeAfter\.begin\(c,fin,plan\)/);
  assert.match(ui,/afterReady:night\.afterReady\|\|null/,'reload saves the proposed scene');
+ assert.match(ui,/const afterOpen=saved\?\.stage==='after'&&!!saved\.after/, 'reload also restores a finished microphone screen');
  assert.match(ui,/night\.afterReady\?/, 'result screen offers explicit choice');
  assert.match(ui,/h\.consequences=cons\.map/,'the completed outer wrapper effects are archived');
  assert.match(ui,/h\.stip=c\.stip\|\|null/,'the stipulation itself survives the report');
