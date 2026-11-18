@@ -112,3 +112,22 @@ const ready=s=>{s.focus=2;};
  assert.doesNotMatch(JSON.stringify(s.territory.agents),/NaN|undefined/);
  console.log('PASS ten weeks of approaches: contracts consistent, circuit predictable');
 }
+
+// 7. An older career that has never read its wrestlers' ambitions still shows what they want and how they feel;
+// champions show the belt they hold; every manager has a painted portrait.
+{
+ G.fresh();const s=G.S;delete s.ambitions;
+ const all=X.stables(),ws=all.flatMap(t=>t.wrestlers);
+ assert.ok(ws.every(w=>w.wants),'everyone shows what they want');
+ assert.ok(new Set(ws.map(w=>w.mood)).size>1,'and not everyone reads the same');
+ const champ=ws.find(w=>w.champion);
+ assert.ok(champ&&champ.belts.length&&champ.belts.every(b=>b.img&&b.name.includes('Championship')),'a champion carries their belt');
+ const fs=require('node:fs'),path=require('node:path'),Pt=root.OfficePortraits;
+ for(const t of all){
+  const html=Pt.avatar({key:'manager:'+t.id,name:t.manager,type:'manager'},null);
+  const file=path.join(__dirname,'..','assets','portraits','manager-'+t.id+'.png');
+  assert.ok(html.includes('assets/portraits/manager-'+t.id+'.png'),t.manager+' uses their portrait');
+  const png=fs.readFileSync(file);assert.equal(png.readUInt32BE(16),144);assert.equal(png.readUInt32BE(20),180);
+ }
+ console.log('PASS wants and moods show on an older career; champions show their belt; six manager portraits');
+}

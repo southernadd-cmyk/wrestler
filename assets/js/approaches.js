@@ -51,14 +51,17 @@
  // The rosters, for the screen.
  function stables(s=G.S){
   const t=s?.territory,w=s?.worldV4;if(!t||!w)return [];
+  // Ambitions are worked out on first read; an older career may not have read them yet.
+  root.OfficeAmbitions?.state(s);
   return t.teams.filter(team=>w.agencies[team.id]).map(team=>({id:team.id,name:team.name,manager:team.manager,blurb:M?.blurb(team)||'',grudge:state(t).grudge[team.id]||0,
    wrestlers:team.roster.filter(id=>w.contracts[id]?.owner==='ai').map(id=>view(id,s)).filter(Boolean)}));
  }
  function view(id,s=G.S){
+  root.OfficeAmbitions?.state(s);
   const c=contract(s,id),x=info(id);if(!c||c.owner!=='ai'||!x.id)return null;
   const team=s.territory.teams.find(t=>t.id===c.agencyId),k=amb(s,id)?.kind,p=chance(s,id),last=state(s.territory).approached[id];
   return {...x,team:team?.name,teamId:c.agencyId,manager:team?.manager,mood:mood(s,id),wants:k?root.OfficeAmbitions?.KINDS?.[k]?.name||k:null,
-   weeksLeft:weeksLeft(s,id),wage:Math.round((c.wage||x.wage)*(pitch(s,id).wage||1)),fee:fee(s,id),champion:titled(s,id),
+   weeksLeft:weeksLeft(s,id),wage:Math.round((c.wage||x.wage)*(pitch(s,id).wage||1)),fee:fee(s,id),champion:titled(s,id),belts:T.titlesOf(id),
    read:read(p),pitch:pitch(s,id).text,cooldown:last!=null&&G.abs()-last<COOLDOWN?COOLDOWN-(G.abs()-last):0};
  }
 

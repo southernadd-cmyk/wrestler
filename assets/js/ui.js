@@ -297,7 +297,8 @@ function renderInbox(){
  const items=list.map(x=>`<li><button data-msg="${x.id}" class="${!x.read?'unread':''} ${x.kind==='decision'&&!x.answer?'need':''}" ${x.id===openMsg?'aria-current="true"':''}><span class="pip">${x.kind==='decision'&&!x.answer?'<span class="sr">Needs a reply. </span>':!x.read?'<span class="sr">Unread. </span>':''}</span><span class="from">${esc(x.from)}</span><span class="wk">S${x.season} W${x.week}</span><span class="subj">${esc(x.subject)}</span></button></li>`).join('');
  let letter='<div class="empty">No messages.</div>';
  if(m){
-  letter=`<article class="letter"><div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
+  const mgr=managerFrom(m);
+  letter=`<article class="letter">${mgr?`<div class="letter-face">${face('manager',mgr.id,mgr.manager,'portrait')}</div>`:''}<div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
   if(m.kind==='decision'){
    if(m.answer)letter+=`<div class="outcome"><b>You chose: ${esc(m.options.find(o=>o.id===m.answer)?.label)}</b><br>${esc(m.outcome)}</div>`;
    else letter+=`<div class="choices">${m.options.map(o=>`<button class="choice" data-answer="${o.id}" data-mid="${m.id}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></button>`).join('')}</div>`;
@@ -457,6 +458,10 @@ function renderScouting(){
 
 // v0.3.19 Rival stables: every agency's roster, how each wrestler feels about it, and an approach for those who want out.
 let selTeam=null;
+// Which belt a champion holds: the belt itself, small, with the promotion's name (full title on hover).
+function champChips(w){return (w.belts||[]).map(b=>{const p=D.PROMOS.find(x=>x.id===b.pid);return `<span class="champ-chip" title="${esc(b.name)}"><img src="${esc(b.img)}" alt="" loading="lazy">${esc(p?.name||'')}</span>`}).join('')}
+// The rival manager a letter is from, if any.
+function managerFrom(m){const t=S().territory?.teams?.find(x=>String(m.from||'').startsWith(x.manager+','));return t||null}
 function renderStables(){
  const s=S(),A=window.OfficeApproaches;if(!A)return renderScouting();
  const all=A.stables(),[kind,id]=String(route.id||'').split(':');
@@ -468,16 +473,17 @@ function renderStables(){
  const tone=m=>m==='Wants out'?'bad':m==='Restless'?'':'good';
  const left=w=>w.weeksLeft==null?'–':w.weeksLeft===0?'Up now':`${w.weeksLeft} wk`;
  const sel=picked&&picked.teamId===team.id?picked:team.wrestlers.slice().sort((a,b)=>(a.mood==='Wants out'?0:a.mood==='Restless'?1:2)-(b.mood==='Wants out'?0:b.mood==='Restless'?1:2)||a.name.localeCompare(b.name))[0];
- const rows=team.wrestlers.map(w=>`<tr class="pick" data-go="stables" data-id="w:${w.id}" aria-selected="${w.id===sel?.id}"><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b>${w.champion?' <span class="tag">Champion</span>':''}<small>${esc(w.tier)} · ${esc(w.style)}</small></span></span></td><td class="wrap">${esc(w.wants||'–')}</td><td><span class="${tone(w.mood)}">${esc(w.mood)}</span></td><td class="n">${left(w)}</td><td class="n">${money(w.fee)}</td></tr>`).join('');
+ const rows=team.wrestlers.map(w=>`<tr class="pick" data-go="stables" data-id="w:${w.id}" aria-selected="${w.id===sel?.id}"><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b>${champChips(w)}<small>${esc(w.tier)} · ${esc(w.style)}</small></span></span></td><td class="wrap">${esc(w.wants||'–')}</td><td><span class="${tone(w.mood)}">${esc(w.mood)}</span></td><td class="n">${left(w)}</td><td class="n">${money(w.fee)}</td></tr>`).join('');
  const cards=team.wrestlers.map(w=>`<button class="free-card" data-go="stables" data-id="w:${w.id}" aria-pressed="${w.id===sel?.id}"><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b><small>${esc(w.mood)} · ${esc(w.wants||'')}</small></span></span><span class="free-costs"><span><small>Contract</small>${left(w)}</span><span><small>Fee</small>${money(w.fee)}</span></span></button>`).join('');
  const grudge=team.grudge>=2?`<p class="bad" style="margin:4px 0 0">${esc(team.manager)} has not forgotten the last time you came knocking.</p>`:team.grudge===1?`<p class="dim" style="margin:4px 0 0">${esc(team.manager)} knows you have been asking around.</p>`:'';
- const list=`${tabs}<p class="dim" style="margin:0 0 8px">${esc(team.blurb)}</p>${grudge}<div class="well free-table"><table class="grid"><thead><tr><th>Wrestler</th><th>Wants</th><th>Mood</th><th class="n">Contract</th><th class="n">Fee</th></tr></thead><tbody>${rows}</tbody></table></div><div class="phone-only"><div class="free-cards">${cards}</div></div>`;
+ const list=`${tabs}<div class="row" style="flex-wrap:nowrap;gap:12px;margin:0 0 8px;align-items:flex-start">${face('manager',team.id,team.manager,'portrait')}<div><b>${esc(team.manager)}</b>, ${esc(team.name)}<p class="dim" style="margin:4px 0 0">${esc(team.blurb)}</p>${grudge}</div></div><div class="well free-table"><table class="grid"><thead><tr><th>Wrestler</th><th>Wants</th><th>Mood</th><th class="n">Contract</th><th class="n">Fee</th></tr></thead><tbody>${rows}</tbody></table></div><div class="phone-only"><div class="free-cards">${cards}</div></div>`;
  let detail='<div class="empty">Select a wrestler.</div>';
  if(sel){
   const full=s.roster.length>=5,can=!full&&s.focus>=1&&s.cash>=sel.fee&&!sel.cooldown&&sel.mood!=='Settled';
   const why=full?'Your locker room is full. Release someone first.':sel.mood==='Settled'?`${sel.short} is happy at ${sel.team}. An approach would only annoy ${sel.manager}.`:sel.cooldown?`${sel.short} has already heard from you. Try again in ${sel.cooldown} ${plural(sel.cooldown,'week')}.`:s.focus<1?'No management meetings left this week.':s.cash<sel.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'';
   detail=`<div class="row" style="align-items:flex-start;gap:14px;flex-wrap:nowrap">${face('wrestler',sel.id,sel.name,'portrait x2')}<div><div style="font:32px/.9 var(--jersey);color:var(--blood)">${esc(sel.name)}</div><div style="font-weight:600;margin:4px 0">“${esc(sel.handle)}”</div><div class="chips"><span class="chip">${esc(sel.tier)}</span><span class="chip">${esc(sel.style)}</span><span class="chip">${esc(sel.team)}</span></div></div></div>
   <div class="well pad attrs" style="margin-top:10px">${[['Ring',sel.ring],['Psychology',sel.psych],['Safety',sel.safe],['Mic',sel.mic],['Heat',sel.heat]].map(([l,v])=>`<div class="attr"><span>${l}</span>${att(v)}${bar(v,bandBar(v))}</div>`).join('')}</div>
+  ${(sel.belts||[]).map(b=>`<div class="title-line">${beltBadge(b)}<small>Current champion. ${esc(sel.team)} will want more for them.</small></div>`).join('')}
   <dl class="kv"><dt>Wants</dt><dd>${esc(sel.wants||'Nothing in particular')}</dd><dt>Mood</dt><dd><span class="${tone(sel.mood)}">${esc(sel.mood)}</span> · ${esc(sel.read)}</dd><dt>Contract</dt><dd>${sel.weeksLeft==null?'No end date':sel.weeksLeft===0?'Up this week':`${sel.weeksLeft} ${plural(sel.weeksLeft,'week')} left`}</dd><dt>You could offer</dt><dd>${esc(sel.pitch)}</dd><dt>Their wage</dt><dd>${money(sel.wage)} a week</dd></dl>
   <div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(sel.fee)}</span><button class="btn go" style="min-height:44px;min-width:170px" data-approach="${sel.id}" ${can?'':'disabled'}>Make an approach</button></div>
   <p class="dim" style="margin-top:6px">${why?esc(why):`Uses one of ${s.focus} meetings left. If ${esc(sel.short)} says yes, the fee goes to ${esc(sel.team)}. Either way, ${esc(sel.manager)} hears about it.`}</p>`;
@@ -593,7 +599,7 @@ function renderPyramid(){
  const pyr=`${tabs}${hero}<div class="well tiers">${tiers}</div><p class="dim" style="margin-top:8px">Wrestlers advance through results on this promoter’s shows. Reach the main event and the promoter will offer a title match.</p>`;
  const belts=`<div class="belt-list">${D.PROMOS.map(x=>D.DIVISION_ORDER.map(d=>{const b=D.belt(x.id,d),h=OfficeTerritory.title(x.id,d)?.holder,w=h?G.W(h)||G.F(h):null;
   return `<button class="belt-row ${w&&G.W(w.id)?'mine':''}" data-go="pyramid" data-id="${x.id}:${d}"><img class="belt-img" src="${esc(b.img)}" alt=""><span><small>${esc(b.name)}</small><b>${w?esc(w.name):'Vacant'}</b></span></button>`}).join('')).join('')}</div>`;
- const teams=`<div class="well"><table class="grid"><thead><tr><th>Stable and manager</th><th class="n">W</th><th class="n">L</th><th class="n">Rep</th></tr></thead><tbody>${t.teams.map(team=>`<tr><td class="wrap"><b>${esc(team.name)} · ${esc(team.manager)}</b>${window.OfficeManagers?`<br><small>${esc(window.OfficeManagers.blurb(team))}</small>`:''}<br><span class="dim">${team.roster.map(id=>esc(G.F(id)?.name||id)).join(', ')}</span></td><td class="n">${team.wins}</td><td class="n">${team.losses}</td><td class="n">${team.rep}</td></tr>`).join('')}</tbody></table></div>`;
+ const teams=`<div class="well"><table class="grid"><thead><tr><th>Stable and manager</th><th class="n">W</th><th class="n">L</th><th class="n">Rep</th></tr></thead><tbody>${t.teams.map(team=>`<tr><td class="wrap"><span class="who">${face('manager',team.id,team.manager)}<span><b>${esc(team.name)} · ${esc(team.manager)}</b>${window.OfficeManagers?`<br><small>${esc(window.OfficeManagers.blurb(team))}</small>`:''}<br><span class="dim">${team.roster.map(id=>esc(G.F(id)?.name||id)).join(', ')}</span></span></span></td><td class="n">${team.wins}</td><td class="n">${team.losses}</td><td class="n">${team.rep}</td></tr>`).join('')}</tbody></table></div>`;
  const news=t.reports.slice(0,4).flatMap(r=>r.lines).map(l=>`<li>${esc(l)}</li>`).join('');
  paint('s-split',
   win(esc(p.name)+' '+esc(D.DIVISIONS[div].name.toLowerCase())+' pyramid',pyr,{keep:'pyr',note:`Season ${s.season}, week ${s.week}`})+
