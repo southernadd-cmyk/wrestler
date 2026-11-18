@@ -134,7 +134,7 @@
    line(M,at,`${A.short} catches ${B.short} with a sudden cradle!`,'play',{big:true,pause:1});
    line(M,at,'ONE! TWO! THREE!','count',{big:true,pause:1});
    line(M,at+2,`That’s a fall to ${A.short}. ${M.stipScore.w}–${M.stipScore.f}${M.stipScore.w===M.stipScore.f?'. All square, and one fall left.':'.'}`,'crowd',{big:true,pause:2});
-   Mx.lift(M,5);M.bonus=(M.bonus||0)+3;M.nearfalls=(M.nearfalls||0)+1;
+   Mx.lift(M,5);M.bonus=(M.bonus||0)+3; // Successful falls are not near falls.
   }else{
    // The wrestler in control does the damage; whoever is ahead on momentum.
    const own=(M.mom||0)>=0,A=own?w:f,B=own?f:w,fn=SPOT[s.kind][M.stipSpots.indexOf(s)%2];
@@ -188,7 +188,7 @@
     line(M,st().at,`${w.short} has the chair, and ${f.short} has nothing. ${w.short} swings, misses, and ${f.short} rolls them up with a fistful of tights.`,'play',{big:true,pause:1});
     line(M,st().at,'ONE! TWO! THREE!','count',{big:true});
     line(M,st().at,`${f.name} steals it. ${w.short} was a swing away.`,'bell',{big:true});}],
-   lose_clean:['finisher_reversed',(M,w,f,st)=>{
+   lose_clean:['finisher',(M,w,f,st)=>{
     line(M,st().at,`${f.short} drives ${w.short} through the table with ${the(f.finisher)}!`,'play',{big:true,pause:1});
     line(M,st().at,'ONE! TWO! THREE!','count',{big:true});
     line(M,st().at,`${f.name} wins. There is wood all over the ringside area.`,'bell',{big:true});}]
@@ -206,7 +206,7 @@
     line(M,st().at,`${w.short} has ${f.short} beaten in the aisle, then stops to argue with a fan. ${f.short} rolls them up with a handful of tights.`,'play',{big:true,pause:1});
     line(M,st().at,'ONE! TWO! THREE!','count',{big:true});
     line(M,st().at,`${f.name} wins it in the aisle. ${w.short} cannot believe it.`,'bell',{big:true});}],
-   lose_clean:['finisher_reversed',(M,w,f,st)=>{
+   lose_clean:['finisher',(M,w,f,st)=>{
     line(M,st().at,`On the concrete floor by the bar, ${f.short} hits ${the(f.finisher)}.`,'play',{big:true,pause:1});
     line(M,st().at,'ONE! TWO! THREE!','count',{big:true});
     line(M,st().at,`${f.name} wins it by the bar. ${w.short} is going nowhere.`,'bell',{big:true});}]
@@ -220,7 +220,10 @@
     // Any fall the clock did not reach is taken first; then the deciding fall, as booked.
     for(const s of M.stipSpots||[])if(!s.done)fireSpot(M,s);
     line(M,step().at,`One fall each. This one decides it.`,'story',{who:'colour'});
-    return run.call(this,M,w,f,step);
+    const completed=run.call(this,M,w,f,step);
+    M.stipScore[key.startsWith('win')?'w':'f']++;
+    line(M,M.t,`Final falls: ${M.stipScore.w}–${M.stipScore.f}.`,'story',{who:'colour'});
+    return completed;
    }
    const F=FINISH[k]?.[key];
    if(!F)return run.call(this,M,w,f,step);
