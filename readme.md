@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.3.19" width="100%">
+  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.3.26" width="100%">
 </p>
 
-<p align="center"><strong>ISSUE v0.3.19</strong> &nbsp; • &nbsp; 18 NOVEMBER 2026 &nbsp; • &nbsp; RIVAL STABLES EDITION</p>
+<p align="center"><strong>ISSUE v0.3.26</strong> &nbsp; • &nbsp; 18 NOVEMBER 2026 &nbsp; • &nbsp; THE WHOLE SHOW EDITION</p>
 
 <p align="center">
   <strong><a href="https://southernadd-cmyk.github.io/wrestler/">ENTER THE OFFICE — PLAY THE GAME</a></strong>
@@ -23,6 +23,36 @@ The other promotions used to book whoever was next on the list. Now each booker 
 Each books the way they talk. **Gaz Pryor** at Dockside reaches for a grudge first and never waits long for the payoff. **Nina Sato** at Pulse wants new stars and loves a surprise on the night. **Harold Pike** at North Crown builds long title chases and pays them off the way the story says. **Vivian Croft** at Grand Union rewards the best workers and lets a good champion reign. **Territory → Booking sheets** shows what each of them has on the board, the heat behind it, the next date and how the last ones ended.
 
 And now they bring you in. A promoter who trusts you can offer one of your wrestlers a **programme**: a title chase, a grudge or a push up the card, with every date, opponent and finish in a single offer. Sign it and every date is booked. See it through and they will call you first next time; pull out of any match in it and you have walked out of the whole thing, which they remember. While your title programme runs, nobody else gets a shot at that belt. The week before the big night, the booker may ring with **a change of plan**: go along with it, argue for the original ending, or walk.
+
+Now the dates have something between them. Every signed programme has an opening, a middle and a payoff, and after Dennis signs the layout he asks **how you want to play this chapter**. Keep it **steady** and let the wrestling speak; **needle** the other wrestler on the microphone; or **gamble** on a bigger claim that may fall flat. What the crowd actually saw, how the promo went and whether the match delivered all count. The next meeting remembers the last one, the booking sheet keeps a dated record, and a programme that comes off particularly well earns its own reward. **The booker still owns the dates, the winner and the finish.** Your job is to make the story worth following.
+
+## THE SHOW GOES ON AFTER THE BELL
+
+*After-hours report*
+
+Dennis wants to know what happens when the result is in. Before the wrestlers go through the curtain, you can plan **a handshake, a stare-down, an attack after the bell, a lap of honour after a win**, or nothing. The other wrestler has a say too. A handshake can be turned down, and an attack they never agreed to can become a real fight, with a fine and an angry promoter waiting backstage.
+
+Then somebody gets the microphone. A winner can give credit or rub it in; a loser can take the result or blame the finish. They can demand a rematch or **call out** a champion, somebody with an old score to settle, or the name just above them on the card. A callout that lands becomes an actual offer the following week, with a letter from the booker. A bad one costs more than a little pride.
+
+There is another way to put a booker on the spot: **demand a title shot** when your wrestler is coming up the card and the belt is free, or **demand a bigger spot**. Nina Sato at Pulse might admire the nerve. Vivian Croft at Grand Union is less inclined to enjoy being told what to do. Either way, what they say on the microphone can change the next booking.
+
+## SOMEBODY IN YOUR CORNER
+
+*Rules and ringside*
+
+Once the plan is signed, a stablemate can go out with your wrestler. They can **stand in the corner**, **distract the referee**, take part in **a planned referee bump** or make **a run-in**, if the finish and the feud give Dennis a reason to allow it. The job goes on the match strip and happens at its appointed moment. A helpful second can lift the crowd and bring the two wrestlers closer. An over-eager one may be sent away by the referee; a bump can genuinely hurt the official.
+
+The referee has a notebook of their own now. **Disqualifications** can be the booked finish, or an unplanned end to a match when your wrestler gets out of hand and ignores the warning. The booker's result is still the script, but decisions at ringside can cost you that script, a share of the purse and the promoter's trust.
+
+You can also ask the promoter for **No disqualification, Submission only, Falls count anywhere** or **Two out of three falls**. Each booker has a favourite, and a main-event grudge gets a more sympathetic hearing than an ordinary opener. These are not labels on the poster: No DQ changes what the referee will allow, submission matches end with a submission, falls can happen out in the crowd, and two-out-of-three goes to a deciding fall. Every one has its own moments, fatigue and consequences.
+
+## THE TALK BEFORE THE FIGHT
+
+*Interview desk*
+
+Some matches are too important for the usual microphone exchange. Before a title bout, a blow-off or a programme's payoff, Dennis sends the wrestlers to **a contract signing** instead. You decide how to approach the table, what to do when the other wrestler starts talking and how to leave your name on the paper. You can get through with a handshake or turn the whole thing into a brawl. If the table goes over, your wrestler goes into the match sore and the room remembers it.
+
+For an ordinary promo, the person who wrestles need not be the one who talks. If a stablemate is clearly better on the microphone, Dennis offers you **a mouthpiece**. Their skill and their own voice carry the argument; the wrestler still owns every promise made on their behalf. A good talker can win the room for a quiet one, but the opponent may ask why they cannot speak for themselves, and an especially proud wrestler may not enjoy giving somebody else the credit.
 
 ## EVERYONE WANTS SOMETHING
 
@@ -274,8 +304,8 @@ You get **£2,250**, an empty locker room and four promoters with different idea
 1. Open the [game](https://southernadd-cmyk.github.io/wrestler/) and pick **New career**. It opens at **Roster → Free agents**. Check the signing fee, the weekly wage and what the wrestler does well before you sign anyone.
 2. Look under **Bookings → Offers**. The booker sets the spot on the card, the purse and the finish. You can negotiate the rate, ask for higher billing or try to protect a clean loss. Once a promoter trusts you, some offers are whole **programmes**: several dated matches signed as one. Don’t sit on a good offer for too long; a rival manager may get it instead.
 3. Read the **Office** inbox. Promoter requests, injuries and backstage problems can all need a decision. Set training in **Roster** and keep an eye on fatigue and upcoming fixtures.
-4. Press **Continue** when the paperwork is in order. A booked card takes you backstage with Dennis. From there you’ll go to the microphone and on to ringside. If the promo gets cut, you’ll go straight to the bell.
-5. Read the match report and check what ended up in **Territory → Results**. A good showing can build a programme. A promise you missed can come back to the office with you.
+4. Press **Continue** when the paperwork is in order. A booked card takes you backstage with Dennis. Set the running order, any programme chapter and the ringside plan. From there it is the microphone (perhaps with a mouthpiece), or a contract signing on a big night, and then the bell. If the promo gets cut, you go straight to the match.
+5. Read the match report, play out the plan **after the bell**, and decide what your wrestler says on the microphone. Then check **Territory → Results**. A good showing can build a programme; a callout can bring next week’s offer, and a promise you missed can follow you back to the office.
 
 The desktop layout keeps **Office**, **Roster**, **Bookings**, **Territory** and **Game** in the sidebar, with back and forward buttons at the top. Wrestler and free-agent lists are sortable. On a smaller screen the panels stack vertically.
 
@@ -337,7 +367,7 @@ Start with **Opening shot**, then take the mic back in **They hit back**. When t
 
 *Match report*
 
-Under the scoreboard, **the match strip** lays the running order along the clock: two lanes of beats, each sitting in the stretch of the match where it’s due, edged gold for your wrestler and white for theirs. A white playhead moves across as the bell time ticks on. A beat lights up when its window opens, turns green when it lands, amber when the wrestlers call an audible and red when the chance passes. A notch marks the moment it happened. Hover for the detail.
+Under the scoreboard, **the match strip** lays the running order along the clock: two lanes of beats, each sitting in the stretch of the match where it’s due, edged gold for your wrestler and white for theirs. A white playhead moves across as the bell time ticks on. A beat lights up when its window opens, turns green when it lands, amber when the wrestlers call an audible and red when the chance passes. A notch marks the moment it happened. **Vows** and planned **Ringside** jobs have their own places on the strip. Hover for the detail.
 
 The bout runs in original text commentary. Style, size, stamina, damage and position shape the action. A comeback needs a change of control. A dangerous spot needs the right setup. A near-fall needs a credible move and a cover. The booked winner remains the plan, with exceptional ringside decisions such as a stoppage handled explicitly.
 
@@ -355,7 +385,7 @@ The report compares the signed board with the match, starting with the strip as 
 
 The browser saves your career automatically, including backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.19. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). Every wrestler’s ambition is worked out the first time an older career is opened, and the bookers, rival managers and promotions’ books start from the next week played. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
+Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.26. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). Every wrestler’s ambition is worked out the first time an older career is opened, and the bookers, rival managers and promotions’ books start from the next week played. Older signed programmes begin recording their creative chapters from the match you are up to; the game does not invent earlier chapters. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
 
 To play locally, download the **whole repository** and open `index.html` in a modern browser. Keep the `assets/` directory alongside it: the page loads the JavaScript, CSS and portrait atlas as separate files. The simulation still runs in the browser, with no installer or build step. Google Fonts load when available, with system fallbacks.
 
@@ -370,7 +400,9 @@ To play locally, download the **whole repository** and open `index.html` in a mo
 | In-ring actions and events (nodes) | 969 |
 | Links between actions and events (transitions) | 6,152 |
 | Match story arcs | 25 |
-| Routes across the four booked finishes | 18 |
+| Routes across the six booked finishes | 26 |
+| Negotiable match stipulations | 4 |
+| Directions for each programme chapter | 3 |
 | Authored moves and move families | 336 / 20 |
 | Promo graph angles and situational variants | 21 / 183 |
 | Backstage situations and follow-ups | 36 / 11 |
@@ -428,6 +460,13 @@ node tests/booking-office.test.cjs
 node tests/rival-managers.test.cjs
 node tests/promotion-business.test.cjs
 node tests/programmes.test.cjs
+node tests/after-bell.test.cjs
+node tests/ringside.test.cjs
+node tests/disqualify.test.cjs
+node tests/stipulations.test.cjs
+node tests/signing-demands.test.cjs
+node tests/mouthpiece.test.cjs
+node tests/programme-arcs.test.cjs
 node tests/approaches.test.cjs
 node tests/world-soak.test.cjs
 node tests/start-poster.test.cjs
@@ -438,7 +477,7 @@ The suites cover the free-agent market and rival contracts, separate promotion l
 
 `node tools/world-sweep.cjs 1 100 48` plays a hundred careers for three seasons with every system switched on and reports anything that breaks; four of them run in CI as `world-soak`. `node tools/five-bouts.cjs` plays five consecutive meetings between the same two wrestlers in one career and writes a report of every argument, negotiation, match and memory; sample reports are in [docs/reports](docs/reports/).
 
-**Continuous integration:** All 37 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
+**Continuous integration:** Every `*.test.cjs` suite, including the modular-source structure check, runs automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
 
 ### Small print
 
@@ -452,6 +491,13 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
+| **v0.3.26** | The whole show edition. Each title chase, grudge and rising-star programme becomes a series of playable chapters: steady, needle or gamble, with a record of what came off and what the next meeting remembers. The final piece of the expanded match-planning and promo work. [Inside the engine](docs/architecture.md#v0326-additions--programme-arcs). |
+| **v0.3.25** | A better talker in your stable can take the microphone for a wrestler who needs help. The words are theirs, the promises still belong to the wrestler, and the heat and credit are shared afterwards. |
+| **v0.3.24** | Demands made after the bell can win a title shot or a better spot. Important matches get a three-round contract signing, which can end in a handshake or a table-flipping brawl. |
+| **v0.3.23** | Four stipulations to negotiate with the booker: No DQ, Submission only, Falls count anywhere and Two out of three falls. Different rules change the action, the finish and the cost to the wrestlers. |
+| **v0.3.22** | The referee starts enforcing the rules. Booked disqualification finishes join the graph; an unplanned DQ can spoil the contract, the purse and the result. |
+| **v0.3.21** | Send a stablemate to ringside with a job: stand in the corner, distract the referee, arrange a bump or run in. The match strip tracks the moment, and the consequences follow both wrestlers back to the office. |
+| **v0.3.20** | After the bell gets its own plan and microphone. Handshakes, stare-downs and attacks can go right or wrong; a callout can turn into a real booking the following week. |
 | **v0.3.19** | Rival stables edition. Every agency’s roster is on view, with wants, moods, contracts, fees and champions’ belts, and you can approach their wrestlers who want out, at the cost of a meeting, a fee and a manager’s grudge. The six managers get painted portraits. The old North Circuit approach is folded into the managers’ bids, which gain a loyalty bonus. |
 | **v0.3.18** | Booking office edition. Every wrestler wants something and reacts when they don’t get it. Each booker runs title chases, grudges and pushes, chooses finishes to serve them and sometimes changes their mind; their plans are on the new Booking sheets. Rival managers lobby the bookers, move and poach wrestlers, take spots you sit on and bid for yours. The four promotions compete for crowds and money, book desperately when struggling, go head to head on title nights and raid each other. Promoters offer your wrestlers whole programmes. Also: the match report’s flow panel, a harder-earned crowd, and an easier-to-read office. [Inside the engine](docs/architecture.md#v0318-additions). |
 | **v0.3.12** | Rivalry edition. Every pairing keeps a record of how their matches went, and rematches argue about it: claims backed by what happened, replies that take a position, five ways to answer, concessions, tests the match can check, and arguments that are settled or come back. Wrestlers can ask Dennis to change a beat when there is a real reason, and the other wrestler answers. Backstage notes no longer reach the microphone. [Design and results](docs/rivalries-v3-12.md). |
