@@ -43,7 +43,9 @@
   const info=id=>D.findWrestler(id)||{};
   // Same saved career => same planned world; distinct careers are no longer
   // locked into identical booking upsets, feuds and tie-breaks.
-  const worldHash=text=>hash(String(s.careerSeed??s.seed??0)+':'+text);
+  // Week 2 is also previewed on the unsaved welcome poster, where no career seed
+  // exists yet. Keep that advertised bill exact; vary each career's later shows.
+  const worldHash=text=>hash(String(week<=2?0:(s.careerSeed??s.seed??0))+':'+text);
   const pressure=id=>{const e=amb(id);return e?clamp((100-e.sat)*(.6+(info(id).ego??55)/100)):0;};
   const bond=(a,b)=>s.bonds?.pairs?.[[a,b].sort().join('|')]?.score||0;
   // A rival manager working the booker on this wrestler's behalf (v0.3.16).
