@@ -299,6 +299,10 @@ function renderInbox(){
  if(m){
   const mgr=managerFrom(m);
   letter=`<article class="letter">${mgr?`<div class="letter-face">${face('manager',mgr.id,mgr.manager,'portrait')}</div>`:''}<div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
+  if(Array.isArray(m.sections)&&m.sections.length){
+   letter+='<div class="report-sections">'+m.sections.map(section=>'<section><h3 class="section-h">'+esc(section.title)+'</h3><ul class="cons">'+(section.lines||[]).map(line=>'<li>'+esc(line)+'</li>').join('')+'</ul></section>').join('')+'</div>';
+   letter+='<div class="report-links"><button class="btn" data-go="territory">Territory and rankings</button><button class="btn" data-go="squad">Your roster</button><button class="btn" data-go="offers">Next bookings</button></div>';
+  }
   if(m.kind==='decision'){
    if(m.answer)letter+=`<div class="outcome"><b>You chose: ${esc(m.options.find(o=>o.id===m.answer)?.label)}</b><br>${esc(m.outcome)}</div>`;
    else letter+=`<div class="choices">${m.options.map(o=>`<button class="choice" data-answer="${o.id}" data-mid="${m.id}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></button>`).join('')}</div>`;
@@ -759,7 +763,7 @@ const NIGHT_STORE='the-office-v23-match'; // same key: preserve existing mid-mat
 function persistNight(){
  if(!night?.queue)return;
  try{const m=night.M?{...night.M,rState:night.M.r?.getState?.()}:null;
- localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,plan:night.plan,promo:night.promo,mouth:night.mouth||null,signing:night.signing||null,after:night.after||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
+ localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,signing:night.signing||null,after:night.after||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
@@ -783,7 +787,7 @@ function resumeNight(){
 }
 const SPEED={slow:{line:2600,pause:1100},normal:{line:1500,pause:750},fast:{line:520,pause:260},skip:{line:0,pause:0}};
 function startNight(){
- night={queue:S().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>c.id),i:0,speed:night?.speed||'normal',results:[]};
+ night={queue:S().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>c.id),i:0,speed:night?.speed||'normal',results:[],before:OfficeNightReport.capture(S())};
  openTV();night.stage='prep';prep();persistNight();
 }
 function current(){return S().card.find(c=>c.id===night.queue[night.i])}
@@ -1054,7 +1058,7 @@ function result(){
   if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed match layout against '+f.short+'.',f.id,-2,0,c.id+':sheet');
   G.save();
  }
- night.results.push({name:w.name,foe:f.name,stars:fin.stars});
+ night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,consequences:cons.map(x=>x.text)});
  night.after=window.OfficeAfter?OfficeAfter.begin(c,fin,night.plan?.after||'none'):null;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
@@ -1068,9 +1072,11 @@ function result(){
 }
 function endNight(){
  clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';
- const res=night?.results||[];clearNight();night={speed:night?.speed||'normal'};
- if(res.length)G.S.inbox.unshift({id:'mn'+Date.now(),week:S().week,season:S().season,read:false,kind:'info',from:'Your road agent',subject:'Match night report',body:res.map(r=>`${r.name} v ${r.foe}: ${starsText(r.stars)||'DUD'}`)});
+ const res=night?.results||[],before=night?.before||null,speed=night?.speed||'normal';clearNight();night={speed};
+ // Finish all weekly systems first; the report then reads their settled state.
  G.endWeek();
+ if(res.length)G.msg(OfficeNightReport.build(before,S(),res.map(r=>({...r,label:starsText(r.stars)||'DUD'}))));
+ G.save();
  if(S().over){render();return gameOver()}
  openMsg=null;past=[];ahead=[];route={s:'desk',id:null};render(true);toast(`Week ${S().week}. ${S().offers.length} ${plural(S().offers.length,'offer')} on the table.`);
 }
