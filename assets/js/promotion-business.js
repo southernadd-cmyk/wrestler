@@ -63,7 +63,7 @@
    // Two big nights the same week split the towns; the one with more buzz keeps more of its crowd.
    const clash=headToHead.includes(p.id)&&headToHead.length>1;
    const won=clash&&headToHead.every(id=>id===p.id||b[id].buzz<=f.buzz);
-   targets[p.id]={raw:base(p)+(quality-2.75)*12+(heat-50)*.1+(champHeat-55)*.1+paid*6+changed*4-(clash?(won?1:6):0)-(f.desperate?3:0)+circuitNoise,paid,changed,clash,won,quality};
+   targets[p.id]={raw:base(p)+(quality-2.75)*12+(heat-50)*.1+(champHeat-55)*.1+paid*6+changed*4-(clash?(won?1:6):0)-(f.desperate?3:0),paid,changed,clash,won,quality,noise:circuitNoise};
   }
   // The towns are shared: when the circuit as a whole is hot, each promotion's share of it shrinks.
   const excess=D.PROMOS.reduce((n,p)=>n+targets[p.id].raw-base(p),0)/D.PROMOS.length;
@@ -71,7 +71,7 @@
    const f=b[p.id],before=f.crowd,{raw,paid,changed,clash,won,quality}=targets[p.id];
    // Each promotion has its own level; a booking style is not a reason to sink for ever.
    const target=base(p)+(raw-excess*.7-base(p))*.6;
-   f.crowd=Math.round(clamp(f.crowd+(target-f.crowd)*.3,5,100));
+   f.crowd=Math.round(clamp(f.crowd+(target-f.crowd)*.3+targets[p.id].noise*.8,5,100));
    // Buzz returns towards a neutral audience rather than decaying to zero when no
    // title changes hands. Show quality and payoff nights still move the needle.
    const news=34+(quality-2.75)*7+paid*7+changed*4+(clash?(won?4:-3):0);
