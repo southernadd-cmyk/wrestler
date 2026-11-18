@@ -71,7 +71,7 @@
   const was=score(w.id,f.id),wonClean=c.finish==='win_clean'&&fin.outcome!=='nc'&&fin.outcome!=='double';
   // An arranged post-bell segment has first call on the scene; do not also invent an
   // independent betrayal that could contradict a planned handshake or beatdown.
-  if(wonClean&&was>=35&&(f.ego||50)>=72&&!c.afterPlan?.length&&
+  if(wonClean&&was>=35&&(f.ego||50)>=72&&!(c.afterPlan&&c.afterPlan!=='none')&&
     !G.S.bonds.done[c.id+':turn']){
    G.S.bonds.done[c.id+':turn']=1;
    shift(w.id,f.id,-45,'betrayal',f.short+' turned on '+w.short+' after losing clean.',c.id+':turned');
