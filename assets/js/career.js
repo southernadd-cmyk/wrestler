@@ -473,7 +473,7 @@ function applyResult(c,fin){
   if(c.programme)S.goals.programmeChapters=(S.goals.programmeChapters||0)+1;
  }
  const result=root.OfficeOutcome.interpret(c,fin);
- S.history.unshift({week:S.week,season:S.season,wid:w.id,name:w.name,rid:f.id,foe:f.name,pid:p.id,promoter:p.name,slot:c.slot,finish:c.finish,bookedFinish:result.bookedFinish,contractHonoured:result.contractHonoured,outcome:result.actualOutcome,stars:fin.stars,crowd:fin.crowd,purse:pay,tag:c.tag,notes:out.map(o=>o.text),log:(fin.log||[]).slice(-90)});
+ S.history.unshift({cid:c.id,week:S.week,season:S.season,wid:w.id,name:w.name,rid:f.id,foe:f.name,pid:p.id,promoter:p.name,slot:c.slot,finish:c.finish,bookedFinish:result.bookedFinish,contractHonoured:result.contractHonoured,outcome:result.actualOutcome,title:c.title?{...c.title}:null,stip:c.stip||null,programme:c.programme?{...c.programme}:null,stars:fin.stars,crowd:fin.crowd,purse:pay,tag:c.tag,notes:out.map(o=>o.text),log:(fin.log||[]).slice(-90)});
  S.history=S.history.slice(0,40);
  S.card=S.card.filter(x=>x.id!==c.id);
  save();return out;
