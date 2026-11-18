@@ -51,10 +51,10 @@
   const rows=(G.S.history||[]).filter(h=>h.wid===L.w&&h.rid===L.f&&h.cid!==skip).slice().reverse();
   for(const h of rows){
    const cid=h.cid||('legacy:'+h.season+':'+h.week);if(L.done[cid])continue;L.done[cid]=1;
-   const winner=h.outcome==='nc'?null:h.outcome==='double'?'w':String(h.finish||'').startsWith('win')?'w':'f';
+   const winner=h.outcome==='nc'?null:h.outcome==='double'?'w':h.outcome==='dq'?'f':String(h.finish||'').startsWith('win')?'w':'f';
    const promise=h.promo?.promise?.checked?{type:h.promo.promise.type,kept:!!h.promo.promise.kept,say:sayPromise(h.promo.promise.type,h.promo.tactic,null,G.F(L.f),G.W(L.w))}:null;
    L.meetings.push({cid,n:L.meetings.length+1,abs:(h.season-1)*16+(h.week||0),finish:h.finish||null,outcome:h.outcome||'booked',winner,
-    how:h.finish==='win_dirty'?'dirty':h.finish==='lose_protected'?'protected':'clean',cheat:h.finish==='win_dirty'?'w':null,cheatDetail:null,route:null,
+    how:h.outcome==='dq'||/_dq$/.test(h.finish||'')?'dq':h.finish==='win_dirty'?'dirty':h.finish==='lose_protected'?'protected':'clean',cheat:h.finish==='win_dirty'?'w':null,cheatDetail:null,route:null,
     minutes:null,stars:h.stars||0,counters:{w:0,f:0},late:{w:0,f:0},families:{w:[],f:[]},stamina:null,injured:{w:null,f:false},promise,commit:null,legacy:true});
   }
   L.meetings=L.meetings.slice(-LIMIT.meetings);
