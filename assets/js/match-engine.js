@@ -1418,8 +1418,16 @@ const Graph=(function makeGraph(){
    return;
   }
   if(M.t/M.len<.59)return;
-  if(p.position==='outside'){say(M,fill(M,noCountout(M)?'{W} and {F} choose to take the fight back inside.':'{W} and {F} beat the referee’s count back into the ring.'));p.position='standing';p.down=null;}
-  Psy.nearfall(M);
+  if(p.position==='outside'&&M.o.stip==='anywhere'){
+   // The match can be decided anywhere; the official counts on the floor.
+   const A=p.control==='f'?M.f:M.w,Df=A===M.w?M.f:M.w;
+   say(M,`${A.short} hooks ${Df.short}'s leg on the floor! Falls count anywhere tonight.`,'play');
+   say(M,`ONE! TWO! ${Df.short} kicks out just before three!`,'count');
+   M.nearfalls++;M.bonus+=8;mark(M,'nf',A===M.w);lift(M,4);
+  }else{
+   if(p.position==='outside'){say(M,fill(M,noCountout(M)?'{W} and {F} choose to take the fight back inside.':'{W} and {F} beat the referee’s count back into the ring.'));p.position='standing';p.down=null;}
+   Psy.nearfall(M);
+  }
   vic(M,'nearfall',.45);
   g.nearfallCount++;
   g.events.push({id:'scheduled_nearfall',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
@@ -2007,7 +2015,7 @@ function finishContext(M){
 }
 /* ---- v0.3.22 the referee: cheap shots can be seen, warned and, for your wrestler, end the match ---- */
 function dqHash(text){let h=2166136261;for(const ch of String(text)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return ((h>>>0)%10007)/10007;}
-function noDQ(M){return M.stip==='nodq'||M.o.stip==='nodq'||['win_dq','lose_dq'].includes(M.o.finish)||M.outcome!=='booked';}
+function noDQ(M){return ['nodq','anywhere'].includes(M.stip||M.o.stip)||['win_dq','lose_dq'].includes(M.o.finish)||M.outcome!=='booked';}
 function referee(M,side){
  if(noDQ(M)||M.stage!=='live')return;
  const ref=M.ref??={w:0,f:0};
