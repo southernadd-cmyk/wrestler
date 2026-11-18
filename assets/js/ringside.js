@@ -37,7 +37,8 @@
     if(j==='support')return true;
     if(hurt)return false;
     if(j==='refbump')return heat>=25||['win_dirty','lose_protected'].includes(c.finish);
-    if(j==='runin')return c.finish==='win_dirty';
+    // v0.3.23 In a no disqualification match a run-in is legal, whatever the booked finish.
+    if(j==='runin')return c.finish==='win_dirty'||c.stip==='nodq';
     return true;
    });
    return {id:x.id,name:x.name,short:x.short,bond:b,hurt,refuse,jobs,note:hurt?'Injured: corner work only.':b>=35?'A friend. They would do anything.':b<=-15?'They do not get on.':''};
@@ -90,7 +91,9 @@
   const roll=hash(k.cid+'|ref|'+k.job);
   let eject=k.job==='distract'?.22:k.job==='runin'?.3:k.job==='refbump'?.12:0;
   eject+=(strict(p)?.1:p?.personality==='showman'?-.08:0)+(60-(x.psych||60))/300;
-  eject=between(eject,.03,.6);k.eject=Math.round(eject*100);
+  eject=between(eject,.03,.6);
+  if(M.o.stip==='nodq'||M.stip==='nodq')eject=0; // nothing to throw anybody out for
+  k.eject=Math.round(eject*100);
   const at={who:null};
   if(k.job==='refbump'){
    // A bump is only dangerous if the wrestlers are careless with each other.

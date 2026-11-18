@@ -69,7 +69,7 @@ function play(seed,weeks=48,hook=null){
  if(hook)hook(root);
  const {OfficeData:D,OfficeGame:G,OfficeTerritory:T,OfficeApproaches:X,OfficeAfter:A,OfficeRingside:R}=root;
  const pick=n=>Math.floor(random()*n);
- const problems=[],stats={weeks:0,matches:0,programmes:0,approaches:0,joined:0,bids:0,sold:0,released:0,predicted:0,skipped:0,decisions:0,titleChanges:0,raids:0,struggling:0,afters:0,callouts:0,corners:0};
+ const problems=[],stats={weeks:0,matches:0,programmes:0,approaches:0,joined:0,bids:0,sold:0,released:0,predicted:0,skipped:0,decisions:0,titleChanges:0,raids:0,struggling:0,afters:0,callouts:0,corners:0,stipAsks:0,stips:0};
  G.fresh();const s=G.S;s.cash+=6000;
  const fin=()=>{const roll=random();return {stars:Math.round((1.5+random()*3)*4)/4,crowd:45+pick(40),crowdPeak:60+pick(35),outcome:roll<.02?'double':roll<.05?'nc':roll<.07?'dq':'booked',finishRoute:roll>=.05&&roll<.07?'dq_cheap':null,botches:pick(3),script:.6+random()*.4,
   adj:{purseMul:1,rep:0,trust:0,heat:0,morale:0},minutes:8+pick(14),plan:['brawl','story','technical','spots','safe'][pick(5)],stamina:20+pick(60),injury:random()<.05?1+pick(3):0,injuryPart:'shoulder',ignored:0,callsUsed:[],log:[]};};
@@ -93,6 +93,12 @@ function play(seed,weeks=48,hook=null){
    if(!m.answer){problems.push(label+': a decision could not be answered: '+m.dtype);break;}
    if(m.dtype==='agent_bid'&&(m.answer==='accept'||!G.W(m.args[0])))stats.sold++;
    stats.decisions++;
+  }
+  // Now and then, ask a promoter for a stipulation.
+  if(wk%4===0&&s.focus>0&&root.OfficeStips){
+   const o=s.offers.find(x=>!x.programme&&!x.stip&&!x.talk&&s.roster.some(w=>D.divisionOf(w)===D.divisionOf(x.rid)&&G.availableAt(w,x.eventAbs)&&(!x.wid||x.wid===w.id)));
+   const w=o&&s.roster.find(w=>D.divisionOf(w)===D.divisionOf(o.rid)&&G.availableAt(w,o.eventAbs)&&(!o.wid||o.wid===w.id));
+   if(w){const kinds=Object.keys(root.OfficeStips.STIPS);if(!G.talkMove(o.id,w.id,'ask:stip:'+kinds[pick(kinds.length)]).error){G.talkMove(o.id,w.id,'arg:'+['crowd','reliability','trade'][pick(3)]);stats.stipAsks++;if(o.stip)stats.stips++;}}
   }
   // Sign programmes; book this week's and next week's work.
   for(const o of s.offers.filter(x=>x.programme)){if(!G.book(o.id,o.wid))stats.programmes++;}
