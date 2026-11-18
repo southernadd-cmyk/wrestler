@@ -55,7 +55,7 @@
    const trust=[];
    for(const p of s.promoters||[]){
     const old=before.promoters?.[p.id],diff=n(p.trust)-n(old?.trust);
-    if(old&&diff)trust.push(p.name+' trust '+old.trust+' → '+p.trust+' ('+signed(diff)+') after this week’s results and settlement.');
+    if(old&&diff&&(results.some(r=>r.pid===p.id)||Math.abs(diff)>=3))trust.push(p.name+' trust '+old.trust+' → '+p.trust+' ('+signed(diff)+') after this week’s results and settlement.');
    }
    const evidence=results.flatMap(r=>r.consequences||[]).filter(t=>/trust|forgave the overrun|hasn.t forgiven/i.test(t)).slice(0,3);
    if(trust.length&&evidence.length)trust.push(...evidence.map(t=>'From the match report: '+t));
@@ -93,7 +93,7 @@
    }else if(prog.beats[step]?.done){
     programmeLines.push(name+', chapter '+(step+1)+'/'+prog.beats.length+' completed.');
    }
-   if(step===prog.beats.length-1&&prog.status)programmeLines.push(name+' '+prog.status+': '+(prog.text||'The final contracted match is complete.'));
+   if(prog.status&&(step===prog.beats.length-1||['broken','walked','collapsed'].includes(prog.status)))programmeLines.push(name+' '+prog.status+': '+(prog.text||'The final contracted match is complete.'));
   }
   add('Programmes',programmeLines.slice(0,8));
 
@@ -135,7 +135,7 @@
   const lede=n(best.stars)>=4?'A standout bout in the books. Here is what the week actually changed.':
    n(best.stars)>=3?'A solid night in the ring. Here is how the results affected the office.':
    'The card is in the books. There are consequences to account for before the next show.';
-  return {from:'Your road agent',subject:'Match night report — S'+season+' W'+week,kind:'info',body:[lede],sections,reportVersion:1};
+  return {from:'Your road agent',subject:'Match night report — S'+season+' W'+week,season,week,kind:'info',body:[lede],sections,reportVersion:1};
  }
  root.OfficeNightReport={capture,build};
 })(typeof window!=='undefined'?window:globalThis);
