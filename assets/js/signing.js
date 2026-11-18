@@ -98,7 +98,10 @@
   if(st.settled)return;st.settled=true;
   const w=G.W(st.w.id);
   if(st.brawl&&w){w.fatigue=clamp(w.fatigue+6);w.flags={...(w.flags||{}),pushThrough:true};}
-  const fd=G.feud?.(st.w.id,st.f.id);if(fd&&!fd.closed)fd.heat=clamp(fd.heat+Math.max(0,st.tension)+(st.brawl?6:0));
+  // The signing has already happened before the bell. Its heat enters the feud NOW,
+  // not a second time through the promo/result wrapper.
+  st.heatApplied=Math.max(0,st.tension)+(st.brawl?6:0);
+  const fd=G.feud?.(st.w.id,st.f.id);if(fd&&!fd.closed)fd.heat=clamp(fd.heat+st.heatApplied);
   G.save?.();
  }
  function result(st){
@@ -106,7 +109,7 @@
   const q=clamp(st.quality+(st.brawl?8:0),15,95);
   const crowdShift=Math.max(-6,Math.min(13,Math.round((q-50)/6)+(st.brawl?5:0)));
   const reaction=st.brawl?'The signing ended in a brawl. The building is buzzing.':st.shake==='shook'?'They shook hands. Somehow that makes it bigger.':q>=65?'The crowd bought every second of it.':'Signed, and not much more.';
-  return {v:3,live:true,format:'signing',speaker:st.w.short,opponent:st.f.short,styleName:'Contract signing',quality:q,crowdShift,heatDelta:clamp(Math.max(0,st.tension)+(st.brawl?4:0),0,16),moraleDelta:0,trustDelta:0,repDelta:0,
+  return {v:3,live:true,format:'signing',speaker:st.w.short,opponent:st.f.short,styleName:'Contract signing',quality:q,crowdShift,heatDelta:0,signingHeat:st.heatApplied??(Math.max(0,st.tension)+(st.brawl?6:0)),moraleDelta:0,trustDelta:0,repDelta:0,
    hook:cap(st.brawl?`They had to be pulled apart at the contract signing. ${st.f.short} has not forgotten.`:st.shake==='shook'?`They shook hands at the contract signing. Tonight, that is forgotten.`:`The contract is signed. Now it has to be won.`),
    promise:null,tactic:null,claim:null,path:st.picks.map(id=>({id})),speech:st.log.filter(e=>e.side==='w').map(e=>e.text),reply:'',reaction,
    dialogue:st.log.map(e=>({speaker:e.who||'Stage',line:e.text,kind:e.kind})),angle:'Contract signing: '+st.picks.join(', ')+(st.brawl?', brawl':'')+'.',brawl:st.brawl};
