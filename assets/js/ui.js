@@ -567,14 +567,20 @@ function promoterState(p,rep){
  if(p.trust<15)return {tone:'bad',text:'Not returning calls'};
  return {tone:'good',text:'Booking'};
 }
+// v0.3.17 How each promotion is doing as a business: crowds against its usual level, buzz, the books.
+function bizCell(p){
+ const v=window.OfficeBusiness?.view(p.id);if(!v)return '';
+ const arrow={up:'▲',down:'▼',flat:'▬'}[v.trend],tone=v.tone==='Struggling'?'bad':v.tone==='Hot'?'good':'';
+ return `<span class="${tone}"><b>${esc(v.tone)}</b> ${arrow}</span><br><span class="dim">Crowd ${v.crowd} (usual ${v.base}) · Buzz ${v.buzz} · ${money(v.money)}</span>`;
+}
 function renderPromoters(){
  const s=S();
- const table=`<div class="well"><table class="grid"><thead><tr><th>Promoter</th><th>Wants</th><th class="n">Reach</th><th>Trust</th><th class="n">Matches</th><th class="n">Best</th><th>Status</th></tr></thead><tbody>${s.promoters.map(p=>{
+ const table=`<div class="well"><table class="grid"><thead><tr><th>Promoter</th><th>Wants</th><th class="n">Reach</th><th>Business</th><th>Trust</th><th class="n">Matches</th><th class="n">Best</th><th>Status</th></tr></thead><tbody>${s.promoters.map(p=>{
   const state=promoterState(p,s.rep);
-  return `<tr><td><span class="who">${face('booker',p.id,p.voice)}<span><b>${esc(p.name)}</b><small>${esc(p.desc)}. Booker ${esc(p.voice)}.</small></span></span></td><td>${esc(planFor(p).name)}</td><td class="n">${att(p.reach)}</td><td>${bar(p.trust,p.trust<30?'danger':p.trust>=65?'':'warn')} ${p.trust}</td><td class="n">${p.matches}</td><td class="n"><span class="stars">${p.best?starsText(p.best):'–'}</span></td><td><span class="${state.tone}">${esc(state.text)}</span></td></tr>`;
+  return `<tr><td><span class="who">${face('booker',p.id,p.voice)}<span><b>${esc(p.name)}</b><small>${esc(p.desc)}. Booker ${esc(p.voice)}.</small></span></span></td><td>${esc(planFor(p).name)}</td><td class="n">${att(p.reach)}</td><td class="wrap">${bizCell(p)}</td><td>${bar(p.trust,p.trust<30?'danger':p.trust>=65?'':'warn')} ${p.trust}</td><td class="n">${p.matches}</td><td class="n"><span class="stars">${p.best?starsText(p.best):'–'}</span></td><td><span class="${state.tone}">${esc(state.text)}</span></td></tr>`;
  }).join('')}</tbody></table></div>`;
- const cards=s.promoters.map(p=>`<article class="phone-card"><div class="who">${face('booker',p.id,p.voice)}<div><b>${esc(p.name)}</b><small>${esc(p.voice)} · ${esc(p.desc)}</small></div></div><div class="phone-card-line"><span>${esc(planFor(p).name)}</span><b>Trust ${p.trust}</b></div><small>Reach ${p.reach} · ${p.matches} matches · Best ${p.best?starsText(p.best):'–'}</small><small>${esc(promoterState(p,s.rep).text)}</small></article>`).join('');
- paint('s-full',win('Promoters',phoneList(table,cards)+'<p class="dim" style="margin-top:8px">Trust rises when you deliver what a promoter asked for and falls when you pull out or break a finish.</p>',{keep:'proms'}));
+ const cards=s.promoters.map(p=>`<article class="phone-card"><div class="who">${face('booker',p.id,p.voice)}<div><b>${esc(p.name)}</b><small>${esc(p.voice)} · ${esc(p.desc)}</small></div></div><div class="phone-card-line"><span>${esc(planFor(p).name)}</span><b>Trust ${p.trust}</b></div><small>Reach ${p.reach} · ${p.matches} matches · Best ${p.best?starsText(p.best):'–'}</small><small>${bizCell(p)}</small><small>${esc(promoterState(p,s.rep).text)}</small></article>`).join('');
+ paint('s-full',win('Promoters',phoneList(table,cards)+'<p class="dim" style="margin-top:8px">Trust rises when you deliver what a promoter asked for and falls when you pull out or break a finish. A promotion drawing well reaches more people and pays better; one that is struggling pays less and books desperately.</p>',{keep:'proms'}));
 }
 // v0.3.15 Each booker's plans: the storylines on the board and how the last ones ended.
 function renderSheets(){
@@ -582,7 +588,7 @@ function renderSheets(){
  const p=D.PROMOS.find(x=>x.id===route.id)||D.PROMOS[0],v=B.view(p.id);
  const tab=x=>`<button class="btn sm ${x.id===p.id?'go':''}" data-go="sheets" data-id="${x.id}" aria-pressed="${x.id===p.id}">${esc(x.name)}</button>`;
  const tabs=`<div class="row" role="group" aria-label="Promotion" style="margin-bottom:10px">${D.PROMOS.map(tab).join('')}</div>`;
- const head=`<div class="row" style="flex-wrap:nowrap;gap:12px;margin-bottom:10px">${face('booker',p.id,p.voice,'portrait')}<div><b>${esc(p.voice)}</b>, booker at ${esc(p.name)}<p class="dim" style="margin:4px 0 0">${esc(v.blurb)}</p></div></div>`;
+ const head=`<div class="row" style="flex-wrap:nowrap;gap:12px;margin-bottom:10px">${face('booker',p.id,p.voice,'portrait')}<div><b>${esc(p.voice)}</b>, booker at ${esc(p.name)}<p class="dim" style="margin:4px 0 0">${esc(v.blurb)}</p>${window.OfficeBusiness?`<p style="margin:4px 0 0">${bizCell(p)}</p>`:''}</div></div>`;
  const card=x=>{
   const step=x.next?(x.next.kind==='payoff'||x.next.kind==='blowoff'?`${x.type==='title'?'Title match':'The last match'}: ${weekLabel(x.next.at)}`:`Match ${x.played+1} of ${x.total}: ${weekLabel(x.next.at)}`):'';
   const rec=x.record.length?`<ul class="cons">${x.record.map(r=>`<li>${esc(r.winner)} beat ${esc(r.loser)}</li>`).join('')}</ul>`:'<p class="dim">Nothing played yet.</p>';

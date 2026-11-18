@@ -50,6 +50,9 @@
   for(const p of D.PROMOS){pools[p.id]={};for(const div of D.DIVISION_ORDER)
    pools[p.id][div]=T.promotionRank(p.id,div,t,s).filter(w=>!w.owned&&T.contracted(s,w.id));}
   const row=(pid,div,id)=>pools[pid][div].find(w=>w.id===id)||null;
+  // A promotion in trouble books desperately: shorter chases, more surprises, belts that move (v0.3.17).
+  const desperate=pid=>!!t.business?.[pid]?.desperate;
+  const cfgFor=p=>{const c=styleOf(p);return desperate(p.id)?{...c,titleLen:Math.max(2,c.titleLen-1),swerve:Math.min(.45,c.swerve*1.5)}:c;};
   const pref=(p,w,salt)=>w.score+(w.heat||50)*.3+pressure(w.id)*.15+lobby(p.id,w.id)*.15+(p.personality==='cold'?(w.ring||60)*.3:0)+hash(salt+':'+w.id)*styleOf(p).noise;
   const cast=new Set(Object.values(st.promos).flatMap(x=>x.live.flatMap(y=>[y.a,y.b])));
   const per={};const count=(pid,div)=>per[pid+':'+div]||0;
@@ -72,9 +75,9 @@
 
   // 2. New storylines: one at a time per division, in the order this booker likes them.
   for(const p of D.PROMOS)for(const div of D.DIVISION_ORDER){
-   const pr=st.promos[p.id],cfg=styleOf(p),pool=pools[p.id][div];
+   const pr=st.promos[p.id],cfg=cfgFor(p),pool=pools[p.id][div];
    const live=pr.live.filter(x=>x.div===div);
-   if(live.length>=cfg.max||week<(pr.next[div]??week))continue;
+   if(live.length>=cfg.max||week<(pr.next[div]??week)-(desperate(p.id)?1:0))continue;
    const free=pool.filter(w=>!cast.has(w.id));
    for(const type of cfg.prefer){
     if(live.some(x=>x.type===type))continue;
@@ -86,7 +89,7 @@
    }
   }
   function propose(type,p,div,pool,free,wk){
-   const cfg=styleOf(p),id=`${p.id}-${div}-${wk}-${type}`,base={id,pid:p.id,div,type,start:wk,delays:0};
+   const cfg=cfgFor(p),id=`${p.id}-${div}-${wk}-${type}`,base={id,pid:p.id,div,type,start:wk,delays:0};
    if(type==='title'){
     const holder=t.titles?.[p.id]?.[div]?.holder;
     if(!holder||!pool.some(w=>w.id===holder)||cast.has(holder))return null;
@@ -95,9 +98,10 @@
      .map(w=>({w,v:pref(p,w,id)+(amb(w.id)?.kind==='title'?25:0)+pressure(w.id)*.3+lobby(p.id,w.id)*.4+(w.slot==='main'?10:0)}))
      .sort((x,y)=>y.v-x.v||x.w.id.localeCompare(y.w.id))[0]?.w;
     if(!who)return null;
-    const beats=[];for(let k=0;k<cfg.titleLen-1;k++)beats.push({at:wk+k,kind:'build'});
-    beats.push({at:wk+cfg.titleLen-1,kind:'payoff'});
-    return {...base,a:who.id,b:holder,heat:clamp(30+pressure(who.id)*.2+(who.heat||50)*.2),beats};
+    const {at,counter}=payoffWeek(p,wk,wk+cfg.titleLen-1);
+    const beats=[];for(let k=wk;k<at;k++)beats.push({at:k,kind:'build'});
+    beats.push({at,kind:'payoff'});
+    return {...base,a:who.id,b:holder,heat:clamp(30+pressure(who.id)*.2+(who.heat||50)*.2),beats,counter};
    }
    if(type==='grudge'){
     let pair=null;
@@ -128,9 +132,22 @@
    }
    return null;
   }
+  // Title nights and the circuit: some bookers put theirs on the same week as a rival's, to take its crowd;
+  // the careful ones move theirs out of the way.
+  function payoffWeek(p,wk,planned){
+   const rivals=D.PROMOS.filter(x=>x!==p).flatMap(x=>(st.promos[x.id]?.live||[]).filter(y=>y.type==='title').map(y=>({pid:x.id,at:y.beats.at(-1).at})));
+   if(p.personality==='aggressive'||p.personality==='showman'||desperate(p.id)){
+    const hit=rivals.filter(r=>r.at>wk&&r.at<=planned+1).sort((x,y)=>Math.abs(x.at-planned)-Math.abs(y.at-planned)||x.pid.localeCompare(y.pid))[0];
+    if(hit)return {at:hit.at,counter:hit.pid};
+    return {at:planned,counter:null};
+   }
+   let at=planned;while(rivals.some(r=>r.at===at))at++;
+   return {at,counter:null};
+  }
   function announce(p,story){
    const belt=D.belt(p.id,story.div),pay=story.beats.at(-1).at;
-   if(story.type==='title')return `${p.name}: ${p.voice} has ${name(story.a)} on the road to ${name(story.b)} and the ${belt.name}. The title match is planned for ${weekLabel(pay)}.`;
+   if(story.type==='title'){const rival=story.counter&&D.PROMOS.find(x=>x.id===story.counter);
+    return `${p.name}: ${p.voice} has ${name(story.a)} on the road to ${name(story.b)} and the ${belt.name}. The title match is planned for ${weekLabel(pay)}${rival?`, the same week as ${rival.name}’s. It is going head to head`:''}.`;}
    if(story.type==='grudge')return `${p.name}: ${name(story.a)} and ${name(story.b)} will settle it over ${story.beats.length} matches, ending ${weekLabel(pay)}.`;
    return `${p.name}: ${p.voice} is building ${name(story.a)} towards a match with ${name(story.b)} in ${weekLabel(pay)}.`;
   }
@@ -139,7 +156,7 @@
   const stories=D.PROMOS.flatMap(p=>st.promos[p.id].live.map(story=>({p,story}))).sort((x,y)=>x.story.start-y.story.start||x.story.id.localeCompare(y.story.id));
   for(const {p,story} of stories){
    const beat=story.beats.find(b=>!b.done);if(!beat||beat.at!==week)continue;
-   const cfg=styleOf(p),pool=pools[p.id][story.div],k=story.beats.indexOf(beat);
+   const cfg=cfgFor(p),pool=pools[p.id][story.div],k=story.beats.indexOf(beat);
    const A=row(p.id,story.div,story.a),B=row(p.id,story.div,story.b);
    let opp=null;
    if(beat.kind==='build'){
@@ -170,7 +187,7 @@
     const held=t.titles?.[p.id]?.[story.div]||{};
     let chance=p.personality==='aggressive'?(story.heat>=55?.75:.45):p.personality==='showman'?.55:p.personality==='cold'?((A.ring||60)>(B.ring||60)+2?.5:.2):(story.heat>=55?.85:.35);
     // A long reign wears on most crowds; Grand Union's booker sees it as a reason to keep the belt where it is.
-    chance+=(held.defences>=4&&p.personality!=='cold'?.15:0)+(amb(A.id)?.kind==='title'?.05:0);
+    chance+=(held.defences>=4&&p.personality!=='cold'?.15:0)+(amb(A.id)?.kind==='title'?.05:0)+(desperate(p.id)?.15:0);
     let change=hash(story.id+':payoff')<chance;
     if(hash(story.id+':swerve')<cfg.swerve)change=!change;
     winner=change?A.id:B.id;
