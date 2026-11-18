@@ -65,7 +65,7 @@ function booksChart(){
 }
 // Every match the stable worked this season, by week and wrestler.
 function seasonChart(){
- const s=S(),h=s.history.filter(x=>x.season===s.season);if(!h.length)return chartEmpty('Ratings for this season appear here as the stable works.');
+ const s=S(),h=(s.seasonResults||s.history).filter(x=>x.season===s.season);if(!h.length)return chartEmpty('Ratings for this season appear here as the stable works.');
  const by={};for(const m of h.slice().reverse())(by[m.wid]??={name:m.name,pts:[]}).pts.push([m.week,m.stars,`W${m.week} ${m.name} v ${m.foe}: ${starsText(m.stars)||'DUD'}`]);
  const lines=Object.values(by).map((l,i)=>({pts:l.pts,col:CH_COLS[i%CH_COLS.length],label:l.name.split(' ').slice(-1)[0],dots:true}));
  const avg=h.reduce((t,m)=>t+m.stars,0)/h.length;
