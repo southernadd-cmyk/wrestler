@@ -86,7 +86,20 @@ function offer(o={}){const s=G.S,x={id:'so-'+(n++),pid:'dock',rid:'silas',slot:'
   else{
    assert.equal(M.final.finishRoute,X.FINISH[stip][finish][0],'the rivalry reads a route with the same meaning');
    assert.ok(end.includes(winner.short)||end.includes(winner.name),'the booked winner wins: '+end);
-   if(stip==='submission')assert.doesNotMatch(text.split(X.STIPS.submission.announce)[1].split('\n').filter(l=>/ONE! TWO! THREE!|^THREE!$/.test(l)).join(),/THREE/,'no pinfalls in a submission match');
+   if(stip==='submission'){
+    const live=M.log.filter(l=>l.kind!=='story'||l.text!==X.STIPS.submission.announce).filter(l=>l.kind!=='bell');
+    assert.doesNotMatch(live.map(l=>l.text).join('\n'),
+     /\b(?:cover|cradle|backslide|roll[- ]?up|pinfall|kicks? out|shoulder up|near.?fall)\b|ONE! TWO!/i,
+     'submission-only cannot narrate any live pin or nearfall');
+    assert.ok(!M.graph.events.some(e=>/^(cover|early_cover|near_kickout|counter_rollup|scheduled_nearfall)$/.test(e.id)),
+     'submission-only cannot enter a pin graph node');
+    assert.equal(M.nearfalls,0,'a submission escape is not a statistical pin nearfall');
+   }
+   if(['nodq','submission','anywhere'].includes(stip)){
+    assert.doesNotMatch(M.log.map(l=>l.text).join('\n'),
+     /referee (?:is up to six|has reached six|reaches eight|begins the count|starts counting|is still counting)|before the referee reaches ten|beat the referee.s count|count is broken/i,
+     stip+' cannot narrate a normal countout');
+   }
   }
  }
  assert.ok(played>=40,'played '+played);
