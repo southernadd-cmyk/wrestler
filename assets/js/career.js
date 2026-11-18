@@ -20,7 +20,7 @@ const uid=p=>p+'-'+S.week+'-'+Math.floor(rand()*1e9).toString(36);
 function fresh(){
  S={v:22,seed:(Date.now()%100000)+7,season:1,week:1,cash:2250,rep:22,focus:2,monthReview:null,coach:null,futureBookings:[],circuitReviews:[],business:{training:0,negotiated:0,meetings:0,kept:0,broken:0},roster:[],free:D.TALENT.map(t=>({...t})),
   promoters:D.PROMOS.map(p=>({...p,blacklist:0,matches:0,best:0})),offers:[],card:[],feuds:{},inbox:[],history:[],
-  goals:{},recentTypes:{},books:[],over:null};
+  goals:{},recentTypes:{},books:[],seasonResults:[],over:null};
  msg({from:'The office',subject:'The keys are yours',kind:'info',body:[
   'You have £2,250, an empty locker room and four promoters who might return your calls.',
   'Sign talent from Roster. Book them on Bookings. Press Continue and you go to the ring with them.',
@@ -36,7 +36,8 @@ function fresh(){
  makeOffers();save();return S;
 }
 function goalList(){const n=S.season;return [
- {id:'rep',text:`Reach reputation ${40+(n-1)*15}`,done:S.rep>=40+(n-1)*15},
+ n<=5?{id:'rep',text:`Reach reputation ${Math.min(100,40+(n-1)*15)}`,done:S.rep>=Math.min(100,40+(n-1)*15)}:
+ {id:'rep',text:'Work two programme chapters this season',done:(S.goals?.programmeChapters||0)>=2},
  {id:'union',text:'Get a booking with Grand Union',done:!!S.goals.union},
  {id:'four',text:'Produce a four-star match',done:!!S.goals.four},
  {id:'solvent',text:'Finish the season in the black',done:S.cash>=0}
@@ -44,7 +45,7 @@ function goalList(){const n=S.season;return [
 function hydrate(x){
  if(!x || ![20,21,22].includes(x.v) || !Array.isArray(x.roster)||!Array.isArray(x.offers))return null;
  if(!Array.isArray(x.free))x.free=[];
- x.v=22;x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];
+ x.v=22;x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,stars:h.stars}));
  for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
  root.OfficeTerritory?.prepare(x);
  root.OfficeWorldV4?.activate(x);
@@ -436,6 +437,13 @@ function applyResult(c,fin){
   else if(fd.heat>=40)add(`A rivalry is building with ${f.short} (heat ${fd.heat}). Rematch offers likely.`,1);
   else add(`Rivalry with ${f.short}: heat ${fd.heat}. Another good match and the promoters will want a rematch.`,0);}
  if(fin.stars>=4)S.goals.four=true;
+ // Keep a compact season ratings ledger when detailed commentary rolls off after 40 matches.
+ S.seasonResults??=[];
+ if(!S.seasonResults.some(x=>x.cid&&x.cid===c.id)){
+  S.seasonResults.push({cid:c.id,season:S.season,week:S.week,wid:w.id,stars:fin.stars});
+  S.seasonResults=S.seasonResults.slice(-120);
+  if(c.programme)S.goals.programmeChapters=(S.goals.programmeChapters||0)+1;
+ }
  const result=root.OfficeOutcome.interpret(c,fin);
  S.history.unshift({week:S.week,season:S.season,wid:w.id,name:w.name,rid:f.id,foe:f.name,pid:p.id,promoter:p.name,slot:c.slot,finish:c.finish,bookedFinish:result.bookedFinish,contractHonoured:result.contractHonoured,outcome:result.actualOutcome,stars:fin.stars,crowd:fin.crowd,purse:pay,tag:c.tag,notes:out.map(o=>o.text),log:(fin.log||[]).slice(-90)});
  S.history=S.history.slice(0,40);
