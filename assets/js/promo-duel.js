@@ -175,8 +175,9 @@
   const drilled=Object.entries(st.practice).sort((a,b)=>b[1]-a[1])[0];
   st.readLines=[READ.room[st.read.room],READ.feud[st.read.feud?'yes':st.read.record?'record':'no'],READ.opp[st.read.opp],READ.voice[st.read.voice],
    ...(drilled&&!m?[PRACTICE[drilled[0]]]:[]),
-   ...(m?['{S} is doing the talking for {W} tonight. {S} is the better talker. {W} gets the credit, and the blame.']:[])].map(t=>fmt(t,st).replace(/\{S\}/g,m?.short||''));
-  push(st,'host',core.dialogue[0].line,'interviewer');
+   ...(m?['{S} is doing the talking for {W} tonight. {S} is the better talker. {W} gets the credit, and the blame.']:[]),
+   ...(opts.arc?[opts.arc.read]:[])].map(t=>fmt(t,st).replace(/\{S\}/g,m?.short||''));
+  push(st,'host',opts.arc?.prompt||core.dialogue[0].line,'interviewer');
   return st;
  }
  const own=(st,slot)=>{if(st.speaker)return null;const line=D.VOICE_PACKS?.[st.w.id]?.promo?.[slot];return line&&rng(st.seed,'own|'+slot+'|'+(st.ownUsed?.[slot]||0))<2/3?line:null;};
