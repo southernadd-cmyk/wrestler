@@ -156,11 +156,28 @@
  const riskWord=r=>r<=0?'Safe':r===1?'Steady':r===2?'Risky':'Very risky';
  const meterWord=m=>m>=25?'The room is yours':m>=8?'With you':m>-8?'Even':m>-25?'With them':'The room is theirs';
  const fmt=(text,st)=>String(text).replace(/\{W\}/g,st.w.short).replace(/\{F\}/g,st.f.short).replace(/\{VENUE\}/g,st.venue).replace(/\{P\}/g,st.promoterVoice).replace(/\{PROMO\}/g,st.promoterName);
- const push=(st,side,line,kind,swing)=>st.log.push({speaker:side==='w'?(st.speaker?st.speaker.name:st.w.name):side==='f'?st.f.name:side==='host'?'Interviewer':side==='crowd'?'Crowd':'',side,line:String(line).charAt(0).toUpperCase()+String(line).slice(1),kind,swing:swing||0});
+ // Core match claims belong to the client even when the mouthpiece voices them.
+ // Opening jokes belong to the actual speaker; only client claims are reframed.
+ function clientClaim(st,line){
+  if(!st.speaker)return String(line);
+  const n=st.w.short;
+  return String(line)
+   .replace(/\bYou beat me\b/gi,'You beat '+n)
+   .replace(/\bI(?:'m|’m)\b/gi,n+' is')
+   .replace(/\bI(?:'ve|’ve)\b/gi,n+' has')
+   .replace(/\bI(?:'ll|’ll)\b/gi,n+' will')
+   .replace(/\bI(?:'d|’d)\b/gi,n+' would')
+   .replace(/\bI am\b/gi,n+' is').replace(/\bI have\b/gi,n+' has')
+   .replace(/\bI don't\b/gi,n+" doesn't").replace(/\bI do\b/gi,n+' does')
+   .replace(/\bI (know|think|want|say|promise|believe|remember|need|love|hate|make|try)\b/gi,(_,v)=>n+' '+({know:'knows',think:'thinks',want:'wants',say:'says',promise:'promises',believe:'believes',remember:'remembers',need:'needs',love:'loves',hate:'hates',make:'makes',try:'tries'}[v.toLowerCase()]||v))
+   .replace(/\bI\b/g,n).replace(/\bmy\b/gi,n+'’s').replace(/\bme\b/gi,n).replace(/\bmine\b/gi,n+'’s');
+ }
+ const push=(st,side,line,kind,swing,clientVoice=false)=>{const text=clientVoice?clientClaim(st,line):String(line);
+  st.log.push({speaker:side==='w'?(st.speaker?st.speaker.name:st.w.name):side==='f'?st.f.name:side==='host'?'Interviewer':side==='crowd'?'Crowd':'',side,line:text.charAt(0).toUpperCase()+text.slice(1),kind,swing:swing||0});};
  function begin(c,w,f,rival,sheet,p,opts={}){
   const m=opts?.mouth||null;
   // The mouthpiece's skill is what the room hears; the words are still about the wrestler.
-  const wTalk=m?{...w,mic:m.mic||40,psych:Math.max(w.psych||45,m.psych||45)}:w;
+  const wTalk=m?{...w,mic:m.mic||40,psych:m.psych||45}:w;
   const core=Core.begin(c,wTalk,f,rival,sheet);
   const fmic=f.mic||Math.round((f.psych||50)*.55+(f.heat||50)*.45);
   const st={v:5,cid:c.id,seed:core.seed+'|duel',core,round:0,fRaw:{id:f.id,ego:f.ego||50,pro:f.pro||60,heat:f.heat||45},angle:null,
@@ -171,10 +188,14 @@
   st.start=st.meter;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
   if(m)st.read.voice=voice(m); // the room knows the wrestler; the voice is the mouthpiece's
-  st.practice={};for(const [k,v] of Object.entries(w.micWork||{}))if(Math.floor(v)>0)st.practice[k]=Math.min(2,Math.floor(v));
+  // Rehearsal and voice fit belong to the person actually speaking, not the client.
+  const practised=m?root.OfficeGame?.W?.(m.id)||m:w;
+  st.practice={};for(const [k,v] of Object.entries(practised.micWork||{}))if(Math.floor(v)>0)st.practice[k]=Math.min(2,Math.floor(v));
   const drilled=Object.entries(st.practice).sort((a,b)=>b[1]-a[1])[0];
-  st.readLines=[READ.room[st.read.room],READ.feud[st.read.feud?'yes':st.read.record?'record':'no'],READ.opp[st.read.opp],READ.voice[st.read.voice],
-   ...(drilled&&!m?[PRACTICE[drilled[0]]]:[]),
+  st.readLines=[READ.room[st.read.room],READ.feud[st.read.feud?'yes':st.read.record?'record':'no'],READ.opp[st.read.opp],
+   // Dennis describes the person holding the microphone here, rather than attributing their style to the client.
+   fmt(READ.voice[st.read.voice],m?{...st,w:st.speaker}:st),
+   ...(drilled?[fmt(PRACTICE[drilled[0]],m?{...st,w:st.speaker}:st)]:[]),
    ...(m?['{S} is doing the talking for {W} tonight. {S} is the better talker. {W} gets the credit, and the blame.']:[]),
    ...(opts.arc?[opts.arc.read]:[])].map(t=>fmt(t,st).replace(/\{S\}/g,m?.short||''));
   push(st,'host',opts.arc?.prompt||core.dialogue[0].line,'interviewer');
@@ -258,7 +279,7 @@
   (st.fits??=[]).push({stage,id,fit});
   let said=false,replied=false,stumbled=false;
   for(const d of fresh){
-   if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);push(st,'w',d.line,step.landed?'strong':'uneven',got);
+   if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);push(st,'w',d.line,step.landed?'strong':'uneven',got,true);
     if(!step.landed)push(st,'stage',fluff(st),'fluff');crowdSays(st,got,key);continue;}
    if(d.speaker==='Crowd'&&d.kind==='reaction'&&!step.landed&&!stumbled){stumbled=true;continue;} // replaced by the fluff above
    if(d.speaker===st.f.name){replied=true;theirTurn(st,d.line,key,step.landed,fit);
@@ -282,12 +303,12 @@
    const cs=st.core.case,P=cs.push||{};st.pushed=id==='leave'?'leave':'argue';
    if(id==='firm'){
     const ok=roll(st,2,'firm',st.meter>=8?.08:0),d=swing(st,ok?7:-7);
-    push(st,'w',P.firm?.line||'I know what I did.',ok?'strong':'uneven',d);
+    push(st,'w',P.firm?.line||'I know what I did.',ok?'strong':'uneven',d,true);
     st.core.metrics.cred+=ok?2:-3;cs.resolution=ok?'defended':'unresolved';cs.followup=ok?'Stood firm, and it held.':'Stood firm, and it did not hold.';
     theirTurn(st,ok?P.firm?.ok:P.firm?.fail,'firm',ok,0);crowdSays(st,d,'firm');rec.landed=ok;
    }else if(id==='revise'){
     const d=swing(st,3);
-    push(st,'w',P.revise?.line||'Fine. Tonight neither of us does.','strong',d);
+    push(st,'w',P.revise?.line||'Fine. Tonight neither of us does.','strong',d,true);
     st.core.metrics.cred+=3;cs.resolution='reframed';
     if(!cs.commit)cs.commit={kind:'nocheat',node:'clean',say:'win without cheating',label:'Promise to do it without cheating',hint:'Follows from what you just said. Kept only if you do not cheat tonight.'};
     cs.followup='Revised the charge: neither of them cheats tonight.';
@@ -340,5 +361,5 @@
    unresolved:st.round===0?((st.core.cases||[]).find(c=>c.continuation)?.reminder||null):st.core.case?.continuation?st.core.case.reminder:null};
  }
  const result=st=>st?.stage==='done'?st.result:null;
- root.OfficeMic={ROUNDS,PUSH,HOOK,FLUFF,CROWD,begin,choose,choices,view,result,meterWord,riskWord,openFit,answerFit,pushFit,READ,ANSWER_FIT};
+ root.OfficeMic={ROUNDS,PUSH,HOOK,FLUFF,CROWD,begin,choose,choices,view,result,clientClaim,meterWord,riskWord,openFit,answerFit,pushFit,READ,ANSWER_FIT};
 })(typeof window!=='undefined'?window:globalThis);

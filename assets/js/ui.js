@@ -65,8 +65,8 @@ function booksChart(){
 }
 // Every match the stable worked this season, by week and wrestler.
 function seasonChart(){
- const s=S(),h=s.history.filter(x=>x.season===s.season);if(!h.length)return chartEmpty('Ratings for this season appear here as the stable works.');
- const by={};for(const m of h.slice().reverse())(by[m.wid]??={name:m.name,pts:[]}).pts.push([m.week,m.stars,`W${m.week} ${m.name} v ${m.foe}: ${starsText(m.stars)||'DUD'}`]);
+ const s=S(),h=(s.seasonResults||s.history).filter(x=>x.season===s.season);if(!h.length)return chartEmpty('Ratings for this season appear here as the stable works.');
+ const by={};for(const m of h.slice().sort((a,b)=>a.week-b.week))(by[m.wid]??={name:m.name||G.W(m.wid)?.name||m.wid,pts:[]}).pts.push([m.week,m.stars,`W${m.week} ${m.name||G.W(m.wid)?.name||m.wid} v ${m.foe||'opponent'}: ${starsText(m.stars)||'DUD'}`]);
  const lines=Object.values(by).map((l,i)=>({pts:l.pts,col:CH_COLS[i%CH_COLS.length],label:l.name.split(' ').slice(-1)[0],dots:true}));
  const avg=h.reduce((t,m)=>t+m.stars,0)/h.length;
  return chart({h:120,x:[.5,16.5],y:[0,5],lines,yTicks:[[0,'0'],[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5★']],xTicks:[1,4,8,12,16].map(k=>[k,'W'+k]),
@@ -643,7 +643,9 @@ function renderPromoters(){
 // v0.3.15 Each booker's plans: the storylines on the board and how the last ones ended.
 function yourProgrammes(p){
  const v=window.OfficeProgrammes?.view(p.id);if(!v||!(v.live.length||v.done.length))return '';
- const line=x=>{const next=x.beats.find(b=>!b.done&&!b.missed),a=window.OfficeProgrammeArcs?.record(x.id)?.arc,last=a?.timeline?.at(-1);return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}${a?`<small class="arc-recap">${esc(a.conclusion||window.OfficeProgrammeArcs.band(a.momentum))}${last?' · '+esc(last.recap):''}</small>`:''}</li>`;};
+ const line=x=>{const next=x.beats.find(b=>!b.done&&!b.missed),a=window.OfficeProgrammeArcs?.record(x.id)?.arc,last=a?.timeline?.at(-1);
+  const chapters=a?.timeline?.length?`<details class="arc-history"><summary>Read ${a.timeline.length} chapter${a.timeline.length===1?'':'s'}</summary><ol>${a.timeline.slice().sort((u,v)=>u.step-v.step).map(e=>`<li><b>${esc(e.chapter||'Chapter '+(e.step+1))}</b> · ${esc(e.recap)}${e.claim==='broken'?'<small class="bad">Claim not delivered</small>':e.claim==='kept'?'<small class="good">Claim backed up</small>':''}</li>`).join('')}</ol></details>`:'';
+  return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}${a?`<small class="arc-recap">${esc(a.conclusion||window.OfficeProgrammeArcs.band(a.momentum))}${last?' · '+esc(last.recap):''}</small>`:''}${chapters}</li>`;};
  return `<h3 class="section-h">Your programmes here</h3><ul class="cons">${[...v.live,...v.done.slice(0,3)].map(line).join('')}</ul>`;
 }
 function renderSheets(){
@@ -686,8 +688,9 @@ function renderResults(){
  paint('s-full',win('Results',`<h3 class="section-h">Season ${s.season} so far</h3>${seasonChart()}${phoneList(table,cards)}`,{keep:'res',note:`${s.history.length} ${plural(s.history.length,'match','matches')}`}));
 }
 function renderGame(){
+ const saved=G.saveStatus(),status=saved.ok===false?'Save FAILED — recent changes are not stored. Export your career immediately.':saved.ok===true?'Last saved successfully in this session at '+new Date(saved.lastSaved).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'.':'No save confirmation this session.';
  paint('s-split even',
-  win('Save and load',`<p class="lede">Your career saves automatically in this browser after every action. Export a save file to move it to another device or browser.</p><div class="row"><button class="btn" data-act="export">Export save</button><button class="btn" data-act="import">Import save</button></div><h3 class="section-h" style="margin-top:20px">Start over</h3><p class="dim">Overwrites the current career.</p><button class="btn red" data-act="newgame">Start a new career</button>`)+
+  win('Save and load',`<p class="lede">Your career saves automatically in this browser after every action. Export a save file to move it to another device or browser.</p><p class="${saved.ok===false?'bad':'dim'}" role="status">${esc(status)}</p><div class="row"><button class="btn" data-act="export">Export save</button><button class="btn" data-act="import">Import save</button></div><h3 class="section-h" style="margin-top:20px">Start over</h3><p class="dim">Overwrites the current career.</p><button class="btn red" data-act="newgame">Start a new career</button>`)+
   win('How a week works',`<ol style="margin:0;padding-left:1.3em;display:grid;gap:8px"><li>Read the inbox. Some messages need a decision before you can continue.</li><li>Set training for each wrestler. Rest anyone who is tired.</li><li>Book wrestlers onto offers. Promoters set the finish; negotiate the fee, billing or a protected loss using a management meeting.</li><li>Press Continue. Choose the match plan and your wrestler’s promo approach, hear both wrestlers speak, then work the match with up to three calls from ringside.</li><li>Wages and costs are paid, and the next week’s offers arrive.</li></ol><p class="dim" style="margin-top:12px">At ringside, Space pauses and keys 1 to 6 make calls.</p>`,{h:'h3'})
  );
 }
@@ -1084,6 +1087,10 @@ function endNight(){
 }
 
 /* ======================= EVENTS ======================= */
+function showSaveStatus(){
+ const el=$('#saveWarning'),status=G.saveStatus();
+ if(el)el.hidden=status.ok!==false;
+}
 function startApp(screen){$('#title').hidden=true;$('#app').hidden=false;past=[];ahead=[];route={s:screen,id:null};render(true)}
 document.addEventListener('click',e=>{
  if(e.target.closest('select,option'))return;
@@ -1243,8 +1250,9 @@ function summary(saved,top){
 
 /* ---------- boot ---------- */
 window.OfficeUI={get night(){return night},go};
+window.addEventListener('office-save-status',showSaveStatus);
 window.addEventListener('DOMContentLoaded',()=>{
- posterBill();
+ posterBill();showSaveStatus();
  const d=$('#modal');d.addEventListener('close',()=>{
   const oid=d.dataset.talkoid;if(oid&&S()){const o=S().offers.find(x=>x.id===oid);if(o?.talk?.step==='start'){o.talk=null;G.save();}}
   delete d.dataset.talkoid;if(S()&&!$('#app').hidden)render();

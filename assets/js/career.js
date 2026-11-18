@@ -8,6 +8,8 @@ const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const r10=n=>Math.round(n/10)*10;
 const money=n=>(n<0?'−':'')+'£'+Math.abs(Math.round(n)).toLocaleString('en-GB');
 let S=null;
+let storageState={ok:null,lastSaved:null};
+function saveStatus(){return {...storageState};}
 
 function rand(){S.seed=(Math.imul(S.seed||1932,1664525)+1013904223)>>>0;return S.seed/4294967296}
 const ri=(a,b)=>Math.floor(rand()*(b-a+1))+a;
@@ -18,7 +20,7 @@ const uid=p=>p+'-'+S.week+'-'+Math.floor(rand()*1e9).toString(36);
 function fresh(){
  S={v:22,seed:(Date.now()%100000)+7,season:1,week:1,cash:2250,rep:22,focus:2,monthReview:null,coach:null,futureBookings:[],circuitReviews:[],business:{training:0,negotiated:0,meetings:0,kept:0,broken:0},roster:[],free:D.TALENT.map(t=>({...t})),
   promoters:D.PROMOS.map(p=>({...p,blacklist:0,matches:0,best:0})),offers:[],card:[],feuds:{},inbox:[],history:[],
-  goals:{},recentTypes:{},books:[],over:null};
+  goals:{},recentTypes:{},books:[],seasonResults:[],over:null};
  msg({from:'The office',subject:'The keys are yours',kind:'info',body:[
   'You have £2,250, an empty locker room and four promoters who might return your calls.',
   'Sign talent from Roster. Book them on Bookings. Press Continue and you go to the ring with them.',
@@ -34,7 +36,8 @@ function fresh(){
  makeOffers();save();return S;
 }
 function goalList(){const n=S.season;return [
- {id:'rep',text:`Reach reputation ${40+(n-1)*15}`,done:S.rep>=40+(n-1)*15},
+ n<=5?{id:'rep',text:`Reach reputation ${Math.min(100,40+(n-1)*15)}`,done:S.rep>=Math.min(100,40+(n-1)*15)}:
+ {id:'rep',text:'Work two programme chapters this season',done:(S.goals?.programmeChapters||0)>=2},
  {id:'union',text:'Get a booking with Grand Union',done:!!S.goals.union},
  {id:'four',text:'Produce a four-star match',done:!!S.goals.four},
  {id:'solvent',text:'Finish the season in the black',done:S.cash>=0}
@@ -42,7 +45,7 @@ function goalList(){const n=S.season;return [
 function hydrate(x){
  if(!x || ![20,21,22].includes(x.v) || !Array.isArray(x.roster)||!Array.isArray(x.offers))return null;
  if(!Array.isArray(x.free))x.free=[];
- x.v=22;x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];
+ x.v=22;x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));
  for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
  root.OfficeTerritory?.prepare(x);
  root.OfficeWorldV4?.activate(x);
@@ -54,7 +57,18 @@ function load(){
  }
  return null;
 }
-function save(){try{localStorage.setItem(STORE,JSON.stringify(S))}catch(e){}}
+function save(){
+ try{
+  localStorage.setItem(STORE,JSON.stringify(S));
+  storageState={ok:true,lastSaved:Date.now()};
+ }catch(e){
+  // Never report that a change is safe if storage is blocked or full.
+  storageState={ok:false,lastSaved:storageState.lastSaved};
+ }
+ if(typeof root.dispatchEvent==='function'&&typeof root.Event==='function')
+  root.dispatchEvent(new root.Event('office-save-status'));
+ return storageState.ok;
+}
 function hasSave(){try{return !!JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(PRIOR_STORE)||localStorage.getItem(LEGACY_STORE))?.v}catch(e){return false}}
 function wipe(){try{localStorage.removeItem(STORE)}catch(e){}}
 
@@ -423,6 +437,13 @@ function applyResult(c,fin){
   else if(fd.heat>=40)add(`A rivalry is building with ${f.short} (heat ${fd.heat}). Rematch offers likely.`,1);
   else add(`Rivalry with ${f.short}: heat ${fd.heat}. Another good match and the promoters will want a rematch.`,0);}
  if(fin.stars>=4)S.goals.four=true;
+ // Keep a compact season ratings ledger when detailed commentary rolls off after 40 matches.
+ S.seasonResults??=[];
+ if(!S.seasonResults.some(x=>x.cid&&x.cid===c.id)){
+  S.seasonResults.push({cid:c.id,season:S.season,week:S.week,wid:w.id,name:w.name,foe:f.name,stars:fin.stars});
+  S.seasonResults=S.seasonResults.slice(-120);
+  if(c.programme)S.goals.programmeChapters=(S.goals.programmeChapters||0)+1;
+ }
  const result=root.OfficeOutcome.interpret(c,fin);
  S.history.unshift({week:S.week,season:S.season,wid:w.id,name:w.name,rid:f.id,foe:f.name,pid:p.id,promoter:p.name,slot:c.slot,finish:c.finish,bookedFinish:result.bookedFinish,contractHonoured:result.contractHonoured,outcome:result.actualOutcome,stars:fin.stars,crowd:fin.crowd,purse:pay,tag:c.tag,notes:out.map(o=>o.text),log:(fin.log||[]).slice(-90)});
  S.history=S.history.slice(0,40);
@@ -588,5 +609,5 @@ function seasonEnd(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
 })(typeof window!=='undefined'?window:globalThis);

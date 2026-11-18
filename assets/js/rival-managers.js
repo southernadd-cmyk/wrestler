@@ -28,7 +28,7 @@
  function state(t=G.S?.territory){
   if(!t)return null;
   const a=t.agents&&typeof t.agents==='object'?t.agents:(t.agents={});
-  a.lobby??={};a.rel??={};a.seen??=[];a.wanted??={};a.lastPoach??=-99;a.lastBid??=-99;a.lastRumour??=-99;a.lastTurn??=-99;
+  a.lobby??={};a.rel??={};a.seen??=[];a.wanted??={};a.claimed??=[];a.lastPoach??=-99;a.lastBid??=-99;a.lastRumour??=-99;a.lastTurn??=-99;
   return a;
  }
  const rel=(a,pid,team)=>a.rel[pid]?.[team]??50;
@@ -78,6 +78,8 @@
  function turn(s,t,week,reports){
   const a=state(t),w=s?.worldV4;if(!a||!w||a.lastTurn===week)return;
   a.lastTurn=week;
+  // Claimed offers are real circuit bookings, then leave the queue after their show.
+  a.claimed=a.claimed.filter(c=>c.at>week);
   // Grudges against you fade, slowly.
   if(week%8===0)for(const k in a.grudge||{})a.grudge[k]=Math.max(0,a.grudge[k]-1);
   const teamOf=id=>w.contracts[id]?.owner==='ai'?w.contracts[id].agencyId:null;
@@ -193,13 +195,26 @@
     .sort((x,y)=>y[1].w-x[1].w||x[0].localeCompare(y[0]))[0];
    if(!rival)continue;
    const [id,l]=rival,team=t.teams.find(x=>x.id===l.by),p=D.PROMOS.find(x=>x.id===o.pid);
+   if(!team||!p||!T.contracted(s,id)||!T.contracted(s,o.rid))continue;
+   // A manager can take a slot only when the real replacement can be placed on the circuit.
+   // Do not claim participants already tied to an AI programme or a player contract.
+   const at=Math.max(week+1,o.eventAbs),booked=new Set(
+    [...(s.card||[]),...(s.futureBookings||[])].filter(c=>c.eventAbs===at).flatMap(c=>[c.wid,c.rid]));
+   const claimed=new Set(a.claimed.filter(c=>c.at===at).flatMap(c=>[c.a,c.b]));
+   const storyCast=new Set(Object.values(t.booking?.promos||{}).flatMap(pr=>(pr.live||[]).flatMap(st=>[st.a,st.b])));
+   if([id,o.rid].some(x=>booked.has(x)||claimed.has(x)||storyCast.has(x)))continue;
+   const title=!!o.title;
+   if(title&&(t.titles?.[o.pid]?.[div]?.holder!==o.rid
+     ||root.OfficeProgrammes?.claims?.(s,t,at)?.belts?.has(o.pid+':'+div)))continue;
    // A manager you have poached from is keener to take something back.
    const chance=(l.w-40)/100*profile(l.by).push*(o.title?.5:1)*(1+(a.grudge?.[l.by]||0)*.3);
    if(hash(o.id+':'+week)>=chance)continue;
    s.offers=s.offers.filter(x=>x!==o);
+   a.claimed.push({id:o.id,pid:o.pid,div,a:id,b:o.rid,at,title,by:team.id});
+   // A stolen spot must appear on an actual card, not just in the letter.
    l.w=Math.min(90,l.w+10);nudge(a,o.pid,l.by,2);
    G.msg?.({from:'Your road agent',subject:`${team.manager} got there first`,kind:'info',body:[
-    `The ${o.title?'title match':D.SLOTS[o.slot].name.toLowerCase()} at ${p.name} you were sitting on has gone. ${team.manager} talked ${p.voice} into giving it to ${name(id)} instead.`,
+    `The ${o.title?'title match':D.SLOTS[o.slot].name.toLowerCase()} at ${p.name} you were sitting on has gone. ${team.manager} talked ${p.voice} into booking ${name(id)} against ${name(o.rid)} in ${'S'+Math.floor((at-1)/16+1)+' W'+((at-1)%16+1)} instead.`,
     'Offers with a reply-by date are not held for ever. If you want a spot that matters, take it while it is on the table.']});
    return;
   }

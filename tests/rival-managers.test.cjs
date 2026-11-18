@@ -62,8 +62,16 @@ const turn=(s,wk)=>{const reports=[];M.state(s.territory).lastTurn=-1;M.turn(s,s
  assert.ok(s.offers.some(o=>o.id==='new-one'),'never an offer you have only just seen');
  const note=s.inbox.find(m=>/got there first/.test(m.subject));
  assert.ok(note&&note.body[0].includes(rival.name)&&note.body[0].includes('Harold Pike'),'the road agent says who took it');
+ const claimed=a.claimed[0];
+ assert.ok(claimed&&claimed.a===rival.id&&claimed.b===rid,'taking a spot reserves the two real participants');
+ const predicted=B.decide(s,s.territory,claimed.at).bill;
+ assert.ok(predicted.some(m=>m.a.id===rival.id&&m.b.id===rid),'the booker puts the replacement on the future circuit bill');
+ G.endWeek();
+ assert.ok(s.territory.lastResults.matches.some(m=>m.a===rival.id&&m.b===rid),
+  'the actual circuit match must happen, not just the inbox letter');
+ assert.ok(!a.claimed.some(c=>c.at<=T.absWeek(s)),'fulfilled replacement is removed from the queue');
  // Your own named offers and a weak lobby are left alone.
- s.offers=held.map(o=>({...o,id:o.id+'-x'}));a.seen=s.offers.map(o=>o.id);a.lobby.crown[rival.id].w=40;
+ s.offers=held.map(o=>({...o,id:o.id+'-x'}));a.seen=s.offers.map(o=>o.id);a.lobby.crown={[rival.id]:{by:team,w:40,kind:'push',week:wk}};
  M.takeSpot(s,s.territory,a,wk);assert.equal(s.offers.length,10,'a half-hearted lobby takes nothing');
  console.log('PASS spots left on the table can go to a rival manager');
 }

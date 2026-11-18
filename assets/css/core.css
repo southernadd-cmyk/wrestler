@@ -486,3 +486,9 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .letter .report-sections .section-h{margin:0 0 7px;font-size:1.05em}
 .letter .report-sections .cons{margin:0;padding-left:1.25em;display:grid;gap:5px}
 .letter .report-links{margin-top:20px;display:flex;flex-wrap:wrap;gap:8px}
+
+/* Save failures must be visible everywhere, not hidden in the Game screen. */
+.save-warning{position:fixed;z-index:170;top:58px;left:12px;right:12px;max-width:940px;margin:auto;padding:10px 14px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;border:3px solid #f2c12e;background:#570b18;color:#fff;box-shadow:4px 4px 0 rgba(0,0,0,.65);font:700 18px/1.25 var(--px)}
+.save-warning b{color:#ffe68e}
+.save-warning .btn{margin-left:auto}
+@media (max-width:680px){.save-warning{top:48px;left:4px;right:4px;padding:8px;font-size:16px}}

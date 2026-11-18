@@ -69,6 +69,28 @@
    cast.delete(story.a);cast.delete(story.b);
   };
 
+  // 0. A rival manager who took an expired player offer must actually work that slot.
+  // This is part of the pure predicted bill, so the start poster and next week's circuit agree.
+  for(const c of t.agents?.claimed||[]){
+   if(c.at!==week)continue;
+   const a=row(c.pid,c.div,c.a),b=row(c.pid,c.div,c.b);
+   const p=D.PROMOS.find(x=>x.id===c.pid);
+   const title=!!c.title&&t.titles?.[c.pid]?.[c.div]?.holder===c.b&&!claim.belts.has(c.pid+':'+c.div);
+   if(!p||!a||!b||busy.has(c.a)||busy.has(c.b)||cast.has(c.a)||cast.has(c.b)
+      ||(c.title&&!title)||count(c.pid,c.div)>=MAX_CARD){
+    notes.push((p?.name||c.pid)+': the replacement booking for '+name(c.a)+' against '+name(c.b)+' could not go ahead.');
+    continue;
+   }
+   const i=pIndex[c.pid],j=dIndex[c.div],salt=c.id+':rival-spot:'+week;
+   const winner=pref(p,a,salt)+(title?10:0)>=pref(p,b,salt)?a.id:b.id;
+   add({i,j,pid:c.pid,div:c.div,a,b,title,winner,stars:title?3:2.5,
+    line:p.name+': '+name(winner)+' defeated '+name(winner===a.id?b.id:a.id)+
+     '. '+(title?'The title was on the line.':'The replacement match went ahead after the manager secured the spot.'),
+    rivalSpotId:c.id});
+   cast.add(c.a);cast.add(c.b);
+   notes.push(p.name+': '+name(c.a)+' v '+name(c.b)+' is booked after '+(t.teams.find(x=>x.id===c.by)?.manager||'a rival manager')+' won the vacant spot.');
+  }
+
   // 1. Storylines whose people are gone, or whose belt has moved, are dropped.
   for(const p of D.PROMOS)for(const story of st.promos[p.id].live.slice()){
    const ok=row(p.id,story.div,story.a)&&row(p.id,story.div,story.b)&&(story.type!=='title'||t.titles?.[p.id]?.[story.div]?.holder===story.b);

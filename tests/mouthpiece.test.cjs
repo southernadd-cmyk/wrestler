@@ -72,3 +72,21 @@ const play=(st,pick=0)=>{while(st.stage!=='done'){const o=Mic.choices(st);Mic.ch
  assert.ok(r.bond>r.before.bond&&r.bond<r.before.bond+8,'still a little closer');
  console.log('PASS afterwards: a bond, an ego, and a mouthpiece who gets noticed');
 }
+
+
+// The better talker's rehearsal belongs to them; the client does not loan them mic practice.
+{
+ const s=career(),w=G.W('rex'),speaker=G.W('lyra');
+ w.micWork={people:2};
+ speaker.micWork={proof:2};
+ const c=contract(),f=G.F(c.rid),p=G.P(c.pid);
+ const st=Mic.begin(c,w,f,null,null,p,{mouth:MP.pick(c,w,'lyra')});
+ assert.equal(st.practice.proof,2,'the speaker prepared the facts');
+ assert.ok(!st.practice.people,'the client’s separate rehearsal is not inherited');
+ assert.ok(st.readLines.some(l=>l.includes(speaker.short+' has been drilling the facts')));
+ assert.ok(!st.readLines.some(l=>l.includes(w.short+' has been practising talking')));
+ assert.match(Mic.clientClaim(st,'I beat you last time, '+f.short+'.'),new RegExp('^'+w.short+' beat you last time'));
+ assert.match(Mic.clientClaim(st,'You beat me last time, '+f.short+'.'),new RegExp('You beat '+w.short+' last time'));
+ assert.match(Mic.clientClaim(st,'I will defend my belt.'),new RegExp(w.short+' will defend '+w.short+'’s belt'));
+}
+console.log('PASS the mouthpiece practises for themselves and attributes client match claims correctly');
