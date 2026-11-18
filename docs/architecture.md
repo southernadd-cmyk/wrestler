@@ -49,6 +49,8 @@ Original portrait data was extracted to a PNG. All relative CSS paths resolve fr
 
 Run `npm test` or `node tests/run-tests.cjs`. Individual suites still run with `node tests/name.test.cjs`. The regression harness reads and combines actual modular JS files in browser order, so there is no separate stale copy of the engine.
 
+`tests/world-soak.test.cjs` plays four seeded careers for three seasons with every system on (ambitions, storylines, managers, the business, programmes, approaches, bids, releases) and checks after every week that nobody is booked twice, contracts and rosters agree, belts are valid, programme dates are still booked, numbers stay in range, the save holds no corrupted values, and the start screen predicted the circuit card exactly. `tests/_world.cjs` is the shared player and checker; `node tools/world-sweep.cjs <first seed> <count> <weeks>` runs it across many careers by hand. Any state that `decide()` reads must not change between the prediction and the real week: belts are settled before planning (`settledTitles()`), and an offered programme's claim is kept with its expiry week in `territory.programmes.offered`, not read from the offers list.
+
 GitHub Actions continues to execute every `tests/*.test.cjs` suite. Always require green CI before merging a structural change.
 
 ## Backstage layout

@@ -35,7 +35,8 @@ console.log('PASS a programme is offered: '+prog.type+', '+prog.beats.length+' m
 
 // 2. While a title programme is on offer or running, the booker keeps the belt for it.
 {
- const t=s.territory,wk=prog.beats[0].at;
+ // While the offer is still open (its reply-by week): an unsigned offer that has run out claims nothing.
+ const t=s.territory,wk=o.expiresAbs;
  const title=s.offers.find(x=>x.programme?.type==='title')||null;
  if(title){
   const {pid,div}=title.title;
@@ -44,6 +45,8 @@ console.log('PASS a programme is offered: '+prog.type+', '+prog.beats.length+' m
   assert.ok(!plan.state.promos[pid].live.some(x=>x.type==='title'&&x.div===div),'no rival title chase for that belt');
   assert.ok(!plan.bill.some(m=>m.pid===pid&&m.div===div&&m.title),'and no title defences that could move it first');
   assert.ok(P.claims(s,t).cast.has(prog.beats.at(-1).rid),'the champion is spoken for');
+  // Once the offer has run out unsigned, it holds nothing: the same answer the week before as on the week itself.
+  assert.ok(!P.claims(s,t,o.expiresAbs+1).belts.has(pid+':'+div),'an expired offer frees the belt');
   console.log('PASS the booker holds the belt for your title programme');
  }
 }

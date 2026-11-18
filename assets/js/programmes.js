@@ -21,12 +21,15 @@
  function state(t=G.S?.territory){
   if(!t)return null;
   const st=t.programmes&&typeof t.programmes==='object'?t.programmes:(t.programmes={});
-  st.live??=[];st.done??=[];st.lastOffer??=-99;st.n??=0;
+  st.live??=[];st.done??=[];st.offered??=[];st.lastOffer??=-99;st.n??=0;
   return st;
  }
  // Belts and wrestlers a programme has a claim on, live or on offer: the booking office leaves them alone.
- function claims(s,t){
-  const st=t?.programmes,live=[...(st?.live||[]),...(s?.offers||[]).filter(o=>o.programme).map(o=>o.programme)];
+ // An offered programme's claim is kept here, with the week its offer runs out, rather than read from the
+ // offers list: the list is trimmed at the start of a week, before the bookers plan, so reading it would
+ // make the start screen's prediction (taken the week before) disagree with the real week.
+ function claims(s,t,week=null){
+  const st=t?.programmes,live=[...(st?.live||[]),...(st?.offered||[]).filter(x=>week==null||x.until>=week)];
   return {belts:new Set(live.filter(x=>x.type==='title').map(x=>x.pid+':'+x.div)),
    cast:new Set(live.flatMap(x=>x.beats.filter(b=>!b.done).map(b=>b.rid)))};
  }
@@ -97,6 +100,7 @@
   if(!options.length||hash('prog-week:'+week)>.6)return null;
   const o=build(s,t,options[0],week);if(!o)return null;
   st.lastOffer=week;s.offers.unshift(o);
+  st.offered.push({id:o.programme.id,pid:o.pid,div:o.programme.div,type:o.programme.type,until:o.expiresAbs,beats:o.programme.beats.map(b=>({rid:b.rid,done:false}))});
   const p=options[0].p,w=options[0].w,pay=o.programme.beats.at(-1);
   G.msg({from:`${p.voice}, ${p.name}`,subject:`A programme for ${w.short}`,kind:'info',body:[
    o.programme.type==='title'?`“I want ${w.name} in the title picture. A win or two to get there, then ${name(pay.rid)} for the ${D.belt(p.id,o.programme.div).name}.”`
@@ -126,7 +130,8 @@
    if(b.at===G.abs())s.card.push(c);else s.futureBookings.push(c);
   }
   s.offers=s.offers.filter(x=>x!==o);
-  state(s.territory).live.push({...prog,signed:G.abs()});
+  const st=state(s.territory);
+  st.live.push({...prog,signed:G.abs()});st.offered=st.offered.filter(x=>x.id!==prog.id);
   if(prog.pid==='union')s.goals.union=true;
   const p=G.P(prog.pid);
   G.msg({from:`${p.voice}, ${p.name}`,subject:'We have a programme',kind:'info',body:[`“Good. ${w.short} starts ${weekLabel(prog.beats[0].at)}. See it through and I won’t forget it.”`,
@@ -222,6 +227,7 @@
     }
    }
   }
+  st.offered=st.offered.filter(x=>x.until>=now);
   offer(s,t,now);
  }
  const originalAnswer=G.answer;
