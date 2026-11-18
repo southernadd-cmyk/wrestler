@@ -116,7 +116,7 @@ function offer(o={}){const s=G.S,x={id:'so-'+(n++),pid:'dock',rid:'silas',slot:'
  assert.equal(warned+dq,0,'nobody is warned or thrown out in a no DQ match');
  // A booked DQ in two out of three falls still comes after a fall each.
  const M=run({w,f,p:G.P('crown'),slot:'main',minutes:20,finish:'win_dq',stip:'falls',feudHeat:40,plan:{game:'story',leash:'script',talk:'none'},seed:61});
- if(M.outcome==='booked'){assert.equal(M.stipScore.w+M.stipScore.f,2);assert.match(M.log.map(l=>l.text).join(' '),/disqualified/);}
+ if(M.outcome==='booked'){assert.equal(M.stipScore.w+M.stipScore.f,3,'a DQ finish can decide the third fall');assert.equal(M.stipScore.w,2,'the booked DQ winner takes the deciding fall');assert.match(M.log.map(l=>l.text).join(' '),/disqualified/);}
  // A run-in is legal in a no DQ match, whatever the finish.
  G.sign('lyra');const c={id:'nd-1',pid:'dock',rid:'silas',wid:'rex',slot:'main',minutes:12,finish:'lose_clean',stip:'nodq',feudHeat:10,eventAbs:G.abs()};
  assert.ok(root.OfficeRingside.seconds(c,G.W('rex'),f).find(x=>x.id==='lyra').jobs.includes('runin'),'a run-in is on the table');
