@@ -20,3 +20,12 @@
  #tv .s-back .scene{min-height:100px;max-height:190px}
  #tv .s-back .decide2{overflow:visible;max-height:none}
 }
+
+/* Programme arcs: the chapter sits with Dennis's signed match plan, not in another modal. */
+.programme-chapter{margin:12px 0 16px;border-top:1px solid var(--line,#b9b9b9);padding-top:10px}
+.programme-chapter .section-h small{font:inherit;font-size:.65em;opacity:.7;margin-left:.35em}
+.programme-chapter .arc-follow{margin:8px 0;padding-left:12px;border-left:3px solid var(--blood,#982b32);font-size:14px}
+.arc-recap{display:block;margin-top:4px;color:var(--muted,#777);font-size:13px;line-height:1.4}
+
+.arc-signing{padding:8px 12px;border-left:3px solid var(--blood,#982b32);margin:7px 12px;font-size:14px}
+.arc-signing span{display:block;margin-top:3px;color:var(--muted,#777)}

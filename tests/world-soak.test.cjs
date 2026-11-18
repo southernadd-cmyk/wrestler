@@ -16,6 +16,7 @@ for(const seed of SEEDS){
 }
 // The systems actually got exercised, so a clean run means something.
 assert.ok(totals.programmes>=4,'programmes were signed: '+totals.programmes);
+assert.ok(totals.arcs>=4,'programme chapters were actually played: '+totals.arcs);
 assert.ok(totals.approaches>=2,'approaches were made: '+totals.approaches);
 assert.ok(totals.bids>=2,'managers bid for your wrestlers: '+totals.bids);
 assert.ok(totals.titleChanges>=10,'belts changed hands: '+totals.titleChanges);
@@ -25,4 +26,4 @@ assert.ok(totals.corners>=40,'seconds went to ringside: '+totals.corners);
 assert.ok(totals.mouths>=10,'mouthpieces did the talking: '+totals.mouths);
 assert.ok(totals.signings>=10,'contract signings were held: '+totals.signings);
 assert.ok(totals.stipAsks>=10&&totals.stips>=2,'stipulations were asked for: '+totals.stipAsks+', '+totals.stips+' given');
-console.log(`PASS world soak: ${SEEDS.length} careers × 48 weeks, every system on, checked weekly (${totals.weeks} weeks, ${totals.matches} of your matches, ${totals.programmes} programmes, ${totals.approaches} approaches, ${totals.bids} bids, ${totals.titleChanges} title changes, ${totals.raids} raids, ${totals.afters} post-match segments, ${totals.callouts} callouts, ${totals.corners} at ringside, ${totals.stips}/${totals.stipAsks} stipulations granted, ${totals.signings} contract signings, ${totals.mouths} promos by a mouthpiece; circuit prediction checked ${totals.predicted} times)`);
+console.log(`PASS world soak: ${SEEDS.length} careers × 48 weeks, every system on, checked weekly (${totals.weeks} weeks, ${totals.matches} of your matches, ${totals.programmes} programmes, ${totals.arcs} programme chapters, ${totals.approaches} approaches, ${totals.bids} bids, ${totals.titleChanges} title changes, ${totals.raids} raids, ${totals.afters} post-match segments, ${totals.callouts} callouts, ${totals.corners} at ringside, ${totals.stips}/${totals.stipAsks} stipulations granted, ${totals.signings} contract signings, ${totals.mouths} promos by a mouthpiece; circuit prediction checked ${totals.predicted} times)`);

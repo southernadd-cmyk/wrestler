@@ -43,8 +43,20 @@ function check(root,s,label){
   const h=t.titles?.[p.id]?.[div]?.holder;if(!h)continue;
   if(D.divisionOf(h)!==div)bad('belt in the wrong division: '+p.id+div);
  }
- // Programmes: every unplayed date is still booked, or the programme has ended.
- for(const prog of t.programmes?.live||[]){
+ // Programmes: every unplayed date is still booked; chapters settle once and stay in range.
+ const rangeArc=(a,id)=>{
+  if(!Number.isFinite(a.momentum)||a.momentum<0||a.momentum>100)bad('programme arc momentum out of range: '+id);
+  const seen=new Set();for(const chapter of a.timeline||[]){
+   if(seen.has(chapter.step))bad('programme chapter settled twice: '+id+' step '+chapter.step);
+   seen.add(chapter.step);
+   if(!Number.isFinite(chapter.delta)||!Number.isFinite(chapter.stars))bad('bad programme chapter result: '+id);
+  }
+ };
+ for(const prog of [...(t.programmes?.live||[]),...(t.programmes?.done||[])]){
+  if(prog.arc){
+   rangeArc(prog.arc,prog.id);
+  }
+  if(prog.status)continue;
   if(!owned.has(prog.wid))bad('live programme for a wrestler you no longer have: '+prog.id);
   const booked=new Set([...s.card,...s.futureBookings].map(c=>c.id));
   for(const b of prog.beats)if(!b.done&&!b.missed&&b.at>=T.absWeek(s)&&!booked.has(b.cid))bad('programme date lost its booking: '+prog.id);
@@ -69,7 +81,7 @@ function play(seed,weeks=48,hook=null){
  if(hook)hook(root);
  const {OfficeData:D,OfficeGame:G,OfficeTerritory:T,OfficeApproaches:X,OfficeAfter:A,OfficeRingside:R}=root;
  const pick=n=>Math.floor(random()*n);
- const problems=[],stats={weeks:0,matches:0,programmes:0,approaches:0,joined:0,bids:0,sold:0,released:0,predicted:0,skipped:0,decisions:0,titleChanges:0,raids:0,struggling:0,afters:0,callouts:0,corners:0,stipAsks:0,stips:0,signings:0,mouths:0};
+ const problems=[],stats={weeks:0,matches:0,programmes:0,approaches:0,joined:0,bids:0,sold:0,released:0,predicted:0,skipped:0,decisions:0,titleChanges:0,raids:0,struggling:0,afters:0,callouts:0,arcs:0,corners:0,stipAsks:0,stips:0,signings:0,mouths:0};
  G.fresh();const s=G.S;s.cash+=6000;
  const fin=()=>{const roll=random();return {stars:Math.round((1.5+random()*3)*4)/4,crowd:45+pick(40),crowdPeak:60+pick(35),outcome:roll<.02?'double':roll<.05?'nc':roll<.07?'dq':'booked',finishRoute:roll>=.05&&roll<.07?'dq_cheap':null,botches:pick(3),script:.6+random()*.4,
   adj:{purseMul:1,rep:0,trust:0,heat:0,morale:0},minutes:8+pick(14),plan:['brawl','story','technical','spots','safe'][pick(5)],stamina:20+pick(60),injury:random()<.05?1+pick(3):0,injuryPart:'shoulder',ignored:0,callsUsed:[],log:[]};};
@@ -116,7 +128,11 @@ function play(seed,weeks=48,hook=null){
    // Otherwise, now and then, a promo with a stablemate doing the talking.
    else if(root.OfficeMouthpiece&&w&&o&&random()<.35){const m=root.OfficeMouthpiece.candidates(c,w).find(x=>!x.refuse);
     if(m){const Mic=root.OfficeMic,st=Mic.begin(c,w,o,G.feud(w.id,o.id),null,G.P(c.pid),{mouth:m});while(st.stage!=='done'){const ch=Mic.choices(st);Mic.choose(st,ch[pick(ch.length)].id);}f.promo=Mic.result(st);stats.mouths++;}}
+   // Choose a programme direction before the bell; the resulting promo and bout judge it.
+   if(c.programme&&root.OfficeProgrammeArcs){const Aarc=root.OfficeProgrammeArcs,choices=Aarc.options(c)?.choices||[];
+    Aarc.prepare(c,choices[pick(choices.length)]?.id,f.promo);}
    G.applyResult(c,f);stats.matches++;
+   if(c.programme&&root.OfficeProgrammeArcs?.record(c.programme.id)?.arc?.timeline.some(x=>x.cid===c.id))stats.arcs++;
    // At ringside: somebody from the stable, with a job that went one way or the other.
    const mate=R&&w&&o&&R.seconds(c,w,o).find(x=>!x.refuse);
    if(mate){const job=mate.jobs[pick(mate.jobs.length)],roll=random();

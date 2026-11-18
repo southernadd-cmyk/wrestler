@@ -527,10 +527,19 @@ function offerWho(o,sel){
  if(!sel)return `<span class="dim">${o.wid?esc(G.W(o.wid)?.name||'Unavailable')+' (unavailable)':noneFor(o)}</span>`;
  return o.wid||o.talk?`<b>${esc(sel.name)}</b>`:`<span title="Suggested. Change it in the offer panel.">${esc(sel.name)}</span>`;
 }
+// v0.3.26 The booker has signed the results, but you choose how each chapter is told.
+function arcPicker(c){
+ const A=window.OfficeProgrammeArcs,v=A?.options(c);if(!v)return '';
+ const choice=v.choices.some(x=>x.id===night.plan?.arcChoice)?night.plan.arcChoice:'steady';
+ return `<section class="programme-chapter" aria-label="Programme chapter"><h3 class="section-h after-h">The programme: ${esc(v.title)} <small>${v.step+1} of ${v.total}</small></h3>
+  <p class="dim">${esc(v.ask)}</p>${v.follow?`<p class="arc-follow">${esc(v.follow)}</p>`:''}
+  <p class="dim">${esc(v.mood)}. The booked finish stays as agreed. What should tonight add to the story?</p>
+  <div class="picks after-picks">${v.choices.map(x=>`<button class="decision-option${x.id===choice?' on':''}" data-arcchoice="${x.id}" aria-pressed="${x.id===choice}"><b>${esc(x.label)}</b><span>${esc(x.hint)}</span>${tagChips([x.risk])}</button>`).join('')}</div></section>`;
+}
 // v0.3.18 A programme offer: every date, opponent and finish, signed as one.
 function programmePanel(o,sel){
  const P=o.programme,name=id=>G.F(id)?.name||id;
- return `<p style="margin-top:8px"><span class="tag hot">${esc(window.OfficeProgrammes?.TYPE_NAME[P.type]||'Programme')}</span> ${P.beats.length} matches for ${esc(G.W(P.wid)?.name||'')}. Reply by ${weekLabel(o.expiresAbs)}.</p>
+ return `<p style="margin-top:8px"><span class="tag hot">${esc(window.OfficeProgrammes?.TYPE_NAME[P.type]||'Programme')}</span> ${P.beats.length} matches for ${esc(G.W(P.wid)?.name||'')}. Reply by ${weekLabel(o.expiresAbs)}.</p><p class="dim">The booker sets the dates and finishes. You choose each chapter's direction backstage; the crowd's reaction follows you into the next match.</p>
   <div class="well"><table class="grid"><thead><tr><th>Show</th><th>Opponent</th><th>Slot</th><th>Finish</th>${sel?'<th class="n">Purse</th>':''}</tr></thead><tbody>${P.beats.map(b=>`<tr><td>${weekLabel(b.at)}</td><td>${esc(name(b.rid))}${b.title?' <span class="tag">Title</span>':b.blowoff?' <span class="tag">Blow-off</span>':''}</td><td>${esc(D.SLOTS[b.slot].name)}</td><td>${finishTag(b.finish)}</td>${sel?`<td class="n">${money(G.purse({pid:o.pid,slot:b.slot,finish:b.finish,boost:o.boost},sel))}</td>`:''}</tr>`).join('')}</tbody></table></div>`;
 }
 function renderOffers(){
@@ -630,7 +639,7 @@ function renderPromoters(){
 // v0.3.15 Each booker's plans: the storylines on the board and how the last ones ended.
 function yourProgrammes(p){
  const v=window.OfficeProgrammes?.view(p.id);if(!v||!(v.live.length||v.done.length))return '';
- const line=x=>{const next=x.beats.find(b=>!b.done&&!b.missed);return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}</li>`;};
+ const line=x=>{const next=x.beats.find(b=>!b.done&&!b.missed),a=window.OfficeProgrammeArcs?.record(x.id)?.arc,last=a?.timeline?.at(-1);return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}${a?`<small class="arc-recap">${esc(a.conclusion||window.OfficeProgrammeArcs.band(a.momentum))}${last?' · '+esc(last.recap):''}</small>`:''}</li>`;};
  return `<h3 class="section-h">Your programmes here</h3><ul class="cons">${[...v.live,...v.done.slice(0,3)].map(line).join('')}</ul>`;
 }
 function renderSheets(){
@@ -827,9 +836,11 @@ function showSigning(){
  const entries=v.log.map(e=>({who:e.who,side:e.side==='stage'?'c':e.side==='p'?'promoter':e.side,text:e.text,kind:e.kind}));
  const hot=v.tension>=4?'bad':v.tension>=2?'':'good';
  const middle=`<b class="fin">Contract signing</b><span class="${hot}">Tension: ${esc(v.tensionWord)}</span>`;
+ const chapter=window.OfficeProgrammeArcs?.intro(c,night.plan?.arcChoice);
+ const arcCue=chapter?`<p class="arc-follow arc-signing"><b>Programme, chapter ${esc(c.programme.step+1)}:</b> ${esc(chapter.read)}<span>${esc(chapter.prompt)}</span></p>`:'';
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede"><b>${esc(v.result.reaction)}</b></p></div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.name)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${pickCards(v.options,'contract')}</div>`;
- $('#tv').innerHTML=strip(c,'contract signing')+'<div class="stage screen s-back">'+win('The contract signing: '+w.short+' and '+f.short,matchupBar(c,w,f,middle)+sceneLog(entries,'signTalk',w,f,p.id)+decide,{h:'h3',body:'tight'})+'</div>'+
+ $('#tv').innerHTML=strip(c,'contract signing')+'<div class="stage screen s-back">'+win('The contract signing: '+w.short+' and '+f.short,matchupBar(c,w,f,middle)+arcCue+sceneLog(entries,'signTalk',w,f,p.id)+decide,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'The paperwork is done.':'Every choice turns the room up or down.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('signTalk');persistNight();
 }
@@ -898,7 +909,7 @@ function showMeeting(){
  const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>
   <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span>${esc(c.who)}’s idea</span>${tagChips(c.tags)}</button>`).join('')}</div></div>`).join('')}</div>
   <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the running order</button></div></div>`:'';
- const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
+ const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
  const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
  const signing=window.OfficeSigning?.eligible(c);
@@ -918,11 +929,12 @@ function showPromos(){
  if(talkers.length&&night.mouth?.cid!==c.id)return showMouthpiece(c,w,f,p,talkers);
  if(!night.promo||night.promo.cid!==c.id||night.promo.v!==5){
   const mouth=night.mouth?.cid===c.id&&night.mouth.id!=='none'?MP?.pick(c,w,night.mouth.id):null;
-  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth});
+  const arc=window.OfficeProgrammeArcs?.intro(c,night.plan?.arcChoice);
+  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth,arc});
   // v0.3.12 The interviewer asks about what the crowd saw: the rivalry's public record. A backstage
   // memory (recalled.promoPrompt) stays backstage; it is no longer read out on air.
   const intro=window.OfficeRivalry?.introFor(night.promo.core);
-  if(intro)night.promo.log[0].line=intro;
+  if(intro)night.promo.log[0].line=arc?arc.prompt+' '+intro:intro;
  }
  const st=night.promo,v=OfficeMic.view(st);night.stage='promo';
  const quote=t=>/^[“"]/.test(t)?t:'“'+t+'”';
@@ -960,6 +972,7 @@ function bell(){
  if(focus&&!w.injury){preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);}
  const signed=window.OfficeSigning&&night.signing?.cid===c.id?OfficeSigning.result(night.signing):null;
  const promoRes=signed||(P.sheet?.skipPromo?null:night.promo?.v>=4?OfficeMic.result(night.promo):night.promo?.v===2?OfficeStory.Graph.result(night.promo):null);
+ if(window.OfficeProgrammeArcs)OfficeProgrammeArcs.prepare(c,P.arcChoice,promoRes);
  night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null,seed:Math.floor(Math.random()*2**31)});
  night.past=[];night.paused=false;
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
@@ -1114,6 +1127,7 @@ document.addEventListener('click',e=>{
   if(!OfficeRoom.options(st).some(o=>o.id===d.room))return;OfficeRoom.act(st,d.room);return showMeeting()}
  if(d.cornerwho){if(night?.stage!=='meeting'||!night.plan)return;night.plan.cornerWho=d.cornerwho;night.plan.corner=null;return showMeeting()}
  if(d.cornerjob){if(night?.stage!=='meeting'||!night.plan)return;const x=OfficeRingside.parse(d.cornerjob);if(!x)return;night.plan.cornerWho=x.id;night.plan.corner=night.plan.corner===d.cornerjob?null:d.cornerjob;return showMeeting()}
+ if(d.arcchoice){if(night?.stage!=='meeting'||night.plan?.room?.stage!=='done')return;const v=window.OfficeProgrammeArcs?.options(current());if(!v?.choices.some(x=>x.id===d.arcchoice))return;night.plan.arcChoice=d.arcchoice;return showMeeting()}
  if(d.afterplan){if(night?.stage!=='meeting'||!night.plan||!OfficeAfter.PLANS[d.afterplan])return;night.plan.after=d.afterplan;return showMeeting()}
  if(d.aftermic){const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='mic')return;OfficeAfter.speak(st,d.aftermic);return showAfter()}
  if(d.tv==='after')return showAfter();
