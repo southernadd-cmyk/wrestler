@@ -8,6 +8,8 @@ const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const r10=n=>Math.round(n/10)*10;
 const money=n=>(n<0?'−':'')+'£'+Math.abs(Math.round(n)).toLocaleString('en-GB');
 let S=null;
+let storageState={ok:null,lastSaved:null};
+function saveStatus(){return {...storageState};}
 
 function rand(){S.seed=(Math.imul(S.seed||1932,1664525)+1013904223)>>>0;return S.seed/4294967296}
 const ri=(a,b)=>Math.floor(rand()*(b-a+1))+a;
@@ -54,7 +56,18 @@ function load(){
  }
  return null;
 }
-function save(){try{localStorage.setItem(STORE,JSON.stringify(S))}catch(e){}}
+function save(){
+ try{
+  localStorage.setItem(STORE,JSON.stringify(S));
+  storageState={ok:true,lastSaved:Date.now()};
+ }catch(e){
+  // Never report that a change is safe if storage is blocked or full.
+  storageState={ok:false,lastSaved:storageState.lastSaved};
+ }
+ if(typeof root.dispatchEvent==='function'&&typeof root.Event==='function')
+  root.dispatchEvent(new root.Event('office-save-status'));
+ return storageState.ok;
+}
 function hasSave(){try{return !!JSON.parse(localStorage.getItem(STORE)||localStorage.getItem(PRIOR_STORE)||localStorage.getItem(LEGACY_STORE))?.v}catch(e){return false}}
 function wipe(){try{localStorage.removeItem(STORE)}catch(e){}}
 
@@ -588,5 +601,5 @@ function seasonEnd(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
 })(typeof window!=='undefined'?window:globalThis);
