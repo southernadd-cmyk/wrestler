@@ -5,6 +5,10 @@
 (function(root){'use strict';
 const D=root.OfficeData;
 const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
+// Governing rules apply to EVERY graph transition, not only the last move.
+const STIP_NO_COUNTOUT=new Set(['nodq','submission','anywhere']);
+const noCountout=M=>STIP_NO_COUNTOUT.has(M.o?.stip||M.stip);
+const pinText=/\b(?:pin(?:fall|ned|ning)?|pin attempt|cover|cradle|small package|backslide|roll[- ]?up|kick(?:s|ed)? out|shoulder up|near.?fall)\b|ONE!|TWO!/i;
 // v0.3.13 Crowd noise has a ceiling the way a room does: each gain shrinks as the place gets louder,
 // so a hot crowd needs sustained good work to stay hot and a full 100 is a rare, earned night.
 // Losses always land in full. Every change to the crowd during a match goes through here.
@@ -64,7 +68,7 @@ const Psy=(function installPsychology(){
  function take(M,choices){const s=get(M),pool=choices.filter(x=>!s.recentBeats.includes(x[0]));const choice=rnd(M,pool.length?pool:choices);s.last=choice[0];s.recentBeats.push(choice[0]);if(s.recentBeats.length>4)s.recentBeats.shift();return choice}
  function phase(M){
   const s=get(M),p=M.phase.id;s.phase=p;
-  if(s.position==='outside'){pair(M,['The referee is up to six. Both wrestlers scramble back beneath the bottom rope.']);s.position='standing';s.down=null}
+  if(s.position==='outside'){pair(M,[noCountout(M)?'They return through the ropes by choice. There is no count-out in this stipulation.':'The referee is up to six. Both wrestlers scramble back beneath the bottom rope.']);s.position='standing';s.down=null}
   if(p==='open'){
    sync(M,'neutral');s.position='standing';s.down=null;
    line(M,M.planId==='brawl'?'No respectful lock-up here. Both rush forward throwing forearms.':M.planId==='technical'?'They begin with a cautious collar-and-elbow tie-up, testing balance and leverage.':'They circle, keeping their distance. The first lock-up will tell us plenty.');
@@ -85,7 +89,7 @@ const Psy=(function installPsychology(){
  function recover(M){
   const s=get(M),A=s.control==='f'?M.f:M.w,Df=s.control==='f'?M.w:M.f;
   if(s.position==='outside'){
-   pair(M,[`The referee has reached six. ${A.short} rolls ${Df.short} back under the bottom rope.`,`The count is broken. They are back inside, and ${A.short} stays close.`]);
+   pair(M,noCountout(M)?[`${A.short} rolls ${Df.short} back under the bottom rope. Neither is forced in by a count.`,`${A.short} follows inside and stays close.`]:[`The referee has reached six. ${A.short} rolls ${Df.short} back under the bottom rope.`,`The count is broken. They are back inside, and ${A.short} stays close.`]);
    s.position='standing';s.down=null;return true;
   }
   if(s.position==='mat'){
@@ -194,7 +198,7 @@ const Psy=(function installPsychology(){
    outside=/floor|ramp|barricade|tope con hilo|over the top rope to the floor|apron/.test(move),
    top=/top rope|450 splash|shooting star|diving elbow/.test(move);
   if(s.position==='outside'&&(!outside||tope||backdrop)){
-   line(M,`${A.short} and ${Df.short} climb back into the ring while the referee is counting.`);
+   line(M,noCountout(M)?`${A.short} and ${Df.short} choose to bring the fight back inside.`:`${A.short} and ${Df.short} climb back into the ring while the referee is counting.`);
    s.position='standing';s.down=null;
   }
   const side=A===M.w?'w':'f';
@@ -210,8 +214,8 @@ const Psy=(function installPsychology(){
    line(M,`${A.short} backs ${Df.short} against the ropes and hooks an arm, preparing a throw over the top.`);
    s.position='outside';s.down=null;
   }else if(outside){
-   if(s.position==='outside')line(M,`${A.short} hauls ${Df.short} upright on the floor. The referee is still counting.`);
-   else line(M,`${A.short} sends ${Df.short} over the ropes to the floor and follows. The referee begins the count.`);
+   if(s.position==='outside')line(M,noCountout(M)?`${A.short} hauls ${Df.short} upright on the floor. They are under no count-out pressure.`:`${A.short} hauls ${Df.short} upright on the floor. The referee is still counting.`);
+   else line(M,noCountout(M)?`${A.short} sends ${Df.short} over the ropes and follows. They can fight on the floor.`:`${A.short} sends ${Df.short} over the ropes to the floor and follows. The referee begins the count.`);
    if(/apron/.test(move))line(M,`${A.short} pulls ${Df.short} up onto the apron and takes hold of the head.`);
    else line(M,`${A.short} pulls ${Df.short} into position on the floor.`);
    s.position='outside';s.down=null;
@@ -234,7 +238,7 @@ const Psy=(function installPsychology(){
   const yours=M.nearfalls%2===0?!yoursFirst:yoursFirst;
   const A=yours?M.w:M.f,Df=yours?M.f:M.w;
   if(s.position==='outside'){
-   line(M,`${A.short} drags ${Df.short} back under the bottom rope. A pin only counts inside the ring.`);
+   line(M,`${A.short} drags ${Df.short} back under the bottom rope. ${M.o.stip==='anywhere'?'The fall would have counted outside too.':M.o.stip==='submission'?'Only a submission can decide this match.':'A pin only counts inside the ring.'}`);
    s.position='standing';s.down=null;
   }
   if(s.position==='mat'&&s.down===(yours?'w':'f')){
@@ -1158,6 +1162,10 @@ const Graph=(function makeGraph(){
  }
  function isValid(M,nodeId){
   const n=A[nodeId],p=Psy.get(M);if(!n)return false;
+  // A submission-only bout cannot reach pin nodes, even through signature/catalog edges.
+  if(M.o.stip==='submission'&&(n.family==='pin'||n.nearfall||
+    ['early_cover','cover','near_kickout','counter_rollup'].includes(nodeId)||
+    n.lines.some(t=>pinText.test(t))))return false;
   if((nodeId==='cover'||nodeId==='near_kickout')&&M.t/M.len<.58)return false;
   // v3.3: big moves, roll-ups and finishing-grade spots belong to the right part of the match.
   if(n.after&&M.t/M.len<n.after)return false;
@@ -1202,7 +1210,11 @@ const Graph=(function makeGraph(){
    const effect=g.targets.w==='left knee'?'hesitates on the damaged knee':g.targets.w==='lower back'?'winces and steadies the lower back':g.targets.w==='ribs'?'takes a painful breath and protects the ribs':'favouring the damaged shoulder';
    say(M,fill(M,'{W} '+effect+' before committing to the next move.'),'story');g.lastSell=M.t;
   }
-  const text=fill(M,variant,{A:attacker.short,D:defender.short,part,move:n.kind});
+  let text=fill(M,variant,{A:attacker.short,D:defender.short,part,move:n.kind});
+  if(noCountout(M)){
+   if(id==='outside_toss')text=attacker.short+' sends '+defender.short+' out to the floor. There is no count-out in this match.';
+   if(id==='roll_inside')text=attacker.short+' rolls '+defender.short+' back inside to continue the fight; there was no count to beat.';
+  }
   say(M,text,n.kind); // all dialogue is original and event-led
   const originalDown=n.reverse?side:opp;
   p.position=n.zone;
@@ -1399,8 +1411,14 @@ const Graph=(function makeGraph(){
  }
  function nearfall(M){
   const g=get(M),p=Psy.get(M);
+  if(M.o.stip==='submission'){
+   // The dramatic almost-finish is a grip escaping, NEVER a pin count.
+   say(M,fill(M,'{W} catches {F} in a dangerous hold, but {F} turns through and breaks the grip.'),'crowd');
+   g.events.push({id:'scheduled_submission_escape',t:M.t,arc:g.arc,control:p.control,position:p.position});
+   return;
+  }
   if(M.t/M.len<.59)return;
-  if(p.position==='outside'){say(M,fill(M,'{W} and {F} beat the referee’s count back into the ring.'));p.position='standing';p.down=null;}
+  if(p.position==='outside'){say(M,fill(M,noCountout(M)?'{W} and {F} choose to take the fight back inside.':'{W} and {F} beat the referee’s count back into the ring.'));p.position='standing';p.down=null;}
   Psy.nearfall(M);
   vic(M,'nearfall',.45);
   g.nearfallCount++;
@@ -1622,6 +1640,14 @@ function fill(M,s,extra={}){const n={...names(M),...extra};return s.replace(/\{(
 const VOICE_PREFIX=[[/^Colour: /,'colour'],[/^(?:Road agent|In your ear): /,'runner']];
 const KIND_VOICE={play:'pbp',story:'pbp',crowd:'pbp',agent:'runner'};
 function say(M,text,kind='play',opt={}){
+ // Final defence against legacy narration from old saved graphs or generic texture lines.
+ if(M.stage==='live'&&M.o?.stip==='submission'&&pinText.test(text)){
+  text=M.w.short+' tries to secure a submission, but '+M.f.short+' works free of the hold.';
+  if(kind==='count')kind='play';
+ }
+ if(noCountout(M)&&/referee (?:is up to|has reached|reaches|begins the count|starts counting|is still counting)|count(?:-?out| is broken)|before (?:the )?referee reaches ten|beat the referee.?s count/i.test(text)){
+  text='They fight on without a count-out. Neither wrestler is forced back inside.';
+ }
  let who=opt.who;
  for(const [re,v] of VOICE_PREFIX)if(re.test(text)){text=text.replace(re,'');text=text.charAt(0).toUpperCase()+text.slice(1);if(who===undefined)who=v;break}
  if(who===undefined)who=KIND_VOICE[kind]||null;
@@ -1696,7 +1722,7 @@ function tick(M){
  // An outside exchange cannot continue indefinitely without a count-out.
  if(Psy.get(M).position==='outside'){
    const g=Graph.get(M);g.floorTicks=(g.floorTicks||0)+1;
-   if(g.floorTicks>=5){say(M,fill(M,'The referee reaches eight. {W} and {F} scramble back through the ropes.'),'play');Psy.get(M).position='standing';Psy.get(M).down=null;g.node=null;g.floorTicks=0;}
+   if(g.floorTicks>=5){say(M,fill(M,noCountout(M)?'{W} and {F} choose to go back through the ropes; there is no count to beat.':'The referee reaches eight. {W} and {F} scramble back through the ropes.'),'play');Psy.get(M).position='standing';Psy.get(M).down=null;g.node=null;g.floorTicks=0;}
   }else Graph.get(M).floorTicks=0;
  // momentum
  const target=Psy.get(M).control==='w'?52:Psy.get(M).control==='f'?-52:0;M.mom+=(target-M.mom)*.23+(M.r()*16-8);M.mom=clamp(M.mom,-100,100);
@@ -2147,7 +2173,7 @@ function finish(M){
  }else if(promise==='clean'){
   say(M,['win_clean','lose_clean'].includes(o.finish)?'Both wrestlers promised a straight contest. The official is watching closely.':'A clean fight was promised on the microphone. That promise is now being tested.','story',{...step()});
  }
- if(Psy.get(M).position==='outside'){say(M,`${w.short} and ${f.short} scramble back inside before the referee reaches ten.`,'play',{...step()});Psy.get(M).position='standing';}
+ if(Psy.get(M).position==='outside'){say(M,noCountout(M)?`${w.short} and ${f.short} bring the finish back inside by choice.`:`${w.short} and ${f.short} scramble back inside before the referee reaches ten.`,'play',{...step()});Psy.get(M).position='standing';}
  if(Psy.get(M).position==='mat'){say(M,'They fight back to their feet. Both know the next exchange can end it.','play',{...step()});Psy.get(M).position='standing';}
  if(M.outcome==='nc'){
   say(M,'The referee waves it off. The doctor is in the ring.','bad',{...step(),big:true});
