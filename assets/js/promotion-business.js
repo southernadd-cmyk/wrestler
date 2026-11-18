@@ -100,6 +100,16 @@
   raid(s,t,b,wk,reports);
  }
 
+ // A wrestler can appear on several ladders. Their real current standing is the
+ // MOST prestigious one, not whichever low-tier card happens to be visited first.
+ function topPromotion(t,id){
+  return D.PROMOS.filter(p=>!!t.cards?.[p.id]?.[id])
+   .sort((a,b)=>b.reach-a.reach||a.id.localeCompare(b.id))[0]||null;
+ }
+ function mayRaid(t,raider,id){
+  const top=topPromotion(t,id);
+  return !!top&&raider.reach>top.reach&&!t.cards?.[raider.id]?.[id];
+ }
  // A promotion with money and momentum signs a rival's best-known name to an exclusive deal.
  function raid(s,t,b,wk,reports){
   if(wk-b.lastRaid<RAID_GAP)return;
@@ -110,7 +120,8 @@
   const cast=new Set([...Object.values(t.booking?.promos||{}).flatMap(x=>x.live.flatMap(y=>[y.a,y.b])),...(root.OfficeProgrammes?.claims(s,t).cast||[])]);
   const owned=new Set(s.roster.map(w=>w.id));
   const target=D.PROMOS.filter(p=>p!==raider).flatMap(p=>Object.entries(t.cards[p.id]||{}).map(([id,row])=>({id,row,from:p})))
-   .filter(x=>!owned.has(x.id)&&!titled.has(x.id)&&!cast.has(x.id)&&T.contracted(s,x.id)&&raider.reach>=x.from.reach&&
+   .filter(x=>!owned.has(x.id)&&!titled.has(x.id)&&!cast.has(x.id)&&T.contracted(s,x.id)&&
+    mayRaid(t,raider,x.id)&&topPromotion(t,x.id)?.id===x.from.id&&
     ![...(s.card||[]),...(s.futureBookings||[])].some(c=>c.rid===x.id||c.wid===x.id)&&
     !t.cards[raider.id]?.[x.id]&&!(wk-(b.raided[x.id]??-99)<RAID_SHIELD)&&wk-(b[x.from.id].lastRaided??-99)>=12)
    .filter(x=>Object.keys(t.cards[x.from.id]).filter(id=>D.divisionOf(id)===D.divisionOf(x.id)).length>6)
@@ -148,5 +159,5 @@
   const tone=f.desperate?'Struggling':f.crowd>=base(p)+5?'Hot':f.crowd<=base(p)-4?'Cooling':'Steady';
   return {pid,crowd:f.crowd,base:Math.round(base(p)),buzz:Math.round(f.buzz),money:f.money,momentum:f.momentum,trend,tone,desperate:f.desperate,best:f.best,finance:f.lastFinance||null,history:f.history.slice()};
  }
- root.OfficeBusiness={state,week,view,raid,base,finance};
+ root.OfficeBusiness={state,week,view,raid,base,finance,topPromotion,mayRaid};
 })(typeof window!=='undefined'?window:globalThis);
