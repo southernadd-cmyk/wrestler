@@ -71,7 +71,7 @@ const turn=(s,wk)=>{const reports=[];M.state(s.territory).lastTurn=-1;M.turn(s,s
   'the actual circuit match must happen, not just the inbox letter');
  assert.ok(!a.claimed.some(c=>c.at<=T.absWeek(s)),'fulfilled replacement is removed from the queue');
  // Your own named offers and a weak lobby are left alone.
- s.offers=held.map(o=>({...o,id:o.id+'-x'}));a.seen=s.offers.map(o=>o.id);a.lobby.crown[rival.id].w=40;
+ s.offers=held.map(o=>({...o,id:o.id+'-x'}));a.seen=s.offers.map(o=>o.id);a.lobby.crown={[rival.id]:{by:team,w:40,kind:'push',week:wk}};
  M.takeSpot(s,s.territory,a,wk);assert.equal(s.offers.length,10,'a half-hearted lobby takes nothing');
  console.log('PASS spots left on the table can go to a rival manager');
 }
