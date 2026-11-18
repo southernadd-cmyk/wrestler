@@ -62,10 +62,12 @@ const owner=id=>G.S.worldV4.contracts[id];
  }
  assert.equal(failed,1,'the failed-talk path was exercised');
 }
-// 4. The poaching approach is only raised when North Circuit could complete the deal.
+// 4. The old North Circuit approach is no longer raised (the rival managers' bids replace it),
+// but one already waiting in a save can still be answered, which tests 1-3 cover.
 {
  const src=script.slice(0,cut);
  assert.match(src,/poach:\{when:w=>[^\n]*canPoach\(w\)/);
+ assert.match(src,/for\(const type of \['unhappy','hurt','raise','dive'\]\)/,'the poach scene is not in the weekly draw');
 }
 // 5. Every one of the 80 wrestlers has an authored voice; newcomers no longer default to stoic.
 {

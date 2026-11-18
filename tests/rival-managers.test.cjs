@@ -108,7 +108,21 @@ const turn=(s,wk)=>{const reports=[];M.state(s.territory).lastTurn=-1;M.turn(s,s
  // And no second offer for a while.
  s2.inbox=[];turn(s2,T.absWeek(s2)+1);
  assert.ok(!s2.inbox.some(m=>m.dtype==='agent_bid'),'managers wait before trying again');
- console.log('PASS managers bid for your wrestlers; selling and refusing both have consequences');
+ // Paying to keep them: £400, loyalty +20, and they stay.
+ const s3=fresh(['rex']),r3=G.W('rex');r3.heat=70;r3.loyal=40;A.state();
+ for(const a of Object.values(s3.worldV4.agencies))a.cash+=50000;
+ turn(s3,T.absWeek(s3));
+ const b3=s3.inbox.find(m=>m.dtype==='agent_bid');
+ s3.cash=300;assert.match(G.answer(b3.id,'bonus'),/Not enough cash/,'the bonus needs the money');
+ s3.cash=1000;assert.match(G.answer(b3.id,'bonus'),/stays/);
+ assert.equal(s3.cash,600);assert.equal(G.W('rex').loyal,60);assert.equal(s3.worldV4.contracts.rex.owner,'player');
+ // The old North Circuit scene no longer comes up: over a season a restless star only hears from the managers.
+ const s4=fresh(['rex']),r4=G.W('rex');
+ for(const a of Object.values(s4.worldV4.agencies))a.cash+=50000;
+ for(let i=0;i<16;i++){r4.heat=75;r4.loyal=30;for(const m of G.pending())G.answer(m.id,m.dtype==='agent_bid'?'refuse':m.options[0].id);s4.card=[];G.endWeek();}
+ assert.ok(!s4.inbox.some(m=>m.dtype==='poach'),'no old-style approach');
+ assert.ok(s4.inbox.some(m=>m.dtype==='agent_bid'),'the managers make their offers instead');
+ console.log('PASS managers bid for your wrestlers; selling, paying to keep them and refusing all have consequences');
 }
 
 // 6. The week before the agencies sign from the market, you hear who they are after.

@@ -473,7 +473,9 @@ function makeDilemmas(){
  const roster=S.roster.slice().sort(()=>rand()-.5);
  const tryMake=(type,args,m)=>{msg({...m,kind:'decision',dtype:type,args});recent[type]=abs();made++};
  for(const w of roster){if(made>=2)break;
-  for(const type of ['unhappy','hurt','poach','raise','dive']){const d=DILEMMAS[type];if(ok(type)&&d.when(w)&&rand()<({unhappy:.8,hurt:.65,poach:.4,raise:.45,dive:.3}[type])){tryMake(type,[w.id],d.make(w));break}}
+  // Approaches for your wrestlers now come from the rival managers themselves (rival-managers.js).
+  // The old North Circuit scene is no longer raised; its resolver stays so a pending one in a save can be answered.
+  for(const type of ['unhappy','hurt','raise','dive']){const d=DILEMMAS[type];if(ok(type)&&d.when(w)&&rand()<({unhappy:.8,hurt:.65,raise:.45,dive:.3}[type])){tryMake(type,[w.id],d.make(w));break}}
  }
  if(made<2&&ok('clash')&&roster.length>=2&&rand()<.25){const [a,b]=roster;if(DILEMMAS.clash.when(a,b))tryMake('clash',[a.id,b.id],DILEMMAS.clash.make(a,b))}
  if(made<2&&ok('favour')&&S.roster.length&&rand()<.3){const p=one(S.promoters.filter(x=>DILEMMAS.favour.when(x)));if(p)tryMake('favour',[p.id],DILEMMAS.favour.make(p))}
