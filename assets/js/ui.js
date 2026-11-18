@@ -444,7 +444,7 @@ function renderScouting(){
   <p style="margin-top:10px">${esc(w.bio)}</p>
   <div class="well pad attrs">${[['Ring',w.ring],['Psychology',w.psych],['Safety',w.safe],['Mic',w.mic],['Heat',w.heat]].map(([l,v])=>`<div class="attr"><span>${l}</span>${att(v)}${bar(v,bandBar(v))}</div>`).join('')}</div>
   <p class="dim" style="margin-top:8px">${esc(temperament(w))} Finisher: ${esc(w.finisher)}.${esc(signatureText(w))}</p>
-  ${ambitionLine(w)}
+  ${ambitionLine(w)}${(()=>{const team=window.OfficeManagers?.wantedBy(w.id);return team?`<p class="bad" style="margin:6px 0 0">${esc(team.manager)} (${esc(team.name)}) means to sign ${esc(w.short)} next week.</p>`:''})()}
   <div class="facts" style="margin:10px 0"><div><small>Signing fee</small><b class="${s.cash<w.fee?'neg':''}">${money(w.fee)}</b></div><div><small>Weekly wage</small><b>${money(w.wage)}</b></div></div>
   <button class="btn go" style="width:100%;min-height:44px" data-sign="${w.id}" ${can?'':'disabled'}>Sign ${esc(w.short)}</button>
   <p class="dim" style="margin-top:6px">${full?'Your locker room is full. Release someone first.':s.cash<w.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'Wages are paid every week, booked or not.'}</p>`;
@@ -554,7 +554,7 @@ function renderPyramid(){
  const pyr=`${tabs}${hero}<div class="well tiers">${tiers}</div><p class="dim" style="margin-top:8px">Wrestlers advance through results on this promoter’s shows. Reach the main event and the promoter will offer a title match.</p>`;
  const belts=`<div class="belt-list">${D.PROMOS.map(x=>D.DIVISION_ORDER.map(d=>{const b=D.belt(x.id,d),h=OfficeTerritory.title(x.id,d)?.holder,w=h?G.W(h)||G.F(h):null;
   return `<button class="belt-row ${w&&G.W(w.id)?'mine':''}" data-go="pyramid" data-id="${x.id}:${d}"><img class="belt-img" src="${esc(b.img)}" alt=""><span><small>${esc(b.name)}</small><b>${w?esc(w.name):'Vacant'}</b></span></button>`}).join('')).join('')}</div>`;
- const teams=`<div class="well"><table class="grid"><thead><tr><th>Stable and manager</th><th class="n">W</th><th class="n">L</th><th class="n">Rep</th></tr></thead><tbody>${t.teams.map(team=>`<tr><td class="wrap"><b>${esc(team.name)} · ${esc(team.manager)}</b><br><span class="dim">${team.roster.map(id=>esc(G.F(id)?.name||id)).join(', ')}</span></td><td class="n">${team.wins}</td><td class="n">${team.losses}</td><td class="n">${team.rep}</td></tr>`).join('')}</tbody></table></div>`;
+ const teams=`<div class="well"><table class="grid"><thead><tr><th>Stable and manager</th><th class="n">W</th><th class="n">L</th><th class="n">Rep</th></tr></thead><tbody>${t.teams.map(team=>`<tr><td class="wrap"><b>${esc(team.name)} · ${esc(team.manager)}</b>${window.OfficeManagers?`<br><small>${esc(window.OfficeManagers.blurb(team))}</small>`:''}<br><span class="dim">${team.roster.map(id=>esc(G.F(id)?.name||id)).join(', ')}</span></td><td class="n">${team.wins}</td><td class="n">${team.losses}</td><td class="n">${team.rep}</td></tr>`).join('')}</tbody></table></div>`;
  const news=t.reports.slice(0,4).flatMap(r=>r.lines).map(l=>`<li>${esc(l)}</li>`).join('');
  paint('s-split',
   win(esc(p.name)+' '+esc(D.DIVISIONS[div].name.toLowerCase())+' pyramid',pyr,{keep:'pyr',note:`Season ${s.season}, week ${s.week}`})+
@@ -592,7 +592,9 @@ function renderSheets(){
  };
  const live=v.live.length?`<div class="story-grid">${v.live.map(card).join('')}</div>`:`<div class="empty">Nothing on the board this week. ${esc(p.voice)} is planning.</div>`;
  const done=v.done.length?`<ul class="cons">${v.done.map(x=>`<li class="${x.status==='dropped'?'':'up'}"><b>${esc(x.typeName)}</b> · ${esc(x.text||'')} <span class="dim">${x.ended?weekLabel(x.ended):''}</span></li>`).join('')}</ul>`:'<p class="dim">No storyline has finished here yet.</p>';
- paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">On the board</h3>${live}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">Bookers plan the circuit’s matches around these storylines and choose who wins to serve them. They do not always stick to the plan.</p>`,{keep:'sheets',note:esc(p.name)}));
+ const M=window.OfficeManagers,pushing=M?.lobbyAt(p.id)||[];
+ const lobby=pushing.length?`<ul class="cons">${pushing.map(l=>`<li><b>${esc(l.manager)}</b> (${esc(l.team)}) is pushing <b>${esc(l.name)}</b>${l.want?` · wants ${esc(l.want.toLowerCase())}`:''}</li>`).join('')}</ul>`:'<p class="dim">No manager is working this booker this week.</p>';
+ paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">On the board</h3>${live}<h3 class="section-h">Managers in the booker’s ear</h3>${lobby}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">Bookers plan the circuit’s matches around these storylines and choose who wins to serve them. They do not always stick to the plan.</p>`,{keep:'sheets',note:esc(p.name)}));
 }
 function renderRivalries(){
  const s=S(),feuds=Object.values(s.feuds).filter(f=>f.heat>0||f.closed).sort((a,b)=>b.heat-a.heat);
