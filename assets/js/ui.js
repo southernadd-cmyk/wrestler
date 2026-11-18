@@ -1066,6 +1066,15 @@ function result(){
   G.save();
  }
  const baseConsequences=cons.map(x=>x.text);
+ // Every outer result wrapper and ringside consequence is preserved in the replay archive.
+ const h=S().history.find(x=>x.cid===c.id);
+ if(h){
+  h.stip=c.stip||null;
+  h.consequences=cons.map(x=>({text:x.text,tone:x.tone??0}));
+  h.notes??=[];
+  for(const effect of h.consequences)if(!h.notes.includes(effect.text))h.notes.push(effect.text);
+  G.save();
+ }
  night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,actualOutcome:fin.outcome,bookedFinish:c.finish,baseConsequences,consequences:baseConsequences.slice()});
  // No angle or microphone mutations occur while the result screen is merely open.
  night.after=null;
