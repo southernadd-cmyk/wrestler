@@ -98,12 +98,38 @@ const OVERHEAD=100;function overhead(){return 60+S.roster.length*25}
 function msg(m){S.inbox.unshift({id:'m'+Math.floor(Math.random()*1e9).toString(36),week:S.week,season:S.season,read:false,answer:null,...m});S.inbox=S.inbox.slice(0,60)}
 function pending(){return S.inbox.filter(m=>m.kind==='decision'&&!m.answer)}
 
+/* ---------- contract ownership and booked opponents ----------
+   An ownership change must never leave a wrestler contracted to fight their own stablemate,
+   or leave a programme holding dates for somebody who is no longer on that side of the deal.
+   Signed contracts use the usual cancellation machinery, including one programme withdrawal;
+   unsigned offers are removed without a promoter penalty. */
+function reconcileOwnership(id,{outgoing=false,reason='Roster change'}={}){
+ if(!S||!id)return {cancelled:0,offers:0};
+ const before=[...S.card,...S.futureBookings];
+ // Programmes are indivisible: close each once, even when three contracted beats refer to this ID.
+ root.OfficeProgrammes?.withdrawForTransfer?.(id,reason);
+ for(const c of before){
+  if(!(outgoing?c.wid===id:(c.rid===id||c.wid===id)))continue;
+  if(![...S.card,...S.futureBookings].some(x=>x.id===c.id))continue;
+  root.OfficeGame?.unbook?.(c.id);
+ }
+ const removed=S.offers.filter(o=>(outgoing&&o.wid===id)||o.rid===id||
+  (o.programme?.beats||[]).some(b=>b.rid===id)||(outgoing&&o.programme?.wid===id));
+ if(removed.length){
+  const ids=new Set(removed.map(o=>o.programme?.id).filter(Boolean));
+  S.offers=S.offers.filter(o=>!removed.includes(o));
+  const staged=S.territory?.programmes;
+  if(staged?.offered)staged.offered=staged.offered.filter(p=>!ids.has(p.id)&&!p.beats?.some(b=>b.rid===id));
+ }
+ return {cancelled:before.length-[...S.card,...S.futureBookings].length,offers:removed.length};
+}
 /* ---------- signing ---------- */
 function sign(id){
  const w=S.free.find(x=>x.id===id);
  if(!w)return 'Not available.';
  if(S.roster.length>=5)return 'Your locker room is full (five contracts).';
  if(S.cash<w.fee)return `You need ${money(w.fee)} to sign ${w.name}.`;
+ reconcileOwnership(id,{reason:'The booked opponent joined your stable'});
  S.cash-=w.fee;S.free=S.free.filter(x=>x.id!==id);
  S.roster.push({...w,trend:[],program:null,prep:{},prepHistory:[],session:null,learned:[],learning:null,micWork:{},rehearsedAt:null,training:'ring',intensity:'light',progress:{},startSkills:{ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe},promise:null,injury:0,matches:0,wins:0,starSum:0,best:0,lastRaise:0,flags:{},joined:abs()});
  snapshot(S.roster.at(-1));
@@ -112,8 +138,7 @@ function sign(id){
 }
 function release(id){
  const w=W(id);if(!w)return;
- for(const c of S.card.filter(c=>c.wid===id)){const promoter=P(c.pid);if(promoter)promoter.trust=clamp(promoter.trust-6)}
- S.card=S.card.filter(c=>c.wid!==id);for(const c of S.futureBookings.filter(c=>c.wid===id)){const p=P(c.pid);if(p)p.trust=clamp(p.trust-6)}S.futureBookings=S.futureBookings.filter(c=>c.wid!==id);
+ reconcileOwnership(id,{outgoing:true,reason:'The wrestler was released from your stable'});
  S.roster=S.roster.filter(x=>x.id!==id);
  const base=D.findWrestler?.(id)||D.TALENT.find(t=>t.id===id);
  S.free.push({...base,heat:w.heat,ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe,fee:Math.round(base.fee*.9)});
@@ -496,7 +521,7 @@ const DILEMMAS={
    const o2={id:'fav',pid:p.id,rid,slot:'opener',finish:'lose_clean',boost:1.15};S.card.push({id:uid('c'),pid:p.id,rid,wid:w.id,slot:'opener',minutes:8,finish:'lose_clean',purse:purse(o2,w),tag:'Favour',feudHeat:0,blowoff:false});
    return `${w.short} is on the card: opener, losing clean to ${F(rid).name}.`}}
 };
-function leave(w,fee){S.cash+=fee;S.card=S.card.filter(c=>c.wid!==w.id);S.futureBookings=S.futureBookings.filter(c=>c.wid!==w.id);S.roster=S.roster.filter(x=>x!==w);if(S.worldV4)root.OfficeWorldV4?.markMarket(S,w.id)}
+function leave(w,fee){if(!w||!W(w.id))return;reconcileOwnership(w.id,{outgoing:true,reason:'The wrestler left your stable'});S.cash+=fee;S.roster=S.roster.filter(x=>x!==w);if(S.worldV4)root.OfficeWorldV4?.markMarket(S,w.id);else if(!S.free.some(x=>x.id===w.id))S.free.push({...w});}
 function makeDilemmas(){
  let made=0;const recent=S.recentTypes;
  const ok=t=>!recent[t]||abs()-recent[t]>=4;
@@ -609,5 +634,5 @@ function seasonEnd(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
 })(typeof window!=='undefined'?window:globalThis);
