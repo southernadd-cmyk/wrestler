@@ -113,3 +113,20 @@ console.log('PASS bookers plan to their own style');
  assert.ok(JSON.stringify(s4.territory.booking).length<25000,'and it stays small in the save');
  console.log('PASS booking sheets view and older careers');
 }
+
+// 8. A belt left vacant (its champion released) is awarded before the bookers plan the week;
+// the start screen's prediction does the same, so it still matches the card that is booked.
+{
+ const s=fresh(),t=s.territory;
+ for(let i=0;i<3;i++){s.card=[];G.endWeek();}
+ const pid='dock',div='women',holder=t.titles[pid][div].holder;
+ assert.ok(holder&&s.worldV4.contracts[holder].owner==='ai','a circuit champion to release');
+ root.OfficeWorldV4.releaseAI(s,holder);
+ const copy=JSON.parse(JSON.stringify(s)),next=T.absWeek(s)+1;
+ const predicted=T.circuitBill(copy,T.prepare(copy),next,new Set());
+ assert.equal(JSON.stringify(copy.territory.titles),JSON.stringify(JSON.parse(JSON.stringify(s)).territory.titles),'predicting changes nothing');
+ s.card=[];G.endWeek();
+ assert.notEqual(t.titles[pid][div].holder,holder,'the vacant belt went to somebody else');
+ assert.equal(t.lastResults.matches.map(m=>m.a+'|'+m.b).sort().join(),predicted.map(m=>m.a.id+'|'+m.b.id).sort().join(),'the prediction matches the week');
+ console.log('PASS a vacant belt is settled before the prediction, as it is before the real week');
+}
