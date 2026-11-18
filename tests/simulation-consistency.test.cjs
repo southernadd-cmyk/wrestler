@@ -78,6 +78,8 @@ console.log('PASS a missed build followed by the finale closes without claiming 
  assert.ok(s.cash-cash<400,'the disqualification reduced the agreed purse');
  assert.ok(!out.some(x=>/Programme complete/.test(x.text)));
  assert.ok(!s.inbox.some(m=>m.subject==='That’s how it’s done'));
+ const letter=root.OfficeNightReport.build(null,s,[{cid:c.id,name:'Titan',foe:'Silas',stars:2,actualOutcome:'dq',bookedFinish:'win_clean',season:s.season,week:s.week}]);
+ assert.ok(letter.sections.find(x=>x.title==='In the ring').lines[0].includes('unplanned disqualification'),'the report must not describe the DQ as a normal agreed finish');
 }
 console.log('PASS unplanned DQ breaks the programme, reduces pay and retains the title');
 
