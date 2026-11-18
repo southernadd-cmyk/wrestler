@@ -382,5 +382,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,begin,view,micOptions,speak,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={state,PLANS,plans,begin,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);
