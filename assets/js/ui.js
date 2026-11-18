@@ -774,7 +774,7 @@ function openTV(){$('#toast').classList.remove('show');$('#tv').hidden=false;doc
 function resumeNight(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(NIGHT_STORE)||'null')}catch(e){}
  // After the last match the card is empty, but a post-match segment still waiting for its last word comes back.
- const afterOpen=saved?.stage==='after'&&saved.after?.stage==='mic';
+ const afterOpen=saved?.stage==='after'&&!!saved.after; // Both live and completed post-bell screens must resume, even when the card is empty.
  const resultOpen=saved?.stage==='result'&&!!saved.resultHTML;
  if(!saved||!Array.isArray(saved.queue)||(!S()?.card?.length&&!afterOpen&&!resultOpen))return false;
  night={...saved,paused:true};
