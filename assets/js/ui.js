@@ -750,7 +750,7 @@ const NIGHT_STORE='the-office-v23-match'; // same key: preserve existing mid-mat
 function persistNight(){
  if(!night?.queue)return;
  try{const m=night.M?{...night.M,rState:night.M.r?.getState?.()}:null;
- localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,plan:night.plan,promo:night.promo,signing:night.signing||null,after:night.after||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
+ localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,plan:night.plan,promo:night.promo,mouth:night.mouth||null,signing:night.signing||null,after:night.after||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
@@ -769,7 +769,7 @@ function resumeNight(){
   bell();clearTimeout(night.timer);night.M=restored;night.past=saved.past||[];night.paused=true;
   updateLive();const last=restored.log?.[restored.log.length-1];if(last)showLine(last,true);
   if(restored.decision&&!restored.queue.length)showDecision();
- }else if(saved.stage==='after'&&saved.after)showAfter();else if(saved.stage==='signing')showSigning();else if(saved.stage==='promo')showPromos();else if(saved.stage==='meeting')showMeeting();else prep();
+ }else if(saved.stage==='after'&&saved.after)showAfter();else if(saved.stage==='signing')showSigning();else if(saved.stage==='promo'||saved.stage==='mouth')showPromos();else if(saved.stage==='meeting')showMeeting();else prep();
  persistNight();return true;
 }
 const SPEED={slow:{line:2600,pause:1100},normal:{line:1500,pause:750},fast:{line:520,pause:260},skip:{line:0,pause:0}};
@@ -832,6 +832,17 @@ function showSigning(){
  $('#tv').innerHTML=strip(c,'contract signing')+'<div class="stage screen s-back">'+win('The contract signing: '+w.short+' and '+f.short,matchupBar(c,w,f,middle)+sceneLog(entries,'signTalk',w,f,p.id)+decide,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'The paperwork is done.':'Every choice turns the room up or down.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('signTalk');persistNight();
+}
+
+/* ---------- the mouthpiece (v0.3.25) ---------- */
+function showMouthpiece(c,w,f,p,talkers){
+ night.stage='mouth';
+ const opts=[{id:'none',label:w.short+' talks for themselves',hint:w.short+'’s own voice, mic '+w.mic+'.',tags:w.mic<45?['Risky']:['Safe']},
+  ...talkers.map(x=>({id:x.id,label:x.short+' does the talking',hint:'Mic '+x.mic+' against '+w.short+'’s '+w.mic+'. '+(x.refuse||x.note||'')+(x.ego?' '+x.ego:''),tags:x.refuse?['Refuses']:['Better talker','Builds a bond',...(x.ego?['Ego risk']:[]),'They will mock it']}))]
+  .filter(o=>!/Refuses/.test(o.tags.join()));
+ const body=matchupBar(c,w,f,'<b class="fin">Who talks?</b>')+`<div class="decide2"><h3 class="section-h">Who has the microphone?</h3><p class="lede">${esc(OfficeRoom.AGENT)}: “${esc(w.short)} isn’t the best talker in the stable. Do we send somebody out to do it for them?”</p>${pickCards(opts,'mouth')}</div>`;
+ $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win('Before the promo',body,{h:'h3',body:'tight'})+'</div><div class="tv-foot"><span class="dim">A mouthpiece speaks; the wrestler is held to it.</span></div>';
+ persistNight();
 }
 
 /* ---------- backstage and the promo duel ---------- */
@@ -902,8 +913,12 @@ function showPromos(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
  if(night.plan?.sheet?.skipPromo)return bell();
+ // v0.3.25 Before the first line: does somebody else do the talking?
+ const MP=window.OfficeMouthpiece,talkers=MP&&(!night.promo||night.promo.cid!==c.id)?MP.candidates(c,w):[];
+ if(talkers.length&&night.mouth?.cid!==c.id)return showMouthpiece(c,w,f,p,talkers);
  if(!night.promo||night.promo.cid!==c.id||night.promo.v!==5){
-  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p);
+  const mouth=night.mouth?.cid===c.id&&night.mouth.id!=='none'?MP?.pick(c,w,night.mouth.id):null;
+  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth});
   // v0.3.12 The interviewer asks about what the crowd saw: the rivalry's public record. A backstage
   // memory (recalled.promoPrompt) stays backstage; it is no longer read out on air.
   const intro=window.OfficeRivalry?.introFor(night.promo.core);
@@ -922,7 +937,8 @@ function showPromos(){
  const cue=v.cue?`<p class="mic-cue">${esc(v.cue)}</p>`:'';
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">The final word</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.tactic?.stake||'')}</p></div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.name)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${read}${cue}${open}${claim}${pickCards(v.options,'mic',true)}</div>`;
- const body=matchupBar(c,w,f,meter)+sceneLog(entries,'micTalk',w,f,p.id)+decide;
+ const sp=st.speaker?G.W(st.speaker.id)||w:w;
+ const body=matchupBar(c,w,f,meter)+(st.speaker?`<p class="dim mouth-note">${esc(st.speaker.short)} is doing the talking for ${esc(w.short)}.</p>`:'')+sceneLog(entries,'micTalk',sp,f,p.id)+decide;
  $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win('The promo: '+w.short+' against '+f.short+' for the room',body,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'It is said.':'Once it is out of your mouth, it stays said.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('micTalk');
@@ -1101,6 +1117,7 @@ document.addEventListener('click',e=>{
  if(d.afterplan){if(night?.stage!=='meeting'||!night.plan||!OfficeAfter.PLANS[d.afterplan])return;night.plan.after=d.afterplan;return showMeeting()}
  if(d.aftermic){const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='mic')return;OfficeAfter.speak(st,d.aftermic);return showAfter()}
  if(d.tv==='after')return showAfter();
+ if(d.mouth){if(night?.stage!=='mouth')return;const c=current();if(!c)return;night.mouth={cid:c.id,id:d.mouth};return showPromos()}
  if(d.contract){const st=night?.signing;if(night?.stage!=='signing'||!st||st.stage!=='live')return;OfficeSigning.choose(st,d.contract);return showSigning()}
  if(d.tv==='signing'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showSigning();}
  if(d.mic){const st=night?.promo;if(night?.stage!=='promo'||st?.v!==5||st.stage==='done')return;
