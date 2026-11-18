@@ -21,6 +21,9 @@ const match={cid:'test-bout',season:start.season,week:start.week,pid:p.id,wid:w.
  name:w.name,foe:'Test Rival',stars:3.5,label:'★★★½',consequences:[p.name+' trust +5.']};
 const report=R.build(start,s,[match]);
 assert.equal(report.kind,'info');
+assert.equal(report.season,start.season);
+assert.equal(report.week,start.week);
+assert.ok(report.subject.startsWith('Match night report'));
 assert.ok(report.subject.includes('S'+start.season+' W'+start.week));
 const section=name=>report.sections.find(x=>x.title===name)?.lines||[];
 assert.match(section('In the ring').join(' '),/Test Rival.*★★★½/);
