@@ -23,7 +23,7 @@ const play=(s,n)=>{for(let i=0;i<n;i++){for(const m of G.pending())G.answer(m.id
  for(const p of D.PROMOS){
   const f=b[p.id],mine=s.promoters.find(x=>x.id===p.id);
   assert.ok(f.crowd>=5&&f.crowd<=100&&f.buzz>=0&&f.buzz<=100&&Number.isFinite(f.money),'in range: '+p.id);
-  assert.ok(new Set(f.history.map(h=>h.c)).size>1,'crowds move week to week at '+p.id);
+  assert.ok(new Set(f.history.map(h=>h.c)).size>1,'crowds move week to week at '+p.id+'; lastWeek='+b.lastWeek+'; crowds='+f.history.map(h=>h.w+':'+h.c).join(',')+'; raw='+f.crowd+'; cash='+f.money);
   assert.ok(f.history.length<=16,'history stays short');
   assert.ok(Math.abs(mine.reach-p.reach)<=12,'your reach with them moves, within limits');
  }
