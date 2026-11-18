@@ -138,8 +138,16 @@ console.log('PASS title promises require championship ownership, not merely winn
  const s=reset();
  s.history.unshift({cid:'old-example',season:3,week:2,wid:'rex',rid:'malik',
   name:'Titan',foe:'Malik',finish:'lose_clean',outcome:'booked',stars:2.5});
+ // An older result recorded as a DQ is not an agreed clean win,
+ // even if the planned finish was a player victory.
+ s.history.unshift({cid:'old-dq',season:3,week:3,wid:'rex',rid:'malik',
+  finish:'win_clean',outcome:'dq',stars:2});
  const L=Riv.ledger('rex','malik');
- assert.equal(L.meetings[0].abs,34,'season 3 week 2 is absolute week 34');
+ const a=L.meetings.find(m=>m.cid==='old-example'),dq=L.meetings.find(m=>m.cid==='old-dq');
+ assert.equal(a.abs,34,'season 3 week 2 is absolute week 34');
+ assert.equal(dq.abs,35);
+ assert.equal(dq.winner,'f','legacy referee DQs must not be reported as player victories');
+ assert.equal(dq.how,'dq','legacy referee DQ is not a clean win');
 }
 console.log('PASS legacy rivalry dates use the real sixteen-week career season');
 
