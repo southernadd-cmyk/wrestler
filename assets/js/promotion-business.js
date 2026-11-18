@@ -86,7 +86,7 @@
    .sort((x,y)=>b[y.id].money+b[y.id].buzz*50-b[x.id].money-b[x.id].buzz*50||x.id.localeCompare(y.id))[0];
   if(!raider)return;
   const titled=new Set(D.PROMOS.flatMap(p=>D.DIVISION_ORDER.map(d=>t.titles?.[p.id]?.[d]?.holder)).filter(Boolean));
-  const cast=new Set(Object.values(t.booking?.promos||{}).flatMap(x=>x.live.flatMap(y=>[y.a,y.b])));
+  const cast=new Set([...Object.values(t.booking?.promos||{}).flatMap(x=>x.live.flatMap(y=>[y.a,y.b])),...(root.OfficeProgrammes?.claims(s,t).cast||[])]);
   const owned=new Set(s.roster.map(w=>w.id));
   const target=D.PROMOS.filter(p=>p!==raider).flatMap(p=>Object.entries(t.cards[p.id]||{}).map(([id,row])=>({id,row,from:p})))
    .filter(x=>!owned.has(x.id)&&!titled.has(x.id)&&!cast.has(x.id)&&T.contracted(s,x.id)&&!t.cards[raider.id]?.[x.id]&&!(wk-(b.raided[x.id]??-99)<RAID_SHIELD)&&wk-(b[x.from.id].lastRaided??-99)>=12)

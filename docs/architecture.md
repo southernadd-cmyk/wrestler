@@ -28,6 +28,7 @@ assets/js/
   booking-office.js         Each promoter's storylines, the circuit's weekly card and the bookers' finishes
   rival-managers.js         The six agencies lobbying bookers, moving and poaching wrestlers, and bidding for yours
   promotion-business.js     Each promotion's crowds, buzz, money and momentum; desperate booking and raids
+  programmes.js             Storylines offered to your wrestlers: signed as one, changed by the booker, kept or walked out of
   ui.js                     Screens, controls and browser events
 assets/portrait-atlas.png   Wrestler sprite sheet (previously embedded in CSS)
 assets/first-week.css       Existing onboarding guide CSS
@@ -121,3 +122,11 @@ Every new career now automatically activates the 80-wrestler world, including 20
 - **Head-to-head nights.** When a booker plans a title chase, Dockside, Pulse and any desperate promotion put the title match on the same week as a rival's announced one; North Crown and Grand Union move theirs out of the way. Two payoffs in one week split the towns, and the one with more buzz keeps more of its crowd. `decide()` stays pure: it reads the stored storylines and last week's business.
 - **Raids.** At most every six weeks the richest promotion with momentum can sign a rival's best-known name (not a champion, not in a live storyline, not raided in the last 16 weeks, from a promotion not raided in the last 12) to an exclusive deal: the wrestler's card row moves across, £1,500 is spent, buzz moves with them.
 - **Screens.** Promoters shows each promotion's state (Hot, Steady, Cooling, Struggling), trend, crowd against its usual level, buzz and money; the booking sheets show the same line under the booker.
+
+## v0.3.18 additions
+
+- **Programmes** (`programmes.js`, `window.OfficeProgrammes`). A promoter who trusts you (40+) can offer one of your wrestlers a whole storyline, at most one offer on the table and one every four weeks: a **title chase** for a main-event or featured name (one or two wins, then the title match against the circuit champion), a **grudge** with a wrestler they have bad blood or a hot feud with (three matches, the last a blow-off), or a **rising star** push for someone low on that card (two wins over better-placed wrestlers, then a main-event name). Which comes first follows the booker's preferences and the wrestler's ambition. The offer (`o.programme`, tagged `Programme`) lists every date, opponent, slot and finish; the payoff's finish leans on the booker, your trust and the promotion's business.
+- **Signing** (`G.book` wrapper) needs every date clear and books all of them as ordinary contracts carrying `programme:{id,step}`. Pulling any of them (`G.unbook`) walks out of the whole programme: every date is cancelled and trust falls by 15. A double-cross ends it. Missing the last date (injury, camp, release) collapses it for −8. Seeing it through gives trust +8, reputation +3 and the promotion some buzz.
+- **A change of plan.** The week before the payoff, a booker may change the ending (`prog_swerve`, a decision): go along with it (trust +3), argue (a management meeting; the booker may change it back), or walk out.
+- **The circuit makes room.** While a title programme is offered or running, the booking office starts no rival chase for that belt and books no champion defences in that division, and the programme's opponents are left out of AI storylines and raids (`claims()`). Everything it reads is in the save, so `decide()` stays pure and the start screen still predicts the circuit (tested with programmes running).
+- **Screens.** Offers shows a programme as one offer with its matches, total purse and a single Sign button (no haggling); the booking sheets list your programmes at that promotion.

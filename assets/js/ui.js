@@ -488,6 +488,12 @@ function offerWho(o,sel){
  if(!sel)return `<span class="dim">${o.wid?esc(G.W(o.wid)?.name||'Unavailable')+' (unavailable)':noneFor(o)}</span>`;
  return o.wid||o.talk?`<b>${esc(sel.name)}</b>`:`<span title="Suggested. Change it in the offer panel.">${esc(sel.name)}</span>`;
 }
+// v0.3.18 A programme offer: every date, opponent and finish, signed as one.
+function programmePanel(o,sel){
+ const P=o.programme,name=id=>G.F(id)?.name||id;
+ return `<p style="margin-top:8px"><span class="tag hot">${esc(window.OfficeProgrammes?.TYPE_NAME[P.type]||'Programme')}</span> ${P.beats.length} matches for ${esc(G.W(P.wid)?.name||'')}. Reply by ${weekLabel(o.expiresAbs)}.</p>
+  <div class="well"><table class="grid"><thead><tr><th>Show</th><th>Opponent</th><th>Slot</th><th>Finish</th>${sel?'<th class="n">Purse</th>':''}</tr></thead><tbody>${P.beats.map(b=>`<tr><td>${weekLabel(b.at)}</td><td>${esc(name(b.rid))}${b.title?' <span class="tag">Title</span>':b.blowoff?' <span class="tag">Blow-off</span>':''}</td><td>${esc(D.SLOTS[b.slot].name)}</td><td>${finishTag(b.finish)}</td>${sel?`<td class="n">${money(G.purse({pid:o.pid,slot:b.slot,finish:b.finish,boost:o.boost},sel))}</td>`:''}</tr>`).join('')}</tbody></table></div>`;
+}
 function renderOffers(){
  const s=S(),income=s.card.reduce((t,c)=>t+c.purse,0),out=G.wages()+G.overhead()+G.trainingBill();
  const ledger=`<div class="facts"><div><small>Purses booked this week</small><b>${money(income)}</b></div><div><small>Wages, overheads, coaching</small><b>${money(-out)}</b></div><div><small>Net this week</small><b class="${income-out<0?'neg':'pos'}">${money(income-out)}</b></div><div><small>Meetings left</small><b>${s.focus} of 2</b></div></div>`;
@@ -496,7 +502,7 @@ function renderOffers(){
  const offers=s.offers.slice().sort((a,b)=>can(b)-can(a)||a.eventAbs-b.eventAbs||a.expiresAbs-b.expiresAbs);
  if(phoneLayout()&&offers.some(o=>o.id===route.id))selOffer=route.id;
  if(!selOffer||!offers.some(o=>o.id===selOffer))selOffer=(offers.find(can)||offers[0])?.id||null;
- const rows=offers.map(o=>{const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);return `<tr class="pick${sel?'':' unbookable'}" data-selo="${o.id}" aria-selected="${o.id===selOffer}"${sel?'':' title="Nobody in your stable can take this booking."'}><td>${weekLabel(o.eventAbs)}<br><span class="dim">${o.eventAbs===G.abs()?'This week':o.expiresAbs>G.abs()?`Reply by ${weekLabel(o.expiresAbs)}`:''}</span></td><td class="wrap"><b>${esc(p.name)}</b>${o.tag?` <span class="tag hot">${esc(o.tag)}</span>`:''}</td><td class="wrap offer-match">${offerWho(o,sel)}<br><span class="vs-line">v ${esc(f.name)}</span></td><td>${esc(D.SLOTS[o.slot].name)}<br>${finishTag(o.finish)}</td><td class="n">${sel?money(G.purse(o,sel)):'<span class="dim">–</span>'}</td></tr>`}).join('');
+ const rows=offers.map(o=>{const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);return `<tr class="pick${sel?'':' unbookable'}" data-selo="${o.id}" aria-selected="${o.id===selOffer}"${sel?'':' title="Nobody in your stable can take this booking."'}><td>${weekLabel(o.eventAbs)}<br><span class="dim">${o.eventAbs===G.abs()?'This week':o.expiresAbs>G.abs()?`Reply by ${weekLabel(o.expiresAbs)}`:''}</span></td><td class="wrap"><b>${esc(p.name)}</b>${o.tag?` <span class="tag hot">${esc(o.tag)}</span>`:''}</td><td class="wrap offer-match">${offerWho(o,sel)}<br><span class="vs-line">v ${esc(f.name)}</span></td><td>${o.programme?`${o.programme.beats.length} matches<br><span class="dim">${esc(window.OfficeProgrammes?.TYPE_NAME[o.programme.type]||'Programme')}</span>`:`${esc(D.SLOTS[o.slot].name)}<br>${finishTag(o.finish)}`}</td><td class="n">${sel?money(o.programme?window.OfficeProgrammes.totalPurse(o,sel):G.purse(o,sel)):'<span class="dim">–</span>'}</td></tr>`}).join('');
  const list=!s.roster.length?`<div class="empty">You need someone under contract before you can take bookings.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`
   :offers.length?`<div class="well"><table class="grid"><thead><tr><th>Show</th><th>Promoter</th><th>Match</th><th>Slot and finish</th><th class="n">Purse</th></tr></thead><tbody>${rows}</tbody></table></div>`
   :`<div class="empty">No offers left this week. Press Continue to move on.</div>`;
@@ -508,15 +514,15 @@ function renderOffers(){
   detail=`<div class="row" style="flex-wrap:nowrap;gap:12px">${face('booker',p.id,p.voice,'portrait')}<div><div style="font:30px/.9 var(--jersey);color:var(--blood)">${esc(p.name)}</div><div class="dim">${esc(p.desc)}, ${esc(p.venue)}. Booker ${esc(p.voice)}.</div><div style="font-size:14px">Trust ${bar(p.trust,p.trust<30?'danger':p.trust>=65?'':'warn')} ${p.trust}</div></div></div>
   <div class="well matchup" style="margin-top:10px"><div class="side">${sel?face('wrestler',sel.id,sel.name,'portrait x2'):''}${options.length?`<select data-pick="${o.id}" aria-label="Wrestler for this offer" ${o.wid||o.talk?'disabled':''}>${options.map(w=>`<option value="${w.id}" ${sel?.id===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select>`:'<span class="dim">Nobody free</span>'}</div><div class="vs">v</div><div class="side">${face('wrestler',f.id,f.name,'portrait x2')}<b>${esc(f.name)}</b><span class="dim">${esc(f.style)}</span></div></div>
   ${o.title?`<div class="title-line">${beltBadge(D.belt(o.title.pid,o.title.div))}<small>${o.tag==='Title defence'?'Your champion defends the belt.':'A shot at the champion.'} The promoter has already decided the result.</small></div>`:''}
-  <dl class="kv"><dt>Show</dt><dd>${weekLong(o.eventAbs)}</dd><dt>Slot</dt><dd>${esc(D.SLOTS[o.slot].name)}, ${mins} minutes</dd><dt>Finish</dt><dd>${finishTag(o.finish)}</dd><dt>Reply by</dt><dd>${weekLong(o.expiresAbs)}</dd></dl>
+  ${o.programme?programmePanel(o,sel):`<dl class="kv"><dt>Show</dt><dd>${weekLong(o.eventAbs)}</dd><dt>Slot</dt><dd>${esc(D.SLOTS[o.slot].name)}, ${mins} minutes</dd><dt>Finish</dt><dd>${finishTag(o.finish)}</dd><dt>Reply by</dt><dd>${weekLong(o.expiresAbs)}</dd></dl>`}
   ${sel?fitNotes(o,sel):''}
-  ${options.length?`<div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(G.purse(o,sel))}</span><button class="btn go" style="min-height:44px;min-width:170px" data-book="${o.id}">${o.eventAbs>G.abs()?'Commit to date':'Book this week'}</button></div>
+  ${o.programme&&options.length?`<div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(window.OfficeProgrammes.totalPurse(o,sel))}</span><button class="btn go" style="min-height:44px;min-width:170px" data-book="${o.id}">Sign the programme</button></div><p class="dim" style="margin-top:6px">Signing books every date. Pull out of any of them and you walk out of the whole programme.</p>`:options.length?`<div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(G.purse(o,sel))}</span><button class="btn go" style="min-height:44px;min-width:170px" data-book="${o.id}">${o.eventAbs>G.abs()?'Commit to date':'Book this week'}</button></div>
   <div class="row" style="margin-top:8px"><button class="btn" data-talkopen="${o.id}" ${!negotiated&&s.focus<1?'disabled':''}>${negotiated?'Read the conversation':'Negotiate with '+esc(p.voice)}</button><span class="dim" style="font-size:13px">${negotiated?`${esc(o.talk.verdict)}. ${esc(o.talk.detail)}`:`Uses one of ${s.focus} meetings left`}</span></div>`
   :`<p class="bad" style="margin-top:10px">${o.wid?`${esc(G.W(o.wid)?.name||'This wrestler')} isn’t available for this date.`:noneFor(o)==='Nobody free'?'Nobody is free on the event date. Check camps and signed bookings.':`This is a ${esc(D.DIVISIONS[D.divisionOf(o.rid)].name.toLowerCase())} match, and nobody in your stable works that division.`}</p>`}`;
  }
  const cards=s.roster.length?offers.map(o=>{
   const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);
-  return `<button class="phone-card${sel?'':' unbookable'}" data-selo="${o.id}"><span class="phone-card-line"><b>${esc(p.name)}</b><span>${o.eventAbs===G.abs()?'This week':weekLabel(o.eventAbs)}</span></span><span>${sel?esc(sel.short)+' ':''}v ${esc(f.name)} · ${esc(D.SLOTS[o.slot].name)}</span><span class="phone-card-line"><small>${esc(D.FINISHES[o.finish].name)}</small><b>${sel?money(G.purse(o,sel)):'Unavailable'}</b></span></button>`;
+  return `<button class="phone-card${sel?'':' unbookable'}" data-selo="${o.id}"><span class="phone-card-line"><b>${esc(p.name)}</b><span>${o.eventAbs===G.abs()?'This week':weekLabel(o.eventAbs)}</span></span><span>${sel?esc(sel.short)+' ':''}v ${esc(f.name)} · ${esc(D.SLOTS[o.slot].name)}</span><span class="phone-card-line"><small>${o.programme?`Programme, ${o.programme.beats.length} matches`:esc(D.FINISHES[o.finish].name)}</small><b>${sel?money(o.programme?window.OfficeProgrammes.totalPurse(o,sel):G.purse(o,sel)):'Unavailable'}</b></span></button>`;
  }).join(''):'';
  paint('s-offers'+phonePane(route.id,o?.id),
   win('Bookings this week',ledger,{area:'ledger',h:'h3',cls:'quiet phone-overview',body:'tight'})+
@@ -583,6 +589,11 @@ function renderPromoters(){
  paint('s-full',win('Promoters',phoneList(table,cards)+'<p class="dim" style="margin-top:8px">Trust rises when you deliver what a promoter asked for and falls when you pull out or break a finish. A promotion drawing well reaches more people and pays better; one that is struggling pays less and books desperately.</p>',{keep:'proms'}));
 }
 // v0.3.15 Each booker's plans: the storylines on the board and how the last ones ended.
+function yourProgrammes(p){
+ const v=window.OfficeProgrammes?.view(p.id);if(!v||!(v.live.length||v.done.length))return '';
+ const line=x=>{const next=x.beats.find(b=>!b.done&&!b.missed);return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}</li>`;};
+ return `<h3 class="section-h">Your programmes here</h3><ul class="cons">${[...v.live,...v.done.slice(0,3)].map(line).join('')}</ul>`;
+}
 function renderSheets(){
  const s=S(),B=window.OfficeBooking;if(!B)return renderPyramid();
  const p=D.PROMOS.find(x=>x.id===route.id)||D.PROMOS[0],v=B.view(p.id);
@@ -600,7 +611,7 @@ function renderSheets(){
  const done=v.done.length?`<ul class="cons">${v.done.map(x=>`<li class="${x.status==='dropped'?'':'up'}"><b>${esc(x.typeName)}</b> · ${esc(x.text||'')} <span class="dim">${x.ended?weekLabel(x.ended):''}</span></li>`).join('')}</ul>`:'<p class="dim">No storyline has finished here yet.</p>';
  const M=window.OfficeManagers,pushing=M?.lobbyAt(p.id)||[];
  const lobby=pushing.length?`<ul class="cons">${pushing.map(l=>`<li><b>${esc(l.manager)}</b> (${esc(l.team)}) is pushing <b>${esc(l.name)}</b>${l.want?` · wants ${esc(l.want.toLowerCase())}`:''}</li>`).join('')}</ul>`:'<p class="dim">No manager is working this booker this week.</p>';
- paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">On the board</h3>${live}<h3 class="section-h">Managers in the booker’s ear</h3>${lobby}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">Bookers plan the circuit’s matches around these storylines and choose who wins to serve them. They do not always stick to the plan.</p>`,{keep:'sheets',note:esc(p.name)}));
+ paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">On the board</h3>${live}${yourProgrammes(p)}<h3 class="section-h">Managers in the booker’s ear</h3>${lobby}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">Bookers plan the circuit’s matches around these storylines and choose who wins to serve them. They do not always stick to the plan.</p>`,{keep:'sheets',note:esc(p.name)}));
 }
 function renderRivalries(){
  const s=S(),feuds=Object.values(s.feuds).filter(f=>f.heat>0||f.closed).sort((a,b)=>b.heat-a.heat);
@@ -969,7 +980,7 @@ document.addEventListener('click',e=>{
   if(err){render();return toast(err)}
   refreshList('offers');return toast(when>G.abs()?`Signed for ${weekLabel(when)}. Purse paid after the match.`:'Booked on this week’s card.');
  }
- if(d.unbook){G.unbook(d.unbook);render();toast('Booking cancelled. Promoter trust −6.');return}
+ if(d.unbook){const said=G.unbook(d.unbook);render();toast(said||'Booking cancelled. Promoter trust −6.');return}
  if(d.talkopen){const o=S().offers.find(x=>x.id===d.talkopen);renderMeeting(d.talkopen,o?.talk?.wid||pick[d.talkopen]);return}
  if(d.talkaction){const res=G.talkMove(d.oid,d.wid,d.talkaction);if(res.error)return toast(res.error);renderMeeting(d.oid,d.wid);return}
  if(d.talkbook){const o=S().offers.find(o=>o.id===d.talkbook);const when=o?.eventAbs;if(d.revert){const res=G.talkMove(d.talkbook,d.wid,'revert');if(res.error)return toast(res.error)}const err=G.book(d.talkbook,d.wid);if(err)return toast(err);$('#modal').close();refreshList('offers');toast(when>G.abs()?`Future booking confirmed for ${weekLabel(when)}.`:`Contract signed for ${money(G.purse(o,G.W(d.wid)))}.`);return}
