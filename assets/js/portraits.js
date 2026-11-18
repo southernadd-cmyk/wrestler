@@ -212,7 +212,10 @@ const portraitCells=new Map(portraitRows.flatMap((row,y)=>row.map((key,x)=>[
  key,`${100*x/(row.length-1)}% ${100*y/(portraitRows.length-1)}%`
 ])));
 // Painted portraits for people who are not on the atlas. Dennis, the road agent, has his own.
-const imagePortraits={'booker:dennis':'assets/portraits/dennis.png'};
+const imagePortraits={'booker:dennis':'assets/portraits/dennis.png',
+ // The six rival managers (v0.3.19).
+ 'manager:iron':'assets/portraits/manager-iron.png','manager:coastal':'assets/portraits/manager-coastal.png','manager:northern':'assets/portraits/manager-northern.png',
+ 'manager:eastbank':'assets/portraits/manager-eastbank.png','manager:meridian':'assets/portraits/manager-meridian.png','manager:redwood':'assets/portraits/manager-redwood.png'};
 function avatar(actor,appearance=null,cssClass='portrait'){
  const safe=String(actor?.name||'Wrestler').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
  const label='Pixel-art portrait of '+safe;

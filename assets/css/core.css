@@ -471,3 +471,8 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .story-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
 .story-card p{margin:0 0 6px}
 .story-card .cons li{background:none;border:0;border-left:3px solid var(--stone-lo);padding:2px 8px;color:inherit}
+
+/* v0.3.19 rival stables: which belt a champion holds, and the manager on their letters. */
+.champ-chip{display:inline-flex;align-items:center;gap:6px;margin:3px 0 2px;padding:2px 6px 2px 2px;border:1px solid var(--gold,#e0b43c);font-size:12px;font-weight:700;line-height:1.1;white-space:nowrap}
+.champ-chip img{width:44px;height:auto;display:block}
+.letter-face{float:right;margin:0 0 8px 12px}
