@@ -187,8 +187,9 @@
  }
  function takeSpot(s,t,a=state(t),week=t.week){
   const seen=new Set(a.seen);
-  const open=(s.offers||[]).filter(o=>seen.has(o.id)&&!o.wid&&!o.talk&&o.eventAbs>=week&&(['main','feature'].includes(o.slot)))
-   .concat((s.offers||[]).filter(o=>seen.has(o.id)&&o.tag==='Title match'));
+  // Only ordinary, unsigned open slots can be reassigned. Earned title shots, callouts,
+  // rematches, named bookings and all multi-date programmes belong to their actual contracts.
+  const open=(s.offers||[]).filter(o=>seen.has(o.id)&&!o.wid&&!o.talk&&!o.title&&!o.programme&&!o.tag&&o.eventAbs>=week&&['main','feature'].includes(o.slot));
   for(const o of open){
    const div=D.divisionOf(o.rid);
    const rival=Object.entries(a.lobby[o.pid]||{}).filter(([id,l])=>D.divisionOf(id)===div&&id!==o.rid&&l.w>=45)
