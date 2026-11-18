@@ -40,7 +40,9 @@ The circuit’s wrestlers want things as well. An unhappy one turns down a new c
 
 The six rival managers stopped waiting for the phone. Each week they work the bookers for the wrestlers who want something most, and the bookers listen to the ones whose wrestlers deliver. They find new work for wrestlers stuck at the bottom of every card, and the ones with money poach unhappy wrestlers from each other.
 
-They are after your business too. An offer you sit on for a week (a featured bout, a main event, a title match) can go to one of their wrestlers instead, and the road agent will tell you who took it. A manager can make you an offer for one of your wrestlers who wants out: **sell**, **ask for more**, **pay a loyalty bonus** to keep them, or **refuse** and live with how they take it. Any of the six managers can come calling now, not just North Circuit. And the week before the agencies sign from the market, word gets round who they are after, so you can get in first. The rival stables table under **Territory → Card pyramid** says how each manager works.
+They are after your business too. An offer you sit on for a week (a featured bout, a main event, a title match) can go to one of their wrestlers instead, and the road agent will tell you who took it. A manager can make you an offer for one of your wrestlers who wants out: **sell**, **ask for more**, **pay a loyalty bonus** to keep them, or **refuse** and live with how they take it. Any of the six managers can come calling now, not just North Circuit. And the week before the agencies sign from the market, word gets round who they are after, so you can get in first.
+
+You can look over the fence too. **Roster → Rival stables** shows every agency’s roster: what each wrestler wants, whether they are settled, restless or want out, and when their contract is up. Somebody who wants out will listen to an approach. It costs a management meeting, and if they say yes you pay their stable’s fee. Either way their manager hears about it, and a manager you have taken from will come for your wrestlers in return. The rival stables table under **Territory → Card pyramid** says how each manager works.
 
 ## THE BUSINESS
 
@@ -419,6 +421,7 @@ node tests/booking-office.test.cjs
 node tests/rival-managers.test.cjs
 node tests/promotion-business.test.cjs
 node tests/programmes.test.cjs
+node tests/approaches.test.cjs
 node tests/start-poster.test.cjs
 node tests/structure.test.cjs
 ```
@@ -427,7 +430,7 @@ The suites cover the free-agent market and rival contracts, separate promotion l
 
 `node tools/five-bouts.cjs` plays five consecutive meetings between the same two wrestlers in one career and writes a report of every argument, negotiation, match and memory; sample reports are in [docs/reports](docs/reports/).
 
-**Continuous integration:** All 35 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
+**Continuous integration:** All 36 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
 
 ### Small print
 

@@ -20,4 +20,4 @@ assert.match(deskCss,/#view:has\(> \.s-desk\)\{overflow-y:auto/);
 assert.match(deskCss,/@media \(min-width:901px\) and \(max-height:880px\)/);
 assert.match(deskCss,/\.nav \.item\{min-height:28px;padding:3px 7px/);
 console.log('PASS desk layout: reserved table rows, short-window scrolling, compact navigation');
-console.log('PASS modular structure: 19 ordered JavaScript files, 4 CSS files, atlas PNG');
+console.log('PASS modular structure: 20 ordered JavaScript files, 4 CSS files, atlas PNG');
