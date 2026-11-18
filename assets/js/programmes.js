@@ -119,8 +119,8 @@
   const w=G.W(wid),prog=o.programme;
   if(!w||w.id!==prog.wid)return `This programme is for ${name(prog.wid)}.`;
   if(o.expiresAbs<G.abs())return 'That offer has expired.';
-  const clash=prog.beats.find(b=>!G.availableAt(w,b.at));
-  if(clash)return `${w.short} isn’t free on ${weekLabel(clash.at)}. Every date in a programme has to be clear.`;
+  const clash=prog.beats.find(b=>!G.availableAt(w,b.at)||G.bookingConflict(w.id,b.rid,b.at));
+  if(clash)return G.bookingConflict(w.id,clash.rid,clash.at)||`${w.short} isn’t free on ${weekLabel(clash.at)}. Every date in a programme has to be clear.`;
   for(const [k,b] of prog.beats.entries()){
    const fd=G.feud?.(w.id,b.rid);
    const c={id:'c-'+prog.id+'-'+k,pid:prog.pid,rid:b.rid,wid:w.id,slot:b.slot,minutes:D.SLOTS[b.slot].mins+(b.blowoff?5:0),finish:b.finish,
@@ -172,9 +172,18 @@
    if(prog){
     const b=prog.beats[c.programme.step];
     if(b&&!b.done){
-     b.done=true;b.result={outcome:fin.outcome,stars:fin.stars||0};
+     const decision=root.OfficeOutcome.interpret(c,fin);
+     b.done=true;b.result={outcome:decision.actualOutcome,stars:fin.stars||0,honoured:decision.contractHonoured};
      const p=G.P(prog.pid);
-     if(fin.outcome==='double'){close(s,prog,'broken',`${name(prog.wid)} went into business for themselves. The programme is over.`);}
+     if(!decision.contractHonoured){
+      const why=decision.actualOutcome==='double'?'went into business for themselves':decision.actualOutcome==='dq'?'was disqualified unexpectedly':decision.actualOutcome==='nc'?'finished without a decision':'did not deliver the agreed finish';
+      close(s,prog,'broken',`${name(prog.wid)} ${why}. The agreed programme could not be completed.`);
+      out.push({text:'Programme ended without the agreed finish. No completion bonus.',tone:-1});
+     }
+     else if(c.programme.step===prog.beats.length-1&&prog.beats.some(x=>x.missed)){
+      close(s,prog,'incomplete',`${name(prog.wid)} worked the finale, but an earlier contracted date was missed. No completion bonus.`);
+      out.push({text:'Programme finale worked, but an earlier date was missed. No completion bonus.',tone:-1});
+     }
      else if(prog.beats.every(x=>x.done)){
       p.trust=clamp(p.trust+KEPT_TRUST);s.rep=clamp(s.rep+KEPT_REP);
       const biz=s.territory.business?.[prog.pid];if(biz)biz.buzz=Math.min(100,(biz.buzz||0)+5);
@@ -209,6 +218,11 @@
     }
    }
    if(!st.live.includes(prog))continue;
+   // Recover older saves whose middle date was missed before the finale was played.
+   if(prog.beats.every(b=>b.done||b.missed)){
+    close(s,prog,'incomplete',`${name(prog.wid)} reached the end of the dates without completing every match. No completion bonus.`);
+    continue;
+   }
    // The week before the big one, the booker may change the ending.
    const pay=prog.beats.at(-1),next=[...s.card,...s.futureBookings].find(c=>c.id===pay.cid);
    if(next&&!prog.swerved&&pay.at===now+1){
