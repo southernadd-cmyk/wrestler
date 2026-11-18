@@ -167,7 +167,7 @@
    const a=arc(x.prog),next=x.prog.beats.findIndex((b,k)=>k>x.step&&!b.done&&!b.missed);
    const text=next>=0?`${name(x.prog.wid)} has another date with ${name(x.prog.beats[next].rid)} on the book. ${band(a.momentum)}.`:
     `That was the last contracted match. ${a.conclusion||'The programme is over'}.`;
-   st.log.push({side:'stage',who:null,text});G.save();return st;
+   st.log.push({side:'stage',who:null,text});after.recordEvidence?.(st);G.save();return st;
   };
  }
  root.OfficeProgrammeArcs={STAGES,band,chapter,options,intro,prepare,settle,locate,arc,record};
