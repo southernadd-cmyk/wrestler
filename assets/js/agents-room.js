@@ -1482,7 +1482,7 @@
  // The next agreed beat that can happen now, whoever owns it.
  function target(M){
   const s=M.sheet;if(!s||s.v<4)return null;
-  return s.nodes.find(b=>!b.vow&&eligible(M,b))||null;
+  return s.nodes.find(b=>!b.vow&&!b.corner&&eligible(M,b))||null;
  }
  const willing=(M,side)=>(side==='w'?M.sheet.workerConsent:M.sheet.opponentConsent)||60;
  // What the wrestler in control is trying to get to: the agreed move, the setup it needs,

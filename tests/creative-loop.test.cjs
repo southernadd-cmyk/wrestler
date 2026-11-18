@@ -11,7 +11,7 @@ const db=new Map(),root={addEventListener(){}};
 const localStorage={getItem:k=>db.get(k)||null,setItem:(k,v)=>db.set(k,String(v)),removeItem:k=>db.delete(k)};
 vm.runInNewContext(script.slice(0,cut),{window:root,localStorage,console,Math,Date,JSON});
 const D=root.OfficeData,G=root.OfficeGame,P=root.OfficeSheets,Promo=root.OfficeStory.Graph,M=root.OfficeMatch,K=root.OfficeGraphKernel;
-assert.ok(script.includes('sheet:P.sheet?.signed?OfficeRoom.addVow(P.sheet,promoRes,w,f):null'),'signed sheet, with any microphone vow, is used at the bell');
+assert.ok(script.includes('sheet:P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null'),'signed sheet, with any microphone vow and the ringside plan, is used at the bell');
 assert.ok(script.includes("pickCards(v.options,'mic',true)")&&script.includes('${claim}'),'promo choices and claim appear on screen');
 
 const rex=D.TALENT.find(w=>w.id==='rex'),brick=D.TALENT.find(w=>w.id==='brick');
