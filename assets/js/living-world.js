@@ -127,6 +127,14 @@ function releaseAI(s,id,week=baseWeek(s)){
  event(w,week,D.findWrestler(id).name+' left '+club(s,contract.agencyId).name+' and entered the free-agent market.');
  return true;
 }
+// Who an agency would sign from the market and the independents next, leaving out anyone in `taken`.
+function marketTarget(s,team,taken=new Set()){
+ const w=activeWorld(s);if(!w)return null;
+ const offers=[...s.free,...all.filter(p=>w.contracts[p.id]?.owner==='independent')];
+ return offers.filter(p=>!taken.has(p.id)&&['market','independent'].includes(w.contracts[p.id]?.owner))
+  .map(p=>({p,fit:(p.style===team.style?30:0)+p.pro*.35+p.ring*.22-p.fee/180-(p.ego>85?5:0)}))
+  .sort((a,b)=>b.fit-a.fit||a.p.id.localeCompare(b.p.id))[0]?.p||null;
+}
 function evolve(s,t,week,reports){
  const w=activeWorld(s);if(!w||w.lastEvolvedWeek===week)return;
  w.lastEvolvedWeek=week;
@@ -151,19 +159,16 @@ function evolve(s,t,week,reports){
  }
  // Every five weeks each agency evaluates the market under its own budget.
  if(week%5===0){
-  const offers=[...s.free,...all.filter(p=>w.contracts[p.id]?.owner==='independent')];
   const taken=new Set();
   for(const team of t.teams){
    const agency=w.agencies[team.id];
    if(!agency||team.roster.length>=agency.cap)continue;
-   const target=offers.filter(p=>!taken.has(p.id)&&['market','independent'].includes(w.contracts[p.id]?.owner))
-    .map(p=>({p,fit:(p.style===team.style?30:0)+p.pro*.35+p.ring*.22-p.fee/180-(p.ego>85?5:0)}))
-    .sort((a,b)=>b.fit-a.fit||a.p.id.localeCompare(b.p.id))[0]?.p;
+   const target=marketTarget(s,team,taken);
    if(target&&hire(s,team.id,target.id,week)){taken.add(target.id);reports.push(team.manager+' signed '+target.name+' to '+team.name+'.');}
   }
  }
  if(w.events.length>80)w.events.length=80;
 }
 function ownership(s,id){return activeWorld(s)?.contracts[id]||null}
-root.OfficeWorldV4={activate,reconcile,markPlayer,markMarket,canAfford,hire,releaseAI,evolve,ownership,activeWorld};
+root.OfficeWorldV4={activate,reconcile,markPlayer,markMarket,canAfford,hire,releaseAI,evolve,ownership,activeWorld,marketTarget};
 })(typeof window!=='undefined'?window:globalThis);

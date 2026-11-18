@@ -43,12 +43,14 @@
   const info=id=>D.findWrestler(id)||{};
   const pressure=id=>{const e=amb(id);return e?clamp((100-e.sat)*(.6+(info(id).ego??55)/100)):0;};
   const bond=(a,b)=>s.bonds?.pairs?.[[a,b].sort().join('|')]?.score||0;
+  // A rival manager working the booker on this wrestler's behalf (v0.3.16).
+  const lobby=(pid,id)=>t.agents?.lobby?.[pid]?.[id]?.w||0;
   // Who each promotion can book in each division: its ranked circuit wrestlers, not yours.
   const pools={};
   for(const p of D.PROMOS){pools[p.id]={};for(const div of D.DIVISION_ORDER)
    pools[p.id][div]=T.promotionRank(p.id,div,t,s).filter(w=>!w.owned&&T.contracted(s,w.id));}
   const row=(pid,div,id)=>pools[pid][div].find(w=>w.id===id)||null;
-  const pref=(p,w,salt)=>w.score+(w.heat||50)*.3+pressure(w.id)*.15+(p.personality==='cold'?(w.ring||60)*.3:0)+hash(salt+':'+w.id)*styleOf(p).noise;
+  const pref=(p,w,salt)=>w.score+(w.heat||50)*.3+pressure(w.id)*.15+lobby(p.id,w.id)*.15+(p.personality==='cold'?(w.ring||60)*.3:0)+hash(salt+':'+w.id)*styleOf(p).noise;
   const cast=new Set(Object.values(st.promos).flatMap(x=>x.live.flatMap(y=>[y.a,y.b])));
   const per={};const count=(pid,div)=>per[pid+':'+div]||0;
   const add=(m)=>{bill.push(m);busy.add(m.a.id);busy.add(m.b.id);per[m.pid+':'+m.div]=count(m.pid,m.div)+1;};
@@ -90,7 +92,7 @@
     if(!holder||!pool.some(w=>w.id===holder)||cast.has(holder))return null;
     const champ=row(p.id,div,holder);
     const who=free.filter(w=>w.id!==holder&&['main','feature'].includes(w.slot)&&w.stable!==champ.stable)
-     .map(w=>({w,v:pref(p,w,id)+(amb(w.id)?.kind==='title'?25:0)+pressure(w.id)*.3+(w.slot==='main'?10:0)}))
+     .map(w=>({w,v:pref(p,w,id)+(amb(w.id)?.kind==='title'?25:0)+pressure(w.id)*.3+lobby(p.id,w.id)*.4+(w.slot==='main'?10:0)}))
      .sort((x,y)=>y.v-x.v||x.w.id.localeCompare(y.w.id))[0]?.w;
     if(!who)return null;
     const beats=[];for(let k=0;k<cfg.titleLen-1;k++)beats.push({at:wk+k,kind:'build'});
@@ -103,7 +105,7 @@
      const n=bond(free[x].id,free[y].id);if(n<=-25&&(!pair||n<pair.n))pair={a:free[x],b:free[y],n};
     }
     if(!pair){
-     const keen=free.filter(w=>amb(w.id)?.kind==='rivalry').sort((x,y)=>pressure(y.id)-pressure(x.id)||x.id.localeCompare(y.id))[0];
+     const keen=free.filter(w=>amb(w.id)?.kind==='rivalry').sort((x,y)=>pressure(y.id)+lobby(p.id,y.id)-pressure(x.id)-lobby(p.id,x.id)||x.id.localeCompare(y.id))[0];
      if(keen){
       const target=amb(keen.id).target,foe=free.find(w=>w.id===target)||free.filter(w=>w.id!==keen.id&&w.stable!==keen.stable)
        .sort((x,y)=>Math.abs(x.score-keen.score)-Math.abs(y.score-keen.score)||x.id.localeCompare(y.id))[0];
@@ -115,7 +117,7 @@
    }
    if(type==='rise'){
     const riser=free.filter(w=>['opener','mid'].includes(w.slot))
-     .map(w=>({w,v:(w.ring||60)*.4+pressure(w.id)*.4+(['push','respect','stage'].includes(amb(w.id)?.kind)?20:0)+hash(id+w.id)*10}))
+     .map(w=>({w,v:(w.ring||60)*.4+pressure(w.id)*.4+lobby(p.id,w.id)*.3+(['push','respect','stage'].includes(amb(w.id)?.kind)?20:0)+hash(id+w.id)*10}))
      .sort((x,y)=>y.v-x.v||x.w.id.localeCompare(y.w.id))[0]?.w;
     if(!riser)return null;
     const holder=t.titles?.[p.id]?.[div]?.holder;
