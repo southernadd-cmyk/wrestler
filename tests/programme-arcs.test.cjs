@@ -81,7 +81,7 @@ console.log('PASS each programme has three distinct, phase-specific directions')
  for(const c of contracts){A.prepare(c,'gamble',{quality:90});G.applyResult(c,fin(4.25));}
  const done=P.state(s.territory).done.find(x=>x.id===prog.id);
  assert.ok(done?.arc?.conclusion);assert.equal(done.arc.timeline.length,contracts.length);
- assert.equal(done.arc.recognition,2);assert.ok(s.rep>60);
+ assert.equal(done.arc.recognition,done.arc.timeline.some(e=>e.claim==='broken')?1:2);assert.ok(s.rep>60);
  assert.equal(contracts.map(c=>c.finish).join(),finishList.join(),'booker-controlled finishes unchanged');
  assert.equal(P.state(s.territory).live.some(x=>x.id===prog.id),false);
  const v=JSON.parse(JSON.stringify(s));assert.equal(v.territory.programmes.done[0].arc.timeline.length,contracts.length);
@@ -100,3 +100,41 @@ console.log('PASS each programme has three distinct, phase-specific directions')
  assert.equal(s.territory.programmes.live[0].arc.momentum,50);
  console.log('PASS an older save can start the creative arc part-way through');
 }
+
+
+// 7. A spectacular performance and an unkept public promise are separate facts.
+{
+ const {prog,contracts}=withProgramme();
+ const finale=contracts.at(-1);
+ finale.finish='lose_clean';prog.beats.at(-1).finish='lose_clean';
+ A.prepare(finale,'gamble',{quality:91});
+ const note=A.settle(finale,fin(4.75));
+ const e=prog.arc.timeline.at(-1);
+ assert.equal(e.passed,true,'the segment still entertained the crowd');
+ assert.equal(e.claim,'broken','a booked loss cannot make a title-winning boast true');
+ assert.match(e.recap,/public claim was not delivered/);
+ assert.ok(note.text.includes('Programme finale'));
+}
+console.log('PASS a strong programme finale can entertain but fail its promised win');
+
+// 8. Choosing high-risk copy but cutting the microphone does not satisfy the mic gate.
+{
+ for(const id of ['needle','gamble']){
+  const {prog,contracts}=withProgramme(),c=contracts[0];
+  A.prepare(c,id,null);
+  A.settle(c,fin(4.5));
+  assert.equal(prog.arc.timeline[0].passed,false,id+' needs the actual promo');
+  assert.equal(prog.arc.timeline[0].quality,null);
+ }
+}
+console.log('PASS a skipped promo cannot satisfy a mic-dependent creative direction');
+
+// 9. Consistently excellent restrained work has a route to recognition.
+{
+ const {s,prog,contracts}=withProgramme();
+ for(const c of contracts){A.prepare(c,'steady',null);G.applyResult(c,fin(4.25));}
+ const arc=P.state(s.territory).done.find(x=>x.id===prog.id).arc;
+ assert.ok(arc.timeline.every(x=>x.passed),'all chapters landed');
+ assert.equal(arc.recognition,1,'restraint earns smaller recognition even below the high-risk momentum threshold');
+}
+console.log('PASS consistently excellent conservative programmes can earn recognition');
