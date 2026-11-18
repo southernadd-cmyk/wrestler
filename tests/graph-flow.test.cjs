@@ -16,7 +16,7 @@ vm.runInNewContext(script.slice(0,cut),{window:root,localStorage,console,Date,Ma
 const D=root.OfficeData,M=root.OfficeMatch,graph=M.GRAPH;
 const validity=graph.validate();
 assert.equal(validity.errors.length,0,JSON.stringify(validity.errors));
-assert.ok(validity.nodes>=55&&validity.arcs>=12&&validity.outcomes===6);
+assert.ok(validity.nodes>=55&&validity.arcs>=12&&validity.outcomes===9);
 assert.ok(validity.edges>=160);
 
 function options(i){
@@ -44,7 +44,7 @@ for(let i=0;i<500;i++){
  assert.ok(x.done&&x.final,'match reaches a final state');
  assert.ok(s.history.length>=2||x.shortened,'match traverses several arcs');
  assert.ok(s.events.some(e=>e.id.startsWith('outcome_')),'outcome graph records the finish');
- const expected=x.outcome==='nc'?'nc':x.outcome==='double'?'double':config.finish;
+ const expected=x.outcome==='nc'?'nc':x.outcome==='double'?'double':x.outcome==='dq'?'dq':config.finish;
  assert.equal(s.outcome.id,expected,'result follows contract or manager intervention');
  outcomeHits.add(s.outcome.id);
  for(const arc of s.history)arcs.add(arc);

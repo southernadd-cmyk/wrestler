@@ -103,7 +103,9 @@
   }else if(roll<eject){
    k.ok=false;k.ejected=true;Mx.lift(M,-4);M.sheetAdj=(M.sheetAdj||0)-.1;
    push(M,say(M,k.job==='runin'?x.short+' is over the barrier, and the referee turns round at exactly the wrong moment.':x.short+' climbs onto the apron to argue, and the referee has seen enough.','bad',{pause:1,who:'pbp'}));
-   push(M,say(M,'The referee points to the back. '+x.short+' is thrown out, and '+w.short+' is on their own.','bad',{big:true,pause:1,who:'colour'}));
+   // v0.3.22 A run-in the referee sees is not an ejection: it is a disqualification (unless nothing is illegal tonight).
+   if(k.job==='runin'&&M.outcome==='booked'&&M.o.stip!=='nodq'&&M.stip!=='nodq'){k.dq=true;M.dqCall={why:'runin',side:'w',who:x.short,at:M.t};}
+   else push(M,say(M,'The referee points to the back. '+x.short+' is thrown out, and '+w.short+' is on their own.','bad',{big:true,pause:1,who:'colour'}));
   }else if(k.job==='distract'){
    k.ok=true;const dirty=M.o.finish==='win_dirty';Mx.lift(M,dirty?6:4);M.sheetAdj=(M.sheetAdj||0)+(dirty?.1:.05);
    push(M,say(M,x.short+' is up on the apron, shouting about something. The referee goes over to deal with it.','play',{pause:1,who:'pbp'}));
@@ -117,7 +119,7 @@
   // Even if the sheet already gave up on it (a long quiet spell past its window), this is what happened.
   if(node){
    node.status=k.ok?'achieved':'missed';node.actual=k.ok?node.move:null;node.at=M.t;
-   node.why=k.ok?'Done as agreed.':k.hurtRef?'The referee was really hurt.':k.job==='runin'?x.short+' was caught before reaching the ring.':x.short+' was thrown out by the referee.';
+   node.why=k.ok?'Done as agreed.':k.hurtRef?'The referee was really hurt.':k.dq?'The referee saw the run-in and disqualified '+w.short+'.':x.short+' was thrown out by the referee.';
   }
  }
  const originalNext=Mx.next;
@@ -155,7 +157,7 @@
    add('The referee was really hurt. £50 for the doctor and '+p.voice+' is not happy: trust −4.',-1);
   }else{
    const dt=strict(p)?-3:-1;p.trust=clamp(p.trust+dt);x.morale=clamp(x.morale-3);
-   add(x.short+' was thrown out by the referee. '+p.name+' trust '+dt+', '+x.short+' morale −3.',-1);
+   add(k.dq?x.short+'’s run-in cost '+w.short+' the match. '+x.short+' morale −3.':x.short+' was thrown out by the referee. '+p.name+' trust '+dt+', '+x.short+' morale −3.',-1);
   }
   st.log.unshift({cid:c.id,week:G.abs(),wid:w.id,second:x.id,job:k.job,fired:!!k.fired,ok:!!k.ok,ejected:!!k.ejected,hurtRef:!!k.hurtRef});st.log=st.log.slice(0,30);
   G.save();return out;

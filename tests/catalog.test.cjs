@@ -73,14 +73,15 @@ function work(x){for(let i=0;i<9000&&!x.done;i++){if(x.decision&&!x.queue.length
 const kg=w=>D.PROFILES[w.id]?.kg||85;
 const sigUse={own:0,ownEvents:0,other:0,otherEvents:0},sigSeen=new Set(),sigCalls=new Set(),routes=new Set(),reached=new Set(),risk={safe:[0,0],spots:[0,0]},limb={on:0,off:0},styleUse={};
 let catalogEvents=0,events=0;
-const N=1000;
+const N=1000;let dqCalled=0;
 for(let i=0;i<N;i++){
  const o=options(i),x=work(M.create(o)),g=x.graph;
- assert.equal(g.outcome.id,x.outcome==='nc'?'nc':x.outcome==='double'?'double':o.finish,'contract still decides the finish');
+ assert.equal(g.outcome.id,x.outcome==='nc'?'nc':x.outcome==='double'?'double':x.outcome==='dq'?'dq':o.finish,'contract still decides the finish, unless the referee throws it out');
+ if(x.outcome==='dq')dqCalled++;
  assert.doesNotMatch(x.log.map(l=>l.text).join(' '),/undefined|NaN|\{(?:A|D|W|F|part|name)\}/);
  if(risk[o.plan.game])risk[o.plan.game][1]++;
  if(x.log.some(l=>/nobody on this circuit does it quite like/.test(l.text)))sigCalls.add(i);
- if(x.final.finishRoute){routes.add(o.finish+'.'+x.final.finishRoute);assert.ok(M.FINISH_ROUTES[o.finish].some(r=>r.id===x.final.finishRoute),'route belongs to the booked finish');}
+ if(x.final.finishRoute&&x.outcome!=='dq'){routes.add(o.finish+'.'+x.final.finishRoute);assert.ok(M.FINISH_ROUTES[o.finish].some(r=>r.id===x.final.finishRoute),'route belongs to the booked finish');}
  for(const e of g.events){
   const n=A[e.id];if(!n)continue;events++;reached.add(e.id);
   if(!n.family)continue;catalogEvents++;
@@ -128,8 +129,14 @@ const ownRate=sigUse.own/sigUse.ownEvents,otherRate=sigUse.other/sigUse.otherEve
 assert.ok(ownRate>4*otherRate,'wrestlers use their own signatures far more than their opponent’s ('+(ownRate*100).toFixed(1)+'% v '+(otherRate*100).toFixed(1)+'%)');
 assert.ok(sigCalls.size>N*.5,'commentary recognises signatures in most matches');
 
-// Finish routes: twenty in all, every contracted route reached, and the match so far picks it.
-assert.equal(M.FINISH_ROUTE_COUNT,20,'twenty finish routes');
+// Finish routes: twenty-six in all (v0.3.22 adds six booked disqualifications), every contracted route
+// reached, and the match so far picks it.
+assert.equal(M.FINISH_ROUTE_COUNT,26,'twenty-six finish routes');
+for(let i=0;i<240;i++){
+ const o={...options(i),finish:i%2?'win_dq':'lose_dq',feudHeat:i%4*20},x=work(M.create(o));
+ if(x.outcome==='booked'){assert.equal(x.graph.outcome.id,o.finish);routes.add(o.finish+'.'+x.final.finishRoute);assert.match(x.log.map(l=>l.text).join(' '),/disqualified|disqualification/);}
+}
+assert.ok(dqCalled<N*.03,'the referee throws out only a few ordinary matches: '+dqCalled+'/'+N);
 const allRoutes=Object.entries(M.FINISH_ROUTES).flatMap(([k,l])=>l.map(r=>k+'.'+r.id));
 const unrouted=allRoutes.filter(r=>!routes.has(r));
 assert.equal(unrouted.length,0,'finish routes never used: '+unrouted.join(', '));

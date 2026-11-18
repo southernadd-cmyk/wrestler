@@ -993,6 +993,10 @@ const Graph=(function makeGraph(){
   win_dirty:{who:'w',method:'illegal pin while official is distracted',legal:'booked dirty victory'},
   lose_protected:{who:'f',method:'rope break followed by opportunistic pin',legal:'booked protected loss'},
   lose_clean:{who:'f',method:'counter followed by decisive finisher',legal:'booked decisive loss'},
+  // v0.3.22 Disqualifications: booked either way, or called by the referee on what they actually saw.
+  win_dq:{who:'w',method:'opponent disqualified in front of the official',legal:'booked disqualification victory'},
+  lose_dq:{who:'f',method:'disqualified in front of the official',legal:'booked disqualification loss'},
+  dq:{who:'f',method:'disqualified for what the official saw',legal:'referee decision'},
   nc:{who:null,method:'medical stoppage',legal:'explicit injury decision'},
   double:{who:'w',method:'refusing agreed finish',legal:'explicit off-script decision'}
  };
@@ -1226,6 +1230,7 @@ const Graph=(function makeGraph(){
   if(id==='near_kickout')g.pendingCover=false;
   g.node=id;g.steps++;g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective});
   if(g.events.length>220)g.events.shift();
+  if(id==='cheap_shot')referee(M,side);
   if(M.o.promo?.tactic?.kind==='counter'&&n.reverse&&side==='f'&&p.control==='w'&&
      M.t/M.len>=.58&&(M.o.promo.tactic.nodes.includes(id)||(!!n.counterOf&&(!M.o.promo.tactic.families||M.o.promo.tactic.families.includes(n.family))))&&!g.promoCounterPaid){
    g.promoCounterPaid=true;
@@ -1413,7 +1418,7 @@ const Graph=(function makeGraph(){
   if(occurred)root.OfficeSheets?.observe(M,'special_spot',p.control,'spot');
  }
  function finishCue(M){
-  const g=get(M),outcome=M.outcome==='nc'?'nc':M.outcome==='double'?'double':M.o.finish;
+  const g=get(M),outcome=M.outcome==='nc'?'nc':M.outcome==='double'?'double':M.outcome==='dq'?'dq':M.o.finish;
   if(!OUTCOME_EDGES.finish_setup.includes(outcome))throw Error('Invalid match outcome: '+outcome);
   const def=OUTCOMES[outcome];
   if(outcome==='nc'&&!M.injury)throw Error('A no-contest medical stoppage requires a recorded injury.');
@@ -1639,6 +1644,7 @@ function stars(M,final=false){
  if(!M.qN)return 0;
  let s=starParts(M).reduce((t,p)=>t+p[2],0);
  if(M.outcome==='nc')s=Math.min(s,1.5);
+ if(M.outcome==='dq')s=Math.min(s,2.5);
  if(!final){const frac=Math.min(1,M.t/M.len);s=s*(.6+.4*frac);}
  return clamp(Math.round(s*4)/4,0,5);
 }
@@ -1649,6 +1655,8 @@ function next(M){
  return M.queue.shift()||null;
 }
 function simulate(M){
+ // A disqualification called during the match (the referee, or a run-in caught at ringside) ends it now.
+ if(M.dqCall&&M.stage==='live'&&M.outcome==='booked'){M.outcome='dq';M.stage='finish';}
  if(M.stage==='entrance')return entrances(M);
  if(M.stage==='finish')return finish(M);
  if(M.stage==='over'){M.done=true;return}
@@ -1971,6 +1979,26 @@ function finishContext(M){
   wRev:ev.filter(e=>e.reverse&&e.preControl==='f').length,fRev:ev.filter(e=>e.reverse&&e.preControl==='w').length,
   heat:Math.max(M.o.feudHeat||0,0),tiredW:M.wSt<30,tiredF:M.fSt<30,gap:M.wSt-M.fSt};
 }
+/* ---- v0.3.22 the referee: cheap shots can be seen, warned and, for your wrestler, end the match ---- */
+function dqHash(text){let h=2166136261;for(const ch of String(text)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return ((h>>>0)%10007)/10007;}
+function noDQ(M){return M.stip==='nodq'||M.o.stip==='nodq'||['win_dq','lose_dq'].includes(M.o.finish)||M.outcome!=='booked';}
+function referee(M,side){
+ if(noDQ(M)||M.stage!=='live')return;
+ const ref=M.ref??={w:0,f:0};
+ // The referee does not see everything; the television promotions' officials see more. Hashed, so the
+ // match's own random numbers are untouched.
+ // After a warning the referee is watching that wrestler closely.
+ const p=(side==='w'&&ref.w?.5:.2)+(['traditional','cold'].includes(M.p?.personality)?.08:0);
+ if(dqHash((M.o.seed||0)+'|ref|'+side+'|'+M.t)>=p)return;
+ if(side==='f'){if(!ref.f){ref.f=1;say(M,`The referee saw that one. ${M.f.short} gets a warning.`,'story',{who:'colour'});}return;}
+ // A professional heeds the first warning; anybody else may not.
+ if(!ref.w){ref.w=1;say(M,`The referee saw the cheap shot and warns ${M.w.short}. Next time, it is over.`,'bad',{big:true,pause:1,who:'colour'});mark(M,'warning',1);return;}
+ if(M.w.pro>=78){if(ref.w===1){ref.w=2;say(M,`${M.w.short} nearly takes another liberty, then remembers the warning.`,'story',{who:'colour'});}return;}
+ // The contract is only broken by the manager's own choices: a wrestler let off the leash, fired up, or
+ // already off the layout. Kept on the script, they get a final warning and pull themselves together.
+ if(!(M.leash==='free'||M.talk==='fire'||M.offScript)){if(ref.w===1){ref.w=2;say(M,`A final warning for ${M.w.short}. The referee means it.`,'story',{who:'colour'});}return;}
+ M.dqCall={why:'cheap',side:'w',at:M.t};
+}
 const count3=(M,step)=>{say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});say(M,'THREE!','count',{...step(),big:true});};
 const FINISH_ROUTES={
  win_clean:[
@@ -2061,7 +2089,39 @@ const FINISH_ROUTES={
    decisive(M,f,w,step,`${f.name} outlasted ${w.short} and wins, decisively.`);}}
  ]
 };
-// Eighteen contracted routes plus the no-contest and the off-script double-cross make twenty.
+// v0.3.22 Booked disqualifications. Who wins is still the contract; the referee simply sees it this time.
+FINISH_ROUTES.win_dq=[
+ {id:'dq_chair_f',when:()=>true,run(M,w,f,step){
+  say(M,`${f.short} is losing it. They slide out, pull a chair from under the ring and walk back in with it.`,'play',{...step(),pause:1});
+  say(M,`The referee tries to take it. ${f.short} swings anyway, and ${w.short} is down.`,'play',{...step(),big:true,pause:1});
+  say(M,'The bell! The referee has seen enough.','bell',{...step(),pause:1});
+  say(M,`${f.name} is disqualified. ${w.name} wins.`,'bell',{...step(),big:true});}},
+ {id:'dq_ref_shove_f',when:x=>x.heat>=25,run(M,w,f,step){
+  say(M,`${w.short} has ${f.short} in trouble. ${f.short} shoves the referee out of the way to get at them.`,'play',{...step(),big:true,pause:1});
+  say(M,'You cannot put hands on the official. The bell goes immediately.','bell',{...step(),pause:1});
+  say(M,`${w.name} wins by disqualification. ${f.short} is still arguing.`,'bell',{...step(),big:true});}},
+ {id:'dq_low_blow_f',when:(x,M,w,f)=>['Brawl','Story'].includes(f.style),run(M,w,f,step){
+  say(M,`${f.short} sees the finish coming and goes low, right in front of the referee.`,'play',{...step(),big:true,pause:1});
+  say(M,'The referee does not even have to think about it.','bell',{...step(),pause:1});
+  say(M,`${f.name} is disqualified. ${w.short} wins, doubled over.`,'bell',{...step(),big:true});}}
+];
+FINISH_ROUTES.lose_dq=[
+ {id:'dq_chair_w',when:()=>true,run(M,w,f,step){
+  say(M,`${w.short} has had enough of ${f.short}. Out under the ropes, back with a chair.`,'play',{...step(),pause:1});
+  say(M,`The referee is right there. ${w.short} swings it anyway.`,'play',{...step(),big:true,pause:1});
+  say(M,'The bell! The referee had no choice.','bell',{...step(),pause:1});
+  say(M,`${w.name} is disqualified. ${f.short} wins, but ${f.short} is the one on the floor.`,'bell',{...step(),big:true});}},
+ {id:'dq_choke_w',when:x=>x.heat>=25||x.dmgW>=3,run(M,w,f,step){
+  say(M,`${w.short} has ${f.short} choked over the bottom rope. The referee counts. One. Two. Three. Four.`,'play',{...step(),big:true,pause:1});
+  say(M,`${w.short} will not let go at five.`,'bell',{...step(),pause:1});
+  say(M,`${w.name} is disqualified. ${f.short} wins, if you can call it that.`,'bell',{...step(),big:true});}},
+ {id:'dq_ref_shove_w',when:(x,M,w)=>w.ego>=65,run(M,w,f,step){
+  say(M,`The referee steps in to break it up and ${w.short} shoves the official across the ring.`,'play',{...step(),big:true,pause:1});
+  say(M,'The bell goes at once.','bell',{...step(),pause:1});
+  say(M,`${w.name} is disqualified. ${f.short} wins.`,'bell',{...step(),big:true});}}
+];
+// Eighteen contracted routes plus the no-contest and the off-script double-cross make twenty; v0.3.22 adds
+// six booked disqualification routes, twenty-six in all.
 const FINISH_ROUTE_COUNT=Object.values(FINISH_ROUTES).reduce((n,l)=>n+l.length,0)+2;
 function pickFinishRoute(M){
  const list=FINISH_ROUTES[M.o.finish]||FINISH_ROUTES.win_clean,x=finishContext(M);
@@ -2102,6 +2162,15 @@ function finish(M){
   say(M,`That was not the plan. ${M.p.name} will want a word.`,'agent',{...step(0)});
   decisive(M,w,f,step,`${w.name} has pulled off the upset!`);
   say(M,`Chaos at ${M.p.venue}.`,'crowd',{...step(),big:true});
+ }else if(M.outcome==='dq'){
+  const k=M.dqCall||{why:'cheap'};M.finishRoute='dq_'+(k.why==='runin'?'runin':'cheap');
+  if(M.graph?.outcome)M.graph.outcome.route=M.finishRoute;
+  if(k.why==='runin')say(M,`The referee has seen ${k.who||'somebody'} come over the barrier, and that is that.`,'bad',{...step(),big:true,pause:1});
+  else say(M,`${w.short} goes for one more cheap shot, and this time the referee is looking straight at it.`,'bad',{...step(),big:true,pause:1});
+  say(M,'The referee calls for the bell!','bell',{...step(),pause:1});
+  say(M,`${w.name} is disqualified. ${f.short} wins.`,'bell',{...step(),big:true});
+  say(M,`That was not the finish anybody agreed. ${M.p.name} will want a word.`,'agent',{...step(2),who:'pbp'});
+  lift(M,-8);
  }else{
   // v3.3: twenty finish routes. The contract chooses who wins; the match so far chooses how.
   const route=pickFinishRoute(M);M.finishRoute=route.id;

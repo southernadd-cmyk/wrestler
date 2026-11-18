@@ -232,7 +232,9 @@
   limb_finish:'Work the limb all night, then finish',strike_knockout:'Win a slugfest',outlasted:'Outlast them',
   tights:'A fistful of tights',feet_on_ropes:'Feet on the ropes',eye_poke:'Thumb in the eye, then roll them up',referee_bump:'Bump the referee',
   rope_rollup:'Foot on the rope, then get rolled up',slow_count:'Get robbed by a slow count',exhausted_cover:'Hit the finisher, too spent to cover',injury_gives:'The bad wheel gives way',
-  duck_finisher:'Get caught, get finished',finisher_reversed:'Have our finisher reversed',submission_defeat:'Tap out'};
+  duck_finisher:'Get caught, get finished',finisher_reversed:'Have our finisher reversed',submission_defeat:'Tap out',
+  dq_chair_f:'They grab a chair in front of the referee',dq_ref_shove_f:'They shove the referee',dq_low_blow_f:'A low blow the referee sees',
+  dq_chair_w:'Snap and use a chair',dq_choke_w:'Choke them past the count of five',dq_ref_shove_w:'Shove the referee'};
  const ROUTE_STATIC={top_rope:(w)=>w.style==='Spectacle'&&kg(w)<110,strike_knockout:(w)=>w.style==='Brawl',eye_poke:(w)=>['Brawl','Story'].includes(w.style)};
  const name=id=>{const n=A[id];return n?.name||id.replace(/_/g,' ');};
  function legal(id,o,r){
@@ -1282,7 +1284,7 @@
   // conversation happens straight after the running order is agreed (and is skipped if the board
   // already avoids the problem).
   if(negotiable(st))st.queue=['rival_counter',...st.queue.filter(id=>id!=='rival_counter')];
-  const fin={win_clean:w.short+' wins clean',win_dirty:w.short+' wins dirty',lose_protected:w.short+' loses, but protected',lose_clean:w.short+' loses clean'}[c.finish];
+  const fin={win_clean:w.short+' wins clean',win_dirty:w.short+' wins dirty',lose_protected:w.short+' loses, but protected',lose_clean:w.short+' loses clean',win_dq:w.short+' wins by disqualification',lose_dq:w.short+' gets disqualified'}[c.finish];
   log(st,'agent',pick(['Evening. Doors in ten, so let’s not make a meal of it.','Right. I’ve a flask going cold, so shall we?','The urn’s on. Let’s get this agreed before the raffle starts.'],seed,'hello'));
   log(st,'agent','Contract says '+fin+'. That part isn’t up for discussion. So, what sort of match are we having?');
   const last=scout(st).lastTalk;

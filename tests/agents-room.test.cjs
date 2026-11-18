@@ -232,7 +232,7 @@ for(const sample of matches){
  }
  assert.ok(match.done,'the signed sheet plays to a result');
  checkStrip(match,true);
- if(!['double','nc'].includes(match.outcome)){
+ if(!['double','nc','dq'].includes(match.outcome)){ // v0.3.22 the referee can throw a match out, like an injury stoppage
   assert.equal(match.outcome,'booked');
   assert.equal(match.final.finishRoute,sheet.finishRoute,'the agreed finish plays out');
   completed++;

@@ -811,7 +811,7 @@ function showAfter(){
 }
 
 /* ---------- backstage and the promo duel ---------- */
-const FINISH_WORDS={win_clean:'wins clean',win_dirty:'wins dirty',lose_protected:'loses, protected',lose_clean:'loses clean',nc:'no contest'};
+const FINISH_WORDS={win_clean:'wins clean',win_dirty:'wins dirty',lose_protected:'loses, protected',lose_clean:'loses clean',win_dq:'wins by DQ',lose_dq:'loses by DQ',dq:'disqualified',nc:'no contest'};
 function signatureText(w){const A=window.OfficeMatch?.GRAPH?.A||{},list=(D.PROFILES[w.id]?.signature||[]).map(id=>A[id]?.name).filter(Boolean);
  return list.length?' Known for: '+list.join(', ')+'.':'';}
 function beatLabel(x){if(x.startsWith('outcome_')){const k=x.slice(8);return 'finish: '+(FINISH_WORDS[k]||k.replace(/_/g,' '));}
@@ -852,7 +852,7 @@ function showMeeting(){
   P.sheet=st.sheet;P.confirmed=true;P.game=st.sheet.game;P.talk=st.sheet.talk;if(st.sheet.leash)P.leash=st.sheet.leash;
   S0.roomRecent=[...(S0.roomRecent||[]),...st.queue].slice(-6);G.save();
  }
- const finishLine={win_clean:`${w.short} wins clean`,win_dirty:`${w.short} wins dirty`,lose_protected:`${w.short} loses, protected`,lose_clean:`${w.short} loses clean`}[c.finish];
+ const finishLine={win_clean:`${w.short} wins clean`,win_dirty:`${w.short} wins dirty`,lose_protected:`${w.short} loses, protected`,lose_clean:`${w.short} loses clean`,win_dq:`${w.short} wins by DQ`,lose_dq:`${w.short} is disqualified`}[c.finish];
  const moodCls=x=>x.value>=62?'good':x.value>=50?'':'bad';
  const wNote=`<span class="${moodCls(v.moods.w)}">${esc(v.moods.w.word)}</span>${w.fatigue>=45?'<span class="bad">tired</span>':''}${w.morale<35?'<span class="bad">low morale</span>':''}`;
  const fNote=`<span class="${moodCls(v.moods.f)}">${esc(v.moods.f.word)}</span>${f.safe<55?'<span class="bad">careless</span>':''}${f.ego>=68?'<span class="bad">big ego</span>':''}${f.psych>=85?'<span class="good">storyteller</span>':''}`;

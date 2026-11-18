@@ -81,7 +81,7 @@
   return issues.sort((a,b)=>b.weight-a.weight);
  }
 
- const FINISH_TEXT={win_clean:'a clean win',win_dirty:'a dirty win',lose_protected:'a protected loss',lose_clean:'a clean loss',nc:'a no contest',double:'a double-cross'};
+ const FINISH_TEXT={win_clean:'a clean win',win_dirty:'a dirty win',lose_protected:'a protected loss',lose_clean:'a clean loss',win_dq:'a win by disqualification',lose_dq:'a disqualification loss',nc:'a no contest',double:'a double-cross'};
  const label=id=>{const n=actions[id];if(id.startsWith('outcome_'))return FINISH_TEXT[id.slice(8)]||id.slice(8).replace(/_/g,' ');
   if(n?.name)return n.counterOf?'a reversal of the '+n.name:n.blockOf?'a blocked '+n.name:n.name;return id.replace(/_/g,' ');};
 

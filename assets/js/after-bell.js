@@ -48,8 +48,8 @@
  function ctxOf(c,fin){
   const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
   const outcome=fin?.outcome||'booked',FN=D.FINISHES[c.finish]||{};
-  const won=outcome==='double'||(outcome!=='nc'&&!!FN.win);
-  return {w,f,p,won,outcome,finish:c.finish,stars:+(fin?.stars||0),crowd:+(fin?.crowd||50),dirty:c.finish==='win_dirty'||c.finish==='lose_protected',clean:c.finish==='win_clean'||c.finish==='lose_clean'};
+  const won=outcome==='double'||(outcome!=='nc'&&outcome!=='dq'&&!!FN.win);
+  return {w,f,p,won,outcome,finish:c.finish,stars:+(fin?.stars||0),crowd:+(fin?.crowd||50),dirty:['win_dirty','lose_protected','win_dq'].includes(c.finish)&&outcome!=='dq',clean:c.finish==='win_clean'||c.finish==='lose_clean'};
  }
  function feudOf(wid,rid){
   const s=G.S,k=wid+':'+rid;
@@ -246,7 +246,7 @@
   const x=ctxOf(c,fin);if(!x.w||!x.f||!x.p)return null;
   const a=state(),st={v:1,cid:c.id,c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish},fin:{stars:x.stars,crowd:x.crowd,outcome:x.outcome},plan:PLANS[plan]?plan:'none',stage:'mic',log:[],cons:[],angle:null,said:null,call:null};
   if(st.plan==='celebrate'&&!x.won)st.plan='none';
-  st.log.push({side:'stage',who:null,text:x.won?'The referee raises '+x.w.short+'’s hand.':x.outcome==='nc'?'Nobody’s hand is raised. The referee waves it off.':'The referee raises '+x.f.short+'’s hand.'});
+  st.log.push({side:'stage',who:null,text:x.outcome==='dq'?'The referee is still pointing at '+x.w.short+'. Disqualified.':x.won?'The referee raises '+x.w.short+'’s hand.':x.outcome==='nc'?'Nobody’s hand is raised. The referee waves it off.':'The referee raises '+x.f.short+'’s hand.'});
   if(a.done[c.id]){st.stage='done';return st;}
   a.done[c.id]=1;
   if(st.plan!=='none')playAngle(st,x);

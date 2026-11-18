@@ -23,7 +23,10 @@
   eye_poke:{how:'dirty',cheat:'a thumb in the eye'},referee_bump:{how:'dirty',cheat:'the ropes while the referee was down'},
   rope_rollup:{how:'protected',cheat:'a handful of tights',argued:true},slow_count:{how:'protected',slow:true,argued:true},
   exhausted_cover:{how:'protected',exhausted:true},injury_gives:{how:'protected',worked:true},
-  duck_finisher:{how:'clean'},finisher_reversed:{how:'clean',reversedFinisher:true},submission_defeat:{how:'clean',submission:true,worked:true}
+  duck_finisher:{how:'clean'},finisher_reversed:{how:'clean',reversedFinisher:true},submission_defeat:{how:'clean',submission:true,worked:true},
+  // v0.3.22 Disqualifications: the loser was thrown out, so nobody won it clean and nobody cheated their way to it.
+  dq_chair_f:{how:'dq'},dq_ref_shove_f:{how:'dq'},dq_low_blow_f:{how:'dq'},dq_chair_w:{how:'dq'},dq_choke_w:{how:'dq'},dq_ref_shove_w:{how:'dq'},
+  dq_cheap:{how:'dq'},dq_runin:{how:'dq'}
  };
  const FAMILY_WORD={submission:'holds',strike:'strikes',aerial:'flying attacks',power:'power moves',suplex:'suplexes',dive:'dives',running:'running attacks',
   corner:'corner attacks',ground:'mat work',chain:'chain wrestling',neck:'neck attacks',pin:'pinning combinations',springboard:'springboard attacks',
