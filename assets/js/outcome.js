@@ -9,7 +9,7 @@
   const actual=fin.actualOutcome||fin.outcome||'booked';
   const disqualification=actual==='dq'||(actual==='booked'&&/_dq$/.test(performedFinish||''));
   const noContest=actual==='nc',unplanned=actual==='double';
-  const winner=noContest?null:unplanned?'w':D.FINISHES[performedFinish]?.win?'w':'f';
+  const winner=noContest?null:unplanned?'w':actual==='dq'?'f':D.FINISHES[performedFinish]?.win?'w':'f';
   const honoured=typeof fin.contractHonoured==='boolean'?fin.contractHonoured:
    !noContest&&!unplanned&&actual!=='dq'&&(bookedFinish===performedFinish);
   return {bookedFinish,performedFinish,actualOutcome:actual,winner,contractHonoured:honoured,
