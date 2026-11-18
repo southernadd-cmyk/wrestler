@@ -285,7 +285,7 @@
  // Close the whole contract once, rather than charging once per remaining fixture.
  function withdrawForTransfer(id,why='Roster change'){
   const s=G.S,st=state(s?.territory);if(!s||!st)return 0;
-  const affected=st.live.filter(p=>p.wid===id||p.beats.some(b=>b.rid===id));
+  const affected=st.live.filter(p=>p.wid===id||p.beats.some(b=>!b.done&&!b.missed&&b.rid===id));
   for(const p of affected)walk(s,p,why);
   return affected.length;
  }
