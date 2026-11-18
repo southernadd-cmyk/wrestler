@@ -479,3 +479,10 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 /* v0.3.22 stipulations in the promoter meeting */
 .stip-ask{margin:10px 0 4px}
 .stip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px}
+
+/* The road agent’s report belongs in the existing paper letter, not a separate dashboard. */
+.letter .report-sections{display:grid;gap:16px;margin:18px 0 0}
+.letter .report-sections section{border-top:1px solid currentColor;padding-top:10px}
+.letter .report-sections .section-h{margin:0 0 7px;font-size:1.05em}
+.letter .report-sections .cons{margin:0;padding-left:1.25em;display:grid;gap:5px}
+.letter .report-links{margin-top:20px;display:flex;flex-wrap:wrap;gap:8px}
