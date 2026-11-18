@@ -188,7 +188,7 @@ function th(key,k,label,cls=''){
 /* ---------- navigation ---------- */
 const NAV=[
  ['Office',[['desk','Desk'],['inbox','Inbox'],['objectives','Objectives']]],
- ['Roster',[['squad','Your stable'],['training','Training'],['scouting','Free agents']]],
+ ['Roster',[['squad','Your stable'],['training','Training'],['scouting','Free agents'],['stables','Rival stables']]],
  ['Bookings',[['offers','Offers'],['fixtures','Fixtures']]],
  ['Territory',[['pyramid','Card pyramid'],['sheets','Booking sheets'],['promoters','Promoters'],['rivalries','Rivalries'],['results','Results']]],
  ['Game',[['game','Save and load']]]
@@ -232,7 +232,7 @@ function renderChrome(){
  $('#tick').innerHTML=lead?`<b>${G.pending().length?'Action':'News'}</b><button data-tickmsg="${lead.id}">${esc(lead.subject)}. ${esc(lead.from)}.</button><span class="keys">${s.history.length} ${plural(s.history.length,'match','matches')} worked this career</span>`:'';
 }
 
-const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,training:renderTraining,scouting:renderScouting,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
+const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,training:renderTraining,scouting:renderScouting,stables:renderStables,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
 function render(reset=false){
  if(!S())return;
  const keep={};if(!reset)document.querySelectorAll('#view [data-keep]').forEach(el=>keep[el.dataset.keep]=el.scrollTop);
@@ -452,6 +452,39 @@ function renderScouting(){
  paint('s-split'+phonePane(route.id,w?.id),
   win('Free agents',list+cards,{keep:'free',cls:'phone-master',note:full?'Locker room full':`Bank ${money(s.cash)}`})+
   win('Scouting report',detail,{h:'h3',keep:'scout',cls:'phone-inspector',actions:phoneBack('scouting','Free agents')})
+ );
+}
+
+// v0.3.19 Rival stables: every agency's roster, how each wrestler feels about it, and an approach for those who want out.
+let selTeam=null;
+function renderStables(){
+ const s=S(),A=window.OfficeApproaches;if(!A)return renderScouting();
+ const all=A.stables(),[kind,id]=String(route.id||'').split(':');
+ if(kind==='team'&&all.some(t=>t.id===id))selTeam=id;
+ const picked=kind==='w'?A.view(id):null;if(picked)selTeam=picked.teamId;
+ const team=all.find(t=>t.id===selTeam)||all[0];selTeam=team?.id||null;
+ if(!team){paint('s-full',win('Rival stables','<div class="empty">No rival stables on the circuit.</div>'));return}
+ const tabs=`<div class="row" role="group" aria-label="Stable" style="margin-bottom:8px">${all.map(t=>`<button class="btn sm ${t.id===team.id?'go':''}" data-go="stables" data-id="team:${t.id}" aria-pressed="${t.id===team.id}">${esc(t.name)}</button>`).join('')}</div>`;
+ const tone=m=>m==='Wants out'?'bad':m==='Restless'?'':'good';
+ const left=w=>w.weeksLeft==null?'–':w.weeksLeft===0?'Up now':`${w.weeksLeft} wk`;
+ const sel=picked&&picked.teamId===team.id?picked:team.wrestlers.slice().sort((a,b)=>(a.mood==='Wants out'?0:a.mood==='Restless'?1:2)-(b.mood==='Wants out'?0:b.mood==='Restless'?1:2)||a.name.localeCompare(b.name))[0];
+ const rows=team.wrestlers.map(w=>`<tr class="pick" data-go="stables" data-id="w:${w.id}" aria-selected="${w.id===sel?.id}"><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b>${w.champion?' <span class="tag">Champion</span>':''}<small>${esc(w.tier)} · ${esc(w.style)}</small></span></span></td><td class="wrap">${esc(w.wants||'–')}</td><td><span class="${tone(w.mood)}">${esc(w.mood)}</span></td><td class="n">${left(w)}</td><td class="n">${money(w.fee)}</td></tr>`).join('');
+ const cards=team.wrestlers.map(w=>`<button class="free-card" data-go="stables" data-id="w:${w.id}" aria-pressed="${w.id===sel?.id}"><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b><small>${esc(w.mood)} · ${esc(w.wants||'')}</small></span></span><span class="free-costs"><span><small>Contract</small>${left(w)}</span><span><small>Fee</small>${money(w.fee)}</span></span></button>`).join('');
+ const grudge=team.grudge>=2?`<p class="bad" style="margin:4px 0 0">${esc(team.manager)} has not forgotten the last time you came knocking.</p>`:team.grudge===1?`<p class="dim" style="margin:4px 0 0">${esc(team.manager)} knows you have been asking around.</p>`:'';
+ const list=`${tabs}<p class="dim" style="margin:0 0 8px">${esc(team.blurb)}</p>${grudge}<div class="well free-table"><table class="grid"><thead><tr><th>Wrestler</th><th>Wants</th><th>Mood</th><th class="n">Contract</th><th class="n">Fee</th></tr></thead><tbody>${rows}</tbody></table></div><div class="phone-only"><div class="free-cards">${cards}</div></div>`;
+ let detail='<div class="empty">Select a wrestler.</div>';
+ if(sel){
+  const full=s.roster.length>=5,can=!full&&s.focus>=1&&s.cash>=sel.fee&&!sel.cooldown&&sel.mood!=='Settled';
+  const why=full?'Your locker room is full. Release someone first.':sel.mood==='Settled'?`${sel.short} is happy at ${sel.team}. An approach would only annoy ${sel.manager}.`:sel.cooldown?`${sel.short} has already heard from you. Try again in ${sel.cooldown} ${plural(sel.cooldown,'week')}.`:s.focus<1?'No management meetings left this week.':s.cash<sel.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'';
+  detail=`<div class="row" style="align-items:flex-start;gap:14px;flex-wrap:nowrap">${face('wrestler',sel.id,sel.name,'portrait x2')}<div><div style="font:32px/.9 var(--jersey);color:var(--blood)">${esc(sel.name)}</div><div style="font-weight:600;margin:4px 0">“${esc(sel.handle)}”</div><div class="chips"><span class="chip">${esc(sel.tier)}</span><span class="chip">${esc(sel.style)}</span><span class="chip">${esc(sel.team)}</span></div></div></div>
+  <div class="well pad attrs" style="margin-top:10px">${[['Ring',sel.ring],['Psychology',sel.psych],['Safety',sel.safe],['Mic',sel.mic],['Heat',sel.heat]].map(([l,v])=>`<div class="attr"><span>${l}</span>${att(v)}${bar(v,bandBar(v))}</div>`).join('')}</div>
+  <dl class="kv"><dt>Wants</dt><dd>${esc(sel.wants||'Nothing in particular')}</dd><dt>Mood</dt><dd><span class="${tone(sel.mood)}">${esc(sel.mood)}</span> · ${esc(sel.read)}</dd><dt>Contract</dt><dd>${sel.weeksLeft==null?'No end date':sel.weeksLeft===0?'Up this week':`${sel.weeksLeft} ${plural(sel.weeksLeft,'week')} left`}</dd><dt>You could offer</dt><dd>${esc(sel.pitch)}</dd><dt>Their wage</dt><dd>${money(sel.wage)} a week</dd></dl>
+  <div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(sel.fee)}</span><button class="btn go" style="min-height:44px;min-width:170px" data-approach="${sel.id}" ${can?'':'disabled'}>Make an approach</button></div>
+  <p class="dim" style="margin-top:6px">${why?esc(why):`Uses one of ${s.focus} meetings left. If ${esc(sel.short)} says yes, the fee goes to ${esc(sel.team)}. Either way, ${esc(sel.manager)} hears about it.`}</p>`;
+ }
+ paint('s-split'+phonePane(route.id,'w:'+sel?.id),
+  win('Rival stables',list,{keep:'stables',cls:'phone-master',note:`${s.focus} of 2 meetings left`})+
+  win('Over the fence',detail,{h:'h3',keep:'rival',cls:'phone-inspector',actions:phoneBack('stables','Rival stables')})
  );
 }
 
@@ -950,7 +983,7 @@ function endNight(){
 function startApp(screen){$('#title').hidden=true;$('#app').hidden=false;past=[];ahead=[];route={s:screen,id:null};render(true)}
 document.addEventListener('click',e=>{
  if(e.target.closest('select,option'))return;
- const t=e.target.closest('button,[data-openw],[data-selo],[data-self],[data-replay]');if(!t||t.disabled)return;const d=t.dataset;
+ const t=e.target.closest('button,[data-openw],[data-selo],[data-self],[data-replay],tr[data-go]');if(!t||t.disabled)return;const d=t.dataset;
  if(t.id==='continue')return proceed();
  if(d.hist)return histMove(d.hist==='back'?-1:1);
  if(d.go)return go(d.go,d.id||null);
@@ -980,6 +1013,7 @@ document.addEventListener('click',e=>{
   if(err){render();return toast(err)}
   refreshList('offers');return toast(when>G.abs()?`Signed for ${weekLabel(when)}. Purse paid after the match.`:'Booked on this week’s card.');
  }
+ if(d.approach){const res=window.OfficeApproaches.approach(d.approach);render();toast(res.error||res.text);return}
  if(d.unbook){const said=G.unbook(d.unbook);render();toast(said||'Booking cancelled. Promoter trust −6.');return}
  if(d.talkopen){const o=S().offers.find(x=>x.id===d.talkopen);renderMeeting(d.talkopen,o?.talk?.wid||pick[d.talkopen]);return}
  if(d.talkaction){const res=G.talkMove(d.oid,d.wid,d.talkaction);if(res.error)return toast(res.error);renderMeeting(d.oid,d.wid);return}

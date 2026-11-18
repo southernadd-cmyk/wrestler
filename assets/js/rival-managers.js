@@ -78,6 +78,8 @@
  function turn(s,t,week,reports){
   const a=state(t),w=s?.worldV4;if(!a||!w||a.lastTurn===week)return;
   a.lastTurn=week;
+  // Grudges against you fade, slowly.
+  if(week%8===0)for(const k in a.grudge||{})a.grudge[k]=Math.max(0,a.grudge[k]-1);
   const teamOf=id=>w.contracts[id]?.owner==='ai'?w.contracts[id].agencyId:null;
   const teams=t.teams.filter(x=>w.agencies[x.id]);
 
@@ -191,7 +193,8 @@
     .sort((x,y)=>y[1].w-x[1].w||x[0].localeCompare(y[0]))[0];
    if(!rival)continue;
    const [id,l]=rival,team=t.teams.find(x=>x.id===l.by),p=D.PROMOS.find(x=>x.id===o.pid);
-   const chance=(l.w-40)/100*profile(l.by).push*(o.title?.5:1);
+   // A manager you have poached from is keener to take something back.
+   const chance=(l.w-40)/100*profile(l.by).push*(o.title?.5:1)*(1+(a.grudge?.[l.by]||0)*.3);
    if(hash(o.id+':'+week)>=chance)continue;
    s.offers=s.offers.filter(x=>x!==o);
    l.w=Math.min(90,l.w+10);nudge(a,o.pid,l.by,2);
@@ -203,11 +206,13 @@
  }
  function bid(s,t,a,week){
   const w=s.worldV4;
-  if(week-a.lastBid<BID_GAP||s.inbox.some(m=>m.dtype==='agent_bid'&&!m.answer))return;
+  const sore=Object.values(a.grudge||{}).some(n=>n>=2);
+  if(week-a.lastBid<(sore?BID_GAP-2:BID_GAP)||s.inbox.some(m=>m.dtype==='agent_bid'&&!m.answer))return;
   const roster=s.roster.filter(x=>(x.heat||0)>=45&&((x.loyal||50)<50||(ambition(s,x.id)?.sat??50)<35));
   for(const wr of roster.sort((x,y)=>(x.loyal||50)-(y.loyal||50)||x.id.localeCompare(y.id))){
-   const team=t.teams.filter(x=>w.agencies[x.id]&&profile(x.id).poach>=.4&&V4.canAfford(s,x.id,wr.id))
-    .map(x=>({x,v:(info(wr.id).style===x.style?20:0)+profile(x.id).poach*30+(profile(x.id).tiers?.includes(wr.tier)?10:0)+w.agencies[x.id].cash/1000}))
+   // A manager with a grudge against you comes for your wrestlers whatever their usual appetite.
+   const team=t.teams.filter(x=>w.agencies[x.id]&&(profile(x.id).poach>=.4||(a.grudge?.[x.id]||0)>=2)&&V4.canAfford(s,x.id,wr.id))
+    .map(x=>({x,v:(info(wr.id).style===x.style?20:0)+profile(x.id).poach*30+(profile(x.id).tiers?.includes(wr.tier)?10:0)+w.agencies[x.id].cash/1000+(a.grudge?.[x.id]||0)*15}))
     .sort((p,q)=>q.v-p.v||p.x.id.localeCompare(q.x.id))[0]?.x;
    if(!team)continue;
    const fee=Math.round((wr.fee||1000)*(.7+profile(team.id).poach*.4)/10)*10;

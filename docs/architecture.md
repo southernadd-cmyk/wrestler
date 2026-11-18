@@ -29,6 +29,7 @@ assets/js/
   rival-managers.js         The six agencies lobbying bookers, moving and poaching wrestlers, and bidding for yours
   promotion-business.js     Each promotion's crowds, buzz, money and momentum; desperate booking and raids
   programmes.js             Storylines offered to your wrestlers: signed as one, changed by the booker, kept or walked out of
+  approaches.js             The rival stables' rosters on view, approaching their wrestlers, and managers' grudges
   ui.js                     Screens, controls and browser events
 assets/portrait-atlas.png   Wrestler sprite sheet (previously embedded in CSS)
 assets/first-week.css       Existing onboarding guide CSS
@@ -130,3 +131,9 @@ Every new career now automatically activates the 80-wrestler world, including 20
 - **A change of plan.** The week before the payoff, a booker may change the ending (`prog_swerve`, a decision): go along with it (trust +3), argue (a management meeting; the booker may change it back), or walk out.
 - **The circuit makes room.** While a title programme is offered or running, the booking office starts no rival chase for that belt and books no champion defences in that division, and the programme's opponents are left out of AI storylines and raids (`claims()`). Everything it reads is in the save, so `decide()` stays pure and the start screen still predicts the circuit (tested with programmes running).
 - **Screens.** Offers shows a programme as one offer with its matches, total purse and a single Sign button (no haggling); the booking sheets list your programmes at that promotion.
+
+## v0.3.19 additions
+
+- **Rival stables** (`approaches.js`, `window.OfficeApproaches`, Roster → Rival stables). Every agency's roster with each wrestler's ambition, a mood read from their satisfaction (Wants out, Restless, Settled; the number stays hidden), weeks left on their contract and their stable's asking fee: dearer from a careful manager and for a champion, cheaper in the last four weeks of a contract.
+- **Approaches** cost a management meeting and need a free contract and the fee. A settled wrestler always says no. Otherwise the chance rises with how unhappy they are, how little loyalty they have, your reputation and what you can offer for what they want (a fifth on their wage for money; a promoter who trusts you 55+ for a title shot, a push or a bigger stage), and falls with that manager's grudge. Yes: they are released, sign for you at the fee (which goes to their stable) and tell you what they want. Either way a wrestler can only be approached once every four weeks.
+- **Grudges** (`territory.agents.grudge`): +1 for an approach, +2 for a poach, −1 every eight weeks. A manager with a grudge of 2 or more bids for your restless wrestlers whatever their usual appetite and two weeks sooner, is the likeliest bidder, and is more likely to take a spot you leave on the table.
