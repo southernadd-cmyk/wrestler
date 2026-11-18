@@ -27,6 +27,7 @@ assets/js/
   ambitions.js              What every wrestler wants, weekly satisfaction, requests, promises and walk-outs
   booking-office.js         Each promoter's storylines, the circuit's weekly card and the bookers' finishes
   rival-managers.js         The six agencies lobbying bookers, moving and poaching wrestlers, and bidding for yours
+  promotion-business.js     Each promotion's crowds, buzz, money and momentum; desperate booking and raids
   ui.js                     Screens, controls and browser events
 assets/portrait-atlas.png   Wrestler sprite sheet (previously embedded in CSS)
 assets/first-week.css       Existing onboarding guide CSS
@@ -111,3 +112,12 @@ Every new career now automatically activates the 80-wrestler world, including 20
 - **Moves and poaching.** Every eight weeks each manager finds new work for their best wrestler stuck low on every card (a promotion that suits them, then the easiest main event to break into), and wrestlers who want a bigger stage are introduced to a television card. Every other week one manager with money can poach an unhappy wrestler from another agency, releasing their own weakest wrestler first if their roster is full; the old agency gets 30% of the fee.
 - **Against you.** An offer you have had on the table for a week (a featured bout, main event or title match) can go to a strongly lobbied rival wrestler instead (`takeSpot`, at most one a week), and the road agent tells you who took it. Every six weeks at most, a manager can bid for one of your wrestlers with heat who wants out or has low loyalty (`agent_bid`): sell, ask for 40% more, or refuse (loyalty −8 if they wanted to go, +3 if they did not). The week before the agencies sign from the market, the road agent tells you who they are after, and Free agents shows it.
 - `career.js` now exports `leave()`; `living-world.js` exports `marketTarget()`, the agencies' next signing, so the rumours match what they do. Booking sheets list the managers in each booker's ear, and the rival stables table shows each manager's style.
+
+## v0.3.17 additions
+
+- **The business** (`promotion-business.js`, `window.OfficeBusiness`). Each promotion keeps `crowd`, `buzz`, `money`, `momentum` and a short `history` in `territory.business`, updated once a week after the circuit's matches (wrapping `OfficeWorldV4.evolve`). The crowd heads for a target built from the week's match quality (the circuit's and yours at that promotion), its hottest storyline, its champions' heat, payoffs and title changes. The towns are shared: the circuit's overall excess is taken back off every promotion, and each is pulled partway back to its usual level so no booking style sinks for ever. Money follows the crowd and the buzz.
+- **Your reach** with each promoter (`S.promoters[].reach`, which sets purses, reputation and match-night crowds) moves with that promotion's crowd, up to 12 either side of its base.
+- **Desperate booking.** A promotion short of money, or losing crowds fast, is marked `desperate` (announced in the circuit news) and cuts its costs. The booking office then runs shorter title chases, changes its mind more often, moves belts more readily and starts storylines sooner, until crowds recover.
+- **Head-to-head nights.** When a booker plans a title chase, Dockside, Pulse and any desperate promotion put the title match on the same week as a rival's announced one; North Crown and Grand Union move theirs out of the way. Two payoffs in one week split the towns, and the one with more buzz keeps more of its crowd. `decide()` stays pure: it reads the stored storylines and last week's business.
+- **Raids.** At most every six weeks the richest promotion with momentum can sign a rival's best-known name (not a champion, not in a live storyline, not raided in the last 16 weeks, from a promotion not raided in the last 12) to an exclusive deal: the wrestler's card row moves across, £1,500 is spent, buzz moves with them.
+- **Screens.** Promoters shows each promotion's state (Hot, Steady, Cooling, Struggling), trend, crowd against its usual level, buzz and money; the booking sheets show the same line under the booker.
