@@ -131,3 +131,18 @@ const ready=s=>{s.focus=2;};
  }
  console.log('PASS wants and moods show on an older career; champions show their belt; six manager portraits');
 }
+
+// 8. The odds: someone desperate to leave is a good bet, never a sure thing; a restless wrestler is a long shot.
+{
+ const s=fresh();
+ const all=X.stables().flatMap(t=>t.wrestlers);
+ const loyalest=all.slice().sort((a,b)=>D.findWrestler(b.id).loyal-D.findWrestler(a.id).loyal)[0];
+ const least=all.slice().sort((a,b)=>D.findWrestler(a.id).loyal-D.findWrestler(b.id).loyal)[0];
+ s.rep=100;s.ambitions.w[least.id].sat=0;
+ assert.ok(X.chance(s,least.id)<=.8,'never better than four in five');
+ s.ambitions.w[loyalest.id].sat=45;s.rep=30;
+ assert.ok(X.chance(s,loyalest.id)<.25,'a loyal, merely restless wrestler is a long shot: '+X.chance(s,loyalest.id).toFixed(2));
+ s.ambitions.w[loyalest.id].sat=60;
+ assert.equal(X.chance(s,loyalest.id),0,'a settled one will not move');
+ console.log('PASS approach odds: a good bet at best, a long shot when merely restless, nothing when settled');
+}
