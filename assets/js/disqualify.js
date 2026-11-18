@@ -15,7 +15,7 @@
  G.applyResult=function(c,fin){
   if(fin?.outcome!=='dq'||!c)return originalApply.apply(this,arguments);
   const booked=c.finish,w=G.W(c.wid),p=G.P(c.pid);
-  const c2={...c,finish:'lose_dq'},f2={...fin,outcome:'booked',script:null,adj:{...(fin.adj||{}),purseMul:(fin.adj?.purseMul??1)*.75}};
+  const c2={...c,finish:'lose_dq'},f2={...fin,outcome:'booked',actualOutcome:'dq',bookedFinish:booked,contractHonoured:false,script:null,adj:{...(fin.adj||{}),purseMul:(fin.adj?.purseMul??1)*.75}};
   const out=originalApply.call(this,c2,f2);
   const h=G.S.history[0];if(h&&h.wid===c.wid&&h.rid===c.rid){h.outcome='dq';h.booked=booked;}
   const why=fin.finishRoute==='dq_runin'?'a run-in the referee saw':'a cheap shot too many';

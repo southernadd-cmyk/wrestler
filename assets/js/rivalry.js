@@ -90,7 +90,7 @@
   const cheat=booked&&R.cheat?winner:null;
   const submission=booked&&winner&&(R.submission||(['finisher','duck_finisher','finisher_reversed','limb_finish'].includes(route)&&isSub(winner==='w'?w:f)))?winner:null;
   const tired=ev?.stamina?{w:ev.stamina.w<30,f:ev.stamina.f<30}:{w:false,f:false};
-  return {cid:c.id,n,abs:c.eventAbs??G.abs(),finish:c.finish,outcome:fin.outcome||'booked',winner,how:fin.outcome==='double'?'upset':R.how||(String(c.finish).includes('dirty')?'dirty':'clean'),
+  return {cid:c.id,n,abs:c.eventAbs??G.abs(),finish:c.finish,bookedFinish:fin.bookedFinish||c.finish,outcome:fin.actualOutcome||fin.outcome||'booked',winner,how:fin.outcome==='double'?'upset':R.how||(String(c.finish).includes('dirty')?'dirty':'clean'),
    route,cheat,cheatDetail:booked&&R.cheat?R.cheat:null,cheapShots:ev?{...ev.dirty}:{w:false,f:false},argued:!!R.argued,slow:booked&&!!R.slow,exhausted:booked&&!!R.exhausted,
    submission,reversedFinisher:booked&&R.reversedFinisher?winner:null,stolen:booked&&R.stolen?winner:null,worked:booked&&!!R.worked?winner:null,
    outlasted:booked&&(R.outlasted||R.exhausted)?winner:null,minutes:fin.minutes||null,stars:fin.stars||0,

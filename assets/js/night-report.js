@@ -39,7 +39,13 @@
   const entries=(s.history||[]).filter(h=>h.season===season&&h.week===week);
   const sections=[],add=(title,lines)=>{const clean=lines.filter(Boolean);if(clean.length)sections.push({title,lines:clean})};
   const rating=r=>r.label||(Number.isFinite(r.stars)?r.stars.toFixed(2)+'★':'DUD');
-  add('In the ring',results.map(r=>r.name+' v '+r.foe+' — '+rating(r)));
+  add('In the ring',results.map(r=>{
+   const finish=r.actualOutcome==='dq'?' — unplanned disqualification (booked finish not delivered)':
+    r.actualOutcome==='nc'?' — no contest':
+    r.actualOutcome==='double'?' — agreed finish broken':
+    /_dq$/.test(r.bookedFinish||'')?' — agreed disqualification finish':'';
+   return r.name+' v '+r.foe+' — '+rating(r)+finish;
+  }));
   const account=[valid?'Bank '+cash(before.cash)+' → '+cash(s.cash)+' ('+change(s.cash-before.cash)+').':'Bank after the week: '+cash(s.cash)+'.'];
   const purses=entries.reduce((sum,h)=>sum+n(h.purse),0);
   if(entries.length)account.push('Match purses received: '+cash(purses)+'.');

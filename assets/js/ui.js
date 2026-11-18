@@ -515,7 +515,7 @@ function fitNotes(o,w){
 function offerPick(o){
  const s=S(),p=G.P(o.pid);
  const div=D.divisionOf(o.rid);
- const options=s.roster.filter(w=>(!o.wid||o.wid===w.id)&&D.divisionOf(w)===div&&G.availableAt(w,o.eventAbs));
+ const options=s.roster.filter(w=>(!o.wid||o.wid===w.id)&&D.divisionOf(w)===div&&G.availableAt(w,o.eventAbs)&&!G.bookingConflict(w.id,o.rid,o.eventAbs)&&(!o.programme||o.programme.beats.every(b=>G.availableAt(w,b.at)&&!G.bookingConflict(w.id,b.rid,b.at))));
  const sel=options.find(w=>w.id===o.talk?.wid)||options.find(w=>w.id===pick[o.id])||options.slice().sort((a,b)=>(D.STYLE_PLAN[b.style]===p.likes)-(D.STYLE_PLAN[a.style]===p.likes)||a.fatigue-b.fatigue)[0];
  if(sel)pick[o.id]=sel.id;
  return {options,sel};
@@ -570,7 +570,7 @@ function renderOffers(){
   ${sel?fitNotes(o,sel):''}
   ${o.programme&&options.length?`<div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(window.OfficeProgrammes.totalPurse(o,sel))}</span><button class="btn go" style="min-height:44px;min-width:170px" data-book="${o.id}">Sign the programme</button></div><p class="dim" style="margin-top:6px">Signing books every date. Pull out of any of them and you walk out of the whole programme.</p>`:options.length?`<div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(G.purse(o,sel))}</span><button class="btn go" style="min-height:44px;min-width:170px" data-book="${o.id}">${o.eventAbs>G.abs()?'Commit to date':'Book this week'}</button></div>
   <div class="row" style="margin-top:8px"><button class="btn" data-talkopen="${o.id}" ${!negotiated&&s.focus<1?'disabled':''}>${negotiated?'Read the conversation':'Negotiate with '+esc(p.voice)}</button><span class="dim" style="font-size:13px">${negotiated?`${esc(o.talk.verdict)}. ${esc(o.talk.detail)}`:`Uses one of ${s.focus} meetings left`}</span></div>`
-  :`<p class="bad" style="margin-top:10px">${o.wid?`${esc(G.W(o.wid)?.name||'This wrestler')} isn’t available for this date.`:noneFor(o)==='Nobody free'?'Nobody is free on the event date. Check camps and signed bookings.':`This is a ${esc(D.DIVISIONS[D.divisionOf(o.rid)].name.toLowerCase())} match, and nobody in your stable works that division.`}</p>`}`;
+  :`<p class="bad" style="margin-top:10px">${(()=>{const w=s.roster.find(w=>(!o.wid||w.id===o.wid)&&D.divisionOf(w)===D.divisionOf(o.rid));if(!w)return 'No wrestler in your stable is eligible for this division.';const dates=o.programme?o.programme.beats:[{at:o.eventAbs,rid:o.rid}];return esc(dates.map(b=>G.bookingConflict(w.id,b.rid,b.at)||(!G.availableAt(w,b.at)?w.short+' isn’t free on '+weekLabel(b.at)+'.':null)).find(Boolean)||'No suitable wrestler is free for every agreed date.');})()}</p>`}`;
  }
  const cards=s.roster.length?offers.map(o=>{
   const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);
@@ -585,12 +585,12 @@ function renderOffers(){
 
 function renderFixtures(){
  const s=S();
- const card=s.card.length?`<div class="well"><table class="grid"><thead><tr><th>Match</th><th>Promoter</th><th>Slot</th><th>Finish</th><th class="n">Purse</th><th></th></tr></thead><tbody>${s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>{const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);return `<tr><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)} v ${esc(f.name)}</b><small>${c.minutes} minutes${c.tag?`, ${esc(c.tag)}`:''}</small></span></span></td><td>${esc(p.name)}</td><td>${esc(D.SLOTS[c.slot].name)}</td><td>${finishTag(c.finish)}</td><td class="n"><b>${money(c.purse)}</b></td><td class="n"><button class="btn link" data-unbook="${c.id}">Pull out</button></td></tr>`}).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Pulling out costs 6 trust with the promoter. Continue takes you to ringside.</p>`
+ const card=s.card.length?`<div class="well"><table class="grid"><thead><tr><th>Match</th><th>Promoter</th><th>Slot</th><th>Finish</th><th class="n">Purse</th><th></th></tr></thead><tbody>${s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>{const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);return `<tr><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)} v ${esc(f.name)}</b><small>${c.minutes} minutes${c.tag?`, ${esc(c.tag)}`:''}</small></span></span></td><td>${esc(p.name)}</td><td>${esc(D.SLOTS[c.slot].name)}</td><td>${finishTag(c.finish)}</td><td class="n"><b>${money(c.purse)}</b></td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw from programme':'Pull out'}</button></td></tr>`}).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. Continue takes you to ringside.</p>`
   :`<div class="empty">Nothing booked this week.<br><button class="btn sm" data-go="offers">See offers</button></div>`;
  const fut=s.futureBookings.slice().sort((a,b)=>a.eventAbs-b.eventAbs);
- const future=fut.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th><th></th></tr></thead><tbody>${fut.map(c=>`<tr><td>${weekLabel(c.eventAbs)}</td><td>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}<br><span class="dim">${esc(D.SLOTS[c.slot].name)}</span></td><td>${esc(G.P(c.pid)?.name||'')}</td><td class="n">${money(c.purse)}</td><td class="n"><button class="btn link" data-unbook="${c.id}">Cancel</button></td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Purses are paid after the match. Cancelling costs 6 trust. A booked wrestler can’t attend camp that week.</p>`
+ const future=fut.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th><th></th></tr></thead><tbody>${fut.map(c=>`<tr><td>${weekLabel(c.eventAbs)}</td><td>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}<br><span class="dim">${esc(D.SLOTS[c.slot].name)}</span></td><td>${esc(G.P(c.pid)?.name||'')}</td><td class="n">${money(c.purse)}</td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Cancel'}</button></td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Purses are paid after the match. Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. A booked wrestler can’t attend camp that week.</p>`
   :'<div class="empty">No future dates signed.</div>';
- const cards=contracts=>contracts.map(c=>`<article class="phone-card"><div class="phone-card-line"><b>${esc(G.P(c.pid)?.name||'')}</b><small>${c.eventAbs===G.abs()?'This week':weekLabel(c.eventAbs)}</small></div><div>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}</div><small>${esc(D.SLOTS[c.slot].name)} · ${esc(D.FINISHES[c.finish].name)}</small><div class="phone-card-line"><b>${money(c.purse)}</b><button class="btn sm" data-unbook="${c.id}">Pull booking</button></div></article>`).join('');
+ const cards=contracts=>contracts.map(c=>`<article class="phone-card"><div class="phone-card-line"><b>${esc(G.P(c.pid)?.name||'')}</b><small>${c.eventAbs===G.abs()?'This week':weekLabel(c.eventAbs)}</small></div><div>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}</div><small>${esc(D.SLOTS[c.slot].name)} · ${esc(D.FINISHES[c.finish].name)}</small><div class="phone-card-line"><b>${money(c.purse)}</b><button class="btn sm" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Pull booking'}</button></div></article>`).join('');
  paint('s-split even',win('This week’s card',phoneList(card,cards(s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank))),{keep:'card',note:`Week ${s.week}`})+win('Future dates',phoneList(future,cards(fut)),{h:'h3',keep:'future'}));
 }
 
@@ -763,7 +763,7 @@ const NIGHT_STORE='the-office-v23-match'; // same key: preserve existing mid-mat
 function persistNight(){
  if(!night?.queue)return;
  try{const m=night.M?{...night.M,rState:night.M.r?.getState?.()}:null;
- localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,signing:night.signing||null,after:night.after||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
+ localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,resultHTML:night.stage==='result'?night.resultHTML||null:null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,signing:night.signing||null,after:night.after||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
@@ -772,9 +772,11 @@ function resumeNight(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(NIGHT_STORE)||'null')}catch(e){}
  // After the last match the card is empty, but a post-match segment still waiting for its last word comes back.
  const afterOpen=saved?.stage==='after'&&saved.after?.stage==='mic';
- if(!saved||!Array.isArray(saved.queue)||(!S()?.card?.length&&!afterOpen))return false;
+ const resultOpen=saved?.stage==='result'&&!!saved.resultHTML;
+ if(!saved||!Array.isArray(saved.queue)||(!S()?.card?.length&&!afterOpen&&!resultOpen))return false;
  night={...saved,paused:true};
  if(afterOpen){openTV();showAfter();return true}
+ if(resultOpen){openTV();$('#tv').innerHTML=saved.resultHTML;return true}
  if(night.i>=night.queue.length){endNight();return true}
  openTV();
  if(saved.stage==='live'&&saved.M){
@@ -1058,7 +1060,7 @@ function result(){
   if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed match layout against '+f.short+'.',f.id,-2,0,c.id+':sheet');
   G.save();
  }
- night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,consequences:cons.map(x=>x.text)});
+ night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,actualOutcome:fin.outcome,bookedFinish:c.finish,consequences:cons.map(x=>x.text)});
  night.after=window.OfficeAfter?OfficeAfter.begin(c,fin,night.plan?.after||'none'):null;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
@@ -1068,7 +1070,7 @@ function result(){
  const story=flowReport(fin,w,f);
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the layout</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
  $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What happened',`${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.after?.stage==='mic'?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Skip to the next match':'Skip, back to the office'}</button><button class="btn go" data-tv="after">After the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
- night.M=null;night.plan=null;night.promo=null;night.stage='result';persistNight();
+ night.M=null;night.plan=null;night.promo=null;night.stage='result';night.resultHTML=$('#tv').innerHTML;persistNight();
 }
 function endNight(){
  clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';
@@ -1116,7 +1118,17 @@ document.addEventListener('click',e=>{
   refreshList('offers');return toast(when>G.abs()?`Signed for ${weekLabel(when)}. Purse paid after the match.`:'Booked on this week’s card.');
  }
  if(d.approach){const res=window.OfficeApproaches.approach(d.approach);render();toast(res.error||res.text);return}
- if(d.unbook){const said=G.unbook(d.unbook);render();toast(said||'Booking cancelled. Promoter trust −6.');return}
+ if(d.unbook){
+  const c=[...S().card,...S().futureBookings].find(x=>x.id===d.unbook);
+  if(c?.programme){
+   const pr=S().territory?.programmes?.live?.find(x=>x.id===c.programme.id);
+   const remaining=pr?.beats?.filter(b=>!b.done&&!b.missed)||[];
+   const p=G.P(c.pid);
+   dialog('Withdraw from the whole programme?',`<p>Pulling this match cancels <b>all ${remaining.length} remaining programme dates</b>, not just this fixture.</p><p><b>${esc(p?.name||'The promoter')} trust −15.</b> This cannot be undone.</p>`,[['Keep the programme','close'],['Withdraw programme','withdraw:'+c.id,'red']]);
+   return;
+  }
+  const said=G.unbook(d.unbook);render();toast(said||'Booking cancelled. Promoter trust −6.');return
+ }
  if(d.talkopen){const o=S().offers.find(x=>x.id===d.talkopen);renderMeeting(d.talkopen,o?.talk?.wid||pick[d.talkopen]);return}
  if(d.talkaction){const res=G.talkMove(d.oid,d.wid,d.talkaction);if(res.error)return toast(res.error);renderMeeting(d.oid,d.wid);return}
  if(d.talkbook){const o=S().offers.find(o=>o.id===d.talkbook);const when=o?.eventAbs;if(d.revert){const res=G.talkMove(d.talkbook,d.wid,'revert');if(res.error)return toast(res.error)}const err=G.book(d.talkbook,d.wid);if(err)return toast(err);$('#modal').close();refreshList('offers');toast(when>G.abs()?`Future booking confirmed for ${weekLabel(when)}.`:`Contract signed for ${money(G.purse(o,G.W(d.wid)))}.`);return}
@@ -1124,7 +1136,7 @@ document.addEventListener('click',e=>{
  if(d.act==='export'){const blob=new Blob([JSON.stringify(S())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`the-office-s${S().season}w${S().week}.json`;a.click();return}
  if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(![20,21,22].includes(x.v))throw 0;G.S=x;if(!G.S)throw 0;G.save();startApp('desk');toast('Save loaded.')}catch(err){toast('That file isn’t a valid save from v2 to v2.3.')}})};i.click();return}
  if(d.act==='newgame'){dialog('Start a new career?','<p>Your current career will be overwritten.</p>',[['Cancel','close'],['Start again','newgame','red']]);return}
- if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';startApp('scouting')}return}
+ if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('withdraw:')){const said=G.unbook(d.dlg.slice(9));render();toast(said||'Programme withdrawn.');return}if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';startApp('scouting')}return}
  if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
  if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
  if(d.plan){night.plan[d.plan]=d.val;if(d.plan==='game'){night.plan.sheet=null;night.plan.focus=null;night.plan.confirmed=false;}t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}

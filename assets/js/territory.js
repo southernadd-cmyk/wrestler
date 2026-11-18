@@ -244,12 +244,14 @@ const originalEnd=G.endWeek,originalApply=G.applyResult;
 G.endWeek=function(...args){const x=originalEnd(...args);evolve();return x};
 G.applyResult=function(c,fin){
  const x=originalApply(c,fin),t=ensure();
- const won=fin.outcome==='nc'?null:fin.outcome==='double'||D.FINISHES[c.finish].win;
+ const resolution=root.OfficeOutcome.interpret(c,fin);
+ const won=resolution.winner===null?null:resolution.winner==='w';
  record(t,c.pid,c.wid,c.rid,c.slot,won,fin.stars);
  if(won!==null)t.points[c.wid]=(t.points[c.wid]||0)+(won?5:-2)+Math.max(0,Math.floor((fin.stars||0)-2));
  if(c.title&&t.titles[c.title.pid]?.[c.title.div]){
   const {pid,div}=c.title,b=D.belt(pid,div),w=G.W(c.wid)||G.F(c.wid),f=G.F(c.rid),held=t.titles[pid][div];
-  if(won===null){if(held.holder===c.wid||held.holder===c.rid)held.defences++;}
+  // Champion's advantage: a DQ or no-contest can win the match, but never transfers the belt.
+  if(won===null||!resolution.beltChangeAllowed){if(held.holder===c.wid||held.holder===c.rid)held.defences++;}
   else{
    const winner=won?c.wid:c.rid,loser=won?c.rid:c.wid;
    if(changeTitle(t,pid,div,winner,loser,'match'))G.msg?.({from:'The Office',subject:`New ${b.short} holder`,kind:'info',body:[`${(won?w:f).name} beat ${(won?f:w).name} for the ${b.name}.`,won?'The belt comes home with your wrestler. Expect promoters to want it defended.':'Your wrestler leaves without the belt.']});
