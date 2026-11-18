@@ -10,6 +10,9 @@
  const pick=(arr,seed,k)=>arr[Math.floor(rng(seed,k)*arr.length)];
  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
  const voice=w=>Room.VOICE[w.id]||'stoic';
+ // v0.3.25 A mouthpiece: a stablemate at the microphone for the wrestler. They speak; the wrestler is spoken for.
+ const talker=st=>st.speaker||st.w;
+ const spoke=st=>st.speaker?{...st,w:st.speaker}:st;
  const HOOK={
   quiet:{label:'Wait for silence',hint:'Stand there until they shut up. Commanding, if you can hold a room. Takes a while.',len:2,risk:2,ok:{crowd:6,cred:2},bad:{crowd:-4,cred:-1},
    lines:{grand:'{W} raises one hand and simply waits. It takes a full minute. The hall goes quiet out of something close to fear.',
@@ -138,6 +141,7 @@
   if((F.ego||50)>=68)w.personal+=2;if(['slippery','grand','eager'].includes(v))w.mock+=2;
   if(['precise','stoic'].includes(v)||(F.pro||60)>=80)w.facts+=2;if(['earnest','sermon'].includes(v)||(F.heat||40)>=60)w.crowd+=2;
   w[{accusation:'personal',imagery:'mock',proof:'facts',people:'crowd',swagger:'mock',hometown:'crowd',numbers:'facts'}[opening]]+=2;
+  if(st.speaker)w.mock+=3; // “Can’t {W} speak for themselves?”
   const total=Object.values(w).reduce((a,b)=>a+b,0);let x=rng(st.seed,'angle')*total;
   for(const [k,n] of Object.entries(w)){x-=n;if(x<0)return k;}
   return 'facts';
@@ -152,27 +156,33 @@
  const riskWord=r=>r<=0?'Safe':r===1?'Steady':r===2?'Risky':'Very risky';
  const meterWord=m=>m>=25?'The room is yours':m>=8?'With you':m>-8?'Even':m>-25?'With them':'The room is theirs';
  const fmt=(text,st)=>String(text).replace(/\{W\}/g,st.w.short).replace(/\{F\}/g,st.f.short).replace(/\{VENUE\}/g,st.venue).replace(/\{P\}/g,st.promoterVoice).replace(/\{PROMO\}/g,st.promoterName);
- const push=(st,side,line,kind,swing)=>st.log.push({speaker:side==='w'?st.w.name:side==='f'?st.f.name:side==='host'?'Interviewer':side==='crowd'?'Crowd':'',side,line:String(line).charAt(0).toUpperCase()+String(line).slice(1),kind,swing:swing||0});
- function begin(c,w,f,rival,sheet,p){
-  const core=Core.begin(c,w,f,rival,sheet);
+ const push=(st,side,line,kind,swing)=>st.log.push({speaker:side==='w'?(st.speaker?st.speaker.name:st.w.name):side==='f'?st.f.name:side==='host'?'Interviewer':side==='crowd'?'Crowd':'',side,line:String(line).charAt(0).toUpperCase()+String(line).slice(1),kind,swing:swing||0});
+ function begin(c,w,f,rival,sheet,p,opts={}){
+  const m=opts?.mouth||null;
+  // The mouthpiece's skill is what the room hears; the words are still about the wrestler.
+  const wTalk=m?{...w,mic:m.mic||40,psych:Math.max(w.psych||45,m.psych||45)}:w;
+  const core=Core.begin(c,wTalk,f,rival,sheet);
   const fmic=f.mic||Math.round((f.psych||50)*.55+(f.heat||50)*.45);
   const st={v:5,cid:c.id,seed:core.seed+'|duel',core,round:0,fRaw:{id:f.id,ego:f.ego||50,pro:f.pro||60,heat:f.heat||45},angle:null,
-   w:{id:w.id,name:w.name,short:w.short,mic:w.mic||40,psych:w.psych||45,heat:w.heat||40},f:{id:f.id,name:f.name,short:f.short,mic:fmic,heat:f.heat||45},
+   w:{id:w.id,name:w.name,short:w.short,mic:wTalk.mic||40,psych:wTalk.psych||45,heat:w.heat||40},
+   speaker:m?{id:m.id,name:m.name,short:m.short,mic:m.mic||40,psych:m.psych||45,heat:m.heat||40}:null,f:{id:f.id,name:f.name,short:f.short,mic:fmic,heat:f.heat||45},
    venue:p?.venue||'this hall',promoterVoice:p?.voice||'the promoter',promoterName:p?.name||'the promotion',finish:c.finish||null,
-   meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
+   meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
+  if(m)st.read.voice=voice(m); // the room knows the wrestler; the voice is the mouthpiece's
   st.practice={};for(const [k,v] of Object.entries(w.micWork||{}))if(Math.floor(v)>0)st.practice[k]=Math.min(2,Math.floor(v));
   const drilled=Object.entries(st.practice).sort((a,b)=>b[1]-a[1])[0];
   st.readLines=[READ.room[st.read.room],READ.feud[st.read.feud?'yes':st.read.record?'record':'no'],READ.opp[st.read.opp],READ.voice[st.read.voice],
-   ...(drilled?[PRACTICE[drilled[0]]]:[])].map(t=>fmt(t,st));
+   ...(drilled&&!m?[PRACTICE[drilled[0]]]:[]),
+   ...(m?['{S} is doing the talking for {W} tonight. {S} is the better talker. {W} gets the credit, and the blame.']:[])].map(t=>fmt(t,st).replace(/\{S\}/g,m?.short||''));
   push(st,'host',core.dialogue[0].line,'interviewer');
   return st;
  }
- const own=(st,slot)=>{const line=D.VOICE_PACKS?.[st.w.id]?.promo?.[slot];return line&&rng(st.seed,'own|'+slot+'|'+(st.ownUsed?.[slot]||0))<2/3?line:null;};
+ const own=(st,slot)=>{if(st.speaker)return null;const line=D.VOICE_PACKS?.[st.w.id]?.promo?.[slot];return line&&rng(st.seed,'own|'+slot+'|'+(st.ownUsed?.[slot]||0))<2/3?line:null;};
  function fluff(st){
   const mine=!st.ownUsed?.fluff&&own(st,'fluff');if(mine){(st.ownUsed??={}).fluff=1;return fmt(mine,st);}
-  const arr=FLUFF[voice(st.w)];st.fluffs=(st.fluffs??hash(st.seed+'|fluff')%arr.length)+1;return fmt(arr[st.fluffs%arr.length],st);}
+  const arr=FLUFF[voice(talker(st))];st.fluffs=(st.fluffs??hash(st.seed+'|fluff')%arr.length)+1;return fmt(arr[st.fluffs%arr.length],spoke(st));}
  function roll(st,risk,key,edge=0){
   const skill=clamp(st.w.mic*.7+st.w.psych*.2+st.w.heat*.1,0,100);
   return rng(st.seed,key)<clamp(.38+skill/170-risk*.09+edge,.12,.96);
@@ -263,7 +273,7 @@
   if(!st||st.stage==='done')throw Error('The promo is over');
   const o=choices(st).find(x=>x.id===id);
   if(!o)throw Error('Not an option at the microphone: '+id);
-  const r=ROUNDS[st.round].id,v=voice(st.w);
+  const r=ROUNDS[st.round].id,v=voice(talker(st));
   let rec={round:r,id,label:o.label,landed:true};
   if(r==='open')rec={round:r,...coreRound(st,'open',id,'open')};
   else if(r==='answer')rec={round:r,...coreRound(st,'answer',id,'answer')};
@@ -281,14 +291,14 @@
     if(!cs.commit)cs.commit={kind:'nocheat',node:'clean',say:'win without cheating',label:'Promise to do it without cheating',hint:'Follows from what you just said. Kept only if you do not cheat tonight.'};
     cs.followup='Revised the charge: neither of them cheats tonight.';
     push(st,'f',P.revise?.reply||'I will hold you to that.','opponent',0);
-   }else{push(st,'stage',fmt('{W} lets it hang there. Nobody concedes anything.',st),'stage',0);cs.followup='Left it hanging.';}
+   }else{push(st,'stage',fmt('{W} lets it hang there. Nobody concedes anything.',spoke(st)),'stage',0);cs.followup='Left it hanging.';}
   }
   else if(r==='push'){
    st.pushed=id;
-   if(id==='leave'){const d=swing(st,st.meter>0?2:0);push(st,'stage',fmt('{W} lets it hang in the air and lowers the microphone.',st),'stage',d);}
+   if(id==='leave'){const d=swing(st,st.meter>0?2:0);push(st,'stage',fmt('{W} lets it hang in the air and lowers the microphone.',spoke(st)),'stage',d);}
    else{
     const p=PUSH[id],h=HOOK[p.src],fit=pushFit(st,id),edge=.07*fit+(st.meter>=8?.1:st.meter<=-8?-.06:0);
-    const ok=roll(st,p.risk,'push|'+id,edge),d=swing(st,ok?Math.round(p.gain*(1+.15*Math.max(0,fit))):-p.loss),line=fmt(own(st,p.src)||h.lines[v],st);
+    const ok=roll(st,p.risk,'push|'+id,edge),d=swing(st,ok?Math.round(p.gain*(1+.15*Math.max(0,fit))):-p.loss),line=fmt(own(st,p.src)||h.lines[v],spoke(st));
     push(st,/^“/.test(line)?'w':'stage',line,ok?'strong':'uneven',d);
     if(!ok)push(st,'stage',fluff(st),'fluff');
     crowdSays(st,d,'push');rec.landed=ok;
@@ -296,7 +306,7 @@
     if(rng(st.seed,'heckle?')<.3){
      push(st,'stage','A voice from the bar: “'+pick(HECKLES,st.seed,'heckle')+'”','event');
      const won=roll(st,2,'heckle'),e=swing(st,won?4:-4);
-     push(st,'stage',fmt(won?'{W} turns it round on the heckler, who sits down and looks at their pint.':'{W} tries to answer back, and the heckler gets the bigger laugh.',st),won?'strong':'fluff',e);
+     push(st,'stage',fmt(won?'{W} turns it round on the heckler, who sits down and looks at their pint.':'{W} tries to answer back, and the heckler gets the bigger laugh.',spoke(st)),won?'strong':'fluff',e);
     }
     if(!ok||rng(st.seed,'pushback?')<.5)theirTurn(st,fmt(pick(['You done, {W}? Only some of us have a match to win.','Keep talking, {W}. It is the only thing you are winning tonight.','Lovely speech. Shall I hold your coat while you finish?','That is a lot of words for somebody about to lose.'],st.seed,'pushback'),st),'push',ok,fit);
    }
@@ -309,7 +319,7 @@
   const base=Core.result(st.core),m=st.meter,pushed=st.pushed&&st.pushed!=='leave';
   const reaction=fmt(m>=25?'{W} owns the room. {F} is talking to {W}’s crowd now.':m>=8?'The room is with {W}.':m>-8?'Honours even. The match will have to settle it.':
    m>-25?'{F} got the better of that.':'{F} took the room off {W} and kept it.',st);
-  return {...base,live:true,duel:{meter:m,won:m>0,pushed:!!pushed,read:{...st.read},angle:st.angle,fits:(st.fits||[]).slice()},
+  return {...base,live:true,mouth:st.speaker?{id:st.speaker.id,short:st.speaker.short,name:st.speaker.name}:null,duel:{meter:m,won:m>0,pushed:!!pushed,read:{...st.read},angle:st.angle,fits:(st.fits||[]).slice()},
    quality:clamp(Math.round(base.quality+m*.35),10,97),
    crowdShift:clamp(Math.round(base.crowdShift+m/7),-8,13),
    heatDelta:clamp(Math.round(base.heatDelta+(pushed?2:0)+(Math.abs(m)>=25?1:0)),-3,16),
