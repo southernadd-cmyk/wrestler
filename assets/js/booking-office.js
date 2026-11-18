@@ -86,7 +86,7 @@
    add({i,j,pid:c.pid,div:c.div,a,b,title,winner,stars:title?3:2.5,
     line:p.name+': '+name(winner)+' defeated '+name(winner===a.id?b.id:a.id)+
      '. '+(title?'The title was on the line.':'The replacement match went ahead after the manager secured the spot.'),
-    story:{id:'rival-spot:'+c.id,type:'rival-spot',kind:'replacement'}});
+    rivalSpotId:c.id});
    cast.add(c.a);cast.add(c.b);
    notes.push(p.name+': '+name(c.a)+' v '+name(c.b)+' is booked after '+(t.teams.find(x=>x.id===c.by)?.manager||'a rival manager')+' won the vacant spot.');
   }
