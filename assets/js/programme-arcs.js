@@ -90,6 +90,14 @@
    meter:Number.isFinite(promo?.duel?.meter)?promo.duel.meter:null};
   return c.arcDecision;
  }
+ // A public claim and an entertaining segment are not the same achievement.
+ // The booker's finish still stands. A wrestler may entertain the crowd but fail a promise.
+ function claimResult(prog,step,id,spoken,won){
+  if(id!=='gamble'||!spoken)return null;
+  if(prog.type==='title'&&step===0)return 'pending'; // "I will take the title" is settled at the finale.
+  if(step===prog.beats.length-1&&['title','grudge','rise'].includes(prog.type))return won?'kept':'broken';
+  return null; // Other gambles promise a standout performance, measured by stars and promo quality.
+ }
  function settle(c,fin){
   const x=locate(c);if(!x)return null;
   const {prog,step}=x,a=arc(prog);
@@ -98,25 +106,42 @@
   const chapterNow=chapter(prog,step);
   const quality=c.arcDecision?.quality??(Number.isFinite(fin?.promo?.quality)?fin.promo.quality:null);
   const stars=Number.isFinite(fin?.stars)?fin.stars:0;
-  const endedNormally=fin?.outcome!=='double'&&fin?.outcome!=='nc'&&fin?.outcome!=='dq';
-  const passed=endedNormally&&(id==='steady'?stars>=2.5:id==='needle'?stars>=2.75&&(quality==null||quality>=55):stars>=3.5&&(quality==null||quality>=65));
-  const delta=passed?{steady:5,needle:9,gamble:14}[id]:{steady:-3,needle:-6,gamble:-10}[id];
+  const outcome=root.OfficeOutcome?.interpret?.(c,fin);
+  const endedNormally=outcome?outcome.contractHonoured:(fin?.outcome!=='double'&&fin?.outcome!=='nc'&&fin?.outcome!=='dq');
+  const spoken=Number.isFinite(quality); // No microphone performance cannot pass a microphone-dependent gamble.
+  const passed=endedNormally&&(id==='steady'?stars>=2.5:id==='needle'?stars>=2.75&&spoken&&quality>=55:stars>=3.5&&spoken&&quality>=65);
+  const final=step===prog.beats.length-1,won=outcome?.winner==='w';
+  let claim=claimResult(prog,step,id,spoken,won);
+  // An emphatic public claim of a win must be proved by the result, not by the star rating.
+  if(claim==='kept'&&!endedNormally)claim='broken';
+  const claimDelta=claim==='kept'?3:claim==='broken'?-6:0;
+  const delta=(passed?{steady:5,needle:9,gamble:14}[id]:{steady:-3,needle:-6,gamble:-10}[id])+claimDelta;
   a.momentum=clamp(a.momentum+delta);const w=G.W(prog.wid),p=G.P(prog.pid);
   // These are modest consequences. The contracted match result, title and bonus remain the booker's.
   if(w)w.heat=clamp((w.heat||0)+(passed&&id!=='steady'?2:!passed&&id==='gamble'?-2:0));
   if(p&&id==='gamble'&&!passed)p.trust=clamp(p.trust-1);
   const worked=passed?'landed with the crowd':'did not convince the crowd';
-  const recap=`${chapterNow[id][0]} ${worked} (${stars.toFixed(2)}★${quality==null?'':`, microphone ${Math.round(quality)}`}).`;
-  const entry={step,cid:c.id,choice:id,chapter:chapterNow.name,at:c.eventAbs??G.abs(),stars,quality,passed,delta,recap};
+  const claimWords={pending:'The promise is still outstanding',kept:'The public claim was backed up',broken:'The public claim was not delivered'};
+  let recap=`${chapterNow[id][0]} ${worked} (${stars.toFixed(2)}★${quality==null?'':`, microphone ${Math.round(quality)}`}).`;
+  if(claim)recap+=' '+claimWords[claim]+'.';
+  const entry={step,cid:c.id,choice:id,chapter:chapterNow.name,at:c.eventAbs??G.abs(),stars,quality,passed,claim,delta,recap};
   a.timeline.push(entry);a.timeline.sort((u,v)=>u.step-v.step);
-  const final=step===prog.beats.length-1;
   if(final){
+   // Resolve an earlier title promise against the actual championship result.
+   for(const prev of a.timeline.filter(e=>e.claim==='pending')){
+    prev.claim=won&&endedNormally?'kept':'broken';
+    prev.recap=prev.recap.replace('The promise is still outstanding.',claimWords[prev.claim]+'.');
+    a.momentum=clamp(a.momentum+(prev.claim==='kept'?3:-6));
+   }
+   const brokenClaim=a.timeline.some(e=>e.claim==='broken');
    a.conclusion=prog.status==='broken'?'The programme fell apart':a.momentum>=70?'The story caught fire':a.momentum>=50?'The build paid off':a.momentum>=35?'The finish arrived, but the build was uneven':'The programme ran its course without winning the room';
-   // Extra recognition for a genuinely well-built programme, not just honouring the dates.
-   if(a.momentum>=70&&prog.status!=='broken'&&G.S){G.S.rep=clamp((G.S.rep||0)+2);a.recognition=2;}
+   // Brilliant consistent work can earn recognition without repeatedly taking the highest-risk gamble.
+   const excellent=a.timeline.length===prog.beats.length&&a.timeline.every(e=>e.passed&&e.stars>=4);
+   const recognition=prog.status==='broken'?0:a.momentum>=70?(brokenClaim?1:2):excellent?1:0;
+   if(recognition&&G.S){G.S.rep=clamp((G.S.rep||0)+recognition);a.recognition=recognition;}
   }
   G.save();
-  return {text:`${final?'Programme finale':'Programme chapter '+(step+1)}: ${recap} ${band(a.momentum)}${final&&a.recognition?' · reputation +2.':'.'}`,tone:passed?1:-1};
+  return {text:`${final?'Programme finale':'Programme chapter '+(step+1)}: ${recap} ${band(a.momentum)}${final&&a.recognition?' · reputation +'+a.recognition+'.':'.'}`,tone:passed?1:-1};
  }
  const originalBook=G.book;
  G.book=function(oid,wid){
