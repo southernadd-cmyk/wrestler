@@ -59,10 +59,11 @@
    const champs=D.DIVISION_ORDER.map(d=>t.titles?.[p.id]?.[d]?.holder).filter(Boolean).map(id=>(G.W?.(id)||D.findWrestler(id))?.heat||50);
    const champHeat=champs.length?champs.reduce((x,y)=>x+y,0)/champs.length:50;
    const paid=payoffs[p.id].length,changed=changes.filter(l=>l.pid===p.id).length;
+   const circuitNoise=(hash(String(s.careerSeed??s.seed??0)+':'+p.id+':'+wk)-.5)*4;
    // Two big nights the same week split the towns; the one with more buzz keeps more of its crowd.
    const clash=headToHead.includes(p.id)&&headToHead.length>1;
    const won=clash&&headToHead.every(id=>id===p.id||b[id].buzz<=f.buzz);
-   targets[p.id]={raw:base(p)+(quality-2.75)*12+(heat-50)*.1+(champHeat-55)*.1+paid*6+changed*4-(clash?(won?1:6):0)-(f.desperate?3:0),paid,changed,clash,won,quality};
+   targets[p.id]={raw:base(p)+(quality-2.75)*12+(heat-50)*.1+(champHeat-55)*.1+paid*6+changed*4-(clash?(won?1:6):0)-(f.desperate?3:0)+circuitNoise,paid,changed,clash,won,quality};
   }
   // The towns are shared: when the circuit as a whole is hot, each promotion's share of it shrinks.
   const excess=D.PROMOS.reduce((n,p)=>n+targets[p.id].raw-base(p),0)/D.PROMOS.length;
