@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.3.18" width="100%">
+  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.3.19" width="100%">
 </p>
 
-<p align="center"><strong>ISSUE v0.3.18</strong> &nbsp; • &nbsp; 18 NOVEMBER 2026 &nbsp; • &nbsp; BOOKING OFFICE EDITION</p>
+<p align="center"><strong>ISSUE v0.3.19</strong> &nbsp; • &nbsp; 18 NOVEMBER 2026 &nbsp; • &nbsp; RIVAL STABLES EDITION</p>
 
 <p align="center">
   <strong><a href="https://southernadd-cmyk.github.io/wrestler/">ENTER THE OFFICE — PLAY THE GAME</a></strong>
@@ -66,6 +66,9 @@ Arguments that were settled stay settled. One left open comes back next time. Ol
 
 ## ALSO IN THIS ISSUE
 
+- **Over the fence.** **Roster → Rival stables** opens every agency’s roster to you: what each wrestler wants, whether they are settled, restless or want out, when their contract is up and what their stable would want for them. A champion shows the belt they hold, with the promotion’s name. Approach one who wants out and it costs a management meeting; say yes and you pay their stable’s fee. See [The other managers](#the-other-managers).
+- **Faces for the managers.** Mo Devlin, Ruth Anwar, Len Mercer, Dina Kestrel, Pavel Singh and Cleo Kells each have a painted portrait now, on their stable’s page, in the rival stables table and on every letter they send you.
+- **One kind of approach.** The old phone call about North Circuit is gone. Any of the six managers can bid for your wrestlers now, and you can pay a loyalty bonus to keep somebody.
 - **How the match went.** The match report has a new panel: the phases of the bout with the crowd and momentum through each, the moments that moved the room, and where the stars came from. Crowds are harder to win, too: a roar fades unless the wrestlers keep feeding it, and 95 and up is gone.
 - **Easier on the eye.** Offers you can actually take come first and are picked for you; stronger contrast, clearer focus rings, and buttons big enough for a thumb on a phone. Commentary names the wrestler getting up off the mat.
 - **Last issues:** rivalries that remember, bonds and grudges between wrestlers, and the eight belts. See [They remember what happened](#they-remember-what-happened), [The locker room talks back](#the-locker-room-talks-back) and [Back issues](#back-issues).
@@ -250,7 +253,7 @@ All 80 wrestlers, together in one roster. Each has a named pixel-art portrait.
 
 Each booker keeps a separate card, from opener to main event, with a men’s and a women’s ranking and a champion at the top of each. A result at Dockside goes on Dockside’s record. Repeat appearances can raise your fee there, and an established draw can bring higher billing. See who’s up, who’s down and who’s working elsewhere in **Territory → Card pyramid**, and what each booker is planning in **Territory → Booking sheets**.
 
-**Rival stable report.** Mo Devlin starts with nine at Iron Borough, Ruth Anwar has eight at Gold Coast, and Len Mercer has eight at North Circuit. Three more managers are on the road: Dina Kestrel at Eastbank Athletic (six wrestlers), Pavel Singh at Meridian International (six), and Cleo Kells at Redwood Wrestling Agency (seven). Their results, wages, signings and releases change the circuit from week to week, and each of them pushes their own wrestlers with the bookers (see [The other managers](#the-other-managers)). If one of your wrestlers takes a rival’s offer, you may find yourself booking against them.
+**Rival stable report.** Mo Devlin starts with nine at Iron Borough, Ruth Anwar has eight at Gold Coast, and Len Mercer has eight at North Circuit. Three more managers are on the road: Dina Kestrel at Eastbank Athletic (six wrestlers), Pavel Singh at Meridian International (six), and Cleo Kells at Redwood Wrestling Agency (seven). Their results, wages, signings and releases change the circuit from week to week, and each of them pushes their own wrestlers with the bookers (see [The other managers](#the-other-managers)). Their rosters, faces and moods are in **Roster → Rival stables**. If one of your wrestlers takes a rival’s offer, you may find yourself booking against them.
 
 ---
 
@@ -352,7 +355,7 @@ The report compares the signed board with the match, starting with the strip as 
 
 The browser saves your career automatically, including backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.18. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). Every wrestler’s ambition is worked out the first time an older career is opened, and the bookers, rival managers and promotions’ books start from the next week played. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
+Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.19. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). Every wrestler’s ambition is worked out the first time an older career is opened, and the bookers, rival managers and promotions’ books start from the next week played. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
 
 To play locally, download the **whole repository** and open `index.html` in a modern browser. Keep the `assets/` directory alongside it: the page loads the JavaScript, CSS and portrait atlas as separate files. The simulation still runs in the browser, with no installer or build step. Google Fonts load when available, with system fallbacks.
 
@@ -394,6 +397,8 @@ Node.js is needed for the regression suites only. From the repository root, run 
 ```sh
 node tests/roster.test.cjs
 node tests/portrait-art.test.cjs
+node tests/portrait-v4.test.cjs
+node tests/roster-plan.test.cjs
 node tests/world-v4.test.cjs
 node tests/agents-room.test.cjs
 node tests/season-soak.test.cjs
@@ -407,6 +412,8 @@ node tests/promo-flow.test.cjs
 node tests/promo-variants.test.cjs
 node tests/promo-read.test.cjs
 node tests/training-sessions.test.cjs
+node tests/first-week.test.cjs
+node tests/audit-fixes.test.cjs
 node tests/records.test.cjs
 node tests/catalog.test.cjs
 node tests/divisions.test.cjs
@@ -444,6 +451,7 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
+| **v0.3.19** | Rival stables edition. Every agency’s roster is on view, with wants, moods, contracts, fees and champions’ belts, and you can approach their wrestlers who want out, at the cost of a meeting, a fee and a manager’s grudge. The six managers get painted portraits. The old North Circuit approach is folded into the managers’ bids, which gain a loyalty bonus. |
 | **v0.3.18** | Booking office edition. Every wrestler wants something and reacts when they don’t get it. Each booker runs title chases, grudges and pushes, chooses finishes to serve them and sometimes changes their mind; their plans are on the new Booking sheets. Rival managers lobby the bookers, move and poach wrestlers, take spots you sit on and bid for yours. The four promotions compete for crowds and money, book desperately when struggling, go head to head on title nights and raid each other. Promoters offer your wrestlers whole programmes. Also: the match report’s flow panel, a harder-earned crowd, and an easier-to-read office. [Inside the engine](docs/architecture.md#v0318-additions). |
 | **v0.3.12** | Rivalry edition. Every pairing keeps a record of how their matches went, and rematches argue about it: claims backed by what happened, replies that take a position, five ways to answer, concessions, tests the match can check, and arguments that are settled or come back. Wrestlers can ask Dennis to change a beat when there is a real reason, and the other wrestler answers. Backstage notes no longer reach the microphone. [Design and results](docs/rivalries-v3-12.md). |
 | **v0.3.11** | Locker room edition. Wrestlers form bonds and grudges from what they remember, which change Dennis’s meetings, bring backstage scenes to the inbox and, left alone, end in car-park attacks, leaked plans or a friend turning after the bell. Every profile shows the locker room. The 52 newcomers get their own weights, traits and signature moves. |
