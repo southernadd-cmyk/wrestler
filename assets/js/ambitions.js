@@ -237,10 +237,13 @@
    e.low=e.sat<20?e.low+1:0;
    // A promise that ran out.
    if(e.promise&&now()>e.promise.by){
+    // Preserve the original promise before expiry can reroll the wrestler's ambition.
+    const kind=e.kind,deadline=e.promise.by,made=e.promise.made;
+    const weeks=Number.isFinite(made)?Math.max(1,deadline-made):promiseWeeks(kind);
     e.promise=null;e.sat=clamp(e.sat-20);
     const m=G.W(id);
-    if(m){m.loyal=G.clamp((m.loyal||50)-12);m.morale=G.clamp((m.morale||50)-10);s.business.broken++;broken.push(id);
-     root.OfficeMemory?.remember(id,'ambition',m.short+' remembers being promised '+KINDS[e.kind].name.toLowerCase()+' and not getting it.',null,-6,0,'ambbroken:'+id+':'+now());}
+    if(m){m.loyal=G.clamp((m.loyal||50)-12);m.morale=G.clamp((m.morale||50)-10);s.business.broken++;broken.push({id,kind,weeks,deadline});
+     root.OfficeMemory?.remember(id,'ambition',m.short+' remembers being promised '+KINDS[kind].name.toLowerCase()+' and not getting it.',null,-6,0,'ambbroken:'+id+':'+now());}
    }
    // A target that left, or an ambition that has gone nowhere for a long time, gives way to another.
    if(e.kind==='rivalry'&&e.target&&!D.findWrestler(e.target))setTarget(id,e);
@@ -261,8 +264,8 @@
     `${w.short} is happier for it.${x.promised?' Loyalty +8.':''}`,
     `Next, ${w.short} ${KINDS[x.next].phrase}. ${KINDS[x.next].counts}`]});
   }
-  for(const id of broken){const w=G.W(id);if(w)G.msg({from:w.name,subject:'You promised',kind:'info',body:[
-   `“You told me you’d get me ${KINDS[a.w[id].kind].name.toLowerCase()}. You gave yourself ${promiseWeeks(a.w[id].kind)} weeks. Nothing.”`,`${w.short}: loyalty −12, morale −10.`]});}
+  for(const {id,kind,weeks} of broken){const w=G.W(id);if(w)G.msg({from:w.name,subject:'You promised',kind:'info',body:[
+   `“You told me you’d get me ${KINDS[kind].name.toLowerCase()}. You gave yourself ${weeks} weeks. Nothing.”`,`${w.short}: loyalty −12, morale −10.`]});}
   introduce();
   ask();
  }
