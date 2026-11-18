@@ -589,7 +589,10 @@ function endWeek(){
    const hot=Object.values(S.feuds).filter(f=>f.wid===w.id&&!f.closed).sort((a,b)=>b.heat-a.heat)[0];if(hot)hot.heat=clamp(hot.heat+6);
    lines.push(`${w.short} recorded a promo: −£40, heat +${g}${hot?', rivalry +6':''}.`);
   }else if(t.stat){
-   const spend=w.program?.type==='camp'?185:intensity.cost;S.cash-=spend;S.business.training+=spend;w.progress??={};const cur=w[t.stat];const camp=w.program?.type==='camp',specialist=S.coach&&COACHES[S.coach].stat===t.stat?COACHES[S.coach].boost:0;const growth=(camp?1.9:intensity.gain)*(1+specialist)*(cur>=88?.24:cur>=80?.5:1)*(w.fatigue>=70?.6:1);
+   const spend=w.program?.type==='camp'?185:intensity.cost;S.cash-=spend;S.business.training+=spend;w.progress??={};const cur=w[t.stat];const camp=w.program?.type==='camp',specialist=S.coach&&COACHES[S.coach].stat===t.stat?COACHES[S.coach].boost:0;// A rookie who is still learning the fundamentals should progress measurably
+   // across a season, without making upper-tier workers sprint to 99.
+   const rookieCatchup=w.tier==='Rookie'&&cur<68?1.4:1;
+   const growth=(camp?1.9:intensity.gain)*(1+specialist)*rookieCatchup*(cur>=88?.24:cur>=80?.5:1)*(w.fatigue>=70?.6:1);
    w.progress[t.stat]=(w.progress[t.stat]||0)+growth;
    const levels=Math.floor(w.progress[t.stat]);w.progress[t.stat]-=levels;
    const gained=Math.min(99-cur,levels);w[t.stat]=clamp(cur+gained,0,99);
