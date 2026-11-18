@@ -70,6 +70,14 @@ const turn=(s,wk)=>{const reports=[];M.state(s.territory).lastTurn=-1;M.turn(s,s
  assert.ok(s.territory.lastResults.matches.some(m=>m.a===rival.id&&m.b===rid),
   'the actual circuit match must happen, not just the inbox letter');
  assert.ok(!a.claimed.some(c=>c.at<=T.absWeek(s)),'fulfilled replacement is removed from the queue');
+ // Earned callouts and negotiated title opportunities cannot be stolen like generic open slots.
+ s.offers=held.slice(0,6).map((o,i)=>({...o,id:'earned-'+i,tag:i%2?'Title match':'Callout',
+  ...(i%2?{title:{pid:'crown',div:'men'}}:{})}));
+ a.seen=s.offers.map(o=>o.id);a.lobby.crown={[rival.id]:{by:team,w:90,kind:'push',week:wk}};
+ const protectedIds=s.offers.map(o=>o.id);
+ M.takeSpot(s,s.territory,a,wk);
+ assert.equal(s.offers.map(o=>o.id).join(','),protectedIds.join(','),
+  'a rival can compete for open slots, never an earned callout or title shot');
  // Your own named offers and a weak lobby are left alone.
  s.offers=held.map(o=>({...o,id:o.id+'-x'}));a.seen=s.offers.map(o=>o.id);a.lobby.crown={[rival.id]:{by:team,w:40,kind:'push',week:wk}};
  M.takeSpot(s,s.territory,a,wk);assert.equal(s.offers.length,10,'a half-hearted lobby takes nothing');
