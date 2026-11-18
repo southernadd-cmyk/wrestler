@@ -281,5 +281,13 @@
   return {live:st.live.filter(x=>!pid||x.pid===pid).map(map),done:st.done.filter(x=>!pid||x.pid===pid).map(map)};
  }
  function totalPurse(o,w){return (o.programme?.beats||[]).reduce((n,b)=>n+G.purse({pid:o.pid,slot:b.slot,finish:b.finish,boost:o.boost},w),0);}
- root.OfficeProgrammes={state,claims,offer,view,totalPurse,TYPE_NAME,STYLE,weekly};
+ // A wrestler changing ownership may invalidate several dates in one signed programme.
+ // Close the whole contract once, rather than charging once per remaining fixture.
+ function withdrawForTransfer(id,why='Roster change'){
+  const s=G.S,st=state(s?.territory);if(!s||!st)return 0;
+  const affected=st.live.filter(p=>p.wid===id||p.beats.some(b=>!b.done&&!b.missed&&b.rid===id));
+  for(const p of affected)walk(s,p,why);
+  return affected.length;
+ }
+ root.OfficeProgrammes={state,claims,offer,view,totalPurse,TYPE_NAME,STYLE,weekly,withdrawForTransfer};
 })(typeof window!=='undefined'?window:globalThis);

@@ -13,7 +13,9 @@
  // Stablemates who could talk for this wrestler tonight, best talker first.
  function candidates(c,w){
   const s=G.S;if(!s||!w)return [];
-  return s.roster.filter(x=>x.id!==w.id&&!G.inCamp?.(x)&&(x.mic||0)>=(w.mic||0)+MIN_GAP).map(x=>{
+  return s.roster.filter(x=>x.id!==w.id&&x.id!==c?.rid&&!G.inCamp?.(x)&&
+  ![...(s.card||[]),...(s.futureBookings||[])].some(k=>k.id!==c?.id&&k.eventAbs===(c?.eventAbs??G.abs())&&(k.wid===x.id||k.rid===x.id))&&
+  (x.mic||0)>=(w.mic||0)+MIN_GAP).map(x=>{
    const b=bondOf(w.id,x.id),refuse=b<=-35?x.short+' will not speak for '+w.short+'.':null;
    const ego=w.ego>=72?w.short+' has a big ego and may not enjoy being spoken for.':null;
    return {id:x.id,name:x.name,short:x.short,mic:x.mic,psych:x.psych,heat:x.heat,bond:b,refuse,ego,

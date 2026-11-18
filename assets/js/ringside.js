@@ -29,7 +29,8 @@
  // Who could walk out with this wrestler tonight, and what each of them could do.
  function seconds(c,w,f){
   const s=G.S,heat=Math.max(c?.feudHeat||0,G.feud?.(w.id,f.id)?.heat||0);
-  return (s?.roster||[]).filter(x=>x.id!==w.id&&!G.inCamp?.(x)).map(x=>{
+  return (s?.roster||[]).filter(x=>x.id!==w.id&&x.id!==c?.rid&&!G.inCamp?.(x)&&
+   ![...(s.card||[]),...(s.futureBookings||[])].some(k=>k.id!==c?.id&&k.eventAbs===(c?.eventAbs??G.abs())&&(k.wid===x.id||k.rid===x.id))).map(x=>{
    const b=bondOf(w.id,x.id),hurt=!!x.injury;
    let refuse=null;
    if(b<=-35)refuse=x.short+' will not stand in '+w.short+'’s corner.';

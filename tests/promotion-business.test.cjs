@@ -80,10 +80,22 @@ const play=(s,n)=>{for(let i=0;i<n;i++){for(const m of G.pending())G.answer(m.id
  assert.ok(line&&line.startsWith('Grand Union'),'Grand Union raids: '+reports.join(' / '));
  const who=D.ALL.find(w=>line.includes(w.name)),from=D.PROMOS.find(p=>p.id!=='union'&&line.includes(p.name+' loses'));
  assert.ok(t.cards.union[who.id]&&!t.cards[from.id][who.id],'the wrestler moves from one card to the other');
+ assert.equal(D.PROMOS.filter(p=>t.cards[p.id]?.[who.id]).length,1,'an exclusive promotion signing cannot keep appearances on other cards');
  assert.ok(!D.PROMOS.some(p=>D.DIVISION_ORDER.some(d=>t.titles[p.id][d].holder===who.id)),'never a champion');
  assert.equal(b.union.money,40000-1500,'it costs the raider');
  const again=[];Biz.raid(s,t,b,wk+1,again);assert.equal(again.length,0,'not again straight away');
  console.log('PASS rich promotions raid their rivals for a star');
+}
+
+// 4b. Even a very rich club cannot raid wrestlers from national television promotions.
+{
+ const s=fresh(),t=s.territory,b=Biz.state(t),wk=T.absWeek(s),reports=[];
+ for(const p of D.PROMOS)Object.assign(b[p.id],{money:1500,buzz:20,momentum:-1});
+ Object.assign(b.dock,{money:90000,buzz:100,momentum:4});
+ Biz.raid(s,t,b,wk,reports);
+ assert.equal(reports.filter(x=>/exclusive deal/.test(x)).length,0,
+  'Dockside must not buy national-TV talent merely because its finances are better');
+ console.log('PASS transfers respect promotion prestige and national reach');
 }
 
 // 5. A hot promotion pays you better.

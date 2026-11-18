@@ -89,7 +89,9 @@
   const cast=new Set([...Object.values(t.booking?.promos||{}).flatMap(x=>x.live.flatMap(y=>[y.a,y.b])),...(root.OfficeProgrammes?.claims(s,t).cast||[])]);
   const owned=new Set(s.roster.map(w=>w.id));
   const target=D.PROMOS.filter(p=>p!==raider).flatMap(p=>Object.entries(t.cards[p.id]||{}).map(([id,row])=>({id,row,from:p})))
-   .filter(x=>!owned.has(x.id)&&!titled.has(x.id)&&!cast.has(x.id)&&T.contracted(s,x.id)&&!t.cards[raider.id]?.[x.id]&&!(wk-(b.raided[x.id]??-99)<RAID_SHIELD)&&wk-(b[x.from.id].lastRaided??-99)>=12)
+   .filter(x=>!owned.has(x.id)&&!titled.has(x.id)&&!cast.has(x.id)&&T.contracted(s,x.id)&&raider.reach>=x.from.reach&&
+    ![...(s.card||[]),...(s.futureBookings||[])].some(c=>c.rid===x.id||c.wid===x.id)&&
+    !t.cards[raider.id]?.[x.id]&&!(wk-(b.raided[x.id]??-99)<RAID_SHIELD)&&wk-(b[x.from.id].lastRaided??-99)>=12)
    .filter(x=>Object.keys(t.cards[x.from.id]).filter(id=>D.divisionOf(id)===D.divisionOf(x.id)).length>6)
    .map(x=>({...x,v:(D.findWrestler(x.id)?.heat||50)+x.row.score*.5}))
    .filter(x=>x.v>=80)
@@ -97,7 +99,10 @@
   if(!target)return;
   // Raids are not every chance that comes along: a hot booker takes more of them.
   if(hash(raider.id+target.id+wk)>.5+b[raider.id].buzz/200)return;
-  delete t.cards[target.from.id][target.id];
+  // "Exclusive" means the wrestler appears on ONE promotion ledger, not merely
+  // one fewer. Reject signed contracts above; withdraw any still-open offers.
+  G.reconcileOwnership?.(target.id,{reason:'The opponent joined another promotion'});
+  for(const promotion of D.PROMOS)if(promotion.id!==raider.id)delete t.cards[promotion.id]?.[target.id];
   (t.cards[raider.id]??={})[target.id]={score:target.row.score,matches:0,wins:0};
   b[raider.id].money-=RAID_COST;b[raider.id].buzz=r1(clamp(b[raider.id].buzz+8));
   b[target.from.id].buzz=r1(clamp(b[target.from.id].buzz-6));
