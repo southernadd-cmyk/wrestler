@@ -26,7 +26,7 @@ assert.equal(h.outcome,'booked');
 assert.equal(h.bookedFinish,'win_clean');
 
 const ui=fs.readFileSync(path.join(__dirname,'../assets/js/ui.js'),'utf8');
-const a=ui.indexOf('function recordedFinishTag(h){'),b=ui.indexOf('function starsText(s){',a);
+const a=ui.indexOf('function finishTag(k){'),b=ui.indexOf('function starsText(s){',a);
 assert.ok(a>0&&b>a,'archive UI has a central display helper');
 const helpers=ui.slice(a,b);
 const context={D,esc:x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
