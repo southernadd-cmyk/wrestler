@@ -112,6 +112,26 @@ console.log('PASS performed post-bell angles and speech reach history and rivalr
 }
 console.log('PASS referee DQs supersede contracted finishes in the rivalry archive');
 
+// A title-winning promise is not fulfilled merely by a DQ victory.
+// Only actual belt ownership can satisfy the claim.
+{
+ const s=reset(),div=D.divisionOf('rex');
+ const c=contract({finish:'win_dq',title:{pid:'crown',div},
+  programme:{id:'phase2-title-claim',step:0}});
+ s.territory.titles.crown[div].holder='silas';
+ const prog={id:'phase2-title-claim',pid:'crown',div,type:'title',wid:'rex',rid:'silas',
+  beats:[{cid:c.id,at:G.abs(),rid:'silas',done:false,slot:'main',finish:'win_dq'}],signed:G.abs()};
+ root.OfficeProgrammes.state(s.territory).live.push(prog);
+ root.OfficeProgrammeArcs.prepare(c,'gamble',{quality:96});
+ G.applyResult(c,result({finishRoute:'dq_chair_f',stars:4.75}));
+ assert.equal(root.OfficeTerritory.title('crown',div).holder,'silas',
+  'the champion retains on a contractual DQ');
+ assert.equal(prog.arc.timeline[0].claim,'broken',
+  'high-quality DQ victory does not fulfil a promise to win the belt');
+ assert.match(prog.arc.timeline[0].recap,/not delivered/);
+}
+console.log('PASS title promises require championship ownership, not merely winning by DQ');
+
 // Legacy matches are 16 weeks per season. Backfill order, evidence age and
 // score must use the same clock as the active career.
 {
