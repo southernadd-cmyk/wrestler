@@ -466,3 +466,8 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 
 /* v0.3.14 ambitions: one line under the name on profiles and free agents. */
 .amb-line{margin:6px 0 0;font-size:14px}
+
+/* v0.3.15 booking sheets: one card per storyline on the board. */
+.story-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.story-card p{margin:0 0 6px}
+.story-card .cons li{background:none;border:0;border-left:3px solid var(--stone-lo);padding:2px 8px;color:inherit}

@@ -190,7 +190,7 @@ const NAV=[
  ['Office',[['desk','Desk'],['inbox','Inbox'],['objectives','Objectives']]],
  ['Roster',[['squad','Your stable'],['training','Training'],['scouting','Free agents']]],
  ['Bookings',[['offers','Offers'],['fixtures','Fixtures']]],
- ['Territory',[['pyramid','Card pyramid'],['promoters','Promoters'],['rivalries','Rivalries'],['results','Results']]],
+ ['Territory',[['pyramid','Card pyramid'],['sheets','Booking sheets'],['promoters','Promoters'],['rivalries','Rivalries'],['results','Results']]],
  ['Game',[['game','Save and load']]]
 ];
 const SECTION_OF={profile:'squad'};
@@ -232,7 +232,7 @@ function renderChrome(){
  $('#tick').innerHTML=lead?`<b>${G.pending().length?'Action':'News'}</b><button data-tickmsg="${lead.id}">${esc(lead.subject)}. ${esc(lead.from)}.</button><span class="keys">${s.history.length} ${plural(s.history.length,'match','matches')} worked this career</span>`:'';
 }
 
-const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,training:renderTraining,scouting:renderScouting,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
+const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,training:renderTraining,scouting:renderScouting,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
 function render(reset=false){
  if(!S())return;
  const keep={};if(!reset)document.querySelectorAll('#view [data-keep]').forEach(el=>keep[el.dataset.keep]=el.scrollTop);
@@ -575,6 +575,24 @@ function renderPromoters(){
  }).join('')}</tbody></table></div>`;
  const cards=s.promoters.map(p=>`<article class="phone-card"><div class="who">${face('booker',p.id,p.voice)}<div><b>${esc(p.name)}</b><small>${esc(p.voice)} · ${esc(p.desc)}</small></div></div><div class="phone-card-line"><span>${esc(planFor(p).name)}</span><b>Trust ${p.trust}</b></div><small>Reach ${p.reach} · ${p.matches} matches · Best ${p.best?starsText(p.best):'–'}</small><small>${esc(promoterState(p,s.rep).text)}</small></article>`).join('');
  paint('s-full',win('Promoters',phoneList(table,cards)+'<p class="dim" style="margin-top:8px">Trust rises when you deliver what a promoter asked for and falls when you pull out or break a finish.</p>',{keep:'proms'}));
+}
+// v0.3.15 Each booker's plans: the storylines on the board and how the last ones ended.
+function renderSheets(){
+ const s=S(),B=window.OfficeBooking;if(!B)return renderPyramid();
+ const p=D.PROMOS.find(x=>x.id===route.id)||D.PROMOS[0],v=B.view(p.id);
+ const tab=x=>`<button class="btn sm ${x.id===p.id?'go':''}" data-go="sheets" data-id="${x.id}" aria-pressed="${x.id===p.id}">${esc(x.name)}</button>`;
+ const tabs=`<div class="row" role="group" aria-label="Promotion" style="margin-bottom:10px">${D.PROMOS.map(tab).join('')}</div>`;
+ const head=`<div class="row" style="flex-wrap:nowrap;gap:12px;margin-bottom:10px">${face('booker',p.id,p.voice,'portrait')}<div><b>${esc(p.voice)}</b>, booker at ${esc(p.name)}<p class="dim" style="margin:4px 0 0">${esc(v.blurb)}</p></div></div>`;
+ const card=x=>{
+  const step=x.next?(x.next.kind==='payoff'||x.next.kind==='blowoff'?`${x.type==='title'?'Title match':'The last match'}: ${weekLabel(x.next.at)}`:`Match ${x.played+1} of ${x.total}: ${weekLabel(x.next.at)}`):'';
+  const rec=x.record.length?`<ul class="cons">${x.record.map(r=>`<li>${esc(r.winner)} beat ${esc(r.loser)}</li>`).join('')}</ul>`:'<p class="dim">Nothing played yet.</p>';
+  return `<article class="well pad story-card"><p><span class="tag${x.type==='title'?' hot':''}">${esc(x.typeName)}</span> <span class="dim">${esc(D.DIVISIONS[x.div].name)} division</span></p>
+   <p><b>${esc(x.aName)}</b> ${x.type==='title'?'chasing':x.type==='rise'?'climbing towards':'v'} <b>${esc(x.bName)}</b></p>
+   <p>Heat ${bar(x.heat,x.heat>=70?'gold':'')} ${x.heat}</p><p class="dim">${esc(step)}</p>${rec}</article>`;
+ };
+ const live=v.live.length?`<div class="story-grid">${v.live.map(card).join('')}</div>`:`<div class="empty">Nothing on the board this week. ${esc(p.voice)} is planning.</div>`;
+ const done=v.done.length?`<ul class="cons">${v.done.map(x=>`<li class="${x.status==='dropped'?'':'up'}"><b>${esc(x.typeName)}</b> · ${esc(x.text||'')} <span class="dim">${x.ended?weekLabel(x.ended):''}</span></li>`).join('')}</ul>`:'<p class="dim">No storyline has finished here yet.</p>';
+ paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">On the board</h3>${live}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">Bookers plan the circuit’s matches around these storylines and choose who wins to serve them. They do not always stick to the plan.</p>`,{keep:'sheets',note:esc(p.name)}));
 }
 function renderRivalries(){
  const s=S(),feuds=Object.values(s.feuds).filter(f=>f.heat>0||f.closed).sort((a,b)=>b.heat-a.heat);

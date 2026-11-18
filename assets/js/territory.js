@@ -91,7 +91,8 @@ function checkTitles(s,t,reports){
  }
 }
 function stableFor(id){return ensure()?.teams.find(team=>team.roster.includes(id));}
-function record(t,pid,a,b,slot,won,stars){
+// `scale` lets the circuit, which now books more matches a week, move the rankings no faster than before.
+function record(t,pid,a,b,slot,won,stars,scale=1){
  const card=t.cards[pid];if(!card||!a||!b||a===b)return;
  const weight=2+(D.SLOTS[slot]?.rank??0);
  for(const [id,win] of [[a,won],[b,won===null?null:!won]]){
@@ -99,7 +100,7 @@ function record(t,pid,a,b,slot,won,stars){
   row.matches++;
   if(win===null)continue;
   if(win)row.wins++;
-  row.score=G.clamp(row.score+(win?weight+2:-2)+Math.max(0,Math.floor((stars||0)-2)));
+  row.score=G.clamp(row.score+Math.round(((win?weight+2:-2)+Math.max(0,Math.floor((stars||0)-2)))*scale));
  }
 }
 // Slots scale with the size of the division: twelve workers gives 2 main, 3 feature, 4 mid, 3 openers.
@@ -155,6 +156,12 @@ function poach(w){const team=poacher();return signRival(team,w)?team.name:null;}
 // (Each pairing only depends on its own promotion and division's ranking, so booking them all first
 // gives the same matches as booking and scoring them one at a time.)
 function circuitBill(s,t,week,busy=new Set((s.card||[]).map(c=>c.rid))){
+ // With the booking office installed, the bookers plan the card (v0.3.15).
+ if(root.OfficeBooking)return root.OfficeBooking.decide(s,t,week,busy).bill;
+ return rotationBill(s,t,week,busy);
+}
+// The original rotation: whoever is next on the list, with champions defending every third week.
+function rotationBill(s,t,week,busy){
  busy=new Set(busy);const out=[];
  for(const [i,p] of D.PROMOS.entries())for(const [j,div] of D.DIVISION_ORDER.entries()){
   const entries=promotionRank(p.id,div,t,s).filter(w=>!busy.has(w.id)&&!w.owned&&contracted(s,w.id));
@@ -177,6 +184,8 @@ function circuitBill(s,t,week,busy=new Set((s.card||[]).map(c=>c.rid))){
  }
  return out;
 }
+// The booking office books about 1.7 times as many circuit matches as the old rotation did.
+const CIRCUIT_SCALE=.6;
 function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  const week=(s.season-1)*16+s.week;if(t.week===week)return;t.week=week;
  const standings=rank();t.previous=Object.fromEntries(standings.map((w,i)=>[w.id,i]));
@@ -184,12 +193,15 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  checkTitles(s,t,reports);
  // This week's circuit results as data, for modules that need more than the report lines.
  t.lastResults={week,matches:[]};
- for(const {i,j,div,a,b,title:onTheLine} of circuitBill(s,t,week)){
+ // The bookers' plan for the week (v0.3.15): commit their storylines and announce anything new.
+ const plan=root.OfficeBooking?.decide(s,t,week)||null;
+ if(plan){t.booking=plan.state;reports.push(...plan.notes);}
+ for(const {i,j,div,a,b,title:onTheLine,winner:planned,stars:billed,line,story} of plan?plan.bill:circuitBill(s,t,week)){
   const p=D.PROMOS[i];
-  const won=((week*13+a.ring+b.psych+p.reach+j*37)%100)<(onTheLine?58:52);
-  const winner=won?a:b,loser=won?b:a;
-  t.lastResults.matches.push({pid:p.id,div,a:a.id,b:b.id,slotA:a.slot,slotB:b.slot,winner:winner.id,title:onTheLine,stars:onTheLine?3:2.5});
-  record(t,p.id,a.id,b.id,a.slot,won,onTheLine?3:2.5);
+  const won=planned?planned===a.id:((week*13+a.ring+b.psych+p.reach+j*37)%100)<(onTheLine?58:52);
+  const winner=won?a:b,loser=won?b:a,stars=billed??(onTheLine?3:2.5);
+  t.lastResults.matches.push({pid:p.id,div,a:a.id,b:b.id,slotA:a.slot,slotB:b.slot,winner:winner.id,title:onTheLine,stars,story:story?.id||null});
+  record(t,p.id,a.id,b.id,a.slot,won,stars,plan?CIRCUIT_SCALE:1);
   t.points[winner.id]=(t.points[winner.id]||0)+4;
   t.points[loser.id]=(t.points[loser.id]||0)-2;
   for(const [w,win] of [[winner,true],[loser,false]]){
@@ -200,7 +212,7 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
   const name=D.belt(p.id,div).name;
   if(onTheLine&&changeTitle(t,p.id,div,winner.id,loser.id,'match'))reports.unshift(p.name+': '+winner.name+' defeated '+loser.name+' to win the '+name+'.');
   else if(onTheLine)reports.push(p.name+': '+winner.name+' retained the '+name+' against '+loser.name+'.');
-  else reports.push(p.name+': '+winner.name+' defeated '+loser.name+'.');
+  else reports.push(line||p.name+': '+winner.name+' defeated '+loser.name+'.');
  }
  if(s.worldV4?.version===4)root.OfficeWorldV4.evolve(s,t,week,reports);
  else if(week%5===0){
