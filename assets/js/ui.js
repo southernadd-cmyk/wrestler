@@ -81,6 +81,80 @@ function crowdChart(trace,len,strip){
  return chart({h:110,x:[0,len],y:[0,100],lines:[{pts:trace,col:'cyan'}],marks,yTicks:[[0,'0'],[50,'50'],[100,'100']],xTicks:[[0,'00:00'],[len/2,Mx.fmt(len/2)],[len,Mx.fmt(len)]],
   aria:`Crowd from ${vals[0]} at the bell to ${vals.at(-1)} at the finish, peaking at ${peak}.${marks.length?` ${marks.filter(m=>m.sym==='✓').length} agreed beats landed.`:''}`});
 }
+// v0.3.13 HOW THE MATCH WENT. The post-match read of the ten-second flow the engine records: the crowd,
+// who had the upper hand, each part of the match judged on its work and its noise, the moments that
+// moved the room, and the rating itemised. Matches recorded before v0.3.13 have no flow and fall back
+// to the plain crowd chart.
+const FLOW_MARK={big:['★','gold','Big move lands'],spot:['★','gold','Move lands'],nf:['◆','white','Near fall'],botch:['✗','blood','Mistake'],tired:['~','warn','Too tired to land it']};
+const FLOW_GOOD=61,FLOW_POOR=50,FLOW_UP=8,FLOW_DOWN=-3;
+function secs(s){const [m,x]=String(s).split(':').map(Number);return (m||0)*60+(x||0)}
+function flowPhases(fin){
+ const fl=fin.flow,ph=[];let g=null;
+ fl.forEach(([t,c,m,p,q],i)=>{
+  if(!g||g.p!==p){g={p,from:i?fl[i-1][0]:0,cIn:i?fl[i-1][1]:(fin.crowdStart??c),qs:0,n:0,mine:0,theirs:0};ph.push(g)}
+  g.to=t;g.cOut=c;g.qs+=q;g.n++;if(m>10)g.mine++;else if(m<-10)g.theirs++;
+ });
+ for(const g of ph){
+  g.q=Math.round(g.qs/g.n);g.d=g.cOut-g.cIn;g.name=Mx.PHASES[g.p]?.name||'';
+  g.work=g.q>=FLOW_GOOD?'good':g.q<FLOW_POOR?'poor':'ok';g.tone=g.d>=FLOW_UP?'up':g.d<=FLOW_DOWN?'down':'flat';
+  g.verdict=g.tone==='up'?(g.work==='poor'?'Noise over substance':g.work==='good'?'Clicked':'Got them going'):
+   g.tone==='down'?(g.work==='poor'?'Fell apart':'Lost them'):(g.work==='good'?'Solid':g.work==='poor'?'Dragged':'Ticked over');
+  g.score=g.d/6+(g.q-55)/6;
+ }
+ return ph;
+}
+// The biggest thirty-second swings in the crowd, kept apart so two moments never describe the same spot.
+function flowMoments(fin){
+ const fl=fin.flow,span=3,sw=[];
+ for(let i=0;i+span<fl.length;i++)sw.push({t0:fl[i][0],t1:fl[i+span][0],d:fl[i+span][1]-fl[i][1]});
+ const pick=(list,n)=>{const out=[];for(const s of list){if(out.length>=n)break;if(out.every(o=>Math.abs(o.t1-s.t1)>60))out.push(s)}return out};
+ const rises=pick(sw.filter(s=>s.d>=5).sort((a,b)=>b.d-a.d),3),drops=pick(sw.filter(s=>s.d<=-4).sort((a,b)=>a.d-b.d),2);
+ const log=(fin.log||[]).filter(l=>l.kind!=='count'&&l.kind!=='rating'&&l.text.length>12).map(l=>({...l,s:secs(l.t)}));
+ const why=s=>{const near=log.filter(l=>l.s>=s.t0-10&&l.s<=s.t1+5);
+  const best=(s.d>0&&near.find(l=>l.big&&l.kind!=='bad'))||near.find(l=>l.kind===(s.d>0?'crowd':'bad'))||near.find(l=>l.kind==='play'||l.kind==='crowd'||l.kind==='bad')||near.at(-1);
+  return best?.text||''};
+ return [...rises,...drops].sort((a,b)=>a.t1-b.t1).map(s=>({...s,text:why(s)}));
+}
+function flowGraphic(fin,w,f,ph){
+ const fl=fin.flow,len=fin.len||fl.at(-1)[0],X=t=>Math.round(Math.min(1,t/len)*10000)/100,start=fin.crowdStart??fl[0][1];
+ const pts=[[0,start],...fl.map(r=>[r[0],r[1]])];
+ const line=pts.map(([t,c])=>X(t)*10+','+(100-c)).join(' ');
+ const area=`0,100 ${line} ${X(pts.at(-1)[0])*10},100`;
+ const momPts=[[0,0],...fl.map(r=>[r[0],r[2]])];
+ const mom=s=>`0,20 ${momPts.map(([t,m])=>X(t)*10+','+(20-s*Math.max(0,s*m)/100*19)).join(' ')} ${X(momPts.at(-1)[0])*10},20`;
+ const bands=ph.map(g=>`<div class="mf-ph w-${g.work}" style="left:${X(g.from)}%;width:${Math.round((X(g.to)-X(g.from))*100)/100}%" title="${esc(g.name)}: ${esc(g.verdict)}. Work ${Math.round(g.q)}, crowd ${g.d>=0?'+':''}${g.d}."><b>${esc(g.name)}</b></div>`).join('');
+ const seps=h=>ph.slice(1).map(g=>`<line class="mf-sep" x1="${X(g.from)*10}" x2="${X(g.from)*10}" y1="0" y2="${h}"/>`).join('');
+ const marks=(fin.marks||[]).map(([t,k,yours])=>{
+  if(k.startsWith('call:')){const c=Mx.CALLS[k.slice(5)];return `<i class="mf-call" style="left:${X(t)}%" title="${esc(Mx.fmt(t))} · You called: ${esc(c?.name||k.slice(5))}">▼</i>`}
+  const m=FLOW_MARK[k];if(!m)return '';
+  const c=(fl.find(r=>r[0]>=t)||fl.at(-1))[1];
+  return `<i class="mf-mark k-${k}${yours?' you':' foe'}" style="left:${X(t)}%;top:${100-c}%" title="${esc(Mx.fmt(t))} · ${esc(m[2])} (${esc(yours?w.short:f.short)})">${m[0]}</i>`;
+ }).join('');
+ const peak=fl.reduce((a,r)=>r[1]>a[1]?r:a,[0,start]);
+ const ticks=[0,.25,.5,.75,1].map(k=>`<span style="left:${k*100}%">${esc(Mx.fmt(Math.round(len*k/10)*10))}</span>`).join('');
+ const aria=`Crowd from ${start} at the bell to ${fl.at(-1)[1]} at the finish, loudest ${peak[1]} at ${Mx.fmt(peak[0])}. `+ph.map(g=>`${g.name}: ${g.verdict.toLowerCase()}`).join('; ')+'.';
+ return `<figure class="mflow" role="img" aria-label="${esc(aria)}">
+  <div class="mf-row mf-phases" aria-hidden="true"><span class="mf-lab">Phase</span><div class="mf-track">${bands}</div></div>
+  <div class="mf-row mf-crowd" aria-hidden="true"><span class="mf-lab">Crowd<small class="top">100</small><small class="mid">50</small><small class="bot">0</small></span><div class="mf-track"><svg viewBox="0 0 1000 100" preserveAspectRatio="none"><line class="mf-grid" x1="0" x2="1000" y1="15" y2="15"/><line class="mf-grid" x1="0" x2="1000" y1="50" y2="50"/>${seps(100)}<polygon class="mf-area" points="${area}"/><polyline class="mf-line" points="${line}"/></svg><i class="mf-peak" style="left:${X(peak[0])}%;top:${100-peak[1]}%" title="Loudest: ${peak[1]} at ${esc(Mx.fmt(peak[0]))}">${peak[1]}</i>${marks}</div></div>
+  <div class="mf-row mf-mom" aria-hidden="true"><span class="mf-lab"><small class="you">${esc(w.short)}</small><small class="them">${esc(f.short)}</small></span><div class="mf-track"><svg viewBox="0 0 1000 40" preserveAspectRatio="none"><polygon class="mf-you" points="${mom(1)}"/><polygon class="mf-them" points="${mom(-1)}"/><line class="mf-mid" x1="0" x2="1000" y1="20" y2="20"/>${seps(40)}</svg></div></div>
+  <div class="mf-row mf-x" aria-hidden="true"><span class="mf-lab"></span><div class="mf-track">${ticks}</div></div>
+  <figcaption class="mf-key"><span><i class="k-line"></i>Crowd</span><span><i class="k-you"></i>${esc(w.short)} on top</span><span><i class="k-them"></i>${esc(f.short)} on top</span><span><b class="k-spot you">★</b>${esc(w.short)} lands one</span><span><b class="k-spot foe">★</b>${esc(f.short)} lands one</span><span><b class="k-nf">◆</b>Near fall</span><span><b class="k-botch">✗</b>Mistake</span><span><b class="k-call">▼</b>Your call</span><span><i class="k-good"></i>Good work</span><span><i class="k-poor"></i>Poor work</span></figcaption>
+ </figure>`;
+}
+function flowReport(fin,w,f){
+ if(!fin.flow||fin.flow.length<6)return '';
+ const ph=flowPhases(fin),byScore=ph.slice().sort((a,b)=>b.score-a.score),best=byScore[0],worst=byScore.at(-1);
+ const total=ph.reduce((t,g)=>t+g.n,0),you=ph.reduce((t,g)=>t+g.mine,0),them=ph.reduce((t,g)=>t+g.theirs,0);
+ const stood=best.tone==='up'||best.work==='good';
+ const head=`<p class="mf-head"><span>${stood?`Best: <b class="up">${esc(best.name)}</b> · ${esc(best.verdict.toLowerCase())}`:'No part of the match really took off'}</span>${worst!==best&&worst.score<0?`<span>Weakest: <b class="down">${esc(worst.name)}</b> · ${esc(worst.verdict.toLowerCase())}</span>`:''}<span>On top: ${esc(w.short)} ${Math.round(you/total*100)}% · ${esc(f.short)} ${Math.round(them/total*100)}%</span></p>`;
+ const rows=ph.map(g=>`<tr class="t-${g.tone}"><th scope="row">${esc(g.name)}<small>${esc(Mx.fmt(g.from))}–${esc(Mx.fmt(g.to))}</small></th><td><span class="mf-bar w-${g.work}" role="img" aria-label="Work ${Math.round(g.q)} out of 100"><i style="width:${Math.max(4,Math.min(100,(g.q-30)/45*100))}%"></i></span> <small>${Math.round(g.q)}</small></td><td class="n">${g.cIn}→${g.cOut} <b class="chip ${g.tone}">${g.d>0?'+':''}${g.d}</b></td><td class="n">${g.mine===g.theirs?'Even':`${esc(g.mine>g.theirs?w.short:f.short)} ${Math.round(Math.max(g.mine,g.theirs)/g.n*100)}%`}</td><td class="v">${esc(g.verdict)}</td></tr>`).join('');
+ const table=`<div class="well mf-table-wrap"><table class="grid mf-table"><thead><tr><th>Phase</th><th>Work</th><th class="n">Crowd</th><th class="n">On top</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+ const mom=flowMoments(fin);
+ const moments=mom.length?`<ol class="mf-moments well">${mom.map(m=>`<li class="${m.d>0?'up':'down'}"><span class="t">${esc(Mx.fmt(m.t1))}</span><b class="chip ${m.d>0?'up':'down'}">${m.d>0?'+':''}${m.d}</b><span>${esc(m.text)}</span></li>`).join('')}</ol>`:'<p class="dim">The crowd never swung hard either way.</p>';
+ const parts=(fin.starParts||[]).filter(p=>Math.abs(p[2])>=.01),maxAbs=Math.max(.5,...parts.map(p=>Math.abs(p[2])));
+ const breakdown=parts.length?`<div class="mf-parts well">${parts.map(([k,label,v])=>`<div class="mf-part ${v>=0?'pos':'neg'}"><span>${esc(label)}</span><span class="mf-pbar"><i style="${v>=0?'left':'right'}:50%;width:${Math.abs(v)/maxAbs*50}%"></i></span><b>${v>=0?'+':'−'}${Math.abs(v).toFixed(2)}</b></div>`).join('')}<div class="mf-part total"><span>Rating</span><span></span><b>${starsText(fin.stars)||'DUD'}</b></div></div>`:'';
+ return `${head}${flowGraphic(fin,w,f,ph)}<div class="mf-cols"><div><h3 class="section-h">Phase by phase</h3>${table}</div><div><h3 class="section-h">Moments that moved the room</h3>${moments}${breakdown?`<h3 class="section-h" style="margin-top:10px">Where the stars came from</h3>${breakdown}`:''}</div></div>`;
+}
 function bar(v,kind=''){return `<span class="bar ${kind}" role="img" aria-label="${Math.round(v)} out of 100"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></span>`}
 function fatKind(f){return f>=60?'danger':f>=40?'warn':'cool'}
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3600)}
@@ -808,8 +882,9 @@ function result(){
  night.i++;const more=night.i<night.queue.length;
  const sheetHtml=sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><p class="dim">'+(sheetReport.room?esc(sheetReport.room.premise):'Story: '+esc(OfficeSheets.focusOptions(c,w,f,night.plan?.game||'story').find(x=>x.id===sheetReport.focus)?.title||sheetReport.focus||'Performer-led'))+
   ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p>'+(finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+'<div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title.charAt(0).toUpperCase()+b.title.slice(1))+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span></li>').join('')+'</ol></div>':'';
+ const story=flowReport(fin,w,f);
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the layout</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${win('What happened',`${facts}${fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What happened',`${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span><button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button></div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';persistNight();
 }
 function endNight(){
