@@ -14,6 +14,19 @@
  const REACH_SWING=12,RAID_GAP=6,RAID_COST=1500,RAID_SHIELD=16,HISTORY=16;
 
  const base=p=>30+p.reach*.45;
+ // A weekly promotion show has ticket receipts, broadcast/sponsor receipts, a real
+ // production bill and wrestler costs. A cold crowd should hurt; low "buzz" alone
+ // must not send a national TV promotion into an inevitable multi-season death spiral.
+ function finance(p,f,matches=0,paid=0,changed=0){
+  const perHead=12+p.reach*.72,gate=Math.round(f.crowd*perHead);
+  const sponsors=Math.round(p.reach*(p.tv?17:6)+f.buzz*(p.tv?7:4));
+  const production=Math.round(base(p)*perHead*.9+p.reach*(p.tv?12:5));
+  const talent=Math.round(matches*(35+p.reach*1.25));
+  const marquee=Math.round((paid+changed)*p.reach*1.5);
+  const savings=f.desperate?Math.round(production*.16):0;
+  const costs=production+talent+marquee-savings;
+  return {gate,sponsors,production,talent,marquee,savings,net:gate+sponsors-costs};
+ }
  function blank(p){return {crowd:Math.round(base(p)),buzz:30,money:Math.round(5000+p.reach*60),momentum:0,desperate:false,weeks:0,best:Math.round(base(p)),history:[],lastRaid:-99};}
  function state(t=G.S?.territory){
   if(!t)return null;
@@ -58,9 +71,16 @@
    // Each promotion has its own level; a booking style is not a reason to sink for ever.
    const target=base(p)+(raw-excess*.7-base(p))*.6;
    f.crowd=Math.round(clamp(f.crowd+(target-f.crowd)*.3,5,100));
-   f.buzz=r1(clamp(f.buzz*.8+paid*10+changed*8+(quality>=3.5?4:0)+(clash&&won?6:0)));
-   // Money follows the crowd and the buzz; a promotion in trouble cuts its costs.
-   f.money=Math.round(f.money+(f.crowd-base(p))*(20+p.reach*.4)+(f.buzz-40)*(5+p.reach*.1)+(f.desperate?p.reach*5:0));
+   // Buzz returns towards a neutral audience rather than decaying to zero when no
+   // title changes hands. Show quality and payoff nights still move the needle.
+   const news=34+(quality-2.75)*7+paid*7+changed*4+(clash?(won?4:-3):0);
+   f.buzz=r1(clamp(f.buzz*.7+news*.3));
+   // Results this week pay the show bill once. Keep the breakdown with the result,
+   // not as an invented generic adjustment to an arbitrary cash baseline.
+   const matches=stars.length;
+   const statement=finance(p,f,matches,paid,changed);
+   f.lastFinance={week:wk,...statement};
+   f.money=Math.round(f.money+statement.net);
    f.momentum=r1(f.momentum*.7+(f.crowd-before)*.3*3);
    f.weeks++;
    // Only a clear new high is news.
@@ -125,7 +145,7 @@
   const p=D.PROMOS.find(x=>x.id===pid),f=s?.territory?state(s.territory)[pid]:null;if(!p||!f)return null;
   const trend=f.momentum>=1.5?'up':f.momentum<=-1.5?'down':'flat';
   const tone=f.desperate?'Struggling':f.crowd>=base(p)+5?'Hot':f.crowd<=base(p)-4?'Cooling':'Steady';
-  return {pid,crowd:f.crowd,base:Math.round(base(p)),buzz:Math.round(f.buzz),money:f.money,momentum:f.momentum,trend,tone,desperate:f.desperate,best:f.best,history:f.history.slice()};
+  return {pid,crowd:f.crowd,base:Math.round(base(p)),buzz:Math.round(f.buzz),money:f.money,momentum:f.momentum,trend,tone,desperate:f.desperate,best:f.best,finance:f.lastFinance||null,history:f.history.slice()};
  }
- root.OfficeBusiness={state,week,view,raid,base};
+ root.OfficeBusiness={state,week,view,raid,base,finance};
 })(typeof window!=='undefined'?window:globalThis);
