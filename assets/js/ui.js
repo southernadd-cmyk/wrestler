@@ -1060,7 +1060,7 @@ function result(){
   if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed match layout against '+f.short+'.',f.id,-2,0,c.id+':sheet');
   G.save();
  }
- night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,consequences:cons.map(x=>x.text)});
+ night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,actualOutcome:fin.outcome,bookedFinish:c.finish,consequences:cons.map(x=>x.text)});
  night.after=window.OfficeAfter?OfficeAfter.begin(c,fin,night.plan?.after||'none'):null;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
