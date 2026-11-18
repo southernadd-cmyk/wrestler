@@ -479,3 +479,7 @@
 .after-picks .decision-option.on>b::before{content:'✓ ';color:var(--gold-lo)}
 .foot-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 @media (max-width:720px){.foot-btns{width:100%}.foot-btns .btn{flex:1 1 auto}}
+/* v0.3.21 ringside plans */
+.corner-who{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.corner-who .btn.on{background:var(--gold-hi);box-shadow:var(--bevel-in)}
+.corner-note{margin:0 0 6px}

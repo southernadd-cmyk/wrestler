@@ -265,7 +265,7 @@
   const frac=M.t/Math.max(1,M.len);
   let mult=1;
   for(const b of s.nodes){
-   if(b.vow||b.impossible||!eligibleBeat(M,b)||frac<b.window[0]-.07||frac>b.window[1])continue;
+   if(b.vow||b.corner||b.impossible||!eligibleBeat(M,b)||frac<b.window[0]-.07||frac>b.window[1])continue;
    if(b.owner!=='either'&&b.owner!==actor)continue;
    if(b.actions.includes(id))mult=Math.max(mult,MODE[s.method].weight);
    else if(b.backup?.includes(id))mult=Math.max(mult,MODE[s.method].weight*.52);
@@ -277,7 +277,7 @@
   const event=K.commit(M,{action:id,actor,kind});
   const frac=M.t/Math.max(1,M.len);
   for(const b of s.nodes){
-   if(b.impossible||b.vow)continue;
+   if(b.impossible||b.vow||b.corner)continue;
    if(kind!=='outcome'&&!eligibleBeat(M,b))continue;
    if(kind==='outcome'&&b.id!=='finish')continue;
    if(frac<b.window[0]-.10||frac>b.window[1]+.12)continue;
@@ -302,7 +302,8 @@
   const s=current(M);if(!s)return;
   const frac=M.t/Math.max(1,M.len);
   for(const b of s.nodes){
-   if(b.status!=='pending'||b.id==='finish'||b.vow||frac<=b.window[1])continue;
+   // Vows and the corner's moment keep their own time; they are settled by their own modules.
+   if(b.status!=='pending'||b.id==='finish'||b.vow||b.corner||frac<=b.window[1])continue;
    if(s.v>=4)M.sheetAdj=(M.sheetAdj||0)-.15;
    b.status='missed';b.why=M.shortened?'The match was cut short; this agreed sequence no longer fit before the finish.':'The opportunity passed before the planned move could be performed.';
    s.changes.push({beat:b.id,at:M.t,reason:b.why});
@@ -357,7 +358,7 @@
   let row=0;
   const beats=s.nodes.map(b=>{const lane=b.vow?2:row++%2;
    const start=Math.max(0,b.window[0]),end=Math.min(1,b.window[1]),slot=STRIP_NAME[b.id]||b.id;
-   const move=b.vow?(b.kind==='counter'?'a counter on '+(M.f?.short||'them'):(M.w?.finisher||'the finisher')):b.id==='finish'?label(b.actions[0]):b.actions[0]==='scheduled_nearfall'?'a run of near-falls':label(b.actions[0]);
+   const move=b.move?b.move:b.vow?(b.kind==='counter'?'a counter on '+(M.f?.short||'them'):(M.w?.finisher||'the finisher')):b.id==='finish'?label(b.actions[0]):b.actions[0]==='scheduled_nearfall'?'a run of near-falls':label(b.actions[0]);
    const open=frac>=b.window[0]-.07&&frac<=b.window[1];
    const state=b.status!=='pending'?b.status:final?'missed':open?'due':'waiting';
    // Where the mark goes: when it happened, or where the chance ran out.

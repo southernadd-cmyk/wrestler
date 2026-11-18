@@ -780,6 +780,17 @@ function prep(){
  return showMeeting();
 }
 
+/* ---------- ringside plans (v0.3.21) ---------- */
+function cornerPicker(c,w,f){
+ const R=window.OfficeRingside;if(!R)return '';
+ const list=R.seconds(c,w,f);if(!list.length)return '';
+ const plan=R.parse(night.plan?.corner),who=night.plan?.cornerWho||plan?.id||'none';
+ const people=[{id:'none',short:'Nobody',note:w.short+' walks out alone.'},...list];
+ const chosen=list.find(x=>x.id===who);
+ const jobs=chosen?(chosen.refuse?`<p class="dim">${esc(chosen.refuse)}</p>`:`<div class="picks after-picks">${chosen.jobs.map(j=>{const J=R.JOBS[j],on=plan?.id===chosen.id&&plan.job===j;return `<button class="decision-option${on?' on':''}" data-cornerjob="${esc(chosen.id+':'+j)}" aria-pressed="${on}"><b>${esc(J.label)}</b><span>${esc(J.hint)}</span>${tagChips(J.tags)}</button>`}).join('')}</div>`):'';
+ return `<h3 class="section-h after-h">At ringside</h3><p class="dim">${esc(OfficeRoom.AGENT)}: “Anybody going out with ${esc(w.short)}?”</p><div class="corner-who" role="group" aria-label="Who goes to ringside">${people.map(x=>`<button class="btn${x.id===who?' on':''}" data-cornerwho="${esc(x.id)}" aria-pressed="${x.id===who}" title="${esc(x.note||'')}">${esc(x.short)}${x.refuse?' ✗':''}</button>`).join('')}</div>${chosen&&chosen.note?`<p class="dim corner-note">${esc(chosen.note)}</p>`:''}${jobs}`;
+}
+
 /* ---------- after the bell (v0.3.20) ---------- */
 function afterPicker(c,w,f){
  if(!window.OfficeAfter)return '';
@@ -852,7 +863,7 @@ function showMeeting(){
  const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>
   <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span>${esc(c.who)}’s idea</span>${tagChips(c.tags)}</button>`).join('')}</div></div>`).join('')}</div>
   <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the running order</button></div></div>`:'';
- const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${afterPicker(c,w,f)}</div>`:
+ const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
  const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
@@ -907,7 +918,7 @@ function bell(){
  const preparation={...w.prep};const focus=D.TRAINING[w.training]?.stat;
  if(focus&&!w.injury){preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);}
  const promoRes=P.sheet?.skipPromo?null:night.promo?.v>=4?OfficeMic.result(night.promo):night.promo?.v===2?OfficeStory.Graph.result(night.promo):null;
- night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:P.sheet?.signed?OfficeRoom.addVow(P.sheet,promoRes,w,f):null,seed:Math.floor(Math.random()*2**31)});
+ night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null,seed:Math.floor(Math.random()*2**31)});
  night.past=[];night.paused=false;
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const bench=`<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
@@ -977,6 +988,7 @@ function result(){
  clearTimeout(night.timer);const M=night.M,c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
  const fin={...M.final,log:M.log.map(({t,text,kind,big,who})=>({t,text,kind,big,who}))};
  const cons=G.applyResult(c,fin);
+ if(window.OfficeRingside)cons.push(...OfficeRingside.settle(c,M));
  const sheetReport=OfficeSheets.report(M),finalStrip=OfficeSheets.strip(M,{final:true});
  if(sheetReport){
   const h=S().history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===S().season&&x.week===S().week);
@@ -1058,6 +1070,8 @@ document.addEventListener('click',e=>{
  if(d.sheetmode){if(!OfficeSheets.MODE[d.sheetmode])return;night.plan.method=d.sheetmode;night.plan.sheet=null;night.plan.confirmed=false;return showMeeting()}
  if(d.room){const st=night?.plan?.room;if(night?.stage!=='meeting'||!st||st.stage==='done')return;
   if(!OfficeRoom.options(st).some(o=>o.id===d.room))return;OfficeRoom.act(st,d.room);return showMeeting()}
+ if(d.cornerwho){if(night?.stage!=='meeting'||!night.plan)return;night.plan.cornerWho=d.cornerwho;night.plan.corner=null;return showMeeting()}
+ if(d.cornerjob){if(night?.stage!=='meeting'||!night.plan)return;const x=OfficeRingside.parse(d.cornerjob);if(!x)return;night.plan.cornerWho=x.id;night.plan.corner=night.plan.corner===d.cornerjob?null:d.cornerjob;return showMeeting()}
  if(d.afterplan){if(night?.stage!=='meeting'||!night.plan||!OfficeAfter.PLANS[d.afterplan])return;night.plan.after=d.afterplan;return showMeeting()}
  if(d.aftermic){const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='mic')return;OfficeAfter.speak(st,d.aftermic);return showAfter()}
  if(d.tv==='after')return showAfter();
