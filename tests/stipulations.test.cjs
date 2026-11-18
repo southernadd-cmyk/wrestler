@@ -106,6 +106,32 @@ function offer(o={}){const s=G.S,x={id:'so-'+(n++),pid:'dock',rid:'silas',slot:'
  console.log('PASS every stipulation and finish plays by the rules ('+played+' matches)');
 }
 
+// 6b. Falls Count Anywhere also has no DQ, and real near-falls may happen on the floor.
+{
+ career();
+ const o=offer({finish:'win_dq'});
+ assert.match(G.talkMove(o.id,'rex','ask:stip:anywhere').error||'',/disqualification/i,
+  'a DQ finish cannot be agreed for Falls Count Anywhere');
+ const w=G.W('rex'),f=G.F('silas'),p=G.P('pulse');
+ const M=MX.create({w:{...w},f,p,slot:'main',minutes:14,finish:'win_clean',
+  stip:'anywhere',plan:{game:'brawl',leash:'free',talk:'fire'},seed:43890});
+ M.stage='live';M.t=Math.floor(M.len*.81);M.story.position='outside';M.story.control='w';
+ const n=M.nearfalls;
+ MX.GRAPH.nearfall(M);
+ assert.equal(M.nearfalls,n+1);
+ assert.equal(M.story.position,'outside','the nearfall took place and counted outside');
+ assert.match(M.log.map(x=>x.text).join(' '),/hooks .* leg on the floor/);
+ for(let i=0;i<80;i++){
+  const m=MX.create({w:{...w,pro:20},f,p,slot:'main',minutes:12,
+   finish:'win_clean',stip:'anywhere',plan:{game:'brawl',leash:'free',talk:'fire'},seed:8000+i});
+  for(let n=0;n<12000&&!m.done;n++){if(m.decision&&!m.queue.length)MX.resolve(m,m.decision.options[0].id);MX.next(m);}
+  assert.ok(m.done);
+  assert.equal(m.outcome==='dq',false,'no DQ in Falls Count Anywhere');
+  assert.equal(m.ref,undefined,'no disciplinary warnings in Falls Count Anywhere');
+ }
+}
+console.log('PASS Falls Count Anywhere: pinfalls on the floor, no count-outs or disqualifications');
+
 // 7. Afterwards: extra fatigue, the feud turned up, once.
 {
  const s=career();const o=offer({stip:'nodq'});G.book(o.id,'rex');const c=s.card[0];
