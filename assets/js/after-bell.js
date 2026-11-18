@@ -300,10 +300,22 @@
   }
   st.stage='done';
   const a=state();a.log.unshift({cid,week:G.abs(),wid:x.w.id,rid:x.f.id,plan:st.plan,angle:st.angle?.ok??null,said:id,call:st.call||null,demand:st.demand||null});a.log=a.log.slice(0,30);
+  recordEvidence(st);
   G.save();return true;
  }
 
- // The segment for one match, built straight after the result.
+ // Only performed post-bell scenes become permanent evidence.
+ // A player who skips the result-screen option never reaches this mutation.
+ function recordEvidence(st){
+  const h=G.S?.history?.find(x=>x.cid===st.cid);if(!h)return;
+  const fresh=st.cons.map(x=>x.text),prior=h.after?.effects||[];
+  h.after={plan:st.plan,angle:st.angle?{...st.angle}:null,said:st.said||null,
+   call:st.call?{...st.call}:null,demand:st.demand?{...st.demand}:null,effects:fresh,
+   log:st.log.map(x=>({side:x.side,text:x.text}))};
+  for(const line of fresh)if(!prior.includes(line))h.notes.push('After the bell: '+line);
+  root.OfficeRivalry?.recordAfter?.(st);
+ }
+ // A selected post-bell scene, never started merely by viewing the result.
  function begin(c,fin,plan='none'){
   const x=ctxOf(c,fin);if(!x.w||!x.f||!x.p)return null;
   const a=state(),st={v:1,cid:c.id,c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish},fin:{stars:x.stars,crowd:x.crowd,outcome:x.outcome},plan:PLANS[plan]?plan:'none',stage:'mic',log:[],cons:[],angle:null,said:null,call:null};
@@ -312,6 +324,7 @@
   if(a.done[c.id]){st.stage='done';return st;}
   a.done[c.id]=1;
   if(st.plan!=='none')playAngle(st,x);
+  recordEvidence(st);
   G.save();return st;
  }
  function view(st){
