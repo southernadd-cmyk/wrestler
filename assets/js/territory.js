@@ -182,10 +182,13 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  const standings=rank();t.previous=Object.fromEntries(standings.map((w,i)=>[w.id,i]));
  const reports=[];
  checkTitles(s,t,reports);
+ // This week's circuit results as data, for modules that need more than the report lines.
+ t.lastResults={week,matches:[]};
  for(const {i,j,div,a,b,title:onTheLine} of circuitBill(s,t,week)){
   const p=D.PROMOS[i];
   const won=((week*13+a.ring+b.psych+p.reach+j*37)%100)<(onTheLine?58:52);
   const winner=won?a:b,loser=won?b:a;
+  t.lastResults.matches.push({pid:p.id,div,a:a.id,b:b.id,slotA:a.slot,slotB:b.slot,winner:winner.id,title:onTheLine,stars:onTheLine?3:2.5});
   record(t,p.id,a.id,b.id,a.slot,won,onTheLine?3:2.5);
   t.points[winner.id]=(t.points[winner.id]||0)+4;
   t.points[loser.id]=(t.points[loser.id]||0)-2;

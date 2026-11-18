@@ -371,6 +371,16 @@ function lockerRoom(w){
  if(!rows.length)return '<p class="dim">No strong feelings about anyone yet. Give it a few shows.</p>';
  return '<ul class="cons">'+rows.map(r=>`<li class="${r.score>0?'up':'down'}"><b>${esc(r.name)}</b> · ${esc(r.label)}${r.betrayed?' · <span class="tag hot">Betrayed</span>':''}${r.reason?`<br><span class="dim">${esc(r.reason)}</span>`:''}</li>`).join('')+'</ul>';
 }
+// What a wrestler wants right now, how close they are, and what they have already been given.
+function ambitionLine(w){
+ const a=window.OfficeAmbitions?.view(w.id);if(!a)return '';
+ return `<p class="amb-line">Wants: <b>${esc(a.name.toLowerCase())}</b> · <span class="${a.sat<35?'bad':a.sat>=70?'good':''}">${esc(a.mood)}</span>${a.promise?` · <span class="tag hot">Promised by ${weekLabel(a.promise.by)}</span>`:''}</p>`;
+}
+function ambitionPanel(w){
+ const a=window.OfficeAmbitions?.view(w.id);if(!a)return '';
+ const kind=a.sat<35?'danger':a.sat<55?'warn':'';
+ return `<div class="well pad"><p><b>${esc(a.name)}</b> · ${esc(a.mood)} ${bar(a.sat,kind)}</p><p class="dim">${esc(a.counts)} ${esc(a.progress)}</p>${a.words?`<p class="dim">In the long run: ${esc(a.words.charAt(0).toLowerCase()+a.words.slice(1))}.</p>`:''}${a.promise?`<p class="bad">You promised to deliver by ${weekLabel(a.promise.by)}.</p>`:''}${a.history.length?'<ul class="cons">'+a.history.map(h=>`<li class="up">${esc(h.text)}${h.promised?' <span class="dim">(as you promised)</span>':''}</li>`).join('')+'</ul>':''}</div>`;
+}
 function renderProfile(){
  const s=S(),w=G.W(route.id);
  if(!w){route={s:'squad',id:null};return renderSquad()}
@@ -391,12 +401,13 @@ function renderProfile(){
  const record=`<div class="facts"><div><small>Matches</small><b>${w.matches}</b></div><div><small>Wins</small><b>${w.wins}</b></div><div><small>Average</small><b>${w.matches?starsText(Math.round(w.starSum/w.matches*4)/4)||'DUD':'–'}</b></div><div><small>Best</small><b>${w.matches?starsText(w.best)||'DUD':'–'}</b></div></div>
   ${ratingsChart(w,s.history.filter(x=>x.wid===w.id))}<h3 class="section-h">Recent matches</h3>${hist.length?`<div class="well"><table class="grid"><tbody>${hist.map(x=>`<tr><td>S${x.season} W${x.week}</td><td>v ${esc(x.foe)}</td><td class="n"><span class="stars">${starsText(x.stars)||'DUD'}</span></td></tr>`).join('')}</tbody></table></div>`:'<p class="dim">No matches yet.</p>'}
   <h3 class="section-h">What they remember</h3><p class="dim">Trust in your judgement: ${OfficeMemory.trust(w.id)}/100. Memories persist after matches and conversations.</p>${OfficeMemory.view(w.id).entries.slice(0,5).length?'<ul class="cons">'+OfficeMemory.view(w.id).entries.slice(0,5).map(e=>'<li>'+esc(e.text)+'</li>').join('')+'</ul>':'<p class="dim">No defining moments yet.</p>'}
+  <h3 class="section-h">What they want</h3>${ambitionPanel(w)}
   <h3 class="section-h">Locker room</h3>${lockerRoom(w)}
   <h3 class="section-h">Rivalries</h3>${feuds.length?feuds.map(f=>`<div class="row" style="justify-content:space-between"><span>${esc(G.F(f.rid).name)}</span><span>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</span></div>`).join(''):'<p class="dim">None yet. Good matches against the same opponent build one.</p>'}
   <h3 class="section-h">Biography</h3><p>${esc(w.bio)}</p><p class="dim">Finisher: ${esc(w.finisher)}. Best game plan: ${esc(D.PLANS[D.STYLE_PLAN[w.style]].name.toLowerCase())}.${esc(signatureText(w))}</p>`;
  const nav=s.roster.length>1?`<button class="btn" data-go="profile" data-id="${prev.id}" aria-label="Previous wrestler">◀ ${esc(prev.short)}</button><button class="btn" data-go="profile" data-id="${next.id}" aria-label="Next wrestler">${esc(next.short)} ▶</button>`:'';
  paint('s-profile',
-  win('Wrestler profile',`${face('wrestler',w.id,w.name,'portrait x3')}<div><div class="name">${esc(w.name)}</div><div class="handle">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${money(w.wage)} a week</span><span class="chip">${status(w)}</span></div>${promise}</div><div class="acts"><button class="btn go" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting</button><span class="dim" style="font-size:13px">${s.focus} of 2 meetings left</span><button class="btn red" data-release="${w.id}">Release</button></div>`,{area:'head',cls:'phead',actions:nav})+
+  win('Wrestler profile',`${face('wrestler',w.id,w.name,'portrait x3')}<div><div class="name">${esc(w.name)}</div><div class="handle">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${money(w.wage)} a week</span><span class="chip">${status(w)}</span></div>${ambitionLine(w)}${promise}</div><div class="acts"><button class="btn go" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting</button><span class="dim" style="font-size:13px">${s.focus} of 2 meetings left</span><button class="btn red" data-release="${w.id}">Release</button></div>`,{area:'head',cls:'phead',actions:nav})+
   win('Attributes',atts+`<h4 class="ch-h">Over time</h4>`+formChart(w),{area:'atts',h:'h3',cls:'quiet',keep:'atts'})+
   win('Training',train,{area:'train',h:'h3',keep:'train'})+
   win('Record',record,{area:'record',h:'h3',keep:'rec'})
@@ -433,6 +444,7 @@ function renderScouting(){
   <p style="margin-top:10px">${esc(w.bio)}</p>
   <div class="well pad attrs">${[['Ring',w.ring],['Psychology',w.psych],['Safety',w.safe],['Mic',w.mic],['Heat',w.heat]].map(([l,v])=>`<div class="attr"><span>${l}</span>${att(v)}${bar(v,bandBar(v))}</div>`).join('')}</div>
   <p class="dim" style="margin-top:8px">${esc(temperament(w))} Finisher: ${esc(w.finisher)}.${esc(signatureText(w))}</p>
+  ${ambitionLine(w)}
   <div class="facts" style="margin:10px 0"><div><small>Signing fee</small><b class="${s.cash<w.fee?'neg':''}">${money(w.fee)}</b></div><div><small>Weekly wage</small><b>${money(w.wage)}</b></div></div>
   <button class="btn go" style="width:100%;min-height:44px" data-sign="${w.id}" ${can?'':'disabled'}>Sign ${esc(w.short)}</button>
   <p class="dim" style="margin-top:6px">${full?'Your locker room is full. Release someone first.':s.cash<w.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'Wages are paid every week, booked or not.'}</p>`;
@@ -450,6 +462,7 @@ function fitNotes(o,w){
  else notes.push(['',`${p.name} crowds want “${planFor(p).name}”. ${w.short}’s best plan is “${D.PLANS[best].name}”.`]);
  const local=OfficeTerritory.promotionRank(p.id).find(row=>row.id===w.id&&row.matches>0);
  if(local)notes.push(['good',`${w.short} is ${D.SLOTS[local.slot].name.toLowerCase()} here. Their local following adds ${Math.min(25,local.matches*5)}% to the fee.`]);
+ const wants=window.OfficeAmbitions?.fits(o,w);if(wants)notes.push(['good',wants]);
  const f=G.F(o.rid);if(f.safe<55)notes.push(['bad',`${f.name} is an unsafe worker.`]);
  if(w.fatigue>=45)notes.push(['bad',`${w.short} is tired (fatigue ${w.fatigue}).`]);
  if(D.FINISHES[o.finish].heat<-3&&w.heat>=60)notes.push(['bad',`A clean loss will cost ${w.short} heat.`]);

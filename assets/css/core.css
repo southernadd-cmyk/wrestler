@@ -463,3 +463,6 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .title-line{display:grid;gap:4px;margin:10px 0 4px}
 .belt-badge{display:inline-grid;grid-template-columns:96px auto;gap:8px;align-items:center;font-weight:600}
 @media(max-width:720px){.belt-hero{grid-template-columns:1fr}.belt-list{grid-template-columns:1fr}}
+
+/* v0.3.14 ambitions: one line under the name on profiles and free agents. */
+.amb-line{margin:6px 0 0;font-size:14px}

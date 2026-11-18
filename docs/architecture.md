@@ -24,6 +24,7 @@ assets/js/
   promo-duel.js             Mic battles and vows
   relationships.js          Bonds, grudges, backstage scenes and betrayals between wrestlers
   rivalry.js                Each pairing's record, evidence-backed promo arguments, counter-proposal reasons
+  ambitions.js              What every wrestler wants, weekly satisfaction, requests, promises and walk-outs
   ui.js                     Screens, controls and browser events
 assets/portrait-atlas.png   Wrestler sprite sheet (previously embedded in CSS)
 assets/first-week.css       Existing onboarding guide CSS
@@ -87,3 +88,9 @@ Every new career now automatically activates the 80-wrestler world, including 20
 - **Counter-proposals** (`agents-room.js`). `rival_counter` and `rival_counter_reply` are follow-ups placed first in the meeting when a reason is possible, and skipped (a scene's `open` may now return `false`) when the board already avoids the problem. The sheet carries `negotiation` and marks changed beats `negotiated`.
 - **Locker room fix** (`relationships.js`). Bond changes now run once per contract, and the chemistry memory is written before the bond is read.
 - **Five-bout harness** (`tools/five-bouts.cjs`). Drives the shipped modules through five full nights for one pairing and writes a markdown report.
+
+## v0.3.14 additions
+
+- **Ambitions** (`ambitions.js`, `window.OfficeAmbitions`). Each of the 80 wrestlers has one current ambition: `title`, `push`, `money`, `body`, `rivalry`, `respect`, `stage` or `mentor`. It is chosen from their traits, their best place on any card and their bonds, with the newcomers' written ambition (`CAREER`) as a lean. State lives in `S.ambitions.w[id]` in the existing v22 save and is built the first time it is read, so older careers need no migration step. Satisfaction (0–100) moves once a week with what actually happened: your stable's matches (logged in an `applyResult` wrapper, once per contract id) and the circuit's (`territory.lastResults`, now written by `evolve()`). A met ambition is recorded, remembered and replaced; one that goes nowhere for 14 weeks gives way to another.
+- **Your stable.** A new signing says what they want. A frustrated wrestler sends an `amb_ask` decision (at most one open, five weeks apart for each wrestler): promise it (kept: loyalty +8; broken: loyalty −12, morale −10), be straight with them, or tell them to earn it. Money ambitions offer a £40 raise instead of a promise. Low satisfaction drags morale and loyalty, which feeds the existing poach and unhappy scenes. Offers that would serve an ambition are marked in the offer notes.
+- **The circuit.** `OfficeWorldV4.evolve` is wrapped: an AI wrestler whose contract is up and whose satisfaction is below 30 turns the renewal down and joins the market; a money ambition is met by a 15% raise when the agency can afford it; and at most one fed-up, proud wrestler a week walks out mid-contract. `pressure(id)` is exposed for the bookers in the next update. Nothing in the module draws a random number.
