@@ -155,7 +155,22 @@ function poach(w){const team=poacher();return signRival(team,w)?team.name:null;}
 // books it. Pure: it reads the career and changes nothing, so the start screen can show a real bill.
 // (Each pairing only depends on its own promotion and division's ranking, so booking them all first
 // gives the same matches as booking and scoring them one at a time.)
+// The belts as evolve() will see them once checkTitles() has run: a belt whose holder has left goes to
+// whoever tops that division. Pure: it builds a new titles object and changes nothing.
+function settledTitles(s,t){
+ const out={};
+ for(const p of D.PROMOS){out[p.id]={...(t.titles?.[p.id]||{})};for(const div of D.DIVISION_ORDER){
+  const b=t.titles?.[p.id]?.[div];
+  if(b?.holder&&holderValid(s,t,p.id,div,b.holder))continue;
+  const top=promotionRank(p.id,div,t,s).find(w=>holderValid(s,t,p.id,div,w.id));
+  out[p.id][div]={holder:top?.id||null,since:absWeek(s),defences:0};
+ }}
+ return out;
+}
 function circuitBill(s,t,week,busy=new Set((s.card||[]).map(c=>c.rid))){
+ // Predict with the belts settled, exactly as evolve() books after checkTitles(); otherwise a vacant belt
+ // makes the start screen's bill differ from the real one.
+ if(t?.titles)t={...t,titles:settledTitles(s,t)};
  // With the booking office installed, the bookers plan the card (v0.3.15).
  if(root.OfficeBooking)return root.OfficeBooking.decide(s,t,week,busy).bill;
  return rotationBill(s,t,week,busy);
