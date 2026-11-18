@@ -152,6 +152,17 @@
    eager:'“{T}! Yeah, you! I want you! Next week! Or the week after, I’m flexible!”',stoic:'“{T}. Whenever you like.”',
    precise:'“{T}: you have avoided me for eleven weeks. I have counted.”',earnest:'“{T}, I’d really like a match with you. If that’s alright. I think I’ve earned it.”',
    sermon:'“{T}. Your day of reckoning has been pencilled in.”',slippery:'“{T}. Let’s you and me make some money. Mostly me.”'},
+  // v0.3.24 Demands, made in front of the promoter's own crowd.
+  title:{grand:'“{P}, I know you are listening. Put the belt on the line. Against me. Next week. The posters write themselves.”',
+   gruff:'“{P}. Title. Me. Next week.”',eager:'“{P}! Can I have a title match? Please? I’ll be SO good. I’ll bring snacks!”',
+   stoic:'“I’ve earned a shot at the belt. {P} knows it.”',precise:'“{P}: I have the record, the ranking and the crowd. All I lack is the title match.”',
+   earnest:'“I don’t usually ask for things. But {P}, I think I’ve earned a title shot. I really do.”',
+   sermon:'“{P}, the gold is calling. It has been calling for weeks. Answer it.”',slippery:'“{P}, give me the title match and I’ll give you a sold-out building. Probably.”'},
+  slot:{grand:'“And another thing, {P}. Third on the card? Me? I am a main event that has been misfiled.”',
+   gruff:'“{P}. Stop hiding me on the undercard.”',eager:'“{P}, next time can I go on later? When everyone’s here? My mum’s coming!”',
+   stoic:'“Put me higher on the card, {P}. I’ll show you why.”',precise:'“{P}: the crowd was loudest for this match. The card should reflect it.”',
+   earnest:'“{P}, I’d love a bigger spot. I think I’m ready. Sorry. I am ready.”',
+   sermon:'“The last shall be first, {P}. Starting with me.”',slippery:'“{P}, move me up the card. Just a bit. Nobody will notice. Except everybody.”'},
   rematch:{grand:'“{F}. Again. Same town, bigger hall.”',gruff:'“{F}. Again.”',eager:'“{F}, one more go! Please! Best of three! Best of five!”',
    stoic:'“{F}. We’re not done.”',precise:'“{F}: the sample size is too small. Again.”',earnest:'“{F}, can we do it again? I know I can beat you.”',
    sermon:'“{F}. The second verse will be different.”',slippery:'“{F}, rematch. Double or nothing. I’ll bring the nothing.”'}
@@ -183,8 +194,32 @@
    const T0=who(t.id);if(!T0)continue;
    opts.push({id:'call:'+t.id,label:'Call out '+T0.short,hint:T0.name+', '+t.why+'.'+(t.champion?' Aim high and miss, and the promoter notices.':''),tags:['Gamble',t.champion?'Title picture':'A new match offer']});
   }
+  // v0.3.24 Demands: a title shot, or a better place on the card, asked for in public.
+  const dm=demandsFor(st);
+  if(dm.title)opts.push({id:'demand:title',label:'Demand a title shot',hint:'Call on '+x.p.voice+' to put the '+dm.title.name+' on the line, in front of everyone. '+x.p.voice+(['traditional','cold'].includes(x.p.personality)?' does not like being put on the spot.':' loves this sort of thing.'),tags:['Gamble','Title match if it lands','Trust ▼ if it flops']});
+  if(dm.slot)opts.push({id:'demand:slot',label:'Demand a bigger spot',hint:'Tell '+x.p.voice+' that '+x.w.short+' belongs higher up the card than '+D.SLOTS[dm.slot].name.toLowerCase()+'.',tags:['Gamble','Up the card if it lands']});
   opts.push({id:'walk',label:'Say nothing',hint:'Hand the microphone back and walk.',tags:['Safe']});
   return opts;
+ }
+ // What this wrestler could demand at this promotion tonight.
+ function demandsFor(st){
+  const s=G.S,x=ctxOf(st.c,st.fin);if(!x.w||!x.p||!T?.promotionRank)return {};
+  const div=D.divisionOf(x.w.id),rank=T.promotionRank(x.p.id,div),i=rank.findIndex(r=>r.id===x.w.id),me=rank[i];
+  const out={rank:i};
+  const holder=T.title?.(x.p.id,div)?.holder;
+  const busy=[...s.offers,...s.card,...s.futureBookings].some(o=>o.title?.pid===x.p.id&&o.title?.div===div);
+  const claimed=root.OfficeProgrammes?.claims?.(s,s.territory)?.belts?.has(x.p.id+':'+div);
+  // A main-event name is offered the title match anyway; the demand is for somebody pushing in from below.
+  if(holder&&holder!==x.w.id&&!G.W(holder)&&!busy&&!claimed&&me&&me.slot!=='main'&&(i<=4||(x.won&&x.stars>=3.5)))out.title={holder,name:D.belt?.(x.p.id,div)?.name||(x.p.name+' title')};
+  if(me&&me.slot!=='main')out.slot=me.slot;
+  return out;
+ }
+ const DEMAND_MOOD={showman:-12,aggressive:-4,traditional:6,cold:14};
+ function demandChance(st,kind){
+  const x=ctxOf(st.c,st.fin),dm=demandsFor(st);
+  const score=x.w.mic*.5+x.w.heat*.3+(x.stars-2.5)*8+(x.won?8:-6)+(kind==='title'&&dm.rank>=0?Math.max(0,4-dm.rank)*4:0);
+  const need=(kind==='title'?58:48)+(DEMAND_MOOD[x.p.personality]||0);
+  return between((score-need+50)/100,.06,.88);
  }
  // How likely a callout is to land: mic skill and heat against how far up the card the target sits.
  function callChance(st,targetId,rematch){
@@ -216,6 +251,33 @@
   else if(id==='excuse'){line('w',sayLine('excuse',x));
    if(x.dirty&&lands(.6)){const h=heatFeud(x.w.id,x.f.id,10);x.w.heat=clamp(x.w.heat+2);line('stage','The crowd is with them. They saw it too.');add('The crowd bought it: heat +2, feud heat '+h+'.',1);}
    else{x.w.heat=clamp(x.w.heat-2);line('stage',x.dirty?'Nobody is in the mood to hear it.':'The crowd saw a clean finish. They say so, loudly.');add('Sour grapes. Heat −2.',-1);}}
+  else if(id==='demand:title'||id==='demand:slot'){
+   const kind=id.slice(7),dm=demandsFor(st),chance=demandChance(st,kind),ok=roll('demand:'+kind)<chance,P=x.p;
+   line('w',sayLine(kind,x));st.demand={kind,ok,chance:Math.round(chance*100)};
+   if(kind==='title'){
+    if(ok){
+     const a=state();a.calls=a.calls.filter(k=>!(k.kind==='title'&&k.wid===x.w.id));
+     a.calls.push({kind:'title',wid:x.w.id,pid:P.id,div:D.divisionOf(x.w.id),from:cid,made:G.abs(),due:G.abs()+1,until:G.abs()+CALL_WEEKS});
+     line('stage','The crowd takes it up: they want it too. Backstage, '+P.voice+' is already on the phone.');
+     add('The title demand landed. Expect '+P.voice+' to offer the '+dm.title.name+' match next week.',1);
+    }else{
+     const dt=-(P.personality==='cold'?6:P.personality==='traditional'?4:3);P.trust=clamp(P.trust+dt);x.w.heat=clamp(x.w.heat-2);x.w.morale=clamp(x.w.morale-3);
+     line('stage','A few cheers, and then quiet. Everybody looks towards the curtain, and nobody comes out.');
+     add('The title demand fell flat. '+P.name+' trust '+dt+', heat −2, morale −3.',-1);
+    }
+   }else{
+    const row=G.S.territory?.cards?.[P.id]?.[x.w.id];
+    if(ok&&row){
+     row.score=clamp(row.score+8);const dt=likesTrouble(P)?1:0;P.trust=clamp(P.trust+dt);
+     line('stage','The crowd agrees, loudly. '+P.voice+' makes a note.');
+     add(x.w.short+' talked their way up the card at '+P.name+(dt?' (and '+P.voice+' liked the nerve: trust +1)':'')+'.',1);
+    }else{
+     const dt=P.personality==='cold'?-4:-2;P.trust=clamp(P.trust+dt);x.w.morale=clamp(x.w.morale-2);
+     line('stage','Nobody seems to think it is a good idea. Least of all '+P.voice+'.');
+     add('The demand for a bigger spot fell flat. '+P.name+' trust '+dt+', morale −2.',-1);
+    }
+   }
+  }
   else if(id==='rematch'||id.startsWith('call:')){
    const rematch=id==='rematch',tid=rematch?x.f.id:id.slice(5),t=who(tid),tg=rematch?null:targets(st).find(o=>o.id===tid);
    x.t=t;line('w',rematch?sayLine('rematch',x):sayLine('callout',x));
@@ -237,7 +299,7 @@
    }
   }
   st.stage='done';
-  const a=state();a.log.unshift({cid,week:G.abs(),wid:x.w.id,rid:x.f.id,plan:st.plan,angle:st.angle?.ok??null,said:id,call:st.call||null});a.log=a.log.slice(0,30);
+  const a=state();a.log.unshift({cid,week:G.abs(),wid:x.w.id,rid:x.f.id,plan:st.plan,angle:st.angle?.ok??null,said:id,call:st.call||null,demand:st.demand||null});a.log=a.log.slice(0,30);
   G.save();return true;
  }
 
@@ -272,6 +334,7 @@
   const now=G.abs(),keep=[];
   for(const k of a.calls){
    if(k.due>now){keep.push(k);continue;}
+   if(k.kind==='title'){if(!deliverTitle(s,k,now)&&k.until>now)keep.push(k);continue;}
    const w=G.W(k.wid),p=G.P(k.pid),t=who(k.rid);
    const onCard=T?.promotionRank?.(k.pid,D.divisionOf(k.wid))?.some(r=>r.id===k.rid&&!r.owned);
    const ok=w&&p&&t&&onCard&&!G.W(k.rid)&&G.eligible(p)&&T.contracted?.(s,k.rid)&&G.availableAt(w,now+1);
@@ -288,6 +351,23 @@
   }
   a.calls=keep;
  }
+ // A title demand that landed: the promoter books the champion, if the belt is still free to book.
+ function deliverTitle(s,k,now){
+  const w=G.W(k.wid),p=G.P(k.pid),holder=T?.title?.(k.pid,k.div)?.holder,champ=who(holder);
+  if(!w||!p||!champ||G.W(holder)||!G.eligible(p)||!T.contracted?.(s,holder)||!G.availableAt(w,now+1))return false;
+  if(D.divisionOf(w.id)!==k.div)return false;
+  if([...s.offers,...s.card,...s.futureBookings].some(o=>o.title?.pid===k.pid&&o.title?.div===k.div))return true;
+  if(root.OfficeProgrammes?.claims?.(s,s.territory)?.belts?.has(k.pid+':'+k.div))return true;
+  if(s.offers.some(o=>o.callout===k.from))return true;
+  const win=hash(k.from+'|tw')<.3+p.trust/300;
+  const finish=win?'win_clean':(hash(k.from+'|tf')<.5?'lose_protected':'lose_clean');
+  const belt=D.belt?.(k.pid,k.div)?.name||'title';
+  s.offers.unshift({id:'o'+Math.floor(hash(k.from+'|toid')*1e9).toString(36)+now,pid:p.id,rid:holder,wid:w.id,slot:'main',finish,tag:'Title match',title:{pid:k.pid,div:k.div},boost:1.5,haggled:false,eventAbs:now+1,expiresAbs:now,callout:k.from});
+  G.msg({from:p.voice+', '+p.name,subject:`All right. ${w.short} gets the title match.`,kind:'info',
+   body:[`“${w.short} asked for it in front of my crowd, and my crowd wants it. ${champ.name}, the ${belt}, next week, main event.”`,
+    `The agreed finish is ${D.FINISHES[finish].name.toLowerCase()}. It is on the Offers screen until the end of this week.`]});
+  return true;
+ }
 
- root.OfficeAfter={state,PLANS,plans,begin,view,micOptions,speak,targets,callChance,deliverCalls};
+ root.OfficeAfter={state,PLANS,plans,begin,view,micOptions,speak,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);

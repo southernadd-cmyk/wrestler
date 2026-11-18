@@ -69,7 +69,7 @@ function play(seed,weeks=48,hook=null){
  if(hook)hook(root);
  const {OfficeData:D,OfficeGame:G,OfficeTerritory:T,OfficeApproaches:X,OfficeAfter:A,OfficeRingside:R}=root;
  const pick=n=>Math.floor(random()*n);
- const problems=[],stats={weeks:0,matches:0,programmes:0,approaches:0,joined:0,bids:0,sold:0,released:0,predicted:0,skipped:0,decisions:0,titleChanges:0,raids:0,struggling:0,afters:0,callouts:0,corners:0,stipAsks:0,stips:0};
+ const problems=[],stats={weeks:0,matches:0,programmes:0,approaches:0,joined:0,bids:0,sold:0,released:0,predicted:0,skipped:0,decisions:0,titleChanges:0,raids:0,struggling:0,afters:0,callouts:0,corners:0,stipAsks:0,stips:0,signings:0};
  G.fresh();const s=G.S;s.cash+=6000;
  const fin=()=>{const roll=random();return {stars:Math.round((1.5+random()*3)*4)/4,crowd:45+pick(40),crowdPeak:60+pick(35),outcome:roll<.02?'double':roll<.05?'nc':roll<.07?'dq':'booked',finishRoute:roll>=.05&&roll<.07?'dq_cheap':null,botches:pick(3),script:.6+random()*.4,
   adj:{purseMul:1,rep:0,trust:0,heat:0,morale:0},minutes:8+pick(14),plan:['brawl','story','technical','spots','safe'][pick(5)],stamina:20+pick(60),injury:random()<.05?1+pick(3):0,injuryPart:'shoulder',ignored:0,callsUsed:[],log:[]};};
@@ -109,7 +109,11 @@ function play(seed,weeks=48,hook=null){
   }
   // Match night.
   for(const c of s.card.slice()){if(G.W(c.wid)){
-   const f=fin(),w=G.W(c.wid),o=G.F(c.rid);G.applyResult(c,f);stats.matches++;
+   const f=fin(),w=G.W(c.wid),o=G.F(c.rid);
+   // The big matches start at a table: a signing, played one way or another, goes in as the promo.
+   const Sg=root.OfficeSigning;
+   if(Sg&&w&&o&&Sg.eligible(c)){const st=Sg.begin(c,w,o,G.P(c.pid));for(const R of Sg.ROUNDS)Sg.choose(st,R.options[pick(R.options.length)].id);f.promo=Sg.result(st);stats.signings++;}
+   G.applyResult(c,f);stats.matches++;
    // At ringside: somebody from the stable, with a job that went one way or the other.
    const mate=R&&w&&o&&R.seconds(c,w,o).find(x=>!x.refuse);
    if(mate){const job=mate.jobs[pick(mate.jobs.length)],roll=random();

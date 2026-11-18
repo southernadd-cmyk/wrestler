@@ -1,6 +1,6 @@
 {
   "name": "the-office-wrestling-manager",
-  "version": "0.3.23",
+  "version": "0.3.24",
   "private": true,
   "description": "Static, deterministic wrestling management game; no runtime or build dependencies",
   "scripts": {
