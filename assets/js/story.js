@@ -841,7 +841,7 @@
     const mood=pr.trustDelta>1?'The promoter appreciated the restraint.':pr.trustDelta<0?'The promoter was unhappy about how personal it became.':'The promoter took note of the exchange.';
     h.notes.push(mood);out.push({text:mood,tone:Math.sign(pr.trustDelta||0)});
    }
-   const msg=pr.speaker+' spoke before the match: '+(pr.v===2?pr.path.map(x=>x.id).join(' → '):'promo '+pr.quality+'/100')+', rivalry '+(fd?.closed?'concluded':'+'+pr.heatDelta)+'.';
+   const msg=pr.format==='signing'?pr.speaker+' and '+pr.opponent+' signed the contract'+(pr.brawl?', and it ended in a brawl':'')+': '+pr.quality+'/100'+(fd?.closed?'.':', rivalry +'+pr.heatDelta+'.'):pr.speaker+' spoke before the match: '+(pr.v===2?pr.path.map(x=>x.id).join(' → '):'promo '+pr.quality+'/100')+', rivalry '+(fd?.closed?'concluded':'+'+pr.heatDelta)+'.';
    h.notes.push(msg);out.push({text:msg,tone:pr.quality>=55?1:0});
   }
   G.save();return out;
