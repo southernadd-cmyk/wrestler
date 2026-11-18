@@ -68,6 +68,14 @@ function booked(wid){return S.card.some(c=>c.wid===wid)}
 function bookedAt(wid,when){return when===abs()?booked(wid):S.futureBookings.some(c=>c.wid===wid&&c.eventAbs===when)}
 function inCamp(w,when=abs()){return !!(w?.program?.type==='camp' && when>=abs() && when<abs()+w.program.left)}
 function availableAt(w,when=abs()){return !!(w && when>=abs() && (!w.injury||w.injury<=(when-abs())) && !bookedAt(w.id,when) && !inCamp(w,when))}
+// One opponent cannot be contracted twice on the same night, including as another player's opponent.
+function bookingConflict(wid,rid,when){
+ const clash=[...S.card,...S.futureBookings].find(c=>c.eventAbs===when&&[wid,rid].some(id=>id===c.wid||id===c.rid));
+ if(!clash)return null;
+ const label='S'+(Math.floor((when-1)/16)+1)+' W'+((when-1)%16+1);
+ if(clash.wid===wid||clash.rid===wid)return (W(wid)?.short||wid)+' isn’t free on '+label+'; already committed to another match.';
+ return (F(rid)?.name||rid)+' is already booked on '+label+' against '+(W(clash.wid)?.name||F(clash.wid)?.name||clash.wid)+'.';
+}
 function available(w){return availableAt(w)}
 function wages(){return S.roster.reduce((t,w)=>t+w.wage,0)}
 const OVERHEAD=100;function overhead(){return 60+S.roster.length*25}
@@ -358,7 +366,7 @@ function talkMove(oid,wid,move){
 function book(oid,wid){
  const o=S.offers.find(x=>x.id===oid),w=W(wid);
  if(!o||!w)return 'Choose a wrestler.';if(!availableAt(w,o.eventAbs))return `${w.name} isn’t available on the offered date.`;if(o.expiresAbs<abs())return 'That offer has expired.';
- if(o.wid&&o.wid!==wid)return 'This offer is for a specific wrestler.';if(D.divisionOf(w)!==D.divisionOf(o.rid))return `This is a ${D.DIVISIONS[D.divisionOf(o.rid)].name.toLowerCase()} match.`;if(o.talk&&o.talk.wid!==wid)return 'These terms were negotiated for a different wrestler.';
+ if(o.wid&&o.wid!==wid)return 'This offer is for a specific wrestler.';const conflict=bookingConflict(wid,o.rid,o.eventAbs);if(conflict)return conflict;if(D.divisionOf(w)!==D.divisionOf(o.rid))return `This is a ${D.DIVISIONS[D.divisionOf(o.rid)].name.toLowerCase()} match.`;if(o.talk&&o.talk.wid!==wid)return 'These terms were negotiated for a different wrestler.';
  const fd=feud(wid,o.rid);
  if(o.talk?.step==='done')S.business.negotiated+=purse(o,w)-(o.talk.original?.fee||purse(o,w));
  const contract={id:uid('c'),pid:o.pid,rid:o.rid,wid,slot:o.slot,minutes:D.SLOTS[o.slot].mins+(o.tag==='Blow-off'?5:0),finish:o.finish,purse:purse(o,w),tag:o.tag,feudHeat:fd&&!fd.closed?fd.heat:0,blowoff:o.tag==='Blow-off',eventAbs:o.eventAbs,...(o.title?{title:{...o.title}}:{})};if(o.eventAbs===abs())S.card.push(contract);else S.futureBookings.push(contract);
@@ -415,7 +423,8 @@ function applyResult(c,fin){
   else if(fd.heat>=40)add(`A rivalry is building with ${f.short} (heat ${fd.heat}). Rematch offers likely.`,1);
   else add(`Rivalry with ${f.short}: heat ${fd.heat}. Another good match and the promoters will want a rematch.`,0);}
  if(fin.stars>=4)S.goals.four=true;
- S.history.unshift({week:S.week,season:S.season,wid:w.id,name:w.name,rid:f.id,foe:f.name,pid:p.id,promoter:p.name,slot:c.slot,finish:c.finish,outcome:fin.outcome,stars:fin.stars,crowd:fin.crowd,purse:pay,tag:c.tag,notes:out.map(o=>o.text),log:(fin.log||[]).slice(-90)});
+ const result=root.OfficeOutcome.interpret(c,fin);
+ S.history.unshift({week:S.week,season:S.season,wid:w.id,name:w.name,rid:f.id,foe:f.name,pid:p.id,promoter:p.name,slot:c.slot,finish:c.finish,bookedFinish:result.bookedFinish,contractHonoured:result.contractHonoured,outcome:result.actualOutcome,stars:fin.stars,crowd:fin.crowd,purse:pay,tag:c.tag,notes:out.map(o=>o.text),log:(fin.log||[]).slice(-90)});
  S.history=S.history.slice(0,40);
  S.card=S.card.filter(x=>x.id!==c.id);
  save();return out;
@@ -579,5 +588,5 @@ function seasonEnd(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
 })(typeof window!=='undefined'?window:globalThis);
