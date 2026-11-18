@@ -185,7 +185,7 @@
   if(x.won){
    opts.push({id:'gloat',label:'Rub it in',hint:'Loud, cocky, and a little cruel. The crowd will love or loathe it.',tags:['Heat ▲','Feud heat ▲','Bond ▼']});
    opts.push({id:'credit',label:'Give '+x.f.short+' credit',hint:'Gracious in victory. Promoters like it.',tags:['Builds a bond','Cools the feud']});
-  }else{
+  }else if(x.outcome!=='nc'){
    opts.push({id:'concede',label:'Take the loss like a pro',hint:'No excuses. It softens the blow.',tags:['Morale ▲','Builds a bond']});
    opts.push({id:'excuse',label:'Blame the finish',hint:x.dirty?'They have a point: it was not clean.':'It was clean. The crowd saw it was clean.',tags:x.dirty?['Feud heat ▲','Heat ▲']:['Unlikely','Heat ▼ if it fails']});
   }
