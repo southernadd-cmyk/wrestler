@@ -18,9 +18,12 @@ const uid=p=>p+'-'+S.week+'-'+Math.floor(rand()*1e9).toString(36);
 
 /* ---------- lifecycle ---------- */
 function fresh(){
- S={v:22,seed:(Date.now()%100000)+7,season:1,week:1,cash:2250,rep:22,focus:2,monthReview:null,coach:null,futureBookings:[],circuitReviews:[],business:{training:0,negotiated:0,meetings:0,kept:0,broken:0},roster:[],free:D.TALENT.map(t=>({...t})),
+ S={v:22,seed:(Date.now()%100000)+7,careerSeed:null,season:1,week:1,cash:2250,rep:22,focus:2,monthReview:null,coach:null,futureBookings:[],circuitReviews:[],business:{training:0,negotiated:0,meetings:0,kept:0,broken:0},roster:[],free:D.TALENT.map(t=>({...t})),
   promoters:D.PROMOS.map(p=>({...p,blacklist:0,matches:0,best:0})),offers:[],card:[],feuds:{},inbox:[],history:[],
   goals:{},recentTypes:{},books:[],seasonResults:[],over:null};
+ // Never change this as the weekly PRNG advances. It identifies this career's
+ // underlying circuit outcomes without touching legacy career random sequences.
+ S.careerSeed=S.seed;
  msg({from:'The office',subject:'The keys are yours',kind:'info',body:[
   'You have £2,250, an empty locker room and four promoters who might return your calls.',
   'Sign talent from Roster. Book them on Bookings. Press Continue and you go to the ring with them.',
@@ -45,7 +48,7 @@ function goalList(){const n=S.season;return [
 function hydrate(x){
  if(!x || ![20,21,22].includes(x.v) || !Array.isArray(x.roster)||!Array.isArray(x.offers))return null;
  if(!Array.isArray(x.free))x.free=[];
- x.v=22;x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));
+ x.v=22;x.careerSeed??=x.seed;x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));
  for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
  root.OfficeTerritory?.prepare(x);
  root.OfficeWorldV4?.activate(x);
@@ -586,7 +589,10 @@ function endWeek(){
    const hot=Object.values(S.feuds).filter(f=>f.wid===w.id&&!f.closed).sort((a,b)=>b.heat-a.heat)[0];if(hot)hot.heat=clamp(hot.heat+6);
    lines.push(`${w.short} recorded a promo: −£40, heat +${g}${hot?', rivalry +6':''}.`);
   }else if(t.stat){
-   const spend=w.program?.type==='camp'?185:intensity.cost;S.cash-=spend;S.business.training+=spend;w.progress??={};const cur=w[t.stat];const camp=w.program?.type==='camp',specialist=S.coach&&COACHES[S.coach].stat===t.stat?COACHES[S.coach].boost:0;const growth=(camp?1.9:intensity.gain)*(1+specialist)*(cur>=88?.24:cur>=80?.5:1)*(w.fatigue>=70?.6:1);
+   const spend=w.program?.type==='camp'?185:intensity.cost;S.cash-=spend;S.business.training+=spend;w.progress??={};const cur=w[t.stat];const camp=w.program?.type==='camp',specialist=S.coach&&COACHES[S.coach].stat===t.stat?COACHES[S.coach].boost:0;// A rookie who is still learning the fundamentals should progress measurably
+   // across a season, without making upper-tier workers sprint to 99.
+   const rookieCatchup=w.tier==='Rookie'&&cur<68?1.4:1;
+   const growth=(camp?1.9:intensity.gain)*(1+specialist)*rookieCatchup*(cur>=88?.24:cur>=80?.5:1)*(w.fatigue>=70?.6:1);
    w.progress[t.stat]=(w.progress[t.stat]||0)+growth;
    const levels=Math.floor(w.progress[t.stat]);w.progress[t.stat]-=levels;
    const gained=Math.min(99-cur,levels);w[t.stat]=clamp(cur+gained,0,99);

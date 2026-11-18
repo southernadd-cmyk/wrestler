@@ -629,7 +629,8 @@ function promoterState(p,rep){
 function bizCell(p){
  const v=window.OfficeBusiness?.view(p.id);if(!v)return '';
  const arrow={up:'▲',down:'▼',flat:'▬'}[v.trend],tone=v.tone==='Struggling'?'bad':v.tone==='Hot'?'good':'';
- return `<span class="${tone}"><b>${esc(v.tone)}</b> ${arrow}</span><br><span class="dim">Crowd ${v.crowd} (usual ${v.base}) · Buzz ${v.buzz} · ${money(v.money)}</span>`;
+ const f=v.finance,delta=f?`<small class="dim" title="${esc('Last show: gate '+money(f.gate)+', sponsors '+money(f.sponsors)+', production '+money(f.production)+', talent '+money(f.talent)+', big matches '+money(f.marquee)+', savings '+money(f.savings))}"> · Last show ${f.net>=0?'+':''}${money(f.net)}</small>`:'';
+ return `<span class="${tone}"><b>${esc(v.tone)}</b> ${arrow}</span><br><span class="dim">Crowd ${v.crowd} (usual ${v.base}) · Buzz ${v.buzz} · ${money(v.money)}</span>${delta}`;
 }
 function renderPromoters(){
  const s=S();

@@ -41,6 +41,11 @@
   const notes=[],bill=[];
   const amb=id=>s.ambitions?.w?.[id]||null;
   const info=id=>D.findWrestler(id)||{};
+  // Same saved career => same planned world; distinct careers are no longer
+  // locked into identical booking upsets, feuds and tie-breaks.
+  // Week 2 is also previewed on the unsaved welcome poster, where no career seed
+  // exists yet. Keep that advertised bill exact; vary each career's later shows.
+  const worldHash=text=>hash(String(week<=2?0:(s.careerSeed??s.seed??0))+':'+text);
   const pressure=id=>{const e=amb(id);return e?clamp((100-e.sat)*(.6+(info(id).ego??55)/100)):0;};
   const bond=(a,b)=>s.bonds?.pairs?.[[a,b].sort().join('|')]?.score||0;
   // A rival manager working the booker on this wrestler's behalf (v0.3.16).
@@ -53,7 +58,7 @@
   // A promotion in trouble books desperately: shorter chases, more surprises, belts that move (v0.3.17).
   const desperate=pid=>!!t.business?.[pid]?.desperate;
   const cfgFor=p=>{const c=styleOf(p);return desperate(p.id)?{...c,titleLen:Math.max(2,c.titleLen-1),swerve:Math.min(.45,c.swerve*1.5)}:c;};
-  const pref=(p,w,salt)=>w.score+(w.heat||50)*.3+pressure(w.id)*.15+lobby(p.id,w.id)*.15+(p.personality==='cold'?(w.ring||60)*.3:0)+hash(salt+':'+w.id)*styleOf(p).noise;
+  const pref=(p,w,salt)=>w.score+(w.heat||50)*.3+pressure(w.id)*.15+lobby(p.id,w.id)*.15+(p.personality==='cold'?(w.ring||60)*.3:0)+worldHash(salt+':'+w.id)*styleOf(p).noise;
   // Your programmes (v0.3.18) have first call on their belt and their opponents.
   const claim=root.OfficeProgrammes?.claims(s,t,week)||{belts:new Set(),cast:new Set()};
   const cast=new Set([...Object.values(st.promos).flatMap(x=>x.live.flatMap(y=>[y.a,y.b])),...claim.cast]);
@@ -145,7 +150,7 @@
    }
    if(type==='rise'){
     const riser=free.filter(w=>['opener','mid'].includes(w.slot))
-     .map(w=>({w,v:(w.ring||60)*.4+pressure(w.id)*.4+lobby(p.id,w.id)*.3+(['push','respect','stage'].includes(amb(w.id)?.kind)?20:0)+hash(id+w.id)*10}))
+     .map(w=>({w,v:(w.ring||60)*.4+pressure(w.id)*.4+lobby(p.id,w.id)*.3+(['push','respect','stage'].includes(amb(w.id)?.kind)?20:0)+worldHash(id+w.id)*10}))
      .sort((x,y)=>y.v-x.v||x.w.id.localeCompare(y.w.id))[0]?.w;
     if(!riser)return null;
     const holder=t.titles?.[p.id]?.[div]?.holder;
@@ -191,7 +196,7 @@
     if(story.type==='rise'){
      const above=others.filter(w=>w.score>A.score).sort((x,y)=>x.score-y.score||x.id.localeCompare(y.id));
      opp=above[Math.min(above.length-1,k)]||others.sort((x,y)=>y.score-x.score||x.id.localeCompare(y.id))[0];
-    }else opp=others.sort((x,y)=>Math.abs(x.score-A.score)-Math.abs(y.score-A.score)||x.id.localeCompare(y.id))[hash(story.id+k)<.5?0:1]||others[0];
+    }else opp=others.sort((x,y)=>Math.abs(x.score-A.score)-Math.abs(y.score-A.score)||x.id.localeCompare(y.id))[worldHash(story.id+k)<.5?0:1]||others[0];
    }else opp=B;
    if(busy.has(A.id)||!opp||busy.has(opp.id)||count(p.id,story.div)>=MAX_CARD){
     // Somebody is unavailable: the rest of the story moves back a week.
@@ -202,7 +207,7 @@
    }
    const last=k===story.beats.length-1,stars=quarter(Math.min(4.25,2.5+story.heat/60+(last?.25:0)));
    let winner,line,title=false;
-   const upset=hash(story.id+':upset:'+k)<cfg.swerve*.5;
+   const upset=worldHash(story.id+':upset:'+k)<cfg.swerve*.5;
    if(story.type==='title'&&beat.kind==='build'){
     winner=upset?opp.id:A.id;
     line=`${p.name}: ${name(winner)} defeated ${name(winner===A.id?opp.id:A.id)}. ${upset?`A setback for ${short(A.id)} before the title match.`:`${short(A.id)} is on the way to a title match with ${short(B.id)}.`}`;
@@ -212,8 +217,8 @@
     let chance=p.personality==='aggressive'?(story.heat>=55?.75:.45):p.personality==='showman'?.55:p.personality==='cold'?((A.ring||60)>(B.ring||60)+2?.5:.2):(story.heat>=55?.85:.35);
     // A long reign wears on most crowds; Grand Union's booker sees it as a reason to keep the belt where it is.
     chance+=(held.defences>=4&&p.personality!=='cold'?.15:0)+(amb(A.id)?.kind==='title'?.05:0)+(desperate(p.id)?.15:0);
-    let change=hash(story.id+':payoff')<chance;
-    if(hash(story.id+':swerve')<cfg.swerve)change=!change;
+    let change=worldHash(story.id+':payoff')<chance;
+    if(worldHash(story.id+':swerve')<cfg.swerve)change=!change;
     winner=change?A.id:B.id;
    }else if(story.type==='grudge'){
     if(beat.kind==='clash'){
@@ -222,7 +227,7 @@
      line=`${p.name}: ${name(winner)} defeated ${name(winner===A.id?B.id:A.id)}. ${short(A.id)} and ${short(B.id)} are not finished yet.`;
     }else{
      const lean=clamp(.5+(pref(p,A,story.id+'b')-pref(p,B,story.id+'b'))/200,.2,.8);
-     winner=hash(story.id+':blowoff')<lean?A.id:B.id;
+     winner=worldHash(story.id+':blowoff')<lean?A.id:B.id;
      line=`${p.name}: ${name(winner)} defeated ${name(winner===A.id?B.id:A.id)}. That settles it between ${short(A.id)} and ${short(B.id)}.`;
     }
    }else{
@@ -231,7 +236,7 @@
      line=`${p.name}: ${name(winner)} defeated ${name(winner===A.id?opp.id:A.id)}. ${upset?`A setback for ${short(A.id)}.`:`${short(A.id)} keeps climbing.`}`;
     }else{
      let chance=p.personality==='showman'?.75:p.personality==='aggressive'?.65:p.personality==='cold'?((A.ring||60)>=(B.ring||60)-3?.65:.35):.6;
-     winner=hash(story.id+':rise')<chance?A.id:B.id;
+     winner=worldHash(story.id+':rise')<chance?A.id:B.id;
      line=`${p.name}: ${name(winner)} defeated ${name(winner===A.id?B.id:A.id)}. ${winner===A.id?`${short(A.id)} has arrived.`:`${short(B.id)} sends ${short(A.id)} back down the card.`}`;
     }
    }
