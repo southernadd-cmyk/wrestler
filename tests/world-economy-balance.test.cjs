@@ -60,6 +60,21 @@ console.log('PASS ticket and sponsorship income, production and talent costs are
  console.log('PASS 48 neutral weeks, real profit/loss: '+D.PROMOS.map(p=>p.id+' £'+b[p.id].money).join('; '));
 }
 
+// A secondary low-tier listing never makes a nationally established worker
+// available to a smaller promoter's exclusive-buyout raid.
+{
+ G.fresh();const t=G.S.territory,id='silas';
+ const dock=D.PROMOS.find(p=>p.id==='dock'),pulse=D.PROMOS.find(p=>p.id==='pulse'),union=D.PROMOS.find(p=>p.id==='union');
+ t.cards.dock[id]??={score:45,matches:0,wins:0};
+ t.cards.union[id]??={score:60,matches:0,wins:0};
+ assert.equal(Biz.topPromotion(t,id).id,union.id,'highest-prestige association is authoritative');
+ assert.equal(Biz.mayRaid(t,pulse,id),false,'secondary indie card cannot bypass national association');
+ delete t.cards.union[id];
+ assert.equal(Biz.mayRaid(t,pulse,id),true,'an indie-to-indie step up remains possible');
+ assert.equal(Biz.mayRaid(t,dock,id),false,'same-tier transfers are not exclusivity buyouts');
+}
+console.log('PASS rival promotions respect highest-prestige booking when raiding talent');
+
 // New careers keep their own world seed across saves; different seeds actually
 // lead to different title chases, match results and opportunities.
 {
