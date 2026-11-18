@@ -82,7 +82,7 @@ function offer(o={}){const s=G.S,x={id:'so-'+(n++),pid:'dock',rid:'silas',slot:'
   assert.ok(M.stipSpots.every(s=>s.done),'every stipulation moment happened: '+stip+' '+finish);
   const end=M.log.filter(l=>l.kind==='bell').pop().text;
   const winner=finish.startsWith('win')?w:f;
-  if(stip==='falls'){assert.equal(M.stipScore.w,1);assert.equal(M.stipScore.f,1);assert.match(text,/This one decides it/);}
+  if(stip==='falls'){assert.equal(M.stipScore.w+M.stipScore.f,3,'the deciding pin counts as the third fall');assert.equal(M.stipScore[finish.startsWith('win')?'w':'f'],2,'the winner has two falls');assert.match(text,/Final falls: [12]–[12]/);}
   else{
    assert.equal(M.final.finishRoute,X.FINISH[stip][finish][0],'the rivalry reads a route with the same meaning');
    assert.ok(end.includes(winner.short)||end.includes(winner.name),'the booked winner wins: '+end);
