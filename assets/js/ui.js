@@ -643,7 +643,9 @@ function renderPromoters(){
 // v0.3.15 Each booker's plans: the storylines on the board and how the last ones ended.
 function yourProgrammes(p){
  const v=window.OfficeProgrammes?.view(p.id);if(!v||!(v.live.length||v.done.length))return '';
- const line=x=>{const next=x.beats.find(b=>!b.done&&!b.missed),a=window.OfficeProgrammeArcs?.record(x.id)?.arc,last=a?.timeline?.at(-1);return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}${a?`<small class="arc-recap">${esc(a.conclusion||window.OfficeProgrammeArcs.band(a.momentum))}${last?' · '+esc(last.recap):''}</small>`:''}</li>`;};
+ const line=x=>{const next=x.beats.find(b=>!b.done&&!b.missed),a=window.OfficeProgrammeArcs?.record(x.id)?.arc,last=a?.timeline?.at(-1);
+  const chapters=a?.timeline?.length?`<details class="arc-history"><summary>Read ${a.timeline.length} chapter${a.timeline.length===1?'':'s'}</summary><ol>${a.timeline.slice().sort((u,v)=>u.step-v.step).map(e=>`<li><b>${esc(e.chapter||'Chapter '+(e.step+1))}</b> · ${esc(e.recap)}${e.claim==='broken'?'<small class="bad">Claim not delivered</small>':e.claim==='kept'?'<small class="good">Claim backed up</small>':''}</li>`).join('')}</ol></details>`:'';
+  return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}${a?`<small class="arc-recap">${esc(a.conclusion||window.OfficeProgrammeArcs.band(a.momentum))}${last?' · '+esc(last.recap):''}</small>`:''}${chapters}</li>`;};
  return `<h3 class="section-h">Your programmes here</h3><ul class="cons">${[...v.live,...v.done.slice(0,3)].map(line).join('')}</ul>`;
 }
 function renderSheets(){
