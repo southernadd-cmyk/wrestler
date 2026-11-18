@@ -429,15 +429,16 @@ node tests/rival-managers.test.cjs
 node tests/promotion-business.test.cjs
 node tests/programmes.test.cjs
 node tests/approaches.test.cjs
+node tests/world-soak.test.cjs
 node tests/start-poster.test.cjs
 node tests/structure.test.cjs
 ```
 
 The suites cover the free-agent market and rival contracts, separate promotion ladders, divisions and title changes, older saves, backstage situations and their follow-ups, personal voices and move sets, relationships and betrayals, rivalry arguments and counter-proposals, ambitions, the bookers’ storylines, rival managers, the promotions’ business and programmes, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
 
-`node tools/five-bouts.cjs` plays five consecutive meetings between the same two wrestlers in one career and writes a report of every argument, negotiation, match and memory; sample reports are in [docs/reports](docs/reports/).
+`node tools/world-sweep.cjs 1 100 48` plays a hundred careers for three seasons with every system switched on and reports anything that breaks; four of them run in CI as `world-soak`. `node tools/five-bouts.cjs` plays five consecutive meetings between the same two wrestlers in one career and writes a report of every argument, negotiation, match and memory; sample reports are in [docs/reports](docs/reports/).
 
-**Continuous integration:** All 36 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
+**Continuous integration:** All 37 suites, including the modular-source structure check, run automatically on pushes and pull requests using Node.js 22 in [GitHub Actions](.github/workflows/tests.yml). A red test run means the submitted commit failed validation. To require green checks before merge, configure the repository's branch protection/ruleset for the `Regression suite (Node 22)` status check.
 
 ### Small print
 
