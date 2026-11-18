@@ -50,5 +50,6 @@ for(let i=0;i<47;i++){
 assert.equal(G.S.history.length,40,'full match descriptions remain bounded');
 assert.equal(G.S.seasonResults.filter(x=>x.season===3).length,47,'all 47 current-season ratings survive');
 assert.ok(G.S.seasonResults.every(x=>!('log' in x)&&!('notes' in x)),'summary does not grow with commentary');
+assert.ok(G.S.seasonResults.every(x=>x.name&&x.foe),'the chart retains names and opponents for every rating');
 assert.match(ui,/\(s\.seasonResults\|\|s\.history\)\.filter/,'chart uses the complete lightweight ledger');
 console.log('PASS season ratings persist after detailed match reports roll off');
