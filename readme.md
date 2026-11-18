@@ -40,7 +40,7 @@ The circuit’s wrestlers want things as well. An unhappy one turns down a new c
 
 The six rival managers stopped waiting for the phone. Each week they work the bookers for the wrestlers who want something most, and the bookers listen to the ones whose wrestlers deliver. They find new work for wrestlers stuck at the bottom of every card, and the ones with money poach unhappy wrestlers from each other.
 
-They are after your business too. An offer you sit on for a week (a featured bout, a main event, a title match) can go to one of their wrestlers instead, and the road agent will tell you who took it. A manager can make you an offer for one of your wrestlers who wants out: **sell**, **ask for more**, or **refuse** and live with how they take it. And the week before the agencies sign from the market, word gets round who they are after, so you can get in first. The rival stables table under **Territory → Card pyramid** says how each manager works.
+They are after your business too. An offer you sit on for a week (a featured bout, a main event, a title match) can go to one of their wrestlers instead, and the road agent will tell you who took it. A manager can make you an offer for one of your wrestlers who wants out: **sell**, **ask for more**, **pay a loyalty bonus** to keep them, or **refuse** and live with how they take it. Any of the six managers can come calling now, not just North Circuit. And the week before the agencies sign from the market, word gets round who they are after, so you can get in first. The rival stables table under **Territory → Card pyramid** says how each manager works.
 
 ## THE BUSINESS
 

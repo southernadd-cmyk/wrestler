@@ -23,7 +23,7 @@
  };
  const DEFAULT={push:.5,poach:.4,thrift:.5,tiers:null,home:'crown',blurb:'looks after their wrestlers.'};
  const profile=id=>MANAGERS[id]||DEFAULT;
- const BID_GAP=6,POACH_GAP=2,LOBBY_COST=50,MAX_DIV=24;
+ const BID_GAP=6,BONUS=400,POACH_GAP=2,LOBBY_COST=50,MAX_DIV=24;
 
  function state(t=G.S?.territory){
   if(!t)return null;
@@ -218,6 +218,7 @@
      `Road agent: ${wants?`${wr.short} has been listening. I would not count on them staying happy if you say no.`:`${wr.short} hasn’t asked to go. Saying no might even help.`}`],
     options:[{id:'accept',label:`Sell for ${G.money(fee)}`,hint:`${wr.short} joins ${team.name} today. The money is yours.`},
      {id:'counter',label:`Ask for ${G.money(Math.round(fee*1.4/10)*10)}`,hint:'They may pay it. They may walk away.'},
+     {id:'bonus',label:`Pay a loyalty bonus (${G.money(BONUS)})`,hint:`${wr.short} stays and knows you paid to keep them: loyalty +20. ${team.manager} backs off.`},
      {id:'refuse',label:'Not for sale',hint:wants?`${wr.short} wanted to hear that offer. Loyalty will suffer.`:`${wr.short} will appreciate it.`}]});
    return;
   }
@@ -237,9 +238,12 @@
   if(!m||m.dtype!=='agent_bid')return originalAnswer(mid,opt);
   if(m.answer)return null;
   if(!m.options.some(o=>o.id===opt))return 'Choose one of the available responses.';
+  if(opt==='bonus'&&s.cash<BONUS)return `Not enough cash for the ${G.money(BONUS)} bonus. Choose another response.`;
   const [wid,teamId,fee]=m.args,wr=G.W(wid),team=s.territory.teams.find(x=>x.id===teamId);let text;
   const wants=wr&&((ambition(s,wid)?.sat??50)<35||(wr.loyal||50)<45);
   if(!wr||!team)text='The offer has lapsed.';
+  else if(opt==='bonus'){s.cash-=BONUS;wr.loyal=G.clamp((wr.loyal||50)+20);wr.morale=G.clamp((wr.morale||50)+5);const e=ambition(s,wid);if(e)e.sat=clamp(e.sat+5);
+   text=`${wr.short} takes the ${G.money(BONUS)} and stays. ${team.manager} has moved on, for now. Loyalty +20.`;}
   else if(opt==='accept')text=sell(s,wr,teamId,fee)?`${wr.short} has signed for ${team.name}. ${G.money(fee)} is in the account.`:`${team.manager} can no longer afford it. The offer is withdrawn and ${wr.short} stays.`;
   else if(opt==='counter'){
    const more=Math.round(fee*1.4/10)*10;
