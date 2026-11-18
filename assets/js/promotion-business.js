@@ -63,12 +63,12 @@
    // Two big nights the same week split the towns; the one with more buzz keeps more of its crowd.
    const clash=headToHead.includes(p.id)&&headToHead.length>1;
    const won=clash&&headToHead.every(id=>id===p.id||b[id].buzz<=f.buzz);
-   targets[p.id]={raw:base(p)+(quality-2.75)*12+(heat-50)*.1+(champHeat-55)*.1+paid*6+changed*4-(clash?(won?1:6):0)-(f.desperate?3:0),paid,changed,clash,won,quality,noise:circuitNoise};
+   targets[p.id]={raw:base(p)+(quality-2.75)*12+(heat-50)*.1+(champHeat-55)*.1+paid*6+changed*4-(clash?(won?1:6):0)-(f.desperate?3:0),paid,changed,clash,won,quality,noise:circuitNoise,matches:stars.length};
   }
   // The towns are shared: when the circuit as a whole is hot, each promotion's share of it shrinks.
   const excess=D.PROMOS.reduce((n,p)=>n+targets[p.id].raw-base(p),0)/D.PROMOS.length;
   for(const p of D.PROMOS){
-   const f=b[p.id],before=f.crowd,{raw,paid,changed,clash,won,quality}=targets[p.id];
+   const f=b[p.id],before=f.crowd,{raw,paid,changed,clash,won,quality,matches}=targets[p.id];
    // Each promotion has its own level; a booking style is not a reason to sink for ever.
    const target=base(p)+(raw-excess*.7-base(p))*.6;
    f.crowd=Math.round(clamp(f.crowd+(target-f.crowd)*.3+targets[p.id].noise*.8,5,100));
@@ -78,7 +78,6 @@
    f.buzz=r1(clamp(f.buzz*.7+news*.3));
    // Results this week pay the show bill once. Keep the breakdown with the result,
    // not as an invented generic adjustment to an arbitrary cash baseline.
-   const matches=stars.length;
    const statement=finance(p,f,matches,paid,changed);
    f.lastFinance={week:wk,...statement};
    f.money=Math.round(f.money+statement.net);
@@ -146,7 +145,7 @@
   const originalEvolve=V4.evolve;
   V4.evolve=function(s,t,wk,reports){
    const out=originalEvolve.call(this,s,t,wk,reports);
-   try{week(s,t,wk,reports);}catch(e){}
+   week(s,t,wk,reports);
    return out;
   };
  }
