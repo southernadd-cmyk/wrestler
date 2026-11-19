@@ -292,6 +292,7 @@ const Graph=(function makeGraph(){
   ['lc_hurricanrana','early_cover',1.35,'followup','Lucha: brief nearfall after the throw'],
   ['lockup','ch_single_leg_rev',.95,'counter','Catch: sprawl turns aside a single-leg shot from the tie-up']
  ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
+ const TRAINED_TECHNIQUE_IDS=new Set(TECHNIQUE_PILOT.map(link=>link.to));
 
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
      reverse:!!opts.reverse,kind:opts.kind||'play',focus:opts.focus||0,crowd:opts.crowd||0,weight:opts.weight||1,styles:opts.styles||null,cost:opts.cost??null,lift:opts.lift??null,
@@ -1363,9 +1364,9 @@ const Graph=(function makeGraph(){
    // Phase 4: individual technical schooling (NOT match style or career drills).
    // A move-specific counter belongs to the defending wrestler who performs it.
    // The background layer only affects already-reviewed live Phase 3 moves.
-   if(root.OfficeTechniqueBackgrounds&&root.OfficeTechniqueRegistry){
+   if(TRAINED_TECHNIQUE_IDS.has(id)&&root.OfficeTechniqueBackgrounds&&root.OfficeTechniqueRegistry){
     const performer=A[id].reverse?(p.control==='f'?M.w:M.f):liveSide;
-    n*=root.OfficeTechniqueBackgrounds.multiplier(performer,id,{A,TECHNIQUE_PILOT},root.OfficeTechniqueRegistry);
+    n*=root.OfficeTechniqueBackgrounds.multiplier(performer,id,Graph,root.OfficeTechniqueRegistry);
    }
     const nd=A[id];
     if(nd.family){
