@@ -36,7 +36,7 @@ assert.equal(B.multiplier('juno','sm_boston',G,R),1.28,'catch background applies
 assert.equal(B.multiplier('bao','sm_triangle',G,R),1.28,'judo background can influence a reviewed shared hold');
 assert.equal(B.multiplier('rex','sm_triangle',G,R),1,'general ringcraft is unchanged');
 assert.equal(B.multiplier('kit','ar_frog',G,R),1.224,'hybrid retains a smaller original lucha preference');
-assert.equal(B.multiplier('juno','sm_deathlock',G,R),1,'reviewed but not live-linked move is not automatically boosted');
+assert.equal(B.multiplier('juno','sm_deathlock',G,R),1.28,'Phase 9 figure-four-to-deathlock connection makes reviewed catch leg control live');
 const immutableMoves=JSON.stringify(G.A),immutableRoster=JSON.stringify(D.ALL);
 const unique=new Set();
 for(const link of G.TECHNIQUE_TRANCHE2){
