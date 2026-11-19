@@ -1,0 +1,40 @@
+name: Phase 9 graph validation
+
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/**'
+      - 'assets/js/match-engine.js'
+      - 'assets/js/technique-backgrounds.js'
+      - 'tests/phase9-graph-validation.test.cjs'
+      - '.github/workflows/phase9-graph-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/graph-lab/**'
+      - 'assets/js/match-engine.js'
+      - 'assets/js/technique-backgrounds.js'
+      - 'tests/phase9-graph-validation.test.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-moves:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate 120 real matches and injected failure cases
+        run: node tests/phase9-graph-validation.test.cjs
+      - name: Capture 250-match repeatable graph evidence
+        run: node tools/graph-lab/validate.cjs --count 250 > phase9-evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phase9-graph-evidence
+          path: phase9-evidence.json
+          retention-days: 14
