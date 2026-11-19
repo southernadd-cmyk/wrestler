@@ -354,3 +354,24 @@ progress{display:block;width:100%;height:5px;margin:14px 0 9px;accent-color:var(
 .tape-legend-activity{background:#b3c4c5}
 .tape-legend-counter{background:var(--counter)}
 .tape-legend-block{background:var(--block)}
+
+/* Phase 9 evidence readout: no extra decorative KPI cards, explicit failure semantics. */
+.validation-results{padding:20px 22px 22px;border-top:1px solid var(--ink-line);background:#202e36}
+.validation-heading{display:flex;align-items:start;justify-content:space-between;gap:16px}
+.validation-heading .block-ref{color:var(--lime)}
+.validation-heading h4{margin:5px 0 0;font:700 24px/1.1 var(--condensed);text-transform:uppercase}
+#validationState{font:700 11px var(--mono);color:var(--faint)}
+#validationState[data-result="pass"]{color:#85d4b6}
+#validationState[data-result="issues"]{color:#f0ad98}
+.validation-measures{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0 14px}
+.validation-measures>div{border-top:1px solid #536069;padding-top:9px}
+.validation-measures span{display:block;color:var(--faint);font:500 10px/1.4 var(--mono);min-height:29px}
+.validation-measures strong{display:block;margin-top:4px;color:var(--light);font:700 26px var(--condensed)}
+.validation-note{color:var(--faint);font:400 11px/1.5 var(--body)}
+.validation-findings{padding:10px 0;font:500 11px/1.6 var(--mono);overflow-wrap:anywhere}
+.validation-findings p{margin:5px 0}
+.validation-details{border-top:1px solid var(--ink-line);padding-top:9px;margin-top:8px}
+.validation-details summary{cursor:pointer;color:var(--light);font:600 11px var(--mono)}
+.validation-details h5{margin:15px 0 7px;color:var(--lime);font:600 10px var(--mono)}
+.validation-details p{margin:4px 0;color:var(--faint);font:400 11px/1.5 var(--mono)}
+@media(max-width:480px){.validation-results{padding:16px}.validation-measures{gap:8px}.validation-measures strong{font-size:21px}.validation-measures span{font-size:9px}}

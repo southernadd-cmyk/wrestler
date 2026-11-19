@@ -4,6 +4,7 @@
   const D = window.OfficeData;
   const M = window.OfficeMatch;
   const lab = window.OfficeGraphLab;
+  const validator = window.OfficeGraphValidation;
   const $ = id => document.getElementById(id);
   const G = M?.GRAPH;
   let info, people, selectedId, lastReport = null, savedReport = null, frozenSuite = null;
@@ -94,6 +95,32 @@
     }
   }
 
+  function renderValidation(result) {
+    if (!result) return;
+    set('validationState', result.pass ? 'PASS' : 'ISSUES');
+    $('validationState').dataset.result = result.pass ? 'pass' : 'issues';
+    set('validationErrors', fmt(result.hardErrors));
+    set('validationUnique', fmt(result.distinctMatchSequences) + ' / ' + fmt(result.bouts));
+    set('validationPairs', fmt(result.observedLinkedPairs));
+    const findings = $('validationFindings');
+    findings.replaceChildren();
+    if (!result.hardErrors) findings.append(make('p', 'No mechanical invariant violations detected in this sample.'));
+    for (const item of result.examples.slice(0, 8)) findings.append(make('p',
+      item.code + ' / seed ' + item.seed + (item.time === null ? '' : ' / ' + item.time + 's') +
+      ' / ' + (item.id || item.detail)));
+    for (const note of result.review) findings.append(make('p', 'REVIEW: ' + note));
+    const styles = $('validationStyles');
+    styles.replaceChildren();
+    for (const [title, table] of [['PERFORMANCE STYLES',result.byStyle],['TECHNICAL BACKGROUNDS',result.byTraining]]) {
+      styles.append(make('h5', title));
+      const entries = Object.entries(table);
+      if (!entries.length) styles.append(make('p', 'No data for this sample.'));
+      for (const [name, entry] of entries) styles.append(make('p',
+        name + ' · ' + entry.actions + ' actions · ' +
+        entry.topFamilies.map(x => x.family + ' ' + x.count).join(' / ')));
+    }
+  }
+
   function updateResults(report) {
     lastReport = report;
     set('completed', fmt(report.bouts));
@@ -108,6 +135,22 @@
     listHits('finishRoutes', report.finishRoutes, name => name.replace(/_/g, ' '));
     $('export').disabled = false;
     renderComparison();
+    if (report.validation) renderValidation(report.validation);
+    if(report.phase9){
+      set('phase9Coverage',
+        'NEW EDGES: '+report.phase9.newLinksObserved+'/'+report.phase9.newlyIntroducedLinks+
+        ' observed · '+report.phase9.matchesWithNew+'/'+report.bouts+
+        ' matches ('+report.phase9.matchesWithNewPct.toFixed(1)+'%) · '+
+        report.phase9.sameControllerOccurrences+' same-wrestler transitions · '+
+        report.phase9.threeMoveNewChains+' three-action chains · '+
+        (report.scriptedSpotEvents||0)+' narrated special spots outside the named graph');
+    }
+    if (report.phase9Groups?.length) {
+      const styles = $('validationStyles');
+      styles.append(make('h5', 'PHASE 9 / OBSERVED CURATED CHAINS'));
+      for (const item of report.phase9Groups) styles.append(make('p',
+        item.group + ' · '+item.newObserved+'/'+item.newLinks+' genuinely new links seen ('+item.newHits+' occurrences) · '+item.hits+' all authored pair occurrences'));
+    }
   }
 
   function filterTrace() {
@@ -235,10 +278,10 @@
     const container = $('techniqueDetails');
     if (!container) return;
     container.replaceChildren(make('span', 'MECHANICS LAYER / PROPOSED', 'block-ref'));
-    const liveLinks = [...(G.TECHNIQUE_PILOT || []),...(G.TECHNIQUE_EXPANSION || []),...(G.TECHNIQUE_TRANCHE2 || []),...(G.TECHNIQUE_DEPTH || [])].filter(link => link.from === id || link.to === id);
+    const liveLinks = [...(G.TECHNIQUE_PILOT || []),...(G.TECHNIQUE_EXPANSION || []),...(G.TECHNIQUE_TRANCHE2 || []),...(G.TECHNIQUE_DEPTH || []),...(G.TECHNIQUE_CHAINS || [])].filter(link => link.from === id || link.to === id);
     if (liveLinks.length) {
       const active = make('div', null, 'mechanics-live');
-      active.append(make('h4', 'LIVE TECHNIQUES / PHASES 3 + 5 + 5b + 8'));
+      active.append(make('h4', 'LIVE TECHNIQUES / PHASES 3 + 5 + 5b + 8 + 9'));
       for (const link of liveLinks) {
         const row = make('button', link.from + ' → ' + link.to + ' · weight ' + link.weight);
         row.type = 'button';
@@ -473,6 +516,7 @@
     const config = { wid: $('worker').value, rid: $('opponent').value, plan: $('plan').value,
       finish: $('finish').value, slot: $('slot').value, seed, count, rotation: $('rotation').value };
     const snapshot = lab.empty(G, config);
+    const evidence = validator.create(G);
     let lastYield = performance.now();
     try {
       for (let i = 0; i < count; i++) {
@@ -486,6 +530,7 @@
         }
         const match = lab.runMatch(window, lab.makeOptions(D, params));
         lab.add(snapshot, match, G);
+        validator.add(evidence, match, G, window.OfficeTechniqueBackgrounds);
         if (i === 0) showTrace(match);
         if (performance.now() - lastYield > 55 || i + 1 === count) {
           $('progress').value = (i + 1) / count * 100;
@@ -494,13 +539,21 @@
           lastYield = performance.now();
         }
       }
-      if (snapshot.bouts) updateResults(lab.report(snapshot, G, { full: true }));
+      if (snapshot.bouts) {
+        const report = lab.report(snapshot, G, { full: true });
+        report.validation = validator.finish(evidence);
+        updateResults(report);
+      }
       set('status', (stopped ? 'Stopped — ' : 'Complete — ') + fmt(snapshot.bouts) + ' real engine matches measured. ' +
         fmt(snapshot.timingErrors.length) + ' sampled timing violations.');
     } catch (error) {
       console.error('Graph Lab run failed', error);
       set('status', 'Simulation stopped: ' + error.message);
-      if (snapshot.bouts) updateResults(lab.report(snapshot, G, { full: true }));
+      if (snapshot.bouts) {
+        const report = lab.report(snapshot, G, { full: true });
+        report.validation = validator.finish(evidence);
+        updateResults(report);
+      }
     } finally {
       running = false; $('run').disabled = false; $('stop').disabled = true;
       $('export').disabled = !lastReport;
@@ -509,7 +562,7 @@
 
   function init() {
     try {
-      if (!D || !M || !lab || !G) throw Error('Shipped match-engine scripts did not load.');
+      if (!D || !M || !lab || !G || !validator) throw Error('Shipped match-engine or validation scripts did not load.');
       window.OfficeRosterV4?.enableProfiles();
       info = lab.inspect(G, D);
       if (window.OfficeTechniqueRegistry) {

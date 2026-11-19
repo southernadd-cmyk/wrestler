@@ -1,0 +1,39 @@
+name: Phase 9 match quality A/B
+
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'assets/js/data.js'
+      - 'tests/match-quality-p0.test.cjs'
+      - 'tools/graph-lab/compare-match-quality.cjs'
+      - '.github/workflows/match-quality-p0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  match-quality:
+    name: Real match-quality regression (500 + 500 bouts)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate on-the-mat quality and early finish constraints
+        run: node tests/match-quality-p0.test.cjs
+      - uses: actions/checkout@v4
+        with:
+          ref: bfc9af6306657e59cf400cb3cbb7cb59c3579666
+          path: quality-reference
+          persist-credentials: false
+      - name: Compare fixed 100 wrestler pairings across five match plans
+        run: node tools/graph-lab/compare-match-quality.cjs quality-reference > match-quality-ab.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phase9-match-quality-ab
+          path: match-quality-ab.json
+          retention-days: 14

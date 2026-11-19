@@ -275,6 +275,7 @@ const Psy=(function installPsychology(){
 /* THE OFFICE v2.7 — hierarchical causal graph, based on match-psychology research */
 const Graph=(function makeGraph(){
  const A={};
+ const introducedPhase9=new Set();
  // Phase 3 / small, curated, live technique sequences. These IDs are ALREADY in
  // the authored graph; they do not unlock new moves or alter the finish contract.
  // Entry position compatibility is enforced at build time and again by isValid().
@@ -348,7 +349,214 @@ const Graph=(function makeGraph(){
   ['st_palm','st_elbow_smash',.65,'followup','Curated position-compatible technique continuation'],
   ['st_leg_kick','st_kneelift',.65,'followup','Curated position-compatible technique continuation']
  ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
- const TRAINED_TECHNIQUE_IDS=new Set([...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH].map(link=>link.to));
+ // Phase 9: hand-authored context and grip-specific transitions. No family lottery.
+ const TECHNIQUE_CHAINS=Object.freeze([
+  ['lockup','ch_top_wristlock',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['lockup','front_facelock',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['wristlock','ch_rolling_wristlock',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['ch_top_wristlock','hammerlock',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['ch_top_wristlock','ch_short_arm',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['ch_rolling_wristlock','ch_short_arm',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['ch_short_arm','ch_deep_arm_drag',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['ch_short_arm','ch_japanese_arm_drag',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['hammerlock','ch_rolling_wristlock',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['standing_switch','sx_german',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['go_behind','ch_leg_trip',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['go_behind','ch_double_leg',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['front_facelock','ch_snapmare',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['front_facelock','sx_vertical',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['front_facelock','sx_brainbuster',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['ch_cravate','ch_headlock_takedown',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['ch_cravate','nk_swinging_neckbreaker',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['waistlock','sx_belly_back',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['waistlock','sx_gutwrench',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['waist_escape','standing_switch',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['go_behind','sx_saito',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['go_behind','sx_half_nelson',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['front_facelock','sx_double_underhook',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['front_facelock','sx_butterfly',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['front_facelock','sx_snap_ddt',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
+  ['mat_hold','gd_arm_stomp',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['mat_hold','gd_arm_elbows',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['mat_hold','sm_armbar',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['mat_hold','sm_kimura',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['mat_hold','sm_chinlock',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['gd_arm_stomp','sm_kimura',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['gd_arm_stomp','sm_fujiwara',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['gd_arm_elbows','sm_wristlock_ground',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['sm_wristlock_ground','sm_short_arm_scissors',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['sm_wristlock_ground','sm_armbar',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['sm_kimura','sm_keylock',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['sm_kimura','sm_fujiwara',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['sm_keylock','sm_cross_armbreaker',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['sm_cross_armbreaker','sm_armbar',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['sm_armbar','sm_fujiwara',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['sm_fujiwara','sm_wristlock_ground',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['rs_hammerlock_mat','sm_kimura',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['rs_wrist_mat','sm_armbar',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['sm_short_arm_scissors','sm_keylock',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['rs_front_chancery','sm_anaconda',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['rs_reverse_chinlock','sm_dragon_sleeper',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['rs_body_scissors','sm_rear_naked',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['rs_seated_chinlock','sm_sleeper',.72,'Arm control on the mat','Keep an isolated wrist, shoulder or elbow while changing the hold'],
+  ['mat_hold','gd_knee_stomp',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['mat_hold','gd_elbow_neck',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['mat_hold','sm_ankle_lock',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['gd_dragon_screw_ground','sm_toe_hold',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_toe_hold','sm_ankle_lock',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_ankle_lock','sm_kneebar',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_kneebar','sm_single_crab',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_single_crab','sm_boston',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_boston','sm_sharpshooter',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_sharpshooter','sm_cloverleaf',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_figure_four','sm_deathlock',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_triangle','sm_arm_triangle',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_arm_triangle','sm_anaconda',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_rear_naked','sm_dragon_sleeper',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['gd_elbow_neck','sm_crossface',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['sm_crossface','sm_stf',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['gd_lower_back_knee','sm_boston',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['gd_knee_stomp','sm_heel_hook',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['gd_arm_stomp','sm_wristlock_ground',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['rs_leg_lace','sm_toe_hold',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['rs_wrist_mat','sm_short_arm_scissors',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['rs_mat_stretch','sm_camel',.72,'Grounded leg and neck control','Follow an established mat hold into a related leg or head-control position'],
+  ['probe_strike','st_jab',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_jab','st_forearm',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_jab','st_body_kick',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_jab','st_palm',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_forearm','st_uppercut',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_forearm','st_kneelift',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_forearm','st_spinning_backfist',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_chop','st_uppercut',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_chop','st_gut_punch',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_open_slap','st_forearm',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_open_slap','st_chop',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_gut_punch','st_elbow_smash',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_gut_punch','st_knee_strike',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_kneelift','st_elbow_smash',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_kneelift','st_uppercut',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_palm','st_kneelift',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_elbow_smash','st_headbutt',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_uppercut','st_forearm',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_leg_kick','st_body_kick',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_leg_kick','st_side_kick',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_body_kick','st_spinning_backfist',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_body_kick','st_superkick',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_headbutt','st_lariat_standing',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_spinning_backfist','st_lariat_standing',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_backhand','st_forearm',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_double_chop','st_kneelift',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['st_eye_rake','hl_ref_argue',.72,'Short striking combinations','Maintain standing range or exploit a lowered guard'],
+  ['lockup','pw_bearhug',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['waistlock','pw_bearhug',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['pw_bearhug','pw_side_slam',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['pw_bearhug','pw_uranage',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['pw_bearhug','pw_belly_bump',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['pw_torture_rack','pw_samoan_drop',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['pw_torture_rack','pw_argentine',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['st_kneelift','pw_pumphandle',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['st_gut_punch','pw_backbreaker',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['st_headbutt','pw_body_slam',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['go_behind','sx_german_release',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['go_behind','sx_rolling_german',.72,'Power wrestling and lifted finishes','Use a stable body tie, shoulder load or stunned opponent for controlled power work'],
+  ['rope_run','lc_handspring',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['rope_run','lc_hurricanrana',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['rope_run','lc_headscissors',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['rope_run','lc_arm_drag_wheel',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['duck_rebound','lc_wheelbarrow',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['duck_rebound','lc_rana_pin',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['duck_rebound','pn_sunset',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['st_palm','lc_headscissors',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['ch_drop_down','lc_hurricanrana',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['ch_kip_up','lc_handspring',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['waist_escape','lc_wheelbarrow',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['standing_switch','pn_oconnor',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['wristlock','pn_magistral',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['ch_rolling_wristlock','pn_crucifix',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['ch_short_arm','pn_backslide',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['rope_rebound','rn_crossbody',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['rope_rebound','rn_dropkick',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['rope_rebound','rn_lariat',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['rope_rebound','rn_spear',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['rope_rebound','rn_bicycle_knee',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['springboard_feint','rope_run',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['rp_springboard_feint','springboard_rise',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['rp_skin_cat','rope_rebound',.72,'Lucha, counters and fast ropes','Use rope momentum, rotation or arm traps to create another standing entry'],
+  ['corner_whip','cn_shoulders',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['corner_whip','cn_forearm',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['corner_whip','cn_chops',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['corner_whip','cn_knee',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['corner_strikes','cn_mounted_punches',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['corner_strikes','cn_choke',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_shoulders','cn_chops',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_shoulders','cn_knee',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_chops','cn_mounted_punches',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_chops','cn_face_buckle',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_mounted_punches','cn_face_buckle',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_tree_of_woe','cn_cannonball',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_tree_of_woe','cn_knee',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_choke','cn_face_buckle',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_forearm','cn_clothesline',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_knee','cn_snapmare',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_hip_attack','cn_chops',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['cn_face_buckle','cn_chops',.72,'Corner sequences','Keep a trapped opponent in the corner until a move changes position'],
+  ['floor_brawl','os_floor_chop',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['floor_brawl','os_barricade',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['floor_brawl','os_post',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['floor_brawl','os_apron_knee',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['os_floor_chop','os_barricade',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['os_floor_chop','os_apron_forearm',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['os_barricade','os_post',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['os_barricade','os_steps',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['os_post','os_post_leg',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['os_apron_knee','os_apron_ddt',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['os_apron_forearm','os_apron_kick',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['os_steps','os_apron_slam',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['os_ropes_choke','os_count_tease',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['floor_regroup','os_count_tease',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['os_crowd_brawl','os_barricade',.72,'Ringside exchanges','Keep outside-ring control while moving between barricade, post and apron'],
+  ['sx_vertical','gd_elbow_drop',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['sx_vertical','gd_knee_drop',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['sx_german','gd_elbow_neck',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['sx_german','gd_headbutt',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['sx_fisherman','near_kickout',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['sx_northern','near_kickout',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['pw_body_slam','gd_leg_drop',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['pw_body_slam','gd_splash',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['pw_backbreaker','gd_lower_back_knee',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['pw_chokeslam','gd_splash',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['nk_ddt','gd_elbow_neck',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['nk_cutter','gd_elbow_drop',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['lc_hurricanrana','gd_stomp',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['lc_rana_pin','near_kickout',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['ar_frog','early_cover',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['ar_moonsault','early_cover',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['ar_senton','early_cover',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['ar_elbow_point','gd_arm_elbows',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['sb_cutter','gd_elbow_neck',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['rn_spear','early_cover',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['rn_lariat','gd_elbow_drop',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['gd_elbow_drop','early_cover',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['gd_splash','early_cover',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['gd_stomp','sm_single_crab',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['gd_elbow_neck','sm_dragon_sleeper',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
+  ['rs_cover_rest','early_cover',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response']
+ ].map(([from,to,weight,group,reason])=>Object.freeze({from,to,weight,group,reason})));
+ // O(1) authored handoff lookup: bias only the current named move -> next move.
+ const CHAIN_BY_PAIR=new Map(TECHNIQUE_CHAINS.map(link=>[link.from+'>'+link.to,link]));
+ const CHAIN_SCHOOL={
+  'Catch ties and throws':['catch','judo'],
+  'Arm control on the mat':['catch','judo'],
+  'Grounded leg and neck control':['catch','judo'],
+  'Short striking combinations':['boxing'],
+  'Power wrestling and lifted finishes':['strength'],
+  'Lucha, counters and fast ropes':['lucha','acrobatics'],
+  'Corner sequences':['strength','boxing'],
+  'Ringside exchanges':['boxing','strength'],
+  'After impact: grounded follow-throughs':[]
+ };
+ const TRAINED_TECHNIQUE_IDS=new Set([...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH,...TECHNIQUE_CHAINS].map(link=>link.to));
 
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
      reverse:!!opts.reverse,kind:opts.kind||'play',focus:opts.focus||0,crowd:opts.crowd||0,weight:opts.weight||1,styles:opts.styles||null,cost:opts.cost??null,lift:opts.lift??null,
@@ -1019,6 +1227,16 @@ const Graph=(function makeGraph(){
      throw Error('Phase 3 counter needs the intended move-specific reversal');
     add(link.from,link.to,link.weight);
    }
+   // Distinguish genuinely introduced Phase 9 edges from links that were
+   // already present and merely reweighted; capture BEFORE adding each link.
+   for(const link of TECHNIQUE_CHAINS){
+    const source=A[link.from],target=A[link.to];
+    if(!source||!target||source.zone!==target.requires)
+     throw Error('Curated impossible technique link: '+link.from+' -> '+link.to);
+    if(!source.next.some(([to])=>to===link.to))
+     introducedPhase9.add(link.from+'>'+link.to);
+    add(link.from,link.to,link.weight);
+   }
   // A few climbing hubs and a superplex route for the bigger spots.
   for(const src of ['corner_strikes','corner_whip','cn_chops','cn_mounted_punches','cn_face_buckle'])add(src,'top_follow',.9);
   A.top_follow.next=members.superplex.flatMap(id=>[e(id,1),e(id+'_rev',.5),...(A[id+'_blk']?[e(id+'_blk',.35)]:[])]);
@@ -1239,7 +1457,64 @@ const Graph=(function makeGraph(){
    if(p.position==='outside')say(M,fill(M,'{W} and {F} beat the referee’s count and slide back into the ring.'));
    else if(p.position==='top')say(M,fill(M,p.down==='w'?'{F} drops back down from the turnbuckle as the counter threat develops.':p.down==='f'?'{W} drops back down from the turnbuckle as the counter threat develops.':'The wrestler on the turnbuckle drops back down as the counter threat develops.'));
    else if(p.position==='corner')say(M,fill(M,'They separate in the corner and step out into open ring.'));
-   else if(p.position==='mat')say(M,fill(M,p.down==='w'?'{W} pushes back up off the mat as the next exchange begins.':p.down==='f'?'{F} pushes back up off the mat as the next exchange begins.':'Both wrestlers push back up off the mat as the next exchange begins.'));
+   else if(p.position==='mat'){
+    // An arc return is a narrated physical reset, not a new move. Rotate
+    // descriptions without changing control, down state or gameplay RNG.
+    g.matReturnCount=(g.matReturnCount||0)+1;
+    const stand=p.down==='w'?'W':p.down==='f'?'F':null;
+    const lines=stand?[
+     '{'+stand+'} pushes back up off the mat as the next exchange begins.',
+     '{'+stand+'} finds their footing and forces the fight back upright.',
+     '{'+stand+'} rolls to a knee, then rises to restart the exchange.',
+     '{'+stand+'} stands carefully after the previous exchange.'
+    ]:[
+     'Both wrestlers push back up off the mat as the next exchange begins.',
+     'They separate on the canvas and regain their feet.',
+     'Both competitors rise, measuring the distance between them.',
+     'The action returns to a standing exchange as they regroup.'
+    ];
+    say(M,fill(M,lines[(g.matReturnCount-1)%lines.length]));
+   }
+  }
+  // Rotate through context-appropriate arc commentary on repeated visits.
+  // Avoid an escalating match announcing the same pace change ten times.
+  const ARC_NARRATION_VARIANTS={
+   escalation:[
+    'The pace rises as both wrestlers start looking for their big attacks.',
+    '{W} and {F} increase the tempo. Neither wants to concede the next opening.',
+    'Both wrestlers commit more heavily to their attacks as the contest builds.',
+    'The counters are getting sharper now. Every attempted finish is being read.',
+    'They trade increasingly ambitious attacks without finding a clean finish.'
+   ],
+   exchange:[
+    'Both wrestlers scramble to their feet. The advantage is there to be taken.',
+    '{W} and {F} return to a standing exchange; neither has established control.',
+    'They circle and re-engage. A quick counter could settle the balance.',
+    'Both find their feet again and look for a reliable opening.'
+   ],
+   nearfall:[
+    'They know one mistake could settle this. Every cover now matters.',
+    'An escape from a pin attempt changes the momentum. Both wrestlers know it.',
+    'The next meaningful advantage could become a decisive cover.',
+    'The contest is close enough that neither wrestler dares leave a shoulder down.'
+   ],
+   finish_setup:[
+    '{W} and {F} dig deep. The finishing sequence is close.',
+    'Both wrestlers search for the opening that will allow the agreed finish.',
+    'The tempo tightens. One clean setup could end the match.'
+   ],
+   hope:[
+    '{W} starts to fight out of trouble. The crowd can sense an opening.',
+    '{W} finds a little space and begins to challenge {F} again.',
+    'The pressure on {W} loosens; a comeback becomes possible.'
+   ]
+  };
+  const alternatives=ARC_NARRATION_VARIANTS[id];
+  if(alternatives){
+   g.arcNarrationCounts??={};
+   const count=g.arcNarrationCounts[id]||0;
+   words=alternatives[count%alternatives.length];
+   g.arcNarrationCounts[id]=count+1;
   }
   if(words)say(M,fill(M,words),'story');
   if(arc.control==='w'||arc.control==='f'){
@@ -1294,6 +1569,9 @@ const Graph=(function makeGraph(){
     ['early_cover','cover','near_kickout','counter_rollup'].includes(nodeId)||
     n.lines.some(t=>pinText.test(t))))return false;
   if((nodeId==='cover'||nodeId==='near_kickout')&&M.t/M.len<.58)return false;
+  // Finish-threat action is not a feeling-out move. The promised finish
+  // itself is still controlled by the match contract, not this graph gate.
+  if((nodeId==='finish_tease'||nodeId==='finish_counter')&&M.t/M.len<.55)return false;
   // v3.3: big moves, roll-ups and finishing-grade spots belong to the right part of the match.
   if(n.after&&M.t/M.len<n.after)return false;
   // Agility moves (lucha, springboards, moonsaults, most dives) are not in a heavyweight's toolkit.
@@ -1322,6 +1600,48 @@ const Graph=(function makeGraph(){
   p.control=w?'w':'f';p.changes++;
   return {A:w?M.w:M.f,Df:w?M.f:M.w,side:w?'w':'f'};
  }
+ const ACTION_NARRATION_VARIANTS={
+  crowd_pose:[
+   '{A} pauses to draw a reaction. {D} stays alert instead of taking the bait.',
+   '{A} looks towards the front row, allowing {D} a moment to reset.',
+   '{A} takes a moment to showboat. {D} closes the distance carefully.'
+  ],
+  stand_reset:[
+   '{A} gives {D} space to get back to their feet. Both reset their footing.',
+   '{A} waits for {D} to stand, looking for the next opening.',
+   'The wrestlers regain a standing position. {A} re-establishes distance.'
+  ],
+  finish_tease:[
+   '{A} reaches for their finisher but {D} slips free before the hold is set.',
+   '{D} recognises the finishing setup and pulls away from {A}.',
+   '{A} signals for the decisive attack; {D} blocks the initial grip.'
+  ],
+  top_climb:[
+   '{A} heads to the turnbuckle after putting {D} down, but checks the distance first.',
+   '{A} climbs the ropes, watching whether {D} can recover.',
+   '{A} goes to the top rope while {D} tries to get clear.'
+  ],
+  springboard_rise:[
+   '{A} springs onto the ropes, gauging the distance to {D}.',
+   '{A} steadies on the ropes with {D} still on the canvas.',
+   '{A} prepares to launch from the second rope.'
+  ],
+  cheap_shot:[
+   '{A} takes an illegal shot while the referee is distracted; {D} is caught off guard.',
+   'The referee misses a quick strike from {A} as {D} tries to defend.',
+   '{A} sneaks in a cheap forearm on the break; {D} protests.'
+  ],
+  rope_rebound:[
+   '{A} sends {D} to the ropes and prepares to meet them on the rebound.',
+   '{D} runs the ropes under pressure from {A}.',
+   '{A} sets their feet as {D} rebounds off the far ropes.'
+  ],
+  catch_breath:[
+   '{A} backs away, conserving energy while {D} gets up.',
+   '{A} takes a moment at range to recover before engaging {D}.',
+   '{A} steadies their breathing; {D} cautiously waits for the next exchange.'
+  ]
+ };
  function apply(M,id){
   const n=A[id],p=Psy.get(M),g=get(M);
   const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';
@@ -1332,7 +1652,14 @@ const Graph=(function makeGraph(){
   // A reversal is performed by D; control flips only AFTER the narration.
   const victim=n.reverse?side:opp;
   const part=g.targets?.[victim]||p.target;
-  const variant=n.lines[Math.floor(M.r()*n.lines.length)];
+  const variants=ACTION_NARRATION_VARIANTS[id]?
+   [...n.lines,...ACTION_NARRATION_VARIANTS[id]]:n.lines;
+  const roll=Math.floor(M.r()*variants.length);
+  g.lastNarrationIndex??={};
+  const index=variants.length>1&&g.lastNarrationIndex[id]===roll?
+   (roll+1)%variants.length:roll;
+  g.lastNarrationIndex[id]=index;
+  const variant=variants[index];
   if(g.damage?.w>=3&&p.control==='w'&&['top_climb','rope_run','clothesline','snap_suplex'].includes(id)&&(!g.lastSell||M.t-g.lastSell>100)){
    const effect=g.targets.w==='left knee'?'hesitates on the damaged knee':g.targets.w==='lower back'?'winces and steadies the lower back':g.targets.w==='ribs'?'takes a painful breath and protects the ribs':'favouring the damaged shoulder';
    say(M,fill(M,'{W} '+effect+' before committing to the next move.'),'story');g.lastSell=M.t;
@@ -1551,6 +1878,13 @@ const Graph=(function makeGraph(){
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
   const entries=arc.entry.map(id=>[id,1]);
   const selected=[...from,...entries];
+  // Only an event actually performed by the current controller can seed an
+  // offensive continuation. Arc changes and special interruptions break it.
+  const previous=g.events[g.events.length-1];
+  const sameController=!!(previous&&previous.id===g.node&&previous.control===p.control);
+  const prior=g.events[g.events.length-2];
+  const inSequence=!!(sameController&&prior&&prior.control===p.control&&
+   CHAIN_BY_PAIR.has(prior.id+'>'+previous.id));
   const liveSide=p.control==='f'?M.f:M.w;
   const style=STYLE_BEATS[liveSide.style]||STYLE_BEATS.Story;
   if(p.position==='standing'&&arc.openers)
@@ -1573,6 +1907,19 @@ const Graph=(function makeGraph(){
    if(famList.includes('superplex'))selected.push(['corner_whip',.7]);
   }
   if(p.position==='corner'&&famList.includes('superplex'))selected.push(['top_follow',2.4]);
+  // A Spectacle wrestler who has reached the ropes should have an actual
+  // named aerial/springboard available, not only the generic launch node.
+  // isValid still rejects heavyweights, fatigue, early big spots and unsafe
+  // manoeuvres; safe plans retain their normal risk discount below.
+  if(p.position==='top'&&sameController&&
+     (g.node==='top_climb'||g.node==='springboard_rise')&&
+     (liveSide.style==='Spectacle'||M.planId==='spots')){
+   const family=g.node==='springboard_rise'?'springboard':'aerial';
+   for(const id of CAT.members[family]||[]){
+    if(A[id]?.family===family&&!A[id].counterOf&&!A[id].blockOf)
+     selected.push([id,liveSide.style==='Spectacle'?2.3:1.35]);
+   }
+  }
   // v3.5: an agents'-room sheet. The wrestler works towards the agreed move, or the setup it needs.
   const agreed=M.sheet?.v>=4&&root.OfficeRoom?root.OfficeRoom.wants(M,p.control==='f'?'f':'w',p.position)[0]:null;
   if(agreed)selected.push([agreed[0],1]);
@@ -1602,6 +1949,48 @@ const Graph=(function makeGraph(){
    if(g.texture==='underdog'&&['hope_elbows','hope_cutoff','counter_strike','mat_scramble'].includes(id))n*=1.4;
    if(g.texture==='fast'&&['duck_rebound','counter_strike','springboard_rise','clothesline'].includes(id))n*=1.3;
    if(g.events.slice(-4).some(x=>x.id===id))n*=.25;
+   // Repeated generic posing and finish threats drown out actual wrestling.
+   // Keep legal alternatives available, but strongly disfavor a second copy
+   // inside five simulated minutes. No forced arc or scripted result changes.
+   if((id==='crowd_pose'||id==='finish_tease')&&
+      g.events.some(x=>x.id===id&&M.t-x.t<300))n*=.12;
+   // Generic top-rope beats have large legacy preference weights. When a
+   // lightweight Spectacle worker has a legal named move available after
+   // a committed climb, reduce the generic fallback (never prohibit it).
+   // Safe plans still suppress high-risk named moves independently below.
+   if(sameController&&p.position==='top'&&liveSide.style==='Spectacle'&&
+      ((g.node==='top_climb'&&id==='aerial_attack')||
+       (g.node==='springboard_rise'&&id==='springboard_strike'))){
+    const family=g.node==='top_climb'?'aerial':'springboard';
+    if((CAT.members[family]||[]).some(moveId=>
+      A[moveId]?.family===family&&!A[moveId].counterOf&&!A[moveId].blockOf&&isValid(M,moveId)))
+      n*=.42;
+   }
+   // Phase 9: the same authored handoff is more likely when the performer
+   // recognises it from their training. Never alter physical availability,
+   // agreed finishes, move validity or the opponent's side of a reversal.
+   const chain=sameController&&CHAIN_BY_PAIR.get(g.node+'>'+id);
+   if(chain&&!A[id].reverse){
+    const school=root.OfficeTechniqueBackgrounds?.get?.(liveSide);
+    const aptitudes=CHAIN_SCHOOL[chain.group]||[];
+    const familiarity=Math.max(0,...aptitudes.map(tag=>school?.affinity?.[tag]||0));
+    const styles={
+     'Catch ties and throws':'Technical',
+     'Arm control on the mat':'Technical',
+     'Grounded leg and neck control':'Technical',
+     'Short striking combinations':'Brawl',
+     'Power wrestling and lifted finishes':'Brawl',
+     'Lucha, counters and fast ropes':'Spectacle',
+     'Corner sequences':'Brawl',
+     'Ringside exchanges':'Brawl'
+    };
+    const performanceMatch=styles[chain.group]===liveSide.style;
+    // Stronger (but bounded) follow-through preference competes with
+    // generic arc hubs. Consecutive legal same-wrestler beats gain slightly
+    // more momentum, without creating an uninterruptible scripted chain.
+    n*=(1+Math.min(.42,.30*familiarity+(performanceMatch?.12:0)))*
+       (2.6+(inSequence?.55:0));
+   }
    // Phase 4: individual technical schooling (NOT match style or career drills).
    // A move-specific counter belongs to the defending wrestler who performs it.
    // The background layer only affects already-reviewed live Phase 3 moves.
@@ -1766,7 +2155,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple};
 })();
 
 function create(o){
@@ -2036,8 +2425,12 @@ function tick(M){
  const target=Psy.get(M).control==='w'?52:Psy.get(M).control==='f'?-52:0;M.mom+=(target-M.mom)*.23+(M.r()*16-8);M.mom=clamp(M.mom,-100,100);
  // stamina
  const mode=M.mode?.type;
- const drain=.55*plan.drain*(mode==='pickup'?1.7:mode==='slow'?.3:1)*(1+w.fatigue/250)*(M.workingHurt?1.5:1);
- M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));M.fSt=clamp(M.fSt-.5*plan.drain+(mode==='slow'?1.2:0));
+ // A skilled, safe high-flyer can work a fast layout efficiently; an
+ // untrained wrestler still pays the full Spot-fest stamina cost.
+ const spotDrain=(worker)=>M.planId==='spots'?
+  clamp(plan.drain-Math.max(0,worker.ring+worker.safe-120)*.0032,1.11,plan.drain):plan.drain;
+ const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*(1+w.fatigue/250)*(M.workingHurt?1.5:1);
+ M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));M.fSt=clamp(M.fSt-.5*spotDrain(f)+(mode==='slow'?1.2:0));
  // quality of this ten seconds
  const sk=(w.ring*plan.w.ring+w.psych*plan.w.psych)*(.55+.45*M.wSt/100);
  const sf=(f.ring*plan.w.ring+f.psych*plan.w.psych)*(.55+.45*M.fSt/100);
@@ -2060,7 +2453,13 @@ function tick(M){
  // the injured wrestler can make things worse
  if(M.workingHurt&&M.r()<.04&&M.injury<4){M.injury++;say(M,`${w.short} winces again. That’s getting worse.`,'agent');}
  // spots
- const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*(M.offScript==='showboat'?1.5:1);
+ // When the active wrestler is spent, build recovery or a lower-risk graph
+ // exchange instead of repeatedly scheduling an impossible high spot.
+ const spotWorker=actors(M).A;
+ const spotSt=spotWorker===M.w?M.wSt:M.fSt;
+ const recoveryWeight=spotSt<28?0:spotSt<42?.4:1;
+ const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*
+  (M.offScript==='showboat'?1.5:1)*recoveryWeight;
  let spoke=aerialResolved||grappleResolved;
  if(!spoke&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
  else if(!spoke&&M.r()<spotP){Graph.special(M);spoke=true;}
@@ -2087,8 +2486,15 @@ function onPhase(M){
  if(M.leash==='script'&&ph.id!=='open'){
   M.scriptChecks++;
   if(M.r()*100<M.comply){M.scriptHits++;M.offScript=null;}
-  else{M.offScript=w.ego>=65?'showboat':'audible';
-   say(M,M.offScript==='showboat'?`${w.short} has gone off the layout, playing to the crowd instead of the plan.`:`${w.short} is calling audibles. This wasn’t the plan.`,'agent');}
+  else{
+   M.offScript=w.ego>=65?'showboat':'audible';
+   // Keep real layout disagreements in state, but make the agent report
+   // transitions or a genuinely new reminder, not 20 identical alerts.
+   if(M.lastOffScriptAnnounced!==M.offScript||M.t-(M.lastOffScriptAt??-9999)>=480){
+    say(M,M.offScript==='showboat'?`${w.short} has gone off the layout, playing to the crowd instead of the plan.`:`${w.short} is calling audibles. This wasn’t the plan.`,'agent');
+    M.lastOffScriptAnnounced=M.offScript;M.lastOffScriptAt=M.t;
+   }
+  }
  }
  if(ph.id==='heat'&&!M.offered.stiff&&M.f.ego>=68&&M.r()<(M.f.ego-55)/60){M.offered.stiff=1;decide(M,'stiff');return;}
  if(ph.id==='stretch'){
@@ -2147,7 +2553,15 @@ function spot(M,big,forced){
  const possible=moves.filter(x=>!(strengthGap>32&&/suplex|piledriver|backdrop|powerbomb/i.test(x)));
  const move=rnd(M,possible.length?possible:['a running dropkick']);
  if(st<28){
-  say(M,`${A.short} looks for a spectacular attack, but the tired legs will not cooperate. ${Df.short} gets a chance to recover.`,'agent',{who:'pbp'});
+  // Automatic risky attempts are gated in tick(); the producer can still
+  // demand a big spot, but not an endless identical failure/commentary loop.
+  M.lastExhaustedSpot??={};
+  const side=yours?'w':'f';
+  if(M.t-(M.lastExhaustedSpot[side]??-9999)>=160){
+   say(M,`${A.short} cannot get their footing for the spectacular attack. ${Df.short} has room to recover.`,'agent',{who:'pbp'});
+   M.lastExhaustedSpot[side]=M.t;
+  }
+  if(!M.mode||M.mode.type!=='slow')M.mode={type:'slow',ticks:3};
   lift(M,-(big?3:1));mark(M,'tired',yours);
   M.bonus-=big?6:2;
   return;

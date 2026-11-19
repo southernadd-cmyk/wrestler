@@ -103,6 +103,18 @@
           <div><h4>REPEATED SEQUENCES</h4><ol id="sequences" class="ranklist"></ol></div>
           <div><h4>FINISH ROUTES</h4><ol id="finishRoutes" class="ranklist"></ol></div>
         </div></details>
+        <section class="validation-results" aria-labelledby="validationTitle">
+          <div class="validation-heading"><div><span class="block-ref">PHASE 9 / AUTOMATED EVIDENCE</span><h4 id="validationTitle">Sequence quality checks</h4></div><strong id="validationState" aria-live="polite">Not run</strong></div>
+          <div class="validation-measures">
+            <div><span>Hard mechanical errors</span><strong id="validationErrors">—</strong></div>
+            <div><span>Different action sequences</span><strong id="validationUnique">—</strong></div>
+            <div><span>Observed authored pairs</span><strong id="validationPairs">—</strong></div>
+          </div>
+          <p class="validation-note">Mechanical errors are objective failures. Repetition and stylistic patterns are evidence for review, not automatic claims of realism.</p>
+          <p id="phase9Coverage" class="validation-note" aria-live="polite">Run a simulation to measure newly introduced connections and continuous sequences.</p>
+          <div id="validationFindings" class="validation-findings" aria-live="polite">Run a simulation to inspect specific issues, seeds and review signals.</div>
+          <details class="validation-details"><summary>Training and performance style breakdown</summary><div id="validationStyles">No simulation yet.</div></details>
+        </section>
         <button id="viewTape" type="button" class="tape-link">OPEN FIRST-BOUT TAPE <span aria-hidden="true">↗</span></button>
       </section>
     </div>
@@ -178,6 +190,7 @@
 <script src="../../assets/js/technique-backgrounds.js" defer></script>
 <script src="../../assets/js/match-engine.js" defer></script>
 <script src="core.js" defer></script>
+<script src="validation.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>
