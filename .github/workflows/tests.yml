@@ -2,6 +2,7 @@ name: Simulation tests
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -9,14 +10,56 @@ permissions:
   contents: read
 
 jobs:
+  classify:
+    name: Classify changed files
+    runs-on: ubuntu-24.04
+    outputs:
+      run_full: ${{ steps.paths.outputs.run_full }}
+    steps:
+      - name: Check out source and history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Decide whether gameplay tests are required
+        id: paths
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          # Fail safely: unknown refs, manual runs and non-documentation changes get full tests.
+          run_full=true
+          if [[ "$EVENT_NAME" != workflow_dispatch && "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$BASE_SHA" != 0000000000000000000000000000000000000000 ]]; then
+            mapfile -d '' changed < <(git diff --name-only --no-renames -z "$BASE_SHA" "$HEAD_SHA")
+            if (( ${#changed[@]} > 0 )); then
+              run_full=false
+              for path in "${changed[@]}"; do
+                case "$path" in
+                  *.md|*.mdx|docs/readme/*.svg|docs/readme/*.png)
+                    ;;
+                  *)
+                    run_full=true
+                    break
+                    ;;
+                esac
+              done
+            fi
+          fi
+          echo "run_full=$run_full" >> "$GITHUB_OUTPUT"
+          echo "Full gameplay and browser test suite: $run_full"
+
   tests:
     name: Regression suite (Node 22)
+    needs: classify
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - name: Check out source
         uses: actions/checkout@v4
       - name: Use Node.js 22
+        if: needs.classify.outputs.run_full == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -28,7 +71,11 @@ jobs:
         run: |
           python -m pip install --quiet pillow
           python tools/build_portraits.py --check
+      - name: Documentation-only check complete
+        if: needs.classify.outputs.run_full == 'false'
+        run: echo 'Portrait and README generation verified; gameplay suite not needed.'
       - name: Run all simulation tests
+        if: needs.classify.outputs.run_full == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -41,20 +88,28 @@ jobs:
 
   browser:
     name: Browser journeys (Chromium)
+    needs: classify
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
+      - name: Documentation-only change — browser tests not needed
+        if: needs.classify.outputs.run_full == 'false'
+        run: echo 'No game or browser code changed.'
       - name: Check out source
+        if: needs.classify.outputs.run_full == 'true'
         uses: actions/checkout@v4
       - name: Use Node.js 22
+        if: needs.classify.outputs.run_full == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Install isolated browser test tools (CI only)
+        if: needs.classify.outputs.run_full == 'true'
         run: |
           npm install --no-save --no-package-lock --ignore-scripts playwright@1.58.2
           npx playwright install --with-deps chromium
       - name: Exercise desktop, mobile and saved result-night journeys
+        if: needs.classify.outputs.run_full == 'true'
         shell: bash
         run: |
           set -euo pipefail
