@@ -36,6 +36,8 @@ try {
   const D = root.OfficeData, G = root.OfficeMatch.GRAPH;
   const all = lab.roster(D);
   const snapshot = lab.empty(G, config);
+  const aerial={attempts:0,landed:0,counter:0,block:0,aborted:0,interrupted:0,
+    unresolved:0,mismatched:0,byMove:{}};
   for (let i = 0; i < count; i++) {
     const options = { ...config, seed: seed + i * 37 };
     if (config.rotation === 'roster') {
@@ -45,8 +47,34 @@ try {
     }
     const match = lab.runMatch(root, lab.makeOptions(D, options));
     lab.add(snapshot, match, G);
+    const allAttempts=match.graph?.aerialAttempts||[];
+    if(match.graph?.pendingAerial)aerial.unresolved++;
+    const indexed=new Map((match.graph?.events||[])
+      .filter(e=>e.aerialAttemptSeq!==undefined).map(e=>[e.aerialAttemptSeq,e]));
+    for(const attempted of allAttempts){
+      aerial.attempts++;
+      const outcome=attempted.outcome||'unresolved';
+      if(!Object.hasOwn(aerial,outcome))aerial.mismatched++;
+      else aerial[outcome]++;
+      const counts=(aerial.byMove[attempted.id]??={attempts:0,landed:0,counter:0,block:0,aborted:0,interrupted:0});
+      counts.attempts++;
+      if(Object.hasOwn(counts,outcome))counts[outcome]++;
+      const action=indexed.get(attempted.seq);
+      if(['counter','landed','block'].includes(outcome)){
+        const expect=outcome==='counter'?attempted.id+'_rev':
+          outcome==='block'?attempted.id+'_blk':attempted.id;
+        if(!action||action.id!==expect||action.attemptedMove!==attempted.id||
+          action.aerialResolution!==outcome||attempted.actionId!==expect)
+          aerial.mismatched++;
+      }else if(action)aerial.mismatched++;
+    }
   }
+  if(aerial.unresolved||aerial.mismatched)
+    throw Error('Aerial attempt integrity failure: '+JSON.stringify(aerial));
   const report = lab.report(snapshot, G, { full: args.includes('--full') });
+  report.aerialAttemptStats={...aerial,byMove:Object.entries(aerial.byMove)
+    .sort((a,b)=>b[1].attempts-a[1].attempts||a[0].localeCompare(b[0]))
+    .map(([id,counts])=>({id,...counts}))};
   if (Array.isArray(G.TECHNIQUE_PILOT)) {
     // Counts only consecutive real match events matching authored graph links,
     // not generic arc jumps or theoretical legal options.
@@ -64,8 +92,8 @@ try {
       from, to, kind, hits: snapshot.edgeHits[from + '>' + to] || 0
     }));
   }
-  // These generated counters already exist: count actual executed reversal
-  // nodes without fabricating an attempted-air-move state or extra graph edge.
+  // Move-specific generated reversals now resolve a committed named aerial
+  // attempt. Count actual reversal nodes without double-counting attempts.
   if (root.OfficeTechniqueRegistry) {
     report.aerialCounterReviews = root.OfficeTechniqueRegistry.list()
       .filter(row => /^(?:ar_|sb_)/.test(row.id) && row.counterIds.length)
