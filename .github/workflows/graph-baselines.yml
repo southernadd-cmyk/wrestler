@@ -1,0 +1,52 @@
+name: Match graph baselines
+
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'assets/js/data.js'
+      - 'assets/js/roster-registry.js'
+      - 'tools/graph-baseline.cjs'
+      - 'tools/graph-baseline-suite.cjs'
+      - 'tools/graph-lab/core.js'
+      - 'tools/graph-lab/baselines/**'
+      - '.github/workflows/graph-baselines.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'assets/js/data.js'
+      - 'assets/js/roster-registry.js'
+      - 'tools/graph-baseline.cjs'
+      - 'tools/graph-baseline-suite.cjs'
+      - 'tools/graph-lab/core.js'
+      - 'tools/graph-lab/baselines/**'
+  schedule:
+    - cron: '17 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baselines:
+    name: Fixed-seed match baselines
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out match engine
+        uses: actions/checkout@v4
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Capture current results without modifying the reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/graph-baseline-suite.cjs capture > "$RUNNER_TEMP/graph-lab-current.json"
+      - name: Compare with frozen reference and publish summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/graph-baseline-suite.cjs compare "$RUNNER_TEMP/graph-lab-current.json" tools/graph-lab/baselines/reference-v1.json
