@@ -492,3 +492,13 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .save-warning b{color:#ffe68e}
 .save-warning .btn{margin-left:auto}
 @media (max-width:680px){.save-warning{top:48px;left:4px;right:4px;padding:8px;font-size:16px}}
+
+/* Phase 4 — evidence and failure visibility, without introducing a new visual theme. */
+.feud-last{display:block;margin-top:3px;color:var(--ink-2);font-size:14px}
+.well .feud-last{color:var(--dim)}
+.feud-detail{margin-top:5px;font-size:15px}
+.feud-detail summary{cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.feud-detail .cons{margin-top:6px}
+.system-alert{margin:14px 0;padding:9px 12px;border-left:4px solid var(--blood);background:var(--paper)}
+.system-alert .section-h{margin-bottom:6px}
+.system-alert .feud-last{color:var(--ink-2)}

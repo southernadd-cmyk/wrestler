@@ -239,7 +239,7 @@ function renderChrome(){
  const s=S(),need=G.pending().length,cards=s.card.length,unread=s.inbox.filter(m=>!m.read).length;
  $('#readouts').innerHTML=`<div class="ro"><small>Season ${s.season}</small><b>Week ${s.week} of 16</b></div><div class="ro"><small>Bank</small><b class="${s.cash<0?'neg':''}">${money(s.cash)}</b></div><div class="ro"><small>Reputation</small><b>${s.rep}</b></div><div class="ro"><small>Meetings left</small><b>${s.focus} of 2</b></div>`;
  $('#continue').innerHTML=need?`Continue<small>${need} ${plural(need,'reply','replies')} needed first</small>`:cards?`Match night<small>${cards} on the card</small>`:`Continue<small>To week ${s.week===16?1:s.week+1}</small>`;
- const badge={inbox:need?`<span class="badge">${need}</span>`:unread?`<span class="badge soft">${unread}</span>`:'',squad:`<span class="badge soft">${s.roster.length}/5</span>`,offers:s.offers.length?`<span class="badge soft">${s.offers.length}</span>`:'',fixtures:cards?`<span class="badge soft">${cards}</span>`:''};
+ const badge={inbox:need?`<span class="badge">${need}</span>`:unread?`<span class="badge soft">${unread}</span>`:'',squad:`<span class="badge soft">${s.roster.length}/5</span>`,offers:s.offers.length?`<span class="badge soft">${s.offers.length}</span>`:'',fixtures:cards?`<span class="badge soft">${cards}</span>`:'',game:s.systemErrors?.length?`<span class="badge">${s.systemErrors.length}</span>`:''};
  const cur=SECTION_OF[route.s]||route.s;
  const group=NAV.find(([,items])=>items.some(([id])=>id===cur))||NAV[0];
  $('#phoneTabs').innerHTML=NAV.map(([label,[[id]]])=>`<button class="phone-tab" data-go="${id}" ${group[0]===label?'aria-current="true"':''}>${label}${id==='desk'&&need?`<span class="phone-badge" aria-label="${need} awaiting reply">${need}</span>`:''}</button>`).join('');
@@ -275,6 +275,7 @@ function trialBlock(){
 }
 function trayItems(){
  const s=S(),out=[],need=G.pending();
+ const errors=G.systemErrors();if(errors.length)out.push({k:'urgent',ic:'!',t:errors.length+' system alert'+(errors.length===1?'':'s'),d:'A simulation extension reported an error. Export your career and review details in Save and load.',go:'game',b:'Review'});
  if(need.length)out.push({k:'urgent',ic:'!',t:`${need.length} ${plural(need.length,'message needs','messages need')} a reply`,d:'You can’t continue until you answer.',go:'inbox',b:'Read'});
  else{const u=s.inbox.filter(m=>!m.read).length;if(u)out.push({k:'',ic:'▸',t:`${u} unread ${plural(u,'message')}`,d:'Reports, results and news from the circuit.',go:'inbox',b:'Read'})}
  if(!s.roster.length)out.push({k:'urgent',ic:'!',t:'Nobody under contract',d:'Sign a headliner, or two cheaper wrestlers.',go:'scouting',b:'Free agents'});
@@ -665,7 +666,7 @@ function yourProgrammes(p){
  const v=window.OfficeProgrammes?.view(p.id);if(!v||!(v.live.length||v.done.length))return '';
  const line=x=>{const next=x.beats.find(b=>!b.done&&!b.missed),a=window.OfficeProgrammeArcs?.record(x.id)?.arc,last=a?.timeline?.at(-1);
   const chapters=a?.timeline?.length?`<details class="arc-history"><summary>Read ${a.timeline.length} chapter${a.timeline.length===1?'':'s'}</summary><ol>${a.timeline.slice().sort((u,v)=>u.step-v.step).map(e=>`<li><b>${esc(e.chapter||'Chapter '+(e.step+1))}</b> · ${esc(e.recap)}${e.claim==='broken'?'<small class="bad">Claim not delivered</small>':e.claim==='kept'?'<small class="good">Claim backed up</small>':''}</li>`).join('')}</ol></details>`:'';
-  return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}${a?`<small class="arc-recap">${esc(a.conclusion||window.OfficeProgrammeArcs.band(a.momentum))}${last?' · '+esc(last.recap):''}</small>`:''}${chapters}</li>`;};
+  return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> <span class="tag">${esc(x.status||"live")}</span> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}${a?`<small class="arc-recap">Momentum ${Math.round(a.momentum)} · ${esc(a.conclusion||window.OfficeProgrammeArcs.band(a.momentum))}${last?' · '+esc(last.recap):''}</small>`:''}${chapters}</li>`;};
  return `<h3 class="section-h">Your programmes here</h3><ul class="cons">${[...v.live,...v.done.slice(0,3)].map(line).join('')}</ul>`;
 }
 function renderSheets(){
@@ -687,18 +688,39 @@ function renderSheets(){
  const lobby=pushing.length?`<ul class="cons">${pushing.map(l=>`<li><b>${esc(l.manager)}</b> (${esc(l.team)}) is pushing <b>${esc(l.name)}</b>${l.want?` · wants ${esc(l.want.toLowerCase())}`:''}</li>`).join('')}</ul>`:'<p class="dim">No manager is working this booker this week.</p>';
  paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">On the board</h3>${live}${yourProgrammes(p)}<h3 class="section-h">Managers in the booker’s ear</h3>${lobby}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">Bookers plan the circuit’s matches around these storylines and choose who wins to serve them. They do not always stick to the plan.</p>`,{keep:'sheets',note:esc(p.name)}));
 }
+
+function rivalrySnapshot(f){
+ const p=window.OfficeRivalry?.profile?.(f.wid,f.rid);
+ if(!p||!p.meetings)return {record:'No recorded matches',last:'No previous match',relations:'',issues:[]};
+ const r=p.record||{},draw=Math.max(0,(r.meetings||0)-(r.w||0)-(r.f||0));
+ const record=`${r.w||0} W · ${r.f||0} L${draw?' · '+draw+' no decision':''}`;
+ const m=p.last;
+ let last='No previous match';
+ if(m){
+  const result=m.outcome==='nc'?'No contest':m.outcome==='dq'?(m.winner==='w'?'Opponent disqualified':'Your wrestler disqualified'):
+   m.outcome==='double'?'Agreed finish broken':m.winner==='w'?'Your wrestler won':m.winner==='f'?'Opponent won':'No decision';
+  last=result+(Number.isFinite(m.abs)&&m.abs>0?' · '+weekLabel(m.abs):'');
+ }
+ const relations=p.stance?'Your wrestler: '+p.stance.w+'; opponent: '+p.stance.f:'';
+ const issues=(p.open||[]).filter(x=>x.text).slice(0,2).map(x=>x.text);
+ return {record,last,relations,issues};
+}
+function rivalryContext(v){
+ const lines=[v.relations,...v.issues].filter(Boolean);
+ return lines.length?`<details class="feud-detail"><summary>Backstage context</summary><ul class="cons">${lines.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></details>`:'';
+}
 function renderRivalries(){
  const s=S(),feuds=Object.values(s.feuds).filter(f=>f.heat>0||f.closed).sort((a,b)=>b.heat-a.heat);
  const info=feuds.map(f=>{
   const w=G.W(f.wid)||D.TALENT.find(x=>x.id===f.wid);
   const ready=f.heat>=70&&f.matches>=2&&!f.closed;
-  return {...f,matchup:(w?.name||'Former wrestler')+' v '+(G.F(f.rid)?.name||f.rid),ready,
+  return {...f,evidence:rivalrySnapshot(f),matchup:(w?.name||'Former wrestler')+' v '+(G.F(f.rid)?.name||f.rid),ready,
    state:f.closed?'Finished':ready?'Ready for the blow-off':'Building',angle:f.angle||'The score will be settled in the ring.'};
  });
- const rows=info.map(f=>`<tr><td><b>${esc(f.matchup)}</b></td><td>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</td><td class="n">${f.matches}</td><td class="n">${f.segments||0}</td><td><span class="${f.ready?'good':''}">${esc(f.state)}</span></td><td class="wrap">${esc(f.angle)}</td></tr>`).join('');
- const cards=info.map(f=>`<article class="phone-card"><b>${esc(f.matchup)}</b><span class="phone-card-line"><span>Heat ${f.heat}</span><small>${esc(f.state)}</small></span><small>${f.matches} matches · ${f.segments||0} promos</small><span>${esc(f.angle)}</span></article>`).join('');
+ const rows=info.map(f=>`<tr><td><b>${esc(f.matchup)}</b></td><td>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</td><td class="wrap"><b>${esc(f.evidence.record)}</b><small class="feud-last">${esc(f.evidence.last)}</small></td><td class="n">${f.segments||0}</td><td><span class="${f.ready?'good':''}">${esc(f.state)}</span></td><td class="wrap">${esc(f.angle)}${rivalryContext(f.evidence)}</td></tr>`).join('');
+ const cards=info.map(f=>`<article class="phone-card"><b>${esc(f.matchup)}</b><span class="phone-card-line"><span>Heat ${f.heat}</span><small>${esc(f.state)}</small></span><small>${esc(f.evidence.record)} · ${f.segments||0} promos</small><small class="feud-last">${esc(f.evidence.last)}</small><span>${esc(f.angle)}</span>${rivalryContext(f.evidence)}</article>`).join('');
  const intro='Every wrestler gets microphone time before their match. Your promo approach affects the crowd, their personal rivalry and potential rematch interest. Heat cools between appearances; build it towards the blow-off.';
- const table=info.length?`<div class="well"><table class="grid"><thead><tr><th>Rivalry</th><th>Heat</th><th class="n">Matches</th><th class="n">Promos</th><th>Status</th><th>Latest angle</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">No rivalries yet. Book a match to begin a storyline, then choose a microphone approach before the bell.</div>';
+ const table=info.length?`<div class="well"><table class="grid"><thead><tr><th>Rivalry</th><th>Heat</th><th>Head to head</th><th class="n">Promos</th><th>Status</th><th>Latest angle</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">No rivalries yet. Book a match to begin a storyline, then choose a microphone approach before the bell.</div>';
  paint('s-full',win('Rivalries',`<p class="lede">${esc(intro)}</p>${phoneList(table,cards)}`,{keep:'feuds'}));
 }
 function renderResults(){
@@ -709,8 +731,12 @@ function renderResults(){
 }
 function renderGame(){
  const saved=G.saveStatus(),status=saved.ok===false?'Save FAILED — recent changes are not stored. Export your career immediately.':saved.ok===true?'Last saved successfully in this session at '+new Date(saved.lastSaved).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'.':'No save confirmation this session.';
+ const diagnostics=G.systemErrors().slice().reverse();
+ const diagnostic=diagnostics.length?`<section class="system-alert" role="status"><h3 class="section-h">System alerts (${diagnostics.length})</h3>
+  <p>A simulation extension reported a problem. Export your career before continuing and include these details in a bug report.</p>
+  <ul class="cons">${diagnostics.map(e=>`<li><b>${esc(e.source)}</b> · S${e.season} W${e.week}${e.count>1?' (repeated '+e.count+' times)':''}<small class="feud-last">${esc(e.message)}</small></li>`).join('')}</ul></section>`:'';
  paint('s-split even',
-  win('Save and load',`<p class="lede">Your career saves automatically in this browser after every action. Export a save file to move it to another device or browser.</p><p class="${saved.ok===false?'bad':'dim'}" role="status">${esc(status)}</p><div class="row"><button class="btn" data-act="export">Export save</button><button class="btn" data-act="import">Import save</button></div><h3 class="section-h" style="margin-top:20px">Start over</h3><p class="dim">Overwrites the current career.</p><button class="btn red" data-act="newgame">Start a new career</button>`)+
+  win('Save and load',`<p class="lede">Your career saves automatically in this browser after every action. Export a save file to move it to another device or browser.</p><p class="${saved.ok===false?'bad':'dim'}" role="status">${esc(status)}</p><div class="row"><button class="btn" data-act="export">Export save</button><button class="btn" data-act="import">Import save</button></div>${diagnostic}<h3 class="section-h" style="margin-top:20px">Start over</h3><p class="dim">Overwrites the current career.</p><button class="btn red" data-act="newgame">Start a new career</button>`)+
   win('How a week works',`<ol style="margin:0;padding-left:1.3em;display:grid;gap:8px"><li>Read the inbox. Some messages need a decision before you can continue.</li><li>Set training for each wrestler. Rest anyone who is tired.</li><li>Book wrestlers onto offers. Promoters set the finish; negotiate the fee, billing or a protected loss using a management meeting.</li><li>Press Continue. Choose the match plan and your wrestler’s promo approach, hear both wrestlers speak, then work the match with up to three calls from ringside.</li><li>Wages and costs are paid, and the next week’s offers arrive.</li></ol><p class="dim" style="margin-top:12px">At ringside, Space pauses and keys 1 to 6 make calls.</p>`,{h:'h3'})
  );
 }
