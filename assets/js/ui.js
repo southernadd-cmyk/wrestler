@@ -882,15 +882,30 @@ function afterPicker(c,w,f){
  }).join('')}</div></section>`;
 }
 function afterNext(){const more=night.i<night.queue.length;return `<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to office'}</button>`}
+
+function shortMicLabel(o){
+ const labels={gloat:'Gloat',credit:'Show respect',concede:'Accept defeat',excuse:'Blame the finish',
+  rematch:'Ask for rematch','demand:title':'Demand title shot','demand:slot':'Demand better billing',walk:'Leave the ring'};
+ return labels[o.id]||o.label;
+}
+function afterMicCards(options){
+ return `<div class="post-mic-picks" role="group" aria-label="Post-match microphone choices">${options.map(o=>{
+  const hint=String(o.hint||'').split(/(?<=[.!?])\s/)[0];
+  return `<button class="decision-option post-mic-choice" data-aftermic="${esc(o.id)}" title="${esc(o.hint)}"><b>${esc(shortMicLabel(o))}</b><span>${esc(hint)}</span></button>`;
+ }).join('')}</div>`;
+}
 function showAfter(){
  const st=night.after;if(!st)return night.i<night.queue.length?prep():endNight();
  const w=G.W(st.c.wid)||D.findWrestler(st.c.wid),f=G.F(st.c.rid)||D.findWrestler(st.c.rid),p=G.P(st.c.pid);
  const v=OfficeAfter.view(st);night.stage='after';
  const entries=v.log.map(e=>({who:e.who,side:e.side==='stage'?'c':e.side,text:e.text}));
- const cons=v.cons.length?`<h3 class="section-h">What it did</h3><ul class="cons">${v.cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`:'';
- const decide=v.stage==='mic'?`<div class="decide2"><h3 class="section-h">${esc(v.title)}</h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'aftermic')}</div>`:'';
+ const cons=v.cons.length?`<section class="after-consequences" aria-labelledby="after-effects-title"><h3 class="section-h" id="after-effects-title">Consequences</h3><ul class="cons">${v.cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul></section>`:'';
+ const decide=v.stage==='mic'?
+  `<div class="decide2 after-decide"><h3 class="section-h">The microphone</h3><p class="lede">${esc(v.ask)}</p>${afterMicCards(v.options)}${cons}</div>`:
+  `<div class="decide2 after-decide"><h3 class="section-h">Post-match fallout</h3>${cons||'<p class="dim">The scene is finished.</p>'}</div>`;
  const middle=`<b class="fin">${esc(v.plan==='none'?'Straight to the microphone':v.planLabel)}</b><span>${esc(p?.venue||'')}</span>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p?.name||'')}: after the bell</b><span>${esc(w?.name||'')} v ${esc(f?.name||'')}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-back">${win('After the bell',matchupBar({},w,f,middle)+sceneLog(entries,'afterTalk',w,f,p?.id)+decide+cons,{h:'h3',body:'tight'})}</div><div class="tv-foot"><span class="dim">${esc(v.stage==='mic'?'The microphone is live.':'The crowd starts filing out.')}</span>${v.stage==='mic'?'':afterNext()}</div>`;
+ const body=matchupBar({},w,f,middle)+matchSceneLayout(sceneLog(entries,'afterTalk',w,f,p?.id),decide,'after-layout');
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p?.name||'')}: after the bell</b><span>${esc(w?.name||'')} v ${esc(f?.name||'')}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-back">${win('After the bell',body,{h:'h3',body:'tight'})}</div><div class="tv-foot"><span class="dim">${esc(v.stage==='mic'?'Choose what your wrestler says.':'Post-match scene complete.')}</span>${v.stage==='mic'?'':afterNext()}</div>`;
  scrollTalk('afterTalk');persistNight();
 }
 
@@ -1145,7 +1160,7 @@ function result(){
   ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p>'+(finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+'<div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title.charAt(0).toUpperCase()+b.title.slice(1))+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span></li>').join('')+'</ol></div>':'';
  const story=flowReport(fin,w,f);
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the layout</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What happened',`${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.afterReady?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Skip after the bell · next match':'Skip after the bell · office'}</button><button class="btn go" data-tv="after" title="Play the post-bell angle and microphone">Play after the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What happened',`${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.afterReady?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}" title="Continue without the optional post-match scene">${more?'Next match':'Finish show'}</button><button class="btn go" data-tv="after" title="Play the planned post-match scene and microphone">After the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to office'}</button>`}</div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';night.resultHTML=$('#tv').innerHTML;persistNight();
 }
 function syncAfterEvidence(){
