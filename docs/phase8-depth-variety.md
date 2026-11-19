@@ -1,6 +1,8 @@
 # Phase 8 — technique identity for all wrestlers, depth-and-variety pilot
 
-**Draft implementation only. This PR targets Phase 7 and is not merged into main.**
+> **v0.4 release status:** Phase 8 subsequently **merged via PR #104**; all 80 wrestlers now have technical identities, 40 provisional. See the [current release](v0.4-release.md) and [next technique/realism review](technique-and-realism-review.md). Original experiment data and reference counts are retained.
+
+**Original branch status, since superseded:** Phase 8 was developed on the Phase 7 branch and subsequently merged via PR #104.
 
 ## The two identities are not interchangeable
 
@@ -69,4 +71,4 @@ The first controlled Phase 8 pilot adds **14 curated same-position graph follow-
 - Full simulated match suite, pre-expansion fixed-seed baseline, repeated rivalries, career/save replay and desktop/mobile browser journeys must pass.
 - Green tests prove integrity, not necessarily more interesting matches. Inspect actual seeded transcripts and variety metrics before merging.
 
-**Dependency:** Phase 7 PR #103 supplies the grapple-attempt engine; this draft Phase 8 PR layers on top of that branch.
+**Historical dependency, satisfied:** Phase 7 PR #103 supplied the grapple-attempt engine; the final Phase 8 release was merged as PR #104.

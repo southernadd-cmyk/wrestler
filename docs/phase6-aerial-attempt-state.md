@@ -1,5 +1,7 @@
 # Phase 6 — specific aerial-attempt state and move-linked resolutions
 
+> **v0.4 status:** Completed aerial attempt release. This was a first causal attempt-state implementation; v0.4 retains it alongside the selected four-grapple pilot. See [v0.4 release](v0.4-release.md) and [technique and physical realism review](technique-and-realism-review.md). Historical figures and original phase wording below are retained for traceability.
+
 **Implemented in the live match engine**, not as editorial metadata or a new button in the Graph Lab. This phase follows [Phase 5b's aerial-counter review](phase5b-ground-strike-aerial-review.md).
 
 ## Why it changed

@@ -1,5 +1,7 @@
 # The Office — Phase 3: small live technique-transition pilot
 
+> **v0.4 status:** Completed Phase 3 eleven-link pilot. Its 969-node graph snapshot predates the Phase 10 increase to 979; no old measurements have been rewritten. See [v0.4 release](v0.4-release.md) and [technique and physical realism review](technique-and-realism-review.md). Historical figures and original phase wording below are retained for traceability.
+
 **Status:** eleven hand-picked transitions integrated with the real match graph, against the [Phase 2 curated proposals](phase2-technique-registry.md). This is not a full rework of the wrestling mechanics engine. The [frozen 1,200-match reference](../tools/graph-lab/baselines/reference-v1.json) remains unchanged.
 
 ## Engineering rule

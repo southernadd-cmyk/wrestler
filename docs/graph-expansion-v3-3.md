@@ -1,5 +1,7 @@
 # The Office v0.3.3 — ten times the graph, still realistic and deterministic
 
+> **v0.4 status:** Historical v0.3.3 graph expansion and its then-current measurements; current graph totals are 979 nodes and 6,401 links. See the [current v0.4 release](v0.4-release.md) and [technique/realism review](technique-and-realism-review.md). Original snapshots, counts and period-specific claims below remain historical.
+
 v0.3.3 grows the match and promo graphs by an order of magnitude without making the
 simulation less believable or less reproducible.
 

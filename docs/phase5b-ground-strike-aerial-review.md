@@ -1,5 +1,7 @@
 # Phase 5b — second technique audit: submissions, strikes and aerial counters
 
+> **v0.4 release status:** Phase 5b's 90 reviewed moves were measured against 336 original moves; **v0.4 has 90 of 340**, leaving 250 without full metadata. See the [current release](v0.4-release.md) and [next technique/realism review](technique-and-realism-review.md). Original experiment data and reference counts are retained.
+
 **Update:** [Phase 6](phase6-aerial-attempt-state.md) subsequently implemented a serialised, named attempted-aerial-move state. The no-attempt-state limitation below describes how Phase 5b worked *before* that change.
 
 This is a **follow-on** to [Phase 5's first 80-worker audit](phase5-training-identity-expansion.md). The Office retains its four performance styles, the original school assignments and all career save fields.

@@ -1,5 +1,7 @@
 # The Office — causal match graph (v0.2.7)
 
+> **v0.4 status:** Historical v0.2.7 story/action/outcome graph, not the current v0.4 engine. Its 59-node and 172-link examples are deliberately retained as the original design. See the [current v0.4 release](v0.4-release.md) and [technique/realism review](technique-and-realism-review.md). Original snapshots, counts and period-specific claims below remain historical.
+
 This is a **wrestling-psychology simulation model**, not a recreation of actual matches, a licensed move library, or a machine-learning model trained on wrestling footage. The original node sequences are informed by documented match breakdowns and wrestler interviews, with the finish still governed by the player's contract and permitted mid-match choices.
 
 ## Architecture

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.3.26" width="100%">
+  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.4.0" width="100%">
 </p>
 
-<p align="center"><strong>ISSUE v0.3.26</strong> &nbsp; • &nbsp; 18 NOVEMBER 2026 &nbsp; • &nbsp; THE WHOLE SHOW EDITION</p>
+<p align="center"><strong>ISSUE v0.4.0</strong> &nbsp; • &nbsp; 19 NOVEMBER 2026 &nbsp; • &nbsp; THE WRESTLING KNOWS ITS WAY AROUND EDITION</p>
 
 <p align="center">
   <strong><a href="https://southernadd-cmyk.github.io/wrestler/">ENTER THE OFFICE — PLAY THE GAME</a></strong>
@@ -11,6 +11,18 @@
 </p>
 
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
+
+## THE WRESTLING KNOWS ITS WAY AROUND
+
+*An expanded ringside report for v0.4.0*
+
+The matches are still booked. **The work between the bells has become more deliberate.** Every one of the 80 wrestlers has their own technical tendency — catch, judo, lucha, boxing, strength, acrobatics or a careful blend — alongside their existing on-screen performance style. Forty tendencies are explicitly provisional gameplay characterisations, **not** newly invented biographies. Weekly training and Dennis's one-match rehearsals are separate again.
+
+The live action graph has **979 action nodes, 6,401 directed connections and 340 authored moves**. Real, compatible follow-throughs, ring position and fatigue guide the match; **twelve scripted high spots** now have their own recorded graph identities. The planned clock governs the finishing stretch. Match ratings take account of actual connected sequences and meaningful comebacks, not merely spectacular move names.
+
+There is still work on the mat. The detailed technique registry covers **90 of 340 moves**. The other 250 already work; their grips, setup relationships and counter semantics are waiting for editorial review, not for somebody to invent them. The next investigation is about those mechanics and better physical continuity.
+
+[**What shipped in v0.4**](docs/v0.4-release.md) · [**Inside Graph Lab**](docs/graph-lab.md) · [**Next technique and realism review**](docs/technique-and-realism-review.md) · [**Documentation index**](docs/README.md)
 
 <p align="center"><img src="docs/readme/01-lead-story.svg" alt="THE MAIN EVENT — THE BOOKERS HAVE PLANS" width="100%"></p>
 
@@ -385,7 +397,7 @@ The report compares the signed board with the match, starting with the strip as 
 
 The browser saves your career automatically, including backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.3.26. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). Every wrestler’s ambition is worked out the first time an older career is opened, and the bookers, rival managers and promotions’ books start from the next week played. Older signed programmes begin recording their creative chapters from the match you are up to; the game does not invent earlier chapters. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
+Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.4.0. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). Every wrestler’s ambition is worked out the first time an older career is opened, and the bookers, rival managers and promotions’ books start from the next week played. Older signed programmes begin recording their creative chapters from the match you are up to; the game does not invent earlier chapters. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
 
 To play locally, download the **whole repository** and open `index.html` in a modern browser. Keep the `assets/` directory alongside it: the page loads the JavaScript, CSS and portrait atlas as separate files. The simulation still runs in the browser, with no installer or build step. Google Fonts load when available, with system fallbacks.
 
@@ -397,13 +409,16 @@ To play locally, download the **whole repository** and open `index.html` in a mo
 
 | What’s in the match layout | Current count |
 | --- | ---: |
-| In-ring actions and events (nodes) | 969 |
-| Links between actions and events (transitions) | 6,152 |
+| In-ring actions and events (nodes) | 979 |
+| Links between actions and events (transitions) | 6,401 |
 | Match story arcs | 25 |
 | Routes across the six booked finishes | 26 |
 | Negotiable match stipulations | 4 |
 | Directions for each programme chapter | 3 |
-| Authored moves and move families | 336 / 20 |
+| Authored moves and move families | 340 / 20 |
+| Reviewed technique records (of authored moves) | 90 / 340 |
+| Wrestlers with technical identities (provisional) | 80 (40) |
+| Named scripted high spots mapped to graph actions | 12 |
 | Promo graph angles and situational variants | 21 / 183 |
 | Backstage situations and follow-ups | 36 / 11 |
 | Kinds of rivalry argument, and ways to answer each | 20 / 5 |
@@ -491,6 +506,7 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
+| **v0.4.0** | The wrestling knows its way around edition. Every wrestler has an independent technical background; curated, physically legal chains and twelve named scripted spots join the live match graph. Match construction, narration and the match clock now agree about the action. [Release guide](docs/v0.4-release.md) · [What's left to review](docs/technique-and-realism-review.md). |
 | **v0.3.26** | The whole show edition. Each title chase, grudge and rising-star programme becomes a series of playable chapters: steady, needle or gamble, with a record of what came off and what the next meeting remembers. The final piece of the expanded match-planning and promo work. [Inside the engine](docs/architecture.md#v0326-additions--programme-arcs). |
 | **v0.3.25** | A better talker in your stable can take the microphone for a wrestler who needs help. The words are theirs, the promises still belong to the wrestler, and the heat and credit are shared afterwards. |
 | **v0.3.24** | Demands made after the bell can win a title shot or a better spot. Important matches get a three-round contract signing, which can end in a handshake or a table-flipping brawl. |

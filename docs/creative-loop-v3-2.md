@@ -1,5 +1,7 @@
 # The Office v0.3.2 — Creative meetings and public stakes
 
+> **v0.4 status:** Historical v0.3.2 creative-loop planning and first implementation; rivalry memory, promo arguments and match construction evolved further by v0.4. See the [current v0.4 release](v0.4-release.md) and [technique/realism review](technique-and-realism-review.md). Original snapshots, counts and period-specific claims below remain historical.
+
 **Product question:** can a player explain what was agreed in the meeting,
 what was asserted at the microphone, and what actually happened in the ring?
 

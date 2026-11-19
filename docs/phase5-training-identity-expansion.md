@@ -1,5 +1,7 @@
 # Phase 5 — training identity and technique breadth (first controlled expansion)
 
+> **v0.4 status:** Completed initial 60-record expansion. Subsequent Phase 5b extended the curated registry to 90 and Phase 10 increased the executable move count to 340. See [v0.4 release](v0.4-release.md) and [technique and physical realism review](technique-and-realism-review.md). Historical figures and original phase wording below are retained for traceability.
+
 ## Purpose
 
 The original four *performance styles* (Story / Technical / Brawl / Spectacle) still govern match presentation. A separate *training background* guides how the wrestler prefers to execute a small set of reviewed mechanics. Neither identity overrides the body's physical restrictions, the card agreement, or the contractually booked finish.
