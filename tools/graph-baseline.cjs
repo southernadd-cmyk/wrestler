@@ -54,6 +54,11 @@ try {
       from, to, kind, hits: snapshot.edgeHits[from + '>' + to] || 0
     }));
   }
+  if (Array.isArray(G.TECHNIQUE_EXPANSION)) {
+    report.phase5Transitions = G.TECHNIQUE_EXPANSION.map(({from,to,kind}) => ({
+      from, to, kind, hits: snapshot.edgeHits[from + '>' + to] || 0
+    }));
+  }
   process.stdout.write(JSON.stringify(report, null, 2) + '\n');
 } catch (error) {
   process.stderr.write('Graph baseline failed: ' + error.message + '\n');
