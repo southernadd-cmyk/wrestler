@@ -42,12 +42,13 @@ assert.equal(result.bouts,200);
 assert.ok(result.distinctMatchSequences>=160,'bouts need genuinely different action sequences');
 const active=links.filter(x=>(snap.edgeHits[x.from+'>'+x.to]||0)>0);
 const observed=active.reduce((sum,x)=>sum+(snap.edgeHits[x.from+'>'+x.to]||0),0);
-assert.ok(active.length>0,'at least some new/strengthened chains must be seen in actual bouts');
-assert.ok(observed>0);
+assert.ok(active.length>=40,'at least forty distinct authored chains must be observed in 200 real bouts');
+assert.ok(observed>=70,'authored chains must actually occur, not merely be reachable in theory');
 const byGroup=Object.entries(Object.groupBy(links,x=>x.group)).map(([group,ls])=>({
  group,candidates:ls.length,observedLinks:ls.filter(l=>snap.edgeHits[l.from+'>'+l.to]).length,
  hits:ls.reduce((n,l)=>n+(snap.edgeHits[l.from+'>'+l.to]||0),0)
 }));
+assert.ok(byGroup.filter(x=>x.hits>0).length>=8,'the expansion must be observed in at least eight of nine contexts');
 console.log('PASS Phase 9: 191 reviewed links, 144 new edges, 9 contexts; 200 real bouts, '+
  observed+' authored-chain transitions observed across '+active.length+
  ' distinct links; '+result.distinctMatchSequences+' unique match sequences; '+
