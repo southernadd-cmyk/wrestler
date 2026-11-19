@@ -14,7 +14,7 @@ for (const name of ['data.js', 'roster-registry.js', 'match-engine.js']) {
 root.OfficeRosterV4.enableProfiles();
 const D = root.OfficeData, M = root.OfficeMatch, G = M.GRAPH;
 const info = core.inspect(G, D);
-assert.deepEqual(info.stats.errors, [], 'graph validates');
+assert.equal(info.stats.errors.length, 0, 'graph validates');
 assert.equal(info.unreachable.length, 0, 'lab reachability matches the catalogue');
 assert.ok(info.stats.nodes >= 960 && info.stats.edges > 3000);
 assert.equal(core.roster(D).length, 80, 'all cast members available in the lab');
