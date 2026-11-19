@@ -290,7 +290,7 @@ const Graph=(function makeGraph(){
   ['ch_dragon_screw','sm_figure_four',1.35,'setup','Catch: targeted leg twist to leglock'],
   ['rope_run','lc_hurricanrana',1.3,'setup','Lucha: rana as opponent rebounds'],
   ['lc_hurricanrana','early_cover',1.35,'followup','Lucha: brief nearfall after the throw'],
-  ['ankle_pick','ch_single_leg_rev',.95,'counter','Catch: sprawl defeats a single-leg attempt']
+  ['lockup','ch_single_leg_rev',.95,'counter','Catch: sprawl turns aside a single-leg shot from the tie-up']
  ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
 
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
