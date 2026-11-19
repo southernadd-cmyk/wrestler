@@ -331,7 +331,24 @@ const Graph=(function makeGraph(){
   ['top_climb','ar_frog',.85,'setup','Lucha: settled top-rope launch into frog splash'],
   ['springboard_rise','sb_cutter',.7,'setup','Lucha and acrobatics: stable springboard into a cutter']
  ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
- const TRAINED_TECHNIQUE_IDS=new Set([...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2].map(link=>link.to));
+ // Phase 8: grounded limb control and short striking follow-throughs.
+ const TECHNIQUE_DEPTH=Object.freeze([
+  ['gd_arm_elbows','sm_armbar',.65,'followup','Curated position-compatible technique continuation'],
+  ['gd_arm_elbows','sm_keylock',.65,'followup','Curated position-compatible technique continuation'],
+  ['gd_knee_stomp','sm_single_crab',.65,'followup','Curated position-compatible technique continuation'],
+  ['gd_knee_stomp','sm_kneebar',.65,'followup','Curated position-compatible technique continuation'],
+  ['gd_dragon_screw_ground','sm_ankle_lock',.65,'followup','Curated position-compatible technique continuation'],
+  ['sm_fujiwara','sm_keylock',.65,'followup','Curated position-compatible technique continuation'],
+  ['sm_short_arm_scissors','sm_armbar',.65,'followup','Curated position-compatible technique continuation'],
+  ['sm_heel_hook','sm_ankle_lock',.65,'followup','Curated position-compatible technique continuation'],
+  ['sm_armbar','sm_cross_armbreaker',.65,'followup','Curated position-compatible technique continuation'],
+  ['st_chop','st_forearm',.65,'followup','Curated position-compatible technique continuation'],
+  ['st_uppercut','st_kneelift',.65,'followup','Curated position-compatible technique continuation'],
+  ['st_kneelift','st_gut_punch',.65,'followup','Curated position-compatible technique continuation'],
+  ['st_palm','st_elbow_smash',.65,'followup','Curated position-compatible technique continuation'],
+  ['st_leg_kick','st_kneelift',.65,'followup','Curated position-compatible technique continuation']
+ ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
+ const TRAINED_TECHNIQUE_IDS=new Set([...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH].map(link=>link.to));
 
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
      reverse:!!opts.reverse,kind:opts.kind||'play',focus:opts.focus||0,crowd:opts.crowd||0,weight:opts.weight||1,styles:opts.styles||null,cost:opts.cost??null,lift:opts.lift??null,
@@ -994,7 +1011,7 @@ const Graph=(function makeGraph(){
   }
    // Only this small reviewed subset becomes playable; Phase 2 proposals
    // are NEVER auto-imported into the match graph.
-   for(const link of [...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2]){
+   for(const link of [...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH]){
     const source=A[link.from],target=A[link.to];
     if(!source||!target||source.zone!==target.requires)
      throw Error('Curated impossible technique link: '+link.from+' -> '+link.to);
@@ -1105,7 +1122,9 @@ const Graph=(function makeGraph(){
   const schoolBrief=schools?[
    [w,schools.get(w)],[f,schools.get(f)]
   ].filter(([,school])=>school.id!=='general')
-   .map(([actor,school])=>actor.short+' brings '+school.label.toLowerCase()+' training to their choices.').join(' '):'';
+   .map(([actor,school])=>schools.PROVISIONAL_ASSIGNMENTS?.[actor.id]
+    ? actor.short+' currently favours '+school.label.toLowerCase()+' techniques (provisional gameplay profile).'
+    : actor.short+' brings '+school.label.toLowerCase()+' training to their choices.').join(' '):'';
   const known=(them.signature||[]).map(id=>A[id]?.name).filter(Boolean).slice(0,2);
   const watch=known.length?' Watch for '+f.short+'’s '+known.join(' and ')+'.':'';
   return {brief:styles+' '+size+(heat>=45?' There is personal history here.':'')+fatigue+(schoolBrief?' '+schoolBrief:''),advice:danger+' '+(advice[plan]||advice.story)+watch,you:me,opponent:them};
@@ -1747,7 +1766,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple};
 })();
 
 function create(o){
