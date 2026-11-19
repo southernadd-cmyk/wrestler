@@ -154,6 +154,21 @@ function summary(result){
     lines.push('| '+row.label+' | '+(found.length?found.map(item=>item.counter).join(', '):'None')+' | '+count+' |');
    }
   }
+  const aerialRows=result.rows.filter(row=>row.after.aerialAttemptStats);
+  if(aerialRows.length){
+   lines.push('','### Phase 6: persistent named aerial attempts','',
+    'Counts come from actual two-beat match state, not guessed adjacency. A named attack resolves once as a landing, specific counter, block or interrupted/aborted attempt.','',
+    '| Scenario | Attempts | Landed | Countered | Blocked | Aborted/interrupted | Unresolved / mismatched |',
+    '|:--|--:|--:|--:|--:|--:|--:|');
+   for(const row of aerialRows){
+    const a=row.after.aerialAttemptStats;
+    lines.push('| '+row.label+' | '+a.attempts+' | '+a.landed+
+      ' | '+a.counter+' | '+a.block+' | '+(a.aborted+a.interrupted)+
+      ' | '+a.unresolved+' / '+a.mismatched+' |');
+   }
+   const total=aerialRows.reduce((n,row)=>n+row.after.aerialAttemptStats.attempts,0);
+   if(!total)lines.push('','**REVIEW:** no named aerial attacks were selected in the fixed-seed sample.');
+  }
   if(result.critical.length)lines.push('','### Invalid run',...result.critical.map(x=>'- '+x));
  lines.push('','Linked-edge reach is a conservative consecutive-event proxy. Arc jumps do not count. A low value is not automatically an error.');
  return lines.join('\n')+'\n';
