@@ -4,114 +4,162 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Graph Lab | The Office</title>
+<meta name="theme-color" content="#141e27">
+<title>Graph Lab — Match analysis | The Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="lab.css">
 </head>
 <body>
-<header class="topbar">
-  <div class="wordmark"><span class="eyebrow">THE OFFICE / ENGINEERING</span><h1>Graph Lab<span class="period">.</span></h1></div>
-  <a class="back" href="../../index.html">← Back to The Office</a>
-</header>
-<main class="shell">
-  <section class="intro" aria-label="Lab introduction">
-    <div><span class="eyebrow">MATCH ENGINE DIAGNOSTICS / PHASE 0</span>
-    <p>Inspect the actual match graph. Run deterministic bouts. Find the actions and transitions the simulation uses — and the ones it doesn't.</p></div>
-    <p class="small quiet">Read-only developer tool · Does not load or modify careers · No independent match simulator</p>
-  </section>
-  <section class="metrics" aria-label="Graph structure">
-    <div class="metric"><span>Action nodes</span><strong id="totalNodes">—</strong></div>
-    <div class="metric"><span>Directed edges</span><strong id="totalEdges">—</strong></div>
-    <div class="metric"><span>Story arcs</span><strong id="totalArcs">—</strong></div>
-    <div class="metric"><span>Validation</span><strong id="validation">—</strong></div>
-  </section>
-  <div class="columns">
-    <section class="pane" aria-labelledby="experimentTitle">
-      <div class="panehead"><div><span class="eyebrow">01 / EXPERIMENT</span><h2 id="experimentTitle">Run the engine</h2></div></div>
-      <form id="experiment" autocomplete="off">
-        <div class="field"><label for="worker">Wrestler</label><select id="worker" required></select></div>
-        <div class="field"><label for="opponent">Opponent</label><select id="opponent" required></select></div>
-        <div class="two">
-          <div class="field"><label for="plan">Match plan</label><select id="plan">
-            <option value="story">Tell a story</option>
-            <option value="technical">Technical showcase</option>
-            <option value="brawl">Brawl</option>
-            <option value="spots">Spot-fest</option>
-            <option value="safe">Keep it safe</option>
-          </select></div>
-          <div class="field"><label for="finish">Booked result</label><select id="finish">
-            <option value="win_clean">Win clean</option>
-            <option value="win_dirty">Win dirty</option>
-            <option value="lose_protected">Lose protected</option>
-            <option value="lose_clean">Lose clean</option>
-            <option value="win_dq">Win by DQ</option>
-            <option value="lose_dq">Lose by DQ</option>
-          </select></div>
-        </div>
-        <div class="two">
-          <div class="field"><label for="seed">First seed</label><input id="seed" type="number" min="1" max="2147483647" step="1" value="5101" required></div>
-          <div class="field"><label for="bouts">Bouts</label><select id="bouts">
-            <option value="1">1 — detailed trace</option><option value="10">10</option><option value="100" selected>100</option><option value="500">500</option><option value="1000">1,000</option>
-          </select></div>
-        </div>
-        <div class="two">
-          <div class="field"><label for="slot">Card position</label><select id="slot">
-            <option value="opener">Opener (8 min)</option>
-            <option value="mid" selected>Mid-card (12 min)</option>
-            <option value="feature">Feature (15 min)</option>
-            <option value="main">Main event (20 min)</option>
-          </select></div>
-          <div class="field"><label for="rotation">Pairing</label><select id="rotation">
-            <option value="fixed" selected>Same two wrestlers</option>
-            <option value="roster">Rotate full roster</option>
-          </select></div>
-        </div>
-        <div class="actions"><button class="primary" id="run" type="submit">Run matches</button><button id="stop" type="button" disabled>Stop</button></div>
-        <progress id="progress" max="100" value="0" aria-label="Simulation progress"></progress>
-        <p class="small quiet status" id="status" role="status" aria-live="polite">Ready to sample the shipped match engine.</p>
-      </form>
-    </section>
-    <section class="pane results" aria-labelledby="resultsTitle">
-      <div class="panehead"><div><span class="eyebrow">02 / MEASURED</span><h2 id="resultsTitle">Simulation results</h2></div>
-        <button id="export" disabled type="button">Export JSON</button></div>
-      <div class="summary">
-        <div><span>Completed</span><strong id="completed">0</strong></div>
-        <div><span>Node coverage</span><strong id="nodeCoverage">—</strong></div>
-        <div><span>Observed authored edges</span><strong id="edgeCoverage">—</strong></div>
-        <div><span>Mean stars</span><strong id="avgStars">—</strong></div>
-      </div>
-      <p class="small quiet">Edge coverage counts consecutive in-ring events matching an authored graph link. Arc-based jumps are excluded. A low value is a diagnostic, not automatically a defect.</p>
-      <div class="two resulttables">
-        <div><h3>Most-used families</h3><ol id="families" class="ranklist"><li>Run a sample to see counts.</li></ol></div>
-        <div><h3>Most-used actions</h3><ol id="topActions" class="ranklist"><li>Awaiting a sample.</li></ol></div>
-      </div>
-      <div class="reviewline"><span id="counterSummary">Counters — · Blocks —</span><span id="unseenSummary">Unseen actions —</span></div>
-      <details><summary>Observed sequences and outcome routes</summary><div class="two"><div><h3>Recurring triplets</h3><ol id="sequences" class="ranklist"></ol></div><div><h3>Finish routes</h3><ol id="finishRoutes" class="ranklist"></ol></div></div></details>
-      <details open><summary>First bout / action trace</summary><div id="trace" class="trace"><p class="quiet">Run a sample to see the first match's actual graph events.</p></div></details>
-    </section>
+<a class="skip" href="#workbench">Skip to analysis workbench</a>
+<header class="mast">
+  <div class="mast-utility">
+    <div class="identity"><span class="identity-mark" aria-hidden="true">O/</span><span>THE OFFICE <small>INTERNAL TOOLS</small></span></div>
+    <div class="mast-right"><span class="source-indicator"><i aria-hidden="true"></i> ACTUAL MATCH ENGINE</span><a href="../../index.html">← RETURN TO THE OFFICE</a></div>
   </div>
-  <section class="pane explorer" aria-labelledby="explorerTitle">
-    <div class="panehead"><div><span class="eyebrow">03 / INSPECT</span><h2 id="explorerTitle">Technique explorer</h2></div><div id="selection" class="selection">Choose a node</div></div>
-    <div class="exploregrid">
-      <div><label for="search">Search node ID, name or family</label><input id="search" type="search" placeholder="e.g. wristlock, suplex, counter">
-        <p class="small quiet" id="found">Search the current graph.</p><div id="nodeList" class="nodeList" role="group" aria-label="Graph nodes"></div>
+  <div class="mast-feature">
+    <div class="mast-word"><span>GRAPH</span><span class="accent-word">LAB<span aria-hidden="true">.</span></span></div>
+    <div class="mast-copy"><p class="kicker">THE MATCH ANALYSIS DESK</p><p>The moves you wrote. The paths the engine takes. The moments it keeps missing.</p><span>Read-only instrument / no career data accessed</span></div>
+  </div>
+</header>
+<div class="instrument-rail" aria-label="Current authored graph">
+  <div class="rail-heading"><span class="ruler-mark" aria-hidden="true">//</span><span>GRAPH INVENTORY</span></div>
+  <div class="rail-item"><span>Action nodes</span><strong id="totalNodes">—</strong></div>
+  <div class="rail-item"><span>Directed links</span><strong id="totalEdges">—</strong></div>
+  <div class="rail-item"><span>Story arcs</span><strong id="totalArcs">—</strong></div>
+  <div class="rail-item rail-status"><span>Integrity check</span><strong id="validation">—</strong></div>
+</div>
+<nav class="worknav" aria-label="Graph Lab workspace">
+  <div class="worktabs" role="tablist" aria-label="Choose an analysis view">
+    <button class="worktab" id="tab-run" data-workspace="run" role="tab" aria-controls="workspace-run" aria-selected="true" tabindex="0" type="button"><span>Run sheet</span><small>SIMULATE</small></button>
+    <button class="worktab" id="tab-tape" data-workspace="tape" role="tab" aria-controls="workspace-tape" aria-selected="false" tabindex="-1" type="button"><span>Tape review</span><small>TRACE</small></button>
+    <button class="worktab" id="tab-atlas" data-workspace="atlas" role="tab" aria-controls="workspace-atlas" aria-selected="false" tabindex="-1" type="button"><span>Move atlas</span><small>EXPLORE</small></button>
+    <button class="worktab" id="tab-compare" data-workspace="compare" role="tab" aria-controls="workspace-compare" aria-selected="false" tabindex="-1" type="button"><span>Baselines</span><small>COMPARE</small></button>
+  </div>
+  <div class="nav-note">ENGINEERING / READ ONLY</div>
+</nav>
+<main class="workbench" id="workbench">
+  <section class="workspace" id="workspace-run" role="tabpanel" aria-labelledby="tab-run">
+    <div class="section-lead">
+      <div><span class="overline">MATCH WORKBENCH / LIVE SAMPLING</span><h2>Set the bout.<br><span>Follow the evidence.</span></h2></div>
+      <p>Choose a scenario and run the original simulation. The figures below come from real match events, not graph estimates.</p>
+    </div>
+    <div class="run-grid">
+      <section class="contract" aria-labelledby="experimentTitle">
+        <header class="block-head"><div><span class="block-ref">MATCH CONTRACT</span><h3 id="experimentTitle">Who gets in the ring?</h3></div><span class="block-signal">INPUT</span></header>
+        <form id="experiment" autocomplete="off">
+          <div class="field"><label for="worker">Your wrestler</label><select id="worker" required></select></div>
+          <div class="field"><label for="opponent">Opposite corner</label><select id="opponent" required></select></div>
+          <div class="field-grid">
+            <div class="field"><label for="plan">Match approach</label><select id="plan">
+              <option value="story">Tell a story</option><option value="technical">Technical showcase</option>
+              <option value="brawl">Brawl</option><option value="spots">Spot-fest</option><option value="safe">Keep it safe</option>
+            </select></div>
+            <div class="field"><label for="finish">Booked finish</label><select id="finish">
+              <option value="win_clean">Win clean</option><option value="win_dirty">Win dirty</option>
+              <option value="lose_protected">Lose protected</option><option value="lose_clean">Lose clean</option>
+              <option value="win_dq">Win by DQ</option><option value="lose_dq">Lose by DQ</option>
+            </select></div>
+          </div>
+          <div class="field-grid">
+            <div class="field"><label for="slot">Card position</label><select id="slot">
+              <option value="opener">Opener / 8 min</option><option value="mid" selected>Mid-card / 12 min</option>
+              <option value="feature">Feature / 15 min</option><option value="main">Main event / 20 min</option>
+            </select></div>
+            <div class="field"><label for="rotation">Pairing method</label><select id="rotation">
+              <option value="fixed" selected>Same opponents</option><option value="roster">Rotate all wrestlers</option>
+            </select></div>
+          </div>
+          <div class="field-grid seed-row">
+            <div class="field"><label for="seed">Starting seed</label><input id="seed" type="number" min="1" max="2147483647" step="1" value="5101" required></div>
+            <div class="field"><label for="bouts">Matches to run</label><select id="bouts">
+              <option value="1">1 match</option><option value="10">10 matches</option><option value="100" selected>100 matches</option>
+              <option value="500">500 matches</option><option value="1000">1,000 matches</option>
+            </select></div>
+          </div>
+          <div class="action-strip"><button id="run" class="primary" type="submit">RUN SIMULATION <span aria-hidden="true">↗</span></button><button id="stop" type="button" disabled>STOP</button></div>
+          <progress id="progress" max="100" value="0" aria-label="Simulation progress"></progress>
+          <p class="run-status" id="status" role="status" aria-live="polite">Engine standing by. Nothing has been run yet.</p>
+        </form>
+        <div class="contract-foot"><span>REPRODUCIBLE BY SEED</span><span>NO CAREER SAVE CHANGES</span></div>
+      </section>
+
+      <section class="observations" aria-labelledby="resultsTitle">
+        <header class="block-head"><div><span class="block-ref">THE READOUT</span><h3 id="resultsTitle">What happened in the ring</h3></div><button id="export" disabled type="button" class="export-button">EXPORT JSON ↗</button></header>
+        <div class="coverage-stats">
+          <div class="coverage-primary"><span class="stat-label">Action vocabulary reached</span><strong id="nodeCoverage">—</strong><span class="stat-caption">Distinct moves and actions seen</span></div>
+          <div class="coverage-primary secondary"><span class="stat-label">Authored links observed</span><strong id="edgeCoverage">—</strong><span class="stat-caption">Linked consecutive action events</span></div>
+        </div>
+        <div class="secondary-stats"><div><span>Matches sampled</span><strong id="completed">0</strong></div><div><span>Mean star rating</span><strong id="avgStars">—</strong></div></div>
+        <div class="run-brief"><span aria-hidden="true">!</span><p>Link coverage is deliberately conservative: only consecutive actions matching authored edges count. An arc jump does not.</p></div>
+        <div class="frequency-list">
+          <div><h4>MOST-USED FAMILIES</h4><ol id="families" class="ranklist"><li>Awaiting first sample.</li></ol></div>
+          <div><h4>BUSIEST ACTIONS</h4><ol id="topActions" class="ranklist"><li>Awaiting first sample.</li></ol></div>
+        </div>
+        <div class="reviewline"><span id="counterSummary">Counters — · Blocks —</span><span id="unseenSummary">Unseen actions —</span></div>
+        <details class="rollup"><summary>Deeper figures <span>Sequences / finish routes</span></summary><div class="frequency-list inner">
+          <div><h4>REPEATED SEQUENCES</h4><ol id="sequences" class="ranklist"></ol></div>
+          <div><h4>FINISH ROUTES</h4><ol id="finishRoutes" class="ranklist"></ol></div>
+        </div></details>
+        <button id="viewTape" type="button" class="tape-link">OPEN FIRST-BOUT TAPE <span aria-hidden="true">↗</span></button>
+      </section>
+    </div>
+  </section>
+
+  <section class="workspace" id="workspace-tape" role="tabpanel" aria-labelledby="tab-tape" hidden>
+    <div class="section-lead">
+      <div><span class="overline">RINGSIDE MONITOR / FIRST BOUT ONLY</span><h2>Roll the <span>tape.</span></h2></div>
+      <p>Every mark below belongs to a real event from the first simulated match. Review its sequence before changing graph weights.</p>
+    </div>
+    <div class="tape-desk">
+      <div class="tape-header"><div><span class="block-ref">EVENT DENSITY / BY MATCH CLOCK</span><h3 id="traceMeta">No bout recorded</h3></div><span class="tape-state">◼ SOURCE: OFFICE MATCH</span></div>
+      <div id="tapeViz" class="tape-viz" aria-label="Event density by match time"><p>Run a simulation to populate the tape.</p></div>
+      <div class="tape-axis"><span>OPENING BELL</span><span>FINAL BELL</span></div>
+    </div>
+    <div class="trace-head"><div><span class="block-ref">PLAY-BY-PLAY RECORD</span><h3>Actions in order</h3></div>
+      <div class="filter-group"><label for="traceFilter">Show events</label><select id="traceFilter">
+        <option value="all">Everything</option><option value="Action">Actions</option><option value="Counter">Counters</option><option value="Block">Blocks</option><option value="Event">Other</option>
+      </select></div>
+    </div>
+    <div id="trace" class="trace" aria-label="First bout action trace"><p class="quiet">Run a sample from the Run sheet to see the actual event trace.</p></div>
+  </section>
+
+  <section class="workspace" id="workspace-atlas" role="tabpanel" aria-labelledby="tab-atlas" hidden>
+    <div class="section-lead">
+      <div><span class="overline">THE MOVE INDEX / ACTUAL DIRECTED GRAPH</span><h2>Find the <span>connection.</span></h2></div>
+      <p>Select any action to see how the authored graph can reach it and what it may lead to next. Weights and move restrictions are taken from the engine.</p>
+    </div>
+    <div class="atlas-grid">
+      <div class="atlas-index"><div class="atlas-search"><label for="search">SEARCH MOVES / ACTION IDS / FAMILIES</label><input id="search" type="search" placeholder="Try wristlock, suplex, counter…" autocomplete="off">
+        <p id="found">Search the current graph.</p></div><div id="nodeList" class="nodeList" role="group" aria-label="Graph nodes"></div>
       </div>
-      <div class="detail"><div id="nodeDetails" class="nodeMeta">Select a node from the list to inspect its real connections.</div>
-        <h3>Local connection diagram</h3><div class="diagram" id="diagram" role="img" aria-label="Incoming and outgoing graph links"></div>
-        <div class="two">
-          <div><h3>Incoming edges</h3><div id="incoming" class="connections"></div></div>
-          <div><h3>Outgoing edges</h3><div id="outgoing" class="connections"></div></div>
+      <div class="atlas-inspection"><header class="inspection-head"><span class="block-ref">SELECTED ACTION</span><span id="selection">Choose a node</span></header>
+        <div id="nodeDetails" class="nodeMeta">Select a node to inspect its real connections.</div>
+        <div class="diagram-head"><h3>IMMEDIATE PATHS</h3><span>LEFT: IN / RIGHT: OUT</span></div>
+        <div class="diagram" id="diagram" role="img" aria-label="Actual incoming and outgoing graph links"></div>
+        <div class="links-grid">
+          <div><h4>LEADS INTO THIS ACTION</h4><div id="incoming" class="connections"></div></div>
+          <div><h4>CAN FOLLOW THIS ACTION</h4><div id="outgoing" class="connections"></div></div>
         </div>
       </div>
     </div>
   </section>
-  <section class="pane" aria-labelledby="comparisonTitle">
-    <div class="panehead"><div><span class="eyebrow">04 / COMPARE</span><h2 id="comparisonTitle">Compare baselines</h2></div></div>
-    <p class="small quiet">Save a JSON baseline now, then load it alongside a later run to compare graph coverage and match behaviour. This comparison is purely descriptive; identical scenarios are needed for meaningful conclusions.</p>
-    <div class="actions"><label class="filelabel" for="baseline">Load baseline JSON</label><input id="baseline" type="file" accept=".json,application/json"><span id="baselineName" class="small quiet">No baseline loaded</span></div>
-    <div id="comparison" class="comparison">No comparison yet.</div>
+
+  <section class="workspace" id="workspace-compare" role="tabpanel" aria-labelledby="tab-compare" hidden>
+    <div class="section-lead">
+      <div><span class="overline">ARCHIVE / BEFORE AND AFTER</span><h2>Measure the <span>difference.</span></h2></div>
+      <p>Export the current run from the Run sheet, then load an earlier JSON snapshot here. Same pairings and seeds give the strongest comparison.</p>
+    </div>
+    <section class="baseline-workspace" aria-labelledby="comparisonTitle">
+      <header class="block-head"><div><span class="block-ref">COMPARISON DESK</span><h3 id="comparisonTitle">Load a recorded baseline</h3></div></header>
+      <div class="file-row"><label class="filelabel" for="baseline">CHOOSE JSON BASELINE ↗</label><input id="baseline" type="file" accept=".json,application/json"><span id="baselineName">No baseline selected</span></div>
+      <div id="comparison" class="comparison">Run a sample and load a previously exported baseline to compare.</div>
+      <div class="comparison-foot"><span>IN-MEMORY ANALYSIS</span><span>NO FILES UPLOADED</span><span>ENGINE UNCHANGED</span></div>
+    </section>
   </section>
 </main>
-<footer class="footer">THE OFFICE / GRAPH LAB · Observational tools only · No match rules modified</footer>
+<footer class="footer"><span>THE OFFICE / PRODUCTION TECHNICAL DESK</span><span>GRAPH LAB · READ ONLY · NO MATCH RULES CHANGED</span></footer>
 <script src="../../assets/js/data.js" defer></script>
 <script src="../../assets/js/roster-registry.js" defer></script>
 <script src="../../assets/js/match-engine.js" defer></script>
