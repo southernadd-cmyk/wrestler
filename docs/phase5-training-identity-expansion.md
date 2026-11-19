@@ -12,10 +12,10 @@ Read [`phase5-roster-training-audit.csv`](phase5-roster-training-audit.csv). Eve
 
 **Findings:**
 - Of the initial **38** bespoke backgrounds, only a limited number are explicitly grounded in described training history; many (e.g. working mat specialists) were **game-design allocations**, not verbatim facts in the cast bible. Their biographies are not silently rewritten.
-- **42** were previously general. Only **three** get new technical backgrounds in the first release; **39** remain general.
+- **42** were previously general. Only **two** gain newly allocated backgrounds in the first release; **40** remain general. One existing lucha allocation receives a provisional acrobatics component.
 - **Tomás Ash — Boxing**: explicitly a former boxer.
 - **Val Vance — Strength athletics**: explicitly a former strength athlete.
-- **Kit Marlowe — Acrobatic training (provisional)**: the original bio says *built like a gymnast*, which does **not** establish formal gymnastics training; this is clearly identified as an **editorial working proposal** requiring approval before treating it as character canon.
+- **Kit Marlowe — Lucha and acrobatics (provisional hybrid)**: Kit retains the original lucha affinity. His bio says *built like a gymnast*, which does **not** establish formal gymnastics training; an additional, weaker acrobatics affinity is an editorial proposal requiring approval before treating it as canon.
 - Bao Merrick (former judoka), Nico Vega (learned lucha), Cal Rourke (club grappler) and every prior assignment retain their names and stable IDs. Being an aerial star (e.g. Kofi, Zara) does **not** on its own automatically grant an acrobatics history.
 
 The source inventory includes opponents who lack published biography fields; they are not retrofitted with invented pasts merely to fill cells.
@@ -32,7 +32,7 @@ The [Phase 1 complete 336-move inventory](phase1-technique-candidates.csv) remai
 
 Training categories are **source-informed skills**, not claims that every related move originated in that discipline. The mechanics vocabulary explicitly distinguishes a strike from a throw, a pinning result from a takedown, and an aerial launch context from an athlete's match style. No Fight Encyclopedia technique database, copyrighted technique text or proprietary taxonomy data is imported.
 
-The real match graph adds **14 explicitly authored, guarded links**, recorded in `Graph.TECHNIQUE_EXPANSION`, in addition to the **unchanged 11 original Phase 3 links**. The new links include:
+The real match graph explicitly curates **14 weighted, guarded transitions**, recorded in `Graph.TECHNIQUE_EXPANSION`, in addition to the **unchanged 11 original Phase 3 links**. Of the fourteen, **four are newly created directed edges**, while ten adjust pre-existing graph paths; the total grows from 6,160 to 6,164. The curated transitions include:
 - `st_jab → st_gut_punch`
 - `waistlock → pw_body_slam`, `rope_rebound → pw_fallaway`, `lockup → pw_military_press`, `pw_torture_rack → pw_samoan_drop`
 - `top_climb → ar_shooting_star / ar_corkscrew / ar_450`; `springboard_rise → sb_dropkick / sb_moonsault`
@@ -54,4 +54,4 @@ The Phase 4 school bonus remains **1.00–1.28**: no extra blanket buffs for a B
 
 Of the 336 original moves, **276 remain outside the curated registry**. The next tranche should be source-reviewed in manageable groups: submissions and their distinct hold entries; forearm/punch and kick variants; aerial risk stages and pin follow-ups; move-specific counters; and technical aptitude decisions for individual cast members. Mark uncertainty as uncertainty, keep theatrical and tactical moves in *Wrestling-only* when necessary, and require all changed links to demonstrate useful occurrence and continued finish integrity in seeded baseline comparisons.
 
-**Human sign-off needed:** Kit's provisional acrobatic training, plus older editorial attributions with no explicit biographical evidence. Do not rewrite the cast bible to rationalise training classifications after the fact.
+**Human sign-off needed:** Kit's provisional *additional* acrobatics affinity (his original lucha identity is preserved), plus older editorial attributions with no explicit biographical evidence. Do not rewrite the cast bible to rationalise training classifications after the fact.
