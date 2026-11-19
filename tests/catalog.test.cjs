@@ -54,6 +54,21 @@ function probe(id){
    plan:{game:'story',leash:'script',talk:'calm'},preparation:{},flags:{},seed:7});
   x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02)));x.wSt=100;x.fSt=100;
   const s=x.story||(x.story={});Object.assign(s,{position:n.requires==='any'?'standing':n.requires,control,down:n.requires==='mat'?(control==='w'?'f':'w'):null});
+  const parent=n.counterOf||n.blockOf;
+  const aerialParent=A[parent]&&['aerial','springboard'].includes(A[parent].family);
+  if(aerialParent){
+   // Phase 6: a generated move-specific aerial counter/block is physically
+   // reachable *during the named parent attempt*, not as a free-floating move.
+   // Keep the original reachability assertion without granting impossible
+   // top-rope reversals with no committed attack.
+   s.position='top';s.down=control==='w'?'f':'w';
+   // Some advanced dives are only available after 70-75% of a match. Their
+   // generated block nodes have no independent after threshold, so probe
+   // at the *parent attack's* legal time rather than an invented early dive.
+   x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02,A[parent].after+.02)));
+   if(!G.startAerial(x,parent))continue;
+   assert.equal(x.graph.pendingAerial.id,parent);
+  }
   if(G.isValid(x,id))return true;
  }
  return false;

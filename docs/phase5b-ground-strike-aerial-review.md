@@ -1,5 +1,7 @@
 # Phase 5b — second technique audit: submissions, strikes and aerial counters
 
+**Update:** [Phase 6](phase6-aerial-attempt-state.md) subsequently implemented a serialised, named attempted-aerial-move state. The no-attempt-state limitation below describes how Phase 5b worked *before* that change.
+
 This is a **follow-on** to [Phase 5's first 80-worker audit](phase5-training-identity-expansion.md). The Office retains its four performance styles, the original school assignments and all career save fields.
 
 ## Changes, with honest coverage

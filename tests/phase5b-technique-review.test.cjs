@@ -88,9 +88,13 @@ const top=M.create(input('kit','rex','spots'));
 top.t=Math.floor(top.len*.82);top.wSt=top.fSt=100;
 top.story.position='top';top.story.down='f';top.story.control='w';
 top.graph.arc='escalation';top.graph.node='top_climb';
-assert.ok(G.isValid(top,'ar_frog_rev'),'existing aerial reversal is position-valid before a dive');
+assert.equal(G.isValid(top,'ar_frog_rev'),false,'no move-specific aerial counter without an attempted frog splash');
+assert.equal(G.startAerial(top,'ar_frog'),true,'explicit frog-splash attempt commits from top rope');
+assert.ok(G.isValid(top,'ar_frog_rev'),'matching frog-splash counter becomes legal while its attempt is pending');
+assert.equal(G.isValid(top,'ar_senton_rev'),false,'a different dive cannot be countered during a frog-splash attempt');
 top.story.position='mat';top.story.down='f';
 assert.equal(G.isValid(top,'ar_frog_rev'),false,'a top-rope counter is not legal after impact');
+assert.equal(G.abortAerial(top,'aborted',false),true,'interrupted attempt is resolved without creating a false counter');
 assert.equal(JSON.stringify(G.A),immutableMoves,'tests do not mutate move graph');
 assert.equal(JSON.stringify(D.ALL),immutableRoster,'tests do not write school fields to saved roster');
 const scenarios=[

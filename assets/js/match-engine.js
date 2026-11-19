@@ -1128,10 +1128,19 @@ const Graph=(function makeGraph(){
   const current=M.t<=0?'opening':frac<.2?'chain':frac<.33?'shine':frac<.62?'control':frac<.77?'comeback':'escalation';
   const g={v:1,arc:current,age:0,node:null,visit:{[current]:1},history:[current],events:[],transitions:0,steps:0,lastTags:[],consecutive:0,target:p.target,
    targets:{w:p.target,f:M.w.style==='Technical'?'shoulder':M.w.style==='Spectacle'?'left knee':M.w.style==='Brawl'?'ribs':'lower back'},
-   damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0,pattern:M.planId,texture:matchTexture(M)};
+   damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0,pattern:M.planId,texture:matchTexture(M),
+   aerialAttempts:[],aerialAttemptSerial:0,pendingAerial:null};
   M.graph=g;return g;
  }
- function get(M){return M.graph||init(M)}
+ function get(M){
+  const g=M.graph||init(M);
+  // Existing in-progress saves have no attempt state: default to no pending dive.
+  if(!Array.isArray(g.aerialAttempts))g.aerialAttempts=[];
+  if(!Number.isSafeInteger(g.aerialAttemptSerial))
+   g.aerialAttemptSerial=g.aerialAttempts.reduce((n,x)=>Math.max(n,x.seq||0),0);
+  if(!Object.prototype.hasOwnProperty.call(g,'pendingAerial'))g.pendingAerial=null;
+  return g;
+ }
  function pick(M,weighted){
   const arr=weighted.filter(([k,w])=>w>0);const sum=arr.reduce((n,[,w])=>n+w,0);
   if(!sum)return null;let n=M.r()*sum;
@@ -1233,8 +1242,20 @@ const Graph=(function makeGraph(){
   const arc=ARCS[g.arc],ph=PHASES.find(x=>x.id===arc.phase)||PHASES[0];
   return {id:ph.id,name:arc.label};
  }
+ // Aerial counters are outcomes of a named attempt, never free-standing
+ // actions selected without the corresponding move being attempted.
+ function isAerialParent(id){
+  const n=A[id];return !!n&&!n.reverse&&!n.blockOf&&
+   (n.family==='aerial'||n.family==='springboard');
+ }
+ function aerialAlternativeParent(id){
+  const n=A[id],original=n?.counterOf||n?.blockOf;
+  return original&&isAerialParent(original)?original:null;
+ }
  function isValid(M,nodeId){
   const n=A[nodeId],p=Psy.get(M);if(!n)return false;
+  const parent=aerialAlternativeParent(nodeId);
+  if(parent&&M.graph?.pendingAerial?.id!==parent)return false;
   // A submission-only bout cannot reach pin nodes, even through signature/catalog edges.
   if(M.o.stip==='submission'&&(n.family==='pin'||n.nearfall||
     ['early_cover','cover','near_kickout','counter_rollup'].includes(nodeId)||
@@ -1343,6 +1364,83 @@ const Graph=(function makeGraph(){
    };
    if(reactions[id]){say(M,fill(M,reactions[id],{A:attacker.short,D:defender.short}),'story');g.lastColourAt=M.t;}
   }
+ }
+ // Two-beat aerial sequence. The pending move lives in the serialised graph:
+ // stage 1 commits and names the precise attack, stage 2 resolves that attack.
+ function startAerial(M,id){
+  const g=get(M),p=Psy.get(M);
+  if(g.pendingAerial||!isAerialParent(id)||!isValid(M,id)||p.position!=='top'||M.len-M.t<10)
+   return false;
+  if(p.control!=='w'&&p.control!=='f')return false;
+  const side=p.control,attacker=side==='w'?M.w:M.f,defender=side==='w'?M.f:M.w;
+  const seq=++g.aerialAttemptSerial;
+  g.pendingAerial={v:1,seq,id,side,at:M.t,position:'top'};
+  g.aerialAttempts.push({seq,id,side,startedT:M.t,outcome:'pending'});
+  // Commitment costs effort even when the defender reverses the airborne move.
+  const key=side==='w'?'wSt':'fSt';
+  M[key]=clamp(M[key]-.8);g.exertion=(g.exertion||0)+.8;
+  say(M,attacker.short+' sets for the '+(A[id].name||id)+
+   ' on the ropes. '+defender.short+' sees the attack coming.','play');
+  return true;
+ }
+ function concludeAerial(M,outcome,actionId=null){
+  const g=get(M),pending=g.pendingAerial;
+  if(!pending)return false;
+  const record=g.aerialAttempts.find(x=>x.seq===pending.seq);
+  if(record){record.outcome=outcome;record.resolvedT=M.t;record.actionId=actionId;}
+  // Preserve the exact attempted move on the resulting real action event.
+  g.pendingAerial=null;
+  if(actionId){
+   apply(M,actionId);
+   const event=g.events[g.events.length-1];
+   if(event?.id===actionId){
+    event.aerialAttemptSeq=pending.seq;
+    event.attemptedMove=pending.id;
+    event.aerialResolution=outcome;
+   }
+  }
+  return true;
+ }
+ function abortAerial(M,reason='interrupted',narrate=false){
+  const pending=get(M).pendingAerial;
+  if(!pending)return false;
+  if(narrate){
+   const attacker=pending.side==='w'?M.w:M.f;
+   say(M,attacker.short+' abandons the '+(A[pending.id]?.name||'aerial attack')+
+    ' as the exchange breaks down.','play');
+   const p=Psy.get(M);p.position='standing';p.down=null;
+   get(M).node=null;
+  }
+  return concludeAerial(M,reason);
+ }
+ function resolveAerial(M){
+  const pending=get(M).pendingAerial;
+  if(!pending)return false;
+  const p=Psy.get(M),id=pending.id;
+  if(M.stage!=='live'||p.position!=='top'||p.control!==pending.side||
+   !isAerialParent(id)||M.t<=pending.at)
+   return abortAerial(M,'interrupted',M.stage==='live');
+  if(!isValid(M,id))return abortAerial(M,'aborted',true);
+  const attacker=pending.side==='w'?M.w:M.f;
+  const defender=pending.side==='w'?M.f:M.w;
+  const rev=id+'_rev',blk=id+'_blk';
+  const attackSkill=attacker.ring*.65+attacker.psych*.35;
+  const defenceSkill=defender.ring*.65+defender.psych*.35;
+  let counterChance=Math.max(.075,Math.min(.28,.15+(defenceSkill-attackSkill)/300));
+  // A promised defensive counter can pay off only against the promised move.
+  const tactic=M.o.promo?.tactic;
+  if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
+   counterChance=Math.min(.42,counterChance*1.6);
+  const counterSide=pending.side==='w'?'f':'w';
+  const expected=M.sheet?.v>=4&&root.OfficeRoom?
+   root.OfficeRoom.wants(M,counterSide,'top')?.[0]:null;
+  if(expected?.[0]===rev)counterChance=Math.min(.48,counterChance*1.7);
+  const blockChance=A[blk]?Math.max(.055,Math.min(.13,.085+(defender.safe-attacker.safe)/550)):0;
+  const roll=M.r();
+  const counter=roll<counterChance&&A[rev]&&isValid(M,rev);
+  const blocked=!counter&&roll<counterChance+blockChance&&A[blk]&&isValid(M,blk);
+  return concludeAerial(M,counter?'counter':blocked?'block':'landed',
+   counter?rev:blocked?blk:id);
  }
  function validPool(M){
   const g=get(M),p=Psy.get(M),arc=ARCS[g.arc],current=A[g.node],pattern=PATTERNS[M.planId]||PATTERNS.story;
@@ -1480,13 +1578,21 @@ const Graph=(function makeGraph(){
  }
  function step(M){
   const g=get(M),p=Psy.get(M);
+  // The named move is already committed. Another caller must not overwrite
+  // it with an unrelated selection before the next tick resolves it.
+  if(g.pendingAerial)return;
   if(p.position==='outside'&&g.floorTicks>=4){apply(M,'roll_inside');g.floorTicks=0;return;}
   if(p.control==='neutral'){
    const advantage=(M.w.ring-M.f.ring)+(M.wSt-M.fSt)*.3;
    p.control=M.r()<Math.max(.3,Math.min(.7,.5+advantage/250))?'w':'f';p.changes++;
   }
   const candidates=validPool(M),id=pick(M,candidates);
-  if(id){apply(M,id);return;}
+  if(id){
+   // A full named attempt starts only when there is another tick to resolve it.
+   // The very final tick retains the pre-existing immediate-landing fallback.
+   if(isAerialParent(id)&&startAerial(M,id))return;
+   apply(M,id);return;
+  }
   recover(M);
  }
  function nearfall(M){
@@ -1524,6 +1630,9 @@ const Graph=(function makeGraph(){
   if(occurred)root.OfficeSheets?.observe(M,'special_spot',p.control,'spot');
  }
  function finishCue(M){
+  // DQ, injury and other immediate endings must not leave a pending dive
+  // masquerading as a landed or countered attack in saved match evidence.
+  abortAerial(M,'interrupted',false);
   const g=get(M),outcome=M.outcome==='nc'?'nc':M.outcome==='double'?'double':M.outcome==='dq'?'dq':M.o.finish;
   if(!OUTCOME_EDGES.finish_setup.includes(outcome))throw Error('Invalid match outcome: '+outcome);
   const def=OUTCOMES[outcome];
@@ -1551,7 +1660,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial};
 })();
 
 function create(o){
@@ -1805,7 +1914,11 @@ function entrances(M){
 }
 function tick(M){
  (M.crowdTrace??=[]).push([M.t,Math.round(M.crowd)]);
- M.t+=10;const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
+ M.t+=10;
+ // Resolve the *specific* committed aerial attack before any scene/arc reset
+ // or unrelated spot can change positions. Pending state survives JSON saves.
+ const aerialResolved=Graph.resolveAerial(M);
+ const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
  if(!M.phase||M.phase.name!==ph.name){M.phase=ph;onPhase(M);if(M.decision)return;}
  // An outside exchange cannot continue indefinitely without a count-out.
  if(Psy.get(M).position==='outside'){
@@ -1841,9 +1954,9 @@ function tick(M){
  if(M.workingHurt&&M.r()<.04&&M.injury<4){M.injury++;say(M,`${w.short} winces again. That’s getting worse.`,'agent');}
  // spots
  const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*(M.offScript==='showboat'?1.5:1);
- let spoke=false;
- if(M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
- else if(M.r()<spotP){Graph.special(M);spoke=true;}
+ let spoke=aerialResolved;
+ if(!spoke&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
+ else if(!spoke&&M.r()<spotP){Graph.special(M);spoke=true;}
  // crowd bands
  crowdBand(M);
  // producer hints

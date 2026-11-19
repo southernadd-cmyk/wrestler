@@ -11,6 +11,7 @@ on:
       - 'tests/phase4-technique-backgrounds.test.cjs'
       - 'tests/phase5-training-expansion.test.cjs'
       - 'tests/phase5b-technique-review.test.cjs'
+      - 'tests/aerial-attempts.test.cjs'
       - '.github/workflows/phase5-techniques.yml'
   push:
     branches: [main]
@@ -42,3 +43,4 @@ jobs:
           node tests/phase4-technique-backgrounds.test.cjs
           node tests/phase5-training-expansion.test.cjs
           node tests/phase5b-technique-review.test.cjs
+          node tests/aerial-attempts.test.cjs
