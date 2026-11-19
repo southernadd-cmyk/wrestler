@@ -1268,6 +1268,7 @@ const Graph=(function makeGraph(){
    if(extra>base*.5){const k=base*.5/extra;for(const x of n.next)if(!orig.has(x[0]))x[1]=Math.round(x[1]*k*1000)/1000;}
   }
   add('outside_toss','floor_regroup',1.5);add('pw_bearhug','hope_elbows_standing',1);
+  add('rope_run','os_ropes_backdrop',.6);add('strike_trade','os_ropes_backdrop',.6);
   return {F,famOf,members,counts};
  })();
  const CROWD_SCALE=.3,SHEET_PULL=1.8;
@@ -2412,6 +2413,41 @@ function say(M,text,kind='play',opt={}){
  const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0,who};M.queue.push(line);M.log.push(line);return line}
 
 function phaseFor(frac,M){const ends=Psy.PHASE_ENDS[M?.planId]||Psy.PHASE_ENDS.story;return PHASES.find((p,i)=>frac<ends[i])||PHASES[4]}
+// Grade observed, mechanically connected offence and actual dramatic payoffs.
+// Never infer good wrestling from spot counts, named moves alone or the match plan.
+function constructionOf(M){
+ const g=M.graph||{},actions=(g.events||[]).filter(e=>Graph.A[e.id]&&e.preControl);
+ let linkedPairs=0,threeBeatSequences=0,staleRepetitions=0,lastLinked=false;
+ for(let i=0;i<actions.length;i++){
+  const event=actions[i],prev=actions[i-1];
+  const linked=!!(prev&&prev.control===event.preControl&&
+   prev.preControl===prev.control&&event.preControl===event.control&&
+   event.t>=prev.t&&event.t-prev.t<=30&&
+   Graph.A[prev.id].next.some(([to])=>to===event.id));
+  if(linked){linkedPairs++;if(lastLinked)threeBeatSequences++;}
+  lastLinked=linked;
+  if(actions.slice(Math.max(0,i-7),i).filter(x=>
+   x.id===event.id&&x.preControl===event.preControl).length>=2)
+   staleRepetitions++;
+ }
+ const history=g.history||[],pressureIndex=history.findIndex(x=>['cutoff','control','limb_work'].includes(x));
+ const hopeIndex=history.findIndex((x,i)=>i>pressureIndex&&['hope','denial'].includes(x));
+ const comeback=history.findIndex((x,i)=>i>hopeIndex&&['comeback','resurgence'].includes(x));
+ const earnedComeback=pressureIndex>=0&&hopeIndex>pressureIndex&&comeback>hopeIndex;
+ const workedDamage=(g.damage?.w||0)+(g.damage?.f||0);
+ const focusedWork=workedDamage>=3;
+ const opportunities=Math.max(1,actions.length-1);
+ // Ratios make longer matches no more valuable than shorter, well-built ones.
+ // A cap protects the five-star scale and keeps raw ringcraft decisive.
+ let score=actions.length<5?0:
+  Math.min(.22,linkedPairs/opportunities*.28+
+   threeBeatSequences/Math.max(1,actions.length-2)*.18)+
+  (focusedWork?.07:workedDamage>0?.03:0)+(earnedComeback?.08:0)-
+  Math.min(.18,staleRepetitions*.025);
+ score=Math.round(clamp(score,-.2,.37)*1000)/1000;
+ return {linkedPairs,threeBeatSequences,staleRepetitions,focusedWork,
+  workedDamage,earnedComeback,actions:actions.length,score};
+}
 // The rating, itemised: what each part added to (or took off) the stars. stars() is their sum.
 function starParts(M){
  if(!M.qN)return [];
@@ -2421,6 +2457,8 @@ function starParts(M){
  if(M.shortened)parts.push(['short','Cut short',-.45]);
  if(M.sheetAdj)parts.push(['layout','The agreed layout',M.sheetAdj]);
  if(M.minutes>=15&&avgQ>=60)parts.push(['length','Long match, held together',.2]);
+ const construction=constructionOf(M);
+ if(construction.score)parts.push(['psychology','Sequences and psychology',construction.score]);
  if(M.outcome==='double')parts.push(['double','Double count-out',.25]);
  return parts;
 }
@@ -3019,7 +3057,7 @@ function summary(M){
    opponentDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='f')
   },
   evidence:evidenceOf(M),roomNegotiation:M.o.sheet?.negotiation||null,
-  psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+  psychology:{archetype:M.planId,construction:constructionOf(M),controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 // v0.3.12 What happened, as structured facts a rivalry can cite later: who reversed whom and which kind
 // of attack, who cheated, who was spent at the bell, who was hurt, and what became of each agreed beat.
