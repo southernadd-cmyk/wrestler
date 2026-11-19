@@ -46,7 +46,15 @@ try {
     const match = lab.runMatch(root, lab.makeOptions(D, options));
     lab.add(snapshot, match, G);
   }
-  process.stdout.write(JSON.stringify(lab.report(snapshot, G, { full: args.includes('--full') }), null, 2) + '\n');
+  const report = lab.report(snapshot, G, { full: args.includes('--full') });
+  if (Array.isArray(G.TECHNIQUE_PILOT)) {
+    // Counts only consecutive real match events matching authored graph links,
+    // not generic arc jumps or theoretical legal options.
+    report.pilotTransitions = G.TECHNIQUE_PILOT.map(({from,to,kind}) => ({
+      from, to, kind, hits: snapshot.edgeHits[from + '>' + to] || 0
+    }));
+  }
+  process.stdout.write(JSON.stringify(report, null, 2) + '\n');
 } catch (error) {
   process.stderr.write('Graph baseline failed: ' + error.message + '\n');
   process.exitCode = 1;

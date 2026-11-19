@@ -56,10 +56,15 @@ async function visit(browser, label, viewport) {
     await page.locator('#nodeList button').first().click();
     assert.match(await page.locator('#techniqueDetails').innerText(), /TAKEDOWN/i);
     assert.match(await page.locator('#techniqueDetails').innerText(), /standing \/ leg/i);
-    assert.match(await page.locator('#techniqueDetails').innerText(), /NOT executable graph links/i);
+    assert.match(await page.locator('#techniqueDetails').innerText(), /Only links explicitly marked LIVE/i);
     await page.locator('#techniqueDetails .mechanics-relations button').last().click();
     assert.match(await page.locator('#selection').innerText(), /ch_single_leg_rev/);
     assert.match(await page.locator('#techniqueDetails').innerText(), /No manually curated mechanic/i);
+    assert.match(await page.locator('#techniqueDetails .mechanics-live').innerText(), /lockup.*ch_single_leg_rev/,'move-specific sprawl counter is explicitly live');
+    await page.locator('#search').fill('ch_rolling_wristlock');
+    await page.locator('#nodeList button').first().click();
+    assert.match(await page.locator('#techniqueDetails .mechanics-live').innerText(), /ch_deep_arm_drag/,'wrist-control-to-drag is live');
+
 
     await page.locator('#tab-run').click();
     if (label === 'desktop') {
