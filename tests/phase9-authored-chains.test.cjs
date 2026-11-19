@@ -12,6 +12,7 @@ const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,B=root.OfficeTechniqueBackg
 assert.equal(G.validate().errors.length,0);
 assert.equal(G.validate().nodes,969,'do not inflate vocabulary with pseudo-actions');
 assert.equal(G.validate().edges,6333,'144 new real directed edges beyond Phase 8');
+assert.equal(G.PHASE9_NEW_EDGES.length,144,'record only genuinely new Phase 9 links');
 const links=G.TECHNIQUE_CHAINS;
 assert.equal(links.length,191,'exact deliberately authored first batch');
 assert.equal(new Set(links.map(l=>l.from+'>'+l.to)).size,links.length,'no duplicated curated pairs');
@@ -33,6 +34,7 @@ function schoolPreference(wid,from,to,position,tag){
  m.t=Math.floor(m.len*.83);m.wSt=m.fSt=100;
  m.story.position=position;m.story.down=position==='mat'?'f':null;m.story.control='w';
  m.graph.node=from;m.graph.arc=position==='mat'?'limb_work':'chain';
+ m.graph.events.push({id:from,t:m.t-10,control:'w',preControl:'w',position});
  const original=root.OfficeTechniqueBackgrounds;
  const weight=affinity=>{
   root.OfficeTechniqueBackgrounds={get:()=>({id:'test',affinity}),multiplier:()=>1};
@@ -59,6 +61,9 @@ for(let i=0;i<config.count;i++){
 const result=validator.finish(ev);
 assert.equal(result.pass,true,JSON.stringify(result.examples));
 assert.equal(result.bouts,200);
+assert.ok(snap.phase9.matchesWithNew>50,'new Phase 9 links appear in real matches');
+assert.ok(snap.phase9.newTriples>0,'two successive newly authored transitions form three-beat offence');
+assert.ok(snap.phase9.sameControllerOccurrences>snap.phase9.interruptedPairs,'continuous offence must dominate unrelated interventions');
 assert.ok(result.distinctMatchSequences>=160,'bouts need genuinely different action sequences');
 const active=links.filter(x=>(snap.edgeHits[x.from+'>'+x.to]||0)>0);
 const observed=active.reduce((sum,x)=>sum+(snap.edgeHits[x.from+'>'+x.to]||0),0);
