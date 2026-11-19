@@ -866,12 +866,22 @@ function cornerPicker(c,w,f){
 }
 
 /* ---------- after the bell (v0.3.20) ---------- */
+const AFTER_SHORT={
+ none:['No angle','Finish and leave'],
+ handshake:['Handshake','Respect · may be refused'],
+ staredown:['Stare-down','Keep the rivalry going'],
+ beatdown:['Post-match attack','Build heat · risk a fight'],
+ celebrate:['Celebrate','Take a lap after a win']
+};
 function afterPicker(c,w,f){
  if(!window.OfficeAfter)return '';
  const on=night.plan?.after||'none';
- return `<h3 class="section-h after-h">After the bell</h3><p class="dim">${esc(OfficeRoom.AGENT)}: “And when it’s over? Decide now. They need to know before they go out.”</p><div class="picks after-picks">${OfficeAfter.plans(c,w,f).map(o=>`<button class="decision-option${o.id===on?' on':''}" data-afterplan="${esc(o.id)}" aria-pressed="${o.id===on}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span>${tagChips(o.tags)}</button>`).join('')}</div>`;
+ return `<section class="after-setup"><h3 class="section-h after-h">After the bell <small>optional</small></h3><p class="dim after-setup-intro">What happens once the match ends?</p><div class="after-plan-grid" role="group" aria-label="After the bell plan">${OfficeAfter.plans(c,w,f).map(o=>{
+  const label=AFTER_SHORT[o.id]||[o.label,o.hint];
+  return `<button class="after-plan${o.id===on?' on':''}" data-afterplan="${esc(o.id)}" aria-pressed="${o.id===on}" title="${esc(o.hint)}"><b>${esc(label[0])}</b><span>${esc(label[1])}</span></button>`;
+ }).join('')}</div></section>`;
 }
-function afterNext(){const more=night.i<night.queue.length;return `<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}
+function afterNext(){const more=night.i<night.queue.length;return `<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to office'}</button>`}
 function showAfter(){
  const st=night.after;if(!st)return night.i<night.queue.length?prep():endNight();
  const w=G.W(st.c.wid)||D.findWrestler(st.c.wid),f=G.F(st.c.rid)||D.findWrestler(st.c.rid),p=G.P(st.c.pid);
@@ -897,7 +907,7 @@ function showSigning(){
  const arcCue=chapter?`<p class="arc-follow arc-signing"><b>Programme, chapter ${esc(c.programme.step+1)}:</b> ${esc(chapter.read)}<span>${esc(chapter.prompt)}</span></p>`:'';
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede"><b>${esc(v.result.reaction)}</b></p></div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.name)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${pickCards(v.options,'contract')}</div>`;
- $('#tv').innerHTML=strip(c,'contract signing')+'<div class="stage screen s-back">'+win('The contract signing: '+w.short+' and '+f.short,matchupBar(c,w,f,middle)+arcCue+sceneLog(entries,'signTalk',w,f,p.id)+decide,{h:'h3',body:'tight'})+'</div>'+
+ $('#tv').innerHTML=strip(c,'contract signing')+'<div class="stage screen s-back">'+win('The contract signing: '+w.short+' and '+f.short,matchupBar(c,w,f,middle)+arcCue+matchSceneLayout(sceneLog(entries,'signTalk',w,f,p.id),decide,'signing-layout'),{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'The paperwork is done.':'Every choice turns the room up or down.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('signTalk');persistNight();
 }
@@ -925,6 +935,7 @@ function tagChips(tags){
  const cls=t=>/▲ or ▼|Gamble|risk|Risk|Risky|stake|if |Unlikely|booked|Will not work|either way|loses clean/.test(t)?'warn':/▼|−£|Shorter|Limits|No promo/.test(t)?'down':/▲|\+£|Safe|Safer|Better|Wins|Builds|Steady/.test(t)?'up':'';
  return tags?.length?`<span class="tags">${tags.map(t=>`<i class="${cls(t)}">${esc(t)}</i>`).join('')}</span>`:'';
 }
+function matchSceneLayout(scene,decision,extra=''){return `<div class="match-scene-layout ${extra}">${scene}${decision}</div>`}
 function sceneLog(entries,id,w,f,pid){
  // The conversation as people talking: your side on the left, theirs on the right.
  const row=e=>{
@@ -966,9 +977,9 @@ function showMeeting(){
  const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>
   <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span>${esc(c.who)}’s idea</span>${tagChips(c.tags)}</button>`).join('')}</div></div>`).join('')}</div>
   <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the running order</button></div></div>`:'';
- const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
+ const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Final arrangements</h3><p class="lede">The running order is agreed. Make your final choices before the match.</p>${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
- const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
+ const body=matchupBar(c,w,f,middle,wNote,fNote)+matchSceneLayout(sceneLog(v.log,'roomTalk',w,f,p.id),decide,'meeting-layout')+agreed;
  const signing=window.OfficeSigning?.eligible(c);
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:signing?'<button class="btn go" data-tv="signing">To the contract signing</button>':st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
  $('#tv').innerHTML=strip(c,'backstage')+'<div class="stage screen s-back">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
@@ -1007,7 +1018,7 @@ function showPromos(){
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">The final word</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.tactic?.stake||'')}</p></div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.name)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${read}${cue}${open}${claim}${pickCards(v.options,'mic',true)}</div>`;
  const sp=st.speaker?G.W(st.speaker.id)||w:w;
- const body=matchupBar(c,w,f,meter)+(st.speaker?`<p class="dim mouth-note">${esc(st.speaker.short)} is doing the talking for ${esc(w.short)}.</p>`:'')+sceneLog(entries,'micTalk',sp,f,p.id)+decide;
+ const body=matchupBar(c,w,f,meter)+(st.speaker?`<p class="dim mouth-note">${esc(st.speaker.short)} is doing the talking for ${esc(w.short)}.</p>`:'')+matchSceneLayout(sceneLog(entries,'micTalk',sp,f,p.id),decide,'promo-layout');
  $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win('The promo: '+w.short+' against '+f.short+' for the room',body,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'It is said.':'Once it is out of your mouth, it stays said.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('micTalk');
