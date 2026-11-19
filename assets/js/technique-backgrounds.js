@@ -25,12 +25,13 @@
   boxing:Object.freeze({id:'boxing',label:'Boxing',affinity:Object.freeze({boxing:1})}),
   strength:Object.freeze({id:'strength',label:'Strength athletics',affinity:Object.freeze({strength:1})}),
   acrobatics:Object.freeze({id:'acrobatics',label:'Acrobatic training (provisional)',affinity:Object.freeze({acrobatics:1})}),
+  'lucha-acrobatics':Object.freeze({id:'lucha-acrobatics',label:'Lucha and acrobatics (provisional)',affinity:Object.freeze({lucha:.8,acrobatics:.65})}),
   'catch-judo':Object.freeze({id:'catch-judo',label:'Catch and judo',affinity:Object.freeze({catch:.8,judo:.65,lucha:0})}),
   'catch-lucha':Object.freeze({id:'catch-lucha',label:'Catch and lucha',affinity:Object.freeze({catch:.8,judo:0,lucha:.65})})
  });
  // Editorial assignments to original characters, not extrapolated from ring
  // style, nationality, gender, weight, or the career's weekly training state.
- // Unlisted wrestlers remain general and receive NO new bias. Zara's documented aerial skill supports a PROVISIONAL editorial acrobatics assignment, not a claim of a documented gymnastics career.
+ // Unlisted wrestlers remain general and receive NO new bias. Kit retains his existing lucha identity, with a PROVISIONAL acrobatics affinity suggested by the gymnast-like description, not a claim of a documented gymnastics career.
  const ASSIGNMENTS=Object.freeze({
   juno:'catch',dee:'catch',cal:'catch',imani:'catch',ezra:'catch',
   silas:'catch',nova:'catch',
@@ -38,11 +39,11 @@
   theo:'catch',winnie:'catch',gideon:'catch',ellis:'catch',
   emmett:'catch',iris:'catch',cleo:'catch',noelle:'catch',jun:'catch',
   marisol:'catch-lucha',cass:'catch-lucha',
-  nico:'lucha',lyra:'lucha',kit:'lucha',night:'lucha',ace:'lucha',
+  nico:'lucha',lyra:'lucha',kit:'lucha-acrobatics',night:'lucha',ace:'lucha',
   tori:'lucha',rina:'lucha',kofi:'lucha',leandro:'lucha',
   nadia:'lucha',liya:'lucha',zara:'lucha',jett:'lucha',
   anya:'lucha',sasha:'lucha',
-  tomasash:'boxing',val:'strength',zara:'acrobatics'
+  tomasash:'boxing',val:'strength'
  });
  const idOf=w=>typeof w==='string'?w:w?.id;
  function get(w){return SCHOOLS[ASSIGNMENTS[idOf(w)]||'general'];}
