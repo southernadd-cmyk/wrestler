@@ -275,6 +275,7 @@ const Psy=(function installPsychology(){
 /* THE OFFICE v2.7 — hierarchical causal graph, based on match-psychology research */
 const Graph=(function makeGraph(){
  const A={};
+ const introducedPhase9=new Set();
  // Phase 3 / small, curated, live technique sequences. These IDs are ALREADY in
  // the authored graph; they do not unlock new moves or alter the finish contract.
  // Entry position compatibility is enforced at build time and again by isValid().
@@ -1218,12 +1219,22 @@ const Graph=(function makeGraph(){
   }
    // Only this small reviewed subset becomes playable; Phase 2 proposals
    // are NEVER auto-imported into the match graph.
-   for(const link of [...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH,...TECHNIQUE_CHAINS]){
+   for(const link of [...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH]){
     const source=A[link.from],target=A[link.to];
     if(!source||!target||source.zone!==target.requires)
      throw Error('Curated impossible technique link: '+link.from+' -> '+link.to);
     if(link.kind==='counter'&&target.counterOf!=='ch_single_leg')
      throw Error('Phase 3 counter needs the intended move-specific reversal');
+    add(link.from,link.to,link.weight);
+   }
+   // Distinguish genuinely introduced Phase 9 edges from links that were
+   // already present and merely reweighted; capture BEFORE adding each link.
+   for(const link of TECHNIQUE_CHAINS){
+    const source=A[link.from],target=A[link.to];
+    if(!source||!target||source.zone!==target.requires)
+     throw Error('Curated impossible technique link: '+link.from+' -> '+link.to);
+    if(!source.next.some(([to])=>to===link.to))
+     introducedPhase9.add(link.from+'>'+link.to);
     add(link.from,link.to,link.weight);
    }
   // A few climbing hubs and a superplex route for the bigger spots.
@@ -2030,7 +2041,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple};
 })();
 
 function create(o){
