@@ -15,7 +15,7 @@ async function visit(browser, label, viewport) {
     await page.goto(URL, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.querySelector('#totalNodes').textContent !== '—');
     assert.ok(Number((await page.locator('#totalNodes').innerText()).replaceAll(',', '')) >= 960);
-    assert.equal(await page.locator('#validation').innerText(), 'Pass');
+    assert.equal((await page.locator('#validation').innerText()).toLowerCase(), 'pass');
     assert.equal(await page.locator('#worker option').count(), 80);
     assert.equal(await page.locator('#opponent option').count(), 80);
 
