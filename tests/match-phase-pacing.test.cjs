@@ -67,6 +67,7 @@ for(let i=0;i<200;i++){
  }
  assert.ok(M.done,'all match outcomes must still resolve, seed '+i);
  assert.ok(M.final?.psychology?.graph,'finished match retains graph evidence');
+ assert.ok(M.scriptChecks<=4,'a scripted bout checks compliance only on four major phase changes');
  bouts++;
 }
 assert.ok(earlyExchange>0,'normal back-and-forth survives before the finish');
