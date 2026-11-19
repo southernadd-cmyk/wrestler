@@ -87,7 +87,7 @@
     traditions, setupIds, counterIds, variantOf, note] of proposals) {
     if (has(registry, id)) throw Error('Duplicate technique registry ID: ' + id);
     registry[id] = Object.freeze({
-      id, mechanicalClass, mechanic,
+      id, mechanicalClass, mechanic: mechanic.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
       entry: spec(entry), exit: spec(exit), target: target || null,
       traditionTags: Object.freeze([...traditions]),
       setupIds: Object.freeze([...setupIds]),
