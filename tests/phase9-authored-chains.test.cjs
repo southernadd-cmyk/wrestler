@@ -26,6 +26,26 @@ for(const link of links){
 }
 assert.equal(B.validate(D,G,R).valid,true,'schools remain compatible with deeper graph');
 assert.equal(B.validate(D,G,R).assigned,80);
+// Hold source, destination and performer fixed, then vary only technical affinity.
+// The live decision pool must prefer genuinely familiar authored handoffs.
+function schoolPreference(wid,from,to,position,tag){
+ const m=M.create(lab.makeOptions(D,{wid,rid:'rex',seed:94077,plan:'technical',slot:'main'}));
+ m.t=Math.floor(m.len*.83);m.wSt=m.fSt=100;
+ m.story.position=position;m.story.down=position==='mat'?'f':null;m.story.control='w';
+ m.graph.node=from;m.graph.arc=position==='mat'?'limb_work':'chain';
+ const original=root.OfficeTechniqueBackgrounds;
+ const weight=affinity=>{
+  root.OfficeTechniqueBackgrounds={get:()=>({id:'test',affinity}),multiplier:()=>1};
+  return G.pool(m).find(([id])=>id===to)?.[1]||0;
+ };
+ try{
+  const neutral=weight({}),trained=weight({[tag]:1});
+  assert.ok(neutral>0&&trained>neutral*1.17,
+   'recognised '+tag+' training must raise real next-move weight for '+from+' > '+to);
+ }finally{root.OfficeTechniqueBackgrounds=original;}
+}
+schoolPreference('juno','mat_hold','sm_kimura','mat','catch');
+schoolPreference('tomasash','st_forearm','st_uppercut','standing','boxing');
 const config={seed:94001,count:200,rotation:'roster'};
 const snap=lab.empty(G,config),ev=validator.create(G),all=lab.roster(D);
 for(let i=0;i<config.count;i++){
