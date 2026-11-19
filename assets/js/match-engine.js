@@ -1911,7 +1911,11 @@ function entrances(M){
 }
 function tick(M){
  (M.crowdTrace??=[]).push([M.t,Math.round(M.crowd)]);
- M.t+=10;const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
+ M.t+=10;
+ // Resolve the *specific* committed aerial attack before any scene/arc reset
+ // or unrelated spot can change positions. Pending state survives JSON saves.
+ const aerialResolved=Graph.resolveAerial(M);
+ const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
  if(!M.phase||M.phase.name!==ph.name){M.phase=ph;onPhase(M);if(M.decision)return;}
  // An outside exchange cannot continue indefinitely without a count-out.
  if(Psy.get(M).position==='outside'){
@@ -1947,9 +1951,9 @@ function tick(M){
  if(M.workingHurt&&M.r()<.04&&M.injury<4){M.injury++;say(M,`${w.short} winces again. That’s getting worse.`,'agent');}
  // spots
  const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*(M.offScript==='showboat'?1.5:1);
- let spoke=false;
- if(M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
- else if(M.r()<spotP){Graph.special(M);spoke=true;}
+ let spoke=aerialResolved;
+ if(!spoke&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
+ else if(!spoke&&M.r()<spotP){Graph.special(M);spoke=true;}
  // crowd bands
  crowdBand(M);
  // producer hints
