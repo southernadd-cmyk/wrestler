@@ -27,8 +27,8 @@ assert.equal(first.schema,'office-five-meeting-audit-v1');
 assert.equal(first.actualMatches,4);
 assert.equal(first.errors.length,0);
 assert.equal(first.checks.graphErrors,0);
-assert.deepEqual(first.pairs.map(x=>x.meetings),again.pairs.map(x=>x.meetings),
- 'all controlled rivalry bouts are reproducible under identical inputs');
+assert.equal(JSON.stringify(first.pairs.map(x=>x.meetings)),JSON.stringify(again.pairs.map(x=>x.meetings)),
+ 'all controlled rivalry bouts are reproducible under identical inputs (including VM array values)');
 assert.ok(first.pairs[0].meetings.every(m=>m.finish&&m.route&&m.actionCount>0));
 assert.ok(first.pairs[0].counterfactual.divergentMatches>=0);
 assert.match(audit.markdown(first),/Meeting-by-meeting outcomes/);
