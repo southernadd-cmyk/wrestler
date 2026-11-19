@@ -52,6 +52,32 @@ for (const id of Object.keys(report.edgeHits)) {
 }
 assert.equal(report.timingErrors.length, 0, 'no graph events before their declared earliest time');
 assert.equal(report.unknownEvents.length, 0, 'all observed non-special events known');
+assert.equal(G.PHASE9_NEW_EDGES.length,144,'Phase 9 export is the genuine pre-insertion difference');
+assert.equal(report.phase9.newlyIntroducedLinks,144);
+assert.equal(report.phase9.newPairOccurrences,snapshot.phase9.newOccurrences);
+assert.equal(report.phase9.newLinksObserved,Object.keys(snapshot.phase9.newPairHits).length);
+assert.equal(report.phase9.opponentInterceptions+report.phase9.sameControllerOccurrences,
+ report.phase9.newPairOccurrences,'intercepted pairs are never mistaken for same-controller combinations');
+// Inject instrument-only traces. This does NOT modify the match engine.
+const fabricated=(events)=>({
+ graph:{events,outcome:{id:'win_clean'}},final:{stars:2.5},outcome:'win_clean',
+ o:{seed:99144},len:600,w:{id:'juno',style:'Technical'},f:{id:'rex',style:'Brawl'}
+});
+const trio=[
+ {id:'wristlock',t:10,preControl:'w',control:'w',arc:'chain',position:'standing'},
+ {id:'ch_rolling_wristlock',t:20,preControl:'w',control:'w',arc:'chain',position:'standing'},
+ {id:'ch_short_arm',t:30,preControl:'w',control:'w',arc:'chain',position:'standing'}
+];
+const chained=core.empty(G);core.add(chained,fabricated(trio),G);
+assert.equal(chained.phase9.newOccurrences,2);
+assert.equal(chained.phase9.sameControllerOccurrences,2);
+assert.equal(chained.phase9.newTriples,1,'true three-action sequence tracks two new adjacent links');
+const intercepted=core.empty(G);
+core.add(intercepted,fabricated([{...trio[0]},{...trio[1],preControl:'f',control:'f'}]),G);
+assert.equal(intercepted.phase9.newOccurrences,1,'interception remains visible in raw adjacency');
+assert.equal(intercepted.phase9.sameControllerOccurrences,0,'opponents cannot share one continuous combo');
+assert.equal(intercepted.phase9.interruptedPairs,1);
+
 const trace = core.trace(one, G);
 assert.ok(trace.length > 0 && trace.every(e => typeof e.seconds === 'number' && e.id));
 assert.equal(JSON.stringify(G.A), before, 'lab must not alter graph definitions');
