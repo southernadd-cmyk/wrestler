@@ -17,7 +17,7 @@
     'Submission', 'Strike', 'Throw', 'Takedown', 'Clinch',
     'Position', 'Escape & Reversal', 'Defence', 'Weapon', 'Wrestling-only'
   ]);
-  const TRADITIONS = Object.freeze(['catch', 'judo', 'lucha']);
+  const TRADITIONS = Object.freeze(['catch', 'judo', 'lucha', 'boxing', 'acrobatics', 'strength']);
   const CONTROLS = Object.freeze([
     'free', 'wrist', 'arm', 'head', 'front-facelock', 'rear-waist',
     'upper-body', 'leg', 'ankle', 'ground-top', 'ground-leg', 'headscissors',
@@ -81,6 +81,34 @@
     ['pn_magistral','Wrestling-only','arm-control cradle','standing/arm','mat/pin',null,['lucha','catch'],['wristlock','ch_deep_arm_drag'],[],null,'Pinning mechanism overlays hand/arm control.'],
     ['pn_victory_roll','Wrestling-only','shoulder roll pin','standing/upper-body','mat/pin',null,['lucha'],['rope_rebound','lc_hurricanrana'],[],null,'Pinning outcome distinct from pure throw.'],
     ['sb_arm_drag','Throw','rope-assisted arm-drag','top/rope-launch','mat/released','arm',['lucha'],['springboard_rise','ch_deep_arm_drag'],[],'ch_deep_arm_drag','Top-rope launch is ring context; no changes to current top-position gate.']
+    ,
+    // Phase 5: independently authored training foundations, not match-performance styles.
+    // Punching mechanics: a former boxer has a source-backed aptitude for punches,
+    // not for every heel strike, forearm, elbow or unrelated impact move.
+    ['st_jab','Strike','straight-punch combination','standing/free','standing/free',null,['boxing'],['strike_trade','lockup'],[],null,'Straight punches as a measured entry; the engine does not store guard position.'],
+    ['st_gut_punch','Strike','body punch','standing/free','standing/free','ribs',['boxing'],['st_jab','strike_trade'],[],null,'Follows jabs to the body; a narrative sequence, not a guaranteed combination.'],
+    // Strength athletics: lifting and catches, with pre-existing weight/stamina guards.
+    ['pw_body_slam','Throw','scoop-and-lift','standing/upper-body','mat/released',null,['strength'],['waistlock','lockup'],[],null,'Body scoop from a tie-up, gated by original lifting restrictions.'],
+    ['pw_fallaway','Throw','catch-and-release lift','standing/upper-body','mat/released',null,['strength'],['rope_rebound'],[],null,'Catch from the ropes; does not grant strength beyond existing lift checks.'],
+    ['pw_military_press','Throw','overhead military press','standing/upper-body','mat/released',null,['strength'],['lockup'],[],null,'An overhead press requires a lifting position and remains weight limited.'],
+    ['pw_samoan_drop','Throw','shoulder-load drop','standing/upper-body','mat/released',null,['strength'],['pw_torture_rack','lockup'],[],null,'A controlled drop after shoulder loading; no automatic follow-up.'],
+    ['pw_gorilla_press','Throw','overhead gorilla press','standing/upper-body','mat/released',null,['strength'],['lockup'],[],'pw_military_press','Similar overhead lift, but a separate existing action.'],
+    ['pw_torture_rack','Submission','shoulder-rack pressure','standing/upper-body','standing/upper-body','back',['strength'],['waistlock','lockup'],[],null,'Standing shoulder carry remains standing in the game state.'],
+    ['pw_scoop_powerslam','Throw','scoop powerslam','standing/upper-body','mat/released',null,['strength'],['rope_rebound','lockup'],[],'pw_body_slam','Scoop entry shared with a body slam but different impact.'],
+    // Acrobatics: an explicitly editorial rather than inferred school for Kit.
+    ['ar_shooting_star','Wrestling-only','shooting-star rotation','top/rope-launch','mat/released',null,['acrobatics'],['top_climb'],[],null,'Advanced aerial rotation; existing agile, risk and late-timing gates remain binding.'],
+    ['ar_corkscrew','Wrestling-only','corkscrew rotation','top/rope-launch','mat/released',null,['acrobatics'],['top_climb'],[],null,'Axial rotation off the top, not simply any Spectacle performance move.'],
+    ['ar_450','Wrestling-only','four-fifty rotation','top/rope-launch','mat/released',null,['acrobatics'],['top_climb'],[],null,'A demanding rotational dive with unchanged risk/eligibility checks.'],
+    ['ar_moonsault','Wrestling-only','backward aerial rotation','top/rope-launch','mat/released',null,['acrobatics'],['top_climb'],[],null,'Backwards flip from a permitted top-rope position.'],
+    ['sb_dropkick','Wrestling-only','springboard kick launch','top/rope-launch','mat/released',null,['acrobatics'],['springboard_rise'],[],null,'Springboard kick is treated as ring-specific aerial delivery.'],
+    ['sb_moonsault','Wrestling-only','springboard backward rotation','top/rope-launch','mat/released',null,['acrobatics'],['springboard_rise'],[],'ar_moonsault','Same aerial rotation with a springboard entry rather than stationary top rope.'],
+    // Additional reviewed catch/judo and ring-specific pins.
+    ['sx_fisherman','Throw','leg-hook bridging suplex','standing/upper-body','mat/released','back',['catch','judo'],['front_facelock','lockup'],[],null,'Leg hook and bridge help set up a nearfall.'],
+    ['sx_exploder','Throw','leg-hook overhead suplex','standing/upper-body','mat/released','back',['judo','catch'],['waistlock','lockup'],[],null,'Off-balancing throw with a leg hook and overhead rotation.'],
+    ['sm_kneebar','Submission','knee extension hold','mat/ground-leg','mat/ground-leg','leg',['catch'],['mat_hold','ch_single_leg'],[],null,'Ground leg extension; a leg target is present in the current engine.'],
+    ['pn_backslide','Wrestling-only','backward arm trap cradle','standing/arm','mat/pin',null,['lucha','catch'],['wristlock'],[],null,'Arm-controlled cradle with a wrestling-only nearfall outcome.'],
+    ['pn_schoolboy','Wrestling-only','rear trip cradle','standing/upper-body','mat/pin',null,['lucha','catch'],['rope_rebound'],[],null,'A simple pin from behind; distinct from a pure takedown.'],
+    ['pn_crucifix','Wrestling-only','crossed arm trap cradle','standing/arm','mat/pin',null,['lucha','catch'],['wristlock'],[],null,'Arm restraint leading to a pin rather than a lock.']
   ];
   const registry = Object.create(null);
   for (const [id, mechanicalClass, mechanic, entry, exit, target,
