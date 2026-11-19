@@ -1502,7 +1502,10 @@
   const id=b.actions[0],n=A[id];if(!n)return [];
   // How hard they chase the agreed move: their mood about the sheet, how tired they are,
   // how good they are at keeping a match on track, and whether the room is giving anything back.
-  const rehearsal=side==='w'&&M.sheet?.rehearsed?1.3:1;
+  // A one-match rehearsal makes a known worker beat substantially more
+  // likely to be timed correctly amid the expanded Phase 10 move pool.
+  // It never bypasses legality, position, stamina or the booked finish.
+  const rehearsal=side==='w'&&M.sheet?.rehearsed?2:1;
   const O=side==='w'?M.w:M.f,tired=clamp(1.15-(O.fatigue||0)/100,.45,1),head=clamp(.55+(O.psych||50)/160,.7,1.15),room=(M.crowd??50)<35?.7:1;
   const keen=clamp((willing(M,side)-40)/11*tired*head*room*rehearsal,.2,5);
   if(b.impossible){
