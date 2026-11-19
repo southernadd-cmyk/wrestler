@@ -25,6 +25,8 @@ async function journey(browser,name,viewport){
     return values;
   });
   assert.equal(colours.poor,colours.poorPhase,name+': poor work swatch and phase band mismatch');
+  assert.equal(colours.poor,'rgb(255, 107, 94)',name+': poor work must be red');
+  assert.equal(colours.opponent,'rgb(187, 166, 255)',name+': opponent momentum must be purple');
   assert.notEqual(colours.poor,colours.opponent,name+': poor work and opponent use the same colour');
   assert.notEqual(colours.mistake,colours.opponent,name+': mistake and opponent use the same colour');
   assert.notEqual(colours.mistake,colours.poor,name+': mistake and poor work use the same colour');
