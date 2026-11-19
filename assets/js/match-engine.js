@@ -275,6 +275,24 @@ const Psy=(function installPsychology(){
 /* THE OFFICE v2.7 — hierarchical causal graph, based on match-psychology research */
 const Graph=(function makeGraph(){
  const A={};
+ // Phase 3 / small, curated, live technique sequences. These IDs are ALREADY in
+ // the authored graph; they do not unlock new moves or alter the finish contract.
+ // Entry position compatibility is enforced at build time and again by isValid().
+ // "counter" entries are alternatives to an attempted move, never after a landed one.
+ const TECHNIQUE_PILOT=Object.freeze([
+  ['wristlock','ch_top_wristlock',1.35,'setup','Catch: retain wrist control'],
+  ['ch_top_wristlock','ch_rolling_wristlock',1.65,'setup','Catch: roll through the trapped wrist'],
+  ['ch_rolling_wristlock','ch_deep_arm_drag',1.65,'setup','Catch: turn wrist control into an arm drag'],
+  ['ch_cravate','ch_headlock_takedown',1.4,'setup','Catch: head control to mat takeover'],
+  ['front_facelock','ch_snapmare',1.2,'setup','Catch: snapmare from secured head control'],
+  ['ch_snapmare','sm_sleeper',1.45,'setup','Catch: hold the head after landing'],
+  ['ch_single_leg','sm_ankle_lock',1.4,'setup','Catch: retained leg to ankle lock'],
+  ['ch_dragon_screw','sm_figure_four',1.35,'setup','Catch: targeted leg twist to leglock'],
+  ['rope_run','lc_hurricanrana',1.3,'setup','Lucha: rana as opponent rebounds'],
+  ['lc_hurricanrana','early_cover',1.35,'followup','Lucha: brief nearfall after the throw'],
+  ['ankle_pick','ch_single_leg_rev',.95,'counter','Catch: sprawl defeats a single-leg attempt']
+ ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
+
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
      reverse:!!opts.reverse,kind:opts.kind||'play',focus:opts.focus||0,crowd:opts.crowd||0,weight:opts.weight||1,styles:opts.styles||null,cost:opts.cost??null,lift:opts.lift??null,
       part:opts.part||null,after:opts.after||0,risk:!!opts.risk,nearfall:!!opts.nearfall,family:opts.family||null,name:opts.name||null,
@@ -934,6 +952,16 @@ const Graph=(function makeGraph(){
     }
    });
   }
+   // Only this small reviewed subset becomes playable; Phase 2 proposals
+   // are NEVER auto-imported into the match graph.
+   for(const link of TECHNIQUE_PILOT){
+    const source=A[link.from],target=A[link.to];
+    if(!source||!target||source.zone!==target.requires)
+     throw Error('Phase 3 impossible technique link: '+link.from+' -> '+link.to);
+    if(link.kind==='counter'&&target.counterOf!=='ch_single_leg')
+     throw Error('Phase 3 counter needs the intended move-specific reversal');
+    add(link.from,link.to,link.weight);
+   }
   // A few climbing hubs and a superplex route for the bigger spots.
   for(const src of ['corner_strikes','corner_whip','cn_chops','cn_mounted_punches','cn_face_buckle'])add(src,'top_follow',.9);
   A.top_follow.next=members.superplex.flatMap(id=>[e(id,1),e(id+'_rev',.5),...(A[id+'_blk']?[e(id+'_blk',.35)]:[])]);
@@ -1471,7 +1499,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid};
 })();
 
 function create(o){
