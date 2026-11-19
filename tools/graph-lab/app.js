@@ -1,0 +1,316 @@
+/* Graph Lab UI. The only source of bouts and graph facts is OfficeMatch. */
+(function () {
+  'use strict';
+  const D = window.OfficeData;
+  const M = window.OfficeMatch;
+  const lab = window.OfficeGraphLab;
+  const $ = id => document.getElementById(id);
+  const G = M?.GRAPH;
+  let info, people, selectedId, lastReport = null, savedReport = null;
+  let running = false, stopped = false;
+  const fmt = n => Number(n).toLocaleString('en-GB');
+  const make = (tag, text, cls) => {
+    const node = document.createElement(tag);
+    if (text !== undefined && text !== null) node.textContent = text;
+    if (cls) node.className = cls;
+    return node;
+  };
+  const set = (id, text) => { $(id).textContent = text; };
+
+  function fillRoster() {
+    people = lab.roster(D);
+    for (const id of ['worker', 'opponent']) {
+      const sel = $(id);
+      for (const person of people) {
+        const option = document.createElement('option');
+        option.value = person.id;
+        option.textContent = person.name + ' · ' + person.style;
+        sel.append(option);
+      }
+    }
+    $('worker').value = people.some(p => p.id === 'juno') ? 'juno' : people[0].id;
+    $('opponent').value = people.some(p => p.id === 'rex') ? 'rex' : people[1].id;
+  }
+
+  function listHits(id, items, labeler) {
+    const parent = $(id);
+    parent.replaceChildren();
+    if (!items?.length) { parent.append(make('li', 'No occurrences in this sample.', 'quiet')); return; }
+    for (const x of items.slice(0, 9)) {
+      const row = make('li');
+      const label = make('span', labeler(x.id));
+      label.title = x.id;
+      row.append(label, make('em', fmt(x.hits)));
+      parent.append(row);
+    }
+  }
+
+  function updateResults(report) {
+    lastReport = report;
+    set('completed', fmt(report.bouts));
+    set('nodeCoverage', report.nodeCoverage.toFixed(1) + '%');
+    set('edgeCoverage', report.edgeCoverage.toFixed(1) + '%');
+    set('avgStars', report.avgStars.toFixed(2));
+    set('counterSummary', 'Counters ' + fmt(report.counters) + ' · Blocks ' + fmt(report.blocks));
+    set('unseenSummary', 'Unseen actions ' + fmt(report.unseenNodes.length));
+    listHits('families', report.families, name => name.replace(/_/g, ' '));
+    listHits('topActions', report.topNodes, name => G.A[name]?.name || name.replace(/_/g, ' '));
+    listHits('sequences', report.topSequences, name => name.split(' > ').map(id => G.A[id]?.name || id).join(' → '));
+    listHits('finishRoutes', report.finishRoutes, name => name.replace(/_/g, ' '));
+    $('export').disabled = false;
+    renderComparison();
+  }
+
+  function showTrace(match) {
+    const trace = lab.trace(match, G);
+    const container = $('trace');
+    container.replaceChildren();
+    if (!trace.length) { container.append(make('p', 'No graph events recorded.', 'quiet')); return; }
+    for (const item of trace) {
+      const row = make('div', null, 'traceRow');
+      const minute = Math.floor(item.seconds / 60);
+      const sec = String(item.seconds % 60).padStart(2, '0');
+      const type = make('span', item.kind, 'kind ' + item.kind.toLowerCase());
+      row.append(make('span', minute + ':' + sec, 'time'), make('span', item.label), make('span', item.id, 'technical'), type);
+      row.title = 'Story arc: ' + item.arc + ' · Control: ' + item.side + ' · Event ID: ' + item.id;
+      container.append(row);
+    }
+  }
+
+  function drawLocal(id) {
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const container = $('diagram');
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 750 240');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'Actual incoming and outgoing authored links for ' + id);
+    const incoming = info.incoming[id].slice(0, 5);
+    const outgoing = G.A[id].next.slice().sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const add = (tag, attrs = {}, text) => {
+      const n = document.createElementNS(svgNS, tag);
+      Object.entries(attrs).forEach(([key, value]) => n.setAttribute(key, value));
+      if (text !== undefined) n.textContent = text;
+      svg.append(n);
+      return n;
+    };
+    const display = (nodeId, limit = 20) => {
+      const text = G.A[nodeId]?.name || nodeId;
+      return text.length > limit ? text.slice(0, limit - 1) + '…' : text;
+    };
+    const centreY = 120;
+    incoming.forEach((x, i) => {
+      const y = 24 + i * 46;
+      add('line', { x1: 195, y1: y, x2: 303, y2: centreY, stroke: '#879cb7', 'stroke-width': 1.5, opacity: .7 });
+      add('rect', { x: 4, y: y - 16, width: 192, height: 32, rx: 3, fill: '#304960', stroke: '#627a97' });
+      add('text', { x: 100, y: y + 4, fill: '#eff5ff', 'font-size': 12, 'text-anchor': 'middle' }, display(x.id));
+    });
+    outgoing.forEach(([nodeId], i) => {
+      const y = 24 + i * 46;
+      add('line', { x1: 446, y1: centreY, x2: 553, y2: y, stroke: '#d5af62', 'stroke-width': 1.5, opacity: .8 });
+      add('rect', { x: 553, y: y - 16, width: 192, height: 32, rx: 3, fill: '#3c3d39', stroke: '#9d884d' });
+      add('text', { x: 649, y: y + 4, fill: '#fff4df', 'font-size': 12, 'text-anchor': 'middle' }, display(nodeId));
+    });
+    add('rect', { x: 301, y: 97, width: 146, height: 46, rx: 4, fill: '#d6b564' });
+    add('text', { x: 374, y: 116, fill: '#172131', 'font-size': 13, 'font-weight': 700, 'text-anchor': 'middle' }, display(id, 17));
+    add('text', { x: 374, y: 133, fill: '#172131', 'font-size': 10, 'text-anchor': 'middle' }, 'SELECTED');
+    if (info.incoming[id].length > incoming.length) add('text', { x: 95, y: 234, fill: '#afbdd0', 'font-size': 11, 'text-anchor': 'middle' }, '+' + (info.incoming[id].length - incoming.length) + ' more incoming');
+    if (G.A[id].next.length > outgoing.length) add('text', { x: 647, y: 234, fill: '#afbdd0', 'font-size': 11, 'text-anchor': 'middle' }, '+' + (G.A[id].next.length - outgoing.length) + ' more outgoing');
+    container.replaceChildren(svg);
+  }
+
+  function edgeButtons(target, links, outbound) {
+    const parent = $(target);
+    parent.replaceChildren();
+    if (!links.length) { parent.append(make('p', 'None in this graph.', 'quiet')); return; }
+    for (const link of links) {
+      const id = outbound ? link[0] : link.id;
+      const weight = outbound ? link[1] : link.weight;
+      const button = make('button', (G.A[id]?.name || id) + ' · weight ' + weight);
+      button.type = 'button';
+      button.title = id;
+      button.addEventListener('click', () => selectNode(id));
+      parent.append(button);
+    }
+  }
+
+  function selectNode(id) {
+    if (!G.A[id]) return;
+    selectedId = id;
+    const n = G.A[id];
+    set('selection', id);
+    const meta = $('nodeDetails');
+    meta.replaceChildren(make('strong', n.name || id), make('div', 'ID ' + id + ' · Family ' + (n.family || 'core') + ' · Entry ' + n.requires + ' → ' + n.zone + ' · Min. match fraction ' + n.after));
+    meta.append(make('div', 'Risk ' + (n.risk ? 'high' : 'ordinary') + ' · Cost ' + (n.cost ?? 'default') + ' · ' + (n.counterOf ? 'Counters ' + n.counterOf : n.blockOf ? 'Blocks ' + n.blockOf : 'Standard action')));
+    edgeButtons('incoming', info.incoming[id], false);
+    edgeButtons('outgoing', n.next, true);
+    drawLocal(id);
+    for (const b of $('nodeList').querySelectorAll('button')) {
+      b.classList.toggle('active', b.dataset.id === id);
+      b.setAttribute('aria-pressed', String(b.dataset.id === id));
+    }
+  }
+
+  function renderSearch() {
+    const q = $('search').value.trim().toLowerCase();
+    const list = $('nodeList');
+    list.replaceChildren();
+    const matches = info.nodes.filter(id => {
+      const n = G.A[id];
+      return !q || id.toLowerCase().includes(q) || (n.name || '').toLowerCase().includes(q) || (n.family || '').toLowerCase().includes(q);
+    });
+    set('found', fmt(matches.length) + ' matching nodes · showing first ' + Math.min(100, matches.length));
+    for (const id of matches.slice(0, 100)) {
+      const n = G.A[id];
+      const b = make('button', n.name || id);
+      b.type = 'button';
+      b.dataset.id = id;
+      b.setAttribute('aria-pressed', String(id === selectedId));
+      b.classList.toggle('active', id === selectedId);
+      b.append(make('span', id + ' / ' + (n.family || 'core')));
+      b.addEventListener('click', () => selectNode(id));
+      list.append(b);
+    }
+  }
+
+  function exportJSON() {
+    if (!lastReport) return;
+    const blob = new Blob([JSON.stringify(lastReport, null, 2) + '\n'], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'office-graph-baseline-' + lastReport.config.seed + '-' + lastReport.bouts + '.json';
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function renderComparison() {
+    const parent = $('comparison');
+    parent.replaceChildren();
+    if (!savedReport || !lastReport) {
+      parent.append(make('p', 'Run a sample and load a previously exported baseline to compare.'));
+      return;
+    }
+    const table = make('table');
+    const header = make('tr');
+    for (const label of ['Metric', 'Baseline', 'Current', 'Δ']) header.append(make('th', label));
+    const thead = make('thead'); thead.append(header); table.append(thead);
+    const tbody = make('tbody');
+    for (const diff of lab.compare(savedReport, lastReport)) {
+      const row = make('tr');
+      row.append(make('td', diff.key), make('td', String(diff.before)), make('td', String(diff.after)));
+      row.append(make('td', (diff.delta > 0 ? '+' : '') + diff.delta, diff.delta > 0 ? 'plus' : diff.delta < 0 ? 'minus' : ''));
+      tbody.append(row);
+    }
+    table.append(tbody);
+    parent.append(table);
+    if (savedReport.config?.plan !== lastReport.config?.plan ||
+        savedReport.config?.wid !== lastReport.config?.wid ||
+        savedReport.config?.rid !== lastReport.config?.rid ||
+        savedReport.config?.seed !== lastReport.config?.seed ||
+        savedReport.bouts !== lastReport.bouts) {
+      parent.append(make('p', 'Caution: the scenarios differ. Treat the comparison as descriptive only.', 'small quiet'));
+    }
+  }
+
+  async function loadBaseline(file) {
+    if (!file) return;
+    try {
+      if (file.size > 5 * 1024 * 1024) throw Error('Baseline exceeds 5 MB.');
+      const value = JSON.parse(await file.text());
+      if (value.schema !== 'office-graph-lab-v1' || !Number.isInteger(value.bouts) ||
+          !Number.isFinite(value.nodeCoverage) || !Number.isFinite(value.edgeCoverage)) throw Error('Not a compatible Graph Lab baseline.');
+      savedReport = value;
+      set('baselineName', file.name + ' (' + fmt(value.bouts) + ' bouts)');
+      renderComparison();
+    } catch (error) {
+      savedReport = null;
+      set('baselineName', 'Could not load baseline: ' + error.message);
+      renderComparison();
+    }
+  }
+
+  async function run(event) {
+    event.preventDefault();
+    if (running) return;
+    const count = Number($('bouts').value);
+    const seed = Number($('seed').value);
+    if (!Number.isSafeInteger(seed) || seed < 1 || seed > 2147483647) {
+      set('status', 'Enter a positive integer seed no greater than 2,147,483,647.');
+      return;
+    }
+    if (!Number.isInteger(count) || count < 1 || count > 1000) return;
+    if ($('worker').value === $('opponent').value && $('rotation').value === 'fixed') {
+      set('status', 'Choose two different wrestlers.');
+      return;
+    }
+    running = true; stopped = false;
+    $('run').disabled = true; $('stop').disabled = false; $('export').disabled = true;
+    $('progress').value = 0;
+    const config = { wid: $('worker').value, rid: $('opponent').value, plan: $('plan').value,
+      finish: $('finish').value, slot: $('slot').value, seed, count, rotation: $('rotation').value };
+    const snapshot = lab.empty(G, config);
+    let lastYield = performance.now();
+    try {
+      for (let i = 0; i < count; i++) {
+        if (stopped) break;
+        const params = { ...config, seed: seed + i * 37 };
+        if (config.rotation === 'roster') {
+          const w = people[i % people.length];
+          const f = people[(i * 7 + 19) % people.length];
+          params.wid = w.id;
+          params.rid = f.id === w.id ? people[(i + 1) % people.length].id : f.id;
+        }
+        const match = lab.runMatch(window, lab.makeOptions(D, params));
+        lab.add(snapshot, match, G);
+        if (i === 0) showTrace(match);
+        if (performance.now() - lastYield > 55 || i + 1 === count) {
+          $('progress').value = (i + 1) / count * 100;
+          set('status', fmt(i + 1) + ' / ' + fmt(count) + ' completed');
+          await new Promise(resolve => setTimeout(resolve, 0));
+          lastYield = performance.now();
+        }
+      }
+      if (snapshot.bouts) updateResults(lab.report(snapshot, G, { full: true }));
+      set('status', (stopped ? 'Stopped — ' : 'Complete — ') + fmt(snapshot.bouts) + ' real engine matches measured. ' +
+        fmt(snapshot.timingErrors.length) + ' sampled timing violations.');
+    } catch (error) {
+      console.error('Graph Lab run failed', error);
+      set('status', 'Simulation stopped: ' + error.message);
+      if (snapshot.bouts) updateResults(lab.report(snapshot, G, { full: true }));
+    } finally {
+      running = false; $('run').disabled = false; $('stop').disabled = true;
+      $('export').disabled = !lastReport;
+    }
+  }
+
+  function init() {
+    try {
+      if (!D || !M || !lab || !G) throw Error('Shipped match-engine scripts did not load.');
+      window.OfficeRosterV4?.enableProfiles();
+      info = lab.inspect(G, D);
+      set('totalNodes', fmt(info.stats.nodes));
+      set('totalEdges', fmt(info.stats.edges));
+      set('totalArcs', fmt(info.stats.arcs));
+      set('validation', info.stats.errors.length || info.unreachable.length ? 'Issues' : 'Pass');
+      if (info.stats.errors.length || info.unreachable.length) {
+        set('status', info.stats.errors.length + ' graph errors, ' + info.unreachable.length + ' unreachable nodes. Review before interpreting results.');
+      }
+      fillRoster();
+      $('experiment').addEventListener('submit', run);
+      $('stop').addEventListener('click', () => { stopped = true; set('status', 'Stopping after the current bout…'); });
+      $('export').addEventListener('click', exportJSON);
+      $('search').addEventListener('input', renderSearch);
+      $('baseline').addEventListener('change', e => loadBaseline(e.target.files?.[0]));
+      renderSearch();
+      selectNode(G.A.wristlock ? 'wristlock' : info.nodes[0]);
+    } catch (error) {
+      console.error('Graph Lab failed to initialise', error);
+      set('status', 'Cannot initialise Graph Lab: ' + error.message);
+      $('run').disabled = true;
+    }
+  }
+
+  init();
+})();
