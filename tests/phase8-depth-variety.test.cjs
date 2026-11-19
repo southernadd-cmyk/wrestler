@@ -1,4 +1,5 @@
 'use strict';
+const {EXPECTED}=require('./_phase10-inventory.cjs');
 // Phase 8: check actual authored transitions and provisional roster coverage.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root={};
@@ -8,7 +9,7 @@ for(const file of ['data.js','roster-registry.js','technique-registry.js','techn
 root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,G=root.OfficeMatch.GRAPH,B=root.OfficeTechniqueBackgrounds;
 assert.equal(G.validate().errors.length,0);
-assert.equal(G.validate().nodes,969,'no extra move IDs invented');
+assert.equal(G.validate().nodes,EXPECTED.nodes,'no extra move IDs invented');
 assert.equal(G.TECHNIQUE_DEPTH.length,14);
 assert.equal(B.validate(D,G,root.OfficeTechniqueRegistry).assigned,80);
 assert.equal(B.validate(D,G,root.OfficeTechniqueRegistry).unassigned,0);

@@ -1,4 +1,5 @@
 'use strict';
+const {EXPECTED}=require('./_phase10-inventory.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -20,7 +21,7 @@ assert.ok(Object.isFrozen(R.RECORDS), 'registry is immutable');
 const before = JSON.stringify(G.A);
 const validated = R.validate(G);
 assert.equal(validated.valid, true, validated.errors.join('\n'));
-assert.equal(validated.authored, 336, 'review against original complete catalogue');
+assert.equal(validated.authored, EXPECTED.moves, 'review against original complete catalogue');
 assert.equal(validated.proposals,90,'60 previously reviewed plus 30 Phase 5b source-audited moves');
 assert.ok(validated.coverage>26&&validated.coverage<27,'still a partial catalogue audit, not full coverage');
 assert.equal(R.list().length, validated.proposals);

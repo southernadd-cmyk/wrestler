@@ -1,4 +1,5 @@
 'use strict';
+const {EXPECTED}=require('./_phase10-inventory.cjs');
 // Phase 7 readiness gate: select only grounded, existing authored counters.
 // This is an audit, NOT a claim that grapples already have persistent attempts.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
@@ -26,5 +27,5 @@ for(const id of candidates){
  console.log(id,attack.family,'entry='+attack.requires,'impact='+attack.zone,
   'reversal='+rev.zone,'block='+(blk?blk.zone:'none'));
 }
-assert.equal(G.validate().nodes,969,'readiness audit must not create nodes');
+assert.equal(G.validate().nodes,EXPECTED.nodes,'readiness audit must not create nodes');
 console.log('PASS Phase 7 readiness: four exact authored grapple counter links audited; transaction logic not yet enabled.');

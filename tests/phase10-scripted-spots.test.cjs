@@ -8,8 +8,10 @@ for(const file of ['data.js','roster-registry.js','technique-registry.js','techn
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../assets/js',file),'utf8'),
   {window:root,console,Date,Math,JSON},{filename:file});
 root.OfficeRosterV4.enableProfiles();
+const {verify:verifyInventory}=require('./_phase10-inventory.cjs');
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH;
 assert.equal(G.validate().errors.length,0,'all named graph connections resolve');
+verifyInventory(G);
 const scripted=Object.values(D.SPOTS).flat();
 assert.equal(scripted.length,12,'all twelve original scripted move names have a mapping');
 assert.equal(Object.keys(G.SCRIPTED_SPOT_IDS).length,scripted.length);
@@ -96,6 +98,22 @@ for(let i=0;i<90;i++){
   if(a.outcome==='landed')assert.equal(ev.length,1);
   else assert.equal(ev.length,0);
  }
+}
+// Frozen baseline seeds once triggered a 45%-gated top-rope setup at 40-43%.
+const people=lab.roster(D);
+for(const spec of [
+ {i:230,seed:24511,plan:'technical',slot:'mid',finish:'win_clean'},
+ {i:173,seed:42402,plan:'spots',slot:'main',finish:'lose_protected'}
+]){
+ const own=people[spec.i%people.length];
+ let other=people[(spec.i*7+19)%people.length];
+ if(other.id===own.id)other=people[(spec.i+1)%people.length];
+ const match=lab.runMatch(root,lab.makeOptions(D,{
+  wid:own.id,rid:other.id,seed:spec.seed,plan:spec.plan,
+  slot:spec.slot,finish:spec.finish}));
+ const early=match.graph.events.filter(e=>e.id==='top_follow'&&
+  e.t/match.len+1e-8<G.A.top_follow.after);
+ assert.equal(early.length,0,'scripted setup bypassed its timing gate: '+spec.seed);
 }
 const verdict=validation.finish(v);
 assert.equal(verdict.pass,true,JSON.stringify(verdict.examples));

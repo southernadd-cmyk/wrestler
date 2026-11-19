@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 'use strict';
 // Phase 9 same-seed comparison against pinned, original Phase 8 Git revision.
-// Usage: node tools/graph-lab/compare-phase8.cjs ./phase8-reference
+// Usage: node tools/graph-lab/compare-phase8.cjs ./phase8-reference ./phase9-reference
+// Both historical engine revisions are pinned and independent of Phase 10.
 // Requires a checkout of d80139d3462cb4bb8740abd4c032c42a30b8cf81.
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const referenceRoot=path.resolve(process.argv[2]||'phase8-reference');
-const latestRoot=path.resolve(__dirname,'../..');
+const latestRoot=path.resolve(process.argv[3]||path.join(__dirname,'../..'));
+// Historical Phase 9 comparisons must use its pinned source, not Phase 10.
 const names=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-engine.js'];
 function load(dir){
  const root={};

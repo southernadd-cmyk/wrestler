@@ -1,4 +1,5 @@
 'use strict';
+const {EXPECTED}=require('./_phase10-inventory.cjs');
 // Phase 6: real two-beat aerial attempt / result state, complete and resumed.
 // No independent dive reversal may occur without the specifically named parent.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
@@ -11,7 +12,7 @@ for(const file of ['data.js','roster-registry.js','technique-registry.js','techn
 root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH;
 assert.equal(G.validate().errors.length,0);
-assert.equal(G.validate().nodes,969,'attempt records do not create pseudo-moves');
+assert.equal(G.validate().nodes,EXPECTED.nodes,'attempt records do not create pseudo-moves');
 const A=G.A;
 function setup(wid='kit',rid='rex',id='ar_frog'){
  const m=M.create(lab.makeOptions(D,{wid,rid,slot:'main',plan:'spots',finish:'win_clean',seed:91011}));

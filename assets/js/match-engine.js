@@ -2163,6 +2163,10 @@ const Graph=(function makeGraph(){
   const n=A[id],p=Psy.get(M),g=get(M);
   if(!n||!['standing','top','outside'].includes(n.requires)||
      g.pendingAerial||g.pendingGrapple)return false;
+  // A high-spot setup must satisfy its own timing rules, not just the final move.
+  // The elbow is legal at 40%, but top_follow not until 45%.
+  if(p.position==='corner'&&n.requires==='top'&&
+     M.t/Math.max(1,M.len)+1e-8<(A.top_follow.after||0))return false;
   const old=[p.control,p.position,p.down];
   p.control=side;p.position=n.requires;p.down=null;
   const valid=isValid(M,id);

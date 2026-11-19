@@ -1,4 +1,5 @@
 'use strict';
+const {EXPECTED}=require('./_phase10-inventory.cjs');
 // Phase 5 expansion: full-roster source audit, 21 mechanical records, 14 guarded
 // executable transitions, and meaningful training-school choice factors.
 // Requires no save migration and keeps original Phase 3 baseline separately intact.
@@ -14,14 +15,14 @@ game.OfficeRosterV4.enableProfiles();
 const D=game.OfficeData,G=game.OfficeMatch.GRAPH,R=game.OfficeTechniqueRegistry,B=game.OfficeTechniqueBackgrounds;
 const validation=G.validate(),registryValidation=R.validate(G),schools=B.validate(D,G,R);
 assert.equal(validation.errors.length,0,validation.errors.join('\n'));
-assert.equal(validation.nodes,969,'no extra executable graph nodes');
-assert.equal(validation.edges,6333,'Phase 5 remains intact alongside the precisely audited Phase 9 expansion');
-assert.equal(G.CATALOG.counts.moves,336);
+assert.equal(validation.nodes,EXPECTED.nodes,'no extra executable graph nodes');
+assert.equal(validation.edges,EXPECTED.edges,'Phase 5 remains intact alongside the precisely audited Phase 9 expansion');
+assert.equal(G.CATALOG.counts.moves,EXPECTED.moves);
 assert.equal(G.TECHNIQUE_PILOT.length,11,'original Phase 3 pilot stays separately intact');
 assert.equal(G.TECHNIQUE_EXPANSION.length,14,'only fourteen new guarded links');
 assert.equal(registryValidation.valid,true,registryValidation.errors.join('\n'));
 assert.equal(registryValidation.proposals,90,'the 60 previously reviewed plus 30 Phase 5b records');
-assert.equal(registryValidation.authored,336);
+assert.equal(registryValidation.authored,EXPECTED.moves);
 assert.equal(schools.valid,true,schools.errors.join('\n'));
 assert.equal(schools.assigned,80);
 assert.equal(schools.unassigned,0);
