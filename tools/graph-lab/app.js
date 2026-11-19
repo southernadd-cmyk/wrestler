@@ -52,6 +52,15 @@
     activateWorkspace(window.location.hash.slice(1));
   }
 
+  function updateSchoolReadout() {
+    const schools = window.OfficeTechniqueBackgrounds;
+    if (!schools) { set('schoolReadout', 'No technique-school data loaded.'); return; }
+    const worker = people.find(x => x.id === $('worker').value);
+    const opponent = people.find(x => x.id === $('opponent').value);
+    const label = person => person ? person.short + ': ' + schools.get(person).label : '—';
+    set('schoolReadout', label(worker) + '  /  ' + label(opponent) + ' · Style and training school are independent.');
+  }
+
   function fillRoster() {
     people = lab.roster(D);
     for (const id of ['worker', 'opponent']) {
@@ -65,6 +74,9 @@
     }
     $('worker').value = people.some(p => p.id === 'juno') ? 'juno' : people[0].id;
     $('opponent').value = people.some(p => p.id === 'rex') ? 'rex' : people[1].id;
+    updateSchoolReadout();
+    $('worker').addEventListener('change', updateSchoolReadout);
+    $('opponent').addEventListener('change', updateSchoolReadout);
   }
 
   function listHits(id, items, labeler) {
@@ -417,6 +429,7 @@
     }
     activateWorkspace('run');
     window.location.hash = 'run';
+    updateSchoolReadout();
     set('status', 'Loaded ' + scenario.label + ' / ' + scenario.report.bouts +
       ' bouts / seed ' + params.seed + '. Run Simulation to compare exactly against the frozen baseline.');
   }

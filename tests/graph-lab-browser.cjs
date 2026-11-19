@@ -18,6 +18,14 @@ async function visit(browser, label, viewport) {
     assert.equal((await page.locator('#validation').innerText()).toLowerCase(), 'pass');
     assert.equal(await page.locator('#worker option').count(), 80);
     assert.equal(await page.locator('#opponent option').count(), 80);
+    assert.match(await page.locator('#schoolReadout').innerText(), /Stark: Catch wrestling/);
+    await page.locator('#worker').selectOption('bao');
+    assert.match(await page.locator('#schoolReadout').innerText(), /Merrick: Judo/);
+    await page.locator('#opponent').selectOption('nico');
+    assert.match(await page.locator('#schoolReadout').innerText(), /Vega: Lucha libre/);
+    await page.locator('#worker').selectOption('juno');
+    await page.locator('#opponent').selectOption('rex');
+
 
     // The main experience is an accessible four-workspace tool, not a long stack of inert cards.
     assert.equal(await page.locator('[role="tab"]').count(), 4);

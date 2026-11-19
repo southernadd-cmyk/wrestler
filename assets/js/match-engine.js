@@ -292,6 +292,7 @@ const Graph=(function makeGraph(){
   ['lc_hurricanrana','early_cover',1.35,'followup','Lucha: brief nearfall after the throw'],
   ['lockup','ch_single_leg_rev',.95,'counter','Catch: sprawl turns aside a single-leg shot from the tie-up']
  ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
+ const TRAINED_TECHNIQUE_IDS=new Set(TECHNIQUE_PILOT.map(link=>link.to));
 
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
      reverse:!!opts.reverse,kind:opts.kind||'play',focus:opts.focus||0,crowd:opts.crowd||0,weight:opts.weight||1,styles:opts.styles||null,cost:opts.cost??null,lift:opts.lift??null,
@@ -1061,9 +1062,14 @@ const Graph=(function makeGraph(){
   const fatigue=(w.fatigue||0)>=40?` Fatigue is a serious concern for ${w.short} tonight.`:'';
   const danger=gap>=25?'Avoid lifting the heavier opponent. Use counters and targeted holds.':f.style==='Technical'?'Avoid long mat exchanges. Prioritise clean escapes.':f.style==='Spectacle'?'Keep them off the ropes and make aerial attacks expensive.':f.style==='Brawl'?'Keep the action in the ring instead of brawling on the floor.':'Vary the pace and protect the finishing sequence.';
   const advice={story:'Build patiently to the finish.',technical:'Target a limb and save energy for counters.',brawl:'Save the heavy strikes; a long brawl is exhausting.',spots:'Big aerial moves need setup and fresh legs.',safe:'Use rest holds and avoid unnecessary risks.'};
+  const schools=root.OfficeTechniqueBackgrounds;
+  const schoolBrief=schools?[
+   [w,schools.get(w)],[f,schools.get(f)]
+  ].filter(([,school])=>school.id!=='general')
+   .map(([actor,school])=>actor.short+' brings '+school.label.toLowerCase()+' training to their choices.').join(' '):'';
   const known=(them.signature||[]).map(id=>A[id]?.name).filter(Boolean).slice(0,2);
   const watch=known.length?' Watch for '+f.short+'’s '+known.join(' and ')+'.':'';
-  return {brief:styles+' '+size+(heat>=45?' There is personal history here.':'')+fatigue,advice:danger+' '+(advice[plan]||advice.story)+watch,you:me,opponent:them};
+  return {brief:styles+' '+size+(heat>=45?' There is personal history here.':'')+fatigue+(schoolBrief?' '+schoolBrief:''),advice:danger+' '+(advice[plan]||advice.story)+watch,you:me,opponent:them};
  }
  function matchTexture(M){
   const gap=Math.abs((M.w.ring+M.w.psych)-(M.f.ring+M.f.psych));
@@ -1355,6 +1361,13 @@ const Graph=(function makeGraph(){
    if(g.texture==='underdog'&&['hope_elbows','hope_cutoff','counter_strike','mat_scramble'].includes(id))n*=1.4;
    if(g.texture==='fast'&&['duck_rebound','counter_strike','springboard_rise','clothesline'].includes(id))n*=1.3;
    if(g.events.slice(-4).some(x=>x.id===id))n*=.25;
+   // Phase 4: individual technical schooling (NOT match style or career drills).
+   // A move-specific counter belongs to the defending wrestler who performs it.
+   // The background layer only affects already-reviewed live Phase 3 moves.
+   if(TRAINED_TECHNIQUE_IDS.has(id)&&root.OfficeTechniqueBackgrounds&&root.OfficeTechniqueRegistry){
+    const performer=A[id].reverse?(p.control==='f'?M.w:M.f):liveSide;
+    n*=root.OfficeTechniqueBackgrounds.multiplier(performer,id,Graph,root.OfficeTechniqueRegistry);
+   }
     const nd=A[id];
     if(nd.family){
      // Limb work follows the body part this wrestler is working, as in a real heat segment.
