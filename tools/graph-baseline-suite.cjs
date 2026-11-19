@@ -91,7 +91,24 @@ function summary(result){
  if(result.warnings.length)lines.push('### Changes to investigate',...result.warnings.map(x=>'- '+x),'');
  for(const r of result.rows)if(r.familyChanges.length)
   lines.push('- **'+r.label+' family frequencies:** '+r.familyChanges.map(x=>x.id+' '+sign(x.diff)).join(', '));
- if(result.critical.length)lines.push('','### Invalid run',...result.critical.map(x=>'- '+x));
+ const pilotRows=result.rows.filter(r=>Array.isArray(r.after.pilotTransitions));
+  if(pilotRows.length){
+   lines.push('','### Phase 3 observed technique sequences','',
+    'Counts reflect consecutive **actual match events** matching curated links, not proof of which graph picker branch was used.','',
+    '| Scenario | Curated pairs observed | Event-pair occurrences | Most frequent |',
+    '|:--|--:|--:|:--|');
+   for(const r of pilotRows){
+    const links=r.after.pilotTransitions;
+    const hits=links.reduce((total,x)=>total+x.hits,0);
+    const seen=links.filter(x=>x.hits>0).length;
+    const top=links.filter(x=>x.hits>0).sort((a,b)=>b.hits-a.hits).slice(0,3)
+     .map(x=>x.from+' → '+x.to+' ('+x.hits+')').join('; ')||'None observed';
+    lines.push('| '+r.label+' | '+seen+'/'+links.length+' | '+hits+' | '+top+' |');
+   }
+   const total=pilotRows.reduce((n,r)=>n+r.after.pilotTransitions.reduce((m,x)=>m+x.hits,0),0);
+   if(total===0)lines.push('','**Review needed:** no curated event pairs appeared in the seeded sample. Physical validity alone is not sufficient.');
+  }
+  if(result.critical.length)lines.push('','### Invalid run',...result.critical.map(x=>'- '+x));
  lines.push('','Linked-edge reach is a conservative consecutive-event proxy. Arc jumps do not count. A low value is not automatically an error.');
  return lines.join('\n')+'\n';
 }
