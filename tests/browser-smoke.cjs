@@ -38,9 +38,9 @@ async function journey(browser,name,viewport){
     name:'Rex Titan',foe:'Silas',stars:fin.stars,baseConsequences:[],consequences:[]
    }],before,stage:'result',resultHTML:
     '<div id="phase5-restored">The saved match result is back.</div>'+
-    '<button type="button" data-tv="done">Back to the office</button>',
+    '<button type="button" data-tv="after">After the bell</button>',
     afterReady:{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish},
-     fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome},plan:'none'},after:null,plan:null,promo:null,past:[]};
+     fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome},plan:'staredown'},after:null,plan:null,promo:null,past:[]};
    localStorage.setItem('the-office-v23-match',JSON.stringify(saved));
    return c.id;
   });
@@ -60,7 +60,31 @@ async function journey(browser,name,viewport){
   await page.locator('#phase5-restored').waitFor();
   assert.equal(await page.locator('#tv').isVisible(),true,'result screen restored');
   assert.equal(await page.evaluate(()=>window.OfficeGame.S.week),1);
-  await page.locator('#tv button[data-tv="done"]').click();
+  // Test the actual post-bell screen, not just the saved-result placeholder.
+  // The broken PR #109 squeezed dialogue and decisions into narrow columns.
+  await page.locator('#tv button[data-tv="after"]').click();
+  await page.locator('#afterTalk').waitFor();
+  assert.equal(await page.locator('#tv .after-consequences').count(),0,
+    name+': consequences must not appear before the mic decision');
+  assert.equal(await page.locator('#tv .tv-foot button[data-tv="done"]').count(),0,
+    name+': finish button must not appear while the microphone is live');
+  const geom=await page.evaluate(()=>{
+    const bounds=selector=>document.querySelector(selector).getBoundingClientRect();
+    return {win:bounds('.s-back>.win').width,scene:bounds('#afterTalk').width,
+      decision:bounds('.s-back .decide2').width};
+  });
+  assert.ok(geom.scene>=geom.win*.85,name+': dialogue squeezed '+JSON.stringify(geom));
+  assert.ok(geom.decision>=geom.win*.85,name+': decision cards squeezed '+JSON.stringify(geom));
+  await page.locator('#tv button[data-aftermic="walk"]').click();
+  const consequences=page.locator('#tv .after-consequences');
+  await consequences.waitFor();
+  assert.equal(await consequences.locator('.section-h').innerText(),'Consequences');
+  assert.ok(await consequences.locator('.cons li').count()>0,
+    name+': actual post-bell effects sit together with their heading');
+  const finish=page.locator('#tv button[data-tv="done"]');
+  await finish.waitFor();
+  assert.equal((await finish.innerText()).trim(),'Finish show');
+  await finish.click();
   await page.locator('#tv').waitFor({state:'hidden'});
   const state=await page.evaluate((id)=>{
    const s=window.OfficeGame.S;
