@@ -86,6 +86,14 @@
    beats.push({at:start+beats.length*2,rid,slot:'main',finish:finishFor(payoffWin,id)});
   }
   if(beats.length<2)return null;
+  // Announce the booker's stipulation when the programme is first offered.
+  // A payoff is not a surprise rewrite of the contract after it is signed.
+  const payoff=beats.at(-1),stips=root.OfficeStips;
+  if(['title','grudge'].includes(type)&&stips&&hash(id+':payoff-stip')<.7){
+   const choice=stips.favourite(p);
+   if(stips.STIPS[choice]&&(!['nodq','anywhere'].includes(choice)||!/_dq$/.test(payoff.finish)))
+    payoff.stip=choice;
+  }
   const programme={id,pid:p.id,div,type,wid:w.id,rid,beats:beats.map(b=>({...b,done:false,cid:null})),offered:week,swerved:false};
   const pay=beats.at(-1);
   return {id:'o-'+id,pid:p.id,rid:pay.rid,slot:pay.slot,finish:pay.finish,wid:w.id,tag:'Programme',boost:1.2,haggled:true,
@@ -123,9 +131,9 @@
   if(clash)return G.bookingConflict(w.id,clash.rid,clash.at)||`${w.short} isn’t free on ${weekLabel(clash.at)}. Every date in a programme has to be clear.`;
   for(const [k,b] of prog.beats.entries()){
    const fd=G.feud?.(w.id,b.rid);
-   const c={id:'c-'+prog.id+'-'+k,pid:prog.pid,rid:b.rid,wid:w.id,slot:b.slot,minutes:D.SLOTS[b.slot].mins+(b.blowoff?5:0),finish:b.finish,
+   const c={id:'c-'+prog.id+'-'+k,pid:prog.pid,rid:b.rid,wid:w.id,slot:b.slot,minutes:D.SLOTS[b.slot].mins+(b.blowoff?5:0)+(b.stip==='falls'?5:0),finish:b.finish,
     purse:G.purse({pid:prog.pid,slot:b.slot,finish:b.finish,boost:o.boost},w),tag:k===prog.beats.length-1?(prog.type==='title'?'Title match':b.blowoff?'Blow-off':'Programme'):'Programme',
-    feudHeat:fd&&!fd.closed?fd.heat:0,blowoff:!!b.blowoff,eventAbs:b.at,programme:{id:prog.id,step:k},...(b.title?{title:{...b.title}}:{})};
+    feudHeat:fd&&!fd.closed?fd.heat:0,blowoff:!!b.blowoff,eventAbs:b.at,programme:{id:prog.id,step:k},...(b.title?{title:{...b.title}}:{}),...(b.stip?{stip:b.stip}:{})};
    b.cid=c.id;
    if(b.at===G.abs())s.card.push(c);else s.futureBookings.push(c);
   }
@@ -135,7 +143,7 @@
   if(prog.pid==='union')s.goals.union=true;
   const p=G.P(prog.pid);
   G.msg({from:`${p.voice}, ${p.name}`,subject:'We have a programme',kind:'info',body:[`“Good. ${w.short} starts ${weekLabel(prog.beats[0].at)}. See it through and I won’t forget it.”`,
-   ...prog.beats.map((b,k)=>`${weekLabel(b.at)}: v ${name(b.rid)}, ${D.SLOTS[b.slot].name.toLowerCase()}, ${D.FINISHES[b.finish].name.toLowerCase()}${b.title?' (title match)':''}.`)]});
+   ...prog.beats.map((b,k)=>`${weekLabel(b.at)}: v ${name(b.rid)}, ${D.SLOTS[b.slot].name.toLowerCase()}, ${D.FINISHES[b.finish].name.toLowerCase()}${b.title?' (title match)':''}${b.stip?' · '+(root.OfficeStips?.name?.(b.stip)||b.stip):''}.`)]});
   G.save();return null;
  };
  // Pulling any match from a programme walks out of the whole programme.
