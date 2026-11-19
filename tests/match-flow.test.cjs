@@ -50,7 +50,12 @@ for(let i=0;i<240;i++){
  assert.ok(x.final.psychology.target,'a persistent target body part exists');
  assert.ok(x.final.psychology.graph?.nodes>=1||x.final.shortened||x.final.outcome==='nc','graph generated connected actions in a complete match');
  assert.ok(x.final.psychology.controlChanges>=1||x.final.shortened||x.final.outcome==='nc','control changed via an event in a complete match');
- assert.ok(x.log.some(line=>/finisher|cover|TAPS|THREE!/i.test(line.text)),'finish narrative present');
+ assert.ok(x.outcome==='dq'
+  ? x.log.some(line=>/disqualified|referee calls for the bell/i.test(line.text))
+  : x.outcome==='nc'
+   ? x.log.some(line=>/no contest|referee waves it off/i.test(line.text))
+   : x.log.some(line=>/finisher|cover|TAPS|THREE!/i.test(line.text)),
+  'appropriate finish narrative present for '+x.outcome);
  assert.doesNotMatch(text,/\{(?:W|F|A|D|move|part|fin)\}|undefined|NaN/,'no unfilled placeholders');
  const times=x.log.map(line=>{const [m,s]=line.t.split(':').map(Number);return m*60+s;});
  for(let j=1;j<times.length;j++)assert.ok(times[j]>=times[j-1],'timestamps must be chronological');
