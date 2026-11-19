@@ -445,6 +445,8 @@
 .mf-key .k-line{height:3px;background:var(--cyan)}.mf-key .k-you{background:var(--gold)}.mf-key .k-them{background:var(--mf-opponent)}
 .mf-key .k-good{background:var(--good)}.mf-key .k-poor{background:var(--mf-poor)}
 .mf-cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px}
+.mf-cols>div{min-width:0}
+.mf-breakdown-section{grid-column:1/-1}
 .mf-table-wrap{overflow-x:auto}
 .mf-table th small{display:block;font-size:14px;color:var(--dim)}
 .mf-table td{vertical-align:middle;white-space:nowrap}
