@@ -372,6 +372,29 @@
  }
 
  // ---------------------------------------------------------------------------------------------
+ // A voluntary raise is a recurring cost, not a one-off loyalty bribe.
+ // Wrestlers can only receive one every four weeks, including raises paid
+ // after an inbox demand. No promoter finish or existing promise is changed.
+ function raiseAvailable(id){
+  const w=G.W(id);if(!w)return {error:'This wrestler is no longer in your stable.'};
+  const last=Number.isFinite(w.lastRaise)?w.lastRaise:0,remaining=last>0?4-(now()-last):0;
+  if(remaining>0)return {error:w.short+' has already had a raise. Next review in '+remaining+' week'+(remaining===1?'':'s')+'.'};
+  return {error:null};
+ }
+ function giveRaise(id){
+  const v=raiseAvailable(id);if(v.error)return v;
+  const w=G.W(id),e=entry(id),old=w.wage;
+  w.wage=old+40;w.lastRaise=now();
+  if(e)e.sat=clamp(e.sat+(e.kind==='money'?10:4));
+  w.morale=G.clamp((w.morale||50)+2);
+  root.OfficeMemory?.remember?.(id,'ambition',w.short+' remembers an unprompted £40 weekly wage increase.',null,2,0,'raise:'+id+':'+now());
+  G.msg({from:'The office',subject:'A voluntary wage increase for '+w.short,kind:'info',body:[
+   w.name+' now earns '+G.money(w.wage)+' a week, up from '+G.money(old)+'.',
+   'The additional £40 is charged every week as part of the normal payroll; there was no one-off fee.',
+   'The next wage review is available in four weeks.']});
+  G.save();
+  return {text:w.short+' receives a £40 weekly raise. New wage '+G.money(w.wage)+' per week.'};
+ }
  // For the screens.
  function mood(sat){return sat>=75?'Content':sat>=50?'Patient':sat>=35?'Restless':sat>=20?'Frustrated':'Fed up';}
  function progressText(id,e){
@@ -413,5 +436,5 @@
  // How hard this wrestler is pushing for what they want: used by the bookers in a later update.
  function pressure(id){const e=entry(id);return e?clamp((100-e.sat)*(.6+(who(id)?.ego??55)/100)):0;}
 
- root.OfficeAmbitions={KINDS,CAREER,state,entry,view,fits,mood,pressure,weekly,progressText};
+ root.OfficeAmbitions={KINDS,CAREER,state,entry,view,fits,mood,pressure,weekly,progressText,raiseAvailable,giveRaise};
 })(typeof window!=='undefined'?window:globalThis);
