@@ -208,7 +208,7 @@ move_id,move_name,office_family,proposed_mechanical_class,review_status,source_l
 "gd_running_senton","running senton","ground","Strike","Needs move-level review","690","Ground family mostly impacts; holds/chokes need overrides"
 "gd_choke_ropes","choke on the ropes","ground","Submission","Editorial exception / review","691","Source family does not describe this technique's main mechanics"
 "gd_back_rake","back rake","ground","Strike","Needs move-level review","692","Ground family mostly impacts; holds/chokes need overrides"
-"gd_dragon_screw_ground","leg twist on the mat","ground","Strike","Needs move-level review","693","Ground family mostly impacts; holds/chokes need overrides"
+"gd_dragon_screw_ground","leg twist on the mat","ground","Unresolved","Needs move-level review","693","Grounded leg-twist mechanism needs editorial review"
 "gd_arm_stomp","stomp to the arm","ground","Strike","Needs move-level review","694","Ground family mostly impacts; holds/chokes need overrides"
 "gd_rib_stomp","stomp to the ribs","ground","Strike","Needs move-level review","695","Ground family mostly impacts; holds/chokes need overrides"
 "gd_elbow_neck","elbow drop to the neck","ground","Strike","Needs move-level review","696","Ground family mostly impacts; holds/chokes need overrides"
