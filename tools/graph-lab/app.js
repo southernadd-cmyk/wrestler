@@ -136,6 +136,13 @@
     $('export').disabled = false;
     renderComparison();
     if (report.validation) renderValidation(report.validation);
+    if (report.phase9Groups?.length) {
+      const styles = $('validationStyles');
+      styles.append(make('h5', 'PHASE 9 / OBSERVED CURATED CHAINS'));
+      for (const item of report.phase9Groups) styles.append(make('p',
+        item.group + ' · ' + item.observed + '/' + item.authored +
+        ' links observed · ' + item.hits + ' real transitions'));
+    }
   }
 
   function filterTrace() {
