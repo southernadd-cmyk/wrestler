@@ -54,6 +54,8 @@ assert.equal(report.timingErrors.length, 0, 'no graph events before their declar
 assert.equal(report.unknownEvents.length, 0, 'all observed non-special events known');
 assert.equal(G.PHASE9_NEW_EDGES.length,144,'Phase 9 export is the genuine pre-insertion difference');
 assert.equal(report.phase9.newlyIntroducedLinks,144);
+assert.equal(report.scriptedSpotEvents,snapshot.scriptedSpotEvents,
+ 'narrated specials must not be counted as named move-graph actions');
 assert.equal(report.phase9.newPairOccurrences,snapshot.phase9.newOccurrences);
 assert.equal(report.phase9.newLinksObserved,Object.keys(snapshot.phase9.newPairHits).length);
 assert.equal(report.phase9.opponentInterceptions+report.phase9.sameControllerOccurrences,
