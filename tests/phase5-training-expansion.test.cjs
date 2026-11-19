@@ -35,7 +35,7 @@ assert.equal(B.get('rex').id,'general','old general remains unmodified');
 assert.equal(B.get('bao').id,'judo','original judoka preserved');
 assert.equal(B.get('juno').id,'catch','original catch preserved');
 assert.equal(B.get('nico').id,'lucha','original lucha preserved');
-assert.equal(B.get('kofi').id,'general','an aerial style alone does not invent an acrobatics history');
+assert.equal(B.get('kofi').id,'lucha','existing Kofi lucha training is preserved rather than inferred from aerial style');
 assert.equal(B.get('milo').id,'general','an aerial spectacle style alone does not invent training history');
 const csv=fs.readFileSync(path.join(__dirname,'..','docs/phase5-roster-training-audit.csv'),'utf8').trim().split(/\r?\n/);
 assert.equal(csv.length,81,'all eighty wrestlers have provenance and review rows');
