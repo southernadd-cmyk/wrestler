@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Graph Lab | The Office</title>
+<link rel="stylesheet" href="lab.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wordmark"><span class="eyebrow">THE OFFICE / ENGINEERING</span><h1>Graph Lab<span class="period">.</span></h1></div>
+  <a class="back" href="../../index.html">← Back to The Office</a>
+</header>
+<main class="shell">
+  <section class="intro" aria-label="Lab introduction">
+    <div><span class="eyebrow">MATCH ENGINE DIAGNOSTICS / PHASE 0</span>
+    <p>Inspect the actual match graph. Run deterministic bouts. Find the actions and transitions the simulation uses — and the ones it doesn't.</p></div>
+    <p class="small quiet">Read-only developer tool · Does not load or modify careers · No independent match simulator</p>
+  </section>
+  <section class="metrics" aria-label="Graph structure">
+    <div class="metric"><span>Action nodes</span><strong id="totalNodes">—</strong></div>
+    <div class="metric"><span>Directed edges</span><strong id="totalEdges">—</strong></div>
+    <div class="metric"><span>Story arcs</span><strong id="totalArcs">—</strong></div>
+    <div class="metric"><span>Validation</span><strong id="validation">—</strong></div>
+  </section>
+  <div class="columns">
+    <section class="pane" aria-labelledby="experimentTitle">
+      <div class="panehead"><div><span class="eyebrow">01 / EXPERIMENT</span><h2 id="experimentTitle">Run the engine</h2></div></div>
+      <form id="experiment" autocomplete="off">
+        <div class="field"><label for="worker">Wrestler</label><select id="worker" required></select></div>
+        <div class="field"><label for="opponent">Opponent</label><select id="opponent" required></select></div>
+        <div class="two">
+          <div class="field"><label for="plan">Match plan</label><select id="plan">
+            <option value="story">Tell a story</option>
+            <option value="technical">Technical showcase</option>
+            <option value="brawl">Brawl</option>
+            <option value="spots">Spot-fest</option>
+            <option value="safe">Keep it safe</option>
+          </select></div>
+          <div class="field"><label for="finish">Booked result</label><select id="finish">
+            <option value="win_clean">Win clean</option>
+            <option value="win_dirty">Win dirty</option>
+            <option value="lose_protected">Lose protected</option>
+            <option value="lose_clean">Lose clean</option>
+            <option value="win_dq">Win by DQ</option>
+            <option value="lose_dq">Lose by DQ</option>
+          </select></div>
+        </div>
+        <div class="two">
+          <div class="field"><label for="seed">First seed</label><input id="seed" type="number" min="1" max="2147483647" step="1" value="5101" required></div>
+          <div class="field"><label for="bouts">Bouts</label><select id="bouts">
+            <option value="1">1 — detailed trace</option><option value="10">10</option><option value="100" selected>100</option><option value="500">500</option><option value="1000">1,000</option>
+          </select></div>
+        </div>
+        <div class="two">
+          <div class="field"><label for="slot">Card position</label><select id="slot">
+            <option value="opener">Opener (8 min)</option>
+            <option value="mid" selected>Mid-card (12 min)</option>
+            <option value="feature">Feature (15 min)</option>
+            <option value="main">Main event (20 min)</option>
+          </select></div>
+          <div class="field"><label for="rotation">Pairing</label><select id="rotation">
+            <option value="fixed" selected>Same two wrestlers</option>
+            <option value="roster">Rotate full roster</option>
+          </select></div>
+        </div>
+        <div class="actions"><button class="primary" id="run" type="submit">Run matches</button><button id="stop" type="button" disabled>Stop</button></div>
+        <progress id="progress" max="100" value="0" aria-label="Simulation progress"></progress>
+        <p class="small quiet status" id="status" role="status" aria-live="polite">Ready to sample the shipped match engine.</p>
+      </form>
+    </section>
+    <section class="pane results" aria-labelledby="resultsTitle">
+      <div class="panehead"><div><span class="eyebrow">02 / MEASURED</span><h2 id="resultsTitle">Simulation results</h2></div>
+        <button id="export" disabled type="button">Export JSON</button></div>
+      <div class="summary">
+        <div><span>Completed</span><strong id="completed">0</strong></div>
+        <div><span>Node coverage</span><strong id="nodeCoverage">—</strong></div>
+        <div><span>Observed authored edges</span><strong id="edgeCoverage">—</strong></div>
+        <div><span>Mean stars</span><strong id="avgStars">—</strong></div>
+      </div>
+      <p class="small quiet">Edge coverage counts consecutive in-ring events matching an authored graph link. Arc-based jumps are excluded. A low value is a diagnostic, not automatically a defect.</p>
+      <div class="two resulttables">
+        <div><h3>Most-used families</h3><ol id="families" class="ranklist"><li>Run a sample to see counts.</li></ol></div>
+        <div><h3>Most-used actions</h3><ol id="topActions" class="ranklist"><li>Awaiting a sample.</li></ol></div>
+      </div>
+      <div class="reviewline"><span id="counterSummary">Counters — · Blocks —</span><span id="unseenSummary">Unseen actions —</span></div>
+      <details><summary>Observed sequences and outcome routes</summary><div class="two"><div><h3>Recurring triplets</h3><ol id="sequences" class="ranklist"></ol></div><div><h3>Finish routes</h3><ol id="finishRoutes" class="ranklist"></ol></div></div></details>
+      <details open><summary>First bout / action trace</summary><div id="trace" class="trace"><p class="quiet">Run a sample to see the first match's actual graph events.</p></div></details>
+    </section>
+  </div>
+  <section class="pane explorer" aria-labelledby="explorerTitle">
+    <div class="panehead"><div><span class="eyebrow">03 / INSPECT</span><h2 id="explorerTitle">Technique explorer</h2></div><div id="selection" class="selection">Choose a node</div></div>
+    <div class="exploregrid">
+      <div><label for="search">Search node ID, name or family</label><input id="search" type="search" placeholder="e.g. wristlock, suplex, counter">
+        <p class="small quiet" id="found">Search the current graph.</p><div id="nodeList" class="nodeList" role="group" aria-label="Graph nodes"></div>
+      </div>
+      <div class="detail"><div id="nodeDetails" class="nodeMeta">Select a node from the list to inspect its real connections.</div>
+        <h3>Local connection diagram</h3><div class="diagram" id="diagram" role="img" aria-label="Incoming and outgoing graph links"></div>
+        <div class="two">
+          <div><h3>Incoming edges</h3><div id="incoming" class="connections"></div></div>
+          <div><h3>Outgoing edges</h3><div id="outgoing" class="connections"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="pane" aria-labelledby="comparisonTitle">
+    <div class="panehead"><div><span class="eyebrow">04 / COMPARE</span><h2 id="comparisonTitle">Compare baselines</h2></div></div>
+    <p class="small quiet">Save a JSON baseline now, then load it alongside a later run to compare graph coverage and match behaviour. This comparison is purely descriptive; identical scenarios are needed for meaningful conclusions.</p>
+    <div class="actions"><label class="filelabel" for="baseline">Load baseline JSON</label><input id="baseline" type="file" accept=".json,application/json"><span id="baselineName" class="small quiet">No baseline loaded</span></div>
+    <div id="comparison" class="comparison">No comparison yet.</div>
+  </section>
+</main>
+<footer class="footer">THE OFFICE / GRAPH LAB · Observational tools only · No match rules modified</footer>
+<script src="../../assets/js/data.js" defer></script>
+<script src="../../assets/js/roster-registry.js" defer></script>
+<script src="../../assets/js/match-engine.js" defer></script>
+<script src="core.js" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>
