@@ -7,6 +7,7 @@ on:
       - 'assets/js/match-engine.js'
       - 'assets/js/technique-backgrounds.js'
       - 'tests/phase9-graph-validation.test.cjs'
+      - 'tests/phase9-authored-chains.test.cjs'
       - '.github/workflows/phase9-graph-validation.yml'
   push:
     branches: [main]
@@ -31,8 +32,10 @@ jobs:
           node-version: '22'
       - name: Validate 120 real matches and injected failure cases
         run: node tests/phase9-graph-validation.test.cjs
-      - name: Capture 250-match repeatable graph evidence
-        run: node tools/graph-lab/validate.cjs --count 250 > phase9-evidence.json
+      - name: Verify 200 bouts across nine authored move-chain contexts
+        run: node tests/phase9-authored-chains.test.cjs
+      - name: Capture 500-match repeatable graph evidence
+        run: node tools/graph-lab/validate.cjs --count 500 > phase9-evidence.json
       - uses: actions/upload-artifact@v4
         with:
           name: phase9-graph-evidence
