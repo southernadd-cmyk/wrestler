@@ -14,14 +14,15 @@ const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,R=root.OfficeTechniqueRegis
 const stats=B.validate(D,G,R);
 assert.equal(stats.valid,true,stats.errors.join('\n'));
 assert.equal(B.VERSION,2);
-assert.equal(stats.assigned,40);
-assert.equal(stats.unassigned,40);
+assert.equal(stats.assigned,80);
+assert.equal(stats.unassigned,0);
 assert.equal(B.MAX_BONUS,.28);
 assert.equal(D.ALL.length,80);
 assert.equal(B.get('bao').label,'Judo','Bao is a judoka in the cast bible');
 assert.equal(B.get('nico').label,'Lucha libre','Nico has a stated lucha upbringing');
 assert.equal(B.get('theo').label,'Catch wrestling');
-assert.equal(B.get('rex').label,'General ringcraft','unassigned wrestlers keep unmodified probabilities');
+assert.equal(B.get('rex').label,'Strength athletics','Rex receives provisional strength move tendencies');
+assert.equal(Object.keys(B.PROVISIONAL_ASSIGNMENTS).length,40,'originally unallocated wrestlers receive provisional gameplay identities');
 assert.equal(B.get('juno').id,'catch');
 assert.equal(B.get('juno').id,B.get({id:'juno'}).id);
 assert.equal(B.get('rex').id,B.get({id:'rex',training:'ring',intensity:'light'}).id);
