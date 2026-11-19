@@ -6,7 +6,7 @@
   const lab = window.OfficeGraphLab;
   const $ = id => document.getElementById(id);
   const G = M?.GRAPH;
-  let info, people, selectedId, lastReport = null, savedReport = null;
+  let info, people, selectedId, lastReport = null, savedReport = null, frozenSuite = null;
   let running = false, stopped = false;
   const fmt = n => Number(n).toLocaleString('en-GB');
   const make = (tag, text, cls) => {
@@ -298,6 +298,76 @@
     }
   }
 
+  async function loadFrozenReference() {
+    const trigger = $('loadReference');
+    trigger.disabled = true;
+    set('referenceStatus', 'Loading the fixed-seed baseline from this site…');
+    try {
+      const response = await fetch('baselines/reference-v1.json', { cache: 'no-store' });
+      if (!response.ok) throw Error('HTTP ' + response.status);
+      const suite = await response.json();
+      if (suite.schema !== 'office-graph-baseline-suite-v1' ||
+          suite.totalBouts !== 1200 || !Array.isArray(suite.scenarios) || suite.scenarios.length !== 6 ||
+          suite.scenarios.some(item => item.report?.schema !== 'office-graph-lab-v1')) {
+        throw Error('Stored reference version or contents are incompatible.');
+      }
+      frozenSuite = suite;
+      const picker = $('referenceScenario');
+      picker.replaceChildren();
+      for (const scenario of suite.scenarios) {
+        const option = document.createElement('option');
+        option.value = scenario.id;
+        option.textContent = scenario.label + ' (' + scenario.report.bouts + ' bouts)';
+        picker.append(option);
+      }
+      picker.disabled = false;
+      $('applyReference').disabled = false;
+      selectFrozenScenario();
+      set('referenceStatus', 'Loaded ' + fmt(suite.totalBouts) + ' verified baseline matches in six reproducible scenarios.');
+    } catch (error) {
+      frozenSuite = null;
+      $('referenceScenario').disabled = true;
+      $('applyReference').disabled = true;
+      set('referenceStatus', 'Could not load the stored baseline: ' + error.message);
+    } finally {
+      trigger.disabled = false;
+    }
+  }
+
+  function selectedFrozenScenario() {
+    return frozenSuite?.scenarios.find(s => s.id === $('referenceScenario').value) || null;
+  }
+
+  function selectFrozenScenario() {
+    const scenario = selectedFrozenScenario();
+    if (!scenario) return;
+    savedReport = scenario.report;
+    set('baselineName', 'Frozen v1: ' + scenario.label + ' / ' + fmt(scenario.report.bouts) + ' bouts');
+    renderComparison();
+  }
+
+  function applyFrozenScenario() {
+    const scenario = selectedFrozenScenario();
+    if (!scenario) return;
+    const params = scenario.parameters;
+    for (const [key, elementId] of [
+      ['wid', 'worker'], ['rid', 'opponent'], ['plan', 'plan'], ['finish', 'finish'],
+      ['slot', 'slot'], ['rotation', 'rotation'], ['seed', 'seed'], ['count', 'bouts']
+    ]) {
+      const input = $(elementId);
+      const value = String(params[key]);
+      if (input.tagName === 'SELECT' && ![...input.options].some(option => option.value === value)) {
+        set('referenceStatus', 'This version cannot run the stored ' + key + ' setting: ' + value);
+        return;
+      }
+      input.value = value;
+    }
+    activateWorkspace('run');
+    window.location.hash = 'run';
+    set('status', 'Loaded ' + scenario.label + ' / ' + scenario.report.bouts +
+      ' bouts / seed ' + params.seed + '. Run Simulation to compare exactly against the frozen baseline.');
+  }
+
   async function loadBaseline(file) {
     if (!file) return;
     try {
@@ -392,6 +462,9 @@
       $('traceFilter').addEventListener('change', filterTrace);
       $('search').addEventListener('input', renderSearch);
       $('baseline').addEventListener('change', e => loadBaseline(e.target.files?.[0]));
+      $('loadReference').addEventListener('click', loadFrozenReference);
+      $('referenceScenario').addEventListener('change', selectFrozenScenario);
+      $('applyReference').addEventListener('click', applyFrozenScenario);
       renderSearch();
       selectNode(G.A.wristlock ? 'wristlock' : info.nodes[0]);
     } catch (error) {
