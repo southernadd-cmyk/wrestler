@@ -217,6 +217,45 @@
     }
   }
 
+  function showTechniqueProposal(id) {
+    const container = $('techniqueDetails');
+    if (!container) return;
+    container.replaceChildren(make('span', 'MECHANICS LAYER / PROPOSED', 'block-ref'));
+    const registry = window.OfficeTechniqueRegistry;
+    const record = registry?.get(id);
+    if (!record) {
+      container.append(make('p', 'No manually curated mechanic for this node. The engine graph above remains authoritative.', 'technique-unmapped'));
+      return;
+    }
+    const badges = make('div', null, 'mechanics-tags');
+    for (const label of [record.mechanicalClass, ...record.traditionTags.map(tag => tag.toUpperCase())]) badges.append(make('span', label));
+    const headline = make('strong', record.mechanic.replace(/-/g, ' '), 'mechanics-headline');
+    const states = make('p', record.entry.position + ' / ' + record.entry.control +
+      ' → ' + record.exit.position + ' / ' + record.exit.control +
+      ' · target ' + (record.target || 'not specified'), 'mechanics-states');
+    container.append(badges, headline, states, make('p', record.editorialNote, 'mechanics-review'));
+    if (record.variantOf) container.append(make('p', 'Possible variant of: ' + (G.A[record.variantOf]?.name || record.variantOf), 'mechanics-variant'));
+
+    const relations = make('div', null, 'mechanics-relations');
+    for (const [title, entries] of [['Possible setups', record.setupIds], ['Move-specific counters', record.counterIds]]) {
+      const area = make('div');
+      area.append(make('h4', title));
+      if (!entries.length) {
+        area.append(make('p', 'None proposed', 'technique-unmapped'));
+      } else {
+        for (const reference of entries) {
+          const action = make('button', G.A[reference]?.name || reference);
+          action.type = 'button';
+          action.title = 'Inspect ' + reference + ' in the live graph';
+          action.addEventListener('click', () => selectNode(reference));
+          area.append(action);
+        }
+      }
+      relations.append(area);
+    }
+    container.append(relations, make('p', 'These are editorial candidate relationships, NOT executable graph links or training abilities.', 'mechanics-disclaimer'));
+  }
+
   function selectNode(id) {
     if (!G.A[id]) return;
     selectedId = id;
@@ -228,6 +267,7 @@
     edgeButtons('incoming', info.incoming[id], false);
     edgeButtons('outgoing', n.next, true);
     drawLocal(id);
+    showTechniqueProposal(id);
     for (const b of $('nodeList').querySelectorAll('button')) {
       b.classList.toggle('active', b.dataset.id === id);
       b.setAttribute('aria-pressed', String(b.dataset.id === id));
@@ -444,6 +484,10 @@
       if (!D || !M || !lab || !G) throw Error('Shipped match-engine scripts did not load.');
       window.OfficeRosterV4?.enableProfiles();
       info = lab.inspect(G, D);
+      if (window.OfficeTechniqueRegistry) {
+        const check = window.OfficeTechniqueRegistry.validate(G);
+        if (!check.valid) console.warn('Phase 2 technique proposals need editorial repair:', check.errors);
+      }
       set('totalNodes', fmt(info.stats.nodes));
       set('totalEdges', fmt(info.stats.edges));
       set('totalArcs', fmt(info.stats.arcs));
