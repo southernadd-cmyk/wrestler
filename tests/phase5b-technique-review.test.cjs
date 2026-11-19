@@ -15,7 +15,7 @@ const D=root.OfficeData,G=root.OfficeMatch.GRAPH,M=root.OfficeMatch,R=root.Offic
 const stats=G.validate(),review=R.validate(G),schools=B.validate(D,G,R);
 assert.equal(stats.errors.length,0,stats.errors.join('\n'));
 assert.equal(stats.nodes,969);
-assert.equal(stats.edges,6189,'Phase 8 adds 13 genuine edges to the 6,176-edge Phase 7 graph');
+assert.equal(stats.edges,6333,'Phase 9 grows from 6,189 to 6,333 edges through 144 new curated connections');
 assert.equal(G.CATALOG.counts.moves,336,'no new authored move nodes');
 assert.equal(G.TECHNIQUE_PILOT.length,11,'Phase 3 baseline remains a separate set');
 assert.equal(G.TECHNIQUE_EXPANSION.length,14,'Phase 5 baseline remains a separate set');
