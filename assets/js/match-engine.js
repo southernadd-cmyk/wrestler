@@ -542,6 +542,19 @@ const Graph=(function makeGraph(){
   ['gd_elbow_neck','sm_dragon_sleeper',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response'],
   ['rs_cover_rest','early_cover',.72,'After impact: grounded follow-throughs','Only follow a landed impact with a positionally legal grounded response']
  ].map(([from,to,weight,group,reason])=>Object.freeze({from,to,weight,group,reason})));
+ // O(1) authored handoff lookup: bias only the current named move -> next move.
+ const CHAIN_BY_PAIR=new Map(TECHNIQUE_CHAINS.map(link=>[link.from+'>'+link.to,link]));
+ const CHAIN_SCHOOL={
+  'Catch ties and throws':['catch','judo'],
+  'Arm control on the mat':['catch','judo'],
+  'Grounded leg and neck control':['catch','judo'],
+  'Short striking combinations':['boxing'],
+  'Power wrestling and lifted finishes':['strength'],
+  'Lucha, counters and fast ropes':['lucha','acrobatics'],
+  'Corner sequences':['strength','boxing'],
+  'Ringside exchanges':['boxing','strength'],
+  'After impact: grounded follow-throughs':[]
+ };
  const TRAINED_TECHNIQUE_IDS=new Set([...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH,...TECHNIQUE_CHAINS].map(link=>link.to));
 
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
@@ -1796,6 +1809,27 @@ const Graph=(function makeGraph(){
    if(g.texture==='underdog'&&['hope_elbows','hope_cutoff','counter_strike','mat_scramble'].includes(id))n*=1.4;
    if(g.texture==='fast'&&['duck_rebound','counter_strike','springboard_rise','clothesline'].includes(id))n*=1.3;
    if(g.events.slice(-4).some(x=>x.id===id))n*=.25;
+   // Phase 9: the same authored handoff is more likely when the performer
+   // recognises it from their training. Never alter physical availability,
+   // agreed finishes, move validity or the opponent's side of a reversal.
+   const chain=CHAIN_BY_PAIR.get(g.node+'>'+id);
+   if(chain){
+    const school=root.OfficeTechniqueBackgrounds?.get?.(liveSide);
+    const aptitudes=CHAIN_SCHOOL[chain.group]||[];
+    const familiarity=Math.max(0,...aptitudes.map(tag=>school?.affinity?.[tag]||0));
+    const styles={
+     'Catch ties and throws':'Technical',
+     'Arm control on the mat':'Technical',
+     'Grounded leg and neck control':'Technical',
+     'Short striking combinations':'Brawl',
+     'Power wrestling and lifted finishes':'Brawl',
+     'Lucha, counters and fast ropes':'Spectacle',
+     'Corner sequences':'Brawl',
+     'Ringside exchanges':'Brawl'
+    };
+    const performanceMatch=styles[chain.group]===liveSide.style;
+    n*=1+Math.min(.42,.30*familiarity+(performanceMatch?.12:0));
+   }
    // Phase 4: individual technical schooling (NOT match style or career drills).
    // A move-specific counter belongs to the defending wrestler who performs it.
    // The background layer only affects already-reviewed live Phase 3 moves.
