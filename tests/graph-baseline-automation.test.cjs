@@ -1,0 +1,36 @@
+'use strict';
+// Automated baseline suite: deterministic scenario capture and drift detection.
+const assert=require('node:assert/strict');
+const suite=require('../tools/graph-baseline-suite.cjs');
+
+assert.equal(suite.cases.length,6);
+assert.equal(suite.cases.reduce((n,c)=>n+c.count,0),1200);
+assert.equal(new Set(suite.cases.map(s=>s.seed)).size,suite.cases.length);
+const small=[{...suite.cases[0],count:3}];
+const reference=suite.capture(small);
+const duplicate=suite.capture(small);
+assert.equal(reference.schema,suite.SCHEMA);
+assert.equal(reference.totalBouts,3);
+assert.equal(JSON.stringify(reference),JSON.stringify(duplicate),'same engine, seeds and scenarios reproduce identical snapshots');
+let diff=suite.compare(reference,duplicate);
+assert.equal(diff.changed,false);
+assert.equal(diff.critical.length,0);
+assert.match(suite.summary(diff),/Identical to the frozen reference/);
+const modified=JSON.parse(JSON.stringify(duplicate));
+modified.scenarios[0].report.avgStars+=.5;
+modified.scenarios[0].report.nodeCoverage-=4;
+modified.scenarios[0].report.families[0].hits+=8;
+diff=suite.compare(reference,modified);
+assert.equal(diff.changed,true);
+assert.ok(diff.warnings.some(x=>x.includes('story')));
+assert.match(suite.summary(diff),/family frequencies/);
+modified.scenarios[0].report.unknownEvents=[{id:'impossible'}];
+diff=suite.compare(reference,modified);
+assert.ok(diff.critical.some(x=>x.includes('unexpected action')));
+const malformed=JSON.parse(JSON.stringify(duplicate));
+malformed.scenarios[0].parameters.seed++;
+assert.throws(()=>suite.compare(reference,malformed),/Scenario definitions differ/);
+const missing=JSON.parse(JSON.stringify(duplicate));missing.scenarios=[];
+assert.throws(()=>suite.compare(reference,missing),/Incompatible baseline suites/);
+assert.ok(reference.scenarios[0].report.actionEvents>0);
+console.log('PASS graph baseline: actual engine capture, deterministic seeds, six scenarios, drift detection, critical anomalies, frozen-reference protection');
