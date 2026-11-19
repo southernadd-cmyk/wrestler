@@ -14,8 +14,8 @@ const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,R=root.OfficeTechniqueRegis
 const stats=B.validate(D,G,R);
 assert.equal(stats.valid,true,stats.errors.join('\n'));
 assert.equal(B.VERSION,2);
-assert.equal(stats.assigned,41);
-assert.equal(stats.unassigned,39);
+assert.equal(stats.assigned,40);
+assert.equal(stats.unassigned,40);
 assert.equal(B.MAX_BONUS,.28);
 assert.equal(D.ALL.length,80);
 assert.equal(B.get('bao').label,'Judo','Bao is a judoka in the cast bible');
@@ -82,4 +82,4 @@ for(let i=0;i<18;i++){
 const brief=G.scout(D.findWrestler('bao'),D.findWrestler('theo'),'technical');
 assert.match(brief.brief,/judo training/i);
 assert.match(brief.brief,/catch wrestling training/i);
-console.log('PASS Phase 4/5: 41 curated/provisional backgrounds, 39 unbiased; 80 real wrestlers; live-technique multiplier, defence attribution, no roster/save mutation; 18 finish-safe seeded bouts.');
+console.log('PASS Phase 4/5: 40 curated/provisional backgrounds, 40 unbiased; 80 real wrestlers; live-technique multiplier, defence attribution, no roster/save mutation; 18 finish-safe seeded bouts.');
