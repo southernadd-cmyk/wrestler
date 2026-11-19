@@ -62,6 +62,10 @@ function probe(id){
    // Keep the original reachability assertion without granting impossible
    // top-rope reversals with no committed attack.
    s.position='top';s.down=control==='w'?'f':'w';
+   // Some advanced dives are only available after 70-75% of a match. Their
+   // generated block nodes have no independent after threshold, so probe
+   // at the *parent attack's* legal time rather than an invented early dive.
+   x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02,A[parent].after+.02)));
    if(!G.startAerial(x,parent))continue;
    assert.equal(x.graph.pendingAerial.id,parent);
   }
