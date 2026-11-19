@@ -77,6 +77,12 @@ async function journey(browser,name,viewport){
   // Together both panels must fill the window, not bunch up at its left edge.
   assert.ok(geom.scene+geom.decision>=geom.win*.90,
     name+': dialogue and choices crammed into a corner '+JSON.stringify(geom));
+  if(viewport.width>=1181&&viewport.height>=600){
+    assert.ok(geom.scene>geom.decision*1.4,
+      name+': dialogue should have the wider desktop column '+JSON.stringify(geom));
+    assert.ok(geom.decision>=360,
+      name+': decision column must remain usable '+JSON.stringify(geom));
+  }
   await page.locator('#tv button[data-aftermic="walk"]').click();
   const consequences=page.locator('#tv .after-consequences');
   await consequences.waitFor();
