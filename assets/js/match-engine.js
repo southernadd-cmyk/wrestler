@@ -1391,6 +1391,14 @@ const Graph=(function makeGraph(){
  }
  function canArc(M,id,frac){
   const g=get(M),n=ARCS[id];if(!n)return false;
+  // The narrative clock determines when a major phase is eligible. The action
+  // graph can still weave through holds, cut-offs and ordinary exchanges.
+  const schedule=phaseFor(frac,M),phaseOrder={open:0,shine:1,heat:2,comeback:3,stretch:4};
+  if(id==='exchange'&&phaseOrder[schedule.id]<2)return false;
+  if(n.phase==='comeback'&&phaseOrder[schedule.id]<3)return false;
+  if(n.phase==='stretch'&&id!=='exchange'&&schedule.id!=='stretch')return false;
+  if(id==='finish_setup'&&frac<Math.max(.88,(Psy.PHASE_ENDS[M.planId]||Psy.PHASE_ENDS.story)[3]+.08))return false;
+  if(schedule.id==='stretch'&&['open','shine','heat'].includes(n.phase))return false;
   if(n.earliest&&frac<n.earliest)return false;
   if(frac<.43&&id==='finish_setup')return false;
   if(n.latest&&frac>n.latest)return false;
@@ -1422,7 +1430,8 @@ const Graph=(function makeGraph(){
    if(t==='fast'&&['shine','exchange','comeback'].includes(id))weight*=1.6;
    return [id,weight];
   });
-  return pick(M,weights)|| (frac>.75?'escalation':g.arc);
+  // Even the no-edge fallback must respect the late-arc timing guard.
+  return pick(M,weights)||(frac>.75&&canArc(M,'escalation',frac)?'escalation':g.arc);
  }
  function enter(M,id,prev){
   const g=get(M),arc=ARCS[id],p=Psy.get(M);
@@ -1528,17 +1537,27 @@ const Graph=(function makeGraph(){
   g.node=null;
  }
  function advance(M,frac){
-  const g=get(M),a=ARCS[g.arc];if(!g.started){g.started=true;enter(M,'opening',null);}g.age++;
+  const g=get(M);if(!g.started){g.started=true;enter(M,'opening',null);}g.age++;
+  const a=ARCS[g.arc],schedule=phaseFor(frac,M),order={open:0,shine:1,heat:2,comeback:3,stretch:4};
+  // Existing in-progress saves may already be in an impossible early finish arc.
+  // Recover those, and never carry an early-phase arc back into the final stretch.
+  const mispaced=(g.arc==='exchange'&&order[schedule.id]<2)
+   ||(a.phase==='comeback'&&order[schedule.id]<3)
+   ||(a.phase==='stretch'&&g.arc!=='exchange'&&schedule.id!=='stretch')
+   ||(g.arc==='finish_setup'&&frac<Math.max(.88,(Psy.PHASE_ENDS[M.planId]||Psy.PHASE_ENDS.story)[3]+.08))
+   ||(schedule.id==='stretch'&&['open','shine','heat'].includes(a.phase));
   const force=frac>.93&&g.arc!=='finish_setup'||frac>.81&&!a.late||frac>.67&&['open','shine','heat'].includes(a.phase);
-  if(force||g.age>=a.max||(g.age>=a.min&&M.r()<.16)){
-   const next=selectArc(M,frac);
+  if(mispaced||force||g.age>=a.max||(g.age>=a.min&&M.r()<.16)){
+   const next=mispaced?({open:'chain',shine:'shine',heat:'control',comeback:'comeback',stretch:'escalation'}[schedule.id]):selectArc(M,frac);
    if(next!==g.arc){
     const prev=g.arc;g.arc=next;g.age=0;g.visit[next]=(g.visit[next]||0)+1;
     g.history.push(next);g.transitions++;g.node=null;
     enter(M,next,prev);
    }
   }
-  const arc=ARCS[g.arc],ph=PHASES.find(x=>x.id===arc.phase)||PHASES[0];
+  // Keep clock, presentation, commentary and crowd/spot modifiers on one
+  // timed phase, without suppressing the graph's detailed arc labels.
+  const arc=ARCS[g.arc],ph=phaseFor(frac,M);
   return {id:ph.id,name:arc.label};
  }
  // Aerial counters are outcomes of a named attempt, never free-standing
@@ -2415,7 +2434,7 @@ function tick(M){
  const aerialResolved=Graph.resolveAerial(M);
  const grappleResolved=Graph.resolveGrapple(M);
  const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
- if(!M.phase||M.phase.name!==ph.name){M.phase=ph;onPhase(M);if(M.decision)return;}
+ if(!M.phase||M.phase.id!==ph.id||M.phase.name!==ph.name){M.phase=ph;onPhase(M);if(M.decision)return;}
  // An outside exchange cannot continue indefinitely without a count-out.
  if(Psy.get(M).position==='outside'){
    const g=Graph.get(M);g.floorTicks=(g.floorTicks||0)+1;
