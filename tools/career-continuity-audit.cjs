@@ -31,7 +31,7 @@ function play(seed=20261119){
   check(before.record.meetings===i,'Earlier results missing from rivalry ledger before week '+week);
   if(i){
    check(before.last?.cid===priorId,'Rivalry lost identity of previous match at week '+week);
-   check(before.facts.every(fact=>!fact.cid||before.last||fact.cid),'Rivalry facts are not inspectable');
+   check(G.S.history.some(h=>h.cid===priorId),'Career history lost the previous contract before its rematch');
   }else{
    check(before.record.meetings===0&&before.facts.length===0,'First meeting invented historical facts');
   }
@@ -150,7 +150,7 @@ function markdown(report){
   '## Five-week career rivalry continuity','',
   '**Real career simulation:** five weekly matches, completed through the game engine, career result processor, rivalry ledger, memory/debrief system, save/load and end-of-week processing.',
   '',
-  '| Meeting | Career week | Contract | Actual finish | Prior results visible | Evidence-based promo cases | Past memory recalled | Rivalry heat |',
+  '| Meeting | Career week | Booked result | Actual finish route | Prior results visible | Evidence-based promo cases | Past memory recalled | Rivalry heat |',
   '|:--|--:|:--|:--|--:|--:|:--:|--:|'
  ];
  for(const m of report.meetings)lines.push('| '+m.meeting+' | '+m.week+' | '+m.finish+
