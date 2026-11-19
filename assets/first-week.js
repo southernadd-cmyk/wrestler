@@ -3,10 +3,10 @@
  'use strict';
  const tasks=[
   {key:'signed',title:'Sign your first wrestler',detail:'A signing fee comes out now; wages come out every week.',go:'scouting'},
-  {key:'booked',title:'Book your first match',detail:'Check the promoter, opponent, purse and planned finish.',go:'offers'},
+  {key:'booked',title:'Book your first match',detail:'The promoter books the winner. Check the purse, any stipulation and what the finish will cost your wrestler.',go:'offers'},
   {key:'read',title:'Read the Office inbox',detail:'Some letters need an answer before the week can continue.',go:'inbox'},
   {key:'trained',title:'Set a training focus',detail:'Choose a focus or a session with Dennis for your wrestler.',go:'training'},
-  {key:'match',title:'Work your first match',detail:'Press Match night, agree the plan, speak on the mic and work the bout.',go:'fixtures'}
+  {key:'match',title:'Work your first match',detail:'Dennis explains the running order. What you promise on the mic can be tested in the ring and remembered afterwards.',go:'fixtures'}
  ];
  function ensure(s){if(!s)return null; if(!s.firstWeek||typeof s.firstWeek!=='object')s.firstWeek={};return s.firstWeek;}
  function progress(s){
@@ -19,10 +19,10 @@
  function note(s){const p=progress(s),next=p.steps.find(x=>!x.done);
   if(!next)return 'That is your first week done. The territory is yours now.';
   if(next.key==='signed')return 'Welcome to the territory. You have £2,250 and an empty locker room. Pick one wrestler you can afford, but remember: wages arrive every week, whether you get booked or not.';
-  if(next.key==='booked')return 'You have someone under contract. Now get them working. The booker picks the result; you negotiate the terms and work out how to get there.';
+  if(next.key==='booked')return 'You have someone under contract. Now get them working. The booker decides who wins; your job is to negotiate the fee, protect the wrestler, and make that result worthwhile.';
   if(next.key==='read')return 'Before you hit Continue, check the office post. Promoters and wrestlers send requests, and some need your answer.';
   if(next.key==='trained')return 'Don’t send someone out cold. Set their training focus, or give them one of my two weekly sessions.';
-  return 'Card signed, paperwork done. Press Match night. I’ll go through the running order with you backstage before the microphone opens.';
+  return 'Card signed, paperwork done. Press Match night. I’ll explain the agreed finish and the four-beat running order; a microphone promise may come back to haunt you next week.';
  }
  root.OfficeOnboarding={tasks,ensure,progress,note};
  if(typeof document==='undefined')return;

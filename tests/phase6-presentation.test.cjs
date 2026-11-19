@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const ui=fs.readFileSync(path.join(__dirname,'../assets/js/ui.js'),'utf8');
+const guide=fs.readFileSync(path.join(__dirname,'../assets/first-week.js'),'utf8');
+assert.match(ui,/function ownedChamps\(id\)/);
+assert.match(ui,/OfficeTerritory\?\.titlesOf/);
+assert.match(ui,/<div class="name">\$\{esc\(w.name\)\}<\/div>\$\{ownedChamps\(w.id\)\}/);
+assert.match(ui,/mu you.*ownedChamps\(w.id\)/);
+assert.match(guide,/booker decides who wins/i);
+assert.match(guide,/microphone promise|promise on the mic/i);
+console.log('PASS Phase 6: genuine player championship identity and consequence-led first week');
