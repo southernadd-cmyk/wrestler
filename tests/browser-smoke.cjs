@@ -73,11 +73,22 @@ async function journey(browser,name,viewport){
     return {win:bounds('.s-back>.win').width,scene:bounds('#afterTalk').width,
       decision:bounds('.s-back .decide2').width};
   });
-  assert.ok(geom.scene>=geom.win*.85,name+': dialogue squeezed '+JSON.stringify(geom));
-  assert.ok(geom.decision>=geom.win*.85,name+': decision cards squeezed '+JSON.stringify(geom));
+  // The original desktop split is deliberate while choices are visible.
+  // Together both panels must fill the window, not bunch up at its left edge.
+  assert.ok(geom.scene+geom.decision>=geom.win*.90,
+    name+': dialogue and choices crammed into a corner '+JSON.stringify(geom));
   await page.locator('#tv button[data-aftermic="walk"]').click();
   const consequences=page.locator('#tv .after-consequences');
   await consequences.waitFor();
+  const doneGeom=await page.evaluate(()=>{
+    const rect=s=>document.querySelector(s).getBoundingClientRect();
+    return {win:rect('.s-after>.win').width,scene:rect('#afterTalk').width,
+      consequences:rect('.after-consequences').width};
+  });
+  assert.ok(doneGeom.scene>=doneGeom.win*.85,
+    name+': completed dialogue must fill the width '+JSON.stringify(doneGeom));
+  assert.ok(doneGeom.consequences>=doneGeom.win*.85,
+    name+': consequences panel must not float in a narrow column '+JSON.stringify(doneGeom));
   assert.equal(await consequences.locator('.section-h').innerText(),'Consequences');
   assert.ok(await consequences.locator('.cons li').count()>0,
     name+': actual post-bell effects sit together with their heading');
