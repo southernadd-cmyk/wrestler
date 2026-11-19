@@ -1758,6 +1758,13 @@ const Graph=(function makeGraph(){
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
   const entries=arc.entry.map(id=>[id,1]);
   const selected=[...from,...entries];
+  // Only an event actually performed by the current controller can seed an
+  // offensive continuation. Arc changes and special interruptions break it.
+  const previous=g.events[g.events.length-1];
+  const sameController=!!(previous&&previous.id===g.node&&previous.control===p.control);
+  const prior=g.events[g.events.length-2];
+  const inSequence=!!(sameController&&prior&&prior.control===p.control&&
+   CHAIN_BY_PAIR.has(prior.id+'>'+previous.id));
   const liveSide=p.control==='f'?M.f:M.w;
   const style=STYLE_BEATS[liveSide.style]||STYLE_BEATS.Story;
   if(p.position==='standing'&&arc.openers)
@@ -1780,6 +1787,19 @@ const Graph=(function makeGraph(){
    if(famList.includes('superplex'))selected.push(['corner_whip',.7]);
   }
   if(p.position==='corner'&&famList.includes('superplex'))selected.push(['top_follow',2.4]);
+  // A Spectacle wrestler who has reached the ropes should have an actual
+  // named aerial/springboard available, not only the generic launch node.
+  // isValid still rejects heavyweights, fatigue, early big spots and unsafe
+  // manoeuvres; safe plans retain their normal risk discount below.
+  if(p.position==='top'&&sameController&&
+     (g.node==='top_climb'||g.node==='springboard_rise')&&
+     (liveSide.style==='Spectacle'||M.planId==='spots')){
+   const family=g.node==='springboard_rise'?'springboard':'aerial';
+   for(const id of CAT.members[family]||[]){
+    if(A[id]?.family===family&&!A[id].counterOf&&!A[id].blockOf)
+     selected.push([id,liveSide.style==='Spectacle'?2.3:1.35]);
+   }
+  }
   // v3.5: an agents'-room sheet. The wrestler works towards the agreed move, or the setup it needs.
   const agreed=M.sheet?.v>=4&&root.OfficeRoom?root.OfficeRoom.wants(M,p.control==='f'?'f':'w',p.position)[0]:null;
   if(agreed)selected.push([agreed[0],1]);
@@ -1812,8 +1832,8 @@ const Graph=(function makeGraph(){
    // Phase 9: the same authored handoff is more likely when the performer
    // recognises it from their training. Never alter physical availability,
    // agreed finishes, move validity or the opponent's side of a reversal.
-   const chain=CHAIN_BY_PAIR.get(g.node+'>'+id);
-   if(chain){
+   const chain=sameController&&CHAIN_BY_PAIR.get(g.node+'>'+id);
+   if(chain&&!A[id].reverse){
     const school=root.OfficeTechniqueBackgrounds?.get?.(liveSide);
     const aptitudes=CHAIN_SCHOOL[chain.group]||[];
     const familiarity=Math.max(0,...aptitudes.map(tag=>school?.affinity?.[tag]||0));
@@ -1828,7 +1848,11 @@ const Graph=(function makeGraph(){
      'Ringside exchanges':'Brawl'
     };
     const performanceMatch=styles[chain.group]===liveSide.style;
-    n*=1+Math.min(.42,.30*familiarity+(performanceMatch?.12:0));
+    // Stronger (but bounded) follow-through preference competes with
+    // generic arc hubs. Consecutive legal same-wrestler beats gain slightly
+    // more momentum, without creating an uninterruptible scripted chain.
+    n*=(1+Math.min(.42,.30*familiarity+(performanceMatch?.12:0)))*
+       (2.6+(inSequence?.55:0));
    }
    // Phase 4: individual technical schooling (NOT match style or career drills).
    // A move-specific counter belongs to the defending wrestler who performs it.
