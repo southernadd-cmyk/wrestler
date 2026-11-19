@@ -68,12 +68,6 @@ async function visit(browser, label, viewport) {
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     assert.ok(overflow <= 3, label + ': horizontal overflow of ' + overflow + 'px');
-    if (process.env.GRAPH_LAB_CAPTURE === '1' && (label === 'desktop' || label === 'phone')) {
-      await page.locator('#tab-run').click();
-      await page.evaluate(() => window.scrollTo(0, 0));
-      const shot = await page.screenshot({ type: 'jpeg', quality: 48, fullPage: true, animations: 'disabled' });
-      console.log('GRAPH_LAB_SCREENSHOT_' + label.toUpperCase() + ':' + shot.toString('base64'));
-    }
     assert.deepEqual(failed, [], label + ': all assets load without HTTP errors');
     assert.deepEqual(errors, [], label + ': no uncaught browser exceptions');
     console.log('PASS graph lab ' + label + ': tabs, real bouts, tape histogram, move atlas, responsive layout');
