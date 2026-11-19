@@ -15,7 +15,7 @@ const G = game.OfficeMatch.GRAPH;
 const R = require('../assets/js/technique-registry.js');
 assert.equal(R.VERSION, 1);
 assert.equal(R.CLASSES.length, 10, 'nine source headings plus wrestling-only extension');
-assert.deepEqual([...R.TRADITIONS], ['catch','judo','lucha']);
+assert.deepEqual([...R.TRADITIONS], ['catch','judo','lucha','boxing','acrobatics','strength']);
 assert.ok(Object.isFrozen(R.RECORDS), 'registry is immutable');
 const before = JSON.stringify(G.A);
 const validated = R.validate(G);
