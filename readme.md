@@ -24,8 +24,6 @@
 
 You run a small regional wrestling stable. Four promoters control their cards and decide the booked winners; you sign wrestlers, negotiate their appearances, work out a match with road agent Dennis, handle the microphone and live with what happens after the bell. Winning every bout isn't the goal. Building a stable that stays in work, earns trust and survives the politics is.
 
-A new career starts with **£2,250**, **five available contract places**, **two management meetings per week** and **16 weeks in a season**. Wages are due even when you don't get booked. You begin with an empty roster.
-
 ### FIRST WEEK WITH DENNIS
 
 *From the road agent*
@@ -45,8 +43,6 @@ You get **£2,250**, an empty locker room and four promoters with different idea
 5. Read the match report, play out the plan **after the bell**, and decide what your wrestler says on the microphone. Then check **Territory → Results**. A good showing can build a programme; a callout can bring next week’s offer, and a promise you missed can follow you back to the office.
 
 The desktop layout keeps **Office**, **Roster**, **Bookings**, **Territory** and **Game** in the sidebar, with back and forward buttons at the top. Wrestler and free-agent lists are sortable. On a smaller screen the panels stack vertically.
-
-**A practical first goal:** sign one wrestler, accept a booking, read the inbox, choose a training focus, then play your first match night. The in-game **First Week** checklist tracks those steps and can be reopened through **Game → How a week works**.
 
 **Saving:** Your career autosaves in the browser. Use **Game → Export save** for a portable copy; use **Import save** on another device or browser.
 
