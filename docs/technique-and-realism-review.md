@@ -4,6 +4,8 @@
 **Baseline:** Verified shipped `main` after Phase 10; 19 November 2026.  
 **Goal:** Make technique identities and match sequences more mechanically convincing **before** growing the move catalogue.
 
+**Completed evidence audit:** [500 seeded bouts](reports/v04-technique-position-500.md) · [exact JSON snapshot](reports/v04-technique-position-500.json) · [read-only reproduction script](../tools/graph-lab/technique-position-audit.cjs). All 500 matches finished, with 6,426 authored-move appearances, including 4,732 without curated metadata. Position/timing gates held, but ringside geography and grip-specific causality remain under-modelled. **The original 24-move list below is superseded** by the audited 24-move shortlist in that report.
+
 ## 1. What already works
 
 The game has **340 authored playable techniques** in 20 families. Of these, **90** have reviewed `OfficeTechniqueRegistry` records (26.5%). The other **250** are *not* missing from the action graph; they already have usable `OfficeMatch.GRAPH.A` definitions. The registry is a curated second layer for explicit grip / entry / exit / counter / tradition relationships, not the source of all executable actions.
@@ -40,7 +42,7 @@ This is computed by comparing `OfficeMatch.GRAPH.CATALOG.F[*].moves` with `Offic
 
 **Interpretation:** The gap is heavily concentrated in ordinary grounded, neck, corner and ringside wrestling as well as strikes and lifting techniques. By contrast, submissions and chain wrestling already have comparatively good metadata coverage. Coverage percentages do not tell us which moves players actually see; the next selection should use **observed event frequency** from Graph Lab as well as physical risk and narrative importance.
 
-### Recommended first curated tranche — 24 existing moves
+### Original pre-audit shortlist — 24 existing moves (historical proposal)
 
 This is a **review shortlist**, not authority to change any graph edge or technique definition. The IDs were verified as *currently present and unreviewed*. Check every proposed entry/exit and counter against real action state before adding metadata:
 

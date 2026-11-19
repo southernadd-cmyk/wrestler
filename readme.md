@@ -22,7 +22,7 @@ The live action graph has **979 action nodes, 6,401 directed connections and 340
 
 There is still work on the mat. The detailed technique registry covers **90 of 340 moves**. The other 250 already work; their grips, setup relationships and counter semantics are waiting for editorial review, not for somebody to invent them. The next investigation is about those mechanics and better physical continuity.
 
-[**What shipped in v0.4**](docs/v0.4-release.md) · [**Inside Graph Lab**](docs/graph-lab.md) · [**Next technique and realism review**](docs/technique-and-realism-review.md) · [**Documentation index**](docs/README.md)
+[**What shipped in v0.4**](docs/v0.4-release.md) · [**Inside Graph Lab**](docs/graph-lab.md) · [**500-bout technique audit**](docs/reports/v04-technique-position-500.md) · [**Next development review**](docs/technique-and-realism-review.md) · [**Documentation index**](docs/README.md)
 
 <p align="center"><img src="docs/readme/01-lead-story.svg" alt="THE MAIN EVENT — THE BOOKERS HAVE PLANS" width="100%"></p>
 
