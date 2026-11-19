@@ -2612,50 +2612,59 @@ function playByPlay(M){
 }
 function spot(M,big,forced){
  const {A,D:Df}=forced?{A:M.w,D:M.f}:actors(M);
- const yours=A===M.w,st=yours?M.wSt:M.fSt;
- const ap=D.PROFILES[A.id]||{kg:85},dp=D.PROFILES[Df.id]||{kg:85};
- const strengthGap=dp.kg-ap.kg;
- const moves=D.SPOTS[A.style]||D.SPOTS.Story;
- const possible=moves.filter(x=>!(strengthGap>32&&/suplex|piledriver|backdrop|powerbomb/i.test(x)));
- const move=rnd(M,possible.length?possible:['a running dropkick']);
+ const yours=A===M.w,side=yours?'w':'f',st=yours?M.wSt:M.fSt;
+ const g=Graph.get(M);
  if(st<28){
-  // Automatic risky attempts are gated in tick(); the producer can still
-  // demand a big spot, but not an endless identical failure/commentary loop.
   M.lastExhaustedSpot??={};
-  const side=yours?'w':'f';
   if(M.t-(M.lastExhaustedSpot[side]??-9999)>=160){
    say(M,`${A.short} cannot get their footing for the spectacular attack. ${Df.short} has room to recover.`,'agent',{who:'pbp'});
    M.lastExhaustedSpot[side]=M.t;
   }
   if(!M.mode||M.mode.type!=='slow')M.mode={type:'slow',ticks:3};
-  lift(M,-(big?3:1));mark(M,'tired',yours);
-  M.bonus-=big?6:2;
-  return;
+  lift(M,-(big?3:1));mark(M,'tired',yours);M.bonus-=big?6:2;
+  return false;
  }
- const wasBotched=M.botches;
- const outside=Psy.spotSetup(M,A,Df,move);
- let botchP=(.03+(100-A.safe)*.0018+(100-st)*.0015)*M.riskMul*(big?1.5:1);
- if(A.ring>=80)botchP*=.8;
+ const mapped=(D.SPOTS[A.style]||D.SPOTS.Story).map(move=>({
+  move,id:Graph.SCRIPTED_SPOT_IDS[move]
+ }));
+ const candidates=mapped.filter(x=>Graph.canScriptedSpot(M,x.id,side));
+ if(!candidates.length){
+  if(forced)say(M,`${A.short} cannot find a legal setup for the requested big move right now.`,'agent',{who:'pbp'});
+  return false;
+ }
+ const chosen=rnd(M,candidates);
+ if(!Graph.prepareScriptedSpot(M,chosen.id,side))return false;
+ const outside=Graph.A[chosen.id].zone==='outside';
+ const botchP=(.03+(100-A.safe)*.0018+(100-st)*.0015)*M.riskMul*(big?1.5:1)*(A.ring>=80?.8:1);
+ const attempt={t:M.t,id:chosen.id,name:chosen.move,side,big:!!big,outcome:'pending'};
+ (g.scriptedSpotAttempts??=[]).push(attempt);
+ if(g.scriptedSpotAttempts.length>220)g.scriptedSpotAttempts.shift();
  M.spots++;
  if(big||M.r()<.35)say(M,big?`${A.short} commits to the high-risk move!`:`${A.short} goes for it!`,'play',{pause:1});
  if(M.r()<botchP){
-  M.botches++;M.bonus-=big?30:20;lift(M,-(big?9:6));mark(M,'botch',yours);
-  say(M,`${move.charAt(0).toUpperCase()+move.slice(1)}… and it’s gone wrong. That looked nasty.`,'bad',{big:true});
-  // who gets hurt: the taker or the one who went for it
+  attempt.outcome='botched';M.botches++;M.bonus-=big?30:20;
+  lift(M,-(big?9:6));mark(M,'botch',yours);
+  say(M,`${chosen.move.charAt(0).toUpperCase()+chosen.move.slice(1)}… and it’s gone wrong. That looked nasty.`,'bad',{big:true});
   const hurtYours=yours?M.r()<.55:M.r()<.45;
-  const injP=(.1+(100-(yours?M.w.safe:M.f.safe))/350)*(big?1.4:1);
+  const injP=(.1+(100-A.safe)/350)*(big?1.4:1);
   if(M.r()<injP){
    if(hurtYours&&!M.injury){M.injury=1+(M.r()<.4?1:0)+(big&&M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);decide(M,'injury');}
    else if(!hurtYours&&!M.foeHurt){M.foeHurt=true;say(M,`${M.f.short} is holding the ${rnd(M,PARTS)}. The referee leans in.`,'agent',{who:'pbp'});M.fSt=clamp(M.fSt-25);}
   }
+  // A botch is an attempted manoeuvre, not a false landed action.
+  Psy.spotAfter(M,A,Df,outside,true);g.node=null;
  }else{
-  M.spotHits++;const pop=(big?7:3)+M.r()*(big?7:4);lift(M,pop*M.plan.crowd);mark(M,big?'big':'spot',yours);M.bonus+=big?18:10;
-  say(M,rnd(M,[`${move.charAt(0).toUpperCase()+move.slice(1)} from ${A.short}!${M.crowd>=70?' The crowd come up out of their seats!':''}`,`${A.short} connects with ${move}! ${Df.short} did not see it coming.`,`What a risk by ${A.short} — ${move} lands flush!`,`${A.short} gets all of ${move}! The front rows erupt.`]),M.crowd>=70?'crowd':'play',{big:big||M.crowd>=75});
+  // The executed graph action owns its own named narration, effects,
+  // movement and event record; do not count it as a second scripted spot.
+  Graph.apply(M,chosen.id,{scriptedSpot:true,big});
+  attempt.outcome='landed';M.spotHits++;
+  const pop=(big?7:3)+M.r()*(big?7:4);
+  lift(M,pop*M.plan.crowd);mark(M,big?'big':'spot',yours);M.bonus+=big?18:10;
+  if(big)say(M,`${Df.short} is rocked by the impact. The front rows erupt!`,'crowd',{big:true});
  }
- // Both wrestlers pay the physical cost of an attempted special, including botches.
  if(yours)M.wSt=clamp(M.wSt-(big?7:4));
  else M.fSt=clamp(M.fSt-(big?7:4));
- Psy.spotAfter(M,A,Df,outside,M.botches>wasBotched);
+ return true;
 }
 function dive(M){
  say(M,`${M.w.short} drives ${M.f.short} through the ropes. They spill towards the aisle, well away from the ring.`,'play',{pause:1});
