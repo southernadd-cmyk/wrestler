@@ -880,7 +880,7 @@ function showAfter(){
  const cons=v.stage==='done'&&v.cons.length?`<section class="after-consequences" aria-label="Consequences"><h3 class="section-h">Consequences</h3><ul class="cons">${v.cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul></section>`:'';
  const decide=v.stage==='mic'?`<div class="decide2"><h3 class="section-h">${esc(v.title)}</h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'aftermic')}</div>`:'';
  const middle=`<b class="fin">${esc(v.plan==='none'?'Straight to the microphone':v.planLabel)}</b><span>${esc(p?.venue||'')}</span>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p?.name||'')}: after the bell</b><span>${esc(w?.name||'')} v ${esc(f?.name||'')}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-back">${win('After the bell',matchupBar({},w,f,middle)+sceneLog(entries,'afterTalk',w,f,p?.id)+decide+cons,{h:'h3',body:'tight'})}</div><div class="tv-foot"><span class="dim">${esc(v.stage==='mic'?'The microphone is live.':'The crowd starts filing out.')}</span>${v.stage==='done'?afterNext():''}</div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p?.name||'')}: after the bell</b><span>${esc(w?.name||'')} v ${esc(f?.name||'')}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-back s-after${v.stage==='done'?' is-done':''}">${win('After the bell',matchupBar({},w,f,middle)+sceneLog(entries,'afterTalk',w,f,p?.id)+decide+cons,{h:'h3',body:'tight'})}</div><div class="tv-foot"><span class="dim">${esc(v.stage==='mic'?'The microphone is live.':'The crowd starts filing out.')}</span>${v.stage==='done'?afterNext():''}</div>`;
  scrollTalk('afterTalk');persistNight();
 }
 
