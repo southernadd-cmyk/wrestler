@@ -1578,6 +1578,9 @@ const Graph=(function makeGraph(){
  }
  function step(M){
   const g=get(M),p=Psy.get(M);
+  // The named move is already committed. Another caller must not overwrite
+  // it with an unrelated selection before the next tick resolves it.
+  if(g.pendingAerial)return;
   if(p.position==='outside'&&g.floorTicks>=4){apply(M,'roll_inside');g.floorTicks=0;return;}
   if(p.control==='neutral'){
    const advantage=(M.w.ring-M.f.ring)+(M.wSt-M.fSt)*.3;
