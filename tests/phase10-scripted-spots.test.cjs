@@ -89,7 +89,9 @@ for(let i=0;i<90;i++){
   slot:i%2?'feature':'main',seed:88001+i*19});
  const match=lab.runMatch(root,o);
  validation.add(v,match,G,root.OfficeTechniqueBackgrounds);
- assert.equal(match.final.psychology.construction.score,
+ // The final report rounds each component to 2 decimals; underlying
+ // construction evidence retains 3 decimal precision for match scoring.
+ assert.equal(Math.round(match.final.psychology.construction.score*100)/100,
   match.final.starParts.find(([id])=>id==='psychology')?.[2]||0);
  assert.ok(match.final.psychology.construction.score<=.37);
  const attempted=match.graph.scriptedSpotAttempts||[];
