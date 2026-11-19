@@ -479,6 +479,9 @@
 .after-picks .decision-option.on>b::before{content:'✓ ';color:var(--gold-lo)}
 .foot-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 @media (max-width:720px){.foot-btns{width:100%}.foot-btns .btn{flex:1 1 auto}}
+/* Post-bell consequences: keep the heading and effects together inside the existing stacked scene. */
+.tv .s-back .after-consequences{flex:none;min-width:0;max-height:32%;overflow:auto;padding:8px 12px 10px;border-top:2px solid var(--ink);background:var(--stone-2)}
+.tv .s-back .after-consequences .section-h{margin:0 0 6px}
 /* v0.3.21 ringside plans */
 .corner-who{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
 .corner-who .btn.on{background:var(--gold-hi);box-shadow:var(--bevel-in)}
