@@ -16,10 +16,10 @@ function run(caught){
  assert.equal(p.last.ringside.secondName,G.W('lyra').short);
  const issue=caught?'runin_caught':'runin_hidden';
  const fact=p.facts.find(x=>x.kind===issue);assert.ok(fact,'new public evidence');
- assert.match(fact.text,/lyra/i);
+ assert.ok(fact.text.includes(G.W('lyra').short),'the recorded ring name belongs to the actual second');
  const args=R.casesFor({seed:'test-seed'},c,G.W('rex'),G.F('silas'));
  const authored=args.find(x=>x.issue===issue);assert.ok(authored,'opponent must have authored reply');
- assert.match(authored.counter,/lyra/i);assert.equal(Object.keys(authored.responses).length,5);
+ assert.ok(authored.counter.includes(G.W('lyra').short),'the opponent names the actual interfering wrestler');assert.equal(Object.keys(authored.responses).length,5);
  const snapshot=JSON.stringify(s);assert.equal(Ring.settle(c,{sheet:{corner:k}}).length,0);
  assert.equal(JSON.stringify(s),snapshot,'no second settlement');
  G.S=JSON.parse(JSON.stringify(s));assert.ok(R.profile('rex','silas').facts.some(x=>x.kind===issue),'save/reload retains fact');
