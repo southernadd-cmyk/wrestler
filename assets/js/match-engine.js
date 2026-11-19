@@ -1122,7 +1122,9 @@ const Graph=(function makeGraph(){
   const schoolBrief=schools?[
    [w,schools.get(w)],[f,schools.get(f)]
   ].filter(([,school])=>school.id!=='general')
-   .map(([actor,school])=>actor.short+' brings '+school.label.toLowerCase()+' training to their choices.').join(' '):'';
+   .map(([actor,school])=>schools.PROVISIONAL_ASSIGNMENTS?.[actor.id]
+    ? actor.short+' currently favours '+school.label.toLowerCase()+' techniques (provisional gameplay profile).'
+    : actor.short+' brings '+school.label.toLowerCase()+' training to their choices.').join(' '):'';
   const known=(them.signature||[]).map(id=>A[id]?.name).filter(Boolean).slice(0,2);
   const watch=known.length?' Watch for '+f.short+'’s '+known.join(' and ')+'.':'';
   return {brief:styles+' '+size+(heat>=45?' There is personal history here.':'')+fatigue+(schoolBrief?' '+schoolBrief:''),advice:danger+' '+(advice[plan]||advice.story)+watch,you:me,opponent:them};
