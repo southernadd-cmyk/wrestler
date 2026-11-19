@@ -36,8 +36,19 @@ jobs:
         run: node tests/phase9-authored-chains.test.cjs
       - name: Capture 500-match repeatable graph evidence
         run: node tools/graph-lab/validate.cjs --count 500 > phase9-evidence.json
+      # Pin the genuine Phase 8 source rather than compare with a moving
+      # graph baseline or a hand-entered metric.
+      - uses: actions/checkout@v4
+        with:
+          ref: d80139d3462cb4bb8740abd4c032c42a30b8cf81
+          path: phase8-reference
+          persist-credentials: false
+      - name: Compare 500 same-seed Phase 8 versus Phase 9 bouts
+        run: node tools/graph-lab/compare-phase8.cjs phase8-reference > phase9-comparison.json
       - uses: actions/upload-artifact@v4
         with:
           name: phase9-graph-evidence
-          path: phase9-evidence.json
+          path: |
+            phase9-evidence.json
+            phase9-comparison.json
           retention-days: 14
