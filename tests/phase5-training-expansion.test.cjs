@@ -23,14 +23,14 @@ assert.equal(registryValidation.valid,true,registryValidation.errors.join('\n'))
 assert.equal(registryValidation.proposals,60,'39 Phase 2 + 21 Phase 5 curated move identities');
 assert.equal(registryValidation.authored,336);
 assert.equal(schools.valid,true,schools.errors.join('\n'));
-assert.equal(schools.assigned,41);
-assert.equal(schools.unassigned,39);
+assert.equal(schools.assigned,40);
+assert.equal(schools.unassigned,40);
 assert.equal(D.ALL.length,80);
 assert.equal(B.MAX_BONUS,.28,'do not increase the maximum training bias');
 assert.equal(B.get('tomasash').id,'boxing');
 assert.equal(B.get('val').id,'strength');
-assert.equal(B.get('zara').id,'acrobatics');
-assert.equal(B.get('kit').id,'lucha','existing Kit identity is not overwritten');
+assert.equal(B.get('kit').id,'lucha-acrobatics','Kit retains the original lucha affinity in a provisional hybrid');
+assert.equal(B.get('zara').id,'lucha','Zara retains her previous training school');
 assert.equal(B.get('rex').id,'general','old general remains unmodified');
 assert.equal(B.get('bao').id,'judo','original judoka preserved');
 assert.equal(B.get('juno').id,'catch','original catch preserved');
@@ -55,7 +55,7 @@ for(const link of G.TECHNIQUE_EXPANSION){
  assert.equal(R.get(link.to).reviewStatus,'proposed','technique metadata never auto-approved');
 }
 for(const [wid,move,expected] of [
- ['tomasash','st_gut_punch',1.28],['val','pw_body_slam',1.28],['zara','ar_shooting_star',1.28],
+ ['tomasash','st_gut_punch',1.28],['val','pw_body_slam',1.28],['kit','ar_shooting_star',1.182],
  ['juno','st_gut_punch',1],['rex','ar_shooting_star',1],['bao','pw_body_slam',1],
  ['tomasash','st_elbow_smash',1],['kit','ar_knee',1],['val','pw_chokeslam',1]
 ])assert.equal(B.multiplier(wid,move,G,R),expected,wid+' '+move+' obeys reviewed training coverage');
@@ -76,14 +76,14 @@ assert.ok(Math.abs(weighted('tomasash','rex','st_jab','st_gut_punch','standing',
  'boxing training influences an actual legal punch choice');
 assert.ok(Math.abs(weighted('val','kit','waistlock','pw_body_slam','standing','brawl')-1.28)<1e-8,
  'strength training influences an actual body slam with a light opponent');
-assert.ok(Math.abs(weighted('zara','rex','top_climb','ar_shooting_star','top','spots')-1.28)<1e-8,
+assert.ok(Math.abs(weighted('kit','rex','top_climb','ar_shooting_star','top','spots')-1.182)<1e-8,
  'acrobatics influences an actual late top-rope choice');
 assert.equal(JSON.stringify(G.A),original,'measuring training must never mutate original authored actions');
 assert.equal(JSON.stringify(D.ALL),roster,'no wrestler template save fields');
 const challenges=[
  {wid:'tomasash',rid:'rex',plan:'brawl'},
  {wid:'val',rid:'kit',plan:'brawl'},
- {wid:'zara',rid:'rex',plan:'spots'},
+ {wid:'kit',rid:'rex',plan:'spots'},
  {wid:'juno',rid:'bao',plan:'technical'}
 ];
 for(let i=0;i<24;i++){
@@ -98,4 +98,4 @@ for(let i=0;i<24;i++){
   assert.equal(JSON.stringify(m.graph.events),JSON.stringify(again.graph.events),'same seed reproducible '+i);
  }
 }
-console.log('PASS Phase 5: 80 audited wrestlers, 41 training backgrounds, 60 curated move records, 14 guarded new transitions, no save mutation or contracted finish drift.');
+console.log('PASS Phase 5: 80 audited wrestlers, 40 training backgrounds, 60 curated move records, 14 guarded new transitions, no save mutation or contracted finish drift.');
