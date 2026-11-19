@@ -35,7 +35,7 @@ assert.equal(B.multiplier('bao','ch_top_wristlock',G,R),1.28,'judo wrestler rece
 assert.equal(B.multiplier('nico','lc_hurricanrana',G,R),1.28,'lucha performer receives a relevant rana bonus');
 assert.equal(B.multiplier('theo','lc_hurricanrana',G,R),1,'catch school does not grant a lucha bonus');
 assert.equal(B.multiplier('rex','ch_rolling_wristlock',G,R),1,'strength tendency does not grant catch-wrestling grip bonuses');
-assert.equal(B.multiplier('juno','sm_kimura',G,R),1,'unreviewed Phase 2 suggestions are not automatically activated');
+assert.equal(B.multiplier('juno','sm_kimura',G,R),1.28,'Phase 9 authored arm-control chain activates reviewed catch kimura');
 assert.equal(B.multiplier('juno','early_cover',G,R),1,'live link without vetted technique tags remains unbiased');
 assert.equal(B.multiplier('juno','ch_single_leg_rev',G,R),1.28,'move-specific counter reads parent technique');
 assert.ok(B.multiplier('marisol','lc_hurricanrana',G,R)>1,'hybrid background supports cross-school movement');
