@@ -1298,7 +1298,7 @@ const Graph=(function makeGraph(){
   denial:{label:'The comeback is cut off',phase:'heat',control:'f',latest:.9,focus:1,min:3,max:6,entry:['hope_cutoff','mat_hold','target_strike'],out:[e('control',4),e('comeback',4),e('rest_hold',2),e('limb_work',1)]},
   comeback:{label:'The comeback',phase:'comeback',control:'w',earliest:.12,openers:1,min:4,max:9,entry:['counter_strike','clothesline','rope_run','snap_suplex','dramatic_rally','rope_rebound'],out:[e('resurgence',4),e('exchange',5),e('cutoff',1),e('dive_sequence',1)]},
   resurgence:{label:'The crowd rises',phase:'comeback',control:'w',openers:1,min:2,max:5,entry:['clothesline','snap_suplex','corner_whip','top_climb'],out:[e('exchange',7),e('cutoff',2),e('dive_sequence',2)]},
-  exchange:{label:'Back-and-forth',phase:'stretch',control:'neutral',openers:1,min:4,max:8,entry:['counter_strike','strike_trade','finish_tease','waistlock','last_second_counter','quiet_reversal','baited_charge'],out:[e('nearfall',3),e('escalation',4),e('control',1),e('fighting_spirit',2),e('submission_battle',1),e('top_rope_battle',1)]},
+  exchange:{label:'Back-and-forth',phase:'stretch',control:'neutral',openers:1,min:4,max:8,entry:['counter_strike','strike_trade','short_arm_lariat','finish_tease','waistlock','last_second_counter','quiet_reversal','baited_charge'],out:[e('nearfall',3),e('escalation',4),e('control',1),e('fighting_spirit',2),e('submission_battle',1),e('top_rope_battle',1)]},
   nearfall:{label:'Near falls',phase:'stretch',control:'neutral',earliest:.3,late:1,min:2,max:5,entry:['snap_suplex','cover','submission_set','counter_rollup','high_crossbody','short_arm_lariat'],out:[e('exchange',3),e('escalation',5),e('nearfall',1),e('false_finish',2),e('double_down',1)]},
   escalation:{label:'Finishing stretch',phase:'stretch',control:'neutral',earliest:.3,late:1,openers:1,min:4,max:8,entry:['finish_tease','corner_whip','top_climb','counter_strike'],out:[e('nearfall',3),e('exchange',2),e('finish_setup',4),e('top_rope_battle',2),e('false_finish',2),e('fighting_spirit',1)]},
   // v3.3 sub-arcs: finer-grained, commonly worked segments inside the classic structure.
@@ -1413,6 +1413,14 @@ const Graph=(function makeGraph(){
  }
  function canArc(M,id,frac){
   const g=get(M),n=ARCS[id];if(!n)return false;
+  // The narrative clock determines when a major phase is eligible. The action
+  // graph can still weave through holds, cut-offs and ordinary exchanges.
+  const schedule=phaseFor(frac,M),phaseOrder={open:0,shine:1,heat:2,comeback:3,stretch:4};
+  if(id==='exchange'&&phaseOrder[schedule.id]<2)return false;
+  if(n.phase==='comeback'&&phaseOrder[schedule.id]<3)return false;
+  if(n.phase==='stretch'&&id!=='exchange'&&schedule.id!=='stretch')return false;
+  if(id==='finish_setup'&&frac<Math.max(.88,(Psy.PHASE_ENDS[M.planId]||Psy.PHASE_ENDS.story)[3]+.08))return false;
+  if(schedule.id==='stretch'&&['open','shine','heat'].includes(n.phase))return false;
   if(n.earliest&&frac<n.earliest)return false;
   if(frac<.43&&id==='finish_setup')return false;
   if(n.latest&&frac>n.latest)return false;
@@ -1444,7 +1452,8 @@ const Graph=(function makeGraph(){
    if(t==='fast'&&['shine','exchange','comeback'].includes(id))weight*=1.6;
    return [id,weight];
   });
-  return pick(M,weights)|| (frac>.75?'escalation':g.arc);
+  // Even the no-edge fallback must respect the late-arc timing guard.
+  return pick(M,weights)||(frac>.75&&canArc(M,'escalation',frac)?'escalation':g.arc);
  }
  function enter(M,id,prev){
   const g=get(M),arc=ARCS[id],p=Psy.get(M);
@@ -1550,17 +1559,27 @@ const Graph=(function makeGraph(){
   g.node=null;
  }
  function advance(M,frac){
-  const g=get(M),a=ARCS[g.arc];if(!g.started){g.started=true;enter(M,'opening',null);}g.age++;
+  const g=get(M);if(!g.started){g.started=true;enter(M,'opening',null);}g.age++;
+  const a=ARCS[g.arc],schedule=phaseFor(frac,M),order={open:0,shine:1,heat:2,comeback:3,stretch:4};
+  // Existing in-progress saves may already be in an impossible early finish arc.
+  // Recover those, and never carry an early-phase arc back into the final stretch.
+  const mispaced=(g.arc==='exchange'&&order[schedule.id]<2)
+   ||(a.phase==='comeback'&&order[schedule.id]<3)
+   ||(a.phase==='stretch'&&g.arc!=='exchange'&&schedule.id!=='stretch')
+   ||(g.arc==='finish_setup'&&frac<Math.max(.88,(Psy.PHASE_ENDS[M.planId]||Psy.PHASE_ENDS.story)[3]+.08))
+   ||(schedule.id==='stretch'&&['open','shine','heat'].includes(a.phase));
   const force=frac>.93&&g.arc!=='finish_setup'||frac>.81&&!a.late||frac>.67&&['open','shine','heat'].includes(a.phase);
-  if(force||g.age>=a.max||(g.age>=a.min&&M.r()<.16)){
-   const next=selectArc(M,frac);
+  if(mispaced||force||g.age>=a.max||(g.age>=a.min&&M.r()<.16)){
+   const next=mispaced?({open:'chain',shine:'shine',heat:'control',comeback:'comeback',stretch:'escalation'}[schedule.id]):selectArc(M,frac);
    if(next!==g.arc){
     const prev=g.arc;g.arc=next;g.age=0;g.visit[next]=(g.visit[next]||0)+1;
     g.history.push(next);g.transitions++;g.node=null;
     enter(M,next,prev);
    }
   }
-  const arc=ARCS[g.arc],ph=PHASES.find(x=>x.id===arc.phase)||PHASES[0];
+  // Keep clock, presentation, commentary and crowd/spot modifiers on one
+  // timed phase, without suppressing the graph's detailed arc labels.
+  const arc=ARCS[g.arc],ph=phaseFor(frac,M);
   return {id:ph.id,name:arc.label};
  }
  // Aerial counters are outcomes of a named attempt, never free-standing
@@ -2519,7 +2538,13 @@ function tick(M){
  const aerialResolved=Graph.resolveAerial(M);
  const grappleResolved=Graph.resolveGrapple(M);
  const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
- if(!M.phase||M.phase.name!==ph.name){M.phase=ph;onPhase(M);if(M.decision)return;}
+ // Minor graph arcs update the label, but do not repeatedly roll the
+ // producer's compliance/incidents checks within the same timed phase.
+ const majorPhaseChange=!M.phase||M.phase.id!==ph.id;
+ if(majorPhaseChange||M.phase.name!==ph.name){
+  M.phase=ph;
+  if(majorPhaseChange){onPhase(M);if(M.decision)return;}
+ }
  // An outside exchange cannot continue indefinitely without a count-out.
  if(Psy.get(M).position==='outside'){
    const g=Graph.get(M);g.floorTicks=(g.floorTicks||0)+1;

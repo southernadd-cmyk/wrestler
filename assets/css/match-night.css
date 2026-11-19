@@ -398,7 +398,8 @@
 }
 /* v0.3.13 How the match went: phases, crowd, who was on top, moments and the rating itemised. */
 .s-result:has(.mf-win){height:auto;grid-template-rows:auto max-content 520px}
-.mf-win{grid-column:1/-1;min-height:max-content}
+/* Keep the chart's categorical colours distinct from wrestler identity colours. */
+.mf-win{grid-column:1/-1;min-height:max-content;--mf-opponent:#BBA6FF;--mf-poor:var(--bad);--mf-mistake:#FFA53A}
 .mf-win>.wbody{overflow:visible;flex:none}
 .mf-head{display:flex;flex-wrap:wrap;gap:4px 22px;margin:0 0 6px;font-size:19px;color:var(--ink-2)}
 .mf-head b.up{color:var(--good-ink)}.mf-head b.down{color:var(--bad-ink)}
@@ -411,7 +412,7 @@
 .mf-phases .mf-lab{line-height:26px}
 .mf-ph{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;overflow:hidden;border-right:2px solid var(--well);color:var(--ink);font:15px/1 var(--px);white-space:nowrap}
 .mf-ph b{overflow:hidden;text-overflow:ellipsis;padding:0 4px}
-.mf-ph.w-good{background:var(--good)}.mf-ph.w-ok{background:var(--stone-2)}.mf-ph.w-poor{background:var(--bad)}
+.mf-ph.w-good{background:var(--good)}.mf-ph.w-ok{background:var(--stone-2)}.mf-ph.w-poor{background:var(--mf-poor)}
 .mf-crowd .mf-track{height:150px;background:var(--deep);border:1px solid var(--well-line)}
 .mf-crowd .mf-lab{line-height:1.1}
 .mf-lab small{position:absolute;right:8px;font-size:15px;line-height:1;background:none;border:0;box-shadow:none;padding:0;color:var(--dim)}
@@ -423,17 +424,17 @@
 .mf-peak{position:absolute;transform:translate(-50%,-160%);z-index:1;font-style:normal;font-size:15px;color:var(--white);background:var(--blood);padding:1px 4px;border:1px solid var(--ink);pointer-events:auto}
 .mf-mark{position:absolute;transform:translate(-50%,-50%);font-style:normal;font-size:16px;line-height:1;text-shadow:1px 1px 0 #000;cursor:default}
 .mf-mark.k-spot.you,.mf-mark.k-big.you,.mf-key .k-spot.you{color:var(--gold)}
-.mf-mark.k-spot.foe,.mf-mark.k-big.foe,.mf-key .k-spot.foe{color:#E98A9A}
+.mf-mark.k-spot.foe,.mf-mark.k-big.foe,.mf-key .k-spot.foe{color:var(--mf-opponent)}
 .mf-mark.k-big{font-size:21px}
 .mf-mark.k-nf,.mf-key .k-nf{color:var(--white)}
-.mf-mark.k-botch,.mf-key .k-botch{color:var(--bad);font-size:19px}
+.mf-mark.k-botch,.mf-key .k-botch{color:var(--mf-mistake);font-size:19px}
 .mf-mark.k-tired{color:var(--warn)}
 .mf-call,.mf-key .k-call{color:var(--cyan)}
 .mf-call{position:absolute;top:2px;transform:translateX(-50%);font-style:normal;font-size:13px;cursor:default}
 .mf-mom .mf-track{height:44px;margin-top:4px;background:var(--deep);border:1px solid var(--well-line)}
 .mf-mom .mf-lab small{font-size:14px;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mf-mom .mf-lab small.you{top:2px;color:var(--gold)}.mf-mom .mf-lab small.them{bottom:2px;color:#E98A9A}
-.mf-you{fill:var(--gold);opacity:.85}.mf-them{fill:var(--blood-hi);opacity:.85}
+.mf-mom .mf-lab small.you{top:2px;color:var(--gold)}.mf-mom .mf-lab small.them{bottom:2px;color:var(--mf-opponent)}
+.mf-you{fill:var(--gold);opacity:.85}.mf-them{fill:var(--mf-opponent);opacity:.85}
 .mf-mid{stroke:var(--dim);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.6}
 .mf-x .mf-track{height:18px;margin-top:4px}
 .mf-x .mf-track span{position:absolute;transform:translateX(-50%);white-space:nowrap}
@@ -441,9 +442,16 @@
 .mf-key{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 0 62px}
 .mf-key i{display:inline-block;width:14px;height:9px;vertical-align:middle;margin-right:5px}
 .mf-key b{margin-right:5px}
-.mf-key .k-line{height:3px;background:var(--cyan)}.mf-key .k-you{background:var(--gold)}.mf-key .k-them{background:var(--blood-hi)}
-.mf-key .k-good{background:var(--good)}.mf-key .k-poor{background:var(--bad)}
-.mf-cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px}
+.mf-key .k-line{height:3px;background:var(--cyan)}.mf-key .k-you{background:var(--gold)}.mf-key .k-them{background:var(--mf-opponent)}
+.mf-key .k-good{background:var(--good)}.mf-key .k-poor{background:var(--mf-poor)}
+/* Keep the compact rating bars under the phase table; let moments occupy
+   the opposite column. Do not stretch a short numerical breakdown full width. */
+.mf-cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);grid-template-areas:"phase moments" "stars moments";gap:12px}
+.mf-phase-section{grid-area:phase;min-width:0}
+.mf-breakdown-section{grid-area:stars;min-width:0}
+.mf-moments-section{grid-area:moments;min-width:0;display:flex;flex-direction:column}
+.mf-moments-section>.mf-moments{flex:1;align-content:space-around}
+.mf-cols:not(:has(.mf-breakdown-section)){grid-template-areas:"phase moments"}
 .mf-table-wrap{overflow-x:auto}
 .mf-table th small{display:block;font-size:14px;color:var(--dim)}
 .mf-table td{vertical-align:middle;white-space:nowrap}
@@ -451,7 +459,7 @@
 .mf-table tr.t-up td.v{color:var(--good)}.mf-table tr.t-down td.v{color:var(--bad)}
 .mf-bar{display:inline-block;width:70px;height:10px;background:var(--deep);border:1px solid var(--well-line);vertical-align:middle;position:relative}
 .mf-bar i{position:absolute;inset:0 auto 0 0}
-.mf-bar.w-good i{background:var(--good)}.mf-bar.w-ok i{background:var(--stone-2)}.mf-bar.w-poor i{background:var(--bad)}
+.mf-bar.w-good i{background:var(--good)}.mf-bar.w-ok i{background:var(--stone-2)}.mf-bar.w-poor i{background:var(--mf-poor)}
 .mf-win .chip{display:inline-block;min-width:2.6em;text-align:center;padding:0 5px;font-size:16px;border:1px solid var(--ink)}
 .mf-win .chip.up{background:var(--good);color:var(--ink)}.mf-win .chip.down{background:var(--bad);color:var(--ink)}.mf-win .chip.flat{background:var(--stone-2);color:var(--ink)}
 .mf-moments{list-style:none;margin:0;padding:6px 10px;font:19px/1.25 var(--tt);color:var(--white);display:grid;gap:6px}
@@ -467,7 +475,9 @@
 .mf-part.total{border-top:1px solid var(--well-line);padding-top:4px}.mf-part.total b{color:var(--gold);font:24px/1 var(--jersey);white-space:nowrap}
 @media (max-width:900px){
  .s-result:has(.mf-win){grid-template-rows:none}
- .mf-cols{grid-template-columns:minmax(0,1fr)}
+ .mf-cols{grid-template-columns:minmax(0,1fr);grid-template-areas:"phase" "moments" "stars"}
+ .mf-cols:not(:has(.mf-breakdown-section)){grid-template-areas:"phase" "moments"}
+ .mf-moments-section>.mf-moments{flex:none;align-content:start}
  .mf-row{grid-template-columns:44px minmax(0,1fr)}.mf-key{margin-left:44px}
  .mf-crowd .mf-track{height:120px}
  .mf-ph{font-size:13px}
@@ -479,6 +489,18 @@
 .after-picks .decision-option.on>b::before{content:'✓ ';color:var(--gold-lo)}
 .foot-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 @media (max-width:720px){.foot-btns{width:100%}.foot-btns .btn{flex:1 1 auto}}
+/* Post-bell consequences: keep the heading and effects together inside the existing stacked scene. */
+.tv .s-back .after-consequences{flex:none;min-width:0;max-height:32%;overflow:auto;padding:8px 12px 10px;border-top:2px solid var(--ink);background:var(--stone-2)}
+.tv .s-back .after-consequences .section-h{margin:0 0 6px}
+/* The completed post-bell effects must have enough space for actual entries. */
+#tv .s-after.is-done .after-consequences{min-height:155px;max-height:none;overflow-y:auto}
+/* Only the finished post-bell scene has no decisions: use its full width,
+   leaving the deliberately split backstage decision screens untouched. */
+@media (min-width:1181px) and (min-height:600px){
+ #tv .s-after.is-done .wbody{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) clamp(155px,24dvh,200px)}
+ #tv .s-after.is-done .scene{grid-column:1;grid-row:2}
+ #tv .s-after.is-done .after-consequences{grid-column:1;grid-row:3;height:100%;min-height:0;max-height:none;overflow-y:auto}
+}
 /* v0.3.21 ringside plans */
 .corner-who{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
 .corner-who .btn.on{background:var(--gold-hi);box-shadow:var(--bevel-in)}
