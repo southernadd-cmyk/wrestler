@@ -104,11 +104,16 @@ for(const [family,cat] of Object.entries(G.CATALOG.F))
   observedHits:0,unreviewedHits:0,observedUnique:0,unreviewedUnique:0};
 const hits={},byPlan={},bySlot={},attempts={aerial:{},grapple:{}},selected={};
 let totalEvents=0,actionEvents=0,authoredEvents=0,reviewedEvents=0,unreviewedEvents=0;
-let maxRetained=0,atEventCap=0,illegalPreconditions=0,attemptCounterChecks=0,timingFaults=0,finished=0;
+let maxRetained=0,atEventCap=0,illegalPreconditions=0,attemptCounterChecks=0,timingFaults=0,finished=0,scriptedSpotAttempts=0,scriptedSpotLanded=0,scriptedSpotBotched=0;
 const problems=[],matchSummary=[],examples=[];
 for(let i=0;i<count;i++){
  const M=run(audited,i),ev=M.graph?.events||[],planned=options(i);
  finished++;maxRetained=Math.max(maxRetained,ev.length);
+ for(const attempt of M.graph?.scriptedSpotAttempts||[]){
+  scriptedSpotAttempts++;
+  if(attempt.outcome==='landed')scriptedSpotLanded++;
+  if(attempt.outcome==='botched')scriptedSpotBotched++;
+ }
  if(ev.length>=220)atEventCap++;
  const p=planned.plan.game,slot=planned.slot;
  const ps=byPlan[p]??={bouts:0,starsTotal:0,actionEvents:0,reviewed:0,unreviewed:0};
@@ -186,6 +191,7 @@ const snapshot={
  unreviewedUnique:allAuthored.filter(id=>observed.has(id)&&!R.get(id)).length,
  unseenMoves:unseen,maxRetainedEvents:maxRetained,eventCapReached:atEventCap,
  timingFaults,illegalPreconditions,attemptCounterChecks,
+ scriptedSpots:{attempts:scriptedSpotAttempts,landed:scriptedSpotLanded,botched:scriptedSpotBotched},
  byPlan,bySlot,byFamily:familySummary,
  mostFrequentUnreviewed:sortCount(Object.fromEntries(Object.entries(hits).filter(([id])=>!R.get(id))))
   .slice(0,50).map(([id,hits])=>({id,family:familyOf.get(id),hits})),
