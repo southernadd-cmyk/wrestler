@@ -17,7 +17,7 @@
     'Submission', 'Strike', 'Throw', 'Takedown', 'Clinch',
     'Position', 'Escape & Reversal', 'Defence', 'Weapon', 'Wrestling-only'
   ]);
-  const TRADITIONS = Object.freeze(['catch', 'judo', 'lucha', 'boxing', 'acrobatics', 'strength']);
+  const TRADITIONS = Object.freeze(['catch', 'judo', 'lucha', 'boxing', 'acrobatics', 'strength', 'wrestling']);
   const CONTROLS = Object.freeze([
     'free', 'wrist', 'arm', 'head', 'front-facelock', 'rear-waist',
     'upper-body', 'leg', 'ankle', 'ground-top', 'ground-leg', 'headscissors',
@@ -109,6 +109,45 @@
     ['pn_backslide','Wrestling-only','backward arm trap cradle','standing/arm','mat/pin',null,['lucha','catch'],['wristlock'],[],null,'Arm-controlled cradle with a wrestling-only nearfall outcome.'],
     ['pn_schoolboy','Wrestling-only','rear trip cradle','standing/upper-body','mat/pin',null,['lucha','catch'],['rope_rebound'],[],null,'A simple pin from behind; distinct from a pure takedown.'],
     ['pn_crucifix','Wrestling-only','crossed arm trap cradle','standing/arm','mat/pin',null,['lucha','catch'],['wristlock'],[],null,'Arm restraint leading to a pin rather than a lock.']
+    ,
+    // Phase 5b — submission mechanics. Catalog entries are ORIGINAL Office
+    // editorial analysis; grip-state annotations do not add latent grip physics.
+    ['sm_keylock','Submission','arm figure-four keylock','mat/arm','mat/arm','arm',['catch','judo'],['sm_armbar','mat_hold'],[],null,'Arm isolation and shoulder rotation; the game continues to use mat position.'],
+    ['sm_triangle','Submission','leg triangle choke','mat/headscissors','mat/headscissors','neck',['catch','judo'],['mat_hold'],[],null,'Leg-based head and arm restraint; distinguish from a grounded arm triangle.'],
+    ['sm_rear_naked','Submission','rear body choke','mat/head','mat/head','neck',['catch','judo'],['mat_hold'],[],null,'Rear control and neck squeeze; no persistent back-control state is introduced.'],
+    ['sm_camel','Submission','back-extension camel clutch','mat/ground-top','mat/ground-top','back',['catch','wrestling'],['mat_hold'],[],null,'Upper-body extension from top control; this is not a standing clinch.'],
+    ['sm_boston','Submission','double-leg extension crab','mat/ground-leg','mat/ground-leg','back',['catch'],['mat_hold'],[],null,'Double-leg folded back control; retains its original back target.'],
+    ['sm_single_crab','Submission','single-leg crab','mat/ground-leg','mat/ground-leg','leg',['catch'],['sm_boston'],[],'sm_boston','Changes from double-leg pressure to one leg; actual leg target differs.'],
+    ['sm_heel_hook','Submission','rotational heel-hook','mat/ground-leg','mat/ground-leg','leg',['catch'],['sm_kneebar'],[],null,'Heel and knee rotation distinct from straight knee extension.'],
+    ['sm_stf','Submission','stepping leg trap crossface','mat/ground-leg','mat/ground-top','neck',['catch'],['mat_hold'],[],null,'Trapped leg plus crossface; the game records a neck target.'],
+    ['sm_crossface','Submission','head-and-arm crossface','mat/arm','mat/ground-top','neck',['catch'],['sm_keylock'],[],null,'Arm isolation can transition into face pressure without changing mat position.'],
+    ['sm_surfboard','Submission','rear surfboard stretch','mat/ground-top','mat/ground-top','back',['catch','wrestling'],['mat_hold'],[],null,'Knees behind the back and raised arms; current game target is back.'],
+    ['sm_cloverleaf','Submission','folded-leg cloverleaf','mat/ground-leg','mat/ground-leg','back',['catch'],['mat_hold'],[],null,'Two legs folded into back extension; not equivalent to single crab.'],
+    ['sm_dragon_sleeper','Submission','inverted neck crank','mat/head','mat/head','neck',['catch'],['mat_hold'],[],null,'Inverted head control; current action begins and ends on the mat.'],
+    ['sm_arm_triangle','Submission','head-and-arm triangle','mat/arm','mat/ground-top','neck',['catch','judo'],['sm_triangle'],[],null,'Grounded arm triangle differs from leg-based triangle choke.'],
+    ['sm_short_arm_scissors','Submission','short-arm scissors','mat/arm','mat/arm','arm',['catch'],['mat_hold','sm_cross_armbreaker'],[],null,'Leg squeeze on a trapped arm; preserved as a grounded arm target.'],
+    ['sm_muffler','Submission','stretch muffler leg-extension','mat/ground-leg','mat/ground-leg','leg',['catch'],['mat_hold'],[],null,'Leg lever over the shoulder; no standing entry or hidden joint tracking.'],
+    ['sm_lion_tamer','Submission','elevated crab pressure','mat/ground-leg','mat/ground-leg','back',['catch','wrestling'],['sm_boston'],[],'sm_boston','An elevated back-pressure variant, not an automatic win condition.'],
+    ['sm_deathlock','Submission','interwoven leg immobilisation','mat/ground-leg','mat/ground-leg','leg',['catch'],['mat_hold'],[],null,'Interlaced legs produce distinct ground immobilisation; game target remains leg.'],
+
+    // Common professional-wrestling striking is NOT retroactively called boxing.
+    // The neutral "wrestling" tag has no school affinity bonus by itself.
+    ['st_forearm','Strike','forearm impact','standing/free','standing/free',null,['wrestling'],['st_jab','strike_trade'],[],null,'A forearm smash is not automatically a boxing punch.'],
+    ['st_elbow_smash','Strike','short elbow impact','standing/free','standing/free',null,['wrestling'],['st_forearm'],[],null,'Close-range elbow after a forearm; neutral to technical training schools.'],
+    ['st_uppercut','Strike','european forearm uppercut','standing/free','standing/free','neck',['wrestling'],['st_gut_punch'],[],null,'European uppercut is not automatically assigned to the boxing school.'],
+    ['st_kneelift','Strike','rising knee lift','standing/free','standing/free',null,['wrestling'],['st_gut_punch'],[],null,'A body shot may fold the opponent into a knee; not a boxer-only manoeuvre.'],
+    ['st_leg_kick','Strike','thigh-target kick','standing/free','standing/free','leg',['wrestling'],['strike_trade'],[],null,'Low kick targets the thigh and can prepare a higher kick.'],
+    ['st_roundhouse','Strike','head-height roundhouse','standing/free','mat/released',null,['wrestling'],['st_leg_kick'],[],null,'Roundhouse ends with an opponent on the mat under the live game rules.'],
+    ['st_palm','Strike','open-palm strike','standing/free','standing/free',null,['wrestling'],['st_jab'],[],null,'Open-hand palm after jabs: a ring-specific alternative, not a boxer signature.'],
+    ['st_body_kick','Strike','rib-target body kick','standing/free','standing/free','ribs',['wrestling'],['st_jab'],[],null,'A kick to the ribs after a strike; not automatically a boxing technique.'],
+
+    // Aerial move-specific counters already exist as autogenerated *alternatives*
+    // to attempted actions. Do not create impossible landed-dive -> counter links.
+    ['ar_frog','Wrestling-only','frog-splash launch','top/rope-launch','mat/released',null,['lucha'],['top_climb'],['ar_frog_rev'],null,'A reviewable diving attack; its generated counter replaces, not follows, a landed dive.'],
+    ['ar_senton','Wrestling-only','forward-rotation senton','top/rope-launch','mat/released',null,['lucha','acrobatics'],['top_climb'],['ar_senton_rev'],null,'Forward aerial rotation with a move-specific generated reversal branch.'],
+    ['ar_cross_arm','Wrestling-only','flying crossbody','top/rope-launch','mat/released',null,['lucha'],['top_climb'],['ar_cross_arm_rev'],null,'A top-rope crossbody; the defended option remains a separate reversal action.'],
+    ['ar_missile_low','Wrestling-only','low-target aerial dropkick','top/rope-launch','mat/released','leg',['lucha'],['top_climb'],['ar_missile_low_rev'],null,'Aerial kick targets the knee; its counter is an alternative during the attempt.'],
+    ['sb_cutter','Wrestling-only','springboard cutter','top/rope-launch','mat/released','neck',['lucha','acrobatics'],['springboard_rise'],['sb_cutter_rev'],null,'Rope-launch cutter with the existing springboard family reversal; no new mid-air state.']
   ];
   const registry = Object.create(null);
   for (const [id, mechanicalClass, mechanic, entry, exit, target,

@@ -310,7 +310,28 @@ const Graph=(function makeGraph(){
   ['wristlock','pn_backslide',.95,'setup','Catch and lucha: arm restraint to a quick cradle'],
   ['wristlock','pn_crucifix',.9,'setup','Lucha: controlled arm trap into a crucifix pin']
  ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
- const TRAINED_TECHNIQUE_IDS=new Set([...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION].map(link=>link.to));
+ // Phase 5b: mat-control follow-through, close striking combinations, and
+ // two aerial entry choices. Aerial move-specific counters remain reviewed
+ // generated alternatives, not fabricated landed-dive -> reversal links.
+ const TECHNIQUE_TRANCHE2=Object.freeze([
+  ['mat_hold','sm_boston',.9,'setup','Catch: convert established mat pressure into a Boston crab'],
+  ['mat_hold','sm_triangle',.85,'setup','Catch and judo: head and arm trap from sustained mat control'],
+  ['mat_hold','sm_rear_naked',.8,'setup','Catch and judo: a grounded rear choke from secured control'],
+  ['mat_hold','sm_stf',.9,'setup','Catch: leg trap to grounded STF'],
+  ['mat_hold','sm_short_arm_scissors',.8,'setup','Catch: isolate the arm from stable mat control'],
+  ['sm_boston','sm_single_crab',.75,'followup','Catch: release one leg to isolate the other'],
+  ['sm_kneebar','sm_heel_hook',.7,'followup','Catch: leg extension to heel-rotation pressure'],
+  ['sm_armbar','sm_keylock',.75,'followup','Catch and judo: reposition the isolated arm into a keylock'],
+  ['sm_keylock','sm_crossface',.7,'followup','Catch: release shoulder pressure into a crossface'],
+  ['sm_triangle','sm_arm_triangle',.6,'followup','Catch and judo: switch from leg triangle into arm triangle'],
+  ['st_gut_punch','st_kneelift',.9,'followup','Ring striking: folded torso invites a rising knee'],
+  ['st_forearm','st_elbow_smash',.9,'followup','Ring striking: close distance from forearm to elbow'],
+  ['st_leg_kick','st_roundhouse',.7,'followup','Ring striking: low kick draws a high guard change'],
+  ['st_gut_punch','st_uppercut',.8,'followup','Ring striking: body opening into a European forearm uppercut'],
+  ['top_climb','ar_frog',.85,'setup','Lucha: settled top-rope launch into frog splash'],
+  ['springboard_rise','sb_cutter',.7,'setup','Lucha and acrobatics: stable springboard into a cutter']
+ ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
+ const TRAINED_TECHNIQUE_IDS=new Set([...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2].map(link=>link.to));
 
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
      reverse:!!opts.reverse,kind:opts.kind||'play',focus:opts.focus||0,crowd:opts.crowd||0,weight:opts.weight||1,styles:opts.styles||null,cost:opts.cost??null,lift:opts.lift??null,
@@ -973,7 +994,7 @@ const Graph=(function makeGraph(){
   }
    // Only this small reviewed subset becomes playable; Phase 2 proposals
    // are NEVER auto-imported into the match graph.
-   for(const link of [...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION]){
+   for(const link of [...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2]){
     const source=A[link.from],target=A[link.to];
     if(!source||!target||source.zone!==target.requires)
      throw Error('Curated impossible technique link: '+link.from+' -> '+link.to);
@@ -1530,7 +1551,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid};
 })();
 
 function create(o){

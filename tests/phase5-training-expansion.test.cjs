@@ -15,12 +15,12 @@ const D=game.OfficeData,G=game.OfficeMatch.GRAPH,R=game.OfficeTechniqueRegistry,
 const validation=G.validate(),registryValidation=R.validate(G),schools=B.validate(D,G,R);
 assert.equal(validation.errors.length,0,validation.errors.join('\n'));
 assert.equal(validation.nodes,969,'no extra executable graph nodes');
-assert.ok(validation.edges>=6160&&validation.edges<=6174,'at most fourteen new active edges');
+assert.ok(validation.edges>=6164&&validation.edges<=6190,'at most fourteen new active edges');
 assert.equal(G.CATALOG.counts.moves,336);
 assert.equal(G.TECHNIQUE_PILOT.length,11,'original Phase 3 pilot stays separately intact');
 assert.equal(G.TECHNIQUE_EXPANSION.length,14,'only fourteen new guarded links');
 assert.equal(registryValidation.valid,true,registryValidation.errors.join('\n'));
-assert.equal(registryValidation.proposals,60,'39 Phase 2 + 21 Phase 5 curated move identities');
+assert.equal(registryValidation.proposals,90,'the 60 previously reviewed plus 30 Phase 5b records');
 assert.equal(registryValidation.authored,336);
 assert.equal(schools.valid,true,schools.errors.join('\n'));
 assert.equal(schools.assigned,40);
