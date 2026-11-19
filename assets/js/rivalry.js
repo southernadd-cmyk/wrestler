@@ -726,6 +726,13 @@
   let propLine=deliver(vw,prop),counter=F_(I.f[mode]);
   if(cand.continuation){propLine=W_(I.again)+' '+propLine;counter=F_(AGAIN[mode])+' '+counter;}
   else if(cand.repeat){propLine=W_(REPEAT_W[cand.issue]||'Not for the first time, {F}.')+' '+propLine;counter=F_(REPEAT_F[mode])+' '+counter;}
+  // A new highly rated match is fresh evidence even when the subject repeats.
+  // Recognise that another meeting took place rather than replaying the same
+  // appreciative speech. Keep the claim, resolution and contract unchanged.
+  if(cand.issue==='great_match'&&cand.repeat&&!cand.continuation){
+   propLine=W_('We have wrestled {RN} times, {F}. The last one got this place talking again. I want to find a new way to earn that reaction tonight.');
+   counter=F_('That last match tested us both, {W}. Respect the result, but do not expect me to give you the same openings.');
+  }
   const evidence=fact.text||factText(fact,w,f);
   const responses={};
   for(const [id,r] of Object.entries(I.r)){
@@ -745,6 +752,10 @@
     if(commit.families==='{FAMILIES}')commit.families=v.FAMILIES||null;}
    const fx={...r.fx};if(id==='callback'){fx.crowd=(fx.crowd||0)-3;fx.heat=(fx.heat||0)-2;fx.cred=(fx.cred||0)-2;}
    const out={label:X_(r.label),hint:X_(r.hint),line:W_(r.line),res:fill(r.res,v),rel:Number(fill(String(r.rel),v)),fx,reply:F_(reply),commit,noPromise:!!r.noPromise};
+   if(cand.issue==='great_match'&&cand.repeat&&!cand.continuation&&id==='calm'){
+    out.line=W_('Let us build on what worked without just replaying it, {F}. I will bring something new if you do.');
+    out.reply=F_('Agreed. After {RN} meetings, the crowd can tell when we are coasting. We owe them better.');
+   }
    // An answer that relies on a charge the speaker is guilty of too can be thrown back at them.
    if(r.expose){const ex=P.facts.find(x=>x.kind===r.expose);if(ex){out.expose={kind:r.expose,line:exposeLine(r.expose,ex,w,f)};}}
    responses[id]=out;
