@@ -1,0 +1,42 @@
+name: Curated technique gate
+
+on:
+  pull_request:
+    paths:
+      - 'assets/js/technique-registry.js'
+      - 'assets/js/technique-backgrounds.js'
+      - 'assets/js/match-engine.js'
+      - 'docs/phase5-roster-training-audit.csv'
+      - 'tests/phase3-technique-sequences.test.cjs'
+      - 'tests/phase4-technique-backgrounds.test.cjs'
+      - 'tests/phase5-training-expansion.test.cjs'
+      - '.github/workflows/phase5-techniques.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/js/technique-registry.js'
+      - 'assets/js/technique-backgrounds.js'
+      - 'assets/js/match-engine.js'
+      - 'docs/phase5-roster-training-audit.csv'
+      - 'tests/phase5-training-expansion.test.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  curated-mechanics:
+    name: Validated schools and moves
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate exact curated move data before costly simulations
+        run: |
+          node tests/technique-registry.test.cjs
+          node tests/phase3-technique-sequences.test.cjs
+          node tests/phase4-technique-backgrounds.test.cjs
+          node tests/phase5-training-expansion.test.cjs

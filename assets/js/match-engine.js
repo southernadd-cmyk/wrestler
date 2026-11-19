@@ -292,7 +292,25 @@ const Graph=(function makeGraph(){
   ['lc_hurricanrana','early_cover',1.35,'followup','Lucha: brief nearfall after the throw'],
   ['lockup','ch_single_leg_rev',.95,'counter','Catch: sprawl turns aside a single-leg shot from the tie-up']
  ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
- const TRAINED_TECHNIQUE_IDS=new Set(TECHNIQUE_PILOT.map(link=>link.to));
+ // Phase 5: bounded pathways for training foundations. Keep the original
+ // 11 Phase 3 links separately inspectable so their baseline remains comparable.
+ const TECHNIQUE_EXPANSION=Object.freeze([
+  ['st_jab','st_gut_punch',1.2,'setup','Boxing: jabs set up a shot to the body'],
+  ['waistlock','pw_body_slam',1.05,'setup','Strength: a controlled scoop from the body tie-up'],
+  ['rope_rebound','pw_fallaway',1.05,'setup','Strength: catch the returning opponent with a fallaway slam'],
+  ['lockup','pw_military_press',.85,'setup','Strength: lift from a stable initial tie-up'],
+  ['pw_torture_rack','pw_samoan_drop',1.1,'setup','Strength: loaded shoulders transition into a controlled drop'],
+  ['top_climb','ar_shooting_star',.95,'setup','Acrobatics: controlled top-rope rotation'],
+  ['top_climb','ar_corkscrew',.9,'setup','Acrobatics: change the rotational axis off the top'],
+  ['top_climb','ar_450',.85,'setup','Acrobatics: 450 press with existing late-match risk gate'],
+  ['springboard_rise','sb_dropkick',1.1,'setup','Acrobatics: kick from a settled springboard'],
+  ['springboard_rise','sb_moonsault',1.0,'setup','Acrobatics: reverse rotation off a springboard'],
+  ['front_facelock','sx_fisherman',1.05,'setup','Catch: leg hook and controlled bridge'],
+  ['waistlock','sx_exploder',1.05,'setup','Judo: off-balance a body tie-up into a leg-hook throw'],
+  ['wristlock','pn_backslide',.95,'setup','Catch and lucha: arm restraint to a quick cradle'],
+  ['wristlock','pn_crucifix',.9,'setup','Lucha: controlled arm trap into a crucifix pin']
+ ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
+ const TRAINED_TECHNIQUE_IDS=new Set([...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION].map(link=>link.to));
 
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
      reverse:!!opts.reverse,kind:opts.kind||'play',focus:opts.focus||0,crowd:opts.crowd||0,weight:opts.weight||1,styles:opts.styles||null,cost:opts.cost??null,lift:opts.lift??null,
@@ -955,10 +973,10 @@ const Graph=(function makeGraph(){
   }
    // Only this small reviewed subset becomes playable; Phase 2 proposals
    // are NEVER auto-imported into the match graph.
-   for(const link of TECHNIQUE_PILOT){
+   for(const link of [...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION]){
     const source=A[link.from],target=A[link.to];
     if(!source||!target||source.zone!==target.requires)
-     throw Error('Phase 3 impossible technique link: '+link.from+' -> '+link.to);
+     throw Error('Curated impossible technique link: '+link.from+' -> '+link.to);
     if(link.kind==='counter'&&target.counterOf!=='ch_single_leg')
      throw Error('Phase 3 counter needs the intended move-specific reversal');
     add(link.from,link.to,link.weight);
@@ -1512,7 +1530,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid};
 })();
 
 function create(o){

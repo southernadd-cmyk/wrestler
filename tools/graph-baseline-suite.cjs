@@ -108,6 +108,23 @@ function summary(result){
    const total=pilotRows.reduce((n,r)=>n+r.after.pilotTransitions.reduce((m,x)=>m+x.hits,0),0);
    if(total===0)lines.push('','**Review needed:** no curated event pairs appeared in the seeded sample. Physical validity alone is not sufficient.');
   }
+  const phase5Rows=result.rows.filter(row=>Array.isArray(row.after.phase5Transitions));
+  if(phase5Rows.length){
+   lines.push('','### Phase 5 new technique sequences','',
+    'Consecutive **actual match-event pairs**, not proof each was picked via an added edge.','',
+    '| Scenario | New pairs observed | Pair occurrences | Most frequent new pair |',
+    '|:--|--:|--:|:--|');
+   for(const row of phase5Rows){
+    const links=row.after.phase5Transitions;
+    const hits=links.reduce((n,link)=>n+link.hits,0);
+    const seen=links.filter(link=>link.hits>0).length;
+    const top=links.filter(link=>link.hits>0).sort((a,b)=>b.hits-a.hits)[0];
+    lines.push('| '+row.label+' | '+seen+'/'+links.length+' | '+hits+' | '+
+     (top?top.from+' → '+top.to+' ('+top.hits+')':'None observed')+' |');
+   }
+   if(phase5Rows.every(row=>row.after.phase5Transitions.every(link=>link.hits===0)))
+    lines.push('','**REVIEW:** no new Phase 5 transitions observed in this fixed-seed sample.');
+  }
   if(result.critical.length)lines.push('','### Invalid run',...result.critical.map(x=>'- '+x));
  lines.push('','Linked-edge reach is a conservative consecutive-event proxy. Arc jumps do not count. A low value is not automatically an error.');
  return lines.join('\n')+'\n';
