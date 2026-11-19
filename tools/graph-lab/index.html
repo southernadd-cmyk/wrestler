@@ -74,7 +74,7 @@
           <div class="field-grid seed-row">
             <div class="field"><label for="seed">Starting seed</label><input id="seed" type="number" min="1" max="2147483647" step="1" value="5101" required></div>
             <div class="field"><label for="bouts">Matches to run</label><select id="bouts">
-              <option value="1">1 match</option><option value="10">10 matches</option><option value="100" selected>100 matches</option>
+              <option value="1">1 match</option><option value="10">10 matches</option><option value="100" selected>100 matches</option><option value="250">250 matches</option>
               <option value="500">500 matches</option><option value="1000">1,000 matches</option>
             </select></div>
           </div>
@@ -153,7 +153,16 @@
     </div>
     <section class="baseline-workspace" aria-labelledby="comparisonTitle">
       <header class="block-head"><div><span class="block-ref">COMPARISON DESK</span><h3 id="comparisonTitle">Load a recorded baseline</h3></div></header>
-      <div class="file-row"><label class="filelabel" for="baseline">CHOOSE JSON BASELINE ↗</label><input id="baseline" type="file" accept=".json,application/json"><span id="baselineName">No baseline selected</span></div>
+      <div class="reference-picker">
+        <div class="reference-intro"><span class="block-ref">FROZEN / PRE-EXPANSION REFERENCE v1</span><p>Six seeded scenarios, 1,200 matches. Load the versioned reference from this site's own files; it will not change automatically.</p></div>
+        <div class="reference-actions">
+          <button id="loadReference" type="button" class="reference-button">LOAD STORED BASELINES ↗</button>
+          <div class="reference-field"><label for="referenceScenario">Select baseline</label><select id="referenceScenario" disabled><option value="">Load the reference first</option></select></div>
+          <button id="applyReference" type="button" class="reference-button secondary-button" disabled>SET UP MATCH ↗</button>
+        </div>
+        <p id="referenceStatus" class="reference-status" role="status" aria-live="polite">Load the frozen reference to compare future graph changes.</p>
+      </div>
+      <div class="file-row"><label class="filelabel" for="baseline">OR CHOOSE YOUR OWN JSON ↗</label><input id="baseline" type="file" accept=".json,application/json"><span id="baselineName">No baseline selected</span></div>
       <div id="comparison" class="comparison">Run a sample and load a previously exported baseline to compare.</div>
       <div class="comparison-foot"><span>IN-MEMORY ANALYSIS</span><span>NO FILES UPLOADED</span><span>ENGINE UNCHANGED</span></div>
     </section>

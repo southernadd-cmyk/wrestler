@@ -206,6 +206,22 @@ progress{display:block;width:100%;height:5px;margin:14px 0 9px;accent-color:var(
 .comparison .plus{color:#267249}.comparison .minus{color:var(--signal-dark)}
 .comparison-foot{display:flex;gap:18px;justify-content:space-between;flex-wrap:wrap;padding:13px 22px;background:#e9e5dc;font:500 10px var(--mono);color:var(--muted)}
 .footer{display:flex;justify-content:space-between;gap:15px;background:var(--ink);color:#b6c1c5;padding:23px max(38px,calc((100vw - 1444px)/2));font:500 10px/1.5 var(--mono);letter-spacing:.04em}
+
+/* Frozen baseline picker: part of the existing workbench, not another dashboard. */
+.reference-picker{padding:23px 22px 16px;border-bottom:1px solid var(--fine);background:#f1eee5}
+.reference-intro{max-width:720px}
+.reference-intro p{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.55}
+.reference-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-top:18px}
+.reference-button{border:1px solid var(--ink);background:var(--ink);color:var(--light);padding:12px 16px;min-height:44px;font:600 11px var(--mono);white-space:normal;text-align:left}
+.reference-button:hover:not(:disabled){background:var(--signal-dark);border-color:var(--signal-dark)}
+.reference-button.secondary-button{background:transparent;color:var(--ink)}
+.reference-button.secondary-button:hover:not(:disabled){color:white}
+.reference-field{min-width:240px;flex:1}
+.reference-field label{display:block;color:var(--muted);font:600 10px var(--mono);margin-bottom:7px;text-transform:uppercase}
+.reference-field select{height:44px}
+.reference-status{font:500 11px/1.5 var(--mono);color:var(--muted);margin-top:12px}
+@media(max-width:690px){.reference-picker{padding:18px 15px}.reference-actions{align-items:stretch;flex-direction:column}.reference-field{min-width:0;width:100%}.reference-button{width:100%}}
+
 @media(max-width:1200px){
   .worknav{padding:0 28px}.nav-note{display:none}
   .workbench{padding:0 28px 50px}

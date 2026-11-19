@@ -55,6 +55,25 @@ npm test
 
 The JSON files are local development artifacts. Do not commit large baseline exports unless there is a clear reason.
 
+## Automated frozen baselines
+
+The first approved **pre-expansion reference** is tracked at [`tools/graph-lab/baselines/reference-v1.json`](../tools/graph-lab/baselines/reference-v1.json). It is a versioned snapshot of **1,200 real simulated matches**. Four 250-bout roster scenarios exercise Story, Technical, Brawl and Spot-fest, while two 100-bout fixed matchups replay Juno Stark / Rex Titan and Bao Merrick / Theo Voss. The initial graph has 969 nodes, 6,152 authored links, and 25 arcs. The reference is intentionally never auto-updated.
+
+**Automation:** [`.github/workflows/graph-baselines.yml`](../.github/workflows/graph-baselines.yml) runs every Monday at **07:17 UTC**, on changes to the match-engine/data/baseline code in pull requests and on `main`, and whenever manually dispatched from the GitHub Actions tab. Each run regenerates the same six scenarios and publishes a side-by-side report in the **GitHub Actions job summary**. It makes no changes to the branch, does not upload artifacts or append historical JSON, and needs no extra secrets or API credits.
+
+**CI behaviour:** it fails for graph-validation errors, invalid action timing, unknown action events, or incomplete runs. A changed number of techniques, altered match ratings, or changed coverage is explicitly **reported for review**, not treated as an automatic failure, because the expansion roadmap is expected to change the graph deliberately. Small differences are shown too; the current graph is expected to give an exact match.
+
+**Browser workflow:** open the Graph Lab → **Baselines** → **Load stored baselines** → choose one scenario → **Set up match** → **Run simulation**. The match settings, seed and bout count are populated exactly from the frozen record. Return to Baselines to see the resulting comparison. All reference reads use the same-site static JSON; no uploaded file or authentication is required.
+
+For local or CI use:
+
+```sh
+node tools/graph-baseline-suite.cjs capture > /tmp/current-graph.json
+node tools/graph-baseline-suite.cjs compare /tmp/current-graph.json tools/graph-lab/baselines/reference-v1.json
+```
+
+**Changing the baseline is a review decision.** Preserve `reference-v1.json` as the before-state for Fight Encyclopedia-inspired work. If we knowingly accept a major new graph, add a separately named v2 reference through a reviewed PR and update the comparison path; never automatically overwrite the original reference on each run.
+
 ## Next changes, after baseline sign-off
 
 1. Annotate missing positional/setup/counter relationships without changing the outcome graph.

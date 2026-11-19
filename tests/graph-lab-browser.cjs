@@ -66,6 +66,20 @@ async function visit(browser, label, viewport) {
       assert.ok(await page.locator('#comparison tbody tr').count() >= 5, 'baseline compare can load exported report');
     }
 
+    // A user can select the frozen, source-controlled baseline without downloading a file.
+    await page.locator('#tab-compare').click();
+    await page.locator('#loadReference').click();
+    await page.waitForFunction(() => document.querySelector('#referenceScenario').options.length === 6);
+    assert.match(await page.locator('#referenceStatus').innerText(), /1,200 verified baseline matches/);
+    await page.locator('#referenceScenario').selectOption('technical');
+    assert.match(await page.locator('#baselineName').innerText(), /Frozen v1: Roster \/ technical/);
+    await page.locator('#applyReference').click();
+    assert.equal(await page.locator('#tab-run').getAttribute('aria-selected'), 'true');
+    assert.equal(await page.locator('#seed').inputValue(), '16001');
+    assert.equal(await page.locator('#bouts').inputValue(), '250');
+    assert.equal(await page.locator('#plan').inputValue(), 'technical');
+    assert.equal(await page.locator('#rotation').inputValue(), 'roster');
+
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     assert.ok(overflow <= 3, label + ': horizontal overflow of ' + overflow + 'px');
     assert.deepEqual(failed, [], label + ': all assets load without HTTP errors');
