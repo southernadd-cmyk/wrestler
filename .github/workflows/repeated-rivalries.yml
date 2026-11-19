@@ -1,0 +1,51 @@
+name: Five-meeting rivalry audit
+
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'assets/js/data.js'
+      - 'assets/js/roster-registry.js'
+      - 'assets/js/technique-backgrounds.js'
+      - 'assets/js/technique-registry.js'
+      - 'tools/repeated-rivalry-audit.cjs'
+      - 'tests/repeated-rivalry-audit.test.cjs'
+      - '.github/workflows/repeated-rivalries.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'assets/js/data.js'
+      - 'assets/js/roster-registry.js'
+      - 'assets/js/technique-backgrounds.js'
+      - 'assets/js/technique-registry.js'
+      - 'tools/repeated-rivalry-audit.cjs'
+  schedule:
+    - cron: '33 7 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repeated-rivalry-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rivalry-variety:
+    name: Five-match storyline variety
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Check out real match engine
+        uses: actions/checkout@v4
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run 4 five-meeting rivalries against neutral schooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/repeated-rivalry-audit.test.cjs
+          node tools/repeated-rivalry-audit.cjs | tee "$GITHUB_STEP_SUMMARY"
