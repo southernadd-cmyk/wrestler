@@ -142,7 +142,8 @@
         ' observed · '+report.phase9.matchesWithNew+'/'+report.bouts+
         ' matches ('+report.phase9.matchesWithNewPct.toFixed(1)+'%) · '+
         report.phase9.sameControllerOccurrences+' same-wrestler transitions · '+
-        report.phase9.threeMoveNewChains+' three-action chains');
+        report.phase9.threeMoveNewChains+' three-action chains · '+
+        (report.scriptedSpotEvents||0)+' narrated special spots outside the named graph');
     }
     if (report.phase9Groups?.length) {
       const styles = $('validationStyles');
