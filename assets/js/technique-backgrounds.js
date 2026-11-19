@@ -96,7 +96,7 @@
   if(!graph||!registry||!moveId||!Array.isArray(graph.TECHNIQUE_PILOT))return 1;
   // Only curated, executable Phase 3 + 5 transition destinations qualify.
   // A descriptive Phase 2/5 catalogue entry alone never receives a bonus.
-  if(![...graph.TECHNIQUE_PILOT,...(graph.TECHNIQUE_EXPANSION||[]),...(graph.TECHNIQUE_TRANCHE2||[])].some(link=>link.to===moveId))return 1;
+  if(![...graph.TECHNIQUE_PILOT,...(graph.TECHNIQUE_EXPANSION||[]),...(graph.TECHNIQUE_TRANCHE2||[]),...(graph.TECHNIQUE_DEPTH||[]),...(graph.TECHNIQUE_CHAINS||[])].some(link=>link.to===moveId))return 1;
   const node=graph.A?.[moveId];
   const meta=registry.get(node?.counterOf||moveId);
   if(!meta||!Array.isArray(meta.traditionTags))return 1;
@@ -111,7 +111,7 @@
    if(!Object.prototype.hasOwnProperty.call(SCHOOLS,key))errors.push('Unknown school '+id+': '+key);
   }
   if(!registry?.validate?.(graph)?.valid)errors.push('Technique registry is not valid for this graph');
-  for(const link of [...(graph?.TECHNIQUE_PILOT||[]),...(graph?.TECHNIQUE_EXPANSION||[]),...(graph?.TECHNIQUE_TRANCHE2||[])]){
+  for(const link of [...(graph?.TECHNIQUE_PILOT||[]),...(graph?.TECHNIQUE_EXPANSION||[]),...(graph?.TECHNIQUE_TRANCHE2||[]),...(graph?.TECHNIQUE_DEPTH||[]),...(graph?.TECHNIQUE_CHAINS||[])]){
    if(!graph?.A?.[link.to])errors.push('Unknown live move '+link.to);
    const meta=registry?.get?.(graph?.A?.[link.to]?.counterOf||link.to);
    if(meta&&meta.traditionTags.some(tag=>!registry.TRADITIONS.includes(tag)))
