@@ -233,10 +233,10 @@
     const container = $('techniqueDetails');
     if (!container) return;
     container.replaceChildren(make('span', 'MECHANICS LAYER / PROPOSED', 'block-ref'));
-    const liveLinks = [...(G.TECHNIQUE_PILOT || []),...(G.TECHNIQUE_EXPANSION || [])].filter(link => link.from === id || link.to === id);
+    const liveLinks = [...(G.TECHNIQUE_PILOT || []),...(G.TECHNIQUE_EXPANSION || []),...(G.TECHNIQUE_TRANCHE2 || [])].filter(link => link.from === id || link.to === id);
     if (liveLinks.length) {
       const active = make('div', null, 'mechanics-live');
-      active.append(make('h4', 'LIVE TECHNIQUES / PHASES 3 + 5'));
+      active.append(make('h4', 'LIVE TECHNIQUES / PHASES 3 + 5 + 5b'));
       for (const link of liveLinks) {
         const row = make('button', link.from + ' → ' + link.to + ' · weight ' + link.weight);
         row.type = 'button';
