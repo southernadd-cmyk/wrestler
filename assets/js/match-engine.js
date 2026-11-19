@@ -1829,6 +1829,18 @@ const Graph=(function makeGraph(){
    if(g.texture==='underdog'&&['hope_elbows','hope_cutoff','counter_strike','mat_scramble'].includes(id))n*=1.4;
    if(g.texture==='fast'&&['duck_rebound','counter_strike','springboard_rise','clothesline'].includes(id))n*=1.3;
    if(g.events.slice(-4).some(x=>x.id===id))n*=.25;
+   // Generic top-rope beats have large legacy preference weights. When a
+   // lightweight Spectacle worker has a legal named move available after
+   // a committed climb, reduce the generic fallback (never prohibit it).
+   // Safe plans still suppress high-risk named moves independently below.
+   if(sameController&&p.position==='top'&&liveSide.style==='Spectacle'&&
+      ((g.node==='top_climb'&&id==='aerial_attack')||
+       (g.node==='springboard_rise'&&id==='springboard_strike'))){
+    const family=g.node==='top_climb'?'aerial':'springboard';
+    if((CAT.members[family]||[]).some(moveId=>
+      A[moveId]?.family===family&&!A[moveId].counterOf&&!A[moveId].blockOf&&isValid(M,moveId)))
+      n*=.42;
+   }
    // Phase 9: the same authored handoff is more likely when the performer
    // recognises it from their training. Never alter physical availability,
    // agreed finishes, move validity or the opponent's side of a reversal.
