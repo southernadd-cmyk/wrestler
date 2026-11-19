@@ -1,6 +1,10 @@
 'use strict';
 // CI-only browser journey: the shipped static game has no runtime test deps.
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../assets/js/ui.js'),'utf8');
+assert.ok(source.includes('class="mf-breakdown-section"'),'real match flow report must render a dedicated full-width stars section');
 const {chromium}=require('playwright');
 const URL='http://127.0.0.1:8765/';
 
@@ -30,6 +34,27 @@ async function journey(browser,name,viewport){
   assert.notEqual(colours.poor,colours.opponent,name+': poor work and opponent use the same colour');
   assert.notEqual(colours.mistake,colours.opponent,name+': mistake and opponent use the same colour');
   assert.notEqual(colours.mistake,colours.poor,name+': mistake and poor work use the same colour');
+  // Match recap: the star breakdown fills the width beneath both upper
+  // columns; it must not leave a large empty lower-left cell.
+  const flowLayout=await page.evaluate(()=>{
+    const host=document.createElement('section');
+    host.className='mf-win';
+    host.style.cssText='position:absolute;left:-2000px;width:min(1100px,100%);visibility:hidden';
+    host.innerHTML='<div class="mf-cols"><div class="mf-phase-section" style="height:280px">Phases</div><div class="mf-moments-section" style="height:210px">Moments</div><div class="mf-breakdown-section" style="height:155px">Stars</div></div>';
+    document.body.appendChild(host);
+    const box=s=>{const r=host.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};
+    const result={grid:box('.mf-cols'),phase:box('.mf-phase-section'),moments:box('.mf-moments-section'),stars:box('.mf-breakdown-section')};
+    host.remove();return result;
+  });
+  assert.ok(flowLayout.stars.left<=flowLayout.phase.left+2 &&
+            flowLayout.stars.right>=flowLayout.grid.right-2,
+    name+': star breakdown does not span the full panel '+JSON.stringify(flowLayout));
+  assert.ok(flowLayout.stars.top>=Math.max(flowLayout.phase.bottom,flowLayout.moments.bottom)-2,
+    name+': star breakdown overlaps the upper panels '+JSON.stringify(flowLayout));
+  if(viewport.width>900){
+    assert.ok(Math.abs(flowLayout.phase.top-flowLayout.moments.top)<=2,
+      name+': upper sections should remain side by side '+JSON.stringify(flowLayout));
+  }
   await page.locator('[data-title="new"]').waitFor();
   await page.locator('[data-title="new"]').click();
   await page.locator('#app').waitFor({state:'visible'});
