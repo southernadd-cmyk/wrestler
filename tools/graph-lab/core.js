@@ -172,6 +172,15 @@
       unknownEvents: top(snapshot.unknownEvents, 30),
       timingErrors: snapshot.timingErrors
     };
+    if (Array.isArray(graph.TECHNIQUE_CHAINS)) {
+      const byGroup={};
+      for (const link of graph.TECHNIQUE_CHAINS) {
+        const g=byGroup[link.group]??={group:link.group,authored:0,observed:0,hits:0};
+        const hits=snapshot.edgeHits[link.from+'>'+link.to]||0;
+        g.authored++;g.hits+=hits;if(hits)g.observed++;
+      }
+      result.phase9Groups=Object.values(byGroup).sort((a,b)=>b.hits-a.hits||a.group.localeCompare(b.group));
+    }
     if (full) {
       result.nodeHits = { ...snapshot.nodeHits };
       result.edgeHits = { ...snapshot.edgeHits };
