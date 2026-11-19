@@ -3,7 +3,7 @@
 <defs><pattern id="halftone" width="11" height="11" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.5" fill="#101c2b" opacity=".24"/></pattern></defs>
 <rect width="1200" height="140" fill="#efe1c3"/><rect x="5" y="5" width="1190" height="130" fill="none" stroke="#152239" stroke-width="6"/>
 <rect x="17" y="17" width="118" height="106" fill="#263f66"/><rect x="19" y="19" width="114" height="102" fill="none" stroke="#efe1c3" stroke-width="2"/>
-<text x="76" y="94" text-anchor="middle" fill="#fff6dc" font-family="Impact,Arial,sans-serif" font-weight="900" font-size="74">02</text>
+<g aria-hidden="true" stroke="#fff6dc" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" fill="none"><path d="M36 38 H116"/><path d="M42 41 V105 Q61 100 70 78 L76 66 L82 78 Q91 100 110 105 V41"/><path d="M50 45 Q55 73 44 91 M102 45 Q97 73 108 91"/><circle cx="76" cy="39" r="6" fill="#fff6dc" stroke="none"/></g>
 <rect x="145" y="15" width="1040" height="23" fill="#152239"/>
 <text x="162" y="32" fill="#efe1c3" font-size="14" font-family="Georgia,serif" font-weight="700" letter-spacing="3">PRODUCTION DESK / BEHIND THE SCENES</text>
 <text x="161" y="100" fill="#152239" font-size="63" font-weight="900" letter-spacing=".4" font-family="Impact,'Arial Narrow',Arial,sans-serif">BEHIND THE CURTAIN</text>
