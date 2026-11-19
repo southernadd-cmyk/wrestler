@@ -13,7 +13,7 @@ root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,R=root.OfficeTechniqueRegistry,B=root.OfficeTechniqueBackgrounds;
 const stats=B.validate(D,G,R);
 assert.equal(stats.valid,true,stats.errors.join('\n'));
-assert.equal(B.VERSION,2);
+assert.equal(B.VERSION,3);
 assert.equal(stats.assigned,80);
 assert.equal(stats.unassigned,0);
 assert.equal(B.MAX_BONUS,.28);
@@ -34,7 +34,7 @@ assert.equal(B.multiplier('bao','ch_rolling_wristlock',G,R),1,'judo schooling do
 assert.equal(B.multiplier('bao','ch_top_wristlock',G,R),1.28,'judo wrestler receives a shared grip transition bonus');
 assert.equal(B.multiplier('nico','lc_hurricanrana',G,R),1.28,'lucha performer receives a relevant rana bonus');
 assert.equal(B.multiplier('theo','lc_hurricanrana',G,R),1,'catch school does not grant a lucha bonus');
-assert.equal(B.multiplier('rex','ch_rolling_wristlock',G,R),1,'no invented background');
+assert.equal(B.multiplier('rex','ch_rolling_wristlock',G,R),1,'strength tendency does not grant catch-wrestling grip bonuses');
 assert.equal(B.multiplier('juno','sm_kimura',G,R),1,'unreviewed Phase 2 suggestions are not automatically activated');
 assert.equal(B.multiplier('juno','early_cover',G,R),1,'live link without vetted technique tags remains unbiased');
 assert.equal(B.multiplier('juno','ch_single_leg_rev',G,R),1.28,'move-specific counter reads parent technique');
@@ -83,4 +83,4 @@ for(let i=0;i<18;i++){
 const brief=G.scout(D.findWrestler('bao'),D.findWrestler('theo'),'technical');
 assert.match(brief.brief,/judo training/i);
 assert.match(brief.brief,/catch wrestling training/i);
-console.log('PASS Phase 4/5: 40 curated/provisional backgrounds, 40 unbiased; 80 real wrestlers; live-technique multiplier, defence attribution, no roster/save mutation; 18 finish-safe seeded bouts.');
+console.log('PASS Phase 4/5/8: 40 original backgrounds plus 40 provisional gameplay profiles; 80 real wrestlers; live-technique multiplier, defence attribution, no roster/save mutation; 18 finish-safe seeded bouts.');
