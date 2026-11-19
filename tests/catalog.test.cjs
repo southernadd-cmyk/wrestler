@@ -56,6 +56,15 @@ function probe(id){
   const s=x.story||(x.story={});Object.assign(s,{position:n.requires==='any'?'standing':n.requires,control,down:n.requires==='mat'?(control==='w'?'f':'w'):null});
   const parent=n.counterOf||n.blockOf;
   const aerialParent=A[parent]&&['aerial','springboard'].includes(A[parent].family);
+  const grappleParent=G.GRAPPLE_PILOT.includes(parent);
+  if(grappleParent){
+   // Phase 7: the existing reversal requires a live, exact parent commitment.
+   // The attack's own requirements and timing must also be achievable.
+   x.stage='live';
+   x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02,A[parent].after+.02)));
+   if(!G.startGrapple(x,parent))continue;
+   assert.equal(x.graph.pendingGrapple.id,parent);
+  }
   if(aerialParent){
    // Phase 6: a generated move-specific aerial counter/block is physically
    // reachable *during the named parent attempt*, not as a free-floating move.
