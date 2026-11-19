@@ -51,6 +51,16 @@ async function visit(browser, label, viewport) {
     await page.locator('#nodeList button').first().click();
     assert.ok(await page.locator('#diagram svg line').count() > 0, 'real graph neighbours render');
 
+    // Curated Phase 2 proposals are visible but cannot affect engine selection.
+    await page.locator('#search').fill('ch_single_leg');
+    await page.locator('#nodeList button').first().click();
+    assert.match(await page.locator('#techniqueDetails').innerText(), /TAKEDOWN/i);
+    assert.match(await page.locator('#techniqueDetails').innerText(), /standing \/ leg/i);
+    assert.match(await page.locator('#techniqueDetails').innerText(), /NOT executable graph links/i);
+    await page.locator('#techniqueDetails .mechanics-relations button').last().click();
+    assert.match(await page.locator('#selection').innerText(), /ch_single_leg_rev/);
+    assert.match(await page.locator('#techniqueDetails').innerText(), /No manually curated mechanic/i);
+
     await page.locator('#tab-run').click();
     if (label === 'desktop') {
       const promise = page.waitForEvent('download');
