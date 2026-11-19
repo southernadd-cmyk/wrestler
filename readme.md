@@ -12,170 +12,56 @@
 
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
-## THE WRESTLING KNOWS ITS WAY AROUND
+<p align="center">
+  <a href="#how-to-play">How to play</a> &nbsp; · &nbsp; <a href="#the-living-roster">Living roster</a> &nbsp; · &nbsp; <a href="#the-territory">Territory</a> &nbsp; · &nbsp; <a href="#match-night">Match night</a> &nbsp; · &nbsp; <a href="#the-latest-issue">Latest issue</a> &nbsp; · &nbsp; <a href="#back-issues">Archive</a>
+</p>
 
-*An expanded ringside report for v0.4.0*
+<p align="center"><img src="docs/readme/04-first-week.svg" alt="FIRST WEEK GUIDE — HOW TO PLAY" width="100%"></p>
 
-The matches are still booked. **The work between the bells has become more deliberate.** Every one of the 80 wrestlers has their own technical tendency — catch, judo, lucha, boxing, strength, acrobatics or a careful blend — alongside their existing on-screen performance style. Forty tendencies are explicitly provisional gameplay characterisations, **not** newly invented biographies. Weekly training and Dennis's one-match rehearsals are separate again.
+## HOW TO PLAY
 
-The live action graph has **979 action nodes, 6,401 directed connections and 340 authored moves**. Real, compatible follow-throughs, ring position and fatigue guide the match; **twelve scripted high spots** now have their own recorded graph identities. The planned clock governs the finishing stretch. Match ratings take account of actual connected sequences and meaningful comebacks, not merely spectacular move names.
+**The matches are scripted. The people aren't.**
 
-There is still work on the mat. The detailed technique registry covers **90 of 340 moves**. The other 250 already work; their grips, setup relationships and counter semantics are waiting for editorial review, not for somebody to invent them. The next investigation is about those mechanics and better physical continuity.
+You run a small regional wrestling stable. Four promoters control their cards and decide the booked winners; you sign wrestlers, negotiate their appearances, work out a match with road agent Dennis, handle the microphone and live with what happens after the bell. Winning every bout isn't the goal. Building a stable that stays in work, earns trust and survives the politics is.
 
-[**What shipped in v0.4**](docs/v0.4-release.md) · [**Inside Graph Lab**](docs/graph-lab.md) · [**Next technique and realism review**](docs/technique-and-realism-review.md) · [**Documentation index**](docs/README.md)
+A new career starts with **£2,250**, **five available contract places**, **two management meetings per week** and **16 weeks in a season**. Wages are due even when you don't get booked. You begin with an empty roster.
 
-<p align="center"><img src="docs/readme/01-lead-story.svg" alt="THE MAIN EVENT — THE BOOKERS HAVE PLANS" width="100%"></p>
+### FIRST WEEK WITH DENNIS
 
-## THE BOOKERS HAVE PLANS
+*From the road agent*
 
-*Lead story*
+The start screen is tonight’s fight poster, and every match on it is real: with a saved career it bills your next booked match, and without one it bills a match from the first circuit show a new career will put on. **New career** still takes you straight to Free agents. Dennis gives you an in-game welcome before the figures take over. A collapsible **First Week** guide stays within reach while you sign a wrestler, book a match, read your inbox, choose a training focus and work your first bout. Steps update from what you actually do; they are not scripted gates. The guide folds away after the first week and can be reopened from **Game → How a week works**. Its state lives inside the normal career save, including older careers.
 
-The other promotions used to book whoever was next on the list. Now each booker **runs storylines**: a **title chase** that builds a challenger with a few wins and then pays off on a title night announced weeks ahead; a **grudge** settled over three matches between two wrestlers who genuinely dislike each other; a **rising star** walked up the card towards a main-event name. They choose who wins to serve the story, and they don’t always stick to the plan.
+### FROM THE BOOKING OFFICE
 
-Each books the way they talk. **Gaz Pryor** at Dockside reaches for a grudge first and never waits long for the payoff. **Nina Sato** at Pulse wants new stars and loves a surprise on the night. **Harold Pike** at North Crown builds long title chases and pays them off the way the story says. **Vivian Croft** at Grand Union rewards the best workers and lets a good champion reign. **Territory → Booking sheets** shows what each of them has on the board, the heat behind it, the next date and how the last ones ended.
+*First week on the job*
 
-And now they bring you in. A promoter who trusts you can offer one of your wrestlers a **programme**: a title chase, a grudge or a push up the card, with every date, opponent and finish in a single offer. Sign it and every date is booked. See it through and they will call you first next time; pull out of any match in it and you have walked out of the whole thing, which they remember. While your title programme runs, nobody else gets a shot at that belt. The week before the big night, the booker may ring with **a change of plan**: go along with it, argue for the original ending, or walk.
+You get **£2,250**, an empty locker room and four promoters with different ideas about what a good match looks like. There are **16 weeks to a season**, room for **five contracts**, and **two management meetings a week**. The wages come due whether you’ve booked a match or spent the week waiting for the phone.
 
-Now the dates have something between them. Every signed programme has an opening, a middle and a payoff, and after Dennis signs the layout he asks **how you want to play this chapter**. Keep it **steady** and let the wrestling speak; **needle** the other wrestler on the microphone; or **gamble** on a bigger claim that may fall flat. What the crowd actually saw, how the promo went and whether the match delivered all count. The next meeting remembers the last one, the booking sheet keeps a dated record, and a programme that comes off particularly well earns its own reward. **The booker still owns the dates, the winner and the finish.** Your job is to make the story worth following.
+1. Open the [game](https://southernadd-cmyk.github.io/wrestler/) and pick **New career**. It opens at **Roster → Free agents**. Check the signing fee, the weekly wage and what the wrestler does well before you sign anyone.
+2. Look under **Bookings → Offers**. The booker sets the spot on the card, the purse and the finish. You can negotiate the rate, ask for higher billing or try to protect a clean loss. Once a promoter trusts you, some offers are whole **programmes**: several dated matches signed as one. Don’t sit on a good offer for too long; a rival manager may get it instead.
+3. Read the **Office** inbox. Promoter requests, injuries and backstage problems can all need a decision. Set training in **Roster** and keep an eye on fatigue and upcoming fixtures.
+4. Press **Continue** when the paperwork is in order. A booked card takes you backstage with Dennis. Set the running order, any programme chapter and the ringside plan. From there it is the microphone (perhaps with a mouthpiece), or a contract signing on a big night, and then the bell. If the promo gets cut, you go straight to the match.
+5. Read the match report, play out the plan **after the bell**, and decide what your wrestler says on the microphone. Then check **Territory → Results**. A good showing can build a programme; a callout can bring next week’s offer, and a promise you missed can follow you back to the office.
 
-## THE SHOW GOES ON AFTER THE BELL
+The desktop layout keeps **Office**, **Roster**, **Bookings**, **Territory** and **Game** in the sidebar, with back and forward buttons at the top. Wrestler and free-agent lists are sortable. On a smaller screen the panels stack vertically.
 
-*After-hours report*
+**A practical first goal:** sign one wrestler, accept a booking, read the inbox, choose a training focus, then play your first match night. The in-game **First Week** checklist tracks those steps and can be reopened through **Game → How a week works**.
 
-Dennis wants to know what happens when the result is in. Before the wrestlers go through the curtain, you can plan **a handshake, a stare-down, an attack after the bell, a lap of honour after a win**, or nothing. The other wrestler has a say too. A handshake can be turned down, and an attack they never agreed to can become a real fight, with a fine and an angry promoter waiting backstage.
-
-Then somebody gets the microphone. A winner can give credit or rub it in; a loser can take the result or blame the finish. They can demand a rematch or **call out** a champion, somebody with an old score to settle, or the name just above them on the card. A callout that lands becomes an actual offer the following week, with a letter from the booker. A bad one costs more than a little pride.
-
-There is another way to put a booker on the spot: **demand a title shot** when your wrestler is coming up the card and the belt is free, or **demand a bigger spot**. Nina Sato at Pulse might admire the nerve. Vivian Croft at Grand Union is less inclined to enjoy being told what to do. Either way, what they say on the microphone can change the next booking.
-
-## SOMEBODY IN YOUR CORNER
-
-*Rules and ringside*
-
-Once the plan is signed, a stablemate can go out with your wrestler. They can **stand in the corner**, **distract the referee**, take part in **a planned referee bump** or make **a run-in**, if the finish and the feud give Dennis a reason to allow it. The job goes on the match strip and happens at its appointed moment. A helpful second can lift the crowd and bring the two wrestlers closer. An over-eager one may be sent away by the referee; a bump can genuinely hurt the official.
-
-The referee has a notebook of their own now. **Disqualifications** can be the booked finish, or an unplanned end to a match when your wrestler gets out of hand and ignores the warning. The booker's result is still the script, but decisions at ringside can cost you that script, a share of the purse and the promoter's trust.
-
-You can also ask the promoter for **No disqualification, Submission only, Falls count anywhere** or **Two out of three falls**. Each booker has a favourite, and a main-event grudge gets a more sympathetic hearing than an ordinary opener. These are not labels on the poster: No DQ changes what the referee will allow, submission matches end with a submission, falls can happen out in the crowd, and two-out-of-three goes to a deciding fall. Every one has its own moments, fatigue and consequences.
-
-## THE TALK BEFORE THE FIGHT
-
-*Interview desk*
-
-Some matches are too important for the usual microphone exchange. Before a title bout, a blow-off or a programme's payoff, Dennis sends the wrestlers to **a contract signing** instead. You decide how to approach the table, what to do when the other wrestler starts talking and how to leave your name on the paper. You can get through with a handshake or turn the whole thing into a brawl. If the table goes over, your wrestler goes into the match sore and the room remembers it.
-
-For an ordinary promo, the person who wrestles need not be the one who talks. If a stablemate is clearly better on the microphone, Dennis offers you **a mouthpiece**. Their skill and their own voice carry the argument; the wrestler still owns every promise made on their behalf. A good talker can win the room for a quiet one, but the opponent may ask why they cannot speak for themselves, and an especially proud wrestler may not enjoy giving somebody else the credit.
-
-## EVERYONE WANTS SOMETHING
-
-*Locker room desk*
-
-Every one of the 80 wrestlers wants something right now: a title shot, a push up the card, better money, a lighter schedule, a real rival, respect for the work, a bigger stage, or a youngster to bring through. The 52 newcomers lean towards the ambition in their own file. What happens each week moves them closer or further away, and when they get it they remember who gave it to them.
-
-A new signing tells you what they want. A frustrated one comes and asks: **promise it** (keep the promise and loyalty rises; break it and it falls hard), **be straight with them**, or **tell them to earn it**. Somebody who wants money can simply be given a raise. Every profile has a **What they want** panel, free agents show it too, and an offer that would give one of your wrestlers what they want says so in the offer notes.
-
-The circuit’s wrestlers want things as well. An unhappy one turns down a new contract, a proud one at the end of their tether walks out mid-deal, and either way they turn up in Free agents.
-
-## THE OTHER MANAGERS
-
-*Rival stable report*
-
-The six rival managers stopped waiting for the phone. Each week they work the bookers for the wrestlers who want something most, and the bookers listen to the ones whose wrestlers deliver. They find new work for wrestlers stuck at the bottom of every card, and the ones with money poach unhappy wrestlers from each other.
-
-They are after your business too. An offer you sit on for a week (a featured bout, a main event, a title match) can go to one of their wrestlers instead, and the road agent will tell you who took it. A manager can make you an offer for one of your wrestlers who wants out: **sell**, **ask for more**, **pay a loyalty bonus** to keep them, or **refuse** and live with how they take it. Any of the six managers can come calling now, not just North Circuit. And the week before the agencies sign from the market, word gets round who they are after, so you can get in first.
-
-You can look over the fence too. **Roster → Rival stables** shows every agency’s roster: what each wrestler wants, whether they are settled, restless or want out, and when their contract is up. Somebody who wants out will listen to an approach. It costs a management meeting, and if they say yes you pay their stable’s fee. Either way their manager hears about it, and a manager you have taken from will come for your wrestlers in return. The rival stables table under **Territory → Card pyramid** says how each manager works.
-
-## THE BUSINESS
-
-*Front office*
-
-The four promotions are businesses now, fighting over the same towns. Every week each one draws a crowd and makes or loses money from the shows it actually put on: the matches (yours included), its storylines, its champions, its big nights. **Promoters** shows who is hot, steady, cooling or struggling. A hot promotion reaches more people and pays you better; a cold one pays less.
-
-A promotion in trouble books like it: shorter title chases, more surprises, belts that move. Dockside and Pulse put their title nights on the same week as a rival’s to take its crowd, and the show with more buzz wins the night. North Crown and Grand Union move out of the way. And a promotion with money and momentum will sign a rival’s best-known name to an exclusive deal.
-
-## THEY REMEMBER WHAT HAPPENED
-
-*Rivalry desk*
-
-Rematches used to start from scratch. Now every pairing keeps **its own record**: who won and how, who grabbed the tights, who tapped, who reversed whom, who was out on their feet at the bell, who got hurt, and which promises made at the microphone actually came true. The next time the two of them meet, that is what they argue about.
-
-Before the first line, the interviewer asks about what the crowd actually saw (“Last time, King beat Titan with a handful of tights”), and the promo screen shows what is **on the record** between them. Openings that use it are marked. Raise it yourself, or pre-empt the point you know is coming, because the other wrestler will bring it up either way. Their answer takes a position of its own: some cite the facts, some refuse to engage, some give a little ground and keep the conclusion, and some change the angle.
-
-Then you choose what your wrestler actually thinks. **Concede the fair part**, **defend it with the evidence**, **turn it into a public test**, **make it personal** or **change the subject**, and each one ends the argument somewhere different. Owning up is often the strongest play. Accuse somebody of cheating when you won with your feet on the ropes last month and you will hear about it. Say “no promises tonight” and then make one, and everyone notices. A test can go on the match strip (“I will reverse the Rush Lock”), and only the real thing, late in the match, counts.
-
-Arguments that were settled stay settled. One left open comes back next time. Old results fade; betrayals and injuries don’t. Five meetings in, two wrestlers can be bitter enemies, grudging equals or two professionals who just want to top their last match.
-
-## ALSO IN THIS ISSUE
-
-- **Over the fence.** **Roster → Rival stables** opens every agency’s roster to you: what each wrestler wants, whether they are settled, restless or want out, when their contract is up and what their stable would want for them. A champion shows the belt they hold, with the promotion’s name. Approach one who wants out and it costs a management meeting; say yes and you pay their stable’s fee. See [The other managers](#the-other-managers).
-- **Faces for the managers.** Mo Devlin, Ruth Anwar, Len Mercer, Dina Kestrel, Pavel Singh and Cleo Kells each have a painted portrait now, on their stable’s page, in the rival stables table and on every letter they send you.
-- **One kind of approach.** The old phone call about North Circuit is gone. Any of the six managers can bid for your wrestlers now, and you can pay a loyalty bonus to keep somebody.
-- **How the match went.** The match report has a new panel: the phases of the bout with the crowd and momentum through each, the moments that moved the room, and where the stars came from. Crowds are harder to win, too: a roar fades unless the wrestlers keep feeding it, and 95 and up is gone.
-- **Easier on the eye.** Offers you can actually take come first and are picked for you; stronger contrast, clearer focus rings, and buttons big enough for a thumb on a phone. Commentary names the wrestler getting up off the mat.
-- **Last issues:** rivalries that remember, bonds and grudges between wrestlers, and the eight belts. See [They remember what happened](#they-remember-what-happened), [The locker room talks back](#the-locker-room-talks-back) and [Back issues](#back-issues).
-
-<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
-
-## THE LOCKER ROOM TALKS BACK
-
-*Locker room desk*
-
-Wrestlers now have feelings about each other, and they don’t come from nowhere. A classic match builds respect. A bad landing leaves a grudge. Two stablemates who share the drive to every show start looking out for each other, unless both of them want the front seat. A proud wrestler left at home while a stablemate headlines takes it personally. Every wrestler’s profile has a **Locker room** panel: who they’re close to, who they can’t stand, and the memory behind it.
-
-It shows up in Dennis’s room. Friends agree more easily and put on a better match. Enemies dig in, and the crowd can tell it’s real. Every so often a scene lands in your inbox: a grudge between stablemates that needs settling, a wrestler who wants another go at a rival, a friend on the free-agent market who could be had for less if the right person asks.
-
-Ignore a grudge and it doesn’t go away. It comes out in the car park after a show, or as a match plan that somehow reaches the other locker room before the bell (Dennis will find out who talked). And a friend with an ego, beaten clean, may not stay a friend once the bell goes.
-
-The 52 wrestlers who joined in the living roster also wrestle like themselves now, each with a weight, trait, favourite moments and four signature moves of their own: Zara Finch’s shooting star press, Nate Barr’s chokeslam, Cleo Watt’s figure-four.
-
-<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
-
-## THE BELTS ARE ON THE TABLE
-
-*Championship desk*
-
-Every promotion now runs two rankings: a **men’s division** and a **women’s division**, each with its own **championship**. That is eight belts across the circuit, and every one of them can change hands. Matches stay within a division, from the offers on your desk to the results that come in from the other towns.
-
-Get one of your wrestlers to the top of a division’s main event and that promoter will offer a **title match** against the champion. As ever, the booker decides the result before you sign. Win the belt and the defences start coming in. Champions you don’t manage defend it every few weeks in the circuit results, and a belt whose holder leaves the promotion is handed to whoever tops the ranking. Careers that started before the belts get them the first time they load: each goes to whoever leads that division.
-
-<table align="center">
-<tr>
-<td align="center"><img src="assets/belts/dockside-mens.webp" alt="Dockside Men’s Championship belt" width="200"><br><sub>Dockside Men’s</sub></td>
-<td align="center"><img src="assets/belts/dockside-womens.webp" alt="Dockside Women’s Championship belt" width="200"><br><sub>Dockside Women’s</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/belts/pulse-underground-mens.webp" alt="Pulse Underground Men’s Championship belt" width="200"><br><sub>Pulse Underground Men’s</sub></td>
-<td align="center"><img src="assets/belts/pulse-underground-womens.webp" alt="Pulse Underground Women’s Championship belt" width="200"><br><sub>Pulse Underground Women’s</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/belts/north-crown-mens.webp" alt="North Crown Men’s Championship belt" width="200"><br><sub>North Crown Men’s</sub></td>
-<td align="center"><img src="assets/belts/north-crown-womens.webp" alt="North Crown Women’s Championship belt" width="200"><br><sub>North Crown Women’s</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/belts/grand-union-mens.webp" alt="Grand Union Men’s Championship belt" width="200"><br><sub>Grand Union Men’s</sub></td>
-<td align="center"><img src="assets/belts/grand-union-womens.webp" alt="Grand Union Women’s Championship belt" width="200"><br><sub>Grand Union Women’s</sub></td>
-</tr>
-</table>
-<p align="center"><sub><em>FROM THE PICTURE DESK:</em> The eight championships, two for each promotion.</sub></p>
-
-<p align="center"><img src="docs/readme/02-production.svg" alt="PRODUCTION DESK — BEHIND THE CURTAIN" width="100%"></p>
-
-## A NEW FLOOR PLAN FOR THE OFFICE
-
-*Production desk*
-
-The entire territory used to work out of one **973 KB** HTML file. The front door is now just **4.6 KB**: the match engine, career, rivals, memory, promos, living-roster contracts and screens now sit in ordered JavaScript files, with separate stylesheets and a pixel-art portrait atlas. It is still the same browser game, served directly from GitHub Pages, with **no build step or runtime dependencies**. Match rules and existing career saves are unchanged.
-
-Dennis has also rearranged the agents’ room. On wide desktop screens, his conversation and the running-order board sit side by side with independent scrolling. On smaller screens they stack, keeping the plan readable while the wrestlers have their say. The regression suite now tests the same scripts the browser loads, in the same order, rather than reading a giant inline script from `index.html`. [See the technical floor plan](docs/architecture.md).
-
-<p align="center"><img src="docs/readme/03-territory.svg" alt="TERRITORY REPORT — FOUR INDEPENDENT PROMOTION CARDS (ARCHIVAL ART)" width="100%"></p>
+**Saving:** Your career autosaves in the browser. Use **Game → Export save** for a portable copy; use **Import save** on another device or browser.
 
 ## THE LIVING ROSTER
 
 *From the picture desk*
 
-All 80 wrestlers, together in one roster. Each has a named pixel-art portrait.
+There are **80 wrestlers** in the living circuit, including the original 28 and 52 newer faces. Your stable starts empty, and you can sign up to **five**. The others work for rival managers, appear on promotion cards or become available to sign. They are not just a list of statistics: each has a voice, favourite moves, relationships, ambitions and a history that develops as the weeks pass.
+
+**What to look for when signing:** ring, mic, psychology and safety ability; weekly wage and signing fee; condition and fatigue; what they want from their career; and how they will get on with the rest of the locker room. A wrestler who can work a good match is not necessarily the one who can sell it on the microphone.
+
+The three kinds of development are distinct: **performance style** (Story, Technical, Brawl or Spectacle) shapes presentation; **technical background** influences eligible, reviewed move choices (40 of those backgrounds are provisional game characterisations); and **weekly training** improves practical readiness. Training does not permanently change technical school in v0.4.
+
+<details>
+<summary><strong>Meet all 80 wrestlers — open the portrait gallery</strong></summary>
 
 <!-- LIVING ROSTER START -->
 <table align="center">
@@ -282,7 +168,17 @@ All 80 wrestlers, together in one roster. Each has a named pixel-art portrait.
 </table>
 <!-- LIVING ROSTER END -->
 
-**The Office** is a text-led wrestling management game played in the browser. You look after one regional stable. Bookers call the result, then you and the wrestlers work out how to get there. Backstage, people remember who took the clean loss, who broke their word, and who made the other wrestler look good in front of a quiet room.
+</details>
+
+*Every portrait comes from the game's actual character art. [Read the living-roster design notes](docs/living-roster-v4.md).*
+
+<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
+
+<p align="center"><img src="docs/readme/03-territory.svg" alt="TERRITORY REPORT — FOUR INDEPENDENT PROMOTION CARDS (ARCHIVAL ART)" width="100%"></p>
+
+## THE TERRITORY
+
+*Four promotions, their champions, their managers and the towns they fight over.*
 
 ### Around the towns
 
@@ -297,31 +193,95 @@ Each booker keeps a separate card, from opener to main event, with a men’s and
 
 **Rival stable report.** Mo Devlin starts with nine at Iron Borough, Ruth Anwar has eight at Gold Coast, and Len Mercer has eight at North Circuit. Three more managers are on the road: Dina Kestrel at Eastbank Athletic (six wrestlers), Pavel Singh at Meridian International (six), and Cleo Kells at Redwood Wrestling Agency (seven). Their results, wages, signings and releases change the circuit from week to week, and each of them pushes their own wrestlers with the bookers (see [The other managers](#the-other-managers)). Their rosters, faces and moods are in **Roster → Rival stables**. If one of your wrestlers takes a rival’s offer, you may find yourself booking against them.
 
----
+### THE BELTS ARE ON THE TABLE
 
-<p align="center"><img src="docs/readme/04-first-week.svg" alt="FIRST WEEK GUIDE — NEW CAREER" width="100%"></p>
+*Championship desk*
 
-## FIRST WEEK WITH DENNIS
+Every promotion now runs two rankings: a **men’s division** and a **women’s division**, each with its own **championship**. That is eight belts across the circuit, and every one of them can change hands. Matches stay within a division, from the offers on your desk to the results that come in from the other towns.
 
-*From the road agent*
+Get one of your wrestlers to the top of a division’s main event and that promoter will offer a **title match** against the champion. As ever, the booker decides the result before you sign. Win the belt and the defences start coming in. Champions you don’t manage defend it every few weeks in the circuit results, and a belt whose holder leaves the promotion is handed to whoever tops the ranking. Careers that started before the belts get them the first time they load: each goes to whoever leads that division.
 
-The start screen is tonight’s fight poster, and every match on it is real: with a saved career it bills your next booked match, and without one it bills a match from the first circuit show a new career will put on. **New career** still takes you straight to Free agents. Dennis gives you an in-game welcome before the figures take over. A collapsible **First Week** guide stays within reach while you sign a wrestler, book a match, read your inbox, choose a training focus and work your first bout. Steps update from what you actually do; they are not scripted gates. The guide folds away after the first week and can be reopened from **Game → How a week works**. Its state lives inside the normal career save, including older careers.
+<table align="center">
+<tr>
+<td align="center"><img src="assets/belts/dockside-mens.webp" alt="Dockside Men’s Championship belt" width="200"><br><sub>Dockside Men’s</sub></td>
+<td align="center"><img src="assets/belts/dockside-womens.webp" alt="Dockside Women’s Championship belt" width="200"><br><sub>Dockside Women’s</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/belts/pulse-underground-mens.webp" alt="Pulse Underground Men’s Championship belt" width="200"><br><sub>Pulse Underground Men’s</sub></td>
+<td align="center"><img src="assets/belts/pulse-underground-womens.webp" alt="Pulse Underground Women’s Championship belt" width="200"><br><sub>Pulse Underground Women’s</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/belts/north-crown-mens.webp" alt="North Crown Men’s Championship belt" width="200"><br><sub>North Crown Men’s</sub></td>
+<td align="center"><img src="assets/belts/north-crown-womens.webp" alt="North Crown Women’s Championship belt" width="200"><br><sub>North Crown Women’s</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/belts/grand-union-mens.webp" alt="Grand Union Men’s Championship belt" width="200"><br><sub>Grand Union Men’s</sub></td>
+<td align="center"><img src="assets/belts/grand-union-womens.webp" alt="Grand Union Women’s Championship belt" width="200"><br><sub>Grand Union Women’s</sub></td>
+</tr>
+</table>
+<p align="center"><sub><em>FROM THE PICTURE DESK:</em> The eight championships, two for each promotion.</sub></p>
 
-## FROM THE BOOKING OFFICE
+<p align="center"><img src="docs/readme/01-lead-story.svg" alt="THE MAIN EVENT — THE BOOKERS HAVE PLANS" width="100%"></p>
 
-*First week on the job*
+### THE BOOKERS HAVE PLANS
 
-You get **£2,250**, an empty locker room and four promoters with different ideas about what a good match looks like. There are **16 weeks to a season**, room for **five contracts**, and **two management meetings a week**. The wages come due whether you’ve booked a match or spent the week waiting for the phone.
+*Lead story*
 
-1. Open the [game](https://southernadd-cmyk.github.io/wrestler/) and pick **New career**. It opens at **Roster → Free agents**. Check the signing fee, the weekly wage and what the wrestler does well before you sign anyone.
-2. Look under **Bookings → Offers**. The booker sets the spot on the card, the purse and the finish. You can negotiate the rate, ask for higher billing or try to protect a clean loss. Once a promoter trusts you, some offers are whole **programmes**: several dated matches signed as one. Don’t sit on a good offer for too long; a rival manager may get it instead.
-3. Read the **Office** inbox. Promoter requests, injuries and backstage problems can all need a decision. Set training in **Roster** and keep an eye on fatigue and upcoming fixtures.
-4. Press **Continue** when the paperwork is in order. A booked card takes you backstage with Dennis. Set the running order, any programme chapter and the ringside plan. From there it is the microphone (perhaps with a mouthpiece), or a contract signing on a big night, and then the bell. If the promo gets cut, you go straight to the match.
-5. Read the match report, play out the plan **after the bell**, and decide what your wrestler says on the microphone. Then check **Territory → Results**. A good showing can build a programme; a callout can bring next week’s offer, and a promise you missed can follow you back to the office.
+The other promotions used to book whoever was next on the list. Now each booker **runs storylines**: a **title chase** that builds a challenger with a few wins and then pays off on a title night announced weeks ahead; a **grudge** settled over three matches between two wrestlers who genuinely dislike each other; a **rising star** walked up the card towards a main-event name. They choose who wins to serve the story, and they don’t always stick to the plan.
 
-The desktop layout keeps **Office**, **Roster**, **Bookings**, **Territory** and **Game** in the sidebar, with back and forward buttons at the top. Wrestler and free-agent lists are sortable. On a smaller screen the panels stack vertically.
+Each books the way they talk. **Gaz Pryor** at Dockside reaches for a grudge first and never waits long for the payoff. **Nina Sato** at Pulse wants new stars and loves a surprise on the night. **Harold Pike** at North Crown builds long title chases and pays them off the way the story says. **Vivian Croft** at Grand Union rewards the best workers and lets a good champion reign. **Territory → Booking sheets** shows what each of them has on the board, the heat behind it, the next date and how the last ones ended.
 
-## A WORD WITH DENNIS
+And now they bring you in. A promoter who trusts you can offer one of your wrestlers a **programme**: a title chase, a grudge or a push up the card, with every date, opponent and finish in a single offer. Sign it and every date is booked. See it through and they will call you first next time; pull out of any match in it and you have walked out of the whole thing, which they remember. While your title programme runs, nobody else gets a shot at that belt. The week before the big night, the booker may ring with **a change of plan**: go along with it, argue for the original ending, or walk.
+
+Now the dates have something between them. Every signed programme has an opening, a middle and a payoff, and after Dennis signs the layout he asks **how you want to play this chapter**. Keep it **steady** and let the wrestling speak; **needle** the other wrestler on the microphone; or **gamble** on a bigger claim that may fall flat. What the crowd actually saw, how the promo went and whether the match delivered all count. The next meeting remembers the last one, the booking sheet keeps a dated record, and a programme that comes off particularly well earns its own reward. **The booker still owns the dates, the winner and the finish.** Your job is to make the story worth following.
+
+### THE OTHER MANAGERS
+
+*Rival stable report*
+
+The six rival managers stopped waiting for the phone. Each week they work the bookers for the wrestlers who want something most, and the bookers listen to the ones whose wrestlers deliver. They find new work for wrestlers stuck at the bottom of every card, and the ones with money poach unhappy wrestlers from each other.
+
+They are after your business too. An offer you sit on for a week (a featured bout, a main event, a title match) can go to one of their wrestlers instead, and the road agent will tell you who took it. A manager can make you an offer for one of your wrestlers who wants out: **sell**, **ask for more**, **pay a loyalty bonus** to keep them, or **refuse** and live with how they take it. Any of the six managers can come calling now, not just North Circuit. And the week before the agencies sign from the market, word gets round who they are after, so you can get in first.
+
+You can look over the fence too. **Roster → Rival stables** shows every agency’s roster: what each wrestler wants, whether they are settled, restless or want out, and when their contract is up. Somebody who wants out will listen to an approach. It costs a management meeting, and if they say yes you pay their stable’s fee. Either way their manager hears about it, and a manager you have taken from will come for your wrestlers in return. The rival stables table under **Territory → Card pyramid** says how each manager works.
+
+### THE BUSINESS
+
+*Front office*
+
+The four promotions are businesses now, fighting over the same towns. Every week each one draws a crowd and makes or loses money from the shows it actually put on: the matches (yours included), its storylines, its champions, its big nights. **Promoters** shows who is hot, steady, cooling or struggling. A hot promotion reaches more people and pays you better; a cold one pays less.
+
+A promotion in trouble books like it: shorter title chases, more surprises, belts that move. Dockside and Pulse put their title nights on the same week as a rival’s to take its crowd, and the show with more buzz wins the night. North Crown and Grand Union move out of the way. And a promotion with money and momentum will sign a rival’s best-known name to an exclusive deal.
+
+<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
+
+## BACKSTAGE: YOUR PEOPLE
+
+*The locker room is a workplace. The wrestlers are people, not pieces on a booking sheet.*
+
+### EVERYONE WANTS SOMETHING
+
+*Locker room desk*
+
+Every one of the 80 wrestlers wants something right now: a title shot, a push up the card, better money, a lighter schedule, a real rival, respect for the work, a bigger stage, or a youngster to bring through. The 52 newcomers lean towards the ambition in their own file. What happens each week moves them closer or further away, and when they get it they remember who gave it to them.
+
+A new signing tells you what they want. A frustrated one comes and asks: **promise it** (keep the promise and loyalty rises; break it and it falls hard), **be straight with them**, or **tell them to earn it**. Somebody who wants money can simply be given a raise. Every profile has a **What they want** panel, free agents show it too, and an offer that would give one of your wrestlers what they want says so in the offer notes.
+
+The circuit’s wrestlers want things as well. An unhappy one turns down a new contract, a proud one at the end of their tether walks out mid-deal, and either way they turn up in Free agents.
+
+### THE LOCKER ROOM TALKS BACK
+
+*Locker room desk*
+
+Wrestlers now have feelings about each other, and they don’t come from nowhere. A classic match builds respect. A bad landing leaves a grudge. Two stablemates who share the drive to every show start looking out for each other, unless both of them want the front seat. A proud wrestler left at home while a stablemate headlines takes it personally. Every wrestler’s profile has a **Locker room** panel: who they’re close to, who they can’t stand, and the memory behind it.
+
+It shows up in Dennis’s room. Friends agree more easily and put on a better match. Enemies dig in, and the crowd can tell it’s real. Every so often a scene lands in your inbox: a grudge between stablemates that needs settling, a wrestler who wants another go at a rival, a friend on the free-agent market who could be had for less if the right person asks.
+
+Ignore a grudge and it doesn’t go away. It comes out in the car park after a show, or as a match plan that somehow reaches the other locker room before the bell (Dennis will find out who talked). And a friend with an ego, beaten clean, may not stay a friend once the bell goes.
+
+The 52 wrestlers who joined in the living roster also wrestle like themselves now, each with a weight, trait, favourite moments and four signature moves of their own: Zara Finch’s shooting star press, Nate Barr’s chokeslam, Cleo Watt’s figure-four.
+
+### A WORD WITH DENNIS
 
 *Training ground*
 
@@ -333,17 +293,15 @@ Training still runs on a weekly focus and intensity, with blocks, camps and a sp
 
 Dennis suggests a session for each wrestler from their last report: a rehearsal after a match that drifted from the match layout, mic work after losing the room, a move for somebody with no big spot of their own. Set sessions in **Roster → Training** or on a wrestler’s profile.
 
-<p align="center"><img src="docs/readme/06-statistics.svg" alt="STATISTICS DESK — THE FIGURES" width="100%"></p>
-
-## THE FIGURES
-
-*Statistics desk*
-
-The office keeps its own records now, and draws them. **Desk → This week** shows the bank balance against the weekly bill. **Territory → Results** charts every match the stable has worked this season, wrestler by wrestler. Each **wrestler profile** shows their ring, mic, psychology and safety week by week, and their star ratings match by match. The **match report** draws the crowd through the bout, with every beat of the running order marked where it landed, changed or slipped away.
+<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
 <p align="center"><img src="docs/readme/05-match-night.svg" alt="MATCH NIGHT — BACKSTAGE TO RINGSIDE" width="100%"></p>
 
-## TEN MINUTES TO DOORS
+## MATCH NIGHT
+
+*From the running order to the last microphone call, every choice becomes part of the record.*
+
+### TEN MINUTES TO DOORS
 
 *From the agents’ room*
 
@@ -361,7 +319,15 @@ A situation can change a beat (the card will say *Changes the heat*), and some d
 
 **Any other business.** At the end of the meeting somebody usually has an idea for their entrance. Every wrestler has one of their own, so it is the Legion bugler for one and a borrowed pallet truck for another. Say yes and it goes down a storm or goes wrong in front of everyone.
 
-## THE MIC IS OPEN
+### THE TALK BEFORE THE FIGHT
+
+*Interview desk*
+
+Some matches are too important for the usual microphone exchange. Before a title bout, a blow-off or a programme's payoff, Dennis sends the wrestlers to **a contract signing** instead. You decide how to approach the table, what to do when the other wrestler starts talking and how to leave your name on the paper. You can get through with a handshake or turn the whole thing into a brawl. If the table goes over, your wrestler goes into the match sore and the room remembers it.
+
+For an ordinary promo, the person who wrestles need not be the one who talks. If a stablemate is clearly better on the microphone, Dennis offers you **a mouthpiece**. Their skill and their own voice carry the argument; the wrestler still owns every promise made on their behalf. A good talker can win the room for a quiet one, but the opponent may ask why they cannot speak for themselves, and an especially proud wrestler may not enjoy giving somebody else the credit.
+
+### THE MIC IS OPEN
 
 *Pre-match report*
 
@@ -375,7 +341,17 @@ Start with **Opening shot**, then take the mic back in **They hit back**. When t
 
 **Last word** is where a vow can follow you into the ring. Promise to counter a particular attack and the match looks for the relevant reversal. Name a finisher and a sharp opponent can scout it. Demand a clean bout and the wrestlers are steered away from dirty tactics. Check the warnings on each choice if the booked result makes the vow difficult to keep. A promise to counter, or to win with the finisher, goes onto the match strip as a **Vow** in its own lane, and is settled at the bell. A promise the booking already guarantees — a win when you’re booked to win — is marked *Safe bet, small reward*, and keeping it earns little.
 
-## RINGSIDE AND AFTER THE BELL
+### SOMEBODY IN YOUR CORNER
+
+*Rules and ringside*
+
+Once the plan is signed, a stablemate can go out with your wrestler. They can **stand in the corner**, **distract the referee**, take part in **a planned referee bump** or make **a run-in**, if the finish and the feud give Dennis a reason to allow it. The job goes on the match strip and happens at its appointed moment. A helpful second can lift the crowd and bring the two wrestlers closer. An over-eager one may be sent away by the referee; a bump can genuinely hurt the official.
+
+The referee has a notebook of their own now. **Disqualifications** can be the booked finish, or an unplanned end to a match when your wrestler gets out of hand and ignores the warning. The booker's result is still the script, but decisions at ringside can cost you that script, a share of the purse and the promoter's trust.
+
+You can also ask the promoter for **No disqualification, Submission only, Falls count anywhere** or **Two out of three falls**. Each booker has a favourite, and a main-event grudge gets a more sympathetic hearing than an ordinary opener. These are not labels on the poster: No DQ changes what the referee will allow, submission matches end with a submission, falls can happen out in the crowd, and two-out-of-three goes to a deciding fall. Every one has its own moments, fatigue and consequences.
+
+### RINGSIDE AND AFTER THE BELL
 
 *Match report*
 
@@ -391,7 +367,37 @@ The bout runs in original text commentary. Style, size, stamina, damage and posi
 
 The report compares the signed board with the match, starting with the strip as it stood at the bell. It shows beats performed, adapted or missed, plus the effect on the crowd, purse and promoter. Wrestlers carry significant incidents into later conversations and matches. A humiliating loss, an injury, a protected finish or a broken promise can all matter next time. The consequences also say how the argument at the microphone came out, whether any test set there was met, and where the rivalry now stands. Rex Titan may want a word after a clean loss. If you promise him a featured match, check the fixture list before you say it.
 
-## KEEP YOUR COPIES
+### THE SHOW GOES ON AFTER THE BELL
+
+*After-hours report*
+
+Dennis wants to know what happens when the result is in. Before the wrestlers go through the curtain, you can plan **a handshake, a stare-down, an attack after the bell, a lap of honour after a win**, or nothing. The other wrestler has a say too. A handshake can be turned down, and an attack they never agreed to can become a real fight, with a fine and an angry promoter waiting backstage.
+
+Then somebody gets the microphone. A winner can give credit or rub it in; a loser can take the result or blame the finish. They can demand a rematch or **call out** a champion, somebody with an old score to settle, or the name just above them on the card. A callout that lands becomes an actual offer the following week, with a letter from the booker. A bad one costs more than a little pride.
+
+There is another way to put a booker on the spot: **demand a title shot** when your wrestler is coming up the card and the belt is free, or **demand a bigger spot**. Nina Sato at Pulse might admire the nerve. Vivian Croft at Grand Union is less inclined to enjoy being told what to do. Either way, what they say on the microphone can change the next booking.
+
+### THEY REMEMBER WHAT HAPPENED
+
+*Rivalry desk*
+
+Rematches used to start from scratch. Now every pairing keeps **its own record**: who won and how, who grabbed the tights, who tapped, who reversed whom, who was out on their feet at the bell, who got hurt, and which promises made at the microphone actually came true. The next time the two of them meet, that is what they argue about.
+
+Before the first line, the interviewer asks about what the crowd actually saw (“Last time, King beat Titan with a handful of tights”), and the promo screen shows what is **on the record** between them. Openings that use it are marked. Raise it yourself, or pre-empt the point you know is coming, because the other wrestler will bring it up either way. Their answer takes a position of its own: some cite the facts, some refuse to engage, some give a little ground and keep the conclusion, and some change the angle.
+
+Then you choose what your wrestler actually thinks. **Concede the fair part**, **defend it with the evidence**, **turn it into a public test**, **make it personal** or **change the subject**, and each one ends the argument somewhere different. Owning up is often the strongest play. Accuse somebody of cheating when you won with your feet on the ropes last month and you will hear about it. Say “no promises tonight” and then make one, and everyone notices. A test can go on the match strip (“I will reverse the Rush Lock”), and only the real thing, late in the match, counts.
+
+Arguments that were settled stay settled. One left open comes back next time. Old results fade; betrayals and injuries don’t. Five meetings in, two wrestlers can be bitter enemies, grudging equals or two professionals who just want to top their last match.
+
+<p align="center"><img src="docs/readme/06-statistics.svg" alt="STATISTICS DESK — THE FIGURES" width="100%"></p>
+
+### THE FIGURES
+
+*Statistics desk*
+
+The office keeps its own records now, and draws them. **Desk → This week** shows the bank balance against the weekly bill. **Territory → Results** charts every match the stable has worked this season, wrestler by wrestler. Each **wrestler profile** shows their ring, mic, psychology and safety week by week, and their star ratings match by match. The **match report** draws the crowd through the bout, with every beat of the running order marked where it landed, changed or slipped away.
+
+### KEEP YOUR COPIES
 
 *Save desk*
 
@@ -401,7 +407,44 @@ Earlier supported v0.2-era careers can still be loaded. Career progress carries 
 
 To play locally, download the **whole repository** and open `index.html` in a modern browser. Keep the `assets/` directory alongside it: the page loads the JavaScript, CSS and portrait atlas as separate files. The simulation still runs in the browser, with no installer or build step. Google Fonts load when available, with system fallbacks.
 
----
+<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
+
+## THE LATEST ISSUE
+
+*v0.4.0 · 19 November 2026 · Development reports from the desks around The Office.*
+
+### THE WRESTLING KNOWS ITS WAY AROUND
+
+*An expanded ringside report for v0.4.0*
+
+The matches are still booked. **The work between the bells has become more deliberate.** Every one of the 80 wrestlers has their own technical tendency — catch, judo, lucha, boxing, strength, acrobatics or a careful blend — alongside their existing on-screen performance style. Forty tendencies are explicitly provisional gameplay characterisations, **not** newly invented biographies. Weekly training and Dennis's one-match rehearsals are separate again.
+
+The live action graph has **979 action nodes, 6,401 directed connections and 340 authored moves**. Real, compatible follow-throughs, ring position and fatigue guide the match; **twelve scripted high spots** now have their own recorded graph identities. The planned clock governs the finishing stretch. Match ratings take account of actual connected sequences and meaningful comebacks, not merely spectacular move names.
+
+There is still work on the mat. The detailed technique registry covers **90 of 340 moves**. The other 250 already work; their grips, setup relationships and counter semantics are waiting for editorial review, not for somebody to invent them. The next investigation is about those mechanics and better physical continuity.
+
+[**What shipped in v0.4**](docs/v0.4-release.md) · [**Inside Graph Lab**](docs/graph-lab.md) · [**Next technique and realism review**](docs/technique-and-realism-review.md) · [**Documentation index**](docs/README.md)
+
+### ALSO IN THIS ISSUE
+
+- **Over the fence.** **Roster → Rival stables** opens every agency’s roster to you: what each wrestler wants, whether they are settled, restless or want out, when their contract is up and what their stable would want for them. A champion shows the belt they hold, with the promotion’s name. Approach one who wants out and it costs a management meeting; say yes and you pay their stable’s fee. See [The other managers](#the-other-managers).
+- **Faces for the managers.** Mo Devlin, Ruth Anwar, Len Mercer, Dina Kestrel, Pavel Singh and Cleo Kells each have a painted portrait now, on their stable’s page, in the rival stables table and on every letter they send you.
+- **One kind of approach.** The old phone call about North Circuit is gone. Any of the six managers can bid for your wrestlers now, and you can pay a loyalty bonus to keep somebody.
+- **How the match went.** The match report has a new panel: the phases of the bout with the crowd and momentum through each, the moments that moved the room, and where the stars came from. Crowds are harder to win, too: a roar fades unless the wrestlers keep feeding it, and 95 and up is gone.
+- **Easier on the eye.** Offers you can actually take come first and are picked for you; stronger contrast, clearer focus rings, and buttons big enough for a thumb on a phone. Commentary names the wrestler getting up off the mat.
+- **Last issues:** rivalries that remember, bonds and grudges between wrestlers, and the eight belts. See [They remember what happened](#they-remember-what-happened), [The locker room talks back](#the-locker-room-talks-back) and [Back issues](#back-issues).
+
+<p align="center"><img src="docs/readme/02-production.svg" alt="PRODUCTION DESK — BEHIND THE CURTAIN" width="100%"></p>
+
+### A NEW FLOOR PLAN FOR THE OFFICE
+
+*Production desk*
+
+The entire territory used to work out of one **973 KB** HTML file. The front door is now just **4.6 KB**: the match engine, career, rivals, memory, promos, living-roster contracts and screens now sit in ordered JavaScript files, with separate stylesheets and a pixel-art portrait atlas. It is still the same browser game, served directly from GitHub Pages, with **no build step or runtime dependencies**. Match rules and existing career saves are unchanged.
+
+Dennis has also rearranged the agents’ room. On wide desktop screens, his conversation and the running-order board sit side by side with independent scrolling. On smaller screens they stack, keeping the plan readable while the wrestlers have their say. The regression suite now tests the same scripts the browser loads, in the same order, rather than reading a giant inline script from `index.html`. [See the technical floor plan](docs/architecture.md).
+
+<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
 ## BY THE NUMBERS
 
@@ -439,7 +482,10 @@ The game is now structured as a small HTML entry point, ordered JavaScript modul
 
 ### On the record
 
-Node.js is needed for the regression suites only. From the repository root, run any of the following:
+Node.js is needed for the regression suites only. Run `npm test` (or `node tests/run-tests.cjs`) from the repository root for the complete suite.
+
+<details>
+<summary>Individual regression test commands</summary>
 
 ```sh
 node tests/roster.test.cjs
@@ -487,6 +533,8 @@ node tests/world-soak.test.cjs
 node tests/start-poster.test.cjs
 node tests/structure.test.cjs
 ```
+
+</details>
 
 The suites cover the free-agent market and rival contracts, separate promotion ladders, divisions and title changes, older saves, backstage situations and their follow-ups, personal voices and move sets, relationships and betrayals, rivalry arguments and counter-proposals, ambitions, the bookers’ storylines, rival managers, the promotions’ business and programmes, signed boards, booked finishes, match legality, the promo duel and repeatable careers.
 
@@ -546,7 +594,5 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 - [Bayley vs Banks and the use of injury callbacks](https://www.cagesideseats.com/wwe/2016/7/25/12264730/making-history-bayleys-journey-part-5)
 
 </details>
-
-<p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
 *Layout references* · [Pro Wrestling Torch print covers](https://www.pwtorch.com/artman2/publish/wadekellerdotcom/46258.shtml) · [Wrestling Observer back issues](https://www.f4wonline.com/news/daily-updates/first-decade-wrestling-observer-hall-of-fame-issues-special-157576/)
