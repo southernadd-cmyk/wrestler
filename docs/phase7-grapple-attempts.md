@@ -1,6 +1,6 @@
 # Phase 7 — grapple attempt state: readiness and implementation gates
 
-**Status: audit branch; no grapple transaction engine shipped yet.**
+**Status: four-move implementation on draft PR #103, not yet merged into live.**
 
 Phase 6 introduced real persistent, two-beat aerial commitments. Phase 7 should cautiously extend this to standing suplexes and grounded submissions, **not** turn every catalog move into a two-beat action.
 
@@ -28,3 +28,12 @@ The executable readiness test checks that the *actual shipped graph* contains th
 - Add a fixed-seed report counting **attempts, outcomes, interrupts, orphans and save/replay divergence** before broadening beyond the pilot.
 
 Phase 6 remains the live implementation until these gates pass. See [Phase 6](phase6-aerial-attempt-state.md).
+
+
+## Implementation on draft PR #103
+
+The match engine now implements `startGrapple`, `resolveGrapple` and `abortGrapple` for the four exact pilot IDs. `graph.pendingGrapple`, `grappleAttempts` and `grappleAttemptSerial` are serialised alongside the existing aerial state. A tick resolves any pending grapple before changing story arcs, and `finishCue` marks interruptions rather than reporting a fictitious completed throw or locked hold.
+
+All matching generated pilot reversals and blocks require their exact parent grapple attempt. The other catalogued grapples are unchanged; no moves, graph edges, or training-school allocations were added. A smaller defence range is used for throws and a distinct hold-specific range for submissions. `tests/grapple-attempts.test.cjs` exercises four parents, distinct outcomes, save/resume, interruption, legacy migration and overlapping-attack rejection. The graph catalog's legality probe now begins a named grapple before testing these four generated alternatives.
+
+**Release gate:** this draft is not a verified live deployment. Check the new PR simulation suite and examine ordinary match transcripts/baseline distributions before merging.
