@@ -15,7 +15,7 @@ const D=game.OfficeData,G=game.OfficeMatch.GRAPH,R=game.OfficeTechniqueRegistry,
 const validation=G.validate(),registryValidation=R.validate(G),schools=B.validate(D,G,R);
 assert.equal(validation.errors.length,0,validation.errors.join('\n'));
 assert.equal(validation.nodes,969,'no extra executable graph nodes');
-assert.ok(validation.edges>=6164&&validation.edges<=6190,'at most fourteen new active edges');
+assert.equal(validation.edges,6333,'Phase 5 remains intact alongside the precisely audited Phase 9 expansion');
 assert.equal(G.CATALOG.counts.moves,336);
 assert.equal(G.TECHNIQUE_PILOT.length,11,'original Phase 3 pilot stays separately intact');
 assert.equal(G.TECHNIQUE_EXPANSION.length,14,'only fourteen new guarded links');
