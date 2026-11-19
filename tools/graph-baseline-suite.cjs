@@ -125,6 +125,35 @@ function summary(result){
    if(phase5Rows.every(row=>row.after.phase5Transitions.every(link=>link.hits===0)))
     lines.push('','**REVIEW:** no new Phase 5 transitions observed in this fixed-seed sample.');
   }
+  const trancheRows=result.rows.filter(row=>Array.isArray(row.after.phase5bTransitions));
+  if(trancheRows.length){
+   lines.push('','### Phase 5b submission and strike sequence observations','',
+    'Observed consecutive action IDs matching vetted links. Does not prove the specific branch used.','',
+    '| Scenario | Curated 5b pairs seen | Pair observations | Most frequent pair |',
+    '|:--|--:|--:|:--|');
+   for(const row of trancheRows){
+    const list=row.after.phase5bTransitions;
+    const count=list.reduce((sum,item)=>sum+item.hits,0);
+    const observed=list.filter(item=>item.hits>0);
+    const top=[...observed].sort((a,b)=>b.hits-a.hits)[0];
+    lines.push('| '+row.label+' | '+observed.length+'/'+list.length+' | '+count+' | '+
+     (top?top.from+' → '+top.to+' ('+top.hits+')':'None')+' |');
+   }
+   const total=trancheRows.reduce((sum,row)=>sum+row.after.phase5bTransitions.reduce((n,item)=>n+item.hits,0),0);
+   if(!total)lines.push('','**REVIEW:** no Phase 5b sequences appeared in fixed-seed bouts.');
+  }
+  const counterRows=result.rows.filter(row=>Array.isArray(row.after.aerialCounterReviews));
+  if(counterRows.length){
+   lines.push('','### Existing move-specific aerial counters','',
+    'Counts are actual reversal-node events for reviewed aerial attacks, **not** a claim that a persistent dive-attempt state exists.','',
+    '| Scenario | Executed reviewed aerial counters | Count |',
+    '|:--|:--|--:|');
+   for(const row of counterRows){
+    const found=row.after.aerialCounterReviews.filter(item=>item.hits>0).sort((a,b)=>b.hits-a.hits);
+    const count=found.reduce((sum,item)=>sum+item.hits,0);
+    lines.push('| '+row.label+' | '+(found.length?found.map(item=>item.counter).join(', '):'None')+' | '+count+' |');
+   }
+  }
   if(result.critical.length)lines.push('','### Invalid run',...result.critical.map(x=>'- '+x));
  lines.push('','Linked-edge reach is a conservative consecutive-event proxy. Arc jumps do not count. A low value is not automatically an error.');
  return lines.join('\n')+'\n';
