@@ -2434,7 +2434,13 @@ function tick(M){
  const aerialResolved=Graph.resolveAerial(M);
  const grappleResolved=Graph.resolveGrapple(M);
  const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
- if(!M.phase||M.phase.id!==ph.id||M.phase.name!==ph.name){M.phase=ph;onPhase(M);if(M.decision)return;}
+ // Minor graph arcs update the label, but do not repeatedly roll the
+ // producer's compliance/incidents checks within the same timed phase.
+ const majorPhaseChange=!M.phase||M.phase.id!==ph.id;
+ if(majorPhaseChange||M.phase.name!==ph.name){
+  M.phase=ph;
+  if(majorPhaseChange){onPhase(M);if(M.decision)return;}
+ }
  // An outside exchange cannot continue indefinitely without a count-out.
  if(Psy.get(M).position==='outside'){
    const g=Graph.get(M);g.floorTicks=(g.floorTicks||0)+1;
