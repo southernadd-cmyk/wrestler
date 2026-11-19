@@ -87,7 +87,7 @@
     return {
       schema: 'office-graph-lab-v1', graph: graph.validate(), config: { ...config },
       bouts: 0, totalStars: 0, totalEvents: 0, actionEvents: 0,
-      nodeHits: {}, edgeHits: {}, adjacentHits: {}, arcHits: {},
+      nodeHits: {}, edgeHits: {}, adjacentHits: {}, arcHits: {}, scriptedSpotEvents: 0,
       familyHits: {}, wrestlerHits: {}, counterHits: 0, blockHits: 0,
       finishHits: {}, outcomeHits: {}, unknownEvents: {}, timingErrors: [],
       sampledSequences: {}, longestChain: 0,
@@ -105,6 +105,7 @@
     increment(snapshot.finishHits, match.final?.finishRoute || '(none)');
     increment(snapshot.outcomeHits, match.graph?.outcome?.id || match.outcome || '(none)');
     snapshot.totalEvents += events.length;
+    snapshot.scriptedSpotEvents += events.filter(e=>e.id==='special_spot').length;
     let previous = null, chain = 0;
     let ids = [];
     for (const event of events) {
@@ -190,6 +191,7 @@
       bouts: snapshot.bouts,
       avgStars: snapshot.bouts ? Math.round(snapshot.totalStars / snapshot.bouts * 100) / 100 : 0,
       actionEvents: snapshot.actionEvents, totalEvents: snapshot.totalEvents,
+      scriptedSpotEvents: snapshot.scriptedSpotEvents||0,
       nodeCoverage: pct(visited.size, nodeTotal),
       edgeCoverage: pct(observedEdges.size, edgeTotal),
       visitedNodes: visited.size, visitedEdges: observedEdges.size,
