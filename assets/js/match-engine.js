@@ -1129,7 +1129,8 @@ const Graph=(function makeGraph(){
   const g={v:1,arc:current,age:0,node:null,visit:{[current]:1},history:[current],events:[],transitions:0,steps:0,lastTags:[],consecutive:0,target:p.target,
    targets:{w:p.target,f:M.w.style==='Technical'?'shoulder':M.w.style==='Spectacle'?'left knee':M.w.style==='Brawl'?'ribs':'lower back'},
    damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0,pattern:M.planId,texture:matchTexture(M),
-   aerialAttempts:[],aerialAttemptSerial:0,pendingAerial:null};
+   aerialAttempts:[],aerialAttemptSerial:0,pendingAerial:null,
+   grappleAttempts:[],grappleAttemptSerial:0,pendingGrapple:null};
   M.graph=g;return g;
  }
  function get(M){
@@ -1139,6 +1140,10 @@ const Graph=(function makeGraph(){
   if(!Number.isSafeInteger(g.aerialAttemptSerial))
    g.aerialAttemptSerial=g.aerialAttempts.reduce((n,x)=>Math.max(n,x.seq||0),0);
   if(!Object.prototype.hasOwnProperty.call(g,'pendingAerial'))g.pendingAerial=null;
+  if(!Array.isArray(g.grappleAttempts))g.grappleAttempts=[];
+  if(!Number.isSafeInteger(g.grappleAttemptSerial))
+   g.grappleAttemptSerial=g.grappleAttempts.reduce((n,x)=>Math.max(n,x.seq||0),0);
+  if(!Object.prototype.hasOwnProperty.call(g,'pendingGrapple'))g.pendingGrapple=null;
   return g;
  }
  function pick(M,weighted){
@@ -1248,14 +1253,23 @@ const Graph=(function makeGraph(){
   const n=A[id];return !!n&&!n.reverse&&!n.blockOf&&
    (n.family==='aerial'||n.family==='springboard');
  }
+ // Only these source-reviewed mechanics enter the Phase 7 two-beat pilot.
+ const GRAPPLE_PILOT=Object.freeze(['sx_vertical','sx_german','sm_sleeper','sm_ankle_lock']);
+ const isGrappleParent=id=>GRAPPLE_PILOT.includes(id);
  function aerialAlternativeParent(id){
   const n=A[id],original=n?.counterOf||n?.blockOf;
   return original&&isAerialParent(original)?original:null;
+ }
+ function grappleAlternativeParent(id){
+  const n=A[id],original=n?.counterOf||n?.blockOf;
+  return original&&isGrappleParent(original)?original:null;
  }
  function isValid(M,nodeId){
   const n=A[nodeId],p=Psy.get(M);if(!n)return false;
   const parent=aerialAlternativeParent(nodeId);
   if(parent&&M.graph?.pendingAerial?.id!==parent)return false;
+  const grappleParent=grappleAlternativeParent(nodeId);
+  if(grappleParent&&M.graph?.pendingGrapple?.id!==grappleParent)return false;
   // A submission-only bout cannot reach pin nodes, even through signature/catalog edges.
   if(M.o.stip==='submission'&&(n.family==='pin'||n.nearfall||
     ['early_cover','cover','near_kickout','counter_rollup'].includes(nodeId)||
@@ -1369,7 +1383,7 @@ const Graph=(function makeGraph(){
  // stage 1 commits and names the precise attack, stage 2 resolves that attack.
  function startAerial(M,id){
   const g=get(M),p=Psy.get(M);
-  if(g.pendingAerial||!isAerialParent(id)||!isValid(M,id)||p.position!=='top'||M.len-M.t<10)
+  if((g.pendingAerial||g.pendingGrapple)||!isAerialParent(id)||!isValid(M,id)||p.position!=='top'||M.len-M.t<10)
    return false;
   if(p.control!=='w'&&p.control!=='f')return false;
   const side=p.control,attacker=side==='w'?M.w:M.f,defender=side==='w'?M.f:M.w;
@@ -1440,6 +1454,77 @@ const Graph=(function makeGraph(){
   const counter=roll<counterChance&&A[rev]&&isValid(M,rev);
   const blocked=!counter&&roll<counterChance+blockChance&&A[blk]&&isValid(M,blk);
   return concludeAerial(M,counter?'counter':blocked?'block':'landed',
+   counter?rev:blocked?blk:id);
+ }
+ // Four vetted throws/holds now share the Phase 6 commitment guarantees,
+ // but do not share aerial probabilities, positions or generated narration.
+ function startGrapple(M,id){
+  const g=get(M),p=Psy.get(M);
+  if(g.pendingAerial||g.pendingGrapple||!isGrappleParent(id)||!isValid(M,id)||
+   M.len-M.t<10||M.stage!=='live'||!['w','f'].includes(p.control))return false;
+  const n=A[id],side=p.control,attacker=side==='w'?M.w:M.f,defender=side==='w'?M.f:M.w;
+  const type=n.family==='submission'?'hold':'throw',seq=++g.grappleAttemptSerial;
+  g.pendingGrapple={v:1,seq,id,side,type,at:M.t,position:p.position,down:p.down};
+  g.grappleAttempts.push({seq,id,side,type,startedT:M.t,outcome:'pending'});
+  const key=side==='w'?'wSt':'fSt';
+  M[key]=clamp(M[key]-.65);g.exertion=(g.exertion||0)+.65;
+  say(M,type==='throw'?
+   attacker.short+' secures the grip and prepares the '+(n.name||id)+'. '+defender.short+' braces against the lift.':
+   attacker.short+' works to lock in the '+(n.name||id)+'. '+defender.short+' fights the grip.','play');
+  return true;
+ }
+ function concludeGrapple(M,outcome,actionId=null){
+  const g=get(M),pending=g.pendingGrapple;
+  if(!pending)return false;
+  const record=g.grappleAttempts.find(x=>x.seq===pending.seq);
+  if(record){record.outcome=outcome;record.resolvedT=M.t;record.actionId=actionId;}
+  g.pendingGrapple=null;
+  if(actionId){
+   apply(M,actionId);
+   const event=g.events[g.events.length-1];
+   if(event?.id===actionId){
+    event.grappleAttemptSeq=pending.seq;
+    event.attemptedMove=pending.id;
+    event.grappleResolution=outcome;
+   }
+  }
+  return true;
+ }
+ function abortGrapple(M,reason='interrupted',narrate=false){
+  const pending=get(M).pendingGrapple;
+  if(!pending)return false;
+  if(narrate){
+   const attacker=pending.side==='w'?M.w:M.f;
+   say(M,attacker.short+' loses the grip before completing the '+(A[pending.id]?.name||'move')+'.','play');
+   const p=Psy.get(M);
+   // A grounded hold remains grounded on a failed setup; a failed throw resets.
+   if(pending.type==='throw'){p.position='standing';p.down=null;}
+   get(M).node=null;
+  }
+  return concludeGrapple(M,reason);
+ }
+ function resolveGrapple(M){
+  const pending=get(M).pendingGrapple;
+  if(!pending)return false;
+  const p=Psy.get(M),id=pending.id;
+  if(M.stage!=='live'||!isGrappleParent(id)||M.t<=pending.at||
+   p.control!==pending.side||p.position!==pending.position||
+   p.down!==pending.down)return abortGrapple(M,'interrupted',M.stage==='live');
+  if(!isValid(M,id))return abortGrapple(M,'aborted',true);
+  const attacker=pending.side==='w'?M.w:M.f,defender=pending.side==='w'?M.f:M.w;
+  const rev=id+'_rev',blk=id+'_blk';
+  const attackerSkill=attacker.ring*.7+attacker.psych*.3;
+  const defenderSkill=defender.ring*.7+defender.psych*.3;
+  const base=pending.type==='hold'?.19:.13;
+  let counterChance=Math.max(.06,Math.min(.32,base+(defenderSkill-attackerSkill)/350));
+  const tactic=M.o.promo?.tactic;
+  if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
+   counterChance=Math.min(.4,counterChance*1.5);
+  const blockChance=A[blk]?Math.max(.04,Math.min(.13,.07+(defender.safe-attacker.safe)/600)):0;
+  const roll=M.r();
+  const counter=roll<counterChance&&A[rev]&&isValid(M,rev);
+  const blocked=!counter&&roll<counterChance+blockChance&&A[blk]&&isValid(M,blk);
+  return concludeGrapple(M,counter?'counter':blocked?'block':'landed',
    counter?rev:blocked?blk:id);
  }
  function validPool(M){
@@ -1580,7 +1665,7 @@ const Graph=(function makeGraph(){
   const g=get(M),p=Psy.get(M);
   // The named move is already committed. Another caller must not overwrite
   // it with an unrelated selection before the next tick resolves it.
-  if(g.pendingAerial)return;
+  if(g.pendingAerial||g.pendingGrapple)return;
   if(p.position==='outside'&&g.floorTicks>=4){apply(M,'roll_inside');g.floorTicks=0;return;}
   if(p.control==='neutral'){
    const advantage=(M.w.ring-M.f.ring)+(M.wSt-M.fSt)*.3;
@@ -1591,6 +1676,7 @@ const Graph=(function makeGraph(){
    // A full named attempt starts only when there is another tick to resolve it.
    // The very final tick retains the pre-existing immediate-landing fallback.
    if(isAerialParent(id)&&startAerial(M,id))return;
+   if(isGrappleParent(id)&&startGrapple(M,id))return;
    apply(M,id);return;
   }
   recover(M);
@@ -1633,6 +1719,7 @@ const Graph=(function makeGraph(){
   // DQ, injury and other immediate endings must not leave a pending dive
   // masquerading as a landed or countered attack in saved match evidence.
   abortAerial(M,'interrupted',false);
+  abortGrapple(M,'interrupted',false);
   const g=get(M),outcome=M.outcome==='nc'?'nc':M.outcome==='double'?'double':M.outcome==='dq'?'dq':M.o.finish;
   if(!OUTCOME_EDGES.finish_setup.includes(outcome))throw Error('Invalid match outcome: '+outcome);
   const def=OUTCOMES[outcome];
@@ -1660,7 +1747,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple};
 })();
 
 function create(o){
@@ -1918,6 +2005,7 @@ function tick(M){
  // Resolve the *specific* committed aerial attack before any scene/arc reset
  // or unrelated spot can change positions. Pending state survives JSON saves.
  const aerialResolved=Graph.resolveAerial(M);
+ const grappleResolved=Graph.resolveGrapple(M);
  const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
  if(!M.phase||M.phase.name!==ph.name){M.phase=ph;onPhase(M);if(M.decision)return;}
  // An outside exchange cannot continue indefinitely without a count-out.
@@ -1954,7 +2042,7 @@ function tick(M){
  if(M.workingHurt&&M.r()<.04&&M.injury<4){M.injury++;say(M,`${w.short} winces again. That’s getting worse.`,'agent');}
  // spots
  const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*(M.offScript==='showboat'?1.5:1);
- let spoke=aerialResolved;
+ let spoke=aerialResolved||grappleResolved;
  if(!spoke&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
  else if(!spoke&&M.r()<spotP){Graph.special(M);spoke=true;}
  // crowd bands
