@@ -16,6 +16,41 @@
     return node;
   };
   const set = (id, text) => { $(id).textContent = text; };
+  const workspaces = ['run', 'tape', 'atlas', 'compare'];
+
+  function activateWorkspace(name, focus = false) {
+    const selected = workspaces.includes(name) ? name : 'run';
+    for (const id of workspaces) {
+      const tab = $('tab-' + id);
+      tab.setAttribute('aria-selected', String(id === selected));
+      tab.tabIndex = id === selected ? 0 : -1;
+      $('workspace-' + id).hidden = id !== selected;
+      if (id === selected && focus) tab.focus();
+    }
+    return selected;
+  }
+
+  function setupWorkspaces() {
+    for (const [index, id] of workspaces.entries()) {
+      const tab = $('tab-' + id);
+      tab.addEventListener('click', () => {
+        activateWorkspace(id);
+        if (window.location.hash !== '#' + id) window.location.hash = id;
+      });
+      tab.addEventListener('keydown', event => {
+        const next = event.key === 'ArrowRight' ? (index + 1) % workspaces.length
+          : event.key === 'ArrowLeft' ? (index + workspaces.length - 1) % workspaces.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? workspaces.length - 1 : null;
+        if (next === null) return;
+        event.preventDefault();
+        const destination = workspaces[next];
+        activateWorkspace(destination, true);
+        window.location.hash = destination;
+      });
+    }
+    window.addEventListener('hashchange', () => activateWorkspace(window.location.hash.slice(1)));
+    activateWorkspace(window.location.hash.slice(1));
+  }
 
   function fillRoster() {
     people = lab.roster(D);
@@ -36,8 +71,10 @@
     const parent = $(id);
     parent.replaceChildren();
     if (!items?.length) { parent.append(make('li', 'No occurrences in this sample.', 'quiet')); return; }
+    const maximum = Math.max(1, ...items.map(x => x.hits));
     for (const x of items.slice(0, 9)) {
       const row = make('li');
+      row.style.setProperty('--share', Math.max(0, x.hits / maximum * 100).toFixed(1) + '%');
       const label = make('span', labeler(x.id));
       label.title = x.id;
       row.append(label, make('em', fmt(x.hits)));
@@ -61,13 +98,22 @@
     renderComparison();
   }
 
+  function filterTrace() {
+    const filter = $('traceFilter').value;
+    for (const row of $('trace').querySelectorAll('.traceRow')) row.hidden = filter !== 'all' && row.dataset.kind !== filter;
+  }
+
   function showTrace(match) {
     const trace = lab.trace(match, G);
     const container = $('trace');
     container.replaceChildren();
+    set('traceMeta', match.w.name + ' vs ' + match.f.name + ' / seed ' + match.o.seed);
+    $('traceFilter').value = 'all';
     if (!trace.length) { container.append(make('p', 'No graph events recorded.', 'quiet')); return; }
     for (const item of trace) {
       const row = make('div', null, 'traceRow');
+      row.dataset.kind = item.kind;
+      row.dataset.seconds = String(item.seconds);
       const minute = Math.floor(item.seconds / 60);
       const sec = String(item.seconds % 60).padStart(2, '0');
       const type = make('span', item.kind, 'kind ' + item.kind.toLowerCase());
@@ -75,6 +121,44 @@
       row.title = 'Story arc: ' + item.arc + ' · Control: ' + item.side + ' · Event ID: ' + item.id;
       container.append(row);
     }
+
+    // Tape activity is the observed event density, not an illustrated or predicted graph.
+    const bins = Array.from({ length: 24 }, () => ({ events: 0, counters: 0, first: null }));
+    const duration = Math.max(1, match.len || trace.at(-1).seconds);
+    trace.forEach((item, i) => {
+      const index = Math.min(bins.length - 1, Math.floor(item.seconds / duration * bins.length));
+      const bin = bins[index];
+      bin.events++;
+      if (item.kind === 'Counter' || item.kind === 'Block') bin.counters++;
+      if (bin.first === null) bin.first = i;
+    });
+    const max = Math.max(1, ...bins.map(b => b.events));
+    const chart = $('tapeViz');
+    chart.replaceChildren();
+    bins.forEach((bin, index) => {
+      const start = Math.floor(index / bins.length * duration);
+      const end = Math.floor((index + 1) / bins.length * duration);
+      const bar = make('button', null, 'timebar');
+      bar.type = 'button';
+      bar.disabled = bin.events === 0;
+      bar.style.setProperty('--height', (bin.events / max * 100).toFixed(1) + '%');
+      bar.style.setProperty('--counter-height', (bin.counters / max * 100).toFixed(1) + '%');
+      bar.setAttribute('aria-label', start + '–' + end + ' seconds: ' + bin.events + ' events, ' + bin.counters + ' counters or blocks');
+      bar.title = bar.getAttribute('aria-label') + ' (select to locate first event)';
+      bar.append(make('span', null, 'activity'), make('span', null, 'counter-activity'));
+      bar.addEventListener('click', () => {
+        if (bin.first === null) return;
+        $('traceFilter').value = 'all';
+        filterTrace();
+        activateWorkspace('tape');
+        const row = container.querySelectorAll('.traceRow')[bin.first];
+        if (!row) return;
+        container.querySelectorAll('.traceRow.located').forEach(n => n.classList.remove('located'));
+        row.classList.add('located');
+        row.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+      });
+      chart.append(bar);
+    });
   }
 
   function drawLocal(id) {
@@ -293,14 +377,19 @@
       set('totalNodes', fmt(info.stats.nodes));
       set('totalEdges', fmt(info.stats.edges));
       set('totalArcs', fmt(info.stats.arcs));
-      set('validation', info.stats.errors.length || info.unreachable.length ? 'Issues' : 'Pass');
-      if (info.stats.errors.length || info.unreachable.length) {
+      const integrityIssues = !!(info.stats.errors.length || info.unreachable.length);
+      set('validation', integrityIssues ? 'Issues' : 'Pass');
+      $('validation').dataset.result = integrityIssues ? 'issues' : 'pass';
+      if (integrityIssues) {
         set('status', info.stats.errors.length + ' graph errors, ' + info.unreachable.length + ' unreachable nodes. Review before interpreting results.');
       }
       fillRoster();
+      setupWorkspaces();
       $('experiment').addEventListener('submit', run);
       $('stop').addEventListener('click', () => { stopped = true; set('status', 'Stopping after the current bout…'); });
       $('export').addEventListener('click', exportJSON);
+      $('viewTape').addEventListener('click', () => { activateWorkspace('tape'); window.location.hash = 'tape'; });
+      $('traceFilter').addEventListener('change', filterTrace);
       $('search').addEventListener('input', renderSearch);
       $('baseline').addEventListener('change', e => loadBaseline(e.target.files?.[0]));
       renderSearch();

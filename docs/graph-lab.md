@@ -2,6 +2,19 @@
 
 A read-only instrument for the **actual** browser match engine. It introduces no new wrestling styles, moves, training rules or career-save mutations. This is the diagnostic baseline to measure future Fight Encyclopedia-inspired graph changes.
 
+## Workbench layout (redesigned)
+
+The Graph Lab has a production-run-sheet identity, not a general-purpose analytics dashboard. It uses condensed sans-serif headings, high-contrast paper/ink/rust colours and strong typographic hierarchy; no serif body type, decorative numbered tiles or stacked metric cards. The visual principles were adapted from the publicly available [taste-skill](https://github.com/leonxlnx/taste-skill), [Claude Design Skillstack](https://github.com/freshtechbro/claudedesignskills) and [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) guidance.
+
+The four workspaces are accessible tabs with Left/Right/Home/End keyboard navigation and stable deep links (`#run`, `#tape`, `#atlas`, `#compare`):
+
+- **Run sheet:** configure seeded bouts and read the sampled actions, links, families, finish routes and ratings. Family/action frequency strips represent observed counts.
+- **Tape review:** inspect the first bout's events in time order; the 24-band activity chart contains *real event counts*, and selecting an occupied band reveals its first event. Filter by actions, counters, blocks or other.
+- **Move atlas:** search the existing graph and inspect authored inbound/outbound links, weights, physical constraints and immediate neighbourhoods.
+- **Baselines:** load a saved JSON report locally and compare it against the current run.
+
+Navigation changes visibility only; it does not re-run matches or re-initialise the engine. Screens adapt at 1440/1280/768/390/375px and respect reduced motion. The page still does not read or write career storage. **Visual redesign does not add technique families, alter graph weighting, or implement new training styles.**
+
 ## Open the lab
 
 Serve the repository root with a simple static server, then open:
