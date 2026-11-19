@@ -28,7 +28,7 @@ function resolve(id,roll){
  assert.equal(m.graph.pendingAerial.id,id);
  assert.equal(m.graph.aerialAttempts.length,1);
  assert.equal(m.graph.aerialAttempts[0].outcome,'pending');
- assert.match(m.log.at(-1).text,new RegExp(A[id].name.replace(/[.*+?^$()|[\]{}]/g,'\\$&'),'i'),
+ assert.ok(m.log.at(-1).text.toLowerCase().includes(A[id].name.toLowerCase()),
   'commentary must identify actual attempted move');
  assert.equal(G.isValid(m,id+'_rev'),true,'exact reversal available with its parent attempt');
  assert.equal(G.isValid(m,id==='ar_frog'?'ar_senton_rev':'ar_frog_rev'),false,
