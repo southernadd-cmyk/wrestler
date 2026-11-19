@@ -3,7 +3,7 @@
 <defs><pattern id="halftone" width="11" height="11" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.5" fill="#101c2b" opacity=".24"/></pattern></defs>
 <rect width="1200" height="140" fill="#efe1c3"/><rect x="5" y="5" width="1190" height="130" fill="none" stroke="#152239" stroke-width="6"/>
 <rect x="17" y="17" width="118" height="106" fill="#c52c26"/><rect x="19" y="19" width="114" height="102" fill="none" stroke="#efe1c3" stroke-width="2"/>
-<text x="76" y="94" text-anchor="middle" fill="#fff6dc" font-family="Impact,Arial,sans-serif" font-weight="900" font-size="74">05</text>
+<g aria-hidden="true" stroke="#fff6dc" fill="none" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"><path d="M40 36 V104 M112 36 V104 M40 49 H112 M40 70 H112 M40 91 H112"/><path d="M40 100 L66 111 L112 99 M40 40 L66 30 L112 41" stroke-width="3"/><rect x="35" y="34" width="10" height="14" rx="2" fill="#fff6dc"/><rect x="107" y="34" width="10" height="14" rx="2" fill="#fff6dc"/></g>
 <rect x="145" y="15" width="1040" height="23" fill="#152239"/>
 <text x="162" y="32" fill="#efe1c3" font-size="14" font-family="Georgia,serif" font-weight="700" letter-spacing="3">BACKSTAGE / ON THE MICROPHONE / RINGSIDE</text>
 <text x="161" y="100" fill="#152239" font-size="63" font-weight="900" letter-spacing=".4" font-family="Impact,'Arial Narrow',Arial,sans-serif">INSIDE THE RING</text>
