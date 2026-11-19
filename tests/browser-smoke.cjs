@@ -89,6 +89,10 @@ async function journey(browser,name,viewport){
     name+': completed dialogue must fill the width '+JSON.stringify(doneGeom));
   assert.ok(doneGeom.consequences>=doneGeom.win*.85,
     name+': consequences panel must not float in a narrow column '+JSON.stringify(doneGeom));
+  const consHeight=await consequences.evaluate(el=>({height:el.getBoundingClientRect().height,
+    visible:el.clientHeight,content:el.scrollHeight,heading:el.querySelector('.section-h').getBoundingClientRect().height}));
+  assert.ok(consHeight.height>=150&&consHeight.visible>consHeight.heading+65,
+    name+': consequences too short to read '+JSON.stringify(consHeight));
   assert.equal(await consequences.locator('.section-h').innerText(),'Consequences');
   assert.ok(await consequences.locator('.cons li').count()>0,
     name+': actual post-bell effects sit together with their heading');
