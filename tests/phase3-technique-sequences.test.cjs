@@ -95,4 +95,16 @@ for(let i=0;i<48;i++){
  total++;
 }
 assert.equal(total,48);
+
+const child=require('node:child_process');
+const baseline=JSON.parse(child.execFileSync(process.execPath,[
+ path.join(__dirname,'..','tools','graph-baseline.cjs'),
+ '--count','12','--seed','90101','--rotation','fixed','--wid',worker.id,
+ '--rid',opponent.id,'--plan','technical'
+],{encoding:'utf8',maxBuffer:3*1024*1024,timeout:120000}));
+assert.equal(baseline.schema,'office-graph-lab-v1');
+assert.equal(baseline.bouts,12);
+assert.equal(baseline.pilotTransitions.length,11,'CLI includes every curated link');
+assert.ok(baseline.pilotTransitions.every(x=>Number.isSafeInteger(x.hits)&&x.hits>=0));
+
 console.log('PASS Phase 3: '+G.TECHNIQUE_PILOT.length+' curated live edges; all physical guards pass, '+G.validate().edges+' links, unchanged 969 nodes, contracts and seeded replay; sampled '+total+' bouts. Observed pilot transitions: '+JSON.stringify(observed));
