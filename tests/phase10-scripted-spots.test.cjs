@@ -9,7 +9,7 @@ for(const file of ['data.js','roster-registry.js','technique-registry.js','techn
   {window:root,console,Date,Math,JSON},{filename:file});
 root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH;
-assert.deepEqual(G.validate().errors,[],'all named graph connections resolve');
+assert.equal(G.validate().errors.length,0,'all named graph connections resolve');
 const scripted=Object.values(D.SPOTS).flat();
 assert.equal(scripted.length,12,'all twelve original scripted move names have a mapping');
 assert.equal(Object.keys(G.SCRIPTED_SPOT_IDS).length,scripted.length);
