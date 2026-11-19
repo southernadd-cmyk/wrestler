@@ -429,6 +429,7 @@
     }
     activateWorkspace('run');
     window.location.hash = 'run';
+    updateSchoolReadout();
     set('status', 'Loaded ' + scenario.label + ' / ' + scenario.report.bouts +
       ' bouts / seed ' + params.seed + '. Run Simulation to compare exactly against the frozen baseline.');
   }
