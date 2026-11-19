@@ -1,0 +1,46 @@
+name: Career rivalry continuity
+
+on:
+  pull_request:
+    paths:
+      - 'assets/js/**'
+      - 'tests/_world.cjs'
+      - 'tests/_source.cjs'
+      - 'tools/career-continuity-audit.cjs'
+      - 'tests/career-continuity-audit.test.cjs'
+      - '.github/workflows/career-continuity.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/js/**'
+      - 'tools/career-continuity-audit.cjs'
+      - 'tests/career-continuity-audit.test.cjs'
+  schedule:
+    - cron: '43 7 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: career-continuity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  five-week-career:
+    name: Five-week persisted rivalry
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Check out real career and match engine
+        uses: actions/checkout@v4
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Replay and verify saved five-week rivalry
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/career-continuity-audit.test.cjs
+          node tools/career-continuity-audit.cjs | tee "$GITHUB_STEP_SUMMARY"
