@@ -482,12 +482,14 @@
 /* Post-bell consequences: keep the heading and effects together inside the existing stacked scene. */
 .tv .s-back .after-consequences{flex:none;min-width:0;max-height:32%;overflow:auto;padding:8px 12px 10px;border-top:2px solid var(--ink);background:var(--stone-2)}
 .tv .s-back .after-consequences .section-h{margin:0 0 6px}
+/* The completed post-bell effects must have enough space for actual entries. */
+#tv .s-after.is-done .after-consequences{min-height:155px;max-height:none;overflow-y:auto}
 /* Only the finished post-bell scene has no decisions: use its full width,
    leaving the deliberately split backstage decision screens untouched. */
 @media (min-width:1181px) and (min-height:600px){
- #tv .s-after.is-done .wbody{grid-template-columns:minmax(0,1fr)}
+ #tv .s-after.is-done .wbody{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) clamp(155px,24dvh,200px)}
  #tv .s-after.is-done .scene{grid-column:1;grid-row:2}
- #tv .s-after.is-done .after-consequences{grid-column:1;grid-row:3}
+ #tv .s-after.is-done .after-consequences{grid-column:1;grid-row:3;height:100%;min-height:0;max-height:none;overflow-y:auto}
 }
 /* v0.3.21 ringside plans */
 .corner-who{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
