@@ -30,7 +30,7 @@
  });
  // Editorial assignments to original characters, not extrapolated from ring
  // style, nationality, gender, weight, or the career's weekly training state.
- // Unlisted wrestlers remain general and receive NO new bias. Kit's gymnastics-like description is a PROVISIONAL editorial assignment, not a claim of a documented gymnastics career.
+ // Unlisted wrestlers remain general and receive NO new bias. Zara's documented aerial skill supports a PROVISIONAL editorial acrobatics assignment, not a claim of a documented gymnastics career.
  const ASSIGNMENTS=Object.freeze({
   juno:'catch',dee:'catch',cal:'catch',imani:'catch',ezra:'catch',
   silas:'catch',nova:'catch',
@@ -42,7 +42,7 @@
   tori:'lucha',rina:'lucha',kofi:'lucha',leandro:'lucha',
   nadia:'lucha',liya:'lucha',zara:'lucha',jett:'lucha',
   anya:'lucha',sasha:'lucha',
-  tomasash:'boxing',val:'strength',kit:'acrobatics'
+  tomasash:'boxing',val:'strength',zara:'acrobatics'
  });
  const idOf=w=>typeof w==='string'?w:w?.id;
  function get(w){return SCHOOLS[ASSIGNMENTS[idOf(w)]||'general'];}
