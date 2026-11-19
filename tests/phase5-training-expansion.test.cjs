@@ -23,20 +23,20 @@ assert.equal(registryValidation.valid,true,registryValidation.errors.join('\n'))
 assert.equal(registryValidation.proposals,90,'the 60 previously reviewed plus 30 Phase 5b records');
 assert.equal(registryValidation.authored,336);
 assert.equal(schools.valid,true,schools.errors.join('\n'));
-assert.equal(schools.assigned,40);
-assert.equal(schools.unassigned,40);
+assert.equal(schools.assigned,80);
+assert.equal(schools.unassigned,0);
 assert.equal(D.ALL.length,80);
 assert.equal(B.MAX_BONUS,.28,'do not increase the maximum training bias');
 assert.equal(B.get('tomasash').id,'boxing');
 assert.equal(B.get('val').id,'strength');
 assert.equal(B.get('kit').id,'lucha-acrobatics','Kit retains the original lucha affinity in a provisional hybrid');
 assert.equal(B.get('zara').id,'lucha','Zara retains her previous training school');
-assert.equal(B.get('rex').id,'general','old general remains unmodified');
+assert.equal(B.get('rex').id,'strength','Rex has a provisional strength-gameplay tendency, not asserted training history');
 assert.equal(B.get('bao').id,'judo','original judoka preserved');
 assert.equal(B.get('juno').id,'catch','original catch preserved');
 assert.equal(B.get('nico').id,'lucha','original lucha preserved');
 assert.equal(B.get('kofi').id,'lucha','existing Kofi lucha training is preserved rather than inferred from aerial style');
-assert.equal(B.get('milo').id,'general','an aerial spectacle style alone does not invent training history');
+assert.equal(B.get('milo').id,'acrobatics','Milo has an explicitly provisional gameplay identity, not a documented school');
 const csv=fs.readFileSync(path.join(__dirname,'..','docs/phase5-roster-training-audit.csv'),'utf8').trim().split(/\r?\n/);
 assert.equal(csv.length,81,'all eighty wrestlers have provenance and review rows');
 for(const w of D.ALL){

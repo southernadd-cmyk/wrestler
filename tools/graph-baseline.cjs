@@ -92,6 +92,12 @@ try {
       from, to, kind, hits: snapshot.edgeHits[from + '>' + to] || 0
     }));
   }
+  if(Array.isArray(G.TECHNIQUE_DEPTH)){
+    // Actual consecutive event pairs, not implied graph-pool usage.
+    report.phase8Transitions=G.TECHNIQUE_DEPTH.map(({from,to,kind})=>({
+      from,to,kind,hits:snapshot.edgeHits[from+'>'+to]||0
+    }));
+  }
   // Move-specific generated reversals now resolve a committed named aerial
   // attempt. Count actual reversal nodes without double-counting attempts.
   if (root.OfficeTechniqueRegistry) {
