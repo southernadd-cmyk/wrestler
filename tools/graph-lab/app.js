@@ -221,6 +221,19 @@
     const container = $('techniqueDetails');
     if (!container) return;
     container.replaceChildren(make('span', 'MECHANICS LAYER / PROPOSED', 'block-ref'));
+    const liveLinks = (G.TECHNIQUE_PILOT || []).filter(link => link.from === id || link.to === id);
+    if (liveLinks.length) {
+      const active = make('div', null, 'mechanics-live');
+      active.append(make('h4', 'LIVE PHASE 3 / AUTHORED TRANSITIONS'));
+      for (const link of liveLinks) {
+        const row = make('button', link.from + ' → ' + link.to + ' · weight ' + link.weight);
+        row.type = 'button';
+        row.title = link.reason + ' — inspect the other node';
+        row.addEventListener('click', () => selectNode(link.from === id ? link.to : link.from));
+        active.append(row, make('p', link.reason));
+      }
+      container.append(active);
+    }
     const registry = window.OfficeTechniqueRegistry;
     const record = registry?.get(id);
     if (!record) {
@@ -253,7 +266,7 @@
       }
       relations.append(area);
     }
-    container.append(relations, make('p', 'These are editorial candidate relationships, NOT executable graph links or training abilities.', 'mechanics-disclaimer'));
+    container.append(relations, make('p', 'The candidate setup/counter lists remain editorial. Only links explicitly marked LIVE above are executable. Training affinities are not active wrestler abilities.', 'mechanics-disclaimer'));
   }
 
   function selectNode(id) {
