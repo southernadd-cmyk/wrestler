@@ -23,7 +23,7 @@ assert.equal(G.CATALOG.counts.moves,336);
 assert.equal(G.CATALOG.counts.reversals,324);
 assert.equal(G.CATALOG.counts.blocks,209);
 assert.equal(G.TECHNIQUE_PILOT.length,11,'conservative curated set');
-assert.ok(G.validate().edges>=6152 && G.validate().edges<=6163,'only 11 edges can change');
+assert.ok(G.validate().edges>=6160 && G.validate().edges<=6174,'Phase 3 and 5 only add their curated bounded links');
 assert.equal(R.validate(G).valid,true,'Phase 2 metadata stays independently valid');
 const pairs=new Set();
 const seedPeople=lab.roster(D).filter(w=>(D.PROFILES[w.id]?.kg||90)<85);
