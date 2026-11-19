@@ -29,17 +29,32 @@ These are graph connections, **not guaranteed scripts**. Each step is selected f
 
 ## School and style differences
 
-In addition to existing move-by-move school multipliers, Phase 9 recognises *named source-to-destination handoffs*. The bounded affinity for a familiar transition can reach an additional **1.42x** from relevant training and theatrical wrestling style (e.g. catch or judo for mat controls; boxing for strike chains; strength for power; lucha/acrobatics for fast ropes). The bonus applies only if that source really was the current graph node and the next move is legal. An opponent's counter is not treated as an attacker chain.
+In addition to existing move-by-move school multipliers, Phase 9 recognises *named source-to-destination handoffs*. A familiar transition receives up to an additional **1.42×** schooling/style factor (e.g. catch or judo for mat control, boxing for strike chains, strength for power, lucha/acrobatics for fast ropes). The refinement also multiplies the eligible **same-controller** authored follow-through by **2.6×**, or **3.15×** when it continues a preceding authored pair. This is a bounded selection preference, never a guaranteed script. It requires the source to be the last genuine action by the current controlling wrestler, not a special interruption or opponent interception, and the destination must still pass normal physical guards and booking rules. A committed top-rope Spectacle wrestler also receives more weight on legal *named* aerial/springboard attacks instead of always taking the generic top-rope beat; safe-match risk reductions remain intact.
 
 **No new or inflated character biographies:** Phase 8's 40 preserved and 40 provisional gameplay training identities remain separate from ring performance style and career training sessions.
 
-## What was genuinely observed
+## What the same-seed tests actually show
 
-The initial 200-bout automated sample, *before a small additional school-familiarity tuning*, recorded **93 consecutive authored-chain transitions on 56 distinct relationships**; all nine contexts occurred. This shows usage, not complete coverage or proof of realism. Lucha and ringside examples were notably sparse in that initial sample.
+The first Phase 9 rollout had 93 authored-pair occurrences over 200 bouts (56 relationships); our 500-match review also showed that only 123/500 matches contained any newly introduced connection. That was inadequate.
 
-A dedicated test now requires at least 40 observed chains, 70 real chain transitions, eight of nine contexts represented and 160 distinct action-event sequences in a deterministic 200-bout sampling protocol. If one of these thresholds fails, the code cannot pass as merely increasing the graph count.
+The refinement was measured in CI against **exact original Phase 8 revision** `d80139d3462cb4bb8740abd4c032c42a30b8cf81` with 500 identical pairings, plans, card positions, booking outcomes and seeds:
 
-The Phase 9 Graph Lab test suite also checks 120 bouts for causal attempt integrity, injected counter mismatches and replay. CI produces a 500-bout evidence artifact. The Move Atlas lists every added relationship and the Lab results show actual per-group observations.
+| Measure | Phase 8 | Refined Phase 9 |
+|---|---:|---:|
+| Match sequences containing a Phase 9-introduced pair | 14/500 | **272/500** |
+| Observed occurrences of newly introduced pairs | 14 | **440** |
+| Different newly introduced pairs observed | 10 | **96** |
+| Consecutive same-controller newly introduced pairs | 11 | **437** |
+| Three-action sequences using two introduced edges | 0 | **40** |
+| Named aerial moves | 37 | **57** |
+| Named springboards | 22 | **56** |
+| Average engine star rating | 2.33 | 2.32 |
+
+**Important interpretation:** the newly introduced pairs can still occur in Phase 8 via general arc picks, so these counts do not prove which picker component made an individual move happen. The controlled A/B evidence does show that they become much more common with Phase 9. Nearly half the refined matches still have no observed new pair; ratings are effectively unchanged. This is more depth, **not evidence of a higher-quality match overall**.
+
+The Phase 9 runner now exports the exact set of 144 new link IDs alongside the 191 authored relationships, and distinguishes all adjacent pairs from same-controller action sequences. The Graph Lab UI shows match reach, actual newly introduced pair counts, and three-action combination examples. CI requires improvements against the pinned Phase 8 source; it also tests intentional injected misattribution and mechanically invalid outcomes. Both the 500-bout standalone report and the same-seed comparison JSON are captured as downloadable GitHub Actions evidence.
+
+The latest dedicated 200-bout technique test observed 214 curated pair occurrences across 98 relationships, with all nine contexts represented. Real footage-style narrative review is still required; passing these tests alone cannot demonstrate convincing choreography.
 
 ## Outstanding limitations
 
@@ -59,6 +74,8 @@ From Node CI, run:
 node tests/phase9-authored-chains.test.cjs
 node tests/phase9-graph-validation.test.cjs
 node tools/graph-lab/validate.cjs --count 500 > phase9-evidence.json
+# With the pinned Phase 8 revision checked out to phase8-reference/:
+node tools/graph-lab/compare-phase8.cjs phase8-reference > phase9-comparison.json
 ```
 
 The results are deliberately reproducible by seed and independent of player career save files.
