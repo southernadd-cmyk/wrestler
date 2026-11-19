@@ -867,7 +867,7 @@ function cornerPicker(c,w,f){
 
 /* ---------- after the bell (v0.3.20) ---------- */
 const AFTER_SHORT={
- none:['No angle','Finish and leave'],
+ none:['No angle','Straight to the microphone'],
  handshake:['Handshake','Respect · may be refused'],
  staredown:['Stare-down','Keep the rivalry going'],
  beatdown:['Post-match attack','Build heat · risk a fight'],
@@ -876,10 +876,11 @@ const AFTER_SHORT={
 function afterPicker(c,w,f){
  if(!window.OfficeAfter)return '';
  const on=night.plan?.after||'none';
- return `<section class="after-setup"><h3 class="section-h after-h">After the bell <small>optional</small></h3><p class="dim after-setup-intro">What happens once the match ends?</p><div class="after-plan-grid" role="group" aria-label="After the bell plan">${OfficeAfter.plans(c,w,f).map(o=>{
+ const options=OfficeAfter.plans(c,w,f),chosen=options.find(o=>o.id===on);
+ return `<section class="after-setup"><h3 class="section-h after-h">After the bell <small>optional</small></h3><p class="dim after-setup-intro">What happens once the match ends?</p><div class="after-plan-grid" role="group" aria-label="After the bell plan">${options.map(o=>{
   const label=AFTER_SHORT[o.id]||[o.label,o.hint];
   return `<button class="after-plan${o.id===on?' on':''}" data-afterplan="${esc(o.id)}" aria-pressed="${o.id===on}" title="${esc(o.hint)}"><b>${esc(label[0])}</b><span>${esc(label[1])}</span></button>`;
- }).join('')}</div></section>`;
+ }).join('')}</div><p class="after-plan-detail" aria-live="polite">${esc(chosen?.hint||'')}</p></section>`;
 }
 function afterNext(){const more=night.i<night.queue.length;return `<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to office'}</button>`}
 
@@ -902,7 +903,7 @@ function showAfter(){
  const cons=v.cons.length?`<section class="after-consequences" aria-labelledby="after-effects-title"><h3 class="section-h" id="after-effects-title">Consequences</h3><ul class="cons">${v.cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul></section>`:'';
  const decide=v.stage==='mic'?
   `<div class="decide2 after-decide"><h3 class="section-h">The microphone</h3><p class="lede">${esc(v.ask)}</p>${afterMicCards(v.options)}${cons}</div>`:
-  `<div class="decide2 after-decide"><h3 class="section-h">Post-match fallout</h3>${cons||'<p class="dim">The scene is finished.</p>'}</div>`;
+  `<div class="decide2 after-decide after-complete">${cons||'<h3 class="section-h">Scene complete</h3>'}</div>`;
  const middle=`<b class="fin">${esc(v.plan==='none'?'Straight to the microphone':v.planLabel)}</b><span>${esc(p?.venue||'')}</span>`;
  const body=matchupBar({},w,f,middle)+matchSceneLayout(sceneLog(entries,'afterTalk',w,f,p?.id),decide,'after-layout');
  $('#tv').innerHTML=`<div class="strip"><b>${esc(p?.name||'')}: after the bell</b><span>${esc(w?.name||'')} v ${esc(f?.name||'')}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-back">${win('After the bell',body,{h:'h3',body:'tight'})}</div><div class="tv-foot"><span class="dim">${esc(v.stage==='mic'?'Choose what your wrestler says.':'Post-match scene complete.')}</span>${v.stage==='mic'?'':afterNext()}</div>`;
