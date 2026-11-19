@@ -263,7 +263,9 @@ for(const r of runs){
  const said=r.bouts.map(b=>b.promo.dialogue.filter(d=>d.speaker===r.w.name||d.speaker===r.f.name).map(d=>d.line));
  for(let i=1;i<said.length;i++){
   const repeated=said[i].filter(l=>said[i-1].includes(l)).length;
-  assert.ok(repeated<=Math.ceil(said[i].length/2),'bout '+(i+1)+' is not a re-run of bout '+i+' ('+repeated+'/'+said[i].length+' lines)');
+  assert.ok(repeated<=Math.ceil(said[i].length/2),'bout '+(i+1)+' is not a re-run of bout '+i+
+   ' ('+repeated+'/'+said[i].length+' lines) in '+r.opts.w+' vs '+r.opts.f+
+   '; repeated verbatim: '+JSON.stringify(said[i].filter(line=>said[i-1].includes(line))));
  }
  assert.equal(r.bouts[0].promo.case,null,'the first meeting does not argue about a history it does not have');
  for(const b of r.bouts.slice(1)){

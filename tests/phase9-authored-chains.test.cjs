@@ -1,4 +1,5 @@
 'use strict';
+const {EXPECTED}=require('./_phase10-inventory.cjs');
 // Phase 9: actual curated match chains, physics and seeded usage rather than node-count theatre.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const lab=require('../tools/graph-lab/core.js'),validator=require('../tools/graph-lab/validation.js');
@@ -10,8 +11,8 @@ for(const file of ['data.js','roster-registry.js','technique-registry.js','techn
 root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,B=root.OfficeTechniqueBackgrounds,R=root.OfficeTechniqueRegistry;
 assert.equal(G.validate().errors.length,0);
-assert.equal(G.validate().nodes,969,'do not inflate vocabulary with pseudo-actions');
-assert.equal(G.validate().edges,6333,'144 new real directed edges beyond Phase 8');
+assert.equal(G.validate().nodes,EXPECTED.nodes,'ten named action nodes added in Phase 10');
+assert.equal(G.validate().edges,EXPECTED.edges,'Phase 10 adds 68 linked paths beyond the Phase 9 graph');
 assert.equal(G.PHASE9_NEW_EDGES.length,144,'record only genuinely new Phase 9 links');
 const links=G.TECHNIQUE_CHAINS;
 assert.equal(links.length,191,'exact deliberately authored first batch');

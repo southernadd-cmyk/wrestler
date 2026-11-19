@@ -1,4 +1,5 @@
 'use strict';
+const {EXPECTED}=require('./_phase10-inventory.cjs');
 // Phase 5b: audit real graph rather than the plausibility of string labels.
 // No production save fields, new move nodes, additional authored finish routes,
 // arbitrary school allocations, or fictional post-landing aerial counter links.
@@ -14,15 +15,15 @@ root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,G=root.OfficeMatch.GRAPH,M=root.OfficeMatch,R=root.OfficeTechniqueRegistry,B=root.OfficeTechniqueBackgrounds;
 const stats=G.validate(),review=R.validate(G),schools=B.validate(D,G,R);
 assert.equal(stats.errors.length,0,stats.errors.join('\n'));
-assert.equal(stats.nodes,969);
-assert.equal(stats.edges,6333,'Phase 9 grows from 6,189 to 6,333 edges through 144 new curated connections');
-assert.equal(G.CATALOG.counts.moves,336,'no new authored move nodes');
+assert.equal(stats.nodes,EXPECTED.nodes);
+assert.equal(stats.edges,EXPECTED.edges,'Phase 9 grows from 6,189 to 6,333 edges through 144 new curated connections');
+assert.equal(G.CATALOG.counts.moves,EXPECTED.moves,'no new authored move nodes');
 assert.equal(G.TECHNIQUE_PILOT.length,11,'Phase 3 baseline remains a separate set');
 assert.equal(G.TECHNIQUE_EXPANSION.length,14,'Phase 5 baseline remains a separate set');
 assert.equal(G.TECHNIQUE_TRANCHE2.length,16,'the exact vetted Phase 5b link set');
 assert.equal(review.valid,true,review.errors.join('\n'));
 assert.equal(review.proposals,90);
-assert.equal(review.authored,336);
+assert.equal(review.authored,EXPECTED.moves);
 assert.equal(schools.valid,true,schools.errors.join('\n'));
 assert.equal(schools.assigned,80);
 assert.equal(schools.unassigned,0);
@@ -115,4 +116,4 @@ for(let i=0;i<24;i++){
   assert.equal(JSON.stringify(bout.graph.events),JSON.stringify(replay.graph.events),'same seed/release replay '+i);
  }
 }
-console.log('PASS Phase 5b: 90/336 reviewed mechanics, 16 curated links, five pre-existing aerial counters, real mat/strike weights, 24 legal finishes, original roster and saves intact.');
+console.log('PASS Phase 5b: 90/340 reviewed mechanics, 16 curated links, five pre-existing aerial counters, real mat/strike weights, 24 legal finishes, original roster and saves intact.');

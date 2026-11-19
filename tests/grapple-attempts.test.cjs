@@ -1,4 +1,5 @@
 'use strict';
+const {EXPECTED}=require('./_phase10-inventory.cjs');
 // Phase 7 exact two-beat pilot: suplex and submission commits, counters, blocks and save replay.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const lab=require('../tools/graph-lab/core.js');
@@ -9,7 +10,7 @@ for(const file of ['data.js','roster-registry.js','technique-registry.js','techn
 root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,A=G.A;
 assert.equal(G.validate().errors.length,0);
-assert.equal(G.validate().nodes,969);
+assert.equal(G.validate().nodes,EXPECTED.nodes);
 const pilot=['sx_vertical','sx_german','sm_sleeper','sm_ankle_lock'];
 assert.equal(JSON.stringify([...G.GRAPPLE_PILOT]),JSON.stringify(pilot));
 function setup(id){

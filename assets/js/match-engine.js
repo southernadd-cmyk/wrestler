@@ -275,6 +275,20 @@ const Psy=(function installPsychology(){
 /* THE OFFICE v2.7 — hierarchical causal graph, based on match-psychology research */
 const Graph=(function makeGraph(){
  const A={};
+ const SCRIPTED_SPOT_IDS=Object.freeze({
+  'a piledriver on the floor':'os_floor_piledriver',
+  'a suplex onto the entrance ramp':'os_ramp_suplex',
+  'a spear through the barricade':'os_barricade_spear',
+  'a superplex from the top rope':'sp_superplex',
+  'a top-rope German suplex':'sp_avalanche_german',
+  'a deadlift bridging suplex':'sx_deadlift_bridge',
+  'a 450 splash':'ar_450',
+  'a tope con hilo over the top rope':'dv_tope_con_hilo',
+  'a shooting star press off the top':'ar_shooting_star',
+  'a diving elbow from the top':'ar_elbow_point',
+  'a DDT on the apron':'os_apron_ddt',
+  'a backdrop over the top rope to the floor':'os_ropes_backdrop'
+ });
  const introducedPhase9=new Set();
  // Phase 3 / small, curated, live technique sequences. These IDs are ALREADY in
  // the authored graph; they do not unlock new moves or alter the finish contract.
@@ -613,6 +627,9 @@ const Graph=(function makeGraph(){
  node('aerial_counter','{D} rolls out of the way! {A} crashes onto the canvas and loses the advantage.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:3,next:[e('cover',2),e('mat_hold',2),e('stand_reset',3)]});
  // Ringside branches must return inside before a pin or submission.
  node('outside_toss','{A} sends {D} over the ropes onto the floor. The referee starts counting.',{zone:'outside',down:null,next:[e('floor_brawl',4),e('apron_stand',3),e('roll_inside',2)]});
+ node('os_ropes_backdrop','{A} catches {D} at the ropes and sends them over with a high backdrop to the floor!',{
+  requires:'standing',zone:'outside',risk:true,after:.5,cost:3.2,crowd:5,
+  next:[e('floor_brawl',3),e('apron_stand',2),e('roll_inside',4)]});
  node('floor_brawl','{A} follows {D} to the floor and throws a forearm near the barricade.',{requires:'outside',zone:'outside',next:[e('floor_counter',3),e('apron_stand',3),e('roll_inside',4)]});
  node('floor_counter','{D} blocks the next shot and drives {A} backwards into the barricade!',{requires:'outside',reverse:true,zone:'outside',next:[e('floor_brawl',3),e('roll_inside',4)]});
  node('apron_stand','{A} pulls {D} towards the apron, where both struggle for position.',{requires:'outside',zone:'outside',next:[e('roll_inside',4),e('floor_counter',3)]});
@@ -696,6 +713,7 @@ const Graph=(function makeGraph(){
     blk:{lines:['{D} hooks a leg and blocks the {name}. {A} keeps hold and resets the grip.','{D} drops their weight, and {A} cannot lift them for the {name}.','{A} tries for the {name}, but {D} plants their feet and refuses to go up.'],next:[['strike_trade',2],['knee_strike_block',1]]},
     moves:[
      ['sx_vertical','vertical suplex','{A} hooks the head, lifts {D} straight up and drops back with a vertical suplex.',{}],
+     ['sx_deadlift_bridge','deadlift bridging suplex','{A} lifts {D} from a dead stop into a bridging suplex, keeping the shoulders trapped!',{cost:4,lift:14,crowd:6,after:.55,risk:1,styles:'T'}],
      ['sx_delayed','delayed vertical suplex','{A} hoists {D} upside down and holds them there… and holds them… before finally dropping back!',{cost:4,lift:22,crowd:5,after:.3,styles:'BY'}],
      ['sx_belly_belly','belly-to-belly suplex','{A} locks the body and launches {D} overhead with a belly-to-belly suplex!',{crowd:3}],
      ['sx_belly_back','belly-to-back suplex','{A} scoops {D} up and falls backwards with a belly-to-back suplex.',{}],
@@ -1036,6 +1054,9 @@ const Graph=(function makeGraph(){
      ['os_post_leg','leg around the post','{A} pulls {D}’s leg around the ring post and wrenches it!',{rv:['{D} kicks {A} away from the post, and {A} crashes into the barricade!'],part:'leg',focus:2,crowd:-1,styles:'BT'}],
      ['os_apron_knee','apron knee drop','{A} drops a knee on {D}, draped over the apron.',{part:'neck',cost:1.8}],
      ['os_apron_ddt','DDT on the apron','{A} spikes {D} with a DDT on the ring apron!',{part:'neck',cost:3,crowd:5,after:.6,risk:1}],
+     ['os_floor_piledriver','piledriver on the floor','{A} hooks {D} on the floor and drives them down with a piledriver!',{part:'neck',cost:4.1,lift:14,crowd:6,after:.68,risk:1,styles:'B'}],
+     ['os_ramp_suplex','suplex on the entrance ramp','{A} lifts {D} at the entrance and suplexes them onto the ramp!',{part:'back',cost:4,lift:20,crowd:6,after:.55,risk:1,styles:'B'}],
+     ['os_barricade_spear','spear through the barricade','{A} drives a shoulder into {D} and sends both crashing through the barricade!',{part:'ribs',cost:4.3,crowd:7,after:.65,risk:1,styles:'B'}],
      ['os_floor_chop','chop on the floor','{A} lands a loud chop on the floor. The crowd at ringside winces.',{part:'ribs',crowd:3}],
      ['os_steps','whip into the ring steps','{A} sends {D} into the ring steps!',{part:'leg',focus:1,crowd:3,cost:2,styles:'B'}],
      ['os_apron_slam','body slam on the apron','{A} body slams {D} on the hard edge of the ring apron!',{part:'back',focus:2,lift:26,cost:3,crowd:4,after:.5,risk:1}],
@@ -1247,6 +1268,7 @@ const Graph=(function makeGraph(){
    if(extra>base*.5){const k=base*.5/extra;for(const x of n.next)if(!orig.has(x[0]))x[1]=Math.round(x[1]*k*1000)/1000;}
   }
   add('outside_toss','floor_regroup',1.5);add('pw_bearhug','hope_elbows_standing',1);
+  add('rope_run','os_ropes_backdrop',.6);add('strike_trade','os_ropes_backdrop',.6);
   return {F,famOf,members,counts};
  })();
  const CROWD_SCALE=.3,SHEET_PULL=1.8;
@@ -1661,7 +1683,7 @@ const Graph=(function makeGraph(){
    '{A} steadies their breathing; {D} cautiously waits for the next exchange.'
   ]
  };
- function apply(M,id){
+ function apply(M,id,options={}){
   const n=A[id],p=Psy.get(M),g=get(M);
   const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';
   if(n.reverse){
@@ -1703,7 +1725,7 @@ const Graph=(function makeGraph(){
   if(exertion<0)g.rests=(g.rests||0)+1;
   g.exertion=(g.exertion||0)+Math.max(0,effective);
   if(id==='near_kickout'||id==='counter_rollup'||n.nearfall) {M.nearfalls++;M.bonus+=n.nearfall?4:5;g.nearfallCount++;}
-  if(n.family&&n.risk&&!n.counterOf&&!n.blockOf){M.spots++;M.spotHits++;M.bonus+=3;}
+  if(!options.scriptedSpot&&n.family&&n.risk&&!n.counterOf&&!n.blockOf){M.spots++;M.spotHits++;M.bonus+=3;}
   if(n.counterOf&&A[n.counterOf]?.risk){M.spots++;M.bonus-=2;}
   if(id==='aerial_attack'){M.spots++;M.spotHits++;M.bonus+=10;}
   if(id==='springboard_strike'){M.spots++;M.spotHits++;M.bonus+=5;}
@@ -1713,7 +1735,9 @@ const Graph=(function makeGraph(){
   if(id==='cover')g.pendingCover=true;
   if(id==='target_hold'||id==='target_strike'||id==='arm_wringer')g.lastTarget=M.t;
   if(id==='near_kickout')g.pendingCover=false;
-  g.node=id;g.steps++;g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective});
+  g.node=id;g.steps++;
+  g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective,
+   ...(options.scriptedSpot?{scriptedSpot:true,scriptedBig:!!options.big}:{})});
   if(g.events.length>220)g.events.shift();
   if(id==='cheap_shot')referee(M,side);
   if(M.o.promo?.tactic?.kind==='counter'&&n.reverse&&side==='f'&&p.control==='w'&&
@@ -2133,14 +2157,61 @@ const Graph=(function makeGraph(){
   g.node='stand_reset';
   root.OfficeSheets?.observe(M,'scheduled_nearfall',p.control,'spot');
  }
+ // Check the real node's legality at its intended landing position without
+ // mutating the match or using an extra random number.
+ function canScriptedSpot(M,id,side){
+  const n=A[id],p=Psy.get(M),g=get(M);
+  if(!n||!['standing','top','outside'].includes(n.requires)||
+     g.pendingAerial||g.pendingGrapple)return false;
+  // A high-spot setup must satisfy its own timing rules, not just the final move.
+  // The elbow is legal at 40%, but top_follow not until 45%.
+  if(p.position==='corner'&&n.requires==='top'&&
+     M.t/Math.max(1,M.len)+1e-8<(A.top_follow.after||0))return false;
+  const old=[p.control,p.position,p.down];
+  p.control=side;p.position=n.requires;p.down=null;
+  const valid=isValid(M,id);
+  [p.control,p.position,p.down]=old;
+  const st=side==='w'?M.wSt:M.fSt;
+  return valid&&st>=28&&st>16+costOf(id)*3.2+5;
+ }
+ // Each setup also records actual graph actions. A successful scheduled
+ // spectacle is no longer an unconnected event labelled 'special_spot'.
+ function prepareScriptedSpot(M,id,side){
+  const p=Psy.get(M),g=get(M),n=A[id],attacker=side==='w'?M.w:M.f,defender=side==='w'?M.f:M.w;
+  if(!canScriptedSpot(M,id,side))return false;
+  if(p.control!==side){
+   if(p.control!=='neutral')p.changes++;
+   say(M,attacker.short+' intercepts '+defender.short+' and creates an opening for the planned high spot.','play');
+   p.control=side;M.mom=side==='w'?Math.max(22,M.mom):Math.min(-22,M.mom);
+   g.node=null;
+  }
+  if(p.position==='outside'&&n.requires!=='outside')apply(M,'roll_inside');
+  if(p.position==='top'&&n.requires!=='top'){
+   say(M,attacker.short+' steps down from the ropes and resets on the canvas.','play');
+   p.position='standing';p.down=null;g.node=null;
+  }
+  if(p.position==='mat'){
+   if(p.down===side){
+    say(M,attacker.short+' rolls clear and rises before attacking again.','play');
+    p.position='standing';p.down=null;g.node=null;
+   }else apply(M,'stand_reset');
+  }
+  if(p.position==='corner'&&n.requires!=='top')apply(M,'corner_break');
+  if(n.requires==='outside'&&p.position==='standing')apply(M,'outside_toss');
+  if(n.requires==='top'&&p.position==='standing'){
+   if(n.family==='superplex'){apply(M,'corner_whip');apply(M,'top_follow');}
+   else apply(M,'top_climb');
+  }else if(n.requires==='top'&&p.position==='corner')apply(M,'top_follow');
+  if(!isValid(M,id)){
+   say(M,attacker.short+' cannot complete the spectacular setup safely.','play');
+   g.node=null;return false;
+  }
+  return true;
+ }
  function special(M){
-  const g=get(M),p=Psy.get(M);
-  if(p.position==='outside'){apply(M,'roll_inside');g.floorTicks=0;return}
-  const prior=M.spots;spot(M,false);const occurred=M.spots>prior;
-  if(occurred)vic(M,'spot',.4);
-  g.events.push({id:occurred?'special_spot':'special_deferred',t:M.t,arc:g.arc,control:p.control,position:p.position,down:p.down});
-  g.node=null;
-  if(occurred)root.OfficeSheets?.observe(M,'special_spot',p.control,'spot');
+  const attempted=spot(M,false,false);
+  if(attempted){vic(M,'spot',.4);root.OfficeSheets?.observe(M,'special_spot',Psy.get(M).control,'spot');}
+  return attempted;
  }
  function finishCue(M){
   // DQ, injury and other immediate endings must not leave a pending dive
@@ -2174,7 +2245,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple};
 })();
 
 function create(o){
@@ -2365,6 +2436,41 @@ function say(M,text,kind='play',opt={}){
  const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0,who};M.queue.push(line);M.log.push(line);return line}
 
 function phaseFor(frac,M){const ends=Psy.PHASE_ENDS[M?.planId]||Psy.PHASE_ENDS.story;return PHASES.find((p,i)=>frac<ends[i])||PHASES[4]}
+// Grade observed, mechanically connected offence and actual dramatic payoffs.
+// Never infer good wrestling from spot counts, named moves alone or the match plan.
+function constructionOf(M){
+ const g=M.graph||{},actions=(g.events||[]).filter(e=>Graph.A[e.id]&&e.preControl);
+ let linkedPairs=0,threeBeatSequences=0,staleRepetitions=0,lastLinked=false;
+ for(let i=0;i<actions.length;i++){
+  const event=actions[i],prev=actions[i-1];
+  const linked=!!(prev&&prev.control===event.preControl&&
+   prev.preControl===prev.control&&event.preControl===event.control&&
+   event.t>=prev.t&&event.t-prev.t<=30&&
+   Graph.A[prev.id].next.some(([to])=>to===event.id));
+  if(linked){linkedPairs++;if(lastLinked)threeBeatSequences++;}
+  lastLinked=linked;
+  if(actions.slice(Math.max(0,i-7),i).filter(x=>
+   x.id===event.id&&x.preControl===event.preControl).length>=2)
+   staleRepetitions++;
+ }
+ const history=g.history||[],pressureIndex=history.findIndex(x=>['cutoff','control','limb_work'].includes(x));
+ const hopeIndex=history.findIndex((x,i)=>i>pressureIndex&&['hope','denial'].includes(x));
+ const comeback=history.findIndex((x,i)=>i>hopeIndex&&['comeback','resurgence'].includes(x));
+ const earnedComeback=pressureIndex>=0&&hopeIndex>pressureIndex&&comeback>hopeIndex;
+ const workedDamage=(g.damage?.w||0)+(g.damage?.f||0);
+ const focusedWork=workedDamage>=3;
+ const opportunities=Math.max(1,actions.length-1);
+ // Ratios make longer matches no more valuable than shorter, well-built ones.
+ // A cap protects the five-star scale and keeps raw ringcraft decisive.
+ let score=actions.length<5?0:
+  Math.min(.22,linkedPairs/opportunities*.28+
+   threeBeatSequences/Math.max(1,actions.length-2)*.18)+
+  (focusedWork?.07:workedDamage>0?.03:0)+(earnedComeback?.08:0)-
+  Math.min(.18,staleRepetitions*.025);
+ score=Math.round(clamp(score,-.2,.37)*1000)/1000;
+ return {linkedPairs,threeBeatSequences,staleRepetitions,focusedWork,
+  workedDamage,earnedComeback,actions:actions.length,score};
+}
 // The rating, itemised: what each part added to (or took off) the stars. stars() is their sum.
 function starParts(M){
  if(!M.qN)return [];
@@ -2374,6 +2480,8 @@ function starParts(M){
  if(M.shortened)parts.push(['short','Cut short',-.45]);
  if(M.sheetAdj)parts.push(['layout','The agreed layout',M.sheetAdj]);
  if(M.minutes>=15&&avgQ>=60)parts.push(['length','Long match, held together',.2]);
+ const construction=constructionOf(M);
+ if(construction.score)parts.push(['psychology','Sequences and psychology',construction.score]);
  if(M.outcome==='double')parts.push(['double','Double count-out',.25]);
  return parts;
 }
@@ -2487,7 +2595,7 @@ function tick(M){
   (M.offScript==='showboat'?1.5:1)*recoveryWeight;
  let spoke=aerialResolved||grappleResolved;
  if(!spoke&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
- else if(!spoke&&M.r()<spotP){Graph.special(M);spoke=true;}
+ else if(!spoke&&M.r()<spotP)spoke=Graph.special(M);
  // crowd bands
  crowdBand(M);
  // producer hints
@@ -2571,50 +2679,59 @@ function playByPlay(M){
 }
 function spot(M,big,forced){
  const {A,D:Df}=forced?{A:M.w,D:M.f}:actors(M);
- const yours=A===M.w,st=yours?M.wSt:M.fSt;
- const ap=D.PROFILES[A.id]||{kg:85},dp=D.PROFILES[Df.id]||{kg:85};
- const strengthGap=dp.kg-ap.kg;
- const moves=D.SPOTS[A.style]||D.SPOTS.Story;
- const possible=moves.filter(x=>!(strengthGap>32&&/suplex|piledriver|backdrop|powerbomb/i.test(x)));
- const move=rnd(M,possible.length?possible:['a running dropkick']);
+ const yours=A===M.w,side=yours?'w':'f',st=yours?M.wSt:M.fSt;
+ const g=Graph.get(M);
  if(st<28){
-  // Automatic risky attempts are gated in tick(); the producer can still
-  // demand a big spot, but not an endless identical failure/commentary loop.
   M.lastExhaustedSpot??={};
-  const side=yours?'w':'f';
   if(M.t-(M.lastExhaustedSpot[side]??-9999)>=160){
    say(M,`${A.short} cannot get their footing for the spectacular attack. ${Df.short} has room to recover.`,'agent',{who:'pbp'});
    M.lastExhaustedSpot[side]=M.t;
   }
   if(!M.mode||M.mode.type!=='slow')M.mode={type:'slow',ticks:3};
-  lift(M,-(big?3:1));mark(M,'tired',yours);
-  M.bonus-=big?6:2;
-  return;
+  lift(M,-(big?3:1));mark(M,'tired',yours);M.bonus-=big?6:2;
+  return false;
  }
- const wasBotched=M.botches;
- const outside=Psy.spotSetup(M,A,Df,move);
- let botchP=(.03+(100-A.safe)*.0018+(100-st)*.0015)*M.riskMul*(big?1.5:1);
- if(A.ring>=80)botchP*=.8;
+ const mapped=(D.SPOTS[A.style]||D.SPOTS.Story).map(move=>({
+  move,id:Graph.SCRIPTED_SPOT_IDS[move]
+ }));
+ const candidates=mapped.filter(x=>Graph.canScriptedSpot(M,x.id,side));
+ if(!candidates.length){
+  if(forced)say(M,`${A.short} cannot find a legal setup for the requested big move right now.`,'agent',{who:'pbp'});
+  return false;
+ }
+ const chosen=rnd(M,candidates);
+ if(!Graph.prepareScriptedSpot(M,chosen.id,side))return false;
+ const outside=Graph.A[chosen.id].zone==='outside';
+ const botchP=(.03+(100-A.safe)*.0018+(100-st)*.0015)*M.riskMul*(big?1.5:1)*(A.ring>=80?.8:1);
+ const attempt={t:M.t,id:chosen.id,name:chosen.move,side,big:!!big,outcome:'pending'};
+ (g.scriptedSpotAttempts??=[]).push(attempt);
+ if(g.scriptedSpotAttempts.length>220)g.scriptedSpotAttempts.shift();
  M.spots++;
  if(big||M.r()<.35)say(M,big?`${A.short} commits to the high-risk move!`:`${A.short} goes for it!`,'play',{pause:1});
  if(M.r()<botchP){
-  M.botches++;M.bonus-=big?30:20;lift(M,-(big?9:6));mark(M,'botch',yours);
-  say(M,`${move.charAt(0).toUpperCase()+move.slice(1)}… and it’s gone wrong. That looked nasty.`,'bad',{big:true});
-  // who gets hurt: the taker or the one who went for it
+  attempt.outcome='botched';M.botches++;M.bonus-=big?30:20;
+  lift(M,-(big?9:6));mark(M,'botch',yours);
+  say(M,`${chosen.move.charAt(0).toUpperCase()+chosen.move.slice(1)}… and it’s gone wrong. That looked nasty.`,'bad',{big:true});
   const hurtYours=yours?M.r()<.55:M.r()<.45;
-  const injP=(.1+(100-(yours?M.w.safe:M.f.safe))/350)*(big?1.4:1);
+  const injP=(.1+(100-A.safe)/350)*(big?1.4:1);
   if(M.r()<injP){
    if(hurtYours&&!M.injury){M.injury=1+(M.r()<.4?1:0)+(big&&M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);decide(M,'injury');}
    else if(!hurtYours&&!M.foeHurt){M.foeHurt=true;say(M,`${M.f.short} is holding the ${rnd(M,PARTS)}. The referee leans in.`,'agent',{who:'pbp'});M.fSt=clamp(M.fSt-25);}
   }
+  // A botch is an attempted manoeuvre, not a false landed action.
+  Psy.spotAfter(M,A,Df,outside,true);g.node=null;
  }else{
-  M.spotHits++;const pop=(big?7:3)+M.r()*(big?7:4);lift(M,pop*M.plan.crowd);mark(M,big?'big':'spot',yours);M.bonus+=big?18:10;
-  say(M,rnd(M,[`${move.charAt(0).toUpperCase()+move.slice(1)} from ${A.short}!${M.crowd>=70?' The crowd come up out of their seats!':''}`,`${A.short} connects with ${move}! ${Df.short} did not see it coming.`,`What a risk by ${A.short} — ${move} lands flush!`,`${A.short} gets all of ${move}! The front rows erupt.`]),M.crowd>=70?'crowd':'play',{big:big||M.crowd>=75});
+  // The executed graph action owns its own named narration, effects,
+  // movement and event record; do not count it as a second scripted spot.
+  Graph.apply(M,chosen.id,{scriptedSpot:true,big});
+  attempt.outcome='landed';M.spotHits++;
+  const pop=(big?7:3)+M.r()*(big?7:4);
+  lift(M,pop*M.plan.crowd);mark(M,big?'big':'spot',yours);M.bonus+=big?18:10;
+  if(big)say(M,`${Df.short} is rocked by the impact. The front rows erupt!`,'crowd',{big:true});
  }
- // Both wrestlers pay the physical cost of an attempted special, including botches.
  if(yours)M.wSt=clamp(M.wSt-(big?7:4));
  else M.fSt=clamp(M.fSt-(big?7:4));
- Psy.spotAfter(M,A,Df,outside,M.botches>wasBotched);
+ return true;
 }
 function dive(M){
  say(M,`${M.w.short} drives ${M.f.short} through the ropes. They spill towards the aisle, well away from the ring.`,'play',{pause:1});
@@ -2969,7 +3086,7 @@ function summary(M){
    opponentDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='f')
   },
   evidence:evidenceOf(M),roomNegotiation:M.o.sheet?.negotiation||null,
-  psychology:{archetype:M.planId,controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
+  psychology:{archetype:M.planId,construction:constructionOf(M),controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 // v0.3.12 What happened, as structured facts a rivalry can cite later: who reversed whom and which kind
 // of attack, who cheated, who was spent at the bell, who was hurt, and what became of each agreed beat.
@@ -2995,5 +3112,5 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,GRAPH:Graph,scout:Graph.scout,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
+root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,GRAPH:Graph,scout:Graph.scout,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
 })(typeof window!=='undefined'?window:globalThis);

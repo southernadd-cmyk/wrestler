@@ -43,8 +43,14 @@ jobs:
           ref: d80139d3462cb4bb8740abd4c032c42a30b8cf81
           path: phase8-reference
           persist-credentials: false
-      - name: Compare 500 same-seed Phase 8 versus Phase 9 bouts
-        run: node tools/graph-lab/compare-phase8.cjs phase8-reference > phase9-comparison.json
+      # Compare genuine historical revisions, not Phase 10 with Phase 8.
+      - uses: actions/checkout@v4
+        with:
+          ref: 36ae02e213d8a21ceb5ce5827f97beab88d0740e
+          path: phase9-reference
+          persist-credentials: false
+      - name: Compare 500 same-seed Phase 8 versus frozen Phase 9 bouts
+        run: node tools/graph-lab/compare-phase8.cjs phase8-reference phase9-reference > phase9-comparison.json
       - uses: actions/upload-artifact@v4
         with:
           name: phase9-graph-evidence

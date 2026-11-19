@@ -1,4 +1,5 @@
 'use strict';
+const {EXPECTED}=require('./_phase10-inventory.cjs');
 // Phase 3: proof that a small, controlled move graph pilot is real, physically legal,
 // deterministic and does not rewrite the original catalogue or booked outcomes.
 const assert=require('node:assert/strict');
@@ -18,12 +19,12 @@ const reference=JSON.parse(fs.readFileSync(path.join(__dirname,'..','tools/graph
 
 assert.equal(reference.totalBouts,1200);
 assert.equal(G.validate().errors.length,0);
-assert.equal(G.validate().nodes,969,'Phase 3 must not mint any nodes');
-assert.equal(G.CATALOG.counts.moves,336);
-assert.equal(G.CATALOG.counts.reversals,324);
-assert.equal(G.CATALOG.counts.blocks,209);
+assert.equal(G.validate().nodes,EXPECTED.nodes,'Phase 3 must not mint any nodes');
+assert.equal(G.CATALOG.counts.moves,EXPECTED.moves);
+assert.equal(G.CATALOG.counts.reversals,EXPECTED.reversals);
+assert.equal(G.CATALOG.counts.blocks,EXPECTED.blocks);
 assert.equal(G.TECHNIQUE_PILOT.length,11,'conservative curated set');
-assert.equal(G.validate().edges,6333,'Phase 9 adds exactly 144 directed links without changing 969 action nodes');
+assert.equal(G.validate().edges,EXPECTED.edges,'Phase 9 adds exactly 144 directed links without changing 969 action nodes');
 const mechanicReview=R.validate(G);
 assert.equal(mechanicReview.valid,true,'Curated move metadata must match the live graph:\n'+mechanicReview.errors.join('\n'));
 const pairs=new Set();
@@ -108,4 +109,4 @@ assert.equal(baseline.bouts,12);
 assert.equal(baseline.pilotTransitions.length,11,'CLI includes every curated link');
 assert.ok(baseline.pilotTransitions.every(x=>Number.isSafeInteger(x.hits)&&x.hits>=0));
 
-console.log('PASS Phase 3: '+G.TECHNIQUE_PILOT.length+' curated live edges; all physical guards pass, '+G.validate().edges+' links, unchanged 969 nodes, contracts and seeded replay; sampled '+total+' bouts. Observed pilot transitions: '+JSON.stringify(observed));
+console.log('PASS Phase 3: '+G.TECHNIQUE_PILOT.length+' curated live edges; all physical guards pass, '+G.validate().edges+' links, the original 969 nodes plus ten Phase 10 action nodes, contracts and seeded replay; sampled '+total+' bouts. Observed pilot transitions: '+JSON.stringify(observed));
