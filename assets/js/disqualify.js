@@ -41,7 +41,7 @@
  const originalEnd=G.endWeek;
  G.endWeek=function(...args){
   const r=originalEnd.apply(this,args);
-  try{for(const o of G.S?.offers||[])dqFinish(o);G.save();}catch(e){}
+  try{for(const o of G.S?.offers||[])dqFinish(o);G.save();}catch(e){G.reportError('disqualification/offers',e)}
   return r;
  };
 

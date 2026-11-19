@@ -87,7 +87,7 @@
  const originalEnd=G.endWeek;
  G.endWeek=function(...args){
   const r=originalEnd.apply(this,args);
-  try{for(const o of G.S?.offers||[])if(o.tag==='Blow-off'&&o.stip===undefined){const p=G.P(o.pid),fav=favourite(p);o.stip=hash(o.id+'|stip')<.7&&!(['nodq','anywhere'].includes(fav)&&isDQ(o.finish))?fav:null;}}catch(e){}
+  try{for(const o of G.S?.offers||[])if(o.tag==='Blow-off'&&o.stip===undefined){const p=G.P(o.pid),fav=favourite(p);o.stip=hash(o.id+'|stip')<.7&&!(['nodq','anywhere'].includes(fav)&&isDQ(o.finish))?fav:null;}}catch(e){G.reportError('stipulations/weekly',e)}
   return r;
  };
  // Signing carries the stipulation onto the contract. Two out of three falls runs five minutes longer.
@@ -150,7 +150,7 @@
    if(M?.stipSpots&&!M.queue.length&&!M.decision&&M.stage==='live'){
     const frac=M.t/Math.max(1,M.len),s=M.stipSpots.find(x=>!x.done&&frac>=x.at);if(s)fireSpot(M,s);
    }
-  }catch(e){}
+  }catch(e){G.reportError('stipulations/in-match',e)}
   return originalNext.call(this,M);
  };
 
@@ -247,7 +247,7 @@
     const fd=G.feud(c.wid,c.rid);if(fd&&!fd.closed&&fin?.outcome!=='nc'){fd.heat=clamp(fd.heat+5);out.push({text:`The ${S0.name.toLowerCase()} match turned the feud up: heat ${fd.heat}.`,tone:1});}
     G.save();
    }
-  }catch(e){}
+  }catch(e){G.reportError('stipulations/match-result',e)}
   return out;
  };
 

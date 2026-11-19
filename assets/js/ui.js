@@ -159,6 +159,25 @@ function bar(v,kind=''){return `<span class="bar ${kind}" role="img" aria-label=
 function fatKind(f){return f>=60?'danger':f>=40?'warn':'cool'}
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3600)}
 function finishTag(k){const f=D.FINISHES[k];return `<span class="tag ${f.win?'tw':'tl'}">${esc(f.name)}</span>`}
+function recordedFinishTag(h){
+ const planned=D.FINISHES[h.bookedFinish||h.finish]?.name||'not recorded';
+ if(h.outcome==='dq')return `<span class="tag hot" title="Booked: ${esc(planned)}">Unplanned DQ</span>`;
+ if(h.outcome==='nc')return '<span class="tag">No contest</span>';
+ if(h.outcome==='double')return '<span class="tag hot">Finish broken</span>';
+ return D.FINISHES[h.finish]?finishTag(h.finish):'<span class="dim">Not recorded</span>';
+}
+function boutStakes(c){
+ const belt=c.title&&D.belt?.(c.title.pid,c.title.div),stip=c.stip&&window.OfficeStips?.STIPS[c.stip];
+ return [belt?`<span class="tag hot">Title bout: ${esc(belt.name)}</span>`:'',
+  stip?`<span class="tag">${esc(stip.name)}</span>`:'',
+  c.programme?`<span class="tag">Programme chapter ${Number(c.programme.step)+1}</span>`:''].filter(Boolean).join(' ');
+}
+function historyDetails(h){
+ const booked=D.FINISHES[h.bookedFinish||h.finish]?.name||'not recorded';
+ const official=h.outcome==='dq'?'Disqualification — agreed finish not delivered':
+  h.outcome==='nc'?'No contest':h.outcome==='double'?'Agreed finish broken':'As booked';
+ return `<p><b>Booked finish:</b> ${esc(booked)} · <b>Official result:</b> ${esc(official)}</p>${boutStakes(h)?'<p>'+boutStakes(h)+'</p>':''}`;
+}
 function starsText(s){return Mx.starText(s)}
 function weekLabel(a){return `S${Math.floor((a-1)/16)+1} W${(a-1)%16+1}`}
 function weekLong(a){return `Season ${Math.floor((a-1)/16)+1}, week ${(a-1)%16+1}`}
@@ -220,7 +239,7 @@ function renderChrome(){
  const s=S(),need=G.pending().length,cards=s.card.length,unread=s.inbox.filter(m=>!m.read).length;
  $('#readouts').innerHTML=`<div class="ro"><small>Season ${s.season}</small><b>Week ${s.week} of 16</b></div><div class="ro"><small>Bank</small><b class="${s.cash<0?'neg':''}">${money(s.cash)}</b></div><div class="ro"><small>Reputation</small><b>${s.rep}</b></div><div class="ro"><small>Meetings left</small><b>${s.focus} of 2</b></div>`;
  $('#continue').innerHTML=need?`Continue<small>${need} ${plural(need,'reply','replies')} needed first</small>`:cards?`Match night<small>${cards} on the card</small>`:`Continue<small>To week ${s.week===16?1:s.week+1}</small>`;
- const badge={inbox:need?`<span class="badge">${need}</span>`:unread?`<span class="badge soft">${unread}</span>`:'',squad:`<span class="badge soft">${s.roster.length}/5</span>`,offers:s.offers.length?`<span class="badge soft">${s.offers.length}</span>`:'',fixtures:cards?`<span class="badge soft">${cards}</span>`:''};
+ const badge={inbox:need?`<span class="badge">${need}</span>`:unread?`<span class="badge soft">${unread}</span>`:'',squad:`<span class="badge soft">${s.roster.length}/5</span>`,offers:s.offers.length?`<span class="badge soft">${s.offers.length}</span>`:'',fixtures:cards?`<span class="badge soft">${cards}</span>`:'',game:s.systemErrors?.length?`<span class="badge">${s.systemErrors.length}</span>`:''};
  const cur=SECTION_OF[route.s]||route.s;
  const group=NAV.find(([,items])=>items.some(([id])=>id===cur))||NAV[0];
  $('#phoneTabs').innerHTML=NAV.map(([label,[[id]]])=>`<button class="phone-tab" data-go="${id}" ${group[0]===label?'aria-current="true"':''}>${label}${id==='desk'&&need?`<span class="phone-badge" aria-label="${need} awaiting reply">${need}</span>`:''}</button>`).join('');
@@ -256,6 +275,7 @@ function trialBlock(){
 }
 function trayItems(){
  const s=S(),out=[],need=G.pending();
+ const errors=G.systemErrors();if(errors.length)out.push({k:'urgent',ic:'!',t:errors.length+' system alert'+(errors.length===1?'':'s'),d:'A simulation extension reported an error. Export your career and review details in Save and load.',go:'game',b:'Review'});
  if(need.length)out.push({k:'urgent',ic:'!',t:`${need.length} ${plural(need.length,'message needs','messages need')} a reply`,d:'You can’t continue until you answer.',go:'inbox',b:'Read'});
  else{const u=s.inbox.filter(m=>!m.read).length;if(u)out.push({k:'',ic:'▸',t:`${u} unread ${plural(u,'message')}`,d:'Reports, results and news from the circuit.',go:'inbox',b:'Read'})}
  if(!s.roster.length)out.push({k:'urgent',ic:'!',t:'Nobody under contract',d:'Sign a headliner, or two cheaper wrestlers.',go:'scouting',b:'Free agents'});
@@ -301,7 +321,7 @@ function renderInbox(){
   letter=`<article class="letter">${mgr?`<div class="letter-face">${face('manager',mgr.id,mgr.manager,'portrait')}</div>`:''}<div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
   if(Array.isArray(m.sections)&&m.sections.length){
    letter+='<div class="report-sections">'+m.sections.map(section=>'<section><h3 class="section-h">'+esc(section.title)+'</h3><ul class="cons">'+(section.lines||[]).map(line=>'<li>'+esc(line)+'</li>').join('')+'</ul></section>').join('')+'</div>';
-   letter+='<div class="report-links"><button class="btn" data-go="territory">Territory and rankings</button><button class="btn" data-go="squad">Your roster</button><button class="btn" data-go="offers">Next bookings</button></div>';
+   letter+='<div class="report-links"><button class="btn" data-go="pyramid">Territory and rankings</button><button class="btn" data-go="squad">Your roster</button><button class="btn" data-go="offers">Next bookings</button></div>';
   }
   if(m.kind==='decision'){
    if(m.answer)letter+=`<div class="outcome"><b>You chose: ${esc(m.options.find(o=>o.id===m.answer)?.label)}</b><br>${esc(m.outcome)}</div>`;
@@ -585,12 +605,12 @@ function renderOffers(){
 
 function renderFixtures(){
  const s=S();
- const card=s.card.length?`<div class="well"><table class="grid"><thead><tr><th>Match</th><th>Promoter</th><th>Slot</th><th>Finish</th><th class="n">Purse</th><th></th></tr></thead><tbody>${s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>{const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);return `<tr><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)} v ${esc(f.name)}</b><small>${c.minutes} minutes${c.tag?`, ${esc(c.tag)}`:''}</small></span></span></td><td>${esc(p.name)}</td><td>${esc(D.SLOTS[c.slot].name)}</td><td>${finishTag(c.finish)}</td><td class="n"><b>${money(c.purse)}</b></td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw from programme':'Pull out'}</button></td></tr>`}).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. Continue takes you to ringside.</p>`
+ const card=s.card.length?`<div class="well"><table class="grid"><thead><tr><th>Match</th><th>Promoter</th><th>Slot</th><th>Finish</th><th class="n">Purse</th><th></th></tr></thead><tbody>${s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>{const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);return `<tr><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)} v ${esc(f.name)}</b><small>${c.minutes} minutes${c.tag?`, ${esc(c.tag)}`:''}</small>${boutStakes(c)}</span></span></td><td>${esc(p.name)}</td><td>${esc(D.SLOTS[c.slot].name)}</td><td>${finishTag(c.finish)}</td><td class="n"><b>${money(c.purse)}</b></td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw from programme':'Pull out'}</button></td></tr>`}).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. Continue takes you to ringside.</p>`
   :`<div class="empty">Nothing booked this week.<br><button class="btn sm" data-go="offers">See offers</button></div>`;
  const fut=s.futureBookings.slice().sort((a,b)=>a.eventAbs-b.eventAbs);
- const future=fut.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th><th></th></tr></thead><tbody>${fut.map(c=>`<tr><td>${weekLabel(c.eventAbs)}</td><td>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}<br><span class="dim">${esc(D.SLOTS[c.slot].name)}</span></td><td>${esc(G.P(c.pid)?.name||'')}</td><td class="n">${money(c.purse)}</td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Cancel'}</button></td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Purses are paid after the match. Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. A booked wrestler can’t attend camp that week.</p>`
+ const future=fut.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th><th></th></tr></thead><tbody>${fut.map(c=>`<tr><td>${weekLabel(c.eventAbs)}</td><td>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}<br><span class="dim">${esc(D.SLOTS[c.slot].name)} · ${esc(D.FINISHES[c.finish]?.name||'Finish not recorded')}</span>${boutStakes(c)}</td><td>${esc(G.P(c.pid)?.name||'')}</td><td class="n">${money(c.purse)}</td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Cancel'}</button></td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Purses are paid after the match. Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. A booked wrestler can’t attend camp that week.</p>`
   :'<div class="empty">No future dates signed.</div>';
- const cards=contracts=>contracts.map(c=>`<article class="phone-card"><div class="phone-card-line"><b>${esc(G.P(c.pid)?.name||'')}</b><small>${c.eventAbs===G.abs()?'This week':weekLabel(c.eventAbs)}</small></div><div>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}</div><small>${esc(D.SLOTS[c.slot].name)} · ${esc(D.FINISHES[c.finish].name)}</small><div class="phone-card-line"><b>${money(c.purse)}</b><button class="btn sm" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Pull booking'}</button></div></article>`).join('');
+ const cards=contracts=>contracts.map(c=>`<article class="phone-card"><div class="phone-card-line"><b>${esc(G.P(c.pid)?.name||'')}</b><small>${c.eventAbs===G.abs()?'This week':weekLabel(c.eventAbs)}</small></div><div>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}</div><small>${esc(D.SLOTS[c.slot].name)} · ${esc(D.FINISHES[c.finish].name)}</small>${boutStakes(c)}<div class="phone-card-line"><b>${money(c.purse)}</b><button class="btn sm" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Pull booking'}</button></div></article>`).join('');
  paint('s-split even',win('This week’s card',phoneList(card,cards(s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank))),{keep:'card',note:`Week ${s.week}`})+win('Future dates',phoneList(future,cards(fut)),{h:'h3',keep:'future'}));
 }
 
@@ -646,7 +666,7 @@ function yourProgrammes(p){
  const v=window.OfficeProgrammes?.view(p.id);if(!v||!(v.live.length||v.done.length))return '';
  const line=x=>{const next=x.beats.find(b=>!b.done&&!b.missed),a=window.OfficeProgrammeArcs?.record(x.id)?.arc,last=a?.timeline?.at(-1);
   const chapters=a?.timeline?.length?`<details class="arc-history"><summary>Read ${a.timeline.length} chapter${a.timeline.length===1?'':'s'}</summary><ol>${a.timeline.slice().sort((u,v)=>u.step-v.step).map(e=>`<li><b>${esc(e.chapter||'Chapter '+(e.step+1))}</b> · ${esc(e.recap)}${e.claim==='broken'?'<small class="bad">Claim not delivered</small>':e.claim==='kept'?'<small class="good">Claim backed up</small>':''}</li>`).join('')}</ol></details>`:'';
-  return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}${a?`<small class="arc-recap">${esc(a.conclusion||window.OfficeProgrammeArcs.band(a.momentum))}${last?' · '+esc(last.recap):''}</small>`:''}${chapters}</li>`;};
+  return `<li class="${x.status==='kept'?'up':x.status==='live'?'':'down'}"><b>${esc(x.wName)}</b> <span class="tag">${esc(x.status||"live")}</span> · ${esc(x.typeName)} v ${esc(x.rName)} · ${x.status==='live'?(next?`next ${weekLabel(next.at)}, ${x.beats.filter(b=>b.done).length} of ${x.beats.length} played`:'finishing'):esc(x.text||x.status)}${a?`<small class="arc-recap">Momentum ${Math.round(a.momentum)} · ${esc(a.conclusion||window.OfficeProgrammeArcs.band(a.momentum))}${last?' · '+esc(last.recap):''}</small>`:''}${chapters}</li>`;};
  return `<h3 class="section-h">Your programmes here</h3><ul class="cons">${[...v.live,...v.done.slice(0,3)].map(line).join('')}</ul>`;
 }
 function renderSheets(){
@@ -668,30 +688,55 @@ function renderSheets(){
  const lobby=pushing.length?`<ul class="cons">${pushing.map(l=>`<li><b>${esc(l.manager)}</b> (${esc(l.team)}) is pushing <b>${esc(l.name)}</b>${l.want?` · wants ${esc(l.want.toLowerCase())}`:''}</li>`).join('')}</ul>`:'<p class="dim">No manager is working this booker this week.</p>';
  paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">On the board</h3>${live}${yourProgrammes(p)}<h3 class="section-h">Managers in the booker’s ear</h3>${lobby}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">Bookers plan the circuit’s matches around these storylines and choose who wins to serve them. They do not always stick to the plan.</p>`,{keep:'sheets',note:esc(p.name)}));
 }
+
+function rivalrySnapshot(f){
+ const p=window.OfficeRivalry?.profile?.(f.wid,f.rid);
+ if(!p||!p.meetings)return {record:'No recorded matches',last:'No previous match',relations:'',issues:[]};
+ const r=p.record||{},draw=Math.max(0,(r.meetings||0)-(r.w||0)-(r.f||0));
+ const record=`${r.w||0} W · ${r.f||0} L${draw?' · '+draw+' no decision':''}`;
+ const m=p.last;
+ let last='No previous match';
+ if(m){
+  const result=m.outcome==='nc'?'No contest':m.outcome==='dq'?(m.winner==='w'?'Opponent disqualified':'Your wrestler disqualified'):
+   m.outcome==='double'?'Agreed finish broken':m.winner==='w'?'Your wrestler won':m.winner==='f'?'Opponent won':'No decision';
+  last=result+(Number.isFinite(m.abs)&&m.abs>0?' · '+weekLabel(m.abs):'');
+ }
+ const relations=p.stance?'Your wrestler: '+p.stance.w+'; opponent: '+p.stance.f:'';
+ const issues=(p.open||[]).filter(x=>x.text).slice(0,2).map(x=>x.text);
+ return {record,last,relations,issues};
+}
+function rivalryContext(v){
+ const lines=[v.relations,...v.issues].filter(Boolean);
+ return lines.length?`<details class="feud-detail"><summary>Backstage context</summary><ul class="cons">${lines.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></details>`:'';
+}
 function renderRivalries(){
  const s=S(),feuds=Object.values(s.feuds).filter(f=>f.heat>0||f.closed).sort((a,b)=>b.heat-a.heat);
  const info=feuds.map(f=>{
   const w=G.W(f.wid)||D.TALENT.find(x=>x.id===f.wid);
   const ready=f.heat>=70&&f.matches>=2&&!f.closed;
-  return {...f,matchup:(w?.name||'Former wrestler')+' v '+(G.F(f.rid)?.name||f.rid),ready,
+  return {...f,evidence:rivalrySnapshot(f),matchup:(w?.name||'Former wrestler')+' v '+(G.F(f.rid)?.name||f.rid),ready,
    state:f.closed?'Finished':ready?'Ready for the blow-off':'Building',angle:f.angle||'The score will be settled in the ring.'};
  });
- const rows=info.map(f=>`<tr><td><b>${esc(f.matchup)}</b></td><td>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</td><td class="n">${f.matches}</td><td class="n">${f.segments||0}</td><td><span class="${f.ready?'good':''}">${esc(f.state)}</span></td><td class="wrap">${esc(f.angle)}</td></tr>`).join('');
- const cards=info.map(f=>`<article class="phone-card"><b>${esc(f.matchup)}</b><span class="phone-card-line"><span>Heat ${f.heat}</span><small>${esc(f.state)}</small></span><small>${f.matches} matches · ${f.segments||0} promos</small><span>${esc(f.angle)}</span></article>`).join('');
+ const rows=info.map(f=>`<tr><td><b>${esc(f.matchup)}</b></td><td>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</td><td class="wrap"><b>${esc(f.evidence.record)}</b><small class="feud-last">${esc(f.evidence.last)}</small></td><td class="n">${f.segments||0}</td><td><span class="${f.ready?'good':''}">${esc(f.state)}</span></td><td class="wrap">${esc(f.angle)}${rivalryContext(f.evidence)}</td></tr>`).join('');
+ const cards=info.map(f=>`<article class="phone-card"><b>${esc(f.matchup)}</b><span class="phone-card-line"><span>Heat ${f.heat}</span><small>${esc(f.state)}</small></span><small>${esc(f.evidence.record)} · ${f.segments||0} promos</small><small class="feud-last">${esc(f.evidence.last)}</small><span>${esc(f.angle)}</span>${rivalryContext(f.evidence)}</article>`).join('');
  const intro='Every wrestler gets microphone time before their match. Your promo approach affects the crowd, their personal rivalry and potential rematch interest. Heat cools between appearances; build it towards the blow-off.';
- const table=info.length?`<div class="well"><table class="grid"><thead><tr><th>Rivalry</th><th>Heat</th><th class="n">Matches</th><th class="n">Promos</th><th>Status</th><th>Latest angle</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">No rivalries yet. Book a match to begin a storyline, then choose a microphone approach before the bell.</div>';
+ const table=info.length?`<div class="well"><table class="grid"><thead><tr><th>Rivalry</th><th>Heat</th><th>Head to head</th><th class="n">Promos</th><th>Status</th><th>Latest angle</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">No rivalries yet. Book a match to begin a storyline, then choose a microphone approach before the bell.</div>';
  paint('s-full',win('Rivalries',`<p class="lede">${esc(intro)}</p>${phoneList(table,cards)}`,{keep:'feuds'}));
 }
 function renderResults(){
  const s=S();
- const cards=s.history.map((x,i)=>`<button class="phone-card" data-replay="${i}"><span class="phone-card-line"><small>S${x.season} W${x.week} · ${esc(x.promoter)}</small><b>${starsText(x.stars)||'DUD'}</b></span><span>${esc(x.name)} v ${esc(x.foe)}</span><small>Crowd ${x.crowd} · Purse ${money(x.purse)}</small></button>`).join('');
- const table=s.history.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th>Finish</th><th class="n">Rating</th><th class="n">Crowd</th><th class="n">Paid</th></tr></thead><tbody>${s.history.map((x,i)=>`<tr class="pick" data-replay="${i}"><td>S${x.season} W${x.week}</td><td><b>${esc(x.name)} v ${esc(x.foe)}</b></td><td>${esc(x.promoter)}</td><td>${x.outcome==='double'?'<span class="tag hot">Double-cross</span>':x.outcome==='nc'?'<span class="tag">No contest</span>':finishTag(x.finish)}</td><td class="n"><span class="stars">${starsText(x.stars)||'DUD'}</span></td><td class="n">${x.crowd}</td><td class="n">${money(x.purse)}</td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Select a match to read the commentary.</p>`:'<div class="empty">No matches yet.</div>';
+ const cards=s.history.map((x,i)=>`<button class="phone-card" data-replay="${i}"><span class="phone-card-line"><small>S${x.season} W${x.week} · ${esc(x.promoter)}</small><b>${starsText(x.stars)||'DUD'}</b></span><span>${esc(x.name)} v ${esc(x.foe)}</span><small>${x.outcome==='dq'?'Unplanned disqualification · ':x.outcome==='nc'?'No contest · ':x.outcome==='double'?'Finish broken · ':''}Crowd ${x.crowd} · Purse ${money(x.purse)}</small></button>`).join('');
+ const table=s.history.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th>Finish</th><th class="n">Rating</th><th class="n">Crowd</th><th class="n">Paid</th></tr></thead><tbody>${s.history.map((x,i)=>`<tr class="pick" data-replay="${i}"><td><button class="btn link" data-replay="${i}" aria-label="Read ${esc(x.name)} versus ${esc(x.foe)}, season ${x.season} week ${x.week}">S${x.season} W${x.week}</button></td><td><b>${esc(x.name)} v ${esc(x.foe)}</b>${boutStakes(x)}</td><td>${esc(x.promoter)}</td><td>${recordedFinishTag(x)}</td><td class="n"><span class="stars">${starsText(x.stars)||'DUD'}</span></td><td class="n">${x.crowd}</td><td class="n">${money(x.purse)}</td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Select a match to read the commentary.</p>`:'<div class="empty">No matches yet.</div>';
  paint('s-full',win('Results',`<h3 class="section-h">Season ${s.season} so far</h3>${seasonChart()}${phoneList(table,cards)}`,{keep:'res',note:`${s.history.length} ${plural(s.history.length,'match','matches')}`}));
 }
 function renderGame(){
  const saved=G.saveStatus(),status=saved.ok===false?'Save FAILED — recent changes are not stored. Export your career immediately.':saved.ok===true?'Last saved successfully in this session at '+new Date(saved.lastSaved).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'.':'No save confirmation this session.';
+ const diagnostics=G.systemErrors().slice().reverse();
+ const diagnostic=diagnostics.length?`<section class="system-alert" role="status"><h3 class="section-h">System alerts (${diagnostics.length})</h3>
+  <p>A simulation extension reported a problem. Export your career before continuing and include these details in a bug report.</p>
+  <ul class="cons">${diagnostics.map(e=>`<li><b>${esc(e.source)}</b> · S${e.season} W${e.week}${e.count>1?' (repeated '+e.count+' times)':''}<small class="feud-last">${esc(e.message)}</small></li>`).join('')}</ul></section>`:'';
  paint('s-split even',
-  win('Save and load',`<p class="lede">Your career saves automatically in this browser after every action. Export a save file to move it to another device or browser.</p><p class="${saved.ok===false?'bad':'dim'}" role="status">${esc(status)}</p><div class="row"><button class="btn" data-act="export">Export save</button><button class="btn" data-act="import">Import save</button></div><h3 class="section-h" style="margin-top:20px">Start over</h3><p class="dim">Overwrites the current career.</p><button class="btn red" data-act="newgame">Start a new career</button>`)+
+  win('Save and load',`<p class="lede">Your career saves automatically in this browser after every action. Export a save file to move it to another device or browser.</p><p class="${saved.ok===false?'bad':'dim'}" role="status">${esc(status)}</p><div class="row"><button class="btn" data-act="export">Export save</button><button class="btn" data-act="import">Import save</button></div>${diagnostic}<h3 class="section-h" style="margin-top:20px">Start over</h3><p class="dim">Overwrites the current career.</p><button class="btn red" data-act="newgame">Start a new career</button>`)+
   win('How a week works',`<ol style="margin:0;padding-left:1.3em;display:grid;gap:8px"><li>Read the inbox. Some messages need a decision before you can continue.</li><li>Set training for each wrestler. Rest anyone who is tired.</li><li>Book wrestlers onto offers. Promoters set the finish; negotiate the fee, billing or a protected loss using a management meeting.</li><li>Press Continue. Choose the match plan and your wrestler’s promo approach, hear both wrestlers speak, then work the match with up to three calls from ringside.</li><li>Wages and costs are paid, and the next week’s offers arrive.</li></ol><p class="dim" style="margin-top:12px">At ringside, Space pauses and keys 1 to 6 make calls.</p>`,{h:'h3'})
  );
 }
@@ -1159,7 +1204,7 @@ document.addEventListener('click',e=>{
  if(d.talkopen){const o=S().offers.find(x=>x.id===d.talkopen);renderMeeting(d.talkopen,o?.talk?.wid||pick[d.talkopen]);return}
  if(d.talkaction){const res=G.talkMove(d.oid,d.wid,d.talkaction);if(res.error)return toast(res.error);renderMeeting(d.oid,d.wid);return}
  if(d.talkbook){const o=S().offers.find(o=>o.id===d.talkbook);const when=o?.eventAbs;if(d.revert){const res=G.talkMove(d.talkbook,d.wid,'revert');if(res.error)return toast(res.error)}const err=G.book(d.talkbook,d.wid);if(err)return toast(err);$('#modal').close();refreshList('offers');toast(when>G.abs()?`Future booking confirmed for ${weekLabel(when)}.`:`Contract signed for ${money(G.purse(o,G.W(d.wid)))}.`);return}
- if(d.replay){const x=S().history[+d.replay];dialog(`${x.name} v ${x.foe}`,`${x.promo?`<p><b>Microphone time — ${esc(x.promo.style)}</b></p>${x.promo.dialogue?.length?x.promo.dialogue.map(z=>`<p><b>${esc(z.speaker)}:</b> ${esc(z.line)}</p>`).join(''):`<p>${x.promo.speech.map(z=>'“'+esc(z)+'”').join(' ')}</p><p><b>${esc(x.promo.opponent)}:</b> “${esc(x.promo.reply)}”</p>`}${x.promo.promise?.kept===true?'<p><b>Promise kept in the match.</b></p>':x.promo.promise?.kept===false?'<p><b>Promise broken in the match.</b></p>':''}`:''}<p class="dim">${esc(x.promoter)}, season ${x.season} week ${x.week}. <span class="stars">${starsText(x.stars)||'DUD'}</span></p>${x.notes.map(n=>`<p>${esc(n)}</p>`).join('')}<div class="well">${logList(x.log)}</div>`);return}
+ if(d.replay){const x=S().history[+d.replay];dialog(`${x.name} v ${x.foe}`,`${x.promo?`<p><b>Microphone time — ${esc(x.promo.style)}</b></p>${x.promo.dialogue?.length?x.promo.dialogue.map(z=>`<p><b>${esc(z.speaker)}:</b> ${esc(z.line)}</p>`).join(''):`<p>${x.promo.speech.map(z=>'“'+esc(z)+'”').join(' ')}</p><p><b>${esc(x.promo.opponent)}:</b> “${esc(x.promo.reply)}”</p>`}${x.promo.promise?.kept===true?'<p><b>Promise kept in the match.</b></p>':x.promo.promise?.kept===false?'<p><b>Promise broken in the match.</b></p>':''}`:''}<p class="dim">${esc(x.promoter)}, season ${x.season} week ${x.week}. <span class="stars">${starsText(x.stars)||'DUD'}</span></p>${historyDetails(x)}${(x.notes||[]).map(n=>`<p>${esc(n)}</p>`).join('')}<div class="well">${logList(x.log||[])}</div>`);return}
  if(d.act==='export'){const blob=new Blob([JSON.stringify(S())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`the-office-s${S().season}w${S().week}.json`;a.click();return}
  if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(![20,21,22].includes(x.v))throw 0;G.S=x;if(!G.S)throw 0;G.save();startApp('desk');toast('Save loaded.')}catch(err){toast('That file isn’t a valid save from v2 to v2.3.')}})};i.click();return}
  if(d.act==='newgame'){dialog('Start a new career?','<p>Your current career will be overwritten.</p>',[['Cancel','close'],['Start again','newgame','red']]);return}

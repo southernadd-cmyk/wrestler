@@ -133,7 +133,7 @@
     a.log=a.log.slice(0,MAX_LOG);
     const keys=Object.keys(a.done);if(keys.length>60)for(const k of keys.slice(0,keys.length-60))delete a.done[k];
    }
-  }catch(e){}
+  }catch(e){G.reportError('ambitions/match',e)}
   return out;
  };
  // Everything one wrestler did in the week just played: your stable's shows and the circuit's.
@@ -327,14 +327,14 @@
  const originalSign=G.sign;
  G.sign=function(id){
   const out=originalSign(id);
-  try{if(out==null){const e=entry(id);if(e){e.sat=Math.max(e.sat,55);e.wageAt=G.W(id)?.wage||e.wageAt;e.told=false;e.promise=null;introduce();G.save();}}}catch(err){}
+  try{if(out==null){const e=entry(id);if(e){e.sat=Math.max(e.sat,55);e.wageAt=G.W(id)?.wage||e.wageAt;e.told=false;e.promise=null;introduce();G.save();}}}catch(err){G.reportError('ambitions/signing',err)}
   return out;
  };
  const originalEnd=G.endWeek;
  G.endWeek=function(...args){
   const wk=G.S?now():null;
   const out=originalEnd(...args);
-  try{if(wk!==null){weekly(wk);G.save();}}catch(e){}
+  try{if(wk!==null){weekly(wk);G.save();}}catch(e){G.reportError('ambitions/weekly',e)}
   return out;
  };
 

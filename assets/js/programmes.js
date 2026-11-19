@@ -194,7 +194,7 @@
      }
     }
    }
-  }catch(e){}
+  }catch(e){G.reportError('programmes/match',e)}
   return out;
  };
 
@@ -268,7 +268,7 @@
  const originalEnd=G.endWeek;
  G.endWeek=function(...args){
   const out=originalEnd(...args);
-  try{weekly();G.save();}catch(e){}
+  try{weekly();G.save();}catch(e){G.reportError('programmes/weekly',e)}
   return out;
  };
 
