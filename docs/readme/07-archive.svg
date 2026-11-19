@@ -3,7 +3,7 @@
 <defs><pattern id="halftone" width="11" height="11" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.5" fill="#101c2b" opacity=".24"/></pattern></defs>
 <rect width="1200" height="140" fill="#efe1c3"/><rect x="5" y="5" width="1190" height="130" fill="none" stroke="#152239" stroke-width="6"/>
 <rect x="17" y="17" width="118" height="106" fill="#c52c26"/><rect x="19" y="19" width="114" height="102" fill="none" stroke="#efe1c3" stroke-width="2"/>
-<text x="76" y="94" text-anchor="middle" fill="#fff6dc" font-family="Impact,Arial,sans-serif" font-weight="900" font-size="74">07</text>
+<g aria-hidden="true" stroke="#fff6dc" stroke-width="5" stroke-linejoin="round" fill="none"><path d="M41 50 H111 V106 H41 Z"/><path d="M49 39 H103 V50 M58 31 H94 V39"/><path d="M57 68 H95 M57 81 H95 M57 94 H85"/></g>
 <rect x="145" y="15" width="1040" height="23" fill="#152239"/>
 <text x="162" y="32" fill="#efe1c3" font-size="14" font-family="Georgia,serif" font-weight="700" letter-spacing="3">BACK ISSUES / THE PAPER TRAIL</text>
 <text x="161" y="100" fill="#152239" font-size="63" font-weight="900" letter-spacing=".4" font-family="Impact,'Arial Narrow',Arial,sans-serif">FROM THE ARCHIVE</text>
