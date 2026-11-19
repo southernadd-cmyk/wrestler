@@ -135,13 +135,14 @@
     }
 
     // Tape activity is the observed event density, not an illustrated or predicted graph.
-    const bins = Array.from({ length: 24 }, () => ({ events: 0, counters: 0, first: null }));
+    const bins = Array.from({ length: 24 }, () => ({ events: 0, counters: 0, blocks: 0, first: null }));
     const duration = Math.max(1, match.len || trace.at(-1).seconds);
     trace.forEach((item, i) => {
       const index = Math.min(bins.length - 1, Math.floor(item.seconds / duration * bins.length));
       const bin = bins[index];
       bin.events++;
-      if (item.kind === 'Counter' || item.kind === 'Block') bin.counters++;
+      if (item.kind === 'Counter') bin.counters++;
+      if (item.kind === 'Block') bin.blocks++;
       if (bin.first === null) bin.first = i;
     });
     const max = Math.max(1, ...bins.map(b => b.events));
@@ -155,9 +156,10 @@
       bar.disabled = bin.events === 0;
       bar.style.setProperty('--height', (bin.events / max * 100).toFixed(1) + '%');
       bar.style.setProperty('--counter-height', (bin.counters / max * 100).toFixed(1) + '%');
-      bar.setAttribute('aria-label', start + '–' + end + ' seconds: ' + bin.events + ' events, ' + bin.counters + ' counters or blocks');
+      bar.style.setProperty('--block-height', (bin.blocks / max * 100).toFixed(1) + '%');
+      bar.setAttribute('aria-label', start + '–' + end + ' seconds: ' + bin.events + ' events, ' + bin.counters + ' counters, ' + bin.blocks + ' blocks');
       bar.title = bar.getAttribute('aria-label') + ' (select to locate first event)';
-      bar.append(make('span', null, 'activity'), make('span', null, 'counter-activity'));
+      bar.append(make('span', null, 'activity'), make('span', null, 'counter-activity'), make('span', null, 'block-activity'));
       bar.addEventListener('click', () => {
         if (bin.first === null) return;
         $('traceFilter').value = 'all';

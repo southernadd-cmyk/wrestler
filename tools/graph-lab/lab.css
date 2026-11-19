@@ -7,6 +7,7 @@
   --stock:#edeae1;--sheet:#faf8f2;--paper:#f5f3ed;
   --type:#1d2b33;--muted:#4b5b63;--rule:#c7c7bf;--fine:#dfdcd2;
   --signal:#c64d36;--signal-dark:#a33d2b;--lime:#e7be67;
+  --counter:#63c5b0;--block:#edba69;
   --light:#faf7ed;--faint:#aebbc1;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --condensed:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
@@ -143,7 +144,8 @@ progress{display:block;width:100%;height:5px;margin:14px 0 9px;accent-color:var(
 .tape-viz>p{font:500 13px var(--mono);color:var(--faint);align-self:center}
 .timebar{flex:1;min-width:0;height:140px;display:flex;align-items:flex-end;position:relative;padding:0;border:0;background:transparent}
 .timebar .activity{display:block;width:100%;height:var(--height,3%);background:#b3c4c5;min-height:2px;transition:background .15s ease}
-.timebar .counter-activity{position:absolute;bottom:0;left:0;right:0;height:var(--counter-height,0);background:var(--signal);pointer-events:none}
+.timebar .counter-activity{position:absolute;bottom:0;left:0;right:0;height:var(--counter-height,0);background:var(--counter);pointer-events:none}
+.timebar .block-activity{position:absolute;bottom:var(--counter-height,0);left:0;right:0;height:var(--block-height,0);background:var(--block);pointer-events:none}
 .timebar:hover .activity,.timebar:focus-visible .activity{background:var(--lime)}
 .tape-axis{display:flex;justify-content:space-between;margin-top:10px;font:500 10px var(--mono);letter-spacing:.05em;color:var(--faint)}
 .trace-head{display:flex;justify-content:space-between;align-items:end;gap:18px;padding:28px 0 15px}
@@ -157,8 +159,9 @@ progress{display:block;width:100%;height:5px;margin:14px 0 9px;accent-color:var(
 .traceRow:nth-child(even){background:#f1efe8}
 .traceRow .time{font:600 12px var(--mono);color:var(--signal-dark)}
 .traceRow .technical{font:500 10px/1.35 var(--mono);color:var(--muted);overflow-wrap:anywhere}
-.traceRow .kind{font:600 10px var(--mono);color:#23674a;text-align:right}
-.traceRow .kind.block{color:var(--signal-dark)}
+.traceRow .kind{font:600 10px var(--mono);color:var(--type);text-align:right}
+.traceRow .kind.counter{color:#176c60}
+.traceRow .kind.block{color:#936019}
 .traceRow .kind.event{color:var(--muted)}
 .traceRow.located{outline:2px solid var(--signal);outline-offset:-2px;background:#fff1d2}
 .traceRow[hidden]{display:none}
@@ -343,3 +346,11 @@ progress{display:block;width:100%;height:5px;margin:14px 0 9px;accent-color:var(
   html{scroll-behavior:auto}
   *,*::before,*::after{transition:none!important;animation:none!important}
 }
+
+/* Tape events use distinct semantic colours, not the site's decorative rust accent. */
+.tape-legend{display:flex;flex-wrap:wrap;gap:10px 20px;margin-top:12px;color:var(--faint);font:500 10px/1.4 var(--mono)}
+.tape-legend span{display:inline-flex;align-items:center;gap:7px}
+.tape-legend i{display:inline-block;width:11px;height:11px;flex:none}
+.tape-legend-activity{background:#b3c4c5}
+.tape-legend-counter{background:var(--counter)}
+.tape-legend-block{background:var(--block)}
