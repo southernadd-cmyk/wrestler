@@ -339,7 +339,7 @@
  const originalEnd=G.endWeek;
  G.endWeek=function(...args){
   const r=originalEnd.apply(this,args);
-  try{if(!G.S?.over)deliverCalls();G.save();}catch(e){}
+  try{if(!G.S?.over)deliverCalls();G.save();}catch(e){G.reportError('after-bell/callout-delivery',e)}
   return r;
  };
  function deliverCalls(){

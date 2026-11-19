@@ -817,7 +817,7 @@
  G.applyResult=function(c,fin){
   const seen=!!(c&&G.S?.rivalries?.[keyOf(c.wid,c.rid)]?.done?.[c.id]);
   const out=applied(c,fin);
-  if(!seen&&c&&fin&&G.S){try{recordMatch(c,fin,out);}catch(e){if(root.OFFICE_STRICT)throw e;}G.save?.();}
+  if(!seen&&c&&fin&&G.S){try{recordMatch(c,fin,out);}catch(e){G.reportError('rivalry/match',e)}G.save?.();}
   return out;
  };
 

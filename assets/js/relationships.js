@@ -50,7 +50,7 @@
   // v0.3.12 Once per contract: a result applied again (a reload, a replay) must not move a bond twice.
   const seen=!!(c&&G.S?.history?.some(h=>h.cid===c.id));
   const out=originalApply(c,fin);
-  try{if(!seen&&c&&fin&&G.S)afterMatch(c,fin,out);}catch(e){}
+  try{if(!seen&&c&&fin&&G.S)afterMatch(c,fin,out);}catch(e){G.reportError('relationships/match',e)}
   return out;
  };
  function afterMatch(c,fin,out){
@@ -102,7 +102,7 @@
      say('Bad news. '+f.short+' knows what '+w.short+' had planned. Somebody talked. I asked around: it was '+short(leak.by)+'.');
      shift(w.id,leak.by,-20,'betrayal',short(leak.by)+' leaked '+short(w.id)+'’s plan to '+f.short+'.','leak:'+c.id);
      Mem?.remember(w.id,'betrayed',w.short+' remembers '+short(leak.by)+' leaking their plan to '+f.short+'.',null,-2,0,'leak:'+c.id);}
-   }catch(e){}
+   }catch(e){G.reportError('relationships/backstage',e)}
    return st;
   };
  }
@@ -113,7 +113,7 @@
  G.endWeek=function(...args){
   const s=G.S,wk=s?{season:s.season,week:s.week}:null,played=s?s.card.map(c=>({...c})):[];
   const out=originalEnd(...args);
-  try{if(s&&wk)weekly(wk,played);}catch(e){}
+  try{if(s&&wk)weekly(wk,played);}catch(e){G.reportError('relationships/weekly',e)}
   return out;
  };
  function weekly(wk,played){
@@ -255,7 +255,7 @@
  const end2=G.endWeek;
  G.endWeek=function(...args){
   const out=end2(...args);
-  try{const b=state();for(const k of b?.trainingPairs||[]){const [x,y]=k.split('|').map(id=>G.W(id));if(x&&y&&score(x.id,y.id)>=35)for(const w of [x,y])w.fatigue=G.clamp((w.fatigue||0)-3);}}catch(e){}
+  try{const b=state();for(const k of b?.trainingPairs||[]){const [x,y]=k.split('|').map(id=>G.W(id));if(x&&y&&score(x.id,y.id)>=35)for(const w of [x,y])w.fatigue=G.clamp((w.fatigue||0)-3);}}catch(e){G.reportError('relationships/training',e)}
   return out;
  };
 

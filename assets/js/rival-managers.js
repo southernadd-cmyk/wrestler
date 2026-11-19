@@ -280,7 +280,7 @@
   const originalEvolve=V4.evolve;
   V4.evolve=function(s,t,week,reports){
    const out=originalEvolve.call(this,s,t,week,reports);
-   try{turn(s,t,week,reports);}catch(e){}
+   try{turn(s,t,week,reports);}catch(e){G.reportError('rival-managers/evolve',e)}
    return out;
   };
  }
