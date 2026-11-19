@@ -96,7 +96,7 @@ These are **possible overlaps or related variants**, not proven defects or dupli
 | Existing moves | Question before creating another node |
 | --- | --- |
 | `sx_belly_back` / `sx_saito` | Are these separate variants of a shared back-suplex mechanism? Which grips differentiate them? |
-| `sx_belly_belly` / `pw_belly_belly` | Do different family names describe materially different mechanics or an alias/variant? Verify against the live move IDs before adopting as a canonical pair |
+| `sx_belly_belly` / `pw_belly_bump` | Do different family names describe materially different mechanics or an alias/variant? The latter follows a bearhug setup; preserve that distinction |
 | `sm_armbar` / `rs_armbar_rest` | Mechanically related but different *match functions*: submission attempt vs rest/control hold |
 | `sm_wristlock_ground` / `rs_wrist_mat` / `ch_rolling_wristlock` | Same limb-control family, but distinct starting position and finish possibilities |
 | `lc_hurricanrana` / `lc_rana_pin` | Shared entry, but the second adds a pinning outcome |
