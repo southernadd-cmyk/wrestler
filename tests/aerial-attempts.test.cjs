@@ -31,6 +31,11 @@ function resolve(id,roll){
  assert.ok(m.log.at(-1).text.toLowerCase().includes(A[id].name.toLowerCase()),
   'commentary must identify actual attempted move');
  assert.equal(G.isValid(m,id+'_rev'),true,'exact reversal available with its parent attempt');
+ const guardPending=JSON.stringify(m.graph.pendingAerial);
+ const guardEventCount=m.graph.events.length;
+ G.step(m);
+ assert.equal(JSON.stringify(m.graph.pendingAerial),guardPending,'another graph step cannot replace the committed attempt');
+ assert.equal(m.graph.events.length,guardEventCount,'no unrelated action happens while the named dive is pending');
  assert.equal(G.isValid(m,id==='ar_frog'?'ar_senton_rev':'ar_frog_rev'),false,
   'unrelated move-specific reversal forbidden while pending');
  const before=m.graph.events.length;
