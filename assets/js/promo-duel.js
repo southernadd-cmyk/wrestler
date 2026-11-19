@@ -105,6 +105,14 @@
   imagery:'{W} has been working on the big pictures with me. Some of them are very strange.',accusation:'{W} has been practising going after people. I’ve had worse weeks. Not many.',
   swagger:'{W} has been working on the swagger. Struts past my office twice a day now.'};
  const clampFit=x=>clamp(x,-2,2);
+ // A programme's creative direction changes how an argument lands, rather
+ // than only adding a score after the match. Small modifiers retain agency.
+ const ARC_FIT={
+  steady:{open:{people:1,proof:1,accusation:-1,swagger:-1},answer:{calm:1,turn:1,personal:-1},close:{clean:1,question:1,vow:-1}},
+  needle:{open:{accusation:1,numbers:1,proof:1,people:-1},answer:{challenge:1,turn:1,personal:1,callback:-1},close:{vow:1,question:1,none:-1}},
+  gamble:{open:{swagger:1,imagery:1,accusation:1,proof:-1},answer:{challenge:1,personal:1,calm:-1},close:{vow:2,finisher:1,none:-1}}
+ };
+ function arcFit(st,stage,id){return ARC_FIT[st.arc?.id]?.[stage]?.[id]||0;}
  function openFit(st,id){
   const r=st.read,v=r.voice;
   return clampFit(({
@@ -115,7 +123,7 @@
    swagger:(r.room==='who'?1:r.room==='cold'?-1:0)+(['grand','slippery','eager'].includes(v)?1:0)-(r.opp==='good'?1:0),
    hometown:(r.room==='hot'?1:r.room==='who'?1:-1)+(['gruff','slippery','grand'].includes(v)?1:-1)+(r.feud?1:0),
    numbers:(['precise','slippery'].includes(v)?2:-1)+(r.room==='hot'?1:0)-(r.opp==='good'?1:0)
-  }[id]||0)+(st.practice?.[id]||0));
+  }[id]||0)+(st.practice?.[id]||0)+arcFit(st,'open',id));
  }
  // The opponent's angle in reply, and the answer that beats each one.
  const ANGLE_CUE={personal:'{F} has gone straight for the personal stuff.',mock:'{F} is laughing at {W}, and some of the crowd are laughing along.',
@@ -146,7 +154,7 @@
   for(const [k,n] of Object.entries(w)){x-=n;if(x<0)return k;}
   return 'facts';
  }
- function answerFit(st,id){return clampFit((ANSWER_FIT[st.angle]?.[id]??0)+(id==='personal'&&st.read.feud?2:0));}
+ function answerFit(st,id){return clampFit((ANSWER_FIT[st.angle]?.[id]??0)+(id==='personal'&&st.read.feud?2:0)+arcFit(st,'answer',id));}
  function pushFit(st,id){
   const r=st.read,v=r.voice;
   return clampFit({bit:(r.room==='hot'?1:r.room==='cold'?-1:0)+(['eager','slippery','grand'].includes(v)?1:0),
@@ -186,6 +194,7 @@
    venue:p?.venue||'this hall',promoterVoice:p?.voice||'the promoter',promoterName:p?.name||'the promotion',finish:c.finish||null,
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
+  st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
   if(m)st.read.voice=voice(m); // the room knows the wrestler; the voice is the mouthpiece's
   // Rehearsal and voice fit belong to the person actually speaking, not the client.
@@ -229,6 +238,8 @@
   const extra=r?r.fx:shown?.evidence?{}:v?.fx;
   for(const k of ['crowd','heat','cred','trust'])if(extra?.[k])fx[k]=(fx[k]||0)+extra[k];
   const tags=[riskWord(riskOf(st,stage,id))];
+  if(arcFit(st,stage,id)>0)tags.push('Fits programme direction');
+  else if(arcFit(st,stage,id)<0)tags.push('Against chapter direction');
   if(shown?.evidence)tags.unshift('On the record');
   if(r){tags.push({conceded:'Concedes a point',defended:'Stands by it',reframed:'Changes the question',unresolved:'Escalates',withdrawn:'Drops it'}[r.res]||'Answers it');
    if(r.commit)tags.push(r.commit.node?'Leads to a promise':'A test the match can answer');if(r.expose)tags.push('Can be thrown back');}
@@ -264,7 +275,7 @@
   const stage=r==='open'?'open':r==='answer'?'answer':'close';
   return Core.choices(stage,st.core).map(o=>({id:o.id,label:o.label,hint:o.hint,tags:stakes(st,stage,o.id,o),evidence:o.evidence||null,caseResponse:!!o.caseResponse,followsCase:!!o.followsCase}));
  }
- function fitOf(st,stage,id){return stage==='open'?openFit(st,id):stage==='answer'?answerFit(st,id):0;}
+ function fitOf(st,stage,id){return stage==='open'?openFit(st,id):stage==='answer'?answerFit(st,id):arcFit(st,'close',id);}
  function coreRound(st,stage,id,key){
   const core=st.core,before=core.dialogue.length,m0={...core.metrics},fit=fitOf(st,stage,id);
   // Composure feeds the core's chance of landing a line; a line that suits the night is easier to land.
@@ -343,6 +354,7 @@
    m>-25?'{F} got the better of that.':'{F} took the room off {W} and kept it.',st);
   return {...base,live:true,mouth:st.speaker?{id:st.speaker.id,short:st.speaker.short,name:st.speaker.name}:null,duel:{meter:m,won:m>0,pushed:!!pushed,read:{...st.read},angle:st.angle,fits:(st.fits||[]).slice()},
    quality:clamp(Math.round(base.quality+m*.35),10,97),
+   arcDirection:st.arc?.id||null,
    crowdShift:clamp(Math.round(base.crowdShift+m/7),-8,13),
    heatDelta:clamp(Math.round(base.heatDelta+(pushed?2:0)+(Math.abs(m)>=25?1:0)),-3,16),
    moraleDelta:clamp(base.moraleDelta+(m>=15?1:m<=-15?-1:0),-3,4),
@@ -361,5 +373,5 @@
    unresolved:st.round===0?((st.core.cases||[]).find(c=>c.continuation)?.reminder||null):st.core.case?.continuation?st.core.case.reminder:null};
  }
  const result=st=>st?.stage==='done'?st.result:null;
- root.OfficeMic={ROUNDS,PUSH,HOOK,FLUFF,CROWD,begin,choose,choices,view,result,clientClaim,meterWord,riskWord,openFit,answerFit,pushFit,READ,ANSWER_FIT};
+ root.OfficeMic={ROUNDS,PUSH,HOOK,FLUFF,CROWD,begin,choose,choices,view,result,clientClaim,meterWord,riskWord,openFit,answerFit,pushFit,arcFit,READ,ANSWER_FIT};
 })(typeof window!=='undefined'?window:globalThis);

@@ -79,7 +79,7 @@
  function intro(c,id){
   const x=options(c);if(!x)return null;
   const pick=x.choices.find(o=>o.id===id)||x.choices[0];
-  return {id:pick.id,prompt:pick.cue,read:`Programme, chapter ${x.step+1} of ${x.total}: ${x.title}. ${x.follow||x.ask}`,mood:x.mood};
+  return {id:pick.id,step:x.step,follow:x.follow,prompt:pick.cue,read:`Programme, chapter ${x.step+1} of ${x.total}: ${x.title}. ${x.follow||x.ask}`,mood:x.mood};
  }
  // Called at the bell only, so going backstage or reloading cannot award anything early.
  function prepare(c,id,promo){
