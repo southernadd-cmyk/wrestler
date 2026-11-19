@@ -50,7 +50,8 @@ function compare(reference,current){
    return [k,round(b[k]-a[k])];
   }));
   const sizeChanged=['nodes','edges','arcs'].some(k=>a.graph[k]!==b.graph[k]);
-  const rowChanged=sizeChanged||Object.values(diffs).some(x=>x!==0);
+  const distributionChanged=['families','topNodes','finishRoutes','outcomes','topSequences'].some(k=>JSON.stringify(a[k]||[])!==JSON.stringify(b[k]||[]));
+  const rowChanged=sizeChanged||distributionChanged||Object.values(diffs).some(x=>x!==0);
   if(rowChanged)changed=true;
   if((b.graph.errors||[]).length)critical.push(newer.id+': graph validation errors '+b.graph.errors.length);
   if((b.timingErrors||[]).length)critical.push(newer.id+': timing violations '+b.timingErrors.length);
@@ -63,7 +64,7 @@ function compare(reference,current){
   const familyChanges=[...new Set([...Object.keys(former),...Object.keys(latest)])]
    .map(id=>({id,diff:(latest[id]||0)-(former[id]||0)})).filter(x=>x.diff!==0)
    .sort((x,y)=>Math.abs(y.diff)-Math.abs(x.diff)||x.id.localeCompare(y.id)).slice(0,3);
-  rows.push({id:newer.id,label:newer.label,bouts:b.bouts,before:a,after:b,diffs,sizeChanged,rowChanged,familyChanges});
+  rows.push({id:newer.id,label:newer.label,bouts:b.bouts,before:a,after:b,diffs,sizeChanged,distributionChanged,rowChanged,familyChanges});
  }
  return {rows,critical,warnings,changed};
 }
