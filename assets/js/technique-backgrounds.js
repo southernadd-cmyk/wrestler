@@ -8,7 +8,7 @@
  * session, does not change stored wrestler objects, and conveys no ownership
  * or historical attribution of any third-party technique.
  *
- * Only Phase 3's curated, LIVE links are eligible for small bonuses.
+ * Only curated LIVE Phase 3 and 5 links are eligible for small bonuses.
  * All other authored moves retain their original selection weights.
  */
 (function(root,factory){
@@ -16,18 +16,21 @@
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.OfficeTechniqueBackgrounds=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
- const VERSION=1, MAX_BONUS=.28;
+ const VERSION=2, MAX_BONUS=.28;
  const SCHOOLS=Object.freeze({
   general:Object.freeze({id:'general',label:'General ringcraft',affinity:Object.freeze({catch:0,judo:0,lucha:0})}),
   catch:Object.freeze({id:'catch',label:'Catch wrestling',affinity:Object.freeze({catch:1,judo:0,lucha:0})}),
   judo:Object.freeze({id:'judo',label:'Judo',affinity:Object.freeze({catch:0,judo:1,lucha:0})}),
   lucha:Object.freeze({id:'lucha',label:'Lucha libre',affinity:Object.freeze({catch:0,judo:0,lucha:1})}),
+  boxing:Object.freeze({id:'boxing',label:'Boxing',affinity:Object.freeze({boxing:1})}),
+  strength:Object.freeze({id:'strength',label:'Strength athletics',affinity:Object.freeze({strength:1})}),
+  acrobatics:Object.freeze({id:'acrobatics',label:'Acrobatic training (provisional)',affinity:Object.freeze({acrobatics:1})}),
   'catch-judo':Object.freeze({id:'catch-judo',label:'Catch and judo',affinity:Object.freeze({catch:.8,judo:.65,lucha:0})}),
   'catch-lucha':Object.freeze({id:'catch-lucha',label:'Catch and lucha',affinity:Object.freeze({catch:.8,judo:0,lucha:.65})})
  });
  // Editorial assignments to original characters, not extrapolated from ring
  // style, nationality, gender, weight, or the career's weekly training state.
- // Unlisted wrestlers remain general and receive NO new bias.
+ // Unlisted wrestlers remain general and receive NO new bias. Kit's gymnastics-like description is a PROVISIONAL editorial assignment, not a claim of a documented gymnastics career.
  const ASSIGNMENTS=Object.freeze({
   juno:'catch',dee:'catch',cal:'catch',imani:'catch',ezra:'catch',
   silas:'catch',nova:'catch',
@@ -38,14 +41,16 @@
   nico:'lucha',lyra:'lucha',kit:'lucha',night:'lucha',ace:'lucha',
   tori:'lucha',rina:'lucha',kofi:'lucha',leandro:'lucha',
   nadia:'lucha',liya:'lucha',zara:'lucha',jett:'lucha',
-  anya:'lucha',sasha:'lucha'
+  anya:'lucha',sasha:'lucha',
+  tomasash:'boxing',val:'strength',kit:'acrobatics'
  });
  const idOf=w=>typeof w==='string'?w:w?.id;
  function get(w){return SCHOOLS[ASSIGNMENTS[idOf(w)]||'general'];}
  function multiplier(w,moveId,graph,registry){
   if(!graph||!registry||!moveId||!Array.isArray(graph.TECHNIQUE_PILOT))return 1;
-  // No drift from the 39 Phase 2 proposals: only reviewed Phase 3 targets.
-  if(!graph.TECHNIQUE_PILOT.some(link=>link.to===moveId))return 1;
+  // Only curated, executable Phase 3 + 5 transition destinations qualify.
+  // A descriptive Phase 2/5 catalogue entry alone never receives a bonus.
+  if(![...graph.TECHNIQUE_PILOT,...(graph.TECHNIQUE_EXPANSION||[])].some(link=>link.to===moveId))return 1;
   const node=graph.A?.[moveId];
   const meta=registry.get(node?.counterOf||moveId);
   if(!meta||!Array.isArray(meta.traditionTags))return 1;
@@ -59,10 +64,10 @@
    if(!Object.prototype.hasOwnProperty.call(SCHOOLS,key))errors.push('Unknown school '+id+': '+key);
   }
   if(!registry?.validate?.(graph)?.valid)errors.push('Technique registry is not valid for this graph');
-  for(const link of graph?.TECHNIQUE_PILOT||[]){
+  for(const link of [...(graph?.TECHNIQUE_PILOT||[]),...(graph?.TECHNIQUE_EXPANSION||[])]){
    if(!graph?.A?.[link.to])errors.push('Unknown live move '+link.to);
    const meta=registry?.get?.(graph?.A?.[link.to]?.counterOf||link.to);
-   if(meta&&meta.traditionTags.some(tag=>!['catch','judo','lucha'].includes(tag)))
+   if(meta&&meta.traditionTags.some(tag=>!registry.TRADITIONS.includes(tag)))
     errors.push('Unsupported training affinity '+link.to);
   }
   return {valid:errors.length===0,errors,assigned:Object.keys(ASSIGNMENTS).length,unassigned:Math.max(0,ids.size-Object.keys(ASSIGNMENTS).length)};
