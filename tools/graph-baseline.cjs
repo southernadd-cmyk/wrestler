@@ -98,6 +98,16 @@ try {
       from,to,kind,hits:snapshot.edgeHits[from+'>'+to]||0
     }));
   }
+  if(Array.isArray(G.TECHNIQUE_CHAINS)){
+    report.phase9Transitions=G.TECHNIQUE_CHAINS.map(({from,to,group})=>({
+      from,to,group,hits:snapshot.edgeHits[from+'>'+to]||0
+    }));
+    report.phase9GroupHits=Object.entries(report.phase9Transitions.reduce((a,x)=>{
+      const g=a[x.group]??={links:0,hits:0,observed:0};
+      g.links++;g.hits+=x.hits;if(x.hits)g.observed++;
+      return a;
+    },{})).map(([group,data])=>({group,...data}));
+  }
   // Move-specific generated reversals now resolve a committed named aerial
   // attempt. Count actual reversal nodes without double-counting attempts.
   if (root.OfficeTechniqueRegistry) {
