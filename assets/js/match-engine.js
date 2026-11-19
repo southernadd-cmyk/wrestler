@@ -1128,10 +1128,19 @@ const Graph=(function makeGraph(){
   const current=M.t<=0?'opening':frac<.2?'chain':frac<.33?'shine':frac<.62?'control':frac<.77?'comeback':'escalation';
   const g={v:1,arc:current,age:0,node:null,visit:{[current]:1},history:[current],events:[],transitions:0,steps:0,lastTags:[],consecutive:0,target:p.target,
    targets:{w:p.target,f:M.w.style==='Technical'?'shoulder':M.w.style==='Spectacle'?'left knee':M.w.style==='Brawl'?'ribs':'lower back'},
-   damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0,pattern:M.planId,texture:matchTexture(M)};
+   damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0,pattern:M.planId,texture:matchTexture(M),
+   aerialAttempts:[],aerialAttemptSerial:0,pendingAerial:null};
   M.graph=g;return g;
  }
- function get(M){return M.graph||init(M)}
+ function get(M){
+  const g=M.graph||init(M);
+  // Existing in-progress saves have no attempt state: default to no pending dive.
+  if(!Array.isArray(g.aerialAttempts))g.aerialAttempts=[];
+  if(!Number.isSafeInteger(g.aerialAttemptSerial))
+   g.aerialAttemptSerial=g.aerialAttempts.reduce((n,x)=>Math.max(n,x.seq||0),0);
+  if(!Object.prototype.hasOwnProperty.call(g,'pendingAerial'))g.pendingAerial=null;
+  return g;
+ }
  function pick(M,weighted){
   const arr=weighted.filter(([k,w])=>w>0);const sum=arr.reduce((n,[,w])=>n+w,0);
   if(!sum)return null;let n=M.r()*sum;
@@ -1233,8 +1242,20 @@ const Graph=(function makeGraph(){
   const arc=ARCS[g.arc],ph=PHASES.find(x=>x.id===arc.phase)||PHASES[0];
   return {id:ph.id,name:arc.label};
  }
+ // Aerial counters are outcomes of a named attempt, never free-standing
+ // actions selected without the corresponding move being attempted.
+ function isAerialParent(id){
+  const n=A[id];return !!n&&!n.reverse&&!n.blockOf&&
+   (n.family==='aerial'||n.family==='springboard');
+ }
+ function aerialAlternativeParent(id){
+  const n=A[id],original=n?.counterOf||n?.blockOf;
+  return original&&isAerialParent(original)?original:null;
+ }
  function isValid(M,nodeId){
   const n=A[nodeId],p=Psy.get(M);if(!n)return false;
+  const parent=aerialAlternativeParent(nodeId);
+  if(parent&&M.graph?.pendingAerial?.id!==parent)return false;
   // A submission-only bout cannot reach pin nodes, even through signature/catalog edges.
   if(M.o.stip==='submission'&&(n.family==='pin'||n.nearfall||
     ['early_cover','cover','near_kickout','counter_rollup'].includes(nodeId)||
