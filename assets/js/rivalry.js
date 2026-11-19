@@ -53,7 +53,7 @@
    const cid=h.cid||('legacy:'+h.season+':'+h.week);if(L.done[cid])continue;L.done[cid]=1;
    const winner=h.outcome==='nc'?null:h.outcome==='double'?'w':h.outcome==='dq'?'f':String(h.finish||'').startsWith('win')?'w':'f';
    const promise=h.promo?.promise?.checked?{type:h.promo.promise.type,kept:!!h.promo.promise.kept,say:sayPromise(h.promo.promise.type,h.promo.tactic,null,G.F(L.f),G.W(L.w))}:null;
-   L.meetings.push({cid,n:L.meetings.length+1,abs:(h.season-1)*16+(h.week||0),finish:h.finish||null,outcome:h.outcome||'booked',winner,
+   L.meetings.push({cid,n:L.meetings.length+1,abs:(h.season-1)*16+(h.week||0),finish:h.finish||null,outcome:h.outcome||'booked',winner,ringside:h.ringside?{...h.ringside}:null,
     how:h.outcome==='dq'||/_dq$/.test(h.finish||'')?'dq':h.finish==='win_dirty'?'dirty':h.finish==='lose_protected'?'protected':'clean',cheat:h.finish==='win_dirty'?'w':null,cheatDetail:null,route:null,
     minutes:null,stars:h.stars||0,counters:{w:0,f:0},late:{w:0,f:0},families:{w:[],f:[]},stamina:null,injured:{w:null,f:false},promise,commit:null,legacy:true});
   }
@@ -104,8 +104,8 @@
  // THE EVIDENCE PROFILE. The facts that still matter, strongest first. Each fact says whose argument
  // it helps (owner), how much it weighs now, and how it can be said out loud.
  const BASE={cheat_f:8,cheat_w:7,tapped:7,finisher_reversed:6,stolen:5,slow_count:6,outlasted_w:5,fade_f:5,injury_w:9,injury_f:7,
-  clean_win_w:3,clean_win_f:3,promise_kept:7,promise_broken:8,counters_w:4,record_w:5,record_f:6,great_match:5,betrayal:11,bond_friend:4};
- const MAJOR={injury_w:1,betrayal:1,cheat_f:1,cheat_w:1,promise_broken:1};
+  clean_win_w:3,clean_win_f:3,promise_kept:7,promise_broken:8,counters_w:4,record_w:5,record_f:6,great_match:5,betrayal:11,bond_friend:4,runin_hidden:10,runin_caught:11};
+ const MAJOR={injury_w:1,betrayal:1,cheat_f:1,cheat_w:1,promise_broken:1,runin_hidden:1,runin_caught:1};
  function whenWord(ago,n){return ago===0?'last time':ago===1?'the time before':n===1?'the first time we met':'a few matches back';}
  function facts(L,w,f){
   const out=[],ms=L.meetings,N=ms.length;
@@ -114,6 +114,10 @@
    out.push({id:m.cid+':'+kind,kind,owner,cid:m.cid,n:m.n,ago,weight,major:!!MAJOR[kind],d:{when:whenWord(ago,m.n),minutes:m.minutes,...d}});
   };
   for(const m of ms.slice(-6)){
+   if(m.ringside?.job==='runin'&&m.ringside.fired){
+    const k=m.ringside,kind=k.dq||k.ejected?'runin_caught':k.ok?'runin_hidden':null;
+    if(kind)add(kind,m,'f',{second:k.secondName||'a second',dq:!!k.dq});
+   }
    if(m.cheat==='f')add('cheat_f',m,'w',{detail:m.cheatDetail,argued:m.argued});
    if(m.cheat==='w')add('cheat_w',m,'f',{detail:m.cheatDetail});
    if(m.submission==='f')add('tapped',m,'f',{part:m.injured?.w||null,worked:m.worked==='f'||(m.damage?.w||0)>=3});
@@ -153,6 +157,7 @@
   const s={w:bond*.45+(regard-50)*.4,f:bond*.45};
   for(const m of L.meetings.slice(-5)){
    if(m.cheat==='f')s.w-=10;if(m.cheat==='w')s.f-=10;
+   if(m.ringside?.job==='runin'&&m.ringside.fired)s.f-=m.ringside.dq?12:16;
    if(m.injured?.w)s.w-=6;if(m.injured?.f)s.f-=6;
    if(m.stars>=3.5){s.w+=7;s.f+=7;}
    if(m.winner==='w'&&m.how==='clean')s.f+=((f.ego||50)>=75?-3:3);
@@ -188,6 +193,8 @@
  function factText(x,w,f){
   const W=w.short,F=f.short,d=x.d||{},when=d.when||'last time',When=cap(when);
   switch(x.kind){
+   case 'runin_hidden':return When+', '+d.second+' ran in and hit '+F+' while the referee was occupied.';
+   case 'runin_caught':return When+', '+d.second+' ran in and was caught.'+(d.dq?' '+W+' lost by disqualification.':'');
    case 'cheat_f':return When+', '+F+' beat '+W+' with '+d.detail+'.';
    case 'cheat_w':return When+', '+W+' beat '+F+' with '+d.detail+'.';
    case 'tapped':return When+', '+W+' tapped to '+F+'’s '+(f.finisher||'submission')+'.';
@@ -224,7 +231,33 @@
  // detail, gruff ones cut it short, earnest ones soften it, grand ones elevate it.
  // ---------------------------------------------------------------------------------------------
  const res=(label,hint,line,resolution,rel,fx,reply,extra={})=>({label,hint,line,res:resolution,rel,fx:fx||{},reply,...extra});
- const ISSUES={
+ const runinResponses=(caught)=>({
+  calm:res(caught?'Accept the disqualification':'Admit the unfair help','Acknowledge the referee and the other wrestler.','You are right, {F}. {SECOND} had no right to get involved. I want the next match decided between us.','conceded',5,{cred:3,trust:2},
+   {evidence:'Then keep your friends in the back.',dismiss:'Show me.',concede:'Good. That is all I asked.',deflect:'I will believe it when I see it.'}),
+  turn:res(caught?'Say the DQ was not the wrestling':'Say the result stands','Do not deny what happened; argue about what it means.',caught?'You won by disqualification. You did not pin me, {F}.':'The referee counted three, {F}. I know what happened outside.','defended',2,{heat:2},
+   {evidence:'The referee saw enough.',dismiss:'You needed help.',concede:'That is a result, not an answer.',deflect:'Bring the whole stable next time.'}),
+  challenge:res('Demand a fair rematch','Turn the grievance into a promise a clean finish can test.','Nobody from our corner gets involved tonight, {F}. It is just you and me.','reframed',4,{cred:2,crowd:2},
+   {evidence:'Then send {SECOND} to the back.',dismiss:'Prove it.',concede:'That is all I wanted.',deflect:'Put it in writing.'},
+   {commit:{kind:'clean',node:'clean',say:'have a straight fight with {opp}',label:'Promise no interference',hint:'Only a genuinely clean result fulfils this.'}}),
+  personal:res(caught?'Blame the second':'Tell them to stop complaining','Escalate a legitimate grievance into a personal insult.','{SECOND} made a mistake, {F}. You are lucky I even let you call that a result.','unresolved',-1,{heat:4,trust:-2},
+   {evidence:'You brought them.',dismiss:'I was there.',concede:'And you still needed them.',deflect:'Tell {SECOND} to say it to me.'}),
+  callback:res('Refuse to discuss the interference','The other wrestler will remember the omission.','Last time is on the record. I am here for tonight.','withdrawn',-2,{},
+   {evidence:'Convenient.',dismiss:'Of course you are.',concede:'Then keep your friends out of it.',deflect:'Easy to move on when they did the hitting.'})
+ });
+ const runinIssue=(caught)=>({family:'personal_grievance',owner:'f',angle:caught?'proof':'accusation',
+  intent:'answer for outside help',target:'the interference',
+  label:caught?'Face the caught run-in':'Answer the unseen run-in',
+  thesis:caught?'Can {W} win without outside help?':'Was the last result decided by outside interference?',
+  prop:{core:caught?'The referee caught {SECOND} coming over the barrier {WHEN}, {F}. It cost us the match.':'{SECOND} came over the barrier {WHEN}, {F}. The referee missed it but we all saw what happened.',
+   detail:caught?'We were disqualified. I am not going to rewrite the record.':'You cannot pretend nobody saw the interference.',
+   edge:caught?'Our second got caught. We lost.':'{SECOND} hit you. The referee missed it.',
+   soft:caught?'I did not like how it ended, {F}. I know what {SECOND} did.':'I know what {SECOND} did, {F}. I would rather settle it ourselves.'},
+  f:{evidence:caught?'You had {SECOND} interfere and still got disqualified. I call that a win.':'{SECOND} hit me while the referee was looking away. You call that fair?',
+   dismiss:'You needed another wrestler just to get through the match.',
+   concede:'At least you admit what happened. It still matters.',
+   deflect:'Is {SECOND} doing the talking for you too?'},
+  again:'We have been over what {SECOND} did, {F}. It is still on the record.',r:runinResponses(caught)});
+ const ISSUES={runin_hidden:runinIssue(false),runin_caught:runinIssue(true),
   cheat_f:{family:'past_results',owner:'w',angle:'accusation',intent:'a clean result',target:'how {F} won',
    label:'Call out how they won',thesis:'Was {F}’s win {WHEN} a real win?',
    prop:{core:'You only beat me {WHEN} because you grabbed {DETAIL}, {F}.',detail:'{MIN} minutes of wrestling, and it ended with {DETAIL}. I have watched it back.',edge:'{CDETAIL}. That is how you beat me, {F}.',soft:'I am not making excuses, {F}. But you beat me {WHEN} with {DETAIL}, and everybody saw it.'},
@@ -608,7 +641,7 @@
  const LEAD={precise:'Let us stick to the facts.',stoic:'Never mind that.',gruff:'Never mind all that.',grand:'Enough.',earnest:'Can I just say something?',sermon:'Hear me.',slippery:'Lovely speech. Anyway.',eager:'Oh, oh, can I say something?'};
  const AGAIN={evidence:'You raised this last time, {W}. My answer has not changed.',dismiss:'This again?',concede:'We have been here before, {W}.',deflect:'Same speech as last time, {W}. Did you write it on the bus?'};
  const REPEAT_F={evidence:'That is twice now.',dismiss:'Again.',concede:'Not for the first time.',deflect:'Here we go again.'};
- const REPEAT_W={cheat_f:'Not for the first time, {F}.',cheat_w:'I know, {F}. It happened again.',tapped:'Twice now, {F}. I know.',promise_kept:'I did it again, {F}.',promise_broken:'Twice now, {F}. I know.',
+ const REPEAT_W={runin_hidden:'We never settled what {SECOND} did, {F}.',runin_caught:'I remember the referee saw it, {F}.',cheat_f:'Not for the first time, {F}.',cheat_w:'I know, {F}. It happened again.',tapped:'Twice now, {F}. I know.',promise_kept:'I did it again, {F}.',promise_broken:'Twice now, {F}. I know.',
   injury_w:'Hurt again, {F}.',slow_count:'Another slow count, {F}.',outlasted_w:'I ran out of gas again, {F}.',fade_f:'You faded again, {F}.',finisher_reversed:'You read it again, {F}.',
   stolen:'I slipped it again, {F}.',clean_win_w:'Clean again, {F}.',clean_win_f:'You beat me clean again, {F}.',counters_w:'I had your timing again, {F}.',
   great_match:'Twice in a row now, {F}. People will start to expect it.',bond_friend:'Still friends, {F}. Still on opposite sides.',betrayal:'I keep coming back to it, {F}, because you never answer.',
@@ -620,7 +653,7 @@
   const fam=Array.isArray(d.families)&&d.families.length?d.families:null;
   const v={W,F,WF:w.finisher||'my finisher',FF:f.finisher||'that hold',WHEN:d.when||'last time',DETAIL:d.detail||'a cheap shot',CDETAIL:cap(d.detail||'a cheap shot'),
    MIN:min?String(min):'all those',MINS:min?min+' minutes in. ':'',MINS2:min?min+' minutes, ':'',
-   PART:d.part||'shoulder',COUNT:String(d.count||0),SAY:d.say||'keep my word',STARS:String(d.stars||''),
+   PART:d.part||'shoulder',SECOND:d.second||'a second',COUNT:String(d.count||0),SAY:d.say||'keep my word',STARS:String(d.stars||''),
    RW:String(rec.w),RF:String(rec.f),RN:String(rec.meetings),RW1:String(rec.w+1),RF1:String(rec.f+1)};
   v.KEPT_EVIDENCE=d.fWon?'You did. And I still won, '+W+'. Put that on your list.':'You did. Once. I have had time to think about it since.';
   v.FADE_EVIDENCE=d.fWon?'Tired, and I still beat you, '+W+'. Imagine me fresh.':'I was tired because I was carrying the match, '+W+'.';
@@ -655,7 +688,7 @@
  // them: an argument that was settled is not reopened unless something new happened; one left
  // unresolved comes back as a continuation; a point a wrestler conceded is not pressed by them again.
  // Issues that are really one subject, for the purpose of not arguing about it every single week.
- const TOPIC={promise_kept:'promise',promise_broken:'promise',record_w:'record',record_f:'record',clean_win_w:'result',clean_win_f:'result',cheat_f:'cheating',cheat_w:'cheating',outlasted_w:'stamina',fade_f:'stamina'};
+ const TOPIC={runin_hidden:'interference',runin_caught:'interference',promise_kept:'promise',promise_broken:'promise',record_w:'record',record_f:'record',clean_win_w:'result',clean_win_f:'result',cheat_f:'cheating',cheat_w:'cheating',outlasted_w:'stamina',fade_f:'stamina'};
  function candidates(L,P,w,f){
   const out=[],claims=L.claims;
   for(const fact of P.facts){
@@ -832,6 +865,14 @@
    lostRun:streak(L).side==='f'?streak(L).n:0,lastTalk:L.talks.at(-1)||null,meetings:L.meetings.length};
  }
 
+ // Ringside settles after the match; amend that meeting rather than inventing another.
+ function recordRingside(c,event){
+  if(!c?.id||event?.cid!==c.id)return null;
+  const m=ledger(c.wid,c.rid)?.meetings.find(x=>x.cid===c.id);if(!m)return null;
+  if(!m.ringside)m.ringside={cid:c.id,second:event.second,secondName:event.secondName,job:event.job,
+   fired:!!event.fired,ok:!!event.ok,ejected:!!event.ejected,hurtRef:!!event.hurtRef,dq:!!event.dq};
+  return m.ringside;
+ }
  // A completed result exists before the optional post-bell scene. Append only facts that
  // actually happened, and never create a second meeting for the same contract.
  function recordAfter(st){
@@ -847,6 +888,6 @@
   }
   return m.after;
  }
- root.OfficeRivalry={recordAfter,ledger,profile,facts:(w,f)=>profile(w,f).facts,casesFor,introFor,stance:(wid,rid)=>profile(wid,rid).stance,record:(wid,rid)=>G.S?record(ledger(wid,rid)):{w:0,f:0},
+ root.OfficeRivalry={recordRingside,recordAfter,ledger,profile,facts:(w,f)=>profile(w,f).facts,casesFor,introFor,stance:(wid,rid)=>profile(wid,rid).stance,record:(wid,rid)=>G.S?record(ledger(wid,rid)):{w:0,f:0},
   scoutedFamilies,ISSUES,ROUTE,FAMILY_WORD,modeOf,deliver,verdict,meetingFrom,keyOf,sayPromise,voiced};
 })(typeof window!=='undefined'?window:globalThis);

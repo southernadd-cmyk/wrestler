@@ -700,6 +700,7 @@ function rivalrySnapshot(f){
   const result=m.outcome==='nc'?'No contest':m.outcome==='dq'?(m.winner==='w'?'Opponent disqualified':'Your wrestler disqualified'):
    m.outcome==='double'?'Agreed finish broken':m.winner==='w'?'Your wrestler won':m.winner==='f'?'Opponent won':'No decision';
   last=result+(Number.isFinite(m.abs)&&m.abs>0?' · '+weekLabel(m.abs):'');
+  if(m.ringside?.job==='runin'&&m.ringside.fired)last+=' · '+(m.ringside.dq?'Caught run-in caused DQ':m.ringside.ok?'Unseen run-in':'Interference caught');
  }
  const relations=p.stance?'Your wrestler: '+p.stance.w+'; opponent: '+p.stance.f:'';
  const issues=(p.open||[]).filter(x=>x.text).slice(0,2).map(x=>x.text);

@@ -132,7 +132,7 @@
    const k=M?.sheet?.corner;
    if(k&&M.stage!=='entrance'&&!k.announced)announce(M);
    if(k&&k.at!=null&&!k.fired&&!M.queue.length&&!M.decision&&(M.stage==='finish'||(M.stage==='live'&&M.t/Math.max(1,M.len)>=k.at)))fire(M);
-  }catch(e){}
+  }catch(e){G.reportError('ringside/in-match',e)}
   return originalNext.call(this,M);
  };
 
@@ -163,7 +163,12 @@
    const dt=strict(p)?-3:-1;p.trust=clamp(p.trust+dt);x.morale=clamp(x.morale-3);
    add(k.dq?x.short+'’s run-in cost '+w.short+' the match. '+x.short+' morale −3.':x.short+' was thrown out by the referee. '+p.name+' trust '+dt+', '+x.short+' morale −3.',-1);
   }
-  st.log.unshift({cid:c.id,week:G.abs(),wid:w.id,second:x.id,job:k.job,fired:!!k.fired,ok:!!k.ok,ejected:!!k.ejected,hurtRef:!!k.hurtRef});st.log=st.log.slice(0,30);
+  // A witnessed or unwitnessed run-in is a fact for next week's arguments.
+  const event={cid:c.id,week:G.abs(),wid:w.id,rid:c.rid,second:x.id,secondName:x.short,job:k.job,
+   fired:!!k.fired,ok:!!k.ok,ejected:!!k.ejected,hurtRef:!!k.hurtRef,dq:!!k.dq};
+  st.log.unshift(event);st.log=st.log.slice(0,30);
+  const h=G.S.history?.find(h=>h.cid===c.id);if(h)h.ringside={...event};
+  root.OfficeRivalry?.recordRingside?.(c,event);
   G.save();return out;
  }
 
