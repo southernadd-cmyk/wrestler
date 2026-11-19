@@ -59,6 +59,20 @@ try {
       from, to, kind, hits: snapshot.edgeHits[from + '>' + to] || 0
     }));
   }
+  if (Array.isArray(G.TECHNIQUE_TRANCHE2)) {
+    report.phase5bTransitions = G.TECHNIQUE_TRANCHE2.map(({from,to,kind}) => ({
+      from, to, kind, hits: snapshot.edgeHits[from + '>' + to] || 0
+    }));
+  }
+  // These generated counters already exist: count actual executed reversal
+  // nodes without fabricating an attempted-air-move state or extra graph edge.
+  if (root.OfficeTechniqueRegistry) {
+    report.aerialCounterReviews = root.OfficeTechniqueRegistry.list()
+      .filter(row => /^(?:ar_|sb_)/.test(row.id) && row.counterIds.length)
+      .flatMap(row => row.counterIds.map(id => ({
+        move: row.id, counter: id, hits: snapshot.nodeHits[id] || 0
+      })));
+  }
   process.stdout.write(JSON.stringify(report, null, 2) + '\n');
 } catch (error) {
   process.stderr.write('Graph baseline failed: ' + error.message + '\n');
