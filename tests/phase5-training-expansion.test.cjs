@@ -31,12 +31,12 @@ assert.equal(B.get('tomasash').id,'boxing');
 assert.equal(B.get('val').id,'strength');
 assert.equal(B.get('kit').id,'lucha-acrobatics','Kit retains the original lucha affinity in a provisional hybrid');
 assert.equal(B.get('zara').id,'lucha','Zara retains her previous training school');
-assert.equal(B.get('rex').id,'general','old general remains unmodified');
+assert.equal(B.get('rex').id,'strength','Rex has a provisional strength-gameplay tendency, not asserted training history');
 assert.equal(B.get('bao').id,'judo','original judoka preserved');
 assert.equal(B.get('juno').id,'catch','original catch preserved');
 assert.equal(B.get('nico').id,'lucha','original lucha preserved');
 assert.equal(B.get('kofi').id,'lucha','existing Kofi lucha training is preserved rather than inferred from aerial style');
-assert.equal(B.get('milo').id,'general','an aerial spectacle style alone does not invent training history');
+assert.equal(B.get('milo').id,'acrobatics','Milo has an explicitly provisional gameplay identity, not a documented school');
 const csv=fs.readFileSync(path.join(__dirname,'..','docs/phase5-roster-training-audit.csv'),'utf8').trim().split(/\r?\n/);
 assert.equal(csv.length,81,'all eighty wrestlers have provenance and review rows');
 for(const w of D.ALL){
