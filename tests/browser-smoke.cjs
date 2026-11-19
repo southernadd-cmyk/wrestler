@@ -1,6 +1,10 @@
 'use strict';
 // CI-only browser journey: the shipped static game has no runtime test deps.
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../assets/js/ui.js'),'utf8');
+assert.ok(source.includes('class="mf-breakdown-section"'),'real match flow report must render a compact stars section');
 const {chromium}=require('playwright');
 const URL='http://127.0.0.1:8765/';
 
@@ -30,6 +34,35 @@ async function journey(browser,name,viewport){
   assert.notEqual(colours.poor,colours.opponent,name+': poor work and opponent use the same colour');
   assert.notEqual(colours.mistake,colours.opponent,name+': mistake and opponent use the same colour');
   assert.notEqual(colours.mistake,colours.poor,name+': mistake and poor work use the same colour');
+  // Match recap: never stretch the compact star breakdown full width.
+  // Desktop: phase + stars stack on the left, moments fill the right column.
+  // Phone: phase, moments and stars stack in that reading order.
+  const flowLayout=await page.evaluate(()=>{
+    const host=document.createElement('section');
+    host.className='mf-win';
+    host.style.cssText='position:absolute;left:-2000px;width:min(1100px,100%);visibility:hidden';
+    host.innerHTML='<div class="mf-cols"><div class="mf-phase-section" style="height:280px">Phases</div><div class="mf-moments-section"><h3>Moments</h3><ol class="mf-moments well"><li>Moment one</li><li>Moment two</li><li>Moment three</li><li>Moment four</li></ol></div><div class="mf-breakdown-section" style="height:155px">Stars</div></div>';
+    document.body.appendChild(host);
+    const box=s=>{const r=host.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};
+    const result={grid:box('.mf-cols'),phase:box('.mf-phase-section'),moments:box('.mf-moments-section'),stars:box('.mf-breakdown-section')};
+    host.remove();return result;
+  });
+  if(viewport.width>900){
+    assert.ok(Math.abs(flowLayout.phase.left-flowLayout.stars.left)<2 &&
+      Math.abs(flowLayout.phase.right-flowLayout.stars.right)<2,
+      name+': rating must stay the width of the phase column '+JSON.stringify(flowLayout));
+    assert.ok(flowLayout.stars.width<flowLayout.grid.width*.65,
+      name+': short rating bars must not span the whole recap '+JSON.stringify(flowLayout));
+    assert.ok(flowLayout.stars.top>=flowLayout.phase.bottom-2,
+      name+': rating must sit under phases '+JSON.stringify(flowLayout));
+    assert.ok(Math.abs(flowLayout.moments.top-flowLayout.phase.top)<2 &&
+      flowLayout.moments.bottom>=flowLayout.stars.bottom-2,
+      name+': moments must fill the right column beside both panels '+JSON.stringify(flowLayout));
+  }else{
+    assert.ok(flowLayout.moments.top>=flowLayout.phase.bottom-2 &&
+      flowLayout.stars.top>=flowLayout.moments.bottom-2,
+      name+': phone reading order must be phases, moments, stars '+JSON.stringify(flowLayout));
+  }
   await page.locator('[data-title="new"]').waitFor();
   await page.locator('[data-title="new"]').click();
   await page.locator('#app').waitFor({state:'visible'});

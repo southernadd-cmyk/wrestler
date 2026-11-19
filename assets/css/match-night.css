@@ -444,7 +444,14 @@
 .mf-key b{margin-right:5px}
 .mf-key .k-line{height:3px;background:var(--cyan)}.mf-key .k-you{background:var(--gold)}.mf-key .k-them{background:var(--mf-opponent)}
 .mf-key .k-good{background:var(--good)}.mf-key .k-poor{background:var(--mf-poor)}
-.mf-cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px}
+/* Keep the compact rating bars under the phase table; let moments occupy
+   the opposite column. Do not stretch a short numerical breakdown full width. */
+.mf-cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);grid-template-areas:"phase moments" "stars moments";gap:12px}
+.mf-phase-section{grid-area:phase;min-width:0}
+.mf-breakdown-section{grid-area:stars;min-width:0}
+.mf-moments-section{grid-area:moments;min-width:0;display:flex;flex-direction:column}
+.mf-moments-section>.mf-moments{flex:1;align-content:space-around}
+.mf-cols:not(:has(.mf-breakdown-section)){grid-template-areas:"phase moments"}
 .mf-table-wrap{overflow-x:auto}
 .mf-table th small{display:block;font-size:14px;color:var(--dim)}
 .mf-table td{vertical-align:middle;white-space:nowrap}
@@ -468,7 +475,9 @@
 .mf-part.total{border-top:1px solid var(--well-line);padding-top:4px}.mf-part.total b{color:var(--gold);font:24px/1 var(--jersey);white-space:nowrap}
 @media (max-width:900px){
  .s-result:has(.mf-win){grid-template-rows:none}
- .mf-cols{grid-template-columns:minmax(0,1fr)}
+ .mf-cols{grid-template-columns:minmax(0,1fr);grid-template-areas:"phase" "moments" "stars"}
+ .mf-cols:not(:has(.mf-breakdown-section)){grid-template-areas:"phase" "moments"}
+ .mf-moments-section>.mf-moments{flex:none;align-content:start}
  .mf-row{grid-template-columns:44px minmax(0,1fr)}.mf-key{margin-left:44px}
  .mf-crowd .mf-track{height:120px}
  .mf-ph{font-size:13px}
