@@ -13,7 +13,7 @@ for(const file of ['data.js','roster-registry.js','technique-registry.js','techn
 root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,G=root.OfficeMatch.GRAPH,M=root.OfficeMatch,R=root.OfficeTechniqueRegistry,B=root.OfficeTechniqueBackgrounds;
 const stats=G.validate(),review=R.validate(G),schools=B.validate(D,G,R);
-assert.deepEqual(stats.errors,[]);
+assert.equal(stats.errors.length,0,stats.errors.join('\n'));
 assert.equal(stats.nodes,969);
 assert.ok(stats.edges>=6164&&stats.edges<=6180,'bounded directed graph edge growth');
 assert.equal(G.CATALOG.counts.moves,336,'no new authored move nodes');
