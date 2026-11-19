@@ -483,3 +483,292 @@
 .corner-who{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
 .corner-who .btn.on{background:var(--gold-hi);box-shadow:var(--bevel-in)}
 .corner-note{margin:0 0 6px}
+
+
+/* Match-night UX pass: one readable decision surface, not two clipped
+   vertical stacks. Dialogue supplies context; the choices stay prominent. */
+.tv .s-back .wbody{
+ padding:0;
+ overflow-y:auto;
+ overflow-x:hidden;
+ scrollbar-color:var(--stone-lo) var(--stone-2);
+}
+.match-scene-layout{
+ display:grid;
+ grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);
+ align-items:start;
+ min-width:0;
+ border-top:2px solid var(--ink);
+ background:var(--stone-2);
+}
+.match-scene-layout .scene{
+ min-width:0;
+ min-height:320px;
+ max-height:min(56vh,560px);
+ overflow-y:auto;
+ overflow-x:hidden;
+ padding:14px;
+ gap:10px;
+ background:var(--paper);
+ border-right:2px solid var(--ink);
+}
+.match-scene-layout .decide2{
+ min-width:0;
+ max-height:none;
+ overflow:visible;
+ padding:15px 18px 18px;
+ border-top:0;
+}
+.match-scene-layout .decide2>.section-h:first-child{
+ margin:0 0 7px;
+ font-size:29px;
+ line-height:1.05;
+}
+.match-scene-layout .decide2>.lede{
+ margin:0 0 13px;
+ max-width:65ch;
+ line-height:1.25;
+}
+.match-scene-layout .picks{
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:9px;
+}
+.match-scene-layout .picks.five{
+ grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.match-scene-layout .decision-option{
+ min-width:0;
+ min-height:66px;
+ padding:10px 12px;
+ gap:5px;
+ border-width:1px;
+ box-shadow:2px 2px 0 rgba(0,0,0,.20);
+}
+.match-scene-layout .decision-option b{font-size:19px;line-height:1.15}
+.match-scene-layout .decision-option>span{font-size:15px;line-height:1.25}
+.match-scene-layout .tags{margin-top:auto;padding-top:5px;gap:5px}
+.match-scene-layout .tags i{font-size:13px;padding:2px 5px}
+.match-scene-layout .rorder-picks{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.match-scene-layout .rorder-pick{min-height:0}
+.match-scene-layout .rorder{gap:10px}
+.match-scene-layout .rorder-row{grid-template-columns:130px minmax(0,1fr)}
+.match-scene-layout .rorder-slot{min-width:0}
+.match-scene-layout .runorder{background:var(--stone-2)}
+.s-back .mouth-note,
+.s-back .arc-follow{flex:none;padding:9px 14px;margin:0}
+.s-back .match-night-matchup{
+ padding:11px 16px;
+}
+.s-back .sheetline{padding:10px 14px}
+.s-back .bub{max-width:92%}
+.s-back .bub .say{padding:8px 11px}
+.s-back .bub .say p{line-height:1.3}
+
+/* The after-bell plan is a compact optional choice, not five paragraphs
+   competing with the actual match-sheet decisions. */
+.after-setup{
+ padding-top:9px;
+ border-top:1px solid var(--stone-lo);
+ margin-top:13px;
+}
+.after-setup .after-h{
+ margin:0 0 3px;
+ display:flex;
+ align-items:baseline;
+ gap:8px;
+}
+.after-setup .after-h small{
+ font:14px/1.2 var(--tt);
+ text-transform:uppercase;
+ color:var(--ink-2);
+ letter-spacing:.035em;
+}
+.after-setup-intro{margin:0 0 10px}
+.after-plan-grid{
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(145px,1fr));
+ gap:7px;
+}
+.after-plan{
+ min-width:0;
+ min-height:63px;
+ display:flex;
+ flex-direction:column;
+ align-items:flex-start;
+ justify-content:center;
+ gap:4px;
+ padding:9px 10px;
+ text-align:left;
+ border:1px solid var(--stone-lo);
+ background:var(--paper);
+ color:var(--ink);
+ box-shadow:none;
+ cursor:pointer;
+}
+.after-plan b{font-size:17px;line-height:1.15}
+.after-plan span{font-size:14px;line-height:1.2;color:var(--ink-2)}
+.after-plan:hover,.after-plan:focus-visible{border-color:var(--blood);background:var(--stone-hi)}
+.after-plan.on{
+ background:var(--gold-hi);
+ border:2px solid var(--gold-lo);
+ padding:8px 9px;
+ box-shadow:inset 0 0 0 1px var(--gold);
+}
+.after-plan.on b::before{content:'✓ ';color:var(--blood)}
+
+/* Post-match actions and consequences belong to the SAME panel.
+   The label no longer floats below the dialogue. */
+.post-mic-picks{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:9px;
+}
+.post-mic-choice{
+ min-height:69px;
+ justify-content:center;
+}
+.after-consequences{
+ margin-top:15px;
+ padding-top:12px;
+ border-top:2px solid var(--stone-lo);
+}
+.after-consequences .section-h{
+ margin:0 0 8px;
+ font-size:24px;
+}
+.after-consequences .cons{
+ gap:6px;
+}
+.after-consequences .cons li{
+ padding:8px 11px;
+ font-size:16px;
+ line-height:1.25;
+ background:var(--paper);
+}
+.tv .s-result .final{padding:9px 12px 15px}
+.tv .s-result .final .verdict{font-size:25px;line-height:1.1}
+.tv .s-result .cons li{line-height:1.25}
+.tv .tv-foot .foot-btns{margin-left:auto}
+.tv .tv-foot .foot-btns .btn{
+ min-height:44px;
+ padding:6px 15px;
+ line-height:1.05;
+}
+.tv .tv-foot .foot-btns .btn:not(.go){
+ background:transparent;
+ border-color:var(--well-line);
+ color:var(--white);
+ box-shadow:none;
+}
+.tv .tv-foot .foot-btns .btn:not(.go):hover,
+.tv .tv-foot .foot-btns .btn:not(.go):focus-visible{
+ background:var(--well);
+}
+@media(max-width:1050px){
+ .match-scene-layout{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}
+ .match-scene-layout .picks{grid-template-columns:minmax(0,1fr)}
+ .match-scene-layout .rorder-row{grid-template-columns:1fr}
+}
+@media(max-width:900px){
+ .tv .s-back .wbody{overflow:visible}
+ .match-scene-layout{display:flex;flex-direction:column;min-height:0}
+ .match-scene-layout .decide2{
+  order:0;
+  width:100%;
+  max-height:none;
+  padding:13px 12px;
+  border-top:0;
+ }
+ .match-scene-layout .scene{
+  order:1;
+  width:100%;
+  min-height:0;
+  max-height:210px;
+  border-right:0;
+  border-top:2px solid var(--ink);
+  padding:10px 12px;
+ }
+ .match-scene-layout .picks,.match-scene-layout .picks.five{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+ }
+ .post-mic-picks{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .after-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:570px){
+ .match-scene-layout .picks,.match-scene-layout .picks.five,
+ .post-mic-picks{grid-template-columns:minmax(0,1fr)}
+ .match-scene-layout .decision-option{min-height:49px;padding:9px 10px}
+ .match-scene-layout .decision-option b{font-size:17px}
+ .after-plan b{font-size:16px}
+ .after-plan span{font-size:13px}
+ .tv .tv-foot .foot-btns{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:7px}
+ .tv .tv-foot .foot-btns .btn{min-width:0;min-height:45px;padding:6px 8px;font-size:21px}
+}
+
+
+/* After the result: verdict, evidence and consequences first; full commentary
+   remains available on demand without consuming half the initial screen. */
+.tv .s-result:has(.mf-win){
+ height:auto;
+ grid-template-columns:minmax(0,1fr);
+ grid-template-rows:none;
+ align-content:start;
+ gap:12px;
+}
+.tv .s-result:has(.mf-win)>*{grid-column:1/-1}
+.tv .s-result .mf-win{min-height:0}
+.tv .s-result .final .bigstars{font-size:clamp(58px,9vw,100px)}
+.tv .s-result .win>.wbody{max-height:none}
+.tv .s-result .facts{gap:7px}
+.tv .s-result .facts>div{min-width:0}
+.result-commentary{
+ grid-column:1/-1;
+ background:var(--well);
+ border:2px solid var(--ink);
+ color:var(--white);
+ min-width:0;
+}
+.result-commentary>summary{
+ display:flex;
+ align-items:baseline;
+ justify-content:space-between;
+ gap:12px;
+ cursor:pointer;
+ list-style:none;
+ padding:10px 16px;
+ font:25px/1.1 var(--jersey);
+ color:var(--gold);
+ background:var(--deep);
+}
+.result-commentary>summary::-webkit-details-marker{display:none}
+.result-commentary>summary::after{content:'+';font-size:24px;margin-left:auto;color:var(--white)}
+.result-commentary[open]>summary::after{content:'−'}
+.result-commentary>summary small{font:16px/1 var(--tt);color:var(--dim)}
+.result-commentary>summary:hover,.result-commentary>summary:focus-visible{background:var(--well-hover)}
+.result-commentary>.well{border:0;outline:0;margin:0;max-height:500px;overflow:auto}
+@media(max-width:900px){
+ .tv .s-result:has(.mf-win){gap:9px}
+ .tv .s-result .final .bigstars{font-size:64px}
+ .result-commentary>summary{padding:11px 12px;font-size:22px}
+ .tv .s-result .win>.wbody{overflow:visible}
+}
+
+
+/* The long explanation follows the selected plan; it is never repeated on
+   every action button. An unselected action needs only its succinct label. */
+.after-plan-detail{
+ margin:9px 0 0;
+ padding:7px 10px;
+ line-height:1.3;
+ font-size:15px;
+ color:var(--ink-2);
+ background:var(--paper);
+ border-left:3px solid var(--gold-lo);
+}
+.tv .s-back .wbody>.decide2{
+ max-height:none;
+ overflow:visible;
+ border-top:1px solid var(--stone-lo);
+ padding:14px 16px 17px;
+}
+.after-complete .after-consequences{margin-top:0;border-top:0;padding-top:0}
