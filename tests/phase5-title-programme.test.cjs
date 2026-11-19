@@ -40,8 +40,13 @@ function setup(){
 console.log('PASS changed champions lead to a documented new title opponent');
 {
  const {s,prog,pid,div}=setup();
+ // A valid player-held belt needs a place on this promotion's title ladder.
+ // Otherwise the title office (correctly) recrowns it before programme checks.
+ s.territory.cards[pid].rex??={score:45,matches:1,wins:1};
  s.territory.titles[pid][div].holder='rex';
+ assert.equal(T.title(pid,div).holder,'rex');
  G.endWeek();
+ assert.equal(T.title(pid,div).holder,'rex','the same-stable champion must still hold the belt');
  assert.ok(!P.state(s.territory).live.some(p=>p.id===prog.id),'invalid title programme closed');
  assert.equal(P.state(s.territory).done.find(p=>p.id===prog.id)?.status,'cancelled');
  assert.ok(!s.futureBookings.some(c=>c.programme?.id===prog.id));
