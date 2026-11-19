@@ -34,10 +34,3 @@ const missing=JSON.parse(JSON.stringify(duplicate));missing.scenarios=[];
 assert.throws(()=>suite.compare(reference,missing),/Incompatible baseline suites/);
 assert.ok(reference.scenarios[0].report.actionEvents>0);
 console.log('PASS graph baseline: actual engine capture, deterministic seeds, six scenarios, drift detection, critical anomalies, frozen-reference protection');
-if (process.env.CI && !require('node:fs').existsSync(require('node:path').join(__dirname,'../tools/graph-lab/baselines/reference-v1.json'))) {
-  const bootstrap = suite.capture();
-  console.log('GRAPH_BASELINE_JSON_BEGIN');
-  console.log(JSON.stringify(bootstrap));
-  console.log('GRAPH_BASELINE_JSON_END');
-}
-
