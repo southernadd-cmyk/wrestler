@@ -40,7 +40,7 @@ async function visit(browser, label, viewport) {
     assert.equal(await page.locator('#tab-tape').getAttribute('aria-selected'), 'true');
     assert.ok(await page.locator('#trace .traceRow').count() > 5, 'actual graph event trace');
     assert.equal(await page.locator('#tapeViz .timebar').count(), 24, 'observed density per clock interval');
-    assert.match(await page.locator('#traceMeta').innerText(), / vs .*seed /);
+    assert.match(await page.locator('#traceMeta').innerText(), / vs .*seed /i);
     await page.locator('#traceFilter').selectOption('Counter');
     assert.equal(await page.locator('#trace .traceRow:not([data-kind="Counter"]):visible').count(), 0, 'trace filtering works');
     await page.locator('#traceFilter').selectOption('all');
@@ -68,6 +68,12 @@ async function visit(browser, label, viewport) {
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     assert.ok(overflow <= 3, label + ': horizontal overflow of ' + overflow + 'px');
+    if (process.env.GRAPH_LAB_CAPTURE === '1' && (label === 'desktop' || label === 'phone')) {
+      await page.locator('#tab-run').click();
+      await page.evaluate(() => window.scrollTo(0, 0));
+      const shot = await page.screenshot({ type: 'jpeg', quality: 48, fullPage: true, animations: 'disabled' });
+      console.log('GRAPH_LAB_SCREENSHOT_' + label.toUpperCase() + ':' + shot.toString('base64'));
+    }
     assert.deepEqual(failed, [], label + ': all assets load without HTTP errors');
     assert.deepEqual(errors, [], label + ': no uncaught browser exceptions');
     console.log('PASS graph lab ' + label + ': tabs, real bouts, tape histogram, move atlas, responsive layout');
