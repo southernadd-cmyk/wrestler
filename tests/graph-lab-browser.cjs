@@ -43,6 +43,12 @@ async function visit(browser, label, viewport) {
     assert.equal(await page.locator('#completed').innerText(), '1');
     assert.ok((await page.locator('#nodeCoverage').innerText()).endsWith('%'), 'measured graph coverage');
     assert.ok((await page.locator('#families li').count()) > 0);
+    assert.equal(await page.locator('#validationState').innerText(), 'PASS', 'real bout passes mechanical checks');
+    assert.equal(await page.locator('#validationErrors').innerText(), '0', 'no mechanical errors');
+    assert.match(await page.locator('#validationUnique').innerText(), /1 \/ 1/);
+    assert.ok((await page.locator('#validationPairs').innerText()).length > 0);
+    await page.locator('.validation-details summary').click();
+    assert.match(await page.locator('#validationStyles').innerText(), /PERFORMANCE STYLES/);
 
     await page.locator('#viewTape').click();
     assert.equal(await page.locator('#tab-tape').getAttribute('aria-selected'), 'true');
@@ -83,6 +89,8 @@ async function visit(browser, label, viewport) {
       assert.equal(snapshot.schema, 'office-graph-lab-v1');
       assert.equal(snapshot.bouts, 1);
       assert.ok(snapshot.visitedNodes > 0);
+      assert.equal(snapshot.validation.schema, 'office-graph-validation-v1');
+      assert.equal(snapshot.validation.hardErrors, 0);
       await page.locator('#tab-compare').click();
       await page.locator('#baseline').setInputFiles(await download.path());
       await page.waitForFunction(() => document.querySelectorAll('#comparison tbody tr').length >= 5);
