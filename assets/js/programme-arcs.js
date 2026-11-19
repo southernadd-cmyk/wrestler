@@ -154,6 +154,9 @@
  };
  const originalApply=G.applyResult;
  G.applyResult=function(c,fin){
+  // This is the outermost result wrapper. Never run any of the inner DQ,
+  // title, programme, wrestler or financial hooks for an already-played contract.
+  if(G.resultRecorded(c))return [];
   const out=originalApply.call(this,c,fin);
   if(!Array.isArray(out))return out;
   const note=settle(c,fin);if(note)out.push(note);

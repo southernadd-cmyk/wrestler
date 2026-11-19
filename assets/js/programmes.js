@@ -86,6 +86,14 @@
    beats.push({at:start+beats.length*2,rid,slot:'main',finish:finishFor(payoffWin,id)});
   }
   if(beats.length<2)return null;
+  // Announce the booker's stipulation when the programme is first offered.
+  // A payoff is not a surprise rewrite of the contract after it is signed.
+  const payoff=beats.at(-1),stips=root.OfficeStips;
+  if(['title','grudge'].includes(type)&&stips&&hash(id+':payoff-stip')<.7){
+   const choice=stips.favourite(p);
+   if(stips.STIPS[choice]&&(!['nodq','anywhere'].includes(choice)||!/_dq$/.test(payoff.finish)))
+    payoff.stip=choice;
+  }
   const programme={id,pid:p.id,div,type,wid:w.id,rid,beats:beats.map(b=>({...b,done:false,cid:null})),offered:week,swerved:false};
   const pay=beats.at(-1);
   return {id:'o-'+id,pid:p.id,rid:pay.rid,slot:pay.slot,finish:pay.finish,wid:w.id,tag:'Programme',boost:1.2,haggled:true,
@@ -123,9 +131,9 @@
   if(clash)return G.bookingConflict(w.id,clash.rid,clash.at)||`${w.short} isn’t free on ${weekLabel(clash.at)}. Every date in a programme has to be clear.`;
   for(const [k,b] of prog.beats.entries()){
    const fd=G.feud?.(w.id,b.rid);
-   const c={id:'c-'+prog.id+'-'+k,pid:prog.pid,rid:b.rid,wid:w.id,slot:b.slot,minutes:D.SLOTS[b.slot].mins+(b.blowoff?5:0),finish:b.finish,
+   const c={id:'c-'+prog.id+'-'+k,pid:prog.pid,rid:b.rid,wid:w.id,slot:b.slot,minutes:D.SLOTS[b.slot].mins+(b.blowoff?5:0)+(b.stip==='falls'?5:0),finish:b.finish,
     purse:G.purse({pid:prog.pid,slot:b.slot,finish:b.finish,boost:o.boost},w),tag:k===prog.beats.length-1?(prog.type==='title'?'Title match':b.blowoff?'Blow-off':'Programme'):'Programme',
-    feudHeat:fd&&!fd.closed?fd.heat:0,blowoff:!!b.blowoff,eventAbs:b.at,programme:{id:prog.id,step:k},...(b.title?{title:{...b.title}}:{})};
+    feudHeat:fd&&!fd.closed?fd.heat:0,blowoff:!!b.blowoff,eventAbs:b.at,programme:{id:prog.id,step:k},...(b.title?{title:{...b.title}}:{}),...(b.stip?{stip:b.stip}:{})};
    b.cid=c.id;
    if(b.at===G.abs())s.card.push(c);else s.futureBookings.push(c);
   }
@@ -135,7 +143,7 @@
   if(prog.pid==='union')s.goals.union=true;
   const p=G.P(prog.pid);
   G.msg({from:`${p.voice}, ${p.name}`,subject:'We have a programme',kind:'info',body:[`“Good. ${w.short} starts ${weekLabel(prog.beats[0].at)}. See it through and I won’t forget it.”`,
-   ...prog.beats.map((b,k)=>`${weekLabel(b.at)}: v ${name(b.rid)}, ${D.SLOTS[b.slot].name.toLowerCase()}, ${D.FINISHES[b.finish].name.toLowerCase()}${b.title?' (title match)':''}.`)]});
+   ...prog.beats.map((b,k)=>`${weekLabel(b.at)}: v ${name(b.rid)}, ${D.SLOTS[b.slot].name.toLowerCase()}, ${D.FINISHES[b.finish].name.toLowerCase()}${b.title?' (title match)':''}${b.stip?' · '+(root.OfficeStips?.name?.(b.stip)||b.stip):''}.`)]});
   G.save();return null;
  };
  // Pulling any match from a programme walks out of the whole programme.
@@ -206,6 +214,31 @@
   for(const prog of st.live.slice()){
    const p=G.P(prog.pid);
    if(!G.W(prog.wid)){close(s,prog,'collapsed',`${name(prog.wid)} left your stable.`);continue;}
+   // The booker must amend the title programme when the belt changes hands.
+   // Retarget only if the new champion is eligible and free for the final date.
+   const final=prog.beats.at(-1),finalContract=[...s.card,...s.futureBookings].find(c=>c.id===final?.cid);
+   if(final?.title&&!final.done&&!final.missed&&finalContract){
+    const champion=t.titles?.[final.title.pid]?.[final.title.div]?.holder||null;
+    if(champion!==final.rid){
+     const occupied=champion&&[...s.card,...s.futureBookings].some(c=>
+      c.id!==finalContract.id&&c.eventAbs===final.at&&(c.wid===champion||c.rid===champion));
+     const eligible=champion&&champion!==prog.wid&&!G.W(champion)&&
+      D.divisionOf(champion)===final.title.div&&t.cards?.[final.title.pid]?.[champion]&&
+      T.contracted(s,champion)&&!occupied;
+     if(!eligible){
+      close(s,prog,'cancelled','The championship changed hands and the promoter could not honour the announced title payoff.');
+      G.msg({from:`${p.voice}, ${p.name}`,subject:'The title programme is cancelled',kind:'info',
+       body:['The promised champion is no longer holding the belt. There is no eligible replacement for the contracted date.',
+        'The remaining dates are cancelled. This was the booker’s change, so no withdrawal penalty applies.']});
+      continue;
+     }
+     const old=final.rid;
+     final.rid=champion;finalContract.rid=champion;prog.rid=champion;
+     G.msg({from:`${p.voice}, ${p.name}`,subject:'New champion, new programme payoff',kind:'info',
+      body:[`The title is no longer held by ${name(old)}. ${name(champion)} is the new champion, so your final contracted match now faces ${name(champion)}.`,
+       `The payoff remains ${weekLabel(final.at)}. The promised finish, purse and title opportunity remain in place.`]});
+    }
+   }
    const exists=new Set([...s.card,...s.futureBookings].map(c=>c.id));
    const missed=prog.beats.filter(b=>!b.done&&!b.missed&&!exists.has(b.cid));
    for(const b of missed){

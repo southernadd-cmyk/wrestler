@@ -243,6 +243,7 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
 const originalEnd=G.endWeek,originalApply=G.applyResult;
 G.endWeek=function(...args){const x=originalEnd(...args);evolve();return x};
 G.applyResult=function(c,fin){
+ if(G.resultRecorded(c))return [];
  const x=originalApply(c,fin),t=ensure();
  const resolution=root.OfficeOutcome.interpret(c,fin);
  const won=resolution.winner===null?null:resolution.winner==='w';

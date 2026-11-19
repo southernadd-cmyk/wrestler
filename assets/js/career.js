@@ -10,6 +10,10 @@ const money=n=>(n<0?'−':'')+'£'+Math.abs(Math.round(n)).toLocaleString('en-GB
 let S=null;
 let storageState={ok:null,lastSaved:null};
 function saveStatus(){return {...storageState};}
+function resultRecorded(c){
+ const id=c?.id;
+ return !!(id&&S&&(S.resultIds?.includes(id)||S.history?.some(h=>h.cid===id)||S.seasonResults?.some(h=>h.cid===id)));
+}
 // Diagnostic notices are part of the career: previously optional simulation
 // failures vanished completely. Keep the last twelve, including their origin.
 function reportError(source,error){
@@ -39,7 +43,7 @@ const uid=p=>p+'-'+S.week+'-'+Math.floor(rand()*1e9).toString(36);
 /* ---------- lifecycle ---------- */
 function fresh(){
  S={v:22,seed:(Date.now()%100000)+7,careerSeed:null,season:1,week:1,cash:2250,rep:22,focus:2,monthReview:null,coach:null,futureBookings:[],circuitReviews:[],business:{training:0,negotiated:0,meetings:0,kept:0,broken:0},roster:[],free:D.TALENT.map(t=>({...t})),
-  promoters:D.PROMOS.map(p=>({...p,blacklist:0,matches:0,best:0})),offers:[],card:[],feuds:{},inbox:[],history:[],systemErrors:[],
+  promoters:D.PROMOS.map(p=>({...p,blacklist:0,matches:0,best:0})),offers:[],card:[],feuds:{},inbox:[],history:[],resultIds:[],systemErrors:[],
   goals:{},recentTypes:{},books:[],seasonResults:[],over:null};
  // Never change this as the weekly PRNG advances. It identifies this career's
  // underlying circuit outcomes without touching legacy career random sequences.
@@ -68,7 +72,7 @@ function goalList(){const n=S.season;return [
 function hydrate(x){
  if(!x || ![20,21,22].includes(x.v) || !Array.isArray(x.roster)||!Array.isArray(x.offers))return null;
  if(!Array.isArray(x.free))x.free=[];
- x.v=22;x.careerSeed??=x.seed;x.systemErrors??=[];x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));
+ x.v=22;x.careerSeed??=x.seed;x.systemErrors??=[];x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));x.resultIds??=[...x.seasonResults,...(x.history||[])].map(h=>h.cid).filter(Boolean).slice(-2048);
  for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
  root.OfficeTerritory?.prepare(x);
  root.OfficeWorldV4?.activate(x);
@@ -441,6 +445,7 @@ function unbook(cid){const c=[...S.card,...S.futureBookings].find(x=>x.id===cid)
 
 /* ---------- results ---------- */
 function applyResult(c,fin){
+ if(resultRecorded(c))return [];
  {const rw=S.roster.find(x=>x.id===c.wid);if(rw&&fin?.rehearsed)useRehearsal(rw);}
  const w=W(c.wid),p=P(c.pid),f=F(c.rid),FN=D.FINISHES[c.finish],out=[];const add=(text,tone=0)=>out.push({text,tone});
  const double=fin.outcome==='double',nc=fin.outcome==='nc',won=double||(!nc&&FN.win);
@@ -485,6 +490,7 @@ function applyResult(c,fin){
   else if(fd.heat>=40)add(`A rivalry is building with ${f.short} (heat ${fd.heat}). Rematch offers likely.`,1);
   else add(`Rivalry with ${f.short}: heat ${fd.heat}. Another good match and the promoters will want a rematch.`,0);}
  if(fin.stars>=4)S.goals.four=true;
+ if(c.id){S.resultIds??=[];S.resultIds.push(c.id);if(S.resultIds.length>2048)S.resultIds=S.resultIds.slice(-2048);}
  // Keep a compact season ratings ledger when detailed commentary rolls off after 40 matches.
  S.seasonResults??=[];
  if(!S.seasonResults.some(x=>x.cid&&x.cid===c.id)){
@@ -663,5 +669,5 @@ function seasonEnd(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,reportError,systemErrors,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
 })(typeof window!=='undefined'?window:globalThis);
