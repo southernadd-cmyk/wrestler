@@ -1,5 +1,7 @@
 # The Office v0.3.12: rivalries that remember
 
+> **v0.4 status:** Historical v0.3.12 rivalry argument audit. The later v0.4 release includes real rematch-specific variations and preserves outcome-grounded dialogue. See [v0.4 release](v0.4-release.md) and [technique and physical realism review](technique-and-realism-review.md). Historical figures and original phase wording below are retained for traceability.
+
 **Status:** v0.3.12, the Rivalry edition. Built on `feature/deeper-promos-rivalries-v3-12`.
 **Brief:** deeper promo arguments and evolving rivalries (reference: `docs/creative-loop-v3-2.md`).
 

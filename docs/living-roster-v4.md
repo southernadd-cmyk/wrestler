@@ -4,7 +4,7 @@
 
 ## Status
 
-**Design and starting allocations only.** This is the reviewed specification for the next implementation stage; it is not yet wired into career saves, matchmaking or the portrait system. No changes to the playable 28-person roster are made by this PR.
+**Shipped in the living 80-wrestler world.** This document is the original cast and agency design brief. Its starting allocations, personality pitches and original acceptance criteria remain as historical design provenance; later implementation added the 52 new wrestlers, six AI agencies, save migration, portraits and world simulation. The current playable game is documented in the [v0.4 release guide](v0.4-release.md) and [architecture guide](architecture.md).
 
 ## Starting population
 
@@ -28,7 +28,7 @@ The four existing promoters (Dockside, Pulse Underground, North Crown, Grand Uni
 | Pavel Singh | Meridian International | 0 | 6 | 6 | Crossover acts, spectacle and high-upside risks |
 | Cleo Kells | Redwood Wrestling Agency | 0 | 7 | 7 | Contracts first, high standards, slow-burn main-event careers |
 
-The budgets, AI recruitment logic and stable-size limits must be redesigned before the cast is activated. A 44-worker AI roster distributed across six managers must not use the old maximum-five agency recruitment shortcut.
+**Original engineering caution (subsequently addressed):** A 44-worker AI roster distributed across six managers could not use the old five-worker recruitment shortcut. The later living-world implementation introduced agency contract and budget management.
 
 ## New talent: identity before artwork
 
@@ -102,7 +102,7 @@ Each performer below has a hand-authored motivation, spoken voice, distinct visi
 - **Bashir Lowe — “Roadwork”** (43, veteran / brawl). A durable veteran who is willing to lose if a youngster earns the moment. **Wants:** Train his eventual successor and settle his final serious feud. **Voice:** Blunt warm mentorship. **Portrait brief:** Close-cropped grey hair, navy work vest.
 - **Cleo Watt — “The Red Line”** (29, prospect / technical). Asks for a clear plan and can detect immediately when someone is not following it. **Wants:** Win a long technical rivalry without political favours. **Voice:** Direct, analytic and sardonic. **Portrait brief:** Tight dark curls, crimson-and-silver gear.
 
-## Engineering contract for the next PR
+## Original engineering contract (historical checklist)
 
 1. Centralize character templates without erasing the separate **career state** for signings, independent status, injury, finances or grudges.
 2. Fix the `TALENT` versus `FOES` split: opponent-only templates currently lack fields required of a player-signable worker. Maintain legacy IDs and existing match mechanics.
@@ -112,7 +112,7 @@ Each performer below has a hand-authored motivation, spoken voice, distinct visi
 6. Seed identities and motives into conversations instead of introducing arbitrary disputes; start with the highest-value existing character arcs.
 7. Only once the roster is integrated and tested, generate a transparent-background 80-wrestler atlas, plus four distinct booker images. Do not splice regenerated characters into the old 4×8 atlas.
 
-## Release gates
+## Original release gates (historical checklist)
 
 - Exactly 80 unique IDs (28 preserved + 52 new) in new careers; initial distribution 20 market / 44 AI / 16 independent.
 - Every wrestler can resolve to an opponent, a match profile and a visible portrait without breaking saved careers.
@@ -123,4 +123,4 @@ Each performer below has a hand-authored motivation, spoken voice, distinct visi
 
 ## What this does NOT do
 
-No live roster activation, new images, additional promotions, gameplay changes or release claim. This is the casting and architecture contract that makes those changes safe and measurable.
+**At the time of this cast-bible draft**, it made no live roster activation, image-generation or gameplay release claim. Those additions were made in later development and are part of the current live 80-person game. This retained document is not a claim that those features remain unfinished.

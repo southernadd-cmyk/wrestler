@@ -1,5 +1,7 @@
 # Phase 2 — technique mechanics registry (read-only pilot)
 
+> **v0.4 status:** Completed original Phase 2 **metadata-only pilot**. The separate live v0.4 registry contains 90 reviewed records for 340 authored moves; this original pilot's proposed relationships are preserved as historical design. See [v0.4 release](v0.4-release.md) and [technique and physical realism review](technique-and-realism-review.md). Historical figures and original phase wording below are retained for traceability.
+
 **Scope:** a manually curated metadata layer over *existing* OfficeMatch catalogue IDs. No new moves, no match selection/weight changes, no saves or training effects. This follows the [Phase 1 audit](phase1-graph-technique-audit.md) and preserves the frozen 1,200-bout reference.
 
 ## Decision

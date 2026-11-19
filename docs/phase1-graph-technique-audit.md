@@ -1,5 +1,7 @@
 # The Office — Phase 1: match-graph technique audit
 
+> **v0.4 status:** Completed Phase 1: the *original* 336-move inventory is a frozen reference; v0.4 has 340 playable moves, of which 90 have detailed technique records. See the [current v0.4 release](v0.4-release.md) and [technique/realism review](technique-and-realism-review.md). Original snapshots, counts and period-specific claims below remain historical.
+
 **Status:** Read-only design/data audit, no match-engine or career-system changes  
 **Audited baseline:** `main` at `02228d5569544790df329e8309dd3b88f87b8d1d` (19 November 2026)  
 **Reference:** `tools/graph-lab/baselines/reference-v1.json`, the frozen 1,200-bout pre-expansion suite  

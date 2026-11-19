@@ -1,5 +1,7 @@
 # The Office v0.2.8 — Promo dialogue graph
 
+> **v0.4 status:** Historical v0.2.8 promo graph. The v0.4 rivalry arguments and repeated-meeting dialogue substantially extend this early model. See the [current v0.4 release](v0.4-release.md) and [technique/realism review](technique-and-realism-review.md). Original snapshots, counts and period-specific claims below remain historical.
+
 The promo system is a branching interactive **three-act encounter**, not a menu that shows four computed scores and lets the player choose the largest.
 
 ## Flow

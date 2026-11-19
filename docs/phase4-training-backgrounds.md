@@ -1,5 +1,7 @@
 # Phase 4 — wrestler technical schooling (bounded live pilot)
 
+> **v0.4 status:** Completed first technical-background pilot. Phase 8 subsequently provided technical identities for all 80 wrestlers, including 40 provisional gameplay assignments. See [v0.4 release](v0.4-release.md) and [technique and physical realism review](technique-and-realism-review.md). Historical figures and original phase wording below are retained for traceability.
+
 **Goal:** different wrestlers can approach the *same* technique sequence in recognisably different ways without equating a performance style with a training tradition, changing contracted finishes, or altering long-lived saves. This follows the [Phase 3 curated live transitions](phase3-technique-transitions.md).
 
 ## Separate the three existing concerns

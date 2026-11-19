@@ -1,5 +1,7 @@
 # Five-week real-career rivalry continuity audit
 
+> **v0.4 status:** The persisted five-week career audit is included in v0.4 regression coverage; original scenario and expectations below remain useful evidence. See the [release guide](v0.4-release.md) and [next review](technique-and-realism-review.md).
+
 This test extends the [40-bout isolated repeated-rivalry audit](repeated-rivalry-automation.md). Unlike the earlier five-match seeded sampling, it uses a **single persistent career**, takes actual match results through the game's career, rivalry, memory and promo systems, advances the calendar, and reloads from browser-style localStorage after each encounter.
 
 ## What it exercises

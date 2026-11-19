@@ -1,5 +1,7 @@
 # The Office v0.3.1 — Negotiated match sheets and causal event graph
 
+> **v0.4 status:** Historical v0.3.1 signed-match-sheet design. Later agent-room work and Phase 10 expand how named scripted moves are recorded. See the [current v0.4 release](v0.4-release.md) and [technique/realism review](technique-and-realism-review.md). Original snapshots, counts and period-specific claims below remain historical.
+
 ## What actually ships
 
 The regional stable game now exposes a real two-worker planning stage between

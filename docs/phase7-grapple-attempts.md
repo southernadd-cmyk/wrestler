@@ -1,6 +1,8 @@
 # Phase 7 — grapple attempt state: readiness and implementation gates
 
-**Status: four-move implementation on draft PR #103, not yet merged into live.**
+> **v0.4 release status:** PR #103 subsequently **merged**; all four audited grapple-attempt pilots are available in the v0.4 engine. See the [current release](v0.4-release.md) and [next technique/realism review](technique-and-realism-review.md). Original experiment data and reference counts are retained.
+
+**Original draft status, now superseded:** the four-move implementation from PR #103 has since been merged and deployed.
 
 Phase 6 introduced real persistent, two-beat aerial commitments. Phase 7 should cautiously extend this to standing suplexes and grounded submissions, **not** turn every catalog move into a two-beat action.
 
@@ -30,10 +32,10 @@ The executable readiness test checks that the *actual shipped graph* contains th
 Phase 6 remains the live implementation until these gates pass. See [Phase 6](phase6-aerial-attempt-state.md).
 
 
-## Implementation on draft PR #103
+## Implementation on PR #103 (since merged)
 
 The match engine now implements `startGrapple`, `resolveGrapple` and `abortGrapple` for the four exact pilot IDs. `graph.pendingGrapple`, `grappleAttempts` and `grappleAttemptSerial` are serialised alongside the existing aerial state. A tick resolves any pending grapple before changing story arcs, and `finishCue` marks interruptions rather than reporting a fictitious completed throw or locked hold.
 
 All matching generated pilot reversals and blocks require their exact parent grapple attempt. The other catalogued grapples are unchanged; no moves, graph edges, or training-school allocations were added. A smaller defence range is used for throws and a distinct hold-specific range for submissions. `tests/grapple-attempts.test.cjs` exercises four parents, distinct outcomes, save/resume, interruption, legacy migration and overlapping-attack rejection. The graph catalog's legality probe now begins a named grapple before testing these four generated alternatives.
 
-**Release gate:** this draft is not a verified live deployment. Check the new PR simulation suite and examine ordinary match transcripts/baseline distributions before merging.
+**Historical release gate, since satisfied:** the original draft required simulation and transcript/baseline checks. These attempt mechanics shipped; broader grip-specific realism still needs a separate review.

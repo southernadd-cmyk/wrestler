@@ -1,4 +1,6 @@
-# The Office — Graph Lab (Phase 0)
+# The Office — Graph Lab (live through v0.4.0)
+
+> **v0.4 release status:** The Graph Lab is **live** and covers the v0.4 match graph; its Phase 0 planning section below is historical. See the [current release](v0.4-release.md) and [next technique/realism review](technique-and-realism-review.md). Original experiment data and reference counts are retained.
 
 A read-only instrument for the **actual** browser match engine. It introduces no new wrestling styles, moves, training rules or career-save mutations. This is the diagnostic baseline to measure future Fight Encyclopedia-inspired graph changes.
 
@@ -74,7 +76,9 @@ node tools/graph-baseline-suite.cjs compare /tmp/current-graph.json tools/graph-
 
 **Changing the baseline is a review decision.** Preserve `reference-v1.json` as the before-state for Fight Encyclopedia-inspired work. If we knowingly accept a major new graph, add a separately named v2 reference through a reviewed PR and update the comparison path; never automatically overwrite the original reference on each run.
 
-## Next changes, after baseline sign-off
+## Original Phase 0 roadmap (subsequently delivered through v0.4)
+
+**Historical roadmap:** These steps motivated the completed Phase 1–10 releases. They are not the current work queue; see [v0.4 technique and realism review](technique-and-realism-review.md).
 
 1. Annotate missing positional/setup/counter relationships without changing the outcome graph.
 2. Add a typed technique registry with stable IDs and explicit provenance.

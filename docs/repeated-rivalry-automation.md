@@ -1,5 +1,7 @@
 # Repeated rivalry automation — what the tests prove
 
+> **v0.4 status:** The multi-bout and training-background comparison automation is live in the v0.4 validation pipeline. Its historical ablation comparisons do not themselves prove dramatic quality. See the [release guide](v0.4-release.md) and [next review](technique-and-realism-review.md).
+
 The Office's [Phase 4 wrestler training backgrounds](phase4-training-backgrounds.md) are now tested through **five consecutive fictional encounters between each of four fixed rival pairings**. This is an *audit*, not an AI evaluator of whether a wrestling show is enjoyable.
 
 ## What runs

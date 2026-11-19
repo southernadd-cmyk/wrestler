@@ -13,10 +13,12 @@ assets/js/
   portraits.js              Pixel-art portrait renderer
   data.js                   Existing 28 wrestler templates, match plans, profiles
   roster-registry.js        Unified 80-wrestler registry from the approved cast bible
+  technique-registry.js     90 source-reviewed technique metadata records
+  technique-backgrounds.js  Independent technical-school identities for all 80 wrestlers
   match-engine.js           Deterministic match simulator and graph
   career.js                 Finances, roster, weekly calendar, saved careers
   territory.js              Four independent promotion card ladders
-  living-world.js           Opt-in v0.4 agency budgets, contracts and migrations
+  living-world.js           Live six-agency budgets, contracts and save migrations
   story.js                  Storylines and rivalries
   memory.js                 Wrestler memory
   sheets.js                 Match planning and shared graph kernel
@@ -68,7 +70,7 @@ Desktop match planning uses independent, height-bounded scroll panes for Dennis'
 
 Local storage keys and save formats are unchanged. The refactor is a source reorganisation and layout correction; it does not rewrite game rules or remove the first-week onboarding.
 
-## v0.4 roster integration (pre-release)
+## v0.4 roster integration (shipped)
 
 The unified 80-wrestler registry is available through `OfficeData.ALL` / `OfficeData.findWrestler(id)`; the original 28 template objects remain unchanged. Since v0.3.11 every new worker has a written ring profile of their own (`RING_PROFILES` in `roster-registry.js`); the interim move archetypes are gone.
 
@@ -76,9 +78,19 @@ The unified 80-wrestler registry is available through `OfficeData.ALL` / `Office
 
 This section describes the migration as it was first built. The 80-wrestler world is now live for every career; see below.
 
-### v0.4 default launch
+### v0.4 default launch (shipped)
 
 Every new career now automatically activates the 80-wrestler world, including 20 market workers, 44 AI-contract workers across six agencies and 16 independents. Every old v20–v22 career migrates on load without losing player contracts or recorded history. Six agency budgets and independent promotion-card ladders continue to evolve every week. The former v0.4 activation switch is no longer necessary for players.
+
+## v0.4.0 release — independently authored technical schools and match graph
+
+The [v0.4 release guide](v0.4-release.md) records the **current**, shipped inventory. Read it before relying on old graph counts in the Phase 1–9 historical reports: **979 nodes, 6,401 edges, 340 authored moves, 90 reviewed technique records**, and all 80 wrestler technical identities. Phase 9's original 969 / 6,333 counts are preserved as historical evidence.
+
+`OfficeTechniqueRegistry` supplies reviewed mechanics and relations for **90** moves; it does not replace the underlying executable catalog. `OfficeTechniqueBackgrounds` assigns 40 retained and 40 explicitly *provisional* individual school preferences; selection effects are bounded and subject to `OfficeMatch.GRAPH.isValid`. A performance style, technical background and weekly training session remain independent concepts. The graph also contains curated Phase 3/5/5b/8 technique links, Phase 9 authored combinations and Phase 10's 12 named scripted high-spot mappings.
+
+The graph supports serialised aerial/springboard attempts and **four** named grapple-attempt pilots; the remaining actions still use the original coarse position/control model. The narrative clock is shared by pacing, phase labels and scoring. When performing changes, preserve legacy saves, legal weight/position/timing gates and booked finishes. `tests/match-phase-pacing.test.cjs`, `tests/phase10-scripted-spots.test.cjs`, `tests/phase9-authored-chains.test.cjs`, `tests/phase8-depth-variety.test.cjs` and `tests/graph-lab.test.cjs` provide specific regression coverage in addition to the full suite.
+
+The next work on **250 unreviewed techniques and controlled physical-state improvements** is a proposed review, **not** already shipped. See [the detailed next-phase assessment](technique-and-realism-review.md) and [documentation guide](README.md).
 
 ## v0.3.9–v0.3.10 additions
 

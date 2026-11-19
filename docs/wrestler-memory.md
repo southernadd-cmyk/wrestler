@@ -1,5 +1,7 @@
 # The Office v0.3.0 — Living wrestlers, not an unrestricted booking sandbox
 
+> **v0.4 status:** Historical foundation of wrestler memory. Current rivalry and backstage consequences build on it; this document's version-specific behaviour remains a historical record. See [v0.4 release](v0.4-release.md) and [technique and physical realism review](technique-and-realism-review.md). Historical figures and original phase wording below are retained for traceability.
+
 **Tagline:** The matches are scripted. The people aren't.
 
 ## Design premise

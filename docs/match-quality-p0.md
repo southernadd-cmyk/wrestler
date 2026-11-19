@@ -1,6 +1,8 @@
 # Phase 9 — Match-quality P0 patch
 
-**Draft PR #107**, stacked on unmerged Phase 9 PR #106. This is a **quality repair**, not another move catalogue expansion. None of these changes is live.
+> **v0.4 release status:** Phase 9 quality patch subsequently **merged via PR #107**. Its 'not fixed' section describes issues *at the time*; Phase 10 later addressed some of them. See the [current release](v0.4-release.md) and [next technique/realism review](technique-and-realism-review.md). Original experiment data and reference counts are retained.
+
+**Historical integration note:** PR #107 was developed on Phase 9's draft stack and has since merged. This quality repair is live; its observations and deferred issues below represent the end of Phase 9, **before** Phase 10.
 
 ## Problems reproduced in the reviewed Phase 9 version
 
