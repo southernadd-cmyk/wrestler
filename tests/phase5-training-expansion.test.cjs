@@ -23,8 +23,8 @@ assert.equal(registryValidation.valid,true,registryValidation.errors.join('\n'))
 assert.equal(registryValidation.proposals,90,'the 60 previously reviewed plus 30 Phase 5b records');
 assert.equal(registryValidation.authored,336);
 assert.equal(schools.valid,true,schools.errors.join('\n'));
-assert.equal(schools.assigned,40);
-assert.equal(schools.unassigned,40);
+assert.equal(schools.assigned,80);
+assert.equal(schools.unassigned,0);
 assert.equal(D.ALL.length,80);
 assert.equal(B.MAX_BONUS,.28,'do not increase the maximum training bias');
 assert.equal(B.get('tomasash').id,'boxing');
