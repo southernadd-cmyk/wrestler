@@ -136,12 +136,19 @@
     $('export').disabled = false;
     renderComparison();
     if (report.validation) renderValidation(report.validation);
+    if(report.phase9){
+      set('phase9Coverage',
+        'NEW EDGES: '+report.phase9.newLinksObserved+'/'+report.phase9.newlyIntroducedLinks+
+        ' observed · '+report.phase9.matchesWithNew+'/'+report.bouts+
+        ' matches ('+report.phase9.matchesWithNewPct.toFixed(1)+'%) · '+
+        report.phase9.sameControllerOccurrences+' same-wrestler transitions · '+
+        report.phase9.threeMoveNewChains+' three-action chains');
+    }
     if (report.phase9Groups?.length) {
       const styles = $('validationStyles');
       styles.append(make('h5', 'PHASE 9 / OBSERVED CURATED CHAINS'));
       for (const item of report.phase9Groups) styles.append(make('p',
-        item.group + ' · ' + item.observed + '/' + item.authored +
-        ' links observed · ' + item.hits + ' real transitions'));
+        item.group + ' · '+item.newObserved+'/'+item.newLinks+' genuinely new links seen ('+item.newHits+' occurrences) · '+item.hits+' all authored pair occurrences'));
     }
   }
 
