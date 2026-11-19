@@ -105,7 +105,7 @@
     increment(snapshot.finishHits, match.final?.finishRoute || '(none)');
     increment(snapshot.outcomeHits, match.graph?.outcome?.id || match.outcome || '(none)');
     snapshot.totalEvents += events.length;
-    snapshot.scriptedSpotEvents += events.filter(e=>e.id==='special_spot').length;
+    snapshot.scriptedSpotEvents += events.filter(e=>e.scriptedSpot||e.id==='special_spot').length;
     let previous = null, chain = 0;
     let ids = [];
     for (const event of events) {
