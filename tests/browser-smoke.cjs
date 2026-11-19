@@ -10,6 +10,24 @@ async function journey(browser,name,viewport){
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto(URL,{waitUntil:'domcontentloaded'});
+  // Legend colours are categories, not interchangeable red alerts:
+  // opponent momentum stays red; poor work is violet; mistake is amber.
+  const colours=await page.evaluate(()=>{
+    const probe=document.createElement('div');
+    probe.className='mf-win';
+    probe.style.cssText='position:absolute;left:-9999px';
+    probe.innerHTML='<div class="mf-key"><i class="k-them"></i><i class="k-poor"></i><b class="k-botch">✗</b></div><div class="mf-phases"><div class="mf-ph w-poor"></div></div>';
+    document.body.appendChild(probe);
+    const bg=s=>getComputedStyle(probe.querySelector(s)).backgroundColor;
+    const values={opponent:bg('.k-them'),poor:bg('.k-poor'),
+      poorPhase:bg('.w-poor'),mistake:getComputedStyle(probe.querySelector('.k-botch')).color};
+    probe.remove();
+    return values;
+  });
+  assert.equal(colours.poor,colours.poorPhase,name+': poor work swatch and phase band mismatch');
+  assert.notEqual(colours.poor,colours.opponent,name+': poor work and opponent use the same colour');
+  assert.notEqual(colours.mistake,colours.opponent,name+': mistake and opponent use the same colour');
+  assert.notEqual(colours.mistake,colours.poor,name+': mistake and poor work use the same colour');
   await page.locator('[data-title="new"]').waitFor();
   await page.locator('[data-title="new"]').click();
   await page.locator('#app').waitFor({state:'visible'});
