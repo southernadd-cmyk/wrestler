@@ -90,7 +90,10 @@
       nodeHits: {}, edgeHits: {}, adjacentHits: {}, arcHits: {},
       familyHits: {}, wrestlerHits: {}, counterHits: 0, blockHits: 0,
       finishHits: {}, outcomeHits: {}, unknownEvents: {}, timingErrors: [],
-      sampledSequences: {}, longestChain: 0
+      sampledSequences: {}, longestChain: 0,
+      phase9: {newPairHits:{},newOccurrences:0,sameControllerOccurrences:0,
+        interruptedPairs:0,matchesWithNew:0,matchesWithTriple:0,
+        newTriples:0,styleHits:{},examples:[]}
     };
   }
 
@@ -137,6 +140,39 @@
       previous = event.id;
       ids.push(event.id);
     }
+    // Phase 9: distinguish actual NEW edges from reweighted older edges.
+    // Counts are consecutive action-ID observations, not proof which pool
+    // component selected an action. Same-controller counts exclude opponent
+    // interceptions; a true 3-beat chain requires two connected NEW links.
+    if(graph.PHASE9_NEW_EDGES?.length){
+      const newEdges=new Set(graph.PHASE9_NEW_EDGES);
+      const p9=snapshot.phase9;
+      let thisMatch=0,triples=0;
+      for(let i=1;i<events.length;i++){
+        const before=events[i-1],after=events[i],edge=before.id+'>'+after.id;
+        if(!newEdges.has(edge)||!A[before.id]||!A[after.id])continue;
+        p9.newOccurrences++;thisMatch++;
+        increment(p9.newPairHits,edge);
+        if(before.control!==after.preControl){p9.interruptedPairs++;continue;}
+        p9.sameControllerOccurrences++;
+        const actor=after.preControl==='f'?match.f:match.w;
+        increment(p9.styleHits,actor?.style||'Unknown');
+        if(i>=2){
+          const previous=events[i-2],prior=previous.id+'>'+before.id;
+          if(newEdges.has(prior)&&A[previous.id]&&
+             previous.control===before.preControl){
+            p9.newTriples++;triples++;
+            if(p9.examples.length<10)p9.examples.push({
+              seed:match.o?.seed,time:after.t,
+              actions:[previous.id,before.id,after.id],
+              performer:actor?.id||null
+            });
+          }
+        }
+      }
+      if(thisMatch)p9.matchesWithNew++;
+      if(triples)p9.matchesWithTriple++;
+    }
     // Sampled short sequences expose repetitive combinations without retaining all match logs.
     for (let i = 0; i + 2 < ids.length; i++) {
       increment(snapshot.sampledSequences, ids.slice(i, i + 3).join(' > '));
@@ -172,12 +208,29 @@
       unknownEvents: top(snapshot.unknownEvents, 30),
       timingErrors: snapshot.timingErrors
     };
+    if (graph.PHASE9_NEW_EDGES?.length){
+      const p9=snapshot.phase9||{};
+      result.phase9={
+        newlyIntroducedLinks:graph.PHASE9_NEW_EDGES.length,
+        newLinksObserved:Object.keys(p9.newPairHits||{}).length,
+        newPairOccurrences:p9.newOccurrences||0,
+        sameControllerOccurrences:p9.sameControllerOccurrences||0,
+        opponentInterceptions:p9.interruptedPairs||0,
+        matchesWithNew:p9.matchesWithNew||0,
+        matchesWithNewPct:pct(p9.matchesWithNew||0,snapshot.bouts),
+        threeMoveNewChains:p9.newTriples||0,
+        matchesWithThreeMoveNewChains:p9.matchesWithTriple||0,
+        byStyle:top(p9.styleHits||{},8),
+        examples:(p9.examples||[]).slice(0,10)
+      };
+    }
     if (Array.isArray(graph.TECHNIQUE_CHAINS)) {
-      const byGroup={};
+      const byGroup={},newSet=new Set(graph.PHASE9_NEW_EDGES||[]);
       for (const link of graph.TECHNIQUE_CHAINS) {
-        const g=byGroup[link.group]??={group:link.group,authored:0,observed:0,hits:0};
-        const hits=snapshot.edgeHits[link.from+'>'+link.to]||0;
+        const g=byGroup[link.group]??={group:link.group,authored:0,observed:0,hits:0,newLinks:0,newHits:0,newObserved:0};
+        const key=link.from+'>'+link.to,hits=snapshot.edgeHits[key]||0;
         g.authored++;g.hits+=hits;if(hits)g.observed++;
+        if(newSet.has(key)){g.newLinks++;g.newHits+=hits;if(hits)g.newObserved++;}
       }
       result.phase9Groups=Object.values(byGroup).sort((a,b)=>b.hits-a.hits||a.group.localeCompare(b.group));
     }
