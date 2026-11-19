@@ -74,6 +74,9 @@
     }
     $('worker').value = people.some(p => p.id === 'juno') ? 'juno' : people[0].id;
     $('opponent').value = people.some(p => p.id === 'rex') ? 'rex' : people[1].id;
+    updateSchoolReadout();
+    $('worker').addEventListener('change', updateSchoolReadout);
+    $('opponent').addEventListener('change', updateSchoolReadout);
   }
 
   function listHits(id, items, labeler) {
