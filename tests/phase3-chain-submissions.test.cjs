@@ -112,6 +112,10 @@ const grounded=M.create(lab.makeOptions(D,{wid:'juno',rid:'dee',slot:'main',
 grounded.stage='live';grounded.t=Math.floor(grounded.len*.86);
 grounded.story.control='w';grounded.story.position='mat';grounded.story.down='f';
 grounded.wSt=grounded.fSt=100;
+// A live known physical descriptor is different from a null legacy-save
+// descriptor, which intentionally retains older permissive compatibility.
+grounded.graph.physical={v:1,locations:{w:'ring',f:'ring'},
+ area:'ring',topSide:null,grip:null};
 assert.equal(G.isValid(grounded,'sm_kimura'),false,
  'a free mat position does not invent wrist control');
 G.apply(grounded,'rs_wrist_mat');
