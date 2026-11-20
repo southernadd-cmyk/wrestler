@@ -62,7 +62,7 @@ function probe(id){
    x.graph.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',topSide:null,
     grip:{type:grip,side:control,at:x.t,source:Object.keys(G.GRIP_ENTRY).find(k=>G.GRIP_ENTRY[k]===grip)||'reviewed-setup'}};
   }
-  const contactParent=G.CONTACT_PILOT.includes(parent);
+  const contactParent=G.CONTACT_PILOT.includes(parent)||G.ENVIRONMENT_PILOT.includes(parent);
   if(contactParent){
    x.stage='live';
    x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02,A[parent].after+.02)));
@@ -142,6 +142,14 @@ for(let i=0;i<N;i++){
  for(const e of g.events){
   const n=A[e.id];if(!n)continue;events++;reached.add(e.id);
   const parent=n.counterOf||n.blockOf;
+  if(parent&&G.ENVIRONMENT_PILOT.includes(parent)){
+   const ledger=g.contactAttempts?.find(a=>a.seq===e.contactAttemptSeq);
+   const outcome=n.counterOf?'counter':'block';
+   assert.ok(ledger&&ledger.id===parent&&ledger.actionId===e.id&&
+    ledger.outcome===outcome&&e.contactResolution===outcome&&
+    e.contactKind===A[parent].family&&e.attemptedMove===parent,
+    'exact environmental defence attribution '+e.id);
+  }
   if(parent&&G.STRIKE_PILOT.includes(parent)){
    const ledger=g.strikeAttempts?.find(a=>a.seq===e.strikeAttemptSeq);
    const outcome=n.counterOf?'counter':'block';

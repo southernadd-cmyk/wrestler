@@ -151,6 +151,22 @@
         'NOT SEEN: '+x.unobservedMoves.map(id=>G.A[id]?.name||id).join(', '):
         'All named grapples observed at least once.');
     }
+    if(report.environment){
+      const x=report.environment;
+      set('environmentOverview',x.coveredMoves+'/'+x.eligibleMoves+
+        ' named environmental actions seen · '+fmt(x.attempts)+' attempts · '+
+        fmt(x.landed)+' landed · '+fmt(x.counter)+' countered · '+
+        fmt(x.block)+' blocked · '+fmt(x.invalid)+' ledger errors');
+      const pane=$('environmentFamilies');pane.replaceChildren();
+      for(const family of ['corner','outside','rope']){
+        const row=x.byFamily[family]||{attempts:0,landed:0,counter:0,block:0};
+        pane.append(make('p',family.toUpperCase()+' · '+row.attempts+' attempts · '+
+          row.landed+' landed / '+row.counter+' counter / '+row.block+' blocked'));
+      }
+      set('environmentUnseen',x.unobservedMoves.length?
+        'NOT SEEN: '+x.unobservedMoves.map(id=>G.A[id]?.name||id).join(', '):
+        'All 44 named environmental actions observed in this sample.');
+    }
     $('export').disabled = false;
     renderComparison();
     if (report.validation) renderValidation(report.validation);

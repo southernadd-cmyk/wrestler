@@ -1637,6 +1637,15 @@ const Graph=(function makeGraph(){
  const GROUND_PILOT=Object.freeze([...CAT.members.ground]);
  const PIN_PILOT=Object.freeze([...CAT.members.pin]);
  const CONTACT_PILOT=Object.freeze([...GROUND_PILOT,...PIN_PILOT]);
+ // Phase 6: complete environmental commitment coverage for corner, floor
+ // and rope actions. The referee countout tease has no authored counter and
+ // remains a narrative beat, not an attack with fabricated defence.
+ const ENVIRONMENT_PILOT=Object.freeze([
+  ...CAT.members.corner,
+  ...CAT.members.outside.filter(id=>id!=='os_count_tease'),
+  ...CAT.members.rope
+ ]);
+ const isContactParent=id=>CONTACT_PILOT.includes(id)||ENVIRONMENT_PILOT.includes(id);
  // A mutual stand-and-trade is already a complete exchange, not a named
  // one-sided attack with a fabricated counter or block.
  const PHASE3_TAKEDOWNS=Object.freeze([
@@ -1860,7 +1869,7 @@ const Graph=(function makeGraph(){
  }
  function contactAlternativeParent(id){
   const n=A[id],original=n?.counterOf||n?.blockOf;
-  return original&&CONTACT_PILOT.includes(original)?original:null;
+  return original&&isContactParent(original)?original:null;
  }
  function strikeAlternativeParent(id){
   const n=A[id],original=n?.counterOf||n?.blockOf;
@@ -2214,7 +2223,7 @@ const Graph=(function makeGraph(){
  function startContact(M,id){
   const g=get(M),p=Psy.get(M);
   if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact||
-     !CONTACT_PILOT.includes(id)||!isValid(M,id)||
+     !isContactParent(id)||!isValid(M,id)||
      M.stage!=='live'||!['w','f'].includes(p.control))return false;
   const seq=++g.contactAttemptSerial,kind=A[id].family;
   g.pendingContact={v:1,id,seq,kind,side:p.control,
@@ -2417,6 +2426,22 @@ const Graph=(function makeGraph(){
   const prior=g.events[g.events.length-2];
   const inSequence=!!(sameController&&prior&&prior.control===p.control&&
    CHAIN_BY_PAIR.has(prior.id+'>'+previous.id));
+  // Phase 6: real environmental setups should offer the documented family
+  // attacks that can follow them. The authored family 'from' lists express
+  // the intended handoff, including moves omitted by a sparse initial link
+  // generator. Guard each destination with the same physical, timing and
+  // stamina isValid rules below; never offer detached counters/blocks.
+  // This restores genuine moves, not the free-floating defensive nodes
+  // removed by the exact-parent integrity fix.
+  if(sameController&&g.node){
+   for(const family of ['corner','outside','rope']){
+    const source=CAT.F[family];
+    if(!source?.from?.includes(g.node))continue;
+    for(const id of CAT.members[family]||[])
+     if(ENVIRONMENT_PILOT.includes(id)&&A[id].requires===p.position)
+      selected.push([id,1.05]);
+   }
+  }
   const liveSide=p.control==='f'?M.f:M.w;
   const style=STYLE_BEATS[liveSide.style]||STYLE_BEATS.Story;
   if(p.position==='standing'&&arc.openers)
@@ -2701,9 +2726,10 @@ const Graph=(function makeGraph(){
    // The very final tick retains the pre-existing immediate-landing fallback.
    if(isAerialParent(id)&&startAerial(M,id))return;
    if(isGrappleParent(id)&&startGrapple(M,id))return;
-   if(CONTACT_PILOT.includes(id)){
-    // Pins and canvas strikes resolve in the present exchange rather than
-    // inserting a synthetic ten-second pause before the referee count.
+   if(isContactParent(id)){
+    // Pins, mat attacks and environmental exchanges resolve in the same beat.
+    // The named parent or its exact defence receives the sole landed event;
+    // we do not create an artificial ten-second pause or new match clock.
     if(startContact(M,id))resolveContact(M);
     return;
    }
@@ -2843,7 +2869,7 @@ const Graph=(function makeGraph(){
  return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
- GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,
+ GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
  startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
 })();
 
@@ -3070,6 +3096,32 @@ function constructionOf(M){
  return {linkedPairs,threeBeatSequences,staleRepetitions,focusedWork,
   workedDamage,earnedComeback,actions:actions.length,score};
 }
+// Credit landed, technically clean high-risk offence rather than granting
+// unearned stars for a showy match plan or an unsuccessful/aborted attempt.
+// One wrestler cannot inflate a rating by repeating the same spot ten times;
+// the bounded score is proportional to ringcraft and safe execution.
+function spectacularExecutionOf(M){
+ let sum=0;const credited=new Set();
+ for(const e of M.graph?.events||[]){
+  const n=Graph.A[e.id];
+  if(!n?.risk||n.reverse||n.blockOf||
+     !['aerial','springboard','dive','lucha','corner','outside','superplex'].includes(n.family))
+   continue;
+  if(e.aerialResolution&&e.aerialResolution!=='landed')continue;
+  if(e.grappleResolution&&e.grappleResolution!=='landed')continue;
+  if(e.contactResolution&&e.contactResolution!=='landed')continue;
+  const performer=e.preControl==='f'?M.f:M.w;
+  if(!['w','f'].includes(e.preControl))continue;
+  const key=e.preControl+':'+e.id;
+  if(credited.has(key))continue;
+  credited.add(key);
+  const craft=clamp(((performer.ring||60)+(performer.safe||60)-110)/70,0,1);
+  const trained=performer.style==='Spectacle'?1.25:1;
+  const planFit=M.planId==='spots'?1.2:1;
+  sum+=(.05+.12*craft)*trained*planFit;
+ }
+ return Math.round(Math.min(.45,sum)*1000)/1000;
+}
 // The rating, itemised: what each part added to (or took off) the stars. stars() is their sum.
 function starParts(M){
  if(!M.qN)return [];
@@ -3079,6 +3131,8 @@ function starParts(M){
  if(M.shortened)parts.push(['short','Cut short',-.45]);
  if(M.sheetAdj)parts.push(['layout','The agreed layout',M.sheetAdj]);
  if(M.minutes>=15&&avgQ>=60)parts.push(['length','Long match, held together',.2]);
+ const execution=spectacularExecutionOf(M);
+ if(execution)parts.push(['showcase','Clean high-risk execution',execution]);
  const construction=constructionOf(M);
  if(construction.score)parts.push(['psychology','Sequences and psychology',construction.score]);
  if(M.outcome==='double')parts.push(['double','Double count-out',.25]);
