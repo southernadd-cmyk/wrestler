@@ -58,7 +58,7 @@ async function visit(browser, label, viewport) {
     assert.ok((await page.locator('#families li').count()) > 0);
     assert.equal(await page.locator('#validationState').innerText(), 'PASS', 'real bout passes mechanical checks');
     assert.equal(await page.locator('#validationErrors').innerText(), '0', 'no mechanical errors');
-    assert.match(await page.locator('#environmentOverview').innerText(), /\\d+\\/44 named environmental actions seen/);
+    assert.match(await page.locator('#environmentOverview').innerText(), /\d+\/44 named environmental actions seen/);
     assert.equal(await page.locator('#environmentFamilies').count(),1);
     assert.match(await page.locator('#phase9Coverage').innerText(), /NEW EDGES: .*three-action chains/i,
       'real match coverage labels new links separately from all authored links');
