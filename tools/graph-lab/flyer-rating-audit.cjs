@@ -16,7 +16,8 @@ function audit(n=60){
   for(const plan of plans){
    const sums={stars:0,q:0,qN:0,crowd:0,spots:0,spotHits:0,botches:0,
      nearfalls:0,low:0,parts:{},workerRing:0,workerSafety:0,
-     endStamina:0,lateQ:0,lateN:0,earlyQ:0,earlyN:0};
+     endStamina:0,lateQ:0,lateN:0,earlyQ:0,earlyN:0,
+     fit:0,earnedAtBell:0,graphRiskLanded:0,scriptLanded:0,scriptBotched:0};
    for(let i=0;i<n;i++){
     const w=workers[i%workers.length],f=opponentPool[(i*7+11)%opponentPool.length];
     const input={wid:w.id,rid:f.id,plan,slot:'main',finish:'win_clean',
@@ -28,6 +29,17 @@ function audit(n=60){
     sums.nearfalls+=match.nearfalls||0;sums.low+=match.final.stars<2?1:0;
     sums.workerRing+=w.ring||0;sums.workerSafety+=w.safe||0;
     sums.endStamina+=match.wSt||0;
+    sums.fit+=match.fit||0;
+    sums.earnedAtBell+=root.OfficeMatch._earnedPlanQuality(match);
+    sums.graphRiskLanded+=(match.graph?.events||[]).filter(e=>{
+      const a=root.OfficeMatch.GRAPH.A[e.id];
+      return a?.risk&&!a.reverse&&!a.counterOf&&!a.blockOf&&
+       (!e.aerialResolution||e.aerialResolution==='landed')&&
+       (!e.grappleResolution||e.grappleResolution==='landed')&&
+       (!e.contactResolution||e.contactResolution==='landed');
+    }).length;
+    sums.scriptLanded+=(match.graph?.scriptedSpotAttempts||[]).filter(x=>x.outcome==='landed').length;
+    sums.scriptBotched+=(match.graph?.scriptedSpotAttempts||[]).filter(x=>x.outcome==='botched').length;
     for(const tick of match.flow||[]){
       if(tick[0] >= match.len*.65){sums.lateQ+=tick[4];sums.lateN++;}
       else if(tick[0] < match.len*.35){sums.earlyQ+=tick[4];sums.earlyN++;}
@@ -45,7 +57,9 @@ function audit(n=60){
      poorMatches:sums.low,avgRing:rounded(sums.workerRing),
      avgSafety:rounded(sums.workerSafety),endStamina:rounded(sums.endStamina),
      earlyQ:sums.earlyN?+(sums.earlyQ/sums.earlyN).toFixed(2):0,
-     lateQ:sums.lateN?+(sums.lateQ/sums.lateN).toFixed(2):0});
+     lateQ:sums.lateN?+(sums.lateQ/sums.lateN).toFixed(2):0,
+     avgFit:rounded(sums.fit),earnedAtBell:rounded(sums.earnedAtBell),
+     graphRiskLanded:rounded(sums.graphRiskLanded),scriptLanded:rounded(sums.scriptLanded),scriptBotched:rounded(sums.scriptBotched)});
   }
   results.push({style,workers:workers.length,rows});
  }
@@ -54,14 +68,14 @@ function audit(n=60){
 function markdown(result){
  const out=['### Matched wrestler-style / plan rating audit','',
   result.n+' matched bouts per row; all five plans and four wrestler styles. Worker, opponent, seed, booked finish and card slot held fixed; only the match plan changes.','',
-  '| Worker style | Match plan | Mean stars | Wrestling | Crowd | Mistakes | Q avg | Early Q | Late Q | Final worker stamina | Peak crowd | Landed/attempted spots | Below 2 stars |',
-  '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|'];
+  '| Worker style | Match plan | Mean stars | Wrestling | Crowd | Mistakes | Q avg | Early Q | Late Q | Final worker stamina | Peak crowd | Landed/attempted spots | Below 2 stars | Plan fit | Earned at bell | Graph risk hits | Scripted landed/botched |',
+  '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|'];
  for(const group of result.results)for(const r of group.rows)
   out.push('| '+group.style+' | '+r.plan+' | '+r.stars.toFixed(2)+' | '+
     r.work.toFixed(2)+' | '+r.crowdPart.toFixed(2)+' | '+r.botchPart.toFixed(2)+
     ' | '+r.quality.toFixed(1)+' | '+r.earlyQ.toFixed(1)+' | '+
     r.lateQ.toFixed(1)+' | '+r.endStamina.toFixed(1)+' | '+r.peakCrowd.toFixed(1)+' | '+
-    r.spotHits+'/'+r.spotAttempts+' | '+r.poorMatches+' |');
+    r.spotHits+'/'+r.spotAttempts+' | '+r.poorMatches+' | '+r.avgFit.toFixed(1)+' | '+r.earnedAtBell.toFixed(2)+' | '+r.graphRiskLanded.toFixed(1)+' | '+r.scriptLanded.toFixed(1)+'/'+r.scriptBotched.toFixed(1)+' |');
  out.push('','There is no automatic pass/fail threshold: compare the same wrestlers and bookings before adjusting rating incentives. The exact random stream differs once plans choose different actions. Early Q is the first 35% of recorded ten-second ticks; late Q is the final 35%; final stamina is the booked worker’s remaining stamina at the bell.','');
  return out.join('\n');
 }
