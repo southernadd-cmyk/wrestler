@@ -45,3 +45,18 @@ A new reproducible `tools/graph-lab/grapple-audit.cjs` command and PR workflow r
 The second revision deliberately excludes the new grapple preference boost for Spot-fest; its existing high-risk aerial identity and botch baseline otherwise regress. The original 90% catalogue coverage gate remains unchanged and is still **not met**. Four target moves remain unobserved: `sx_delayed`, `sx_dragon`, `pw_powerbomb`, `pw_running_powerbomb`. Absence from the sample does not prove impossible reachability, and no manual narrative-quality sign-off has occurred.
 
 **No merge while catalogue coverage fails.** Further work should instrument rejected move candidates by cause (position, grip, stamina, timing, lift, style), distinguish insufficient setups from poor selection, then review a limited corrective set. Never manufacture throw outcomes, bypass grip ownership, suppress risky wrestling or lower the gate merely to pass CI.
+
+## Paired main-versus-Phase-2 coverage classification (20 November 2026)
+
+A new **read-only** comparison, `tools/graph-lab/coverage-classification.cjs`, checks out current `main` and evaluates both revisions over the **same 1,000 seeded bouts**, wrestler pairings, plan styles, match slots and finishes. The [CI evidence run](https://github.com/southernadd-cmyk/wrestler/actions/runs/44720420059) uploaded the complete candidate/base comparison as `phase2-coverage-comparison.json`.
+
+| Category | Current main | Phase 2 candidate | Delta |
+| --- | ---: | ---: | ---: |
+| All graph nodes observed | **91.73%** | **86.43%** | **−5.30 pp** |
+| Independently executable actions observed | **97.74%** | **96.83%** | **−0.91 pp** |
+
+**Conclusion:** the 90% whole-graph coverage regression is real relative to the same-seed main baseline, but mainly concerns dependent generated counter/block nodes, not ordinary action access. The candidate has 133 unobserved nodes, of which 119 are counters or blocks. Because named grapple reversals now require an exact pending parent attempt, their lower frequency may be physically correct, but must be explicitly reviewed—not dismissed as a harmless test artefact.
+
+Four rarely selected moves (`sx_delayed`, `sx_dragon`, `pw_powerbomb`, `pw_running_powerbomb`) have **398 combined legal selection opportunities** in this seed set but only **2.871 expected selections** at the recorded weights. Zero actual selections is plausible sampling variation; their availability checks do not establish a defect. More useful follow-up tests: parent-specific attempt rates and conditional defence rates by move, independent-action coverage, and a direct matrix of all 39 exact counter/block paths; these should be judged against the original aggregate test before any proposal to revise the release gate.
+
+The 90% threshold remains unchanged and **the PR remains draft/unmerged**. No match-engine probabilities or physical eligibility were altered by this investigation.
