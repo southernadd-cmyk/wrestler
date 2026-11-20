@@ -8,10 +8,34 @@
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const {script:inline}=require('../../tests/_source.cjs');
 const cut=inline.indexOf('/* THE OFFICE — interface v3');
-const root={addEventListener(){}},store=new Map();
+const abortDetails=[],root={addEventListener(){},
+ __phase4AbortDetail:row=>{
+  if(['sx_falcon_arrow','sm_dragon_sleeper','sx_delayed'].includes(row.id)&&
+     abortDetails.length<50)abortDetails.push(row);
+ }},store=new Map();
 const localStorage={getItem:k=>store.get(k)||null,
  setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)};
-vm.runInNewContext(inline.slice(0,cut),
+// Diagnostic-only VM injection. It observes actual engine decisions at the
+// exact point an already-committed grappling attempt fails revalidation;
+// neither the shipped JS file nor the simulated match is altered.
+const needle="  if(!isValid(M,id))return abortGrapple(M,'aborted',true);";
+const injection=`  if(!isValid(M,id)){
+   if(root.__phase4AbortDetail){
+    const grip=get(M).physical?.grip;
+    root.__phase4AbortDetail({id,seed:M.o.seed,at:M.t,
+     startedT:pending.at,position:p.position,control:p.control,
+     required:PHYSICAL_GRIP_MOVES[id]||null,
+     gripType:grip?.type||null,gripOwner:grip?.side||null,
+     gripSource:grip?.source||null,gripAge:grip?M.t-grip.at:null,
+     stamina:p.control==='w'?M.wSt:M.fSt,
+     after:A[id].after||0,progress:M.t/M.len});
+   }
+   return abortGrapple(M,'aborted',true);
+  }`;
+let engine=inline.slice(0,cut);
+if(engine.split(needle).length!==2)throw Error('Grapple abort hook no longer unique');
+engine=engine.replace(needle,injection);
+vm.runInNewContext(engine,
  {window:root,localStorage,console,Date,Math,JSON},{filename:'office-engine.js'});
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,A=G.A;
 const n=Number(process.argv[2]||1000),batches=Number(process.argv[3]||4);
@@ -96,12 +120,13 @@ const combined={observed:globalHits.size,total:independent.length,
 const report={schema:'office-phase4-independent-seed-audit-v1',
  methodology:'Same roster/plan/slot/finish fixtures as catalog.test.cjs; only seed offset changes, independent engine runs; no writes to engine or RNG.',
  config:{matchesPerBatch:n,batches,seedStride:104729},
- combined,batches:batchReports,repeatedMissing:repeated};
+ combined,batches:batchReports,repeatedMissing:repeated,abortDetails};
 const filename=path.resolve(process.cwd(),'phase4-seed-coverage-audit.json');
 fs.writeFileSync(filename,JSON.stringify(report,null,2)+'\n');
 console.log('COMBINED '+combined.observed+'/'+combined.total+
  ' ('+combined.coverage+'%); missing across all '+consistentlyMissing.length);
 console.log('REPEATED '+JSON.stringify(repeated.slice(0,45)));
+console.log('ABORT DETAILS '+JSON.stringify(abortDetails));
 console.log('Saved '+filename);
 // Read-only diagnostic: individual batches may legitimately fail the
 // release gate. Never make this audit fail just because a rare move did
