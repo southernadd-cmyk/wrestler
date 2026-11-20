@@ -118,7 +118,7 @@
    '"They were chanting my name after that match. I do not want to go back to being just another name on the card."';
   // The report is about the actual incident, not a fabricated contract dispute.
   const evidence=kind==='breakthrough'?
-   'Match report: '+w.short+' earned '+(fin?.stars||event?.stars||'a standout')+' stars against '+f.short+'. The audience responded.':
+   'Match report: '+w.short+' delivered '+(fin?.stars||event?.stars?((fin?.stars||event?.stars)+'-star'):'a standout')+' performance against '+f.short+'. The audience responded.':
    kind==='humiliation'?'Match report: '+w.short+' was booked to lose cleanly to '+f.short+'.':
    kind==='protected'?'Match report: '+w.short+' took a protected loss to '+f.short+'.':
    kind==='hurt'?'Match report: '+w.short+' was injured in the match with '+f.short+'.':
