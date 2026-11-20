@@ -43,7 +43,7 @@
     if(!event||event.id!==expected||event.attemptedMove!==a.id||
       event[prefix+'Resolution']!==a.outcome||a.actionId!==expected)
      issue(out,'mismatched-'+type,match,event,'expected '+expected+' after '+a.id);
-    if(type==='grapple'&&!graph.GRAPPLE_PILOT?.includes(a.id))
+    if(type==='grapple'&&![...(graph.GRAPPLE_PILOT||[]),...(graph.SUPERPLEX_PILOT||[])].includes(a.id))
      issue(out,'unapproved-grapple',match,event,a.id);
    }else if(event)issue(out,'orphan-'+type+'-event',match,event,a.id);
   }
