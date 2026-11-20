@@ -32,6 +32,8 @@ jobs:
           node-version: '22'
       - name: Assert matched sample and deterministic replay
         run: node tests/style-depth-audit.test.cjs
+      - name: Verify actual narrated Brawl pacing and real late attack eligibility
+        run: node tests/brawl-endurance.test.cjs
       - name: Simulate 4860 bouts and publish all comparisons
         shell: bash
         run: |
