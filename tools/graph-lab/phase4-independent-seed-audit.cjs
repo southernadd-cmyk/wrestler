@@ -122,7 +122,7 @@ for(let batch=0;batch<batches;batch++){
    globalHits.set(event.id,(globalHits.get(event.id)||0)+1);
    byPlan[k].actions++;byStyle[style].actions++;
   }
-  for(const kind of ['grappleAttempts','strikeAttempts','aerialAttempts']){
+  for(const kind of ['grappleAttempts','strikeAttempts','aerialAttempts','contactAttempts']){
    for(const a of x.graph[kind]||[]){
     const row=attempts.get(a.id)||{attempts:0,landed:0,counter:0,block:0,aborted:0,interrupted:0};
     row.attempts++;row[a.outcome]=(row[a.outcome]||0)+1;
