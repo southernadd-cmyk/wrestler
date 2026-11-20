@@ -62,6 +62,13 @@ function probe(id){
    x.graph.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',topSide:null,
     grip:{type:grip,side:control,at:x.t,source:Object.keys(G.GRIP_ENTRY).find(k=>G.GRIP_ENTRY[k]===grip)||'reviewed-setup'}};
   }
+  const contactParent=G.CONTACT_PILOT.includes(parent);
+  if(contactParent){
+   x.stage='live';
+   x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02,A[parent].after+.02)));
+   if(!G.startContact(x,parent))continue;
+   assert.equal(x.graph.pendingContact.id,parent);
+  }
   const strikeParent=G.STRIKE_PILOT.includes(parent);
   if(strikeParent){
    x.stage='live';x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02,A[parent].after+.02)));
