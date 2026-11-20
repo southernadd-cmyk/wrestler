@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 'use strict';
-// Cross-plan matched-pair audit for high-flying wrestlers. Same opponents,
+// All five plans, including a low-risk plan, matched across four wrestler\n// styles. Same opponents,
 // finish, slot, seed and promotion; only the match plan changes.
 const lab=require('./core.js'),engine=require('./match-review.cjs');
 function audit(n=60){
  if(!Number.isInteger(n)||n<1||n>250)throw Error('Expected 1..250 paired bouts per worker style/plan');
  const root=engine.load(),D=root.OfficeData,people=lab.roster(D);
- const styles=['Spectacle','Technical','Brawl'],plans=['spots','technical','brawl','story'];
+ const styles=['Spectacle','Technical','Brawl','Story'],plans=['spots','technical','brawl','story','safe'];
  const results=[];
  for(const style of styles){
   const workers=people.filter(w=>w.style===style);
@@ -53,7 +53,7 @@ function audit(n=60){
 }
 function markdown(result){
  const out=['### Matched wrestler-style / plan rating audit','',
-  result.n+' matched bouts per row. Worker, opponent, seed, booked finish and card slot held fixed; only the match plan changes.','',
+  result.n+' matched bouts per row; all five plans and four wrestler styles. Worker, opponent, seed, booked finish and card slot held fixed; only the match plan changes.','',
   '| Worker style | Match plan | Mean stars | Wrestling | Crowd | Mistakes | Q avg | Early Q | Late Q | Final worker stamina | Peak crowd | Landed/attempted spots | Below 2 stars |',
   '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|'];
  for(const group of result.results)for(const r of group.rows)

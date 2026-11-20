@@ -69,7 +69,7 @@ const FINISHES={
 const PLANS={
  story:{name:'Tell a story',blurb:'Slow build, big finish. Rewards psychology.',w:{ring:.35,psych:.65},crowd:1.0,late:1.35,risk:.6,drain:.85,spotRate:.045},
  spots:{name:'Spot-fest',blurb:'Big moves, big pops, big risk.',w:{ring:.7,psych:.3},crowd:1.25,late:1.1,risk:1.3,drain:1.35,spotRate:.1},
- technical:{name:'Technical showcase',blurb:'Ringcraft first. Purists love it; casual crowds drift.',w:{ring:.8,psych:.2},crowd:.8,late:1.1,risk:.7,drain:1,spotRate:.035,qual:4},
+ technical:{name:'Technical showcase',blurb:'Ringcraft first. Purists love it; casual crowds drift.',w:{ring:.8,psych:.2},crowd:.8,late:1.1,risk:.7,drain:1,spotRate:.035},
  brawl:{name:'Brawl',blurb:'Fight all over the building. Loud, messy, tiring.',w:{ring:.55,psych:.45},crowd:1.15,late:1.05,risk:1.2,drain:1.15,spotRate:.09},
  safe:{name:'Keep it safe',blurb:'Low risk, low ceiling. For tired or injured bodies.',w:{ring:.5,psych:.5},crowd:.75,late:1,risk:.35,drain:.7,spotRate:.02,qual:-2}
 };

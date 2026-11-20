@@ -3154,43 +3154,61 @@ function spectacularExecutionOf(M){
  }
  return Math.round(Math.min(.45,sum)*1000)/1000;
 }
-// Plans earn quality through the work actually shown in the ring.
-// Previously Technical Showcase received +4 on *every* ten-second tick,
-// even without doing technical wrestling, while a skilfully executed
-// Spot-fest had no corresponding ongoing quality credit. Use real, unique
-// landed actions from the last three minutes rather than a free plan bonus.
-// This is separate from one-off post-match spectacular-execution stars:
-// it rewards sustaining a convincing match rhythm, and decays if the
-// wrestler stops executing the chosen plan.
+// Every match plan earns its quality through actual recent ring work.
+// A successful plan has a distinct identity, never a guaranteed flat score.
+// The last three minutes of events matter so a hot opening cannot carry a
+// tired, repetitive finishing stretch. Unique landed moves only.
 function earnedPlanQuality(M){
- if(!['technical','spots'].includes(M.planId))return M.plan.qual||0;
+ const plan=M.planId;
+ const caps={story:3.5,spots:3.6,technical:4,brawl:3.5,safe:1.5};
+ if(!Object.prototype.hasOwnProperty.call(caps,plan))return 0;
  const seen=new Set(),start=M.t-180;let earned=0;
+ const build=['cutoff','control','limb_work','hope','denial','comeback','resurgence',
+  'nearfall','false_finish','escalation','submission_battle','fighting_spirit'];
  for(const e of M.graph?.events||[]){
   if(e.t<start||e.t>M.t||!['w','f'].includes(e.preControl))continue;
   const n=Graph.A[e.id];
-  if(!n||n.reverse||n.counterOf||n.blockOf||
-     e.aerialResolution&&e.aerialResolution!=='landed'||
-     e.contactResolution&&e.contactResolution!=='landed'||
-     e.grappleResolution&&e.grappleResolution!=='landed')continue;
-  const performer=e.preControl==='w'?M.w:M.f;
-  const key=e.preControl+':'+e.id;
-  if(seen.has(key))continue; // repeating the same move cannot farm quality
-  if(M.planId==='technical'){
-   if(!['chain','submission','suplex','ground','rest','neck'].includes(n.family))continue;
-   seen.add(key);
-   earned+=1.15;
-  }else{
-   if(!n.risk||!['aerial','springboard','dive','lucha','corner','outside','superplex'].includes(n.family))
-    continue;
-   // A spectacular exchange counts only when the performer has the
-   // ringcraft and safety needed to make it look convincing.
-   const competence=clamp(((performer.ring||0)+(performer.safe||0)-110)/65,0,1);
-   if(competence<=0)continue;
-   seen.add(key);
-   earned+=2.0*competence;
+  if(!n||!n.family||n.reverse||n.counterOf||n.blockOf||
+     (e.aerialResolution&&e.aerialResolution!=='landed')||
+     (e.grappleResolution&&e.grappleResolution!=='landed')||
+     (e.strikeResolution&&e.strikeResolution!=='landed')||
+     (e.contactResolution&&e.contactResolution!=='landed'))continue;
+  const worker=e.preControl==='w'?M.w:M.f,key=e.preControl+':'+e.id;
+  if(seen.has(key))continue;
+  let gain=0;
+  switch(plan){
+   case 'technical':
+    if(['chain','submission','suplex','ground','rest','neck'].includes(n.family))
+     gain=1.15*clamp(((worker.ring||0)-40)/50,.2,1);
+    break;
+   case 'spots':
+    if(n.risk&&['aerial','springboard','dive','lucha','corner','outside','superplex'].includes(n.family))
+     gain=2*clamp(((worker.ring||0)+(worker.safe||0)-110)/65,0,1);
+    break;
+   case 'brawl':
+    if(['strike','running','power','outside','corner','rope'].includes(n.family))
+     gain=1.05*clamp(((worker.ring||0)+(worker.psych||0)-85)/95,.25,1);
+    break;
+   case 'story':
+    // An actual move must support a heat, hope, comeback or late pay-off.
+    // Merely reaching the scheduled story arc earns nothing on its own.
+    if(build.includes(e.arc))
+     gain=.9*clamp(((worker.psych||0)+(worker.ring||0)-85)/95,.25,1);
+    break;
+   case 'safe':
+    // The deliberate low-ceiling plan values genuinely manageable work;
+    // dangerous aerials and long, punishing high-cost moves cannot count.
+    if(!n.risk&&(n.cost??0)<=2.2&&
+       ['chain','rest','ground','pin','submission','strike','neck'].includes(n.family))
+     gain=.55*clamp(((worker.safe||0)-35)/55,.2,1);
+    break;
   }
+  if(gain>0){seen.add(key);earned+=gain;}
  }
- return Math.round(Math.min(M.planId==='technical'?4:3.6,earned)*1000)/1000;
+ // 'Keep it safe' retains its existing -2 quality baseline: choosing it
+ // still trades spectacle and ceiling for lower risk and stamina cost.
+ const base=plan==='safe'?(M.plan?.qual??-2):0;
+ return Math.round((base+Math.min(caps[plan],earned))*1000)/1000;
 }
 // The rating, itemised: what each part added to (or took off) the stars. stars() is their sum.
 function starParts(M){

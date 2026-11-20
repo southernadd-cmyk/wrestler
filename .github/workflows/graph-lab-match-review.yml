@@ -28,6 +28,8 @@ jobs:
         run: node tests/phase6-dive-continuity.test.cjs
       - name: Verify actual low-stamina Spot-fest recovery actions
         run: node tests/phase6b-pacing.test.cjs
+      - name: Verify earned quality across all five match plans
+        run: node tests/phase6b-all-plan-quality.test.cjs
       - name: Run repeatability checks
         run: node tests/graph-lab-match-review.test.cjs
       - name: Verify earned high-risk star ratings

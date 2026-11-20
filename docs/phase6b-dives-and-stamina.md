@@ -27,3 +27,17 @@ The previous matched Spectacle-wrestler audit found Spot-fest about **2.22★**,
 ## Acceptance criteria
 
 Do not merge with a red test. Maintain the existing **at least 700 genuine actions** in the six-career soak, preservation of booked finishes and saved matches, correct physical legality, zero invalid committed attempts and functional Graph Lab desktop/mobile UI. Rerun the same seeded scenario comparison and examine actual tapes to evaluate match quality.
+
+## Five-plan earned-quality balance (all plans, not only the flyers)
+
+The former **+4 Technical quality every ten seconds regardless of moves** has been replaced by bounded quality earned from real, distinct actions in a rolling 180-second window. The same mechanism now applies to **every** match plan:
+
+| Plan | What actually earns quality | Maximum earned quality points |
+|---|---|---:|
+| Technical Showcase | Landed chain, submission, suplex, ground, rest-hold or neck wrestling, weighted by ringcraft | +4.0 |
+| Spot-fest | Distinct successful high-risk aerial, springboard, dive, lucha, corner, ringside or superplex moves, scaled by ringcraft *and safety* | +3.6 |
+| Brawl | Genuine strikes, running attacks, power, ringside, corner and rope offence, weighted by ringcraft/psychology | +3.5 |
+| Tell a Story | Real landed moves within heat, hope, denial, comeback or finishing story arcs, weighted by psychology and ringcraft | +3.5 |
+| Keep It Safe | Distinct successful low-cost, low-risk chain/hold/ground/pin/strike/neck moves, scaled by safety | +1.5 |
+
+Keep It Safe deliberately retains its established **-2 quality-point baseline**, so it does not outscore a well-worked risky match just because it avoids danger. Botches, pace, risk, stamina and match structure continue to have their ordinary separate effects. No plan earns a positive quality award by selection alone, repeated identical move spam, a counter to a non-attempt, or a failed attack. The rating function uses a bounded rolling *quality* contribution, not a free additive star bonus. The audit now compares all **five plans against all four wrestler styles**, on fixed worker/opponent/seed/finish/slot inputs (20 cells, 1,200 matches at 60 each). Acceptance also requires the original full careers and historic tests to remain green.
