@@ -42,6 +42,13 @@ assert.ok(e<10,'recovery has a bounded physically plausible ceiling');
 assert.equal(story,n,'all other plans preserve the legacy authored breath gain');
 assert.equal(M._earnedPlanQuality(elite),0,
  'catching a breath must never earn aerial quality or free stars');
+// A real pre-finish runway is essential: waiting until the last 180s
+// left the elite cohort at only ~29 stamina, unable to finish aerial moves.
+const runway=fixture('spots','elite'),earlierRun=fixture('spots','elite');
+runway.t=runway.len-320;earlierRun.t=earlierRun.len-510;
+runway.wSt=50;earlierRun.wSt=50;
+assert.ok(weight(runway,'catch_breath')>weight(earlierRun,'catch_breath'),
+ 'elite flyers must visibly pace themselves before the final three minutes');
 const beforePool=fixture('spots','elite'),beforeWeight=weight(beforePool,'catch_breath');
 assert.ok(beforeWeight>0,'a tired flyer can select actual recovery');
 const after=fixture('spots','elite');
