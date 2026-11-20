@@ -12,9 +12,11 @@ if(folders.length!==2)throw Error('Usage: node phase4-career-diversity.cjs MAIN_
 function scan(dir){
  const full=path.resolve(dir),test=path.join(full,'tests','season-soak.test.cjs');
  let src=fs.readFileSync(test,'utf8');
- const marker="assert.ok(union('moves').size>=700,'a wide range of moves appears across careers: '+union('moves').size);";
+ const oldMarker="assert.ok(union('moves').size>=700,'a wide range of moves appears across careers: '+union('moves').size);";
+ const newMarker="assert.ok(union('moves').size>=700,'a wide range of landed or genuinely defended attempts appears across careers: '+union('moves').size+\n ' (landed-event distinct '+union('landedMoves').size+')');";
+ const marker=src.includes(oldMarker)?oldMarker:newMarker;
  if(src.split(marker).length!==2)throw Error('Season-soak range gate marker changed: '+full);
- const diagnostic="console.log('CAREER_AUDIT_JSON '+JSON.stringify({distinct:union('moves').size,ids:[...union('moves')],runs:runs.map(r=>({seed:r.seed,style:r.style,matches:r.matches,distinct:r.moves.size,ids:[...r.moves]}))}));";
+ const diagnostic="console.log('CAREER_AUDIT_JSON '+JSON.stringify({distinct:union('moves').size,ids:[...union('moves')],eventOnly:runs[0].landedMoves?union('landedMoves').size:union('moves').size,eventIds:[...(runs[0].landedMoves?union('landedMoves'):union('moves'))],runs:runs.map(r=>({seed:r.seed,style:r.style,matches:r.matches,distinct:r.moves.size,ids:[...r.moves],eventOnly:r.landedMoves?r.landedMoves.size:r.moves.size,eventIds:[...(r.landedMoves||r.moves)]}))}));";
  src=src.replace(marker,diagnostic);
  const tmp=path.join(full,'tests','.phase4-career-debug.cjs');
  let stdout;
@@ -42,27 +44,29 @@ function scan(dir){
  return result;
 }
 const base=scan(folders[0]),pr=scan(folders[1]);
-const a=new Set(base.ids),b=new Set(pr.ids);
-const lost=base.ids.filter(id=>!b.has(id));
-const gained=pr.ids.filter(id=>!a.has(id));
+// Compare like-for-like *event* IDs on both sides. The PR's broader
+// ≥700 variety metric additionally includes authentic defended attacks.
+const a=new Set(base.eventIds),b=new Set(pr.eventIds);
+const lost=base.eventIds.filter(id=>!b.has(id));
+const gained=pr.eventIds.filter(id=>!a.has(id));
 const familyOf=(id,src)=>{const prefix=id.match(/^([a-z]{2})_/)?.[1];return prefix||'base';};
 function groups(ids){
  const g={};for(const id of ids){const k=familyOf(id);(g[k]??=[]).push(id);}
  return g;
 }
 const report={
- base:{distinct:base.distinct,perCareer:base.runs.map(r=>({seed:r.seed,style:r.style,matches:r.matches,distinct:r.distinct})),families:base.families},
- pr:{distinct:pr.distinct,perCareer:pr.runs.map(r=>({seed:r.seed,style:r.style,matches:r.matches,distinct:r.distinct})),families:pr.families},
+ base:{distinct:base.distinct,eventOnly:base.eventOnly,perCareer:base.runs.map(r=>({seed:r.seed,style:r.style,matches:r.matches,distinct:r.distinct})),families:base.families},
+ pr:{distinct:pr.distinct,eventOnly:pr.eventOnly,perCareer:pr.runs.map(r=>({seed:r.seed,style:r.style,matches:r.matches,distinct:r.distinct})),families:pr.families},
  lost:{count:lost.length,byFamily:groups(lost)},
  gained:{count:gained.length,byFamily:groups(gained)},
  withinCareer:pr.runs.map((r,i)=>{
-  const before=new Set(base.runs[i].ids),now=new Set(r.ids);
+  const before=new Set(base.runs[i].eventIds),now=new Set(r.eventIds);
   return {seed:r.seed,base:base.runs[i].distinct,pr:r.distinct,
-   lost:base.runs[i].ids.filter(id=>!now.has(id)).slice(0,50),
-   gained:r.ids.filter(id=>!before.has(id)).slice(0,50)};
+   lost:base.runs[i].eventIds.filter(id=>!now.has(id)).slice(0,50),
+   gained:r.eventIds.filter(id=>!before.has(id)).slice(0,50)};
  })
 };
-console.log('BASE '+base.distinct+' unique career moves, PR '+pr.distinct);
+console.log('BASE '+base.distinct+' event IDs, PR '+pr.eventOnly+' event IDs + defended parent IDs => '+pr.distinct+' authentic total');
 console.log('LOST FROM PR '+JSON.stringify(report.lost));
 console.log('GAINED ON PR '+JSON.stringify(report.gained));
 console.log('CAREER COUNTS '+JSON.stringify(report.withinCareer.map(x=>({seed:x.seed,base:x.base,pr:x.pr}))));
