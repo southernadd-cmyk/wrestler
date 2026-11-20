@@ -270,6 +270,8 @@ if(require.main===module){
  try{
   const n=process.argv[2]?Number(process.argv[2]):6;
   const r=capture(n);
+  if(process.argv.includes('--json-file'))
+   require('node:fs').writeFileSync('flyer-depth-audit.json',JSON.stringify(r,null,2)+'\n');
   console.log(process.argv.includes('--json')?JSON.stringify(r,null,2):markdown(r));
   if(failures(r).length)process.exitCode=1;
  }catch(e){console.error(e.stack);process.exitCode=1;}
