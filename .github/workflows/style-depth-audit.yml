@@ -1,0 +1,45 @@
+name: Non-flyer style depth audit
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/style-depth-audit.cjs'
+      - 'tests/style-depth-audit.test.cjs'
+      - '.github/workflows/style-depth-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/graph-lab/style-depth-audit.cjs'
+      - 'tests/style-depth-audit.test.cjs'
+      - '.github/workflows/style-depth-audit.yml'
+      - 'assets/js/match-engine.js'
+      - 'assets/js/data.js'
+      - 'assets/js/roster-registry.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  audit:
+    name: Technical / Brawl / Story controlled match matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert matched sample and deterministic replay
+        run: node tests/style-depth-audit.test.cjs
+      - name: Simulate 4860 bouts and publish all comparisons
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/graph-lab/style-depth-audit.cjs 6 --json-file | tee "$GITHUB_STEP_SUMMARY"
+      - name: Retain structured observations
+        uses: actions/upload-artifact@v4
+        with:
+          name: nonflyer-style-depth-audit-json
+          path: style-depth-audit.json
+          if-no-files-found: error
