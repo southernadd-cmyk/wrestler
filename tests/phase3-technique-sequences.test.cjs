@@ -62,6 +62,7 @@ for(const link of G.TECHNIQUE_PILOT){
   // This authored edge now offers a defensive alternative only if the
   // attack was genuinely committed by the wrestler on the preceding beat.
   assert.equal(G.isValid(m,link.to),false,'cannot freely select a named counter: '+id);
+  m.stage='live'; // a real pending attempt can only begin after the bell
   assert.equal(G.startGrapple(m,A[link.to].counterOf),true,
    'real attack must be physically available before counter: '+id);
  }
