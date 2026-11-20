@@ -1621,7 +1621,10 @@ const Graph=(function makeGraph(){
  // Phase 4: standing offence receives its own exact-parent ledger.
  // It does not pollute the grappling attempt counts or create fake throws.
  // Running moves remain a distinct category with standing impact outcomes.
- const STRIKE_PILOT=Object.freeze([...CAT.members.strike,...CAT.members.running]);
+ const STRIKE_PILOT=Object.freeze([...CAT.members.strike.filter(id=>
+  id!=='st_fighting_spirit'),...CAT.members.running]);
+ // A mutual stand-and-trade is already a complete exchange, not a named
+ // one-sided attack with a fabricated counter or block.
  const PHASE3_TAKEDOWNS=Object.freeze([
   'ch_single_leg','ch_double_leg','ch_fireman','ch_snapmare',
   'ch_deep_arm_drag','ch_japanese_arm_drag','ch_drop_toehold',
