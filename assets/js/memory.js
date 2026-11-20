@@ -60,31 +60,114 @@
   if(fin.ignored>=2)return {kind:'defiance',text:w.short+' remembers ignoring the signals from ringside against '+f.short+'.',shift:-2,rivalShift:0,prompt:true};
   return null;
  }
- function conversation(c,fin,w,f,p,event){
-  const highEgo=(w.ego||0)>=70;
-  const veteran=(w.pro||0)>=75;
-  const subject=event.kind==='hurt'?'After the injury':event.kind==='rebellion'?'The finish was broken':event.kind==='breakthrough'?'After the big match':'About that match';
-  const opening=event.kind==='humiliation'?(highEgo?'"You sent me out there to lose like I was nobody. You had better explain why."':'"I did what was asked. But I need to know what comes next."'):
-   event.kind==='protected'?'"I did the job. You made sure I was protected. I noticed."':
-   event.kind==='hurt'?'"I went down badly out there. I need to know you are looking after me."':
-   event.kind==='rebellion'?'"I broke the finish and you were there. Now what happens to us?"':
-   event.kind==='control'?'"You kept calling from the curtain. It felt like you did not trust me."':
-   event.kind==='defiance'?'"I heard you from ringside. I just could not do what you wanted."':
+ // Keep conversation choices tied to the *actual* post-match memory. The
+ // outcome IDs are unchanged so open career saves and consequence rules survive.
+ const COPY={
+  humiliation:{
+   lead:'A clean defeat has damaged their confidence in the booking. What do you tell them about their next opportunity?',
+   back:['Defend their place on the card','Back them in front of the promoter; you gain their trust but risk the booking relationship.'],
+   business:['Explain the agreed loss','A veteran may understand the longer story. An unhappy wrestler may hear an excuse.'],
+   promise:['Commit to rebuilding their position','Promise a featured match within two weeks; failing to deliver has consequences.']
+  },
+  protected:{
+   lead:'They accepted the loss because their standing was protected. What do you do with that trust now?',
+   back:['Acknowledge their professionalism publicly','Show the promoter that their contribution mattered, at the risk of interfering.'],
+   business:['Explain how the protection helps','A veteran may appreciate the longer-term thinking; others may still want a win.'],
+   promise:['Offer them a featured opportunity','Commit to a featured match within two weeks, or let them down.']
+  },
+  breakthrough:{
+   lead:'That performance drew a strong crowd response. They now have a case for better billing. How will you respond?',
+   back:['Push for a higher place on the card','Make their case to the promoter. Your wrestler appreciates it, but the promoter may resent the pressure.'],
+   business:['Keep expectations realistic','Explain that one standout match does not guarantee top billing next week.'],
+   promise:['Promise a featured match','Find them a featured or main-event booking within two weeks, or break your word.']
+  },
+  control:{
+   lead:'Your calls from ringside made them feel you did not trust their judgement. How do you address it?',
+   back:['Tell the promoter you trust them','Stand up for their in-ring judgement, even if the promoter dislikes your intervention.'],
+   business:['Explain why you called the match','A professional might accept your reasoning; someone frustrated may feel dismissed.'],
+   promise:['Offer a fresh featured opportunity','Make a real booking commitment rather than an empty apology.']
+  },
+  defiance:{
+   lead:'They ignored your ringside instructions. You need to deal with the disagreement before the next match.',
+   back:['Stand by their in-ring judgement','Support their call in front of the promoter, taking responsibility for the friction.'],
+   business:['Explain why the plan mattered','Reassert the agreed layout. A veteran may accept it; another wrestler may resist.'],
+   promise:['Offer a featured chance to reset','Promise another important match within two weeks, with a real deadline.']
+  },
+  rebellion:{
+   lead:'They changed the agreed finish. The promoter now has reason to question your stable. How will you handle it?',
+   back:['Defend them to the promoter','Show loyalty to the wrestler, but further damage your relationship with the promoter.'],
+   business:['Explain the damage they caused','Make clear why breaking a booked finish matters. They might not welcome the lecture.'],
+   promise:['Offer a featured chance to make amends','Make a binding booking promise without pretending the broken finish never happened.']
+  },
+  hurt:{
+   lead:'They were injured during the match and need to know what support you will provide.'
+  }
+ };
+ const fallbackKind=subject=>subject==='After the big match'?'breakthrough':
+   subject==='After the injury'?'hurt':subject==='The finish was broken'?'rebellion':null;
+ function debriefCopy(kind,w,f,fin,event){
+  const highEgo=(w.ego||0)>=70,copy=COPY[kind]||COPY.humiliation;
+  const subject=kind==='hurt'?'After the injury':kind==='rebellion'?'The finish was broken':
+   kind==='breakthrough'?'After the big match':'About that match';
+  const opening=kind==='humiliation'?(highEgo?'"You sent me out there to lose like I was nobody. You had better explain why."':'"I did what was asked. But I need to know what comes next."'):
+   kind==='protected'?'"I did the job. You made sure I was protected. I noticed."':
+   kind==='hurt'?'"I went down badly out there. I need to know you are looking after me."':
+   kind==='rebellion'?'"I broke the finish and you were there. Now what happens to us?"':
+   kind==='control'?'"You kept calling from the curtain. It felt like you did not trust me."':
+   kind==='defiance'?'"I heard you from ringside. I just could not do what you wanted."':
    '"They were chanting my name after that match. I do not want to go back to being just another name on the card."';
-  const options=event.kind==='hurt'?[
+  // The report is about the actual incident, not a fabricated contract dispute.
+  const evidence=kind==='breakthrough'?
+   'Match report: '+w.short+' delivered '+(fin?.stars||event?.stars?('a '+(fin?.stars||event?.stars)+'-star'):'a standout')+' performance against '+f.short+'. The audience responded.':
+   kind==='humiliation'?'Match report: '+w.short+' was booked to lose cleanly to '+f.short+'.':
+   kind==='protected'?'Match report: '+w.short+' took a protected loss to '+f.short+'.':
+   kind==='hurt'?'Match report: '+w.short+' was injured in the match with '+f.short+'.':
+   kind==='rebellion'?'Match report: '+w.short+' broke the agreed finish against '+f.short+'.':
+   kind==='control'?'Match report: '+w.short+' wanted more freedom to improvise against '+f.short+'.':
+   kind==='defiance'?'Match report: '+w.short+' ignored instructions during the match with '+f.short+'.':
+   'Match report: '+(event?.text||'A difficult post-match conversation.');
+  const openPromise=w.promise?.status==='open';
+  const options=kind==='hurt'?[
    {id:'rest',label:'Put their recovery first',hint:'Set training to rest. More trust; the next payday may have to wait.'},
    {id:'medical',label:'Help with treatment (£120)',hint:'Pay £120. A meaningful show of support, if you can afford it.'},
    {id:'listen',label:'Hear them out',hint:'Rebuild some trust, but make no practical commitment.'}
   ]:[
-   {id:'back',label:'Back your wrestler publicly',hint:'Their trust rises. The promoter may see it as interference.'},
-   {id:'business',label:'Explain the business',hint:'A professional may understand; a proud wrestler might not.'},
-   {id:'promise',label:w.promise?.status==='open'?'Listen without another promise':'Promise a featured opportunity',hint:w.promise?.status==='open'?'Hear the concern without making a second promise.':'A featured/main-event booking within two weeks, or your word is broken.'}
+   {id:'back',label:copy.back[0],hint:copy.back[1]},
+   {id:'business',label:copy.business[0],hint:copy.business[1]},
+   {id:'promise',label:openPromise?'Acknowledge their existing promise':copy.promise[0],
+    hint:openPromise?'Listen, but do not make a second promise before the existing one is settled.':copy.promise[1]}
   ];
-  return {from:w.name,subject,kind:'decision',dtype:'office_debrief',args:[w.id,p.id,f.id,event.id],
-   body:[opening,'Road agent: '+event.text,'The contract has been settled. Your response decides what happens when they return to the dressing room.'],
-   options,answer:null,outcome:null,read:false,week:G.S.week,season:G.S.season,
-   id:'debrief-'+c.id};
+  return {subject,body:[opening,evidence,copy.lead],options};
  }
+ function conversation(c,fin,w,f,p,event){
+  const copy=debriefCopy(event.kind,w,f,fin,event);
+  return {from:w.name,subject:copy.subject,kind:'decision',dtype:'office_debrief',
+   incidentKind:event.kind,copyVersion:2,args:[w.id,p.id,f.id,event.id],
+   body:copy.body,options:copy.options,answer:null,outcome:null,read:false,
+   week:G.S.week,season:G.S.season,id:'debrief-'+c.id};
+ }
+ // Update unanswered debriefs already inside existing careers. Simply fixing
+ // the generator would leave the exact mobile inbox shown by players unchanged.
+ function refreshDebriefs(){
+  const inbox=G.S?.inbox;if(!Array.isArray(inbox))return;
+  let changed=false;
+  for(const msg of inbox){
+   if(msg.dtype!=='office_debrief'||msg.answer||msg.copyVersion===2)continue;
+   const [wid,,rid,source]=msg.args||[],w=worker(wid),f=G.F(rid);
+   const event=G.S.officeMemory?.entries?.[wid]?.find(e=>e.id===source);
+   const kind=msg.incidentKind||event?.kind||fallbackKind(msg.subject);
+   if(!w||!f||!kind)continue; // Do not invent an event for an ambiguous old message.
+   const revised=debriefCopy(kind,w,f,null,event);
+   msg.subject=revised.subject;msg.body=revised.body;msg.options=revised.options;
+   msg.incidentKind=kind;msg.copyVersion=2;changed=true;
+  }
+  if(changed)G.save();
+ }
+ const originalPending=G.pending;
+ G.pending=function(...args){refreshDebriefs();return originalPending(...args);};
+ const originalLoad=G.load;
+ G.load=function(...args){const loaded=originalLoad(...args);if(loaded)refreshDebriefs();return loaded;};
+ refreshDebriefs();
  G.applyResult=function(c,fin){
   const result=originalApply(c,fin);
   if(!c||!fin||!G.S)return result;
@@ -124,10 +207,10 @@
   else if(opt==='medical'){s.cash-=120;w.morale=clamp(w.morale+4);change=10;result='You paid £120 towards '+w.short+'’s treatment. They did not expect you to do that.';}
   else if(opt==='listen'){w.morale=clamp(w.morale+2);change=3;result='You listened carefully without making another commitment. '+w.short+' leaves less angry.';}
   else if(opt==='back'){change=8;rel=2;w.morale=clamp(w.morale+5);w.loyal=clamp(w.loyal+4);if(p)p.trust=clamp(p.trust-4);
-   result='You defended '+w.short+' in front of the promoter. '+w.short+' felt supported; '+(p?.name||'the promoter')+' trust fell by 4.';}
+   result=m.incidentKind==='breakthrough'?'You made the case for '+w.short+' to receive better billing. They felt supported; '+(p?.name||'the promoter')+' trust fell by 4.':'You defended '+w.short+' in front of the promoter. '+w.short+' felt supported; '+(p?.name||'the promoter')+' trust fell by 4.';}
   else if(opt==='business'){
-   if(w.pro>=75){change=3;w.morale=clamp(w.morale-1);result=w.short+' understands the booking, although the defeat still stings.';}
-   else{change=-6;w.morale=clamp(w.morale-4);result=w.short+' hears an excuse, not an explanation. The conversation ends badly.';}
+   if(w.pro>=75){change=3;w.morale=clamp(w.morale-1);result=m.incidentKind==='breakthrough'?w.short+' understands that one standout match is a strong argument for better billing, not a guaranteed headline spot.':m.incidentKind==='rebellion'?w.short+' understands why changing the agreed finish put the stable in difficulty.':w.short+' understands the booking, although the result still stings.';}
+   else{change=-6;w.morale=clamp(w.morale-4);result=m.incidentKind==='breakthrough'?w.short+' hears a reason to hold them back just after their biggest match. The conversation ends badly.':m.incidentKind==='rebellion'?w.short+' resents being lectured about the finish they changed. The conversation ends badly.':w.short+' hears an excuse, not an explanation. The conversation ends badly.';}
    if(p)p.trust=clamp(p.trust+2);
   }
   else if(opt==='promise'){
