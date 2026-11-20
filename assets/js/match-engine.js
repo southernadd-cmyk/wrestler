@@ -2571,7 +2571,7 @@ const Graph=(function makeGraph(){
   // only offered from the ring with sufficient stamina. Their ensuing
   // attacks remain governed by the normal top-rope physical and risk gates.
   if(M.planId==='spots'&&p.position==='standing'&&
-     stamina>=(closingFlight?37:42)&&
+     stamina>=(closingFlight&&trainedRecovery>=.70?31:closingFlight?37:42)&&
      (liveSide.style==='Spectacle'||((liveSide.ring||0)>=78&&(liveSide.safe||0)>=65))&&
      (['shine','resurgence','exchange','nearfall','escalation','dive_sequence',
        'finish_setup'].includes(g.arc)||
@@ -2840,6 +2840,47 @@ const Graph=(function makeGraph(){
    weights.set(id,(weights.get(id)||0)+n);
   }
   const pool=[...weights.entries()];
+  // A trained flyer has to earn the closing comeback through a REAL
+  // mat reversal and standing reset. No change to the physical descriptor
+  // or controller happens until a legal action is selected and performed.
+  const eliteWorkerFlight=M.planId==='spots'&&M.len>=900&&
+   M.w.style==='Spectacle'&&recoveryTraining(M.w)>=.70&&
+   M.len-M.t>=40&&M.len-M.t<=180&&
+   !g.events.some(e=>e.preControl==='w'&&e.t>=M.len-180&&
+    A[e.id]?.risk&&['aerial','springboard','dive'].includes(A[e.id].family)&&
+    !A[e.id].counterOf&&!A[e.id].blockOf&&!A[e.id].reverse&&
+    (!e.aerialResolution||e.aerialResolution==='landed'));
+  if(eliteWorkerFlight&&M.wSt>=27){
+   const promote=(id,share)=>{
+    const choice=pool.find(([move])=>move===id);
+    if(!choice)return;
+    const other=pool.reduce((sum,[move,weight])=>
+     sum+(move===id?0:weight),0);
+    choice[1]=Math.max(choice[1],other*share);
+   };
+   // An actual grounded opponent exchange must precede the defence.
+   // mat_scramble flips control and leaves the opponent on the mat;
+   // stand_reset later brings both to their feet.
+   if(p.control==='f'&&p.position==='mat'&&p.down==='w'&&
+      g.events.at(-1)?.control==='f'&&
+      g.events.at(-1)?.position==='mat')
+    promote('mat_scramble',.52);
+   if(p.control==='w'&&p.position==='mat'&&p.down==='f')
+    promote('stand_reset',.65);
+   // The worker must FIRST win control and get up. This does not make a
+   // top-rope move valid or successful; it only weights legal setups.
+   if(p.control==='w'&&p.position==='standing'&&M.wSt>=31){
+    const eligible=pool.filter(([id])=>
+     id==='top_climb'||id==='springboard_rise');
+    const rest=pool.reduce((sum,[id,weight])=>
+     sum+((id==='top_climb'||id==='springboard_rise')?0:weight),0);
+    if(eligible.length){
+     const total=eligible.reduce((sum,[,weight])=>sum+weight,0);
+     for(const candidate of eligible)
+      candidate[1]=Math.max(candidate[1],rest*.45*candidate[1]/total);
+    }
+   }
+  }
   // In the expanded repertoire a single recovery candidate gets lost
   // among hundreds of legal moves. Reserve a bounded SHARE of the actual
   // choice probability for a tired, trained flyer BEFORE the final run.
