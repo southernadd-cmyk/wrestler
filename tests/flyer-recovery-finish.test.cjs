@@ -154,6 +154,58 @@ assert.equal(weight(caseWith('w','counter'),'top_climb'),stillNeeded,
  'a reversed or failed aerial cannot satisfy the late landing condition');
 assert.equal(weight(caseWith('f','landed'),'top_climb'),stillNeeded,
  'the opponent performing a high spot does not fulfil the worker aerial plan');
+// The flyer can reclaim the finish only through a legal opponent-control
+// reversal, then a distinct standing reset, then a physical rope setup.
+const contested=fixture('spots','elite');
+contested.t=contested.len-120;contested.wSt=42;contested.fSt=65;
+contested.story.control='f';contested.story.position='mat';contested.story.down='w';
+const contestedGraph=G.get(contested);
+contestedGraph.events.push({id:'mat_hold',t:contested.t-10,
+ preControl:'f',control:'f',position:'mat',down:'w',arc:'escalation'});
+contestedGraph.node='mat_hold';
+const matPool=G.pool(contested);
+const scrambleWeight=matPool.find(([id])=>id==='mat_scramble')?.[1]||0;
+const remaining=matPool.reduce((n,[id,w])=>n+(id==='mat_scramble'?0:w),0);
+assert.ok(scrambleWeight>=remaining*.52-1e-7,
+ 'grounded elite flyer gets a meaningful but non-forced legal reversal');
+assert.equal(contested.story.control,'f',
+ 'building the candidate pool must not grant an invisible control switch');
+assert.equal(G.isValid(contested,'top_climb'),true,
+ 'base graph still permits the known setup, but selection cannot use it while grounded');
+assert.equal(matPool.some(([id])=>id==='top_climb'),false,
+ 'no top-rope setup can be selected while the flyer remains grounded');
+G.apply(contested,'mat_scramble');
+assert.equal(contested.story.control,'w','authored mat counter wins actual control');
+assert.equal(contested.story.position,'mat','a mat reversal does not teleport the worker to the ropes');
+assert.equal(contested.story.down,'f','the opponent ends grounded after the counter');
+const standPool=G.pool(contested);
+const standWeight=standPool.find(([id])=>id==='stand_reset')?.[1]||0;
+const remainStanding=standPool.reduce((n,[id,w])=>n+(id==='stand_reset'?0:w),0);
+assert.ok(standWeight>=remainStanding*.65-1e-7,
+ 'the controlling grounded flyer has a credible narrated standing route');
+G.apply(contested,'stand_reset');
+assert.equal(contested.story.position,'standing','actual action regains a standing position');
+assert.equal(contested.story.control,'w','the standing route keeps earned control');
+const climbPool=G.pool(contested);
+const topShare=climbPool.filter(([id])=>id==='top_climb'||id==='springboard_rise')
+ .reduce((n,[,w])=>n+w,0);
+const otherShare=climbPool.filter(([id])=>id!=='top_climb'&&id!=='springboard_rise')
+ .reduce((n,[,w])=>n+w,0);
+assert.ok(topShare>=otherShare*.45-1e-7,
+ 'a still-fit elite worker now has a competitive but not guaranteed rope setup');
+assert.ok(otherShare>0,'ordinary counters and exchanges remain possible');
+G.apply(contested,'top_climb');
+assert.equal(contested.story.position,'top','an actual climb is required before an aerial payoff');
+assert.ok(G.pool(contested).some(([id])=>G.A[id]?.family==='aerial'&&
+ !G.A[id].counterOf&&!G.A[id].blockOf&&!G.A[id].reverse),
+ 'after a physical climb, the named aerial still requires its separate legal selection');
+// Opponent control cannot be flipped without a real grounded preceding exchange.
+const noEvidence=fixture('spots','elite');
+noEvidence.t=noEvidence.len-120;noEvidence.wSt=42;noEvidence.fSt=65;
+noEvidence.story.control='f';noEvidence.story.position='mat';noEvidence.story.down='w';
+const unsupported=G.pool(noEvidence),supportWeight=unsupported.find(([id])=>id==='mat_scramble')?.[1]||0;
+assert.ok(supportWeight<scrambleWeight,
+ 'a mat counter gets no special comeback weight without recent physical evidence');
 const spent=fixture('spots','elite');
 spent.t=spent.len-120;spent.wSt=18;
 assert.equal(G.isValid(spent,aerial),false,
