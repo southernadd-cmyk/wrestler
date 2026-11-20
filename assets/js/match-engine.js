@@ -2472,7 +2472,12 @@ const Graph=(function makeGraph(){
   const prof=fighter(liveSide),stamina=p.control==='f'?M.fSt:M.wSt;
   if(p.position==='standing'&&M.t/M.len>.12){
    for(const id of prof.preferred)if(A[id])selected.push([id,1.4]);
-   if(stamina<48)selected.push(['catch_breath',5]);
+   // A high-speed layout still needs visible recovery beats. Prefer an
+   // actual in-ring breath after a flyer drops below 38 stamina, rather
+   // than silently restoring energy or issuing a free rating bonus.
+   // The normal duplicate-action penalty prevents repetitive stalling.
+   if(stamina<48)selected.push(['catch_breath',
+    M.planId==='spots'&&stamina<38?14:5]);
   }
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
   for(const fam of ARC_FAMILIES[g.arc]||[])for(const id of CAT.members[fam]||[]){
