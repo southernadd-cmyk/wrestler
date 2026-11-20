@@ -5,6 +5,9 @@ on:
       - 'assets/js/match-engine.js'
       - 'tests/catalog.test.cjs'
       - 'tests/phase4-standing-exchanges.test.cjs'
+      - 'tests/phase4-neck-exchanges.test.cjs'
+      - 'tests/grapple-attempts.test.cjs'
+      - 'tests/phase3-chain-submissions.test.cjs'
       - '.github/workflows/phase4-standing-exchanges.yml'
   workflow_dispatch:
 permissions:
@@ -20,6 +23,8 @@ jobs:
           node-version: '22'
       - name: Prove all strike and running parents with named outcomes
         run: node tests/phase4-standing-exchanges.test.cjs
+      - name: Check all 18 neck-family techniques
+        run: node tests/phase4-neck-exchanges.test.cjs
       - name: Check Phase 3 chain and submission continuity
         run: |
           node tests/phase3-chain-submissions.test.cjs
