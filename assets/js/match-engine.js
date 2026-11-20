@@ -2980,6 +2980,32 @@ const Graph=(function makeGraph(){
     }
    }
   }
+  // When the late-match runway approaches, a genuinely fatigued elite
+  // flyer under an ACTUAL opponent hold or strike can work a counter to
+  // recover control. This is a real authored reversal with normal selection
+  // odds and a follow-up rest/stand opportunity — never a controller switch
+  // granted by the booking plan or a silent stamina refill.
+  const runwayEscape=M.planId==='spots'&&M.len>=900&&
+   M.w.style==='Spectacle'&&recoveryTraining(M.w)>=.95&&
+   M.len-M.t>180&&M.len-M.t<=420&&M.wSt>=16&&M.wSt<48;
+  if(runwayEscape&&p.control==='f'){
+   const last=g.events.at(-1),attack=A[last?.id];
+   const isRecent=last?.preControl==='f'&&last.control==='f'&&
+    M.t-last.t>=0&&M.t-last.t<=20;
+   const counter=(id,share)=>{
+    const candidate=pool.find(([move])=>move===id);
+    if(!candidate)return;
+    const other=pool.reduce((sum,[move,w])=>sum+(move===id?0:w),0);
+    candidate[1]=Math.max(candidate[1],other*share);
+   };
+   if(isRecent&&p.position==='mat'&&p.down==='w'&&
+      last.position==='mat')counter('mat_scramble',.58);
+   if(isRecent&&p.position==='standing'&&
+      (['strike','running','rope','corner'].includes(attack?.family)||
+       ['strike_trade','probe_strike','cheap_shot',
+        'clothesline','finish_tease'].includes(last.id)))
+    counter('counter_strike',.50);
+  }
   // Once a REAL top-rope setup has been completed, an elite flyer should
   // more often follow through with a legal named risk instead of changing
   // direction. The probability is bounded, not guaranteed; exact-parent
