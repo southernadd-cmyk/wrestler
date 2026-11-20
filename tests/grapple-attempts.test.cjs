@@ -11,7 +11,13 @@ root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,A=G.A;
 assert.equal(G.validate().errors.length,0);
 assert.equal(G.validate().nodes,EXPECTED.nodes);
-const pilot=[...G.GRAPPLE_PILOT];
+// Preserve Phase 2's original 39-move deterministic matrix; Phase 3's
+// additions have their own full-family directed test.
+const phase3=new Set([...G.CATALOG.members.submission.filter(id=>!['sm_sleeper','sm_ankle_lock'].includes(id)),
+ ...['ch_single_leg','ch_double_leg','ch_fireman','ch_snapmare',
+ 'ch_deep_arm_drag','ch_japanese_arm_drag','ch_drop_toehold',
+ 'ch_headlock_takedown','ch_leg_trip','ch_dragon_screw','ch_hip_toss_chain']]);
+const pilot=G.GRAPPLE_PILOT.filter(id=>!phase3.has(id));
 assert.equal(pilot.length,39,'39 named grapple techniques in the bulk pilot');
 assert.equal(new Set(pilot).size,pilot.length,'no duplicate grapple IDs');
 assert.ok(pilot.every(id=>A[id]&&A[id+'_rev']),'every pilot has real authored move and counter');
