@@ -1637,6 +1637,15 @@ const Graph=(function makeGraph(){
  const GROUND_PILOT=Object.freeze([...CAT.members.ground]);
  const PIN_PILOT=Object.freeze([...CAT.members.pin]);
  const CONTACT_PILOT=Object.freeze([...GROUND_PILOT,...PIN_PILOT]);
+ // Phase 6: complete environmental commitment coverage for corner, floor
+ // and rope actions. The referee countout tease has no authored counter and
+ // remains a narrative beat, not an attack with fabricated defence.
+ const ENVIRONMENT_PILOT=Object.freeze([
+  ...CAT.members.corner,
+  ...CAT.members.outside.filter(id=>id!=='os_count_tease'),
+  ...CAT.members.rope
+ ]);
+ const isContactParent=id=>CONTACT_PILOT.includes(id)||ENVIRONMENT_PILOT.includes(id);
  // A mutual stand-and-trade is already a complete exchange, not a named
  // one-sided attack with a fabricated counter or block.
  const PHASE3_TAKEDOWNS=Object.freeze([
@@ -1860,7 +1869,7 @@ const Graph=(function makeGraph(){
  }
  function contactAlternativeParent(id){
   const n=A[id],original=n?.counterOf||n?.blockOf;
-  return original&&CONTACT_PILOT.includes(original)?original:null;
+  return original&&isContactParent(original)?original:null;
  }
  function strikeAlternativeParent(id){
   const n=A[id],original=n?.counterOf||n?.blockOf;
@@ -2214,7 +2223,7 @@ const Graph=(function makeGraph(){
  function startContact(M,id){
   const g=get(M),p=Psy.get(M);
   if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact||
-     !CONTACT_PILOT.includes(id)||!isValid(M,id)||
+     !isContactParent(id)||!isValid(M,id)||
      M.stage!=='live'||!['w','f'].includes(p.control))return false;
   const seq=++g.contactAttemptSerial,kind=A[id].family;
   g.pendingContact={v:1,id,seq,kind,side:p.control,
@@ -2701,9 +2710,10 @@ const Graph=(function makeGraph(){
    // The very final tick retains the pre-existing immediate-landing fallback.
    if(isAerialParent(id)&&startAerial(M,id))return;
    if(isGrappleParent(id)&&startGrapple(M,id))return;
-   if(CONTACT_PILOT.includes(id)){
-    // Pins and canvas strikes resolve in the present exchange rather than
-    // inserting a synthetic ten-second pause before the referee count.
+   if(isContactParent(id)){
+    // Pins, mat attacks and environmental exchanges resolve in the same beat.
+    // The named parent or its exact defence receives the sole landed event;
+    // we do not create an artificial ten-second pause or new match clock.
     if(startContact(M,id))resolveContact(M);
     return;
    }
@@ -2843,7 +2853,7 @@ const Graph=(function makeGraph(){
  return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
- GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,
+ GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
  startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
 })();
 
