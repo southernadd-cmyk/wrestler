@@ -1923,6 +1923,27 @@ const Graph=(function makeGraph(){
   return g.node==='top_follow'&&p.position==='top'&&
    SUPERPLEX_PILOT.some(id=>isValid(M,id));
  }
+ // The ordinary tick can skip a graph action. After an actual legal climb,
+ // a trained flyer gets ONE next-tick move-selection opportunity, exactly
+ // as a two-wrestler top contest does. This does NOT select, commit or
+ // resolve an aerial; the normal seeded pool and counter gates stay active.
+ function readyNamedAerial(M){
+  const g=get(M),p=Psy.get(M),side=p.control;
+  if(M.planId!=='spots'||M.len<900||M.len-M.t<20||
+     !['w','f'].includes(side)||p.position!=='top'||
+     !['top_climb','springboard_rise'].includes(g.node)||
+     g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)
+   return false;
+  const actor=side==='w'?M.w:M.f,last=g.events.at(-1);
+  if(actor.style!=='Spectacle'||recoveryTraining(actor)<.95||
+     last?.id!==g.node||last.control!==side||
+     M.t-last.t<0||M.t-last.t>10||
+     g.physical?.locations?.[side]!=='top')return false;
+  const family=g.node==='top_climb'?'aerial':'springboard';
+  return (CAT.members[family]||[]).some(id=>
+   A[id]?.risk&&!A[id].reverse&&!A[id].counterOf&&!A[id].blockOf&&
+   isAerialParent(id)&&isValid(M,id));
+ }
  const isGrappleParent=id=>GRAPPLE_PILOT.includes(id)||SUPERPLEX_PILOT.includes(id);
  function aerialAlternativeParent(id){
   const n=A[id],original=n?.counterOf||n?.blockOf;
@@ -3208,7 +3229,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial};
 })();
 
 function create(o){
@@ -3682,8 +3703,9 @@ function tick(M){
  // resolve that organic exchange before an unrelated scheduled spectacle.
  // Deferred nearfalls are still available on a later tick.
  const topContest=!spoke&&Graph.readyTopContest(M);
- if(!spoke&&!topContest&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
- else if(!spoke&&!topContest&&M.r()<spotP)spoke=Graph.special(M);
+ const preparedFlight=!spoke&&!topContest&&Graph.readyNamedAerial(M);
+ if(!spoke&&!topContest&&!preparedFlight&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
+ else if(!spoke&&!topContest&&!preparedFlight&&M.r()<spotP)spoke=Graph.special(M);
  // crowd bands
  crowdBand(M);
  // producer hints
@@ -3694,7 +3716,7 @@ function tick(M){
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
- if(!spoke&&(topContest||M.r()<.64))Graph.step(M);
+ if(!spoke&&(topContest||preparedFlight||M.r()<.64))Graph.step(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
