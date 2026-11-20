@@ -1,0 +1,33 @@
+name: Phase 2 grapple evidence
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'tools/graph-lab/**'
+      - '.github/workflows/phase2-grapple-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  grapple-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit 1000 actual matches
+        run: node tools/graph-lab/grapple-audit.cjs 1000 > phase2-grapple-audit.json
+      - name: Show grappling outcomes and unseen moves
+        if: always()
+        run: |
+          if test -f phase2-grapple-audit.json; then
+            node -e "const r=require('./phase2-grapple-audit.json'); console.log(JSON.stringify({graphCoverage:r.graphCoverage,observed:r.grappling.coveredMoves,eligible:r.grappling.eligibleMoves,attempts:r.grappling.attempts,invalid:r.grappling.invalid,unseen:r.grappling.unobservedMoves,byMove:r.grappling.byMove},null,2))"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase2-grapple-audit
+          path: phase2-grapple-audit.json
+          if-no-files-found: warn
