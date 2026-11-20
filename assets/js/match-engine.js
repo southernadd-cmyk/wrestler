@@ -2197,7 +2197,10 @@ const Graph=(function makeGraph(){
      grip.side===p.control&&M.t-grip.at<=20){
    for(const id of CAT.members.submission){
     if(A[id]?.requires==='mat'&&PHYSICAL_GRIP_MOVES[id]===grip.type)
-     selected.push([id,2.2]);
+     // Control is a fleeting technical opportunity: a relevant hold should
+     // compete meaningfully with arbitrary arc changes or another rest hold.
+     // This raises only an eligible exact-grip option, never bypasses isValid.
+     selected.push([id,5.8]);
    }
   }
   if(p.position==='mat'&&!g.physical?.grip&&
