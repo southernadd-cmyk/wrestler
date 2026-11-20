@@ -276,6 +276,23 @@ assert.equal(beforeFinish.story.control,'f',
 G.apply(beforeFinish,'mat_scramble');
 assert.equal(beforeFinish.story.control,'w',
  'a real pre-finish scramble must be performed to win control');
+// A true elite flyer can start this control recovery before the three
+// minutes begin; the authorial aerial phase still starts later.
+const preRun=fixture('spots','elite');
+preRun.t=preRun.len-240;preRun.wSt=40;preRun.fSt=65;
+preRun.story.control='f';preRun.story.position='mat';preRun.story.down='w';
+const preRunGraph=G.get(preRun);
+preRunGraph.node='mat_hold';
+preRunGraph.events.push({id:'mat_hold',t:preRun.t-10,preControl:'f',
+ control:'f',position:'mat',down:'w'});
+const preRunPool=G.pool(preRun);
+const preScrambleWeight=preRunPool.find(([id])=>id==='mat_scramble')?.[1]||0;
+const preOtherWeight=preRunPool.reduce((sum,[id,w])=>
+ sum+(id==='mat_scramble'?0:w),0);
+assert.ok(preScrambleWeight>=preOtherWeight*.95-1e-7,
+ 'an elite flyer can earn a mat comeback before the final three-minute window');
+assert.equal(preRun.story.control,'f',
+ 'the early comeback weighting must not silently flip controller');
 // Narrative arc changes may not erase a real, legally prepared high spot
 // between the climb and the flyer's ONE following attack choice.
 const protectedLaunch=fixture('spots','elite');
@@ -388,6 +405,14 @@ assert.equal(G.validate().errors.length,0);
 // regression FLOOR here; the 80-85% production goal is monitored
 // separately because individual cohorts fluctuate with real counters.
 const finalAudit=require('../tools/graph-lab/flyer-finish-trace.cjs').capture(24);
+console.log('Eight lowest-risk elite finishing samples:',
+ JSON.stringify(finalAudit.samples.map(x=>({
+  opponent:x.opponent,seed:x.seed,
+  staminaAt180:x.stAt180,lateControlTicks:x.control,
+  setups:x.setup?.map(a=>a.id),
+  riskyLandings:x.landedRisk?.map(a=>a.id),
+  attemptedAerials:x.aerialAttempts?.map(a=>a.outcome)
+ }))));
 console.log('Elite 96-bout finishing distribution:',JSON.stringify({
  bouts:finalAudit.bouts,
  distinctRisk:finalAudit.avg.distinctWorkerRisk,
