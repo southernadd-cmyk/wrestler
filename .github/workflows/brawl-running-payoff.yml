@@ -1,0 +1,84 @@
+name: Brawl running payoff comparison
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/brawl-running-depth.cjs'
+      - 'tests/brawl-running-payoff.test.cjs'
+      - '.github/workflows/brawl-running-payoff.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    name: Real rebound, named attempts and genuine landings
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check owned rebound, legal attack and non-Brawl isolation
+        run: |
+          node tests/brawl-running-payoff.test.cjs
+          node tests/brawl-late-impact.test.cjs
+      - name: Checkout prior #144 candidate for paired baseline
+        uses: actions/checkout@v4
+        with:
+          ref: balance/brawl-late-impact-20261120
+          path: baseline
+      - name: Compare baseline and patch on the same 288 Brawl bouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp tools/graph-lab/brawl-running-depth.cjs baseline/tools/graph-lab/
+          (cd baseline && node tools/graph-lab/brawl-running-depth.cjs 24 --json-file > ../brawl-running-before.md)
+          node tools/graph-lab/brawl-running-depth.cjs 24 --json-file > brawl-running-after.md
+          echo '# BEFORE — PR #144' >> "$GITHUB_STEP_SUMMARY"
+          cat brawl-running-before.md >> "$GITHUB_STEP_SUMMARY"
+          echo '# AFTER — legal one-beat Brawl run' >> "$GITHUB_STEP_SUMMARY"
+          cat brawl-running-after.md >> "$GITHUB_STEP_SUMMARY"
+          cat brawl-running-before.md brawl-running-after.md
+      - name: Assert genuine running landings without losing late variety
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict'),fs=require('node:fs');
+          const b=JSON.parse(fs.readFileSync('baseline/brawl-running-depth.json'));
+          const a=JSON.parse(fs.readFileSync('brawl-running-depth.json'));
+          for(const tier of ['novice','competent','elite']){
+           const before=b.cohorts.find(x=>x.tier===tier);
+           const after=a.cohorts.find(x=>x.tier===tier);
+           assert(before&&after,'missing paired tier '+tier);
+           console.log(tier+' running '+before.lateRunningLanded+' => '+
+            after.lateRunningLanded+', total late distinct '+
+            before.totalNamedDistinctPerBout+' => '+after.totalNamedDistinctPerBout+
+            ', other late distinct '+before.nonRunningDistinctPerBout+' => '+
+            after.nonRunningDistinctPerBout);
+           if(tier==='novice')assert.equal(after.lateRunningLanded,before.lateRunningLanded);
+           else {
+            assert.ok(after.lateRunningLanded>=Math.max(tier==='elite'?5:3,before.lateRunningLanded+2),
+             'named running landings must increase for '+tier);
+            assert.ok(after.totalNamedDistinctPerBout+.08>=before.totalNamedDistinctPerBout,
+             'cannot substantially displace overall late offence: '+tier);
+            assert.ok(after.nonRunningDistinctPerBout+.12>=before.nonRunningDistinctPerBout,
+             'cannot strongly displace other late offence: '+tier);
+           }
+          }
+          NODE
+      - name: Run full 4860-match all-five-plan style depth audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/graph-lab/style-depth-audit.cjs 6 --json-file | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Retain paired evidence and full audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: brawl-running-paired-action-ledgers
+          path: |
+            brawl-running-before.md
+            brawl-running-after.md
+            baseline/brawl-running-depth.json
+            brawl-running-depth.json
+            style-depth-audit.json
+          if-no-files-found: error

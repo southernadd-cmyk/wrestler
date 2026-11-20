@@ -1618,6 +1618,10 @@ const Graph=(function makeGraph(){
       isAerialParent(id)&&isValid(M,id)))
     return {id:schedule.id,name:a.label};
   }
+  // A real Brawl rebound earns ONE opportunity before the arc director
+  // changes control or resets the ropes. Only if a named running attack
+  // is affordable now. This never performs or credits the attack.
+  if(readyBrawlRebound(M))return {id:schedule.id,name:a.label};
   // Existing in-progress saves may already be in an impossible early finish arc.
   // Recover those, and never carry an early-phase arc back into the final stretch.
   const mispaced=(g.arc==='exchange'&&order[schedule.id]<2)
@@ -1930,6 +1934,69 @@ const Graph=(function makeGraph(){
  // named attack, allow the next tick to select a graph action rather than
  // silently abandoning the setup. Choice, commitment, counter and landing
  // still go through their ordinary seeded rules; no success is guaranteed.
+ // A physically performed rope setup is useful for only the following beat.
+ // No invisible teleport, synthetic setup, or guaranteed strike.
+ // A real landed standing strike may produce an actual, paid rope run
+ // within the SAME 10-second exchange. The named attack on the next
+ // beat still uses the ordinary counter/block/landed attempt ledger.
+ function maybeBrawlComboRun(M,side,sourceId){
+  const g=get(M),p=Psy.get(M),remaining=M.len-M.t;
+  if(M.planId!=='brawl'||M.len<900||remaining<30||remaining>180||
+     !['w','f'].includes(side)||p.control!==side||
+     p.position!=='standing'||p.down!==null||
+     g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)
+   return false;
+  const actor=side==='w'?M.w:M.f,trained=brawlConditioning(actor);
+  if(actor.style!=='Brawl'||trained<.30)return false;
+  const last=g.events.at(-1),source=A[sourceId];
+  if(!source||last?.id!==sourceId||last.preControl!==side||
+     last.t!==M.t||source.reverse||source.counterOf||source.blockOf)return false;
+  const namedLanded=source.family==='strike'&&
+   last.strikeResolution==='landed'&&
+   g.strikeAttempts.some(a=>a.seq===last.strikeAttemptSeq&&
+    a.id===sourceId&&a.side===side&&a.outcome==='landed');
+  const coreLanded=['stiff_forearm','body_shot','strike_trade'].includes(sourceId)&&
+   !last.strikeResolution;
+  if(!namedLanded&&!coreLanded)return false;
+  if(g.events.some(e=>e.id==='rope_run'&&e.preControl===side&&e.t>=M.len-180))
+   return false;
+  const ph=g.physical;
+  if(ph&&(ph.area!=='ring'||ph.locations?.w!=='ring'||ph.locations?.f!=='ring'))
+   return false;
+  const stamina=side==='w'?M.wSt:M.fSt;
+  if(!isValid(M,'rope_run')||
+     !(CAT.members.running||[]).some(id=>A[id]?.requires==='standing'&&
+      !A[id].agile&&!A[id].reverse&&!A[id].counterOf&&!A[id].blockOf&&
+      isValid(M,id)&&
+      stamina>=16+costOf(id)*3.2+costOf('rope_run')+1.5))
+   return false;
+  if(M.r()>=.29+.18*trained)return false;
+  apply(M,'rope_run');
+  const setup=g.events.at(-1);
+  if(setup?.id!=='rope_run'||setup.preControl!==side)return false;
+  setup.brawlComboSource=sourceId;
+  return true;
+ }
+ function readyBrawlRebound(M){
+  const g=get(M),p=Psy.get(M),side=p.control,remaining=M.len-M.t;
+  if(M.planId!=='brawl'||M.len<900||remaining<20||remaining>180||
+     !['w','f'].includes(side)||p.position!=='standing'||
+     !['rope_run','rope_rebound'].includes(g.node)||
+     g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)
+   return false;
+  const actor=side==='w'?M.w:M.f,stamina=side==='w'?M.wSt:M.fSt,
+   last=g.events.at(-1);
+  if(actor.style!=='Brawl'||brawlConditioning(actor)<.30||
+     last?.id!==g.node||last.control!==side||
+     M.t-last.t<0||M.t-last.t>10)return false;
+  return (CAT.members.running||[]).some(id=>{
+   const move=A[id];
+   return move&&!move.reverse&&!move.counterOf&&!move.blockOf&&
+    move.requires===p.position&&
+    stamina>=Math.max(10,9+costOf(id)*3)&&
+    isValid(M,id);
+  });
+ }
  function readyNamedAerial(M){
   const g=get(M),p=Psy.get(M),side=p.control;
   if(M.planId!=='spots'||M.len<900||M.len-M.t<20||
@@ -2735,12 +2802,8 @@ const Graph=(function makeGraph(){
     for(const id of CAT.members[family]||[]){
      if(brawlImpact(id)&&!usedLate(id))selected.push([id,emphasis]);
     }
-   // Support a legitimate strike -> rope run -> named running payoff.
-   if(p.position==='standing'&&sameController&&
-      ['strike','running'].includes(A[g.node]?.family)&&
-      !g.events.some(e=>e.id==='rope_run'&&e.preControl===p.control&&
-       M.t-e.t<60)&&stamina>=20)
-    selected.push(['rope_run',3.2]);
+   // Completed standing strikes can earn a rope-run in their ORIGINAL beat
+   // without competing for this tick's attack selection (see maybeBrawlComboRun).
   }
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
   for(const fam of ARC_FAMILIES[g.arc]||[])for(const id of CAT.members[fam]||[]){
@@ -3014,6 +3077,43 @@ const Graph=(function makeGraph(){
     }
    }
   }
+  // A narrated, owned rebound invites a small set of source-appropriate
+  // named running attacks. These remain real contested choices, not a forced hit.
+  if(brawlLate&&readyBrawlRebound(M)){
+   const setup=g.events.at(-1),prior=g.events.at(-2);
+   const linked=setup?.brawlComboSource&&prior?.id===setup.brawlComboSource&&
+    prior.preControl===p.control&&prior.t===setup.t;
+   const part=linked?A[prior.id]?.part:null;
+   const authored=part==='ribs'?
+    ['rn_spear','rn_knee','rn_cannonball_mid','rn_thesz']:
+    part==='neck'?
+    ['rn_lariat','rn_elbow','rn_bicycle_knee','rn_flying_shoulder']:
+    ['rn_lariat','rn_crossbody','rn_dropkick','rn_elbow','rn_hip_attack'];
+   const eligible=pool.filter(([id])=>A[id]?.family==='running'&&
+    brawlImpact(id)&&!usedLate(id));
+   const connected=linked?eligible.filter(([id])=>authored.includes(id)):[];
+   const runs=connected.length>=2?connected:eligible;
+   if(runs.length){
+    const ids=new Set(runs.map(([id])=>id));
+    const current=runs.reduce((sum,[,w])=>sum+w,0);
+    const other=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+    // Competent brawlers have fewer safe named runners than elites.
+    // Once they have paid for a REAL strike -> rope run, let that brief
+    // opening compete strongly; no new setup or landing is invented.
+    const competentLink=linked&&brawlTraining<.65;
+    // A completed rebound is a fleeting, authored ATTACK setup, not
+    // an invitation to drift into an unrelated hold. Trained competent
+    // workers get a strong but non-mandatory (~75%) chance to attempt
+    // one of the few physically legal payoff moves. A counter or block
+    // is still decided normally by resolveStrike.
+    const target=other*(competentLink?3.0:
+      linked?.78+.14*brawlTraining:.64+.10*brawlTraining);
+    if(current>0&&current<target){
+     const scale=Math.min(competentLink?120:12,target/current);
+     for(const item of runs)item[1]*=scale;
+    }
+   }
+  }
   // The large modern graph would otherwise drown the one genuine rest.
   // This is only a probability share, before the last 180 seconds.
   if(longBrawl&&timeLeft>180&&timeLeft<=540&&stamina<62&&
@@ -3225,15 +3325,20 @@ const Graph=(function makeGraph(){
     return;
    }
    if(STRIKE_PILOT.includes(id)&&startStrike(M,id)){
-    // The standing attempt and defence are one contested exchange. A
-    // running attack has its own prior rope/rebound setup in the graph;
-    // introducing another mandatory clock tick would artificially crowd
-    // out aerial and grounded action. Parent and defender remain explicit
-    // and saves can still restore a pending attempt.
+    // The actual strike is committed and resolved before a visible run
+    // can be chosen. Countered/blocked strikes create no offensive setup.
+    const side=p.control;
     resolveStrike(M,true);
+    const attempt=g.strikeAttempts.at(-1);
+    if(attempt?.id===id&&attempt.side===side&&attempt.outcome==='landed')
+     maybeBrawlComboRun(M,side,id);
     return;
    }
-   apply(M,id);return;
+   const side=p.control;
+   apply(M,id);
+   if(['stiff_forearm','body_shot','strike_trade'].includes(id))
+    maybeBrawlComboRun(M,side,id);
+   return;
   }
   recover(M);
  }
@@ -3361,7 +3466,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,maybeBrawlComboRun};
 })();
 
 function create(o){
@@ -3848,8 +3953,10 @@ function tick(M){
  // Deferred nearfalls are still available on a later tick.
  const topContest=!spoke&&Graph.readyTopContest(M);
  const preparedFlight=!spoke&&!topContest&&Graph.readyNamedAerial(M);
- if(!spoke&&!topContest&&!preparedFlight&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
- else if(!spoke&&!topContest&&!preparedFlight&&M.r()<spotP)spoke=Graph.special(M);
+ const preparedRun=!spoke&&!topContest&&!preparedFlight&&Graph.readyBrawlRebound(M);
+ if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){
+  M.nearfallAt.shift();Graph.nearfall(M);spoke=true;
+ }else if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&M.r()<spotP)spoke=Graph.special(M);
  // crowd bands
  crowdBand(M);
  // producer hints
@@ -3860,7 +3967,7 @@ function tick(M){
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
- if(!spoke&&(topContest||preparedFlight||M.r()<.64))Graph.step(M);
+ if(!spoke&&(topContest||preparedFlight||preparedRun||M.r()<.64))Graph.step(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
