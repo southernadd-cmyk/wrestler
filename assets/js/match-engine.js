@@ -2481,11 +2481,12 @@ const Graph=(function makeGraph(){
    if(isAerialParent(id)&&startAerial(M,id))return;
    if(isGrappleParent(id)&&startGrapple(M,id))return;
    if(STRIKE_PILOT.includes(id)&&startStrike(M,id)){
-    // Short strikes are thrown, read and defended in the SAME exchange.
-    // Making every jab require the following clock tick costs half of
-    // ordinary wrestling and crowds out unrelated moves. A running attack
-    // still commits to a distinct next-beat charge and can be interrupted.
-    if(A[id].family==='strike')resolveStrike(M,true);
+    // The standing attempt and defence are one contested exchange. A
+    // running attack has its own prior rope/rebound setup in the graph;
+    // introducing another mandatory clock tick would artificially crowd
+    // out aerial and grounded action. Parent and defender remain explicit
+    // and saves can still restore a pending attempt.
+    resolveStrike(M,true);
     return;
    }
    apply(M,id);return;
