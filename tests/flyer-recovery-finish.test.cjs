@@ -208,6 +208,33 @@ noEvidence.story.control='f';noEvidence.story.position='mat';noEvidence.story.do
 const unsupported=G.pool(noEvidence),supportWeight=unsupported.find(([id])=>id==='mat_scramble')?.[1]||0;
 assert.ok(supportWeight<scrambleWeight,
  'a mat counter gets no special comeback weight without recent physical evidence');
+// Narrative arc changes may not erase a real, legally prepared high spot
+// between the climb and the flyer's ONE following attack choice.
+const protectedLaunch=fixture('spots','elite');
+protectedLaunch.t=protectedLaunch.len-60;protectedLaunch.wSt=44;
+const launchGraph=G.get(protectedLaunch);
+launchGraph.started=true;launchGraph.arc='escalation';
+launchGraph.age=G.ARCS.escalation.max;
+G.apply(protectedLaunch,'top_climb');
+assert.equal(protectedLaunch.story.position,'top');
+protectedLaunch.t+=10; // >93% normally forces a finish_setup arc reset
+const launchPhase=G.advance(protectedLaunch,protectedLaunch.t/protectedLaunch.len);
+assert.equal(launchPhase.id,'stretch','the timed finishing phase still advances');
+assert.equal(protectedLaunch.story.position,'top',
+ 'a narrative phase change cannot silently erase a legal next-tick aerial setup');
+assert.equal(launchGraph.node,'top_climb',
+ 'the athlete keeps the real named setup, not an invented landing');
+const readyParents=G.pool(protectedLaunch).filter(([id])=>
+ G.A[id]?.family==='aerial'&&G.A[id]?.risk&&
+ !G.A[id].reverse&&!G.A[id].counterOf&&!G.A[id].blockOf);
+assert.ok(readyParents.length>0,
+ 'the preserved physical rope position must expose a real legal named aerial');
+assert.equal(launchGraph.pendingAerial,null,'an arc hold must not start an aerial automatically');
+assert.equal(G.startAerial(protectedLaunch,readyParents[0][0]),true,
+ 'only a separate committed named attempt starts the actual attack');
+assert.equal(launchGraph.pendingAerial.id,readyParents[0][0]);
+assert.equal(launchGraph.aerialAttempts.at(-1).outcome,'pending',
+ 'a prepared attack is not credited as landed before its counter/botch resolution');
 const spent=fixture('spots','elite');
 spent.t=spent.len-120;spent.wSt=18;
 assert.equal(G.isValid(spent,aerial),false,
