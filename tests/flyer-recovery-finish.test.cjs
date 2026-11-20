@@ -321,6 +321,26 @@ assert.equal(G.readyNamedAerial(protectedLaunch),false,
  'a committed aerial cannot be selected or launched twice');
 assert.equal(launchGraph.aerialAttempts.at(-1).outcome,'pending',
  'a prepared attack is not credited as landed before its counter/botch resolution');
+// Late scheduled phase changes can overtake a still-valid comeback arc.
+// The flyer must not lose a genuine climb because the *story* transitions
+// from "resurgence" to "stretch" before the next graph choice.
+const crossArcLaunch=fixture('spots','elite');
+crossArcLaunch.t=crossArcLaunch.len-60;crossArcLaunch.wSt=44;
+const crossArcGraph=G.get(crossArcLaunch);
+crossArcGraph.started=true;crossArcGraph.arc='resurgence';
+crossArcGraph.age=G.ARCS.resurgence.max;
+G.apply(crossArcLaunch,'top_climb');
+assert.equal(crossArcLaunch.story.position,'top');
+crossArcLaunch.t+=10;
+assert.equal(G.ARCS.resurgence.phase,'comeback');
+G.advance(crossArcLaunch,crossArcLaunch.t/crossArcLaunch.len);
+assert.equal(crossArcLaunch.story.position,'top',
+ 'switching from comeback to stretch cannot cancel an earned viable top climb');
+assert.equal(crossArcGraph.node,'top_climb');
+assert.equal(G.readyNamedAerial(crossArcLaunch),true,
+ 'the prepared legal aerial retains its one follow-through opportunity');
+assert.equal(crossArcGraph.pendingAerial,null,
+ 'preserving a setup across arcs does not force a launch or a landing');
 const noviceLaunch=fixture('spots','novice');
 noviceLaunch.t=noviceLaunch.len-60;noviceLaunch.wSt=44;
 G.apply(noviceLaunch,'top_climb');
