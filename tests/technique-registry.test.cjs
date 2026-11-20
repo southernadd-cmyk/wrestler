@@ -29,6 +29,13 @@ assert.equal(R.get('sm_abdominal').entry.position,'standing');
 assert.equal(R.get('sm_octopus').entry.position,'standing');
 assert.equal(R.get('rs_cover_rest').counterIds.length,0);
 assert.equal(R.get('pn_sunset').exit.control,'pin');
+// New editorial records must not silently enable training-school weighting.
+const B = require('../assets/js/technique-backgrounds.js');
+for(const id of ['gd_knee_stomp','gd_dragon_screw_ground']) {
+  assert.deepEqual([...R.get(id).traditionTags], ['wrestling']);
+  assert.equal(B.multiplier('juno', id, G, R), 1, id+' must remain training-neutral');
+}
+
 assert.ok(R.get('ch_single_leg').counterIds.includes('ch_single_leg_rev'));
 assert.equal(R.get('ch_single_leg').mechanicalClass, 'Takedown');
 assert.equal(R.get('lc_rana_pin').variantOf, 'lc_hurricanrana');
