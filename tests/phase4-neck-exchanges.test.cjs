@@ -70,6 +70,7 @@ for(const id of fast){
  const m=make(id),rev=id+'_rev';
  assert.equal(G.isValid(m,rev),false,'no floating rapid counter '+id);
  assert.equal(G.startStrike(m,id),true);
+ m.r=()=>.999; // deterministic clean landing outside all counter/block ranges
  assert.equal(G.resolveStrike(m,true),true);
  assert.equal(m.graph.events.at(-1).attemptedMove,id);
  assert.equal(m.graph.strikeAttempts.at(-1).outcome,'landed');
