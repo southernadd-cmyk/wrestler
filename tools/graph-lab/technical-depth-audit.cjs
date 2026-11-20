@@ -19,7 +19,7 @@ function capture(seeds=12){
    submissions:0,submissionLanded:0,submissionCounter:0,
    opposingGrapples:0,opposingCountered:0,gripEntries:0,gripToAttempt:0,
    gripRequired:0,gripVerified:0,triples:0,linkedPairs:0,
-   ledgerErrors:0,topMoves:{},topSubmissions:{},topTriples:{},examples:[]};
+   ledgerErrors:0,ledgerExamples:[],topMoves:{},topSubmissions:{},topTriples:{},examples:[]};
   for(let oi=0;oi<OPP.length;oi++)for(let seedIndex=0;seedIndex<seeds;seedIndex++){
    const settings=lab.makeOptions(D,{wid:'juno',rid:OPP[oi],minutes,plan,
     slot:'main',seed:910087+oi*7919+minutes*9191+seedIndex*193,
@@ -42,10 +42,18 @@ function capture(seeds=12){
     const action=seq.get(a.seq),result=a.outcome==='counter'?a.id+'_rev':
      a.outcome==='block'?a.id+'_blk':a.id;
     const happened=['landed','counter','block'].includes(a.outcome);
-    if(happened?
+    const broken=happened?
       !(action&&action.id===result&&action.grappleResolution===a.outcome&&
-        action.attemptedMove===a.id&&action.actionId===result):
-      !!action||!['aborted','interrupted'].includes(a.outcome))g.ledgerErrors++;
+        action.attemptedMove===a.id&&a.actionId===result):
+      !!action||!['aborted','interrupted'].includes(a.outcome);
+    if(broken){
+     g.ledgerErrors++;
+     if(g.ledgerExamples.length<8)g.ledgerExamples.push({
+      seed:m.o.seed,at:a.startedT,move:a.id,outcome:a.outcome,seq:a.seq,
+      recordedAction:a.actionId||null,event:action?
+       {id:action.id,resolution:action.grappleResolution,attempted:action.attemptedMove}:null,
+      visibleEventCount:e.length,totalGrappleAttempts:attempts.length});
+    }
     if(a.side==='f'){
      g.opposingGrapples++;g.opposingCountered+=a.outcome==='counter';continue;
     }
@@ -101,7 +109,7 @@ function capture(seeds=12){
    gripEntries:mean(g.gripEntries,n),gripToAttemptPct:pct(g.gripToAttempt,g.gripEntries),
    requiredGripAttempts:g.gripRequired,verifiedGripPct:pct(g.gripVerified,g.gripRequired),
    actualLinkedPairs:mean(g.linkedPairs,n),actualThreeMoveChains:mean(g.triples,n),
-   ledgerErrors:g.ledgerErrors,topMoves:rank(g.topMoves),
+   ledgerErrors:g.ledgerErrors,ledgerExamples:g.ledgerExamples,topMoves:rank(g.topMoves),
    topSubmissions:rank(g.topSubmissions),topTriples:rank(g.topTriples),examples:g.examples});
  }
  const errors=groups.filter(g=>g.bouts!==4*seeds||g.ledgerErrors||
