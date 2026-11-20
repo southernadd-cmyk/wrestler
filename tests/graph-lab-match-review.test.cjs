@@ -13,7 +13,7 @@ assert.equal(before.schema,'office-graph-lab-review-v05');
 assert.equal(before.totalBouts,18);
 assert.equal(before.registry.reviewed,325);
 assert.equal(before.registry.authored,340);
-assert.deepEqual(before,again,'identical seeds and roster choices must repeat exactly');
+assert.equal(JSON.stringify(before),JSON.stringify(again),'identical seeds and roster choices must reproduce the same JSON report');
 assert.deepEqual(review.failures(before),[],'all six real match scenarios are mechanically valid');
 assert.ok(before.scenarios.every(row=>row.uniqueMatchSequences>0));
 assert.match(review.markdown(before),/Mechanical validation:\*\* passed/);
