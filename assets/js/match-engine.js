@@ -635,7 +635,7 @@ const Graph=(function makeGraph(){
  node('hope_cutoff','{A} intercepts the escape with a knee to {D}’s {part}; the comeback is stopped.',{focus:1,zone:'mat',down:'d',next:[e('target_hold',3),e('mat_hold',2),e('stand_reset',2)]});
  node('stand_reset','{D} rolls clear and uses the ropes to rise. {A} gives ground to avoid a counter.',{requires:'mat',zone:'standing',down:null,next:[e('lockup',2),e('strike_trade',3),e('corner_whip',2),e('rope_run',2)]});
  // High-risk branches include genuine preparation, payoff or failure.
- node('top_climb','{A} drops {D} with a strike, then climbs the turnbuckles, checking their footing.',{zone:'top',down:'d',next:[e('aerial_attack',5),e('aerial_counter',3),e('missile_dropkick',3),e('high_crossbody',3),e('top_rope_hesitation',1)]});
+ node('top_climb','{A} drops {D} with a strike, then climbs the turnbuckles, checking their footing.',{requires:'standing',zone:'top',down:'d',next:[e('aerial_attack',5),e('aerial_counter',3),e('missile_dropkick',3),e('high_crossbody',3),e('top_rope_hesitation',1)]});
  node('aerial_attack','{A} launches from the turnbuckle and connects with a diving elbow!',{requires:'top',zone:'mat',down:'d',crowd:5,next:[e('cover',5),e('stand_reset',2)]});
  node('aerial_counter','{D} rolls out of the way! {A} crashes onto the canvas and loses the advantage.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:3,next:[e('cover',2),e('mat_hold',2),e('stand_reset',3)]});
  // Ringside branches must return inside before a pin or submission.
@@ -664,7 +664,7 @@ const Graph=(function makeGraph(){
 
  node('grapple_trip','{A} shoots for the leg, catches {D} off balance and drives them onto the mat.',{cost:1.1,zone:'mat',down:'d',next:[e('target_hold',5),e('mat_hold',3),e('mat_scramble',2)]});
  node('power_spinebuster','{A} catches {D} coming forward and plants them with a heavy spinebuster!',{cost:3.5,lift:30,zone:'mat',down:'d',crowd:2,next:[e('cover',3),e('mat_hold',2),e('stand_reset',3)]});
- node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{cost:1.8,zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3),e('missile_dropkick',2),e('top_rope_hesitation',2)]});
+ node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{cost:1.8,requires:'standing',zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3),e('missile_dropkick',2),e('top_rope_hesitation',2)]});
  node('springboard_strike','{A} launches from the ropes and lands a springboard crossbody on {D}!',{cost:3.2,requires:'top',zone:'mat',down:'d',crowd:4,next:[e('cover',4),e('stand_reset',2)]});
  node('springboard_evaded','{D} rolls clear! {A} crashes into the canvas and {D} takes control.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:2,next:[e('mat_hold',2),e('cover',2),e('stand_reset',3)]});
  node('crowd_pose','{A} stops to play to the crowd. {D} watches, looking for an opening.',{cost:-0.7,next:[e('cheap_shot',2),e('counter_strike',3),e('probe_strike',3),e('lockup',2)]});
