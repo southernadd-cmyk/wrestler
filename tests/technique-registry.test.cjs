@@ -47,7 +47,7 @@ assert.equal(R.get('ch_single_leg').mechanicalClass, 'Takedown');
 assert.equal(R.get('lc_rana_pin').variantOf, 'lc_hurricanrana');
 assert.equal(R.get('lc_rana_pin').mechanicalClass, 'Wrestling-only');
 assert.ok(R.get('ch_deep_arm_drag').traditionTags.includes('lucha'));
-assert.equal(R.get('st_superkick'), null, 'unreviewed moves have no authoritative metadata');
+assert.equal(R.get('sx_vertical'), null, 'still-unreviewed moves have no authoritative metadata');
 assert.ok(R.list().every(row => row.reviewStatus === 'proposed'));
 assert.equal(JSON.stringify(G.A), before, 'metadata must not mutate the action graph');
 
