@@ -2941,7 +2941,11 @@ const Graph=(function makeGraph(){
    M.w.style==='Spectacle'&&eliteTraining>=.70&&
    M.len-M.t>=40&&M.len-M.t<=(eliteTraining>=.95?270:180)&&
    eliteLateCount<2;
-  if(eliteWorkerFlight&&M.wSt>=27){
+  // A drained worker can still execute a *legal low-cost reversal* to
+  // regain control; the previous >=27 condition wrongly disabled even
+  // those escapes. Actual isValid cost/position gates still filter each
+  // candidate. Rope setup remains separately gated at >=31 stamina.
+  if(eliteWorkerFlight&&M.wSt>=16){
    // First clean landing is the main objective; a second *distinct* one
    // remains plausible but gets less producer emphasis, never a guarantee.
    const strength=eliteLateCount===0?1:.35;
