@@ -2118,10 +2118,29 @@ const Graph=(function makeGraph(){
   }
   if(p.position==='corner'&&famList.includes('superplex')&&affordableSuperplex(M))
    selected.push(['top_follow',13]);
-  // Prefer genuine acquisition beats when a desired throw/hold lacks its grip.
-  if(p.position==='standing'&&!g.physical?.grip&&
-     (famList.includes('suplex')||famList.includes('neck')||famList.includes('chain')))
-   selected.push(['front_facelock',2.1],['go_behind',1.4],['waistlock',1.2]);
+  // Phase 2: a named grappling attempt should be a plausible payoff for the
+  // *actual* grip the controller just established, not a random catalogue
+  // entry with no setup. Preserve isValid, weight, stamina and clock gates.
+  const grip=g.physical?.grip;
+  const controlledGrip=grip&&grip.side===p.control&&M.t-grip.at<=20&&
+    p.position==='standing'&&g.physical.area==='ring';
+  if(controlledGrip){
+   // Candidate pool only: no graph edges invented and no forced execution.
+   // Boost different legal throws for each control; prefer repertoire/style
+   // through the existing scoring multipliers below.
+   for(const id of GRAPPLE_PILOT){
+    if(PHYSICAL_GRIP_MOVES[id]===grip.type&&A[id]?.requires==='standing')
+     selected.push([id,2.6]);
+   }
+  }else if(p.position==='standing'&&
+     (famList.includes('suplex')||famList.includes('power')||
+      famList.includes('neck')||famList.includes('chain'))){
+   // The next beat acquires a real grip, then the wrestler has a chance to
+   // use it. This is not a free-standing throw or synthetic grip assignment.
+   selected.push(['front_facelock',4.2],['go_behind',2.8],
+     ['waistlock',2.2],['lockup',2.5]);
+   if(famList.includes('power'))selected.push(['pw_bearhug',1.6]);
+  }
   if(p.position==='mat'&&!g.physical?.grip&&
      (famList.includes('submission')||famList.includes('ground')))
    selected.push(['leg_wrench',2.2]);
