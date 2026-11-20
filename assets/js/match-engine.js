@@ -2488,7 +2488,7 @@ const Graph=(function makeGraph(){
   if(M.planId==='spots'&&p.position==='standing'&&stamina>=42&&
      (liveSide.style==='Spectacle'||((liveSide.ring||0)>=78&&(liveSide.safe||0)>=65))&&
      ['shine','resurgence','exchange','nearfall','escalation','dive_sequence','finish_setup'].includes(g.arc))
-   selected.push(['top_climb',3],['springboard_rise',2.4]);
+   selected.push(['top_climb',4.2],['springboard_rise',3.5]);
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
   for(const fam of ARC_FAMILIES[g.arc]||[])for(const id of CAT.members[fam]||[]){
    const mv=A[id];if(mv.requires!==p.position&&mv.requires!=='any')continue;
@@ -2628,6 +2628,13 @@ const Graph=(function makeGraph(){
    if(g.texture==='underdog'&&['hope_elbows','hope_cutoff','counter_strike','mat_scramble'].includes(id))n*=1.4;
    if(g.texture==='fast'&&['duck_rebound','counter_strike','springboard_rise','clothesline'].includes(id))n*=1.3;
    if(g.events.slice(-4).some(x=>x.id===id))n*=.25;
+   // In a long bout, the same core action should not monopolise every
+   // exchange after its third appearance. Keep authentic repeats possible,
+   // but rotate towards other legal authored moves and named defences.
+   // This is a weight, not a forced move, and does not weaken physical gates.
+   const priorUses=g.events.filter(e=>e.id===id).length;
+   if(priorUses>=3)n*=.48;
+   else if(priorUses===2)n*=.78;
    // Repeated generic posing and finish threats drown out actual wrestling.
    // Keep legal alternatives available, but strongly disfavor a second copy
    // inside five simulated minutes. No forced arc or scripted result changes.
@@ -2691,14 +2698,6 @@ const Graph=(function makeGraph(){
       n*=Math.max(.45,Math.min(2.6,1+gap/45));
      }
      if(nd.nearfall)n*=g.arc==='nearfall'||g.arc==='false_finish'?1.2:.5;
-     // A fast card must show *varied* legitimate moves, not a recurring
-     // climb-to-splash loop. Prefer unused authored offence and defences
-     // within this bout; never bypass physical/commitment eligibility.
-     if(M.planId==='spots'){
-      const appearances=g.events.filter(e=>e.id===id).length;
-      if(!appearances)n*=1.55;
-      else if(appearances>=2)n*=.85;
-     }
      if(g.events.slice(-12).some(x=>x.id===id))n*=.35;
     }
    if(['submission_set','target_hold','target_strike'].includes(id)&&['control','denial','cutoff'].includes(g.arc))n*=2.5;
