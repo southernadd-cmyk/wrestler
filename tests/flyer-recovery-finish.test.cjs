@@ -170,8 +170,10 @@ assert.ok(scrambleWeight>=remaining*.52-1e-7,
  'grounded elite flyer gets a meaningful but non-forced legal reversal');
 assert.equal(contested.story.control,'f',
  'building the candidate pool must not grant an invisible control switch');
-assert.equal(G.isValid(contested,'top_climb'),true,
- 'base graph still permits the known setup, but selection cannot use it while grounded');
+assert.equal(G.isValid(contested,'top_climb'),false,
+ 'top climbing must be physically illegal while grounded');
+assert.equal(G.isValid(contested,'springboard_rise'),false,
+ 'springboard setup must also require a genuine standing position');
 assert.equal(matPool.some(([id])=>id==='top_climb'),false,
  'no top-rope setup can be selected while the flyer remains grounded');
 G.apply(contested,'mat_scramble');
