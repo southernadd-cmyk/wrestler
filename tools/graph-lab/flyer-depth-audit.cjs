@@ -27,6 +27,9 @@ function stats(){
   lateSum:0,lateN:0,endStamina:0,exhausted:0,botches:0,injuries:0,
   peakCrowd:0,nearfalls:0,spotHits:0,spotAttempts:0,
   riskLanded:0,lateRiskLanded:0,lateUniqueRisk:0,
+  lateWorkerRiskLanded:0,lateWorkerDistinctRisk:0,lateWorkerAnyRisk:0,
+  lateWorkerTwoRisk:0,lateWorkerAerialSetups:0,
+  lateWorkerAerialAttempts:0,lateWorkerAerialLanded:0,
   earnedBell:0,showcase:0,recovery:0,
   aerialAttempts:0,aerialLanded:0,aerialCounter:0,aerialBlock:0,
   aerialAborted:0,aerialInterrupted:0,scriptAttempts:0,scriptLanded:0,
@@ -45,8 +48,11 @@ function collect(row,m,engine){
  row.finalStar45+=stars>=4.5?1:0;
  for(const [key,,score] of m.final.starParts||[])
   if(key==='showcase')row.showcase+=score;
- const recent=new Set();
+ const recent=new Set(),workerRecent=new Set();
  for(const e of events){
+  if(e.t>=m.len-180&&e.preControl==='w'&&
+     (e.id==='top_climb'||e.id==='springboard_rise'))
+   row.lateWorkerAerialSetups++;
   const a=G.A[e.id];
   if(a)row.distinctMoveIds.add(e.id);
   if(e.id==='catch_breath'&&e.preControl==='w')row.recovery++;
@@ -60,10 +66,21 @@ function collect(row,m,engine){
   if(e.t>=m.len-180){
    row.lateRiskLanded++;
    recent.add(e.preControl+':'+e.id);
+   if(e.preControl==='w'){
+    row.lateWorkerRiskLanded++;
+    workerRecent.add(e.id);
+   }
   }
  }
  row.lateUniqueRisk+=recent.size;
+ row.lateWorkerDistinctRisk+=workerRecent.size;
+ if(workerRecent.size>0)row.lateWorkerAnyRisk++;
+ if(workerRecent.size>=2)row.lateWorkerTwoRisk++;
  for(const e of m.graph?.aerialAttempts||[]){
+  if(e.side==='w'&&e.startedT>=m.len-180){
+   row.lateWorkerAerialAttempts++;
+   if(e.outcome==='landed')row.lateWorkerAerialLanded++;
+  }
   row.aerialAttempts++;
   if(e.outcome==='landed')row.aerialLanded++;
   else if(e.outcome==='counter')row.aerialCounter++;
@@ -103,6 +120,13 @@ function finalise(id,row,meta={}){
   riskLandedPerMatch:round(row.riskLanded/row.n),
   lateRiskPerMatch:round(row.lateRiskLanded/row.n),
   uniqueLateRiskPerMatch:round(row.lateUniqueRisk/row.n),
+  lateFlyerRiskPerMatch:round(row.lateWorkerRiskLanded/row.n),
+  lateDistinctFlyerRiskPerMatch:round(row.lateWorkerDistinctRisk/row.n),
+  lateFlyerAnyRiskPct:percent(row.lateWorkerAnyRisk,row.n),
+  lateFlyerTwoRiskPct:percent(row.lateWorkerTwoRisk,row.n),
+  lateFlyerSetupsPerMatch:round(row.lateWorkerAerialSetups/row.n),
+  lateFlyerAerialAttemptsPerMatch:round(row.lateWorkerAerialAttempts/row.n),
+  lateFlyerAerialLandedPerMatch:round(row.lateWorkerAerialLanded/row.n),
   earnedAtBell:round(row.earnedBell/row.n,3),
   showcaseStars:round(row.showcase/row.n,3),
   recoveryPerMatch:round(row.recovery/row.n),
@@ -237,11 +261,13 @@ function markdown(r){
   ' | '+a.staminaAtBell+' | '+a.exhaustedPct+'% | '+a.botchesPerMatch+
   ' | '+a.lateRiskPerMatch+' | '+a.earnedAtBell+' |');
  out.push('','### Spot-fest by duration','',
-  '| Tier | Minutes | ★ | Late Q | Bell stamina | Aerial attempts/match | Aerial landed/match | Real recovery/match | Late distinct risk/match |',
-  '|---|---:|---:|---:|---:|---:|---:|---:|---:|');
+  '| Tier | Minutes | ★ | Late Q | Bell stamina | Aerial attempts/match | Aerial landed/match | Real recovery/match | Late distinct risk (both)/match | Late distinct risk (flyer)/match | Flyer >=1 late risk | Flyer >=2 late risks | Late flyer setups/match | Late flyer landed aerials/match |',
+  '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
  for(const a of r.lengthRows)out.push('| '+a.tier+' | '+a.minutes+' | '+a.avgStars+
   ' | '+a.lateQ+' | '+a.staminaAtBell+' | '+a.aerialAttemptPerMatch+
-  ' | '+a.aerialLandedPerMatch+' | '+a.recoveryPerMatch+' | '+a.uniqueLateRiskPerMatch+' |');
+  ' | '+a.aerialLandedPerMatch+' | '+a.recoveryPerMatch+' | '+a.uniqueLateRiskPerMatch+
+  ' | '+a.lateDistinctFlyerRiskPerMatch+' | '+a.lateFlyerAnyRiskPct+'% | '+a.lateFlyerTwoRiskPct+'% | '+a.lateFlyerSetupsPerMatch+
+  ' | '+a.lateFlyerAerialLandedPerMatch+' |');
  out.push('','### Elite Spot-fest against fixed opponents','',
   '| Opponent style | ★ | Botches/match | Late Q | Bell stamina | Late distinct risk/match |',
   '|---|---:|---:|---:|---:|---:|');
@@ -262,7 +288,7 @@ function markdown(r){
   '|---|---:|---:|---:|---:|---:|---:|');
  for(const a of r.headlineRows)out.push('| '+a.plan+' | '+a.avgStars+
   ' | '+a.bestStars+' | '+a.rate4+'% | '+a.rate45+'% | '+a.staminaAtBell+' | '+a.lateQ+' |');
- out.push('','**Metrics:** Late Q is last 35% of ten-second match ticks; late risky moves and earned quality use the engine’s actual final 180 seconds. Earned quality at bell is a recent-move *quality input*, not a direct star amount. Aerial attempts come from the exact-parent aerial ledger; scripted spots are measured separately, avoiding false combined totals. Star thresholds include all match results. Real-flyer and opponent comparisons retain the actual opponent skill mix; only the five plans are matched within a scenario.','',
+ out.push('','**Metrics:** Late Q is last 35% of ten-second match ticks; late risky moves and earned quality use the engine’s actual final 180 seconds. The old late distinct risk metric includes both wrestlers; the added flyer-only metrics count the booked worker, not the opponent. Earned quality at bell is a recent-move *quality input*, not a direct star amount. Aerial attempts come from the exact-parent aerial ledger; scripted spots are measured separately, avoiding false combined totals. Star thresholds include all match results. Real-flyer and opponent comparisons retain the actual opponent skill mix; only the five plans are matched within a scenario.','',
   '**Checks:** '+(failures(r).length?'FAILED: '+failures(r).join('; '):'PASS — paired groups complete, ledger and star thresholds consistent')+'.','');
  return out.join('\n');
 }
