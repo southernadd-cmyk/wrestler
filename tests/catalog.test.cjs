@@ -62,6 +62,12 @@ function probe(id){
    x.graph.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',topSide:null,
     grip:{type:grip,side:control,at:x.t,source:Object.keys(G.GRIP_ENTRY).find(k=>G.GRIP_ENTRY[k]===grip)||'reviewed-setup'}};
   }
+  const strikeParent=G.STRIKE_PILOT.includes(parent);
+  if(strikeParent){
+   x.stage='live';x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02,A[parent].after+.02)));
+   if(!G.startStrike(x,parent))continue;
+   assert.equal(x.graph.pendingStrike.id,parent);
+  }
   const aerialParent=A[parent]&&['aerial','springboard'].includes(A[parent].family);
   const grappleParent=G.GRAPPLE_PILOT.includes(parent)||G.SUPERPLEX_PILOT.includes(parent);
   if(grappleParent){
@@ -128,6 +134,13 @@ for(let i=0;i<N;i++){
  for(const e of g.events){
   const n=A[e.id];if(!n)continue;events++;reached.add(e.id);
   const parent=n.counterOf||n.blockOf;
+  if(parent&&G.STRIKE_PILOT.includes(parent)){
+   const ledger=g.strikeAttempts?.find(a=>a.seq===e.strikeAttemptSeq);
+   const outcome=n.counterOf?'counter':'block';
+   assert.ok(ledger&&ledger.id===parent&&ledger.actionId===e.id&&
+    ledger.outcome===outcome&&e.strikeResolution===outcome&&
+    e.attemptedMove===parent,'exact strike counter/block attribution '+e.id);
+  }
   if(parent&&(G.GRAPPLE_PILOT.includes(parent)||G.SUPERPLEX_PILOT.includes(parent))){
    linkedDefences.checked++;
    const ledger=g.grappleAttempts?.find(a=>a.seq===e.grappleAttemptSeq);
