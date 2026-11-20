@@ -1723,8 +1723,19 @@ const Graph=(function makeGraph(){
   const n=A[id],side=p.control,other=side==='w'?'f':'w';
   if(!['w','f'].includes(side))return true;
   const expected=PHYSICAL_GRIP_MOVES[id];
-  if(expected&&(!ph.grip||ph.grip.type!==expected||ph.grip.side!==side||
-      M.t-ph.grip.at>20))return false;
+  if(expected){
+   const grip=ph.grip,pending=M.graph?.pendingGrapple;
+   // The wrestler must secure a *fresh* owned grip before committing.
+   // During the one following resolution tick, that same retained grip
+   // cannot expire merely because the simulation clock advances 10s.
+   // A different wrestler, move, stolen/replaced grip, or an interrupted
+   // attempt receives no grace period. No new attack may start stale.
+   const committed=!!(pending?.id===id&&pending.side===side&&
+     pending.at>=grip?.at&&pending.at-grip.at<=20&&
+     M.t>=pending.at&&M.t-pending.at<=10);
+   if(!grip||grip.type!==expected||grip.side!==side||
+      (M.t-grip.at>20&&!committed))return false;
+  }
   if(n.family==='superplex'){
    if(ph.topSide!==side||ph.locations[side]!=='top'||ph.locations[other]!=='top')return false;
   }
