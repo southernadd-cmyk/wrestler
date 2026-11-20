@@ -1,34 +1,32 @@
-# Phase 2 — deeper grappling and counter sequences (controlled pilot)
+# Phase 2 — bulk grappling and named counter sequences
 
 **Date:** 20 November 2026  
-**Status:** proposed branch; not live pending CI, Graph Lab transcript audit and review.
+**Branch:** `feature/phase2-grapple-counter-sequences-20261120`  
+**Status:** implementation in draft PR #126; not live, testing and match-tape review pending.
 
-## Pilot implementation
+## What this branch actually implements
 
-Expand the existing persistent two-tick grappling engine from four to seven named move commitments:
+Extend the existing serialized two-beat `startGrapple → resolveGrapple` mechanism from **4 to 39 existing authored techniques**:
 
-| Move | Entry | Resolution |
-| --- | --- | --- |
-| `sx_deadlift_bridge` | Fresh, controller-owned front facelock | Existing deadlift bridging suplex or its exact generated counter/block |
-| `nk_snap_ddt` | Fresh, controller-owned front facelock | Existing snap DDT or exact counter/block |
-| `pw_powerbomb` | Fresh, controller-owned front facelock | Existing weight/stamina/clock-legal powerbomb or exact counter/block |
+- **All 25 suplex techniques**, from vertical, delayed, fisherman and German suplexes through dragon, tiger, overhead, brainbuster and falcon arrow.
+- **11 selected power techniques**: powerbomb, sit-out and running variants, backbreaker, uranage, Samoan drop, gorilla press, military press, pumphandle slam, belly-to-belly throw and Argentine backbreaker.
+- **3 existing other techniques**: sleeper, ankle lock and snap DDT.
 
-All three moves already exist in the authored match graph. The original four grapple pilots remain untouched. The attempt state is serialized through `graph.pendingGrapple`, outcomes and attempts remain attributed to the existing exact graph move IDs, and stale or wrong-side grips are rejected. No additional RNG draws are made outside the existing grappling resolution pathway.
+An attempt records its true attacker, move ID and match tick. At the next tick it resolves to the **same move**, its existing named generated `_rev` counter or `_blk` block where one exists, or a genuine interruption/abort. No fictitious landed move is credited to the attacker on an escape. Save/resume and booked outcomes remain governed by the original engine.
 
-## Boundaries
+## Reusable physical control
 
-- No extra move nodes, fabricated counters, third-party technique imports or mass reclassification.
-- Keep the separate physical descriptor optional on older/injected saved matches; once an actual descriptor exists, these three moves require the reviewed grip setup.
-- Preserve booking outcomes, old saves, the narrative clock, fatigue/weight/stipulation gates and the v1 reference baseline.
-- Do **not** merge based only on matching labels or passing syntactic tests. Real match tapes need to demonstrate credible entry, commit, defend, land and reset sequences.
+A central `PHYSICAL_GRIP_MOVES` mapping declares entry grip requirements; `GRIP_ENTRY` identifies actual graph nodes that can produce front facelock, rear waistlock, upper-body tie, body clinch or grounded leg control. The descriptor stores owner, source and age, and rejects an absent, expired or opponent-owned grip. A previously unrecorded legacy `physical=null` state retains the existing migration fallback.
 
-## Release gates
+**Important limitation:** A common attempt/resolution framework does *not* by itself prove live handoffs are frequent. `CAT.members.suplex` is used to avoid hand-maintaining 25 IDs, while each physical grip mapping is explicit, not inferred mechanically from an imported name.
 
-1. `npm test`, including seven-pilot exact path and legacy-save tests.
-2. Graph Lab 500+500 paired-seed quality and position checks, including evidence of actual new pilot attempts rather than only static reachability.
-3. Review technical, story, brawl, spectacle and safe match transcripts, checking commentary and phase timing.
-4. Desktop/mobile Chromium journeys, then guarded PR merge only if CI is green.
+## Testing
 
-## Follow-up Phase 2 work
+- Exhaustive directed-path tests for 39 parents, exact counters and blocks, illegal grip ownership/age, replay, interrupt and legacy migration.
+- The graph catalogue's reachability probes establish valid grip prerequisites when examining a move or its generated defence.
+- Mandatory full CI, Graph Lab 500+500 paired-seed audit with actual landed/countered/aborted attempt counts, old-save and pacing checks, and desktop/mobile Chromium.
+- Examine real transcripts across five plan styles, including technically credible throws, counters and follow-throughs. This is a **review gate**, not a claim of verified wrestling realism.
 
-After this pilot is verified, evaluate wrist-control chains, defensive re-grips and grounded hold-to-hold transitions using real match events. Each additional sequence needs an owner-correct precondition, a specific legal escape/counter and an explanation of why it improves believable wrestling rather than just increasing edge counts.
+## Remaining Phase 2 scope
+
+More grounded submission chaining, wrist control, counter-to-regrip and grip-preserving transitions require subsequent batches. The initial 39-technique implementation is not a claim that the remaining 226 unreviewed catalogue techniques have source-reviewed metadata or reliable physical continuations. Avoid further mass imports or invented counters.
