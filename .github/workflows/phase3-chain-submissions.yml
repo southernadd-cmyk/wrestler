@@ -1,6 +1,7 @@
 name: Phase 3 chain and submission gates
 on:
-  pull_request:
+  push:
+    branches: [main]
     paths:
       - 'assets/js/match-engine.js'
       - 'tests/phase3-chain-submissions.test.cjs'
@@ -11,6 +12,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   chain-submissions:
     runs-on: ubuntu-24.04
