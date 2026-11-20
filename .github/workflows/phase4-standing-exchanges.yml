@@ -1,0 +1,29 @@
+name: Phase 4 standing exchanges
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'tests/catalog.test.cjs'
+      - 'tests/phase4-standing-exchanges.test.cjs'
+      - '.github/workflows/phase4-standing-exchanges.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  standing-exchanges:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prove all strike and running parents with named outcomes
+        run: node tests/phase4-standing-exchanges.test.cjs
+      - name: Check Phase 3 chain and submission continuity
+        run: |
+          node tests/phase3-chain-submissions.test.cjs
+          node tests/phase3-rest-control.test.cjs
+          node tests/phase3-chain-transitions.test.cjs
+      - name: Full catalog physical legality and 1000 bout coverage
+        run: node tests/catalog.test.cjs
