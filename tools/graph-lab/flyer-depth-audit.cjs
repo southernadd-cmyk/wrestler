@@ -27,7 +27,8 @@ function stats(){
   lateSum:0,lateN:0,endStamina:0,exhausted:0,botches:0,injuries:0,
   peakCrowd:0,nearfalls:0,spotHits:0,spotAttempts:0,
   riskLanded:0,lateRiskLanded:0,lateUniqueRisk:0,
-  lateWorkerRiskLanded:0,lateWorkerDistinctRisk:0,lateWorkerAerialSetups:0,
+  lateWorkerRiskLanded:0,lateWorkerDistinctRisk:0,lateWorkerAnyRisk:0,
+  lateWorkerTwoRisk:0,lateWorkerAerialSetups:0,
   lateWorkerAerialAttempts:0,lateWorkerAerialLanded:0,
   earnedBell:0,showcase:0,recovery:0,
   aerialAttempts:0,aerialLanded:0,aerialCounter:0,aerialBlock:0,
@@ -73,6 +74,8 @@ function collect(row,m,engine){
  }
  row.lateUniqueRisk+=recent.size;
  row.lateWorkerDistinctRisk+=workerRecent.size;
+ if(workerRecent.size>0)row.lateWorkerAnyRisk++;
+ if(workerRecent.size>=2)row.lateWorkerTwoRisk++;
  for(const e of m.graph?.aerialAttempts||[]){
   if(e.side==='w'&&e.startedT>=m.len-180){
    row.lateWorkerAerialAttempts++;
@@ -119,6 +122,8 @@ function finalise(id,row,meta={}){
   uniqueLateRiskPerMatch:round(row.lateUniqueRisk/row.n),
   lateFlyerRiskPerMatch:round(row.lateWorkerRiskLanded/row.n),
   lateDistinctFlyerRiskPerMatch:round(row.lateWorkerDistinctRisk/row.n),
+  lateFlyerAnyRiskPct:percent(row.lateWorkerAnyRisk,row.n),
+  lateFlyerTwoRiskPct:percent(row.lateWorkerTwoRisk,row.n),
   lateFlyerSetupsPerMatch:round(row.lateWorkerAerialSetups/row.n),
   lateFlyerAerialAttemptsPerMatch:round(row.lateWorkerAerialAttempts/row.n),
   lateFlyerAerialLandedPerMatch:round(row.lateWorkerAerialLanded/row.n),
