@@ -1,17 +1,6 @@
 name: Five-meeting rivalry audit
 
 on:
-  pull_request:
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'assets/js/data.js'
-      - 'assets/js/roster-registry.js'
-      - 'assets/js/technique-backgrounds.js'
-      - 'assets/js/technique-registry.js'
-      - 'tools/repeated-rivalry-audit.cjs'
-      - 'tests/repeated-rivalry-audit.test.cjs'
-      - 'tests/rivalry.test.cjs'
-      - '.github/workflows/repeated-rivalries.yml'
   push:
     branches: [main]
     paths:
@@ -29,8 +18,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: repeated-rivalry-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   rivalry-variety:
