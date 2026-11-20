@@ -8,7 +8,25 @@
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const {script:inline}=require('../../tests/_source.cjs');
 const cut=inline.indexOf('/* THE OFFICE — interface v3');
-const abortDetails=[],root={addEventListener(){},
+const abortDetails=[],rareIds=['dv_moonsault','nk_tombstone','pw_sitout','sx_delayed'];
+const rareStats=Object.fromEntries(rareIds.map(id=>[id,{legal:0,offered:0,offeredLegal:0,expected:0,
+ maxProbability:0,plans:{},grips:{},locations:{},legalButNotOffered:0}]));
+const root={addEventListener(){},
+ __phase4RareProbe:row=>{
+  const s=rareStats[row.id];if(!s)return;
+  if(row.legal)s.legal++;
+  if(row.offered){s.offered++;if(row.legal)s.offeredLegal++;
+   s.expected+=row.probability;
+   s.maxProbability=Math.max(s.maxProbability,row.probability);
+  }else if(row.legal)s.legalButNotOffered++;
+  if(row.legal){
+   const p=s.plans[row.plan]??={legal:0,offered:0,expected:0};
+   p.legal++;if(row.offered){p.offered++;p.expected+=row.probability;}
+   const grip=row.grip||'none',loc=row.location||'none';
+   s.grips[grip]=(s.grips[grip]||0)+1;
+   s.locations[loc]=(s.locations[loc]||0)+1;
+  }
+ },
  __phase4AbortDetail:row=>{
   if(['sx_falcon_arrow','sm_dragon_sleeper','sx_delayed'].includes(row.id)&&
      abortDetails.length<50)abortDetails.push(row);
@@ -35,6 +53,26 @@ const injection=`  if(!isValid(M,id)){
 let engine=inline.slice(0,cut);
 if(engine.split(needle).length!==2)throw Error('Grapple abort hook no longer unique');
 engine=engine.replace(needle,injection);
+// Read-only probe of *post-weight* legal candidates for the four
+// consistently missing moves. It consumes no RNG and never changes a pool.
+const poolNeedle='  return pool;\n }\n function recover(M)';
+const probe=`  if(root.__phase4RareProbe){
+   const denom=pool.reduce((n,r)=>n+r[1],0);
+   const physical=g.physical,side=p.control,opponent=side==='w'?'f':'w';
+   for(const id of ['dv_moonsault','nk_tombstone','pw_sitout','sx_delayed']){
+    const weight=pool.find(r=>r[0]===id)?.[1]||0;
+    root.__phase4RareProbe({id,legal:isValid(M,id),offered:weight>0,
+     probability:denom>0?weight/denom:0,plan:M.planId,
+     style:liveSide.style,grip:physical?.grip?.type||null,
+     location:(physical?.locations?.[side]||'?')+'/'+
+      (physical?.locations?.[opponent]||'?')});
+   }
+  }
+  return pool;
+ }
+ function recover(M)`;
+if(engine.split(poolNeedle).length!==2)throw Error('Missing pool hook');
+engine=engine.replace(poolNeedle,probe);
 vm.runInNewContext(engine,
  {window:root,localStorage,console,Date,Math,JSON},{filename:'office-engine.js'});
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,A=G.A;
@@ -120,13 +158,20 @@ const combined={observed:globalHits.size,total:independent.length,
 const report={schema:'office-phase4-independent-seed-audit-v1',
  methodology:'Same roster/plan/slot/finish fixtures as catalog.test.cjs; only seed offset changes, independent engine runs; no writes to engine or RNG.',
  config:{matchesPerBatch:n,batches,seedStride:104729},
- combined,batches:batchReports,repeatedMissing:repeated,abortDetails};
+ combined,batches:batchReports,repeatedMissing:repeated,abortDetails,rareStats};
 const filename=path.resolve(process.cwd(),'phase4-seed-coverage-audit.json');
 fs.writeFileSync(filename,JSON.stringify(report,null,2)+'\n');
 console.log('COMBINED '+combined.observed+'/'+combined.total+
  ' ('+combined.coverage+'%); missing across all '+consistentlyMissing.length);
 console.log('REPEATED '+JSON.stringify(repeated.slice(0,45)));
 console.log('ABORT DETAILS '+JSON.stringify(abortDetails));
+for(const id of rareIds){
+ const s=rareStats[id];
+ s.expected=+s.expected.toFixed(2);
+ s.maxProbability=+s.maxProbability.toFixed(4);
+ for(const row of Object.values(s.plans))row.expected=+row.expected.toFixed(2);
+ console.log('RARE OPPORTUNITY '+id+' '+JSON.stringify(s));
+}
 console.log('Saved '+filename);
 // Read-only diagnostic: individual batches may legitimately fail the
 // release gate. Never make this audit fail just because a rare move did
