@@ -1888,6 +1888,72 @@ const Graph=(function makeGraph(){
   return {A:w?M.w:M.f,Df:w?M.f:M.w,side:w?'w':'f'};
  }
  const ACTION_NARRATION_VARIANTS={
+  // Phase 4: avoid ten identical lock-ups, wrist counters, rope runs or
+  // clotheslines in one match. Every variant keeps the same actors, outcome,
+  // body part and action; only the commentary angle changes.
+  lockup:[
+   '{A} and {D} tie up collar-and-elbow. {A} leans in and {D} holds the centre.',
+   '{A} takes the collar while {D} searches for inside wrist position.',
+   'Another lock-up. {D} lowers their base as {A} tries to turn them.',
+  ],
+  wristlock:[
+   '{A} catches a wrist and turns {D} towards the trapped shoulder.',
+   '{A} keeps hold of {D}’s hand and rotates the wrist to take control.',
+   '{D} reaches to break contact, but {A} twists into wrist control.',
+  ],
+  wrist_escape:[
+   '{D} rolls beneath the arm, reverses the pressure and takes the wrist.',
+   '{D} steps through the trapped arm and turns the wristlock back on {A}.',
+   '{A} loses the grip as {D} rotates free and secures the counter-wristlock.',
+  ],
+  arm_wringer:[
+   '{A} wrings the arm again, walking {D} towards the shoulder pressure.',
+   '{D} bends at the knees while {A} twists the captured wrist upwards.',
+  ],
+  rope_run:[
+   '{A} runs the ropes and changes pace, trying to draw {D} out of position.',
+   '{A} hits the near rope and comes back hard; {D} squares up for contact.',
+   '{D} watches the rebound as {A} picks up speed across the ring.',
+  ],
+  rope_rebound:[
+   '{A} rebounds sharply and checks {D}’s position on the way back.',
+   '{D} adjusts their feet as {A} comes off the ropes for another pass.',
+  ],
+  clothesline:[
+   '{A} swings through with a clothesline, knocking {D} onto the canvas.',
+   '{D} tries to run through the contact; {A} catches them flush with a clothesline.',
+   '{A} connects high across the chest and {D} hits the mat.',
+  ],
+  outside_toss:[
+   '{A} sends {D} over the top rope. {D} lands on the floor as the official begins the count.',
+   '{D} loses balance at the ropes and {A} sends them down to ringside.',
+   '{A} forces {D} out of the ring. The referee starts counting while {A} watches.',
+  ],
+  floor_brawl:[
+   '{A} joins {D} at ringside and lands a short shot beside the barricade.',
+   '{D} covers up near the front row as {A} closes in with a forearm.',
+   '{A} presses the advantage on the floor, keeping {D} away from the ring steps.',
+  ],
+  counter_strike:[
+   '{D} slips beneath the blow and answers with a stiff elbow.',
+   '{D} reads the incoming shot, blocks it and fires straight back.',
+   '{A} overreaches; {D} makes them pay with a quick counter-strike.',
+  ],
+  grapple_trip:[
+   '{A} changes levels, takes the leg and trips {D} onto the canvas.',
+   '{D} attempts to widen their stance, but {A} finishes the leg takedown.',
+   '{A} catches the near leg and follows {D} to the mat.',
+  ],
+  target_hold:[
+   '{A} stays on the {part}, holding {D} in place while the referee checks the pressure.',
+   '{D} turns towards the ropes, but {A} keeps the {part} isolated.',
+   '{A} settles their weight and continues working {D}’s {part}.',
+  ],
+  waistlock:[
+   '{A} circles to the back and locks both hands around {D}’s waist.',
+   '{D} drops their hips to block the lift as {A} secures rear control.',
+   '{A} clamps on a waistlock, forcing {D} to fight the hands.',
+  ],
   crowd_pose:[
    '{A} pauses to draw a reaction. {D} stays alert instead of taking the bait.',
    '{A} looks towards the front row, allowing {D} a moment to reset.',
