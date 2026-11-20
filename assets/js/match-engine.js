@@ -2959,6 +2959,27 @@ const Graph=(function makeGraph(){
     }
    }
   }
+  // Once a REAL top-rope setup has been completed, an elite flyer should
+  // more often follow through with a legal named risk instead of changing
+  // direction. The probability is bounded, not guaranteed; exact-parent
+  // commitment, counters, botches, clock and stamina all still apply.
+  // After the first DISTINCT success the bias drops, and after two it ends.
+  if(needsLatePayoff&&trainedRecovery>=.95&&sameController&&
+     p.position==='top'&&
+     (g.node==='top_climb'||g.node==='springboard_rise')){
+   const family=g.node==='top_climb'?'aerial':'springboard';
+   const named=pool.filter(([id])=>A[id]?.family===family&&A[id].risk&&
+    !A[id].reverse&&!A[id].counterOf&&!A[id].blockOf);
+   const namedWeight=named.reduce((sum,[,weight])=>sum+weight,0);
+   if(namedWeight>0){
+    const otherWeight=pool.reduce((sum,[id,weight])=>
+     sum+(A[id]?.family===family&&A[id].risk&&
+      !A[id].reverse&&!A[id].counterOf&&!A[id].blockOf?0:weight),0);
+    const ratio=lateCount===0?3:1.8;
+    for(const choice of named)
+     choice[1]=Math.max(choice[1],otherWeight*ratio*choice[1]/namedWeight);
+   }
+  }
   // A fatigued trained flyer unable to afford an actual named high spot
   // still has a *real*, narrated standing recovery choice. Reserve its
   // selection weight only while enough time remains to breathe, climb,
