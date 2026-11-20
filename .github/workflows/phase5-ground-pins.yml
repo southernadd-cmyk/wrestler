@@ -1,0 +1,35 @@
+name: Phase 5 ground wrestling and nearfalls
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'tests/phase5-ground-pins.test.cjs'
+      - 'tests/catalog.test.cjs'
+      - 'tests/season-soak.test.cjs'
+      - 'tools/graph-lab/technique-position-audit.cjs'
+      - '.github/workflows/phase5-ground-pins.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ground-pin-matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify all 20 ground and 11 pin exact-parent exchanges
+        run: node tests/phase5-ground-pins.test.cjs
+      - name: Previous grappling and striking regression tests
+        run: |
+          node tests/phase4-standing-exchanges.test.cjs
+          node tests/phase4-neck-exchanges.test.cjs
+          node tests/phase3-chain-submissions.test.cjs
+          node tests/phase3-rest-control.test.cjs
+          node tests/phase3-chain-transitions.test.cjs
+      - name: Verify recorded position audit and legal parent probes
+        run: |
+          node tests/technique-position-audit.test.cjs
+          node tests/catalog.test.cjs
