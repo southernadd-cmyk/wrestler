@@ -120,4 +120,55 @@ for(let i=0;i<9000;i++){
 assert.ok(encounter.done&&encounter.final,'character-driven match still finishes');
 assert.equal(encounter.graph.outcome.id,'lose_clean','story never changes the contracted result');
 assert.ok(encounter.log.some(l=>/remembers|understands the booking/i.test(l.text)),'history recalled in match');
+// A breakout match must invite an opportunity discussion, not an unrelated
+// signed-contract dispute. The actual consequence IDs remain stable.
+const baseline={...x.fin,stars:4.25,injury:0,ignored:0,resent:false,refused:false};
+function newConversation(id,finish,changes={}){
+ G.fresh();assert.equal(G.sign('rex'),null);
+ const c={...x.c,id,finish};
+ G.applyResult(c,{...baseline,...changes});
+ const m=G.pending().find(m=>m.dtype==='office_debrief');
+ assert.ok(m,'expected a post-match decision for '+id);
+ return {c,m,w:G.W('rex'),p:G.P('dock')};
+}
+let scene=newConversation('breakthrough-relevance','win_clean');
+assert.equal(scene.m.incidentKind,'breakthrough');
+assert.match(scene.m.body.join(' '),/performance|crowd/i);
+assert.doesNotMatch(scene.m.body.join(' '),/contract has been settled/i);
+assert.match(scene.m.body[2],/better billing/);
+assert.deepEqual(scene.m.options.map(o=>o.id),['back','business','promise']);
+assert.match(scene.m.options[0].label,/higher place on the card/);
+assert.match(scene.m.options[1].label,/expectations/);
+assert.match(scene.m.options[2].label,/featured match/);
+const beforeTrust=scene.p.trust;
+assert.match(G.answer(scene.m.id,'back'),/better billing/);
+assert.equal(scene.p.trust,beforeTrust-4,'backing their breakthrough still costs promoter trust');
+
+// Existing mobile careers already contain pre-generated messages. Reopening
+// the Inbox must replace their copy in situ without changing the choice IDs.
+scene=newConversation('legacy-breakthrough-copy','win_clean');
+scene.m.body[2]='The contract has been settled. Your response decides what happens.';
+scene.m.options[0].label='Back your wrestler publicly';
+delete scene.m.incidentKind;delete scene.m.copyVersion;
+const updated=G.pending()[0];
+assert.equal(updated,scene.m,'upgrade keeps the original inbox message');
+assert.match(updated.options[0].label,/higher place on the card/);
+assert.doesNotMatch(updated.body.join(' '),/contract has been settled/);
+assert.equal(updated.copyVersion,2);
+assert.match(G.answer(updated.id,'business'),/standout match|biggest match/i);
+
+// Alternative incident kinds need decisions that match their actual events.
+for(const [kind,finish,attrs,expected] of [
+ ['protected','lose_protected',{stars:2.75},/protected|professionalism/],
+ ['control','win_clean',{stars:2.75,resent:true,ignored:1},/ringside|instructions|trust/],
+ ['defiance','win_clean',{stars:2.75,ignored:2},/instructions|ignored/],
+ ['rebellion','win_clean',{stars:2.75,outcome:'double'},/finish|promoter/],
+ ['hurt','win_clean',{stars:2.75,injury:2,injuryPart:'knee'},/injured|injury/]
+]){
+ const {m}=newConversation('relevance-'+kind,finish,attrs);
+ assert.equal(m.incidentKind,kind,'event should not be misidentified: '+kind);
+ assert.match(m.body.join(' '),expected,kind+' should discuss the actual issue');
+ assert.doesNotMatch(m.body.join(' '),/contract has been settled/i);
+}
+
 console.log('PASS memory v3.0: Rex confrontation; credible tradeoffs; lasting trust; old saves; promise kept/broken; debut and repeat match; one debrief per show');
