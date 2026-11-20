@@ -1621,8 +1621,11 @@ const Graph=(function makeGraph(){
  // Phase 4: standing offence receives its own exact-parent ledger.
  // It does not pollute the grappling attempt counts or create fake throws.
  // Running moves remain a distinct category with standing impact outcomes.
+ const QUICK_NECK_IDS=Object.freeze(['nk_jawbreaker','nk_cutter','nk_stunner']);
+ const PHASE4_NECK_THROWS=Object.freeze(CAT.members.neck.filter(id=>
+  id!=='nk_snap_ddt'&&!QUICK_NECK_IDS.includes(id)));
  const STRIKE_PILOT=Object.freeze([...CAT.members.strike.filter(id=>
-  id!=='st_fighting_spirit'),...CAT.members.running]);
+  id!=='st_fighting_spirit'),...CAT.members.running,...QUICK_NECK_IDS]);
  // A mutual stand-and-trade is already a complete exchange, not a named
  // one-sided attack with a fabricated counter or block.
  const PHASE3_TAKEDOWNS=Object.freeze([
@@ -1637,7 +1640,7 @@ const Graph=(function makeGraph(){
   'pw_powerbomb','pw_sitout','pw_running_powerbomb','pw_backbreaker',
   'pw_uranage','pw_samoan_drop','pw_gorilla_press','pw_military_press',
   'pw_pumphandle','pw_belly_bump','pw_argentine',
-  ...CAT.members.submission,...PHASE3_TAKEDOWNS
+  ...CAT.members.submission,...PHASE3_TAKEDOWNS,...PHASE4_NECK_THROWS
  ])]);
 
  // v0.4 physical-continuity pilot: a *small optional, serialisable* descriptor.
@@ -1662,6 +1665,12 @@ const Graph=(function makeGraph(){
   sx_snap_ddt:'front-facelock',sx_cradle:'front-facelock',
   sx_falcon_arrow:'front-facelock',
   nk_ddt:'front-facelock',nk_snap_ddt:'front-facelock',
+  nk_double_arm_ddt:'front-facelock',nk_implant:'front-facelock',
+  nk_facebuster:'front-facelock',nk_piledriver:'front-facelock',
+  nk_tombstone:'front-facelock',
+  nk_swinging_neckbreaker:'head',nk_jumping_neckbreaker:'head',
+  nk_rolling_neckbreaker:'head',nk_russian_sweep:'upper-body',
+  nk_sto:'upper-body',
   pw_powerbomb:'front-facelock',pw_sitout:'front-facelock',
   pw_running_powerbomb:'front-facelock',pw_backbreaker:'body-clinch',
   pw_uranage:'upper-body',pw_samoan_drop:'upper-body',
@@ -2630,7 +2639,8 @@ const Graph=(function makeGraph(){
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
  return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
- STRIKE_PILOT,startStrike,resolveStrike,abortStrike,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
+ STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
+ startStrike,resolveStrike,abortStrike,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
 })();
 
 function create(o){
