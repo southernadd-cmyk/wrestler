@@ -3154,6 +3154,44 @@ function spectacularExecutionOf(M){
  }
  return Math.round(Math.min(.45,sum)*1000)/1000;
 }
+// Plans earn quality through the work actually shown in the ring.
+// Previously Technical Showcase received +4 on *every* ten-second tick,
+// even without doing technical wrestling, while a skilfully executed
+// Spot-fest had no corresponding ongoing quality credit. Use real, unique
+// landed actions from the last three minutes rather than a free plan bonus.
+// This is separate from one-off post-match spectacular-execution stars:
+// it rewards sustaining a convincing match rhythm, and decays if the
+// wrestler stops executing the chosen plan.
+function earnedPlanQuality(M){
+ if(!['technical','spots'].includes(M.planId))return M.plan.qual||0;
+ const seen=new Set(),start=M.t-180;let earned=0;
+ for(const e of M.graph?.events||[]){
+  if(e.t<start||e.t>M.t||!['w','f'].includes(e.preControl))continue;
+  const n=Graph.A[e.id];
+  if(!n||n.reverse||n.counterOf||n.blockOf||
+     e.aerialResolution&&e.aerialResolution!=='landed'||
+     e.contactResolution&&e.contactResolution!=='landed'||
+     e.grappleResolution&&e.grappleResolution!=='landed')continue;
+  const performer=e.preControl==='w'?M.w:M.f;
+  const key=e.preControl+':'+e.id;
+  if(seen.has(key))continue; // repeating the same move cannot farm quality
+  if(M.planId==='technical'){
+   if(!['chain','submission','suplex','ground','rest','neck'].includes(n.family))continue;
+   seen.add(key);
+   earned+=1.15;
+  }else{
+   if(!n.risk||!['aerial','springboard','dive','lucha','corner','outside','superplex'].includes(n.family))
+    continue;
+   // A spectacular exchange counts only when the performer has the
+   // ringcraft and safety needed to make it look convincing.
+   const competence=clamp(((performer.ring||0)+(performer.safe||0)-110)/65,0,1);
+   if(competence<=0)continue;
+   seen.add(key);
+   earned+=2.0*competence;
+  }
+ }
+ return Math.round(Math.min(M.planId==='technical'?4:3.6,earned)*1000)/1000;
+}
 // The rating, itemised: what each part added to (or took off) the stars. stars() is their sum.
 function starParts(M){
  if(!M.qN)return [];
@@ -3258,7 +3296,7 @@ function tick(M){
  // quality of this ten seconds
  const sk=(w.ring*plan.w.ring+w.psych*plan.w.psych)*(.55+.45*M.wSt/100);
  const sf=(f.ring*plan.w.ring+f.psych*plan.w.psych)*(.55+.45*M.fSt/100);
- let q=18+(sk*.55+sf*.45)*.6+M.fit+(plan.qual||0)+(M.crowd-50)*.1+(M.talk==='fire'?2:0);
+ let q=18+(sk*.55+sf*.45)*.6+M.fit+earnedPlanQuality(M)+(M.crowd-50)*.1+(M.talk==='fire'?2:0);
  if(M.leash==='free')q+=(M.r()*24-12)+(w.psych-62)*.18;else q+=M.r()*16-8;
  if(M.offScript==='showboat')q-=4;if(M.offScript==='audible')q+=(w.psych-65)/3;
  if(mode==='slow')q-=M.crowd<45?6:3;if(mode==='pickup')q+=M.wSt>45?3:-5;if(mode==='crowd')q-=3;
@@ -3810,5 +3848,5 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,GRAPH:Graph,scout:Graph.scout,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
+root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
 })(typeof window!=='undefined'?window:globalThis);
