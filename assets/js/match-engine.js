@@ -2349,7 +2349,7 @@ const Graph=(function makeGraph(){
     if(PHYSICAL_GRIP_MOVES[id]===grip.type&&A[id]?.requires==='standing')
      // Securing a difficult grip should lead to a plausible attack before
      // the hold expires; still never bypass move legality, stamina or styles.
-     selected.push([id,3.3]);
+     selected.push([id,4.4]);
    }
   }else if(M.planId!=='spots'&&p.position==='standing'&&
      (famList.includes('suplex')||famList.includes('power')||
@@ -2370,7 +2370,7 @@ const Graph=(function makeGraph(){
      // Control is a fleeting technical opportunity: a relevant hold should
      // compete meaningfully with arbitrary arc changes or another rest hold.
      // This raises only an eligible exact-grip option, never bypasses isValid.
-     selected.push([id,5.8]);
+     selected.push([id,7.0]);
    }
   }
   if(p.position==='mat'&&!g.physical?.grip&&
