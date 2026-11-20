@@ -273,6 +273,9 @@ const Psy=(function installPsychology(){
 
 
 /* THE OFFICE v2.7 — hierarchical causal graph, based on match-psychology research */
+// Shared with Graph selection and the outer tick simulation.
+const brawlConditioning=actor=>clamp(
+ ((actor.ring||0)+(actor.safe||0)+(actor.psych||0)-180)/90,0,1);
 const Graph=(function makeGraph(){
  const A={};
  const SCRIPTED_SPOT_IDS=Object.freeze({
@@ -2134,6 +2137,7 @@ const Graph=(function makeGraph(){
  // Recovery reflects learned pacing, not an invisible refill. Only an
  // actually narrated catch_breath exchange can give the trained benefit.
  const recoveryTraining=actor=>clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1);
+
  function apply(M,id,options={}){
   const n=A[id],p=Psy.get(M),g=get(M);
   const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';
@@ -2184,6 +2188,15 @@ const Graph=(function makeGraph(){
     (training>=.95?.95:.56)*training:0;
    effective=exertion*(1+extra);
   }
+  // A genuine narrated breather works better for conditioned long-match
+  // brawlers. Novices and every other match plan retain the original cost.
+  if(id==='catch_breath'&&exertion<0&&M.planId==='brawl'&&M.len>=900){
+   const actor=activeSide==='w'?M.w:M.f;
+   if(actor.style==='Brawl'){
+    const trained=brawlConditioning(actor);
+    if(trained>=.25)effective=exertion*(1+.68*trained);
+   }
+  }
   // High-flyers need a *real* in-ring break before the last three minutes
   // even when they have an opponent down. A narrated, physically legal
   // grounded rest hold is more credible than an invisible stamina award.
@@ -2214,6 +2227,22 @@ const Graph=(function makeGraph(){
     if(!g.paceExplained){
      say(M,actor.short+' deliberately slows the exchanges after that rest, saving their energy for the closing stretch.','story');
      g.paceExplained=true;
+    }
+   }
+  }
+  // Only an actual narrated rest starts a saved, bounded Brawl pacing
+  // window. Repeated breathers cannot endlessly extend it.
+  if(id==='catch_breath'&&exertion<0&&M.planId==='brawl'&&M.len>=900&&
+     M.len-M.t>180&&M.len-M.t<=600){
+   const actor=activeSide==='w'?M.w:M.f,trained=brawlConditioning(actor);
+   const previous=g.pacedBrawl?.[activeSide];
+   if(actor.style==='Brawl'&&trained>=.25&&
+      (!previous||M.t-previous.at>=110)){
+    g.pacedBrawl??={};
+    g.pacedBrawl[activeSide]={at:M.t,until:M.t+150};
+    if(!g.brawlPaceExplained){
+     say(M,actor.short+' eases the pressure after that breather, keeping something back for the last hard exchanges.','story');
+     g.brawlPaceExplained=true;
     }
    }
   }
@@ -2596,6 +2625,9 @@ const Graph=(function makeGraph(){
   const timeLeft=M.len-M.t;
   const trainedFlyer=liveSide.style==='Spectacle'&&trainedRecovery>0;
   const longSpot=M.planId==='spots'&&M.len>=900&&trainedFlyer;
+  const brawlTraining=brawlConditioning(liveSide);
+  const longBrawl=M.planId==='brawl'&&M.len>=900&&
+   liveSide.style==='Brawl'&&brawlTraining>=.25;
   const closingFlight=longSpot&&timeLeft>=30&&timeLeft<=210&&
    ['resurgence','exchange','nearfall','escalation','dive_sequence',
     'finish_setup','false_finish','fighting_spirit'].includes(g.arc);
@@ -2639,6 +2671,11 @@ const Graph=(function makeGraph(){
     selected.push(['catch_breath',urgency*longBonus*runway]);
    }else if(!longSpot&&M.planId==='spots'&&stamina<60)
     selected.push(['catch_breath',stamina<40?20:stamina<52?12:6]);
+   else if(longBrawl&&timeLeft>180&&timeLeft<=600&&stamina<67&&
+      !g.events.slice(-20).some(e=>e.id==='catch_breath'&&
+       e.preControl===p.control&&M.t-e.t<70))
+    // A paced fight still has real exchanges between recoveries.
+    selected.push(['catch_breath',(stamina<35?20:stamina<48?14:8)*(1+brawlTraining)]);
    else if(M.planId!=='spots'&&stamina<48)selected.push(['catch_breath',5]);
   }
   // In the pre-finish runway, a trained flyer holding an opponent on the
@@ -2673,6 +2710,20 @@ const Graph=(function makeGraph(){
   // aerial attack. A reset remains a real, timed, position-valid graph move.
   if(needsLatePayoff&&p.position==='mat'&&p.down!==p.control)
    selected.push(['stand_reset',6]);
+  // In the final three minutes, trained brawlers can choose fresh named
+  // physical strikes/power exchanges, not just replay generic forearms.
+  // The ordinary validity, position, weight and commitment checks still apply.
+  if(longBrawl&&brawlTraining>=.5&&timeLeft>=30&&timeLeft<=180&&stamina>=26){
+   for(const family of ['strike','running','power','outside','corner','rope'])
+    for(const id of CAT.members[family]||[]){
+     const move=A[id];
+     if(!move||move.reverse||move.counterOf||move.blockOf||
+        (move.requires!==p.position&&move.requires!=='any')||
+        g.events.some(e=>e.id===id&&e.preControl===p.control&&
+         e.t>=M.len-180))continue;
+     selected.push([id,2.6]);
+    }
+  }
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
   for(const fam of ARC_FAMILIES[g.arc]||[])for(const id of CAT.members[fam]||[]){
    const mv=A[id];if(mv.requires!==p.position&&mv.requires!=='any')continue;
@@ -2929,6 +2980,17 @@ const Graph=(function makeGraph(){
    weights.set(id,(weights.get(id)||0)+n);
   }
   const pool=[...weights.entries()];
+  // The large modern graph would otherwise drown the one genuine rest.
+  // This is only a probability share, before the last 180 seconds.
+  if(longBrawl&&timeLeft>180&&timeLeft<=540&&stamina<62&&
+     !g.events.slice(-20).some(e=>e.id==='catch_breath'&&
+      e.preControl===p.control&&M.t-e.t<70)){
+   const rest=pool.find(([id])=>id==='catch_breath');
+   if(rest){
+    const others=pool.reduce((sum,[id,w])=>sum+(id==='catch_breath'?0:w),0);
+    rest[1]=Math.max(rest[1],others*(.12+.28*brawlTraining));
+   }
+  }
   // A trained flyer has to earn the closing comeback through a REAL
   // mat reversal and standing reset. No change to the physical descriptor
   // or controller happens until a legal action is selected and performed.
@@ -3695,16 +3757,28 @@ function tick(M){
  // deliberate pickup nor explicit slow calls get an extra pacing discount.
  // Real aerial setup/move costs and their safety gates are untouched.
  const pacing=Graph.get(M).pacedRest;
- const paceFactor=(actor,side)=>
-  M.planId==='spots'&&mode!=='pickup'&&mode!=='slow'&&
-  actor.style==='Spectacle'&&M.len>=900&&pacing?.[side]&&
-  M.t<=pacing[side].until
-   ?1-(clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1)>=.95?.82:.64)*
-      clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1):1;
- const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*
+ const paceFactor=(actor,side)=>{
+  if(mode==='pickup'||mode==='slow'||M.len<900)return 1;
+  if(M.planId==='spots'&&actor.style==='Spectacle'&&pacing?.[side]&&
+     M.t<=pacing[side].until){
+   const skill=clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1);
+   return 1-(skill>=.95?.82:.64)*skill;
+  }
+  const pacedBrawl=Graph.get(M).pacedBrawl?.[side];
+  if(M.planId==='brawl'&&actor.style==='Brawl'&&
+     pacedBrawl&&M.t<=pacedBrawl.until)
+   return 1-.45*brawlConditioning(actor);
+  return 1;
+ };
+ // Skilled brawlers conserve movement, but actual action costs remain
+ // unchanged. This reduction is never unlocked by choosing Brawl alone.
+ const workDrain=worker=>M.planId==='brawl'&&M.len>=900&&worker.style==='Brawl'?
+  clamp(plan.drain-Math.max(0,worker.ring+worker.safe+worker.psych-180)*.0032,.95,plan.drain):
+  spotDrain(worker);
+ const drain=.55*workDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*
   (1+w.fatigue/250)*(M.workingHurt?1.5:1)*paceFactor(w,'w');
  M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));
- M.fSt=clamp(M.fSt-.5*spotDrain(f)*paceFactor(f,'f')+(mode==='slow'?1.2:0));
+ M.fSt=clamp(M.fSt-.5*workDrain(f)*paceFactor(f,'f')+(mode==='slow'?1.2:0));
  // quality of this ten seconds
  const sk=(w.ring*plan.w.ring+w.psych*plan.w.psych)*(.55+.45*M.wSt/100);
  const sf=(f.ring*plan.w.ring+f.psych*plan.w.psych)*(.55+.45*M.fSt/100);
