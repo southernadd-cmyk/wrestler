@@ -635,7 +635,7 @@ const Graph=(function makeGraph(){
  node('hope_cutoff','{A} intercepts the escape with a knee to {D}’s {part}; the comeback is stopped.',{focus:1,zone:'mat',down:'d',next:[e('target_hold',3),e('mat_hold',2),e('stand_reset',2)]});
  node('stand_reset','{D} rolls clear and uses the ropes to rise. {A} gives ground to avoid a counter.',{requires:'mat',zone:'standing',down:null,next:[e('lockup',2),e('strike_trade',3),e('corner_whip',2),e('rope_run',2)]});
  // High-risk branches include genuine preparation, payoff or failure.
- node('top_climb','{A} drops {D} with a strike, then climbs the turnbuckles, checking their footing.',{zone:'top',down:'d',next:[e('aerial_attack',5),e('aerial_counter',3),e('missile_dropkick',3),e('high_crossbody',3),e('top_rope_hesitation',1)]});
+ node('top_climb','{A} drops {D} with a strike, then climbs the turnbuckles, checking their footing.',{requires:'standing',zone:'top',down:'d',next:[e('aerial_attack',5),e('aerial_counter',3),e('missile_dropkick',3),e('high_crossbody',3),e('top_rope_hesitation',1)]});
  node('aerial_attack','{A} launches from the turnbuckle and connects with a diving elbow!',{requires:'top',zone:'mat',down:'d',crowd:5,next:[e('cover',5),e('stand_reset',2)]});
  node('aerial_counter','{D} rolls out of the way! {A} crashes onto the canvas and loses the advantage.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:3,next:[e('cover',2),e('mat_hold',2),e('stand_reset',3)]});
  // Ringside branches must return inside before a pin or submission.
@@ -664,7 +664,7 @@ const Graph=(function makeGraph(){
 
  node('grapple_trip','{A} shoots for the leg, catches {D} off balance and drives them onto the mat.',{cost:1.1,zone:'mat',down:'d',next:[e('target_hold',5),e('mat_hold',3),e('mat_scramble',2)]});
  node('power_spinebuster','{A} catches {D} coming forward and plants them with a heavy spinebuster!',{cost:3.5,lift:30,zone:'mat',down:'d',crowd:2,next:[e('cover',3),e('mat_hold',2),e('stand_reset',3)]});
- node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{cost:1.8,zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3),e('missile_dropkick',2),e('top_rope_hesitation',2)]});
+ node('springboard_rise','{A} sends {D} down and steps onto the middle rope, checking their balance.',{cost:1.8,requires:'standing',zone:'top',down:'d',next:[e('springboard_strike',5),e('springboard_evaded',3),e('missile_dropkick',2),e('top_rope_hesitation',2)]});
  node('springboard_strike','{A} launches from the ropes and lands a springboard crossbody on {D}!',{cost:3.2,requires:'top',zone:'mat',down:'d',crowd:4,next:[e('cover',4),e('stand_reset',2)]});
  node('springboard_evaded','{D} rolls clear! {A} crashes into the canvas and {D} takes control.',{requires:'top',reverse:true,zone:'mat',down:'d',crowd:2,next:[e('mat_hold',2),e('cover',2),e('stand_reset',3)]});
  node('crowd_pose','{A} stops to play to the crowd. {D} watches, looking for an opening.',{cost:-0.7,next:[e('cheap_shot',2),e('counter_strike',3),e('probe_strike',3),e('lockup',2)]});
@@ -1591,6 +1591,30 @@ const Graph=(function makeGraph(){
  function advance(M,frac){
   const g=get(M);if(!g.started){g.started=true;enter(M,'opening',null);}g.age++;
   const a=ARCS[g.arc],schedule=phaseFor(frac,M),order={open:0,shine:1,heat:2,comeback:3,stretch:4};
+  // A genuine top-rope setup must get its ONE legal follow-through choice.
+  // Previously the arc clock could immediately change to finish_setup,
+  // resetting both physical locations before the prepared wrestler could
+  // even attempt an attack. Preserve the actual top position for one tick
+  // only if a trained high-flyer has a physically legal named risk available.
+  // No committed move or result is granted: the next graph selection can
+  // still choose a countered attack, a hesitation, or a safe step down.
+  const pos=Psy.get(M),last=g.events.at(-1);
+  const actor=pos.control==='w'?M.w:pos.control==='f'?M.f:null;
+  const setup=pos.position==='top'&&
+   (g.node==='top_climb'||g.node==='springboard_rise')&&
+   last?.id===g.node&&last.control===pos.control&&
+   M.t-last.t>=0&&M.t-last.t<=10;
+  if(M.planId==='spots'&&M.len>=900&&M.len-M.t>=10&&
+     schedule.id==='stretch'&&
+     setup&&actor?.style==='Spectacle'&&recoveryTraining(actor)>=.95&&
+     g.physical?.locations?.[pos.control]==='top'&&
+     !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact){
+   const family=g.node==='top_climb'?'aerial':'springboard';
+   if((CAT.members[family]||[]).some(id=>
+      A[id]?.risk&&!A[id].counterOf&&!A[id].blockOf&&!A[id].reverse&&
+      isAerialParent(id)&&isValid(M,id)))
+    return {id:schedule.id,name:a.label};
+  }
   // Existing in-progress saves may already be in an impossible early finish arc.
   // Recover those, and never carry an early-phase arc back into the final stretch.
   const mispaced=(g.arc==='exchange'&&order[schedule.id]<2)
@@ -1863,12 +1887,62 @@ const Graph=(function makeGraph(){
    M.t=was.t;M[key]=was.st;p.position=was.pos;p.down=was.down;g.physical=was.physical;
   }
  }
+ // A low-energy climb is not a risky aerial sequence. Read-only, zero-RNG
+ // lookahead asks the EXACT normal isValid guard whether at least one
+ // named risky attack could be launched after paying the rope setup,
+ // routine exertion and commitment cost. Restore every probe field.
+ function affordableNamedFlight(M,setup){
+  if(setup!=='top_climb'&&setup!=='springboard_rise')return false;
+  const p=Psy.get(M),g=get(M),side=p.control;
+  if(!['w','f'].includes(side)||p.position!=='standing'||M.len-M.t<30)
+   return false;
+  const key=side==='w'?'wSt':'fSt';
+  const actor=side==='w'?M.w:M.f,other=side==='w'?'f':'w';
+  const workhorse=fighter(actor).trait==='Workhorse'?.8:1;
+  const forecast=M[key]-costOf(setup)*workhorse-.8-.72;
+  const saved={t:M.t,stamina:M[key],position:p.position,down:p.down,
+   physical:g.physical};
+  try{
+   M.t+=10;M[key]=Math.max(0,forecast);p.position='top';p.down=other;
+   g.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',
+    grip:null,topSide:null};
+   g.physical.locations[side]='top';
+   const family=setup==='top_climb'?'aerial':'springboard';
+   return (CAT.members[family]||[]).some(id=>
+    A[id]?.risk&&!A[id].reverse&&!A[id].counterOf&&!A[id].blockOf&&
+    isAerialParent(id)&&isValid(M,id));
+  }finally{
+   M.t=saved.t;M[key]=saved.stamina;p.position=saved.position;
+   p.down=saved.down;g.physical=saved.physical;
+  }
+ }
  // Only a true two-wrestler top_follow, with a legally available variant,
  // gets priority over unrelated scheduled spectacle on the following tick.
  function readyTopContest(M){
   const g=get(M),p=Psy.get(M);
   return g.node==='top_follow'&&p.position==='top'&&
    SUPERPLEX_PILOT.some(id=>isValid(M,id));
+ }
+ // Once an elite flyer has genuinely reached the ropes with a viable
+ // named attack, allow the next tick to select a graph action rather than
+ // silently abandoning the setup. Choice, commitment, counter and landing
+ // still go through their ordinary seeded rules; no success is guaranteed.
+ function readyNamedAerial(M){
+  const g=get(M),p=Psy.get(M),side=p.control;
+  if(M.planId!=='spots'||M.len<900||M.len-M.t<20||
+     !['w','f'].includes(side)||p.position!=='top'||
+     !['top_climb','springboard_rise'].includes(g.node)||
+     g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)
+   return false;
+  const actor=side==='w'?M.w:M.f,last=g.events.at(-1);
+  if(actor.style!=='Spectacle'||recoveryTraining(actor)<.95||
+     last?.id!==g.node||last.control!==side||
+     M.t-last.t<0||M.t-last.t>10||
+     g.physical?.locations?.[side]!=='top')return false;
+  const family=g.node==='top_climb'?'aerial':'springboard';
+  return (CAT.members[family]||[]).some(id=>
+   A[id]?.risk&&!A[id].reverse&&!A[id].counterOf&&!A[id].blockOf&&
+   isAerialParent(id)&&isValid(M,id));
  }
  const isGrappleParent=id=>GRAPPLE_PILOT.includes(id)||SUPERPLEX_PILOT.includes(id);
  function aerialAlternativeParent(id){
@@ -2057,6 +2131,9 @@ const Graph=(function makeGraph(){
    '{A} steadies their breathing; {D} cautiously waits for the next exchange.'
   ]
  };
+ // Recovery reflects learned pacing, not an invisible refill. Only an
+ // actually narrated catch_breath exchange can give the trained benefit.
+ const recoveryTraining=actor=>clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1);
  function apply(M,id,options={}){
   const n=A[id],p=Psy.get(M),g=get(M);
   const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';
@@ -2095,7 +2172,51 @@ const Graph=(function makeGraph(){
   if(n.crowd)lift(M,n.crowd*(n.family?CROWD_SCALE:1));
   const exertion=costOf(id),activeSide=n.reverse?opp:side,staminaKey=activeSide==='w'?'wSt':'fSt';
   let effective=exertion;
+  if(id==='catch_breath'&&exertion<0&&M.planId==='spots'){
+   const actor=activeSide==='w'?M.w:M.f;
+   // Do not turn every wrestler into an endurance-trained aerial worker.
+   // An experienced flyer can recover more in a genuine, visible pause;
+   // novices retain -5.5. No difficulty, botch or crowd-rating change.
+   const training=recoveryTraining(actor);
+   // The stronger visible rest belongs to elite fliers only; everyone
+   // below that tier retains the already validated .56 recovery pacing.
+   const extra=actor.style==='Spectacle'&&M.len>=900?
+    (training>=.95?.95:.56)*training:0;
+   effective=exertion*(1+extra);
+  }
+  // High-flyers need a *real* in-ring break before the last three minutes
+  // even when they have an opponent down. A narrated, physically legal
+  // grounded rest hold is more credible than an invisible stamina award.
+  // Normal rest holds and all other styles/plans retain their old cost.
+  if(n.family==='rest'&&exertion<0&&M.planId==='spots'&&M.len>=900&&
+     M.len-M.t>180&&M.len-M.t<=540){
+   const actor=activeSide==='w'?M.w:M.f;
+   const trained=recoveryTraining(actor);
+   if(actor.style==='Spectacle'&&trained>=.70&&
+      (M.len-M.t<=480||trained>=.95))
+    effective=exertion-5.8*trained;
+  }
   if(exertion>0&&fighter(activeSide==='w'?M.w:M.f).trait==='Workhorse')effective*=.8;
+  // One narrated rest can start a measured pacing window. This is saved
+  // graph state, not an automatic refill. Actual move costs stay unchanged.
+  let pacedUntil=null;
+  if(exertion<0&&(id==='catch_breath'||n.family==='rest')&&
+     M.planId==='spots'&&M.len>=900&&M.len-M.t>180&&
+     M.len-M.t<=480){
+   const actor=activeSide==='w'?M.w:M.f,trained=recoveryTraining(actor);
+   const previous=g.pacedRest?.[activeSide];
+   if(actor.style==='Spectacle'&&trained>=.70&&
+      (M.len-M.t<=480||trained>=.95)&&
+      (!previous||M.t-previous.at>=80)){
+    g.pacedRest??={};
+    pacedUntil=M.t+180;
+    g.pacedRest[activeSide]={at:M.t,until:pacedUntil};
+    if(!g.paceExplained){
+     say(M,actor.short+' deliberately slows the exchanges after that rest, saving their energy for the closing stretch.','story');
+     g.paceExplained=true;
+    }
+   }
+  }
   M[staminaKey]=clamp(M[staminaKey]-effective);
   if(exertion<0)g.rests=(g.rests||0)+1;
   g.exertion=(g.exertion||0)+Math.max(0,effective);
@@ -2113,6 +2234,7 @@ const Graph=(function makeGraph(){
   g.node=id;g.steps++;
   g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective,
    physical:{locations:{...g.physical.locations},area:g.physical.area,grip:g.physical.grip?.type||null,topSide:g.physical.topSide},
+   ...(pacedUntil!==null?{pacedRecoveryUntil:pacedUntil}:{}),
    ...(options.scriptedSpot?{scriptedSpot:true,scriptedBig:!!options.big}:{})});
   if(g.events.length>220)g.events.shift();
   if(id==='cheap_shot')referee(M,side);
@@ -2470,25 +2592,87 @@ const Graph=(function makeGraph(){
   if(p.position==='standing'&&arc.openers)
    for(const id of style.open)selected.push([id,1.6]);
   const prof=fighter(liveSide),stamina=p.control==='f'?M.fSt:M.wSt;
+  const trainedRecovery=recoveryTraining(liveSide);
+  const timeLeft=M.len-M.t;
+  const trainedFlyer=liveSide.style==='Spectacle'&&trainedRecovery>0;
+  const longSpot=M.planId==='spots'&&M.len>=900&&trainedFlyer;
+  const closingFlight=longSpot&&timeLeft>=30&&timeLeft<=210&&
+   ['resurgence','exchange','nearfall','escalation','dive_sequence',
+    'finish_setup','false_finish','fighting_spirit'].includes(g.arc);
+  // One spectacular landing should NOT end an elite flyer's late-match
+  // repertoire. Recognise up to TWO DIFFERENT named risky landings, while
+  // lowering the drive after the first. Failed, countered or opponent-owned
+  // attempts cannot satisfy either step.
+  const landedLateRisk=(e,side)=>{
+   const action=A[e.id];
+   return !!action&&e.preControl===side&&e.t>=M.len-180&&
+    !action.reverse&&!action.counterOf&&!action.blockOf&&
+    action.risk&&['aerial','springboard','dive','lucha','superplex'].includes(action.family)&&
+    (!e.aerialResolution||e.aerialResolution==='landed')&&
+    (!e.grappleResolution||e.grappleResolution==='landed')&&
+    (!e.strikeResolution||e.strikeResolution==='landed')&&
+    (!e.contactResolution||e.contactResolution==='landed');
+  };
+  const riskCount=side=>new Set(g.events.filter(e=>landedLateRisk(e,side))
+   .map(e=>e.id)).size;
+  const lateFlyerRun=closingFlight&&trainedRecovery>=.70;
+  const lateCount=riskCount(p.control);
+  const needsLatePayoff=lateFlyerRun&&lateCount<2;
+  const lateUrgency=lateCount===0?1:lateCount===1?.32:0;
   if(p.position==='standing'&&M.t/M.len>.12){
    for(const id of prof.preferred)if(A[id])selected.push([id,1.4]);
-   // A high-speed layout still needs visible recovery beats. Prefer an
-   // actual in-ring breath after a flyer drops below 38 stamina, rather
-   // than silently restoring energy or issuing a free rating bonus.
-   // The normal duplicate-action penalty prevents repetitive stalling.
-   if(stamina<60&&M.planId==='spots')selected.push(['catch_breath',
-    // An actual narrated recovery beat, selected before the flyer is fully spent.
-    stamina<40?20:stamina<52?12:6]);
-   else if(stamina<48)selected.push(['catch_breath',5]);
+   // Actual narrated recovery before a long match's final aerial run.
+   // A per-wrestler cooldown prevents endless breathing/pose loops.
+   const restedRecently=g.events.slice(-20).some(e=>e.id==='catch_breath'&&
+    e.preControl===p.control&&M.t-e.t<40);
+   if(longSpot&&timeLeft>35&&!restedRecently&&stamina<66){
+    const urgency=stamina<35?24:stamina<45?18:stamina<56?13:8;
+    const longBonus=longSpot&&M.t/M.len>.5?1+trainedRecovery*.65:1;
+    // Begin the visible pacing work several minutes BEFORE the closing
+    // stretch. At -180 seconds elite workers were down to ~29 stamina, so
+    // a last-minute climb boost was mechanically useless. A genuinely
+    // trained flyer may choose several spaced, narrated breathers here.
+    // Each still consumes a real action and respects the 40-second cooldown.
+    const runway=trainedRecovery>=.70&&timeLeft>180&&
+     timeLeft<=(trainedRecovery>=.95?540:480)&&
+     stamina<60?3.2:1;
+    selected.push(['catch_breath',urgency*longBonus*runway]);
+   }else if(!longSpot&&M.planId==='spots'&&stamina<60)
+    selected.push(['catch_breath',stamina<40?20:stamina<52?12:6]);
+   else if(M.planId!=='spots'&&stamina<48)selected.push(['catch_breath',5]);
   }
+  // In the pre-finish runway, a trained flyer holding an opponent on the
+  // canvas can earn recovery by actually applying an authored rest hold.
+  // No free stamina, detached mat holds or reset to a standing position.
+  const lastRest=g.events.slice(-20).some(e=>e.preControl===p.control&&
+   (e.id==='catch_breath'||A[e.id]?.family==='rest')&&M.t-e.t<50);
+  if(longSpot&&trainedRecovery>=.70&&timeLeft>180&&
+     timeLeft<=(trainedRecovery>=.95?540:480)&&
+     stamina<60&&p.position==='mat'&&p.down!==(p.control)&&!lastRest)
+   for(const id of CAT.members.rest||[])
+    if(A[id]?.requires==='mat'&&!A[id].reverse&&!A[id].counterOf&&!A[id].blockOf)
+     selected.push([id,4.5]);
   // On a fast layout, a trained flyer needs real take-off opportunities
   // beyond the opening exchange. These are existing authored setup actions,
   // only offered from the ring with sufficient stamina. Their ensuing
   // attacks remain governed by the normal top-rope physical and risk gates.
-  if(M.planId==='spots'&&p.position==='standing'&&stamina>=42&&
+  if(M.planId==='spots'&&p.position==='standing'&&
+     stamina>=(closingFlight&&trainedRecovery>=.70?31:closingFlight?37:42)&&
      (liveSide.style==='Spectacle'||((liveSide.ring||0)>=78&&(liveSide.safe||0)>=65))&&
-     ['shine','resurgence','exchange','nearfall','escalation','dive_sequence','finish_setup'].includes(g.arc))
-   selected.push(['top_climb',4.2],['springboard_rise',3.5]);
+     (['shine','resurgence','exchange','nearfall','escalation','dive_sequence',
+       'finish_setup'].includes(g.arc)||
+      (closingFlight&&['false_finish','fighting_spirit'].includes(g.arc)))){
+   // The wrestler still climbs or springs into an actual committed landing,
+   // with the existing physical, stamina, timing and counter checks intact.
+   const focus=closingFlight?(1.4+trainedRecovery*.55):1;
+   const missingPayoff=needsLatePayoff?1+1.8*lateUrgency:1;
+   selected.push(['top_climb',4.2*focus*missingPayoff],
+    ['springboard_rise',3.5*focus*missingPayoff]);
+  }
+  // A flyer on the mat must visibly stand up before mounting another
+  // aerial attack. A reset remains a real, timed, position-valid graph move.
+  if(needsLatePayoff&&p.position==='mat'&&p.down!==p.control)
+   selected.push(['stand_reset',6]);
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
   for(const fam of ARC_FAMILIES[g.arc]||[])for(const id of CAT.members[fam]||[]){
    const mv=A[id];if(mv.requires!==p.position&&mv.requires!=='any')continue;
@@ -2605,7 +2789,10 @@ const Graph=(function makeGraph(){
   // v3.4: signature moves. A wrestler's trademark offence, wherever the position allows it.
   if(M.t/M.len>.1)for(const id of prof.signature||[])if(A[id])selected.push([id,.45]);
   const weights=new Map();
-  for(const [id,w] of selected) if((id!=='top_follow'||affordableSuperplex(M))&&isValid(M,id)) {
+  for(const [id,w] of selected) if((id!=='top_follow'||affordableSuperplex(M))&&
+   !(needsLatePayoff&&trainedRecovery>=.95&&
+      (id==='top_climb'||id==='springboard_rise')&&
+     !affordableNamedFlight(M,id))&&isValid(M,id)) {
    let n=w;
    if(pattern.actions.includes(id))n*=1.6;
    n*=style.bias[id]||1;
@@ -2614,7 +2801,20 @@ const Graph=(function makeGraph(){
    if(prof.signature?.includes(id)&&g.events.filter(x=>x.id===id).length>=2)n*=.12;
    const energy=costOf(id);
    if(energy>=2&&stamina<45)n*=Math.max(.15,stamina/70);
-   if(id==='catch_breath')n*=stamina<22?5:stamina<35?2.4:1;
+   if(id==='catch_breath'){
+    n*=stamina<22?5:stamina<35?2.4:1;
+    if(longSpot&&M.t/M.len>.55&&timeLeft>35)
+     n*=1+trainedRecovery*.55;
+   }
+   // Following an actual climb, prefer a fresh named high-risk landing
+   // rather than an unrelated fallback. This changes selection odds only:
+   // exact-parent, weight, stamina, counter and botch checks are unchanged.
+   if(needsLatePayoff&&sameController&&p.position==='top'&&
+      ['aerial','springboard'].includes(A[id].family)&&A[id].risk&&
+      !A[id].reverse&&!A[id].counterOf&&!A[id].blockOf&&
+      !g.events.some(e=>e.id===id&&e.preControl===p.control&&
+       e.t>=M.len-180&&(!e.aerialResolution||e.aerialResolution==='landed')))
+    n*=2.5;
    if(A[id].reverse){
     const defender=p.control==='f'?M.w:M.f;
     const difference=(defender.ring*.65+defender.psych*.35)-(liveSide.ring*.65+liveSide.psych*.35);
@@ -2729,6 +2929,148 @@ const Graph=(function makeGraph(){
    weights.set(id,(weights.get(id)||0)+n);
   }
   const pool=[...weights.entries()];
+  // A trained flyer has to earn the closing comeback through a REAL
+  // mat reversal and standing reset. No change to the physical descriptor
+  // or controller happens until a legal action is selected and performed.
+  const eliteLateCount=riskCount('w');
+  // Skilled flyers can begin a genuine comeback before the last 180s.
+  // Only the elite tier receives the extra 90-second runway; the normal
+  // match-closing aerial-selection phase still starts at its old time.
+  const eliteTraining=recoveryTraining(M.w);
+  const eliteWorkerFlight=M.planId==='spots'&&M.len>=900&&
+   M.w.style==='Spectacle'&&eliteTraining>=.70&&
+   M.len-M.t>=40&&M.len-M.t<=(eliteTraining>=.95?270:180)&&
+   eliteLateCount<2;
+  // A drained worker can still execute a *legal low-cost reversal* to
+  // regain control; the previous >=27 condition wrongly disabled even
+  // those escapes. Actual isValid cost/position gates still filter each
+  // candidate. Rope setup remains separately gated at >=31 stamina.
+  if(eliteWorkerFlight&&M.wSt>=16){
+   // First clean landing is the main objective; a second *distinct* one
+   // remains plausible but gets less producer emphasis, never a guarantee.
+   const strength=eliteLateCount===0?1:.35;
+   const promote=(id,share)=>{
+    const choice=pool.find(([move])=>move===id);
+    if(!choice)return;
+    const other=pool.reduce((sum,[move,weight])=>
+     sum+(move===id?0:weight),0);
+    choice[1]=Math.max(choice[1],other*share);
+   };
+   // An actual grounded opponent exchange must precede the defence.
+   // mat_scramble flips control and leaves the opponent on the mat;
+   // stand_reset later brings both to their feet.
+   if(p.control==='f'&&p.position==='mat'&&p.down==='w'&&
+      g.events.at(-1)?.control==='f'&&
+      g.events.at(-1)?.position==='mat')
+    promote('mat_scramble',.95*strength);
+   // A recent ACTUAL standing strike offers a real counter-strike pathway,
+   // even when the grounded-counter route is unavailable. No invented attack
+   // or free controller switch: the authored defensive action must be chosen.
+   const last=g.events.at(-1),lastAction=A[last?.id];
+   if(p.control==='f'&&p.position==='standing'&&
+      last?.preControl==='f'&&last.control==='f'&&M.t-last.t<=20&&
+      (['strike','running','rope','corner','neck','power'].includes(lastAction?.family)||
+       ['strike_trade','probe_strike','cheap_shot','clothesline',
+        'counter_strike','finish_tease'].includes(last.id)))
+    promote('counter_strike',.90*strength);
+   if(p.control==='w'&&p.position==='mat'&&p.down==='f')
+    promote('stand_reset',1.1*strength);
+   // The worker must FIRST win control and get up. This does not make a
+   // top-rope move valid or successful; it only weights legal setups.
+   if(p.control==='w'&&p.position==='standing'&&M.wSt>=31&&
+      M.len-M.t<=210){
+    const eligible=pool.filter(([id])=>
+     id==='top_climb'||id==='springboard_rise');
+    const rest=pool.reduce((sum,[id,weight])=>
+     sum+((id==='top_climb'||id==='springboard_rise')?0:weight),0);
+    if(eligible.length){
+     const total=eligible.reduce((sum,[,weight])=>sum+weight,0);
+     for(const candidate of eligible)
+      candidate[1]=Math.max(candidate[1],rest*.78*strength*candidate[1]/total);
+    }
+   }
+  }
+  // When the late-match runway approaches, a genuinely fatigued elite
+  // flyer under an ACTUAL opponent hold or strike can work a counter to
+  // recover control. This is a real authored reversal with normal selection
+  // odds and a follow-up rest/stand opportunity — never a controller switch
+  // granted by the booking plan or a silent stamina refill.
+  const runwayEscape=M.planId==='spots'&&M.len>=900&&
+   M.w.style==='Spectacle'&&recoveryTraining(M.w)>=.95&&
+   M.len-M.t>180&&M.len-M.t<=420&&M.wSt>=16&&M.wSt<48;
+  if(runwayEscape&&p.control==='f'){
+   const last=g.events.at(-1),attack=A[last?.id];
+   const isRecent=last?.preControl==='f'&&last.control==='f'&&
+    M.t-last.t>=0&&M.t-last.t<=20;
+   const counter=(id,share)=>{
+    const candidate=pool.find(([move])=>move===id);
+    if(!candidate)return;
+    const other=pool.reduce((sum,[move,w])=>sum+(move===id?0:w),0);
+    candidate[1]=Math.max(candidate[1],other*share);
+   };
+   if(isRecent&&p.position==='mat'&&p.down==='w'&&
+      last.position==='mat')counter('mat_scramble',.84);
+   if(isRecent&&p.position==='standing'&&
+      (['strike','running','rope','corner'].includes(attack?.family)||
+       ['strike_trade','probe_strike','cheap_shot',
+        'clothesline','finish_tease'].includes(last.id)))
+    counter('counter_strike',.68);
+  }
+  // Once a REAL top-rope setup has been completed, an elite flyer should
+  // more often follow through with a legal named risk instead of changing
+  // direction. The probability is bounded, not guaranteed; exact-parent
+  // commitment, counters, botches, clock and stamina all still apply.
+  // After the first DISTINCT success the bias drops, and after two it ends.
+  if(needsLatePayoff&&trainedRecovery>=.95&&sameController&&
+     p.position==='top'&&
+     (g.node==='top_climb'||g.node==='springboard_rise')){
+   const family=g.node==='top_climb'?'aerial':'springboard';
+   const named=pool.filter(([id])=>A[id]?.family===family&&A[id].risk&&
+    !A[id].reverse&&!A[id].counterOf&&!A[id].blockOf);
+   const namedWeight=named.reduce((sum,[,weight])=>sum+weight,0);
+   if(namedWeight>0){
+    const otherWeight=pool.reduce((sum,[id,weight])=>
+     sum+(A[id]?.family===family&&A[id].risk&&
+      !A[id].reverse&&!A[id].counterOf&&!A[id].blockOf?0:weight),0);
+    const ratio=lateCount===0?3:1.2;
+    for(const choice of named)
+     choice[1]=Math.max(choice[1],otherWeight*ratio*choice[1]/namedWeight);
+   }
+  }
+  // A fatigued trained flyer unable to afford an actual named high spot
+  // still has a *real*, narrated standing recovery choice. Reserve its
+  // selection weight only while enough time remains to breathe, climb,
+  // commit and resolve the separate attempt. No free stamina or hits.
+  if(needsLatePayoff&&trainedRecovery>=.95&&
+     p.control==='w'&&p.position==='standing'&&
+     timeLeft>=65&&timeLeft<=180&&stamina<42&&
+     !affordableNamedFlight(M,'top_climb')&&
+     !affordableNamedFlight(M,'springboard_rise')&&
+     !g.events.slice(-20).some(e=>e.id==='catch_breath'&&
+       e.preControl==='w'&&M.t-e.t<40)){
+   const recovering=pool.find(([id])=>id==='catch_breath');
+   if(recovering){
+    const competing=pool.reduce((sum,[id,weight])=>
+     sum+(id==='catch_breath'?0:weight),0);
+    recovering[1]=Math.max(recovering[1],competing*.95);
+   }
+  }
+  // In the expanded repertoire a single recovery candidate gets lost
+  // among hundreds of legal moves. Reserve a bounded SHARE of the actual
+  // choice probability for a tired, trained flyer BEFORE the final run.
+  // The seeded selection still decides: there is no forced move or refill.
+  if(longSpot&&trainedRecovery>=.70&&timeLeft>180&&
+     timeLeft<=(trainedRecovery>=.95?540:480)&&
+     p.position==='standing'&&stamina<60&&
+     !g.events.slice(-20).some(e=>e.id==='catch_breath'&&
+      e.preControl===p.control&&M.t-e.t<40)){
+   const recovering=pool.find(([id])=>id==='catch_breath');
+   if(recovering){
+    const competing=pool.reduce((sum,[id,n])=>
+     sum+(id==='catch_breath'?0:n),0);
+    recovering[1]=Math.max(recovering[1],competing*.72);
+   }
+  }
   // An agreed beat is not one option among fifty. If it is legal right now, the wrestler takes it
   // with odds set by how willing they are, whatever their habits would otherwise suggest.
   if(agreed){
@@ -2923,7 +3265,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial};
 })();
 
 function create(o){
@@ -3348,8 +3690,21 @@ function tick(M){
   // No free stars or reduced botch probability: this only changes
   // sustained exertion, which has measurable late-match quality effects.
   clamp(plan.drain-Math.max(0,worker.ring+worker.safe-120)*.010,.96,plan.drain):plan.drain;
- const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*(1+w.fatigue/250)*(M.workingHurt?1.5:1);
- M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));M.fSt=clamp(M.fSt-.5*spotDrain(f)+(mode==='slow'?1.2:0));
+ // Only a previously narrated, saved rest lets a trained high-flyer
+ // conserve movement between exchanges for up to 180 seconds. Neither
+ // deliberate pickup nor explicit slow calls get an extra pacing discount.
+ // Real aerial setup/move costs and their safety gates are untouched.
+ const pacing=Graph.get(M).pacedRest;
+ const paceFactor=(actor,side)=>
+  M.planId==='spots'&&mode!=='pickup'&&mode!=='slow'&&
+  actor.style==='Spectacle'&&M.len>=900&&pacing?.[side]&&
+  M.t<=pacing[side].until
+   ?1-(clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1)>=.95?.82:.64)*
+      clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1):1;
+ const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*
+  (1+w.fatigue/250)*(M.workingHurt?1.5:1)*paceFactor(w,'w');
+ M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));
+ M.fSt=clamp(M.fSt-.5*spotDrain(f)*paceFactor(f,'f')+(mode==='slow'?1.2:0));
  // quality of this ten seconds
  const sk=(w.ring*plan.w.ring+w.psych*plan.w.psych)*(.55+.45*M.wSt/100);
  const sf=(f.ring*plan.w.ring+f.psych*plan.w.psych)*(.55+.45*M.fSt/100);
@@ -3384,8 +3739,9 @@ function tick(M){
  // resolve that organic exchange before an unrelated scheduled spectacle.
  // Deferred nearfalls are still available on a later tick.
  const topContest=!spoke&&Graph.readyTopContest(M);
- if(!spoke&&!topContest&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
- else if(!spoke&&!topContest&&M.r()<spotP)spoke=Graph.special(M);
+ const preparedFlight=!spoke&&!topContest&&Graph.readyNamedAerial(M);
+ if(!spoke&&!topContest&&!preparedFlight&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){M.nearfallAt.shift();Graph.nearfall(M);spoke=true;}
+ else if(!spoke&&!topContest&&!preparedFlight&&M.r()<spotP)spoke=Graph.special(M);
  // crowd bands
  crowdBand(M);
  // producer hints
@@ -3396,7 +3752,7 @@ function tick(M){
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
- if(!spoke&&(topContest||M.r()<.64))Graph.step(M);
+ if(!spoke&&(topContest||preparedFlight||M.r()<.64))Graph.step(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
