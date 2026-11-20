@@ -1,7 +1,8 @@
 name: Graph Lab match review
 
 on:
-  pull_request:
+  push:
+    branches: [main]
     paths:
       - 'tools/graph-lab/**'
       - 'assets/js/match-engine.js'
@@ -13,6 +14,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   match-review:

@@ -5,7 +5,6 @@ on:
     paths:
       - 'assets/js/technique-registry.js'
       - 'assets/js/technique-backgrounds.js'
-      - 'assets/js/match-engine.js'
       - 'docs/phase5-roster-training-audit.csv'
       - 'tests/phase3-technique-sequences.test.cjs'
       - 'tests/phase4-technique-backgrounds.test.cjs'
@@ -25,6 +24,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   curated-mechanics:

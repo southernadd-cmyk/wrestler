@@ -1,14 +1,6 @@
 name: Career rivalry continuity
 
 on:
-  pull_request:
-    paths:
-      - 'assets/js/**'
-      - 'tests/_world.cjs'
-      - 'tests/_source.cjs'
-      - 'tools/career-continuity-audit.cjs'
-      - 'tests/career-continuity-audit.test.cjs'
-      - '.github/workflows/career-continuity.yml'
   push:
     branches: [main]
     paths:
@@ -23,8 +15,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: career-continuity-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   five-week-career:

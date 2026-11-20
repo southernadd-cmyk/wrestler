@@ -1,6 +1,7 @@
 name: Phase 2 grapple evidence
 on:
-  pull_request:
+  push:
+    branches: [main]
     paths:
       - 'assets/js/match-engine.js'
       - 'tools/graph-lab/**'
@@ -8,6 +9,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   grapple-evidence:
     runs-on: ubuntu-24.04
