@@ -2476,9 +2476,19 @@ const Graph=(function makeGraph(){
    // actual in-ring breath after a flyer drops below 38 stamina, rather
    // than silently restoring energy or issuing a free rating bonus.
    // The normal duplicate-action penalty prevents repetitive stalling.
-   if(stamina<48)selected.push(['catch_breath',
-    M.planId==='spots'&&stamina<38?14:5]);
+   if(stamina<60&&M.planId==='spots')selected.push(['catch_breath',
+    // An actual narrated recovery beat, selected before the flyer is fully spent.
+    stamina<40?20:stamina<52?12:6]);
+   else if(stamina<48)selected.push(['catch_breath',5]);
   }
+  // On a fast layout, a trained flyer needs real take-off opportunities
+  // beyond the opening exchange. These are existing authored setup actions,
+  // only offered from the ring with sufficient stamina. Their ensuing
+  // attacks remain governed by the normal top-rope physical and risk gates.
+  if(M.planId==='spots'&&p.position==='standing'&&stamina>=42&&
+     (liveSide.style==='Spectacle'||((liveSide.ring||0)>=78&&(liveSide.safe||0)>=65))&&
+     ['shine','resurgence','exchange','nearfall','escalation','dive_sequence','finish_setup'].includes(g.arc))
+   selected.push(['top_climb',4.2],['springboard_rise',3.5]);
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
   for(const fam of ARC_FAMILIES[g.arc]||[])for(const id of CAT.members[fam]||[]){
    const mv=A[id];if(mv.requires!==p.position&&mv.requires!=='any')continue;
@@ -3160,7 +3170,7 @@ function spectacularExecutionOf(M){
 // tired, repetitive finishing stretch. Unique landed moves only.
 function earnedPlanQuality(M){
  const plan=M.planId;
- const caps={story:3.5,spots:3.6,technical:4,brawl:3.5,safe:1.5};
+ const caps={story:3.5,spots:4.25,technical:4,brawl:3.5,safe:1.5};
  if(!Object.prototype.hasOwnProperty.call(caps,plan))return 0;
  // The original graph also contains genuine, narrated core techniques
  // without catalogue-family labels. Include only hand-reviewed, physically
@@ -3197,7 +3207,7 @@ function earnedPlanQuality(M){
    case 'spots':
     if((n.risk&&['aerial','springboard','dive','lucha','corner','outside','superplex'].includes(n.family))||
        core.spots.includes(e.id))
-     gain=(n.family?2:.8)*clamp(((worker.ring||0)+(worker.safe||0)-110)/65,0,1);
+     gain=(n.family?2.8:1.1)*clamp(((worker.ring||0)+(worker.safe||0)-100)/60,0,1);
     break;
    case 'brawl':
     if(['strike','running','power','outside','corner','rope'].includes(n.family)||
@@ -3321,10 +3331,12 @@ function tick(M){
  // untrained wrestler still pays the full Spot-fest stamina cost.
  const spotDrain=(worker)=>M.planId==='spots'?
   // Competent and safe workers conserve movement across a demanding
-  // aerial layout. Untrained wrestlers still pay the full 1.35 rate.
+  // aerial layout. Untrained wrestlers (ring+safety <=120) still pay the
+  // full 1.35 rate; even the best-trained retain a 0.96 rate and pay
+  // every actual move's stamina cost.
   // No free stars or reduced botch probability: this only changes
   // sustained exertion, which has measurable late-match quality effects.
-  clamp(plan.drain-Math.max(0,worker.ring+worker.safe-120)*.0047,1.07,plan.drain):plan.drain;
+  clamp(plan.drain-Math.max(0,worker.ring+worker.safe-120)*.010,.96,plan.drain):plan.drain;
  const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*(1+w.fatigue/250)*(M.workingHurt?1.5:1);
  M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));M.fSt=clamp(M.fSt-.5*spotDrain(f)+(mode==='slow'?1.2:0));
  // quality of this ten seconds
