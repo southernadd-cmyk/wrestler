@@ -1638,7 +1638,7 @@ const Graph=(function makeGraph(){
   sx_falcon_arrow:'front-facelock',
   nk_ddt:'front-facelock',nk_snap_ddt:'front-facelock',
   pw_powerbomb:'front-facelock',pw_sitout:'front-facelock',
-  pw_running_powerbomb:'front-facelock',pw_backbreaker:'upper-body',
+  pw_running_powerbomb:'front-facelock',pw_backbreaker:'body-clinch',
   pw_uranage:'upper-body',pw_samoan_drop:'upper-body',
   pw_gorilla_press:'upper-body',pw_military_press:'upper-body',
   pw_pumphandle:'upper-body',pw_belly_bump:'body-clinch',
