@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 'use strict';
-// All five plans, including a low-risk plan, matched across four wrestler\n// styles. Same opponents,
+// All five plans, including a low-risk plan, matched across four wrestler\n// styles. Rotating the four promoter preferences. Same opponents,
 // finish, slot, seed and promotion; only the match plan changes.
 const lab=require('./core.js'),engine=require('./match-review.cjs');
 function audit(n=60){
  if(!Number.isInteger(n)||n<1||n>250)throw Error('Expected 1..250 paired bouts per worker style/plan');
  const root=engine.load(),D=root.OfficeData,people=lab.roster(D);
  const styles=['Spectacle','Technical','Brawl','Story'],plans=['spots','technical','brawl','story','safe'];
+ if(D.PROMOS.length!==4||new Set(D.PROMOS.map(p=>p.likes)).size!==4)
+  throw Error('Expected four distinct promoter preferences for a controlled matched audit');
  const results=[];
  for(const style of styles){
   const workers=people.filter(w=>w.style===style);
@@ -21,7 +23,10 @@ function audit(n=60){
    for(let i=0;i<n;i++){
     const w=workers[i%workers.length],f=opponentPool[(i*7+11)%opponentPool.length];
     const input={wid:w.id,rid:f.id,plan,slot:'main',finish:'win_clean',
-      seed:501137+i*173};
+      seed:501137+i*173,
+      // Rotate across promoters; the old fixed Dockside cohort gave Brawl
+      // an automatic +6 fit on every match and overstated its lead.
+      promotion:D.PROMOS[Math.floor(i/workers.length)%D.PROMOS.length].id};
     const match=lab.runMatch(root,lab.makeOptions(D,input));
     sums.stars+=match.final.stars;sums.q+=match.qSum||0;sums.qN+=match.qN||0;
     sums.crowd+=match.crowdPeak||0;sums.spots+=match.spots||0;
@@ -67,7 +72,7 @@ function audit(n=60){
 }
 function markdown(result){
  const out=['### Matched wrestler-style / plan rating audit','',
-  result.n+' matched bouts per row; all five plans and four wrestler styles. Worker, opponent, seed, booked finish and card slot held fixed; only the match plan changes.','',
+  result.n+' matched bouts per row; all five plans and four wrestler styles. Worker, opponent, promotion, seed, booked finish and card slot held fixed *within each five-plan cohort*. The four promoters rotate across cohorts, avoiding a permanent Brawl fit bonus; only the match plan changes.','',
   '| Worker style | Match plan | Mean stars | Wrestling | Crowd | Mistakes | Q avg | Early Q | Late Q | Final worker stamina | Peak crowd | Landed/attempted spots | Below 2 stars | Plan fit | Earned at bell | Graph risk hits | Scripted landed/botched |',
   '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|'];
  for(const group of result.results)for(const r of group.rows)
