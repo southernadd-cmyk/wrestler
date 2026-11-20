@@ -1924,9 +1924,9 @@ const Graph=(function makeGraph(){
    SUPERPLEX_PILOT.some(id=>isValid(M,id));
  }
  // The ordinary tick can skip a graph action. After an actual legal climb,
- // a trained flyer gets ONE next-tick move-selection opportunity, exactly
- // as a two-wrestler top contest does. This does NOT select, commit or
- // resolve an aerial; the normal seeded pool and counter gates stay active.
+ // a trained flyer gets a 91% chance of next-tick action selection (instead
+ // of 64%). Unlike a committed two-wrestler top contest, the remaining 9%
+ // represents real hesitation; no attempt, landing or counter is scripted.
  function readyNamedAerial(M){
   const g=get(M),p=Psy.get(M),side=p.control;
   if(M.planId!=='spots'||M.len<900||M.len-M.t<20||
@@ -3716,7 +3716,7 @@ function tick(M){
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
- if(!spoke&&(topContest||preparedFlight||M.r()<.64))Graph.step(M);
+ if(!spoke&&(topContest||M.r()<(preparedFlight?.91:.64)))Graph.step(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
