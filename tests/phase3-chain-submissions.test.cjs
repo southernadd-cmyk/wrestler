@@ -26,8 +26,8 @@ const added=G.GRAPPLE_PILOT.filter(id=>!old.has(id)&&
 assert.equal(old.size,39);
 assert.equal(G.CATALOG.members.submission.length,35);
 assert.equal(added.length,44,'33 new submissions plus 11 takedowns');
-assert.equal(G.GRAPPLE_PILOT.length,83);
-assert.equal(new Set(G.GRAPPLE_PILOT).size,83);
+assert.equal(G.GRAPPLE_PILOT.length,97,'83 previous and 14 Phase 4 neck grapples');
+assert.equal(new Set(G.GRAPPLE_PILOT).size,G.GRAPPLE_PILOT.length);
 assert.ok(takedowns.every(id=>added.includes(id)));
 assert.ok(added.every(id=>A[id]&&G.CATALOG.members.submission.includes(id)||
  takedowns.includes(id)));
