@@ -77,3 +77,31 @@ A **fresh 4,000-match independent-seed recheck** (same seeds as before, same int
 After the bug fix, `sm_dragon_sleeper` landed **twice** (previously none, two aborted); `sx_falcon_arrow` is no longer on the consistently absent list and has no revalidation aborts in the latest trace. `pw_running_powerbomb` also landed once in the expanded sample. Only **four** actions remain unseen across all four batches: `dv_moonsault`, `nk_tombstone`, `pw_sitout`, and `sx_delayed`; none were observed as committed attempts. Their legal, earned setups and organic selection weights need a separate review, not a blanket increase in success odds.
 
 **Still blocked:** the original 1,000-match CI gate stays **418/442 = 94.57%**, two independent actions short of the release requirement. Even with three of four new cohorts passing, do not merge or revise the threshold simply because a larger union is green.
+
+## Latest targeted setup audit and validation (supersedes earlier blocker status)
+
+A focused, read-only opportunity probe was added to the four-cohort audit for the four moves that previously had no landed events. It inspects the **post-weight move pool** at every ordinary selection opportunity, differentiating legal availability, offered availability and the sum of actual weighted selection probabilities without consuming extra RNG or changing engine behaviour.
+
+Before the change, the 4,000-bout sample showed:
+- `dv_moonsault`: **426 legal**, 336 offered, ~2.10 expected selections; ring-to-floor physical state already correct
+- `nk_tombstone`: **138 legal**, 138 offered, ~1.50 expected selections; fresh front facelock and adequate lifting capacity required
+- `pw_sitout`: **196 legal**, 196 offered, ~0.96 expected selections; same earned facelock requirements
+- `sx_delayed`: **319 legal**, 318 offered, ~3.95 expected selections; physically reachable but not chosen on these fixed seeds
+
+**Finding:** none of these four suffered a completely blocked or orphaned path. The high-impact three did, however, reveal a match-plan asymmetry: `spots` never staged the standing-grip-to-lift sequence despite its spectacular power/neck moves. Only one legal `sx_delayed` moment and zero legal tombstone or sit-out powerbomb moments occurred in spot-fest matches across 4,000 bouts.
+
+**Change:** The spot-fest plan can now naturally offer a *visible front facelock setup* in the later stages for a suitably skilled standing wrestler with sufficient stamina when the current arc includes neck/power/suplex work. After that **real, owned and unexpired grip**, it may offer authentic lifted finishes at a **lower controlled follow-through weight** than technical/brawl styles; it retains the spectacle/aerial emphasis. All original weight, ability, location, stamina, clock, risk and finish-authority checks remain. A directed test asserts that no tombstone is valid before acquiring the grip, a real facelock makes at least one big lift available to a legitimate pairing, and an opponent-owned grip remains unusable.
+
+**Latest exact and independent CI evidence** (commit `f3dffc45`; 95% threshold unchanged):
+
+| Sample | Before spot-fest setup | After spot-fest setup | Pass? |
+|---|---:|---:|---|
+| Fixed 1,000-bout release gate | 418/442 = 94.57% | **420/442 = 95.02%** | **Yes** |
+| Offset 104729 | 423/442 = 95.70% | **425/442 = 96.15%** | Yes |
+| Offset 209458 | 427/442 = 96.61% | **429/442 = 97.06%** | Yes |
+| Offset 314187 | 429/442 = 97.06% | **428/442 = 96.83%** | Yes |
+| Union of four cohorts | 438/442 = 99.10% | **439/442 = 99.32%** | Diagnostic only |
+
+The previously unseen `dv_moonsault` landed once in these four cohorts. `nk_tombstone`, `pw_sitout` and `sx_delayed` remain unselected, despite being physically legal and present in the selection pool; these remain *rare outcomes*, not an established crash or physical-guard failure. The independent audit reports only 3 of 442 independent moves absent across 4,000 total bouts. Do **not** force a scripted landing or increase individual move odds to game the fixed seeds.
+
+The focused Phase 4 test including 43 strike parents, 17 newly covered neck parents, Phase 3 continuity, and the full original 1,000-bout catalogue test is green at this commit. Match-quality A/B, graph validation, rivalry continuity and browser journeys were also green; final full Node simulation regression verification should be checked independently before marking the PR ready.
