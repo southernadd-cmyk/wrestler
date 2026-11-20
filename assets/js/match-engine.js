@@ -2301,7 +2301,21 @@ const Graph=(function makeGraph(){
    selected.push(['leg_wrench',2.2],['rs_wrist_mat',1.9],
      ['rs_hammerlock_mat',1.2],['rs_side_headlock',1.6],
      ['rs_mat_stretch',1.1]);
-  if(p.position==='outside')selected.push(['apron_stand',1.6],['ramp_approach',1.3],['floor_regroup',1.4]);
+  if(p.position==='outside'){
+   selected.push(['apron_stand',1.6],['ramp_approach',1.3],['floor_regroup',1.4]);
+   // A Spectacle wrestler who has *actually* thrown an opponent outside
+   // should consider the named ring-to-floor dives before both regroup.
+   // The existing physical location/weight/stamina/clock gates remain
+   // authoritative: an actor already on the floor cannot magically dive.
+   const physical=g.physical,other=p.control==='w'?'f':'w';
+   if((M.planId==='spots'||liveSide.style==='Spectacle')&&
+      physical?.locations?.[p.control]==='ring'&&
+      physical?.locations?.[other]==='floor'){
+    for(const id of CAT.members.dive||[])
+     if(A[id]&&!A[id].counterOf&&!A[id].blockOf)
+      selected.push([id,2.4]);
+   }
+  }
   // A Spectacle wrestler who has reached the ropes should have an actual
   // named aerial/springboard available, not only the generic launch node.
   // isValid still rejects heavyweights, fatigue, early big spots and unsafe
