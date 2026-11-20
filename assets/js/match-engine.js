@@ -2100,9 +2100,11 @@ const Graph=(function makeGraph(){
   let effective=exertion;
   if(id==='catch_breath'&&exertion<0&&M.planId==='spots'){
    const actor=activeSide==='w'?M.w:M.f;
+   // Do not turn every wrestler into an endurance-trained aerial worker.
    // An experienced flyer can recover more in a genuine, visible pause;
    // novices retain -5.5. No difficulty, botch or crowd-rating change.
-   const extra=(M.len>=900?.62:.38)*recoveryTraining(actor);
+   const extra=actor.style==='Spectacle'&&M.len>=900?
+    .56*recoveryTraining(actor):0;
    effective=exertion*(1+extra);
   }
   if(exertion>0&&fighter(activeSide==='w'?M.w:M.f).trait==='Workhorse')effective*=.8;
@@ -2482,8 +2484,9 @@ const Graph=(function makeGraph(){
   const prof=fighter(liveSide),stamina=p.control==='f'?M.fSt:M.wSt;
   const trainedRecovery=recoveryTraining(liveSide);
   const timeLeft=M.len-M.t;
-  const longSpot=M.planId==='spots'&&M.len>=900;
-  const closingFlight=M.planId==='spots'&&timeLeft>=30&&timeLeft<=210&&
+  const trainedFlyer=liveSide.style==='Spectacle'&&trainedRecovery>0;
+  const longSpot=M.planId==='spots'&&M.len>=900&&trainedFlyer;
+  const closingFlight=longSpot&&timeLeft>=30&&timeLeft<=210&&
    ['resurgence','exchange','nearfall','escalation','dive_sequence',
     'finish_setup','false_finish','fighting_spirit'].includes(g.arc);
   if(p.position==='standing'&&M.t/M.len>.12){
@@ -2494,8 +2497,9 @@ const Graph=(function makeGraph(){
     e.preControl===p.control&&M.t-e.t<40);
    if(M.planId==='spots'&&timeLeft>35&&!restedRecently&&
       stamina<(longSpot?66:60)){
-    const urgency=stamina<35?24:stamina<45?18:stamina<56?13:8;
-    const longBonus=longSpot&&M.t/M.len>.5?1+trainedRecovery*.85:1;
+    const urgency=trainedFlyer?(stamina<35?24:stamina<45?18:stamina<56?13:8):
+     (stamina<40?20:stamina<52?12:6);
+    const longBonus=longSpot&&M.t/M.len>.5?1+trainedRecovery*.65:1;
     selected.push(['catch_breath',urgency*longBonus]);
    }else if(M.planId!=='spots'&&stamina<48)selected.push(['catch_breath',5]);
   }
@@ -2510,7 +2514,7 @@ const Graph=(function makeGraph(){
       'finish_setup','false_finish','fighting_spirit'].includes(g.arc)){
    // The wrestler still climbs or springs into an actual committed landing,
    // with the existing physical, stamina, timing and counter checks intact.
-   const focus=closingFlight?(1.5+trainedRecovery*.65):1;
+   const focus=closingFlight?(1.4+trainedRecovery*.55):1;
    selected.push(['top_climb',4.2*focus],['springboard_rise',3.5*focus]);
   }
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
