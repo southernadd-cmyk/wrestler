@@ -293,6 +293,27 @@ assert.ok(preScrambleWeight>=preOtherWeight*.95-1e-7,
  'an elite flyer can earn a mat comeback before the final three-minute window');
 assert.equal(preRun.story.control,'f',
  'the early comeback weighting must not silently flip controller');
+// Low-stamina wrestlers must not lose access to a legal grounded reversal
+// simply because they cannot yet afford a rope setup or its aerial landing.
+const drained=fixture('spots','elite');
+drained.t=drained.len-120;drained.wSt=24;drained.fSt=65;
+drained.story.control='f';drained.story.position='mat';drained.story.down='w';
+const drainGraph=G.get(drained);
+drainGraph.node='mat_hold';
+drainGraph.events.push({id:'mat_hold',t:drained.t-10,
+ preControl:'f',control:'f',position:'mat',down:'w'});
+assert.ok(G.isValid(drained,'mat_scramble'),
+ 'a tired but trained flyer still qualifies for a low-cost mat reversal');
+const drainedPool=G.pool(drained);
+const drainedCounter=drainedPool.find(([id])=>id==='mat_scramble')?.[1]||0;
+const drainedAlternatives=drainedPool.reduce((sum,[id,w])=>
+ sum+(id==='mat_scramble'?0:w),0);
+assert.ok(drainedCounter>=drainedAlternatives*.95-1e-7,
+ 'a viable escape is competitive even when the flyer has under 27 stamina');
+assert.equal(drainedPool.some(([id])=>id==='top_climb'||id==='springboard_rise'),false,
+ 'the low-stamina reversal cannot also unlock an illegal aerial setup');
+assert.equal(drained.story.control,'f',
+ 'giving a reversal priority must not grant control without performing it');
 // Narrative arc changes may not erase a real, legally prepared high spot
 // between the climb and the flyer's ONE following attack choice.
 const protectedLaunch=fixture('spots','elite');
