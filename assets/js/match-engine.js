@@ -2314,7 +2314,15 @@ const Graph=(function makeGraph(){
   const tactic=M.o.promo?.tactic;
   if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
    counterChance=Math.min(.4,counterChance*1.5);
-  const blockChance=A[blk]?Math.max(.04,Math.min(.13,.07+(defender.safe-attacker.safe)/600)):0;
+  // The same defensive schooling applies to an earned grapple: a
+  // technical wrestler reading a hold/throw in a technical bout is more
+  // likely to turn it into its *named, exact-parent* reversal. A safe bout
+  // favours blocking a dangerous lift rather than pretending it landed.
+  if(M.planId==='technical'&&defender.style==='Technical')
+   counterChance=Math.min(.4,counterChance*1.25);
+  const safetyBase=M.planId==='safe'?.09:.07;
+  const blockChance=A[blk]?Math.max(.04,Math.min(.16,safetyBase+
+   (defender.safe-attacker.safe)/600)):0;
   const roll=M.r();
   const counter=roll<counterChance&&A[rev]&&isValid(M,rev);
   const blocked=!counter&&roll<counterChance+blockChance&&A[blk]&&isValid(M,blk);
