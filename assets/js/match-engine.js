@@ -1214,7 +1214,11 @@ const Graph=(function makeGraph(){
     famOf[id]=fid;members[fid].push(id);counts.moves++;
     // Not everything is an 'attempt' that can be reversed (a kip-up, a double count). Stationary
     // offence and a few awkward names get their own wording instead of the family template.
-    const rv=f.rev,rid=id+'_rev',rreq=rv.requires||requires,hasRev=o.rev!==false;
+    const rv=f.rev,rid=id+'_rev',
+     // A standing submission's defence must be possible during its standing
+     // attempt; the mat-submission family default cannot teleport the counter.
+     rreq=fid==='submission'&&requires==='standing'?requires:rv.requires||requires,
+     hasRev=o.rev!==false;
     if(hasRev){
      const words=o.rv||(o.still&&rv.still)||rv.lines;
      node(rid,words.map(t=>t.replace(/\{name\}/g,name)),{requires:rreq,reverse:true,zone:rv.zone,down:rv.down,
