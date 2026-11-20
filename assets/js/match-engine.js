@@ -2387,11 +2387,16 @@ const Graph=(function makeGraph(){
    // authoritative: an actor already on the floor cannot magically dive.
    const physical=g.physical,other=p.control==='w'?'f':'w';
    if((M.planId==='spots'||liveSide.style==='Spectacle')&&
-      physical?.locations?.[p.control]==='ring'&&
       physical?.locations?.[other]==='floor'){
-    for(const id of CAT.members.dive||[])
-     if(A[id]&&!A[id].counterOf&&!A[id].blockOf)
-      selected.push([id,2.4]);
+    const launch=physical?.locations?.[p.control];
+    // After apron_stand, the worker is on the apron, not in the ring:
+    // only the two actual apron dives can be offered. Never offer a
+    // ring-to-floor dive from the wrong launch location.
+    if(launch==='ring'||launch==='apron')
+     for(const id of CAT.members.dive||[])
+      if(A[id]&&!A[id].counterOf&&!A[id].blockOf&&
+         (launch==='apron')===APRON_DIVES.has(id))
+       selected.push([id,launch==='apron'?5.5:2.4]);
    }
   }
   // A Spectacle wrestler who has reached the ropes should have an actual
