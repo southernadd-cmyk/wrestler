@@ -2497,8 +2497,7 @@ const Graph=(function makeGraph(){
    const action=A[e.id];
    return !!action&&e.preControl===p.control&&e.t>=M.len-180&&
     !action.reverse&&!action.counterOf&&!action.blockOf&&
-    ((action.risk&&['aerial','springboard','dive','lucha','superplex'].includes(action.family))||
-     ['aerial_attack','springboard_strike','missile_dropkick','high_crossbody'].includes(e.id))&&
+    action.risk&&['aerial','springboard','dive','lucha','superplex'].includes(action.family)&&
     (!e.aerialResolution||e.aerialResolution==='landed')&&
     (!e.grappleResolution||e.grappleResolution==='landed')&&
     (!e.contactResolution||e.contactResolution==='landed');
