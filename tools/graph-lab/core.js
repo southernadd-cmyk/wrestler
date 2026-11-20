@@ -237,8 +237,10 @@
       timingErrors: snapshot.timingErrors,
       grappling: {
         ...snapshot.grappling,
-        coveredMoves:Object.keys(snapshot.grappling.byMove).length,
+        coveredMoves:(graph.GRAPPLE_PILOT||[]).filter(id=>snapshot.grappling.byMove[id]).length,
         eligibleMoves:(graph.GRAPPLE_PILOT||[]).length,
+        otherCommittedMoves:Object.keys(snapshot.grappling.byMove)
+          .filter(id=>!(graph.GRAPPLE_PILOT||[]).includes(id)),
         unobservedMoves:(graph.GRAPPLE_PILOT||[]).filter(id=>!snapshot.grappling.byMove[id]),
         byMove:Object.entries(snapshot.grappling.byMove)
           .map(([id,counts])=>({id,...counts}))
