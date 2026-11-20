@@ -145,8 +145,8 @@ for(let i=0;i<count;i++){
    // Resolution clears pending attempt first, so the raw isValid() check
    // intentionally rejects the counter outside its attempt context.
    const isResolvedCounter=(e.aerialAttemptSeq!==undefined||
-    e.grappleAttemptSeq!==undefined||e.strikeAttemptSeq!==undefined)&&
-    (node.counterOf||node.blockOf);
+    e.grappleAttemptSeq!==undefined||e.strikeAttemptSeq!==undefined||
+    e.contactAttemptSeq!==undefined)&&(node.counterOf||node.blockOf);
    // The grapple resolver validated the live attempt BEFORE clearing
    // pendingGrapple and invoking apply(). That completed move may therefore
    // fail the audit's second (post-clear) isValid() check, especially when

@@ -94,7 +94,7 @@ for(let i=0;i<1000;i++){
  }
  if(!m.done)throw Error('Unfinished match '+i);
  for(const ev of m.graph.events||[])events.set(ev.id,(events.get(ev.id)||0)+1);
- for(const kind of ['grappleAttempts','strikeAttempts','aerialAttempts'])
+ for(const kind of ['grappleAttempts','strikeAttempts','aerialAttempts','contactAttempts'])
   for(const a of m.graph[kind]||[]){
    const row=attempts.get(a.id)||{};
    row[a.outcome]=(row[a.outcome]||0)+1;
