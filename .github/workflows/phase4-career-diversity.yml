@@ -1,6 +1,7 @@
 name: Phase 4 career diversity diagnostic
 on:
-  pull_request:
+  push:
+    branches: [main]
     paths:
       - 'assets/js/match-engine.js'
       - 'tools/graph-lab/phase4-career-diversity.cjs'
@@ -9,6 +10,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   career-comparison:
     runs-on: ubuntu-24.04
