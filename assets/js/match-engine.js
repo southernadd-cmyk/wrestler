@@ -2632,9 +2632,13 @@ const Graph=(function makeGraph(){
    // exchange after its third appearance. Keep authentic repeats possible,
    // but rotate towards other legal authored moves and named defences.
    // This is a weight, not a forced move, and does not weaken physical gates.
-   const priorUses=g.events.filter(e=>e.id===id).length;
-   if(priorUses>=3)n*=.48;
-   else if(priorUses===2)n*=.78;
+   // Technical Showcase must retain its sustained grappling continuity;
+   // global anti-repetition tuning distorted the technical proficiency guard.
+   if(M.planId!=='technical'){
+    const priorUses=g.events.filter(e=>e.id===id).length;
+    if(priorUses>=3)n*=.48;
+    else if(priorUses===2)n*=.78;
+   }
    // Repeated generic posing and finish threats drown out actual wrestling.
    // Keep legal alternatives available, but strongly disfavor a second copy
    // inside five simulated minutes. No forced arc or scripted result changes.
