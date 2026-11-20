@@ -95,6 +95,8 @@
         invalid:0,byMove:{},examples:[]},
       environment: {attempts:0,landed:0,counter:0,block:0,aborted:0,
         interrupted:0,invalid:0,byFamily:{},seen:{}},
+      flying: {attempts:0,landed:0,counter:0,block:0,aborted:0,
+        interrupted:0,invalid:0,byFamily:{},diveSeen:{}},
       phase9: {newPairHits:{},newOccurrences:0,sameControllerOccurrences:0,
         interruptedPairs:0,matchesWithNew:0,matchesWithTriple:0,
         newTriples:0,styleHits:{},examples:[]}
@@ -133,6 +135,30 @@
       if(grapple.examples.length<24)grapple.examples.push({seed:match.o?.seed,
         move:attempt.id,at:attempt.startedT,outcome,actionId:attempt.actionId||null,
         performer:attempt.side});
+    }
+    // The same committed aerial ledger now covers both top-rope actions
+    // and physically staged dives to the floor. Count one attempt per
+    // parent and verify that any landed/countered event belongs to it.
+    const flight=snapshot.flying,airEvents=new Map(events.filter(e=>e.aerialAttemptSeq!==undefined)
+      .map(e=>[e.aerialAttemptSeq,e]));
+    for(const attempt of match.graph?.aerialAttempts||[]){
+      flight.attempts++;
+      const family=graph.A[attempt.id]?.family||'(unknown)';
+      const row=flight.byFamily[family]??={attempts:0,landed:0,counter:0,block:0,aborted:0,interrupted:0};
+      row.attempts++;
+      if(['landed','counter','block','aborted','interrupted'].includes(attempt.outcome)){
+        flight[attempt.outcome]++;row[attempt.outcome]++;
+      }else flight.invalid++;
+      if((graph.DIVE_PILOT||[]).includes(attempt.id))
+        flight.diveSeen[attempt.id]=(flight.diveSeen[attempt.id]||0)+1;
+      const event=airEvents.get(attempt.seq);
+      const expected=attempt.outcome==='counter'?attempt.id+'_rev':
+        attempt.outcome==='block'?attempt.id+'_blk':attempt.id;
+      const resolved=['landed','counter','block'].includes(attempt.outcome);
+      if(resolved
+        ? !(event?.id===expected&&event.attemptedMove===attempt.id&&
+            event.aerialResolution===attempt.outcome&&attempt.actionId===expected)
+        : !!event)flight.invalid++;
     }
     // The existing contact ledger covers the actual Phase 6 environmental
     // decisions. Generated counters are not counted as independent attempts.
@@ -261,6 +287,12 @@
       longestLinkedSequence: snapshot.longestChain + 1,
       unknownEvents: top(snapshot.unknownEvents, 30),
       timingErrors: snapshot.timingErrors,
+      flying: {
+        ...snapshot.flying,
+        eligibleDives:(graph.DIVE_PILOT||[]).length,
+        observedDives:Object.keys(snapshot.flying.diveSeen).length,
+        unseenDives:(graph.DIVE_PILOT||[]).filter(id=>!snapshot.flying.diveSeen[id])
+      },
       environment: {
         ...snapshot.environment,
         eligibleMoves:(graph.ENVIRONMENT_PILOT||[]).length,
