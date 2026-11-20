@@ -1,0 +1,110 @@
+name: Technical earned recovery A/B
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'tests/technical-earned-recovery.test.cjs'
+      - '.github/workflows/technical-earned-recovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    name: Visible recovery, true late quality and control safety
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prove no phantom recovery or grip interruption
+        run: |
+          node tests/technical-earned-recovery.test.cjs
+          node tests/technical-grip-followthrough.test.cjs
+      - name: Checkout unchanged fully audited Technical endurance baseline
+        uses: actions/checkout@v4
+        with:
+          ref: audit/technical-endurance-runway-20261120
+          path: baseline
+      - name: Compare 432 real 18-minute stamina timelines
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd baseline && node tools/graph-lab/technical-endurance-trace.cjs 12 --json-file > ../endurance-before.md)
+          node tools/graph-lab/technical-endurance-trace.cjs 12 --json-file > endurance-after.md
+          echo '# Before: original Technical pacing' >> "$GITHUB_STEP_SUMMARY"
+          cat endurance-before.md >> "$GITHUB_STEP_SUMMARY"
+          echo '# After: legal authored recovery' >> "$GITHUB_STEP_SUMMARY"
+          cat endurance-after.md >> "$GITHUB_STEP_SUMMARY"
+          echo 'Matched stamina and recovery cohorts:'
+          grep -E '^\| (novice|competent|elite) \|' endurance-before.md endurance-after.md
+      - name: Assert actual recovery improves long-match endurance
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const b=require('./baseline/technical-endurance-trace.json').rows;
+          const a=require('./technical-endurance-trace.json').rows;
+          for(const tier of ['novice','competent','elite']){
+           const get=(v,plan)=>v.find(x=>x.tier===tier&&x.plan===plan);
+           const before=get(b,'technical'),after=get(a,'technical');
+           console.log(tier,'stamina',before.bellStamina,'=>',after.bellStamina,
+            'real breathers',before.catchBreathersPerBout,'=>',after.catchBreathersPerBout,
+            'late variety',before.lateDistinctPerBout,'=>',after.lateDistinctPerBout,
+            'stars',before.stars,'=>',after.stars);
+           if(tier!=='novice'){
+            assert.ok(after.bellStamina>=before.bellStamina+4,
+             'trained technician must preserve at least four more stamina by the bell');
+            assert.ok(after.catchBreathersPerBout>before.catchBreathersPerBout+.4,
+             'more genuine narrated recovery actions required');
+            assert.ok(after.lateDistinctPerBout+.08>=before.lateDistinctPerBout,
+             'do not replace meaningful late offence with resting');
+            assert.ok(after.stars+.10>=before.stars,'match rating quality cannot collapse');
+           }
+           for(const plan of ['story','safe']){
+            const b2=get(b,plan),a2=get(a,plan);
+            assert.equal(a2.bellStamina,b2.bellStamina,
+             'other plans must not inherit Technical pacing');
+           }
+          }
+          NODE
+      - name: Review 864-bout skill, real chains and submission variety
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd baseline && node tools/graph-lab/technical-depth-audit.cjs 12 --json-file > ../depth-before.md)
+          node tools/graph-lab/technical-depth-audit.cjs 12 --json-file > depth-after.md
+          echo '# After: all actual grappling sequences' >> "$GITHUB_STEP_SUMMARY"
+          cat depth-after.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Assert linked three-move sequences are not displaced
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const b=require('./baseline/technical-depth-audit.json'),a=require('./technical-depth-audit.json');
+          assert.deepEqual(a.errors,[]);
+          for(const tier of ['competent','elite']){
+           const get=v=>v.groups.find(x=>x.tier===tier&&x.minutes===18&&x.plan==='technical');
+           const before=get(b),after=get(a);
+           console.log(tier,'real triples',before.actualThreeMoveChains,'=>',after.actualThreeMoveChains,
+            'late distinct',before.lateDistinct,'=>',after.lateDistinct);
+           assert.ok(after.actualThreeMoveChains+.03>=before.actualThreeMoveChains,
+            'a breather must not hollow out already working grappling chains');
+           assert.ok(after.lateDistinct+.08>=before.lateDistinct);
+          }
+          NODE
+      - name: Retain all paired action-ledger evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: technical-pacing-paired
+          path: |
+            baseline/technical-endurance-trace.json
+            technical-endurance-trace.json
+            baseline/technical-depth-audit.json
+            technical-depth-audit.json
+            endurance-before.md
+            endurance-after.md
+            depth-before.md
+            depth-after.md
+          if-no-files-found: error

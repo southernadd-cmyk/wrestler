@@ -2297,6 +2297,16 @@ const Graph=(function makeGraph(){
     if(trained>=.25)effective=exertion*(1+.68*trained);
    }
   }
+  // An elite Technical worker can make better use of a REAL
+  // ten-second breather during the long-match runway. This recovery
+  // is earned by a narrated action: no rest, no stamina and no star
+  // credit. Competent and novice recovery costs remain unchanged.
+  if(id==='catch_breath'&&exertion<0&&M.planId==='technical'&&
+     M.len>=900&&M.len-M.t>180&&M.len-M.t<=540){
+   const actor=activeSide==='w'?M.w:M.f;
+   if(actor.style==='Technical'&&actor.ring>=85&&actor.safe>=80)
+    effective=exertion*1.38;
+  }
   // High-flyers need a *real* in-ring break before the last three minutes
   // even when they have an opponent down. A narrated, physically legal
   // grounded rest hold is more credible than an invisible stamina award.
@@ -2777,6 +2787,31 @@ const Graph=(function makeGraph(){
     // A paced fight still has real exchanges between recoveries.
     selected.push(['catch_breath',(stamina<35?20:stamina<48?14:8)*(1+brawlTraining)]);
    else if(M.planId!=='spots'&&stamina<48)selected.push(['catch_breath',5]);
+  }
+  // Trained Technical wrestlers must actively pace a long contest.
+  // An actual in-ring, narrated breather earns normal recovery in the
+  // pre-finish runway. No bonus stamina, artificial stars or skipped move
+  // costs: the performer voluntarily spends a real graph action resting.
+  // Never interrupt an owned/contested grip or turn rest into a spam loop.
+  if(M.planId==='technical'&&M.len>=900&&
+     liveSide.style==='Technical'&&liveSide.ring>=68&&liveSide.safe>=60&&
+     timeLeft>180&&timeLeft<=540&&p.position==='standing'&&p.down===null&&
+     g.physical?.area==='ring'&&!g.physical?.grip){
+   const skill=Math.max(0,Math.min(1,
+    (liveSide.ring+liveSide.safe+liveSide.psych-180)/85));
+   const breaths=g.events.filter(e=>e.id==='catch_breath'&&
+    e.preControl===p.control&&e.t>=M.len-540&&e.t<=M.t);
+   const cap=skill>=.85?3:2;
+   const target=skill>=.85?62:56;
+   if(stamina<target&&breaths.length<cap&&
+      !breaths.some(e=>M.t-e.t<95)){
+    // Resting is an explicit choice, not passive recovery. The much
+    // expanded match pool previously buried it even while exhausted;
+    // these weights apply only before the closing stretch and are
+    // bounded by the per-wrestler 2/3 breath and cooldown guards above.
+    const urgency=stamina<35?220:stamina<45?190:155;
+    selected.push(['catch_breath',urgency*(.85+.45*skill)]);
+   }
   }
   // In the pre-finish runway, a trained flyer holding an opponent on the
   // canvas can earn recovery by actually applying an authored rest hold.
