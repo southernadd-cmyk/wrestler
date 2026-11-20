@@ -54,7 +54,12 @@ for(const id of slower){
  assert.equal(d.graph.grappleAttempts.at(-1).outcome,'counter');
  counters++;
  if(A[blk]){
-  const b=make(id);G.startGrapple(b,id);b.r=()=>.19;b.t+=10;
+  const b=make(id);G.startGrapple(b,id);
+  const attackSkill=b.w.ring*.7+b.w.psych*.3;
+  const defenceSkill=b.f.ring*.7+b.f.psych*.3;
+  const counterChance=Math.max(.06,Math.min(.32,.13+
+   (defenceSkill-attackSkill)/350));
+  b.r=()=>counterChance+.01;b.t+=10;
   G.resolveGrapple(b);
   assert.equal(b.graph.events.at(-1).id,blk,'physically defended neck attack '+id);
   assert.equal(b.graph.grappleAttempts.at(-1).outcome,'block');
