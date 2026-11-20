@@ -1,0 +1,33 @@
+name: Phase 4 career diversity diagnostic
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'tools/graph-lab/phase4-career-diversity.cjs'
+      - '.github/workflows/phase4-career-diversity.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  career-comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Create isolated baseline from main without altering PR
+        run: |
+          mkdir -p /tmp/the-office-baseline
+          git archive origin/main | tar -x -C /tmp/the-office-baseline
+      - name: Compare six deterministic career soaks (main versus PR)
+        run: node tools/graph-lab/phase4-career-diversity.cjs /tmp/the-office-baseline .
+      - name: Store detailed action-family comparisons
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-career-diversity-analysis
+          path: phase4-career-soak-diagnostic.json
+          if-no-files-found: error
