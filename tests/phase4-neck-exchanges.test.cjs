@@ -114,6 +114,38 @@ for(const [id,required,position] of [
  assert.equal(stolen.graph.grappleAttempts.at(-1).outcome,'aborted',
   'stolen grip cannot gain one-beat grace '+id);
 }
+// Spot-fest / spectacular match plans should permit rare big-lift spots,
+ // but only after a *real* front facelock, in a credible late phase and
+ // with a wrestler able to lift the opponent. No invented free throws.
+ const wrestlers=lab.roster(D);
+ const powerWorker=wrestlers.filter(w=>w.style==='Brawl')
+  .sort((a,b)=>(D.PROFILES[b.id]?.kg||0)-(D.PROFILES[a.id]?.kg||0))[0];
+ const lightOpponent=wrestlers.filter(w=>w.id!==powerWorker?.id)
+  .sort((a,b)=>(D.PROFILES[a.id]?.kg||0)-(D.PROFILES[b.id]?.kg||0))[0];
+ assert.ok(powerWorker&&lightOpponent,'real Brawl and lighter opponent available');
+ const spots=M.create(lab.makeOptions(D,{wid:powerWorker.id,
+  rid:lightOpponent.id,slot:'main',plan:'spots',
+  finish:'win_clean',seed:91599}));
+ spots.stage='live';spots.t=Math.floor(spots.len*.8);
+ spots.story.control='w';spots.story.position='standing';spots.story.down=null;
+ spots.wSt=spots.fSt=100;spots.graph.arc='escalation';spots.graph.node=null;
+ spots.graph.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',
+  topSide:null,grip:null};
+ assert.equal(G.isValid(spots,'nk_tombstone'),false,
+  'spot-fest cannot perform tombstone without first gaining control');
+ assert.ok(new Map(G.pool(spots)).get('front_facelock')>0,
+  'spot-fest must offer the visible facelock setup when a big lift is possible');
+ G.apply(spots,'front_facelock');
+ assert.equal(spots.graph.physical.grip?.type,'front-facelock');
+ const pool=new Map(G.pool(spots));
+ assert.ok(['nk_tombstone','pw_sitout','sx_delayed'].some(id=>
+  G.isValid(spots,id)&&pool.get(id)>0),
+  'spot-fest must offer legal lift finishes once control is earned');
+ spots.graph.physical.grip.side='f';
+ for(const id of ['nk_tombstone','pw_sitout','sx_delayed'])
+  assert.equal(G.isValid(spots,id),false,
+   'an opponent-owned grip must never permit '+id);
+
 const saved=make('nk_double_arm_ddt',91566);
 assert.equal(G.startGrapple(saved,'nk_double_arm_ddt'),true);
 const resumed=M.restore(JSON.parse(JSON.stringify({...saved,rState:saved.r.getState()})));
