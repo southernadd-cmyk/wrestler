@@ -65,6 +65,27 @@ assert.equal(finish.story.position,'top','real setup changes the physical locati
 assert.ok(G.pool(finish).some(([id])=>G.A[id]?.family==='aerial'&&
  !G.A[id].reverse&&!G.A[id].counterOf&&!G.A[id].blockOf),
  'a completed legal climb offers real named aerial attacks');
+// The extra late push exists only until this worker earns a genuinely
+// risky, successful *named* landing. An opponent landing or a failed attempt
+// must not satisfy the flyer's missing-payoff condition.
+const lateRisk=G.CATALOG.members.aerial.find(id=>G.A[id]?.risk&&
+ !G.A[id].reverse&&!G.A[id].counterOf&&!G.A[id].blockOf);
+assert.ok(lateRisk,'authored catalog has at least one named risky aerial');
+const nearBell=()=>{const m=fixture('spots','elite');m.t=m.len-120;m.wSt=48;return m;};
+const freshLate=nearBell(),stillNeeded=weight(freshLate,'top_climb');
+const caseWith=(side,resolution)=>{
+ const m=nearBell();
+ G.get(m).events.push({id:lateRisk,t:m.len-130,preControl:side,
+  control:side,aerialResolution:resolution});
+ return m;
+};
+const completed=caseWith('w','landed');
+assert.ok(stillNeeded>weight(completed,'top_climb'),
+ 'late aerial setup priority eases after this flyer actually lands a named risk');
+assert.equal(weight(caseWith('w','counter'),'top_climb'),stillNeeded,
+ 'a reversed or failed aerial cannot satisfy the late landing condition');
+assert.equal(weight(caseWith('f','landed'),'top_climb'),stillNeeded,
+ 'the opponent performing a high spot does not fulfil the worker aerial plan');
 const spent=fixture('spots','elite');
 spent.t=spent.len-120;spent.wSt=18;
 assert.equal(G.isValid(spent,aerial),false,
