@@ -171,4 +171,52 @@ for(const [kind,finish,attrs,expected] of [
  assert.doesNotMatch(m.body.join(' '),/contract has been settled/i);
 }
 
+// UX regression: a great match is a request for better billing, not a contract
+// dispute. The options, explanations and actual consequences must agree.
+G.fresh();
+assert.equal(G.sign('rex'),null);
+const starW=G.W('rex'),starF=G.F('silas'),starP=G.P('dock');
+const starC={...x.c,id:'breakthrough-ux',wid:starW.id,rid:starF.id,pid:starP.id,finish:'win_clean'};
+const starFin={...x.fin,stars:4.25,injury:0,ignored:0,script:.9,resent:false};
+G.applyResult(starC,starFin);
+const starMsg=G.pending().find(m=>m.dtype==='office_debrief');
+assert.ok(starMsg,'a standout performance should prompt a debrief');
+assert.equal(starMsg.incidentKind,'breakthrough');
+assert.match(starMsg.body.join(' '),/4.25-star/);
+assert.doesNotMatch(starMsg.body.join(' '),/contract has been settled/i);
+assert.deepEqual(starMsg.options.map(o=>o.id),['back','business','promise']);
+assert.match(starMsg.options[0].label,/higher place on the card/i);
+assert.match(starMsg.options[1].label,/expectations realistic/i);
+assert.match(starMsg.options[2].label,/featured match/i);
+const trustPre=O.trust('rex'),bookerPre=starP.trust;
+// A saved, unanswered old-style debrief must be repaired in place, including
+// its existing ID and decision options. It may be visible when the player resumes.
+starMsg.copyVersion=undefined;
+starMsg.incidentKind=undefined;
+starMsg.body=['They were chanting my name.','Road agent: a strong match.',
+ 'The contract has been settled. Your response decides what happens.'];
+starMsg.options=[{id:'back',label:'Back your wrestler publicly'},
+ {id:'business',label:'Explain the business'},
+ {id:'promise',label:'Promise a featured opportunity'}];
+const idBefore=starMsg.id;
+G.pending();
+assert.equal(starMsg.id,idBefore,'repaired messages keep their stable decision ID');
+assert.equal(starMsg.incidentKind,'breakthrough');
+assert.match(starMsg.options[0].label,/higher place on the card/i);
+assert.doesNotMatch(starMsg.body.join(' '),/contract has been settled/i);
+assert.match(G.answer(starMsg.id,'back'),/better billing/);
+assert.equal(O.trust(starW.id),trustPre+8);
+assert.equal(starP.trust,bookerPre-4);
+assert.equal(G.pending().length,0,'the decision resolves normally after migration');
+// A contract dispute is not inserted into a fresh injury conversation either.
+G.fresh();assert.equal(G.sign('rex'),null);
+const injuredW=G.W('rex'),injuredF=G.F('silas'),injuredP=G.P('dock');
+G.applyResult({...starC,id:'injury-ux',wid:injuredW.id,rid:injuredF.id,pid:injuredP.id},
+ {...starFin,injury:2,injuryPart:'knee'});
+const injuryMsg=G.pending().find(m=>m.dtype==='office_debrief');
+assert.ok(injuryMsg);
+assert.equal(injuryMsg.incidentKind,'hurt');
+assert.match(injuryMsg.body.join(' '),/injur|recover|support/i);
+assert.doesNotMatch(injuryMsg.body.join(' '),/contract has been settled/i);
+assert.deepEqual(injuryMsg.options.map(o=>o.id),['rest','medical','listen']);
 console.log('PASS memory v3.0: Rex confrontation; credible tradeoffs; lasting trust; old saves; promise kept/broken; debut and repeat match; one debrief per show');
