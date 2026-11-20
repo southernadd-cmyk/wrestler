@@ -27,8 +27,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Test narrated skill-aware recovery and real aerial commitment
+        run: node tests/flyer-recovery-finish.test.cjs
       - name: Assert diagnostic repeatability and matched inputs
         run: node tests/flyer-depth-audit.test.cjs
+      - name: Diagnose final-three-minute aerial execution (96 matches)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/graph-lab/flyer-finish-trace.cjs 24 | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Run full flyer quality and endurance matrix
         shell: bash
         run: |
