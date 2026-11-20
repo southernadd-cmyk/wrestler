@@ -3,6 +3,7 @@
 // This protects the reproducibility promised by the published 500-bout report.
 const assert=require('node:assert/strict');
 const path=require('node:path');
+const fs=require('node:fs');
 const {spawnSync}=require('node:child_process');
 const {EXPECTED}=require('./_phase10-inventory.cjs');
 const runner=path.resolve(__dirname,'../tools/graph-lab/technique-position-audit.cjs');
@@ -19,7 +20,10 @@ assert.equal(report.instrumentationParity.bouts,12);
 assert.equal(report.graph.errors.length,0);
 assert.equal(report.graph.nodes,EXPECTED.nodes);
 assert.equal(report.graph.edges,EXPECTED.edges);
-assert.equal(report.registry.proposals,90);
+assert.equal(report.registry.proposals,114,'live audit must read all 24 newly reviewed move records');
+// The original published 500-bout JSON remains a frozen pre-tranche baseline.
+const frozen=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../docs/reports/v04-technique-position-500.json'),'utf8'));
+assert.equal(frozen.registry.proposals,90,'do not rewrite the historical evidence');
 assert.equal(report.timingFaults,0);
 assert.equal(report.illegalPreconditions,0);
 assert.equal(report.eventCapReached,0);
