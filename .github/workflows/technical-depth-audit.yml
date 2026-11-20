@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'tools/graph-lab/technical-depth-audit.cjs'
+      - 'tools/graph-lab/technical-grip-continuity.cjs'
       - 'tests/technical-depth-audit.test.cjs'
       - '.github/workflows/technical-depth-audit.yml'
   workflow_dispatch:
@@ -22,9 +23,13 @@ jobs:
         run: node tests/technical-depth-audit.test.cjs
       - name: Review 864 controlled actual Technical bouts
         run: node tools/graph-lab/technical-depth-audit.cjs 12 --json-file | tee "$GITHUB_STEP_SUMMARY"
+      - name: Diagnose actual grip interruption and lost opportunities across 288 matches
+        run: node tools/graph-lab/technical-grip-continuity.cjs 6 --json-file | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Retain the structured Technical observations
         uses: actions/upload-artifact@v4
         with:
           name: technical-grappling-audit-864
-          path: technical-depth-audit.json
+          path: |
+            technical-depth-audit.json
+            technical-grip-continuity.json
           if-no-files-found: error
