@@ -62,7 +62,7 @@ function markdown(result){
     ' | '+r.quality.toFixed(1)+' | '+r.earlyQ.toFixed(1)+' | '+
     r.lateQ.toFixed(1)+' | '+r.endStamina.toFixed(1)+' | '+r.peakCrowd.toFixed(1)+' | '+
     r.spotHits+'/'+r.spotAttempts+' | '+r.poorMatches+' |');
- out.push('','There is no automatic pass/fail threshold: compare the same wrestlers and bookings before adjusting rating incentives. The exact random stream differs once plans choose different actions. Early Q is the first 35% of recorded ten-second ticks; late Q is the final 35%; final stamina is the booked worker's remaining stamina at the bell.','');
+ out.push('','There is no automatic pass/fail threshold: compare the same wrestlers and bookings before adjusting rating incentives. The exact random stream differs once plans choose different actions. Early Q is the first 35% of recorded ten-second ticks; late Q is the final 35%; final stamina is the booked worker’s remaining stamina at the bell.','');
  return out.join('\n');
 }
 if(require.main===module){
