@@ -64,6 +64,9 @@ assert.equal(JSON.stringify(G.A),graph,'no authored moves/weights are changed');
 // A reversal is performed by the defender, not the wrestler attempting it.
 const defender=make('bao');defender.f={...D.findWrestler('theo'),fatigue:0};defender.t=Math.floor(defender.len*.6);
 defender.story.position='standing';defender.story.control='f';defender.graph.arc='chain';defender.graph.node='lockup';
+defender.stage='live';defender.wSt=defender.fSt=100;
+assert.equal(G.startGrapple(defender,'ch_single_leg'),true,
+ 'defence schooling is evaluated during the exact attempted takedown');
 const seen=[];root.OfficeTechniqueBackgrounds={multiplier(w,id){if(id==='ch_single_leg_rev')seen.push(w.id);return 1;}};
 G.pool(defender);root.OfficeTechniqueBackgrounds=enabled;
 assert.ok(seen.includes('bao'),'the proposed sprawl reads the defending worker training, not the attacker');
