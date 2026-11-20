@@ -17,7 +17,8 @@ const phase3=new Set([...G.CATALOG.members.submission.filter(id=>!['sm_sleeper',
  ...['ch_single_leg','ch_double_leg','ch_fireman','ch_snapmare',
  'ch_deep_arm_drag','ch_japanese_arm_drag','ch_drop_toehold',
  'ch_headlock_takedown','ch_leg_trip','ch_dragon_screw','ch_hip_toss_chain']]);
-const pilot=G.GRAPPLE_PILOT.filter(id=>!phase3.has(id));
+const pilot=G.GRAPPLE_PILOT.filter(id=>!phase3.has(id)&&
+ !G.PHASE4_NECK_THROWS.includes(id));
 assert.equal(pilot.length,39,'39 named grapple techniques in the bulk pilot');
 assert.equal(new Set(pilot).size,pilot.length,'no duplicate grapple IDs');
 assert.ok(pilot.every(id=>A[id]&&A[id+'_rev']),'every pilot has real authored move and counter');
