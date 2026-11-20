@@ -60,3 +60,18 @@ A new **read-only** comparison, `tools/graph-lab/coverage-classification.cjs`, c
 Four rarely selected moves (`sx_delayed`, `sx_dragon`, `pw_powerbomb`, `pw_running_powerbomb`) have **398 combined legal selection opportunities** in this seed set but only **2.871 expected selections** at the recorded weights. Zero actual selections is plausible sampling variation; their availability checks do not establish a defect. More useful follow-up tests: parent-specific attempt rates and conditional defence rates by move, independent-action coverage, and a direct matrix of all 39 exact counter/block paths; these should be judged against the original aggregate test before any proposal to revise the release gate.
 
 The 90% threshold remains unchanged and **the PR remains draft/unmerged**. No match-engine probabilities or physical eligibility were altered by this investigation.
+
+## Parent-linked defensive outcomes: direct main-vs-Phase-2 comparison
+
+The same-seed paired audit [run #44720882096](https://github.com/southernadd-cmyk/wrestler/actions/runs/44720882096) now explicitly matches defensive action events against the **39 candidate grapple parents** on both revisions. A verified link requires `grappleAttemptSeq` and `attemptedMove` to identify the exact intended parent. This is a deliberately narrow check of the new persistent grapple mechanism; an untagged historical reversal is not by itself proof that its narration was inappropriate.
+
+| Measure (1,000 bouts each) | Main | Candidate |
+| --- | ---: | ---: |
+| Counter events for target grapples | 325 | 40 |
+| Block events for target grapples | 261 | 15 |
+| Events carrying exact parent-attempt linkage | **20** | **55** |
+| Events without that linkage | **566** | **0** |
+
+This directly supports the explanation for reduced defensive-node coverage: the old graph could surface many generated counter/block nodes outside a named two-beat grapple commitment; the expanded pilot now allows these events only as outcomes of a specific attack. The old matches may still have contained narrative context, so **do not claim all 566 actions were narratively impossible** without reviewing transcripts. They did not, however, have independently verifiable attempt attribution.
+
+**Release implication:** the global 90% all-nodes gate currently rewards events the upgraded physical engine intentionally rejects. Do not silently lower it; replace or supplement it, with an explicit reviewed decision, by demanding independent-action coverage, full directed parent-to-counter/block viability across 39 grapples and their defenses, actual attempt frequency, correct attribution, and unchanged match quality. Keep PR #126 draft until those gates are implemented and all new checks are green.
