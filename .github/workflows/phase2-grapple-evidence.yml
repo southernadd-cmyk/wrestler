@@ -17,6 +17,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify named grapple paths and audited physical handoffs
+        run: |
+          node tests/grapple-attempts.test.cjs
+          node tests/technique-audit24.test.cjs
+          node tests/creative-loop.test.cjs
       - name: Audit 1000 actual matches
         run: node tools/graph-lab/grapple-audit.cjs 1000 > phase2-grapple-audit.json
       - name: Show grappling outcomes and unseen moves
