@@ -270,6 +270,10 @@ assert.equal(protectedLaunch.story.position,'top',
  'a narrative phase change cannot silently erase a legal next-tick aerial setup');
 assert.equal(launchGraph.node,'top_climb',
  'the athlete keeps the real named setup, not an invented landing');
+assert.equal(G.readyNamedAerial(protectedLaunch),true,
+ 'a real late top-rope setup deserves an immediate normal action selection');
+assert.equal(launchGraph.pendingAerial,null,
+ 'the action opportunity must not secretly commit a move');
 const readyParents=G.pool(protectedLaunch).filter(([id])=>
  G.A[id]?.family==='aerial'&&G.A[id]?.risk&&
  !G.A[id].reverse&&!G.A[id].counterOf&&!G.A[id].blockOf);
@@ -291,8 +295,16 @@ assert.equal(launchGraph.pendingAerial,null,'an arc hold must not start an aeria
 assert.equal(G.startAerial(protectedLaunch,readyParents[0][0]),true,
  'only a separate committed named attempt starts the actual attack');
 assert.equal(launchGraph.pendingAerial.id,readyParents[0][0]);
+assert.equal(G.readyNamedAerial(protectedLaunch),false,
+ 'a committed aerial cannot be selected or launched twice');
 assert.equal(launchGraph.aerialAttempts.at(-1).outcome,'pending',
  'a prepared attack is not credited as landed before its counter/botch resolution');
+const noviceLaunch=fixture('spots','novice');
+noviceLaunch.t=noviceLaunch.len-60;noviceLaunch.wSt=44;
+G.apply(noviceLaunch,'top_climb');
+noviceLaunch.t+=10;
+assert.equal(G.readyNamedAerial(noviceLaunch),false,
+ 'novices do not gain an elite-only early aerial-selection window');
 // A legal climb is not automatically an affordable named risky *landing*.
 // The lookahead is read-only and must not spend real stamina or move either
 // wrestler merely to test the future position.
