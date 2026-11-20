@@ -2386,6 +2386,13 @@ const Graph=(function makeGraph(){
    // The existing physical location/weight/stamina/clock gates remain
    // authoritative: an actor already on the floor cannot magically dive.
    const physical=g.physical,other=p.control==='w'?'f':'w';
+   // Once apron_stand has genuinely established the apron position,
+   // the existing apron offence (including the body slam) must compete
+   // with a generic roll back into the ring. No apron move is offered
+   // from a floor-only position, and weight/risk/phase gates stay intact.
+   if(physical?.area==='apron'&&physical.locations?.[p.control]==='apron'){
+    for(const id of APRON_OFFENCE)selected.push([id,4.8]);
+   }
    if((M.planId==='spots'||liveSide.style==='Spectacle')&&
       physical?.locations?.[other]==='floor'){
     const launch=physical?.locations?.[p.control];
