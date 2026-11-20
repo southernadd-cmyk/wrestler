@@ -2450,6 +2450,13 @@ const Graph=(function makeGraph(){
   // This restores genuine moves, not the free-floating defensive nodes
   // removed by the exact-parent integrity fix.
   if(sameController&&g.node){
+   // The original dive family had legal physical locations but extremely
+   // few organically selected parents in live bouts. After an actual
+   // ringside setup, offer existing named dives at a bounded weight; the
+   // standard physical guards exclude floor-bound launches and mismatched
+   // apron moves. No defensive node is introduced or made autonomous.
+   if(p.position==='outside'&&['outside_toss','floor_regroup','apron_stand'].includes(g.node))
+    for(const id of DIVE_PILOT)selected.push([id,2.1]);
    for(const family of ['corner','outside','rope']){
     const source=CAT.F[family];
     if(!source?.from?.includes(g.node))continue;
@@ -3236,7 +3243,11 @@ function tick(M){
  // A skilled, safe high-flyer can work a fast layout efficiently; an
  // untrained wrestler still pays the full Spot-fest stamina cost.
  const spotDrain=(worker)=>M.planId==='spots'?
-  clamp(plan.drain-Math.max(0,worker.ring+worker.safe-120)*.0032,1.11,plan.drain):plan.drain;
+  // Competent and safe workers conserve movement across a demanding
+  // aerial layout. Untrained wrestlers still pay the full 1.35 rate.
+  // No free stars or reduced botch probability: this only changes
+  // sustained exertion, which has measurable late-match quality effects.
+  clamp(plan.drain-Math.max(0,worker.ring+worker.safe-120)*.0047,1.07,plan.drain):plan.drain;
  const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*(1+w.fatigue/250)*(M.workingHurt?1.5:1);
  M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));M.fSt=clamp(M.fSt-.5*spotDrain(f)+(mode==='slow'?1.2:0));
  // quality of this ten seconds
