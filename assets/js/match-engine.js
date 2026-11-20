@@ -2156,8 +2156,11 @@ const Graph=(function makeGraph(){
    // Do not turn every wrestler into an endurance-trained aerial worker.
    // An experienced flyer can recover more in a genuine, visible pause;
    // novices retain -5.5. No difficulty, botch or crowd-rating change.
+   const training=recoveryTraining(actor);
+   // The stronger visible rest belongs to elite fliers only; everyone
+   // below that tier retains the already validated .56 recovery pacing.
    const extra=actor.style==='Spectacle'&&M.len>=900?
-    .95*recoveryTraining(actor):0;
+    (training>=.95?.95:.56)*training:0;
    effective=exertion*(1+extra);
   }
   // High-flyers need a *real* in-ring break before the last three minutes
@@ -2168,7 +2171,8 @@ const Graph=(function makeGraph(){
      M.len-M.t>180&&M.len-M.t<=540){
    const actor=activeSide==='w'?M.w:M.f;
    const trained=recoveryTraining(actor);
-   if(actor.style==='Spectacle'&&trained>=.70)
+   if(actor.style==='Spectacle'&&trained>=.70&&
+      (M.len-M.t<=480||trained>=.95))
     effective=exertion-5.8*trained;
   }
   if(exertion>0&&fighter(activeSide==='w'?M.w:M.f).trait==='Workhorse')effective*=.8;
@@ -2181,6 +2185,7 @@ const Graph=(function makeGraph(){
    const actor=activeSide==='w'?M.w:M.f,trained=recoveryTraining(actor);
    const previous=g.pacedRest?.[activeSide];
    if(actor.style==='Spectacle'&&trained>=.70&&
+      (M.len-M.t<=480||trained>=.95)&&
       (!previous||M.t-previous.at>=80)){
     g.pacedRest??={};
     pacedUntil=M.t+180;
@@ -2607,7 +2612,8 @@ const Graph=(function makeGraph(){
     // a last-minute climb boost was mechanically useless. A genuinely
     // trained flyer may choose several spaced, narrated breathers here.
     // Each still consumes a real action and respects the 40-second cooldown.
-    const runway=trainedRecovery>=.70&&timeLeft>180&&timeLeft<=540&&
+    const runway=trainedRecovery>=.70&&timeLeft>180&&
+     timeLeft<=(trainedRecovery>=.95?540:480)&&
      stamina<60?3.2:1;
     selected.push(['catch_breath',urgency*longBonus*runway]);
    }else if(!longSpot&&M.planId==='spots'&&stamina<60)
@@ -2619,7 +2625,8 @@ const Graph=(function makeGraph(){
   // No free stamina, detached mat holds or reset to a standing position.
   const lastRest=g.events.slice(-20).some(e=>e.preControl===p.control&&
    (e.id==='catch_breath'||A[e.id]?.family==='rest')&&M.t-e.t<50);
-  if(longSpot&&trainedRecovery>=.70&&timeLeft>180&&timeLeft<=540&&
+  if(longSpot&&trainedRecovery>=.70&&timeLeft>180&&
+     timeLeft<=(trainedRecovery>=.95?540:480)&&
      stamina<60&&p.position==='mat'&&p.down!==(p.control)&&!lastRest)
    for(const id of CAT.members.rest||[])
     if(A[id]?.requires==='mat'&&!A[id].reverse&&!A[id].counterOf&&!A[id].blockOf)
@@ -2762,7 +2769,8 @@ const Graph=(function makeGraph(){
   if(M.t/M.len>.1)for(const id of prof.signature||[])if(A[id])selected.push([id,.45]);
   const weights=new Map();
   for(const [id,w] of selected) if((id!=='top_follow'||affordableSuperplex(M))&&
-   !(needsLatePayoff&&(id==='top_climb'||id==='springboard_rise')&&
+   !(needsLatePayoff&&trainedRecovery>=.95&&
+      (id==='top_climb'||id==='springboard_rise')&&
      !affordableNamedFlight(M,id))&&isValid(M,id)) {
    let n=w;
    if(pattern.actions.includes(id))n*=1.6;
@@ -2955,7 +2963,8 @@ const Graph=(function makeGraph(){
   // still has a *real*, narrated standing recovery choice. Reserve its
   // selection weight only while enough time remains to breathe, climb,
   // commit and resolve the separate attempt. No free stamina or hits.
-  if(needsLatePayoff&&p.control==='w'&&p.position==='standing'&&
+  if(needsLatePayoff&&trainedRecovery>=.95&&
+     p.control==='w'&&p.position==='standing'&&
      timeLeft>=65&&timeLeft<=180&&stamina<42&&
      !affordableNamedFlight(M,'top_climb')&&
      !affordableNamedFlight(M,'springboard_rise')&&
@@ -2972,7 +2981,8 @@ const Graph=(function makeGraph(){
   // among hundreds of legal moves. Reserve a bounded SHARE of the actual
   // choice probability for a tired, trained flyer BEFORE the final run.
   // The seeded selection still decides: there is no forced move or refill.
-  if(longSpot&&trainedRecovery>=.70&&timeLeft>180&&timeLeft<=540&&
+  if(longSpot&&trainedRecovery>=.70&&timeLeft>180&&
+     timeLeft<=(trainedRecovery>=.95?540:480)&&
      p.position==='standing'&&stamina<60&&
      !g.events.slice(-20).some(e=>e.id==='catch_breath'&&
       e.preControl===p.control&&M.t-e.t<40)){
@@ -3611,7 +3621,8 @@ function tick(M){
   M.planId==='spots'&&mode!=='pickup'&&mode!=='slow'&&
   actor.style==='Spectacle'&&M.len>=900&&pacing?.[side]&&
   M.t<=pacing[side].until
-   ?1-.82*clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1):1;
+   ?1-(clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1)>=.95?.82:.64)*
+      clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1):1;
  const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*
   (1+w.fatigue/250)*(M.workingHurt?1.5:1)*paceFactor(w,'w');
  M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));
