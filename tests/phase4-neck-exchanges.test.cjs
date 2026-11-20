@@ -22,7 +22,8 @@ const make=(id,seed=91371)=>{
  const m=M.create(lab.makeOptions(D,{wid:agile?'lyra':'rex',rid:'dee',
   slot:'main',plan:'technical',finish:'win_clean',seed}));
  m.stage='live';m.t=Math.floor(m.len*.87);
- m.story.control='w';m.story.position=A[id].requires;m.story.down=null;
+ m.story.control='w';m.story.position=A[id].requires;
+ m.story.down=A[id].requires==='mat'?'f':null;
  m.wSt=m.fSt=100;m.graph.arc='escalation';m.graph.node=null;
  const grip=G.PHYSICAL_GRIP_MOVES[id];
  m.graph.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',
