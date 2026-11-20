@@ -2999,12 +2999,12 @@ const Graph=(function makeGraph(){
     candidate[1]=Math.max(candidate[1],other*share);
    };
    if(isRecent&&p.position==='mat'&&p.down==='w'&&
-      last.position==='mat')counter('mat_scramble',.58);
+      last.position==='mat')counter('mat_scramble',.84);
    if(isRecent&&p.position==='standing'&&
       (['strike','running','rope','corner'].includes(attack?.family)||
        ['strike_trade','probe_strike','cheap_shot',
         'clothesline','finish_tease'].includes(last.id)))
-    counter('counter_strike',.50);
+    counter('counter_strike',.68);
   }
   // Once a REAL top-rope setup has been completed, an elite flyer should
   // more often follow through with a legal named risk instead of changing
