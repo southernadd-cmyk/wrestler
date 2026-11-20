@@ -12,9 +12,11 @@ const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,A=G.A;
 const ids=G.STRIKE_PILOT;
 assert.equal(G.CATALOG.members.strike.length,32);
 assert.equal(G.CATALOG.members.running.length,12);
-assert.equal(ids.length,44);
+assert.equal(ids.length,43,'mutual exchange is intentionally not a committed attack');
+assert.equal(ids.includes('st_fighting_spirit'),false);
 assert.equal(new Set(ids).size,44);
 assert.ok(ids.every(id=>A[id]&&['strike','running'].includes(A[id].family)));
+assert.ok(ids.every(id=>A[id+'_rev']),'all committed parents have a named defence');
 const setup=(id='st_forearm',seed=89110)=>{
  const m=M.create(lab.makeOptions(D,{wid:'lyra',rid:'dee',slot:'main',
   plan:'technical',finish:'win_clean',seed}));
