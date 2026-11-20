@@ -1,8 +1,8 @@
 # Phase 7 — Flyer-depth investigation
 
-**Status:** Read-only diagnosis against merged Phase 6B on \`main\`. No gameplay changes in this phase.
+**Status:** Read-only diagnosis against merged Phase 6B on `main`. No gameplay changes in this phase.
 
-**Reproduce:** \`node tests/flyer-depth-audit.test.cjs\`; \`node tools/graph-lab/flyer-depth-audit.cjs 6 --json-file\`. GitHub Actions workflow: \`Flyer depth and stamina audit\`. The workflow retains a full JSON artifact and writes the tables into its job summary.
+**Reproduce:** `node tests/flyer-depth-audit.test.cjs`; `node tools/graph-lab/flyer-depth-audit.cjs 6 --json-file`. GitHub Actions workflow: `Flyer depth and stamina audit`. The workflow retains a full JSON artifact and writes the tables into its job summary.
 
 ## Scope and controls
 
@@ -44,7 +44,7 @@ The deliberately optimised 20-minute Pulse headliner reaches **4.90★ average**
 | Competent | 3.72★ / 37.3 | 3.59★ / 27.8 | 3.27★ / **15.3** | **0.17** |
 | Elite | 4.17★ / 39.5 | 4.13★ / 31.1 | 4.03★ / **20.0** | **0.38** |
 
-The late 35% quality reading falls in 18-minute Spot-fests to **42.0** (novice), **49.7** (competent) and **56.3** (elite). Actual \`catch_breath\` moves occur more frequently in those long bouts (1.67, 2.08, 2.00 per match respectively), but insufficiently restore the ability to sustain physically legal late aerial sequences. This is observable fatigue and action scarcity, not proof the rating formula is missing a flat multiplier.
+The late 35% quality reading falls in 18-minute Spot-fests to **42.0** (novice), **49.7** (competent) and **56.3** (elite). Actual `catch_breath` moves occur more frequently in those long bouts (1.67, 2.08, 2.00 per match respectively), but insufficiently restore the ability to sustain physically legal late aerial sequences. This is observable fatigue and action scarcity, not proof the rating formula is missing a flat multiplier.
 
 ### 3. The live roster is not equivalent to the hypothetical elite tier
 
@@ -65,7 +65,7 @@ The high-heat premium scenario shows this need not make the **overall star ratin
 
 ## Recommended next implementation — separate balance PR
 
-1. **Improve sustainable pacing rather than grant stamina invisibly.** Trial skill-aware timing for legal narrated recovery beats and evaluate actual \`catch_breath\` counts, stamina at the start of the finishing stretch, crowd cooling, and the existing authored stamina costs. Do not increase recovery for inexperienced performers to the same extent as seasoned flyers.
+1. **Improve sustainable pacing rather than grant stamina invisibly.** Trial skill-aware timing for legal narrated recovery beats and evaluate actual `catch_breath` counts, stamina at the start of the finishing stretch, crowd cooling, and the existing authored stamina costs. Do not increase recovery for inexperienced performers to the same extent as seasoned flyers.
 2. **Protect the earned late spectacle.** Increase the chance of *legally prepared, distinct* aerial sequences in the final 180 seconds **only when the performer actually has stamina and valid physical setups**. Never create free landings, phantom counters, instant teleporting, or direct star awards. Examine whether existing high-cost setup sequences consume the remaining stamina too quickly.
 3. **Keep match-plan identities intact.** All five plans remain in every matched cohort; Technical should remain credible for technicians, Brawl for brawlers, Story for storytellers and Safe as a lower-risk option. Do not normalise all style-plan means to equality.
 4. **Keep full safety and diversity gates.** Retain the 700 genuine-action six-career minimum, timing and exact-parent continuity, botch/injury pathways, 4–5★ incidence, and full regression/rivalry CI. No threshold is to be relaxed to secure a green result.
