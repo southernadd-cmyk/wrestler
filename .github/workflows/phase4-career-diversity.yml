@@ -4,6 +4,7 @@ on:
     paths:
       - 'assets/js/match-engine.js'
       - 'tools/graph-lab/phase4-career-diversity.cjs'
+      - 'tests/season-soak.test.cjs'
       - '.github/workflows/phase4-career-diversity.yml'
   workflow_dispatch:
 permissions:
@@ -19,6 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Enforce authentic six-career 700-action variety gate
+        run: node tests/season-soak.test.cjs
       - name: Create isolated baseline from main without altering PR
         run: |
           mkdir -p /tmp/the-office-baseline
