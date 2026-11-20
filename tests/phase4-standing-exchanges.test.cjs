@@ -101,6 +101,16 @@ assert.ok((apronPool.get('dv_cannonball')||0)>0,
  'actual apron setup must permit cannonball follow-up');
 assert.equal(apronPool.has('dv_moonsault'),false,
  'unavailable ordinary dive must not be offered from apron');
+assert.equal(G.isValid(outside,'os_apron_slam'),true,
+ 'the physically prepared apron slam remains legal for this pairing');
+assert.ok((apronPool.get('os_apron_slam')||0)>0,
+ 'earned apron setup offers a body slam instead of always retreating');
+const floorOnly=setup('st_forearm',95148);
+G.apply(floorOnly,'outside_toss');
+G.apply(floorOnly,'floor_brawl');
+assert.equal(floorOnly.graph.physical.area,'floor');
+assert.equal(G.isValid(floorOnly,'os_apron_slam'),false,
+ 'body slam on apron must not be performed from the floor');
 
 const saved=setup('st_forearm',99128);
 assert.equal(G.startStrike(saved,'st_forearm'),true);
