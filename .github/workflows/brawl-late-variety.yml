@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check legal competent late Brawl impact and setups
+        run: node tests/brawl-late-impact.test.cjs
       - name: Trace novice, competent and elite late moves
         shell: bash
         run: |

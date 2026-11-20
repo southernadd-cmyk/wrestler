@@ -24,9 +24,10 @@ function run(n=24){
  const root=review.load(),D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,A=G.A;
  const cohorts=[];
  for(const tier of TIERS){
-  const training=(tier.ring+tier.safe+tier.psych-180)/90;
+  const training=Math.max(0,Math.min(1,(tier.ring+tier.safe+tier.psych-180)/90));
   const acc={tier:tier.id,training:round(training,3),n:0,stars:0,bell:0,
    threeMinute:0,threeMinuteN:0,lateUnique:0,lateActions:0,withTwo:0,none:0,
+   impactDistinct:0,impactTwo:0,impactCount:0,
    samples:0,positions:{},controls:{},staminaBands:{},
    workerSamples:0,eligibleSamples:0,gates:{},legal:0,offered:0,unused:0,
    boostCandidates:0,specialWeight:0,boostWeight:0,activeMoves:{},
@@ -70,9 +71,12 @@ function run(n=24){
     acc.specialWeight+=specialty.reduce((v,[,w])=>v+w,0)/Math.max(1,total);
     acc.boostWeight+=offered.reduce((v,[,w])=>v+w,0)/Math.max(1,total);
     for(const [id,w] of offered)add(acc.familyShare,A[id].family,w/Math.max(1,total));
-    add(acc.gates,training<.5&&st<26?'fails threshold and stamina':
-      training<.5?'conditioning below 0.50':
-      st<26?'stamina below 26':'passes both');
+    // This is a selection diagnostic, not an eligibility promise: the
+    // old 26-stamina blanket gate was removed for cost-aware affordability.
+    add(acc.gates,training<.30?'under 0.30 conditioning (no late boost)':
+      st<15?'stamina <15 (very few affordable impacts)':
+      st<26?'stamina 15-25 (cheap impacts may qualify)':
+      'stamina >=26 (full legal-cost checks still apply)');
    }
    if(!m.done||!m.final)throw Error('Incomplete match '+tier.id+'/'+seed);
    acc.stars+=m.final.stars;acc.bell+=m.wSt;
@@ -80,6 +84,14 @@ function run(n=24){
     e.t>=m.len-180&&e.preControl==='w'&&named(A,e.id)&&landed(e));
    const distinct=new Set(late.map(x=>x.id)).size;
    acc.lateUnique+=distinct;acc.lateActions+=late.length;acc.none+=!distinct;acc.withTwo+=distinct>=2;
+   // Do not count a held bearhug or standing rack as a landed impact.
+   const impact=late.filter(e=>A[e.id].family==='strike'||
+    A[e.id].family==='running'||
+    (A[e.id].family==='power'&&A[e.id].zone==='mat')||
+    (['corner','outside','ringside','rope'].includes(A[e.id].family)&&
+     A[e.id].zone==='mat'));
+   const impacted=new Set(impact.map(e=>e.id)).size;
+   acc.impactDistinct+=impacted;acc.impactTwo+=impacted>=2;acc.impactCount+=impact.length;
    for(const e of late)add(acc.activeMoves,e.id);
    for(const type of ['strike','grapple','contact','aerial']){
     const attempts=(m.graph?.[type+'Attempts']||[]).filter(e=>
@@ -100,6 +112,8 @@ function run(n=24){
    stars:avg(acc.stars,acc.n),bell:avg(acc.bell,acc.n),
    startOfFinalThree:avg(acc.threeMinute,acc.threeMinuteN),
    lateDistinct:avg(acc.lateUnique,acc.n),lateActions:avg(acc.lateActions,acc.n),
+   impactDistinct:avg(acc.impactDistinct,acc.n),impactCount:avg(acc.impactCount,acc.n),
+   impactTwoPct:pct(acc.impactTwo,acc.n),
    twoPct:pct(acc.withTwo,acc.n),zeroPct:pct(acc.none,acc.n),
    positionsPct:Object.fromEntries(Object.entries(acc.positions).map(([k,v])=>[k,pct(v,acc.samples)])),
    controlPct:Object.fromEntries(Object.entries(acc.controls).map(([k,v])=>[k,pct(v,acc.samples)])),
@@ -123,10 +137,11 @@ function run(n=24){
 function markdown(r){
  const out=['## Brawl late-move variety — read-only diagnostic','',
   String(r.matches)+' complete real OfficeMatch simulations. '+r.notes,'',
-  '| Tier | Conditioning | Bell stamina | 3-min start stamina | Distinct successful late | ≥2 late | None late | Worker controls | Legal named | Offered named | Fresh boosted-family | Named pool share |',
-  '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|'];
+  '| Tier | Conditioning | Bell stamina | 3-min start stamina | Distinct successful late | Distinct landed impacts | ≥2 impacts | ≥2 late | None late | Worker controls | Legal named | Offered named | Fresh boosted-family | Named pool share |',
+  '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|'];
  for(const s of r.cohorts)out.push('| '+s.tier+' | '+s.conditioning+' | '+s.bell+
-  ' | '+s.startOfFinalThree+' | '+s.lateDistinct+' | '+s.twoPct+'% | '+
+  ' | '+s.startOfFinalThree+' | '+s.lateDistinct+' | '+s.impactDistinct+
+  ' | '+s.impactTwoPct+'% | '+s.twoPct+'% | '+
   s.zeroPct+'% | '+(s.controlPct.w||0)+'% | '+s.legalNamedPerTick+
   ' | '+s.offeredNamedPerTick+' | '+s.unusedBoostFamilyPerTick+' | '+s.namedWeightPct+'% |');
  for(const s of r.cohorts){
