@@ -22,7 +22,7 @@ assert.equal(G.TECHNIQUE_PILOT.length,11,'Phase 3 baseline remains a separate se
 assert.equal(G.TECHNIQUE_EXPANSION.length,14,'Phase 5 baseline remains a separate set');
 assert.equal(G.TECHNIQUE_TRANCHE2.length,16,'the exact vetted Phase 5b link set');
 assert.equal(review.valid,true,review.errors.join('\n'));
-assert.equal(review.proposals,153);
+assert.equal(review.proposals,183);
 assert.equal(review.authored,EXPECTED.moves);
 assert.equal(schools.valid,true,schools.errors.join('\n'));
 assert.equal(schools.assigned,80);
