@@ -93,6 +93,8 @@
       sampledSequences: {}, longestChain: 0,
       grappling: {attempts:0,landed:0,counter:0,block:0,aborted:0,interrupted:0,
         invalid:0,byMove:{},examples:[]},
+      environment: {attempts:0,landed:0,counter:0,block:0,aborted:0,
+        interrupted:0,invalid:0,byFamily:{},seen:{}},
       phase9: {newPairHits:{},newOccurrences:0,sameControllerOccurrences:0,
         interruptedPairs:0,matchesWithNew:0,matchesWithTriple:0,
         newTriples:0,styleHits:{},examples:[]}
@@ -131,6 +133,30 @@
       if(grapple.examples.length<24)grapple.examples.push({seed:match.o?.seed,
         move:attempt.id,at:attempt.startedT,outcome,actionId:attempt.actionId||null,
         performer:attempt.side});
+    }
+    // The existing contact ledger covers the actual Phase 6 environmental
+    // decisions. Generated counters are not counted as independent attempts.
+    const env=snapshot.environment,accepted=['landed','counter','block','aborted','interrupted'];
+    const contactEvents=new Map(events.filter(e=>e.contactAttemptSeq!==undefined)
+      .map(e=>[e.contactAttemptSeq,e]));
+    for(const attempt of match.graph?.contactAttempts||[]){
+      if(!(graph.ENVIRONMENT_PILOT||[]).includes(attempt.id))continue;
+      env.attempts++;
+      const family=graph.A[attempt.id]?.family||'(unknown)';
+      const row=env.byFamily[family]??={attempts:0,landed:0,counter:0,block:0,aborted:0,interrupted:0};
+      row.attempts++;
+      if(accepted.includes(attempt.outcome)){env[attempt.outcome]++;row[attempt.outcome]++;}
+      else env.invalid++;
+      env.seen[attempt.id]=(env.seen[attempt.id]||0)+1;
+      const event=contactEvents.get(attempt.seq);
+      const expected=attempt.outcome==='counter'?attempt.id+'_rev':
+        attempt.outcome==='block'?attempt.id+'_blk':attempt.id;
+      const resolved=['landed','counter','block'].includes(attempt.outcome);
+      if(resolved
+        ? !(event?.id===expected&&event.attemptedMove===attempt.id&&
+            event.contactResolution===attempt.outcome&&
+            event.contactKind===family&&attempt.actionId===expected)
+        : !!event) env.invalid++;
     }
     let previous = null, chain = 0;
     let ids = [];
@@ -235,6 +261,12 @@
       longestLinkedSequence: snapshot.longestChain + 1,
       unknownEvents: top(snapshot.unknownEvents, 30),
       timingErrors: snapshot.timingErrors,
+      environment: {
+        ...snapshot.environment,
+        eligibleMoves:(graph.ENVIRONMENT_PILOT||[]).length,
+        coveredMoves:Object.keys(snapshot.environment.seen).length,
+        unobservedMoves:(graph.ENVIRONMENT_PILOT||[]).filter(id=>!snapshot.environment.seen[id])
+      },
       grappling: {
         ...snapshot.grappling,
         coveredMoves:(graph.GRAPPLE_PILOT||[]).filter(id=>snapshot.grappling.byMove[id]).length,
