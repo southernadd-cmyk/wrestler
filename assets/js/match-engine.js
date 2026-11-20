@@ -1605,7 +1605,8 @@ const Graph=(function makeGraph(){
    (n.family==='aerial'||n.family==='springboard');
  }
  // Only these source-reviewed mechanics enter the Phase 7 two-beat pilot.
- const GRAPPLE_PILOT=Object.freeze(['sx_vertical','sx_german','sm_sleeper','sm_ankle_lock']);
+ const GRAPPLE_PILOT=Object.freeze(['sx_vertical','sx_german','sm_sleeper','sm_ankle_lock',
+  'sx_deadlift_bridge','nk_snap_ddt','pw_powerbomb']);
 
  // v0.4 physical-continuity pilot: a *small optional, serialisable* descriptor.
  // A null descriptor is an old/injected match state: preserve legacy eligibility
@@ -1614,7 +1615,8 @@ const Graph=(function makeGraph(){
  const SUPERPLEX_PILOT=Object.freeze([...CAT.members.superplex]);
  const PHYSICAL_GRIP_MOVES=Object.freeze({
   sx_vertical:'front-facelock',sx_deadlift_bridge:'front-facelock',
-  nk_ddt:'front-facelock',sx_german:'rear-waist',
+  nk_ddt:'front-facelock',nk_snap_ddt:'front-facelock',
+  pw_powerbomb:'front-facelock',sx_german:'rear-waist',
   sm_ankle_lock:'ground-leg',rs_leg_lace:'ground-leg'
  });
  const APRON_OFFENCE=new Set(['os_apron_knee','os_apron_ddt','os_apron_slam']);
