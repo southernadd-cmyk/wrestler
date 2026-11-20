@@ -413,7 +413,7 @@ To play locally, download the **whole repository** and open `index.html` in a mo
 
 *The match doesn't just happen. It develops.*
 
-There are still **340 authored moves** in the live match catalogue, but they have more meaningful places in the fight. A wrestler can work into the grip, attempt a named throw, find a counter, follow through on the mat, chase a pin and deal with the nearfall. The recent graph phases deepened standing exchanges, power offence, aerial attempts, ground work and physically constrained continuations. Training school helps favour compatible **eligible** techniques; it isn't the same thing as performance style or weekly training.
+The live graph now contains **980 action nodes and 6,413 directed links**, including **340 authored moves**. Those moves have more meaningful places in the fight. A wrestler can work into the grip, attempt a named throw, find a counter, follow through on the mat, chase a pin and deal with the nearfall. The recent graph phases deepened standing exchanges, power offence, aerial attempts, ground work and physically constrained continuations. Training school helps favour compatible **eligible** techniques; it isn't the same thing as performance style or weekly training.
 
 The editorial review caught up with those changes. **325 of the 340 catalogue entries now have proposed technique metadata**. The remaining **15 aren't missing moves**: they're referee disputes, crowd work, recovery counts or other performance beats which stay in the match engine. Metadata is a description of mechanics, **not** a promise that every documented move has new executable physics or fresh graph links.
 
@@ -462,10 +462,10 @@ Dennis has also rearranged the agents’ room. On wide desktop screens, his conv
 
 *Engine desk*
 
-| What’s in the match layout | v0.4 graph baseline / updated v0.5 technique metadata |
+| What’s in the match layout | Current count (v0.5) |
 | --- | ---: |
-| In-ring actions and events (nodes) | 979 |
-| Links between actions and events (transitions) | 6,401 |
+| In-ring actions and events (nodes) | 980 |
+| Links between actions and events (transitions) | 6,413 |
 | Match story arcs | 25 |
 | Routes across the six booked finishes | 26 |
 | Negotiable match stipulations | 4 |
