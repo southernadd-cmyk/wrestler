@@ -2544,21 +2544,26 @@ const Graph=(function makeGraph(){
   const closingFlight=longSpot&&timeLeft>=30&&timeLeft<=210&&
    ['resurgence','exchange','nearfall','escalation','dive_sequence',
     'finish_setup','false_finish','fighting_spirit'].includes(g.arc);
-  // Match-closing priority is earned by an actual risk landing. The wrestler
-  // may seek their first clean late aerial payoff, but after succeeding,
-  // normal repertoire variety returns; failed attempts do not count.
-  const lateFlyerRun=closingFlight&&trainedRecovery>=.70;
-  const landedLateRisk=e=>{
+  // One spectacular landing should NOT end an elite flyer's late-match
+  // repertoire. Recognise up to TWO DIFFERENT named risky landings, while
+  // lowering the drive after the first. Failed, countered or opponent-owned
+  // attempts cannot satisfy either step.
+  const landedLateRisk=(e,side)=>{
    const action=A[e.id];
-   return !!action&&e.preControl===p.control&&e.t>=M.len-180&&
+   return !!action&&e.preControl===side&&e.t>=M.len-180&&
     !action.reverse&&!action.counterOf&&!action.blockOf&&
     action.risk&&['aerial','springboard','dive','lucha','superplex'].includes(action.family)&&
     (!e.aerialResolution||e.aerialResolution==='landed')&&
     (!e.grappleResolution||e.grappleResolution==='landed')&&
+    (!e.strikeResolution||e.strikeResolution==='landed')&&
     (!e.contactResolution||e.contactResolution==='landed');
   };
-  const latePayoff=lateFlyerRun&&g.events.some(landedLateRisk);
-  const needsLatePayoff=lateFlyerRun&&!latePayoff;
+  const riskCount=side=>new Set(g.events.filter(e=>landedLateRisk(e,side))
+   .map(e=>e.id)).size;
+  const lateFlyerRun=closingFlight&&trainedRecovery>=.70;
+  const lateCount=riskCount(p.control);
+  const needsLatePayoff=lateFlyerRun&&lateCount<2;
+  const lateUrgency=lateCount===0?1:lateCount===1?.60:0;
   if(p.position==='standing'&&M.t/M.len>.12){
    for(const id of prof.preferred)if(A[id])selected.push([id,1.4]);
    // Actual narrated recovery before a long match's final aerial run.
@@ -2603,7 +2608,7 @@ const Graph=(function makeGraph(){
    // The wrestler still climbs or springs into an actual committed landing,
    // with the existing physical, stamina, timing and counter checks intact.
    const focus=closingFlight?(1.4+trainedRecovery*.55):1;
-   const missingPayoff=needsLatePayoff?2.8:1;
+   const missingPayoff=needsLatePayoff?1+1.8*lateUrgency:1;
    selected.push(['top_climb',4.2*focus*missingPayoff],
     ['springboard_rise',3.5*focus*missingPayoff]);
   }
@@ -2867,14 +2872,14 @@ const Graph=(function makeGraph(){
   // A trained flyer has to earn the closing comeback through a REAL
   // mat reversal and standing reset. No change to the physical descriptor
   // or controller happens until a legal action is selected and performed.
+  const eliteLateCount=riskCount('w');
   const eliteWorkerFlight=M.planId==='spots'&&M.len>=900&&
    M.w.style==='Spectacle'&&recoveryTraining(M.w)>=.70&&
-   M.len-M.t>=40&&M.len-M.t<=180&&
-   !g.events.some(e=>e.preControl==='w'&&e.t>=M.len-180&&
-    A[e.id]?.risk&&['aerial','springboard','dive'].includes(A[e.id].family)&&
-    !A[e.id].counterOf&&!A[e.id].blockOf&&!A[e.id].reverse&&
-    (!e.aerialResolution||e.aerialResolution==='landed'));
+   M.len-M.t>=40&&M.len-M.t<=180&&eliteLateCount<2;
   if(eliteWorkerFlight&&M.wSt>=27){
+   // First clean landing is the main objective; a second *distinct* one
+   // remains plausible but gets less producer emphasis, never a guarantee.
+   const strength=eliteLateCount===0?1:.64;
    const promote=(id,share)=>{
     const choice=pool.find(([move])=>move===id);
     if(!choice)return;
@@ -2888,9 +2893,19 @@ const Graph=(function makeGraph(){
    if(p.control==='f'&&p.position==='mat'&&p.down==='w'&&
       g.events.at(-1)?.control==='f'&&
       g.events.at(-1)?.position==='mat')
-    promote('mat_scramble',.52);
+    promote('mat_scramble',.95*strength);
+   // A recent ACTUAL standing strike offers a real counter-strike pathway,
+   // even when the grounded-counter route is unavailable. No invented attack
+   // or free controller switch: the authored defensive action must be chosen.
+   const last=g.events.at(-1),lastAction=A[last?.id];
+   if(p.control==='f'&&p.position==='standing'&&
+      last?.preControl==='f'&&last.control==='f'&&M.t-last.t<=20&&
+      (['strike','running','rope','corner','neck','power'].includes(lastAction?.family)||
+       ['strike_trade','probe_strike','cheap_shot','clothesline',
+        'counter_strike','finish_tease'].includes(last.id)))
+    promote('counter_strike',.90*strength);
    if(p.control==='w'&&p.position==='mat'&&p.down==='f')
-    promote('stand_reset',.65);
+    promote('stand_reset',1.1*strength);
    // The worker must FIRST win control and get up. This does not make a
    // top-rope move valid or successful; it only weights legal setups.
    if(p.control==='w'&&p.position==='standing'&&M.wSt>=31){
@@ -2901,7 +2916,7 @@ const Graph=(function makeGraph(){
     if(eligible.length){
      const total=eligible.reduce((sum,[,weight])=>sum+weight,0);
      for(const candidate of eligible)
-      candidate[1]=Math.max(candidate[1],rest*.45*candidate[1]/total);
+      candidate[1]=Math.max(candidate[1],rest*.78*strength*candidate[1]/total);
     }
    }
   }
