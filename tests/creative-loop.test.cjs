@@ -119,7 +119,7 @@ let fulfilled=0,broken=0,stories=0,missed=0,different=0;
 for(let i=0;i<180;i++){
  const q=config(i),m=run(q.args),sheet=P.report(m);
  assert.ok(m.done&&m.final&&sheet);
- assert.equal(m.graph.outcome.id,q.c.finish);
+ assert.equal(m.graph.outcome.id,q.c.finish,'creative loop case '+i+' / seed '+q.args.seed+' / worker '+q.args.w.id+' / finish '+q.c.finish+' / referee '+JSON.stringify(m.ref)+' / offScript '+m.offScript+' / dqCall '+JSON.stringify(m.dqCall));
  assert.equal(sheet.achieved+sheet.adapted+sheet.missed,sheet.total);
  assert.ok(m.final.promoSignals&&typeof m.final.promoSignals.workerCounter==='boolean');
  assert.ok(new Set(m.sheet.ledger.map(x=>x.id)).size===m.sheet.ledger.length,'unique event identifiers');
