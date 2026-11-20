@@ -1665,7 +1665,7 @@ const Graph=(function makeGraph(){
   rs_leg_lace:'ground-leg',
   // Chain throws are only attempted after contact, not from a free stance.
   ch_deep_arm_drag:'wrist',ch_japanese_arm_drag:'wrist',
-  ch_headlock_takedown:'head',ch_snapmare:'head',
+  ch_headlock_takedown:'head',
   ch_fireman:'upper-body',ch_hip_toss_chain:'upper-body',
   // Grounded arm attacks use an actual retained wrist/arm.
   sm_armbar:'ground-arm',sm_cross_armbreaker:'ground-arm',
