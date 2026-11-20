@@ -76,6 +76,32 @@ assert.equal(M._earnedPlanQuality(matElite),0,
 matElite.wSt=40;
 assert.ok(weight(matElite,restId)<weight(matFixture('elite'),restId),
  'a just-completed hold may not monopolise consecutive recovery choices');
+// A pacing window is EARNED by an actual narrated rest action; its expiry
+// is stored in the graph for refresh/save determinism, not granted at spawn.
+const paced=fixture('spots','elite');paced.t=paced.len-320;
+assert.equal(G.get(paced).pacedRest,undefined,
+ 'a booked Spot-fest does not start with any pacing advantage');
+G.apply(paced,'catch_breath');
+assert.equal(paced.graph.pacedRest.w.until,paced.t+180,
+ 'a real, trained recovery beat activates only a bounded 180-second window');
+assert.equal(paced.graph.events.at(-1).pacedRecoveryUntil,paced.t+180,
+ 'the pacing window is recorded on the same visible recovery event');
+assert.ok(paced.log.some(x=>x.text.includes('deliberately slows')),
+ 'commentary makes trained pacing readable to the player');
+const initialPacingUntil=paced.graph.pacedRest.w.until;
+paced.t+=40;G.apply(paced,'catch_breath');
+assert.equal(paced.graph.pacedRest.w.until,initialPacingUntil,
+ 'repeating a rest immediately cannot indefinitely extend the pacing window');
+assert.equal(JSON.parse(JSON.stringify(paced.graph)).pacedRest.w.until,
+ initialPacingUntil,'saved graph state retains the exact pacing expiry');
+const novicePace=fixture('spots','novice');novicePace.t=novicePace.len-320;
+G.apply(novicePace,'catch_breath');
+assert.equal(novicePace.graph.pacedRest,undefined,
+ 'untrained flyers never receive a long-bout pacing window');
+const tooLate=fixture('spots','elite');tooLate.t=tooLate.len-120;
+G.apply(tooLate,'catch_breath');
+assert.equal(tooLate.graph.pacedRest,undefined,
+ 'a breath during the final three minutes does not award retroactive pacing');
 const beforePool=fixture('spots','elite'),beforeWeight=weight(beforePool,'catch_breath');
 assert.ok(beforeWeight>0,'a tired flyer can select actual recovery');
 const after=fixture('spots','elite');
