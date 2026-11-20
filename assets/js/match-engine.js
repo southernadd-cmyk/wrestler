@@ -3468,7 +3468,7 @@ function tick(M){
   M.planId==='spots'&&mode!=='pickup'&&mode!=='slow'&&
   actor.style==='Spectacle'&&M.len>=900&&pacing?.[side]&&
   M.t<=pacing[side].until
-   ?1-.64*recoveryTraining(actor):1;
+   ?1-.64*clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1):1;
  const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*
   (1+w.fatigue/250)*(M.workingHurt?1.5:1)*paceFactor(w,'w');
  M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));
