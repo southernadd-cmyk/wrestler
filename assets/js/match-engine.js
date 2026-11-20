@@ -2350,9 +2350,10 @@ const Graph=(function makeGraph(){
   const grip=g.physical?.grip;
   const controlledGrip=grip&&grip.side===p.control&&M.t-grip.at<=20&&
     p.position==='standing'&&g.physical.area==='ring';
-  if(controlledGrip&&M.planId!=='spots'){
-   // Keep spot-fest's deliberately high-risk aerial emphasis: grip attempts
-   // must not drown out the existing spectacle/incident probabilities.
+  if(controlledGrip){
+   // A spot-fest can also produce an earned *high-impact* lifted sequence.
+   // Reduce its grip follow-through weight relative to a technical match
+   // so it never drowns out the established aerial/spectacle emphasis.
    // Candidate pool only: no graph edges invented and no forced execution.
    // Boost different legal throws for each control; prefer repertoire/style
    // through the existing scoring multipliers below.
@@ -2360,16 +2361,25 @@ const Graph=(function makeGraph(){
     if(PHYSICAL_GRIP_MOVES[id]===grip.type&&A[id]?.requires==='standing')
      // Securing a difficult grip should lead to a plausible attack before
      // the hold expires; still never bypass move legality, stamina or styles.
-     selected.push([id,4.4]);
+     selected.push([id,M.planId==='spots'?2.2:4.4]);
    }
-  }else if(M.planId!=='spots'&&p.position==='standing'&&
+  }else if(p.position==='standing'&&
      (famList.includes('suplex')||famList.includes('power')||
-      famList.includes('neck')||famList.includes('chain'))){
+      famList.includes('neck')||famList.includes('chain'))&&
+     (M.planId!=='spots'||(M.t/M.len>=.5&&M.t/M.len<=.86&&
+       stamina>=45&&['Brawl','Technical','Story'].includes(liveSide.style)))){
    // The next beat acquires a real grip, then the wrestler has a chance to
    // use it. This is not a free-standing throw or synthetic grip assignment.
-   selected.push(['front_facelock',4.2],['go_behind',2.8],
-     ['waistlock',2.2],['lockup',2.5]);
-   if(famList.includes('power'))selected.push(['pw_bearhug',1.6]);
+   if(M.planId==='spots'){
+    // A lift/neck sequence in the last half of an otherwise spot-heavy
+    // match still needs a visible real front facelock before an impact.
+    // The ordinary move validity/weight/risk/stamina checks remain.
+    selected.push(['front_facelock',3.5]);
+   }else{
+    selected.push(['front_facelock',4.2],['go_behind',2.8],
+      ['waistlock',2.2],['lockup',2.5]);
+    if(famList.includes('power'))selected.push(['pw_bearhug',1.6]);
+   }
   }
   // Phase 3: a real grounded grip invites a legal submission. Keep the
   // parent-specific attempt/reversal rules and existing stamina gates.
