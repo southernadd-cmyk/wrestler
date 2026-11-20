@@ -1,0 +1,30 @@
+name: Brawl late-move variety diagnostic
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/brawl-late-variety.cjs'
+      - '.github/workflows/brawl-late-variety.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    name: Read-only 18-minute Brawl late action audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Trace novice, competent and elite late moves
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/graph-lab/brawl-late-variety.cjs 24 --json-file | tee "$GITHUB_STEP_SUMMARY"
+      - name: Retain action and position evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: brawl-late-variety-diagnostic
+          path: brawl-late-variety.json
+          if-no-files-found: error
