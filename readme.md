@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.4.0" width="100%">
+  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.5.0" width="100%">
 </p>
 
-<p align="center"><strong>ISSUE v0.4.0</strong> &nbsp; • &nbsp; 19 NOVEMBER 2026 &nbsp; • &nbsp; THE WRESTLING KNOWS ITS WAY AROUND EDITION</p>
+<p align="center"><strong>ISSUE v0.5.0</strong> &nbsp; • &nbsp; 20 NOVEMBER 2026 &nbsp; • &nbsp; EVERY HOLD HAS A HISTORY EDITION</p>
 
 <p align="center">
   <strong><a href="https://southernadd-cmyk.github.io/wrestler/">ENTER THE OFFICE — PLAY THE GAME</a></strong>
@@ -54,7 +54,7 @@ There are **80 wrestlers** in the living circuit, including the original 28 and 
 
 **What to look for when signing:** ring, mic, psychology and safety ability; weekly wage and signing fee; condition and fatigue; what they want from their career; and how they will get on with the rest of the locker room. A wrestler who can work a good match is not necessarily the one who can sell it on the microphone.
 
-The three kinds of development are distinct: **performance style** (Story, Technical, Brawl or Spectacle) shapes presentation; **technical background** influences eligible, reviewed move choices (40 of those backgrounds are provisional game characterisations); and **weekly training** improves practical readiness. Training does not permanently change technical school in v0.4.
+The three kinds of development are distinct: **performance style** (Story, Technical, Brawl or Spectacle) shapes presentation; **technical background** influences eligible, reviewed move choices (40 of those backgrounds are provisional game characterisations); and **weekly training** improves practical readiness. Training does not permanently change technical school in v0.5.
 
 <details>
 <summary><strong>Meet all 80 wrestlers — open the portrait gallery</strong></summary>
@@ -399,13 +399,29 @@ The office keeps its own records now, and draws them. **Desk → This week** sho
 
 The browser saves your career automatically, including backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.4.0. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). Every wrestler’s ambition is worked out the first time an older career is opened, and the bookers, rival managers and promotions’ books start from the next week played. Older signed programmes begin recording their creative chapters from the match you are up to; the game does not invent earlier chapters. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
+Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.5.0. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). Every wrestler’s ambition is worked out the first time an older career is opened, and the bookers, rival managers and promotions’ books start from the next week played. Older signed programmes begin recording their creative chapters from the match you are up to; the game does not invent earlier chapters. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
 
 To play locally, download the **whole repository** and open `index.html` in a modern browser. Keep the `assets/` directory alongside it: the page loads the JavaScript, CSS and portrait atlas as separate files. The simulation still runs in the browser, with no installer or build step. Google Fonts load when available, with system fallbacks.
 
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
 ## THE LATEST ISSUE
+
+*v0.5.0 · 20 November 2026 · A ringside investigation from The Office.*
+
+### EVERY HOLD HAS A HISTORY
+
+*The match doesn't just happen. It develops.*
+
+There are still **340 authored moves** in the live match catalogue, but they have more meaningful places in the fight. A wrestler can work into the grip, attempt a named throw, find a counter, follow through on the mat, chase a pin and deal with the nearfall. The recent graph phases deepened standing exchanges, power offence, aerial attempts, ground work and physically constrained continuations. Training school helps favour compatible **eligible** techniques; it isn't the same thing as performance style or weekly training.
+
+The editorial review caught up with those changes. **325 of the 340 catalogue entries now have proposed technique metadata**. The remaining **15 aren't missing moves**: they're referee disputes, crowd work, recovery counts or other performance beats which stay in the match engine. Metadata is a description of mechanics, **not** a promise that every documented move has new executable physics or fresh graph links.
+
+The next test isn't simply how many moves we can list. It's **whether a bout works**. Graph Lab now offers six seeded match reviews — technical chains, power brawls, aerial spectacle, comebacks, cautious openers and a repeated rivalry. They exercise the real engine and can run 600 bouts automatically, alongside a tape review for wrestling plausibility.
+
+[**v0.5 release guide**](docs/v0.5-release.md) · [**Run the Graph Lab**](https://southernadd-cmyk.github.io/wrestler/tools/graph-lab/) · [**Final technique audit**](docs/reports/v04-final-106-technique-audit.md) · [**Previous release**](docs/v0.4-release.md)
+
+### PREVIOUS ISSUE — v0.4.0
 
 *v0.4.0 · 19 November 2026 · Development reports from the desks around The Office.*
 
@@ -446,7 +462,7 @@ Dennis has also rearranged the agents’ room. On wide desktop screens, his conv
 
 *Engine desk*
 
-| What’s in the match layout | Current count |
+| What’s in the match layout | v0.4 graph baseline / updated v0.5 technique metadata |
 | --- | ---: |
 | In-ring actions and events (nodes) | 979 |
 | Links between actions and events (transitions) | 6,401 |
@@ -455,7 +471,7 @@ Dennis has also rearranged the agents’ room. On wide desktop screens, his conv
 | Negotiable match stipulations | 4 |
 | Directions for each programme chapter | 3 |
 | Authored moves and move families | 340 / 20 |
-| Reviewed technique records (of authored moves) | 90 / 340 |
+| Proposed technique records (of authored moves) | 325 / 340 (15 performance beats excluded) |
 | Wrestlers with technical identities (provisional) | 80 (40) |
 | Named scripted high spots mapped to graph actions | 12 |
 | Promo graph angles and situational variants | 21 / 183 |
@@ -550,6 +566,7 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
+| **v0.5.0** | Deeper grappling, counters, ground work and match-phase legality; all 325 identifiable wrestling techniques now documented, with 15 performance beats classified separately. Six seeded Graph Lab match-review fixtures. [Release guide](docs/v0.5-release.md) · [Final technique audit](docs/reports/v04-final-106-technique-audit.md). |
 | **v0.4.0** | The wrestling knows its way around edition. Every wrestler has an independent technical background; curated, physically legal chains and twelve named scripted spots join the live match graph. Match construction, narration and the match clock now agree about the action. [Release guide](docs/v0.4-release.md) · [What's left to review](docs/technique-and-realism-review.md). |
 | **v0.3.26** | The whole show edition. Each title chase, grudge and rising-star programme becomes a series of playable chapters: steady, needle or gamble, with a record of what came off and what the next meeting remembers. The final piece of the expanded match-planning and promo work. [Inside the engine](docs/architecture.md#v0326-additions--programme-arcs). |
 | **v0.3.25** | A better talker in your stable can take the microphone for a wrestler who needs help. The words are theirs, the promises still belong to the wrestler, and the heat and credit are shared afterwards. |
