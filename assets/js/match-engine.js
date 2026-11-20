@@ -2119,6 +2119,25 @@ const Graph=(function makeGraph(){
     effective=exertion-5.8*trained;
   }
   if(exertion>0&&fighter(activeSide==='w'?M.w:M.f).trait==='Workhorse')effective*=.8;
+  // One narrated rest can start a measured pacing window. This is saved
+  // graph state, not an automatic refill. Actual move costs stay unchanged.
+  let pacedUntil=null;
+  if(exertion<0&&(id==='catch_breath'||n.family==='rest')&&
+     M.planId==='spots'&&M.len>=900&&M.len-M.t>180&&
+     M.len-M.t<=480){
+   const actor=activeSide==='w'?M.w:M.f,trained=recoveryTraining(actor);
+   const previous=g.pacedRest?.[activeSide];
+   if(actor.style==='Spectacle'&&trained>=.70&&
+      (!previous||M.t-previous.at>=80)){
+    g.pacedRest??={};
+    pacedUntil=M.t+180;
+    g.pacedRest[activeSide]={at:M.t,until:pacedUntil};
+    if(!g.paceExplained){
+     say(M,actor.short+' deliberately slows the exchanges after that rest, saving their energy for the closing stretch.','story');
+     g.paceExplained=true;
+    }
+   }
+  }
   M[staminaKey]=clamp(M[staminaKey]-effective);
   if(exertion<0)g.rests=(g.rests||0)+1;
   g.exertion=(g.exertion||0)+Math.max(0,effective);
@@ -2136,6 +2155,7 @@ const Graph=(function makeGraph(){
   g.node=id;g.steps++;
   g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective,
    physical:{locations:{...g.physical.locations},area:g.physical.area,grip:g.physical.grip?.type||null,topSide:g.physical.topSide},
+   ...(pacedUntil!==null?{pacedRecoveryUntil:pacedUntil}:{}),
    ...(options.scriptedSpot?{scriptedSpot:true,scriptedBig:!!options.big}:{})});
   if(g.events.length>220)g.events.shift();
   if(id==='cheap_shot')referee(M,side);
@@ -3439,8 +3459,20 @@ function tick(M){
   // No free stars or reduced botch probability: this only changes
   // sustained exertion, which has measurable late-match quality effects.
   clamp(plan.drain-Math.max(0,worker.ring+worker.safe-120)*.010,.96,plan.drain):plan.drain;
- const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*(1+w.fatigue/250)*(M.workingHurt?1.5:1);
- M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));M.fSt=clamp(M.fSt-.5*spotDrain(f)+(mode==='slow'?1.2:0));
+ // Only a previously narrated, saved rest lets a trained high-flyer
+ // conserve movement between exchanges for up to 180 seconds. Neither
+ // deliberate pickup nor explicit slow calls get an extra pacing discount.
+ // Real aerial setup/move costs and their safety gates are untouched.
+ const pacing=Graph.get(M).pacedRest;
+ const paceFactor=(actor,side)=>
+  M.planId==='spots'&&mode!=='pickup'&&mode!=='slow'&&
+  actor.style==='Spectacle'&&M.len>=900&&pacing?.[side]&&
+  M.t<=pacing[side].until
+   ?1-.64*recoveryTraining(actor):1;
+ const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*
+  (1+w.fatigue/250)*(M.workingHurt?1.5:1)*paceFactor(w,'w');
+ M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));
+ M.fSt=clamp(M.fSt-.5*spotDrain(f)*paceFactor(f,'f')+(mode==='slow'?1.2:0));
  // quality of this ten seconds
  const sk=(w.ring*plan.w.ring+w.psych*plan.w.psych)*(.55+.45*M.wSt/100);
  const sf=(f.ring*plan.w.ring+f.psych*plan.w.psych)*(.55+.45*M.fSt/100);
