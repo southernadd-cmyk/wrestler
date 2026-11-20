@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify all nine outside dive commitments and top-rope positions
+        run: node tests/phase6-dive-continuity.test.cjs
       - name: Run repeatability checks
         run: node tests/graph-lab-match-review.test.cjs
       - name: Verify earned high-risk star ratings
