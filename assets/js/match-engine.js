@@ -2489,6 +2489,22 @@ const Graph=(function makeGraph(){
   const closingFlight=longSpot&&timeLeft>=30&&timeLeft<=210&&
    ['resurgence','exchange','nearfall','escalation','dive_sequence',
     'finish_setup','false_finish','fighting_spirit'].includes(g.arc);
+  // Match-closing priority is earned by an actual risk landing. The wrestler
+  // may seek their first clean late aerial payoff, but after succeeding,
+  // normal repertoire variety returns; failed attempts do not count.
+  const lateFlyerRun=closingFlight&&trainedRecovery>=.70;
+  const landedLateRisk=e=>{
+   const action=A[e.id];
+   return !!action&&e.preControl===p.control&&e.t>=M.len-180&&
+    !action.reverse&&!action.counterOf&&!action.blockOf&&
+    ((action.risk&&['aerial','springboard','dive','lucha','superplex'].includes(action.family))||
+     ['aerial_attack','springboard_strike','missile_dropkick','high_crossbody'].includes(e.id))&&
+    (!e.aerialResolution||e.aerialResolution==='landed')&&
+    (!e.grappleResolution||e.grappleResolution==='landed')&&
+    (!e.contactResolution||e.contactResolution==='landed');
+  };
+  const latePayoff=lateFlyerRun&&g.events.some(landedLateRisk);
+  const needsLatePayoff=lateFlyerRun&&!latePayoff;
   if(p.position==='standing'&&M.t/M.len>.12){
    for(const id of prof.preferred)if(A[id])selected.push([id,1.4]);
    // Actual narrated recovery before a long match's final aerial run.
@@ -2498,7 +2514,10 @@ const Graph=(function makeGraph(){
    if(longSpot&&timeLeft>35&&!restedRecently&&stamina<66){
     const urgency=stamina<35?24:stamina<45?18:stamina<56?13:8;
     const longBonus=longSpot&&M.t/M.len>.5?1+trainedRecovery*.65:1;
-    selected.push(['catch_breath',urgency*longBonus]);
+    // Rest one beat before the intended late rope run while the wrestler
+    // still has time to climb and land; never refill stamina automatically.
+    const runway=trainedRecovery>=.70&&timeLeft>180&&timeLeft<=300?1.55:1;
+    selected.push(['catch_breath',urgency*longBonus*runway]);
    }else if(!longSpot&&M.planId==='spots'&&stamina<60)
     selected.push(['catch_breath',stamina<40?20:stamina<52?12:6]);
    else if(M.planId!=='spots'&&stamina<48)selected.push(['catch_breath',5]);
@@ -2516,8 +2535,14 @@ const Graph=(function makeGraph(){
    // The wrestler still climbs or springs into an actual committed landing,
    // with the existing physical, stamina, timing and counter checks intact.
    const focus=closingFlight?(1.4+trainedRecovery*.55):1;
-   selected.push(['top_climb',4.2*focus],['springboard_rise',3.5*focus]);
+   const missingPayoff=needsLatePayoff?2.8:1;
+   selected.push(['top_climb',4.2*focus*missingPayoff],
+    ['springboard_rise',3.5*focus*missingPayoff]);
   }
+  // A flyer on the mat must visibly stand up before mounting another
+  // aerial attack. A reset remains a real, timed, position-valid graph move.
+  if(needsLatePayoff&&p.position==='mat'&&p.down!==p.control)
+   selected.push(['stand_reset',6]);
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
   for(const fam of ARC_FAMILIES[g.arc]||[])for(const id of CAT.members[fam]||[]){
    const mv=A[id];if(mv.requires!==p.position&&mv.requires!=='any')continue;
@@ -2648,6 +2673,15 @@ const Graph=(function makeGraph(){
     if(longSpot&&M.t/M.len>.55&&timeLeft>35)
      n*=1+trainedRecovery*.55;
    }
+   // Following an actual climb, prefer a fresh named high-risk landing
+   // rather than an unrelated fallback. This changes selection odds only:
+   // exact-parent, weight, stamina, counter and botch checks are unchanged.
+   if(needsLatePayoff&&sameController&&p.position==='top'&&
+      ['aerial','springboard'].includes(A[id].family)&&A[id].risk&&
+      !A[id].reverse&&!A[id].counterOf&&!A[id].blockOf&&
+      !g.events.some(e=>e.id===id&&e.preControl===p.control&&
+       e.t>=M.len-180&&(!e.aerialResolution||e.aerialResolution==='landed')))
+    n*=2.5;
    if(A[id].reverse){
     const defender=p.control==='f'?M.w:M.f;
     const difference=(defender.ring*.65+defender.psych*.35)-(liveSide.ring*.65+liveSide.psych*.35);
