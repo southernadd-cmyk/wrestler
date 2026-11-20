@@ -1591,6 +1591,30 @@ const Graph=(function makeGraph(){
  function advance(M,frac){
   const g=get(M);if(!g.started){g.started=true;enter(M,'opening',null);}g.age++;
   const a=ARCS[g.arc],schedule=phaseFor(frac,M),order={open:0,shine:1,heat:2,comeback:3,stretch:4};
+  // A genuine top-rope setup must get its ONE legal follow-through choice.
+  // Previously the arc clock could immediately change to finish_setup,
+  // resetting both physical locations before the prepared wrestler could
+  // even attempt an attack. Preserve the actual top position for one tick
+  // only if a trained high-flyer has a physically legal named risk available.
+  // No committed move or result is granted: the next graph selection can
+  // still choose a countered attack, a hesitation, or a safe step down.
+  const pos=Psy.get(M),last=g.events.at(-1);
+  const actor=pos.control==='w'?M.w:pos.control==='f'?M.f:null;
+  const setup=pos.position==='top'&&
+   (g.node==='top_climb'||g.node==='springboard_rise')&&
+   last?.id===g.node&&last.control===pos.control&&
+   M.t-last.t>=0&&M.t-last.t<=10;
+  if(M.planId==='spots'&&M.len>=900&&M.len-M.t>=10&&
+     schedule.id==='stretch'&&a.phase==='stretch'&&
+     setup&&actor?.style==='Spectacle'&&recoveryTraining(actor)>=.70&&
+     g.physical?.locations?.[pos.control]==='top'&&
+     !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact){
+   const family=g.node==='top_climb'?'aerial':'springboard';
+   if((CAT.members[family]||[]).some(id=>
+      A[id]?.risk&&!A[id].counterOf&&!A[id].blockOf&&!A[id].reverse&&
+      isAerialParent(id)&&isValid(M,id)))
+    return {id:schedule.id,name:a.label};
+  }
   // Existing in-progress saves may already be in an impossible early finish arc.
   // Recover those, and never carry an early-phase arc back into the final stretch.
   const mispaced=(g.arc==='exchange'&&order[schedule.id]<2)
