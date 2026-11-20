@@ -254,6 +254,28 @@ noEvidence.story.control='f';noEvidence.story.position='mat';noEvidence.story.do
 const unsupported=G.pool(noEvidence),supportWeight=unsupported.find(([id])=>id==='mat_scramble')?.[1]||0;
 assert.ok(supportWeight<scrambleWeight,
  'a mat counter gets no special comeback weight without recent physical evidence');
+// An elite worker who is being held down four minutes BEFORE the final
+// three can earn the way back into the match, allowing normal visible
+// recovery before the top-rope run. Never grant an unearned control flip.
+const beforeFinish=fixture('spots','elite');
+beforeFinish.t=beforeFinish.len-300;beforeFinish.wSt=35;
+beforeFinish.story.control='f';beforeFinish.story.position='mat';
+beforeFinish.story.down='w';
+const beforeGraph=G.get(beforeFinish);
+beforeGraph.node='mat_hold';
+beforeGraph.events.push({id:'mat_hold',t:beforeFinish.t-10,
+ preControl:'f',control:'f',position:'mat',down:'w'});
+const prePool=G.pool(beforeFinish);
+const preScramble=prePool.find(([id])=>id==='mat_scramble')?.[1]||0;
+const preAlternatives=prePool.reduce((sum,[id,w])=>
+ sum+(id==='mat_scramble'?0:w),0);
+assert.ok(preScramble>=preAlternatives*.58-1e-7,
+ 'only the documented active opponent hold qualifies for a pre-finish escape');
+assert.equal(beforeFinish.story.control,'f',
+ 'candidate weighting alone never steals opponent control');
+G.apply(beforeFinish,'mat_scramble');
+assert.equal(beforeFinish.story.control,'w',
+ 'a real pre-finish scramble must be performed to win control');
 // Narrative arc changes may not erase a real, legally prepared high spot
 // between the climb and the flyer's ONE following attack choice.
 const protectedLaunch=fixture('spots','elite');
