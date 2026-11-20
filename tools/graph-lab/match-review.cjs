@@ -23,7 +23,8 @@ function capture(count=100){
   const roster=lab.roster(D),authored=new Set(all),results=[];
   for(const test of presets.cases){
     const config={...test,count},snapshot=lab.empty(G,config),evidence=validation.create(G);
-    let metadataEvents=0,performanceEvents=0,nearfalls=0,botches=0;
+    let metadataEvents=0,performanceEvents=0,nearfalls=0,botches=0,spots=0,spotHits=0;
+    let qSum=0, qN=0, crowdPeak=0;const partSums={};
     const seenTechniques=new Set(),seenPerformance=new Set();
     for(let i=0;i<count;i++){
       const params={...config,seed:config.seed+i*37};
@@ -37,6 +38,9 @@ function capture(count=100){
       validation.add(evidence,match,G,root.OfficeTechniqueBackgrounds);
       nearfalls+=match.nearfalls||0;
       botches+=match.botches||0;
+      spots+=match.spots||0;spotHits+=match.spotHits||0;
+      qSum+=match.qSum||0;qN+=match.qN||0;crowdPeak+=match.crowdPeak||0;
+      for(const [key,,amount] of match.final?.starParts||[])partSums[key]=(partSums[key]||0)+amount;
       for(const event of match.graph?.events||[]){
         if(!authored.has(event.id))continue;
         if(R.get(event.id)){metadataEvents++;seenTechniques.add(event.id);}
@@ -54,7 +58,12 @@ function capture(count=100){
       environment:report.environment,
       metadataEvents,performanceEvents,distinctTechniques:seenTechniques.size,
       distinctPerformanceBeats:seenPerformance.size,
-      nearfalls,botches,counters:report.counters,blocks:report.blocks,
+      nearfalls,botches,spots,spotHits,
+      meanQuality:qN?+(qSum/qN).toFixed(2):0,
+      meanPeakCrowd:+(crowdPeak/count).toFixed(2),
+      starComponents:Object.fromEntries(Object.entries(partSums)
+        .map(([key,total])=>[key,+(total/count).toFixed(3)])),
+      counters:report.counters,blocks:report.blocks,
       topFamilies:report.families.slice(0,8),finishRoutes:report.finishRoutes,
       phase9:report.phase9,
       graph:report.graph});
@@ -88,7 +97,14 @@ function markdown(result){
     lines.push('| '+s.label+' | '+s.bouts+' | '+s.meanStars.toFixed(2)+' | '+s.nodeCoverage+'% | '+s.edgeCoverage+'% | '+
       s.uniqueMatchSequences+' | '+s.metadataEvents+' | '+s.performanceEvents+' | '+s.counters+' | '+s.hardErrors+' |');
   }
-  lines.push('','**Phase 6 environmental attempts:** '+result.scenarios.map(s=>
+  lines.push('','### Rating-component audit (average contribution per bout)','',
+    '| Scenario | Work | Big moments | Crowd | Near falls | Botches | Sequences | Peak crowd | High spots landed/attempted |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|---:|',
+    ...result.scenarios.map(s=>'| '+s.label+' | '+
+      ['work','moments','crowd','nearfalls','botches','psychology'].map(k=>
+        (s.starComponents[k]||0).toFixed(2)).join(' | ')+
+      ' | '+s.meanPeakCrowd.toFixed(1)+' | '+s.spotHits+'/'+s.spots+' |'),
+    '','**Phase 6 environmental attempts:** '+result.scenarios.map(s=>
     s.id+': '+s.environment.attempts+' attempts / '+
     s.environment.counter+' counters / '+s.environment.invalid+' errors').join('; '),'',
     '**Mechanical validation:** '+(failures(result).length?'FAILED — '+failures(result).join('; '):'passed'), '',
