@@ -1048,12 +1048,12 @@ const Graph=(function makeGraph(){
     moves:[
      ['pn_small_package','small package','{A} rolls {D} into a small package! ONE! TWO! {D} kicks out!',{}],
      ['pn_schoolboy','schoolboy','{A} trips {D} from behind with a schoolboy! ONE! TWO! {D} kicks out!',{}],
-     ['pn_inside_cradle','inside cradle','{A} rolls {D} up with an inside cradle! TWO AND THREE-QUARTERS!',{crowd:6}],
+     ['pn_inside_cradle','inside cradle','{A} rolls {D} up with an inside cradle! TWO AND THREE-QUARTERS! {D} gets a shoulder up!',{crowd:6}],
      ['pn_crucifix','crucifix pin','{A} traps the arms with a crucifix pin! ONE! TWO! {D} gets out!',{}],
      ['pn_sunset','sunset flip','{A} flips over {D} and rolls them up with a sunset flip! TWO! {D} kicks out!',{from:['rope_rebound','duck_rebound','rope_run']}],
      ['pn_victory_roll','victory roll','{A} leaps onto {D}’s shoulders and rolls them up! TWO! {D} kicks out!',{crowd:6,styles:'S'}],
      ['pn_backslide','backslide','{A} catches {D} with a backslide! ONE! TWO! {D} kicks out!',{}],
-     ['pn_oconnor','rolling cradle','{A} rolls {D} up and holds the legs! ONE! TWO! No!',{}],
+     ['pn_oconnor','rolling cradle','{A} rolls {D} up and holds the legs! ONE! TWO! {D} kicks out!',{}],
      ['pn_jackknife','jackknife cover','{A} folds {D} up with a jackknife cover! TWO! {D} gets free!',{}],
      ['pn_magistral','La Magistral cradle','{A} spins around {D}’s arm and rolls them up! TWO! {D} kicks out!',{crowd:6,styles:'S'}],
      ['pn_bridge_rollup','bridging rollup','{A} rolls {D} up and bridges for leverage! TWO! {D} kicks out!',{}]

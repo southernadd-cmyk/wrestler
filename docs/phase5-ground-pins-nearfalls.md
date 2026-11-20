@@ -48,4 +48,16 @@ Full Node, Chromium and career/quality sign-off are separate required workflows.
 
 ## Follow-up: judging match quality
 
-Review at least a few mat-heavy **Technical**, **Brawl**, **Story**, **Safe**, and **Spot-fest** match tapes for believable knockdown-to-ground offence, contested roll-ups, the timing of kick-outs, and repetition of near-fall dialogue. Genuine near-falls should be connected to their preceding action; never add extra unearned attempts to meet a count. If sample variety is insufficient, inspect match-plan setup frequency before modifying individual move weights.
+The dedicated Phase 5 gate is now joined by a paired **500-bout tape review**: 100 identical wrestler pairings and seeds per Technical, Story, Brawl, Spot-fest and Safe plan, compared with merged Phase 4 commit `9fdacf0`. The two versions use the same planned finishes, alternating mid/main slots, four outcome types and seed series `61001 + 53*i`. Reproduce against a detached Phase 4 checkout with `node tools/graph-lab/phase5-quality-audit.cjs /path/to/phase4 > /tmp/phase5-tapes.json`; the JSON includes the plan totals and short contextual tapes. This review was run after the two near-fall narration clarifications below.
+
+| Plan | Mean stars, Phase 4 → Phase 5 | Landed ground, Phase 4 → Phase 5 | Landed named pins, Phase 4 → Phase 5 | Near-falls per bout, Phase 4 → Phase 5 |
+| --- | ---: | ---: | ---: | ---: |
+| Technical | 2.982 → 2.960 | 174 → 183 | 53 → 31 | 2.90 → 2.70 |
+| Story | 2.635 → 2.607 | 179 → 195 | 36 → 31 | 2.65 → 2.67 |
+| Brawl | 3.060 → 3.058 | 178 → 168 | 50 → 37 | 2.73 → 2.63 |
+| Spot-fest | 2.348 → 2.350 | 205 → 186 | 62 → 38 | 3.02 → 2.82 |
+| Safe | 2.465 → 2.465 | 165 → 159 | 53 → 45 | 2.75 → 2.79 |
+
+All **500/500** bouts finished with the same booked outcome as the Phase 4 match. The new ledger contains **1,259 real contact attempts**: **1,073 landed**, **186 exact-parent counters** and **0 interrupted** in this ordinary match sample. Those landings comprise **891 ground attacks** and **182 named roll-ups**. Ordinary pin landings declined from **254** to **182**, while total near-falls fell only from **2.81** to **2.72 per bout**. This is a consequence of the new physical and counter guards; the older generated defensive events could appear without a parent attack, so the raw counter totals across versions do not measure the same thing. No plan's mean rating changed by more than **0.028** stars. No near-fall call repeated three or more times within a Phase 5 bout in this sample.
+
+The recorded tapes show a clothesline leading into a grounded back rake (Technical seed `61001`), an arm drag setting up a running senton (Story seed `61054`), a backslide after a counter-strike (Technical seed `61054`), and a near-fall crucifix in the late match (Spot-fest seed `61054`). The inside cradle and rolling cradle originally ended with an ambiguous count; both now explicitly say the defender escaped. These are sample observations, not a claim that every seed has an authored ground-to-pin chain. Continue watching live match reports for repetition and awkward transitions after merge.
