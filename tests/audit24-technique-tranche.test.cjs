@@ -22,8 +22,8 @@ const reviewed=[
 assert.equal(new Set(reviewed).size,24,'exactly 24 distinct audited action identities');
 const registry=R.validate(G);
 assert.equal(registry.valid,true,registry.errors.join('\n'));
-assert.equal(registry.proposals,234,'90 original + 24 audit records + 39 Phase 5 mat records');
-assert.equal(registry.coverage,68.8);
+assert.equal(registry.proposals,325,'90 original + 24 audit records + 39 Phase 5 mat records');
+assert.equal(registry.coverage,95.6);
 assert.equal(G.validate().errors.length,0);
 assert.equal(G.validate().nodes,980,'no new graph nodes');
 assert.equal(G.validate().edges,6413,'only six genuinely new links');
