@@ -19,9 +19,10 @@ function open(dir){
  root.OfficeRosterV4.enableProfiles();return root;
 }
 const roots={base:open(oldPath),candidate:open(path.resolve(__dirname,'../..'))};
-function evaluate(root){
+function evaluate(root,targetParents){
  const D=root.OfficeData,G=root.OfficeMatch.GRAPH,people=lab.roster(D),A=G.A;
  const seen=new Set(),parents=new Set(),grapples=new Set();
+ const targetDefences={counter:0,block:0,tagged:0,untagged:0,byParent:{}};
  const grappleOutcomes={},sampleByStyle={},graphStats=G.validate();
  let attempts=0;
  for(let i=0;i<count;i++){
@@ -36,6 +37,16 @@ function evaluate(root){
    if(!A[e.id])continue;
    seen.add(e.id);
    const node=A[e.id];if(!node.counterOf&&!node.blockOf)parents.add(e.id);
+   const defended=node.counterOf||node.blockOf;
+   if(targetParents.has(defended)){
+    const label=node.counterOf?'counter':'block';
+    targetDefences[label]++;
+    if(e.grappleAttemptSeq!==undefined&&e.attemptedMove===defended)
+     targetDefences.tagged++;
+    else targetDefences.untagged++;
+    const row=targetDefences.byParent[defended]??={counter:0,block:0,untagged:0};
+    row[label]++;if(e.grappleAttemptSeq===undefined||e.attemptedMove!==defended)row.untagged++;
+   }
   }
   for(const a of match.graph?.grappleAttempts||[]){
    attempts++;grapples.add(a.id);
@@ -64,11 +75,13 @@ function evaluate(root){
   unseenConditional:absent.filter(id=>A[id].counterOf||A[id].blockOf).length,
   defensiveParentsObserved:conditionallySeen,
   grappleAttempted:grapples.size,grappleAttempts:attempts,grappleOutcomes,
+  targetDefences,
   missingTargetRelated:targetedMissing,
   independentCoveragePct:+(100*(byCategory.independent?.observed||0)/
    Math.max(1,byCategory.independent?.total||1)).toFixed(2)};
 }
-const base=evaluate(roots.base),candidate=evaluate(roots.candidate);
+const targetParents=new Set(roots.candidate.OfficeMatch.GRAPH.GRAPPLE_PILOT||[]);
+const base=evaluate(roots.base,targetParents),candidate=evaluate(roots.candidate,targetParents);
 const difference={coveragePct:+(candidate.coveragePct-base.coveragePct).toFixed(2),
  independentCoveragePct:+(candidate.independentCoveragePct-base.independentCoveragePct).toFixed(2),
  independentUnseen: candidate.byCategory.independent.unobserved-base.byCategory.independent.unobserved,
@@ -81,4 +94,6 @@ process.stderr.write('Coverage base '+base.coveragePct+'% candidate '+candidate.
  '% (delta '+difference.coveragePct+'); independent base '+base.independentCoveragePct+
  '% candidate '+candidate.independentCoveragePct+'% (delta '+
  difference.independentCoveragePct+'); unseen independent candidate: '+
- candidate.unseenIndependent.join(', ')+'\n');
+ candidate.unseenIndependent.join(', ')+
+ '; target defences main '+JSON.stringify(base.targetDefences)+
+ ' candidate '+JSON.stringify(candidate.targetDefences)+'\n');
