@@ -3092,9 +3092,11 @@ function referee(M,side){
  // A professional heeds the first warning; anybody else may not.
  if(!ref.w){ref.w=1;say(M,`The referee saw the cheap shot and warns ${M.w.short}. Next time, it is over.`,'bad',{big:true,pause:1,who:'colour'});mark(M,'warning',1);return;}
  if(M.w.pro>=78){if(ref.w===1){ref.w=2;say(M,`${M.w.short} nearly takes another liberty, then remembers the warning.`,'story',{who:'colour'});}return;}
- // The contract is only broken by the manager's own choices: a wrestler let off the leash, fired up, or
- // already off the layout. Kept on the script, they get a final warning and pull themselves together.
- if(!(M.leash==='free'||M.talk==='fire'||M.offScript)){if(ref.w===1){ref.w=2;say(M,`A final warning for ${M.w.short}. The referee means it.`,'story',{who:'colour'});}return;}
+ // Unscripted disobedience alone isn't a manager instruction to sacrifice
+ // the booked finish. Only an explicit free leash / fired-up instruction can
+ // turn repeated cheap shots into a referee DQ; an off-layout scripted worker
+ // receives the last warning and pulls back. Caught run-ins are handled apart.
+ if(!(M.leash==='free'||M.talk==='fire')){if(ref.w===1){ref.w=2;say(M,`A final warning for ${M.w.short}. The referee means it.`,'story',{who:'colour'});}return;}
  M.dqCall={why:'cheap',side:'w',at:M.t};
 }
 const count3=(M,step)=>{say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});say(M,'THREE!','count',{...step(),big:true});};
