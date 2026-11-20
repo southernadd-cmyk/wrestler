@@ -79,6 +79,40 @@ for(const id of fast){
  assert.equal(d.graph.events.at(-1).id,rev);
  assert.equal(d.graph.strikeAttempts.at(-1).outcome,'counter');
 }
+// A legally secured grip at its final valid moment must remain controlled
+// for the single following committed-resolution tick. Otherwise genuine
+// high-effort finishes (Falcon Arrow, dragon sleeper) always abort at age 30.
+for(const [id,required,position] of [
+ ['sx_falcon_arrow','front-facelock','standing'],
+ ['sm_dragon_sleeper','ground-head','mat']
+]){
+ const m=make(id,91588);
+ m.story.position=position;m.story.down=position==='mat'?'f':null;
+ m.graph.physical.grip={type:required,side:'w',at:m.t-20,
+  source:position==='mat'?'rs_side_headlock':'front_facelock'};
+ assert.equal(G.isValid(m,id),true,'fresh-but-aging entry legal '+id);
+ assert.equal(G.startGrapple(m,id),true,'legitimately committed '+id);
+ m.r=()=>.999;m.t+=10;
+ assert.equal(G.resolveGrapple(m),true,'committed grip resolves '+id);
+ assert.equal(m.graph.grappleAttempts.at(-1).outcome,'landed',
+  'one tick must not expire a legal committed grip '+id);
+ assert.equal(m.graph.events.at(-1).id,id,'real move landed '+id);
+ const stale=make(id,91589);
+ stale.story.position=position;stale.story.down=position==='mat'?'f':null;
+ stale.graph.physical.grip={type:required,side:'w',at:stale.t-30,
+  source:position==='mat'?'rs_side_headlock':'front_facelock'};
+ assert.equal(G.isValid(stale,id),false,'stale grip cannot start '+id);
+ assert.equal(G.startGrapple(stale,id),false,'stale move cannot commit '+id);
+ const stolen=make(id,91590);
+ stolen.story.position=position;stolen.story.down=position==='mat'?'f':null;
+ stolen.graph.physical.grip={type:required,side:'w',at:stolen.t-20,
+  source:position==='mat'?'rs_side_headlock':'front_facelock'};
+ assert.equal(G.startGrapple(stolen,id),true);
+ stolen.graph.physical.grip.side='f';stolen.t+=10;
+ assert.equal(G.resolveGrapple(stolen),true);
+ assert.equal(stolen.graph.grappleAttempts.at(-1).outcome,'aborted',
+  'stolen grip cannot gain one-beat grace '+id);
+}
 const saved=make('nk_double_arm_ddt',91566);
 assert.equal(G.startGrapple(saved,'nk_double_arm_ddt'),true);
 const resumed=M.restore(JSON.parse(JSON.stringify({...saved,rState:saved.r.getState()})));
