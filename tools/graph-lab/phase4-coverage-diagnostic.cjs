@@ -17,7 +17,11 @@ const injected=`  if(root.__phase4CoverageInspect){
  function recover(M)`;
 if(source.split(anchor).length!==2)throw Error('Expected final validPool return anchor missing');
 source=source.replace(anchor,injected);
-const picks=new Map(),stats=new Map(),events=new Map();
+const selectionAnchor='  const candidates=validPool(M),id=pick(M,candidates);';
+if(source.split(selectionAnchor).length!==2)throw Error('Choice anchor missing');
+source=source.replace(selectionAnchor,
+ selectionAnchor+'\n  if(root.__phase4Choice)root.__phase4Choice(id);');
+const picks=new Map(),stats=new Map(),events=new Map(),attempts=new Map();
 const focus=[
  'sx_deadlift_bridge','sx_delayed','sx_tiger','sx_snap_ddt','sx_cradle',
  'sx_falcon_arrow','pw_powerbomb','pw_sitout','pw_running_powerbomb',
@@ -64,7 +68,8 @@ function capture(d){
   stats.set(id,row);
  }
 }
-const storage=new Map(),windowRoot={__phase4CoverageInspect:capture,addEventListener(){}};
+const storage=new Map(),windowRoot={__phase4CoverageInspect:capture,
+ __phase4Choice:id=>picks.set(id,(picks.get(id)||0)+1),addEventListener(){}};
 const localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)};
 let globalMatch=null;
 vm.runInNewContext(source,{window:windowRoot,localStorage,console,Date,Math,JSON},{filename:'office-phase4-diagnostic.js'});
@@ -89,15 +94,22 @@ for(let i=0;i<1000;i++){
  }
  if(!m.done)throw Error('Unfinished match '+i);
  for(const ev of m.graph.events||[])events.set(ev.id,(events.get(ev.id)||0)+1);
+ for(const kind of ['grappleAttempts','strikeAttempts','aerialAttempts'])
+  for(const a of m.graph[kind]||[]){
+   const row=attempts.get(a.id)||{};
+   row[a.outcome]=(row[a.outcome]||0)+1;
+   attempts.set(a.id,row);
+  }
 }
 const report=focus.map(id=>{const row=stats.get(id);
- return {...row,landed:events.get(id)||0,
+ return {...row,landed:events.get(id)||0,picked:picks.get(id)||0,
+  attempts:attempts.get(id)||{},
   expected:+row.expected.toFixed(2),
   maxChance:+row.maxChance.toFixed(4)};});
 console.log('Phase 4 catalogue diagnostic: '+run.checks+' selection opportunities; '+focus.length+' rare moves inspected');
 for(const r of report){
  const causes=Object.entries(r.states).sort((a,b)=>b[1]-a[1]).slice(0,3);
- console.log(r.id+' landed='+r.landed+' legal='+r.legal+
+ console.log(r.id+' landed='+r.landed+' picked='+r.picked+' attempts='+JSON.stringify(r.attempts)+' legal='+r.legal+
   ' offered='+r.offered+' expected='+r.expected+' positions='+JSON.stringify(r.positions)+
   ' causes='+JSON.stringify(causes));
 }
