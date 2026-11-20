@@ -4,8 +4,9 @@ const assert=require('node:assert/strict');
 const PHASE9_BASE=Object.freeze({nodes:969,edges:6333,moves:336,reversals:324,blocks:209});
 const PHASE10_ADDED=Object.freeze({nodes:10,edges:68,moves:4,reversals:4,blocks:1});
 const PHYSICAL_PILOT_ADDED=Object.freeze({nodes:1,edges:6,moves:0,reversals:0,blocks:0});
+const AUDIT24_ADDED=Object.freeze({nodes:0,edges:6,moves:0,reversals:0,blocks:0});
 const EXPECTED=Object.freeze(Object.fromEntries(Object.keys(PHASE9_BASE)
- .map(k=>[k,PHASE9_BASE[k]+PHASE10_ADDED[k]+PHYSICAL_PILOT_ADDED[k]])));
+ .map(k=>[k,PHASE9_BASE[k]+PHASE10_ADDED[k]+PHYSICAL_PILOT_ADDED[k]+AUDIT24_ADDED[k]])));
 const NEW_MOVES=Object.freeze(['sx_deadlift_bridge','os_floor_piledriver','os_ramp_suplex','os_barricade_spear']);
 function verify(G){
  const actual=G.validate();
@@ -21,4 +22,4 @@ function verify(G){
   .some(f=>f.moves.some(m=>m[0]===id)),'Phase 10 catalogue move missing '+id);
  return actual;
 }
-module.exports={PHASE9_BASE,PHASE10_ADDED,PHYSICAL_PILOT_ADDED,EXPECTED,NEW_MOVES,verify};
+module.exports={PHASE9_BASE,PHASE10_ADDED,PHYSICAL_PILOT_ADDED,AUDIT24_ADDED,EXPECTED,NEW_MOVES,verify};
