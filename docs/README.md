@@ -2,6 +2,7 @@
 
 **Current release:** [v0.4.0 — release guide](v0.4-release.md)  
 **Next development review:** [Technique coverage and physical realism](technique-and-realism-review.md)  
+**Completed 500-bout audit:** [Findings](reports/v04-technique-position-500.md) · [Machine-readable data](reports/v04-technique-position-500.json) · [Reproduction script](../tools/graph-lab/technique-position-audit.cjs)  
 **Playable game:** https://southernadd-cmyk.github.io/wrestler/  
 **Graph Lab:** https://southernadd-cmyk.github.io/wrestler/tools/graph-lab/
 
@@ -13,6 +14,7 @@ This index separates **current implementation** from **historical phase notes**.
 | --- | --- |
 | What shipped and the verified counts | [v0.4 release guide](v0.4-release.md) |
 | Next technique and realism work | [v0.4 review](technique-and-realism-review.md) |
+| Real 500-bout technique and physical-state evidence | [Completed audit](reports/v04-technique-position-500.md) |
 | Source modules, persistence and test architecture | [Architecture](architecture.md) |
 | Lab workflow, saved baselines and graph comparison | [Graph Lab](graph-lab.md) |
 | Fictional character design, starting world and identities | [Living-roster cast bible](living-roster-v4.md) |

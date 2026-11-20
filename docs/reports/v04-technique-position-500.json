@@ -1,0 +1,3223 @@
+{
+  "schema": "the-office-v04-technique-position-audit-v1",
+  "referenceCommit": "015af53aed9244aeb091d0dcbcddc7c207aca1e0",
+  "liveSourceRevision": "015af53aed9244aeb091d0dcbcddc7c207aca1e0",
+  "config": {
+    "count": 500,
+    "seedBase": 90021,
+    "seedStep": 41,
+    "plans": [
+      "technical",
+      "story",
+      "brawl",
+      "spots",
+      "safe"
+    ],
+    "slots": [
+      "opener",
+      "mid",
+      "main"
+    ],
+    "rosterRotation": "sorted 80, wrestler=i%80; opponent=(7*i+19)%80 (next if equal)",
+    "finishRotation": [
+      "win_clean",
+      "lose_clean",
+      "win_dirty",
+      "lose_protected"
+    ],
+    "decisions": [
+      "job",
+      "home",
+      "cut",
+      "protect"
+    ],
+    "unmodifiedOptions": "fatigue=0, script leash, calm talk, no preparation",
+    "instrumentation": "non-mutating capture at Graph.apply entry; 25-bout untouched-engine parity check"
+  },
+  "graph": {
+    "nodes": 979,
+    "arcs": 25,
+    "outcomes": 9,
+    "edges": 6401,
+    "families": 20,
+    "moves": 340,
+    "reversals": 328,
+    "blocks": 210,
+    "errors": []
+  },
+  "registry": {
+    "valid": true,
+    "errors": [],
+    "proposals": 90,
+    "authored": 340,
+    "coverage": 26.5
+  },
+  "instrumentationParity": {
+    "bouts": 25,
+    "identical": true
+  },
+  "completed": 500,
+  "rosterCount": 80,
+  "totalEvents": 26871,
+  "actionEvents": 25458,
+  "authoredEvents": 6426,
+  "reviewedEvents": 1694,
+  "unreviewedEvents": 4732,
+  "reviewedUnique": 89,
+  "unreviewedUnique": 235,
+  "unseenMoves": [
+    "nk_tornado_ddt",
+    "cn_backflip",
+    "ar_headbutt",
+    "ar_corkscrew",
+    "ar_stomp",
+    "sp_hurricanrana",
+    "sp_powerbomb",
+    "sp_spider",
+    "sp_super_ddt",
+    "sp_super_arm_drag",
+    "dv_suicide",
+    "dv_moonsault",
+    "dv_apron_senton",
+    "lc_tornillo",
+    "lc_rope_walk",
+    "rp_tiger_feint"
+  ],
+  "maxRetainedEvents": 93,
+  "eventCapReached": 0,
+  "timingFaults": 0,
+  "illegalPreconditions": 0,
+  "attemptCounterChecks": 73,
+  "scriptedSpots": {
+    "attempts": 588,
+    "landed": 529,
+    "botched": 59
+  },
+  "byPlan": {
+    "technical": {
+      "bouts": 100,
+      "starsTotal": 303.25,
+      "actionEvents": 5006,
+      "reviewed": 337,
+      "unreviewed": 900
+    },
+    "story": {
+      "bouts": 100,
+      "starsTotal": 269.75,
+      "actionEvents": 5159,
+      "reviewed": 373,
+      "unreviewed": 984
+    },
+    "brawl": {
+      "bouts": 100,
+      "starsTotal": 300.5,
+      "actionEvents": 5081,
+      "reviewed": 341,
+      "unreviewed": 970
+    },
+    "spots": {
+      "bouts": 100,
+      "starsTotal": 239.5,
+      "actionEvents": 5156,
+      "reviewed": 271,
+      "unreviewed": 994
+    },
+    "safe": {
+      "bouts": 100,
+      "starsTotal": 248.25,
+      "actionEvents": 5056,
+      "reviewed": 372,
+      "unreviewed": 884
+    }
+  },
+  "bySlot": {
+    "opener": {
+      "bouts": 170,
+      "starsTotal": 479.25,
+      "actionEvents": 5405
+    },
+    "mid": {
+      "bouts": 165,
+      "starsTotal": 461.5,
+      "actionEvents": 7773
+    },
+    "main": {
+      "bouts": 165,
+      "starsTotal": 420.5,
+      "actionEvents": 12280
+    }
+  },
+  "byFamily": {
+    "suplex": {
+      "catalogued": 25,
+      "reviewed": 5,
+      "observedHits": 176,
+      "unreviewedHits": 135,
+      "observedUnique": 25,
+      "unreviewedUnique": 20
+    },
+    "power": {
+      "catalogued": 27,
+      "reviewed": 7,
+      "observedHits": 389,
+      "unreviewedHits": 312,
+      "observedUnique": 27,
+      "unreviewedUnique": 20
+    },
+    "neck": {
+      "catalogued": 18,
+      "reviewed": 0,
+      "observedHits": 212,
+      "unreviewedHits": 212,
+      "observedUnique": 17,
+      "unreviewedUnique": 17
+    },
+    "strike": {
+      "catalogued": 32,
+      "reviewed": 10,
+      "observedHits": 877,
+      "unreviewedHits": 556,
+      "observedUnique": 32,
+      "unreviewedUnique": 22
+    },
+    "corner": {
+      "catalogued": 18,
+      "reviewed": 0,
+      "observedHits": 60,
+      "unreviewedHits": 60,
+      "observedUnique": 17,
+      "unreviewedUnique": 17
+    },
+    "aerial": {
+      "catalogued": 18,
+      "reviewed": 8,
+      "observedHits": 146,
+      "unreviewedHits": 112,
+      "observedUnique": 15,
+      "unreviewedUnique": 8
+    },
+    "superplex": {
+      "catalogued": 7,
+      "reviewed": 0,
+      "observedHits": 88,
+      "unreviewedHits": 88,
+      "observedUnique": 2,
+      "unreviewedUnique": 2
+    },
+    "springboard": {
+      "catalogued": 6,
+      "reviewed": 4,
+      "observedHits": 57,
+      "unreviewedHits": 26,
+      "observedUnique": 6,
+      "unreviewedUnique": 2
+    },
+    "dive": {
+      "catalogued": 9,
+      "reviewed": 0,
+      "observedHits": 78,
+      "unreviewedHits": 78,
+      "observedUnique": 6,
+      "unreviewedUnique": 6
+    },
+    "submission": {
+      "catalogued": 35,
+      "reviewed": 27,
+      "observedHits": 781,
+      "unreviewedHits": 139,
+      "observedUnique": 35,
+      "unreviewedUnique": 8
+    },
+    "ground": {
+      "catalogued": 20,
+      "reviewed": 0,
+      "observedHits": 803,
+      "unreviewedHits": 803,
+      "observedUnique": 20,
+      "unreviewedUnique": 20
+    },
+    "chain": {
+      "catalogued": 24,
+      "reviewed": 19,
+      "observedHits": 517,
+      "unreviewedHits": 87,
+      "observedUnique": 24,
+      "unreviewedUnique": 5
+    },
+    "pin": {
+      "catalogued": 11,
+      "reviewed": 5,
+      "observedHits": 148,
+      "unreviewedHits": 79,
+      "observedUnique": 11,
+      "unreviewedUnique": 6
+    },
+    "outside": {
+      "catalogued": 17,
+      "reviewed": 0,
+      "observedHits": 292,
+      "unreviewedHits": 292,
+      "observedUnique": 17,
+      "unreviewedUnique": 17
+    },
+    "heel": {
+      "catalogued": 14,
+      "reviewed": 0,
+      "observedHits": 670,
+      "unreviewedHits": 670,
+      "observedUnique": 14,
+      "unreviewedUnique": 14
+    },
+    "fire": {
+      "catalogued": 15,
+      "reviewed": 0,
+      "observedHits": 709,
+      "unreviewedHits": 709,
+      "observedUnique": 15,
+      "unreviewedUnique": 15
+    },
+    "rest": {
+      "catalogued": 12,
+      "reviewed": 0,
+      "observedHits": 262,
+      "unreviewedHits": 262,
+      "observedUnique": 12,
+      "unreviewedUnique": 12
+    },
+    "lucha": {
+      "catalogued": 10,
+      "reviewed": 5,
+      "observedHits": 64,
+      "unreviewedHits": 15,
+      "observedUnique": 8,
+      "unreviewedUnique": 3
+    },
+    "rope": {
+      "catalogued": 10,
+      "reviewed": 0,
+      "observedHits": 30,
+      "unreviewedHits": 30,
+      "observedUnique": 9,
+      "unreviewedUnique": 9
+    },
+    "running": {
+      "catalogued": 12,
+      "reviewed": 0,
+      "observedHits": 67,
+      "unreviewedHits": 67,
+      "observedUnique": 12,
+      "unreviewedUnique": 12
+    }
+  },
+  "mostFrequentUnreviewed": [
+    {
+      "id": "double_down_count",
+      "family": "fire",
+      "hits": 407
+    },
+    {
+      "id": "gd_elbow_drop",
+      "family": "ground",
+      "hits": 98
+    },
+    {
+      "id": "ar_elbow_point",
+      "family": "aerial",
+      "hits": 83
+    },
+    {
+      "id": "hl_thumb",
+      "family": "heel",
+      "hits": 76
+    },
+    {
+      "id": "hl_rope_leverage",
+      "family": "heel",
+      "hits": 75
+    },
+    {
+      "id": "dv_tope_con_hilo",
+      "family": "dive",
+      "hits": 70
+    },
+    {
+      "id": "sp_superplex",
+      "family": "superplex",
+      "hits": 68
+    },
+    {
+      "id": "gd_stomp",
+      "family": "ground",
+      "hits": 66
+    },
+    {
+      "id": "os_ramp_suplex",
+      "family": "outside",
+      "hits": 65
+    },
+    {
+      "id": "hl_ref_argue",
+      "family": "heel",
+      "hits": 63
+    },
+    {
+      "id": "pw_bearhug",
+      "family": "power",
+      "hits": 63
+    },
+    {
+      "id": "gd_senton",
+      "family": "ground",
+      "hits": 60
+    },
+    {
+      "id": "gd_arm_elbows",
+      "family": "ground",
+      "hits": 59
+    },
+    {
+      "id": "hl_stall",
+      "family": "heel",
+      "hits": 58
+    },
+    {
+      "id": "gd_ground_pound",
+      "family": "ground",
+      "hits": 55
+    },
+    {
+      "id": "hl_distraction_apron",
+      "family": "heel",
+      "hits": 55
+    },
+    {
+      "id": "fr_crowd_clap",
+      "family": "fire",
+      "hits": 54
+    },
+    {
+      "id": "os_apron_ddt",
+      "family": "outside",
+      "hits": 52
+    },
+    {
+      "id": "st_headbutt",
+      "family": "strike",
+      "hits": 52
+    },
+    {
+      "id": "gd_running_senton",
+      "family": "ground",
+      "hits": 50
+    },
+    {
+      "id": "gd_splash",
+      "family": "ground",
+      "hits": 49
+    },
+    {
+      "id": "sm_abdominal",
+      "family": "submission",
+      "hits": 49
+    },
+    {
+      "id": "st_double_chop",
+      "family": "strike",
+      "hits": 49
+    },
+    {
+      "id": "gd_knee_stomp",
+      "family": "ground",
+      "hits": 48
+    },
+    {
+      "id": "st_open_slap",
+      "family": "strike",
+      "hits": 46
+    },
+    {
+      "id": "hl_bite",
+      "family": "heel",
+      "hits": 45
+    },
+    {
+      "id": "hl_mock",
+      "family": "heel",
+      "hits": 45
+    },
+    {
+      "id": "hl_rake",
+      "family": "heel",
+      "hits": 44
+    },
+    {
+      "id": "rs_leg_lace",
+      "family": "rest",
+      "hits": 43
+    },
+    {
+      "id": "hl_hair_pull",
+      "family": "heel",
+      "hits": 42
+    },
+    {
+      "id": "hl_strut",
+      "family": "heel",
+      "hits": 41
+    },
+    {
+      "id": "hl_beg",
+      "family": "heel",
+      "hits": 40
+    },
+    {
+      "id": "pw_belly_bump",
+      "family": "power",
+      "hits": 40
+    },
+    {
+      "id": "hl_low_blow_tease",
+      "family": "heel",
+      "hits": 39
+    },
+    {
+      "id": "st_backhand",
+      "family": "strike",
+      "hits": 39
+    },
+    {
+      "id": "sx_deadlift_bridge",
+      "family": "suplex",
+      "hits": 39
+    },
+    {
+      "id": "fr_mounted_comeback",
+      "family": "fire",
+      "hits": 37
+    },
+    {
+      "id": "os_barricade_spear",
+      "family": "outside",
+      "hits": 37
+    },
+    {
+      "id": "st_chop",
+      "family": "strike",
+      "hits": 37
+    },
+    {
+      "id": "gd_elbow_neck",
+      "family": "ground",
+      "hits": 36
+    },
+    {
+      "id": "gd_lower_back_knee",
+      "family": "ground",
+      "hits": 36
+    },
+    {
+      "id": "gd_rib_stomp",
+      "family": "ground",
+      "hits": 36
+    },
+    {
+      "id": "gd_arm_stomp",
+      "family": "ground",
+      "hits": 35
+    },
+    {
+      "id": "nk_russian_sweep",
+      "family": "neck",
+      "hits": 34
+    },
+    {
+      "id": "st_eye_rake",
+      "family": "strike",
+      "hits": 34
+    },
+    {
+      "id": "gd_back_rake",
+      "family": "ground",
+      "hits": 33
+    },
+    {
+      "id": "gd_fist_drop",
+      "family": "ground",
+      "hits": 32
+    },
+    {
+      "id": "st_standing_dropkick",
+      "family": "strike",
+      "hits": 32
+    },
+    {
+      "id": "rs_hammerlock_mat",
+      "family": "rest",
+      "hits": 30
+    },
+    {
+      "id": "fr_flying_forearm",
+      "family": "fire",
+      "hits": 28
+    }
+  ],
+  "proposedTrancheByFrequency": [
+    {
+      "id": "gd_elbow_drop",
+      "family": "ground",
+      "hits": 98
+    },
+    {
+      "id": "gd_stomp",
+      "family": "ground",
+      "hits": 66
+    },
+    {
+      "id": "os_ramp_suplex",
+      "family": "outside",
+      "hits": 65
+    },
+    {
+      "id": "gd_arm_elbows",
+      "family": "ground",
+      "hits": 59
+    },
+    {
+      "id": "sx_deadlift_bridge",
+      "family": "suplex",
+      "hits": 39
+    },
+    {
+      "id": "gd_knee_drop",
+      "family": "ground",
+      "hits": 27
+    },
+    {
+      "id": "os_floor_piledriver",
+      "family": "outside",
+      "hits": 25
+    },
+    {
+      "id": "os_barricade",
+      "family": "outside",
+      "hits": 19
+    },
+    {
+      "id": "nk_snap_ddt",
+      "family": "neck",
+      "hits": 18
+    },
+    {
+      "id": "nk_swinging_neckbreaker",
+      "family": "neck",
+      "hits": 18
+    },
+    {
+      "id": "pw_backbreaker",
+      "family": "power",
+      "hits": 17
+    },
+    {
+      "id": "nk_ddt",
+      "family": "neck",
+      "hits": 10
+    },
+    {
+      "id": "nk_inverted_ddt",
+      "family": "neck",
+      "hits": 9
+    },
+    {
+      "id": "os_post",
+      "family": "outside",
+      "hits": 9
+    },
+    {
+      "id": "pw_chokeslam",
+      "family": "power",
+      "hits": 6
+    },
+    {
+      "id": "sx_rolling_german",
+      "family": "suplex",
+      "hits": 6
+    },
+    {
+      "id": "sx_vertical",
+      "family": "suplex",
+      "hits": 5
+    },
+    {
+      "id": "cn_forearm",
+      "family": "corner",
+      "hits": 4
+    },
+    {
+      "id": "pw_running_powerbomb",
+      "family": "power",
+      "hits": 4
+    },
+    {
+      "id": "cn_tree_of_woe",
+      "family": "corner",
+      "hits": 3
+    },
+    {
+      "id": "pw_powerbomb",
+      "family": "power",
+      "hits": 3
+    },
+    {
+      "id": "cn_dropkick",
+      "family": "corner",
+      "hits": 2
+    },
+    {
+      "id": "cn_splash",
+      "family": "corner",
+      "hits": 2
+    },
+    {
+      "id": "sx_tiger",
+      "family": "suplex",
+      "hits": 2
+    }
+  ],
+  "highlighted": {
+    "dv_tope_con_hilo": {
+      "hits": 70,
+      "unlinked": 3,
+      "prePositions": {
+        "outside": 70
+      },
+      "predecessors": [
+        [
+          "outside_toss",
+          67
+        ],
+        [
+          "dv_tope_con_hilo",
+          2
+        ],
+        [
+          "floor_brawl",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90021,
+          "plan": "technical",
+          "slot": "opener",
+          "time": "06:30",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": true,
+          "lines": [
+            "The pace rises as both wrestlers start looking for their big attacks.",
+            "Cassidy intercepts Solis and creates an opening for the planned high spot.",
+            "Cassidy sends Solis over the ropes onto the floor. The referee starts counting.",
+            "Cassidy flips over the top rope onto Solis on the floor!",
+            "That is going on the poster. Somebody find a photographer."
+          ]
+        },
+        {
+          "seed": 90144,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "04:20",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": true,
+          "lines": [
+            "The wrestlers regain a standing position. Ortez re-establishes distance.",
+            "Ortez sends Fen over the ropes onto the floor. The referee starts counting.",
+            "Ortez goes for it!",
+            "Ortez flips over the top rope onto Fen on the floor!"
+          ]
+        },
+        {
+          "seed": 90144,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "05:10",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": true,
+          "lines": [
+            "Fen steps down from the ropes and resets on the canvas.",
+            "Fen sends Ortez over the ropes onto the floor. The referee starts counting.",
+            "Fen flips over the top rope onto Ortez on the floor!"
+          ]
+        }
+      ]
+    },
+    "double_down_count": {
+      "hits": 407,
+      "unlinked": 405,
+      "prePositions": {
+        "mat": 407
+      },
+      "predecessors": [
+        [
+          "scheduled_nearfall",
+          345
+        ],
+        [
+          "fr_mounted_comeback",
+          6
+        ],
+        [
+          "st_lariat_standing",
+          6
+        ],
+        [
+          "fr_hulk_kick",
+          4
+        ],
+        [
+          "st_discus",
+          4
+        ],
+        [
+          "st_knee_strike",
+          4
+        ],
+        [
+          "st_spin_kick",
+          4
+        ],
+        [
+          "fr_flying_forearm",
+          3
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90021,
+          "plan": "technical",
+          "slot": "opener",
+          "time": "06:50",
+          "pre": "mat",
+          "post": "standing",
+          "from": "scheduled_nearfall",
+          "linked": false,
+          "lines": [
+            "Both wrestlers are down. The referee counts… FOUR… FIVE… SIX… and they both stir."
+          ]
+        },
+        {
+          "seed": 90144,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "06:50",
+          "pre": "mat",
+          "post": "standing",
+          "from": "scheduled_nearfall",
+          "linked": false,
+          "lines": [
+            "Both wrestlers are down. The referee counts… FOUR… FIVE… SIX… and they both stir."
+          ]
+        },
+        {
+          "seed": 90185,
+          "plan": "safe",
+          "slot": "opener",
+          "time": "05:50",
+          "pre": "mat",
+          "post": "standing",
+          "from": "st_standing_dropkick",
+          "linked": false,
+          "lines": [
+            "Both wrestlers are down. The referee counts… FOUR… FIVE… SIX… and they both stir.",
+            "Momentum is a funny thing, Gloria. You cannot buy it, but you can lose it in a second."
+          ]
+        }
+      ]
+    },
+    "cn_dropkick": {
+      "hits": 2,
+      "unlinked": 0,
+      "prePositions": {
+        "corner": 2
+      },
+      "predecessors": [
+        [
+          "cn_avalanche",
+          1
+        ],
+        [
+          "cn_chops",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90062,
+          "plan": "story",
+          "slot": "opener",
+          "time": "03:20",
+          "pre": "corner",
+          "post": "corner",
+          "from": "cn_avalanche",
+          "linked": true,
+          "lines": [
+            "Moreno runs in and lands a dropkick to Frost, slumped in the corner!"
+          ]
+        },
+        {
+          "seed": 97196,
+          "plan": "technical",
+          "slot": "main",
+          "time": "09:30",
+          "pre": "corner",
+          "post": "corner",
+          "from": "cn_chops",
+          "linked": true,
+          "lines": [
+            "Hollis runs in and lands a dropkick to Knight, slumped in the corner!"
+          ]
+        }
+      ]
+    },
+    "pw_bearhug": {
+      "hits": 63,
+      "unlinked": 44,
+      "prePositions": {
+        "standing": 63
+      },
+      "predecessors": [
+        [
+          "lockup",
+          5
+        ],
+        [
+          "counter_strike",
+          4
+        ],
+        [
+          "scheduled_nearfall",
+          4
+        ],
+        [
+          "st_headbutt",
+          4
+        ],
+        [
+          "rope_run",
+          3
+        ],
+        [
+          "stand_reset",
+          3
+        ],
+        [
+          "catch_breath",
+          2
+        ],
+        [
+          "clothesline",
+          2
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90103,
+          "plan": "brawl",
+          "slot": "opener",
+          "time": "01:20",
+          "pre": "standing",
+          "post": "standing",
+          "from": "ch_dragon_screw",
+          "linked": false,
+          "lines": [
+            "Fox finds their footing and forces the fight back upright.",
+            "Stark keeps Fox under pressure, deliberately slowing the contest.",
+            "Stark locks Fox in a bearhug and squeezes the air out of their ribs."
+          ]
+        },
+        {
+          "seed": 90308,
+          "plan": "brawl",
+          "slot": "mid",
+          "time": "04:10",
+          "pre": "standing",
+          "post": "standing",
+          "from": "roll_inside",
+          "linked": false,
+          "lines": [
+            "Idris keeps Merrick under pressure, deliberately slowing the contest.",
+            "Idris locks Merrick in a bearhug and squeezes the air out of their ribs.",
+            "This is the part the crowd pretends not to enjoy. They are loving it."
+          ]
+        },
+        {
+          "seed": 90308,
+          "plan": "brawl",
+          "slot": "mid",
+          "time": "11:50",
+          "pre": "standing",
+          "post": "standing",
+          "from": "probe_strike",
+          "linked": false,
+          "lines": [
+            "Idris locks Merrick in a bearhug and squeezes the air out of their ribs."
+          ]
+        }
+      ]
+    },
+    "gd_stomp": {
+      "hits": 66,
+      "unlinked": 20,
+      "prePositions": {
+        "mat": 66
+      },
+      "predecessors": [
+        [
+          "power_spinebuster",
+          21
+        ],
+        [
+          "mat_hold",
+          7
+        ],
+        [
+          "nk_russian_sweep",
+          4
+        ],
+        [
+          "clothesline",
+          2
+        ],
+        [
+          "lc_hurricanrana",
+          2
+        ],
+        [
+          "pw_pumphandle",
+          2
+        ],
+        [
+          "submission_set",
+          2
+        ],
+        [
+          "sx_half_nelson",
+          2
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90144,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "05:40",
+          "pre": "mat",
+          "post": "mat",
+          "from": "fr_atomic_drop_rev",
+          "linked": true,
+          "lines": [
+            "Ortez is calling audibles. This wasn’t the plan.",
+            "Fen stomps on Ortez’s lower back."
+          ]
+        },
+        {
+          "seed": 90267,
+          "plan": "story",
+          "slot": "mid",
+          "time": "04:10",
+          "pre": "mat",
+          "post": "mat",
+          "from": "power_spinebuster",
+          "linked": true,
+          "lines": [
+            "Titan stomps on Bay’s ribs."
+          ]
+        },
+        {
+          "seed": 90349,
+          "plan": "spots",
+          "slot": "mid",
+          "time": "00:40",
+          "pre": "mat",
+          "post": "mat",
+          "from": "power_spinebuster",
+          "linked": true,
+          "lines": [
+            "Vance stomps on Lowe’s ribs."
+          ]
+        }
+      ]
+    },
+    "nk_swinging_neckbreaker": {
+      "hits": 18,
+      "unlinked": 14,
+      "prePositions": {
+        "standing": 18
+      },
+      "predecessors": [
+        [
+          "ch_cravate",
+          2
+        ],
+        [
+          "stand_reset",
+          2
+        ],
+        [
+          "ar_elbow_point",
+          1
+        ],
+        [
+          "catch_breath",
+          1
+        ],
+        [
+          "counter_strike",
+          1
+        ],
+        [
+          "double_down_count",
+          1
+        ],
+        [
+          "fr_crowd_clap",
+          1
+        ],
+        [
+          "gd_running_senton",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90226,
+          "plan": "technical",
+          "slot": "mid",
+          "time": "03:20",
+          "pre": "standing",
+          "post": "mat",
+          "from": "ch_cravate",
+          "linked": true,
+          "lines": [
+            "Carter spins Rowe around and drops them with a swinging neckbreaker."
+          ]
+        },
+        {
+          "seed": 90431,
+          "plan": "technical",
+          "slot": "main",
+          "time": "14:30",
+          "pre": "standing",
+          "post": "mat",
+          "from": "rope_break",
+          "linked": false,
+          "lines": [
+            "Hayes spins Mercer around and drops them with a swinging neckbreaker."
+          ]
+        },
+        {
+          "seed": 91005,
+          "plan": "safe",
+          "slot": "mid",
+          "time": "11:10",
+          "pre": "standing",
+          "post": "mat",
+          "from": "scheduled_nearfall",
+          "linked": false,
+          "lines": [
+            "Calder rolls to a knee, then rises to restart the exchange.",
+            "Calder and Marr dig deep. The finishing sequence is close.",
+            "Calder spins Marr around and drops them with a swinging neckbreaker."
+          ]
+        }
+      ]
+    },
+    "nk_snap_ddt": {
+      "hits": 18,
+      "unlinked": 15,
+      "prePositions": {
+        "standing": 18
+      },
+      "predecessors": [
+        [
+          "clothesline",
+          2
+        ],
+        [
+          "scheduled_nearfall",
+          2
+        ],
+        [
+          "st_throat_thrust",
+          2
+        ],
+        [
+          "ch_rolling_wristlock",
+          1
+        ],
+        [
+          "cheap_shot",
+          1
+        ],
+        [
+          "cover",
+          1
+        ],
+        [
+          "double_down_count",
+          1
+        ],
+        [
+          "finish_tease",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90267,
+          "plan": "story",
+          "slot": "mid",
+          "time": "09:20",
+          "pre": "standing",
+          "post": "mat",
+          "from": "rs_reverse_chinlock",
+          "linked": false,
+          "lines": [
+            "Bay snaps Titan down with a quick DDT before they can defend."
+          ]
+        },
+        {
+          "seed": 90882,
+          "plan": "story",
+          "slot": "mid",
+          "time": "01:30",
+          "pre": "standing",
+          "post": "mat",
+          "from": "clothesline",
+          "linked": false,
+          "lines": [
+            "Quinn pushes back up off the mat as the next exchange begins.",
+            "Quinn and Bay settle into a series of holds, escapes and counters.",
+            "Bay snaps Quinn down with a quick DDT before they can defend.",
+            "That is the snap DDT — nobody on this circuit does it quite like Bay."
+          ]
+        },
+        {
+          "seed": 93137,
+          "plan": "story",
+          "slot": "opener",
+          "time": "06:40",
+          "pre": "standing",
+          "post": "mat",
+          "from": "mat_scramble",
+          "linked": false,
+          "lines": [
+            "Cho snaps Voss down with a quick DDT before they can defend."
+          ]
+        }
+      ]
+    },
+    "gd_elbow_drop": {
+      "hits": 98,
+      "unlinked": 26,
+      "prePositions": {
+        "mat": 98
+      },
+      "predecessors": [
+        [
+          "clothesline",
+          37
+        ],
+        [
+          "power_spinebuster",
+          23
+        ],
+        [
+          "scheduled_nearfall",
+          7
+        ],
+        [
+          "target_strike",
+          3
+        ],
+        [
+          "pw_fallaway",
+          2
+        ],
+        [
+          "rn_lariat",
+          2
+        ],
+        [
+          "rope_crawl",
+          2
+        ],
+        [
+          "sm_boston",
+          2
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90308,
+          "plan": "brawl",
+          "slot": "mid",
+          "time": "02:50",
+          "pre": "mat",
+          "post": "mat",
+          "from": "pw_fallaway",
+          "linked": true,
+          "lines": [
+            "Idris drops an elbow across Merrick’s chest."
+          ]
+        },
+        {
+          "seed": 90308,
+          "plan": "brawl",
+          "slot": "mid",
+          "time": "07:00",
+          "pre": "mat",
+          "post": "mat",
+          "from": "power_spinebuster",
+          "linked": true,
+          "lines": [
+            "Idris drops an elbow across Merrick’s chest."
+          ]
+        },
+        {
+          "seed": 90390,
+          "plan": "safe",
+          "slot": "mid",
+          "time": "02:10",
+          "pre": "mat",
+          "post": "mat",
+          "from": "ch_leg_trip",
+          "linked": false,
+          "lines": [
+            "Mercer drops an elbow across Fox’s chest.",
+            "That is the elbow drop — nobody on this circuit does it quite like Mercer."
+          ]
+        }
+      ]
+    },
+    "sp_superplex": {
+      "hits": 68,
+      "unlinked": 0,
+      "prePositions": {
+        "top": 68
+      },
+      "predecessors": [
+        [
+          "top_follow",
+          68
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90308,
+          "plan": "brawl",
+          "slot": "mid",
+          "time": "10:50",
+          "pre": "top",
+          "post": "mat",
+          "from": "top_follow",
+          "linked": true,
+          "lines": [
+            "Idris rolls clear and uses the ropes to rise. Merrick gives ground to avoid a counter.",
+            "Merrick whips Idris across the ring towards the opposite turnbuckles.",
+            "Merrick follows Idris up the turnbuckles. Both are balanced on the top rope.",
+            "Merrick goes for it!",
+            "Merrick hooks Idris on the top rope and hits a superplex! The ring shakes!"
+          ]
+        },
+        {
+          "seed": 90595,
+          "plan": "safe",
+          "slot": "main",
+          "time": "13:30",
+          "pre": "top",
+          "post": "mat",
+          "from": "top_follow",
+          "linked": true,
+          "lines": [
+            "Marlowe drops back down from the turnbuckle as the counter threat develops.",
+            "Marlowe rushes in once too often. Watt sidesteps and takes control!",
+            "Watt whips Marlowe across the ring towards the opposite turnbuckles.",
+            "Watt follows Marlowe up the turnbuckles. Both are balanced on the top rope.",
+            "Watt hooks Marlowe on the top rope and hits a superplex! The ring shakes!"
+          ]
+        },
+        {
+          "seed": 90964,
+          "plan": "spots",
+          "slot": "mid",
+          "time": "06:30",
+          "pre": "top",
+          "post": "mat",
+          "from": "top_follow",
+          "linked": true,
+          "lines": [
+            "Quill whips Quade across the ring towards the opposite turnbuckles.",
+            "Quill follows Quade up the turnbuckles. Both are balanced on the top rope.",
+            "Quill goes for it!",
+            "Quill hooks Quade on the top rope and hits a superplex! The ring shakes!"
+          ]
+        }
+      ]
+    },
+    "os_ramp_suplex": {
+      "hits": 65,
+      "unlinked": 7,
+      "prePositions": {
+        "outside": 65
+      },
+      "predecessors": [
+        [
+          "outside_toss",
+          57
+        ],
+        [
+          "os_ramp_suplex",
+          5
+        ],
+        [
+          "dv_apron_senton_rev",
+          1
+        ],
+        [
+          "floor_brawl",
+          1
+        ],
+        [
+          "floor_regroup",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90349,
+          "plan": "spots",
+          "slot": "mid",
+          "time": "07:30",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": true,
+          "lines": [
+            "Lowe sends Vance over the ropes onto the floor. The referee starts counting.",
+            "Lowe lifts Vance at the entrance and suplexes them onto the ramp!"
+          ]
+        },
+        {
+          "seed": 90349,
+          "plan": "spots",
+          "slot": "mid",
+          "time": "11:10",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": true,
+          "lines": [
+            "Vance pushes back up off the mat as the next exchange begins.",
+            "Lowe and Vance dig deep. The finishing sequence is close.",
+            "Lowe intercepts Vance and creates an opening for the planned high spot.",
+            "Lowe sends Vance over the ropes onto the floor. The referee starts counting.",
+            "Lowe lifts Vance at the entrance and suplexes them onto the ramp!"
+          ]
+        },
+        {
+          "seed": 90636,
+          "plan": "technical",
+          "slot": "opener",
+          "time": "07:20",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": true,
+          "lines": [
+            "Knight waits for Hollis to stand, looking for the next opening.",
+            "Knight sends Hollis over the ropes onto the floor. The referee starts counting.",
+            "Knight lifts Hollis at the entrance and suplexes them onto the ramp!"
+          ]
+        }
+      ]
+    },
+    "ar_elbow_point": {
+      "hits": 83,
+      "unlinked": 0,
+      "prePositions": {
+        "top": 83
+      },
+      "predecessors": [
+        [
+          "top_climb",
+          83
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90472,
+          "plan": "story",
+          "slot": "main",
+          "time": "09:00",
+          "pre": "top",
+          "post": "mat",
+          "from": "top_climb",
+          "linked": true,
+          "lines": [
+            "Blackwell drops Rourke with a strike, then climbs the turnbuckles, checking their footing.",
+            "Blackwell points to the crowd and drops a diving elbow from the top!"
+          ]
+        },
+        {
+          "seed": 90513,
+          "plan": "brawl",
+          "slot": "main",
+          "time": "13:50",
+          "pre": "top",
+          "post": "mat",
+          "from": "top_climb",
+          "linked": true,
+          "lines": [
+            "Rae slides Quill under the bottom rope and follows. The referee breaks the count.",
+            "Rae hesitates on the damaged knee before committing to the next move.",
+            "Rae drops Quill with a strike, then climbs the turnbuckles, checking their footing.",
+            "Rae goes for it!",
+            "Rae points to the crowd and drops a diving elbow from the top!"
+          ]
+        },
+        {
+          "seed": 90759,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "04:40",
+          "pre": "top",
+          "post": "mat",
+          "from": "top_climb",
+          "linked": true,
+          "lines": [
+            "Hart drops Wynn with a strike, then climbs the turnbuckles, checking their footing.",
+            "Hart points to the crowd and drops a diving elbow from the top!"
+          ]
+        }
+      ]
+    },
+    "os_apron_ddt": {
+      "hits": 52,
+      "unlinked": 3,
+      "prePositions": {
+        "outside": 52
+      },
+      "predecessors": [
+        [
+          "outside_toss",
+          47
+        ],
+        [
+          "apron_stand",
+          1
+        ],
+        [
+          "floor_brawl",
+          1
+        ],
+        [
+          "os_apron_knee",
+          1
+        ],
+        [
+          "os_floor_piledriver",
+          1
+        ],
+        [
+          "os_ropes_backdrop",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90513,
+          "plan": "brawl",
+          "slot": "main",
+          "time": "13:40",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": true,
+          "lines": [
+            "Rae sends Quill over the ropes onto the floor. The referee starts counting.",
+            "Rae goes for it!",
+            "Rae spikes Quill with a DDT on the ring apron!"
+          ]
+        },
+        {
+          "seed": 90759,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "07:10",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": true,
+          "lines": [
+            "Hart gives Wynn space to get back to their feet. Both reset their footing.",
+            "Hart sends Wynn over the ropes onto the floor. The referee starts counting.",
+            "Hart goes for it!",
+            "Hart spikes Wynn with a DDT on the ring apron!",
+            "That is going on the poster. Somebody find a photographer."
+          ]
+        },
+        {
+          "seed": 90882,
+          "plan": "story",
+          "slot": "mid",
+          "time": "09:20",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": true,
+          "lines": [
+            "Quinn sends Bay over the ropes onto the floor. The referee starts counting.",
+            "Quinn spikes Bay with a DDT on the ring apron!",
+            "In my day you did that once a year, and only at Christmas."
+          ]
+        }
+      ]
+    },
+    "gd_arm_elbows": {
+      "hits": 59,
+      "unlinked": 26,
+      "prePositions": {
+        "mat": 59
+      },
+      "predecessors": [
+        [
+          "ar_elbow_point",
+          17
+        ],
+        [
+          "mat_hold",
+          11
+        ],
+        [
+          "clothesline",
+          3
+        ],
+        [
+          "power_spinebuster",
+          3
+        ],
+        [
+          "scheduled_nearfall",
+          3
+        ],
+        [
+          "mat_takedown",
+          2
+        ],
+        [
+          "rope_crawl",
+          2
+        ],
+        [
+          "target_hold",
+          2
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90595,
+          "plan": "safe",
+          "slot": "main",
+          "time": "12:30",
+          "pre": "mat",
+          "post": "mat",
+          "from": "target_hold",
+          "linked": false,
+          "lines": [
+            "Watt kneels on Marlowe’s wrist and drives elbows into the arm."
+          ]
+        },
+        {
+          "seed": 90677,
+          "plan": "story",
+          "slot": "opener",
+          "time": "01:40",
+          "pre": "mat",
+          "post": "mat",
+          "from": "power_spinebuster",
+          "linked": true,
+          "lines": [
+            "Barr kneels on Blackwell’s wrist and drives elbows into the arm.",
+            "Never trust a wrestler who smiles in a headlock, Gloria."
+          ]
+        },
+        {
+          "seed": 90800,
+          "plan": "safe",
+          "slot": "opener",
+          "time": "04:10",
+          "pre": "mat",
+          "post": "mat",
+          "from": "ch_deep_arm_drag",
+          "linked": false,
+          "lines": [
+            "Solis kneels on Ash’s wrist and drives elbows into the arm."
+          ]
+        }
+      ]
+    },
+    "os_barricade": {
+      "hits": 19,
+      "unlinked": 0,
+      "prePositions": {
+        "outside": 19
+      },
+      "predecessors": [
+        [
+          "floor_brawl",
+          12
+        ],
+        [
+          "os_floor_chop",
+          2
+        ],
+        [
+          "os_floor_piledriver",
+          2
+        ],
+        [
+          "outside_toss",
+          2
+        ],
+        [
+          "apron_stand",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90677,
+          "plan": "story",
+          "slot": "opener",
+          "time": "03:10",
+          "pre": "outside",
+          "post": "outside",
+          "from": "floor_brawl",
+          "linked": true,
+          "lines": [
+            "Barr whips Blackwell hard into the barricade."
+          ]
+        },
+        {
+          "seed": 91784,
+          "plan": "spots",
+          "slot": "main",
+          "time": "01:10",
+          "pre": "outside",
+          "post": "outside",
+          "from": "apron_stand",
+          "linked": true,
+          "lines": [
+            "Cassidy whips Graves hard into the barricade."
+          ]
+        },
+        {
+          "seed": 95679,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "07:50",
+          "pre": "outside",
+          "post": "outside",
+          "from": "floor_brawl",
+          "linked": true,
+          "lines": [
+            "Ward is blown up. Slow it down or take it home.",
+            "Ward whips Orr hard into the barricade."
+          ]
+        }
+      ]
+    },
+    "pw_powerbomb": {
+      "hits": 3,
+      "unlinked": 3,
+      "prePositions": {
+        "standing": 3
+      },
+      "predecessors": [
+        [
+          "double_down_count",
+          1
+        ],
+        [
+          "scheduled_nearfall",
+          1
+        ],
+        [
+          "stand_reset",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90759,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "07:00",
+          "pre": "standing",
+          "post": "mat",
+          "from": "double_down_count",
+          "linked": false,
+          "lines": [
+            "Hart doubles Wynn over, lifts them onto the shoulders and drives them down with a powerbomb!"
+          ]
+        },
+        {
+          "seed": 102936,
+          "plan": "technical",
+          "slot": "opener",
+          "time": "08:00",
+          "pre": "standing",
+          "post": "mat",
+          "from": "stand_reset",
+          "linked": false,
+          "lines": [
+            "Rain doubles Vance over, lifts them onto the shoulders and drives them down with a powerbomb!"
+          ]
+        },
+        {
+          "seed": 108020,
+          "plan": "safe",
+          "slot": "opener",
+          "time": "07:30",
+          "pre": "standing",
+          "post": "mat",
+          "from": "scheduled_nearfall",
+          "linked": false,
+          "lines": [
+            "Vega stands carefully after the previous exchange.",
+            "Moya and Vega dig deep. The finishing sequence is close.",
+            "Moya doubles Vega over, lifts them onto the shoulders and drives them down with a powerbomb!"
+          ]
+        }
+      ]
+    },
+    "os_post": {
+      "hits": 9,
+      "unlinked": 0,
+      "prePositions": {
+        "outside": 9
+      },
+      "predecessors": [
+        [
+          "floor_brawl",
+          9
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90800,
+          "plan": "safe",
+          "slot": "opener",
+          "time": "01:10",
+          "pre": "outside",
+          "post": "outside",
+          "from": "floor_brawl",
+          "linked": true,
+          "lines": [
+            "Ash rams Solis’s shoulder into the ring post!"
+          ]
+        },
+        {
+          "seed": 97893,
+          "plan": "brawl",
+          "slot": "main",
+          "time": "01:40",
+          "pre": "outside",
+          "post": "outside",
+          "from": "floor_brawl",
+          "linked": true,
+          "lines": [
+            "Ortez rams Park’s shoulder into the ring post!"
+          ]
+        },
+        {
+          "seed": 99164,
+          "plan": "spots",
+          "slot": "main",
+          "time": "04:20",
+          "pre": "outside",
+          "post": "outside",
+          "from": "floor_brawl",
+          "linked": true,
+          "lines": [
+            "Doyle rams Flint’s shoulder into the ring post!"
+          ]
+        }
+      ]
+    },
+    "sx_deadlift_bridge": {
+      "hits": 39,
+      "unlinked": 39,
+      "prePositions": {
+        "standing": 39
+      },
+      "predecessors": [
+        [
+          "stand_reset",
+          18
+        ],
+        [
+          "catch_breath",
+          3
+        ],
+        [
+          "crowd_pose",
+          2
+        ],
+        [
+          "lockup",
+          2
+        ],
+        [
+          "corner_break",
+          1
+        ],
+        [
+          "corner_charge",
+          1
+        ],
+        [
+          "counter_strike",
+          1
+        ],
+        [
+          "double_down_count",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 90923,
+          "plan": "brawl",
+          "slot": "mid",
+          "time": "08:20",
+          "pre": "standing",
+          "post": "mat",
+          "from": "corner_charge",
+          "linked": false,
+          "lines": [
+            "Briggs lifts Bloom from a dead stop into a bridging suplex, keeping the shoulders trapped!"
+          ]
+        },
+        {
+          "seed": 90923,
+          "plan": "brawl",
+          "slot": "mid",
+          "time": "08:50",
+          "pre": "standing",
+          "post": "mat",
+          "from": "stand_reset",
+          "linked": false,
+          "lines": [
+            "Briggs waits for Bloom to stand, looking for the next opening.",
+            "Briggs lifts Bloom from a dead stop into a bridging suplex, keeping the shoulders trapped!"
+          ]
+        },
+        {
+          "seed": 91333,
+          "plan": "brawl",
+          "slot": "opener",
+          "time": "04:50",
+          "pre": "standing",
+          "post": "mat",
+          "from": "hl_fake_injury_rev",
+          "linked": false,
+          "lines": [
+            "Park goes for it!",
+            "Park lifts Ortez from a dead stop into a bridging suplex, keeping the shoulders trapped!",
+            "The front row have spilled their drinks. That is the review written."
+          ]
+        }
+      ]
+    },
+    "nk_inverted_ddt": {
+      "hits": 9,
+      "unlinked": 8,
+      "prePositions": {
+        "standing": 9
+      },
+      "predecessors": [
+        [
+          "arm_wringer",
+          1
+        ],
+        [
+          "ch_rolling_wristlock",
+          1
+        ],
+        [
+          "cn_stinger",
+          1
+        ],
+        [
+          "counter_strike",
+          1
+        ],
+        [
+          "double_down_count",
+          1
+        ],
+        [
+          "os_crowd_brawl",
+          1
+        ],
+        [
+          "os_ramp_suplex",
+          1
+        ],
+        [
+          "rope_run",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 91087,
+          "plan": "story",
+          "slot": "main",
+          "time": "14:20",
+          "pre": "standing",
+          "post": "mat",
+          "from": "arm_wringer",
+          "linked": false,
+          "lines": [
+            "Frost hooks the head from behind and falls back with an inverted DDT."
+          ]
+        },
+        {
+          "seed": 92809,
+          "plan": "spots",
+          "slot": "mid",
+          "time": "09:30",
+          "pre": "standing",
+          "post": "mat",
+          "from": "os_crowd_brawl",
+          "linked": false,
+          "lines": [
+            "Idris and Hollis beat the referee’s count and slide back into the ring.",
+            "Both wrestlers scramble to their feet. The advantage is there to be taken.",
+            "Idris hooks the head from behind and falls back with an inverted DDT."
+          ]
+        },
+        {
+          "seed": 98713,
+          "plan": "brawl",
+          "slot": "opener",
+          "time": "06:00",
+          "pre": "standing",
+          "post": "mat",
+          "from": "rope_run",
+          "linked": false,
+          "lines": [
+            "Vega hooks the head from behind and falls back with an inverted DDT."
+          ]
+        }
+      ]
+    },
+    "sx_rolling_german": {
+      "hits": 6,
+      "unlinked": 6,
+      "prePositions": {
+        "standing": 6
+      },
+      "predecessors": [
+        [
+          "scheduled_nearfall",
+          2
+        ],
+        [
+          "ar_450",
+          1
+        ],
+        [
+          "clean_break",
+          1
+        ],
+        [
+          "lockup",
+          1
+        ],
+        [
+          "rope_run",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 91087,
+          "plan": "story",
+          "slot": "main",
+          "time": "15:30",
+          "pre": "standing",
+          "post": "mat",
+          "from": "lockup",
+          "linked": false,
+          "lines": [
+            "Frost rolls through one German suplex, then a second, then a third!"
+          ]
+        },
+        {
+          "seed": 92563,
+          "plan": "brawl",
+          "slot": "opener",
+          "time": "06:10",
+          "pre": "standing",
+          "post": "mat",
+          "from": "ar_450",
+          "linked": false,
+          "lines": [
+            "Shift rolls to a knee, then rises to restart the exchange.",
+            "Moss and Shift return to a standing exchange; neither has established control.",
+            "Moss rolls through one German suplex, then a second, then a third!"
+          ]
+        },
+        {
+          "seed": 99615,
+          "plan": "safe",
+          "slot": "mid",
+          "time": "11:00",
+          "pre": "standing",
+          "post": "mat",
+          "from": "scheduled_nearfall",
+          "linked": false,
+          "lines": [
+            "Bell rolls through one German suplex, then a second, then a third!"
+          ]
+        }
+      ]
+    },
+    "sx_vertical": {
+      "hits": 5,
+      "unlinked": 2,
+      "prePositions": {
+        "standing": 5
+      },
+      "predecessors": [
+        [
+          "ar_elbow_point",
+          1
+        ],
+        [
+          "front_facelock",
+          1
+        ],
+        [
+          "go_behind",
+          1
+        ],
+        [
+          "scheduled_nearfall",
+          1
+        ],
+        [
+          "st_leg_kick",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 91169,
+          "plan": "spots",
+          "slot": "main",
+          "time": "01:50",
+          "pre": "standing",
+          "post": "mat",
+          "from": "front_facelock",
+          "linked": true,
+          "lines": [
+            "King hooks the head, lifts Stroud straight up and drops back with a vertical suplex."
+          ]
+        },
+        {
+          "seed": 96704,
+          "plan": "spots",
+          "slot": "main",
+          "time": "01:10",
+          "pre": "standing",
+          "post": "mat",
+          "from": "st_leg_kick",
+          "linked": true,
+          "lines": [
+            "Fen hooks the head, lifts Ortez straight up and drops back with a vertical suplex.",
+            "Ortez pushes back up off the mat as the next exchange begins.",
+            "Fen keeps Ortez under pressure, deliberately slowing the contest."
+          ]
+        },
+        {
+          "seed": 98549,
+          "plan": "spots",
+          "slot": "main",
+          "time": "02:40",
+          "pre": "standing",
+          "post": "mat",
+          "from": "go_behind",
+          "linked": true,
+          "lines": [
+            "Lane hooks the head, lifts North straight up and drops back with a vertical suplex."
+          ]
+        }
+      ]
+    },
+    "gd_knee_drop": {
+      "hits": 27,
+      "unlinked": 19,
+      "prePositions": {
+        "mat": 27
+      },
+      "predecessors": [
+        [
+          "gd_splash",
+          3
+        ],
+        [
+          "arm_drag",
+          2
+        ],
+        [
+          "clothesline",
+          2
+        ],
+        [
+          "gd_headbutt",
+          2
+        ],
+        [
+          "st_big_boot",
+          2
+        ],
+        [
+          "aerial_counter",
+          1
+        ],
+        [
+          "cover",
+          1
+        ],
+        [
+          "gd_back_rake",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 91784,
+          "plan": "spots",
+          "slot": "main",
+          "time": "11:40",
+          "pre": "mat",
+          "post": "mat",
+          "from": "st_standing_dropkick",
+          "linked": false,
+          "lines": [
+            "Graves drops a knee across Cassidy’s head.",
+            "That is the knee drop — nobody on this circuit does it quite like Graves.",
+            "Here it comes. You can hear the building change."
+          ]
+        },
+        {
+          "seed": 91784,
+          "plan": "spots",
+          "slot": "main",
+          "time": "13:50",
+          "pre": "mat",
+          "post": "mat",
+          "from": "st_big_boot",
+          "linked": false,
+          "lines": [
+            "Graves drops a knee across Cassidy’s head."
+          ]
+        },
+        {
+          "seed": 91825,
+          "plan": "safe",
+          "slot": "main",
+          "time": "12:50",
+          "pre": "mat",
+          "post": "mat",
+          "from": "sm_heel_hook",
+          "linked": false,
+          "lines": [
+            "Merrick drops a knee across Knight’s head."
+          ]
+        }
+      ]
+    },
+    "pw_running_powerbomb": {
+      "hits": 4,
+      "unlinked": 4,
+      "prePositions": {
+        "standing": 4
+      },
+      "predecessors": [
+        [
+          "scheduled_nearfall",
+          2
+        ],
+        [
+          "counter_strike",
+          1
+        ],
+        [
+          "nk_rolling_neckbreaker",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 91907,
+          "plan": "story",
+          "slot": "opener",
+          "time": "07:40",
+          "pre": "standing",
+          "post": "mat",
+          "from": "scheduled_nearfall",
+          "linked": false,
+          "lines": [
+            "Both wrestlers search for the opening that will allow the agreed finish.",
+            "Quinn lifts Tide, charges across the ring and slams them down with a running powerbomb!"
+          ]
+        },
+        {
+          "seed": 99000,
+          "plan": "safe",
+          "slot": "mid",
+          "time": "09:50",
+          "pre": "standing",
+          "post": "mat",
+          "from": "counter_strike",
+          "linked": false,
+          "lines": [
+            "The pace rises as both wrestlers start looking for their big attacks.",
+            "Park lifts Gale, charges across the ring and slams them down with a running powerbomb!"
+          ]
+        },
+        {
+          "seed": 100435,
+          "plan": "safe",
+          "slot": "main",
+          "time": "16:20",
+          "pre": "standing",
+          "post": "mat",
+          "from": "scheduled_nearfall",
+          "linked": false,
+          "lines": [
+            "Marlowe finds their footing and forces the fight back upright.",
+            "The pace rises as both wrestlers start looking for their big attacks.",
+            "Watt is calling audibles. This wasn’t the plan.",
+            "Watt lifts Marlowe, charges across the ring and slams them down with a running powerbomb!"
+          ]
+        }
+      ]
+    },
+    "nk_ddt": {
+      "hits": 10,
+      "unlinked": 9,
+      "prePositions": {
+        "standing": 10
+      },
+      "predecessors": [
+        [
+          "circle",
+          1
+        ],
+        [
+          "finish_tease",
+          1
+        ],
+        [
+          "front_facelock",
+          1
+        ],
+        [
+          "headlock_takeover",
+          1
+        ],
+        [
+          "lockup",
+          1
+        ],
+        [
+          "outside_toss",
+          1
+        ],
+        [
+          "scheduled_nearfall",
+          1
+        ],
+        [
+          "st_rolling_koppu",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 92276,
+          "plan": "technical",
+          "slot": "main",
+          "time": "16:00",
+          "pre": "standing",
+          "post": "mat",
+          "from": "lockup",
+          "linked": false,
+          "lines": [
+            "The pace rises as both wrestlers start looking for their big attacks.",
+            "Stroud tucks Keats’s head and falls back, spiking them with a DDT!"
+          ]
+        },
+        {
+          "seed": 93957,
+          "plan": "story",
+          "slot": "mid",
+          "time": "10:20",
+          "pre": "standing",
+          "post": "mat",
+          "from": "st_side_kick",
+          "linked": false,
+          "lines": [
+            "Blackwell tucks Barr’s head and falls back, spiking them with a DDT!"
+          ]
+        },
+        {
+          "seed": 97729,
+          "plan": "spots",
+          "slot": "mid",
+          "time": "03:20",
+          "pre": "standing",
+          "post": "mat",
+          "from": "front_facelock",
+          "linked": true,
+          "lines": [
+            "Stroud tucks King’s head and falls back, spiking them with a DDT!"
+          ]
+        }
+      ]
+    },
+    "os_floor_piledriver": {
+      "hits": 25,
+      "unlinked": 24,
+      "prePositions": {
+        "outside": 25
+      },
+      "predecessors": [
+        [
+          "outside_toss",
+          21
+        ],
+        [
+          "os_ramp_suplex",
+          2
+        ],
+        [
+          "floor_brawl",
+          1
+        ],
+        [
+          "os_floor_piledriver",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 92317,
+          "plan": "story",
+          "slot": "main",
+          "time": "19:00",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": false,
+          "lines": [
+            "Pike sends Rourke over the ropes onto the floor. The referee starts counting.",
+            "Pike goes for it!",
+            "Pike hooks Rourke on the floor and drives them down with a piledriver!",
+            "Pike is blown up. Slow it down or take it home."
+          ]
+        },
+        {
+          "seed": 93711,
+          "plan": "technical",
+          "slot": "opener",
+          "time": "08:00",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": false,
+          "lines": [
+            "Mercer gives Hayes space to get back to their feet. Both reset their footing.",
+            "Mercer sends Hayes over the ropes onto the floor. The referee starts counting.",
+            "Mercer goes for it!",
+            "Mercer hooks Hayes on the floor and drives them down with a piledriver!",
+            "Somebody will be walking funny tomorrow, Gloria."
+          ]
+        },
+        {
+          "seed": 96909,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "06:10",
+          "pre": "outside",
+          "post": "outside",
+          "from": "outside_toss",
+          "linked": false,
+          "lines": [
+            "Vance rolls clear and uses the ropes to rise. Lowe gives ground to avoid a counter.",
+            "Lowe sends Vance over the ropes onto the floor. The referee starts counting.",
+            "Lowe goes for it!",
+            "Lowe hooks Vance on the floor and drives them down with a piledriver!",
+            "The front row have spilled their drinks. That is the review written."
+          ]
+        }
+      ]
+    },
+    "pw_backbreaker": {
+      "hits": 17,
+      "unlinked": 15,
+      "prePositions": {
+        "standing": 17
+      },
+      "predecessors": [
+        [
+          "aerial_attack",
+          1
+        ],
+        [
+          "body_shot",
+          1
+        ],
+        [
+          "circle",
+          1
+        ],
+        [
+          "counter_rollup",
+          1
+        ],
+        [
+          "duck_rebound",
+          1
+        ],
+        [
+          "floor_brawl",
+          1
+        ],
+        [
+          "gd_rib_stomp",
+          1
+        ],
+        [
+          "mat_hold",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 92563,
+          "plan": "brawl",
+          "slot": "opener",
+          "time": "02:10",
+          "pre": "standing",
+          "post": "mat",
+          "from": "stand_reset",
+          "linked": false,
+          "lines": [
+            "Shift scoops Moss up and drops them across a knee with a backbreaker."
+          ]
+        },
+        {
+          "seed": 92604,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "07:30",
+          "pre": "standing",
+          "post": "mat",
+          "from": "outside_toss",
+          "linked": false,
+          "lines": [
+            "Flint and Doyle beat the referee’s count and slide back into the ring.",
+            "Flint and Doyle dig deep. The finishing sequence is close.",
+            "Flint scoops Doyle up and drops them across a knee with a backbreaker."
+          ]
+        },
+        {
+          "seed": 93506,
+          "plan": "technical",
+          "slot": "main",
+          "time": "09:40",
+          "pre": "standing",
+          "post": "mat",
+          "from": "floor_brawl",
+          "linked": false,
+          "lines": [
+            "Rowe scoops Carter up and drops them across a knee with a backbreaker."
+          ]
+        }
+      ]
+    },
+    "sx_german": {
+      "hits": 13,
+      "unlinked": 11,
+      "prePositions": {
+        "standing": 13
+      },
+      "predecessors": [
+        [
+          "stand_reset",
+          2
+        ],
+        [
+          "waist_escape",
+          2
+        ],
+        [
+          "ch_short_arm",
+          1
+        ],
+        [
+          "corner_escape",
+          1
+        ],
+        [
+          "crowd_pose",
+          1
+        ],
+        [
+          "duck_rebound",
+          1
+        ],
+        [
+          "fr_crowd_clap",
+          1
+        ],
+        [
+          "os_apron_ddt",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 93055,
+          "plan": "safe",
+          "slot": "main",
+          "time": "14:40",
+          "pre": "standing",
+          "post": "mat",
+          "from": "springboard_rise",
+          "linked": false,
+          "lines": [
+            "Bell locks the waist and arches Kade over with a German suplex!",
+            "That is the German suplex — nobody on this circuit does it quite like Bell."
+          ]
+        },
+        {
+          "seed": 95515,
+          "plan": "safe",
+          "slot": "main",
+          "time": "15:10",
+          "pre": "standing",
+          "post": "mat",
+          "from": "fr_crowd_clap",
+          "linked": false,
+          "lines": [
+            "March locks the waist and arches Rowe over with a German suplex!"
+          ]
+        },
+        {
+          "seed": 97032,
+          "plan": "story",
+          "slot": "mid",
+          "time": "08:20",
+          "pre": "standing",
+          "post": "mat",
+          "from": "crowd_pose",
+          "linked": false,
+          "lines": [
+            "Rourke locks the waist and arches Blackwell over with a German suplex!",
+            "That is the German suplex — nobody on this circuit does it quite like Rourke."
+          ]
+        }
+      ]
+    },
+    "cn_tree_of_woe": {
+      "hits": 3,
+      "unlinked": 0,
+      "prePositions": {
+        "corner": 3
+      },
+      "predecessors": [
+        [
+          "corner_whip",
+          2
+        ],
+        [
+          "corner_strikes",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 93506,
+          "plan": "technical",
+          "slot": "main",
+          "time": "15:10",
+          "pre": "corner",
+          "post": "corner",
+          "from": "corner_strikes",
+          "linked": true,
+          "lines": [
+            "Carter hangs Rowe upside down in the turnbuckles and stomps them."
+          ]
+        },
+        {
+          "seed": 98795,
+          "plan": "safe",
+          "slot": "opener",
+          "time": "05:50",
+          "pre": "corner",
+          "post": "corner",
+          "from": "corner_whip",
+          "linked": true,
+          "lines": [
+            "Rowe hangs March upside down in the turnbuckles and stomps them."
+          ]
+        },
+        {
+          "seed": 103674,
+          "plan": "spots",
+          "slot": "opener",
+          "time": "07:40",
+          "pre": "corner",
+          "post": "corner",
+          "from": "corner_whip",
+          "linked": true,
+          "lines": [
+            "Serrano hangs Bloom upside down in the turnbuckles and stomps them."
+          ]
+        }
+      ]
+    },
+    "pw_chokeslam": {
+      "hits": 6,
+      "unlinked": 4,
+      "prePositions": {
+        "standing": 6
+      },
+      "predecessors": [
+        [
+          "lockup",
+          2
+        ],
+        [
+          "scheduled_nearfall",
+          2
+        ],
+        [
+          "cheap_shot",
+          1
+        ],
+        [
+          "strike_trade",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 94162,
+          "plan": "story",
+          "slot": "main",
+          "time": "11:10",
+          "pre": "standing",
+          "post": "mat",
+          "from": "lockup",
+          "linked": true,
+          "lines": [
+            "Bay grips Quinn by the throat, lifts them high and slams them down!"
+          ]
+        },
+        {
+          "seed": 95761,
+          "plan": "technical",
+          "slot": "mid",
+          "time": "10:30",
+          "pre": "standing",
+          "post": "mat",
+          "from": "cheap_shot",
+          "linked": false,
+          "lines": [
+            "Doyle grips Moya by the throat, lifts them high and slams them down!"
+          ]
+        },
+        {
+          "seed": 99000,
+          "plan": "safe",
+          "slot": "mid",
+          "time": "12:00",
+          "pre": "standing",
+          "post": "mat",
+          "from": "lockup",
+          "linked": true,
+          "lines": [
+            "Gale grips Park by the throat, lifts them high and slams them down!",
+            "Nobody is thinking about the drive home now."
+          ]
+        }
+      ]
+    },
+    "cn_forearm": {
+      "hits": 4,
+      "unlinked": 0,
+      "prePositions": {
+        "corner": 4
+      },
+      "predecessors": [
+        [
+          "corner_whip",
+          4
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 94613,
+          "plan": "brawl",
+          "slot": "mid",
+          "time": "03:30",
+          "pre": "corner",
+          "post": "corner",
+          "from": "corner_whip",
+          "linked": true,
+          "lines": [
+            "Ortez charges into the corner with a running forearm."
+          ]
+        },
+        {
+          "seed": 95474,
+          "plan": "spots",
+          "slot": "main",
+          "time": "02:10",
+          "pre": "corner",
+          "post": "corner",
+          "from": "corner_whip",
+          "linked": true,
+          "lines": [
+            "The Reverend charges into the corner with a running forearm.",
+            "Shift has that look. I had that look once. Then I had the knee operation."
+          ]
+        },
+        {
+          "seed": 99820,
+          "plan": "safe",
+          "slot": "main",
+          "time": "11:30",
+          "pre": "corner",
+          "post": "corner",
+          "from": "corner_whip",
+          "linked": true,
+          "lines": [
+            "Finch charges into the corner with a running forearm."
+          ]
+        }
+      ]
+    },
+    "sx_tiger": {
+      "hits": 2,
+      "unlinked": 2,
+      "prePositions": {
+        "standing": 2
+      },
+      "predecessors": [
+        [
+          "wristlock",
+          2
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 96868,
+          "plan": "brawl",
+          "slot": "opener",
+          "time": "06:10",
+          "pre": "standing",
+          "post": "mat",
+          "from": "wristlock",
+          "linked": false,
+          "lines": [
+            "Both wrestlers scramble to their feet. The advantage is there to be taken.",
+            "Merrick hooks both arms from behind and bridges Idris with a tiger suplex!"
+          ]
+        },
+        {
+          "seed": 107323,
+          "plan": "brawl",
+          "slot": "opener",
+          "time": "05:50",
+          "pre": "standing",
+          "post": "mat",
+          "from": "wristlock",
+          "linked": false,
+          "lines": [
+            "Both wrestlers scramble to their feet. The advantage is there to be taken.",
+            "Briggs hooks both arms from behind and bridges Bloom with a tiger suplex!"
+          ]
+        }
+      ]
+    },
+    "cn_splash": {
+      "hits": 2,
+      "unlinked": 0,
+      "prePositions": {
+        "corner": 2
+      },
+      "predecessors": [
+        [
+          "corner_charge",
+          1
+        ],
+        [
+          "corner_strikes",
+          1
+        ]
+      ],
+      "examples": [
+        {
+          "seed": 101501,
+          "plan": "technical",
+          "slot": "main",
+          "time": "09:50",
+          "pre": "corner",
+          "post": "corner",
+          "from": "corner_charge",
+          "linked": true,
+          "lines": [
+            "Fen charges and crushes Gale in the corner with a splash."
+          ]
+        },
+        {
+          "seed": 109291,
+          "plan": "technical",
+          "slot": "mid",
+          "time": "02:30",
+          "pre": "corner",
+          "post": "corner",
+          "from": "corner_strikes",
+          "linked": true,
+          "lines": [
+            "the Reverend is calling audibles. This wasn’t the plan.",
+            "The Reverend charges and crushes Vaughan in the corner with a splash."
+          ]
+        }
+      ]
+    }
+  },
+  "attempts": {
+    "aerial": {
+      "sb_clothesline": {
+        "attempts": 13,
+        "outcomes": {
+          "landed": 9,
+          "counter": 3,
+          "block": 1
+        }
+      },
+      "sb_elbow": {
+        "attempts": 24,
+        "outcomes": {
+          "landed": 17,
+          "counter": 5,
+          "block": 2
+        }
+      },
+      "sb_dropkick": {
+        "attempts": 22,
+        "outcomes": {
+          "landed": 16,
+          "counter": 5,
+          "block": 1
+        }
+      },
+      "ar_swanton": {
+        "attempts": 1,
+        "outcomes": {
+          "landed": 1
+        }
+      },
+      "ar_450": {
+        "attempts": 2,
+        "outcomes": {
+          "counter": 1,
+          "landed": 1
+        }
+      },
+      "sb_arm_drag": {
+        "attempts": 17,
+        "outcomes": {
+          "counter": 3,
+          "block": 6,
+          "landed": 8
+        }
+      },
+      "ar_axe": {
+        "attempts": 9,
+        "outcomes": {
+          "landed": 6,
+          "counter": 3
+        }
+      },
+      "ar_fist": {
+        "attempts": 10,
+        "outcomes": {
+          "landed": 9,
+          "counter": 1
+        }
+      },
+      "ar_missile_low": {
+        "attempts": 9,
+        "outcomes": {
+          "block": 1,
+          "landed": 4,
+          "counter": 4
+        }
+      },
+      "ar_knee": {
+        "attempts": 3,
+        "outcomes": {
+          "landed": 2,
+          "block": 1
+        }
+      },
+      "ar_splash": {
+        "attempts": 8,
+        "outcomes": {
+          "landed": 5,
+          "block": 2,
+          "counter": 1
+        }
+      },
+      "ar_shooting_star": {
+        "attempts": 1,
+        "outcomes": {
+          "landed": 1
+        }
+      },
+      "ar_cross_arm": {
+        "attempts": 8,
+        "outcomes": {
+          "landed": 6,
+          "block": 2
+        }
+      },
+      "sb_moonsault": {
+        "attempts": 5,
+        "outcomes": {
+          "counter": 1,
+          "landed": 3,
+          "block": 1
+        }
+      },
+      "ar_clothesline": {
+        "attempts": 5,
+        "outcomes": {
+          "landed": 4,
+          "counter": 1
+        }
+      },
+      "ar_elbow_point": {
+        "attempts": 1,
+        "outcomes": {
+          "landed": 1
+        }
+      },
+      "ar_frog": {
+        "attempts": 3,
+        "outcomes": {
+          "landed": 3
+        }
+      },
+      "sb_cutter": {
+        "attempts": 3,
+        "outcomes": {
+          "landed": 3
+        }
+      },
+      "ar_legdrop": {
+        "attempts": 2,
+        "outcomes": {
+          "landed": 2
+        }
+      },
+      "ar_moonsault": {
+        "attempts": 1,
+        "outcomes": {
+          "landed": 1
+        }
+      },
+      "ar_senton": {
+        "attempts": 1,
+        "outcomes": {
+          "landed": 1
+        }
+      }
+    },
+    "grapple": {
+      "sm_sleeper": {
+        "attempts": 32,
+        "outcomes": {
+          "landed": 22,
+          "counter": 9,
+          "block": 1
+        }
+      },
+      "sm_ankle_lock": {
+        "attempts": 33,
+        "outcomes": {
+          "landed": 21,
+          "counter": 11,
+          "block": 1
+        }
+      },
+      "sx_vertical": {
+        "attempts": 8,
+        "outcomes": {
+          "landed": 5,
+          "counter": 3
+        }
+      },
+      "sx_german": {
+        "attempts": 16,
+        "outcomes": {
+          "landed": 13,
+          "block": 2,
+          "counter": 1
+        }
+      }
+    }
+  },
+  "flaggedExamples": [],
+  "firstTenBouts": [
+    {
+      "index": 0,
+      "seed": 90021,
+      "w": "ace",
+      "f": "eira",
+      "plan": "technical",
+      "slot": "opener",
+      "seconds": 480,
+      "stars": 3.5,
+      "outcome": "win_clean"
+    },
+    {
+      "index": 1,
+      "seed": 90062,
+      "w": "aisha",
+      "f": "gideon",
+      "plan": "story",
+      "slot": "opener",
+      "seconds": 480,
+      "stars": 3,
+      "outcome": "lose_clean"
+    },
+    {
+      "index": 2,
+      "seed": 90103,
+      "w": "alina",
+      "f": "juno",
+      "plan": "brawl",
+      "slot": "opener",
+      "seconds": 480,
+      "stars": 3.25,
+      "outcome": "win_dirty"
+    },
+    {
+      "index": 3,
+      "seed": 90144,
+      "w": "anya",
+      "f": "liya",
+      "plan": "spots",
+      "slot": "opener",
+      "seconds": 480,
+      "stars": 3,
+      "outcome": "lose_protected"
+    },
+    {
+      "index": 4,
+      "seed": 90185,
+      "w": "ari",
+      "f": "milo",
+      "plan": "safe",
+      "slot": "opener",
+      "seconds": 480,
+      "stars": 2,
+      "outcome": "win_clean"
+    },
+    {
+      "index": 5,
+      "seed": 90226,
+      "w": "ash",
+      "f": "nikita",
+      "plan": "technical",
+      "slot": "mid",
+      "seconds": 720,
+      "stars": 3,
+      "outcome": "lose_clean"
+    },
+    {
+      "index": 6,
+      "seed": 90267,
+      "w": "ayla",
+      "f": "rex",
+      "plan": "story",
+      "slot": "mid",
+      "seconds": 720,
+      "stars": 3,
+      "outcome": "win_dirty"
+    },
+    {
+      "index": 7,
+      "seed": 90308,
+      "w": "bao",
+      "f": "soraya",
+      "plan": "brawl",
+      "slot": "mid",
+      "seconds": 720,
+      "stars": 3.75,
+      "outcome": "lose_protected"
+    },
+    {
+      "index": 8,
+      "seed": 90349,
+      "w": "bashir",
+      "f": "val",
+      "plan": "spots",
+      "slot": "mid",
+      "seconds": 720,
+      "stars": 3,
+      "outcome": "win_clean"
+    },
+    {
+      "index": 9,
+      "seed": 90390,
+      "w": "brick",
+      "f": "alina",
+      "plan": "safe",
+      "slot": "mid",
+      "seconds": 720,
+      "stars": 3,
+      "outcome": "lose_clean"
+    }
+  ],
+  "coverageNote": "The scripted engine logs post-action position; auditPrePosition is captured at Graph.apply entry. No wrist/waist/facelock grip is modelled. An unlinked preceding event is NOT by itself a physical-legality failure.",
+  "eventCapNote": "Match engine retains at most 220 graph events. If eventCapReached is nonzero, extend the tracer before treating event frequency as exhaustive."
+}
