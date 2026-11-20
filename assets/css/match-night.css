@@ -472,7 +472,11 @@
 .mf-pbar{position:relative;height:10px;background:linear-gradient(var(--well-line),var(--well-line)) 50% 0/1px 100% no-repeat}
 .mf-pbar i{position:absolute;top:0;bottom:0}
 .mf-part.pos .mf-pbar i{background:var(--good)}.mf-part.neg .mf-pbar i{background:var(--bad)}
-.mf-part.total{border-top:1px solid var(--well-line);padding-top:4px}.mf-part.total b{color:var(--gold);font:24px/1 var(--jersey);white-space:nowrap}
+/* The breakdown values use a narrow numeric column. A star glyph rating is wider:
+   give it its own content-sized column instead of letting it spill off-screen. */
+.mf-part.total{border-top:1px solid var(--well-line);padding-top:4px;grid-template-columns:minmax(0,1fr) max-content}
+.mf-part.total>span:nth-child(2){display:none}
+.mf-part.total b{color:var(--gold);font:24px/1 var(--jersey);white-space:nowrap;text-align:right}
 @media (max-width:900px){
  .s-result:has(.mf-win){grid-template-rows:none}
  .mf-cols{grid-template-columns:minmax(0,1fr);grid-template-areas:"phase" "moments" "stars"}
