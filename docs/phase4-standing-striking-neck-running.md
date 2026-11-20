@@ -57,3 +57,23 @@ This is an independent test, **not a replacement for the 1,000-match release gat
 Other repeatedly unseen moves are not permanently unreachable: `pw_powerbomb` landed once, `sx_brainbuster` twice, `sx_deadlift_bridge` three times, and `lc_rope_walk` five times across the expanded sample. This confirms that the apparent list of missing moves in any one 1,000-bout cohort is partly seed-sensitive.
 
 **Conclusion:** the existing 1,000-bout 95% coverage gate does not currently give a stable pass across independent cohorts (two pass, two fail). The original unmodified gate must still pass before merge. This is **not** evidence for lowering the bar or padding the simulator with arbitrary move weights. Address the particular consistently absent setup and aborted-attempt paths, especially `sx_falcon_arrow` and `sm_dragon_sleeper`, then rerun exact and independent cohorts. Preserve the match-quality A/B, physical-grip, finish-contract and style-diversity gates.
+
+## Committed-grip expiry bug and independent recheck
+
+The independent diagnostic was extended to report the exact physical descriptor when a selected and committed grapple aborts during resolution. **All six measured aborts** of `sx_falcon_arrow` (4) and `sm_dragon_sleeper` (2) had an owned, correct grip aged **30 seconds** on the resolution tick. The grip was already valid at commitment, when it was **20 seconds** old. The old `physicalLegal` check re-tested the grip against the original 20-second *entry* window after the simulated clock advanced 10 seconds, causing a valid commitment to fail before a defender could realistically counter it.
+
+The fix allows the original same-owner grip to remain valid for **exactly the one pending resolution tick** if it was still fresh when that *same named move* was committed. A new attempt with an already stale grip remains forbidden; an opponent-owned grip, different move, or extra tick cannot exploit the allowance. Deterministic tests explicitly validate Falcon Arrow and dragon sleeper land, stale entry cannot commit, and stolen grip aborts.
+
+A **fresh 4,000-match independent-seed recheck** (same seeds as before, same intact 95% release gate) returned:
+
+| Seed cohort | Before fix | After fix | After status |
+|---|---:|---:|---|
+| Original 1,000 | 418/442 (94.57%) | 418/442 (94.57%) | Fail |
+| Offset 104729 | 418/442 (94.57%) | 423/442 (95.70%) | Pass |
+| Offset 209458 | 421/442 (95.25%) | 427/442 (96.61%) | Pass |
+| Offset 314187 | 425/442 (96.15%) | 429/442 (97.06%) | Pass |
+| Union of four | 435/442 (98.42%) | **438/442 (99.10%)** | Diagnostic only |
+
+After the bug fix, `sm_dragon_sleeper` landed **twice** (previously none, two aborted); `sx_falcon_arrow` is no longer on the consistently absent list and has no revalidation aborts in the latest trace. `pw_running_powerbomb` also landed once in the expanded sample. Only **four** actions remain unseen across all four batches: `dv_moonsault`, `nk_tombstone`, `pw_sitout`, and `sx_delayed`; none were observed as committed attempts. Their legal, earned setups and organic selection weights need a separate review, not a blanket increase in success odds.
+
+**Still blocked:** the original 1,000-match CI gate stays **418/442 = 94.57%**, two independent actions short of the release requirement. Even with three of four new cohorts passing, do not merge or revise the threshold simply because a larger union is green.
