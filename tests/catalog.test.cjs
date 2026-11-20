@@ -56,7 +56,7 @@ function probe(id){
   const s=x.story||(x.story={});Object.assign(s,{position:n.requires==='any'?'standing':n.requires,control,down:n.requires==='mat'?(control==='w'?'f':'w'):null});
   const parent=n.counterOf||n.blockOf;
   const aerialParent=A[parent]&&['aerial','springboard'].includes(A[parent].family);
-  const grappleParent=G.GRAPPLE_PILOT.includes(parent);
+  const grappleParent=G.GRAPPLE_PILOT.includes(parent)||G.SUPERPLEX_PILOT.includes(parent);
   if(grappleParent){
    // Phase 7: the existing reversal requires a live, exact parent commitment.
    // The attack's own requirements and timing must also be achievable.
