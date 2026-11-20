@@ -13,7 +13,7 @@ function capture(n=6){
   lateSetups:0,lateWorkerRisk:0,lateWorkerNamedAerials:0,
   lateGenericAerial:0,lateAerialAttempts:0,lateAerialLandings:0,
   lateBreaths:0,zeroSetups:0,zeroNamedRisk:0,
-  lateStartReady:0
+  lateStartReady:0,distinctWorkerRisk:0,atLeastOneRisk:0,twoDistinctRisks:0
  };
  for(let oi=0;oi<opponents.length;oi++)for(let i=0;i<n;i++){
   const opp=opponents[oi],seed=880041+oi*7919+18*9191+i*193;
@@ -69,6 +69,7 @@ function capture(n=6){
    if(['aerial_attack','springboard_strike','missile_dropkick','high_crossbody'].includes(e.id))
     data.lateGenericAerial=(data.lateGenericAerial||0)+1;
   }
+  data.distinctLateRisk=new Set(data.landedRisk.map(x=>x.id)).size;
   data.aerialAttempts=(m.graph?.aerialAttempts||[])
    .filter(e=>e.side==='w'&&e.startedT>=m.len-180)
    .map(e=>({id:e.id,t:e.startedT,outcome:e.outcome}));
@@ -80,6 +81,9 @@ function capture(n=6){
   sums.topReady+=data.topReady;sums.workerMat+=data.mat;
   sums.workerOutside+=data.outside;sums.lateSetups+=data.setup.length;
   sums.lateWorkerRisk+=data.lateRisk;
+  sums.distinctWorkerRisk+=data.distinctLateRisk;
+  if(data.distinctLateRisk>0)sums.atLeastOneRisk++;
+  if(data.distinctLateRisk>=2)sums.twoDistinctRisks++;
   sums.lateWorkerNamedAerials+=data.landedRisk.filter(e=>
    ['aerial','springboard','dive'].includes(G.A[e.id]?.family)).length;
   sums.lateGenericAerial+=data.lateGenericAerial||0;
