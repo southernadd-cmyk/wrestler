@@ -34,6 +34,8 @@ jobs:
         run: node tests/style-depth-audit.test.cjs
       - name: Verify actual narrated Brawl pacing and real late attack eligibility
         run: node tests/brawl-endurance.test.cjs
+      - name: Check competent Brawl late impact legality
+        run: node tests/brawl-late-impact.test.cjs
       - name: Simulate 4860 bouts and publish all comparisons
         shell: bash
         run: |

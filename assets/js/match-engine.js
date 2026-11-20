@@ -2710,19 +2710,37 @@ const Graph=(function makeGraph(){
   // aerial attack. A reset remains a real, timed, position-valid graph move.
   if(needsLatePayoff&&p.position==='mat'&&p.down!==p.control)
    selected.push(['stand_reset',6]);
-  // In the final three minutes, trained brawlers can choose fresh named
-  // physical strikes/power exchanges, not just replay generic forearms.
-  // The ordinary validity, position, weight and commitment checks still apply.
-  if(longBrawl&&brawlTraining>=.5&&timeLeft>=30&&timeLeft<=180&&stamina>=26){
+  // Skilled Brawl performers (>=.30) earn named late move variety.
+  // Cost-aware selection replaces the flat 26-stamina exclusion, while
+  // isValid retains the actual positioning, lift, grip and expense gates.
+  const brawlLate=longBrawl&&brawlTraining>=.30&&timeLeft>=30&&timeLeft<=180;
+  const usedLate=id=>g.events.some(e=>e.id===id&&
+   e.preControl===p.control&&e.t>=M.len-180);
+  const brawlImpact=id=>{
+   const move=A[id];
+   if(!move||move.reverse||move.counterOf||move.blockOf||
+      !['strike','running','power','outside','corner','rope'].includes(move.family)||
+      (move.requires!==p.position&&move.requires!=='any')||
+      costOf(id)<0||stamina<Math.max(10,9+costOf(id)*3))return false;
+   // Holds and body-clinch setups are not *impact* payoffs.
+   if(move.family==='power'&&move.zone!=='mat')return false;
+   // A running attack needs an actual rope/rebound setup.
+   if(move.family==='running'&&
+      !(sameController&&CAT.F.running.from.includes(g.node)))return false;
+   return true;
+  };
+  if(brawlLate){
+   const emphasis=2.6*(.62+.38*brawlTraining);
    for(const family of ['strike','running','power','outside','corner','rope'])
     for(const id of CAT.members[family]||[]){
-     const move=A[id];
-     if(!move||move.reverse||move.counterOf||move.blockOf||
-        (move.requires!==p.position&&move.requires!=='any')||
-        g.events.some(e=>e.id===id&&e.preControl===p.control&&
-         e.t>=M.len-180))continue;
-     selected.push([id,2.6]);
+     if(brawlImpact(id)&&!usedLate(id))selected.push([id,emphasis]);
     }
+   // Support a legitimate strike -> rope run -> named running payoff.
+   if(p.position==='standing'&&sameController&&
+      ['strike','running'].includes(A[g.node]?.family)&&
+      !g.events.some(e=>e.id==='rope_run'&&e.preControl===p.control&&
+       M.t-e.t<60)&&stamina>=20)
+    selected.push(['rope_run',3.2]);
   }
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
   for(const fam of ARC_FAMILIES[g.arc]||[])for(const id of CAT.members[fam]||[]){
@@ -2980,6 +2998,22 @@ const Graph=(function makeGraph(){
    weights.set(id,(weights.get(id)||0)+n);
   }
   const pool=[...weights.entries()];
+  // Restore a bounded, non-forced impact share after the broad action-pool
+  // expansion. No reward for bearhugs/holds or an already landed named move.
+  if(brawlLate){
+   const fresh=pool.filter(([id])=>brawlImpact(id)&&!usedLate(id));
+   if(fresh.length>=2){
+    const freshIds=new Set(fresh.map(([id])=>id));
+    const current=fresh.reduce((sum,[,weight])=>sum+weight,0);
+    const others=pool.reduce((sum,[id,weight])=>
+     sum+(freshIds.has(id)?0:weight),0);
+    const goal=others*(.20+.11*brawlTraining);
+    if(current>0&&current<goal){
+     const scaling=Math.min(3,goal/current);
+     for(const entry of fresh)entry[1]*=scaling;
+    }
+   }
+  }
   // The large modern graph would otherwise drown the one genuine rest.
   // This is only a probability share, before the last 180 seconds.
   if(longBrawl&&timeLeft>180&&timeLeft<=540&&stamina<62&&
