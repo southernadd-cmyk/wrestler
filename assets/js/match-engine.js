@@ -2108,9 +2108,10 @@ const Graph=(function makeGraph(){
   g.strikeAttempts.push({seq,id,side,startedT:M.t,outcome:'pending'});
   const staminaKey=side==='w'?'wSt':'fSt';
   M[staminaKey]=clamp(M[staminaKey]-.45);g.exertion=(g.exertion||0)+.45;
-  say(M,n.family==='running'?
-   attacker.short+' bursts forward for the '+(n.name||id)+'. '+defender.short+' prepares to evade or meet the charge.':
-   attacker.short+' sets up the '+(n.name||id)+'. '+defender.short+' raises a guard and looks for an opening.','play');
+  // An ordinary strike/running exchange resolves in the same match beat.
+  // Narrating a generic setup here AND the real applied event below repeats
+  // identical lines every time a worker uses their preferred strike. The
+  // landing, block or exact counter gets the commentary instead.
   return true;
  }
  function concludeStrike(M,outcome,actionId=null){
