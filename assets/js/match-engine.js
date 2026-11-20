@@ -2271,7 +2271,9 @@ const Graph=(function makeGraph(){
    // through the existing scoring multipliers below.
    for(const id of GRAPPLE_PILOT){
     if(PHYSICAL_GRIP_MOVES[id]===grip.type&&A[id]?.requires==='standing')
-     selected.push([id,2.6]);
+     // Securing a difficult grip should lead to a plausible attack before
+     // the hold expires; still never bypass move legality, stamina or styles.
+     selected.push([id,3.3]);
    }
   }else if(M.planId!=='spots'&&p.position==='standing'&&
      (famList.includes('suplex')||famList.includes('power')||
