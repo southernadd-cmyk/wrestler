@@ -1,16 +1,6 @@
 name: Match graph baselines
 
 on:
-  pull_request:
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'assets/js/data.js'
-      - 'assets/js/roster-registry.js'
-      - 'tools/graph-baseline.cjs'
-      - 'tools/graph-baseline-suite.cjs'
-      - 'tools/graph-lab/core.js'
-      - 'tools/graph-lab/baselines/**'
-      - '.github/workflows/graph-baselines.yml'
   push:
     branches: [main]
     paths:
@@ -27,6 +17,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   baselines:
