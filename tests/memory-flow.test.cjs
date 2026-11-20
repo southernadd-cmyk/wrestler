@@ -136,7 +136,7 @@ assert.equal(scene.m.incidentKind,'breakthrough');
 assert.match(scene.m.body.join(' '),/performance|crowd/i);
 assert.doesNotMatch(scene.m.body.join(' '),/contract has been settled/i);
 assert.match(scene.m.body[2],/better billing/);
-assert.deepEqual(scene.m.options.map(o=>o.id),['back','business','promise']);
+assert.deepEqual(Array.from(scene.m.options,o=>o.id),['back','business','promise']);
 assert.match(scene.m.options[0].label,/higher place on the card/);
 assert.match(scene.m.options[1].label,/expectations/);
 assert.match(scene.m.options[2].label,/featured match/);
