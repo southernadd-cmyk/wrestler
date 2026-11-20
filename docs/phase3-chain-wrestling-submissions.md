@@ -33,3 +33,15 @@ The engine's existing legality guard still enforces wrestler weight, energy, mat
 The rest-hold family (12 actions), non-attacking chain transitions (8+ actions), extended mat positional escapes and follow-up narration need their own linked-control and probability review rather than being arbitrarily labelled 'committed grapples'. Confirm their live path selection and document any dead ends. Do not force all 340 catalogue moves into this one mechanic.
 
 This document describes an **implementation awaiting testing**, not a production or realism sign-off.
+
+## Rest holds and defensive continuity (follow-on batch)
+
+The 12 existing rest-family actions have been audited as *positional controls*, not forced into the two-beat high-impact grapple mechanism. Ten of the 12 establish explicit held body-part control (ground-arm, ground-head, ground-back or existing ground-leg); body scissors and the loose lateral cover deliberately do **not** confer a made-up wrist/leg grip.
+
+A real side headlock/front chancery opens an appropriate grounded neck submission, held wrist/arm control opens a kimura or armbar, mat stretch can lead to camel clutch and leg control leads to grounded leg locks. Seven specific real-action setup→submission chains are regression-tested, plus all 12 rest nodes, grip ownership and expiry, escape interruption and save/replay.
+
+Rest-family generated `_rev` escapes and `_blk` blocks now require the **exact preceding rest hold** by the same original controller, within 20 match ticks. This is not a pending two-beat grapple attempt; it is a one-beat defensive reply to an actual hold. Generic graph edges do not grant free-standing escapes. The structural reachability probe now performs each real rest hold before checking its defence.
+
+A neutral mat position/target hold can carry a *still-valid, same-controller* captured grip for a genuine continuation, without refreshing its expiry. A scramble, loose cover or different controller releases/invalidates the grip. This preserves movement and interruption rather than mechanically forcing a particular finisher.
+
+The original 95% coverage gate remains in place (no threshold reduction). After a legally controlled, same-owner mat grip, eligible submission follow-throughs receive a modest selection preference; they still have to beat normal style, stamina, weight, phase, risk and booked-finish checks. No new moves or counterfeit outcomes were introduced.
