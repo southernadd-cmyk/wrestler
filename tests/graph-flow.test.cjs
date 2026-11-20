@@ -71,6 +71,8 @@ for(let i=0;i<500;i++){
 const authored=Object.keys(graph.A).filter(name=>!graph.A[name].family);
 for(let i=500;i<2000&&authored.some(name=>!visited.has(name));i++)
  for(const e of work(M.create(options(i))).graph.events)visited.add(e.id);
+const missingAuthored=authored.filter(name=>!visited.has(name));
+console.log('Graph-flow authored backbone reachability: '+(authored.length-missingAuthored.length)+'/'+authored.length+' across at most 2000 sampled bouts; missing: '+missingAuthored.join(', '));
 for(const name of authored)assert.ok(visited.has(name),'graph node never reached: '+name);
 for(const name of Object.keys(graph.ARCS))assert.ok(arcs.has(name),'story arc never reached: '+name);
 assert.ok(fingerprints.size>=100,'matches must travel significantly different story paths');
