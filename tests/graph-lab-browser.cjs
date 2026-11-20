@@ -37,6 +37,19 @@ async function visit(browser, label, viewport) {
     await page.locator('#tab-run').click();
     assert.equal(await page.locator('#workspace-run').isVisible(), true);
 
+    // The reviewed fixtures feed the real form and do not inject artificial bouts.
+    assert.equal(await page.locator('#reviewScenario option').count(),7);
+    await page.locator('#reviewScenario').selectOption('aerial');
+    await page.locator('#applyReviewScenario').click();
+    assert.equal(await page.locator('#plan').inputValue(),'spots');
+    assert.equal(await page.locator('#seed').inputValue(),'225101');
+    assert.equal(await page.locator('#rotation').inputValue(),'roster');
+    await page.locator('#reviewScenario').selectOption('rivalry');
+    await page.locator('#applyReviewScenario').click();
+    assert.equal(await page.locator('#rotation').inputValue(),'fixed');
+    assert.equal(await page.locator('#worker').inputValue(),'juno');
+    assert.equal(await page.locator('#opponent').inputValue(),'rex');
+    assert.equal(await page.locator('#seed').inputValue(),'261101');
     await page.locator('#bouts').selectOption('1');
     await page.locator('#run').click();
     await page.waitForFunction(() => document.querySelector('#status').textContent.startsWith('Complete — '), { timeout: 45000 });

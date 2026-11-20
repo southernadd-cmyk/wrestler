@@ -578,6 +578,31 @@
     }
   }
 
+  function setupReviewScenarios(){
+    const source=window.OfficeGraphReviewScenarios;
+    if(!source)throw Error('Match review presets did not load.');
+    for(const scenario of source.cases){
+      const option=document.createElement('option');
+      option.value=scenario.id;
+      option.textContent=scenario.label+' / '+fmt(scenario.count)+' matches';
+      $('reviewScenario').append(option);
+    }
+    $('applyReviewScenario').addEventListener('click',()=>{
+      if(running)return;
+      const preset=source.get($('reviewScenario').value);
+      if(!preset){
+        set('status','Select a review scenario or use your own match settings.');
+        return;
+      }
+      for(const key of ['wid','rid','plan','finish','slot','rotation','seed','count']){
+        const id=key==='wid'?'worker':key==='rid'?'opponent':key==='count'?'bouts':key;
+        $(id).value=String(preset[key]);
+      }
+      updateSchoolReadout();
+      set('status',preset.label+' loaded. Press Run simulation to measure real matches.');
+    });
+  }
+
   function init() {
     try {
       if (!D || !M || !lab || !G || !validator) throw Error('Shipped match-engine or validation scripts did not load.');
@@ -597,6 +622,7 @@
         set('status', info.stats.errors.length + ' graph errors, ' + info.unreachable.length + ' unreachable nodes. Review before interpreting results.');
       }
       fillRoster();
+      setupReviewScenarios();
       setupWorkspaces();
       $('experiment').addEventListener('submit', run);
       $('stop').addEventListener('click', () => { stopped = true; set('status', 'Stopping after the current bout…'); });

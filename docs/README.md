@@ -1,6 +1,6 @@
-# The Office — documentation guide (v0.4.0)
+# The Office — documentation guide (v0.5.0)
 
-**Current release:** [v0.4.0 — release guide](v0.4-release.md)  
+**Current release:** [v0.5.0 — release guide](v0.5-release.md) · [previous v0.4.0](v0.4-release.md)  
 **Next development review:** [Technique coverage and physical realism](technique-and-realism-review.md)  
 **Completed 500-bout audit:** [Findings](reports/v04-technique-position-500.md) · [Machine-readable data](reports/v04-technique-position-500.json) · [Reproduction script](../tools/graph-lab/technique-position-audit.cjs)  
 **Superplex pacing and referee follow-up:** [1,500-bout investigation and verified pacing change](reports/v04-superplex-dq-followup-20261120.md)  
@@ -8,14 +8,14 @@
 **Playable game:** https://southernadd-cmyk.github.io/wrestler/  
 **Graph Lab:** https://southernadd-cmyk.github.io/wrestler/tools/graph-lab/
 
-This index separates **current implementation** from **historical phase notes**. The original phase documents and reports preserve the conditions, counts, proposals and trial measurements of their own period. Their titles, numeric baselines and historic test comparisons should not be silently rewritten to fit the current build. A short status note links them to the shipped v0.4 state.
+This index separates **v0.5 implementation and reviewed metadata** from **historical phase notes**. The original phase documents and reports preserve the conditions, counts, proposals and trial measurements of their own period. Their titles, numeric baselines and historic test comparisons should not be silently rewritten to fit the current build. A short status note links them to the shipped v0.4 state.
 
 ## Current entry points
 
 | Need | Read |
 | --- | --- |
-| What shipped and the verified counts | [v0.4 release guide](v0.4-release.md) |
-| Next technique and realism work | [v0.4 review](technique-and-realism-review.md) |
+| What's new in v0.5 and the current technique audit | [v0.5 release guide](v0.5-release.md), [final audit](reports/v04-final-106-technique-audit.md) |
+| Further match-quality and physical-realism review | [Earlier roadmap](technique-and-realism-review.md), [Graph Lab](graph-lab.md) |
 | Real 500-bout technique and physical-state evidence | [Completed audit](reports/v04-technique-position-500.md) |
 | Source modules, persistence and test architecture | [Architecture](architecture.md) |
 | Lab workflow, saved baselines and graph comparison | [Graph Lab](graph-lab.md) |

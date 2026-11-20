@@ -1,0 +1,33 @@
+name: Graph Lab match review
+
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/**'
+      - 'assets/js/match-engine.js'
+      - 'assets/js/technique-backgrounds.js'
+      - 'assets/js/technique-registry.js'
+      - 'tests/graph-lab-match-review.test.cjs'
+      - '.github/workflows/graph-lab-match-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  match-review:
+    name: Six scenarios / 600 real bouts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run repeatability checks
+        run: node tests/graph-lab-match-review.test.cjs
+      - name: Run complete Graph Lab match review
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/graph-lab/match-review.cjs 100 | tee "$GITHUB_STEP_SUMMARY"

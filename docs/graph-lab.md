@@ -1,6 +1,6 @@
-# The Office — Graph Lab (live through v0.4.0)
+# The Office — Graph Lab (live through v0.5.0)
 
-> **v0.4 release status:** The Graph Lab is **live** and covers the v0.4 match graph; its Phase 0 planning section below is historical. See the [current release](v0.4-release.md) and [next technique/realism review](technique-and-realism-review.md). Original experiment data and reference counts are retained.
+> **v0.5 release status:** Graph Lab measures the live v0.5 match graph. Its frozen v1 baseline and original Phase 0 design notes are historical. See the [current release](v0.5-release.md) and the [completed final technique audit](reports/v04-final-106-technique-audit.md).
 
 A read-only instrument for the **actual** browser match engine. It introduces no new wrestling styles, moves, training rules or career-save mutations. This is the diagnostic baseline to measure future Fight Encyclopedia-inspired graph changes.
 
@@ -25,6 +25,22 @@ Serve the repository root with a simple static server, then open:
 - Once merged into `main`: `https://southernadd-cmyk.github.io/wrestler/tools/graph-lab/`
 
 Do not open directly from `file://`. The lab uses the repository's real `data.js`, `roster-registry.js`, `match-engine.js`, and its own small `core.js`. It does not load `career.js`, `ui.js`, local storage, or any external runtime dependency. It does not appear in normal career navigation.
+
+## New v0.5 match-review scenarios
+
+The **Run sheet** now has six repeatable review presets: technical grappling, power/brawl, aerial spectacle, comeback storytelling, cautious opener and a repeated Juno/Rex rivalry. Choose one, press **Load test settings**, then **Run simulation**. Each loads 100 real seeded bouts into the existing, read-only match simulation; you can change any setting before starting. The tape, graph, counter, physical validation and export panels remain unchanged.
+
+Run the same presets headlessly:
+
+```sh
+node tools/graph-lab/match-review.cjs 100
+node tools/graph-lab/match-review.cjs 5 --json
+node tests/graph-lab-match-review.test.cjs
+```
+
+The [Graph Lab match review workflow](../.github/workflows/graph-lab-match-review.yml) runs all 600 bouts on related pull requests and on manual dispatch; its Markdown report is published in the GitHub Actions job summary. It checks actual match completion, engine legality, deterministic scenarios, observed authored move use and nearfall/counter evidence. A match-quality claim also needs a human review of the **Tape review** output.
+
+**Important:** v0.5's 325 authored technique descriptions are editorial metadata, not new executable moves. Fifteen remaining catalogue events are intentionally classified as crowd, timing, story or performance beats. These remain playable. The existing match engine is not changed by the Lab or this metadata audit.
 
 ## What it measures
 
