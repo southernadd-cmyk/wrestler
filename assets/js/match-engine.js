@@ -2864,25 +2864,6 @@ const Graph=(function makeGraph(){
    weights.set(id,(weights.get(id)||0)+n);
   }
   const pool=[...weights.entries()];
-  // Having actually reached the ropes, a trained flyer should favour a
-  // named launch over unrelated generic movement. Only already-legal,
-  // physically prepared exact-parent aerials gain selection probability;
-  // this never resolves the attempt or weakens defence/botch chances.
-  if(needsLatePayoff&&sameController&&p.position==='top'&&
-     timeLeft>=30&&
-     (g.node==='top_climb'||g.node==='springboard_rise')){
-   const intended=g.node==='top_climb'?'aerial':'springboard';
-   const eligible=pool.filter(([id])=>A[id]?.family===intended&&
-    A[id].risk&&!A[id].counterOf&&!A[id].blockOf&&!A[id].reverse);
-   const existing=eligible.reduce((sum,[,weight])=>sum+weight,0);
-   if(existing>0){
-    const rival=pool.reduce((sum,[id,weight])=>
-     sum+(A[id]?.family===intended&&A[id].risk&&
-      !A[id].counterOf&&!A[id].blockOf&&!A[id].reverse?0:weight),0);
-    for(const choice of eligible)
-     choice[1]=Math.max(choice[1],rival*1.2*choice[1]/existing);
-   }
-  }
   // A trained flyer has to earn the closing comeback through a REAL
   // mat reversal and standing reset. No change to the physical descriptor
   // or controller happens until a legal action is selected and performed.
