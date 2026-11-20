@@ -1662,7 +1662,15 @@ const Graph=(function makeGraph(){
   sm_figure_four:'ground-leg',sm_single_crab:'ground-leg',
   sm_deathlock:'ground-leg',sm_muffler:'ground-leg',
   sm_rings:'ground-leg',sm_cloverleaf:'ground-leg',
-  rs_leg_lace:'ground-leg'
+  rs_leg_lace:'ground-leg',
+  // Chain throws are only attempted after contact, not from a free stance.
+  ch_deep_arm_drag:'wrist',ch_japanese_arm_drag:'wrist',
+  ch_headlock_takedown:'head',ch_snapmare:'head',
+  ch_fireman:'upper-body',ch_hip_toss_chain:'upper-body',
+  // Grounded arm attacks use an actual retained wrist/arm.
+  sm_armbar:'ground-arm',sm_cross_armbreaker:'ground-arm',
+  sm_kimura:'ground-arm',sm_keylock:'ground-arm',
+  sm_fujiwara:'ground-arm',sm_short_arm_scissors:'ground-arm'
  });
  const APRON_OFFENCE=new Set(['os_apron_knee','os_apron_ddt','os_apron_slam']);
  const APRON_DIVES=new Set(['dv_apron_senton','dv_cannonball']);
@@ -1670,6 +1678,10 @@ const Graph=(function makeGraph(){
   lockup:'upper-body',knuckle_lock:'upper-body',pw_bearhug:'body-clinch',
   front_facelock:'front-facelock',go_behind:'rear-waist',waistlock:'rear-waist',
   standing_switch:'rear-waist',
+  wristlock:'wrist',arm_wringer:'wrist',ch_top_wristlock:'wrist',
+  ch_rolling_wristlock:'wrist',headlock:'head',ch_cravate:'head',
+  rs_wrist_mat:'ground-arm',rs_hammerlock_mat:'ground-arm',
+  sm_wristlock_ground:'ground-arm',
   ankle_pick:'ground-leg',ch_single_leg:'ground-leg',ch_dragon_screw:'ground-leg',
   leg_wrench:'ground-leg',gd_dragon_screw_ground:'ground-leg',
   sm_toe_hold:'ground-leg',sm_heel_hook:'ground-leg',sm_kneebar:'ground-leg',
@@ -2132,7 +2144,7 @@ const Graph=(function makeGraph(){
   const famList=ARC_FAMILIES[g.arc]||[];
   if(p.position==='standing'){
    if(famList.includes('corner'))selected.push(['corner_whip',1.1],['corner_push',.5]);
-   if(famList.includes('chain'))selected.push(['headlock',.8],['lockup',.4]);
+   if(famList.includes('chain'))selected.push(['headlock',1.5],['wristlock',1.7],['lockup',.4]);
    if(famList.includes('superplex'))selected.push(['corner_whip',affordableSuperplex(M,true)?5.5:.7]);
   }
   if(p.position==='corner'&&famList.includes('superplex')&&affordableSuperplex(M))
@@ -2162,9 +2174,21 @@ const Graph=(function makeGraph(){
      ['waistlock',2.2],['lockup',2.5]);
    if(famList.includes('power'))selected.push(['pw_bearhug',1.6]);
   }
+  // Phase 3: a real grounded grip invites a legal submission. Keep the
+  // parent-specific attempt/reversal rules and existing stamina gates.
+  // Rest holds and wrist controls generate actual retained grip states.
+  if(p.position==='mat'&&M.planId!=='spots'&&grip&&
+     grip.side===p.control&&M.t-grip.at<=20){
+   for(const id of CAT.members.submission){
+    if(A[id]?.requires==='mat'&&PHYSICAL_GRIP_MOVES[id]===grip.type)
+     selected.push([id,2.2]);
+   }
+  }
   if(p.position==='mat'&&!g.physical?.grip&&
-     (famList.includes('submission')||famList.includes('ground')))
-   selected.push(['leg_wrench',2.2]);
+     (famList.includes('submission')||famList.includes('ground')||
+      famList.includes('rest')))
+   selected.push(['leg_wrench',2.2],['rs_wrist_mat',1.9],
+     ['rs_hammerlock_mat',1.2]);
   if(p.position==='outside')selected.push(['apron_stand',1.6],['ramp_approach',1.3],['floor_regroup',1.4]);
   // A Spectacle wrestler who has reached the ropes should have an actual
   // named aerial/springboard available, not only the generic launch node.
