@@ -2107,6 +2107,17 @@ const Graph=(function makeGraph(){
     .56*recoveryTraining(actor):0;
    effective=exertion*(1+extra);
   }
+  // High-flyers need a *real* in-ring break before the last three minutes
+  // even when they have an opponent down. A narrated, physically legal
+  // grounded rest hold is more credible than an invisible stamina award.
+  // Normal rest holds and all other styles/plans retain their old cost.
+  if(n.family==='rest'&&exertion<0&&M.planId==='spots'&&M.len>=900&&
+     M.len-M.t>180&&M.len-M.t<=480){
+   const actor=activeSide==='w'?M.w:M.f;
+   const trained=recoveryTraining(actor);
+   if(actor.style==='Spectacle'&&trained>=.70)
+    effective=exertion-5.8*trained;
+  }
   if(exertion>0&&fighter(activeSide==='w'?M.w:M.f).trait==='Workhorse')effective*=.8;
   M[staminaKey]=clamp(M[staminaKey]-effective);
   if(exertion<0)g.rests=(g.rests||0)+1;
@@ -2525,6 +2536,16 @@ const Graph=(function makeGraph(){
     selected.push(['catch_breath',stamina<40?20:stamina<52?12:6]);
    else if(M.planId!=='spots'&&stamina<48)selected.push(['catch_breath',5]);
   }
+  // In the pre-finish runway, a trained flyer holding an opponent on the
+  // canvas can earn recovery by actually applying an authored rest hold.
+  // No free stamina, detached mat holds or reset to a standing position.
+  const lastRest=g.events.slice(-20).some(e=>e.preControl===p.control&&
+   (e.id==='catch_breath'||A[e.id]?.family==='rest')&&M.t-e.t<50);
+  if(longSpot&&trainedRecovery>=.70&&timeLeft>180&&timeLeft<=480&&
+     stamina<60&&p.position==='mat'&&p.down!==(p.control)&&!lastRest)
+   for(const id of CAT.members.rest||[])
+    if(A[id]?.requires==='mat'&&!A[id].reverse&&!A[id].counterOf&&!A[id].blockOf)
+     selected.push([id,4.5]);
   // On a fast layout, a trained flyer needs real take-off opportunities
   // beyond the opening exchange. These are existing authored setup actions,
   // only offered from the ring with sufficient stamina. Their ensuing
