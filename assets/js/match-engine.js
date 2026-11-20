@@ -2933,9 +2933,14 @@ const Graph=(function makeGraph(){
   // mat reversal and standing reset. No change to the physical descriptor
   // or controller happens until a legal action is selected and performed.
   const eliteLateCount=riskCount('w');
+  // Skilled flyers can begin a genuine comeback before the last 180s.
+  // Only the elite tier receives the extra 90-second runway; the normal
+  // match-closing aerial-selection phase still starts at its old time.
+  const eliteTraining=recoveryTraining(M.w);
   const eliteWorkerFlight=M.planId==='spots'&&M.len>=900&&
-   M.w.style==='Spectacle'&&recoveryTraining(M.w)>=.70&&
-   M.len-M.t>=40&&M.len-M.t<=180&&eliteLateCount<2;
+   M.w.style==='Spectacle'&&eliteTraining>=.70&&
+   M.len-M.t>=40&&M.len-M.t<=(eliteTraining>=.95?270:180)&&
+   eliteLateCount<2;
   if(eliteWorkerFlight&&M.wSt>=27){
    // First clean landing is the main objective; a second *distinct* one
    // remains plausible but gets less producer emphasis, never a guarantee.
@@ -2968,7 +2973,8 @@ const Graph=(function makeGraph(){
     promote('stand_reset',1.1*strength);
    // The worker must FIRST win control and get up. This does not make a
    // top-rope move valid or successful; it only weights legal setups.
-   if(p.control==='w'&&p.position==='standing'&&M.wSt>=31){
+   if(p.control==='w'&&p.position==='standing'&&M.wSt>=31&&
+      M.len-M.t<=210){
     const eligible=pool.filter(([id])=>
      id==='top_climb'||id==='springboard_rise');
     const rest=pool.reduce((sum,[id,weight])=>
