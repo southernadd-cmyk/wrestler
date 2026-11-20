@@ -11,7 +11,8 @@ root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,A=G.A;
 assert.equal(G.validate().errors.length,0);
 assert.equal(G.validate().nodes,EXPECTED.nodes);
-const pilot=['sx_vertical','sx_german','sm_sleeper','sm_ankle_lock'];
+const pilot=['sx_vertical','sx_german','sm_sleeper','sm_ankle_lock',
+ 'sx_deadlift_bridge','nk_snap_ddt','pw_powerbomb'];
 assert.equal(JSON.stringify([...G.GRAPPLE_PILOT]),JSON.stringify(pilot));
 function setup(id){
  const m=M.create(lab.makeOptions(D,{wid:'juno',rid:'bao',slot:'main',plan:'technical',finish:'win_clean',seed:70119}));
@@ -19,6 +20,11 @@ function setup(id){
  m.story.position=A[id].requires;
  m.story.down=A[id].requires==='mat'?'f':null;
  m.story.control='w';m.graph.arc='escalation';m.graph.node=null;
+ // Reviewed Phase 2 additions require the actual controller to have an
+ // established, fresh front facelock; legacy pilot probes stay untouched.
+ if(['sx_deadlift_bridge','nk_snap_ddt','pw_powerbomb'].includes(id))
+  m.graph.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',topSide:null,
+   grip:{type:'front-facelock',side:'w',at:m.t,source:'front_facelock'}};
  assert.ok(G.isValid(m,id),'parent must be physically legal '+id);
  return m;
 }
@@ -60,6 +66,14 @@ for(const id of pilot){
   assert.equal(blocked.graph.events.at(-1).id,id+'_blk');
  }
 }
+for(const id of ['sx_deadlift_bridge','nk_snap_ddt','pw_powerbomb']){
+ const noGrip=setup(id);noGrip.graph.physical.grip=null;
+ assert.equal(G.isValid(noGrip,id),false,'cannot commit without verified setup: '+id);
+ const stolen=setup(id);stolen.graph.physical.grip.side='f';
+ assert.equal(G.isValid(stolen,id),false,'cannot use opponent setup: '+id);
+ const stale=setup(id);stale.graph.physical.grip.at=stale.t-30;
+ assert.equal(G.isValid(stale,id),false,'cannot use stale setup: '+id);
+}
 const live=setup('sx_vertical');G.startGrapple(live,'sx_vertical');
 const raw=JSON.parse(JSON.stringify({...live,rState:live.r.getState()}));
 const restored=M.restore(raw);
@@ -88,4 +102,4 @@ assert.equal(G.isValid(migrated,'sx_vertical_rev'),false);
 const concurrent=setup('sx_vertical');G.startGrapple(concurrent,'sx_vertical');
 concurrent.story.position='top';concurrent.story.down='f';
 assert.equal(G.startAerial(concurrent,'ar_frog'),false,'no overlapping committed attacks');
-console.log('PASS Phase 7: four exact grapples, outcomes, save/replay, interruption, migration and single pending attempt.');
+console.log('PASS Phase 2: seven exact grapples, named counters/blocks, grip legality, save/replay and interruption.');
