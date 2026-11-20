@@ -2495,13 +2495,13 @@ const Graph=(function makeGraph(){
    // A per-wrestler cooldown prevents endless breathing/pose loops.
    const restedRecently=g.events.slice(-20).some(e=>e.id==='catch_breath'&&
     e.preControl===p.control&&M.t-e.t<40);
-   if(M.planId==='spots'&&timeLeft>35&&!restedRecently&&
-      stamina<(longSpot?66:60)){
-    const urgency=trainedFlyer?(stamina<35?24:stamina<45?18:stamina<56?13:8):
-     (stamina<40?20:stamina<52?12:6);
+   if(longSpot&&timeLeft>35&&!restedRecently&&stamina<66){
+    const urgency=stamina<35?24:stamina<45?18:stamina<56?13:8;
     const longBonus=longSpot&&M.t/M.len>.5?1+trainedRecovery*.65:1;
     selected.push(['catch_breath',urgency*longBonus]);
-   }else if(M.planId!=='spots'&&stamina<48)selected.push(['catch_breath',5]);
+   }else if(!longSpot&&M.planId==='spots'&&stamina<60)
+    selected.push(['catch_breath',stamina<40?20:stamina<52?12:6]);
+   else if(M.planId!=='spots'&&stamina<48)selected.push(['catch_breath',5]);
   }
   // On a fast layout, a trained flyer needs real take-off opportunities
   // beyond the opening exchange. These are existing authored setup actions,
@@ -2510,8 +2510,9 @@ const Graph=(function makeGraph(){
   if(M.planId==='spots'&&p.position==='standing'&&
      stamina>=(closingFlight?37:42)&&
      (liveSide.style==='Spectacle'||((liveSide.ring||0)>=78&&(liveSide.safe||0)>=65))&&
-     ['shine','resurgence','exchange','nearfall','escalation','dive_sequence',
-      'finish_setup','false_finish','fighting_spirit'].includes(g.arc)){
+     (['shine','resurgence','exchange','nearfall','escalation','dive_sequence',
+       'finish_setup'].includes(g.arc)||
+      (closingFlight&&['false_finish','fighting_spirit'].includes(g.arc)))){
    // The wrestler still climbs or springs into an actual committed landing,
    // with the existing physical, stamina, timing and counter checks intact.
    const focus=closingFlight?(1.4+trainedRecovery*.55):1;
