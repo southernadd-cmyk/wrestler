@@ -22,13 +22,22 @@ const before = JSON.stringify(G.A);
 const validated = R.validate(G);
 assert.equal(validated.valid, true, validated.errors.join('\n'));
 assert.equal(validated.authored, EXPECTED.moves, 'review against original complete catalogue');
-assert.equal(validated.proposals,183,'114 reviewed plus 39 Phase 5 mat-wrestling records');
-assert.equal(validated.coverage,53.8,'39-move tranche raises exact curated coverage to 153 of 340');
+assert.equal(validated.proposals,234,'114 reviewed plus 39 Phase 5 mat-wrestling records');
+assert.equal(validated.coverage,68.8,'39-move tranche raises exact curated coverage to 153 of 340');
 assert.equal(R.list().length, validated.proposals);
 assert.equal(R.get('sm_abdominal').entry.position,'standing');
 assert.equal(R.get('sm_octopus').entry.position,'standing');
 assert.equal(R.get('rs_cover_rest').counterIds.length,0);
 assert.equal(R.get('pn_sunset').exit.control,'pin');
+assert.equal(R.get('nk_tornado_ddt').entry.position, 'corner', 'tornado DDT starts in the corner');
+assert.equal(R.get('nk_jawbreaker').exit.position, 'standing', 'jawbreaker leaves the match standing');
+assert.equal(R.get('sx_snap_ddt').mechanic, 'snap-suplex-with-cover', 'this action is a snap suplex, not a DDT');
+assert.equal(R.get('pw_double_chop_slam').target, 'ribs', 'gutbuster targets ribs');
+assert.equal(R.get('nk_russian_sweep').target, 'back', 'leg sweep targets back');
+for (const id of ['sx_vertical','sx_delayed','pw_chokeslam','pw_sitout','nk_tornado_ddt']) {
+  assert.deepEqual([...R.get(id).traditionTags], ['wrestling'], 'new metadata must be training-neutral');
+}
+
 assert.equal(R.get('st_fighting_spirit').counterIds.length,0);
 for(const id of ['st_superkick','st_enzuigiri','rn_spear','rn_lariat']) {
   assert.equal(R.get(id).exit.position,'mat');
@@ -47,7 +56,7 @@ assert.equal(R.get('ch_single_leg').mechanicalClass, 'Takedown');
 assert.equal(R.get('lc_rana_pin').variantOf, 'lc_hurricanrana');
 assert.equal(R.get('lc_rana_pin').mechanicalClass, 'Wrestling-only');
 assert.ok(R.get('ch_deep_arm_drag').traditionTags.includes('lucha'));
-assert.equal(R.get('sx_vertical'), null, 'still-unreviewed moves have no authoritative metadata');
+assert.equal(R.get('cn_splash'), null, 'still-unreviewed moves have no authoritative metadata');
 assert.ok(R.list().every(row => row.reviewStatus === 'proposed'));
 assert.equal(JSON.stringify(G.A), before, 'metadata must not mutate the action graph');
 
