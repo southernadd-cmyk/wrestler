@@ -1887,6 +1887,35 @@ const Graph=(function makeGraph(){
    M.t=was.t;M[key]=was.st;p.position=was.pos;p.down=was.down;g.physical=was.physical;
   }
  }
+ // A low-energy climb is not a risky aerial sequence. Read-only, zero-RNG
+ // lookahead asks the EXACT normal isValid guard whether at least one
+ // named risky attack could be launched after paying the rope setup,
+ // routine exertion and commitment cost. Restore every probe field.
+ function affordableNamedFlight(M,setup){
+  if(setup!=='top_climb'&&setup!=='springboard_rise')return false;
+  const p=Psy.get(M),g=get(M),side=p.control;
+  if(!['w','f'].includes(side)||p.position!=='standing'||M.len-M.t<30)
+   return false;
+  const key=side==='w'?'wSt':'fSt';
+  const actor=side==='w'?M.w:M.f,other=side==='w'?'f':'w';
+  const workhorse=fighter(actor).trait==='Workhorse'?.8:1;
+  const forecast=M[key]-costOf(setup)*workhorse-.8-.72;
+  const saved={t:M.t,stamina:M[key],position:p.position,down:p.down,
+   physical:g.physical};
+  try{
+   M.t+=10;M[key]=Math.max(0,forecast);p.position='top';p.down=other;
+   g.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',
+    grip:null,topSide:null};
+   g.physical.locations[side]='top';
+   const family=setup==='top_climb'?'aerial':'springboard';
+   return (CAT.members[family]||[]).some(id=>
+    A[id]?.risk&&!A[id].reverse&&!A[id].counterOf&&!A[id].blockOf&&
+    isAerialParent(id)&&isValid(M,id));
+  }finally{
+   M.t=saved.t;M[key]=saved.stamina;p.position=saved.position;
+   p.down=saved.down;g.physical=saved.physical;
+  }
+ }
  // Only a true two-wrestler top_follow, with a legally available variant,
  // gets priority over unrelated scheduled spectacle on the following tick.
  function readyTopContest(M){
@@ -2732,7 +2761,9 @@ const Graph=(function makeGraph(){
   // v3.4: signature moves. A wrestler's trademark offence, wherever the position allows it.
   if(M.t/M.len>.1)for(const id of prof.signature||[])if(A[id])selected.push([id,.45]);
   const weights=new Map();
-  for(const [id,w] of selected) if((id!=='top_follow'||affordableSuperplex(M))&&isValid(M,id)) {
+  for(const [id,w] of selected) if((id!=='top_follow'||affordableSuperplex(M))&&
+   !(needsLatePayoff&&(id==='top_climb'||id==='springboard_rise')&&
+     !affordableNamedFlight(M,id))&&isValid(M,id)) {
    let n=w;
    if(pattern.actions.includes(id))n*=1.6;
    n*=style.bias[id]||1;
@@ -2918,6 +2949,23 @@ const Graph=(function makeGraph(){
      for(const candidate of eligible)
       candidate[1]=Math.max(candidate[1],rest*.78*strength*candidate[1]/total);
     }
+   }
+  }
+  // A fatigued trained flyer unable to afford an actual named high spot
+  // still has a *real*, narrated standing recovery choice. Reserve its
+  // selection weight only while enough time remains to breathe, climb,
+  // commit and resolve the separate attempt. No free stamina or hits.
+  if(needsLatePayoff&&p.control==='w'&&p.position==='standing'&&
+     timeLeft>=65&&timeLeft<=180&&stamina<42&&
+     !affordableNamedFlight(M,'top_climb')&&
+     !affordableNamedFlight(M,'springboard_rise')&&
+     !g.events.slice(-20).some(e=>e.id==='catch_breath'&&
+       e.preControl==='w'&&M.t-e.t<40)){
+   const recovering=pool.find(([id])=>id==='catch_breath');
+   if(recovering){
+    const competing=pool.reduce((sum,[id,weight])=>
+     sum+(id==='catch_breath'?0:weight),0);
+    recovering[1]=Math.max(recovering[1],competing*.95);
    }
   }
   // In the expanded repertoire a single recovery candidate gets lost
