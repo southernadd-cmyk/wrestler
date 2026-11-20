@@ -141,7 +141,9 @@
     ['st_palm','Strike','open-palm strike','standing/free','standing/free',null,['wrestling'],['st_jab'],[],null,'Open-hand palm after jabs: a ring-specific alternative, not a boxer signature.'],
     ['st_body_kick','Strike','rib-target body kick','standing/free','standing/free','ribs',['wrestling'],['st_jab'],[],null,'A kick to the ribs after a strike; not automatically a boxing technique.'],
 
-    // 20 Nov v0.4 audit: 24 individually checked action mechanics and actual\n    // move-specific generated counters. Metadata alone never creates free counters.\n    ['gd_elbow_drop','Wrestling-only','grounded elbow impact','mat/ground-top','mat/ground-top','ribs',['wrestling'],['mat_hold','pw_backbreaker'],['gd_elbow_drop_rev'],null,'Grounded opponent receives a rib-area elbow; no new pin or hidden submission grip.'],
+    // 20 Nov v0.4 audit: 24 individually checked action mechanics and actual
+    // move-specific generated counters. Metadata alone never creates free counters.
+    ['gd_elbow_drop','Wrestling-only','grounded elbow impact','mat/ground-top','mat/ground-top','ribs',['wrestling'],['mat_hold','pw_backbreaker'],['gd_elbow_drop_rev'],null,'Grounded opponent receives a rib-area elbow; no new pin or hidden submission grip.'],
     ['gd_stomp','Strike','grounded stomp','mat/ground-top','mat/ground-top',null,['wrestling'],['mat_hold'],['gd_stomp_rev'],null,'An already grounded wrestler is stomped; the selected target body part is narrated, not a new fixed limb requirement.'],
     ['gd_senton','Wrestling-only','grounded back senton','mat/ground-top','mat/ground-top','ribs',['wrestling'],['pw_backbreaker','mat_hold'],['gd_senton_rev'],null,'A close-range back senton follows an opponent down; distinguish this from an aerial top-rope attack.'],
     ['gd_arm_elbows','Strike','grounded arm isolation elbows','mat/arm','mat/ground-top','arm',['catch','wrestling'],['mat_hold'],['gd_arm_elbows_rev'],null,'Kneeling on the trapped wrist provides the stated arm target, but no independent persistent wrist-grip gate is claimed.'],
