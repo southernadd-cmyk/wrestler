@@ -98,10 +98,11 @@ function options(i){
   slot:['opener','mid','main'][Math.floor(i/5)%3],
   finish:['win_clean','lose_clean','win_dirty','lose_protected'][i%4]});
 }
-const parityFailures=[];
+const parityFailures=[],seenNodes=new Set();
 for(let i=0;i<count;i++){
  const input=options(i);
  const match=lab.runMatch(instrumented,input);
+ for(const event of match.graph?.events||[])if(G.A[event.id])seenNodes.add(event.id);
  for(const a of match.graph?.grappleAttempts||[]){
   const record=results.get(a.id);
   if(!record)continue;
@@ -124,7 +125,23 @@ const moves=[...results.values()].map(d=>({
  maxSelectionProbability:Number((selectionStats.get(d.id)?.maxProbability||0).toFixed(4))
 })).sort((a,b)=>a.attempts-b.attempts||a.id.localeCompare(b.id));
 const noAttempts=moves.filter(x=>!x.attempts);
+const unseen=Object.keys(G.A).filter(id=>!seenNodes.has(id));
+const unseenByType={},unseenByFamily={};
+for(const id of unseen){
+ const n=G.A[id],parent=n.counterOf||n.blockOf;
+ const target=parent&&G.GRAPPLE_PILOT.includes(parent);
+ const sp=parent&&G.SUPERPLEX_PILOT.includes(parent);
+ const category=target?(n.counterOf?'target-counter':'target-block'):
+  sp?(n.counterOf?'superplex-counter':'superplex-block'):
+  n.counterOf?'other-counter':n.blockOf?'other-block':'action';
+ unseenByType[category]=(unseenByType[category]||0)+1;
+ const family=n.family||'base';
+ unseenByFamily[family]=(unseenByFamily[family]||0)+1;
+}
+const graphCoverage=Number((100*seenNodes.size/Object.keys(G.A).length).toFixed(2));
 const report={schema:'office-phase2-grapple-diagnostic-v1',bouts:count,steps,
+ graphCoverage,graphNodes:Object.keys(G.A).length,
+ unseenGraphNodes:unseen,unseenByType,unseenByFamily,
  targetMoves:G.GRAPPLE_PILOT.length,attemptedMoves:moves.length-noAttempts.length,
  noAttemptIds:noAttempts.map(x=>x.id),parityFailures,
  note:'Reasons are evaluated at each selection tick in guard order, not independent exhaustive causes.',
@@ -140,4 +157,6 @@ for(const d of noAttempts)
   maxSelectionProbability:d.maxSelectionProbability,
   causes:Object.entries(d.reasons).sort((a,b)=>b[1]-a[1]).slice(0,7),
   byPlan:d.legalByPlan,gripSources:d.setupSources})+'\n');
+process.stderr.write('  Graph node coverage: '+graphCoverage+'%; unseen '+unseen.length+
+ ' by type '+JSON.stringify(unseenByType)+'\n');
 if(parityFailures.length)process.exitCode=1;
