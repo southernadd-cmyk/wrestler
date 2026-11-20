@@ -55,6 +55,13 @@ function probe(id){
   x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02)));x.wSt=100;x.fSt=100;
   const s=x.story||(x.story={});Object.assign(s,{position:n.requires==='any'?'standing':n.requires,control,down:n.requires==='mat'?(control==='w'?'f':'w'):null});
   const parent=n.counterOf||n.blockOf;
+  // This reachability probe must establish an actual allowed grip for all
+  // expanded Phase 2 parents before testing an exact generated defence.
+  const source=parent||id,grip=G.PHYSICAL_GRIP_MOVES[source];
+  if(grip){
+   x.graph.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',topSide:null,
+    grip:{type:grip,side:control,at:x.t,source:Object.keys(G.GRIP_ENTRY).find(k=>G.GRIP_ENTRY[k]===grip)||'reviewed-setup'}};
+  }
   const aerialParent=A[parent]&&['aerial','springboard'].includes(A[parent].family);
   const grappleParent=G.GRAPPLE_PILOT.includes(parent)||G.SUPERPLEX_PILOT.includes(parent);
   if(grappleParent){
@@ -62,6 +69,7 @@ function probe(id){
    // The attack's own requirements and timing must also be achievable.
    x.stage='live';
    x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02,A[parent].after+.02)));
+   if(x.graph.physical?.grip)x.graph.physical.grip.at=x.t;
    if(!G.startGrapple(x,parent))continue;
    assert.equal(x.graph.pendingGrapple.id,parent);
   }
