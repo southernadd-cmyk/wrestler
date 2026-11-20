@@ -73,6 +73,35 @@ for(const id of ids){
  assert.equal(G.resolveStrike(interrupted),true);
  assert.equal(interrupted.graph.strikeAttempts.at(-1).outcome,'interrupted');
 }
+// A real outside toss and apron setup must offer only legal apron dives
+// for a trained/high-flying worker. A floor-bound attacker cannot
+// magically perform an apron senton; ring dives remain ring-only.
+const outside=M.create(lab.makeOptions(D,{wid:'lyra',rid:'dee',slot:'main',
+ plan:'spots',finish:'win_clean',seed:95147}));
+outside.stage='live';outside.t=Math.floor(outside.len*.84);
+outside.story.control='w';outside.story.position='standing';
+outside.story.down=null;outside.wSt=outside.fSt=100;
+G.apply(outside,'outside_toss');
+assert.equal(outside.story.position,'outside');
+assert.equal(outside.graph.physical.locations.w,'ring');
+assert.equal(outside.graph.physical.locations.f,'floor');
+assert.equal(G.isValid(outside,'dv_apron_senton'),false,
+ 'apron-only dive not legal from inside ring');
+G.apply(outside,'apron_stand');
+assert.equal(outside.graph.physical.locations.w,'apron');
+assert.equal(outside.graph.physical.locations.f,'floor');
+assert.equal(G.isValid(outside,'dv_apron_senton'),true);
+assert.equal(G.isValid(outside,'dv_cannonball'),true);
+assert.equal(G.isValid(outside,'dv_moonsault'),false,
+ 'regular ring dive cannot launch from apron');
+const apronPool=new Map(G.pool(outside));
+assert.ok((apronPool.get('dv_apron_senton')||0)>0,
+ 'actual apron setup must enter weighted legal dive selection');
+assert.ok((apronPool.get('dv_cannonball')||0)>0,
+ 'actual apron setup must permit cannonball follow-up');
+assert.equal(apronPool.has('dv_moonsault'),false,
+ 'unavailable ordinary dive must not be offered from apron');
+
 const saved=setup('st_forearm',99128);
 assert.equal(G.startStrike(saved,'st_forearm'),true);
 const clone=M.restore(JSON.parse(JSON.stringify({...saved,rState:saved.r.getState()})));
