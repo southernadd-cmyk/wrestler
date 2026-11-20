@@ -20,12 +20,14 @@ const old=new Set(['sm_sleeper','sm_ankle_lock','nk_snap_ddt',
 const takedowns=['ch_single_leg','ch_double_leg','ch_fireman','ch_snapmare',
  'ch_deep_arm_drag','ch_japanese_arm_drag','ch_drop_toehold',
  'ch_headlock_takedown','ch_leg_trip','ch_dragon_screw','ch_hip_toss_chain'];
-const added=G.GRAPPLE_PILOT.filter(id=>!old.has(id));
+// Phase 3 remains a fixed 44-parent matrix even after Phase 4 additions.
+const added=G.GRAPPLE_PILOT.filter(id=>!old.has(id)&&
+ !G.PHASE4_NECK_THROWS.includes(id));
 assert.equal(old.size,39);
 assert.equal(G.CATALOG.members.submission.length,35);
 assert.equal(added.length,44,'33 new submissions plus 11 takedowns');
-assert.equal(G.GRAPPLE_PILOT.length,83);
-assert.equal(new Set(G.GRAPPLE_PILOT).size,83);
+assert.equal(G.GRAPPLE_PILOT.length,97,'83 previous and 14 Phase 4 neck grapples');
+assert.equal(new Set(G.GRAPPLE_PILOT).size,G.GRAPPLE_PILOT.length);
 assert.ok(takedowns.every(id=>added.includes(id)));
 assert.ok(added.every(id=>A[id]&&G.CATALOG.members.submission.includes(id)||
  takedowns.includes(id)));

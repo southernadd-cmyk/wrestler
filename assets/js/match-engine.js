@@ -1407,7 +1407,8 @@ const Graph=(function makeGraph(){
    targets:{w:p.target,f:M.w.style==='Technical'?'shoulder':M.w.style==='Spectacle'?'left knee':M.w.style==='Brawl'?'ribs':'lower back'},
    damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0,pattern:M.planId,texture:matchTexture(M),
    aerialAttempts:[],aerialAttemptSerial:0,pendingAerial:null,
-   grappleAttempts:[],grappleAttemptSerial:0,pendingGrapple:null,physical:null};
+   grappleAttempts:[],grappleAttemptSerial:0,pendingGrapple:null,
+   strikeAttempts:[],strikeAttemptSerial:0,pendingStrike:null,physical:null};
   M.graph=g;return g;
  }
  function get(M){
@@ -1421,6 +1422,10 @@ const Graph=(function makeGraph(){
   if(!Number.isSafeInteger(g.grappleAttemptSerial))
    g.grappleAttemptSerial=g.grappleAttempts.reduce((n,x)=>Math.max(n,x.seq||0),0);
   if(!Object.prototype.hasOwnProperty.call(g,'pendingGrapple'))g.pendingGrapple=null;
+  if(!Array.isArray(g.strikeAttempts))g.strikeAttempts=[];
+  if(!Number.isSafeInteger(g.strikeAttemptSerial))
+   g.strikeAttemptSerial=g.strikeAttempts.reduce((n,x)=>Math.max(n,x.seq||0),0);
+  if(!Object.prototype.hasOwnProperty.call(g,'pendingStrike'))g.pendingStrike=null;
   if(!Object.prototype.hasOwnProperty.call(g,'physical'))g.physical=null;
   return g;
  }
@@ -1613,6 +1618,16 @@ const Graph=(function makeGraph(){
  // reversals/blocks; no synthetic graph nodes or extra out-of-band RNG.
  // Phase 3 bulk: committed, exact-parent defensive pathways for all
  // 35 catalog submissions and 11 actual chain takedowns (not escapes).
+ // Phase 4: standing offence receives its own exact-parent ledger.
+ // It does not pollute the grappling attempt counts or create fake throws.
+ // Running moves remain a distinct category with standing impact outcomes.
+ const QUICK_NECK_IDS=Object.freeze(['nk_jawbreaker','nk_cutter','nk_stunner']);
+ const PHASE4_NECK_THROWS=Object.freeze(CAT.members.neck.filter(id=>
+  id!=='nk_snap_ddt'&&!QUICK_NECK_IDS.includes(id)));
+ const STRIKE_PILOT=Object.freeze([...CAT.members.strike.filter(id=>
+  id!=='st_fighting_spirit'),...CAT.members.running,...QUICK_NECK_IDS]);
+ // A mutual stand-and-trade is already a complete exchange, not a named
+ // one-sided attack with a fabricated counter or block.
  const PHASE3_TAKEDOWNS=Object.freeze([
   'ch_single_leg','ch_double_leg','ch_fireman','ch_snapmare',
   'ch_deep_arm_drag','ch_japanese_arm_drag','ch_drop_toehold',
@@ -1625,7 +1640,7 @@ const Graph=(function makeGraph(){
   'pw_powerbomb','pw_sitout','pw_running_powerbomb','pw_backbreaker',
   'pw_uranage','pw_samoan_drop','pw_gorilla_press','pw_military_press',
   'pw_pumphandle','pw_belly_bump','pw_argentine',
-  ...CAT.members.submission,...PHASE3_TAKEDOWNS
+  ...CAT.members.submission,...PHASE3_TAKEDOWNS,...PHASE4_NECK_THROWS
  ])]);
 
  // v0.4 physical-continuity pilot: a *small optional, serialisable* descriptor.
@@ -1650,6 +1665,12 @@ const Graph=(function makeGraph(){
   sx_snap_ddt:'front-facelock',sx_cradle:'front-facelock',
   sx_falcon_arrow:'front-facelock',
   nk_ddt:'front-facelock',nk_snap_ddt:'front-facelock',
+  nk_double_arm_ddt:'front-facelock',nk_implant:'front-facelock',
+  nk_facebuster:'front-facelock',nk_piledriver:'front-facelock',
+  nk_tombstone:'front-facelock',
+  nk_swinging_neckbreaker:'head',nk_jumping_neckbreaker:'head',
+  nk_rolling_neckbreaker:'head',nk_russian_sweep:'upper-body',
+  nk_sto:'upper-body',
   pw_powerbomb:'front-facelock',pw_sitout:'front-facelock',
   pw_running_powerbomb:'front-facelock',pw_backbreaker:'body-clinch',
   pw_uranage:'upper-body',pw_samoan_drop:'upper-body',
@@ -1702,8 +1723,19 @@ const Graph=(function makeGraph(){
   const n=A[id],side=p.control,other=side==='w'?'f':'w';
   if(!['w','f'].includes(side))return true;
   const expected=PHYSICAL_GRIP_MOVES[id];
-  if(expected&&(!ph.grip||ph.grip.type!==expected||ph.grip.side!==side||
-      M.t-ph.grip.at>20))return false;
+  if(expected){
+   const grip=ph.grip,pending=M.graph?.pendingGrapple;
+   // The wrestler must secure a *fresh* owned grip before committing.
+   // During the one following resolution tick, that same retained grip
+   // cannot expire merely because the simulation clock advances 10s.
+   // A different wrestler, move, stolen/replaced grip, or an interrupted
+   // attempt receives no grace period. No new attack may start stale.
+   const committed=!!(pending?.id===id&&pending.side===side&&
+     pending.at>=grip?.at&&pending.at-grip.at<=20&&
+     M.t>=pending.at&&M.t-pending.at<=10);
+   if(!grip||grip.type!==expected||grip.side!==side||
+      (M.t-grip.at>20&&!committed))return false;
+  }
   if(n.family==='superplex'){
    if(ph.topSide!==side||ph.locations[side]!=='top'||ph.locations[other]!=='top')return false;
   }
@@ -1805,6 +1837,10 @@ const Graph=(function makeGraph(){
   const n=A[id],original=n?.counterOf||n?.blockOf;
   return original&&isAerialParent(original)?original:null;
  }
+ function strikeAlternativeParent(id){
+  const n=A[id],original=n?.counterOf||n?.blockOf;
+  return original&&STRIKE_PILOT.includes(original)?original:null;
+ }
  function grappleAlternativeParent(id){
   const n=A[id],original=n?.counterOf||n?.blockOf;
   return original&&isGrappleParent(original)?original:null;
@@ -1814,6 +1850,8 @@ const Graph=(function makeGraph(){
   if(!physicalLegal(M,nodeId))return false;
   const parent=aerialAlternativeParent(nodeId);
   if(parent&&M.graph?.pendingAerial?.id!==parent)return false;
+  const strikeParent=strikeAlternativeParent(nodeId);
+  if(strikeParent&&M.graph?.pendingStrike?.id!==strikeParent)return false;
   const grappleParent=grappleAlternativeParent(nodeId);
   if(grappleParent&&M.graph?.pendingGrapple?.id!==grappleParent)return false;
   // Rest-hold resistance is a one-beat defensive continuation, not a
@@ -1861,6 +1899,72 @@ const Graph=(function makeGraph(){
   return {A:w?M.w:M.f,Df:w?M.f:M.w,side:w?'w':'f'};
  }
  const ACTION_NARRATION_VARIANTS={
+  // Phase 4: avoid ten identical lock-ups, wrist counters, rope runs or
+  // clotheslines in one match. Every variant keeps the same actors, outcome,
+  // body part and action; only the commentary angle changes.
+  lockup:[
+   '{A} and {D} tie up collar-and-elbow. {A} leans in and {D} holds the centre.',
+   '{A} takes the collar while {D} searches for inside wrist position.',
+   'Another lock-up. {D} lowers their base as {A} tries to turn them.',
+  ],
+  wristlock:[
+   '{A} catches a wrist and turns {D} towards the trapped shoulder.',
+   '{A} keeps hold of {D}’s hand and rotates the wrist to take control.',
+   '{D} reaches to break contact, but {A} twists into wrist control.',
+  ],
+  wrist_escape:[
+   '{D} rolls beneath the arm, reverses the pressure and takes the wrist.',
+   '{D} steps through the trapped arm and turns the wristlock back on {A}.',
+   '{A} loses the grip as {D} rotates free and secures the counter-wristlock.',
+  ],
+  arm_wringer:[
+   '{A} wrings the arm again, walking {D} towards the shoulder pressure.',
+   '{D} bends at the knees while {A} twists the captured wrist upwards.',
+  ],
+  rope_run:[
+   '{A} runs the ropes and changes pace, trying to draw {D} out of position.',
+   '{A} hits the near rope and comes back hard; {D} squares up for contact.',
+   '{D} watches the rebound as {A} picks up speed across the ring.',
+  ],
+  rope_rebound:[
+   '{A} rebounds sharply and checks {D}’s position on the way back.',
+   '{D} adjusts their feet as {A} comes off the ropes for another pass.',
+  ],
+  clothesline:[
+   '{A} swings through with a clothesline, knocking {D} onto the canvas.',
+   '{D} tries to run through the contact; {A} catches them flush with a clothesline.',
+   '{A} connects high across the chest and {D} hits the mat.',
+  ],
+  outside_toss:[
+   '{A} sends {D} over the top rope. {D} lands on the floor as the official begins the count.',
+   '{D} loses balance at the ropes and {A} sends them down to ringside.',
+   '{A} forces {D} out of the ring. The referee starts counting while {A} watches.',
+  ],
+  floor_brawl:[
+   '{A} joins {D} at ringside and lands a short shot beside the barricade.',
+   '{D} covers up near the front row as {A} closes in with a forearm.',
+   '{A} presses the advantage on the floor, keeping {D} away from the ring steps.',
+  ],
+  counter_strike:[
+   '{D} slips beneath the blow and answers with a stiff elbow.',
+   '{D} reads the incoming shot, blocks it and fires straight back.',
+   '{A} overreaches; {D} makes them pay with a quick counter-strike.',
+  ],
+  grapple_trip:[
+   '{A} changes levels, takes the leg and trips {D} onto the canvas.',
+   '{D} attempts to widen their stance, but {A} finishes the leg takedown.',
+   '{A} catches the near leg and follows {D} to the mat.',
+  ],
+  target_hold:[
+   '{A} stays on the {part}, holding {D} in place while the referee checks the pressure.',
+   '{D} turns towards the ropes, but {A} keeps the {part} isolated.',
+   '{A} settles their weight and continues working {D}’s {part}.',
+  ],
+  waistlock:[
+   '{A} circles to the back and locks both hands around {D}’s waist.',
+   '{D} drops their hips to block the lift as {A} secures rear control.',
+   '{A} clamps on a waistlock, forcing {D} to fight the hands.',
+  ],
   crowd_pose:[
    '{A} pauses to draw a reaction. {D} stays alert instead of taking the bait.',
    '{A} looks towards the front row, allowing {D} a moment to reset.',
@@ -2068,9 +2172,76 @@ const Graph=(function makeGraph(){
  }
  // Four vetted throws/holds now share the Phase 6 commitment guarantees,
  // but do not share aerial probabilities, positions or generated narration.
+ // Phase 4 — a distinct, saved two-beat strike/rebound attempt. A whiff,
+ // block or counter never credits the attacking wrestler with a landed hit.
+ function startStrike(M,id){
+  const g=get(M),p=Psy.get(M);
+  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||
+     !STRIKE_PILOT.includes(id)||!isValid(M,id)||
+     M.len-M.t<10||M.stage!=='live'||!['w','f'].includes(p.control))return false;
+  const side=p.control,attacker=side==='w'?M.w:M.f,
+   defender=side==='w'?M.f:M.w,n=A[id],seq=++g.strikeAttemptSerial;
+  g.pendingStrike={v:1,seq,id,side,at:M.t,position:p.position,down:p.down};
+  g.strikeAttempts.push({seq,id,side,startedT:M.t,outcome:'pending'});
+  const staminaKey=side==='w'?'wSt':'fSt';
+  M[staminaKey]=clamp(M[staminaKey]-.45);g.exertion=(g.exertion||0)+.45;
+  // An ordinary strike/running exchange resolves in the same match beat.
+  // Narrating a generic setup here AND the real applied event below repeats
+  // identical lines every time a worker uses their preferred strike. The
+  // landing, block or exact counter gets the commentary instead.
+  return true;
+ }
+ function concludeStrike(M,outcome,actionId=null){
+  const g=get(M),pending=g.pendingStrike;if(!pending)return false;
+  const record=g.strikeAttempts.find(x=>x.seq===pending.seq);
+  if(record){record.outcome=outcome;record.resolvedT=M.t;record.actionId=actionId;}
+  g.pendingStrike=null;
+  if(actionId){
+   apply(M,actionId);
+   const e=g.events.at(-1);
+   if(e?.id===actionId){
+    e.strikeAttemptSeq=pending.seq;
+    e.attemptedMove=pending.id;
+    e.strikeResolution=outcome;
+   }
+  }
+  return true;
+ }
+ function abortStrike(M,reason='interrupted',narrate=false){
+  const pending=get(M).pendingStrike;if(!pending)return false;
+  if(narrate){
+   const who=pending.side==='w'?M.w:M.f;
+   say(M,who.short+' cannot complete the '+(A[pending.id]?.name||'attack')+
+    ' as the exchange breaks apart.','play');
+   get(M).node=null;
+  }
+  return concludeStrike(M,reason);
+ }
+ function resolveStrike(M,immediate=false){
+  const pending=get(M).pendingStrike;if(!pending)return false;
+  const p=Psy.get(M),id=pending.id;
+  if(M.stage!=='live'||(!immediate&&M.t<=pending.at)||
+     p.control!==pending.side||p.position!==pending.position||
+     p.down!==pending.down)
+   return abortStrike(M,'interrupted',M.stage==='live');
+  if(!isValid(M,id))return abortStrike(M,'aborted',true);
+  const attacker=pending.side==='w'?M.w:M.f,
+   defender=pending.side==='w'?M.f:M.w,rev=id+'_rev',blk=id+'_blk';
+  const attackSkill=attacker.ring*.65+attacker.psych*.35,
+   defenceSkill=defender.ring*.65+defender.psych*.35;
+  let counterChance=Math.max(.06,Math.min(.31,.145+(defenceSkill-attackSkill)/320));
+  const tactic=M.o.promo?.tactic;
+  if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
+   counterChance=Math.min(.43,counterChance*1.5);
+  const blockChance=A[blk]?Math.max(.05,Math.min(.16,.095+(defender.safe-attacker.safe)/500)):0;
+  const roll=M.r();
+  const counter=roll<counterChance&&A[rev]&&isValid(M,rev);
+  const block=!counter&&roll<counterChance+blockChance&&A[blk]&&isValid(M,blk);
+  return concludeStrike(M,counter?'counter':block?'block':'landed',counter?rev:block?blk:id);
+ }
  function startGrapple(M,id){
   const g=get(M),p=Psy.get(M);
-  if(g.pendingAerial||g.pendingGrapple||!isGrappleParent(id)||!isValid(M,id)||
+  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||!isGrappleParent(id)||!isValid(M,id)||
    M.len-M.t<10||M.stage!=='live'||!['w','f'].includes(p.control))return false;
   const n=A[id],side=p.control,attacker=side==='w'?M.w:M.f,defender=side==='w'?M.f:M.w;
   const type=n.family==='submission'?'hold':'throw',seq=++g.grappleAttemptSerial;
@@ -2179,24 +2350,36 @@ const Graph=(function makeGraph(){
   const grip=g.physical?.grip;
   const controlledGrip=grip&&grip.side===p.control&&M.t-grip.at<=20&&
     p.position==='standing'&&g.physical.area==='ring';
-  if(controlledGrip&&M.planId!=='spots'){
-   // Keep spot-fest's deliberately high-risk aerial emphasis: grip attempts
-   // must not drown out the existing spectacle/incident probabilities.
+  if(controlledGrip){
+   // A spot-fest can also produce an earned *high-impact* lifted sequence.
+   // Reduce its grip follow-through weight relative to a technical match
+   // so it never drowns out the established aerial/spectacle emphasis.
    // Candidate pool only: no graph edges invented and no forced execution.
    // Boost different legal throws for each control; prefer repertoire/style
    // through the existing scoring multipliers below.
    for(const id of GRAPPLE_PILOT){
     if(PHYSICAL_GRIP_MOVES[id]===grip.type&&A[id]?.requires==='standing')
-     selected.push([id,2.6]);
+     // Securing a difficult grip should lead to a plausible attack before
+     // the hold expires; still never bypass move legality, stamina or styles.
+     selected.push([id,M.planId==='spots'?2.2:4.4]);
    }
-  }else if(M.planId!=='spots'&&p.position==='standing'&&
+  }else if(p.position==='standing'&&
      (famList.includes('suplex')||famList.includes('power')||
-      famList.includes('neck')||famList.includes('chain'))){
+      famList.includes('neck')||famList.includes('chain'))&&
+     (M.planId!=='spots'||(M.t/M.len>=.5&&M.t/M.len<=.86&&
+       stamina>=45&&['Brawl','Technical','Story'].includes(liveSide.style)))){
    // The next beat acquires a real grip, then the wrestler has a chance to
    // use it. This is not a free-standing throw or synthetic grip assignment.
-   selected.push(['front_facelock',4.2],['go_behind',2.8],
-     ['waistlock',2.2],['lockup',2.5]);
-   if(famList.includes('power'))selected.push(['pw_bearhug',1.6]);
+   if(M.planId==='spots'){
+    // A lift/neck sequence in the last half of an otherwise spot-heavy
+    // match still needs a visible real front facelock before an impact.
+    // The ordinary move validity/weight/risk/stamina checks remain.
+    selected.push(['front_facelock',3.5]);
+   }else{
+    selected.push(['front_facelock',4.2],['go_behind',2.8],
+      ['waistlock',2.2],['lockup',2.5]);
+    if(famList.includes('power'))selected.push(['pw_bearhug',1.6]);
+   }
   }
   // Phase 3: a real grounded grip invites a legal submission. Keep the
   // parent-specific attempt/reversal rules and existing stamina gates.
@@ -2208,7 +2391,7 @@ const Graph=(function makeGraph(){
      // Control is a fleeting technical opportunity: a relevant hold should
      // compete meaningfully with arbitrary arc changes or another rest hold.
      // This raises only an eligible exact-grip option, never bypasses isValid.
-     selected.push([id,5.8]);
+     selected.push([id,7.0]);
    }
   }
   if(p.position==='mat'&&!g.physical?.grip&&
@@ -2217,7 +2400,33 @@ const Graph=(function makeGraph(){
    selected.push(['leg_wrench',2.2],['rs_wrist_mat',1.9],
      ['rs_hammerlock_mat',1.2],['rs_side_headlock',1.6],
      ['rs_mat_stretch',1.1]);
-  if(p.position==='outside')selected.push(['apron_stand',1.6],['ramp_approach',1.3],['floor_regroup',1.4]);
+  if(p.position==='outside'){
+   selected.push(['apron_stand',1.6],['ramp_approach',1.3],['floor_regroup',1.4]);
+   // A Spectacle wrestler who has *actually* thrown an opponent outside
+   // should consider the named ring-to-floor dives before both regroup.
+   // The existing physical location/weight/stamina/clock gates remain
+   // authoritative: an actor already on the floor cannot magically dive.
+   const physical=g.physical,other=p.control==='w'?'f':'w';
+   // Once apron_stand has genuinely established the apron position,
+   // the existing apron offence (including the body slam) must compete
+   // with a generic roll back into the ring. No apron move is offered
+   // from a floor-only position, and weight/risk/phase gates stay intact.
+   if(physical?.area==='apron'&&physical.locations?.[p.control]==='apron'){
+    for(const id of APRON_OFFENCE)selected.push([id,4.8]);
+   }
+   if((M.planId==='spots'||liveSide.style==='Spectacle')&&
+      physical?.locations?.[other]==='floor'){
+    const launch=physical?.locations?.[p.control];
+    // After apron_stand, the worker is on the apron, not in the ring:
+    // only the two actual apron dives can be offered. Never offer a
+    // ring-to-floor dive from the wrong launch location.
+    if(launch==='ring'||launch==='apron')
+     for(const id of CAT.members.dive||[])
+      if(A[id]&&!A[id].counterOf&&!A[id].blockOf&&
+         (launch==='apron')===APRON_DIVES.has(id))
+       selected.push([id,launch==='apron'?5.5:2.4]);
+   }
+  }
   // A Spectacle wrestler who has reached the ropes should have an actual
   // named aerial/springboard available, not only the generic launch node.
   // isValid still rejects heavyweights, fatigue, early big spots and unsafe
@@ -2384,7 +2593,7 @@ const Graph=(function makeGraph(){
   const g=get(M),p=Psy.get(M);
   // The named move is already committed. Another caller must not overwrite
   // it with an unrelated selection before the next tick resolves it.
-  if(g.pendingAerial||g.pendingGrapple)return;
+  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike)return;
   if(p.position==='outside'&&g.floorTicks>=4){apply(M,'roll_inside');g.floorTicks=0;return;}
   if(p.control==='neutral'){
    const advantage=(M.w.ring-M.f.ring)+(M.wSt-M.fSt)*.3;
@@ -2396,6 +2605,15 @@ const Graph=(function makeGraph(){
    // The very final tick retains the pre-existing immediate-landing fallback.
    if(isAerialParent(id)&&startAerial(M,id))return;
    if(isGrappleParent(id)&&startGrapple(M,id))return;
+   if(STRIKE_PILOT.includes(id)&&startStrike(M,id)){
+    // The standing attempt and defence are one contested exchange. A
+    // running attack has its own prior rope/rebound setup in the graph;
+    // introducing another mandatory clock tick would artificially crowd
+    // out aerial and grounded action. Parent and defender remain explicit
+    // and saves can still restore a pending attempt.
+    resolveStrike(M,true);
+    return;
+   }
    apply(M,id);return;
   }
   recover(M);
@@ -2520,7 +2738,9 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
+ STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
+ startStrike,resolveStrike,abortStrike,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
 })();
 
 function create(o){
@@ -2816,6 +3036,7 @@ function tick(M){
  // or unrelated spot can change positions. Pending state survives JSON saves.
  const aerialResolved=Graph.resolveAerial(M);
  const grappleResolved=Graph.resolveGrapple(M);
+ const strikeResolved=Graph.resolveStrike(M);
  const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
  // Minor graph arcs update the label, but do not repeatedly roll the
  // producer's compliance/incidents checks within the same timed phase.

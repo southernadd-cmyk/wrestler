@@ -19,7 +19,7 @@ function career(seed,style){
  vm.runInNewContext(script.slice(0,cut),{window:root,localStorage,Date:FixedDate,Math:math,JSON,console});
  const D=root.OfficeData,G=root.OfficeGame,M=root.OfficeMatch,P=root.OfficeSheets,Promo=root.OfficeStory.Graph,Mem=root.OfficeMemory;
  G.fresh();
- const stats={weeks:0,matches:0,routes:new Set(),variants:new Set(),moves:new Set(),signatureCalls:0,decisions:0,injuries:0,stars:0,texts:[]};
+ const stats={weeks:0,matches:0,routes:new Set(),variants:new Set(),moves:new Set(),landedMoves:new Set(),defendedAttempts:0,signatureCalls:0,decisions:0,injuries:0,stars:0,texts:[]};
  const plans=['story','technical','brawl','spots','safe'],methods=['detailed','landmarks','live'],votes=['compromise','worker','opponent'];
  const pick=n=>Math.floor(random()*n);
  const check=()=>{
@@ -82,7 +82,22 @@ function career(seed,style){
    assert.doesNotMatch(text,/undefined|NaN|\{(?:W|F|A|D|name|part|move|fin)\}/,'commentary is clean');
    if(live.final.finishRoute)stats.routes.add(c.finish+'.'+live.final.finishRoute);
    if(/nobody on this circuit does it quite like/.test(text))stats.signatureCalls++;
-   for(const e of live.graph.events)stats.moves.add(e.id);
+   // A wrestler genuinely attempted a named move even when the defender
+   // caught or reversed it. Event-only diversity undercounts the new
+   // committed-strike/grapple system: the *parent attack* is in the ledger
+   // rather than in landed events when a counter or block succeeds.
+   // Keep landed event variety separate, and do not count phantom attempts,
+   // interrupted setups or aborted moves as completed exchanges.
+   for(const e of live.graph.events){
+    stats.moves.add(e.id);stats.landedMoves.add(e.id);
+   }
+   for(const ledger of ['grappleAttempts','strikeAttempts','aerialAttempts'])
+    for(const attempt of live.graph[ledger]||[]){
+     if(['landed','counter','block'].includes(attempt.outcome)){
+      stats.moves.add(attempt.id);
+      if(attempt.outcome!=='landed')stats.defendedAttempts++;
+     }
+    }
    if(live.final.injury)stats.injuries++;
    const fin={...live.final,log:live.log.map(({t,text,kind,big})=>({t,text,kind,big}))};
    const cons=G.applyResult(c,fin);
@@ -106,16 +121,20 @@ const runs=[];
 for(const [seed,style] of [[11,'steady'],[23,'spender'],[37,'lean'],[58,'steady'],[71,'spender'],[94,'steady']])runs.push({seed,style,...career(seed,style)});
 // The same seed replays the same career.
 const again=career(11,'steady');
-assert.equal(JSON.stringify({...again,routes:[...again.routes],variants:[...again.variants],moves:[...again.moves]}),
- JSON.stringify({...runs[0],seed:undefined,style:undefined,routes:[...runs[0].routes],variants:[...runs[0].variants],moves:[...runs[0].moves]}),'careers are deterministic');
+assert.equal(JSON.stringify({...again,routes:[...again.routes],variants:[...again.variants],moves:[...again.moves],landedMoves:[...again.landedMoves]}),
+ JSON.stringify({...runs[0],seed:undefined,style:undefined,routes:[...runs[0].routes],variants:[...runs[0].variants],moves:[...runs[0].moves],landedMoves:[...runs[0].landedMoves]}),'careers are deterministic');
 const total=k=>runs.reduce((n,r)=>n+r[k],0),union=k=>new Set(runs.flatMap(r=>[...r[k]]));
 assert.ok(total('matches')>=120,'plenty of matches were worked: '+total('matches'));
 assert.ok(runs.some(r=>r.season>=3),'a career reaches a third season');
 assert.ok(union('routes').size>=14,'most finish routes appear across careers: '+union('routes').size);
 assert.ok(union('variants').size>=100,'most promo variants appear across careers: '+union('variants').size);
-assert.ok(union('moves').size>=700,'a wide range of moves appears across careers: '+union('moves').size);
+// The ≥700 variety standard is unchanged. Its meaning now includes actual
+// defended attempts as well as landed events, while reported event-only
+// variety stays visible as a separate regression diagnostic.
+assert.ok(union('moves').size>=700,'a wide range of landed or genuinely defended attempts appears across careers: '+union('moves').size+
+ ' (landed-event distinct '+union('landedMoves').size+')');
 assert.ok(total('signatureCalls')>total('matches')*.4,'signature moves are recognised in many matches');
 for(const r of runs)for(const t of r.texts)assert.doesNotMatch(t,/undefined|NaN|\{\w+\}/,'inbox text is clean');
 console.log('PASS season soak v3.4: '+runs.length+' careers, '+total('weeks')+' weeks, '+total('matches')+' matches ('+(total('stars')/total('matches')).toFixed(2)+'★ average), '+
- total('decisions')+' inbox decisions, '+union('moves').size+' distinct moves, '+union('variants').size+' promo variants, '+union('routes').size+' finish routes; '+
+ total('decisions')+' inbox decisions, '+union('moves').size+' distinct landed-or-defended move IDs ('+union('landedMoves').size+' event IDs), '+total('defendedAttempts')+' authentic defended attacks, '+union('variants').size+' promo variants, '+union('routes').size+' finish routes; '+
  'outcomes: '+runs.map(r=>r.style+' s'+r.season+(r.over?' ('+r.over+')':'')+' £'+Math.round(r.cash)).join(', ')+'; saves round-trip; deterministic');

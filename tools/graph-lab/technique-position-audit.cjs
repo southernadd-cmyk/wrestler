@@ -104,7 +104,8 @@ for(const [family,cat] of Object.entries(G.CATALOG.F))
   observedHits:0,unreviewedHits:0,observedUnique:0,unreviewedUnique:0};
 const hits={},byPlan={},bySlot={},attempts={aerial:{},grapple:{}},selected={};
 let totalEvents=0,actionEvents=0,authoredEvents=0,reviewedEvents=0,unreviewedEvents=0;
-let maxRetained=0,atEventCap=0,illegalPreconditions=0,attemptCounterChecks=0,timingFaults=0,finished=0,scriptedSpotAttempts=0,scriptedSpotLanded=0,scriptedSpotBotched=0;
+let maxRetained=0,atEventCap=0,illegalPreconditions=0,attemptCounterChecks=0,
+ committedLandingChecks=0,timingFaults=0,finished=0,scriptedSpotAttempts=0,scriptedSpotLanded=0,scriptedSpotBotched=0;
 const problems=[],matchSummary=[],examples=[];
 for(let i=0;i<count;i++){
  const M=run(audited,i),ev=M.graph?.events||[],planned=options(i);
@@ -144,8 +145,22 @@ for(let i=0;i<count;i++){
    // Resolution clears pending attempt first, so the raw isValid() check
    // intentionally rejects the counter outside its attempt context.
    const isResolvedCounter=(e.aerialAttemptSeq!==undefined||
-    e.grappleAttemptSeq!==undefined)&&(node.counterOf||node.blockOf);
+    e.grappleAttemptSeq!==undefined||e.strikeAttemptSeq!==undefined)&&
+    (node.counterOf||node.blockOf);
+   // The grapple resolver validated the live attempt BEFORE clearing
+   // pendingGrapple and invoking apply(). That completed move may therefore
+   // fail the audit's second (post-clear) isValid() check, especially when
+   // the last valid grip becomes 30 seconds old on its resolution tick.
+   // Credit this case ONLY when the exact named parent was actually
+   // committed and the engine's persisted ledger proves a landed result.
+   const resolvedLanding=e.grappleAttemptSeq!==undefined&&
+    e.grappleResolution==='landed'&&e.attemptedMove===e.id&&
+    (M.graph?.grappleAttempts||[]).some(a=>
+     a.seq===e.grappleAttemptSeq&&a.id===e.id&&
+     a.actionId===e.id&&a.outcome==='landed'&&
+     a.resolvedT===e.t&&a.startedT<e.t);
    if(isResolvedCounter)attemptCounterChecks++;
+   else if(resolvedLanding)committedLandingChecks++;
    else{
     illegalPreconditions++;
     if(problems.length<40)problems.push({type:'precondition',seed:M.o.seed,id:e.id,t:e.t,
@@ -190,7 +205,7 @@ const snapshot={
  reviewedEvents,unreviewedEvents,reviewedUnique:allAuthored.filter(id=>observed.has(id)&&R.get(id)).length,
  unreviewedUnique:allAuthored.filter(id=>observed.has(id)&&!R.get(id)).length,
  unseenMoves:unseen,maxRetainedEvents:maxRetained,eventCapReached:atEventCap,
- timingFaults,illegalPreconditions,attemptCounterChecks,
+ timingFaults,illegalPreconditions,attemptCounterChecks,committedLandingChecks,
  scriptedSpots:{attempts:scriptedSpotAttempts,landed:scriptedSpotLanded,botched:scriptedSpotBotched},
  byPlan,bySlot,byFamily:familySummary,
  mostFrequentUnreviewed:sortCount(Object.fromEntries(Object.entries(hits).filter(([id])=>!R.get(id))))
