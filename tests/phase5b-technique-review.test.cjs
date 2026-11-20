@@ -22,7 +22,7 @@ assert.equal(G.TECHNIQUE_PILOT.length,11,'Phase 3 baseline remains a separate se
 assert.equal(G.TECHNIQUE_EXPANSION.length,14,'Phase 5 baseline remains a separate set');
 assert.equal(G.TECHNIQUE_TRANCHE2.length,16,'the exact vetted Phase 5b link set');
 assert.equal(review.valid,true,review.errors.join('\n'));
-assert.equal(review.proposals,90);
+assert.equal(review.proposals,114);
 assert.equal(review.authored,EXPECTED.moves);
 assert.equal(schools.valid,true,schools.errors.join('\n'));
 assert.equal(schools.assigned,80);
@@ -116,4 +116,4 @@ for(let i=0;i<24;i++){
   assert.equal(JSON.stringify(bout.graph.events),JSON.stringify(replay.graph.events),'same seed/release replay '+i);
  }
 }
-console.log('PASS Phase 5b: 90/340 reviewed mechanics, 16 curated links, five pre-existing aerial counters, real mat/strike weights, 24 legal finishes, original roster and saves intact.');
+console.log('PASS Phase 5b: 114/340 reviewed mechanics (90 Phase 5b and earlier), 16 curated links, five pre-existing aerial counters, real mat/strike weights, 24 legal finishes, original roster and saves intact.');

@@ -21,7 +21,7 @@ assert.equal(G.CATALOG.counts.moves,EXPECTED.moves);
 assert.equal(G.TECHNIQUE_PILOT.length,11,'original Phase 3 pilot stays separately intact');
 assert.equal(G.TECHNIQUE_EXPANSION.length,14,'only fourteen new guarded links');
 assert.equal(registryValidation.valid,true,registryValidation.errors.join('\n'));
-assert.equal(registryValidation.proposals,90,'the 60 previously reviewed plus 30 Phase 5b records');
+assert.equal(registryValidation.proposals,114,'preserve prior 90 records and add the 24 audited follow-up records');
 assert.equal(registryValidation.authored,EXPECTED.moves);
 assert.equal(schools.valid,true,schools.errors.join('\n'));
 assert.equal(schools.assigned,80);

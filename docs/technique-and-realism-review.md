@@ -4,6 +4,8 @@
 **Baseline:** Verified shipped `main` after Phase 10; 19 November 2026.  
 **Goal:** Make technique identities and match sequences more mechanically convincing **before** growing the move catalogue.
 
+**Post-release progress (20 November 2026):** [The evidence-led 24-technique tranche](reports/v04-technique-tranche24-20261120.md) adds 24 editorial mechanics records and seven reviewed handoffs (six net new edges). The original **90 reviewed / 250 outstanding**, 979-node and 6,401-edge figures in this historical design review predate the latest pilot and follow-up. The proposed branch now validates at **114 reviewed / 226 outstanding, 980 nodes and 6,413 edges**. The old physical-state pilot proposal in §3 was delivered separately by [PR #121](https://github.com/southernadd-cmyk/wrestler/pull/121).
+
 **Completed evidence audit:** [500 seeded bouts](reports/v04-technique-position-500.md) · [exact JSON snapshot](reports/v04-technique-position-500.json) · [read-only reproduction script](../tools/graph-lab/technique-position-audit.cjs). All 500 matches finished, with 6,426 authored-move appearances, including 4,732 without curated metadata. Position/timing gates held, but ringside geography and grip-specific causality remain under-modelled. **The original 24-move list below is superseded** by the audited 24-move shortlist in that report.
 
 ## 1. What already works
