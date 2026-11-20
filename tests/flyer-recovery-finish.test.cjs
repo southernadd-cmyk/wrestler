@@ -29,7 +29,8 @@ const gain=m=>{
  assert.equal(actual.id,'catch_breath','recovery must be a visible action');
  assert.equal(actual.preControl,'w','the recovering wrestler executes it');
  assert.ok(actual.exertion<0,'visible rest cost records the returned energy');
- assert.equal(m.wSt-before,-actual.exertion,'no hidden stamina refill');
+ assert.ok(Math.abs((m.wSt-before)+actual.exertion)<1e-8,
+  'no hidden stamina refill (floating point tolerance)');
  return m.wSt-before;
 };
 const novice=fixture('spots','novice'),competent=fixture('spots','competent'),
