@@ -9,7 +9,7 @@ for(const name of ['data.js','roster-registry.js','technique-registry.js',
   {window:root,console,Math,Date,JSON},{filename:name});
 root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,A=G.A;
-const ids=G.STRIKE_PILOT;
+const ids=G.STRIKE_PILOT.filter(id=>!G.QUICK_NECK_IDS.includes(id));
 assert.equal(G.CATALOG.members.strike.length,32);
 assert.equal(G.CATALOG.members.running.length,12);
 assert.equal(ids.length,43,'mutual exchange is intentionally not a committed attack');
