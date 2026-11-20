@@ -44,8 +44,26 @@ const injection=String.raw`  // Diagnostic only; injected into a temporary in-me
   }
 `;
 if(code[4].split(anchor).length!==2)throw Error('Diagnostic anchor changed. Review before use.');
-const edited=code[4].replace(anchor,injection+anchor);
-const results=new Map();
+const selectAnchor='  const candidates=validPool(M),id=pick(M,candidates);';
+if(code[4].split(selectAnchor).length!==2)throw Error('Selection diagnostic anchor changed.');
+const edited=code[4].replace(anchor,injection+anchor).replace(selectAnchor,
+ selectAnchor+'\n  if(root.__grappleSelection)root.__grappleSelection(candidates,id);');
+const results=new Map(),selectionStats=new Map();
+const recordChoice=(pool,picked)=>{
+ const sum=pool.reduce((acc,row)=>acc+row[1],0);
+ for(const [id,weight] of pool){
+  if(!id.startsWith('sx_')&&!id.startsWith('pw_')&&
+     id!=='sm_sleeper'&&id!=='sm_ankle_lock'&&id!=='nk_snap_ddt')continue;
+  const d=selectionStats.get(id)||{weightedOffers:0,expectedSelections:0,
+    chosen:0,maxProbability:0};
+  const probability=sum>0?weight/sum:0;
+  d.weightedOffers++;
+  d.expectedSelections+=probability;
+  d.maxProbability=Math.max(d.maxProbability,probability);
+  if(picked===id)d.chosen++;
+  selectionStats.set(id,d);
+ }
+};
 let steps=0;
 function probe(row){
  let d=results.get(row.id);
@@ -63,7 +81,8 @@ function probe(row){
  if(row.id==='sx_vertical')steps++;
 }
 function load(engine,monitor){
- const root={__grappleDiagnostics:monitor?probe:undefined};
+ const root={__grappleDiagnostics:monitor?probe:undefined,
+  __grappleSelection:monitor?recordChoice:undefined};
  files.forEach((name,i)=>vm.runInNewContext(i===4?engine:code[i],{
   window:root,Math,Date,JSON,console},{filename:name}));
  root.OfficeRosterV4.enableProfiles();
@@ -98,7 +117,11 @@ for(let i=0;i<count;i++){
  }
 }
 const moves=[...results.values()].map(d=>({
- ...d,avgRawOfferWeight:d.offeredLegal?Number((d.offeredWeight/d.offeredLegal).toFixed(3)):0
+ ...d,avgRawOfferWeight:d.offeredLegal?Number((d.offeredWeight/d.offeredLegal).toFixed(3)):0,
+ weightedOffers:selectionStats.get(d.id)?.weightedOffers||0,
+ expectedSelections:Number((selectionStats.get(d.id)?.expectedSelections||0).toFixed(3)),
+ pickedSelections:selectionStats.get(d.id)?.chosen||0,
+ maxSelectionProbability:Number((selectionStats.get(d.id)?.maxProbability||0).toFixed(4))
 })).sort((a,b)=>a.attempts-b.attempts||a.id.localeCompare(b.id));
 const noAttempts=moves.filter(x=>!x.attempts);
 const report={schema:'office-phase2-grapple-diagnostic-v1',bouts:count,steps,
@@ -113,6 +136,8 @@ process.stderr.write('Grapple diagnostic: '+count+' bouts; attempted '+report.at
 for(const d of noAttempts)
  process.stderr.write('  '+d.id+': '+JSON.stringify({
   legal:d.legal,offered:d.offeredLegal,notOffered:d.unofferedLegal,
+  expectedSelections:d.expectedSelections,picked:d.pickedSelections,
+  maxSelectionProbability:d.maxSelectionProbability,
   causes:Object.entries(d.reasons).sort((a,b)=>b[1]-a[1]).slice(0,7),
   byPlan:d.legalByPlan,gripSources:d.setupSources})+'\n');
 if(parityFailures.length)process.exitCode=1;
