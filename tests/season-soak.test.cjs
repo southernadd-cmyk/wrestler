@@ -91,7 +91,7 @@ function career(seed,style){
    for(const e of live.graph.events){
     stats.moves.add(e.id);stats.landedMoves.add(e.id);
    }
-   for(const ledger of ['grappleAttempts','strikeAttempts','aerialAttempts'])
+   for(const ledger of ['grappleAttempts','strikeAttempts','aerialAttempts','contactAttempts'])
     for(const attempt of live.graph[ledger]||[]){
      if(['landed','counter','block'].includes(attempt.outcome)){
       stats.moves.add(attempt.id);
