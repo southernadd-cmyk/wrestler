@@ -1625,6 +1625,9 @@ const Graph=(function makeGraph(){
   // Preserve one genuinely owned, legal Technical grip through the arc
   // director, exactly like a real aerial setup or Brawl rebound.
   if(readyTechnicalGrip(M))return {id:schedule.id,name:a.label};
+  // If the defender genuinely countered from a Story hope beat, let
+  // them attempt an authored strike before the next arc clears control.
+  if(readyStoryHope(M))return {id:schedule.id,name:a.label};
   // Existing in-progress saves may already be in an impossible early finish arc.
   // Recover those, and never carry an early-phase arc back into the final stretch.
   const mispaced=(g.arc==='exchange'&&order[schedule.id]<2)
@@ -2009,6 +2012,24 @@ const Graph=(function makeGraph(){
    !A[id].counterOf&&!A[id].blockOf&&
    PHYSICAL_GRIP_MOVES[id]===grip.type&&
    A[id].requires===p.position&&isValid(M,id));
+ }
+ // Story psychology: a genuine reversal of actual heel pressure can earn
+ // ONE legal, still-contested follow-up in the same hope arc. Only the
+ // real defensive counter (not the narration or arc visit) grants this.
+ function readyStoryHope(M){
+  const g=get(M),p=Psy.get(M),last=g.events.at(-1),worker=M.w;
+  if(M.planId!=='story'||worker.style!=='Story'||worker.ring<68||
+     worker.psych<65||M.wSt<23||
+     !['hope','second_hope'].includes(g.arc)||
+     p.control!=='w'||p.position!=='standing'||p.down!==null||
+     !last||last.id!=='counter_strike'||!last.reverse||
+     last.preControl!=='f'||last.control!=='w'||last.arc!==g.arc||
+     g.node!==last.id||M.t-last.t!==10||M.len-M.t<20||
+     g.pendingGrapple||g.pendingStrike||g.pendingAerial||g.pendingContact||
+     g.physical?.area!=='ring'||g.physical.locations?.w!=='ring'||
+     g.physical.locations?.f!=='ring')return false;
+  return A[last.id].next.some(([id])=>
+   ['clothesline','snap_suplex'].includes(id)&&isValid(M,id));
  }
  function readyBrawlRebound(M){
   const g=get(M),p=Psy.get(M),side=p.control,remaining=M.len-M.t;
@@ -2696,6 +2717,26 @@ const Graph=(function makeGraph(){
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
   const entries=arc.entry.map(id=>[id,1]);
   const selected=[...from,...entries];
+  // A trained Story wrestler may contest actual opponent pressure while
+  // still underneath in a heat-stage hope arc. The authored counter is
+  // selectable but never guaranteed; normal legality, exertion and
+  // independent move selection still apply. Do not grant free control.
+  if(M.planId==='story'&&['hope','second_hope'].includes(g.arc)&&
+     p.control==='f'&&['standing','mat'].includes(p.position)&&
+     M.w.style==='Story'&&M.w.ring>=68&&M.w.psych>=65&&
+     M.wSt>=23&&M.t/M.len>=.25&&M.t/M.len<.82&&
+     g.events.some(e=>e.preControl==='f'&&e.control==='f'&&
+      M.t>=e.t&&M.t-e.t<=130&&
+      ['cutoff','control','limb_work','floor_heat','denial'].includes(e.arc)&&
+      !!A[e.id]&&!A[e.id].reverse&&!A[e.id].counterOf&&
+      !A[e.id].blockOf&&
+      ['strikeResolution','grappleResolution','contactResolution']
+       .every(k=>!e[k]||e[k]==='landed'))){
+   const opening=p.position==='mat'?'mat_scramble':'counter_strike';
+   // This is an existing real defensive reversal. The opponent's
+   // established physical/position state and isValid remain authoritative.
+   selected.push([opening,32+Math.max(0,M.w.psych-65)*.6]);
+  }
   // Only an event actually performed by the current controller can seed an
   // offensive continuation. Arc changes and special interruptions break it.
   const previous=g.events[g.events.length-1];
@@ -3129,6 +3170,27 @@ const Graph=(function makeGraph(){
    weights.set(id,(weights.get(id)||0)+n);
   }
   const pool=[...weights.entries()];
+  // A genuinely countered hope spot should have a realistic possibility
+  // of a performed follow-through, not only a commentary declaration.
+  // Promote the two existing authored links from counter_strike, leaving
+  // other legal moves live and normal defender outcomes unchanged.
+  if(readyStoryHope(M)){
+   const links=new Set(A[g.node].next.map(([id])=>id));
+   const moves=pool.filter(([id])=>links.has(id)&&
+    ['clothesline','snap_suplex'].includes(id));
+   if(moves.length){
+    const ids=new Set(moves.map(([id])=>id));
+    const ours=moves.reduce((v,[,w])=>v+w,0);
+    const others=pool.reduce((v,[id,w])=>v+(ids.has(id)?0:w),0);
+    const trained=Math.max(0,Math.min(1,
+     (M.w.ring+M.w.psych-135)/45));
+    const goal=others*(.65+.25*trained);
+    if(ours>0&&ours<goal){
+     const boost=Math.min(7,goal/ours);
+     for(const item of moves)item[1]*=boost;
+    }
+   }
+  }
   // A held, physically legal grip is a fleeting technical opportunity.
   // Improve the CHOICE share, not the move's accuracy or defender's counter.
   if(readyTechnicalGrip(M)){
@@ -3571,7 +3633,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,maybeBrawlComboRun};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun};
 })();
 
 function create(o){
@@ -4060,9 +4122,10 @@ function tick(M){
  const preparedFlight=!spoke&&!topContest&&Graph.readyNamedAerial(M);
  const preparedRun=!spoke&&!topContest&&!preparedFlight&&Graph.readyBrawlRebound(M);
  const preparedGrip=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&Graph.readyTechnicalGrip(M);
- if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){
+ const preparedHope=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&Graph.readyStoryHope(M);
+ if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){
   M.nearfallAt.shift();Graph.nearfall(M);spoke=true;
- }else if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&M.r()<spotP)spoke=Graph.special(M);
+ }else if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&M.r()<spotP)spoke=Graph.special(M);
  // crowd bands
  crowdBand(M);
  // producer hints
@@ -4073,7 +4136,7 @@ function tick(M){
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
- if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||M.r()<.64))Graph.step(M);
+ if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||preparedHope||M.r()<.64))Graph.step(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
