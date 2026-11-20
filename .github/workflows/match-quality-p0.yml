@@ -8,10 +8,22 @@ on:
       - 'tests/match-quality-p0.test.cjs'
       - 'tools/graph-lab/compare-match-quality.cjs'
       - '.github/workflows/match-quality-p0.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'assets/js/data.js'
+      - 'tests/match-quality-p0.test.cjs'
+      - 'tools/graph-lab/compare-match-quality.cjs'
+      - '.github/workflows/match-quality-p0.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   match-quality:
