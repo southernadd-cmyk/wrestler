@@ -133,6 +133,24 @@
     listHits('topActions', report.topNodes, name => G.A[name]?.name || name.replace(/_/g, ' '));
     listHits('sequences', report.topSequences, name => name.split(' > ').map(id => G.A[id]?.name || id).join(' → '));
     listHits('finishRoutes', report.finishRoutes, name => name.replace(/_/g, ' '));
+    if(report.grappling){
+      const x=report.grappling;
+      set('grappleOverview',x.coveredMoves+'/'+x.eligibleMoves+' moves observed · '+
+        fmt(x.attempts)+' attempts · '+fmt(x.landed)+' landed · '+
+        fmt(x.counter)+' counters · '+fmt(x.block)+' blocks · '+
+        fmt(x.aborted+x.interrupted)+' aborted/interrupted · '+fmt(x.invalid)+' integrity errors');
+      const list=$('grappleMoves');list.replaceChildren();
+      const rows=x.byMove.filter(row=>G.GRAPPLE_PILOT.includes(row.id));
+      if(!rows.length)list.append(make('li','No named grapples observed yet. Run more matches or vary the pairing.'));
+      for(const row of rows){const li=make('li');
+        li.append(make('span',(G.A[row.id]?.name||row.id)+' · '+row.attempts+' attempts'),
+          make('em',row.landed+' landed / '+row.counter+' counter / '+row.block+' blocked'));
+        list.append(li);
+      }
+      set('grappleUnseen',x.unobservedMoves.length?
+        'NOT SEEN: '+x.unobservedMoves.map(id=>G.A[id]?.name||id).join(', '):
+        'All named grapples observed at least once.');
+    }
     $('export').disabled = false;
     renderComparison();
     if (report.validation) renderValidation(report.validation);
