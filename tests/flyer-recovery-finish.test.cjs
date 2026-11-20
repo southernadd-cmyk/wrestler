@@ -281,6 +281,37 @@ assert.equal(G.startAerial(protectedLaunch,readyParents[0][0]),true,
 assert.equal(launchGraph.pendingAerial.id,readyParents[0][0]);
 assert.equal(launchGraph.aerialAttempts.at(-1).outcome,'pending',
  'a prepared attack is not credited as landed before its counter/botch resolution');
+// A legal climb is not automatically an affordable named risky *landing*.
+// The lookahead is read-only and must not spend real stamina or move either
+// wrestler merely to test the future position.
+const tooTiredForFlight=fixture('spots','elite');
+tooTiredForFlight.t=tooTiredForFlight.len-120;
+tooTiredForFlight.wSt=26;
+const untouched=JSON.stringify({
+ t:tooTiredForFlight.t,st:tooTiredForFlight.wSt,
+ story:tooTiredForFlight.story,physical:G.get(tooTiredForFlight).physical
+});
+assert.ok(G.isValid(tooTiredForFlight,'top_climb'),
+ 'legacy climb guard alone allows an unaffordable follow-through');
+const noFlightPool=G.pool(tooTiredForFlight);
+assert.equal(noFlightPool.some(([id])=>
+ id==='top_climb'||id==='springboard_rise'),false,
+ 'do not choose a climb that cannot lead to any legal named risky aerial');
+assert.equal(JSON.stringify({
+ t:tooTiredForFlight.t,st:tooTiredForFlight.wSt,
+ story:tooTiredForFlight.story,physical:G.get(tooTiredForFlight).physical
+}),untouched,'physical and stamina lookahead leaves live state intact');
+const restChoice=noFlightPool.find(([id])=>id==='catch_breath')?.[1]||0;
+const othersNoFlight=noFlightPool.reduce((sum,[id,w])=>
+ sum+(id==='catch_breath'?0:w),0);
+assert.ok(restChoice>=othersNoFlight*.95-1e-7,
+ 'a tired worker should visibly recover rather than waste an impossible climb');
+G.apply(tooTiredForFlight,'catch_breath');
+assert.ok(tooTiredForFlight.wSt>35,
+ 'an actual recovery action restores enough stamina for a new setup choice');
+assert.ok(G.pool(tooTiredForFlight).some(([id])=>
+ id==='top_climb'||id==='springboard_rise'),
+ 'after that physical rest the named landing runway becomes plausible');
 const spent=fixture('spots','elite');
 spent.t=spent.len-120;spent.wSt=18;
 assert.equal(G.isValid(spent,aerial),false,
