@@ -1,14 +1,6 @@
 name: Phase 9 graph validation
 
 on:
-  pull_request:
-    paths:
-      - 'tools/graph-lab/**'
-      - 'assets/js/match-engine.js'
-      - 'assets/js/technique-backgrounds.js'
-      - 'tests/phase9-graph-validation.test.cjs'
-      - 'tests/phase9-authored-chains.test.cjs'
-      - '.github/workflows/phase9-graph-validation.yml'
   push:
     branches: [main]
     paths:
@@ -20,6 +12,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   validate-moves:
