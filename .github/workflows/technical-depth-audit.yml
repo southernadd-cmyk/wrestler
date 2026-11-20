@@ -1,0 +1,30 @@
+name: Technical grappling depth audit
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/technical-depth-audit.cjs'
+      - 'tests/technical-depth-audit.test.cjs'
+      - '.github/workflows/technical-depth-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    name: Grapples, held grip, counters, late variety
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Deterministic 72 match validation
+        run: node tests/technical-depth-audit.test.cjs
+      - name: Review 864 controlled actual Technical bouts
+        run: node tools/graph-lab/technical-depth-audit.cjs 12 --json-file | tee "$GITHUB_STEP_SUMMARY"
+      - name: Retain the structured Technical observations
+        uses: actions/upload-artifact@v4
+        with:
+          name: technical-grappling-audit-864
+          path: technical-depth-audit.json
+          if-no-files-found: error
