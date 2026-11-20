@@ -1816,6 +1816,14 @@ const Graph=(function makeGraph(){
   if(parent&&M.graph?.pendingAerial?.id!==parent)return false;
   const grappleParent=grappleAlternativeParent(nodeId);
   if(grappleParent&&M.graph?.pendingGrapple?.id!==grappleParent)return false;
+  // Rest-hold resistance is a one-beat defensive continuation, not a
+  // standalone move. It must immediately answer the exact live hold.
+  const restParent=n.counterOf||n.blockOf;
+  if(restParent&&A[restParent]?.family==='rest'){
+   const prior=M.graph?.events?.at(-1);
+   if(prior?.id!==restParent||prior.control!==p.control||
+      M.t-prior.t>20)return false;
+  }
   // A submission-only bout cannot reach pin nodes, even through signature/catalog edges.
   if(M.o.stip==='submission'&&(n.family==='pin'||n.nearfall||
     ['early_cover','cover','near_kickout','counter_rollup'].includes(nodeId)||
