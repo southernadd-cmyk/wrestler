@@ -30,3 +30,18 @@ A central `PHYSICAL_GRIP_MOVES` mapping declares entry grip requirements; `GRIP_
 ## Remaining Phase 2 scope
 
 More grounded submission chaining, wrist control, counter-to-regrip and grip-preserving transitions require subsequent batches. The initial 39-technique implementation is not a claim that the remaining 226 unreviewed catalogue techniques have source-reviewed metadata or reliable physical continuations. Avoid further mass imports or invented counters.
+
+## Graph Lab evidence — reachability intervention (20 November 2026)
+
+A new reproducible `tools/graph-lab/grapple-audit.cjs` command and PR workflow run 1,000 real bouts across rotating wrestlers, five match plans and fixed seeds. The browser Graph Lab now shows per-move actual attempts, landings, counters, blocks and moves absent from the sample; generated reversals alone are **not** counted as attempts.
+
+| Measure | Initial 39-move branch | Controlled-grip selection | Spot-fest-preserving revision |
+| --- | ---: | ---: | ---: |
+| Target grapples attempted at least once | 21/39 | 36/39 | **35/39** |
+| Overall graph nodes observed | 84.0% | 86.6% | **86.4%** |
+| Grapple commitments (includes established superplexes) | 185 | 432 | **392** |
+| Attempt-event integrity errors | 0 | 0 | **0** |
+
+The second revision deliberately excludes the new grapple preference boost for Spot-fest; its existing high-risk aerial identity and botch baseline otherwise regress. The original 90% catalogue coverage gate remains unchanged and is still **not met**. Four target moves remain unobserved: `sx_delayed`, `sx_dragon`, `pw_powerbomb`, `pw_running_powerbomb`. Absence from the sample does not prove impossible reachability, and no manual narrative-quality sign-off has occurred.
+
+**No merge while catalogue coverage fails.** Further work should instrument rejected move candidates by cause (position, grip, stamina, timing, lift, style), distinguish insufficient setups from poor selection, then review a limited corrective set. Never manufacture throw outcomes, bypass grip ownership, suppress risky wrestling or lower the gate merely to pass CI.
