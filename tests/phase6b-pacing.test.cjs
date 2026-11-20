@@ -22,6 +22,14 @@ assert.ok(likelihood(lowSpots)>likelihood(lowTechnical),
  'an exhausted flyer has a stronger chance to recover visibly under Spot-fest');
 assert.ok(likelihood(lowSpots)>likelihood(fitSpots),
  'fresh flyers must not stall simply because they chose the Spot-fest plan');
+const tiringSpots=prepared('spots',50),tiringTechnical=prepared('technical',50);
+assert.ok(likelihood(tiringSpots)>likelihood(tiringTechnical),
+ 'a flyer should have a real recovery option before reaching near-exhaustion');
+const setUp=prepared('spots',70),g=G.get(setUp);
+g.arc='escalation';setUp.story.position='standing';
+const candidate=id=>G.pool(setUp).find(([move])=>move===id)?.[1]||0;
+assert.ok(candidate('top_climb')>0||candidate('springboard_rise')>0,
+ 'a prepared flyer should have a physically legal route into a named aerial attack');
 assert.equal(G.isValid(lowSpots,'catch_breath'),true);
 const before=lowSpots.wSt;
 G.apply(lowSpots,'catch_breath');
