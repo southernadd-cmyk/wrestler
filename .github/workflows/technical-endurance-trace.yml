@@ -1,0 +1,33 @@
+name: Technical long-match endurance (read-only)
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/technical-endurance-trace.cjs'
+      - 'tests/technical-endurance-trace.test.cjs'
+      - '.github/workflows/technical-endurance-trace.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    name: Observe real stamina and actual recovery
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check actual stamina audit fixtures
+        run: node tests/technical-endurance-trace.test.cjs
+      - name: 432 real Technical, Story and Safe long-match comparisons
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/graph-lab/technical-endurance-trace.cjs 12 --json-file | tee "$GITHUB_STEP_SUMMARY"
+      - name: Retain stamina and event timeline JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: technical-endurance-runway-432
+          path: technical-endurance-trace.json
+          if-no-files-found: error
