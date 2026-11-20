@@ -1,0 +1,114 @@
+name: Technical owned-grip payoff A/B
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'tests/technical-grip-followthrough.test.cjs'
+      - '.github/workflows/technical-grip-followthrough.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Direct physical legality and saved-state regression
+        run: |
+          node tests/technical-grip-followthrough.test.cjs
+          node tests/technical-depth-audit.test.cjs
+      - name: Fetch unchanged read-only baseline
+        uses: actions/checkout@v4
+        with:
+          ref: audit/technical-grappling-depth-20261120
+          path: baseline
+      - name: Same 288 seeded grip traces before and after
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd baseline && node tools/graph-lab/technical-grip-continuity.cjs 6 --json-file > ../technical-before.md)
+          node tools/graph-lab/technical-grip-continuity.cjs 6 --json-file > technical-after.md
+          echo '# Baseline' >> "$GITHUB_STEP_SUMMARY"
+          cat technical-before.md >> "$GITHUB_STEP_SUMMARY"
+          echo '# Candidate' >> "$GITHUB_STEP_SUMMARY"
+          cat technical-after.md >> "$GITHUB_STEP_SUMMARY"
+          echo 'Baseline and candidate conversion rows:'
+          grep -E '^\| (novice|competent|elite) \| (12|18) \| technical \|' technical-before.md technical-after.md
+      - name: Guard actual conversion and cohort isolation
+        shell: bash
+        run: |
+          node <<'NODE'
+          const a=require('./technical-grip-continuity.json');
+          const b=require('./baseline/technical-grip-continuity.json');
+          const assert=require('node:assert/strict');
+          for(const tier of ['novice','competent','elite'])
+           for(const minutes of [12,18]){
+            const find=(d,plan)=>d.rows.find(x=>x.tier===tier&&x.minutes===minutes&&x.plan===plan);
+            const before=find(b,'technical'),after=find(a,'technical');
+            assert(before&&after);
+            console.log(tier,minutes,'technical',before.convertedPct,'=>',after.convertedPct,
+             'setups',before.setups,'=>',after.setups,
+             'eligible',before.eligiblePct,'=>',after.eligiblePct,
+             'candidate weight',before.offeredSharePct,'=>',after.offeredSharePct);
+            if(minutes===12)
+             assert.equal(after.convertedPct,before.convertedPct,
+              'short-match Technical lane must be unchanged');
+            else if(tier==='novice')
+             assert.ok(Math.abs(after.convertedPct-before.convertedPct)<=4,
+              'novice workers cannot receive direct new skill; a trained opponent may change the match');
+            else assert.ok(after.convertedPct>=before.convertedPct+5,
+             'trained 18-minute Technical conversion did not improve enough');
+            assert.equal(find(a,'story').convertedPct,find(b,'story').convertedPct);
+           }
+          NODE
+      - name: Compare full 864-bout grappling quality and late variety
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd baseline && node tools/graph-lab/technical-depth-audit.cjs 12 --json-file > ../technical-full-before.md)
+          node tools/graph-lab/technical-depth-audit.cjs 12 --json-file > technical-full-after.md
+          echo '# All baseline Technical measures' >> "$GITHUB_STEP_SUMMARY"
+          cat technical-full-before.md >> "$GITHUB_STEP_SUMMARY"
+          echo '# All candidate Technical measures' >> "$GITHUB_STEP_SUMMARY"
+          cat technical-full-after.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Require genuine linked-three move continuity and finishing variety
+        shell: bash
+        run: |
+          node <<'NODE'
+          const a=require('./technical-depth-audit.json');
+          const b=require('./baseline/technical-depth-audit.json');
+          const assert=require('node:assert/strict');
+          assert.deepEqual(a.errors,[]);
+          for(const tier of ['competent','elite']){
+           const get=(d)=>d.groups.find(x=>x.tier===tier&&x.minutes===18&&x.plan==='technical');
+           const before=get(b),after=get(a);
+           console.log(tier,'three-move chains',before.actualThreeMoveChains,'=>',
+            after.actualThreeMoveChains,'late distinct',before.lateDistinct,'=>',
+            after.lateDistinct,'stars',before.stars,'=>',after.stars);
+           assert.ok(after.actualThreeMoveChains>=before.actualThreeMoveChains,
+            'do not trade away actual connected three-move grappling for standalone holds');
+           assert.ok(after.lateDistinct+.03>=before.lateDistinct,
+            'no late technical variety reduction');
+           assert.ok(after.stars+.12>=before.stars,'no hidden match-quality collapse');
+           assert.ok(after.grapplesLanded>=before.grapplesLanded+.4,
+            'committed, landed grapples must improve meaningfully');
+          }
+          NODE
+      - name: Retain paired evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: technical-grip-followthrough-paired
+          path: |
+            baseline/technical-grip-continuity.json
+            technical-grip-continuity.json
+            baseline/technical-depth-audit.json
+            technical-depth-audit.json
+            technical-before.md
+            technical-after.md
+            technical-full-before.md
+            technical-full-after.md
+          if-no-files-found: error

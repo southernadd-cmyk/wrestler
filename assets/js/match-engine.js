@@ -1622,6 +1622,9 @@ const Graph=(function makeGraph(){
   // changes control or resets the ropes. Only if a named running attack
   // is affordable now. This never performs or credits the attack.
   if(readyBrawlRebound(M))return {id:schedule.id,name:a.label};
+  // Preserve one genuinely owned, legal Technical grip through the arc
+  // director, exactly like a real aerial setup or Brawl rebound.
+  if(readyTechnicalGrip(M))return {id:schedule.id,name:a.label};
   // Existing in-progress saves may already be in an impossible early finish arc.
   // Recover those, and never carry an early-phase arc back into the final stretch.
   const mispaced=(g.arc==='exchange'&&order[schedule.id]<2)
@@ -1976,6 +1979,36 @@ const Graph=(function makeGraph(){
   if(setup?.id!=='rope_run'||setup.preControl!==side)return false;
   setup.brawlComboSource=sourceId;
   return true;
+ }
+ // A real owned grip earns at most ONE short Technical follow-through beat.
+ // Its prospective grapple is still a normal committed, defendable move.
+ function readyTechnicalGrip(M){
+  const g=get(M),p=Psy.get(M),side=p.control,remaining=M.len-M.t;
+  // Technical opening wrist-chain wrestling must be allowed to build
+  // naturally. Only help controlled transitions after the first 45% of
+  // a long match, where the wider graph previously buried the payoff.
+  if(M.planId!=='technical'||M.len<900||M.t/M.len<.45||
+     remaining<20||
+     !['w','f'].includes(side)||g.pendingAerial||g.pendingGrapple||
+     g.pendingStrike||g.pendingContact)return false;
+  const actor=side==='w'?M.w:M.f,grip=g.physical?.grip,
+   last=g.events.at(-1);
+  if(actor.style!=='Technical'||actor.ring<68||actor.safe<60||
+     !grip||grip.side!==side||grip.source!==last?.id||
+     grip.at!==last.t||last.preControl!==side||last.control!==side||
+     GRIP_ENTRY[last.id]!==grip.type||
+     last.id!==g.node||GRAPPLE_PILOT.includes(last.id)||
+     SUPERPLEX_PILOT.includes(last.id)||
+     M.t-grip.at!==10)return false;
+  // A near-empty tank cannot sustain a newly committed grappling exchange.
+  if((side==='w'?M.wSt:M.fSt)<12)return false;
+  const ph=g.physical;
+  if(ph.area!=='ring'||ph.locations?.w!=='ring'||ph.locations?.f!=='ring')
+   return false;
+  return GRAPPLE_PILOT.some(id=>A[id]&&!A[id].reverse&&
+   !A[id].counterOf&&!A[id].blockOf&&
+   PHYSICAL_GRIP_MOVES[id]===grip.type&&
+   A[id].requires===p.position&&isValid(M,id));
  }
  function readyBrawlRebound(M){
   const g=get(M),p=Psy.get(M),side=p.control,remaining=M.len-M.t;
@@ -3061,6 +3094,43 @@ const Graph=(function makeGraph(){
    weights.set(id,(weights.get(id)||0)+n);
   }
   const pool=[...weights.entries()];
+  // A held, physically legal grip is a fleeting technical opportunity.
+  // Improve the CHOICE share, not the move's accuracy or defender's counter.
+  if(readyTechnicalGrip(M)){
+   const held=g.physical.grip,trained=Math.max(0,Math.min(1,
+    (liveSide.ring+liveSide.safe+liveSide.psych-180)/85));
+   const options=pool.filter(([id])=>GRAPPLE_PILOT.includes(id)&&
+    PHYSICAL_GRIP_MOVES[id]===held.type&&A[id]?.requires===p.position);
+   if(options.length){
+    const ids=new Set(options.map(([id])=>id));
+    const current=options.reduce((sum,[,w])=>sum+w,0);
+    const rest=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+    const goal=rest*(.48+.28*trained);
+    if(current>0&&current<goal){
+     const scale=Math.min(6,goal/current);
+     for(const item of options)item[1]*=scale;
+    }
+   }
+   // Do not skip the real wrist/waist/limb-control steps on the way to
+   // a throw. Source-authored matching-grip transitions remain a distinct
+   // legal choice, allowing wristlock -> rolling control -> takedown.
+   // Their moves still consume a full beat and can be interrupted.
+   const actual=A[g.node],links=new Set((actual?.next||[]).map(([id])=>id));
+   const connected=pool.filter(([id])=>links.has(id)&&
+    id!==g.node&&!GRAPPLE_PILOT.includes(id)&&
+    GRIP_ENTRY[id]===held.type&&!A[id]?.reverse&&
+    A[id]?.requires===p.position);
+   if(connected.length){
+    const ids=new Set(connected.map(([id])=>id));
+    const heldWeight=connected.reduce((sum,[,w])=>sum+w,0);
+    const other=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+    const goal=other*(.38+.18*trained);
+    if(heldWeight>0&&heldWeight<goal){
+     const boost=Math.min(6,goal/heldWeight);
+     for(const item of connected)item[1]*=boost;
+    }
+   }
+  }
   // Restore a bounded, non-forced impact share after the broad action-pool
   // expansion. No reward for bearhugs/holds or an already landed named move.
   if(brawlLate){
@@ -3466,7 +3536,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,maybeBrawlComboRun};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,maybeBrawlComboRun};
 })();
 
 function create(o){
@@ -3954,9 +4024,10 @@ function tick(M){
  const topContest=!spoke&&Graph.readyTopContest(M);
  const preparedFlight=!spoke&&!topContest&&Graph.readyNamedAerial(M);
  const preparedRun=!spoke&&!topContest&&!preparedFlight&&Graph.readyBrawlRebound(M);
- if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){
+ const preparedGrip=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&Graph.readyTechnicalGrip(M);
+ if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){
   M.nearfallAt.shift();Graph.nearfall(M);spoke=true;
- }else if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&M.r()<spotP)spoke=Graph.special(M);
+ }else if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&M.r()<spotP)spoke=Graph.special(M);
  // crowd bands
  crowdBand(M);
  // producer hints
@@ -3967,7 +4038,7 @@ function tick(M){
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
- if(!spoke&&(topContest||preparedFlight||preparedRun||M.r()<.64))Graph.step(M);
+ if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||M.r()<.64))Graph.step(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
