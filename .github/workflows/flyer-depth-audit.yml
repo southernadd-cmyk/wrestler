@@ -1,6 +1,7 @@
 name: Flyer depth and stamina audit
 on:
-  pull_request:
+  push:
+    branches: [main]
     paths:
       - 'tools/graph-lab/flyer-depth-audit.cjs'
       - 'tests/flyer-depth-audit.test.cjs'
@@ -11,6 +12,11 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   flyer-depth:
     name: All five plans / three skill tiers / all opponents and durations
