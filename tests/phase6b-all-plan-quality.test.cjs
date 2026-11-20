@@ -26,7 +26,7 @@ const representative={
  safe:pick('chain',n=>!n.risk&&(n.cost??0)<=2.2)
 };
 const plans=['story','spots','technical','brawl','safe'];
-const max={story:3.5,spots:3.6,technical:4,brawl:3.5,safe:1.5};
+const max={story:3.5,spots:4.25,technical:4,brawl:3.5,safe:1.5};
 function fixture(plan){
  const m=M.create(lab.makeOptions(D,{wid:'lyra',rid:'dee',plan,
   seed:196011,slot:'main',finish:'win_clean'}));
@@ -82,7 +82,8 @@ weak.w={...weak.w,ring:35,safe:35};
 weak.graph.events.push(event(aerial));
 assert.equal(M._earnedPlanQuality(weak),0);
 weak.w={...weak.w,ring:90,safe:90};
-assert.ok(M._earnedPlanQuality(weak)>0);
+assert.ok(M._earnedPlanQuality(weak)>=2.4,
+ 'a high-ringcraft, safe flyer earns substantial execution quality for a real, distinct landing');
 // Story demands an actual move within a meaningful arc, not a setup at
 // the bell. A narrative tag alone is never sufficient.
 const story=fixture('story');
