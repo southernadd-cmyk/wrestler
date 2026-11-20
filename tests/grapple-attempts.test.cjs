@@ -18,7 +18,10 @@ assert.ok(pilot.every(id=>A[id]&&A[id+'_rev']),'every pilot has real authored mo
 assert.equal(G.CATALOG.members.suplex.filter(id=>pilot.includes(id)).length,25,
  'all 25 suplexes participate');
 function setup(id){
- const m=M.create(lab.makeOptions(D,{wid:'juno',rid:'bao',slot:'main',plan:'technical',finish:'win_clean',seed:70119}));
+ // Use a genuinely eligible power-versus-lightweight pairing for the
+ // full 39-technique matrix; a lightweight must not lift a heavyweight
+ // just because a directed-path test needs that action to be legal.
+ const m=M.create(lab.makeOptions(D,{wid:'rex',rid:'lyra',slot:'main',plan:'technical',finish:'win_clean',seed:70119}));
  m.stage='live';m.t=Math.floor(m.len*.86);m.wSt=m.fSt=100;
  m.story.position=A[id].requires;
  m.story.down=A[id].requires==='mat'?'f':null;
