@@ -75,3 +75,22 @@ The high-heat premium scenario shows this need not make the **overall star ratin
 ## Limitations
 
 The synthetic tiers change three stats together (ring, safety, psychology) and therefore quantify their *combined effect*, not the independent effect of training each stat. All comparisons use one flyer identity for control. Actual opponent styles are confounded with each named opponent's other ratings; the favourable headliner explicitly favours Spot-fest. The small real-roster sample is descriptive. These data are simulation outputs, not user playtesting or externally validated wrestling ratings.
+
+
+## Phase 7 implementation evidence (20 November 2026)
+
+The separate balance change replaces the investigation's hypothetical suggestions with **actual narrated, position-valid match actions**. Trained elite Spectacle flyers in long Spot-fests earn stamina through visible breaks and bounded pacing after a completed rest; nobody receives free stamina, reduced named aerial costs, invented counters, a guaranteed landing or a direct stars bonus. Grounded workers must earn an authored reversal and standing reset, climb legally, and select a named move through the exact-parent commitment and counter system. A valid climb earns one subsequent action-selection opportunity instead of vanishing during an ordinary idle tick or narrative phase transition.
+
+The 96-bout independently extended seed cohort covers four fixed opponents at 24 seeds each, alternating booked outcomes, in **18-minute elite Spot-fests**. These are simulation statistics, not real-world wrestling averages:
+
+| Finishing measure | Last-180-seconds result | Design aim |
+| --- | ---: | ---: |
+| Distinct successful risky moves by booked elite flyer | **1.06 per bout** | 1.1–1.4 |
+| Bouts with at least one flyer-owned named risky landing | **75%** | 80–85% |
+| Bouts with at least two distinct flyer-owned risky landings | **26%** | Varied, never guaranteed |
+| Landed committed aerial attacks by booked flyer | **0.82 per bout** | 0.8–1.1 |
+| Flyer stamina at -180 seconds / bell | **36.45 / 25.67** | Avoid empty finishes |
+
+Earlier 24- and 48-bout samples showed higher aerial hit rates. The larger cohort is the more appropriate conservative reference, not an excuse to tune until one fixed seed set looks perfect. The first two design aims remain **slightly below target**, and 25% of this cohort still has no late named risky landing. Those misses disproportionately feature actual fatigue or the opponent controlling the finish. Keep them visible: scripted or guaranteed landings would hide a remaining simulation issue rather than fix it.
+
+**Quality gate:** The final integration candidate passed focused legal-graph/recovery/96-bout assertions and the separate mixed-plan Phase 9 quality comparison. The full all-plan regression, browser and deeper career/graph audits run on `main` after integration or through manual dispatch under the streamlined CI policy (`docs/ci-policy.md`); the initial implementation's earlier full-suite runs were green. Re-run the long audit after material future changes rather than triggering fourteen separate full workflows for each exploratory commit.
