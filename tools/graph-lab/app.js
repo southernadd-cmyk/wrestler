@@ -151,6 +151,22 @@
         'NOT SEEN: '+x.unobservedMoves.map(id=>G.A[id]?.name||id).join(', '):
         'All named grapples observed at least once.');
     }
+    if(report.flying){
+      const x=report.flying;
+      set('flyingOverview',x.observedDives+'/'+x.eligibleDives+
+        ' named outside dives seen · '+fmt(x.attempts)+' total airborne attempts · '+
+        fmt(x.landed)+' landed · '+fmt(x.counter)+' countered · '+
+        fmt(x.block)+' blocked · '+fmt(x.invalid)+' ledger errors');
+      const pane=$('flyingFamilies');pane.replaceChildren();
+      for(const family of ['aerial','springboard','dive']){
+        const row=x.byFamily[family]||{attempts:0,landed:0,counter:0,block:0};
+        pane.append(make('p',family.toUpperCase()+' · '+row.attempts+' attempts · '+
+          row.landed+' landed / '+row.counter+' counter / '+row.block+' blocked'));
+      }
+      set('flyingUnseen',x.unseenDives.length?
+        'NOT ATTEMPTED: '+x.unseenDives.map(id=>G.A[id]?.name||id).join(', '):
+        'All nine outside dives attempted in the selected sample.');
+    }
     if(report.environment){
       const x=report.environment;
       set('environmentOverview',x.coveredMoves+'/'+x.eligibleMoves+
