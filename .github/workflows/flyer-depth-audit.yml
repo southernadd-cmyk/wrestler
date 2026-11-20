@@ -4,6 +4,7 @@ on:
     paths:
       - 'tools/graph-lab/flyer-depth-audit.cjs'
       - 'tests/flyer-depth-audit.test.cjs'
+      - 'tests/flyer-recovery-finish.test.cjs'
       - '.github/workflows/flyer-depth-audit.yml'
       - 'assets/js/match-engine.js'
       - 'assets/js/data.js'
@@ -21,6 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Test skill-aware visible rest and physically legal aerial setups
+        run: node tests/flyer-recovery-finish.test.cjs
       - name: Assert diagnostic repeatability and matched inputs
         run: node tests/flyer-depth-audit.test.cjs
       - name: Run full flyer quality and endurance matrix
