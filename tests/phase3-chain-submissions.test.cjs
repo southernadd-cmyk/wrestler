@@ -91,6 +91,37 @@ for(const id of added){
   assert.equal(G.isValid(illegal,id),false,'opponent grip cannot be stolen: '+id);
  }
 }
+// Validate real setup nodes in sequence, not only injected diagnostic grips.
+const chain=M.create(lab.makeOptions(D,{wid:'lyra',rid:'dee',slot:'main',
+ plan:'technical',finish:'win_clean',seed:77017}));
+chain.stage='live';chain.t=Math.floor(chain.len*.86);
+chain.story.control='w';chain.story.position='standing';
+chain.wSt=chain.fSt=100;
+for(const id of ['wristlock','ch_top_wristlock','ch_rolling_wristlock']){
+ assert.ok(G.isValid(chain,id),'chain action is valid '+id);
+ G.apply(chain,id);
+ assert.equal(chain.graph.physical.grip?.type,'wrist','wrist stays controlled after '+id);
+}
+assert.equal(G.isValid(chain,'ch_deep_arm_drag'),true);
+assert.equal(G.startGrapple(chain,'ch_deep_arm_drag'),true);
+chain.r=()=>.999;chain.t+=10;G.resolveGrapple(chain);
+assert.equal(chain.story.position,'mat','arm drag lands on mat');
+
+const grounded=M.create(lab.makeOptions(D,{wid:'juno',rid:'dee',slot:'main',
+ plan:'technical',finish:'win_clean',seed:77018}));
+grounded.stage='live';grounded.t=Math.floor(grounded.len*.86);
+grounded.story.control='w';grounded.story.position='mat';grounded.story.down='f';
+grounded.wSt=grounded.fSt=100;
+assert.equal(G.isValid(grounded,'sm_kimura'),false,
+ 'a free mat position does not invent wrist control');
+G.apply(grounded,'rs_wrist_mat');
+assert.equal(grounded.graph.physical.grip?.type,'ground-arm');
+assert.equal(G.isValid(grounded,'sm_kimura'),true,
+ 'real ground wrist control opens a kimura');
+assert.equal(G.startGrapple(grounded,'sm_kimura'),true);
+grounded.r=()=>.999;grounded.t+=10;G.resolveGrapple(grounded);
+assert.equal(grounded.graph.grappleAttempts.at(-1).outcome,'landed');
+
 const replay=setup('sm_figure_four');
 assert.equal(G.startGrapple(replay,'sm_figure_four'),true);
 const serialized=JSON.parse(JSON.stringify({...replay,rState:replay.r.getState()}));
