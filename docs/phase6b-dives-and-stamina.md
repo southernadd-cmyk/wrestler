@@ -1,6 +1,6 @@
 # Phase 6B — outside dives, top-rope continuity and flyer stamina audit
 
-**Status:** implementation PR, not yet merged. Continues the merged Phase 6 environmental counters without modifying the 340-action catalogue or the existing match scoring.
+**Status:** implementation PR, not yet merged. Continues the merged Phase 6 environmental counters without changing the 340-action catalogue. Match-quality scoring is now explicitly evidence-led across all five plans.
 
 ## New mechanic: all nine named dives
 
@@ -35,7 +35,7 @@ The former **+4 Technical quality every ten seconds regardless of moves** has be
 | Plan | What actually earns quality | Maximum earned quality points |
 |---|---|---:|
 | Technical Showcase | Landed chain, submission, suplex, ground, rest-hold or neck wrestling, weighted by ringcraft | +4.0 |
-| Spot-fest | Distinct successful high-risk aerial, springboard, dive, lucha, corner, ringside or superplex moves, scaled by ringcraft *and safety* | +3.6 |
+| Spot-fest | Distinct successful high-risk aerial, springboard, dive, lucha, corner, ringside or superplex moves, scaled by ringcraft *and safety* | +4.25 |
 | Brawl | Genuine strikes, running attacks, power, ringside, corner and rope offence, weighted by ringcraft/psychology | +3.5 |
 | Tell a Story | Real landed moves within heat, hope, denial, comeback or finishing story arcs, weighted by psychology and ringcraft | +3.5 |
 | Keep It Safe | Distinct successful low-cost, low-risk chain/hold/ground/pin/strike/neck moves, scaled by safety | +1.5 |
@@ -45,3 +45,19 @@ Keep It Safe deliberately retains its established **-2 quality-point baseline**,
 ### Core-graph moves also count
 
 The audit identified a classification gap: some genuine earlier moves, such as wristlocks, clotheslines, dramatic rallies, springboard strikes and mat holds, have no later catalogue-family label. A narrow per-plan, reviewed list now includes these **real executed core-graph actions** at a smaller weight than family techniques, across all five plans. The same landed-action, safety, distinct-move and recent-event checks apply. Generic entries, stalling and posture resets are not rewarded. This avoids systematically favouring plans whose moves were registered in later catalogue families (notably Brawl).
+
+
+## Balancing correction: promoter fit and actual flyer endurance
+
+The first 1,200-match comparison used the Graph Lab's default **Dockside** promoter on every bout. Dockside explicitly likes **Brawl**, adding +6 match-quality fit and overstating Brawl performance for every worker style. The matched audit now rotates all four promoters (`dock`, `pulse`, `crown`, `union`) between cohorts, while holding the **same** promoter within each five-plan comparison. This is a test correction, not a gameplay nerf to Brawl or Dockside.
+
+With that correction alone, the 60-matches-per-cell Spectacle cohort averaged **2.53 stars for Spot-fest**, **2.50 for Technical**, **2.27 for Brawl**, **2.65 for Story**; Spot-fest still needed attention. Its final average stamina was **7.1** and its earned risky-action quality at the bell only **0.02**, so the major gap is **sustainable real high spots late in a match**, not a missing unconditional bonus.
+
+The follow-up gameplay patch therefore:
+
+- Lets sufficiently trained, safe workers conserve exertion during fast layouts (skill coefficient 0.010 with 0.96 floor instead of 0.0047/1.07); the worker's actual move costs, difficulty, safety gating and botch risks remain unchanged. Untrained ring+safety scores at or below 120 receive no discount.
+- Offers the existing narrated `catch_breath` action earlier, from under 60 stamina, instead of letting a flyer collapse below the high-spot legality thresholds. Repetitive stalling remains penalised.
+- Offers actual `top_climb` and `springboard_rise` setup moves to trained, fresh enough flyers in appropriate mid/late story arcs; no teleporting or extra automatic landings, and physical and exact-parent legality remain mandatory.
+- Increases the **capped earned** Spot-fest performance quality to +4.25, with stronger ringcraft/safety weighting for *distinct, successful high-risk moves* in the last 180 seconds. Missed, aborted and repeated manoeuvres grant no award, and merely selecting a plan grants nothing.
+
+Review the new 1,200-match outcomes and the full career/rivalry soak before merging. Do not balance by simply equalising all plan means; look for **appropriate wrestler styles** outperforming on their own specialties and for late-match fatigue, botches, crowd trajectory and actual named moves.
