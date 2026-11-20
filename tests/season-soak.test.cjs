@@ -113,6 +113,10 @@ function career(seed,style){
   check();
  }
  for(const m of G.S.inbox)stats.texts.push(m.subject+' '+(m.body||[]).join(' '));
+ // Audit the family mix when committed counters change variety.
+ // Keep the >=700 threshold unchanged; observed IDs still must be genuine.
+ stats.moveFamilies=Object.fromEntries([...stats.moves].map(id=>
+  [id,M.GRAPH.A[id]?.family||'core']));
  stats.over=G.S.over?.reason||null;stats.season=G.S.season;stats.cash=G.S.cash;stats.rep=G.S.rep;stats.history=G.S.history.length;
  return stats;
 }
@@ -131,6 +135,12 @@ assert.ok(union('variants').size>=100,'most promo variants appear across careers
 // The ≥700 variety standard is unchanged. Its meaning now includes actual
 // defended attempts as well as landed events, while reported event-only
 // variety stays visible as a separate regression diagnostic.
+const familyIds={};
+for(const r of runs)for(const [id,family] of Object.entries(r.moveFamilies))
+ (familyIds[family]??=new Set()).add(id);
+console.log('CAREER VARIETY DIAGNOSTIC: '+JSON.stringify(Object.fromEntries(
+ Object.entries(familyIds).sort(([a],[b])=>a.localeCompare(b))
+  .map(([f,ids])=>[f,ids.size]))));
 assert.ok(union('moves').size>=700,'a wide range of landed or genuinely defended attempts appears across careers: '+union('moves').size+
  ' (landed-event distinct '+union('landedMoves').size+')');
 assert.ok(total('signatureCalls')>total('matches')*.4,'signature moves are recognised in many matches');
