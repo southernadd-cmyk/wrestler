@@ -118,13 +118,14 @@ function options(i){
 function work(x){for(let i=0;i<9000&&!x.done;i++){if(x.decision&&!x.queue.length){const o=x.decision.options.find(o=>['job','home','cut','protect'].includes(o.id))||x.decision.options[0];M.resolve(x,o.id);}M.next(x);}assert.ok(x.done);return x;}
 const kg=w=>D.PROFILES[w.id]?.kg||85;
 const sigUse={own:0,ownEvents:0,other:0,otherEvents:0},sigSeen=new Set(),sigCalls=new Set(),routes=new Set(),reached=new Set(),risk={safe:[0,0],spots:[0,0]},limb={on:0,off:0},styleUse={};
-let catalogEvents=0,events=0;
+let catalogEvents=0,events=0,strikeCount=0;
 // Conditional counter/block nodes cannot legally run as free-standing moves.
 // Count their outcomes separately rather than demanding arbitrary appearances.
 const linkedDefences={checked:0,invalid:0},grappleOutcomes={};
 const N=1000;let dqCalled=0;
 for(let i=0;i<N;i++){
  const o=options(i),x=work(M.create(o)),g=x.graph;
+ strikeCount+=(g.strikeAttempts||[]).length;
  assert.equal(g.outcome.id,x.outcome==='nc'?'nc':x.outcome==='double'?'double':x.outcome==='dq'?'dq':o.finish,'contract still decides the finish, unless the referee throws it out');
  if(x.outcome==='dq')dqCalled++;
  assert.doesNotMatch(x.log.map(l=>l.text).join(' '),/undefined|NaN|\{(?:A|D|W|F|part|name)\}/);
@@ -174,6 +175,7 @@ const total=Object.keys(A).length,coverage=reached.size/total;
 const independent=Object.keys(A).filter(id=>!A[id].counterOf&&!A[id].blockOf);
 const reachedIndependent=independent.filter(id=>reached.has(id));
 const independentCoverage=reachedIndependent.length/independent.length;
+console.log('Phase 4 naturally attempted strikes/runs in 1000 bouts: '+strikeCount);
 console.log('Catalogue unobserved independent IDs: '+independent.filter(id=>!reached.has(id)).join(', '));
 // v0.4 Phase 2: compare like with like. A generated defence now *requires*
 // the exact pending parent attempt; the previous all-node 90% coverage metric
