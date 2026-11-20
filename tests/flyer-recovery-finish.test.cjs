@@ -102,6 +102,14 @@ const tooLate=fixture('spots','elite');tooLate.t=tooLate.len-120;
 G.apply(tooLate,'catch_breath');
 assert.equal(tooLate.graph.pacedRest,undefined,
  'a breath during the final three minutes does not award retroactive pacing');
+const restShares=fixture('spots','elite');restShares.t=restShares.len-320;
+restShares.wSt=50;
+const legalShares=G.pool(restShares);
+const restWeight=legalShares.find(([id])=>id==='catch_breath')?.[1]||0;
+const otherWeights=legalShares.reduce((n,[id,w])=>n+(id==='catch_breath'?0:w),0);
+assert.ok(restWeight>=otherWeights*.72-1e-7,
+ 'pre-finish recovery competes meaningfully with the full expanded move pool');
+assert.ok(otherWeights>0,'the flyer still has real non-recovery choices');
 const beforePool=fixture('spots','elite'),beforeWeight=weight(beforePool,'catch_breath');
 assert.ok(beforeWeight>0,'a tired flyer can select actual recovery');
 const after=fixture('spots','elite');
