@@ -1,6 +1,6 @@
 'use strict';
 const {EXPECTED}=require('./_phase10-inventory.cjs');
-// Phase 7 exact two-beat pilot: suplex and submission commits, counters, blocks and save replay.
+// Phase 2 bulk two-beat grapple family: named attempts, legal counters, grip and replay.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const lab=require('../tools/graph-lab/core.js');
 const root={};
@@ -11,14 +11,26 @@ root.OfficeRosterV4.enableProfiles();
 const D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,A=G.A;
 assert.equal(G.validate().errors.length,0);
 assert.equal(G.validate().nodes,EXPECTED.nodes);
-const pilot=['sx_vertical','sx_german','sm_sleeper','sm_ankle_lock'];
-assert.equal(JSON.stringify([...G.GRAPPLE_PILOT]),JSON.stringify(pilot));
+const pilot=[...G.GRAPPLE_PILOT];
+assert.equal(pilot.length,39,'39 named grapple techniques in the bulk pilot');
+assert.equal(new Set(pilot).size,pilot.length,'no duplicate grapple IDs');
+assert.ok(pilot.every(id=>A[id]&&A[id+'_rev']),'every pilot has real authored move and counter');
+assert.equal(G.CATALOG.members.suplex.filter(id=>pilot.includes(id)).length,25,
+ 'all 25 suplexes participate');
 function setup(id){
- const m=M.create(lab.makeOptions(D,{wid:'juno',rid:'bao',slot:'main',plan:'technical',finish:'win_clean',seed:70119}));
+ // Use a genuinely eligible power-versus-lightweight pairing for the
+ // full 39-technique matrix; a lightweight must not lift a heavyweight
+ // just because a directed-path test needs that action to be legal.
+ const m=M.create(lab.makeOptions(D,{wid:'rex',rid:'lyra',slot:'main',plan:'technical',finish:'win_clean',seed:70119}));
  m.stage='live';m.t=Math.floor(m.len*.86);m.wSt=m.fSt=100;
  m.story.position=A[id].requires;
  m.story.down=A[id].requires==='mat'?'f':null;
  m.story.control='w';m.graph.arc='escalation';m.graph.node=null;
+ // Supply the exact certified physical setup required by each candidate.
+ // A review of the live path must independently show the named grip-entry node.
+ const type=G.PHYSICAL_GRIP_MOVES[id];
+ if(type)m.graph.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',topSide:null,
+  grip:{type,side:'w',at:m.t,source:Object.keys(G.GRIP_ENTRY).find(k=>G.GRIP_ENTRY[k]===type)||'reviewed-setup'}};
  assert.ok(G.isValid(m,id),'parent must be physically legal '+id);
  return m;
 }
@@ -60,6 +72,14 @@ for(const id of pilot){
   assert.equal(blocked.graph.events.at(-1).id,id+'_blk');
  }
 }
+for(const id of pilot.filter(id=>G.PHYSICAL_GRIP_MOVES[id])){
+ const noGrip=setup(id);noGrip.graph.physical.grip=null;
+ assert.equal(G.isValid(noGrip,id),false,'cannot commit without verified setup: '+id);
+ const stolen=setup(id);stolen.graph.physical.grip.side='f';
+ assert.equal(G.isValid(stolen,id),false,'cannot use opponent setup: '+id);
+ const stale=setup(id);stale.graph.physical.grip.at=stale.t-30;
+ assert.equal(G.isValid(stale,id),false,'cannot use stale setup: '+id);
+}
 const live=setup('sx_vertical');G.startGrapple(live,'sx_vertical');
 const raw=JSON.parse(JSON.stringify({...live,rState:live.r.getState()}));
 const restored=M.restore(raw);
@@ -88,4 +108,4 @@ assert.equal(G.isValid(migrated,'sx_vertical_rev'),false);
 const concurrent=setup('sx_vertical');G.startGrapple(concurrent,'sx_vertical');
 concurrent.story.position='top';concurrent.story.down='f';
 assert.equal(G.startAerial(concurrent,'ar_frog'),false,'no overlapping committed attacks');
-console.log('PASS Phase 7: four exact grapples, outcomes, save/replay, interruption, migration and single pending attempt.');
+console.log('PASS Phase 2: 39 named grapples, counters/blocks, grip legality, save/replay and interruption.');

@@ -1605,21 +1605,50 @@ const Graph=(function makeGraph(){
    (n.family==='aerial'||n.family==='springboard');
  }
  // Only these source-reviewed mechanics enter the Phase 7 two-beat pilot.
- const GRAPPLE_PILOT=Object.freeze(['sx_vertical','sx_german','sm_sleeper','sm_ankle_lock']);
+ // Phase 2: curated bulk tranche. Reuse the exact existing generated move-specific
+ // reversals/blocks; no synthetic graph nodes or extra out-of-band RNG.
+ const GRAPPLE_PILOT=Object.freeze([
+  'sm_sleeper','sm_ankle_lock','nk_snap_ddt',
+  ...CAT.members.suplex,
+  'pw_powerbomb','pw_sitout','pw_running_powerbomb','pw_backbreaker',
+  'pw_uranage','pw_samoan_drop','pw_gorilla_press','pw_military_press',
+  'pw_pumphandle','pw_belly_bump','pw_argentine'
+ ]);
 
  // v0.4 physical-continuity pilot: a *small optional, serialisable* descriptor.
  // A null descriptor is an old/injected match state: preserve legacy eligibility
  // until an actual graph action establishes who is where and who holds what.
  // Existing arc clocks, deterministic RNG and booked endings remain authoritative.
  const SUPERPLEX_PILOT=Object.freeze([...CAT.members.superplex]);
+ // Explicit physical entries for the expanded commitment set. A named attempt
+ // must already have an actor-owned grip, never a descriptive guess after impact.
  const PHYSICAL_GRIP_MOVES=Object.freeze({
   sx_vertical:'front-facelock',sx_deadlift_bridge:'front-facelock',
-  nk_ddt:'front-facelock',sx_german:'rear-waist',
+  sx_delayed:'front-facelock',sx_northern:'upper-body',
+  sx_fisherman:'front-facelock',sx_exploder:'upper-body',
+  sx_german:'rear-waist',sx_german_release:'rear-waist',
+  sx_rolling_german:'rear-waist',sx_dragon:'rear-waist',
+  sx_tiger:'rear-waist',sx_double_underhook:'front-facelock',
+  sx_brainbuster:'front-facelock',sx_butterfly:'front-facelock',
+  sx_half_nelson:'rear-waist',sx_saito:'rear-waist',
+  sx_belly_belly:'upper-body',sx_belly_back:'rear-waist',
+  sx_side:'upper-body',sx_gutwrench:'upper-body',
+  sx_overhead:'upper-body',sx_tbone:'upper-body',
+  sx_snap_ddt:'front-facelock',sx_cradle:'front-facelock',
+  sx_falcon_arrow:'front-facelock',
+  nk_ddt:'front-facelock',nk_snap_ddt:'front-facelock',
+  pw_powerbomb:'front-facelock',pw_sitout:'front-facelock',
+  pw_running_powerbomb:'front-facelock',pw_backbreaker:'body-clinch',
+  pw_uranage:'upper-body',pw_samoan_drop:'upper-body',
+  pw_gorilla_press:'upper-body',pw_military_press:'upper-body',
+  pw_pumphandle:'upper-body',pw_belly_bump:'body-clinch',
+  pw_argentine:'upper-body',
   sm_ankle_lock:'ground-leg',rs_leg_lace:'ground-leg'
  });
  const APRON_OFFENCE=new Set(['os_apron_knee','os_apron_ddt','os_apron_slam']);
  const APRON_DIVES=new Set(['dv_apron_senton','dv_cannonball']);
  const GRIP_ENTRY=Object.freeze({
+  lockup:'upper-body',knuckle_lock:'upper-body',pw_bearhug:'body-clinch',
   front_facelock:'front-facelock',go_behind:'rear-waist',waistlock:'rear-waist',
   standing_switch:'rear-waist',
   ankle_pick:'ground-leg',ch_single_leg:'ground-leg',ch_dragon_screw:'ground-leg',
@@ -2089,10 +2118,31 @@ const Graph=(function makeGraph(){
   }
   if(p.position==='corner'&&famList.includes('superplex')&&affordableSuperplex(M))
    selected.push(['top_follow',13]);
-  // Prefer genuine acquisition beats when a desired throw/hold lacks its grip.
-  if(p.position==='standing'&&!g.physical?.grip&&
-     (famList.includes('suplex')||famList.includes('neck')||famList.includes('chain')))
-   selected.push(['front_facelock',2.1],['go_behind',1.4],['waistlock',1.2]);
+  // Phase 2: a named grappling attempt should be a plausible payoff for the
+  // *actual* grip the controller just established, not a random catalogue
+  // entry with no setup. Preserve isValid, weight, stamina and clock gates.
+  const grip=g.physical?.grip;
+  const controlledGrip=grip&&grip.side===p.control&&M.t-grip.at<=20&&
+    p.position==='standing'&&g.physical.area==='ring';
+  if(controlledGrip&&M.planId!=='spots'){
+   // Keep spot-fest's deliberately high-risk aerial emphasis: grip attempts
+   // must not drown out the existing spectacle/incident probabilities.
+   // Candidate pool only: no graph edges invented and no forced execution.
+   // Boost different legal throws for each control; prefer repertoire/style
+   // through the existing scoring multipliers below.
+   for(const id of GRAPPLE_PILOT){
+    if(PHYSICAL_GRIP_MOVES[id]===grip.type&&A[id]?.requires==='standing')
+     selected.push([id,2.6]);
+   }
+  }else if(M.planId!=='spots'&&p.position==='standing'&&
+     (famList.includes('suplex')||famList.includes('power')||
+      famList.includes('neck')||famList.includes('chain'))){
+   // The next beat acquires a real grip, then the wrestler has a chance to
+   // use it. This is not a free-standing throw or synthetic grip assignment.
+   selected.push(['front_facelock',4.2],['go_behind',2.8],
+     ['waistlock',2.2],['lockup',2.5]);
+   if(famList.includes('power'))selected.push(['pw_bearhug',1.6]);
+  }
   if(p.position==='mat'&&!g.physical?.grip&&
      (famList.includes('submission')||famList.includes('ground')))
    selected.push(['leg_wrench',2.2]);
@@ -2399,7 +2449,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,resetPhysical,affordableSuperplex,readyTopContest};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
 })();
 
 function create(o){
@@ -3042,9 +3092,11 @@ function referee(M,side){
  // A professional heeds the first warning; anybody else may not.
  if(!ref.w){ref.w=1;say(M,`The referee saw the cheap shot and warns ${M.w.short}. Next time, it is over.`,'bad',{big:true,pause:1,who:'colour'});mark(M,'warning',1);return;}
  if(M.w.pro>=78){if(ref.w===1){ref.w=2;say(M,`${M.w.short} nearly takes another liberty, then remembers the warning.`,'story',{who:'colour'});}return;}
- // The contract is only broken by the manager's own choices: a wrestler let off the leash, fired up, or
- // already off the layout. Kept on the script, they get a final warning and pull themselves together.
- if(!(M.leash==='free'||M.talk==='fire'||M.offScript)){if(ref.w===1){ref.w=2;say(M,`A final warning for ${M.w.short}. The referee means it.`,'story',{who:'colour'});}return;}
+ // Unscripted disobedience alone isn't a manager instruction to sacrifice
+ // the booked finish. Only an explicit free leash / fired-up instruction can
+ // turn repeated cheap shots into a referee DQ; an off-layout scripted worker
+ // receives the last warning and pulls back. Caught run-ins are handled apart.
+ if(!(M.leash==='free'||M.talk==='fire')){if(ref.w===1){ref.w=2;say(M,`A final warning for ${M.w.short}. The referee means it.`,'story',{who:'colour'});}return;}
  M.dqCall={why:'cheap',side:'w',at:M.t};
 }
 const count3=(M,step)=>{say(M,'ONE!','count',{...step(),big:true,pause:1});say(M,'TWO!','count',{...step(),big:true,pause:2});say(M,'THREE!','count',{...step(),big:true});};

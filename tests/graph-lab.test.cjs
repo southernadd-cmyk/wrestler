@@ -80,6 +80,28 @@ assert.equal(intercepted.phase9.newOccurrences,1,'interception remains visible i
 assert.equal(intercepted.phase9.sameControllerOccurrences,0,'opponents cannot share one continuous combo');
 assert.equal(intercepted.phase9.interruptedPairs,1);
 
+// Phase 2 readout counts only real attempt ledger outcomes, not a free counter.
+assert.equal(report.grappling.eligibleMoves,G.GRAPPLE_PILOT.length);
+assert.equal(report.grappling.attempts,
+ report.grappling.landed+report.grappling.counter+report.grappling.block+
+ report.grappling.aborted+report.grappling.interrupted);
+assert.equal(report.grappling.invalid,0,'actual grapple outcomes align with named events');
+const artificial=core.empty(G);
+core.add(artificial,{
+ ...fabricated([{id:'sx_vertical_rev',t:30,grappleAttemptSeq:1,
+  attemptedMove:'sx_vertical',grappleResolution:'counter'}]),
+ graph:{events:[{id:'sx_vertical_rev',t:30,grappleAttemptSeq:1,
+  attemptedMove:'sx_vertical',grappleResolution:'counter'}],
+  grappleAttempts:[{id:'sx_vertical',seq:1,side:'w',startedT:20,
+   actionId:'sx_vertical_rev',outcome:'counter'}],outcome:{id:'win_clean'}}
+},G);
+const measured=core.report(artificial,G);
+assert.equal(measured.grappling.attempts,1);
+assert.equal(measured.grappling.counter,1);
+assert.equal(measured.grappling.invalid,0);
+assert.equal(measured.grappling.coveredMoves,1);
+assert.ok(measured.grappling.unobservedMoves.includes('sx_german'));
+
 const trace = core.trace(one, G);
 assert.ok(trace.length > 0 && trace.every(e => typeof e.seconds === 'number' && e.id));
 assert.equal(JSON.stringify(G.A), before, 'lab must not alter graph definitions');

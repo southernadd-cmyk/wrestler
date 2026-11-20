@@ -55,6 +55,13 @@ function probe(id){
   x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02)));x.wSt=100;x.fSt=100;
   const s=x.story||(x.story={});Object.assign(s,{position:n.requires==='any'?'standing':n.requires,control,down:n.requires==='mat'?(control==='w'?'f':'w'):null});
   const parent=n.counterOf||n.blockOf;
+  // This reachability probe must establish an actual allowed grip for all
+  // expanded Phase 2 parents before testing an exact generated defence.
+  const source=parent||id,grip=G.PHYSICAL_GRIP_MOVES[source];
+  if(grip){
+   x.graph.physical={v:1,locations:{w:'ring',f:'ring'},area:'ring',topSide:null,
+    grip:{type:grip,side:control,at:x.t,source:Object.keys(G.GRIP_ENTRY).find(k=>G.GRIP_ENTRY[k]===grip)||'reviewed-setup'}};
+  }
   const aerialParent=A[parent]&&['aerial','springboard'].includes(A[parent].family);
   const grappleParent=G.GRAPPLE_PILOT.includes(parent)||G.SUPERPLEX_PILOT.includes(parent);
   if(grappleParent){
@@ -62,6 +69,7 @@ function probe(id){
    // The attack's own requirements and timing must also be achievable.
    x.stage='live';
    x.t=Math.ceil(x.len*Math.min(.97,Math.max(.62,n.after+.02,A[parent].after+.02)));
+   if(x.graph.physical?.grip)x.graph.physical.grip.at=x.t;
    if(!G.startGrapple(x,parent))continue;
    assert.equal(x.graph.pendingGrapple.id,parent);
   }
@@ -97,6 +105,9 @@ function work(x){for(let i=0;i<9000&&!x.done;i++){if(x.decision&&!x.queue.length
 const kg=w=>D.PROFILES[w.id]?.kg||85;
 const sigUse={own:0,ownEvents:0,other:0,otherEvents:0},sigSeen=new Set(),sigCalls=new Set(),routes=new Set(),reached=new Set(),risk={safe:[0,0],spots:[0,0]},limb={on:0,off:0},styleUse={};
 let catalogEvents=0,events=0;
+// Conditional counter/block nodes cannot legally run as free-standing moves.
+// Count their outcomes separately rather than demanding arbitrary appearances.
+const linkedDefences={checked:0,invalid:0},grappleOutcomes={};
 const N=1000;let dqCalled=0;
 for(let i=0;i<N;i++){
  const o=options(i),x=work(M.create(o)),g=x.graph;
@@ -108,6 +119,15 @@ for(let i=0;i<N;i++){
  if(x.final.finishRoute&&x.outcome!=='dq'){routes.add(o.finish+'.'+x.final.finishRoute);assert.ok(M.FINISH_ROUTES[o.finish].some(r=>r.id===x.final.finishRoute),'route belongs to the booked finish');}
  for(const e of g.events){
   const n=A[e.id];if(!n)continue;events++;reached.add(e.id);
+  const parent=n.counterOf||n.blockOf;
+  if(parent&&(G.GRAPPLE_PILOT.includes(parent)||G.SUPERPLEX_PILOT.includes(parent))){
+   linkedDefences.checked++;
+   const ledger=g.grappleAttempts?.find(a=>a.seq===e.grappleAttemptSeq);
+   const outcome=n.counterOf?'counter':'block';
+   if(!ledger||ledger.id!==parent||e.attemptedMove!==parent||
+      e.grappleResolution!==outcome||ledger.outcome!==outcome||ledger.actionId!==e.id)
+    linkedDefences.invalid++;
+  }
   if(!n.family)continue;catalogEvents++;
   assert.ok(e.t/x.len>=n.after-1e-9,e.id+' happened before it is credible ('+(e.t/x.len).toFixed(2)+' < '+n.after+')');
   const att=e.preControl==='w'?x.w:x.f,def=e.preControl==='w'?x.f:x.w;
@@ -126,9 +146,27 @@ for(let i=0;i<N;i++){
   }
   if(!n.counterOf&&!n.blockOf){const st=att.style;styleUse[st]??={};styleUse[st][n.family]=(styleUse[st][n.family]||0)+1;}
  }
+ for(const attempt of g.grappleAttempts||[])
+  grappleOutcomes[attempt.outcome]=(grappleOutcomes[attempt.outcome]||0)+1;
 }
 const total=Object.keys(A).length,coverage=reached.size/total;
-assert.ok(coverage>=.9,'at least 90% of the graph appears in '+N+' ordinary matches, got '+(coverage*100).toFixed(1)+'%');
+const independent=Object.keys(A).filter(id=>!A[id].counterOf&&!A[id].blockOf);
+const reachedIndependent=independent.filter(id=>reached.has(id));
+const independentCoverage=reachedIndependent.length/independent.length;
+// v0.4 Phase 2: compare like with like. A generated defence now *requires*
+// the exact pending parent attempt; the previous all-node 90% coverage metric
+// incentivised impossible free-floating counters. This 95% independent-action
+// gate is stricter than the former 90% bar for moves that can be selected.
+assert.ok(independentCoverage>=.95,
+ 'at least 95% of independent actions appear in '+N+' ordinary matches, got '+
+ (independentCoverage*100).toFixed(1)+'% ('+reachedIndependent.length+'/'+independent.length+')');
+assert.equal(linkedDefences.invalid,0,'every generated grapple counter/block traces to an exact committed parent');
+assert.ok(linkedDefences.checked>=10,'grapple defence outcomes occur organically in ordinary matches');
+assert.ok(Object.keys(grappleOutcomes).some(outcome=>outcome==='landed'),
+ 'named grapples actually land in played matches');
+console.log('Phase 2 coverage: all graph nodes '+(coverage*100).toFixed(1)+'% (diagnostic), '+
+ 'independent actions '+(independentCoverage*100).toFixed(1)+'%, '+
+ linkedDefences.checked+' attributed grapple defences');
 assert.ok(catalogEvents/events>=.25,'the new vocabulary is a large share of real match action: '+(catalogEvents/events*100).toFixed(1)+'%');
 assert.ok(limb.on>limb.off,'heat segments mostly work the targeted body part ('+limb.on+' on / '+limb.off+' off)');
 assert.ok(risk.spots[0]/risk.spots[1]>2*risk.safe[0]/risk.safe[1],'"Keep it safe" suppresses high-risk spots relative to a spot-fest: '+JSON.stringify(risk));
