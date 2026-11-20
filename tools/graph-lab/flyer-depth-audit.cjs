@@ -261,12 +261,12 @@ function markdown(r){
   ' | '+a.staminaAtBell+' | '+a.exhaustedPct+'% | '+a.botchesPerMatch+
   ' | '+a.lateRiskPerMatch+' | '+a.earnedAtBell+' |');
  out.push('','### Spot-fest by duration','',
-  '| Tier | Minutes | ★ | Late Q | Bell stamina | Aerial attempts/match | Aerial landed/match | Real recovery/match | Late distinct risk (both)/match | Late distinct risk (flyer)/match | Late flyer setups/match | Late flyer landed aerials/match |',
-  '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
+  '| Tier | Minutes | ★ | Late Q | Bell stamina | Aerial attempts/match | Aerial landed/match | Real recovery/match | Late distinct risk (both)/match | Late distinct risk (flyer)/match | Flyer >=1 late risk | Flyer >=2 late risks | Late flyer setups/match | Late flyer landed aerials/match |',
+  '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
  for(const a of r.lengthRows)out.push('| '+a.tier+' | '+a.minutes+' | '+a.avgStars+
   ' | '+a.lateQ+' | '+a.staminaAtBell+' | '+a.aerialAttemptPerMatch+
   ' | '+a.aerialLandedPerMatch+' | '+a.recoveryPerMatch+' | '+a.uniqueLateRiskPerMatch+
-  ' | '+a.lateDistinctFlyerRiskPerMatch+' | '+a.lateFlyerSetupsPerMatch+
+  ' | '+a.lateDistinctFlyerRiskPerMatch+' | '+a.lateFlyerAnyRiskPct+'% | '+a.lateFlyerTwoRiskPct+'% | '+a.lateFlyerSetupsPerMatch+
   ' | '+a.lateFlyerAerialLandedPerMatch+' |');
  out.push('','### Elite Spot-fest against fixed opponents','',
   '| Opponent style | ★ | Botches/match | Late Q | Bell stamina | Late distinct risk/match |',
