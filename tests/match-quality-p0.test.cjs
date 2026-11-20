@@ -33,6 +33,7 @@ for(const plan of plans){
  assert.equal(result.warning,0,plan+' auto-selected a doomed, exhausted high-risk spot');
  assert.ok(result.offScript<=result.n*3,'agent still repeats layout warnings');
 }
+console.log('P0 matched plan diagnostics: '+JSON.stringify(metrics));
 assert.ok(metrics.spots.avgStars>=1.9,'Spot-fest remains unplayably poor');
 assert.ok(metrics.spots.botches>0,'risk has not been erased');
 assert.ok(metrics.spots.spots>metrics.technical.spots,'Spot-fest still attempts more spectacular work');
