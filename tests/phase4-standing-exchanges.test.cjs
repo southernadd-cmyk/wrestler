@@ -112,6 +112,23 @@ assert.equal(floorOnly.graph.physical.area,'floor');
 assert.equal(G.isValid(floorOnly,'os_apron_slam'),false,
  'body slam on apron must not be performed from the floor');
 
+// Defensive training is consequential but never permits a free-standing
+// counter: same attacker, defender and roll; a Technical defender reads a
+// committed strike more successfully in a technical contest.
+const technical=setup('st_forearm',99127);
+const ordinary=setup('st_forearm',99127);
+assert.equal(technical.f.style,'Technical');
+ordinary.planId='story';
+for(const m of [technical,ordinary]){
+ assert.equal(G.startStrike(m,'st_forearm'),true);
+ m.r=()=>.17;
+ assert.equal(G.resolveStrike(m,true),true);
+}
+assert.equal(technical.graph.strikeAttempts.at(-1).outcome,'counter',
+ 'technical-school defender counters a genuine strike attempt');
+assert.notEqual(ordinary.graph.strikeAttempts.at(-1).outcome,'counter',
+ 'same roll does not grant untrained extra strike reversal');
+assert.equal(technical.graph.events.at(-1).attemptedMove,'st_forearm');
 const saved=setup('st_forearm',99128);
 assert.equal(G.startStrike(saved,'st_forearm'),true);
 const clone=M.restore(JSON.parse(JSON.stringify({...saved,rState:saved.r.getState()})));
