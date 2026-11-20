@@ -15,7 +15,8 @@ function audit(n=60){
   const rows=[];
   for(const plan of plans){
    const sums={stars:0,q:0,qN:0,crowd:0,spots:0,spotHits:0,botches:0,
-     nearfalls:0,low:0,parts:{},workerRing:0,workerSafety:0};
+     nearfalls:0,low:0,parts:{},workerRing:0,workerSafety:0,
+     endStamina:0,lateQ:0,lateN:0,earlyQ:0,earlyN:0};
    for(let i=0;i<n;i++){
     const w=workers[i%workers.length],f=opponentPool[(i*7+11)%opponentPool.length];
     const input={wid:w.id,rid:f.id,plan,slot:'main',finish:'win_clean',
@@ -26,6 +27,11 @@ function audit(n=60){
     sums.spotHits+=match.spotHits||0;sums.botches+=match.botches||0;
     sums.nearfalls+=match.nearfalls||0;sums.low+=match.final.stars<2?1:0;
     sums.workerRing+=w.ring||0;sums.workerSafety+=w.safe||0;
+    sums.endStamina+=match.wSt||0;
+    for(const tick of match.flow||[]){
+      if(tick[0] >= match.len*.65){sums.lateQ+=tick[4];sums.lateN++;}
+      else if(tick[0] < match.len*.35){sums.earlyQ+=tick[4];sums.earlyN++;}
+    }
     for(const [key,,part] of match.final.starParts||[])
       sums.parts[key]=(sums.parts[key]||0)+part;
    }
@@ -37,7 +43,9 @@ function audit(n=60){
      peakCrowd:rounded(sums.crowd),botches:sums.botches,
      spotHits:sums.spotHits,spotAttempts:sums.spots,
      poorMatches:sums.low,avgRing:rounded(sums.workerRing),
-     avgSafety:rounded(sums.workerSafety)});
+     avgSafety:rounded(sums.workerSafety),endStamina:rounded(sums.endStamina),
+     earlyQ:sums.earlyN?+(sums.earlyQ/sums.earlyN).toFixed(2):0,
+     lateQ:sums.lateN?+(sums.lateQ/sums.lateN).toFixed(2):0});
   }
   results.push({style,workers:workers.length,rows});
  }
@@ -46,14 +54,15 @@ function audit(n=60){
 function markdown(result){
  const out=['### Matched wrestler-style / plan rating audit','',
   result.n+' matched bouts per row. Worker, opponent, seed, booked finish and card slot held fixed; only the match plan changes.','',
-  '| Worker style | Match plan | Mean stars | Wrestling | Crowd | Mistakes | Q avg | Peak crowd | Landed/attempted spots | Below 2 stars |',
-  '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|'];
+  '| Worker style | Match plan | Mean stars | Wrestling | Crowd | Mistakes | Q avg | Early Q | Late Q | Final worker stamina | Peak crowd | Landed/attempted spots | Below 2 stars |',
+  '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|'];
  for(const group of result.results)for(const r of group.rows)
   out.push('| '+group.style+' | '+r.plan+' | '+r.stars.toFixed(2)+' | '+
     r.work.toFixed(2)+' | '+r.crowdPart.toFixed(2)+' | '+r.botchPart.toFixed(2)+
-    ' | '+r.quality.toFixed(1)+' | '+r.peakCrowd.toFixed(1)+' | '+
+    ' | '+r.quality.toFixed(1)+' | '+r.earlyQ.toFixed(1)+' | '+
+    r.lateQ.toFixed(1)+' | '+r.endStamina.toFixed(1)+' | '+r.peakCrowd.toFixed(1)+' | '+
     r.spotHits+'/'+r.spotAttempts+' | '+r.poorMatches+' |');
- out.push('','There is no automatic pass/fail threshold: compare the same wrestlers and bookings before adjusting rating incentives. The exact random stream differs once plans choose different actions.','');
+ out.push('','There is no automatic pass/fail threshold: compare the same wrestlers and bookings before adjusting rating incentives. The exact random stream differs once plans choose different actions. Early Q is the first 35% of recorded ten-second ticks; late Q is the final 35%; final stamina is the booked worker's remaining stamina at the bell.','');
  return out.join('\n');
 }
 if(require.main===module){
