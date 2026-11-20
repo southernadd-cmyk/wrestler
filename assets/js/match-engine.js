@@ -2233,7 +2233,19 @@ const Graph=(function makeGraph(){
   const tactic=M.o.promo?.tactic;
   if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
    counterChance=Math.min(.43,counterChance*1.5);
-  const blockChance=A[blk]?Math.max(.05,Math.min(.16,.095+(defender.safe-attacker.safe)/500)):0;
+  // A technical worker's trained timing matters when reading a jab or
+  // rebound. An exchange on a technical match plan should display that
+  // schooling as actual named defensive responses, not a free-standing
+  // reversal chosen without its parent attack. Spectacle workers are
+  // especially equipped to meet an oncoming running charge.
+  if(M.planId==='technical'&&defender.style==='Technical')
+   counterChance=Math.min(.38,counterChance*1.28);
+  else if(A[id].family==='running'&&defender.style==='Spectacle')
+   counterChance=Math.min(.35,counterChance*1.17);
+  // Safer bouts favour caught/covered strikes over unplanned risky trades.
+  const safetyBase=M.planId==='safe'?.12:.095;
+  const blockChance=A[blk]?Math.max(.05,Math.min(.19,safetyBase+
+   (defender.safe-attacker.safe)/500)):0;
   const roll=M.r();
   const counter=roll<counterChance&&A[rev]&&isValid(M,rev);
   const block=!counter&&roll<counterChance+blockChance&&A[blk]&&isValid(M,blk);
