@@ -7,6 +7,7 @@ on:
       - 'tests/phase4-standing-exchanges.test.cjs'
       - 'tests/phase4-neck-exchanges.test.cjs'
       - 'tools/graph-lab/phase4-coverage-diagnostic.cjs'
+      - 'tools/graph-lab/phase4-independent-seed-audit.cjs'
       - 'tests/grapple-attempts.test.cjs'
       - 'tests/phase3-chain-submissions.test.cjs'
       - '.github/workflows/phase4-standing-exchanges.yml'
@@ -35,3 +36,20 @@ jobs:
         run: node tools/graph-lab/phase4-coverage-diagnostic.cjs
       - name: Full catalog physical legality and 1000 bout coverage
         run: node tests/catalog.test.cjs
+
+  independent-seed-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compare four disjoint 1,000-bout seed cohorts
+        run: node tools/graph-lab/phase4-independent-seed-audit.cjs 1000 4
+      - name: Preserve detailed coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-independent-seed-coverage
+          path: phase4-seed-coverage-audit.json
+          if-no-files-found: error
