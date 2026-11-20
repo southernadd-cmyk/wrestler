@@ -2513,9 +2513,13 @@ const Graph=(function makeGraph(){
    if(longSpot&&timeLeft>35&&!restedRecently&&stamina<66){
     const urgency=stamina<35?24:stamina<45?18:stamina<56?13:8;
     const longBonus=longSpot&&M.t/M.len>.5?1+trainedRecovery*.65:1;
-    // Rest one beat before the intended late rope run while the wrestler
-    // still has time to climb and land; never refill stamina automatically.
-    const runway=trainedRecovery>=.70&&timeLeft>180&&timeLeft<=300?1.55:1;
+    // Begin the visible pacing work several minutes BEFORE the closing
+    // stretch. At -180 seconds elite workers were down to ~29 stamina, so
+    // a last-minute climb boost was mechanically useless. A genuinely
+    // trained flyer may choose several spaced, narrated breathers here.
+    // Each still consumes a real action and respects the 40-second cooldown.
+    const runway=trainedRecovery>=.70&&timeLeft>180&&timeLeft<=480&&
+     stamina<60?3.2:1;
     selected.push(['catch_breath',urgency*longBonus*runway]);
    }else if(!longSpot&&M.planId==='spots'&&stamina<60)
     selected.push(['catch_breath',stamina<40?20:stamina<52?12:6]);
