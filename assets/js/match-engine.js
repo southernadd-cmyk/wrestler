@@ -1670,7 +1670,11 @@ const Graph=(function makeGraph(){
   // Grounded arm attacks use an actual retained wrist/arm.
   sm_armbar:'ground-arm',sm_cross_armbreaker:'ground-arm',
   sm_kimura:'ground-arm',sm_keylock:'ground-arm',
-  sm_fujiwara:'ground-arm',sm_short_arm_scissors:'ground-arm'
+  sm_fujiwara:'ground-arm',sm_short_arm_scissors:'ground-arm',
+  // Mat head/body control must be established on-screen too. These are
+  // voluntary committed submissions, not arbitrary rest-hold damage.
+  sm_chinlock:'ground-head',sm_rear_naked:'ground-head',
+  sm_dragon_sleeper:'ground-head',sm_camel:'ground-back'
  });
  const APRON_OFFENCE=new Set(['os_apron_knee','os_apron_ddt','os_apron_slam']);
  const APRON_DIVES=new Set(['dv_apron_senton','dv_cannonball']);
@@ -1681,6 +1685,11 @@ const Graph=(function makeGraph(){
   wristlock:'wrist',arm_wringer:'wrist',ch_top_wristlock:'wrist',
   ch_rolling_wristlock:'wrist',headlock:'head',ch_cravate:'head',
   rs_wrist_mat:'ground-arm',rs_hammerlock_mat:'ground-arm',
+  rs_armbar_rest:'ground-arm',
+  rs_side_headlock:'ground-head',rs_front_chancery:'ground-head',
+  rs_seated_chinlock:'ground-head',rs_reverse_chinlock:'ground-head',
+  rs_nerve_hold:'ground-head',
+  rs_mat_stretch:'ground-back',
   sm_wristlock_ground:'ground-arm',
   ankle_pick:'ground-leg',ch_single_leg:'ground-leg',ch_dragon_screw:'ground-leg',
   leg_wrench:'ground-leg',gd_dragon_screw_ground:'ground-leg',
@@ -1750,6 +1759,13 @@ const Graph=(function makeGraph(){
     ph.grip=old.grip;
    else if(old?.grip?.side===side&&old.grip.type==='ground-leg'&&
            id==='mat_hold'&&p.position==='mat')
+    ph.grip=old.grip;
+   // A technical wrestler may keep the *same actual control* while using
+   // a neutral positional hold; never transfer an opponent-owned grip.
+   else if(old?.grip?.side===side&&M.t-old.grip.at<=20&&
+           ['ground-leg','ground-arm','ground-head','ground-back'].includes(old.grip.type)&&
+           n.zone==='mat'&&p.position==='mat'&&
+           ['mat_hold','target_hold'].includes(id))
     ph.grip=old.grip;
   }
   g.physical=ph;
@@ -2188,7 +2204,8 @@ const Graph=(function makeGraph(){
      (famList.includes('submission')||famList.includes('ground')||
       famList.includes('rest')))
    selected.push(['leg_wrench',2.2],['rs_wrist_mat',1.9],
-     ['rs_hammerlock_mat',1.2]);
+     ['rs_hammerlock_mat',1.2],['rs_side_headlock',1.6],
+     ['rs_mat_stretch',1.1]);
   if(p.position==='outside')selected.push(['apron_stand',1.6],['ramp_approach',1.3],['floor_regroup',1.4]);
   // A Spectacle wrestler who has reached the ropes should have an actual
   // named aerial/springboard available, not only the generic launch node.
