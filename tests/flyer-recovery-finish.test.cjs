@@ -229,6 +229,17 @@ const readyParents=G.pool(protectedLaunch).filter(([id])=>
  !G.A[id].reverse&&!G.A[id].counterOf&&!G.A[id].blockOf);
 assert.ok(readyParents.length>0,
  'the preserved physical rope position must expose a real legal named aerial');
+const legalPool=G.pool(protectedLaunch);
+const namedWeight=legalPool.filter(([id])=>G.A[id]?.family==='aerial'&&
+ G.A[id]?.risk&&!G.A[id].reverse&&!G.A[id].counterOf&&!G.A[id].blockOf)
+ .reduce((sum,[,weight])=>sum+weight,0);
+const otherWeight=legalPool.filter(([id])=>!(G.A[id]?.family==='aerial'&&
+ G.A[id]?.risk&&!G.A[id].reverse&&!G.A[id].counterOf&&!G.A[id].blockOf))
+ .reduce((sum,[,weight])=>sum+weight,0);
+assert.ok(namedWeight>=otherWeight*1.2-1e-7,
+ 'an actual elite top-rope setup makes a real named aerial competitive but not certain');
+assert.ok(otherWeight>0,
+ 'normal hesitation and failure pathways remain selectable from the ropes');
 assert.equal(launchGraph.pendingAerial,null,'an arc hold must not start an aerial automatically');
 assert.equal(G.startAerial(protectedLaunch,readyParents[0][0]),true,
  'only a separate committed named attempt starts the actual attack');
