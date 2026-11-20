@@ -1607,13 +1607,22 @@ const Graph=(function makeGraph(){
  // Only these source-reviewed mechanics enter the Phase 7 two-beat pilot.
  // Phase 2: curated bulk tranche. Reuse the exact existing generated move-specific
  // reversals/blocks; no synthetic graph nodes or extra out-of-band RNG.
- const GRAPPLE_PILOT=Object.freeze([
+ // Phase 3 bulk: committed, exact-parent defensive pathways for all
+ // 35 catalog submissions and 11 actual chain takedowns (not escapes).
+ const PHASE3_TAKEDOWNS=Object.freeze([
+  'ch_single_leg','ch_double_leg','ch_fireman','ch_snapmare',
+  'ch_deep_arm_drag','ch_japanese_arm_drag','ch_drop_toehold',
+  'ch_headlock_takedown','ch_leg_trip','ch_dragon_screw',
+  'ch_hip_toss_chain'
+ ]);
+ const GRAPPLE_PILOT=Object.freeze([...new Set([
   'sm_sleeper','sm_ankle_lock','nk_snap_ddt',
   ...CAT.members.suplex,
   'pw_powerbomb','pw_sitout','pw_running_powerbomb','pw_backbreaker',
   'pw_uranage','pw_samoan_drop','pw_gorilla_press','pw_military_press',
-  'pw_pumphandle','pw_belly_bump','pw_argentine'
- ]);
+  'pw_pumphandle','pw_belly_bump','pw_argentine',
+  ...CAT.members.submission,...PHASE3_TAKEDOWNS
+ ])]);
 
  // v0.4 physical-continuity pilot: a *small optional, serialisable* descriptor.
  // A null descriptor is an old/injected match state: preserve legacy eligibility
@@ -1643,7 +1652,13 @@ const Graph=(function makeGraph(){
   pw_gorilla_press:'upper-body',pw_military_press:'upper-body',
   pw_pumphandle:'upper-body',pw_belly_bump:'body-clinch',
   pw_argentine:'upper-body',
-  sm_ankle_lock:'ground-leg',rs_leg_lace:'ground-leg'
+  // A named leg lock needs genuinely controlled legwork, not a magic grip.
+  sm_ankle_lock:'ground-leg',sm_heel_hook:'ground-leg',
+  sm_kneebar:'ground-leg',sm_toe_hold:'ground-leg',
+  sm_figure_four:'ground-leg',sm_single_crab:'ground-leg',
+  sm_deathlock:'ground-leg',sm_muffler:'ground-leg',
+  sm_rings:'ground-leg',sm_cloverleaf:'ground-leg',
+  rs_leg_lace:'ground-leg'
  });
  const APRON_OFFENCE=new Set(['os_apron_knee','os_apron_ddt','os_apron_slam']);
  const APRON_DIVES=new Set(['dv_apron_senton','dv_cannonball']);
