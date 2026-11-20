@@ -2426,6 +2426,22 @@ const Graph=(function makeGraph(){
   const prior=g.events[g.events.length-2];
   const inSequence=!!(sameController&&prior&&prior.control===p.control&&
    CHAIN_BY_PAIR.has(prior.id+'>'+previous.id));
+  // Phase 6: real environmental setups should offer the documented family
+  // attacks that can follow them. The authored family 'from' lists express
+  // the intended handoff, including moves omitted by a sparse initial link
+  // generator. Guard each destination with the same physical, timing and
+  // stamina isValid rules below; never offer detached counters/blocks.
+  // This restores genuine moves, not the free-floating defensive nodes
+  // removed by the exact-parent integrity fix.
+  if(sameController&&g.node){
+   for(const family of ['corner','outside','rope']){
+    const source=CAT.F[family];
+    if(!source?.from?.includes(g.node))continue;
+    for(const id of CAT.members[family]||[])
+     if(ENVIRONMENT_PILOT.includes(id)&&A[id].requires===p.position)
+      selected.push([id,1.05]);
+   }
+  }
   const liveSide=p.control==='f'?M.f:M.w;
   const style=STYLE_BEATS[liveSide.style]||STYLE_BEATS.Story;
   if(p.position==='standing'&&arc.openers)
@@ -3080,6 +3096,32 @@ function constructionOf(M){
  return {linkedPairs,threeBeatSequences,staleRepetitions,focusedWork,
   workedDamage,earnedComeback,actions:actions.length,score};
 }
+// Credit landed, technically clean high-risk offence rather than granting
+// unearned stars for a showy match plan or an unsuccessful/aborted attempt.
+// One wrestler cannot inflate a rating by repeating the same spot ten times;
+// the bounded score is proportional to ringcraft and safe execution.
+function spectacularExecutionOf(M){
+ let sum=0;const credited=new Set();
+ for(const e of M.graph?.events||[]){
+  const n=Graph.A[e.id];
+  if(!n?.risk||n.reverse||n.blockOf||
+     !['aerial','springboard','dive','lucha','corner','outside','superplex'].includes(n.family))
+   continue;
+  if(e.aerialResolution&&e.aerialResolution!=='landed')continue;
+  if(e.grappleResolution&&e.grappleResolution!=='landed')continue;
+  if(e.contactResolution&&e.contactResolution!=='landed')continue;
+  const performer=e.preControl==='f'?M.f:M.w;
+  if(!['w','f'].includes(e.preControl))continue;
+  const key=e.preControl+':'+e.id;
+  if(credited.has(key))continue;
+  credited.add(key);
+  const craft=clamp(((performer.ring||60)+(performer.safe||60)-110)/70,0,1);
+  const trained=performer.style==='Spectacle'?1.25:1;
+  const planFit=M.planId==='spots'?1.2:1;
+  sum+=(.05+.12*craft)*trained*planFit;
+ }
+ return Math.round(Math.min(.45,sum)*1000)/1000;
+}
 // The rating, itemised: what each part added to (or took off) the stars. stars() is their sum.
 function starParts(M){
  if(!M.qN)return [];
@@ -3089,6 +3131,8 @@ function starParts(M){
  if(M.shortened)parts.push(['short','Cut short',-.45]);
  if(M.sheetAdj)parts.push(['layout','The agreed layout',M.sheetAdj]);
  if(M.minutes>=15&&avgQ>=60)parts.push(['length','Long match, held together',.2]);
+ const execution=spectacularExecutionOf(M);
+ if(execution)parts.push(['showcase','Clean high-risk execution',execution]);
  const construction=constructionOf(M);
  if(construction.score)parts.push(['psychology','Sequences and psychology',construction.score]);
  if(M.outcome==='double')parts.push(['double','Double count-out',.25]);
