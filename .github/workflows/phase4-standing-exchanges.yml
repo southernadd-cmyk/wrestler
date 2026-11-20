@@ -6,6 +6,7 @@ on:
       - 'tests/catalog.test.cjs'
       - 'tests/phase4-standing-exchanges.test.cjs'
       - 'tests/phase4-neck-exchanges.test.cjs'
+      - 'tools/graph-lab/phase4-coverage-diagnostic.cjs'
       - 'tests/grapple-attempts.test.cjs'
       - 'tests/phase3-chain-submissions.test.cjs'
       - '.github/workflows/phase4-standing-exchanges.yml'
@@ -30,5 +31,7 @@ jobs:
           node tests/phase3-chain-submissions.test.cjs
           node tests/phase3-rest-control.test.cjs
           node tests/phase3-chain-transitions.test.cjs
+      - name: Diagnose rare-move eligibility in exact catalogue fixtures
+        run: node tools/graph-lab/phase4-coverage-diagnostic.cjs
       - name: Full catalog physical legality and 1000 bout coverage
         run: node tests/catalog.test.cjs
