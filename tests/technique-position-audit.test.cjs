@@ -4,6 +4,7 @@
 const assert=require('node:assert/strict');
 const path=require('node:path');
 const {spawnSync}=require('node:child_process');
+const {EXPECTED}=require('./_phase10-inventory.cjs');
 const runner=path.resolve(__dirname,'../tools/graph-lab/technique-position-audit.cjs');
 const r=spawnSync(process.execPath,[runner,'--count','12'],{
  encoding:'utf8',maxBuffer:1024*1024*2,timeout:90000
@@ -16,8 +17,8 @@ assert.equal(report.completed,12);
 assert.equal(report.instrumentationParity.identical,true);
 assert.equal(report.instrumentationParity.bouts,12);
 assert.equal(report.graph.errors.length,0);
-assert.equal(report.graph.nodes,979);
-assert.equal(report.graph.edges,6401);
+assert.equal(report.graph.nodes,EXPECTED.nodes);
+assert.equal(report.graph.edges,EXPECTED.edges);
 assert.equal(report.registry.proposals,90);
 assert.equal(report.timingFaults,0);
 assert.equal(report.illegalPreconditions,0);

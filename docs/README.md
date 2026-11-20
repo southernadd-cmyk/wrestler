@@ -3,6 +3,7 @@
 **Current release:** [v0.4.0 — release guide](v0.4-release.md)  
 **Next development review:** [Technique coverage and physical realism](technique-and-realism-review.md)  
 **Completed 500-bout audit:** [Findings](reports/v04-technique-position-500.md) · [Machine-readable data](reports/v04-technique-position-500.json) · [Reproduction script](../tools/graph-lab/technique-position-audit.cjs)  
+**Superplex pacing and referee follow-up:** [1,500-bout investigation and verified pacing change](reports/v04-superplex-dq-followup-20261120.md)  
 **Playable game:** https://southernadd-cmyk.github.io/wrestler/  
 **Graph Lab:** https://southernadd-cmyk.github.io/wrestler/tools/graph-lab/
 
