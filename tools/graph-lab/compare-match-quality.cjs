@@ -22,7 +22,7 @@ function sample(world){
  for(const plan of plans){
   const r={bouts:0,stars:0,spots:0,spotHits:0,botches:0,offScript:0,
    exhaustedWarnings:0,earlyFinishTeases:0,namedGraphActions:0,below2:0,
-   repeatedPhrases3Plus:0,severeRepeatMatches:0};
+   repeatedPhrases3Plus:0,severeRepeatMatches:0,severeExamples:[]};
   for(let i=0;i<100;i++){
    const w=roster[i%roster.length],f=roster[(i*7+19)%roster.length];
    const o=lab.makeOptions(data,{
@@ -35,7 +35,11 @@ function sample(world){
     spoken[l.text]=(spoken[l.text]||0)+1;
    const duplicates=Object.values(spoken);
    r.repeatedPhrases3Plus+=duplicates.filter(n=>n>=3).length;
-   r.severeRepeatMatches+=duplicates.some(n=>n>=10)?1:0;
+   const severe=Object.entries(spoken).filter(([,count])=>count>=10);
+   r.severeRepeatMatches+=severe.length?1:0;
+   if(severe.length&&r.severeExamples.length<5)
+    r.severeExamples.push({seed:o.seed,wid:w.id,rid:o.f.id,
+     phrases:severe.slice(0,3).map(([phrase,count])=>({phrase,count}))});
    r.bouts++;r.stars+=m.final.stars;r.spots+=m.spots;r.spotHits+=m.spotHits;
    r.botches+=m.botches;r.below2+=m.final.stars<2;
    r.offScript+=m.log.filter(x=>/off the layout|calling audibles/i.test(x.text)).length;
@@ -79,5 +83,8 @@ const report={schema:'office-quality-ab-v1',revision,method:
 process.stdout.write(JSON.stringify(report,null,2)+'\n');
 if(!report.pass){
  process.stderr.write('Match-quality comparison gates failed: '+Object.entries(checks).filter(([,v])=>!v).map(([k])=>k).join(', ')+'\n');
+ if(!checks.severeSpamRare)
+  process.stderr.write('Severe-phrase cases: '+JSON.stringify(Object.fromEntries(
+   plans.map(plan=>[plan,after[plan].severeExamples])))+'\n');
  process.exitCode=1;
 }
