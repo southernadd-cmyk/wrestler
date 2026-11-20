@@ -153,6 +153,7 @@ const total=Object.keys(A).length,coverage=reached.size/total;
 const independent=Object.keys(A).filter(id=>!A[id].counterOf&&!A[id].blockOf);
 const reachedIndependent=independent.filter(id=>reached.has(id));
 const independentCoverage=reachedIndependent.length/independent.length;
+console.log('Catalogue unobserved independent IDs: '+independent.filter(id=>!reached.has(id)).join(', '));
 // v0.4 Phase 2: compare like with like. A generated defence now *requires*
 // the exact pending parent attempt; the previous all-node 90% coverage metric
 // incentivised impossible free-floating counters. This 95% independent-action
