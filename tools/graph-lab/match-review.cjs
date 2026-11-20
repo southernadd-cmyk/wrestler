@@ -51,6 +51,7 @@ function capture(count=100){
       hardErrors:valid.hardErrors,validationExamples:valid.examples,
       unknownEvents:report.unknownEvents,timingErrors:report.timingErrors,
       grappleInvalid:report.grappling.invalid,
+      environment:report.environment,
       metadataEvents,performanceEvents,distinctTechniques:seenTechniques.size,
       distinctPerformanceBeats:seenPerformance.size,
       nearfalls,botches,counters:report.counters,blocks:report.blocks,
@@ -70,6 +71,7 @@ function failures(result){
     if(s.unknownEvents.length)errors.push(s.id+': unknown events');
     if(s.timingErrors.length)errors.push(s.id+': timing errors');
     if(s.grappleInvalid)errors.push(s.id+': '+s.grappleInvalid+' invalid grapple attempts');
+    if(s.environment?.invalid)errors.push(s.id+': '+s.environment.invalid+' invalid environmental attempts');
     if(!s.actionEvents||!s.metadataEvents)errors.push(s.id+': no authored technique evidence');
     return errors;
   });
@@ -86,7 +88,10 @@ function markdown(result){
     lines.push('| '+s.label+' | '+s.bouts+' | '+s.meanStars.toFixed(2)+' | '+s.nodeCoverage+'% | '+s.edgeCoverage+'% | '+
       s.uniqueMatchSequences+' | '+s.metadataEvents+' | '+s.performanceEvents+' | '+s.counters+' | '+s.hardErrors+' |');
   }
-  lines.push('','**Mechanical validation:** '+(failures(result).length?'FAILED — '+failures(result).join('; '):'passed'), '',
+  lines.push('','**Phase 6 environmental attempts:** '+result.scenarios.map(s=>
+    s.id+': '+s.environment.attempts+' attempts / '+
+    s.environment.counter+' counters / '+s.environment.invalid+' errors').join('; '),'',
+    '**Mechanical validation:** '+(failures(result).length?'FAILED — '+failures(result).join('; '):'passed'), '',
     'Note: Metadata additions are editorial. This review measures move use, variety and continuity; it does not mean 325 newly implemented match techniques.',
     'Review the exported tape for plausibility. Linked-edge coverage is a conservative observed-adjacency measure, not a full probability audit.','');
   return lines.join('\n');
