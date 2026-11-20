@@ -8,6 +8,9 @@ assert.deepEqual(d.errors,[]);
 for(const r of d.rows){
  assert.equal(r.bouts,4);
  assert.ok(r.stars>=0&&r.stars<=5);
+ assert.ok(r.actualHopePct>=0&&r.actualHopePct<=100);
+ assert.ok(r.graphArcTransitionsPerBout>=0);
+ assert.ok(r.momentumPolarFlipsPerBout>=0);
  assert.ok(r.actualHeatHopeDenialComebackPct<=r.actualHeatHopeComebackPct);
  assert.ok(r.scheduledNearfallsWithoutLead<=r.scheduledNearfallsTotal);
  assert.ok(r.distinctLateFinishOffence>=0);

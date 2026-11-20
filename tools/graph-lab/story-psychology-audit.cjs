@@ -37,19 +37,31 @@ function one(m,M){
  const earned=raw.filter(e=>A[e.id]&&
   (A[e.id].nearfall||['near_kickout','counter_rollup'].includes(e.id))&&
   isLanded(e,A));
- const hasLeadIn=e=>performed.some(p=>p.t<=e.t&&e.t-p.t<=30&&
-  p.preControl===e.control&&
-  (A[p.id].family||A[p.id].crowd>0)&&
-  !['rest','heel'].includes(A[p.id].family)&&
-  !['catch_breath','clean_break','finish_tease','crowd_pose'].includes(p.id));
+ const hasLeadIn=e=>performedOffence.some(p=>p.t<=e.t&&
+  e.t-p.t<=30&&p.preControl===e.control);
  const noLead=scheduled.filter(e=>!hasLeadIn(e));
- const finalSetup=performed.filter(e=>e.t>=m.len-180&&FINISH.has(e.arc));
- const lastMove=performed.at(-1);
+ // A pose or threatened finish is not actual offensive work.
+ const CORE_OFFENCE=new Set(['clothesline','counter_strike','mat_takedown',
+  'hope_elbows','hope_cutoff','target_strike','target_hold','cover',
+  'snap_suplex','corner_strikes','dramatic_rally','short_arm_lariat']);
+ const offensive=e=>!!A[e.id]&&e.id!=='finish_tease'&&
+  (CORE_OFFENCE.has(e.id)||
+    (!!A[e.id].family&&!['rest','setup','pose','taunt'].includes(A[e.id].family)));
+ const performedOffence=performed.filter(offensive);
+ const finalSetup=performedOffence.filter(e=>e.t>=m.len-180&&FINISH.has(e.arc));
+ const lastMove=performedOffence.at(-1);
  const lateNear=scheduled.filter(e=>e.t>=m.len-180);
  const beforeEarly=scheduled.filter(e=>e.t/m.len<.59);
  const phaseTick=m.flow||[];
- const change=phaseTick.filter((v,i)=>i>0&&
-  ((v[2]>=20&&phaseTick[i-1][2]<=-20)||(v[2]<=-20&&phaseTick[i-1][2]>=20))).length;
+ // Momentum cannot reverse from +20 to -20 in one tick. Count genuine
+ // polar episodes over time, ignoring the noisy neutral middle.
+ let prior=0,change=0;
+ for(const tick of phaseTick){
+  const phase=tick[2]>=20?1:tick[2]<=-20?-1:0;
+  if(phase===0)continue;
+  if(prior!==0&&phase!==prior)change++;
+  prior=phase;
+ }
  const star=m.final?.stars||0;
  const worked=performed.filter(e=>A[e.id]?.focus&&A[e.id]?.part);
  const distinctLast=new Set(finalSetup.map(e=>e.id));
@@ -70,7 +82,7 @@ function one(m,M){
   lateScheduledNearfall:lateNear.length,
   last180DistinctFinishOffence:distinctLast.size,
   final180ActualFinisherSetups:finalSetup.length,
-  final60PerformedOffence:performed.filter(e=>e.t>=m.len-60).length,
+  final60PerformedOffence:performedOffence.filter(e=>e.t>=m.len-60).length,
   lateFinisherTease:raw.filter(e=>e.id==='finish_tease'&&e.t>=m.len-180).length,
   preFinishActionGap:lastMove?Math.max(0,m.len-lastMove.t):m.len,
   winnerLastOffence:lastMove&&['w','f'].includes(winner)?loser===winner:null,
@@ -120,7 +132,8 @@ function capture(seeds=12){
     tier,minutes,plan,bouts:n,stars:m('stars'),bellStamina:m('stamina'),
     crowdPeak:m('peakCrowd'),arcsVisited:m('arcsVisited'),
     arcsWithActions:m('arcsPerformed'),
-    narratedHopeArcPct:c('arcHopeVisited'),actualHopePct:c('actualHope'),
+    narratedHopeArcPct:c('arcHopeVisited'),
+    actualHopePct:pct(records.filter(v=>v.actualHope>0).length,n),
     narratedDenialArcPct:c('arcDenialVisited'),
     narratedComebackArcPct:c('arcComebackVisited'),
     performedHopePerBout:m('actualHope'),
@@ -143,7 +156,7 @@ function capture(seeds=12){
     winnerOwnedLastActionPct:pct(winning.filter(x=>x.winnerLastOffence).length,winning.length),
     targetingPerBout:m('focusLanded'),
     controlChanges:m('organicSideChanges'),
-    graphArcTransitions:m('controlChanges'),
+    graphArcTransitionsPerBout:m('controlChanges'),
     momentumPolarFlipsPerBout:m('momentumPolarFlips'),
     nearfallsPerBout:m('nearfallCount'),
     endingTypes:endings,finishRoutes,
