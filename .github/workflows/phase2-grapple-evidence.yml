@@ -27,6 +27,11 @@ jobs:
           fi
       - name: Diagnose guarded and unselected grapples (read only)
         run: node tools/graph-lab/grapple-reachability-diagnostic.cjs 1000 > phase2-grapple-diagnostic.json
+      - name: Compare same-seed graph coverage with main
+        run: |
+          git fetch --depth=1 origin main
+          git worktree add --detach /tmp/office-phase2-base FETCH_HEAD
+          node tools/graph-lab/coverage-classification.cjs /tmp/office-phase2-base 1000 > phase2-coverage-comparison.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -34,4 +39,5 @@ jobs:
           path: |
             phase2-grapple-audit.json
             phase2-grapple-diagnostic.json
+            phase2-coverage-comparison.json
           if-no-files-found: warn
