@@ -1214,7 +1214,11 @@ const Graph=(function makeGraph(){
     famOf[id]=fid;members[fid].push(id);counts.moves++;
     // Not everything is an 'attempt' that can be reversed (a kip-up, a double count). Stationary
     // offence and a few awkward names get their own wording instead of the family template.
-    const rv=f.rev,rid=id+'_rev',rreq=rv.requires||requires,hasRev=o.rev!==false;
+    const rv=f.rev,rid=id+'_rev',
+     // A standing submission's defence must be possible during its standing
+     // attempt; the mat-submission family default cannot teleport the counter.
+     rreq=fid==='submission'&&requires==='standing'?requires:rv.requires||requires,
+     hasRev=o.rev!==false;
     if(hasRev){
      const words=o.rv||(o.still&&rv.still)||rv.lines;
      node(rid,words.map(t=>t.replace(/\{name\}/g,name)),{requires:rreq,reverse:true,zone:rv.zone,down:rv.down,
@@ -1607,13 +1611,22 @@ const Graph=(function makeGraph(){
  // Only these source-reviewed mechanics enter the Phase 7 two-beat pilot.
  // Phase 2: curated bulk tranche. Reuse the exact existing generated move-specific
  // reversals/blocks; no synthetic graph nodes or extra out-of-band RNG.
- const GRAPPLE_PILOT=Object.freeze([
+ // Phase 3 bulk: committed, exact-parent defensive pathways for all
+ // 35 catalog submissions and 11 actual chain takedowns (not escapes).
+ const PHASE3_TAKEDOWNS=Object.freeze([
+  'ch_single_leg','ch_double_leg','ch_fireman','ch_snapmare',
+  'ch_deep_arm_drag','ch_japanese_arm_drag','ch_drop_toehold',
+  'ch_headlock_takedown','ch_leg_trip','ch_dragon_screw',
+  'ch_hip_toss_chain'
+ ]);
+ const GRAPPLE_PILOT=Object.freeze([...new Set([
   'sm_sleeper','sm_ankle_lock','nk_snap_ddt',
   ...CAT.members.suplex,
   'pw_powerbomb','pw_sitout','pw_running_powerbomb','pw_backbreaker',
   'pw_uranage','pw_samoan_drop','pw_gorilla_press','pw_military_press',
-  'pw_pumphandle','pw_belly_bump','pw_argentine'
- ]);
+  'pw_pumphandle','pw_belly_bump','pw_argentine',
+  ...CAT.members.submission,...PHASE3_TAKEDOWNS
+ ])]);
 
  // v0.4 physical-continuity pilot: a *small optional, serialisable* descriptor.
  // A null descriptor is an old/injected match state: preserve legacy eligibility
@@ -1643,7 +1656,25 @@ const Graph=(function makeGraph(){
   pw_gorilla_press:'upper-body',pw_military_press:'upper-body',
   pw_pumphandle:'upper-body',pw_belly_bump:'body-clinch',
   pw_argentine:'upper-body',
-  sm_ankle_lock:'ground-leg',rs_leg_lace:'ground-leg'
+  // A named leg lock needs genuinely controlled legwork, not a magic grip.
+  sm_ankle_lock:'ground-leg',sm_heel_hook:'ground-leg',
+  sm_kneebar:'ground-leg',sm_toe_hold:'ground-leg',
+  sm_figure_four:'ground-leg',sm_single_crab:'ground-leg',
+  sm_deathlock:'ground-leg',sm_muffler:'ground-leg',
+  sm_rings:'ground-leg',sm_cloverleaf:'ground-leg',
+  rs_leg_lace:'ground-leg',
+  // Chain throws are only attempted after contact, not from a free stance.
+  ch_deep_arm_drag:'wrist',ch_japanese_arm_drag:'wrist',
+  ch_headlock_takedown:'head',
+  ch_fireman:'upper-body',ch_hip_toss_chain:'upper-body',
+  // Grounded arm attacks use an actual retained wrist/arm.
+  sm_armbar:'ground-arm',sm_cross_armbreaker:'ground-arm',
+  sm_kimura:'ground-arm',sm_keylock:'ground-arm',
+  sm_fujiwara:'ground-arm',sm_short_arm_scissors:'ground-arm',
+  // Mat head/body control must be established on-screen too. These are
+  // voluntary committed submissions, not arbitrary rest-hold damage.
+  sm_chinlock:'ground-head',sm_rear_naked:'ground-head',
+  sm_dragon_sleeper:'ground-head',sm_camel:'ground-back'
  });
  const APRON_OFFENCE=new Set(['os_apron_knee','os_apron_ddt','os_apron_slam']);
  const APRON_DIVES=new Set(['dv_apron_senton','dv_cannonball']);
@@ -1651,6 +1682,15 @@ const Graph=(function makeGraph(){
   lockup:'upper-body',knuckle_lock:'upper-body',pw_bearhug:'body-clinch',
   front_facelock:'front-facelock',go_behind:'rear-waist',waistlock:'rear-waist',
   standing_switch:'rear-waist',
+  wristlock:'wrist',arm_wringer:'wrist',ch_top_wristlock:'wrist',
+  ch_rolling_wristlock:'wrist',headlock:'head',ch_cravate:'head',
+  rs_wrist_mat:'ground-arm',rs_hammerlock_mat:'ground-arm',
+  rs_armbar_rest:'ground-arm',
+  rs_side_headlock:'ground-head',rs_front_chancery:'ground-head',
+  rs_seated_chinlock:'ground-head',rs_reverse_chinlock:'ground-head',
+  rs_nerve_hold:'ground-head',
+  rs_mat_stretch:'ground-back',
+  sm_wristlock_ground:'ground-arm',
   ankle_pick:'ground-leg',ch_single_leg:'ground-leg',ch_dragon_screw:'ground-leg',
   leg_wrench:'ground-leg',gd_dragon_screw_ground:'ground-leg',
   sm_toe_hold:'ground-leg',sm_heel_hook:'ground-leg',sm_kneebar:'ground-leg',
@@ -1720,6 +1760,13 @@ const Graph=(function makeGraph(){
    else if(old?.grip?.side===side&&old.grip.type==='ground-leg'&&
            id==='mat_hold'&&p.position==='mat')
     ph.grip=old.grip;
+   // A technical wrestler may keep the *same actual control* while using
+   // a neutral positional hold; never transfer an opponent-owned grip.
+   else if(old?.grip?.side===side&&M.t-old.grip.at<=20&&
+           ['ground-leg','ground-arm','ground-head','ground-back'].includes(old.grip.type)&&
+           n.zone==='mat'&&p.position==='mat'&&
+           ['mat_hold','target_hold'].includes(id))
+    ph.grip=old.grip;
   }
   g.physical=ph;
  }
@@ -1769,6 +1816,14 @@ const Graph=(function makeGraph(){
   if(parent&&M.graph?.pendingAerial?.id!==parent)return false;
   const grappleParent=grappleAlternativeParent(nodeId);
   if(grappleParent&&M.graph?.pendingGrapple?.id!==grappleParent)return false;
+  // Rest-hold resistance is a one-beat defensive continuation, not a
+  // standalone move. It must immediately answer the exact live hold.
+  const restParent=n.counterOf||n.blockOf;
+  if(restParent&&A[restParent]?.family==='rest'){
+   const prior=M.graph?.events?.at(-1);
+   if(prior?.id!==restParent||prior.control!==p.control||
+      M.t-prior.t>20)return false;
+  }
   // A submission-only bout cannot reach pin nodes, even through signature/catalog edges.
   if(M.o.stip==='submission'&&(n.family==='pin'||n.nearfall||
     ['early_cover','cover','near_kickout','counter_rollup'].includes(nodeId)||
@@ -2113,7 +2168,7 @@ const Graph=(function makeGraph(){
   const famList=ARC_FAMILIES[g.arc]||[];
   if(p.position==='standing'){
    if(famList.includes('corner'))selected.push(['corner_whip',1.1],['corner_push',.5]);
-   if(famList.includes('chain'))selected.push(['headlock',.8],['lockup',.4]);
+   if(famList.includes('chain'))selected.push(['headlock',1.5],['wristlock',1.7],['lockup',.4]);
    if(famList.includes('superplex'))selected.push(['corner_whip',affordableSuperplex(M,true)?5.5:.7]);
   }
   if(p.position==='corner'&&famList.includes('superplex')&&affordableSuperplex(M))
@@ -2143,9 +2198,25 @@ const Graph=(function makeGraph(){
      ['waistlock',2.2],['lockup',2.5]);
    if(famList.includes('power'))selected.push(['pw_bearhug',1.6]);
   }
+  // Phase 3: a real grounded grip invites a legal submission. Keep the
+  // parent-specific attempt/reversal rules and existing stamina gates.
+  // Rest holds and wrist controls generate actual retained grip states.
+  if(p.position==='mat'&&M.planId!=='spots'&&grip&&
+     grip.side===p.control&&M.t-grip.at<=20){
+   for(const id of CAT.members.submission){
+    if(A[id]?.requires==='mat'&&PHYSICAL_GRIP_MOVES[id]===grip.type)
+     // Control is a fleeting technical opportunity: a relevant hold should
+     // compete meaningfully with arbitrary arc changes or another rest hold.
+     // This raises only an eligible exact-grip option, never bypasses isValid.
+     selected.push([id,5.8]);
+   }
+  }
   if(p.position==='mat'&&!g.physical?.grip&&
-     (famList.includes('submission')||famList.includes('ground')))
-   selected.push(['leg_wrench',2.2]);
+     (famList.includes('submission')||famList.includes('ground')||
+      famList.includes('rest')))
+   selected.push(['leg_wrench',2.2],['rs_wrist_mat',1.9],
+     ['rs_hammerlock_mat',1.2],['rs_side_headlock',1.6],
+     ['rs_mat_stretch',1.1]);
   if(p.position==='outside')selected.push(['apron_stand',1.6],['ramp_approach',1.3],['floor_regroup',1.4]);
   // A Spectacle wrestler who has reached the ropes should have an actual
   // named aerial/springboard available, not only the generic launch node.

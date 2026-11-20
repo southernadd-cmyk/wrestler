@@ -73,6 +73,14 @@ function probe(id){
    if(!G.startGrapple(x,parent))continue;
    assert.equal(x.graph.pendingGrapple.id,parent);
   }
+  if(parent&&A[parent]?.family==='rest'){
+   // A rest-hold counter is physically possible only after the named hold
+   // has *actually occurred* in this live scenario. Graph edges alone
+   // no longer grant a free-floating escape from a nonexistent hold.
+   x.stage='live';
+   if(!G.isValid(x,parent))continue;
+   G.apply(x,parent);
+  }
   if(aerialParent){
    // Phase 6: a generated move-specific aerial counter/block is physically
    // reachable *during the named parent attempt*, not as a free-floating move.
@@ -153,6 +161,7 @@ const total=Object.keys(A).length,coverage=reached.size/total;
 const independent=Object.keys(A).filter(id=>!A[id].counterOf&&!A[id].blockOf);
 const reachedIndependent=independent.filter(id=>reached.has(id));
 const independentCoverage=reachedIndependent.length/independent.length;
+console.log('Catalogue unobserved independent IDs: '+independent.filter(id=>!reached.has(id)).join(', '));
 // v0.4 Phase 2: compare like with like. A generated defence now *requires*
 // the exact pending parent attempt; the previous all-node 90% coverage metric
 // incentivised impossible free-floating counters. This 95% independent-action
