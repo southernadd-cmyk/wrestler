@@ -2130,10 +2130,10 @@ const Graph=(function makeGraph(){
   }
   return concludeStrike(M,reason);
  }
- function resolveStrike(M){
+ function resolveStrike(M,immediate=false){
   const pending=get(M).pendingStrike;if(!pending)return false;
   const p=Psy.get(M),id=pending.id;
-  if(M.stage!=='live'||M.t<=pending.at||
+  if(M.stage!=='live'||(!immediate&&M.t<=pending.at)||
      p.control!==pending.side||p.position!==pending.position||
      p.down!==pending.down)
    return abortStrike(M,'interrupted',M.stage==='live');
@@ -2480,7 +2480,14 @@ const Graph=(function makeGraph(){
    // The very final tick retains the pre-existing immediate-landing fallback.
    if(isAerialParent(id)&&startAerial(M,id))return;
    if(isGrappleParent(id)&&startGrapple(M,id))return;
-   if(STRIKE_PILOT.includes(id)&&startStrike(M,id))return;
+   if(STRIKE_PILOT.includes(id)&&startStrike(M,id)){
+    // Short strikes are thrown, read and defended in the SAME exchange.
+    // Making every jab require the following clock tick costs half of
+    // ordinary wrestling and crowds out unrelated moves. A running attack
+    // still commits to a distinct next-beat charge and can be interrupted.
+    if(A[id].family==='strike')resolveStrike(M,true);
+    return;
+   }
    apply(M,id);return;
   }
   recover(M);
