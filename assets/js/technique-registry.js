@@ -170,7 +170,7 @@
 
     // Phase 5 mat-wrestling metadata: 39 existing moves, no new graph edges.
     // Standing submissions remain standing; the lateral rest press has no reversal.
-    ['gd_knee_drop','Wrestling-only','grounded knee impact','mat/ground-top','mat/ground-top','neck',['wrestling'],['mat_hold'],['gd_knee_drop_rev'],null,'Knee drop onto a grounded opponent's head; this is not a top-rope knee attack.'],
+    ['gd_knee_drop','Wrestling-only','grounded knee impact','mat/ground-top','mat/ground-top','neck',['wrestling'],['mat_hold'],['gd_knee_drop_rev'],null,'Knee drop onto a grounded opponent\'s head; this is not a top-rope knee attack.'],
     ['gd_leg_drop','Wrestling-only','grounded throat leg drop','mat/ground-top','mat/ground-top','neck',['wrestling'],['mat_hold'],['gd_leg_drop_rev'],null,'A grounded leg drop across the throat, distinct from a running or aerial leg drop.'],
     ['gd_splash','Wrestling-only','standing body splash','mat/ground-top','mat/ground-top','ribs',['wrestling'],['mat_hold'],['gd_splash_rev'],null,'A close-range standing splash onto an already downed opponent, not a top-rope launch.'],
     ['gd_headbutt','Strike','falling grounded headbutt','mat/ground-top','mat/ground-top',null,['wrestling'],['mat_hold'],['gd_headbutt_rev'],null,'The opponent is down before the attacker drops into a headbutt; the body-part call is variable.'],
@@ -190,7 +190,7 @@
     ['rs_body_scissors','Clinch','grounded torso body scissors','mat/ground-top','mat/ground-top','ribs',['catch'],['mat_hold'],['rs_body_scissors_rev'],null,'Legs squeeze the torso while grounded, with no automatic choke or pin outcome.'],
     ['rs_nerve_hold','Clinch','shoulder nerve pressure','mat/head','mat/head','neck',['wrestling'],['mat_hold'],['rs_nerve_hold_rev'],null,'Shoulder-base nerve pressure targets the neck under live graph metadata.'],
     ['rs_seated_chinlock','Clinch','seated knee backed chinlock','mat/head','mat/head','back',['catch','wrestling'],['mat_hold'],['rs_seated_chinlock_rev'],null,'Knee between shoulder blades accompanies a seated chinlock; the recorded target is back.'],
-    ['rs_hammerlock_mat','Clinch','grounded hammerlock control','mat/arm','mat/arm','arm',['catch'],['mat_hold'],['rs_hammerlock_mat_rev'],null,'Held arm bends behind the opponent's back; a rest control rather than a finish attempt.'],
+    ['rs_hammerlock_mat','Clinch','grounded hammerlock control','mat/arm','mat/arm','arm',['catch'],['mat_hold'],['rs_hammerlock_mat_rev'],null,'Held arm bends behind the opponent\'s back; a rest control rather than a finish attempt.'],
     ['rs_cover_rest','Wrestling-only','one count lateral press','mat/pin','mat/ground-top',null,['wrestling'],['mat_hold'],[],null,'A brief lateral press with a one-count release; its authored action has no generated reversal.'],
     ['rs_reverse_chinlock','Clinch','grounded rear chinlock','mat/head','mat/head','neck',['catch','wrestling'],['mat_hold'],['rs_reverse_chinlock_rev'],null,'Seated rear chin control keeps the opponent down without assuming a submission outcome.'],
     ['rs_mat_stretch','Clinch','grounded back stretch','mat/ground-top','mat/ground-top','back',['catch'],['mat_hold'],['rs_mat_stretch_rev'],null,'Low-energy grounded stretch used to hold an opponent down; no separate pressure state.'],
