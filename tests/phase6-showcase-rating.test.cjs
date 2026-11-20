@@ -20,6 +20,7 @@ function setup(plan='spots'){
 }
 function credit(m){return M._starParts(m).find(p=>p[0]==='showcase')?.[2]||0;}
 const plain=setup('spots');
+plain.w.ring=90;plain.w.safe=90; // controlled skilled performer; cast ratings vary
 assert.equal(credit(plain),0,'choosing a high-flying plan alone is not a star bonus');
 plain.graph.aerialAttempts.push({id:risky[0],outcome:'counter',startedT:100});
 assert.equal(credit(plain),0,'attempting without landing does not score a spectacular execution');
