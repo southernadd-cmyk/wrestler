@@ -73,6 +73,14 @@ function probe(id){
    if(!G.startGrapple(x,parent))continue;
    assert.equal(x.graph.pendingGrapple.id,parent);
   }
+  if(parent&&A[parent]?.family==='rest'){
+   // A rest-hold counter is physically possible only after the named hold
+   // has *actually occurred* in this live scenario. Graph edges alone
+   // no longer grant a free-floating escape from a nonexistent hold.
+   x.stage='live';
+   if(!G.isValid(x,parent))continue;
+   G.apply(x,parent);
+  }
   if(aerialParent){
    // Phase 6: a generated move-specific aerial counter/block is physically
    // reachable *during the named parent attempt*, not as a free-floating move.
