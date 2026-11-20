@@ -1616,7 +1616,7 @@ const Graph=(function makeGraph(){
  // actions selected without the corresponding move being attempted.
  function isAerialParent(id){
   const n=A[id];return !!n&&!n.reverse&&!n.blockOf&&
-   (n.family==='aerial'||n.family==='springboard');
+   (n.family==='aerial'||n.family==='springboard'||n.family==='dive');
  }
  // Only these source-reviewed mechanics enter the Phase 7 two-beat pilot.
  // Phase 2: curated bulk tranche. Reuse the exact existing generated move-specific
@@ -1668,6 +1668,9 @@ const Graph=(function makeGraph(){
  // until an actual graph action establishes who is where and who holds what.
  // Existing arc clocks, deterministic RNG and booked endings remain authoritative.
  const SUPERPLEX_PILOT=Object.freeze([...CAT.members.superplex]);
+ // Nine named outside dives share the exact-parent aerial ledger. A floor
+ // target and ring/apron launch are mandatory, not inferred from narration.
+ const DIVE_PILOT=Object.freeze([...CAT.members.dive]);
  // Explicit physical entries for the expanded commitment set. A named attempt
  // must already have an actor-owned grip, never a descriptive guess after impact.
  const PHYSICAL_GRIP_MOVES=Object.freeze({
@@ -1768,6 +1771,11 @@ const Graph=(function makeGraph(){
   }
   if(n.family==='superplex'){
    if(ph.topSide!==side||ph.locations[side]!=='top'||ph.locations[other]!=='top')return false;
+  }
+  // Top-rope offence needs an actual launch position, with the recipient
+  // on the canvas. A two-wrestler top contest permits superplexes instead.
+  if(n.family==='aerial'||n.family==='springboard'){
+   if(ph.locations[side]!=='top'||ph.locations[other]!=='ring')return false;
   }
   if(n.family==='dive'){
    if(ph.locations[other]!=='floor')return false;
@@ -2140,18 +2148,19 @@ const Graph=(function makeGraph(){
  // stage 1 commits and names the precise attack, stage 2 resolves that attack.
  function startAerial(M,id){
   const g=get(M),p=Psy.get(M);
-  if((g.pendingAerial||g.pendingGrapple)||!isAerialParent(id)||!isValid(M,id)||p.position!=='top'||M.len-M.t<10)
+  if((g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)||!isAerialParent(id)||!isValid(M,id)||p.position!==A[id].requires||M.len-M.t<10)
    return false;
   if(p.control!=='w'&&p.control!=='f')return false;
   const side=p.control,attacker=side==='w'?M.w:M.f,defender=side==='w'?M.f:M.w;
   const seq=++g.aerialAttemptSerial;
-  g.pendingAerial={v:1,seq,id,side,at:M.t,position:'top'};
+  g.pendingAerial={v:1,seq,id,side,at:M.t,position:p.position};
   g.aerialAttempts.push({seq,id,side,startedT:M.t,outcome:'pending'});
   // Commitment costs effort even when the defender reverses the airborne move.
   const key=side==='w'?'wSt':'fSt';
   M[key]=clamp(M[key]-.8);g.exertion=(g.exertion||0)+.8;
   say(M,attacker.short+' sets for the '+(A[id].name||id)+
-   ' on the ropes. '+defender.short+' sees the attack coming.','play');
+   (A[id].family==='dive'?' towards '+defender.short+' at ringside. ':
+    ' on the ropes. ')+defender.short+' sees the attack coming.','play');
   return true;
  }
  function concludeAerial(M,outcome,actionId=null){
@@ -2179,8 +2188,15 @@ const Graph=(function makeGraph(){
    const attacker=pending.side==='w'?M.w:M.f;
    say(M,attacker.short+' abandons the '+(A[pending.id]?.name||'aerial attack')+
     ' as the exchange breaks down.','play');
-   const p=Psy.get(M);p.position='standing';p.down=null;
-   get(M).physical=null;get(M).node=null;
+   const p=Psy.get(M);
+   if(pending.position==='outside'){
+    // No dive landed: keep the actual ring/apron and floor locations
+    // rather than teleporting wrestlers into a neutral ring exchange.
+    p.position='outside';p.down=null;get(M).node=null;
+   }else{
+    p.position='standing';p.down=null;
+    resetPhysical(M);get(M).node=null;
+   }
   }
   return concludeAerial(M,reason);
  }
@@ -2188,7 +2204,7 @@ const Graph=(function makeGraph(){
   const pending=get(M).pendingAerial;
   if(!pending)return false;
   const p=Psy.get(M),id=pending.id;
-  if(M.stage!=='live'||p.position!=='top'||p.control!==pending.side||
+  if(M.stage!=='live'||p.position!==(pending.position||A[id]?.requires)||p.control!==pending.side||
    !isAerialParent(id)||M.t<=pending.at)
    return abortAerial(M,'interrupted',M.stage==='live');
   if(!isValid(M,id))return abortAerial(M,'aborted',true);
@@ -2724,7 +2740,11 @@ const Graph=(function makeGraph(){
   if(id){
    // A full named attempt starts only when there is another tick to resolve it.
    // The very final tick retains the pre-existing immediate-landing fallback.
-   if(isAerialParent(id)&&startAerial(M,id))return;
+   if(isAerialParent(id)){
+    if(startAerial(M,id))return;
+    // A floor dive cannot become an uncommitted landing on the final tick.
+    if(DIVE_PILOT.includes(id)){recover(M);return;}
+   }
    if(isGrappleParent(id)&&startGrapple(M,id))return;
    if(isContactParent(id)){
     // Pins, mat attacks and environmental exchanges resolve in the same beat.
@@ -2866,7 +2886,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,DIVE_PILOT,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
