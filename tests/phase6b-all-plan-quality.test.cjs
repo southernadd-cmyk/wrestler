@@ -65,6 +65,16 @@ for(const plan of plans){
  assert.ok(M._earnedPlanQuality(m)<=base+max[plan],
   plan+' earned award cannot exceed the plan cap');
 }
+// A real base-graph move can also earn quality: many classic holds and
+// aerial payoffs predate the family catalogue and are still authentic work.
+const legacy={technical:'wristlock',spots:'aerial_attack',brawl:'clothesline',
+ story:'dramatic_rally',safe:'mat_hold'};
+for(const plan of plans){
+ const m=fixture(plan),base=plan==='safe'?-2:0;
+ m.graph.events=[event(legacy[plan],400)];
+ assert.ok(M._earnedPlanQuality(m)>base,
+   plan+' must credit a real authored core-graph move, not only later family entries');
+}
 // Not even excellent Spot-fest wrestlers can gain from merely scheduling
 // a high-risk attack; weak, unsafe workers must not earn execution quality.
 const aerial=representative.spots,weak=fixture('spots');

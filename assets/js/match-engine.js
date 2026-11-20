@@ -3162,13 +3162,25 @@ function earnedPlanQuality(M){
  const plan=M.planId;
  const caps={story:3.5,spots:3.6,technical:4,brawl:3.5,safe:1.5};
  if(!Object.prototype.hasOwnProperty.call(caps,plan))return 0;
+ // The original graph also contains genuine, narrated core techniques
+ // without catalogue-family labels. Include only hand-reviewed, physically
+ // completed actions; not entry setups, pose/stall nodes or generic resets.
+ const core={
+  technical:['lockup','headlock','wristlock','arm_wringer','waistlock',
+    'hammerlock','mat_takedown'],
+  spots:['aerial_attack','springboard_strike','missile_dropkick','high_crossbody'],
+  brawl:['clothesline','body_shot','stiff_forearm','floor_brawl',
+    'corner_strikes','short_arm_lariat'],
+  story:['hope_elbows','hope_cutoff','dramatic_rally','target_hold','target_strike'],
+  safe:['wristlock','headlock','mat_hold','clean_break','target_hold','mat_takedown']
+ };
  const seen=new Set(),start=M.t-180;let earned=0;
  const build=['cutoff','control','limb_work','hope','denial','comeback','resurgence',
   'nearfall','false_finish','escalation','submission_battle','fighting_spirit'];
  for(const e of M.graph?.events||[]){
   if(e.t<start||e.t>M.t||!['w','f'].includes(e.preControl))continue;
   const n=Graph.A[e.id];
-  if(!n||!n.family||n.reverse||n.counterOf||n.blockOf||
+  if(!n||(!n.family&&!core[plan].includes(e.id))||n.reverse||n.counterOf||n.blockOf||
      (e.aerialResolution&&e.aerialResolution!=='landed')||
      (e.grappleResolution&&e.grappleResolution!=='landed')||
      (e.strikeResolution&&e.strikeResolution!=='landed')||
@@ -3178,29 +3190,33 @@ function earnedPlanQuality(M){
   let gain=0;
   switch(plan){
    case 'technical':
-    if(['chain','submission','suplex','ground','rest','neck'].includes(n.family))
-     gain=1.15*clamp(((worker.ring||0)-40)/50,.2,1);
+    if(['chain','submission','suplex','ground','rest','neck'].includes(n.family)||
+       core.technical.includes(e.id))
+     gain=(n.family?1.15:.65)*clamp(((worker.ring||0)-40)/50,.2,1);
     break;
    case 'spots':
-    if(n.risk&&['aerial','springboard','dive','lucha','corner','outside','superplex'].includes(n.family))
-     gain=2*clamp(((worker.ring||0)+(worker.safe||0)-110)/65,0,1);
+    if((n.risk&&['aerial','springboard','dive','lucha','corner','outside','superplex'].includes(n.family))||
+       core.spots.includes(e.id))
+     gain=(n.family?2:.8)*clamp(((worker.ring||0)+(worker.safe||0)-110)/65,0,1);
     break;
    case 'brawl':
-    if(['strike','running','power','outside','corner','rope'].includes(n.family))
-     gain=1.05*clamp(((worker.ring||0)+(worker.psych||0)-85)/95,.25,1);
+    if(['strike','running','power','outside','corner','rope'].includes(n.family)||
+       core.brawl.includes(e.id))
+     gain=(n.family?1.05:.35)*clamp(((worker.ring||0)+(worker.psych||0)-85)/95,.25,1);
     break;
    case 'story':
     // An actual move must support a heat, hope, comeback or late pay-off.
     // Merely reaching the scheduled story arc earns nothing on its own.
     if(build.includes(e.arc))
-     gain=.9*clamp(((worker.psych||0)+(worker.ring||0)-85)/95,.25,1);
+     gain=(n.family?.9:.6)*clamp(((worker.psych||0)+(worker.ring||0)-85)/95,.25,1);
     break;
    case 'safe':
     // The deliberate low-ceiling plan values genuinely manageable work;
     // dangerous aerials and long, punishing high-cost moves cannot count.
     if(!n.risk&&(n.cost??0)<=2.2&&
-       ['chain','rest','ground','pin','submission','strike','neck'].includes(n.family))
-     gain=.55*clamp(((worker.safe||0)-35)/55,.2,1);
+       (['chain','rest','ground','pin','submission','strike','neck'].includes(n.family)||
+        core.safe.includes(e.id)))
+     gain=(n.family?.55:.3)*clamp(((worker.safe||0)-35)/55,.2,1);
     break;
   }
   if(gain>0){seen.add(key);earned+=gain;}
