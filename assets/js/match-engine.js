@@ -2840,6 +2840,21 @@ const Graph=(function makeGraph(){
    weights.set(id,(weights.get(id)||0)+n);
   }
   const pool=[...weights.entries()];
+  // In the expanded repertoire a single recovery candidate gets lost
+  // among hundreds of legal moves. Reserve a bounded SHARE of the actual
+  // choice probability for a tired, trained flyer BEFORE the final run.
+  // The seeded selection still decides: there is no forced move or refill.
+  if(longSpot&&trainedRecovery>=.70&&timeLeft>180&&timeLeft<=480&&
+     p.position==='standing'&&stamina<60&&
+     !g.events.slice(-20).some(e=>e.id==='catch_breath'&&
+      e.preControl===p.control&&M.t-e.t<40)){
+   const recovering=pool.find(([id])=>id==='catch_breath');
+   if(recovering){
+    const competing=pool.reduce((sum,[id,n])=>
+     sum+(id==='catch_breath'?0:n),0);
+    recovering[1]=Math.max(recovering[1],competing*.72);
+   }
+  }
   // An agreed beat is not one option among fifty. If it is legal right now, the wrestler takes it
   // with odds set by how willing they are, whatever their habits would otherwise suggest.
   if(agreed){
