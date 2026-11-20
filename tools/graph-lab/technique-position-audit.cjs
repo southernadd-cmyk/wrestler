@@ -144,7 +144,8 @@ for(let i=0;i<count;i++){
    // Resolution clears pending attempt first, so the raw isValid() check
    // intentionally rejects the counter outside its attempt context.
    const isResolvedCounter=(e.aerialAttemptSeq!==undefined||
-    e.grappleAttemptSeq!==undefined)&&(node.counterOf||node.blockOf);
+    e.grappleAttemptSeq!==undefined||e.strikeAttemptSeq!==undefined)&&
+    (node.counterOf||node.blockOf);
    if(isResolvedCounter)attemptCounterChecks++;
    else{
     illegalPreconditions++;
