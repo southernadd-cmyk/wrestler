@@ -1605,8 +1605,8 @@ const Graph=(function makeGraph(){
    last?.id===g.node&&last.control===pos.control&&
    M.t-last.t>=0&&M.t-last.t<=10;
   if(M.planId==='spots'&&M.len>=900&&M.len-M.t>=10&&
-     schedule.id==='stretch'&&a.phase==='stretch'&&
-     setup&&actor?.style==='Spectacle'&&recoveryTraining(actor)>=.70&&
+     schedule.id==='stretch'&&
+     setup&&actor?.style==='Spectacle'&&recoveryTraining(actor)>=.95&&
      g.physical?.locations?.[pos.control]==='top'&&
      !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact){
    const family=g.node==='top_climb'?'aerial':'springboard';
