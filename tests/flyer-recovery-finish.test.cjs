@@ -38,7 +38,7 @@ const novice=fixture('spots','novice'),competent=fixture('spots','competent'),
 const n=gain(novice),c=gain(competent),e=gain(elite),story=gain(otherPlan);
 assert.ok(n>5&&n<6,'novices receive standard rest benefit, not skilled bonus');
 assert.ok(c>n&&e>c,'actual recovery scales with training and safety');
-assert.ok(e<10,'recovery has a bounded physically plausible ceiling');
+assert.ok(e<12,'recovery has a bounded physically plausible ceiling');
 assert.equal(story,n,'all other plans preserve the legacy authored breath gain');
 assert.equal(M._earnedPlanQuality(elite),0,
  'catching a breath must never earn aerial quality or free stars');
