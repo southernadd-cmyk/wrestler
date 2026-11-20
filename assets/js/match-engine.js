@@ -1923,10 +1923,10 @@ const Graph=(function makeGraph(){
   return g.node==='top_follow'&&p.position==='top'&&
    SUPERPLEX_PILOT.some(id=>isValid(M,id));
  }
- // The ordinary tick can skip a graph action. After an actual legal climb,
- // a trained flyer gets a 91% chance of next-tick action selection (instead
- // of 64%). Unlike a committed two-wrestler top contest, the remaining 9%
- // represents real hesitation; no attempt, landing or counter is scripted.
+ // Once an elite flyer has genuinely reached the ropes with a viable
+ // named attack, allow the next tick to select a graph action rather than
+ // silently abandoning the setup. Choice, commitment, counter and landing
+ // still go through their ordinary seeded rules; no success is guaranteed.
  function readyNamedAerial(M){
   const g=get(M),p=Psy.get(M),side=p.control;
   if(M.planId!=='spots'||M.len<900||M.len-M.t<20||
@@ -2618,7 +2618,7 @@ const Graph=(function makeGraph(){
   const lateFlyerRun=closingFlight&&trainedRecovery>=.70;
   const lateCount=riskCount(p.control);
   const needsLatePayoff=lateFlyerRun&&lateCount<2;
-  const lateUrgency=lateCount===0?1:lateCount===1?.60:0;
+  const lateUrgency=lateCount===0?1:lateCount===1?.32:0;
   if(p.position==='standing'&&M.t/M.len>.12){
    for(const id of prof.preferred)if(A[id])selected.push([id,1.4]);
    // Actual narrated recovery before a long match's final aerial run.
@@ -2939,7 +2939,7 @@ const Graph=(function makeGraph(){
   if(eliteWorkerFlight&&M.wSt>=27){
    // First clean landing is the main objective; a second *distinct* one
    // remains plausible but gets less producer emphasis, never a guarantee.
-   const strength=eliteLateCount===0?1:.64;
+   const strength=eliteLateCount===0?1:.35;
    const promote=(id,share)=>{
     const choice=pool.find(([move])=>move===id);
     if(!choice)return;
@@ -2996,7 +2996,7 @@ const Graph=(function makeGraph(){
     const otherWeight=pool.reduce((sum,[id,weight])=>
      sum+(A[id]?.family===family&&A[id].risk&&
       !A[id].reverse&&!A[id].counterOf&&!A[id].blockOf?0:weight),0);
-    const ratio=lateCount===0?3:1.8;
+    const ratio=lateCount===0?3:1.2;
     for(const choice of named)
      choice[1]=Math.max(choice[1],otherWeight*ratio*choice[1]/namedWeight);
    }
@@ -3716,7 +3716,7 @@ function tick(M){
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
- if(!spoke&&(topContest||M.r()<(preparedFlight?.91:.64)))Graph.step(M);
+ if(!spoke&&(topContest||preparedFlight||M.r()<.64))Graph.step(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
