@@ -26,6 +26,8 @@ jobs:
           node-version: '22'
       - name: Run repeatability checks
         run: node tests/graph-lab-match-review.test.cjs
+      - name: Verify earned high-risk star ratings
+        run: node tests/phase6-showcase-rating.test.cjs
       - name: Run complete Graph Lab match review
         shell: bash
         run: |
