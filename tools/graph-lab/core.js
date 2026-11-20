@@ -91,6 +91,8 @@
       familyHits: {}, wrestlerHits: {}, counterHits: 0, blockHits: 0,
       finishHits: {}, outcomeHits: {}, unknownEvents: {}, timingErrors: [],
       sampledSequences: {}, longestChain: 0,
+      grappling: {attempts:0,landed:0,counter:0,block:0,aborted:0,interrupted:0,
+        invalid:0,byMove:{},examples:[]},
       phase9: {newPairHits:{},newOccurrences:0,sameControllerOccurrences:0,
         interruptedPairs:0,matchesWithNew:0,matchesWithTriple:0,
         newTriples:0,styleHits:{},examples:[]}
@@ -106,6 +108,30 @@
     increment(snapshot.outcomeHits, match.graph?.outcome?.id || match.outcome || '(none)');
     snapshot.totalEvents += events.length;
     snapshot.scriptedSpotEvents += events.filter(e=>e.scriptedSpot||e.id==='special_spot').length;
+    // Read the actual commitment ledger; one attempt is counted exactly once.
+    // A generated counter alone is not evidence that the move was attempted.
+    const grapple=snapshot.grappling;
+    const resolved=new Map(events.filter(e=>e.grappleAttemptSeq!==undefined)
+      .map(e=>[e.grappleAttemptSeq,e]));
+    for(const attempt of match.graph?.grappleAttempts||[]){
+      grapple.attempts++;
+      const row=grapple.byMove[attempt.id]??={attempts:0,landed:0,counter:0,block:0,aborted:0,interrupted:0,invalid:0};
+      row.attempts++;
+      const outcome=attempt.outcome;
+      if(['landed','counter','block','aborted','interrupted'].includes(outcome)){
+        grapple[outcome]++;row[outcome]++;
+      }else{grapple.invalid++;row.invalid++;}
+      const event=resolved.get(attempt.seq);
+      const expected=outcome==='counter'?attempt.id+'_rev':outcome==='block'?attempt.id+'_blk':attempt.id;
+      const valid= ['landed','counter','block'].includes(outcome)
+        ? !!event&&event.id===expected&&event.attemptedMove===attempt.id&&
+          event.grappleResolution===outcome&&attempt.actionId===expected
+        : !event;
+      if(!valid){grapple.invalid++;row.invalid++;}
+      if(grapple.examples.length<24)grapple.examples.push({seed:match.o?.seed,
+        move:attempt.id,at:attempt.startedT,outcome,actionId:attempt.actionId||null,
+        performer:attempt.side});
+    }
     let previous = null, chain = 0;
     let ids = [];
     for (const event of events) {
@@ -208,7 +234,16 @@
       finishRoutes: top(snapshot.finishHits, 30), outcomes: top(snapshot.outcomeHits),
       longestLinkedSequence: snapshot.longestChain + 1,
       unknownEvents: top(snapshot.unknownEvents, 30),
-      timingErrors: snapshot.timingErrors
+      timingErrors: snapshot.timingErrors,
+      grappling: {
+        ...snapshot.grappling,
+        coveredMoves:Object.keys(snapshot.grappling.byMove).length,
+        eligibleMoves:(graph.GRAPPLE_PILOT||[]).length,
+        unobservedMoves:(graph.GRAPPLE_PILOT||[]).filter(id=>!snapshot.grappling.byMove[id]),
+        byMove:Object.entries(snapshot.grappling.byMove)
+          .map(([id,counts])=>({id,...counts}))
+          .sort((a,b)=>b.attempts-a.attempts||a.id.localeCompare(b.id))
+      }
     };
     if (graph.PHASE9_NEW_EDGES?.length){
       const p9=snapshot.phase9||{};
