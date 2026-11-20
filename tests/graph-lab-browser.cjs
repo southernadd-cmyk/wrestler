@@ -49,7 +49,7 @@ async function visit(browser, label, viewport) {
       'real match coverage labels new links separately from all authored links');
     assert.match(await page.locator('#validationUnique').innerText(), /1 \/ 1/);
     assert.ok((await page.locator('#validationPairs').innerText()).length > 0);
-    await page.locator('.validation-details summary').click();
+    await page.locator('section[aria-labelledby="validationTitle"] .validation-details summary').click();
     assert.match(await page.locator('#validationStyles').innerText(), /PERFORMANCE STYLES/);
 
     await page.locator('#viewTape').click();
