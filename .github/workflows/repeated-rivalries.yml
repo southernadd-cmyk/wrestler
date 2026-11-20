@@ -10,6 +10,7 @@ on:
       - 'assets/js/technique-registry.js'
       - 'tools/repeated-rivalry-audit.cjs'
       - 'tests/repeated-rivalry-audit.test.cjs'
+      - 'tests/rivalry.test.cjs'
       - '.github/workflows/repeated-rivalries.yml'
   push:
     branches: [main]
@@ -47,5 +48,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node tests/rivalry.test.cjs
           node tests/repeated-rivalry-audit.test.cjs
           node tools/repeated-rivalry-audit.cjs | tee "$GITHUB_STEP_SUMMARY"

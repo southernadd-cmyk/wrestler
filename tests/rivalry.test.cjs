@@ -253,7 +253,12 @@ const {run:fiveBouts}=require('../tools/five-bouts.cjs');
 const plays=[
  {w:'rex',f:'silas',tag:'t1',stance:'measured',finishes:['lose_clean','lose_protected','win_clean','lose_clean','win_clean'],careerSeed:4242,matchSeed:900},
  {w:'brick',f:'rev',tag:'t2',stance:'gracious',finishes:['win_clean','lose_clean','win_clean','lose_protected','win_clean'],careerSeed:4242,matchSeed:3100},
- {w:'sol',f:'malik',tag:'t3',stance:'hothead',finishes:['lose_protected','win_dirty','lose_clean','win_clean','win_clean'],careerSeed:4242,matchSeed:2600}];
+ {w:'sol',f:'malik',tag:'t3',stance:'hothead',finishes:['lose_protected','win_dirty','lose_clean','win_clean','win_clean'],careerSeed:4242,matchSeed:2600},
+ // Rating-curve changes can alter which real match facts make the original
+ // three careers' promos. Keep the five-issue requirement but broaden the
+ // deterministic evidence sample to distinctive styles and risk profiles.
+ {w:'lyra',f:'roxy',tag:'t4',stance:'hothead',game:'spots',finishes:['win_dirty','lose_protected','win_clean','win_dirty','lose_clean'],careerSeed:14023,matchSeed:2501},
+ {w:'rex',f:'silas',tag:'t5',stance:'gracious',game:'safe',finishes:['win_clean','win_clean','lose_clean','lose_protected','win_clean'],careerSeed:97323,matchSeed:7802}];
 const runs=plays.map(fiveBouts);
 const again=fiveBouts(plays[0]);
 const shape=r=>JSON.stringify(r.bouts.map(b=>({d:b.promo.dialogue.map(x=>x.line),room:b.roomLog.map(x=>x.text),m:b.match.route,c:b.consequences})));

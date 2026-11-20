@@ -56,6 +56,7 @@ function capture(count=100){
       unknownEvents:report.unknownEvents,timingErrors:report.timingErrors,
       grappleInvalid:report.grappling.invalid,
       environment:report.environment,
+      flying:report.flying,
       metadataEvents,performanceEvents,distinctTechniques:seenTechniques.size,
       distinctPerformanceBeats:seenPerformance.size,
       nearfalls,botches,spots,spotHits,
@@ -81,6 +82,7 @@ function failures(result){
     if(s.timingErrors.length)errors.push(s.id+': timing errors');
     if(s.grappleInvalid)errors.push(s.id+': '+s.grappleInvalid+' invalid grapple attempts');
     if(s.environment?.invalid)errors.push(s.id+': '+s.environment.invalid+' invalid environmental attempts');
+    if(s.flying?.invalid)errors.push(s.id+': '+s.flying.invalid+' invalid airborne attempts');
     if(!s.actionEvents||!s.metadataEvents)errors.push(s.id+': no authored technique evidence');
     return errors;
   });
@@ -97,6 +99,10 @@ function markdown(result){
     lines.push('| '+s.label+' | '+s.bouts+' | '+s.meanStars.toFixed(2)+' | '+s.nodeCoverage+'% | '+s.edgeCoverage+'% | '+
       s.uniqueMatchSequences+' | '+s.metadataEvents+' | '+s.performanceEvents+' | '+s.counters+' | '+s.hardErrors+' |');
   }
+  lines.push('','**Committed outside dives:** '+result.scenarios.map(s=>
+    s.id+': '+(s.flying.byFamily.dive?.attempts||0)+' attempts / '+
+    (s.flying.byFamily.dive?.counter||0)+' counters / '+
+    s.flying.invalid+' errors').join('; '),'');
   lines.push('','### Rating-component audit (average contribution per bout)','',
     '| Scenario | Work | Big moments | Crowd | Near falls | Botches | Sequences | Peak crowd | High spots landed/attempted |',
     '|---|---:|---:|---:|---:|---:|---:|---:|---:|',

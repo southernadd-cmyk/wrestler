@@ -1616,7 +1616,7 @@ const Graph=(function makeGraph(){
  // actions selected without the corresponding move being attempted.
  function isAerialParent(id){
   const n=A[id];return !!n&&!n.reverse&&!n.blockOf&&
-   (n.family==='aerial'||n.family==='springboard');
+   (n.family==='aerial'||n.family==='springboard'||n.family==='dive');
  }
  // Only these source-reviewed mechanics enter the Phase 7 two-beat pilot.
  // Phase 2: curated bulk tranche. Reuse the exact existing generated move-specific
@@ -1668,6 +1668,9 @@ const Graph=(function makeGraph(){
  // until an actual graph action establishes who is where and who holds what.
  // Existing arc clocks, deterministic RNG and booked endings remain authoritative.
  const SUPERPLEX_PILOT=Object.freeze([...CAT.members.superplex]);
+ // Nine named outside dives share the exact-parent aerial ledger. A floor
+ // target and ring/apron launch are mandatory, not inferred from narration.
+ const DIVE_PILOT=Object.freeze([...CAT.members.dive]);
  // Explicit physical entries for the expanded commitment set. A named attempt
  // must already have an actor-owned grip, never a descriptive guess after impact.
  const PHYSICAL_GRIP_MOVES=Object.freeze({
@@ -1768,6 +1771,11 @@ const Graph=(function makeGraph(){
   }
   if(n.family==='superplex'){
    if(ph.topSide!==side||ph.locations[side]!=='top'||ph.locations[other]!=='top')return false;
+  }
+  // Top-rope offence needs an actual launch position, with the recipient
+  // on the canvas. A two-wrestler top contest permits superplexes instead.
+  if(n.family==='aerial'||n.family==='springboard'){
+   if(ph.locations[side]!=='top'||ph.locations[other]!=='ring')return false;
   }
   if(n.family==='dive'){
    if(ph.locations[other]!=='floor')return false;
@@ -2140,18 +2148,19 @@ const Graph=(function makeGraph(){
  // stage 1 commits and names the precise attack, stage 2 resolves that attack.
  function startAerial(M,id){
   const g=get(M),p=Psy.get(M);
-  if((g.pendingAerial||g.pendingGrapple)||!isAerialParent(id)||!isValid(M,id)||p.position!=='top'||M.len-M.t<10)
+  if((g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)||!isAerialParent(id)||!isValid(M,id)||p.position!==A[id].requires||M.len-M.t<10)
    return false;
   if(p.control!=='w'&&p.control!=='f')return false;
   const side=p.control,attacker=side==='w'?M.w:M.f,defender=side==='w'?M.f:M.w;
   const seq=++g.aerialAttemptSerial;
-  g.pendingAerial={v:1,seq,id,side,at:M.t,position:'top'};
+  g.pendingAerial={v:1,seq,id,side,at:M.t,position:p.position};
   g.aerialAttempts.push({seq,id,side,startedT:M.t,outcome:'pending'});
   // Commitment costs effort even when the defender reverses the airborne move.
   const key=side==='w'?'wSt':'fSt';
   M[key]=clamp(M[key]-.8);g.exertion=(g.exertion||0)+.8;
   say(M,attacker.short+' sets for the '+(A[id].name||id)+
-   ' on the ropes. '+defender.short+' sees the attack coming.','play');
+   (A[id].family==='dive'?' towards '+defender.short+' at ringside. ':
+    ' on the ropes. ')+defender.short+' sees the attack coming.','play');
   return true;
  }
  function concludeAerial(M,outcome,actionId=null){
@@ -2179,8 +2188,15 @@ const Graph=(function makeGraph(){
    const attacker=pending.side==='w'?M.w:M.f;
    say(M,attacker.short+' abandons the '+(A[pending.id]?.name||'aerial attack')+
     ' as the exchange breaks down.','play');
-   const p=Psy.get(M);p.position='standing';p.down=null;
-   get(M).physical=null;get(M).node=null;
+   const p=Psy.get(M);
+   if(pending.position==='outside'){
+    // No dive landed: keep the actual ring/apron and floor locations
+    // rather than teleporting wrestlers into a neutral ring exchange.
+    p.position='outside';p.down=null;get(M).node=null;
+   }else{
+    p.position='standing';p.down=null;
+    resetPhysical(M);get(M).node=null;
+   }
   }
   return concludeAerial(M,reason);
  }
@@ -2188,7 +2204,7 @@ const Graph=(function makeGraph(){
   const pending=get(M).pendingAerial;
   if(!pending)return false;
   const p=Psy.get(M),id=pending.id;
-  if(M.stage!=='live'||p.position!=='top'||p.control!==pending.side||
+  if(M.stage!=='live'||p.position!==(pending.position||A[id]?.requires)||p.control!==pending.side||
    !isAerialParent(id)||M.t<=pending.at)
    return abortAerial(M,'interrupted',M.stage==='live');
   if(!isValid(M,id))return abortAerial(M,'aborted',true);
@@ -2434,6 +2450,13 @@ const Graph=(function makeGraph(){
   // This restores genuine moves, not the free-floating defensive nodes
   // removed by the exact-parent integrity fix.
   if(sameController&&g.node){
+   // The original dive family had legal physical locations but extremely
+   // few organically selected parents in live bouts. After an actual
+   // ringside setup, offer existing named dives at a bounded weight; the
+   // standard physical guards exclude floor-bound launches and mismatched
+   // apron moves. No defensive node is introduced or made autonomous.
+   if(p.position==='outside'&&['outside_toss','floor_regroup','apron_stand'].includes(g.node))
+    for(const id of DIVE_PILOT)selected.push([id,2.1]);
    for(const family of ['corner','outside','rope']){
     const source=CAT.F[family];
     if(!source?.from?.includes(g.node))continue;
@@ -2449,8 +2472,23 @@ const Graph=(function makeGraph(){
   const prof=fighter(liveSide),stamina=p.control==='f'?M.fSt:M.wSt;
   if(p.position==='standing'&&M.t/M.len>.12){
    for(const id of prof.preferred)if(A[id])selected.push([id,1.4]);
-   if(stamina<48)selected.push(['catch_breath',5]);
+   // A high-speed layout still needs visible recovery beats. Prefer an
+   // actual in-ring breath after a flyer drops below 38 stamina, rather
+   // than silently restoring energy or issuing a free rating bonus.
+   // The normal duplicate-action penalty prevents repetitive stalling.
+   if(stamina<60&&M.planId==='spots')selected.push(['catch_breath',
+    // An actual narrated recovery beat, selected before the flyer is fully spent.
+    stamina<40?20:stamina<52?12:6]);
+   else if(stamina<48)selected.push(['catch_breath',5]);
   }
+  // On a fast layout, a trained flyer needs real take-off opportunities
+  // beyond the opening exchange. These are existing authored setup actions,
+  // only offered from the ring with sufficient stamina. Their ensuing
+  // attacks remain governed by the normal top-rope physical and risk gates.
+  if(M.planId==='spots'&&p.position==='standing'&&stamina>=42&&
+     (liveSide.style==='Spectacle'||((liveSide.ring||0)>=78&&(liveSide.safe||0)>=65))&&
+     ['shine','resurgence','exchange','nearfall','escalation','dive_sequence','finish_setup'].includes(g.arc))
+   selected.push(['top_climb',4.2],['springboard_rise',3.5]);
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
   for(const fam of ARC_FAMILIES[g.arc]||[])for(const id of CAT.members[fam]||[]){
    const mv=A[id];if(mv.requires!==p.position&&mv.requires!=='any')continue;
@@ -2590,6 +2628,17 @@ const Graph=(function makeGraph(){
    if(g.texture==='underdog'&&['hope_elbows','hope_cutoff','counter_strike','mat_scramble'].includes(id))n*=1.4;
    if(g.texture==='fast'&&['duck_rebound','counter_strike','springboard_rise','clothesline'].includes(id))n*=1.3;
    if(g.events.slice(-4).some(x=>x.id===id))n*=.25;
+   // In a long bout, the same core action should not monopolise every
+   // exchange after its third appearance. Keep authentic repeats possible,
+   // but rotate towards other legal authored moves and named defences.
+   // This is a weight, not a forced move, and does not weaken physical gates.
+   // Technical Showcase must retain its sustained grappling continuity;
+   // global anti-repetition tuning distorted the technical proficiency guard.
+   if(M.planId!=='technical'){
+    const priorUses=g.events.filter(e=>e.id===id).length;
+    if(priorUses>=3)n*=.48;
+    else if(priorUses===2)n*=.78;
+   }
    // Repeated generic posing and finish threats drown out actual wrestling.
    // Keep legal alternatives available, but strongly disfavor a second copy
    // inside five simulated minutes. No forced arc or scripted result changes.
@@ -2724,7 +2773,11 @@ const Graph=(function makeGraph(){
   if(id){
    // A full named attempt starts only when there is another tick to resolve it.
    // The very final tick retains the pre-existing immediate-landing fallback.
-   if(isAerialParent(id)&&startAerial(M,id))return;
+   if(isAerialParent(id)){
+    if(startAerial(M,id))return;
+    // A floor dive cannot become an uncommitted landing on the final tick.
+    if(DIVE_PILOT.includes(id)){recover(M);return;}
+   }
    if(isGrappleParent(id)&&startGrapple(M,id))return;
    if(isContactParent(id)){
     // Pins, mat attacks and environmental exchanges resolve in the same beat.
@@ -2866,7 +2919,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,DIVE_PILOT,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
@@ -3122,6 +3175,78 @@ function spectacularExecutionOf(M){
  }
  return Math.round(Math.min(.45,sum)*1000)/1000;
 }
+// Every match plan earns its quality through actual recent ring work.
+// A successful plan has a distinct identity, never a guaranteed flat score.
+// The last three minutes of events matter so a hot opening cannot carry a
+// tired, repetitive finishing stretch. Unique landed moves only.
+function earnedPlanQuality(M){
+ const plan=M.planId;
+ const caps={story:3.5,spots:4.25,technical:4,brawl:3.5,safe:1.5};
+ if(!Object.prototype.hasOwnProperty.call(caps,plan))return 0;
+ // The original graph also contains genuine, narrated core techniques
+ // without catalogue-family labels. Include only hand-reviewed, physically
+ // completed actions; not entry setups, pose/stall nodes or generic resets.
+ const core={
+  technical:['lockup','headlock','wristlock','arm_wringer','waistlock',
+    'hammerlock','mat_takedown'],
+  spots:['aerial_attack','springboard_strike','missile_dropkick','high_crossbody'],
+  brawl:['clothesline','body_shot','stiff_forearm','floor_brawl',
+    'corner_strikes','short_arm_lariat'],
+  story:['hope_elbows','hope_cutoff','dramatic_rally','target_hold','target_strike'],
+  safe:['wristlock','headlock','mat_hold','clean_break','target_hold','mat_takedown']
+ };
+ const seen=new Set(),start=M.t-180;let earned=0;
+ const build=['cutoff','control','limb_work','hope','denial','comeback','resurgence',
+  'nearfall','false_finish','escalation','submission_battle','fighting_spirit'];
+ for(const e of M.graph?.events||[]){
+  if(e.t<start||e.t>M.t||!['w','f'].includes(e.preControl))continue;
+  const n=Graph.A[e.id];
+  if(!n||(!n.family&&!core[plan].includes(e.id))||n.reverse||n.counterOf||n.blockOf||
+     (e.aerialResolution&&e.aerialResolution!=='landed')||
+     (e.grappleResolution&&e.grappleResolution!=='landed')||
+     (e.strikeResolution&&e.strikeResolution!=='landed')||
+     (e.contactResolution&&e.contactResolution!=='landed'))continue;
+  const worker=e.preControl==='w'?M.w:M.f,key=e.preControl+':'+e.id;
+  if(seen.has(key))continue;
+  let gain=0;
+  switch(plan){
+   case 'technical':
+    if(['chain','submission','suplex','ground','rest','neck'].includes(n.family)||
+       core.technical.includes(e.id))
+     gain=(n.family?1.15:.65)*clamp(((worker.ring||0)-40)/50,.2,1);
+    break;
+   case 'spots':
+    if((n.risk&&['aerial','springboard','dive','lucha','corner','outside','superplex'].includes(n.family))||
+       core.spots.includes(e.id))
+     gain=(n.family?2.8:1.1)*clamp(((worker.ring||0)+(worker.safe||0)-100)/60,0,1);
+    break;
+   case 'brawl':
+    if(['strike','running','power','outside','corner','rope'].includes(n.family)||
+       core.brawl.includes(e.id))
+     gain=(n.family?1.05:.35)*clamp(((worker.ring||0)+(worker.psych||0)-85)/95,.25,1);
+    break;
+   case 'story':
+    // An actual move must support a heat, hope, comeback or late pay-off.
+    // Merely reaching the scheduled story arc earns nothing on its own.
+    if(build.includes(e.arc))
+     gain=(n.family?.9:.6)*clamp(((worker.psych||0)+(worker.ring||0)-85)/95,.25,1);
+    break;
+   case 'safe':
+    // The deliberate low-ceiling plan values genuinely manageable work;
+    // dangerous aerials and long, punishing high-cost moves cannot count.
+    if(!n.risk&&(n.cost??0)<=2.2&&
+       (['chain','rest','ground','pin','submission','strike','neck'].includes(n.family)||
+        core.safe.includes(e.id)))
+     gain=(n.family?.55:.3)*clamp(((worker.safe||0)-35)/55,.2,1);
+    break;
+  }
+  if(gain>0){seen.add(key);earned+=gain;}
+ }
+ // 'Keep it safe' retains its existing -2 quality baseline: choosing it
+ // still trades spectacle and ceiling for lower risk and stamina cost.
+ const base=plan==='safe'?(M.plan?.qual??-2):0;
+ return Math.round((base+Math.min(caps[plan],earned))*1000)/1000;
+}
 // The rating, itemised: what each part added to (or took off) the stars. stars() is their sum.
 function starParts(M){
  if(!M.qN)return [];
@@ -3216,13 +3341,19 @@ function tick(M){
  // A skilled, safe high-flyer can work a fast layout efficiently; an
  // untrained wrestler still pays the full Spot-fest stamina cost.
  const spotDrain=(worker)=>M.planId==='spots'?
-  clamp(plan.drain-Math.max(0,worker.ring+worker.safe-120)*.0032,1.11,plan.drain):plan.drain;
+  // Competent and safe workers conserve movement across a demanding
+  // aerial layout. Untrained wrestlers (ring+safety <=120) still pay the
+  // full 1.35 rate; even the best-trained retain a 0.96 rate and pay
+  // every actual move's stamina cost.
+  // No free stars or reduced botch probability: this only changes
+  // sustained exertion, which has measurable late-match quality effects.
+  clamp(plan.drain-Math.max(0,worker.ring+worker.safe-120)*.010,.96,plan.drain):plan.drain;
  const drain=.55*spotDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*(1+w.fatigue/250)*(M.workingHurt?1.5:1);
  M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));M.fSt=clamp(M.fSt-.5*spotDrain(f)+(mode==='slow'?1.2:0));
  // quality of this ten seconds
  const sk=(w.ring*plan.w.ring+w.psych*plan.w.psych)*(.55+.45*M.wSt/100);
  const sf=(f.ring*plan.w.ring+f.psych*plan.w.psych)*(.55+.45*M.fSt/100);
- let q=18+(sk*.55+sf*.45)*.6+M.fit+(plan.qual||0)+(M.crowd-50)*.1+(M.talk==='fire'?2:0);
+ let q=18+(sk*.55+sf*.45)*.6+M.fit+earnedPlanQuality(M)+(M.crowd-50)*.1+(M.talk==='fire'?2:0);
  if(M.leash==='free')q+=(M.r()*24-12)+(w.psych-62)*.18;else q+=M.r()*16-8;
  if(M.offScript==='showboat')q-=4;if(M.offScript==='audible')q+=(w.psych-65)/3;
  if(mode==='slow')q-=M.crowd<45?6:3;if(mode==='pickup')q+=M.wSt>45?3:-5;if(mode==='crowd')q-=3;
@@ -3774,5 +3905,5 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,GRAPH:Graph,scout:Graph.scout,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
+root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
 })(typeof window!=='undefined'?window:globalThis);

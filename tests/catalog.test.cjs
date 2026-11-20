@@ -75,7 +75,7 @@ function probe(id){
    if(!G.startStrike(x,parent))continue;
    assert.equal(x.graph.pendingStrike.id,parent);
   }
-  const aerialParent=A[parent]&&['aerial','springboard'].includes(A[parent].family);
+  const aerialParent=A[parent]&&['aerial','springboard','dive'].includes(A[parent].family);
   const grappleParent=G.GRAPPLE_PILOT.includes(parent)||G.SUPERPLEX_PILOT.includes(parent);
   if(grappleParent){
    // Phase 7: the existing reversal requires a live, exact parent commitment.
@@ -99,7 +99,7 @@ function probe(id){
    // reachable *during the named parent attempt*, not as a free-floating move.
    // Keep the original reachability assertion without granting impossible
    // top-rope reversals with no committed attack.
-   s.position='top';s.down=control==='w'?'f':'w';
+   s.position=A[parent].requires;s.down=s.position==='top'?(control==='w'?'f':'w'):null;
    // Some advanced dives are only available after 70-75% of a match. Their
    // generated block nodes have no independent after threshold, so probe
    // at the *parent attack's* legal time rather than an invented early dive.
@@ -142,6 +142,13 @@ for(let i=0;i<N;i++){
  for(const e of g.events){
   const n=A[e.id];if(!n)continue;events++;reached.add(e.id);
   const parent=n.counterOf||n.blockOf;
+  if(parent&&G.DIVE_PILOT.includes(parent)){
+   const ledger=g.aerialAttempts?.find(a=>a.seq===e.aerialAttemptSeq);
+   const outcome=n.counterOf?'counter':'block';
+   assert.ok(ledger&&ledger.id===parent&&ledger.actionId===e.id&&
+    ledger.outcome===outcome&&e.aerialResolution===outcome&&
+    e.attemptedMove===parent,'exact outside-dive defender attribution '+e.id);
+  }
   if(parent&&G.ENVIRONMENT_PILOT.includes(parent)){
    const ledger=g.contactAttempts?.find(a=>a.seq===e.contactAttemptSeq);
    const outcome=n.counterOf?'counter':'block';
