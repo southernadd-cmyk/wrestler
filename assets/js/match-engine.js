@@ -1605,23 +1605,50 @@ const Graph=(function makeGraph(){
    (n.family==='aerial'||n.family==='springboard');
  }
  // Only these source-reviewed mechanics enter the Phase 7 two-beat pilot.
- const GRAPPLE_PILOT=Object.freeze(['sx_vertical','sx_german','sm_sleeper','sm_ankle_lock',
-  'sx_deadlift_bridge','nk_snap_ddt','pw_powerbomb']);
+ // Phase 2: curated bulk tranche. Reuse the exact existing generated move-specific
+ // reversals/blocks; no synthetic graph nodes or extra out-of-band RNG.
+ const GRAPPLE_PILOT=Object.freeze([
+  'sm_sleeper','sm_ankle_lock','nk_snap_ddt',
+  ...CAT.members.suplex,
+  'pw_powerbomb','pw_sitout','pw_running_powerbomb','pw_backbreaker',
+  'pw_uranage','pw_samoan_drop','pw_gorilla_press','pw_military_press',
+  'pw_pumphandle','pw_belly_bump','pw_argentine'
+ ]);
 
  // v0.4 physical-continuity pilot: a *small optional, serialisable* descriptor.
  // A null descriptor is an old/injected match state: preserve legacy eligibility
  // until an actual graph action establishes who is where and who holds what.
  // Existing arc clocks, deterministic RNG and booked endings remain authoritative.
  const SUPERPLEX_PILOT=Object.freeze([...CAT.members.superplex]);
+ // Explicit physical entries for the expanded commitment set. A named attempt
+ // must already have an actor-owned grip, never a descriptive guess after impact.
  const PHYSICAL_GRIP_MOVES=Object.freeze({
   sx_vertical:'front-facelock',sx_deadlift_bridge:'front-facelock',
+  sx_delayed:'front-facelock',sx_northern:'upper-body',
+  sx_fisherman:'front-facelock',sx_exploder:'upper-body',
+  sx_german:'rear-waist',sx_german_release:'rear-waist',
+  sx_rolling_german:'rear-waist',sx_dragon:'rear-waist',
+  sx_tiger:'rear-waist',sx_double_underhook:'front-facelock',
+  sx_brainbuster:'front-facelock',sx_butterfly:'front-facelock',
+  sx_half_nelson:'rear-waist',sx_saito:'rear-waist',
+  sx_belly_belly:'upper-body',sx_belly_back:'rear-waist',
+  sx_side:'upper-body',sx_gutwrench:'upper-body',
+  sx_overhead:'upper-body',sx_tbone:'upper-body',
+  sx_snap_ddt:'front-facelock',sx_cradle:'front-facelock',
+  sx_falcon_arrow:'front-facelock',
   nk_ddt:'front-facelock',nk_snap_ddt:'front-facelock',
-  pw_powerbomb:'front-facelock',sx_german:'rear-waist',
+  pw_powerbomb:'front-facelock',pw_sitout:'front-facelock',
+  pw_running_powerbomb:'front-facelock',pw_backbreaker:'upper-body',
+  pw_uranage:'upper-body',pw_samoan_drop:'upper-body',
+  pw_gorilla_press:'upper-body',pw_military_press:'upper-body',
+  pw_pumphandle:'upper-body',pw_belly_bump:'body-clinch',
+  pw_argentine:'upper-body',
   sm_ankle_lock:'ground-leg',rs_leg_lace:'ground-leg'
  });
  const APRON_OFFENCE=new Set(['os_apron_knee','os_apron_ddt','os_apron_slam']);
  const APRON_DIVES=new Set(['dv_apron_senton','dv_cannonball']);
  const GRIP_ENTRY=Object.freeze({
+  lockup:'upper-body',knuckle_lock:'upper-body',pw_bearhug:'body-clinch',
   front_facelock:'front-facelock',go_behind:'rear-waist',waistlock:'rear-waist',
   standing_switch:'rear-waist',
   ankle_pick:'ground-leg',ch_single_leg:'ground-leg',ch_dragon_screw:'ground-leg',
@@ -2401,7 +2428,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,resetPhysical,affordableSuperplex,readyTopContest};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
 })();
 
 function create(o){
