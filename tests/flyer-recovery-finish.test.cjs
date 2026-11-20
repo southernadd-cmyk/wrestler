@@ -49,6 +49,33 @@ runway.t=runway.len-320;earlierRun.t=earlierRun.len-510;
 runway.wSt=50;earlierRun.wSt=50;
 assert.ok(weight(runway,'catch_breath')>weight(earlierRun,'catch_breath'),
  'elite flyers must visibly pace themselves before the final three minutes');
+// A worker already working a grounded opponent can earn a visible rest
+// through a valid hold instead of waiting to return to a standing position.
+const matFixture=level=>{
+ const m=fixture('spots',level);
+ m.t=m.len-320;m.wSt=40;m.story.position='mat';m.story.down='f';
+ return m;
+};
+const matElite=matFixture('elite'),matNovice=matFixture('novice');
+const restId=G.CATALOG.members.rest.find(id=>
+ G.A[id]?.requires==='mat'&&!G.A[id].reverse&&!G.A[id].counterOf&&
+ !G.A[id].blockOf&&G.isValid(matElite,id));
+assert.ok(restId,'the live graph offers a physically legal narrated rest hold');
+assert.ok(weight(matElite,restId)>0,
+ 'a trained mat controller can select an actual restorative hold before the finish');
+const matEliteBefore=matElite.wSt,matNoviceBefore=matNovice.wSt;
+G.apply(matElite,restId);G.apply(matNovice,restId);
+assert.ok(matElite.wSt-matEliteBefore>5,
+ 'only a completed trained-flyer mat hold earns the bounded recovery benefit');
+assert.ok(matNovice.wSt-matNoviceBefore<1,
+ 'novices keep the original rest hold cost and do not gain the elite benefit');
+assert.equal(matElite.graph.events.at(-1).id,restId,
+ 'rest recovery must appear as an actual visible graph event');
+assert.equal(M._earnedPlanQuality(matElite),0,
+ 'resting on the mat cannot grant any aerial execution quality');
+matElite.wSt=40;
+assert.ok(weight(matElite,restId)<weight(matFixture('elite'),restId),
+ 'a just-completed hold may not monopolise consecutive recovery choices');
 const beforePool=fixture('spots','elite'),beforeWeight=weight(beforePool,'catch_breath');
 assert.ok(beforeWeight>0,'a tired flyer can select actual recovery');
 const after=fixture('spots','elite');
