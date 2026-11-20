@@ -363,6 +363,19 @@ const Graph=(function makeGraph(){
   ['st_palm','st_elbow_smash',.65,'followup','Curated position-compatible technique continuation'],
   ['st_leg_kick','st_kneelift',.65,'followup','Curated position-compatible technique continuation']
  ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
+ // Post-v0.4 review: a small group of concrete, position-compatible
+ // handoffs from the evidence-led 24-move audit. These are not generated from
+ // shared family names. Each requires its own source beat, its live legality
+ // checks, and its genuine original move-specific defensive alternatives.
+ const TECHNIQUE_AUDIT24_LINKS=Object.freeze([
+  ['front_facelock','nk_snap_ddt',.95,'setup','Retained head control allows a quick DDT, without waiving the authored stamina and position checks'],
+  ['front_facelock','nk_swinging_neckbreaker',.85,'setup','Release the standing head tie into a rotating neckbreaker'],
+  ['pw_bearhug','pw_backbreaker',.9,'followup','A close body clinch enables the weight-limited knee-supported backbreaker'],
+  ['leg_wrench','rs_leg_lace',1.15,'followup','Persisted grounded leg access leads into an actual leg lace'],
+  ['nk_ddt','rs_front_chancery',.85,'followup','After a landed DDT, transition from head impact to grounded chancery'],
+  ['gd_senton','gd_ground_pound',.7,'followup','Follow a grounded back senton by closing distance into mounted punches'],
+  ['st_double_chop','st_chop',.8,'followup','Close-range shoulder chops can flow into a chest-target knife-edge chop']
+ ].map(([from,to,weight,kind,reason])=>Object.freeze({from,to,weight,kind,reason})));
  // Phase 9: hand-authored context and grip-specific transitions. No family lottery.
  const TECHNIQUE_CHAINS=Object.freeze([
   ['lockup','ch_top_wristlock',.72,'Catch ties and throws','Maintain or change a controlled grip before a takedown'],
@@ -570,7 +583,7 @@ const Graph=(function makeGraph(){
   'Ringside exchanges':['boxing','strength'],
   'After impact: grounded follow-throughs':[]
  };
- const TRAINED_TECHNIQUE_IDS=new Set([...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH,...TECHNIQUE_CHAINS].map(link=>link.to));
+ const TRAINED_TECHNIQUE_IDS=new Set([...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH,...TECHNIQUE_CHAINS,...TECHNIQUE_AUDIT24_LINKS].map(link=>link.to));
 
  const node=(id,text,opts={})=>{A[id]={id,lines:Array.isArray(text)?text:[text],requires:opts.requires||'standing',next:opts.next||[],zone:opts.zone||'standing',down:opts.down||null,
      reverse:!!opts.reverse,kind:opts.kind||'play',focus:opts.focus||0,crowd:opts.crowd||0,weight:opts.weight||1,styles:opts.styles||null,cost:opts.cost??null,lift:opts.lift??null,
@@ -1241,7 +1254,7 @@ const Graph=(function makeGraph(){
   }
    // Only this small reviewed subset becomes playable; Phase 2 proposals
    // are NEVER auto-imported into the match graph.
-   for(const link of [...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH]){
+   for(const link of [...TECHNIQUE_PILOT,...TECHNIQUE_EXPANSION,...TECHNIQUE_TRANCHE2,...TECHNIQUE_DEPTH,...TECHNIQUE_AUDIT24_LINKS]){
     const source=A[link.from],target=A[link.to];
     if(!source||!target||source.zone!==target.requires)
      throw Error('Curated impossible technique link: '+link.from+' -> '+link.to);
@@ -2386,7 +2399,7 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,resetPhysical,affordableSuperplex,readyTopContest};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,resetPhysical,affordableSuperplex,readyTopContest};
 })();
 
 function create(o){
