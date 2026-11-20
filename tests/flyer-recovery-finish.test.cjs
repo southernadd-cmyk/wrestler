@@ -154,6 +154,20 @@ assert.equal(weight(caseWith('w','counter'),'top_climb'),stillNeeded,
  'a reversed or failed aerial cannot satisfy the late landing condition');
 assert.equal(weight(caseWith('f','landed'),'top_climb'),stillNeeded,
  'the opponent performing a high spot does not fulfil the worker aerial plan');
+const secondRisk=G.CATALOG.members.aerial.find(id=>id!==lateRisk&&
+ G.A[id]?.risk&&!G.A[id].reverse&&!G.A[id].counterOf&&!G.A[id].blockOf);
+assert.ok(secondRisk,'two different named risky aerial moves exist');
+const doubleRisk=caseWith('w','landed');
+G.get(doubleRisk).events.push({id:secondRisk,t:doubleRisk.len-100,
+ preControl:'w',control:'w',aerialResolution:'landed'});
+const repeatRisk=caseWith('w','landed');
+G.get(repeatRisk).events.push({id:lateRisk,t:repeatRisk.len-100,
+ preControl:'w',control:'w',aerialResolution:'landed'});
+assert.ok(weight(completed,'top_climb')>weight(doubleRisk,'top_climb'),
+ 'one landed risk still leaves reduced incentive for a SECOND distinct aerial');
+assert.equal(weight(repeatRisk,'top_climb'),weight(completed,'top_climb'),
+ 'repeating the same risky move cannot satisfy a two-distinct-move target');
+
 // The flyer can reclaim the finish only through a legal opponent-control
 // reversal, then a distinct standing reset, then a physical rope setup.
 const contested=fixture('spots','elite');
@@ -201,6 +215,38 @@ assert.equal(contested.story.position,'top','an actual climb is required before 
 assert.ok(G.pool(contested).some(([id])=>G.A[id]?.family==='aerial'&&
  !G.A[id].counterOf&&!G.A[id].blockOf&&!G.A[id].reverse),
  'after a physical climb, the named aerial still requires its separate legal selection');
+// A standing counter is also earned by the opponent's immediately
+// preceding actual strike. It never flips control merely by being offered.
+const standingPressure=fixture('spots','elite');
+standingPressure.t=standingPressure.len-120;
+standingPressure.wSt=43;standingPressure.fSt=65;
+standingPressure.story.control='f';
+standingPressure.story.position='standing';
+const pressureGraph=G.get(standingPressure);
+pressureGraph.node='strike_trade';
+pressureGraph.events.push({id:'strike_trade',t:standingPressure.t-10,
+ preControl:'f',control:'f',position:'standing'});
+const pressurePool=G.pool(standingPressure);
+const counterShare=pressurePool.find(([id])=>id==='counter_strike')?.[1]||0;
+const counterOthers=pressurePool.reduce((n,[id,w])=>
+ n+(id==='counter_strike'?0:w),0);
+assert.ok(counterShare>=counterOthers*.90-1e-7,
+ 'real opponent strikes give a prepared flyer a competitive legal counter');
+assert.equal(standingPressure.story.control,'f',
+ 'the pool cannot automatically steal control from the striker');
+G.apply(standingPressure,'counter_strike');
+assert.equal(standingPressure.story.control,'w',
+ 'only the performed and narrated counter wins control');
+const oldPressure=fixture('spots','elite');
+oldPressure.t=oldPressure.len-120;oldPressure.wSt=43;oldPressure.fSt=65;
+oldPressure.story.control='f';oldPressure.story.position='standing';
+const oldGraph=G.get(oldPressure);oldGraph.node='strike_trade';
+oldGraph.events.push({id:'strike_trade',t:oldPressure.t-70,
+ preControl:'f',control:'f',position:'standing'});
+const oldPool=G.pool(oldPressure);
+const oldShare=oldPool.find(([id])=>id==='counter_strike')?.[1]||0;
+assert.ok(oldShare<counterShare,
+ 'a long-past strike cannot generate an unearned immediate counter');
 // Opponent control cannot be flipped without a real grounded preceding exchange.
 const noEvidence=fixture('spots','elite');
 noEvidence.t=noEvidence.len-120;noEvidence.wSt=42;noEvidence.fSt=65;
