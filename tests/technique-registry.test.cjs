@@ -22,13 +22,19 @@ const before = JSON.stringify(G.A);
 const validated = R.validate(G);
 assert.equal(validated.valid, true, validated.errors.join('\n'));
 assert.equal(validated.authored, EXPECTED.moves, 'review against original complete catalogue');
-assert.equal(validated.proposals,153,'114 reviewed plus 39 Phase 5 mat-wrestling records');
-assert.equal(validated.coverage,45,'39-move tranche raises exact curated coverage to 153 of 340');
+assert.equal(validated.proposals,183,'114 reviewed plus 39 Phase 5 mat-wrestling records');
+assert.equal(validated.coverage,53.8,'39-move tranche raises exact curated coverage to 153 of 340');
 assert.equal(R.list().length, validated.proposals);
 assert.equal(R.get('sm_abdominal').entry.position,'standing');
 assert.equal(R.get('sm_octopus').entry.position,'standing');
 assert.equal(R.get('rs_cover_rest').counterIds.length,0);
 assert.equal(R.get('pn_sunset').exit.control,'pin');
+assert.equal(R.get('st_fighting_spirit').counterIds.length,0);
+for(const id of ['st_superkick','st_enzuigiri','rn_spear','rn_lariat']) {
+  assert.equal(R.get(id).exit.position,'mat');
+  assert.deepEqual([...R.get(id).traditionTags],['wrestling']);
+}
+
 // New editorial records must not silently enable training-school weighting.
 const B = require('../assets/js/technique-backgrounds.js');
 for(const id of ['gd_knee_stomp','gd_dragon_screw_ground']) {
