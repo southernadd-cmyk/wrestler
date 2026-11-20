@@ -2057,6 +2057,9 @@ const Graph=(function makeGraph(){
    '{A} steadies their breathing; {D} cautiously waits for the next exchange.'
   ]
  };
+ // Recovery reflects learned pacing, not an invisible refill. Only an
+ // actually narrated catch_breath exchange can give the trained benefit.
+ const recoveryTraining=actor=>clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1);
  function apply(M,id,options={}){
   const n=A[id],p=Psy.get(M),g=get(M);
   const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';
@@ -2095,6 +2098,13 @@ const Graph=(function makeGraph(){
   if(n.crowd)lift(M,n.crowd*(n.family?CROWD_SCALE:1));
   const exertion=costOf(id),activeSide=n.reverse?opp:side,staminaKey=activeSide==='w'?'wSt':'fSt';
   let effective=exertion;
+  if(id==='catch_breath'&&exertion<0&&M.planId==='spots'){
+   const actor=activeSide==='w'?M.w:M.f;
+   // An experienced flyer can recover more in a genuine, visible pause;
+   // novices retain -5.5. No difficulty, botch or crowd-rating change.
+   const extra=(M.len>=900?.62:.38)*recoveryTraining(actor);
+   effective=exertion*(1+extra);
+  }
   if(exertion>0&&fighter(activeSide==='w'?M.w:M.f).trait==='Workhorse')effective*=.8;
   M[staminaKey]=clamp(M[staminaKey]-effective);
   if(exertion<0)g.rests=(g.rests||0)+1;
@@ -2470,25 +2480,39 @@ const Graph=(function makeGraph(){
   if(p.position==='standing'&&arc.openers)
    for(const id of style.open)selected.push([id,1.6]);
   const prof=fighter(liveSide),stamina=p.control==='f'?M.fSt:M.wSt;
+  const trainedRecovery=recoveryTraining(liveSide);
+  const timeLeft=M.len-M.t;
+  const longSpot=M.planId==='spots'&&M.len>=900;
+  const closingFlight=M.planId==='spots'&&timeLeft>=30&&timeLeft<=210&&
+   ['resurgence','exchange','nearfall','escalation','dive_sequence',
+    'finish_setup','false_finish','fighting_spirit'].includes(g.arc);
   if(p.position==='standing'&&M.t/M.len>.12){
    for(const id of prof.preferred)if(A[id])selected.push([id,1.4]);
-   // A high-speed layout still needs visible recovery beats. Prefer an
-   // actual in-ring breath after a flyer drops below 38 stamina, rather
-   // than silently restoring energy or issuing a free rating bonus.
-   // The normal duplicate-action penalty prevents repetitive stalling.
-   if(stamina<60&&M.planId==='spots')selected.push(['catch_breath',
-    // An actual narrated recovery beat, selected before the flyer is fully spent.
-    stamina<40?20:stamina<52?12:6]);
-   else if(stamina<48)selected.push(['catch_breath',5]);
+   // Actual narrated recovery before a long match's final aerial run.
+   // A per-wrestler cooldown prevents endless breathing/pose loops.
+   const restedRecently=g.events.slice(-20).some(e=>e.id==='catch_breath'&&
+    e.preControl===p.control&&M.t-e.t<40);
+   if(M.planId==='spots'&&timeLeft>35&&!restedRecently&&
+      stamina<(longSpot?66:60)){
+    const urgency=stamina<35?24:stamina<45?18:stamina<56?13:8;
+    const longBonus=longSpot&&M.t/M.len>.5?1+trainedRecovery*.85:1;
+    selected.push(['catch_breath',urgency*longBonus]);
+   }else if(M.planId!=='spots'&&stamina<48)selected.push(['catch_breath',5]);
   }
   // On a fast layout, a trained flyer needs real take-off opportunities
   // beyond the opening exchange. These are existing authored setup actions,
   // only offered from the ring with sufficient stamina. Their ensuing
   // attacks remain governed by the normal top-rope physical and risk gates.
-  if(M.planId==='spots'&&p.position==='standing'&&stamina>=42&&
+  if(M.planId==='spots'&&p.position==='standing'&&
+     stamina>=(closingFlight?37:42)&&
      (liveSide.style==='Spectacle'||((liveSide.ring||0)>=78&&(liveSide.safe||0)>=65))&&
-     ['shine','resurgence','exchange','nearfall','escalation','dive_sequence','finish_setup'].includes(g.arc))
-   selected.push(['top_climb',4.2],['springboard_rise',3.5]);
+     ['shine','resurgence','exchange','nearfall','escalation','dive_sequence',
+      'finish_setup','false_finish','fighting_spirit'].includes(g.arc)){
+   // The wrestler still climbs or springs into an actual committed landing,
+   // with the existing physical, stamina, timing and counter checks intact.
+   const focus=closingFlight?(1.5+trainedRecovery*.65):1;
+   selected.push(['top_climb',4.2*focus],['springboard_rise',3.5*focus]);
+  }
   // v3.3: the arc invites its move families; the physical guards still decide what is legal.
   for(const fam of ARC_FAMILIES[g.arc]||[])for(const id of CAT.members[fam]||[]){
    const mv=A[id];if(mv.requires!==p.position&&mv.requires!=='any')continue;
@@ -2614,7 +2638,11 @@ const Graph=(function makeGraph(){
    if(prof.signature?.includes(id)&&g.events.filter(x=>x.id===id).length>=2)n*=.12;
    const energy=costOf(id);
    if(energy>=2&&stamina<45)n*=Math.max(.15,stamina/70);
-   if(id==='catch_breath')n*=stamina<22?5:stamina<35?2.4:1;
+   if(id==='catch_breath'){
+    n*=stamina<22?5:stamina<35?2.4:1;
+    if(longSpot&&M.t/M.len>.55&&timeLeft>35)
+     n*=1+trainedRecovery*.55;
+   }
    if(A[id].reverse){
     const defender=p.control==='f'?M.w:M.f;
     const difference=(defender.ring*.65+defender.psych*.35)-(liveSide.ring*.65+liveSide.psych*.35);
