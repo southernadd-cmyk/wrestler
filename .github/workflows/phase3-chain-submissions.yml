@@ -1,0 +1,26 @@
+name: Phase 3 chain and submission gates
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'tests/phase3-chain-submissions.test.cjs'
+      - 'tests/grapple-attempts.test.cjs'
+      - '.github/workflows/phase3-chain-submissions.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chain-submissions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test all newly committed chain and submission techniques
+        run: node tests/phase3-chain-submissions.test.cjs
+      - name: Preserve original 39 Phase 2 grapples
+        run: node tests/grapple-attempts.test.cjs
+      - name: Check catalogue structural reachability and 1000 real bouts
+        run: node tests/catalog.test.cjs
