@@ -58,6 +58,13 @@ for(const link of G.TECHNIQUE_PILOT){
  p.control='w';p.position=A[link.from].requires;p.down=p.position==='mat'?'f':null;
  assert.equal(G.isValid(m,link.from),true,'source not physically valid: '+link.from);
  G.apply(m,link.from);
+ if(link.kind==='counter'&&G.GRAPPLE_PILOT.includes(A[link.to].counterOf)){
+  // This authored edge now offers a defensive alternative only if the
+  // attack was genuinely committed by the wrestler on the preceding beat.
+  assert.equal(G.isValid(m,link.to),false,'cannot freely select a named counter: '+id);
+  assert.equal(G.startGrapple(m,A[link.to].counterOf),true,
+   'real attack must be physically available before counter: '+id);
+ }
  assert.equal(G.isValid(m,link.to),true,'target not valid after source: '+id);
  assert.equal(m.graph.events.at(-1).id,link.from);
 }
