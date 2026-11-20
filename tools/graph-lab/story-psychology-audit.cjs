@@ -37,9 +37,6 @@ function one(m,M){
  const earned=raw.filter(e=>A[e.id]&&
   (A[e.id].nearfall||['near_kickout','counter_rollup'].includes(e.id))&&
   isLanded(e,A));
- const hasLeadIn=e=>performedOffence.some(p=>p.t<=e.t&&
-  e.t-p.t<=30&&p.preControl===e.control);
- const noLead=scheduled.filter(e=>!hasLeadIn(e));
  // A pose or threatened finish is not actual offensive work.
  const CORE_OFFENCE=new Set(['clothesline','counter_strike','mat_takedown',
   'hope_elbows','hope_cutoff','target_strike','target_hold','cover',
@@ -48,6 +45,9 @@ function one(m,M){
   (CORE_OFFENCE.has(e.id)||
     (!!A[e.id].family&&!['rest','setup','pose','taunt'].includes(A[e.id].family)));
  const performedOffence=performed.filter(offensive);
+ const hasLeadIn=e=>performedOffence.some(p=>p.t<=e.t&&
+  e.t-p.t<=30&&p.preControl===e.control);
+ const noLead=scheduled.filter(e=>!hasLeadIn(e));
  const finalSetup=performedOffence.filter(e=>e.t>=m.len-180&&FINISH.has(e.arc));
  const lastMove=performedOffence.at(-1);
  const lateNear=scheduled.filter(e=>e.t>=m.len-180);
