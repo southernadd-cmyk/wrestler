@@ -1407,7 +1407,8 @@ const Graph=(function makeGraph(){
    targets:{w:p.target,f:M.w.style==='Technical'?'shoulder':M.w.style==='Spectacle'?'left knee':M.w.style==='Brawl'?'ribs':'lower back'},
    damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0,pattern:M.planId,texture:matchTexture(M),
    aerialAttempts:[],aerialAttemptSerial:0,pendingAerial:null,
-   grappleAttempts:[],grappleAttemptSerial:0,pendingGrapple:null,physical:null};
+   grappleAttempts:[],grappleAttemptSerial:0,pendingGrapple:null,
+   strikeAttempts:[],strikeAttemptSerial:0,pendingStrike:null,physical:null};
   M.graph=g;return g;
  }
  function get(M){
@@ -1421,6 +1422,10 @@ const Graph=(function makeGraph(){
   if(!Number.isSafeInteger(g.grappleAttemptSerial))
    g.grappleAttemptSerial=g.grappleAttempts.reduce((n,x)=>Math.max(n,x.seq||0),0);
   if(!Object.prototype.hasOwnProperty.call(g,'pendingGrapple'))g.pendingGrapple=null;
+  if(!Array.isArray(g.strikeAttempts))g.strikeAttempts=[];
+  if(!Number.isSafeInteger(g.strikeAttemptSerial))
+   g.strikeAttemptSerial=g.strikeAttempts.reduce((n,x)=>Math.max(n,x.seq||0),0);
+  if(!Object.prototype.hasOwnProperty.call(g,'pendingStrike'))g.pendingStrike=null;
   if(!Object.prototype.hasOwnProperty.call(g,'physical'))g.physical=null;
   return g;
  }
@@ -1613,6 +1618,10 @@ const Graph=(function makeGraph(){
  // reversals/blocks; no synthetic graph nodes or extra out-of-band RNG.
  // Phase 3 bulk: committed, exact-parent defensive pathways for all
  // 35 catalog submissions and 11 actual chain takedowns (not escapes).
+ // Phase 4: standing offence receives its own exact-parent ledger.
+ // It does not pollute the grappling attempt counts or create fake throws.
+ // Running moves remain a distinct category with standing impact outcomes.
+ const STRIKE_PILOT=Object.freeze([...CAT.members.strike,...CAT.members.running]);
  const PHASE3_TAKEDOWNS=Object.freeze([
   'ch_single_leg','ch_double_leg','ch_fireman','ch_snapmare',
   'ch_deep_arm_drag','ch_japanese_arm_drag','ch_drop_toehold',
@@ -1805,6 +1814,10 @@ const Graph=(function makeGraph(){
   const n=A[id],original=n?.counterOf||n?.blockOf;
   return original&&isAerialParent(original)?original:null;
  }
+ function strikeAlternativeParent(id){
+  const n=A[id],original=n?.counterOf||n?.blockOf;
+  return original&&STRIKE_PILOT.includes(original)?original:null;
+ }
  function grappleAlternativeParent(id){
   const n=A[id],original=n?.counterOf||n?.blockOf;
   return original&&isGrappleParent(original)?original:null;
@@ -1814,6 +1827,8 @@ const Graph=(function makeGraph(){
   if(!physicalLegal(M,nodeId))return false;
   const parent=aerialAlternativeParent(nodeId);
   if(parent&&M.graph?.pendingAerial?.id!==parent)return false;
+  const strikeParent=strikeAlternativeParent(nodeId);
+  if(strikeParent&&M.graph?.pendingStrike?.id!==strikeParent)return false;
   const grappleParent=grappleAlternativeParent(nodeId);
   if(grappleParent&&M.graph?.pendingGrapple?.id!==grappleParent)return false;
   // Rest-hold resistance is a one-beat defensive continuation, not a
@@ -2068,9 +2083,75 @@ const Graph=(function makeGraph(){
  }
  // Four vetted throws/holds now share the Phase 6 commitment guarantees,
  // but do not share aerial probabilities, positions or generated narration.
+ // Phase 4 — a distinct, saved two-beat strike/rebound attempt. A whiff,
+ // block or counter never credits the attacking wrestler with a landed hit.
+ function startStrike(M,id){
+  const g=get(M),p=Psy.get(M);
+  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||
+     !STRIKE_PILOT.includes(id)||!isValid(M,id)||
+     M.len-M.t<10||M.stage!=='live'||!['w','f'].includes(p.control))return false;
+  const side=p.control,attacker=side==='w'?M.w:M.f,
+   defender=side==='w'?M.f:M.w,n=A[id],seq=++g.strikeAttemptSerial;
+  g.pendingStrike={v:1,seq,id,side,at:M.t,position:p.position,down:p.down};
+  g.strikeAttempts.push({seq,id,side,startedT:M.t,outcome:'pending'});
+  const staminaKey=side==='w'?'wSt':'fSt';
+  M[staminaKey]=clamp(M[staminaKey]-.45);g.exertion=(g.exertion||0)+.45;
+  say(M,n.family==='running'?
+   attacker.short+' bursts forward for the '+(n.name||id)+'. '+defender.short+' prepares to evade or meet the charge.':
+   attacker.short+' sets up the '+(n.name||id)+'. '+defender.short+' raises a guard and looks for an opening.','play');
+  return true;
+ }
+ function concludeStrike(M,outcome,actionId=null){
+  const g=get(M),pending=g.pendingStrike;if(!pending)return false;
+  const record=g.strikeAttempts.find(x=>x.seq===pending.seq);
+  if(record){record.outcome=outcome;record.resolvedT=M.t;record.actionId=actionId;}
+  g.pendingStrike=null;
+  if(actionId){
+   apply(M,actionId);
+   const e=g.events.at(-1);
+   if(e?.id===actionId){
+    e.strikeAttemptSeq=pending.seq;
+    e.attemptedMove=pending.id;
+    e.strikeResolution=outcome;
+   }
+  }
+  return true;
+ }
+ function abortStrike(M,reason='interrupted',narrate=false){
+  const pending=get(M).pendingStrike;if(!pending)return false;
+  if(narrate){
+   const who=pending.side==='w'?M.w:M.f;
+   say(M,who.short+' cannot complete the '+(A[pending.id]?.name||'attack')+
+    ' as the exchange breaks apart.','play');
+   get(M).node=null;
+  }
+  return concludeStrike(M,reason);
+ }
+ function resolveStrike(M){
+  const pending=get(M).pendingStrike;if(!pending)return false;
+  const p=Psy.get(M),id=pending.id;
+  if(M.stage!=='live'||M.t<=pending.at||
+     p.control!==pending.side||p.position!==pending.position||
+     p.down!==pending.down)
+   return abortStrike(M,'interrupted',M.stage==='live');
+  if(!isValid(M,id))return abortStrike(M,'aborted',true);
+  const attacker=pending.side==='w'?M.w:M.f,
+   defender=pending.side==='w'?M.f:M.w,rev=id+'_rev',blk=id+'_blk';
+  const attackSkill=attacker.ring*.65+attacker.psych*.35,
+   defenceSkill=defender.ring*.65+defender.psych*.35;
+  let counterChance=Math.max(.06,Math.min(.31,.145+(defenceSkill-attackSkill)/320));
+  const tactic=M.o.promo?.tactic;
+  if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
+   counterChance=Math.min(.43,counterChance*1.5);
+  const blockChance=A[blk]?Math.max(.05,Math.min(.16,.095+(defender.safe-attacker.safe)/500)):0;
+  const roll=M.r();
+  const counter=roll<counterChance&&A[rev]&&isValid(M,rev);
+  const block=!counter&&roll<counterChance+blockChance&&A[blk]&&isValid(M,blk);
+  return concludeStrike(M,counter?'counter':block?'block':'landed',counter?rev:block?blk:id);
+ }
  function startGrapple(M,id){
   const g=get(M),p=Psy.get(M);
-  if(g.pendingAerial||g.pendingGrapple||!isGrappleParent(id)||!isValid(M,id)||
+  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||!isGrappleParent(id)||!isValid(M,id)||
    M.len-M.t<10||M.stage!=='live'||!['w','f'].includes(p.control))return false;
   const n=A[id],side=p.control,attacker=side==='w'?M.w:M.f,defender=side==='w'?M.f:M.w;
   const type=n.family==='submission'?'hold':'throw',seq=++g.grappleAttemptSerial;
@@ -2384,7 +2465,7 @@ const Graph=(function makeGraph(){
   const g=get(M),p=Psy.get(M);
   // The named move is already committed. Another caller must not overwrite
   // it with an unrelated selection before the next tick resolves it.
-  if(g.pendingAerial||g.pendingGrapple)return;
+  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike)return;
   if(p.position==='outside'&&g.floorTicks>=4){apply(M,'roll_inside');g.floorTicks=0;return;}
   if(p.control==='neutral'){
    const advantage=(M.w.ring-M.f.ring)+(M.wSt-M.fSt)*.3;
@@ -2396,6 +2477,7 @@ const Graph=(function makeGraph(){
    // The very final tick retains the pre-existing immediate-landing fallback.
    if(isAerialParent(id)&&startAerial(M,id))return;
    if(isGrappleParent(id)&&startGrapple(M,id))return;
+   if(STRIKE_PILOT.includes(id)&&startStrike(M,id))return;
    apply(M,id);return;
   }
   recover(M);
@@ -2520,7 +2602,8 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
+ STRIKE_PILOT,startStrike,resolveStrike,abortStrike,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
 })();
 
 function create(o){
@@ -2816,6 +2899,7 @@ function tick(M){
  // or unrelated spot can change positions. Pending state survives JSON saves.
  const aerialResolved=Graph.resolveAerial(M);
  const grappleResolved=Graph.resolveGrapple(M);
+ const strikeResolved=Graph.resolveStrike(M);
  const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
  // Minor graph arcs update the label, but do not repeatedly roll the
  // producer's compliance/incidents checks within the same timed phase.
