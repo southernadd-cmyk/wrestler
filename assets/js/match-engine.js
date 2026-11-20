@@ -2124,7 +2124,9 @@ const Graph=(function makeGraph(){
   const grip=g.physical?.grip;
   const controlledGrip=grip&&grip.side===p.control&&M.t-grip.at<=20&&
     p.position==='standing'&&g.physical.area==='ring';
-  if(controlledGrip){
+  if(controlledGrip&&M.planId!=='spots'){
+   // Keep spot-fest's deliberately high-risk aerial emphasis: grip attempts
+   // must not drown out the existing spectacle/incident probabilities.
    // Candidate pool only: no graph edges invented and no forced execution.
    // Boost different legal throws for each control; prefer repertoire/style
    // through the existing scoring multipliers below.
@@ -2132,7 +2134,7 @@ const Graph=(function makeGraph(){
     if(PHYSICAL_GRIP_MOVES[id]===grip.type&&A[id]?.requires==='standing')
      selected.push([id,2.6]);
    }
-  }else if(p.position==='standing'&&
+  }else if(M.planId!=='spots'&&p.position==='standing'&&
      (famList.includes('suplex')||famList.includes('power')||
       famList.includes('neck')||famList.includes('chain'))){
    // The next beat acquires a real grip, then the wrestler has a chance to
