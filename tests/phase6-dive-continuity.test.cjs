@@ -21,6 +21,8 @@ function setup(id,seed=987117){
  G.apply(m,'outside_toss');
  if(['dv_apron_senton','dv_cannonball'].includes(id))G.apply(m,'apron_stand');
  assert.equal(G.isValid(m,id),true,'credible ring/apron dive '+id);
+ assert.ok(G.pool(m).some(([move,weight])=>move===id&&weight>0),
+   'a physically prepared dive must genuinely enter the organic candidate pool '+id);
  return m;
 }
 for(const id of ids){
