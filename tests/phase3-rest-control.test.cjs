@@ -69,6 +69,37 @@ for(const [from,to,type] of [
  assert.equal(m.graph.grappleAttempts.at(-1).outcome,'landed');
  assert.equal(m.graph.events.at(-1).id,to);
 }
+// Defensive rest escapes and blocks must answer the *actual previous* hold.
+let verifiedEscapes=0,verifiedBlocks=0;
+for(const id of REST){
+ const rev=id+'_rev',blk=id+'_blk';
+ if(!G.A[rev]&&!G.A[blk])continue;
+ const m=fixture(66110+verifiedEscapes);
+ assert.equal(G.isValid(m,rev),false,'rest defence cannot appear unattached: '+id);
+ if(id==='rs_leg_lace')G.apply(m,'leg_wrench');
+ G.apply(m,id);
+ if(G.A[rev]){
+  assert.equal(G.isValid(m,rev),true,'actual rest hold exposes named escape '+id);
+  const copy=fixture(71110+verifiedEscapes);
+  if(id==='rs_leg_lace')G.apply(copy,'leg_wrench');
+  G.apply(copy,id);
+  G.apply(copy,rev);
+  assert.equal(copy.story.control,'f','the held wrestler escapes '+id);
+  verifiedEscapes++;
+ }
+ if(G.A[blk]){
+  assert.equal(G.isValid(m,blk),true,'actual rest hold exposes defended block '+id);
+  verifiedBlocks++;
+ }
+ const overdue=fixture(81110+verifiedEscapes);
+ if(id==='rs_leg_lace')G.apply(overdue,'leg_wrench');
+ G.apply(overdue,id);
+ overdue.t+=30;
+ if(G.A[rev])assert.equal(G.isValid(overdue,rev),false,
+  'old hold cannot be escaped after a separate exchange: '+id);
+}
+assert.ok(verifiedEscapes>=10);
+assert.ok(verifiedBlocks>=10);
 const rested=fixture();
 G.apply(rested,'rs_wrist_mat');
 const original=rested.graph.physical.grip;
@@ -99,4 +130,4 @@ assert.equal(G.isValid(resumed,'sm_dragon_sleeper'),true,
  'saved actual head control allows the original submission');
 assert.equal(JSON.stringify(resumed.graph.physical),JSON.stringify(saved.graph.physical));
 console.log('PASS Phase 3 rest controls: all '+REST.length+
- ' rest holds audited; 7 earned submission continuations, owner and expiry, escapes, cover and save/replay.');
+ ' rest holds audited; '+verifiedEscapes+' exact escapes, '+verifiedBlocks+' blocks, 7 earned submissions, ownership and save/replay.');
