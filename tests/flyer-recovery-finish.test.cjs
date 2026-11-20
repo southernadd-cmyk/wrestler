@@ -275,6 +275,18 @@ const readyParents=G.pool(protectedLaunch).filter(([id])=>
  !G.A[id].reverse&&!G.A[id].counterOf&&!G.A[id].blockOf);
 assert.ok(readyParents.length>0,
  'the preserved physical rope position must expose a real legal named aerial');
+const prepared=G.pool(protectedLaunch);
+const validRisk=prepared.reduce((sum,[id,weight])=>
+ sum+(G.A[id]?.family==='aerial'&&G.A[id]?.risk&&
+ !G.A[id].counterOf&&!G.A[id].blockOf&&!G.A[id].reverse?weight:0),0);
+const alternatives=prepared.reduce((sum,[id,weight])=>
+ sum+(G.A[id]?.family==='aerial'&&G.A[id]?.risk&&
+ !G.A[id].counterOf&&!G.A[id].blockOf&&!G.A[id].reverse?0:weight),0);
+assert.ok(alternatives>0,'the fighter can still choose a non-risky alternative');
+assert.ok(validRisk>=alternatives*3-1e-7,
+ 'fully prepared elite flyers favor an already-legal named risky aerial');
+assert.ok(!G.A.ar_fist.risk,
+ 'the low-risk flying fist drop is correctly excluded from risky-move targets');
 assert.equal(launchGraph.pendingAerial,null,'an arc hold must not start an aerial automatically');
 assert.equal(G.startAerial(protectedLaunch,readyParents[0][0]),true,
  'only a separate committed named attempt starts the actual attack');
