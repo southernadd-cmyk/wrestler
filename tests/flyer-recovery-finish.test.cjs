@@ -368,6 +368,17 @@ assert.equal(G.validate().errors.length,0);
 // regression FLOOR here; the 80-85% production goal is monitored
 // separately because individual cohorts fluctuate with real counters.
 const finalAudit=require('../tools/graph-lab/flyer-finish-trace.cjs').capture(24);
+console.log('Elite 96-bout finishing distribution:',JSON.stringify({
+ bouts:finalAudit.bouts,
+ distinctRisk:finalAudit.avg.distinctWorkerRisk,
+ anyRiskPercent:Math.round(finalAudit.avg.atLeastOneRisk*100),
+ twoRiskPercent:Math.round(finalAudit.avg.twoDistinctRisks*100),
+ namedLandings:finalAudit.avg.lateWorkerNamedAerials,
+ aerialLandings:finalAudit.avg.lateAerialLandings,
+ averageStaminaAtBell:finalAudit.avg.stAtBell,
+ averageStaminaAtLast3:finalAudit.avg.stAt180,
+ noNamedRiskBouts:finalAudit.avg.zeroNamedRisk
+}));
 assert.equal(finalAudit.bouts,96,'four opponents with 24 independent seeds each');
 assert.ok(finalAudit.avg.distinctWorkerRisk>=1.05,
  'elite finish must retain substantially more than one named risky landing on average');
