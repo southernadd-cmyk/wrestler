@@ -1408,7 +1408,8 @@ const Graph=(function makeGraph(){
    damage:{w:p.focusHits||0,f:0},nearfallCount:0,started:M.t>0,migrated:M.t>0,pattern:M.planId,texture:matchTexture(M),
    aerialAttempts:[],aerialAttemptSerial:0,pendingAerial:null,
    grappleAttempts:[],grappleAttemptSerial:0,pendingGrapple:null,
-   strikeAttempts:[],strikeAttemptSerial:0,pendingStrike:null,physical:null};
+   strikeAttempts:[],strikeAttemptSerial:0,pendingStrike:null,
+   contactAttempts:[],contactAttemptSerial:0,pendingContact:null,physical:null};
   M.graph=g;return g;
  }
  function get(M){
@@ -1426,6 +1427,10 @@ const Graph=(function makeGraph(){
   if(!Number.isSafeInteger(g.strikeAttemptSerial))
    g.strikeAttemptSerial=g.strikeAttempts.reduce((n,x)=>Math.max(n,x.seq||0),0);
   if(!Object.prototype.hasOwnProperty.call(g,'pendingStrike'))g.pendingStrike=null;
+  if(!Array.isArray(g.contactAttempts))g.contactAttempts=[];
+  if(!Number.isSafeInteger(g.contactAttemptSerial))
+   g.contactAttemptSerial=g.contactAttempts.reduce((n,x)=>Math.max(n,x.seq||0),0);
+  if(!Object.prototype.hasOwnProperty.call(g,'pendingContact'))g.pendingContact=null;
   if(!Object.prototype.hasOwnProperty.call(g,'physical'))g.physical=null;
   return g;
  }
@@ -1626,6 +1631,12 @@ const Graph=(function makeGraph(){
   id!=='nk_snap_ddt'&&!QUICK_NECK_IDS.includes(id)));
  const STRIKE_PILOT=Object.freeze([...CAT.members.strike.filter(id=>
   id!=='st_fighting_spirit'),...CAT.members.running,...QUICK_NECK_IDS]);
+ // Phase 5: ground shots and near-fall cradles are not standing strikes.
+ // Each uses a distinct, one-exchange defence ledger, and only a landed
+ // pin credits a referee nearfall. All 20+11 original authored moves remain.
+ const GROUND_PILOT=Object.freeze([...CAT.members.ground]);
+ const PIN_PILOT=Object.freeze([...CAT.members.pin]);
+ const CONTACT_PILOT=Object.freeze([...GROUND_PILOT,...PIN_PILOT]);
  // A mutual stand-and-trade is already a complete exchange, not a named
  // one-sided attack with a fabricated counter or block.
  const PHASE3_TAKEDOWNS=Object.freeze([
@@ -1723,6 +1734,16 @@ const Graph=(function makeGraph(){
   const n=A[id],side=p.control,other=side==='w'?'f':'w';
   if(!['w','f'].includes(side))return true;
   const expected=PHYSICAL_GRIP_MOVES[id];
+  // A grounded strike must actually have an opponent on the canvas.
+  // The wrestler who is themselves down cannot perform a grounded
+  // elbow/stomp unless they first gain control and turn the opponent over.
+  // A cradle is initiated from two standing, in-ring participants; the
+  // resulting pin and kickout put the receiver on the mat.
+  const family=A[id]?.family,original=A[id]?.counterOf||A[id]?.blockOf;
+  const kind=CONTACT_PILOT.includes(original)?A[original]?.family:family;
+  if(kind==='ground'&&(p.position!=='mat'||p.down!==other))return false;
+  if(kind==='pin'&&(p.position!=='standing'||p.down!==null||
+     ph.locations[side]!=='ring'||ph.locations[other]!=='ring'))return false;
   if(expected){
    const grip=ph.grip,pending=M.graph?.pendingGrapple;
    // The wrestler must secure a *fresh* owned grip before committing.
@@ -1837,6 +1858,10 @@ const Graph=(function makeGraph(){
   const n=A[id],original=n?.counterOf||n?.blockOf;
   return original&&isAerialParent(original)?original:null;
  }
+ function contactAlternativeParent(id){
+  const n=A[id],original=n?.counterOf||n?.blockOf;
+  return original&&CONTACT_PILOT.includes(original)?original:null;
+ }
  function strikeAlternativeParent(id){
   const n=A[id],original=n?.counterOf||n?.blockOf;
   return original&&STRIKE_PILOT.includes(original)?original:null;
@@ -1852,6 +1877,15 @@ const Graph=(function makeGraph(){
   if(parent&&M.graph?.pendingAerial?.id!==parent)return false;
   const strikeParent=strikeAlternativeParent(nodeId);
   if(strikeParent&&M.graph?.pendingStrike?.id!==strikeParent)return false;
+  const contactParent=contactAlternativeParent(nodeId);
+  if(contactParent&&M.graph?.pendingContact?.id!==contactParent)return false;
+  // The physical descriptor is absent in old saves; basic positioning
+  // remains mandatory even in those states.
+  const kind=CONTACT_PILOT.includes(nodeId)?A[nodeId].family:
+   contactParent?A[contactParent].family:null;
+  if(kind==='ground'&&
+    (p.position!=='mat'||p.down!==(p.control==='w'?'f':'w')))return false;
+  if(kind==='pin'&&(p.position!=='standing'||p.down!==null))return false;
   const grappleParent=grappleAlternativeParent(nodeId);
   if(grappleParent&&M.graph?.pendingGrapple?.id!==grappleParent)return false;
   // Rest-hold resistance is a one-beat defensive continuation, not a
@@ -2174,9 +2208,71 @@ const Graph=(function makeGraph(){
  // but do not share aerial probabilities, positions or generated narration.
  // Phase 4 — a distinct, saved two-beat strike/rebound attempt. A whiff,
  // block or counter never credits the attacking wrestler with a landed hit.
+ // Phase 5: one contested canvas shot or roll-up. This is deliberately
+ // separate from the standing strike and two-beat lifting/submission
+ // ledgers, so referee near-falls cannot be credited to a missed pin.
+ function startContact(M,id){
+  const g=get(M),p=Psy.get(M);
+  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact||
+     !CONTACT_PILOT.includes(id)||!isValid(M,id)||
+     M.stage!=='live'||!['w','f'].includes(p.control))return false;
+  const seq=++g.contactAttemptSerial,kind=A[id].family;
+  g.pendingContact={v:1,id,seq,kind,side:p.control,
+   at:M.t,position:p.position,down:p.down};
+  g.contactAttempts.push({seq,id,kind,side:p.control,startedT:M.t,outcome:'pending'});
+  return true;
+ }
+ function concludeContact(M,outcome,actionId=null){
+  const g=get(M),pending=g.pendingContact;
+  if(!pending)return false;
+  const record=g.contactAttempts.find(x=>x.seq===pending.seq);
+  if(record){
+   record.outcome=outcome;record.resolvedT=M.t;record.actionId=actionId;
+  }
+  g.pendingContact=null;
+  if(actionId){
+   apply(M,actionId);
+   const e=g.events.at(-1);
+   if(e?.id===actionId){
+    e.contactAttemptSeq=pending.seq;
+    e.attemptedMove=pending.id;
+    e.contactResolution=outcome;
+    e.contactKind=pending.kind;
+   }
+  }
+  return true;
+ }
+ function abortContact(M,reason='interrupted'){
+  return concludeContact(M,reason);
+ }
+ function resolveContact(M){
+  const g=get(M),pending=g.pendingContact;
+  if(!pending)return false;
+  const p=Psy.get(M),id=pending.id;
+  if(M.stage!=='live'||p.control!==pending.side||
+     p.position!==pending.position||p.down!==pending.down||
+     !isValid(M,id))return abortContact(M,'interrupted');
+  const attacker=p.control==='w'?M.w:M.f;
+  const defender=p.control==='w'?M.f:M.w,rev=id+'_rev',blk=id+'_blk';
+  const skillA=attacker.ring*.65+attacker.psych*.35;
+  const skillD=defender.ring*.65+defender.psych*.35;
+  // A cradle is easier to read than an ordinary grounded stomp.
+  const base=pending.kind==='pin'?.19:.14;
+  let counterChance=Math.max(.07,Math.min(.32,base+(skillD-skillA)/350));
+  const tactic=M.o.promo?.tactic;
+  if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
+   counterChance=Math.min(.4,counterChance*1.4);
+  const blockChance=A[blk]?Math.max(.05,Math.min(.14,.075+
+   (defender.safe-attacker.safe)/550)):0;
+  const roll=M.r();
+  const counter=roll<counterChance&&A[rev]&&isValid(M,rev);
+  const block=!counter&&roll<counterChance+blockChance&&A[blk]&&isValid(M,blk);
+  return concludeContact(M,counter?'counter':block?'block':'landed',
+   counter?rev:block?blk:id);
+ }
  function startStrike(M,id){
   const g=get(M),p=Psy.get(M);
-  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||
+  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact||
      !STRIKE_PILOT.includes(id)||!isValid(M,id)||
      M.len-M.t<10||M.stage!=='live'||!['w','f'].includes(p.control))return false;
   const side=p.control,attacker=side==='w'?M.w:M.f,
@@ -2241,7 +2337,7 @@ const Graph=(function makeGraph(){
  }
  function startGrapple(M,id){
   const g=get(M),p=Psy.get(M);
-  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||!isGrappleParent(id)||!isValid(M,id)||
+  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact||!isGrappleParent(id)||!isValid(M,id)||
    M.len-M.t<10||M.stage!=='live'||!['w','f'].includes(p.control))return false;
   const n=A[id],side=p.control,attacker=side==='w'?M.w:M.f,defender=side==='w'?M.f:M.w;
   const type=n.family==='submission'?'hold':'throw',seq=++g.grappleAttemptSerial;
@@ -2593,7 +2689,7 @@ const Graph=(function makeGraph(){
   const g=get(M),p=Psy.get(M);
   // The named move is already committed. Another caller must not overwrite
   // it with an unrelated selection before the next tick resolves it.
-  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike)return;
+  if(g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)return;
   if(p.position==='outside'&&g.floorTicks>=4){apply(M,'roll_inside');g.floorTicks=0;return;}
   if(p.control==='neutral'){
    const advantage=(M.w.ring-M.f.ring)+(M.wSt-M.fSt)*.3;
@@ -2605,6 +2701,12 @@ const Graph=(function makeGraph(){
    // The very final tick retains the pre-existing immediate-landing fallback.
    if(isAerialParent(id)&&startAerial(M,id))return;
    if(isGrappleParent(id)&&startGrapple(M,id))return;
+   if(CONTACT_PILOT.includes(id)){
+    // Pins and canvas strikes resolve in the present exchange rather than
+    // inserting a synthetic ten-second pause before the referee count.
+    if(startContact(M,id))resolveContact(M);
+    return;
+   }
    if(STRIKE_PILOT.includes(id)&&startStrike(M,id)){
     // The standing attempt and defence are one contested exchange. A
     // running attack has its own prior rope/rebound setup in the graph;
@@ -2740,7 +2842,9 @@ const Graph=(function makeGraph(){
  }
  return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
- startStrike,resolveStrike,abortStrike,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
+ startStrike,resolveStrike,abortStrike,
+ GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest};
 })();
 
 function create(o){
@@ -3037,6 +3141,7 @@ function tick(M){
  const aerialResolved=Graph.resolveAerial(M);
  const grappleResolved=Graph.resolveGrapple(M);
  const strikeResolved=Graph.resolveStrike(M);
+ const contactResolved=Graph.resolveContact(M);
  const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
  // Minor graph arcs update the label, but do not repeatedly roll the
  // producer's compliance/incidents checks within the same timed phase.
