@@ -268,3 +268,121 @@ assert.ok(completed>=100,'booked finishes are exercised at scale');
 assert.ok(agreedFinishes>0,'the match must sometimes deliver the signed method');
 assert.ok(finishAudibles>0,'the match must exercise a physically justified audible');
 console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings).toFixed(2)} beats a sheet, ${swaps} running-order changes, ${reworked} rewritten by situations, ${situations.size} situations, ${promos} duels, ${skippedPromos} canceled promos, ${completed} booked finishes (${agreedFinishes} as agreed, ${finishAudibles} audibles); agreed beats land ${Math.round(100*rate(adherence.happy))}% happy v ${Math.round(100*rate(adherence.sulking))}% sulking; ${strips} match strips checked`);
+
+
+// Diagnostic-only audit: quantify agreed finish execution without changing gameplay.
+(function auditFinishRouteAudibles(){
+ const plans=['technical','brawl','story','spots','safe'], durations=[8,12,18];
+ const results={offered:[],controlled:[]};
+ const each=(s,fn)=>Array.from({length:s},(_,i)=>fn(i));
+ const by=(records,key)=>{
+  const out={};
+  for(const row of records){
+   const k=String(row[key]??'(none)');
+   const v=out[k]??={count:0,agreed:0,audibles:0,other:0,reasons:{}};
+   v.count++;
+   if(row.booked){if(row.audible)v.audibles++;else v.agreed++}else v.other++;
+   if(row.audible)for(const why of row.reasons)v.reasons[why]=(v.reasons[why]||0)+1;
+  }
+  return Object.fromEntries(Object.entries(out).map(([key,v])=>[key,{...v,rate:v.agreed+v.audibles?Number((v.audibles/(v.agreed+v.audibles)).toFixed(3)):null}]));
+ };
+ const why=(route,M,heat)=>{
+  const g=M.graph||{},e=g.events||[],revW=e.filter(x=>x.reverse&&x.preControl==='f').length,
+   revF=e.filter(x=>x.reverse&&x.preControl==='w').length,dw=g.damage?.w||0,df=g.damage?.f||0,
+   sw=M.wSt,sf=M.fSt,gap=sw-sf,fail=[];
+  switch(route){
+   case 'reversal_finisher':if(revW<3)fail.push('worker_reversals_below_3');break;
+   case 'finisher_reversed':if(revF<3)fail.push('opponent_reversals_below_3');break;
+   case 'limb_finish':if(df<4)fail.push('opponent_damage_below_4');break;
+   case 'submission_defeat':if(dw<4)fail.push('worker_damage_below_4');break;
+   case 'injury_gives':if(dw<3)fail.push('worker_damage_below_3');break;
+   case 'top_rope':if(sw<30)fail.push('worker_exhausted');break;
+   case 'outlasted':
+    if(M.o.finish==='win_clean'){
+     if(sf>=30)fail.push('loser_not_exhausted');
+     if(gap<15)fail.push('stamina_gap_below_15');
+    }else{
+     if(sw>=30)fail.push('loser_not_exhausted');
+     if(gap>-15)fail.push('stamina_gap_below_15');
+    }
+    break;
+   case 'exhausted_cover':if(sw>=30)fail.push('worker_not_exhausted');break;
+   case 'referee_bump':if(heat<40)fail.push('feud_heat_below_40');break;
+   case 'dq_ref_shove_f':if(heat<25)fail.push('feud_heat_below_25');break;
+   case 'dq_choke_w':if(heat<25&&dw<3)fail.push('insufficient_heat_or_damage');break;
+   case 'dq_ref_shove_w':if(M.w.ego<65)fail.push('ego_below_65');break;
+  }
+  return fail.length?fail:['condition_other'];
+ };
+ const eligible=(id,w,f)=>{
+  if(id==='top_rope')return w.style==='Spectacle'&&(D.PROFILES[w.id]?.kg||85)<110;
+  if(id==='strike_knockout')return w.style==='Brawl';
+  if(id==='eye_poke')return ['Brawl','Story'].includes(w.style);
+  if(id==='dq_low_blow_f')return ['Brawl','Story'].includes(f.style);
+  return true;
+ };
+ function make(finish,route,plan,minutes,seed,w,f,heat,mode){
+  const c={id:'aud-audit-'+seed+'-'+finish,wid:w.id,rid:f.id,pid:promoter.id,
+   slot:'main',finish,minutes,eventAbs:20,feudHeat:heat};
+  const st=Room.begin(c,w,f,promoter);st.queue=[];
+  Room.act(st,'plan_'+plan);
+  while(st.stage!=='done'){
+   const options=Room.options(st);
+   const choice=st.stage==='board'?options.find(x=>x.id==='board_ok'):
+    st.stage==='finish'&&mode==='offered'?options[seed%options.length]:options[0];
+   Room.act(st,choice.id);
+  }
+  const sheet=clone(st.sheet);
+  if(mode==='controlled'){
+   sheet.finishRoute=route;
+   const b=sheet.nodes.find(x=>x.id==='finish');if(b)b.route=route;
+  }
+  const agreed=sheet.finishRoute;
+  const m=M.create({w:{...w,fatigue:5,flags:{}},f:{...f,fatigue:5,flags:{}},p:promoter,
+   slot:'main',minutes:sheet.minutes,finish,feudHeat:heat,
+   plan:{game:sheet.game,leash:sheet.leash||'script',talk:sheet.talk||'calm'},
+   preparation:{},flags:sheet.flags,seed,sheet});
+  for(let tick=0;tick<9000&&!m.done;tick++){
+   if(m.decision&&!m.queue.length)M.resolve(m,m.decision.options[0].id);
+   M.next(m);
+  }
+  assert.ok(m.done,'audit bout must finish');
+  const booked=m.outcome==='booked',audible=booked&&m.finishRoute!==agreed;
+  if(booked)assert.equal(m.graph.outcome.route,m.finishRoute);
+  return {mode,finish,agreed,performed:m.finishRoute,plan,minutes,heat,worker:w.id,
+   opponent:f.id,seed,booked,audible,reasons:audible?why(agreed,m,heat):[],
+   wSt:Math.round(m.wSt),fSt:Math.round(m.fSt),damageW:m.graph?.damage?.w||0,
+   damageF:m.graph?.damage?.f||0};
+ }
+ const promoter0=D.PROMOS[0];
+ // Actual backstage offered choices; cycle every choice index, all five plans and six booked results.
+ let seq=0;
+ for(const finish of Object.keys(M.FINISH_ROUTES))
+  for(const plan of plans)for(const minutes of durations)for(let j=0;j<6;j++){
+   const w=D.TALENT[(seq*7+j)%D.TALENT.length],
+    f=D.FOES[(seq*3+j)%D.FOES.length],heat=[0,20,40,60][(j+seq)%4];
+   results.offered.push(make(finish,null,plan,minutes,82001+seq,w,f,heat,'offered'));
+   seq++;
+  }
+ // Equal route exposure: compare conditional routes without letting backstage pitch frequency hide failures.
+ seq=0;
+ for(const [finish,routes] of Object.entries(M.FINISH_ROUTES))
+  for(const route of routes)
+   for(const plan of ['technical','story','spots'])for(const minutes of [8,18])for(let j=0;j<4;j++){
+    const candidates=[];
+    for(const w of D.TALENT)for(const f of D.FOES)if(eligible(route.id,w,f))candidates.push([w,f]);
+    assert.ok(candidates.length,'at least one statically eligible pairing: '+route.id);
+    const [w,f]=candidates[(seq*13+j)%candidates.length],heat=[0,20,40,60][(j+seq)%4];
+    results.controlled.push(make(finish,route.id,plan,minutes,93001+seq,w,f,heat,'controlled'));
+    seq++;
+   }
+ const summarize=rows=>({
+  total:rows.length,booked:rows.filter(r=>r.booked).length,
+  audible:rows.filter(r=>r.audible).length,
+  routes:by(rows,'agreed'),outcomes:by(rows,'finish'),plans:by(rows,'plan'),
+  durations:by(rows,'minutes'),examples:rows.filter(r=>r.audible).slice(0,24)
+ });
+ console.log('FINISH_AUDIBLE_DIAGNOSTIC_JSON='+JSON.stringify({
+  version:1,offered:summarize(results.offered),controlled:summarize(results.controlled)
+ }));
+})();
