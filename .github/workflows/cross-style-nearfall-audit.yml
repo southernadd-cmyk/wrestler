@@ -1,0 +1,33 @@
+name: Cross-style earned near-fall baseline (read-only)
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/cross-style-nearfall-audit.cjs'
+      - '.github/workflows/cross-style-nearfall-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    name: Technical, Brawl, Spots and Safe real-action near-fall trace
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run 768 real matches without modifying gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/graph-lab/cross-style-nearfall-audit.cjs 8 --json-file > cross-style-nearfall-report.md
+          cat cross-style-nearfall-report.md >> "$GITHUB_STEP_SUMMARY"
+          node -e "const r=require('./cross-style-nearfall-audit.json');if(r.errors.length||r.bouts!==768)process.exit(1);console.log('Verified:',r.bouts,'bouts, errors:',r.errors.length)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-style-nearfall-baseline-768
+          path: |
+            cross-style-nearfall-audit.json
+            cross-style-nearfall-report.md
+          if-no-files-found: error
