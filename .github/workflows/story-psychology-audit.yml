@@ -1,0 +1,33 @@
+name: Story psychology depth audit (read-only)
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/story-psychology-audit.cjs'
+      - 'tests/story-psychology-audit.test.cjs'
+      - '.github/workflows/story-psychology-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  story:
+    name: Actual heat, hope, denial, comebacks and finishes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate real events and nearfall provenance in 72 bouts
+        run: node tests/story-psychology-audit.test.cjs
+      - name: Audit 864 matched genuine Story, Technical and Safe matches
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/graph-lab/story-psychology-audit.cjs 12 --json-file | tee "$GITHUB_STEP_SUMMARY"
+      - name: Retain reproducible Story match data
+        uses: actions/upload-artifact@v4
+        with:
+          name: story-psychology-864
+          path: story-psychology-audit.json
+          if-no-files-found: error

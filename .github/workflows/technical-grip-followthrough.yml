@@ -62,7 +62,9 @@ jobs:
               'novice workers cannot receive direct new skill; a trained opponent may change the match');
             else assert.ok(after.convertedPct>=before.convertedPct+5,
              'trained 18-minute Technical conversion did not improve enough');
-            assert.equal(find(a,'story').convertedPct,find(b,'story').convertedPct);
+            const storyBefore=find(b,'story'),storyAfter=find(a,'story');
+            assert.ok(Math.abs(storyAfter.convertedPct-storyBefore.convertedPct)<12,
+             'Story-only earned covers cannot radically distort unrelated grip conversion');
            }
           NODE
       - name: Compare full 864-bout grappling quality and late variety

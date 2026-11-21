@@ -1,0 +1,108 @@
+name: Story earned hope A/B
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'tests/story-earned-hope.test.cjs'
+      - 'tools/graph-lab/story-hope-trace.cjs'
+      - '.github/workflows/story-earned-hope.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    name: Real hope choreography and Story psychology comparisons
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Demonstrate real and physically legal defensive hope
+        run: |
+          node tests/story-earned-hope.test.cjs
+          node tests/story-psychology-audit.test.cjs
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/story-psychology-depth-20261120
+          path: baseline
+      - name: Compare same 288 Story-plan real-action reversals before and after
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp tools/graph-lab/story-hope-trace.cjs baseline/tools/graph-lab/story-hope-trace.cjs
+          (cd baseline && node tools/graph-lab/story-hope-trace.cjs 12 --json-file > ../hope-before.md)
+          node tools/graph-lab/story-hope-trace.cjs 12 --json-file > hope-after.md
+          echo '# Before: real hope reversal trace' >> "$GITHUB_STEP_SUMMARY"
+          cat hope-before.md >> "$GITHUB_STEP_SUMMARY"
+          echo '# After: real hope reversal trace' >> "$GITHUB_STEP_SUMMARY"
+          cat hope-after.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Compare exact 864 seeded Story, Technical and Safe matches
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd baseline && node tools/graph-lab/story-psychology-audit.cjs 12 --json-file > ../story-before.md)
+          node tools/graph-lab/story-psychology-audit.cjs 12 --json-file > story-after.md
+          echo '# Before: Story psychology 864' >> "$GITHUB_STEP_SUMMARY"
+          cat story-before.md >> "$GITHUB_STEP_SUMMARY"
+          echo '# After: Story psychology 864' >> "$GITHUB_STEP_SUMMARY"
+          cat story-after.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Require actual heat-to-hope improvements and isolated plans
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const before=require('./baseline/story-psychology-audit.json');
+          const after=require('./story-psychology-audit.json');
+          assert.deepEqual(after.errors,[]);
+          for(const tier of ['novice','competent','elite'])for(const minutes of [12,18]){
+           const find=(r,plan)=>r.rows.find(v=>v.tier===tier&&v.minutes===minutes&&v.plan===plan);
+           const b=find(before,'story'),a=find(after,'story');
+           console.log(tier,minutes,'real hope',b.actualHopePct,'=>',a.actualHopePct,
+            'heat-hope-comeback',b.actualHeatHopeComebackPct,'=>',a.actualHeatHopeComebackPct,
+            'denied comeback',b.actualHeatHopeDenialComebackPct,'=>',a.actualHeatHopeDenialComebackPct,
+            'late distinct',b.distinctLateFinishOffence,'=>',a.distinctLateFinishOffence,
+            'last minute actions',b.last60ActualOffence,'=>',a.last60ActualOffence,
+            'stars',b.stars,'=>',a.stars);
+           assert.equal(a.bouts,b.bouts);
+           if(tier==='novice'){
+            assert.equal(a.actualHopePct,b.actualHopePct,'novice hero must keep unassisted hopes');
+           }else if(minutes===18){
+            assert.ok(a.actualHopePct>=b.actualHopePct+8,'trained Story hope must be actually performed');
+            assert.ok(a.actualHeatHopeComebackPct>=b.actualHeatHopeComebackPct+5,
+             'fix must improve entire performed pressure / hope / comeback chronology');
+            assert.ok(a.actualHeatHopeDenialComebackPct+3>=b.actualHeatHopeDenialComebackPct,
+             'do not destroy meaningful denied hope sequences');
+            // The later dedicated Story earned-cover patch intentionally
+            // removes unsourced highlights, but cannot hollow out the bout.
+            assert.ok(a.stars>=b.stars-.23,'do not collapse match quality');
+            assert.ok(a.distinctLateFinishOffence>=b.distinctLateFinishOffence-.20,
+             'preserve real last-three-minute offence');
+            assert.ok(a.scheduledNearfallsPerBout>=.40,
+             'Story bouts must retain legitimate, visible near falls');
+           }
+           for(const plan of ['technical','safe']){
+            const c=find(before,plan),d=find(after,plan);
+            assert.deepEqual(
+             [d.actualHopePct,d.actualHeatHopeComebackPct,d.stars,d.scheduledNearfallsPerBout],
+             [c.actualHopePct,c.actualHeatHopeComebackPct,c.stars,c.scheduledNearfallsPerBout],
+             'non-Story plans must remain identical'
+            );
+           }
+          }
+          NODE
+      - name: Retain both full evidence sets
+        uses: actions/upload-artifact@v4
+        with:
+          name: story-hope-paired-864
+          path: |
+            baseline/story-hope-trace.json
+            story-hope-trace.json
+            baseline/story-psychology-audit.json
+            story-psychology-audit.json
+            hope-before.md
+            hope-after.md
+            story-before.md
+            story-after.md
+          if-no-files-found: error

@@ -268,7 +268,28 @@ const Psy=(function installPsychology(){
   }
   M.nearfalls++;lift(M,pop);mark(M,'nf',yours);M.bonus+=late?8:4;
  }
- return {PHASE_ENDS,make,get,phase,beat,recover,spotSetup,spotAfter,nearfall};
+ // A live scheduled kick-out may credit only the wrestler who actually
+ // landed the immediately preceding in-ring knockdown. Never write an
+ // imaginary strike, reversal or change of attacker to satisfy the clock.
+ function earnedNearfall(M,source){
+  const s=get(M),side=source?.side,other=side==='w'?'f':'w';
+  if(!['w','f'].includes(side)||s.control!==side||
+     s.position!=='mat'||s.down!==other)return false;
+  const attacker=side==='w'?M.w:M.f,defender=other==='w'?M.w:M.f;
+  line(M,attacker.short+' stays on '+defender.short+' after the '+source.label+
+   ', hooks the far leg and goes for the cover!','count');
+  line(M,'ONE!','count');line(M,'TWO!','count');
+  line(M,rnd(M,[
+   defender.short+' lifts a shoulder before three!',
+   'TWO AND A HALF! '+defender.short+' finds the escape!',
+   'NO! '+defender.short+' kicks out at the last instant!'
+  ]),'crowd');
+  const late=M.nearfallAt.length===0&&M.crowd>=67;
+  M.nearfalls++;lift(M,3+M.crowd*.05*(late?1.4:1));
+  mark(M,'nf',side==='w');M.bonus+=late?8:4;
+  return true;
+ }
+ return {PHASE_ENDS,make,get,phase,beat,recover,spotSetup,spotAfter,nearfall,earnedNearfall};
 })();
 
 
@@ -1625,6 +1646,14 @@ const Graph=(function makeGraph(){
   // Preserve one genuinely owned, legal Technical grip through the arc
   // director, exactly like a real aerial setup or Brawl rebound.
   if(readyTechnicalGrip(M))return {id:schedule.id,name:a.label};
+  // If the defender genuinely countered from a Story hope beat, let
+  // them attempt an authored strike before the next arc clears control.
+  if(readyStoryHope(M))return {id:schedule.id,name:a.label};
+  // Preserve the actual mat knockdown for the cover already due. The
+  // otherwise routine arc reset would stand everyone up before the count.
+  if(M.planId==='story'&&M.nearfallAt?.length&&
+     frac>=M.nearfallAt[0]&&earnedNearfallSource(M))
+    return {id:schedule.id,name:a.label};
   // Existing in-progress saves may already be in an impossible early finish arc.
   // Recover those, and never carry an early-phase arc back into the final stretch.
   const mispaced=(g.arc==='exchange'&&order[schedule.id]<2)
@@ -2009,6 +2038,24 @@ const Graph=(function makeGraph(){
    !A[id].counterOf&&!A[id].blockOf&&
    PHYSICAL_GRIP_MOVES[id]===grip.type&&
    A[id].requires===p.position&&isValid(M,id));
+ }
+ // Story psychology: a genuine reversal of actual heel pressure can earn
+ // ONE legal, still-contested follow-up in the same hope arc. Only the
+ // real defensive counter (not the narration or arc visit) grants this.
+ function readyStoryHope(M){
+  const g=get(M),p=Psy.get(M),last=g.events.at(-1),worker=M.w;
+  if(M.planId!=='story'||worker.style!=='Story'||worker.ring<68||
+     worker.psych<65||M.wSt<23||
+     !['hope','second_hope'].includes(g.arc)||
+     p.control!=='w'||p.position!=='standing'||p.down!==null||
+     !last||last.id!=='counter_strike'||!last.reverse||
+     last.preControl!=='f'||last.control!=='w'||last.arc!==g.arc||
+     g.node!==last.id||M.t-last.t!==10||M.len-M.t<20||
+     g.pendingGrapple||g.pendingStrike||g.pendingAerial||g.pendingContact||
+     g.physical?.area!=='ring'||g.physical.locations?.w!=='ring'||
+     g.physical.locations?.f!=='ring')return false;
+  return A[last.id].next.some(([id])=>
+   ['clothesline','snap_suplex'].includes(id)&&isValid(M,id));
  }
  function readyBrawlRebound(M){
   const g=get(M),p=Psy.get(M),side=p.control,remaining=M.len-M.t;
@@ -2696,6 +2743,49 @@ const Graph=(function makeGraph(){
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
   const entries=arc.entry.map(id=>[id,1]);
   const selected=[...from,...entries];
+  // In a STORY finishing stretch, the match can only earn a dramatic
+  // kick-out if a real worker actually hits a genuine grounding attack.
+  // Promote a few existing, position-valid knockdowns as normal selectable
+  // actions as the next nearfall slot approaches. No authored move or
+  // outcome is guaranteed; the exact physical and skill gates apply
+  // unchanged in the final isValid pool filter.
+  const closingSlot=M.planId==='story'&&M.len>=720&&
+   M.nearfallAt?.length&&M.t/M.len>=M.nearfallAt[0]-.06&&
+   M.t/M.len>=.72&&M.t/M.len<=1;
+  const closingExchange=M.planId==='story'&&M.len>=720&&
+   M.len-M.t<=90&&M.len-M.t>=0;
+  if((closingSlot||closingExchange)&&p.position==='standing'&&
+      ['w','f'].includes(p.control)&&g.physical?.area==='ring'){
+   const striker=p.control==='w'?M.w:M.f;
+   const prepared=striker.style==='Story'&&striker.ring>=70&&striker.psych>=65;
+   for(const id of ['clothesline','snap_suplex','heavy_slam',
+      'power_spinebuster','arm_drag','mat_takedown','short_arm_lariat']){
+    if(!A[id])continue;
+    const repeated=g.events.some(e=>e.id===id&&e.preControl===p.control&&M.t-e.t<=80);
+    selected.push([id,(closingSlot?8.5:5.5)*(prepared?1.2:1)*
+     (repeated?.16:1)]);
+   }
+  }
+  // A trained Story wrestler may contest actual opponent pressure while
+  // still underneath in a heat-stage hope arc. The authored counter is
+  // selectable but never guaranteed; normal legality, exertion and
+  // independent move selection still apply. Do not grant free control.
+  if(M.planId==='story'&&['hope','second_hope'].includes(g.arc)&&
+     p.control==='f'&&['standing','mat'].includes(p.position)&&
+     M.w.style==='Story'&&M.w.ring>=68&&M.w.psych>=65&&
+     M.wSt>=23&&M.t/M.len>=.25&&M.t/M.len<.82&&
+     g.events.some(e=>e.preControl==='f'&&e.control==='f'&&
+      M.t>=e.t&&M.t-e.t<=130&&
+      ['cutoff','control','limb_work','floor_heat','denial'].includes(e.arc)&&
+      !!A[e.id]&&!A[e.id].reverse&&!A[e.id].counterOf&&
+      !A[e.id].blockOf&&
+      ['strikeResolution','grappleResolution','contactResolution']
+       .every(k=>!e[k]||e[k]==='landed'))){
+   const opening=p.position==='mat'?'mat_scramble':'counter_strike';
+   // This is an existing real defensive reversal. The opponent's
+   // established physical/position state and isValid remain authoritative.
+   selected.push([opening,32+Math.max(0,M.w.psych-65)*.6]);
+  }
   // Only an event actually performed by the current controller can seed an
   // offensive continuation. Arc changes and special interruptions break it.
   const previous=g.events[g.events.length-1];
@@ -3129,6 +3219,27 @@ const Graph=(function makeGraph(){
    weights.set(id,(weights.get(id)||0)+n);
   }
   const pool=[...weights.entries()];
+  // A genuinely countered hope spot should have a realistic possibility
+  // of a performed follow-through, not only a commentary declaration.
+  // Promote the two existing authored links from counter_strike, leaving
+  // other legal moves live and normal defender outcomes unchanged.
+  if(readyStoryHope(M)){
+   const links=new Set(A[g.node].next.map(([id])=>id));
+   const moves=pool.filter(([id])=>links.has(id)&&
+    ['clothesline','snap_suplex'].includes(id));
+   if(moves.length){
+    const ids=new Set(moves.map(([id])=>id));
+    const ours=moves.reduce((v,[,w])=>v+w,0);
+    const others=pool.reduce((v,[id,w])=>v+(ids.has(id)?0:w),0);
+    const trained=Math.max(0,Math.min(1,
+     (M.w.ring+M.w.psych-135)/45));
+    const goal=others*(.65+.25*trained);
+    if(ours>0&&ours<goal){
+     const boost=Math.min(7,goal/ours);
+     for(const item of moves)item[1]*=boost;
+    }
+   }
+  }
   // A held, physically legal grip is a fleeting technical opportunity.
   // Improve the CHOICE share, not the move's accuracy or defender's counter.
   if(readyTechnicalGrip(M)){
@@ -3447,8 +3558,64 @@ const Graph=(function makeGraph(){
   }
   recover(M);
  }
- function nearfall(M){
+ // A genuinely performed, landed ring knockdown must still be controlling
+ // the grounded opponent at the scheduled moment. A scheduled timer is
+ // not permission to invent a move, flip control or teleport either side.
+ function earnedNearfallSource(M){
+  const g=get(M),p=Psy.get(M),side=p.control;
+  // A held submission, rope crawl, mat pressure or rest is not a
+  // fresh knockdown. The defender being down alone is insufficient:
+  // the actual authored move must be an impact or credited takedown.
+  const impactFamilies=new Set(['strike','running','power','suplex',
+   'neck','aerial','springboard','superplex','lucha','dive',
+   'corner','rope','outside']);
+  const classicImpacts=new Set(['clothesline','snap_suplex',
+   'heavy_slam','power_spinebuster','arm_drag','mat_takedown',
+   'short_arm_lariat','target_strike','shoulder_tackle','hip_toss',
+   'gutbuster','grapple_trip','headlock_takeover','body_shot']);
+  if(M.o.stip==='submission'||M.t/M.len<.59||
+     !['w','f'].includes(side)||p.position!=='mat'||
+     p.down!==(side==='w'?'f':'w')||
+     g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact||
+     g.physical?.area!=='ring'||
+     g.physical.locations?.w!=='ring'||g.physical.locations?.f!=='ring')
+   return null;
+  const used=new Set(g.earnedNearfallSources||[]);
+  for(let i=g.events.length-1;i>=0;i--){
+   const e=g.events[i],n=A[e.id];
+   if(M.t-e.t>30)break;
+   if(e.t>M.t||e.preControl!==side||e.control!==side||
+      e.position!=='mat'||e.down!==p.down||!n||n.reverse||
+      n.counterOf||n.blockOf||n.down!=='d'||n.zone!=='mat'||
+      !(impactFamilies.has(n.family)||classicImpacts.has(e.id))||
+      !['aerialResolution','grappleResolution','strikeResolution','contactResolution']
+        .every(key=>!e[key]||e[key]==='landed'))continue;
+   const key=e.t+':'+e.id+':'+side;
+   if(used.has(key))continue;
+   return {id:e.id,t:e.t,side,label:n.name||n.kind||'takedown',key};
+  }
+  return null;
+ }
+ function nearfall(M,source=null){
   const g=get(M),p=Psy.get(M);
+  if(source){
+   const valid=earnedNearfallSource(M);
+   if(!valid||valid.key!==source.key||!Psy.earnedNearfall(M,valid))
+    return false;
+   g.earnedNearfallSources??=[];
+   g.earnedNearfallSources.push(valid.key);
+   vic(M,'nearfall',.45);
+   g.nearfallCount++;
+   g.events.push({id:'scheduled_nearfall',t:M.t,arc:g.arc,
+    control:p.control,position:p.position,down:p.down,
+    earned:true,sourceMove:valid.id,sourceT:valid.t,
+    sourceSide:valid.side});
+   g.node='stand_reset';
+   root.OfficeSheets?.observe(M,'scheduled_nearfall',p.control,'spot');
+   return true;
+  }
+  // Legacy explicitly invoked nearfall sequences remain supported for
+  // saved-state/external tooling; normal live scheduling uses the earned path.
   if(M.o.stip==='submission'){
    // The dramatic almost-finish is a grip escaping, NEVER a pin count.
    say(M,fill(M,'{W} catches {F} in a dangerous hold, but {F} turns through and breaks the grip.'),'crowd');
@@ -3567,11 +3734,11 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,DIVE_PILOT,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
+ return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,earnedNearfallSource,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,DIVE_PILOT,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,maybeBrawlComboRun};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun};
 })();
 
 function create(o){
@@ -4060,9 +4227,25 @@ function tick(M){
  const preparedFlight=!spoke&&!topContest&&Graph.readyNamedAerial(M);
  const preparedRun=!spoke&&!topContest&&!preparedFlight&&Graph.readyBrawlRebound(M);
  const preparedGrip=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&Graph.readyTechnicalGrip(M);
- if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&M.nearfallAt.length&&frac>=M.nearfallAt[0]){
-  M.nearfallAt.shift();Graph.nearfall(M);spoke=true;
- }else if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&M.r()<spotP)spoke=Graph.special(M);
+ const preparedHope=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&Graph.readyStoryHope(M);
+ const earnedCover=M.planId==='story'&&!spoke&&!topContest&&
+  !preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&
+  M.nearfallAt.length&&frac>=M.nearfallAt[0]?
+   Graph.earnedNearfallSource(M):null;
+ // A timer may ask for a near fall, but no fictional move may make it
+ // happen. Keep the next appointment pending until a real landed
+ // knockdown produces a lawful cover opportunity.
+ if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&
+    M.nearfallAt.length&&frac>=M.nearfallAt[0]&&
+    (M.planId!=='story'||M.o.stip==='submission'||earnedCover)){
+  // Roll out to other match plans only after dedicated cross-plan baselines.
+  // Their established scheduled nearfalls remain behaviourally identical.
+  if(M.planId!=='story'||M.o.stip==='submission'){
+   M.nearfallAt.shift();Graph.nearfall(M);spoke=true;
+  }else if(Graph.nearfall(M,earnedCover)){
+   M.nearfallAt.shift();spoke=true;
+  }
+ }else if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&M.r()<spotP)spoke=Graph.special(M);
  // crowd bands
  crowdBand(M);
  // producer hints
@@ -4073,7 +4256,14 @@ function tick(M){
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
- if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||M.r()<.64))Graph.step(M);
+ // During the last minute, a Story finish needs an actual physical
+ // exchange rather than a long run of narration-only ticks. The ordinary
+ // graph pool still decides what can be performed; it cannot bypass a
+ // committed move, a defensive counter, positioning or the planned finish.
+ const closingStory=!spoke&&M.planId==='story'&&M.len>=720&&
+  M.len-M.t<=60&&M.len-M.t>=0;
+ if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||
+    preparedHope||closingStory||M.r()<.64))Graph.step(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
