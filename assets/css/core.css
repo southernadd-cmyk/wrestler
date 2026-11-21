@@ -148,6 +148,9 @@ h1,h2,h3{margin:0;font-weight:400}
 .grid td.wrap,.who small{white-space:normal}
 .grid .sort{border:0;background:none;padding:0;color:inherit;font:inherit;white-space:nowrap}
 .grid .sort:hover{color:var(--gold)}
+/* True buttons make table-row actions available with Tab, Enter and Space. */
+.grid .row-pick{display:block;max-width:100%;padding:1px 2px;border:0;background:transparent;color:inherit;text-align:left;font:inherit;line-height:inherit}
+.grid .row-pick:hover{text-decoration:underline;text-underline-offset:3px}
 .grid th[aria-sort="ascending"],.grid th[aria-sort="descending"]{color:var(--gold)}
 .who{display:flex;align-items:center;gap:8px;min-width:170px}
 .who b{display:block;font-weight:600}
