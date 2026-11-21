@@ -23,7 +23,12 @@ G.apply(elite,'catch_breath');G.apply(novice,'catch_breath');
 assert.ok(elite.wSt-oldElite>novice.wSt-oldNovice+2,
  'only an actual narrated trained rest gets the modest recovery improvement');
 assert.equal(novice.graph.pacedBrawl,undefined);
-assert.equal(elite.graph.pacedBrawl.w.until,elite.t+150);
+assert.equal(elite.graph.pacedBrawl.w.until,elite.t+180,
+ 'an elite brawler earns the current 180-second pacing window');
+const competent=setup('brawl','competent');
+G.apply(competent,'catch_breath');
+assert.equal(competent.graph.pacedBrawl.w.until,competent.t+150,
+ 'a competent brawler gets the shorter 150-second pacing window');
 assert.ok(elite.log.some(x=>x.text.includes('eases the pressure')));
 const until=elite.graph.pacedBrawl.w.until;
 elite.t+=40;G.apply(elite,'catch_breath');
