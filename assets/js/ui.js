@@ -9,6 +9,8 @@ const money=G.money;
 const S=()=>G.S;
 let route={s:'desk',id:null},past=[],ahead=[];
 let openMsg=null,pick={},selOffer=null,selFree=null,night=null,toastT=0;
+// Presentation preferences only; no changes to career state or match simulation.
+let inboxFilter='all',stableFilter='all',stableQuery='',scoutQuery='',scoutStyle='all',scoutBudget='all',shortlist=[];
 const sorts={};
 
 /* ---------- small helpers ---------- */
@@ -312,6 +314,17 @@ function trayItems(){
 }
 function renderDesk(){
  const s=S(),stakes=s.season===1&&s.week<=4;
+ const pending=G.pending().length;
+ const brief=pending?
+  {heading:pending+' '+plural(pending,'decision')+' awaiting reply',why:'Reply before you can advance the week.',go:'inbox',cta:'Review decisions'}:
+  !s.roster.length?
+  {heading:'Build your stable',why:'Sign your first wrestler before accepting bookings.',go:'scouting',cta:'Find talent'}:
+  s.card.length?
+  {heading:s.card.length+' '+plural(s.card.length,'match')+' booked',why:'Check the card and prepare for match night.',go:'fixtures',cta:'Review card'}:
+  s.offers.length?
+  {heading:s.offers.length+' '+plural(s.offers.length,'offer')+' available',why:'Consider the terms before advancing the week.',go:'offers',cta:'Review offers'}:
+  {heading:'Ready to advance',why:'Use Continue to reach next week and receive new offers.',go:null,cta:null};
+ const briefing=`<div class="desk-brief"><div><small>NEXT ACTION</small><b>${esc(brief.heading)}</b><span>${esc(brief.why)}</span></div>${brief.go?`<button class="btn sm" data-go="${brief.go}">${esc(brief.cta)}</button>`:''}</div>`;
  let mission='';
  if(stakes)mission=win('Sponsor trial',trialBlock(),{area:'mission',note:'Weeks 1 to 4'});
  else if(s.monthReview&&s.season===1)mission=win(s.monthReview.passed?'Backer invested £450':'Backer declined funding',`<p>Best match in the trial: ${s.monthReview.best}★. Training and promos: ${money(s.monthReview.business?.training||0)}. Contract improvements: ${money(s.monthReview.business?.negotiated||0)}. Promises kept ${s.monthReview.business?.kept||0}, broken ${s.monthReview.business?.broken||0}.</p><p class="dim">The regional circuit runs to week 16. Checkpoints are under Objectives.</p><button class="btn sm" data-go="objectives">Objectives</button>`,{area:'mission',note:'Trial review'});
@@ -322,19 +335,27 @@ function renderDesk(){
  paint('s-desk'+(mission?'':' nomission'),
   mission+
   win('This week',ledgerFacts()+booksChart(),{area:'ledger',h:'h3',cls:'quiet',body:'tight'})+
-  win('In-tray',`<div class="phone-only"><div class="phone-progress"><div><small>Reputation</small><b>${s.rep}</b></div><div><small>Meetings left</small><b>${s.focus} of 2</b></div></div></div><div class="well">${tray}</div>`,{area:'tray',cls:'desk-actions',body:'tight',keep:'tray'})+
+  win('In-tray',`<div class="phone-only"><div class="phone-progress"><div><small>Reputation</small><b>${s.rep}</b></div><div><small>Meetings left</small><b>${s.focus} of 2</b></div></div></div><div class="well">${briefing}${tray}</div>`,{area:'tray',cls:'desk-actions',body:'tight',keep:'tray'})+
   win('Next dates',`<div class="well">${datesHtml}</div>`,{area:'dates',h:'h3',body:'tight',keep:'dates'})+
   win('Stable condition',`<div class="well">${squad}</div>`,{area:'squad',h:'h3',body:'tight',keep:'cond',actions:'<button class="btn" data-go="training">Training</button>'})
  );
 }
 
 function renderInbox(){
- const s=S(),list=s.inbox;
+ const s=S(),all=s.inbox;
+ const filters=[['all','All',all.length],
+  ['action','Action',all.filter(m=>m.kind==='decision'&&!m.answer).length],
+  ['unread','Unread',all.filter(m=>!m.read).length],
+  ['reports','Reports',all.filter(m=>Array.isArray(m.sections)&&m.sections.length).length]];
+ const list=all.filter(m=>inboxFilter==='all'||(inboxFilter==='action'&&m.kind==='decision'&&!m.answer)||
+  (inboxFilter==='unread'&&!m.read)||(inboxFilter==='reports'&&Array.isArray(m.sections)&&m.sections.length));
+ const controls=`<div class="office-filter-tabs" role="group" aria-label="Filter messages">${filters.map(([key,label,n])=>
+  `<button class="btn sm ${inboxFilter===key?'go':''}" data-inbox-filter="${key}" aria-pressed="${inboxFilter===key}">${label} <span class="filter-count">${n}</span></button>`).join('')}</div>`;
  if(phoneLayout()&&list.some(m=>m.id===route.id))openMsg=route.id;
  if(!openMsg||!list.some(m=>m.id===openMsg))openMsg=(G.pending()[0]||list[0])?.id;
  const m=list.find(x=>x.id===openMsg);if(m&&!m.read&&m.kind!=='decision'&&(!phoneLayout()||route.id===m.id)){m.read=true;G.save()}
  const items=list.map(x=>`<li><button data-msg="${x.id}" class="${!x.read?'unread':''} ${x.kind==='decision'&&!x.answer?'need':''}" ${x.id===openMsg?'aria-current="true"':''}><span class="pip">${x.kind==='decision'&&!x.answer?'<span class="sr">Needs a reply. </span>':!x.read?'<span class="sr">Unread. </span>':''}</span><span class="from">${esc(x.from)}</span><span class="wk">S${x.season} W${x.week}</span><span class="subj">${esc(x.subject)}</span></button></li>`).join('');
- let letter='<div class="empty">No messages.</div>';
+ let letter='<div class="empty">No messages in this view.</div>';
  if(m){
   const mgr=managerFrom(m);
   const sender=String(m.from||''),promoter=s.promoters.find(p=>sender===p.voice||sender===p.name||sender.startsWith(p.voice+',')||sender.startsWith(p.name+','));
@@ -353,7 +374,7 @@ function renderInbox(){
  }
  const need=G.pending().length;
  paint('s-inbox'+phonePane(route.id,m?.id),
-  win('Inbox',`<div class="well" style="min-height:100%"><ul class="msglist">${items}</ul></div>`,{body:'tight',keep:'msgs',cls:'phone-master',note:need?`${need} awaiting reply`:`${list.length} ${plural(list.length,'message')}`})+
+  win('Inbox',`${controls}<div class="well inbox-results">${items?`<ul class="msglist">${items}</ul>`:'<div class="empty">No messages match this filter.</div>'}</div>`,{body:'tight',keep:'msgs',cls:'phone-master',note:need?`${need} awaiting reply`:`${list.length} ${plural(list.length,'message')}`})+
   win(m?.kind==='decision'&&!m.answer?'Your decision':'Message',`<div class="paper" style="min-height:100%">${letter}</div>`,{body:'tight',keep:'letter',cls:'quiet phone-inspector',h:'h3',actions:phoneBack('inbox','Inbox')})
  );
 }
@@ -375,13 +396,25 @@ const FREE_STATS=[['heat','Heat'],['ring','Ring'],['mic','Mic'],['psych','Psych'
 const FREE_SORTS=[['name','Wrestler'],['style','Style'],...FREE_STATS,['wage','Wage'],['fee','Fee']];
 function renderSquad(){
  const s=S();
- const rows=sortRows('squad',s.roster,WCOLS,{k:'heat',d:-1});
- const table=s.roster.length?`<div class="well"><table class="grid"><thead><tr>${th('squad','name','Wrestler')}${th('squad','style','Style')}${th('squad','heat','Heat','n')}${th('squad','ring','Ring','n')}${th('squad','mic','Mic','n')}${th('squad','psych','Psych','n')}${th('squad','safe','Safe','n')}${th('squad','fat','Fatigue')}${th('squad','mor','Morale','n')}<th>Status</th>${th('squad','wage','Wage','n')}</tr></thead><tbody>${rows.map(w=>`<tr class="pick" data-openw="${w.id}"><td><button class="row-pick" data-openw="${w.id}" aria-label="Open ${esc(w.name)} profile"><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b>${ownedChamps(w.id)}<small>${esc(w.tier)}. “${esc(w.handle)}”</small></span></span></button></td><td>${esc(w.style)}</td><td class="n">${att(w.heat)}</td><td class="n">${att(w.ring)}</td><td class="n">${att(w.mic)}</td><td class="n">${att(w.psych)}</td><td class="n">${att(w.safe)}</td><td>${bar(w.fatigue,fatKind(w.fatigue))} ${w.fatigue}</td><td class="n">${att(w.morale)}</td><td>${status(w)}</td><td class="n">${money(w.wage)}</td></tr>`).join('')}</tbody></table></div>`
-  :`<div class="empty">Nobody under contract. Sign a headliner, or two cheaper wrestlers.<br><button class="btn go" data-go="scouting">Go to free agents</button></div>`;
+ const ranked=sortRows('squad',s.roster,WCOLS,{k:'heat',d:-1});
+ const q=stableQuery.trim().toLocaleLowerCase();
+ const rows=ranked.filter(w=>(!q||(w.name+' '+(w.handle||'')+' '+(w.style||'')).toLocaleLowerCase().includes(q))&&
+  (stableFilter==='all'||(stableFilter==='attention'&&(w.injury||w.fatigue>=45||w.morale<35||w.promise?.status==='open'))||
+  (stableFilter==='bookable'&&G.available(w))));
+ const toolbar=`<div class="management-filters" role="search" aria-label="Filter your stable">
+  <label>Find <input type="search" data-stable-query="1" autocomplete="off" placeholder="Wrestler name" value="${esc(stableQuery)}"></label>
+  <label>View <select data-stable-filter="1">
+  ${[['all','All wrestlers'],['attention','Needs attention'],['bookable','Available to book']].map(([key,label])=>
+    `<option value="${key}" ${stableFilter===key?'selected':''}>${label}</option>`).join('')}</select></label>
+  <span class="filter-results" role="status">${rows.length} of ${s.roster.length} shown</span>
+  <button class="btn sm" data-clear-stable="1" ${stableFilter==='all'&&!q?'disabled':''}>Clear filters</button>
+ </div>`;
+ const table=rows.length?`<div class="well"><table class="grid"><thead><tr>${th('squad','name','Wrestler')}${th('squad','style','Style')}${th('squad','heat','Heat','n')}${th('squad','ring','Ring','n')}${th('squad','mic','Mic','n')}${th('squad','psych','Psych','n')}${th('squad','safe','Safe','n')}${th('squad','fat','Fatigue')}${th('squad','mor','Morale','n')}<th>Status</th>${th('squad','wage','Wage','n')}</tr></thead><tbody>${rows.map(w=>`<tr class="pick" data-openw="${w.id}"><td><button class="row-pick" data-openw="${w.id}" aria-label="Open ${esc(w.name)} profile"><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b>${ownedChamps(w.id)}<small>${esc(w.tier)}. “${esc(w.handle)}”</small></span></span></button></td><td>${esc(w.style)}</td><td class="n">${att(w.heat)}</td><td class="n">${att(w.ring)}</td><td class="n">${att(w.mic)}</td><td class="n">${att(w.psych)}</td><td class="n">${att(w.safe)}</td><td>${bar(w.fatigue,fatKind(w.fatigue))} ${w.fatigue}</td><td class="n">${att(w.morale)}</td><td>${status(w)}</td><td class="n">${money(w.wage)}</td></tr>`).join('')}</tbody></table></div>`
+  :s.roster.length?'<div class="empty">No wrestlers match these filters.</div>':`<div class="empty">Nobody under contract. Sign a headliner, or two cheaper wrestlers.<br><button class="btn go" data-go="scouting">Go to free agents</button></div>`;
  const cards=rows.map(w=>`<button class="phone-card" data-openw="${w.id}"><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b>${ownedChamps(w.id)}<small>${esc(w.tier)} · ${esc(w.style)}</small></span></span><span class="phone-card-line"><span>Fatigue ${w.fatigue} · Morale ${w.morale}</span><span>${status(w)}</span></span><small>${money(w.wage)} a week</small></button>`).join('');
  const open=5-s.roster.length;
  const openPlaces=s.roster.length&&open>0?`<div class="open-places"><div><b>${open} open ${plural(open,'place')}</b><span>More wrestlers means more of this week’s offers you can fill.</span></div><button class="btn go" data-go="scouting">Find free agents</button></div>`:'';
- paint('s-full',win('Your stable',`${phoneList(table,cards)}${openPlaces}<p class="dim" style="margin-top:10px"><span class="phone-table">Select a wrestler to open their profile. Click a column heading to sort.</span><span class="phone-only">Tap a wrestler to open their profile.</span></p>`,{keep:'squad',note:`${s.roster.length} of 5 places filled. Wages ${money(G.wages())} a week.`,actions:'<button class="btn" data-go="training">Training</button><button class="btn" data-go="scouting">Free agents</button>'}));
+ paint('s-full',win('Your stable',`${toolbar}${phoneList(table,cards)}${openPlaces}<p class="dim" style="margin-top:10px"><span class="phone-table">Select a wrestler to open their profile. Click a column heading to sort.</span><span class="phone-only">Tap a wrestler to open their profile.</span></p>`,{keep:'squad',note:`${s.roster.length} of 5 places filled. Wages ${money(G.wages())} a week.`,actions:'<button class="btn" data-go="training">Training</button><button class="btn" data-go="scouting">Free agents</button>'}));
 }
 
 function temperament(w){
@@ -529,13 +562,38 @@ function renderTraining(){
  );
 }
 
+
+function scoutingComparison(free){
+ const pair=shortlist.map(id=>free.find(w=>w.id===id)).filter(Boolean);
+ if(!pair.length)return '';
+ if(pair.length===1)return `<p class="dim scout-shortlist-status">Shortlisted: ${esc(pair[0].name)}. Choose another free agent to compare.</p>`;
+ const fields=[['Ring','ring'],['Psychology','psych'],['Safety','safe'],['Mic','mic'],['Heat','heat'],['Signing fee','fee'],['Weekly wage','wage']];
+ return `<section class="scout-comparison" aria-label="Compare free agents"><h3 class="section-h">Compare two wrestlers</h3>
+  <div class="well"><table class="grid scout-compare-table"><thead><tr><th>Attribute</th>${pair.map(w=>`<th>${esc(w.short||w.name)}</th>`).join('')}</tr></thead><tbody>
+  ${fields.map(([label,key])=>`<tr><th scope="row">${label}</th>${pair.map(w=>`<td class="n">${key==='fee'||key==='wage'?money(w[key]):att(w[key])}</td>`).join('')}</tr>`).join('')}
+  </tbody></table></div><p class="dim">Comparison only: performance and costs do not predict booking success.</p></section>`;
+}
+
 function renderScouting(){
  const s=S(),full=s.roster.length>=5;
- const rows=sortRows('free',s.free,WCOLS,{k:'fee',d:-1});
- if(phoneLayout()&&s.free.some(w=>w.id===route.id))selFree=route.id;
- if(!selFree||!s.free.some(w=>w.id===selFree))selFree=rows[0]?.id||null;
+ shortlist=shortlist.filter(id=>s.free.some(w=>w.id===id));
+ const sorted=sortRows('free',s.free,WCOLS,{k:'fee',d:-1});
+ const q=scoutQuery.trim().toLocaleLowerCase();
+ const rows=sorted.filter(w=>(!q||(w.name+' '+(w.handle||'')+' '+(w.style||'')).toLocaleLowerCase().includes(q))&&
+   (scoutStyle==='all'||w.style===scoutStyle)&&
+   (scoutBudget==='all'||w.fee<=s.cash));
+ if(s.free.some(w=>w.id===route.id))selFree=route.id;
+ if(!selFree||!rows.some(w=>w.id===selFree))selFree=rows[0]?.id||null;
  const w=s.free.find(x=>x.id===selFree);
- const list=s.free.length?`<div class="well free-table"><table class="grid"><thead><tr>${FREE_SORTS.map(([key,label],i)=>th('free',key,label,i>=2?'n':'')).join('')}</tr></thead><tbody>${rows.map(x=>`<tr class="pick" data-self="${x.id}" aria-selected="${x.id===selFree}"><td><button class="row-pick" data-self="${x.id}" aria-pressed="${x.id===selFree}" aria-label="Review ${esc(x.name)}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span></span></button></td><td>${esc(x.style)}</td>${FREE_STATS.map(([key])=>`<td class="n">${att(x[key])}</td>`).join('')}<td class="n">${money(x.wage)}</td><td class="n"><b>${money(x.fee)}</b></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nobody left on the market.</div>';
+ const toolbar=`<div class="management-filters" role="search" aria-label="Search free agents">
+  <label>Search <input type="search" data-scout-query="1" autocomplete="off" placeholder="Name or style" value="${esc(scoutQuery)}"></label>
+  <label>Style <select data-scout-style="1">${[['all','All styles'],...['Story','Technical','Brawl','Spectacle'].map(v=>[v,v])].map(([key,label])=>
+   `<option value="${key}" ${scoutStyle===key?'selected':''}>${label}</option>`).join('')}</select></label>
+  <label>Affordability <select data-scout-budget="1"><option value="all" ${scoutBudget==='all'?'selected':''}>All fees</option><option value="affordable" ${scoutBudget==='affordable'?'selected':''}>Can afford fee</option></select></label>
+  <span class="filter-results" role="status">${rows.length} of ${s.free.length} available</span>
+  <button class="btn sm" data-clear-scout="1" ${!q&&scoutStyle==='all'&&scoutBudget==='all'?'disabled':''}>Clear filters</button>
+ </div>`;
+ const list=rows.length?`<div class="well free-table"><table class="grid"><thead><tr>${FREE_SORTS.map(([key,label],i)=>th('free',key,label,i>=2?'n':'')).join('')}</tr></thead><tbody>${rows.map(x=>`<tr class="pick" data-self="${x.id}" aria-selected="${x.id===selFree}"><td><button class="row-pick" data-self="${x.id}" aria-pressed="${x.id===selFree}" aria-label="Review ${esc(x.name)}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span></span></button></td><td>${esc(x.style)}</td>${FREE_STATS.map(([key])=>`<td class="n">${att(x[key])}</td>`).join('')}<td class="n">${money(x.wage)}</td><td class="n"><b>${money(x.fee)}</b></td></tr>`).join('')}</tbody></table></div>` :`<div class="empty">${s.free.length?'No free agents match these filters.':'Nobody left on the market.'}</div>`;
  const sort=sorts.free;
  const cards=rows.length?`<div class="free-cards"><div class="free-sort"><label class="field">Sort by<select data-free-sort>${FREE_SORTS.map(([key,label])=>`<option value="${key}" ${key===sort.k?'selected':''}>${label}</option>`).join('')}</select></label><button class="btn sm" data-sort="free:${sort.k}" aria-label="Reverse sort order">${sort.d>0?'Ascending ▲':'Descending ▼'}</button></div>
   ${rows.map(x=>`<button class="free-card" data-self="${x.id}" aria-pressed="${x.id===selFree}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)} · ${esc(x.style)}</small></span></span>
@@ -552,8 +610,15 @@ function renderScouting(){
   <button class="btn go" style="width:100%;min-height:44px" data-sign="${w.id}" ${can?'':'disabled'}>Sign ${esc(w.short)}</button>
   <p class="dim" style="margin-top:6px">${full?'Your locker room is full. Release someone first.':s.cash<w.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'Wages are paid every week, booked or not.'}</p>`;
  }
+ if(w){
+  const picked=shortlist.includes(w.id);
+  detail+=`<div class="record-actions scout-shortlist-actions">
+   <button class="btn sm" data-shortlist="${w.id}" aria-pressed="${picked}">${picked?'Remove from shortlist':'Shortlist for comparison'}</button>
+   ${shortlist.length?`<button class="btn sm" data-clear-shortlist="1">Clear shortlist (${shortlist.length})</button>`:''}
+  </div>${scoutingComparison(s.free)}`;
+ }
  paint('s-split'+phonePane(route.id,w?.id),
-  win('Free agents',list+cards,{keep:'free',cls:'phone-master',note:full?'Locker room full':`Bank ${money(s.cash)}`})+
+  win('Free agents',toolbar+list+cards,{keep:'free',cls:'phone-master',note:full?'Locker room full':`Bank ${money(s.cash)}`})+
   win('Scouting report',detail,{h:'h3',keep:'scout',cls:'phone-inspector',actions:phoneBack('scouting','Free agents')})
  );
 }
@@ -875,7 +940,7 @@ function logList(log){return `<ol class="fulllog">${(log||[]).map(l=>`<li class=
 /* ---------- continue ---------- */
 function proceed(){
  const s=S();
- if(G.pending().length){openMsg=G.pending()[0].id;go('inbox',phoneLayout()?openMsg:null);toast('Reply to the messages marked in red first.');return}
+ if(G.pending().length){inboxFilter='action';openMsg=G.pending()[0].id;go('inbox',phoneLayout()?openMsg:null);toast('Reply to the messages marked in red first.');return}
  if(s.card.length){startNight();return}
  if(!s.roster.length&&s.week===1){go('scouting');toast('Sign a wrestler first.');return}
  G.endWeek();
@@ -1278,7 +1343,16 @@ document.addEventListener('click',e=>{
   if(phoneLayout())return go(d.selo?'offers':'scouting',d.selo||d.self);
   render();if(innerWidth<=900)document.querySelector('#view .screen>.win:last-child')?.scrollIntoView({behavior:'smooth',block:'start'});return;
  }
- if(d.tickmsg){openMsg=d.tickmsg;go('inbox',phoneLayout()?openMsg:null);return}
+ if(d.tickmsg){inboxFilter='all';openMsg=d.tickmsg;go('inbox',phoneLayout()?openMsg:null);return}
+ if(d.inboxFilter){inboxFilter=d.inboxFilter;openMsg=null;return go('inbox');}
+ if(d.clearStable){stableQuery='';stableFilter='all';return render();}
+ if(d.clearScout){scoutQuery='';scoutStyle='all';scoutBudget='all';selFree=null;return go('scouting');}
+ if(d.clearShortlist){shortlist=[];return render();}
+ if(d.shortlist){
+  if(shortlist.includes(d.shortlist))shortlist=shortlist.filter(id=>id!==d.shortlist);
+  else shortlist=[...shortlist.filter(id=>id!==d.shortlist),d.shortlist].slice(-2);
+  return render();
+ }
  if(d.msg){openMsg=d.msg;if(phoneLayout())return go('inbox',d.msg);render();return}
  if(d.answer){const out=G.answer(d.mid,d.answer);render();if(out)toast(out);return}
  if(d.checkin){renderPrivateMeeting(d.checkin);return}
@@ -1354,8 +1428,20 @@ document.addEventListener('click',e=>{
  if(d.speed!==undefined){night.speed=d.speed;document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===night.speed));if(!night.paused)schedule(50);return}
  if(t.hasAttribute('data-pause')){night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}
 });
+document.addEventListener('input',e=>{
+ const el=e.target;
+ if(!el.matches('[data-stable-query],[data-scout-query]'))return;
+ const which=el.hasAttribute('data-stable-query')?'stable':'scout',start=el.selectionStart,end=el.selectionEnd;
+ if(which==='stable')stableQuery=el.value;else scoutQuery=el.value;
+ render();
+ const next=$('#view [data-'+which+'-query]');
+ if(next){next.focus({preventScroll:true});if(start!=null)next.setSelectionRange(start,end);}
+});
 document.addEventListener('change',e=>{
  const t=e.target,d=t.dataset;
+ if(d.stableFilter!==undefined){stableFilter=t.value;render();return}
+ if(d.scoutStyle!==undefined){scoutStyle=t.value;render();return}
+ if(d.scoutBudget!==undefined){scoutBudget=t.value;render();return}
  if(d.freeSort!==undefined){sorts.free={k:t.value,d:['name','style'].includes(t.value)?1:-1};render();return}
  if(d.session){const err=G.setSession(d.session,t.value);if(err){toast(err);render();return}const w=G.W(d.session);render();toast(t.value==='none'?`${w.short}: no session with Dennis this week.`:`${w.short}: ${t.selectedOptions[0]?.textContent.replace(' — Dennis suggests','').toLowerCase()} with Dennis.`);return}
  if(d.train){G.setTraining(d.train,t.value);render();toast(`${G.W(d.train).short}: ${D.TRAINING[t.value].name.toLowerCase()} this week.`);return}
