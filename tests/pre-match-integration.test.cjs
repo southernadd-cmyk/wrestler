@@ -49,6 +49,59 @@ function play(m){
  return m;
 }
 
+// The manager picks the method before called spots; rerouting must not erase
+// their own spots, and older stored meetings can still use the legacy finish step.
+{
+ const booking={id:'finish-first-screen',wid:worker.id,rid:opponent.id,pid:promoter.id,
+  finish:'win_clean',slot:'main',minutes:12,eventAbs:31,feudHeat:20};
+ const st=Room.begin(booking,worker,opponent,promoter);
+ st.queue=[];
+ Room.act(st,'plan_story');
+ let view=Room.view(st);
+ assert.equal(st.stage,'board','finishing method and spots are planned together');
+ assert.ok(st.board.finish?.route,'Dennis pencils in a concrete finish before called spots');
+ assert.equal(view.finishes.filter(x=>x.selected).length,1,'one visible finish is selected');
+ assert.ok(view.finishes.length>=2,'the manager has a meaningful finish choice');
+ assert.equal(view.finishPlan.route,st.board.finish.route);
+ assert.ok(view.board.length===4&&view.board.every(row=>row.cards.some(x=>x.selected)));
+ const chosen=Room.options(st).find(o=>o.slot==='opening'&&!o.selected);
+ assert.ok(chosen,'there is a real opening spot to change');
+ Room.act(st,chosen.id);
+ const manual=st.board.opening.action;
+ assert.equal(st.board.opening.chosen,true,'the manual spot is marked distinct from Dennis’s pencil');
+ const finish=Room.options(st).find(o=>o.route&&o.route!==st.board.finish.route);
+ assert.ok(finish,'another eligible way to deliver the same booked outcome exists');
+ Room.act(st,finish.id);
+ assert.equal(st.board.finish.route,finish.route);
+ assert.equal(st.board.opening.action,manual,'changing finish preserves the manager’s called spot');
+ assert.equal(Room.view(st).finishes.filter(x=>x.selected).length,1);
+ assert.equal(Room.view(st).finishPlan.route,finish.route);
+ Room.act(st,'board_ok');
+ assert.equal(st.stage,'curtain','a complete modern sheet does not ask for the finish twice');
+ Room.act(st,Room.options(st)[0].id);
+ assert.equal(st.sheet.finishRoute,finish.route,'the selected method survives into the signed sheet');
+ assert.equal(st.sheet.nodes.at(-1).route,finish.route);
+ assert.equal(st.sheet.nodes.find(n=>n.id==='opening')?.actions[0],manual);
+
+ const old=Room.begin({...booking,id:'old-saved-board'},worker,opponent,promoter);
+ old.queue=[];Room.act(old,'plan_story');
+ delete old.board.finish; // a saved game from before finish-first planning
+ Room.act(old,'board_ok');
+ assert.equal(old.stage,'finish','old saved board uses the existing separate finish step');
+ Room.act(old,Room.options(old)[0].id);
+ assert.equal(old.stage,'curtain');
+ Room.act(old,Room.options(old)[0].id);
+ assert.ok(old.sheet.finishRoute,'old saved plans still sign a real route');
+
+ const focus=Room.begin({...booking,id:'focus-guide'},worker,opponent,promoter);
+ Room.act(focus,'plan_technical');focus.board.finish={route:'limb_finish',by:'agent',label:'Work the limb all night, then finish'};
+ const guide=Room.view(focus).finishPlan;
+ assert.match(guide.requirement,/four points of focused damage/i);
+ assert.match(guide.summary,/in-ring|called spot/i,
+  'the planning readout does not promise artificial focused damage');
+ assert.equal(guide.kind,'conditional');
+}
+
 // All five plans, short/mid/long clocks, cooperative/unhappy workers, matched seeds.
 // The physical engine must remain authoritative even when the sheet differs.
 let bouts=0;
@@ -139,3 +192,60 @@ for(const {risk,expected} of [{risk:0,expected:'landed'},{risk:100,expected:'bot
  }
 }
 console.log('PASS pre-match integration: '+bouts+' matched generated-sheet bouts across five plans, three durations, two consent tiers and two seeds; legal finishes, real scripted spot evidence, hard restrictions and causal reports');
+
+
+// Signed finish integration: static viability is checked at selection time;
+// once signed, a finish can favour relevant LEGAL setup, but not invent it.
+{
+ const mk=(w,f,finish,heat=0)=>Room.begin({
+  id:'finish-eligibility-'+w.id+'-'+f.id+'-'+finish+'-'+heat,
+  wid:w.id,rid:f.id,pid:promoter.id,finish,slot:'main',minutes:12,
+  eventAbs:1,feudHeat:heat
+ },w,f,promoter);
+ const candidate=D.FOES.find(f=>!['Brawl','Story'].includes(f.style));
+ const calm=D.TALENT.find(w=>w.ego<65);
+ const scrupulous=D.TALENT.find(w=>w.pro>=78);
+ assert.ok(candidate&&calm&&scrupulous,'static eligibility fixture wrestlers exist');
+ const pitched=st=>Room.pitches(st,'finish').map(c=>c.route);
+ assert.ok(!pitched(mk(worker,opponent,'win_dirty',0)).includes('referee_bump'),
+  'referee bump cannot be agreed without the required existing feud heat');
+ assert.ok(!pitched(mk(worker,candidate,'win_dq',50)).includes('dq_low_blow_f'),
+  'opponent cannot pitch an illegal low-blow disqualification for their style');
+ assert.ok(!pitched(mk(worker,opponent,'win_dq',0)).includes('dq_ref_shove_f'),
+  'opponent cannot pitch a referee shove without sufficient feud heat');
+ assert.ok(!pitched(mk(calm,opponent,'lose_dq',50)).includes('dq_ref_shove_w'),
+  'non-defiant worker cannot pitch referee-shove disqualification');
+ const incident=mk(scrupulous,opponent,'win_dirty',0);
+ incident.queue=['scruples'];Room.act(incident,'plan_story');Room.act(incident,'board_ok');
+ assert.equal(incident.stage,'scene');
+ Room.act(incident,'accident');
+ assert.equal(incident.lockRoute,'feet_on_ropes',
+  'forced backstage finish must have a legal no-heat alternative');
+ // A real focused legal action is more likely before the requisite damage is earned.
+ const data=signed('technical',12);
+ const sample=create(data,12097);
+ const focus=Object.values(G.A).find(n=>n.focus>0&&!n.reverse&&
+  (!n.part||n.part===G.PART_OF[sample.graph.targets.f]));
+ assert.ok(focus,'at least one limb-focused attack is in the real graph');
+ sample.stage='live';sample.t=sample.len*.55;sample.story.control='w';
+ sample.o.sheet.finishRoute='finisher';
+ const neutral=Room.bias(sample,focus.id);
+ sample.o.sheet.finishRoute='limb_finish';
+ assert.ok(Room.bias(sample,focus.id)>neutral,
+  'the signed limb finish favours actual focused offence, not narrative-only damage');
+ sample.graph.damage.f=4;
+ assert.equal(Room.bias(sample,focus.id),neutral,
+  'preparation assistance stops when enough real damage has landed');
+ const reverse=Object.values(G.A).find(n=>n.reverse);
+ assert.ok(reverse,'a real reversal exists');
+ sample.graph.events=[];sample.story.control='f';sample.o.sheet.finishRoute='reversal_finisher';
+ const before=Room.bias(sample,reverse.id);
+ sample.graph.events=[1,2,3].map(i=>({id:'counter_'+i,reverse:true,preControl:'f'}));
+ assert.ok(before>Room.bias(sample,reverse.id),
+  'a planned reversal finish prefers genuine counters only while unearned');
+ sample.o.sheet.finishRoute='finisher';
+ const unchanged=Room.bias(sample,reverse.id);
+ sample.o.sheet.finishRoute='reversal_finisher';sample.story.control='w';
+ assert.equal(Room.bias(sample,reverse.id),unchanged,
+  'the finish plan never boosts reversals by the wrong performer');
+}
