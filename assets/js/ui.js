@@ -13,6 +13,21 @@ const sorts={};
 
 /* ---------- small helpers ---------- */
 function face(type,id,name,cls='portrait'){return Pt.avatar({key:type+':'+id,name,type},null,cls)}
+// Contextual records use IDs, not names, so a renamed character still opens correctly.
+function recordLink(kind,id,name){
+ if(!id)return esc(name);
+ return `<button class="record-link" data-record="${kind}:${esc(id)}" aria-label="Open ${esc(name)} ${kind==='p'?'promotion':'wrestler'} record">${esc(name)}</button>`;
+}
+function recordBack(){return past.length?'<button class="btn sm" data-hist="back">◀ Back</button>':'<button class="btn sm" data-go="desk">Office desk</button>'}
+function openRecord(key){
+ const [kind,id]=String(key||'').split(':');if(!id)return;
+ if(kind==='w'){
+  if(G.W(id))return go('profile',id);
+  if(!G.F(id)&&!S().free.some(w=>w.id===id))return;
+ }else if(kind==='p'){if(!G.P(id))return}
+ else return;
+ go('record',kind+':'+id);
+}
 function band(v){return v>=80?5:v>=65?4:v>=50?3:v>=35?2:1}
 function bandBar(v){return ['','danger','warn','gold','',''][band(v)]}
 function att(v){return `<span class="att a${band(v)}">${Math.round(v)}</span>`}
@@ -212,7 +227,7 @@ const NAV=[
  ['Territory',[['pyramid','Card pyramid'],['sheets','Booking sheets'],['promoters','Promoters'],['rivalries','Rivalries'],['results','Results']]],
  ['Game',[['game','Save and load']]]
 ];
-const SECTION_OF={profile:'squad'};
+const SECTION_OF={profile:'squad',record:'promoters'};
 const PHONE_WIDTH=720;
 const phoneLayout=()=>innerWidth<=PHONE_WIDTH;
 const PHONE_LABELS={desk:'Today',squad:'Stable',pyramid:'Card ladder',game:'Save and load'};
@@ -251,7 +266,7 @@ function renderChrome(){
  $('#tick').innerHTML=lead?`<b>${G.pending().length?'Action':'News'}</b><button data-tickmsg="${lead.id}">${esc(lead.subject)}. ${esc(lead.from)}.</button><span class="keys">${s.history.length} ${plural(s.history.length,'match','matches')} worked this career</span>`:'';
 }
 
-const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,training:renderTraining,scouting:renderScouting,stables:renderStables,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
+const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,record:renderRecord,training:renderTraining,scouting:renderScouting,stables:renderStables,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
 function render(reset=false){
  if(!S())return;
  const keep={};if(!reset)document.querySelectorAll('#view [data-keep]').forEach(el=>keep[el.dataset.keep]=el.scrollTop);
@@ -302,7 +317,7 @@ function renderDesk(){
  else if(s.monthReview&&s.season===1)mission=win(s.monthReview.passed?'Backer invested £450':'Backer declined funding',`<p>Best match in the trial: ${s.monthReview.best}★. Training and promos: ${money(s.monthReview.business?.training||0)}. Contract improvements: ${money(s.monthReview.business?.negotiated||0)}. Promises kept ${s.monthReview.business?.kept||0}, broken ${s.monthReview.business?.broken||0}.</p><p class="dim">The regional circuit runs to week 16. Checkpoints are under Objectives.</p><button class="btn sm" data-go="objectives">Objectives</button>`,{area:'mission',note:'Trial review'});
  const tray=`<ul class="tray">${trayItems().map(x=>`<li class="${x.k}"><span class="ic">${x.ic}</span><span><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span>${x.go?`<button class="btn sm" data-go="${x.go}" ${x.id?`data-id="${x.id}"`:''}>${x.b}</button>`:'<span></span>'}</li>`).join('')}</ul>`;
  const dates=[...s.card.map(c=>({...c,eventAbs:G.abs()})),...s.futureBookings].sort((a,b)=>a.eventAbs-b.eventAbs).slice(0,6);
- const datesHtml=dates.length?`<table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th></tr></thead><tbody>${dates.map(c=>`<tr><td>${c.eventAbs===G.abs()?'<b>This week</b>':weekLabel(c.eventAbs)}</td><td>${esc(G.W(c.wid)?.short||'Departed')} v ${esc(G.F(c.rid).short)}</td><td class="dim">${esc(G.P(c.pid)?.name||'')}</td><td class="n">${money(c.purse)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">No dates signed.<br><button class="btn sm" data-go="offers">See offers</button></div>`;
+ const datesHtml=dates.length?`<table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th></tr></thead><tbody>${dates.map(c=>`<tr><td>${c.eventAbs===G.abs()?'<b>This week</b>':weekLabel(c.eventAbs)}</td><td>${recordLink('w',c.wid,G.W(c.wid)?.short||'Departed')} v ${recordLink('w',c.rid,G.F(c.rid)?.short||'Opponent')}</td><td class="dim">${recordLink('p',c.pid,G.P(c.pid)?.name||'Promotion')}</td><td class="n">${money(c.purse)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">No dates signed.<br><button class="btn sm" data-go="offers">See offers</button></div>`;
  const squad=s.roster.length?`<table class="grid"><thead><tr><th>Wrestler</th><th>Fatigue</th><th class="n">Morale</th><th>Status</th></tr></thead><tbody>${s.roster.map(w=>`<tr class="pick" data-openw="${w.id}"><td><button class="row-pick" data-openw="${w.id}" aria-label="Open ${esc(w.name)} profile">${esc(w.name)}</button></td><td>${bar(w.fatigue,fatKind(w.fatigue))} ${w.fatigue}</td><td class="n">${att(w.morale)}</td><td>${status(w)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">An empty stable can’t take bookings.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`;
  paint('s-desk'+(mission?'':' nomission'),
   mission+
@@ -322,7 +337,10 @@ function renderInbox(){
  let letter='<div class="empty">No messages.</div>';
  if(m){
   const mgr=managerFrom(m);
-  letter=`<article class="letter">${mgr?`<div class="letter-face">${face('manager',mgr.id,mgr.manager,'portrait')}</div>`:''}<div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
+  const sender=String(m.from||''),promoter=s.promoters.find(p=>sender===p.voice||sender===p.name||sender.startsWith(p.voice+',')||sender.startsWith(p.name+','));
+  const person=promoter?null:[...s.roster,...s.free,...(D.ALL||[]),...(D.FOES||[])].find(w=>sender===w.name||sender.startsWith(w.name+','));
+  const senderRecord=promoter?recordLink('p',promoter.id,promoter.name):person?recordLink('w',person.id,person.name):'';
+  letter=`<article class="letter">${mgr?`<div class="letter-face">${face('manager',mgr.id,mgr.manager,'portrait')}</div>`:''}<div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.${senderRecord?' · '+senderRecord:''}</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
   if(Array.isArray(m.sections)&&m.sections.length){
    letter+='<div class="report-sections">'+m.sections.map(section=>'<section><h3 class="section-h">'+esc(section.title)+'</h3><ul class="cons">'+(section.lines||[]).map(line=>'<li>'+esc(line)+'</li>').join('')+'</ul></section>').join('')+'</div>';
    letter+='<div class="report-links"><button class="btn" data-go="pyramid">Territory and rankings</button><button class="btn" data-go="squad">Your roster</button><button class="btn" data-go="offers">Next bookings</button></div>';
@@ -410,6 +428,62 @@ function ambitionPanel(w){
  const kind=a.sat<35?'danger':a.sat<55?'warn':'';
  return `<div class="well pad"><p><b>${esc(a.name)}</b> · ${esc(a.mood)} ${bar(a.sat,kind)}</p><p class="dim">${esc(a.counts)} ${esc(a.progress)}</p>${a.words?`<p class="dim">In the long run: ${esc(a.words.charAt(0).toLowerCase()+a.words.slice(1))}.</p>`:''}${a.promise?`<p class="bad">You promised to deliver by ${weekLabel(a.promise.by)}.</p>`:''}${a.history.length?'<ul class="cons">'+a.history.map(h=>`<li class="up">${esc(h.text)}${h.promised?' <span class="dim">(as you promised)</span>':''}</li>`).join('')+'</ul>':''}</div>`;
 }
+
+/* ======================= CONTEXTUAL RECORDS =======================
+   Read-only wrestler and promotion records assembled from existing career state.
+   No new game rules or save fields. */
+function renderRecord(){
+ const s=S(),[kind,id]=String(route.id||'').split(':');
+ if(kind==='p'){
+  const p=G.P(id);if(!p){route={s:'promoters',id:null};return renderPromoters()}
+  const standing=promoterState(p,s.rep),events=[...s.card,...s.futureBookings].filter(c=>c.pid===p.id).sort((a,b)=>a.eventAbs-b.eventAbs);
+  const offers=s.offers.filter(o=>o.pid===p.id);
+  const champions=D.DIVISION_ORDER.map(div=>{
+   const belt=D.belt(p.id,div),held=OfficeTerritory.title(p.id,div),w=held?.holder?(G.W(held.holder)||G.F(held.holder)):null;
+   return `<li><b>${esc(belt.name)}</b>: ${w?recordLink('w',w.id,w.name):'Vacant'} <span class="dim">${held?.defences||0} defences</span></li>`;
+  }).join('');
+  const upcoming=events.length?'<ul class="cons">'+events.map(c=>{
+   const a=G.W(c.wid)||G.F(c.wid),b=G.F(c.rid);
+   return `<li><b>${weekLabel(c.eventAbs)}</b> · ${recordLink('w',a?.id,a?.name||'Departed wrestler')} v ${recordLink('w',b?.id,b?.name||'Opponent')} · ${money(c.purse)}</li>`;
+  }).join('')+'</ul>':'<p class="dim">No dates signed with this promoter.</p>';
+  const links=`<div class="record-actions"><button class="btn sm" data-go="pyramid" data-id="${esc(p.id)}:${esc(D.DIVISION_ORDER[0])}">Card rankings</button><button class="btn sm" data-go="sheets" data-id="${esc(p.id)}">Booking sheet</button><button class="btn sm" data-go="offers">Offers</button></div>`;
+  const head=`<div class="record-head">${face('booker',p.id,p.voice,'portrait x2')}<div><h2 class="record-name">${esc(p.name)}</h2><p>${esc(p.desc)} · ${esc(p.venue)}</p><p class="dim">Booker: ${esc(p.voice)} · ${esc(planFor(p).name)} style</p><p class="${standing.tone}">${esc(standing.text)}</p></div></div>`;
+  const facts=`<div class="facts"><div><small>Your trust</small><b>${p.trust}</b></div><div><small>Reach</small><b>${p.reach}</b></div><div><small>Matches worked</small><b>${p.matches}</b></div><div><small>Best rating</small><b>${p.best?starsText(p.best):'–'}</b></div></div>`;
+  paint('s-split even',
+   win('Promotion record',head+facts+links+'<h3 class="section-h">Business</h3><p>'+bizCell(p)+'</p><h3 class="section-h">Upcoming dates</h3>'+upcoming,{keep:'record-p',actions:recordBack()})+
+   win('Territory history','<h3 class="section-h">Current champions</h3><ul class="cons">'+champions+'</ul><h3 class="section-h">Offers on the table</h3><p>'+offers.length+' '+plural(offers.length,'offer')+' from this promotion.</p><h3 class="section-h">How to work here</h3><p>Promoters book the winner. Your stable earns trust by delivering the agreed match and keeping its commitments.</p>',{h:'h3',keep:'record-p-history'})
+  );return;
+ }
+ if(kind!=='w'){route={s:'desk',id:null};return renderDesk()}
+ const w=G.W(id)||s.free.find(x=>x.id===id)||G.F(id);
+ if(!w){route={s:'pyramid',id:null};return renderPyramid()}
+ const stable=OfficeTerritory.stableFor(id),free=s.free.some(x=>x.id===id),division=D.divisionOf(id);
+ const statusText=stable?'Contracted to '+stable.name:free?'Free agent':'Independent / other circuit';
+ const stat=(label,key)=>`<div class="attr"><span>${label}</span><span>${Number.isFinite(w[key])?att(w[key]):'–'}</span>${Number.isFinite(w[key])?bar(w[key],bandBar(w[key])):'<span></span>'}</div>`;
+ const head=`<div class="record-head">${face('wrestler',w.id,w.name,'portrait x2')}<div><h2 class="record-name">${esc(w.name)}</h2><p>${w.handle?'“'+esc(w.handle)+'” · ':''}${esc(w.style||'Wrestler')} · ${esc(w.tier||'Circuit wrestler')}</p><p class="dim">${esc(statusText)} · ${esc(D.DIVISIONS[division]?.name||'Circuit')} division</p></div></div>`;
+ const titles=OfficeTerritory.titlesOf(id),ranks=s.promoters.flatMap(p=>{
+  const list=OfficeTerritory.promotionRank(p.id,division),n=list.findIndex(x=>x.id===id);
+  return n<0?[]:[{p,place:n+1,row:list[n],total:list.length}];
+ });
+ const rankings=ranks.length?'<ul class="cons">'+ranks.map(r=>`<li>${recordLink('p',r.p.id,r.p.name)} · rank ${r.place}/${r.total} · ${esc(D.SLOTS[r.row.slot]?.name||'Card')} · ${r.row.score} points</li>`).join('')+'</ul>':'<p class="dim">Not currently ranked on these cards.</p>';
+ const recent=s.history.map((h,i)=>({...h,i})).filter(h=>h.wid===id||h.rid===id).slice(0,8);
+ const results=recent.length?'<div class="well"><table class="grid"><thead><tr><th>Week</th><th>Opponent</th><th>Rating</th><th></th></tr></thead><tbody>'+recent.map(h=>{
+  const other=h.wid===id?{id:h.rid,name:h.foe}:{id:h.wid,name:h.name};
+  return `<tr><td>S${h.season} W${h.week}</td><td>${recordLink('w',other.id,other.name||'Opponent')}</td><td>${starsText(h.stars)||'DUD'}</td><td><button class="btn link" data-replay="${h.i}">Match report</button></td></tr>`;
+ }).join('')+'</tbody></table></div>':'<p class="dim">No meetings with your stable recorded yet.</p>';
+ const rivalries=Object.values(s.feuds||{}).filter(f=>f.wid===id||f.rid===id);
+ const feuds=rivalries.length?'<ul class="cons">'+rivalries.map(f=>{
+  const other=f.wid===id?f.rid:f.wid,opponent=G.W(other)||G.F(other);
+  return `<li>${recordLink('w',other,opponent?.name||'Opponent')} · heat ${Math.round(f.heat||0)} · ${f.closed?'finished':'ongoing'}</li>`;
+ }).join('')+'</ul>':'<p class="dim">No rivalry with your stable recorded yet.</p>';
+ const next=stable?`<button class="btn sm" data-go="stables" data-id="w:${esc(id)}">View rival stable</button>`:free?'<button class="btn sm" data-go="scouting" data-id="'+esc(id)+'">View free-agent listing</button>':'<button class="btn sm" data-go="pyramid">Card rankings</button>';
+ const belts=titles.length?'<p>'+titles.map(t=>'<span class="tag hot">'+esc(t.name)+'</span>').join(' ')+'</p>':'';
+ paint('s-split even',
+  win('Wrestler record',head+belts+`<p>${esc(w.bio||'No biography is on file.')}</p><h3 class="section-h">Attributes</h3><div class="well pad attrs">`+stat('Ring','ring')+stat('Psychology','psych')+stat('Safety','safe')+stat('Mic','mic')+stat('Heat','heat')+'</div><p class="dim">Finisher: '+esc(w.finisher||'Not recorded')+'</p><div class="record-actions">'+next+'</div>',{actions:recordBack(),keep:'record-w'})+
+  win('Career and connections','<h3 class="section-h">Promotion rankings</h3>'+rankings+'<h3 class="section-h">Against your stable</h3>'+results+'<h3 class="section-h">Rivalries</h3>'+feuds,{h:'h3',keep:'record-w-history'})
+ );
+}
+
 function renderProfile(){
  const s=S(),w=G.W(route.id);
  if(!w){route={s:'squad',id:null};return renderSquad()}
@@ -436,7 +510,7 @@ function renderProfile(){
   <h3 class="section-h">Biography</h3><p>${esc(w.bio)}</p><p class="dim">Finisher: ${esc(w.finisher)}. Best game plan: ${esc(D.PLANS[D.STYLE_PLAN[w.style]].name.toLowerCase())}.${esc(signatureText(w))}</p>`;
  const nav=s.roster.length>1?`<button class="btn" data-go="profile" data-id="${prev.id}" aria-label="Previous wrestler">◀ ${esc(prev.short)}</button><button class="btn" data-go="profile" data-id="${next.id}" aria-label="Next wrestler">${esc(next.short)} ▶</button>`:'';
  paint('s-profile',
-  win('Wrestler profile',`${face('wrestler',w.id,w.name,'portrait x3')}<div><div class="name">${esc(w.name)}</div>${ownedChamps(w.id)}<div class="handle">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${money(w.wage)} a week</span><span class="chip">${status(w)}</span></div>${ambitionLine(w)}${promise}</div><div class="acts"><button class="btn go" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting</button><span class="dim" style="font-size:13px">${s.focus} of 2 meetings left</span><button class="btn" data-raise="${w.id}" ${window.OfficeAmbitions?.raiseAvailable?.(w.id)?.error?'disabled':''} title="Permanent £40 per week payroll increase. At most once every four weeks.">Give £40/wk raise</button><button class="btn red" data-release="${w.id}">Release</button></div>`,{area:'head',cls:'phead',actions:nav})+
+  win('Wrestler profile',`${face('wrestler',w.id,w.name,'portrait x3')}<div><div class="name">${esc(w.name)}</div>${ownedChamps(w.id)}<div class="handle">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${money(w.wage)} a week</span><span class="chip">${status(w)}</span></div>${ambitionLine(w)}${promise}</div><div class="acts"><button class="btn go" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting</button><span class="dim" style="font-size:13px">${s.focus} of 2 meetings left</span><button class="btn" data-raise="${w.id}" ${window.OfficeAmbitions?.raiseAvailable?.(w.id)?.error?'disabled':''} title="Permanent £40 per week payroll increase. At most once every four weeks.">Give £40/wk raise</button><button class="btn red" data-release="${w.id}">Release</button></div>`,{area:'head',cls:'phead',actions:recordBack()+nav})+
   win('Attributes',atts+`<h4 class="ch-h">Over time</h4>`+formChart(w),{area:'atts',h:'h3',cls:'quiet',keep:'atts'})+
   win('Training',train,{area:'train',h:'h3',keep:'train'})+
   win('Record',record,{area:'record',h:'h3',keep:'rec'})
@@ -577,9 +651,9 @@ function renderOffers(){
  // Offers you can actually fill come first; ones nobody can take sink to the bottom, dimmed.
  const can=o=>offerPick(o).options.length>0;
  const offers=s.offers.slice().sort((a,b)=>can(b)-can(a)||a.eventAbs-b.eventAbs||a.expiresAbs-b.expiresAbs);
- if(phoneLayout()&&offers.some(o=>o.id===route.id))selOffer=route.id;
+ if(offers.some(o=>o.id===route.id))selOffer=route.id;
  if(!selOffer||!offers.some(o=>o.id===selOffer))selOffer=(offers.find(can)||offers[0])?.id||null;
- const rows=offers.map(o=>{const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);return `<tr class="pick${sel?'':' unbookable'}" data-selo="${o.id}" aria-selected="${o.id===selOffer}"${sel?'':' title="Nobody in your stable can take this booking."'}><td><button class="row-pick" data-selo="${o.id}" aria-pressed="${o.id===selOffer}" aria-label="Review ${esc(p.name)} booking offer">${weekLabel(o.eventAbs)}<br><span class="dim">${o.eventAbs===G.abs()?'This week':o.expiresAbs>G.abs()?`Reply by ${weekLabel(o.expiresAbs)}`:''}</span></button></td><td class="wrap"><b>${esc(p.name)}</b>${o.tag?` <span class="tag hot">${esc(o.tag)}</span>`:''}${o.stip?` <span class="tag">${esc(window.OfficeStips.STIPS[o.stip].short)}</span>`:''}</td><td class="wrap offer-match">${offerWho(o,sel)}<br><span class="vs-line">v ${esc(f.name)}</span></td><td>${o.programme?`${o.programme.beats.length} matches<br><span class="dim">${esc(window.OfficeProgrammes?.TYPE_NAME[o.programme.type]||'Programme')}</span>`:`${esc(D.SLOTS[o.slot].name)}<br>${finishTag(o.finish)}`}</td><td class="n">${sel?money(o.programme?window.OfficeProgrammes.totalPurse(o,sel):G.purse(o,sel)):'<span class="dim">–</span>'}</td></tr>`}).join('');
+ const rows=offers.map(o=>{const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);return `<tr class="pick${sel?'':' unbookable'}" data-selo="${o.id}" aria-selected="${o.id===selOffer}"${sel?'':' title="Nobody in your stable can take this booking."'}><td><button class="row-pick" data-selo="${o.id}" aria-pressed="${o.id===selOffer}" aria-label="Review ${esc(p.name)} booking offer">${weekLabel(o.eventAbs)}<br><span class="dim">${o.eventAbs===G.abs()?'This week':o.expiresAbs>G.abs()?`Reply by ${weekLabel(o.expiresAbs)}`:''}</span></button></td><td class="wrap"><b>${esc(p.name)}</b>${o.tag?` <span class="tag hot">${esc(o.tag)}</span>`:''}${o.stip?` <span class="tag">${esc(window.OfficeStips.STIPS[o.stip].short)}</span>`:''}</td><td class="wrap offer-match">${offerWho(o,sel)}<br><span class="vs-line">v ${recordLink('w',f.id,f.name)}</span></td><td>${o.programme?`${o.programme.beats.length} matches<br><span class="dim">${esc(window.OfficeProgrammes?.TYPE_NAME[o.programme.type]||'Programme')}</span>`:`${esc(D.SLOTS[o.slot].name)}<br>${finishTag(o.finish)}`}</td><td class="n">${sel?money(o.programme?window.OfficeProgrammes.totalPurse(o,sel):G.purse(o,sel)):'<span class="dim">–</span>'}</td></tr>`}).join('');
  const list=!s.roster.length?`<div class="empty">You need someone under contract before you can take bookings.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`
   :offers.length?`<div class="well"><table class="grid"><thead><tr><th>Show</th><th>Promoter</th><th>Match</th><th>Slot and finish</th><th class="n">Purse</th></tr></thead><tbody>${rows}</tbody></table></div>`
   :`<div class="empty">No offers left this week. Press Continue to move on.</div>`;
@@ -589,7 +663,7 @@ function renderOffers(){
   const p=G.P(o.pid),f=G.F(o.rid),{options,sel}=offerPick(o),negotiated=o.talk?.step==='done';
   const mins=D.SLOTS[o.slot].mins+(o.tag==='Blow-off'?5:0);
   detail=`<div class="row" style="flex-wrap:nowrap;gap:12px">${face('booker',p.id,p.voice,'portrait')}<div><div style="font:30px/.9 var(--jersey);color:var(--blood)">${esc(p.name)}</div><div class="dim">${esc(p.desc)}, ${esc(p.venue)}. Booker ${esc(p.voice)}.</div><div style="font-size:14px">Trust ${bar(p.trust,p.trust<30?'danger':p.trust>=65?'':'warn')} ${p.trust}</div></div></div>
-  <div class="well matchup" style="margin-top:10px"><div class="side">${sel?face('wrestler',sel.id,sel.name,'portrait x2'):''}${options.length?`<select data-pick="${o.id}" aria-label="Wrestler for this offer" ${o.wid||o.talk?'disabled':''}>${options.map(w=>`<option value="${w.id}" ${sel?.id===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select>`:'<span class="dim">Nobody free</span>'}</div><div class="vs">v</div><div class="side">${face('wrestler',f.id,f.name,'portrait x2')}<b>${esc(f.name)}</b><span class="dim">${esc(f.style)}</span></div></div>
+  <div class="well matchup" style="margin-top:10px"><div class="side">${sel?face('wrestler',sel.id,sel.name,'portrait x2'):''}${options.length?`<select data-pick="${o.id}" aria-label="Wrestler for this offer" ${o.wid||o.talk?'disabled':''}>${options.map(w=>`<option value="${w.id}" ${sel?.id===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select>`:'<span class="dim">Nobody free</span>'}</div><div class="vs">v</div><div class="side">${face('wrestler',f.id,f.name,'portrait x2')}<b>${recordLink('w',f.id,f.name)}</b><span class="dim">${esc(f.style)}</span></div></div>
   ${o.title?`<div class="title-line">${beltBadge(D.belt(o.title.pid,o.title.div))}<small>${o.tag==='Title defence'?'Your champion defends the belt.':'A shot at the champion.'} The promoter has already decided the result.</small></div>`:''}
   ${o.programme?programmePanel(o,sel):`<dl class="kv"><dt>Show</dt><dd>${weekLong(o.eventAbs)}</dd><dt>Slot</dt><dd>${esc(D.SLOTS[o.slot].name)}, ${mins} minutes</dd><dt>Finish</dt><dd>${finishTag(o.finish)}</dd>${o.stip?`<dt>Stipulation</dt><dd><span class="tag hot">${esc(stipName(o.stip))}</span></dd>`:''}<dt>Reply by</dt><dd>${weekLong(o.expiresAbs)}</dd></dl>`}
   ${sel?fitNotes(o,sel):''}
@@ -599,7 +673,7 @@ function renderOffers(){
  }
  const cards=s.roster.length?offers.map(o=>{
   const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);
-  return `<button class="phone-card${sel?'':' unbookable'}" data-selo="${o.id}"><span class="phone-card-line"><b>${esc(p.name)}</b><span>${o.eventAbs===G.abs()?'This week':weekLabel(o.eventAbs)}</span></span><span>${sel?esc(sel.short)+' ':''}v ${esc(f.name)} · ${esc(D.SLOTS[o.slot].name)}</span><span class="phone-card-line"><small>${o.programme?`Programme, ${o.programme.beats.length} matches`:esc(D.FINISHES[o.finish].name)}</small><b>${sel?money(o.programme?window.OfficeProgrammes.totalPurse(o,sel):G.purse(o,sel)):'Unavailable'}</b></span></button>`;
+  return `<article class="phone-card${sel?'':' unbookable'}"><span class="phone-card-line"><b>${esc(p.name)}</b><span>${o.eventAbs===G.abs()?'This week':weekLabel(o.eventAbs)}</span></span><span>${sel?recordLink('w',sel.id,sel.short)+' ':''}v ${recordLink('w',f.id,f.name)} · ${esc(D.SLOTS[o.slot].name)}</span><span class="phone-card-line"><small>${o.programme?`Programme, ${o.programme.beats.length} matches`:esc(D.FINISHES[o.finish].name)}</small><b>${sel?money(o.programme?window.OfficeProgrammes.totalPurse(o,sel):G.purse(o,sel)):'Unavailable'}</b></span><div class="record-actions"><button class="btn sm" data-selo="${o.id}">Review offer</button></div></article>`;
  }).join(''):'';
  paint('s-offers'+phonePane(route.id,o?.id),
   win('Bookings this week',ledger,{area:'ledger',h:'h3',cls:'quiet phone-overview',body:'tight'})+
@@ -610,12 +684,12 @@ function renderOffers(){
 
 function renderFixtures(){
  const s=S();
- const card=s.card.length?`<div class="well"><table class="grid"><thead><tr><th>Match</th><th>Promoter</th><th>Slot</th><th>Finish</th><th class="n">Purse</th><th></th></tr></thead><tbody>${s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>{const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);return `<tr><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)} v ${esc(f.name)}</b><small>${c.minutes} minutes${c.tag?`, ${esc(c.tag)}`:''}</small>${boutStakes(c)}</span></span></td><td>${esc(p.name)}</td><td>${esc(D.SLOTS[c.slot].name)}</td><td>${finishTag(c.finish)}</td><td class="n"><b>${money(c.purse)}</b></td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw from programme':'Pull out'}</button></td></tr>`}).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. Continue takes you to ringside.</p>`
+ const card=s.card.length?`<div class="well"><table class="grid"><thead><tr><th>Match</th><th>Promoter</th><th>Slot</th><th>Finish</th><th class="n">Purse</th><th></th></tr></thead><tbody>${s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>{const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);return `<tr><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${recordLink('w',w.id,w.name)} v ${recordLink('w',f.id,f.name)}</b><small>${c.minutes} minutes${c.tag?`, ${esc(c.tag)}`:''}</small>${boutStakes(c)}</span></span></td><td>${recordLink('p',p.id,p.name)}</td><td>${esc(D.SLOTS[c.slot].name)}</td><td>${finishTag(c.finish)}</td><td class="n"><b>${money(c.purse)}</b></td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw from programme':'Pull out'}</button></td></tr>`}).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. Continue takes you to ringside.</p>`
   :`<div class="empty">Nothing booked this week.<br><button class="btn sm" data-go="offers">See offers</button></div>`;
  const fut=s.futureBookings.slice().sort((a,b)=>a.eventAbs-b.eventAbs);
- const future=fut.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th><th></th></tr></thead><tbody>${fut.map(c=>`<tr><td>${weekLabel(c.eventAbs)}</td><td>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}<br><span class="dim">${esc(D.SLOTS[c.slot].name)} · ${esc(D.FINISHES[c.finish]?.name||'Finish not recorded')}</span>${boutStakes(c)}</td><td>${esc(G.P(c.pid)?.name||'')}</td><td class="n">${money(c.purse)}</td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Cancel'}</button></td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Purses are paid after the match. Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. A booked wrestler can’t attend camp that week.</p>`
+ const future=fut.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th><th></th></tr></thead><tbody>${fut.map(c=>`<tr><td>${weekLabel(c.eventAbs)}</td><td>${recordLink('w',c.wid,G.W(c.wid)?.name||'Departed wrestler')} v ${recordLink('w',c.rid,G.F(c.rid)?.name||'Opponent')}<br><span class="dim">${esc(D.SLOTS[c.slot].name)} · ${esc(D.FINISHES[c.finish]?.name||'Finish not recorded')}</span>${boutStakes(c)}</td><td>${esc(G.P(c.pid)?.name||'')}</td><td class="n">${money(c.purse)}</td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Cancel'}</button></td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Purses are paid after the match. Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. A booked wrestler can’t attend camp that week.</p>`
   :'<div class="empty">No future dates signed.</div>';
- const cards=contracts=>contracts.map(c=>`<article class="phone-card"><div class="phone-card-line"><b>${esc(G.P(c.pid)?.name||'')}</b><small>${c.eventAbs===G.abs()?'This week':weekLabel(c.eventAbs)}</small></div><div>${esc(G.W(c.wid)?.name||'Departed wrestler')} v ${esc(G.F(c.rid).name)}</div><small>${esc(D.SLOTS[c.slot].name)} · ${esc(D.FINISHES[c.finish].name)}</small>${boutStakes(c)}<div class="phone-card-line"><b>${money(c.purse)}</b><button class="btn sm" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Pull booking'}</button></div></article>`).join('');
+ const cards=contracts=>contracts.map(c=>`<article class="phone-card"><div class="phone-card-line"><b>${recordLink('p',c.pid,G.P(c.pid)?.name||'Promotion')}</b><small>${c.eventAbs===G.abs()?'This week':weekLabel(c.eventAbs)}</small></div><div>${recordLink('w',c.wid,G.W(c.wid)?.name||'Departed wrestler')} v ${recordLink('w',c.rid,G.F(c.rid)?.name||'Opponent')}</div><small>${esc(D.SLOTS[c.slot].name)} · ${esc(D.FINISHES[c.finish].name)}</small>${boutStakes(c)}<div class="phone-card-line"><b>${money(c.purse)}</b><button class="btn sm" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Pull booking'}</button></div></article>`).join('');
  paint('s-split even',win('This week’s card',phoneList(card,cards(s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank))),{keep:'card',note:`Week ${s.week}`})+win('Future dates',phoneList(future,cards(fut)),{h:'h3',keep:'future'}));
 }
 
@@ -628,8 +702,8 @@ function renderPyramid(){
  const tabs=`<div class="row" role="group" aria-label="Promotion" style="margin-bottom:6px">${D.PROMOS.map(x=>tab(x.id+':'+div,x.name,x.id===p.id)).join('')}</div>
   <div class="row" role="group" aria-label="Division" style="margin-bottom:10px">${D.DIVISION_ORDER.map(d=>tab(p.id+':'+d,D.DIVISIONS[d].name+' division',d===div)).join('')}</div>`;
  const champ=held?.holder?G.W(held.holder)||G.F(held.holder):null;
- const label=w=>`<span class="pent ${w.owned?'mine':''} ${w.champion?'champ':''}"><b>${esc(w.name)}${w.champion?' <span class="tag">Champion</span>':''}</b><small>${esc(w.owned?'Your stable':w.stable||'Independent')} · ${w.score} pts</small></span>`;
- const hero=`<div class="belt-hero well"><img class="belt-img" src="${esc(belt.img)}" alt="${esc(belt.name)} belt"><div><small class="dim">${esc(belt.name)}</small><b>${champ?esc(champ.name):'Vacant'}</b>${champ?`<small>${G.W(champ.id)?'Your stable':esc(OfficeTerritory.stableFor(champ.id)?.name||'Independent')} · ${held.defences} ${plural(held.defences,'defence')}</small>`:''}</div></div>`;
+ const label=w=>`<span class="pent ${w.owned?'mine':''} ${w.champion?'champ':''}"><b>${recordLink('w',w.id,w.name)}${w.champion?' <span class="tag">Champion</span>':''}</b><small>${esc(w.owned?'Your stable':w.stable||'Independent')} · ${w.score} pts</small></span>`;
+ const hero=`<div class="belt-hero well"><img class="belt-img" src="${esc(belt.img)}" alt="${esc(belt.name)} belt"><div><small class="dim">${esc(belt.name)}</small><b>${champ?recordLink('w',champ.id,champ.name):'Vacant'}</b>${champ?`<small>${G.W(champ.id)?'Your stable':esc(OfficeTerritory.stableFor(champ.id)?.name||'Independent')} · ${held.defences} ${plural(held.defences,'defence')}</small>`:''}</div></div>`;
  const tiers=D.SLOT_ORDER.slice().reverse().map(slot=>{
   const wrestlers=ranked.filter(w=>w.slot===slot);
   return `<div class="tier ${slot==='main'?'apex':''}" data-card-tier="${slot}"><strong>${esc(D.SLOTS[slot].name)}</strong><div class="entries">${wrestlers.length?wrestlers.map(label).join(''):'<span class="dim">Vacant</span>'}</div></div>`;
@@ -661,9 +735,9 @@ function renderPromoters(){
  const s=S();
  const table=`<div class="well"><table class="grid"><thead><tr><th>Promoter</th><th>Wants</th><th class="n">Reach</th><th>Business</th><th>Trust</th><th class="n">Matches</th><th class="n">Best</th><th>Status</th></tr></thead><tbody>${s.promoters.map(p=>{
   const state=promoterState(p,s.rep);
-  return `<tr><td><span class="who">${face('booker',p.id,p.voice)}<span><b>${esc(p.name)}</b><small>${esc(p.desc)}. Booker ${esc(p.voice)}.</small></span></span></td><td>${esc(planFor(p).name)}</td><td class="n">${att(p.reach)}</td><td class="wrap">${bizCell(p)}</td><td>${bar(p.trust,p.trust<30?'danger':p.trust>=65?'':'warn')} ${p.trust}</td><td class="n">${p.matches}</td><td class="n"><span class="stars">${p.best?starsText(p.best):'–'}</span></td><td><span class="${state.tone}">${esc(state.text)}</span></td></tr>`;
+  return `<tr><td><span class="who">${face('booker',p.id,p.voice)}<span><b>${recordLink('p',p.id,p.name)}</b><small>${esc(p.desc)}. Booker ${esc(p.voice)}.</small></span></span></td><td>${esc(planFor(p).name)}</td><td class="n">${att(p.reach)}</td><td class="wrap">${bizCell(p)}</td><td>${bar(p.trust,p.trust<30?'danger':p.trust>=65?'':'warn')} ${p.trust}</td><td class="n">${p.matches}</td><td class="n"><span class="stars">${p.best?starsText(p.best):'–'}</span></td><td><span class="${state.tone}">${esc(state.text)}</span></td></tr>`;
  }).join('')}</tbody></table></div>`;
- const cards=s.promoters.map(p=>`<article class="phone-card"><div class="who">${face('booker',p.id,p.voice)}<div><b>${esc(p.name)}</b><small>${esc(p.voice)} · ${esc(p.desc)}</small></div></div><div class="phone-card-line"><span>${esc(planFor(p).name)}</span><b>Trust ${p.trust}</b></div><small>Reach ${p.reach} · ${p.matches} matches · Best ${p.best?starsText(p.best):'–'}</small><small>${bizCell(p)}</small><small>${esc(promoterState(p,s.rep).text)}</small></article>`).join('');
+ const cards=s.promoters.map(p=>`<article class="phone-card"><div class="who">${face('booker',p.id,p.voice)}<div><b>${recordLink('p',p.id,p.name)}</b><small>${esc(p.voice)} · ${esc(p.desc)}</small></div></div><div class="phone-card-line"><span>${esc(planFor(p).name)}</span><b>Trust ${p.trust}</b></div><small>Reach ${p.reach} · ${p.matches} matches · Best ${p.best?starsText(p.best):'–'}</small><small>${bizCell(p)}</small><small>${esc(promoterState(p,s.rep).text)}</small></article>`).join('');
  paint('s-full',win('Promoters',phoneList(table,cards)+'<p class="dim" style="margin-top:8px">Trust rises when you deliver what a promoter asked for and falls when you pull out or break a finish. A promotion drawing well reaches more people and pays better; one that is struggling pays less and books desperately.</p>',{keep:'proms'}));
 }
 // v0.3.15 Each booker's plans: the storylines on the board and how the last ones ended.
@@ -723,16 +797,16 @@ function renderRivalries(){
   return {...f,evidence:rivalrySnapshot(f),matchup:(w?.name||'Former wrestler')+' v '+(G.F(f.rid)?.name||f.rid),ready,
    state:f.closed?'Finished':ready?'Ready for the blow-off':'Building',angle:f.angle||'The score will be settled in the ring.'};
  });
- const rows=info.map(f=>`<tr><td><b>${esc(f.matchup)}</b></td><td>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</td><td class="wrap"><b>${esc(f.evidence.record)}</b><small class="feud-last">${esc(f.evidence.last)}</small></td><td class="n">${f.segments||0}</td><td><span class="${f.ready?'good':''}">${esc(f.state)}</span></td><td class="wrap">${esc(f.angle)}${rivalryContext(f.evidence)}</td></tr>`).join('');
- const cards=info.map(f=>`<article class="phone-card"><b>${esc(f.matchup)}</b><span class="phone-card-line"><span>Heat ${f.heat}</span><small>${esc(f.state)}</small></span><small>${esc(f.evidence.record)} · ${f.segments||0} promos</small><small class="feud-last">${esc(f.evidence.last)}</small><span>${esc(f.angle)}</span>${rivalryContext(f.evidence)}</article>`).join('');
+ const rows=info.map(f=>`<tr><td><b>${recordLink('w',f.wid,G.W(f.wid)?.name||G.F(f.wid)?.name||'Former wrestler')} v ${recordLink('w',f.rid,G.F(f.rid)?.name||'Opponent')}</b></td><td>${bar(f.heat,f.heat>=70?'gold':'')} ${f.heat}</td><td class="wrap"><b>${esc(f.evidence.record)}</b><small class="feud-last">${esc(f.evidence.last)}</small></td><td class="n">${f.segments||0}</td><td><span class="${f.ready?'good':''}">${esc(f.state)}</span></td><td class="wrap">${esc(f.angle)}${rivalryContext(f.evidence)}</td></tr>`).join('');
+ const cards=info.map(f=>`<article class="phone-card"><b>${recordLink('w',f.wid,G.W(f.wid)?.name||G.F(f.wid)?.name||'Former wrestler')} v ${recordLink('w',f.rid,G.F(f.rid)?.name||'Opponent')}</b><span class="phone-card-line"><span>Heat ${f.heat}</span><small>${esc(f.state)}</small></span><small>${esc(f.evidence.record)} · ${f.segments||0} promos</small><small class="feud-last">${esc(f.evidence.last)}</small><span>${esc(f.angle)}</span>${rivalryContext(f.evidence)}</article>`).join('');
  const intro='Every wrestler gets microphone time before their match. Your promo approach affects the crowd, their personal rivalry and potential rematch interest. Heat cools between appearances; build it towards the blow-off.';
  const table=info.length?`<div class="well"><table class="grid"><thead><tr><th>Rivalry</th><th>Heat</th><th>Head to head</th><th class="n">Promos</th><th>Status</th><th>Latest angle</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">No rivalries yet. Book a match to begin a storyline, then choose a microphone approach before the bell.</div>';
  paint('s-full',win('Rivalries',`<p class="lede">${esc(intro)}</p>${phoneList(table,cards)}`,{keep:'feuds'}));
 }
 function renderResults(){
  const s=S();
- const cards=s.history.map((x,i)=>`<button class="phone-card" data-replay="${i}"><span class="phone-card-line"><small>S${x.season} W${x.week} · ${esc(x.promoter)}</small><b>${starsText(x.stars)||'DUD'}</b></span><span>${esc(x.name)} v ${esc(x.foe)}</span><small>${x.outcome==='dq'?'Unplanned disqualification · ':x.outcome==='nc'?'No contest · ':x.outcome==='double'?'Finish broken · ':''}Crowd ${x.crowd} · Purse ${money(x.purse)}</small></button>`).join('');
- const table=s.history.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th>Finish</th><th class="n">Rating</th><th class="n">Crowd</th><th class="n">Paid</th></tr></thead><tbody>${s.history.map((x,i)=>`<tr class="pick" data-replay="${i}"><td><button class="btn link" data-replay="${i}" aria-label="Read ${esc(x.name)} versus ${esc(x.foe)}, season ${x.season} week ${x.week}">S${x.season} W${x.week}</button></td><td><b>${esc(x.name)} v ${esc(x.foe)}</b>${boutStakes(x)}</td><td>${esc(x.promoter)}</td><td>${recordedFinishTag(x)}</td><td class="n"><span class="stars">${starsText(x.stars)||'DUD'}</span></td><td class="n">${x.crowd}</td><td class="n">${money(x.purse)}</td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Select a match to read the commentary.</p>`:'<div class="empty">No matches yet.</div>';
+ const cards=s.history.map((x,i)=>`<article class="phone-card"><span class="phone-card-line"><small>S${x.season} W${x.week} · ${esc(x.promoter)}</small><b>${starsText(x.stars)||'DUD'}</b></span><span>${recordLink('w',x.wid,x.name)} v ${recordLink('w',x.rid,x.foe)}</span><small>${x.outcome==='dq'?'Unplanned disqualification · ':x.outcome==='nc'?'No contest · ':x.outcome==='double'?'Finish broken · ':''}Crowd ${x.crowd} · Purse ${money(x.purse)}</small><div class="record-actions"><button class="btn sm" data-replay="${i}">Read match report</button></div></article>`).join('');
+ const table=s.history.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th>Finish</th><th class="n">Rating</th><th class="n">Crowd</th><th class="n">Paid</th></tr></thead><tbody>${s.history.map((x,i)=>`<tr class="pick" data-replay="${i}"><td><button class="btn link" data-replay="${i}" aria-label="Read ${esc(x.name)} versus ${esc(x.foe)}, season ${x.season} week ${x.week}">S${x.season} W${x.week}</button></td><td><b>${recordLink('w',x.wid,x.name)} v ${recordLink('w',x.rid,x.foe)}</b>${boutStakes(x)}</td><td>${esc(x.promoter)}</td><td>${recordedFinishTag(x)}</td><td class="n"><span class="stars">${starsText(x.stars)||'DUD'}</span></td><td class="n">${x.crowd}</td><td class="n">${money(x.purse)}</td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Select a match to read the commentary.</p>`:'<div class="empty">No matches yet.</div>';
  paint('s-full',win('Results',`<h3 class="section-h">Season ${s.season} so far</h3>${seasonChart()}${phoneList(table,cards)}`,{keep:'res',note:`${s.history.length} ${plural(s.history.length,'match','matches')}`}));
 }
 function renderGame(){
@@ -1195,6 +1269,7 @@ document.addEventListener('click',e=>{
  const t=e.target.closest('button,[data-openw],[data-selo],[data-self],[data-replay],tr[data-go]');if(!t||t.disabled)return;const d=t.dataset;
  if(t.id==='continue')return proceed();
  if(d.hist)return histMove(d.hist==='back'?-1:1);
+ if(d.record)return openRecord(d.record);
  if(d.go)return go(d.go,d.id||null);
  if(d.openw)return go('profile',d.openw);
  if(d.sort){const [key,k]=d.sort.split(':');const s=sorts[key];sorts[key]=s&&s.k===k?{k,d:-s.d}:{k,d:['name','style','tier'].includes(k)?1:-1};render();return}

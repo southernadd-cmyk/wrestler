@@ -19,4 +19,21 @@ for(const name of ['lCrowdBar','lMom'])assert.ok(ui.includes("$('#"+name+"').par
 assert.match(html,/<dialog id="modal" aria-labelledby="office-dialog-title">/);
 assert.equal((ui.match(/<h2 id="office-dialog-title">/g)||[]).length,3);
 assert.ok(!backstage.includes('var(--muted,#777)'));
+// CM-style contextual records: one route for outside wrestlers and promotions.
+assert.match(ui,/function recordLink\(kind,id,name\)/);
+assert.match(ui,/function renderRecord\(\)/);
+assert.match(ui,/record:renderRecord/);
+assert.match(ui,/if\(d\.record\)return openRecord\(d\.record\)/);
+assert.match(ui,/function recordBack\(\)/);
+for(const screen of ["desk dates","inbox","offers","fixtures","pyramid","promoters","rivalries","results"]){
+ const token={ "desk dates":"G.W(c.wid)?.short||'Departed'",
+  inbox:"senderRecord",offers:"vs-line\">v ${recordLink",
+  fixtures:"recordLink('p',p.id,p.name)",pyramid:"recordLink('w',w.id,w.name)",
+  promoters:"recordLink('p',p.id,p.name)",rivalries:"recordLink('w',f.rid",
+  results:"recordLink('w',x.rid,x.foe)"}[screen];
+ assert.ok(ui.includes(token),screen+" must retain a contextual profile link");
+}
+assert.match(css,/\.record-link\{/);
+assert.match(css,/\.record-head\{/);
+new Function(ui); // Source parses before any browser navigation runs.
 console.log('PASS Office UI keyboard, status indicators, action labels and modal accessibility');
