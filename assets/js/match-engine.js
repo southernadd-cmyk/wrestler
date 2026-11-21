@@ -1538,7 +1538,20 @@ const Graph=(function makeGraph(){
   else words='{W} and {F} dig deep. The finishing sequence is close.';
   // Arc switches never teleport the wrestlers. Every needed reset is narrated.
   if(prev){
-   if(p.position==='outside')say(M,fill(M,'{W} and {F} beat the referee’s count and slide back into the ring.'));
+   if(p.position==='outside'){
+    g.outsideReturnCount=(g.outsideReturnCount||0)+1;
+    const options=noCountout(M)?[
+     '{W} and {F} choose to return inside. They could have stayed on the floor.',
+     'Both competitors step back through the ropes without count-out pressure.',
+     '{W} and {F} return to the ring of their own accord.'
+    ]:[
+     '{W} and {F} beat the referee’s count and slide back into the ring.',
+     'The referee is still counting as {W} and {F} scramble back inside.',
+     '{W} and {F} make it through the ropes before the count reaches ten.',
+     'Both wrestlers get back into the ring in time to avoid the count-out.'
+    ];
+    say(M,fill(M,options[(g.outsideReturnCount-1)%options.length]));
+   }
    else if(p.position==='top')say(M,fill(M,p.down==='w'?'{F} drops back down from the turnbuckle as the counter threat develops.':p.down==='f'?'{W} drops back down from the turnbuckle as the counter threat develops.':'The wrestler on the turnbuckle drops back down as the counter threat develops.'));
    else if(p.position==='corner')say(M,fill(M,'They separate in the corner and step out into open ring.'));
    else if(p.position==='mat'){
@@ -1563,6 +1576,32 @@ const Graph=(function makeGraph(){
   // Rotate through context-appropriate arc commentary on repeated visits.
   // Avoid an escalating match announcing the same pace change ten times.
   const ARC_NARRATION_VARIANTS={
+   control:[
+    '{F} keeps {W} under pressure, deliberately slowing the contest.',
+    '{F} maintains the advantage as {W} searches for a way back in.',
+    '{W} is forced to defend while {F} dictates the tempo.',
+    'The initiative stays with {F}, who is giving {W} little room to attack.'
+   ],
+   denial:[
+    '{F} catches the attempted escape and cuts the rally short!',
+    '{W} finds space for a moment, but {F} closes it before the comeback begins.',
+    '{F} breaks up another attempt by {W} to turn the match around.'
+   ],
+   cutoff:[
+    '{W} presses forward and gets caught. {F} reverses the attack and takes over!',
+    '{W} commits too far and {F} takes control of the counter.',
+    '{F} turns {W}’s forward momentum against them to regain the advantage.'
+   ],
+   resurgence:[
+    '{W} keeps the pressure on. {F} struggles to find a way back.',
+    '{W} remains in charge of the exchanges as {F} looks for a counter.',
+    '{F} is still defending. {W} has not given up the initiative.'
+   ],
+   chain:[
+    '{W} and {F} settle into a series of holds, escapes and counters.',
+    'The match moves into a struggle for grips. Both are searching for control.',
+    'A patient exchange of holds and releases; neither wrestler has a clear opening.'
+   ],
    escalation:[
     'The pace rises as both wrestlers start looking for their big attacks.',
     '{W} and {F} increase the tempo. Neither wants to concede the next opening.',
@@ -2174,6 +2213,16 @@ const Graph=(function makeGraph(){
   return {A:w?M.w:M.f,Df:w?M.f:M.w,side:w?'w':'f'};
  }
  const ACTION_NARRATION_VARIANTS={
+  strike_trade:[
+   '{A} and {D} exchange sharp forearms, neither giving ground.',
+   '{A} answers a shot from {D} and both stay on their feet.',
+   '{D} fires back at {A}. The standing exchange continues.'
+  ],
+  double_down_count:[
+   'Both wrestlers are down. The referee reaches four, five, six — they begin to stir.',
+   'The official counts over both wrestlers. At six they are fighting to get up.',
+   'Neither can get up at first. The referee reaches six before they start moving.'
+  ],
   mat_takedown:[
    '{A} hooks the near leg and trips {D}, following to the mat.',
    '{D} widens their stance but {A} completes a clean leg trip.',
@@ -2393,8 +2442,14 @@ const Graph=(function makeGraph(){
   g.lastNarrationIndex[id]=index;
   const variant=variants[index],broadcast=broadcastHistory(g,id,n,side);
   if(g.damage?.w>=3&&p.control==='w'&&['top_climb','rope_run','clothesline','snap_suplex'].includes(id)&&(!g.lastSell||M.t-g.lastSell>100)){
-   const effect=g.targets.w==='left knee'?'hesitates on the damaged knee':g.targets.w==='lower back'?'winces and steadies the lower back':g.targets.w==='ribs'?'takes a painful breath and protects the ribs':'favouring the damaged shoulder';
-   say(M,fill(M,'{W} '+effect+' before committing to the next move.'),'story');g.lastSell=M.t;
+   const effect=g.targets.w==='left knee'?'hesitates on the damaged knee':g.targets.w==='lower back'?'winces and steadies the lower back':g.targets.w==='ribs'?'takes a painful breath and protects the ribs':'favours the damaged shoulder';
+   g.sellCount=(g.sellCount||0)+1;
+   const calls=[
+    '{W} '+effect+' before committing to the next move.',
+    '{W} '+effect+' while preparing the next attack.',
+    '{W} '+effect+' and takes a moment before the next exchange.'
+   ];
+   say(M,fill(M,calls[(g.sellCount-1)%calls.length]),'story');g.lastSell=M.t;
   }
   let text=fill(M,variant,{A:attacker.short,D:defender.short,part,move:n.kind});
   if(noCountout(M)){
