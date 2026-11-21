@@ -67,7 +67,7 @@ jobs:
             'late moves',b.lateDistinct,'=>',a.lateDistinct);
           }
           NODE
-      - name: Verify Safe scripted-spot boundary without changing other plans
+      - name: Verify established Safe boundary and scoped cross-plan tape changes
         shell: bash
         run: |
           set -euo pipefail
@@ -78,7 +78,7 @@ jobs:
           node tools/graph-lab/safe-scripted-spot-audit.cjs --compare baseline/safe-scripted-spot-audit.json safe-scripted-spot-audit.json > safe-scripted-compare.json
           echo '### Safe scripted spot: historical baseline' >> "$GITHUB_STEP_SUMMARY"
           cat safe-scripted-before.md >> "$GITHUB_STEP_SUMMARY"
-          echo '### Safe restriction: four unchanged other plans' >> "$GITHUB_STEP_SUMMARY"
+          echo '### Safe restriction and scoped exactness for unaffected plans' >> "$GITHUB_STEP_SUMMARY"
           cat safe-scripted-after.md >> "$GITHUB_STEP_SUMMARY"
           cat safe-scripted-compare.json >> "$GITHUB_STEP_SUMMARY"
       - name: Retain independent paired source evidence
