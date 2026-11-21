@@ -191,6 +191,8 @@ console.log('PASS pre-match integration: '+bouts+' matched generated-sheet bouts
  assert.ok(before>Room.bias(sample,reverse.id),
   'a planned reversal finish prefers genuine counters only while unearned');
  sample.o.sheet.finishRoute='finisher';
- assert.equal(Room.bias(sample,reverse.id),Room.bias(sample,reverse.id),
-  'unconditional finish leaves the regular route weights intact');
+ const unchanged=Room.bias(sample,reverse.id);
+ sample.o.sheet.finishRoute='reversal_finisher';sample.story.control='w';
+ assert.equal(Room.bias(sample,reverse.id),unchanged,
+  'the finish plan never boosts reversals by the wrong performer');
 }
