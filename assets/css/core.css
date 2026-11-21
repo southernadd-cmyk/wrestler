@@ -258,6 +258,43 @@ h1,h2,h3{margin:0;font-weight:400}
 .tray b{font-weight:600;display:block}
 .tray small{color:var(--dim);font-size:16px}
 
+/* Phase 2 — practical CM-style management tools, using existing desktop chrome. */
+.management-filters{display:flex;flex-wrap:wrap;align-items:end;gap:7px 10px;margin-bottom:10px;padding:8px 10px;background:var(--stone-2);border:1px solid var(--stone-lo)}
+.management-filters label{display:flex;flex:1 1 130px;flex-direction:column;gap:3px;min-width:0;font-size:15px;color:var(--ink-2)}
+.management-filters label:first-child{flex:2 1 165px}
+.management-filters input,.management-filters select{width:100%;min-width:0;min-height:34px;padding:4px 8px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:0;box-shadow:var(--bevel-in);font-size:17px}
+.management-filters .filter-results{align-self:center;font-size:15px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.management-filters .btn{margin-left:auto}
+.office-filter-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:6px;background:var(--stone-2);border-bottom:2px solid var(--ink)}
+.office-filter-tabs .btn{padding:3px 10px}
+.filter-count{margin-left:4px;font:16px/1 var(--tt)}
+.s-inbox .phone-master .wbody.tight{display:flex;flex-direction:column}
+.s-inbox .phone-master .inbox-results{flex:1;min-height:0;overflow:auto}
+.desk-brief{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--well-row);border-bottom:2px solid var(--well-line)}
+.desk-brief>div{display:flex;flex-direction:column;min-width:0}
+.desk-brief small{color:var(--cyan);font-size:13px}
+.desk-brief b{font-size:20px;color:var(--white)}
+.desk-brief span{font-size:15px;color:var(--dim)}
+.desk-brief .btn{flex-shrink:0}
+.scout-shortlist-actions{margin-top:12px}
+.scout-comparison{margin:12px 0 0}
+.scout-comparison>.well{overflow-x:auto}
+.scout-compare-table th:first-child,.scout-compare-table td:first-child{text-align:left}
+.scout-compare-table th,.scout-compare-table td{padding:4px 7px}
+.scout-shortlist-status{margin-top:8px}
+@media(max-width:720px){
+ .management-filters{margin-bottom:10px;padding:8px;gap:8px}
+ .management-filters label{font-size:13px}
+ .management-filters input,.management-filters select{min-height:44px}
+ .management-filters .btn{margin-left:0}
+ .office-filter-tabs .btn{flex:1 1 auto}
+ .s-inbox .phone-master .wbody.tight{overflow:visible}
+ .s-inbox .phone-master .inbox-results{flex:none;overflow:visible}
+ .desk-brief{align-items:flex-start;flex-wrap:wrap}
+ .desk-brief .btn{flex:1 1 100%}
+ .scout-compare-table{font-size:14px}
+}
+
 /* ---------- inbox ---------- */
 .s-inbox{grid-template-columns:minmax(260px,380px) minmax(0,1fr)}
 .msglist{list-style:none;margin:0;padding:0}
