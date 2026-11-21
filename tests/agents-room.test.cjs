@@ -399,3 +399,148 @@ console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings
   version:1,offered:summarize(results.offered),controlled:summarize(results.controlled)
  }));
 })();
+
+
+// Diagnostic only: test the signed outlasting finish against a same-seed,
+// same-sheet control using the default method. No rule, threshold or move edits.
+// A success needs a loser below 30 and a winner 15 stamina points ahead at the bell.
+(function auditOutlastingPhysicalStamina(){
+ const promoter=D.PROMOS[0],plans=['technical','brawl','story','spots','safe'];
+ const durations=[8,12,18],results=[],A=M.GRAPH.A;
+ const num=n=>Math.round(n*10)/10;
+ const mean=x=>x.length?num(x.reduce((a,b)=>a+b,0)/x.length):null;
+ const median=x=>x.length?num(x.slice().sort((a,b)=>a-b)[Math.floor((x.length-1)/2)]):null;
+ const count=(rows,key,yes=true)=>rows.filter(x=>!!x[key]===yes).length;
+ const group=(rows,key,fn)=>Object.fromEntries([...new Set(rows.map(x=>x[key]))].sort().map(k=>[k,fn(rows.filter(x=>x[key]===k))]));
+ function run(booking,sheet,w,f,seed,route){
+  const s=JSON.parse(JSON.stringify(sheet)),finish=s.nodes.find(n=>n.id==='finish');
+  s.finishRoute=route;if(finish)finish.route=route;
+  const m=M.create({w:{...w,fatigue:5,flags:{}},f:{...f,fatigue:5,flags:{}},
+   p:promoter,slot:booking.slot,minutes:s.minutes,finish:booking.finish,
+   feudHeat:booking.feudHeat,plan:{game:s.game,leash:s.leash||'script',talk:s.talk||'calm'},
+   preparation:{},flags:s.flags,seed,sheet:s});
+  const winner=booking.finish==='win_clean'?'w':'f';
+  const waypoints=[.25,.5,.75,.90,.99],at={};
+  let lastTime=-1,everTired=false,everLead=false,everEligible=false,firstTired=null,
+   firstLead=null,firstEligible=null,lastEligible=null,maxLead=-999,maxLeadAfterTired=-999;
+  const capture=()=>{
+   if(m.t===lastTime||m.stage==='entrance')return;
+   lastTime=m.t;
+   const win=winner==='w'?m.wSt:m.fSt,lose=winner==='w'?m.fSt:m.wSt,
+    lead=win-lose,frac=m.t/m.len;
+   if(lose<30){everTired=true;if(firstTired===null)firstTired=m.t;}
+   if(lead>=15){everLead=true;if(firstLead===null)firstLead=m.t;}
+   if(lose<30&&lead>=15){everEligible=true;if(firstEligible===null)firstEligible=m.t;lastEligible=m.t;}
+   maxLead=Math.max(maxLead,lead);
+   if(lose<30)maxLeadAfterTired=Math.max(maxLeadAfterTired,lead);
+   for(const point of waypoints)if(frac>=point&&at[point]===undefined)at[point]={win:num(win),lose:num(lose),lead:num(lead)};
+  };
+  for(let tick=0;tick<9000&&!m.done;tick++){
+   if(m.decision&&!m.queue.length)M.resolve(m,m.decision.options[0].id);
+   M.next(m);capture();
+  }
+  assert.ok(m.done,'outlasting stamina diagnostic: bout must finish');
+  assert.equal(m.graph.outcome.id,booking.finish,'stamina investigation must preserve the contract');
+  const win=winner==='w'?m.wSt:m.fSt,lose=winner==='w'?m.fSt:m.wSt,lead=win-lose;
+  const rests=(m.graph.events||[]).filter(e=>{
+   const n=A[e.id];
+   return ['w','f'].includes(e.preControl)&&
+    (e.id==='catch_breath'||n?.family==='rest'&&n.cost<0);
+  });
+  const recovery=side=>rests.filter(e=>e.preControl===side).length;
+  const lateRecovery=side=>rests.filter(e=>e.preControl===side&&e.t>=m.len-180).length;
+  const won=m.finishRoute==='outlasted';
+  if(route==='outlasted'&&m.outcome==='booked')
+   assert.equal(won,lose<30&&lead>=15,'outlasted must honour exact stamina prerequisites');
+  return {route,won,agreed:m.o.sheet.finishRoute,
+   winSt:num(win),loseSt:num(lose),lead:num(lead),eligible:lose<30&&lead>=15,
+   loserTired:lose<30,lead15:lead>=15,bothTired:win<30&&lose<30,
+   everTired,everLead,everEligible,maxLead:num(maxLead),
+   maxLeadAfterTired:maxLeadAfterTired===-999?null:num(maxLeadAfterTired),
+   firstTired,firstLead,firstEligible,lastEligible,
+   winRests:recovery(winner),loseRests:recovery(winner==='w'?'f':'w'),
+   winLateRests:lateRecovery(winner),loseLateRests:lateRecovery(winner==='w'?'f':'w'),
+   totalActions:m.graph.events?.length||0,waypoints:at};
+ }
+ let seq=0;
+ for(const plan of plans)for(const minutes of durations)for(const finish of ['win_clean','lose_clean']){
+  let found=0;
+  for(let candidate=0;candidate<160&&found<4;candidate++){
+   const index=seq*19+candidate, w=D.TALENT[(index*7+candidate)%D.TALENT.length],
+    f=D.FOES[(index*3+candidate)%D.FOES.length],heat=[0,20,40,60][index%4];
+   const booking={id:'outlast-probe-'+plan+'-'+minutes+'-'+finish+'-'+candidate,
+    wid:w.id,rid:f.id,pid:promoter.id,slot:'main',finish,minutes,
+    eventAbs:index,feudHeat:heat};
+   const st=Room.begin(booking,w,f,promoter);st.queue=[];
+   Room.act(st,'plan_'+plan);
+   const suggested=Room.options(st).find(x=>x.route==='outlasted');
+   if(!suggested)continue; // This is a finish the player is actually offered.
+   Room.act(st,suggested.id);
+   for(let step=0;st.stage!=='done'&&step<20;step++){
+    const choices=Room.options(st),choice=st.stage==='board'?
+     choices.find(x=>x.id==='board_ok'):choices[0];
+    assert.ok(choice,'stamina probe backstage choice exists');
+    Room.act(st,choice.id);
+   }
+   assert.equal(st.stage,'done');
+   assert.equal(st.sheet.finishRoute,'outlasted');
+   const seed=980000+index;
+   const planned=run(booking,st.sheet,w,f,seed,'outlasted'),
+    noPrep=run(booking,st.sheet,w,f,seed,finish==='win_clean'?'finisher':'duck_finisher');
+   results.push({plan,minutes,finish,worker:w.id,foe:f.id,heat,
+    planned,noPrep,deltaLead:num(planned.lead-noPrep.lead),
+    deltaWinRests:planned.winRests-noPrep.winRests,
+    deltaLoseRests:planned.loseRests-noPrep.loseRests});
+   found++;seq++;
+  }
+  assert.equal(found,4,'at least four naturally pitched outlasting pairings for '+plan+'/'+minutes+'/'+finish);
+ }
+ const runs=results.map(x=>({...x.planned,plan:x.plan,minutes:x.minutes,finish:x.finish}));
+ const controls=results.map(x=>({...x.noPrep,plan:x.plan,minutes:x.minutes,finish:x.finish}));
+ const summarise=rows=>({
+  n:rows.length,eligibleAtBell:count(rows,'eligible'),loserTiredAtBell:count(rows,'loserTired'),
+  lead15AtBell:count(rows,'lead15'),bothTiredAtBell:count(rows,'bothTired'),
+  loserEverTired:count(rows,'everTired'),leadEverReached15:count(rows,'everLead'),
+  everFullyEligible:count(rows,'everEligible'),
+  hadWindowButLostByBell:rows.filter(x=>x.everEligible&&!x.eligible).length,
+  bell:{winnerMedian:median(rows.map(x=>x.winSt)),loserMedian:median(rows.map(x=>x.loseSt)),
+   leadMedian:median(rows.map(x=>x.lead)),leadMean:mean(rows.map(x=>x.lead)),
+   winnerNearZero:rows.filter(x=>x.winSt<=5).length,
+   loserNearZero:rows.filter(x=>x.loseSt<=5).length},
+  recovery:{winMean:mean(rows.map(x=>x.winRests)),loseMean:mean(rows.map(x=>x.loseRests)),
+   zeroWinner:rows.filter(x=>x.winRests===0).length,
+   winnerLateMean:mean(rows.map(x=>x.winLateRests)),
+   loserLateMean:mean(rows.map(x=>x.loseLateRests)},
+  trajectory:Object.fromEntries([.25,.5,.75,.90,.99].map(k=>[String(k),{
+   winnerMean:mean(rows.map(x=>x.waypoints[k]?.win).filter(x=>x!==undefined)),
+   loserMean:mean(rows.map(x=>x.waypoints[k]?.lose).filter(x=>x!==undefined)),
+   gapMean:mean(rows.map(x=>x.waypoints[k]?.lead).filter(x=>x!==undefined))
+  }]))
+ });
+ const by=x=>({n:x.length,hit:x.filter(r=>r.planned.eligible).length,
+  loserTired:x.filter(r=>r.planned.loserTired).length,
+  gap15:x.filter(r=>r.planned.lead15).length,
+  medianGap:median(x.map(r=>r.planned.lead)),
+  avgWinRest:mean(x.map(r=>r.planned.winRests)),
+  meanPlanGain:mean(x.map(r=>r.deltaLead))});
+ const examples=results.filter(x=>!x.planned.eligible)
+  .sort((a,b)=>a.planned.lead-b.planned.lead)
+  .slice(0,16).map(x=>({plan:x.plan,minutes:x.minutes,finish:x.finish,
+   worker:x.worker,foe:x.foe,winSt:x.planned.winSt,loseSt:x.planned.loseSt,
+   lead:x.planned.lead,loserTired:x.planned.loserTired,winRests:x.planned.winRests,
+   loseRests:x.planned.loseRests,everEligible:x.planned.everEligible,
+   maxLeadAfterTired:x.planned.maxLeadAfterTired,controlLead:x.noPrep.lead}));
+ console.log('OUTLAST_STAMINA_DIAGNOSTIC_JSON='+JSON.stringify({
+  version:1,fixtures:results.length,pairedRuns:results.length*2,
+  conditions:{loserBelow:30,winnerGapAtLeast:15},
+  planned:summarise(runs),control:summarise(controls),
+  comparison:{meanGapGain:mean(results.map(x=>x.deltaLead)),
+   medianGapGain:median(results.map(x=>x.deltaLead)),
+   improvedGap:results.filter(x=>x.deltaLead>1).length,
+   worsenedGap:results.filter(x=>x.deltaLead< -1).length,
+   sameGap:results.filter(x=>Math.abs(x.deltaLead)<=1).length,
+   changedEligibility:results.filter(x=>x.planned.eligible!==x.noPrep.eligible).length},
+  byPlan:group(results,'plan',by),byMinutes:group(results,'minutes',by),
+  byOutcome:group(results,'finish',by),examples
+ }));
+})();
