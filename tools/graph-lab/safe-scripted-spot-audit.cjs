@@ -71,24 +71,55 @@ function compare(before,after){
  assert.equal(before.matches,after.matches);
  assert.equal(after.matches,960,'all 960 real matches must complete');
  const original=new Map(before.rows.map(row=>[row.key,row]));
- let same=0;
+ const initialSafeRestriction=before.plans.safe.severe>0;
+ // The original #156 comparison began before Safe had the scripted gate,
+ // so all four OTHER plans had to remain byte-for-byte identical.
+ // Once the gate has landed on main, that historical assumption is false:
+ // future Brawl / Spot-fest tuning is allowed only for the documented
+ // trained-worker, 18-minute cohorts. Safe/Technical/Story stay exact.
+ const protectedPlans=new Set(initialSafeRestriction?
+  ['technical','story','brawl','spots']:['safe','technical','story']);
+ let identical=0,intendedChanges=0;
  for(const a of after.rows){
   const b=original.get(a.key);assert.ok(b,'missing matched case '+a.key);
-  if(a.plan!=='safe'){
-   assert.equal(a.tape,b.tape,'non-Safe game tape changed: '+a.key);
-   same++;
+  assert.equal(a.finish,b.finish,'booked finish changed: '+a.key);
+  if(protectedPlans.has(a.plan)){
+   assert.equal(a.tape,b.tape,'unaffected plan tape changed: '+a.key);
+   identical++;
+  }else if(!initialSafeRestriction&&a.tape!==b.tape){
+   const [worker,tier,minutes]=a.key.split(':');
+   // This audit's deliberate post-#156 change touches ONLY the natural
+   // elite Brawl and competent Spectacle worker in long matches. Keep
+   // the cross-style exactness guard for everyone else.
+   const intended=minutes==='18'&&
+    (a.plan==='brawl'&&worker==='0'&&tier==='elite'||
+     a.plan==='spots'&&worker==='3'&&tier==='competent');
+   assert.ok(intended,'unexpected changed match tape: '+a.key);
+   intendedChanges++;
   }
  }
- assert.equal(same,768,'all four other plans must remain unchanged');
+ assert.equal(original.size,after.rows.length,'unpaired baseline rows');
+ for(const plan of PLANS){
+  const prev=before.plans[plan],next=after.plans[plan];
+  assert.equal(next.n,prev.n,'missing '+plan+' matches');
+  assert.equal(next.badCovers,0,plan+': every scheduled cover must have a true source');
+  assert.equal(next.booked,next.n,plan+': all booked outcomes must hold');
+  assert.equal(prev.booked,prev.n,plan+': baseline booked outcomes must hold');
+ }
  const b=before.plans.safe,a=after.plans.safe;
- assert.ok(b.severe>0,'baseline must expose the original problem');
  assert.equal(a.severe,0,'no extreme scripted spots in Safe');
- assert.equal(a.badCovers,0,'all Safe nearfalls must cite exact valid source');
- assert.ok(a.earned>=b.earned*.55,'do not erase genuine Safe nearfalls');
- assert.ok(a.stars>=b.stars-.35,'do not hollow out Safe match quality');
- assert.ok(a.lateDistinct>=b.lateDistinct-1,'late real wrestling must remain');
- assert.ok(a.booked>=b.booked,'no extra unbooked outcomes');
- return {status:'PASS',cases:after.matches,nonSafeIdentical:same,
+ assert.ok(a.earned>=b.earned*.55,'do not hollow out genuine Safe nearfalls');
+ assert.ok(a.stars>=b.stars-.35,'Safe rating may not collapse');
+ assert.ok(a.lateDistinct>=b.lateDistinct-1,'Safe late wrestling must remain');
+ if(initialSafeRestriction){
+  assert.equal(identical,768,'initial Safe-only change must preserve all other plans');
+ }else{
+  assert.equal(b.severe,0,'baseline was already restricted');
+  assert.equal(identical,576,'Safe, Technical and Story must be identical');
+ }
+ return {status:'PASS',cases:after.matches,
+  baselineMode:initialSafeRestriction?'before Safe restriction':'Safe already restricted',
+  unaffectedTapesIdentical:identical,intendedChangedTapes:intendedChanges,
   oldSafe:b,newSafe:a};
 }
 function markdown(r){

@@ -38,3 +38,9 @@ Run `node tests/long-match-endurance.test.cjs` to confirm:
 **Remaining limitation:** long Brawl/Spot-fest matches are still physically exhausting, especially with mismatched styles or low skills; this update is a conservative incremental correction, **not a blanket solution** to every late-match pacing issue. Technical and Story endurance and repetitive commentary remain separate investigations. A further major pacing change should be based on a fresh all-five-plan audit, not silent direct score or stamina edits.
 
 **CI policy:** no additional workflow or broad per-commit regression suite is introduced. Existing targeted PR tests and main-branch integration tests remain the source of automatic validation.
+
+## Existing A/B guard updated after the Safe release
+
+The original #156 `safe-scripted-spot-audit.cjs` comparator required all four non-Safe plans to match pre-restriction gameplay. Because #156 was already merged, that historical condition is no longer valid for a deliberate Brawl/Spot-fest update. The comparator now distinguishes the old pre-Safe-restriction baseline from the established Safe-restricted baseline. For this PR it asserts all **576 Safe, Technical and Story tapes are byte-for-byte identical**, along with every booked outcome and every plan's sourced pin counts. It permits other tape changes only for **18-minute elite Brawl** and **18-minute competent Spot-fest** workers. The workflow evidence showed precisely **12 affected match tapes** across those two cells, zero unexpected differences and no new hazardous Safe scripted spots. The original pre-Safe comparator behaviour remains covered for its legacy historical baseline.
+
+This is a correction of an outdated CI assumption, not a waiver of match legality. No new workflow is added.
