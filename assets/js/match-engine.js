@@ -3468,6 +3468,23 @@ const Graph=(function makeGraph(){
   const timeLeft=M.len-M.t;
   const trainedFlyer=liveSide.style==='Spectacle'&&trainedRecovery>0;
   const longSpot=M.planId==='spots'&&M.len>=900&&trainedFlyer;
+  // A real standing breather must be available *before* the winner is
+  // exhausted, not merely boosted after the normal low-stamina offer.
+  // The action still passes the original physical isValid and seeded pick.
+  if(M.o.sheet?.finishRoute==='outlasted'&&M.outcome==='booked'&&
+     ['win_clean','lose_clean'].includes(M.o.finish)&&M.len>=600&&
+     M.t/M.len>=.22&&M.t/M.len<.91){
+   const winner=M.o.finish==='win_clean'?'w':'f',
+    loser=winner==='w'?'f':'w',otherSt=loser==='w'?M.wSt:M.fSt;
+   const rests=g.events.filter(e=>e.preControl===winner&&
+    (e.id==='catch_breath'||A[e.id]?.family==='rest'&&costOf(e.id)<0));
+   if(p.control===winner&&p.position==='standing'&&
+      g.physical?.area==='ring'&&!g.physical?.grip&&
+      stamina<80&&stamina-otherSt<22&&rests.length<5&&
+      !rests.some(e=>M.t-e.t<95)&&
+      !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact)
+    selected.push(['catch_breath',9]);
+  }
   const brawlTraining=brawlConditioning(liveSide);
   const longBrawl=M.planId==='brawl'&&M.len>=900&&
    liveSide.style==='Brawl'&&brawlTraining>=.25;
@@ -4233,52 +4250,58 @@ const Graph=(function makeGraph(){
     }
    }
   }
-  // The signed Outlasted route needs an actual stamina separation, not just
-  // two tired wrestlers. Give the eventual winner *opportunities* to work
-  // economically: the breather/hold must already be physically legal, gets
-  // selected through the normal seeded pool, spends a full graph action and
-  // produces its ordinary narrated recovery event. Never award free stamina.
-  // Short bouts cannot support this endurance story. Leave them naturally
-  // difficult rather than scripting the necessary exhaustion.
+  // An Outlasted story needs one wrestler to work harder while the
+  // eventual winner manages exertion. Offer only existing, fully legal
+  // in-ring actions; move costs, counters, the opponent's stamina and
+  // real match timing remain authoritative.
   if(M.o.sheet?.finishRoute==='outlasted'&&M.outcome==='booked'&&
      ['win_clean','lose_clean'].includes(M.o.finish)&&M.len>=600&&
-     M.t/M.len>=.23&&M.t/M.len<.91){
-   const winner=M.o.finish==='win_clean'?'w':'f',loser=winner==='w'?'f':'w',
+     M.t/M.len>=.22&&M.t/M.len<.91){
+   const winner=M.o.finish==='win_clean'?'w':'f',
+    loser=winner==='w'?'f':'w',
     winSt=winner==='w'?M.wSt:M.fSt,
-    loserSt=loser==='w'?M.wSt:M.fSt,
-    lead=winSt-loserSt;
-   if(p.control===winner&&winSt<77&&lead<19&&
+    loseSt=loser==='w'?M.wSt:M.fSt,
+    lead=winSt-loseSt;
+   if(p.control===winner&&winSt<80&&lead<22&&
       !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact){
-    const recoveryEvents=g.events.filter(e=>e.preControl===winner&&
+    const rests=g.events.filter(e=>e.preControl===winner&&
      (e.id==='catch_breath'||A[e.id]?.family==='rest'&&costOf(e.id)<0));
-    // Four distinctly earned breathers at most, at least 90 seconds apart.
-    // Never displace an imminent finish or repeatedly pose between moves.
-    if(recoveryEvents.length<4&&
-       !recoveryEvents.some(e=>M.t-e.t<90)){
-     const opts=pool.filter(([id])=>id==='catch_breath'||
+    // Five real rest actions at most, with 95 seconds between them.
+    // This reserves only a CHANCE, never a compulsory action.
+    if(rests.length<5&&!rests.some(e=>M.t-e.t<95)){
+     const options=pool.filter(([id])=>id==='catch_breath'||
       A[id]?.family==='rest'&&costOf(id)<0);
-     // The pool remains authoritative; this is NOT a new free-standing
-     // action, an invalid rest hold, or an escape from an active grapple.
-     if(opts.length){
-      const own=new Set(opts.map(([id])=>id));
-      const competing=pool.reduce((sum,[id,w])=>sum+(own.has(id)?0:w),0);
-      const already=opts.reduce((sum,[,w])=>sum+w,0);
-      const share=lead<8?.70:.43; // a noticeable, never certain rest choice
+     if(options.length){
+      const ids=new Set(options.map(([id])=>id));
+      const competing=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+      const already=options.reduce((sum,[,w])=>sum+w,0);
+      const share=lead<8?1.2:.6;
       if(already>0&&competing>0&&already<competing*share){
-       const scale=Math.min(60,competing*share/already);
-       for(const e of opts)e[1]*=scale;
+       const factor=competing*share/already;
+       for(const e of options)e[1]*=factor;
       }
      }
     }
    }
-   // The eventual loser puts in real work in the middle stretch. A small
-   // weight adjustment favours already-legal, tiring offence rather than
-   // applying invisible fatigue or invalidating safe-plan restrictions.
-   if(p.control===loser&&lead<15&&M.t/M.len<.84){
-    for(const entry of pool){
-     const n=A[entry[0]];
-     if(n&&costOf(entry[0])>=2.5&&!n.reverse&&!n.counterOf&&
-        !n.blockOf&&!n.nearfall&&n.family!=='rest')entry[1]*=1.25;
+   // The wrestler who will lose tries to do more real, draining work,
+   // but can still rest or choose any ordinary move. The pressure stops
+   // once they are exhausted; we do not secretly deduct stamina.
+   if(p.control===loser&&loseSt>=27&&lead<18&&M.t/M.len<.84){
+    const demanding=pool.filter(([id])=>{
+     const n=A[id],cost=costOf(id);
+     return n&&cost>=2.5&&!n.reverse&&!n.counterOf&&!n.blockOf&&
+      !n.nearfall&&n.family!=='rest'&&
+      (M.planId!=='safe'||!n.risk);
+    });
+    if(demanding.length){
+     const ids=new Set(demanding.map(([id])=>id));
+     const competing=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+     const weight=demanding.reduce((sum,[,w])=>sum+w,0);
+     const share=M.planId==='safe'?.22:.55;
+     if(weight>0&&competing>0&&weight<competing*share){
+      const factor=competing*share/weight;
+      for(const e of demanding)e[1]*=factor;
+     }
     }
    }
   }
