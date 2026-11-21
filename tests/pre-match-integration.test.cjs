@@ -139,3 +139,58 @@ for(const {risk,expected} of [{risk:0,expected:'landed'},{risk:100,expected:'bot
  }
 }
 console.log('PASS pre-match integration: '+bouts+' matched generated-sheet bouts across five plans, three durations, two consent tiers and two seeds; legal finishes, real scripted spot evidence, hard restrictions and causal reports');
+
+
+// Signed finish integration: static viability is checked at selection time;
+// once signed, a finish can favour relevant LEGAL setup, but not invent it.
+{
+ const mk=(w,f,finish,heat=0)=>Room.begin({
+  id:'finish-eligibility-'+w.id+'-'+f.id+'-'+finish+'-'+heat,
+  wid:w.id,rid:f.id,pid:promoter.id,finish,slot:'main',minutes:12,
+  eventAbs:1,feudHeat:heat
+ },w,f,promoter);
+ const candidate=D.FOES.find(f=>!['Brawl','Story'].includes(f.style));
+ const calm=D.TALENT.find(w=>w.ego<65);
+ const scrupulous=D.TALENT.find(w=>w.pro>=78);
+ assert.ok(candidate&&calm&&scrupulous,'static eligibility fixture wrestlers exist');
+ const pitched=st=>Room.pitches(st,'finish').map(c=>c.route);
+ assert.ok(!pitched(mk(worker,opponent,'win_dirty',0)).includes('referee_bump'),
+  'referee bump cannot be agreed without the required existing feud heat');
+ assert.ok(!pitched(mk(worker,candidate,'win_dq',50)).includes('dq_low_blow_f'),
+  'opponent cannot pitch an illegal low-blow disqualification for their style');
+ assert.ok(!pitched(mk(worker,opponent,'win_dq',0)).includes('dq_ref_shove_f'),
+  'opponent cannot pitch a referee shove without sufficient feud heat');
+ assert.ok(!pitched(mk(calm,opponent,'lose_dq',50)).includes('dq_ref_shove_w'),
+  'non-defiant worker cannot pitch referee-shove disqualification');
+ const incident=mk(scrupulous,opponent,'win_dirty',0);
+ incident.queue=['scruples'];Room.act(incident,'plan_story');Room.act(incident,'board_ok');
+ assert.equal(incident.stage,'scene');
+ Room.act(incident,'accident');
+ assert.equal(incident.lockRoute,'feet_on_ropes',
+  'forced backstage finish must have a legal no-heat alternative');
+ // A real focused legal action is more likely before the requisite damage is earned.
+ const data=signed('technical',12);
+ const sample=create(data,12097);
+ const focus=Object.values(G.A).find(n=>n.focus>0&&!n.reverse&&
+  (!n.part||n.part===G.PART_OF[sample.graph.targets.f]));
+ assert.ok(focus,'at least one limb-focused attack is in the real graph');
+ sample.stage='live';sample.t=sample.len*.55;sample.story.control='w';
+ sample.o.sheet.finishRoute='finisher';
+ const neutral=Room.bias(sample,focus.id);
+ sample.o.sheet.finishRoute='limb_finish';
+ assert.ok(Room.bias(sample,focus.id)>neutral,
+  'the signed limb finish favours actual focused offence, not narrative-only damage');
+ sample.graph.damage.f=4;
+ assert.equal(Room.bias(sample,focus.id),neutral,
+  'preparation assistance stops when enough real damage has landed');
+ const reverse=Object.values(G.A).find(n=>n.reverse);
+ assert.ok(reverse,'a real reversal exists');
+ sample.graph.events=[];sample.story.control='f';sample.o.sheet.finishRoute='reversal_finisher';
+ const before=Room.bias(sample,reverse.id);
+ sample.graph.events=[1,2,3].map(i=>({id:'counter_'+i,reverse:true,preControl:'f'}));
+ assert.ok(before>Room.bias(sample,reverse.id),
+  'a planned reversal finish prefers genuine counters only while unearned');
+ sample.o.sheet.finishRoute='finisher';
+ assert.equal(Room.bias(sample,reverse.id),Room.bias(sample,reverse.id),
+  'unconditional finish leaves the regular route weights intact');
+}
