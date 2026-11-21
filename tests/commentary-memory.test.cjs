@@ -48,7 +48,8 @@ const exact=(m)=>Object.entries(m.log.reduce((a,l)=>{
  return a;
 },{})).filter(([,n])=>n>=3);
 const stats={bouts:0,paired:0,tripleOld:0,tripleNew:0,severeOld:0,severeNew:0,
- worst:[],frequentIds:{},repeatedByAction:{},repeatedByTexture:{},textureEvents:{}};
+ worst:[],frequentIds:{},repeatedByAction:{},repeatedByTexture:{},textureEvents:{},
+ residualTextureExamples:[]};
 function run(o,tag){
  const m=lab.runMatch(fresh.root,JSON.parse(JSON.stringify(o)));
  assert.ok(m.done&&m.final,tag+' completes');
@@ -68,6 +69,8 @@ function run(o,tag){
   if(id==='(texture)'){
    const texture=m.log.find(l=>l.text===line)?.textureId||'(unattributed)';
    stats.repeatedByTexture[texture]=(stats.repeatedByTexture[texture]||0)+1;
+   if(stats.residualTextureExamples.length<70)
+    stats.residualTextureExamples.push({tag,line,count:n,texture});
   }
  }
  for(const [line,n] of repetition.filter(([,n])=>n>=4).slice(0,3)){
