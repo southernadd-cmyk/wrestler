@@ -3473,14 +3473,14 @@ const Graph=(function makeGraph(){
   // The action still passes the original physical isValid and seeded pick.
   if(M.o.sheet?.finishRoute==='outlasted'&&M.outcome==='booked'&&
      ['win_clean','lose_clean'].includes(M.o.finish)&&M.len>=600&&
-     M.t/M.len>=.22&&M.t/M.len<.91){
+     M.t/M.len>=.22&&M.t/M.len<.94){
    const winner=M.o.finish==='win_clean'?'w':'f',
     loser=winner==='w'?'f':'w',otherSt=loser==='w'?M.wSt:M.fSt;
    const rests=g.events.filter(e=>e.preControl===winner&&
     (e.id==='catch_breath'||A[e.id]?.family==='rest'&&costOf(e.id)<0));
    if(p.control===winner&&p.position==='standing'&&
       g.physical?.area==='ring'&&!g.physical?.grip&&
-      stamina<80&&stamina-otherSt<22&&rests.length<5&&
+      stamina<80&&stamina-otherSt<27&&rests.length<6&&
       !rests.some(e=>M.t-e.t<95)&&
       !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact)
     selected.push(['catch_breath',9]);
@@ -4256,30 +4256,52 @@ const Graph=(function makeGraph(){
   // real match timing remain authoritative.
   if(M.o.sheet?.finishRoute==='outlasted'&&M.outcome==='booked'&&
      ['win_clean','lose_clean'].includes(M.o.finish)&&M.len>=600&&
-     M.t/M.len>=.22&&M.t/M.len<.91){
+     M.t/M.len>=.22&&M.t/M.len<.94){
    const winner=M.o.finish==='win_clean'?'w':'f',
     loser=winner==='w'?'f':'w',
     winSt=winner==='w'?M.wSt:M.fSt,
     loseSt=loser==='w'?M.wSt:M.fSt,
     lead=winSt-loseSt;
-   if(p.control===winner&&winSt<80&&lead<22&&
+   if(p.control===winner&&winSt<80&&lead<27&&
       !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact){
     const rests=g.events.filter(e=>e.preControl===winner&&
      (e.id==='catch_breath'||A[e.id]?.family==='rest'&&costOf(e.id)<0));
-    // Five real rest actions at most, with 95 seconds between them.
+    // Six real rest actions at most, with 95 seconds between them.
     // This reserves only a CHANCE, never a compulsory action.
-    if(rests.length<5&&!rests.some(e=>M.t-e.t<95)){
+    if(rests.length<6&&!rests.some(e=>M.t-e.t<95)){
      const options=pool.filter(([id])=>id==='catch_breath'||
       A[id]?.family==='rest'&&costOf(id)<0);
      if(options.length){
       const ids=new Set(options.map(([id])=>id));
       const competing=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
       const already=options.reduce((sum,[,w])=>sum+w,0);
-      const share=lead<8?1.2:.6;
+      const share=lead<15?1.5:.85;
       if(already>0&&competing>0&&already<competing*share){
        const factor=competing*share/already;
        for(const e of options)e[1]*=factor;
       }
+     }
+    }
+   }
+   // In between actual rests, favour sound, economical *wrestling*
+   // instead of an all-out attack every exchange. Only already-valid
+   // offensive graph actions with real positive costs can benefit. The
+   // worker can still choose every other legal move, and neither receives
+   // hidden recovery or bonus quality.
+   if(p.control===winner&&winSt<80&&lead<23&&M.t/M.len<.87){
+    const economical=pool.filter(([id])=>{
+     const n=A[id],cost=costOf(id);
+     return n&&n.family&&n.family!=='rest'&&cost>0&&cost<=1.7&&
+      !n.reverse&&!n.counterOf&&!n.blockOf&&!n.nearfall&&!n.risk;
+    });
+    if(economical.length){
+     const ids=new Set(economical.map(([id])=>id));
+     const other=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+     const weight=economical.reduce((sum,[,w])=>sum+w,0);
+     const share=.95;
+     if(weight>0&&other>0&&weight<other*share){
+      const factor=other*share/weight;
+      for(const e of economical)e[1]*=factor;
      }
     }
    }
@@ -4297,7 +4319,7 @@ const Graph=(function makeGraph(){
      const ids=new Set(demanding.map(([id])=>id));
      const competing=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
      const weight=demanding.reduce((sum,[,w])=>sum+w,0);
-     const share=M.planId==='safe'?.22:.55;
+     const share=M.planId==='safe'?.38:1.1;
      if(weight>0&&competing>0&&weight<competing*share){
       const factor=competing*share/weight;
       for(const e of demanding)e[1]*=factor;
