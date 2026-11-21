@@ -449,6 +449,20 @@ console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings
   });
   const recovery=side=>rests.filter(e=>e.preControl===side).length;
   const lateRecovery=side=>rests.filter(e=>e.preControl===side&&e.t>=m.len-180).length;
+
+  const actor=e=>e.reverse?(e.preControl==='w'?'f':'w'):e.preControl;
+  const signedEvents=(m.graph.events||[]).filter(e=>['w','f'].includes(actor(e)));
+  const statsFor=side=>{
+   const ev=signedEvents.filter(e=>actor(e)===side),rest=ev.filter(e=>e.exertion<0),
+    costly=ev.filter(e=>e.exertion>=3),late=ev.filter(e=>e.t>=m.len-180);
+   return {actions:ev.length,positiveCost:num(ev.reduce((sum,e)=>sum+Math.max(0,e.exertion||0),0)),
+    restored:num(-rest.reduce((sum,e)=>sum+(e.exertion||0),0)),
+    costlyActions:costly.length,risky:ev.filter(e=>A[e.id]?.risk&&!A[e.id]?.reverse).length,
+    lateActions:late.length,lateCost:num(late.reduce((sum,e)=>sum+Math.max(0,e.exertion||0),0)),
+    lateRests:late.filter(e=>e.exertion<0).length,
+    firstRest:rest.length?rest[0].t:null,lastRest:rest.length?rest.at(-1).t:null};
+  };
+  const winStats=statsFor(winner),loseStats=statsFor(winner==='w'?'f':'w');
   const won=m.finishRoute==='outlasted';
   if(route==='outlasted'&&m.outcome==='booked')
    assert.equal(won,lose<30&&lead>=15,'outlasted must honour exact stamina prerequisites');
@@ -460,6 +474,7 @@ console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings
    firstTired,firstLead,firstEligible,lastEligible,
    winRests:recovery(winner),loseRests:recovery(winner==='w'?'f':'w'),
    winLateRests:lateRecovery(winner),loseLateRests:lateRecovery(winner==='w'?'f':'w'),
+   winStats,loseStats,paceCount:m.graph.pacedOutlast?.[winner]?.count||0,
    totalActions:m.graph.events?.length||0,waypoints:at};
  }
  let seq=0;
@@ -488,6 +503,9 @@ console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings
    const planned=run(booking,st.sheet,w,f,seed,'outlasted'),
     noPrep=run(booking,st.sheet,w,f,seed,finish==='win_clean'?'finisher':'duck_finisher');
    results.push({plan,minutes,finish,worker:w.id,foe:f.id,heat,
+    workerStyle:w.style,foeStyle:f.style,
+    winnerStyle:finish==='win_clean'?w.style:f.style,
+    loserStyle:finish==='win_clean'?f.style:w.style,
     planned,noPrep,deltaLead:num(planned.lead-noPrep.lead),
     deltaWinRests:planned.winRests-noPrep.winRests,
     deltaLoseRests:planned.loseRests-noPrep.loseRests});
@@ -530,6 +548,68 @@ console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings
    lead:x.planned.lead,loserTired:x.planned.loserTired,winRests:x.planned.winRests,
    loseRests:x.planned.loseRests,everEligible:x.planned.everEligible,
    maxLeadAfterTired:x.planned.maxLeadAfterTired,controlLead:x.noPrep.lead}));
+
+ const failureBreak=rows=>({
+  noGap:rows.filter(x=>x.planned.lead<15).length,
+  noLoserExhaustion:rows.filter(x=>x.planned.loseSt>=30).length,
+  bothMiss:rows.filter(x=>x.planned.lead<15&&x.planned.loseSt>=30).length,
+  loserOnly:rows.filter(x=>x.planned.lead>=15&&x.planned.loseSt>=30).length,
+  gapOnly:rows.filter(x=>x.planned.lead<15&&x.planned.loseSt<30).length,
+  windowLost:rows.filter(x=>x.planned.everEligible&&!x.planned.eligible).length,
+  zeroWinnerRest:rows.filter(x=>x.planned.winRests===0).length,
+  moreLoserRests:rows.filter(x=>x.planned.loseRests>x.planned.winRests).length,
+  winnerSpentMore:rows.filter(x=>x.planned.winStats.positiveCost>x.planned.loseStats.positiveCost).length,
+  meanWinCost:mean(rows.map(x=>x.planned.winStats.positiveCost)),
+  meanLoseCost:mean(rows.map(x=>x.planned.loseStats.positiveCost)),
+  meanWinRecover:mean(rows.map(x=>x.planned.winStats.restored)),
+  meanLoseRecover:mean(rows.map(x=>x.planned.loseStats.restored)),
+  meanWinRisk:mean(rows.map(x=>x.planned.winStats.risky)),
+  meanLoseRisk:mean(rows.map(x=>x.planned.loseStats.risky)),
+  meanWinLateCost:mean(rows.map(x=>x.planned.winStats.lateCost)),
+  meanLoseLateCost:mean(rows.map(x=>x.planned.loseStats.lateCost)),
+  meanPacingTriggers:mean(rows.map(x=>x.planned.paceCount)),
+  meanControlWinCost:mean(rows.map(x=>x.noPrep.winStats.positiveCost)),
+  meanControlLoseCost:mean(rows.map(x=>x.noPrep.loseStats.positiveCost)),
+  meanControlWinRecover:mean(rows.map(x=>x.noPrep.winStats.restored))
+ });
+ const categories=Object.fromEntries(['plan','minutes','finish','winnerStyle','loserStyle']
+  .map(k=>[k,group(results,k,rows=>({
+   n:rows.length,hit:rows.filter(x=>x.planned.eligible).length,
+   controlHit:rows.filter(x=>x.noPrep.eligible).length,
+   medianGap:median(rows.map(x=>x.planned.lead)),
+   medianControlGap:median(rows.map(x=>x.noPrep.lead)),
+   meanGapDelta:mean(rows.map(x=>x.deltaLead)),
+   ...failureBreak(rows)
+  }))]));
+ const pairedChanges=results.filter(x=>x.planned.eligible!==x.noPrep.eligible).map(x=>({
+  plan:x.plan,minutes:x.minutes,finish:x.finish,worker:x.worker,foe:x.foe,
+  gained:x.planned.eligible,winStyle:x.winnerStyle,loseStyle:x.loserStyle,
+  liveGap:x.planned.lead,controlGap:x.noPrep.lead,liveLoser:x.planned.loseSt,
+  controlLoser:x.noPrep.loseSt,
+  winRecover:x.planned.winStats.restored,loseRecover:x.planned.loseStats.restored,
+  winPositive:x.planned.winStats.positiveCost,losePositive:x.planned.loseStats.positiveCost,
+  lostWindow:x.planned.everEligible&&!x.planned.eligible
+ }));
+ const spotExamples=results.filter(x=>x.plan==='spots'&&x.minutes>=12).map(x=>({
+  minutes:x.minutes,finish:x.finish,worker:x.worker,foe:x.foe,
+  styles:x.winnerStyle+'/'+x.loserStyle,hit:x.planned.eligible,
+  wSt:x.planned.winSt,lSt:x.planned.loseSt,gap:x.planned.lead,
+  defaultGap:x.noPrep.lead,winRests:x.planned.winRests,loserRests:x.planned.loseRests,
+  winnerCost:x.planned.winStats.positiveCost,loserCost:x.planned.loseStats.positiveCost,
+  winnerRecover:x.planned.winStats.restored,loserRecover:x.planned.loseStats.restored,
+  winnerRisk:x.planned.winStats.risky,loserRisk:x.planned.loseStats.risky,
+  pacing:x.planned.paceCount,
+  gap90:x.planned.waypoints['0.9']?.lead,eligibleEarlier:x.planned.everEligible
+ }));
+ console.log('OUTLAST_FOCUS_DIAGNOSTIC_JSON='+JSON.stringify({
+  version:1,fixtures:results.length,focus:failureBreak(results),
+  breakdown:categories,
+  regressionCases:pairedChanges,
+  spotExamples,
+  findingNotes:['Action exertion uses real graph event costs, not passive clock drain.',
+   'Reversal actor inferred from graph reversal metadata.',
+   'Same seed and sheet as original 120-pair diagnostic.']
+ }));
  console.log('OUTLAST_STAMINA_DIAGNOSTIC_JSON='+JSON.stringify({
   version:1,fixtures:results.length,pairedRuns:results.length*2,
   conditions:{loserBelow:30,winnerGapAtLeast:15},
