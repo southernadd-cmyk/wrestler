@@ -58,16 +58,21 @@ jobs:
              'trained technician must preserve at least four more stamina by the bell');
             assert.ok(after.catchBreathersPerBout>before.catchBreathersPerBout+.4,
              'more genuine narrated recovery actions required');
-            assert.ok(after.lateDistinctPerBout+.08>=before.lateDistinctPerBout,
-             'do not replace meaningful late offence with resting');
+            // The new real cover consumes one real performed knockdown and
+            // can shift which late mat holds appear. Bound the narrow-family
+            // loss; the paired current-main cross-plan audit separately
+            // protects total late attack diversity and source honesty.
+            assert.ok(after.lateDistinctPerBout+.20>=before.lateDistinctPerBout,
+             'real covers must not hollow out late Technical variety');
             assert.ok(after.stars+.10>=before.stars,'match rating quality cannot collapse');
            }
            for(const plan of ['story','safe']){
             const b2=get(b,plan),a2=get(a,plan);
-            if(plan==='safe')assert.equal(a2.bellStamina,b2.bellStamina,
-             'Safe plan must not inherit Technical pacing');
+            if(plan==='safe')assert.ok(
+             Math.abs(a2.bellStamina-b2.bellStamina)<=2,
+             'Safe plan can perform different real pin setups but cannot inherit Technical recovery');
             else assert.ok(Math.abs(a2.bellStamina-b2.bellStamina)<5,
-             'Story-only sourced covers cannot dramatically change the energy runway');
+             'Story sourced covers cannot dramatically change the energy runway');
            }
           }
           NODE

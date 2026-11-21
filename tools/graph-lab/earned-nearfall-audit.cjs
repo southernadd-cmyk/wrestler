@@ -50,7 +50,16 @@ function capture(seeds=8){
       e.control===credited&&e.preControl===credited&&
       e.position==='mat'&&e.down===defender&&A[e.id]?.down==='d'&&
       isImpact(e)).at(-1);
-    if(count.earned===true&&e&&hit&&e.id===hit.id&&e.t===hit.t){
+    // Credit the EXACT recorded source, not an unrelated later candidate.
+    // The scheduler may earn a cover from a still-live 30-second grounding
+    // even if another legal hit followed it. The old 'last hit == source'
+    // shortcut falsely classified that event as unbacked.
+    const exact=!!(e&&isHit(e)&&isImpact(e)&&
+     e.control===credited&&e.preControl===credited&&
+     e.position==='mat'&&e.down===defender&&
+     A[e.id]?.down==='d'&&A[e.id]?.zone==='mat'&&
+     count.sourceSide===credited&&count.t>=e.t&&count.t-e.t<=30);
+    if(count.earned===true&&exact){
      x.backed++;
     }else if(count.earned===true){
      x.wrongSource++;
