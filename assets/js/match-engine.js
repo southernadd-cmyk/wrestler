@@ -2782,7 +2782,7 @@ const Graph=(function makeGraph(){
     submission_roll:[
      'That change in mat position came from an actual counter.',
      'A small change in leverage has altered this submission exchange.',
-     'The escape happened on the mat, not in the commentary booth.'
+     'That roll broke the grip cleanly. The hold is over.'
     ]
    };
    if(reactions[id]){
