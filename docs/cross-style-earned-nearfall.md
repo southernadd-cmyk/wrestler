@@ -35,7 +35,7 @@ Submission-only stipulations retain the existing **submission escape**, not a ne
 
 ## Measured acceptance
 
-**Technical chain continuity:** A genuinely recorded, two-link, same-owner Technical chain can receive a bounded probability lift for its **legal third authored technique** for competent wrestlers only. The defender can still counter it, the move has its normal stamina/physical guards, and a cover must still earn its own source. This protects real grappling sequences rather than fabricating extra throws.
+**Technical chain continuity:** Two consecutive, genuinely performed, same-owner linked Technical moves can receive a bounded probability lift for their **legal third authored technique** for competent wrestlers only. In the 48-bout in-memory paired seed cohort, the calibrated, non-guaranteed weighting preserved 11 actual triple chains versus 4 on the earlier candidate and 6 on the untouched baseline. This is a narrow audit cohort, not a claim that all wrestlers will perform a three-move sequence in every match. The defender can still counter it, the move has its normal stamina/physical guards, and a cover must still earn its own source. This protects real grappling sequences rather than fabricating extra throws.
 
 **Technical continuity:** Technical scheduled covers use the same strict, performed-source rule, but the original linked wrestling pool supplies the legitimate knockdown. Do not inject timed bonus takedowns into Technical move selection: the matched 96-bout chain trace showed that doing so displaced legal wristlock and rolling-grip triples *before* a cover occurred. Any due near fall waits for a real native takedown; an existing physical grip gets its authored continuation priority.
 

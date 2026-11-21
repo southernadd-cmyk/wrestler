@@ -3315,14 +3315,17 @@ const Graph=(function makeGraph(){
   // A real TWO-step authored Technical chain deserves a fair chance to
   // complete its legal third link. The former near-fall prep bias crowded
   // out competent wrestler wristlock -> rolling control -> throw sequences.
-  // Only an actual consecutive, same-owned linked pair qualifies: no
-  // synthetic grip, guaranteed action, free stamina, or immune counter.
+  // Only two actually performed, same-owned graph-linked actions can
+  // qualify; the prospective third link must exist, be legal and match
+  // a real authored technique. Its probability stays below certainty,
+  // with normal physical, stamina and counter rules fully active.
   // Elite technicians already maintain their chains without this assistance.
-  if(M.planId==='technical'&&M.len>=900&&inSequence&&
+  if(M.planId==='technical'&&M.len>=900&&sameController&&prior&&
+      !!A[prior.id]?.next.some(([nextId])=>nextId===previous.id)&&
       liveSide.style==='Technical'&&liveSide.ring>=68&&liveSide.ring<85&&
       liveSide.safe>=60&&previous.preControl===p.control&&
       prior.preControl===p.control&&prior.control===p.control&&
-      previous.t-prior.t<=20&&M.t-previous.t>=0&&M.t-previous.t<=10){
+      previous.t-prior.t<=20&&M.t-previous.t>=0&&M.t-previous.t<=20){
    const last=A[g.node];
    const authored=new Set((last?.next||[]).map(([id])=>id));
    const technicalFamilies=new Set(['chain','suplex','submission',
@@ -3337,9 +3340,9 @@ const Graph=(function makeGraph(){
     const other=pool.reduce((total,[id,weight])=>
      total+(ids.has(id)?0:weight),0);
     const training=Math.min(1,(liveSide.ring-68)/17);
-    const target=other*(.48+.12*training);
+    const target=other*1.05;
     if(owned>0&&owned<target){
-     const factor=Math.min(6,target/owned);
+     const factor=Math.min(8,target/owned);
      for(const item of followups)item[1]*=factor;
     }
    }
