@@ -89,6 +89,8 @@ jobs:
           node tests/phase9-graph-validation.test.cjs
           node tests/phase9-authored-chains.test.cjs
           node tests/pre-match-integration.test.cjs
+          # Signed finish choices and legal audibles use the same match-engine boundary.
+          node tests/agents-room.test.cjs
           # Run the compact booth fixture in the existing PR smoke gate.
           node tests/commentary-memory.test.cjs
           # Branch-scoped paired witness for v0.6.2 texture-only narration.
