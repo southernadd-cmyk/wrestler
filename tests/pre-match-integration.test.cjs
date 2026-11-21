@@ -340,3 +340,26 @@ console.log('PASS pre-match integration: '+bouts+' matched generated-sheet bouts
  Room.act(st,'talk_none');
  assert.equal(st.sheet.finishRoute,'feet_on_ropes');
 }
+
+
+// A signed Outlasted finish is honestly explained at each match length.
+// The guide communicates feasibility; it does not lower the bell-time gates.
+{
+ const make=minutes=>{
+  const st=Room.begin({id:'outlasting-guide-'+minutes,wid:worker.id,rid:opponent.id,pid:promoter.id,
+   slot:'main',finish:'win_clean',minutes,eventAbs:minutes,feudHeat:30},
+   worker,opponent,promoter);
+  Room.act(st,'plan_story');
+  st.board.finish={route:'outlasted',label:'Outlast them',by:'agent',owner:'either'};
+  return Room.view(st).finishPlan;
+ };
+ const short=make(8),medium=make(12),long=make(18);
+ assert.ok(short&&medium&&long,'an Outlasted route has an explicit feasibility guide');
+ assert.match(short.summary,/very unlikely|short match/i);
+ assert.match(medium.summary,/risky/i);
+ assert.match(long.summary,/both wrestlers/i);
+ for(const note of [short,medium,long]){
+  assert.match(note.requirement,/loser needs stamina below 30/i);
+  assert.match(note.summary,/guarantee|must|required|often/i);
+ }
+}
