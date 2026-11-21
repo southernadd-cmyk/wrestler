@@ -34,6 +34,14 @@ const unearned=make();const old=unearned.nearfalls;
 assert.equal(G.nearfall(unearned,{id:'clothesline',t:950,side:'w',key:'950:clothesline:w'}),false,
  'forged source cannot earn a count');
 assert.equal(unearned.nearfalls,old);
+const crawl=make();crawl.story.position='mat';crawl.story.down='f';
+G.apply(crawl,'rope_crawl');
+assert.equal(G.earnedNearfallSource(crawl),null,
+ 'defender crawling towards ropes is not an earned knockdown');
+const held=make();held.story.position='mat';held.story.down='f';
+G.apply(held,'sm_lion_tamer');
+assert.equal(G.earnedNearfallSource(held),null,
+ 'an applied submission hold is not an impact-to-pin setup');
 const wrong=make();G.apply(wrong,'clothesline');wrong.story.control='f';
 assert.equal(G.earnedNearfallSource(wrong),null,'opponent cannot steal earned count');
 const expired=make();G.apply(expired,'clothesline');expired.t+=40;

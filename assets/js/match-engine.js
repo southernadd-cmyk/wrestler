@@ -3563,6 +3563,16 @@ const Graph=(function makeGraph(){
  // not permission to invent a move, flip control or teleport either side.
  function earnedNearfallSource(M){
   const g=get(M),p=Psy.get(M),side=p.control;
+  // A held submission, rope crawl, mat pressure or rest is not a
+  // fresh knockdown. The defender being down alone is insufficient:
+  // the actual authored move must be an impact or credited takedown.
+  const impactFamilies=new Set(['strike','running','power','suplex',
+   'neck','aerial','springboard','superplex','lucha','dive',
+   'corner','rope','outside']);
+  const classicImpacts=new Set(['clothesline','snap_suplex',
+   'heavy_slam','power_spinebuster','arm_drag','mat_takedown',
+   'short_arm_lariat','target_strike','shoulder_tackle','hip_toss',
+   'gutbuster','grapple_trip','headlock_takeover','body_shot']);
   if(M.o.stip==='submission'||M.t/M.len<.59||
      !['w','f'].includes(side)||p.position!=='mat'||
      p.down!==(side==='w'?'f':'w')||
@@ -3577,7 +3587,7 @@ const Graph=(function makeGraph(){
    if(e.t>M.t||e.preControl!==side||e.control!==side||
       e.position!=='mat'||e.down!==p.down||!n||n.reverse||
       n.counterOf||n.blockOf||n.down!=='d'||n.zone!=='mat'||
-      ['rest','pin','setup','pose','taunt','heel'].includes(n.family)||
+      !(impactFamilies.has(n.family)||classicImpacts.has(e.id))||
       !['aerialResolution','grappleResolution','strikeResolution','contactResolution']
         .every(key=>!e[key]||e[key]==='landed'))continue;
    const key=e.t+':'+e.id+':'+side;

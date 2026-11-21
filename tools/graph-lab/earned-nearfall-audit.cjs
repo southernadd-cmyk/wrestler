@@ -22,6 +22,13 @@ function capture(seeds=8){
    opt.w={...opt.w,ring,safe,psych,heat:65,fatigue:4,pro:78};
    const m=lab.runMatch(root,opt);
    const events=m.graph.events;
+   const IMPACT_FAMILIES=new Set(['strike','running','power','suplex','neck',
+     'aerial','springboard','superplex','lucha','dive','corner','rope','outside']);
+   const CORE_IMPACTS=new Set(['clothesline','snap_suplex','heavy_slam','power_spinebuster',
+     'arm_drag','mat_takedown','short_arm_lariat','target_strike','shoulder_tackle',
+     'hip_toss','gutbuster','grapple_trip','headlock_takeover','body_shot']);
+   const isImpact=e=>{const a=A[e.id];return !!a&&
+     (IMPACT_FAMILIES.has(a.family)||CORE_IMPACTS.has(e.id));};
    const isHit=e=>{const a=A[e.id];return !!a&&!a.reverse&&!a.counterOf&&!a.blockOf&&
     !['rest','setup','pose','taunt'].includes(a.family)&&
     ['aerialResolution','grappleResolution','strikeResolution','contactResolution']
@@ -42,7 +49,7 @@ function capture(seeds=8){
     const hit=events.filter(e=>e.t<=count.t&&count.t-e.t<=30&&isHit(e)&&
       e.control===credited&&e.preControl===credited&&
       e.position==='mat'&&e.down===defender&&A[e.id]?.down==='d'&&
-      !['rest','pin','heel'].includes(A[e.id]?.family)).at(-1);
+      isImpact(e)).at(-1);
     if(count.earned===true&&e&&hit&&e.id===hit.id&&e.t===hit.t){
      x.backed++;
     }else if(count.earned===true){
