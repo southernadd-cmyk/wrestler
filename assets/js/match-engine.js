@@ -4233,6 +4233,55 @@ const Graph=(function makeGraph(){
     }
    }
   }
+  // The signed Outlasted route needs an actual stamina separation, not just
+  // two tired wrestlers. Give the eventual winner *opportunities* to work
+  // economically: the breather/hold must already be physically legal, gets
+  // selected through the normal seeded pool, spends a full graph action and
+  // produces its ordinary narrated recovery event. Never award free stamina.
+  // Short bouts cannot support this endurance story. Leave them naturally
+  // difficult rather than scripting the necessary exhaustion.
+  if(M.o.sheet?.finishRoute==='outlasted'&&M.outcome==='booked'&&
+     ['win_clean','lose_clean'].includes(M.o.finish)&&M.len>=600&&
+     M.t/M.len>=.23&&M.t/M.len<.91){
+   const winner=M.o.finish==='win_clean'?'w':'f',loser=winner==='w'?'f':'w',
+    winSt=winner==='w'?M.wSt:M.fSt,
+    loserSt=loser==='w'?M.wSt:M.fSt,
+    lead=winSt-loserSt;
+   if(p.control===winner&&winSt<77&&lead<19&&
+      !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact){
+    const recoveryEvents=g.events.filter(e=>e.preControl===winner&&
+     (e.id==='catch_breath'||A[e.id]?.family==='rest'&&costOf(e.id)<0));
+    // Four distinctly earned breathers at most, at least 90 seconds apart.
+    // Never displace an imminent finish or repeatedly pose between moves.
+    if(recoveryEvents.length<4&&
+       !recoveryEvents.some(e=>M.t-e.t<90)){
+     const opts=pool.filter(([id])=>id==='catch_breath'||
+      A[id]?.family==='rest'&&costOf(id)<0);
+     // The pool remains authoritative; this is NOT a new free-standing
+     // action, an invalid rest hold, or an escape from an active grapple.
+     if(opts.length){
+      const own=new Set(opts.map(([id])=>id));
+      const competing=pool.reduce((sum,[id,w])=>sum+(own.has(id)?0:w),0);
+      const already=opts.reduce((sum,[,w])=>sum+w,0);
+      const share=lead<8?.70:.43; // a noticeable, never certain rest choice
+      if(already>0&&competing>0&&already<competing*share){
+       const scale=Math.min(60,competing*share/already);
+       for(const e of opts)e[1]*=scale;
+      }
+     }
+    }
+   }
+   // The eventual loser puts in real work in the middle stretch. A small
+   // weight adjustment favours already-legal, tiring offence rather than
+   // applying invisible fatigue or invalidating safe-plan restrictions.
+   if(p.control===loser&&lead<15&&M.t/M.len<.84){
+    for(const entry of pool){
+     const n=A[entry[0]];
+     if(n&&costOf(entry[0])>=2.5&&!n.reverse&&!n.counterOf&&
+        !n.blockOf&&!n.nearfall&&n.family!=='rest')entry[1]*=1.25;
+    }
+   }
+  }
   // An agreed beat is not one option among fifty. If it is legal right now, the wrestler takes it
   // with odds set by how willing they are, whatever their habits would otherwise suggest.
   if(agreed){
