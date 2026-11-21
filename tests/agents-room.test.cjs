@@ -510,7 +510,7 @@ console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings
   recovery:{winMean:mean(rows.map(x=>x.winRests)),loseMean:mean(rows.map(x=>x.loseRests)),
    zeroWinner:rows.filter(x=>x.winRests===0).length,
    winnerLateMean:mean(rows.map(x=>x.winLateRests)),
-   loserLateMean:mean(rows.map(x=>x.loseLateRests)},
+   loserLateMean:mean(rows.map(x=>x.loseLateRests))},
   trajectory:Object.fromEntries([.25,.5,.75,.90,.99].map(k=>[String(k),{
    winnerMean:mean(rows.map(x=>x.waypoints[k]?.win).filter(x=>x!==undefined)),
    loserMean:mean(rows.map(x=>x.waypoints[k]?.lose).filter(x=>x!==undefined)),
