@@ -36,4 +36,18 @@ for(const screen of ["desk dates","inbox","offers","fixtures","pyramid","promote
 assert.match(css,/\.record-link\{/);
 assert.match(css,/\.record-head\{/);
 new Function(ui); // Source parses before any browser navigation runs.
+// Phase 2: management controls remain presentation-only and keyboard operable.
+for(const field of ['data-scout-query','data-scout-style','data-scout-budget',
+ 'data-stable-query','data-stable-filter','data-inbox-filter','data-shortlist']){
+ assert.ok(ui.includes(field),'missing management filter control: '+field);
+}
+assert.match(ui,/function scoutingComparison\(free\)/);
+assert.match(ui,/function renderScouting\(\)/);
+assert.match(ui,/function renderSquad\(\)/);
+assert.match(ui,/No messages match this filter/);
+assert.match(ui,/function renderDesk\(\)/);
+assert.match(ui,/data-clear-shortlist/);
+assert.ok(css.includes('.management-filters{'));
+assert.ok(css.includes('.desk-brief{'));
+assert.ok(css.includes('.office-filter-tabs{'));
 console.log('PASS Office UI keyboard, status indicators, action labels and modal accessibility');
