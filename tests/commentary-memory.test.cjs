@@ -48,9 +48,9 @@ const exact=(m)=>Object.entries(m.log.reduce((a,l)=>{
  return a;
 },{})).filter(([,n])=>n>=3);
 const stats={bouts:0,paired:0,tripleOld:0,tripleNew:0,severeOld:0,severeNew:0,
- worst:[],frequentIds:{}};
+ worst:[],frequentIds:{},repeatedByAction:{}};
 function run(o,tag){
- const m=lab.runMatch(fresh.root,o);
+ const m=lab.runMatch(fresh.root,JSON.parse(JSON.stringify(o)));
  assert.ok(m.done&&m.final,tag+' completes');
  assert.ok(m.log.every(l=>!/\bundefined\b|\bNaN\b/.test(l.text)),tag+' has valid booth text');
  assert.ok(!m.log.some(l=>/successful uses so far|It works for a fourth time/.test(l.text)),
@@ -59,11 +59,18 @@ function run(o,tag){
  stats.bouts++;stats.tripleNew+=repetition.length;
  stats.severeNew+=repetition.filter(([,n])=>n>=5).length;
  for(const e of m.graph.events)stats.frequentIds[e.id]=(stats.frequentIds[e.id]||0)+1;
+ for(const [line,n] of repetition){
+  const id=m.log.find(l=>l.text===line)?.actionId||'(texture)';
+  stats.repeatedByAction[id]=(stats.repeatedByAction[id]||0)+1;
+ }
  for(const [line,n] of repetition.filter(([,n])=>n>=4).slice(0,3)){
-  if(stats.worst.length<15)stats.worst.push({tag,count:n,line});
+  if(stats.worst.length<15){
+   const matchLine=m.log.find(l=>l.text===line);
+   stats.worst.push({tag,count:n,actionId:matchLine?.actionId||'(texture)',line});
+  }
  }
  if(base){
-  const b=lab.runMatch(base.root,o);
+  const b=lab.runMatch(base.root,JSON.parse(JSON.stringify(o)));
   assert.equal(mechanics(m),mechanics(b),'mechanical drift '+tag);
   const prior=exact(b);
   stats.paired++;stats.tripleOld+=prior.length;
@@ -92,4 +99,5 @@ assert.equal(submission.log.at(-1).who,'pbp');
 // Regression summary gives exact residual lines and graph-action frequencies,
 // rather than claiming that a single aggregate figure explains repetition.
 stats.frequentIds=Object.entries(stats.frequentIds).sort((a,b)=>b[1]-a[1]).slice(0,25);
+stats.repeatedByAction=Object.entries(stats.repeatedByAction).sort((a,b)=>b[1]-a[1]).slice(0,25);
 console.log('PASS commentary memory + matched mechanics: '+JSON.stringify(stats));
