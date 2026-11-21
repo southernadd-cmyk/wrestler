@@ -330,10 +330,18 @@ console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings
    slot:'main',finish,minutes,eventAbs:20,feudHeat:heat};
   const st=Room.begin(c,w,f,promoter);st.queue=[];
   Room.act(st,'plan_'+plan);
+  let finishChosen=false;
   while(st.stage!=='done'){
    const options=Room.options(st);
-   const choice=st.stage==='board'?options.find(x=>x.id==='board_ok'):
+   // The modern room chooses the route at the top of the board, BEFORE
+   // its four called spots. Without this step the audit silently samples
+   // Dennis's default finisher 540 times instead of the offered methods.
+   const routes=st.stage==='board'&&mode==='offered'&&!finishChosen?
+    options.filter(o=>o.route):[];
+   const choice=routes.length?routes[seed%routes.length]:
+    st.stage==='board'?options.find(x=>x.id==='board_ok'):
     st.stage==='finish'&&mode==='offered'?options[seed%options.length]:options[0];
+   if(routes.length)finishChosen=true;
    Room.act(st,choice.id);
   }
   const sheet=clone(st.sheet);
