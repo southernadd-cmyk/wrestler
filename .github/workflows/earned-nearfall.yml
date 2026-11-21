@@ -1,0 +1,74 @@
+name: Earned near falls and finish continuity A/B
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'tests/earned-nearfall.test.cjs'
+      - 'tools/graph-lab/earned-nearfall-audit.cjs'
+      - '.github/workflows/earned-nearfall.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    name: Real in-ring knockdowns, sourced counts and real finishes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact physical position, ownership and duplicate-cover guards
+        run: |
+          node tests/earned-nearfall.test.cjs
+          node tests/story-earned-hope.test.cjs
+      - uses: actions/checkout@v4
+        with:
+          ref: balance/story-earned-hope-20261120
+          path: baseline
+      - name: Compare actual in-ring counts and finish gaps in 576 matches
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp tools/graph-lab/earned-nearfall-audit.cjs baseline/tools/graph-lab/earned-nearfall-audit.cjs
+          (cd baseline && node tools/graph-lab/earned-nearfall-audit.cjs 8 --json-file > ../nearfall-before.md)
+          node tools/graph-lab/earned-nearfall-audit.cjs 8 --json-file > nearfall-after.md
+          echo '# Before: action provenance and finish gaps' >> "$GITHUB_STEP_SUMMARY"
+          cat nearfall-before.md >> "$GITHUB_STEP_SUMMARY"
+          echo '# After: genuine landed-source near falls' >> "$GITHUB_STEP_SUMMARY"
+          cat nearfall-after.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Protect booked results, meaningful nearfalls and match quality
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const b=require('./baseline/earned-nearfall-audit.json');
+          const a=require('./earned-nearfall-audit.json');
+          for(const x of a.rows){
+           const old=b.rows.find(y=>y.tier===x.tier&&y.minutes===x.minutes&&y.plan===x.plan);
+           assert(old);assert.deepEqual(x.finishTypes,old.finishTypes,
+            'do not alter any planned match finish');
+           assert.equal(x.wrongSource,0,'every credited cover needs a real, exact source');
+           if(x.scheduledNearfalls>0)assert.equal(x.provenancePct,100,
+            'no synthetic scheduled pin may survive');
+           console.log(x.tier,x.minutes,x.plan,'actual scheduled counts',
+            old.scheduledNearfalls,'=>',x.scheduledNearfalls,
+            'sourced',x.provenancePct+'%','stars',old.stars,'=>',x.stars,
+            'finish gap',old.finishGapSeconds,'=>',x.finishGapSeconds);
+           assert.ok(x.stars+0.15>=old.stars,'match quality cannot collapse');
+           if(x.plan==='story'&&x.minutes===18&&x.tier!=='novice')
+            assert.ok(x.scheduledNearfalls>=.40,
+             'long Story match needs enough actual, non-invented covers');
+          }
+          NODE
+      - name: Retain all actual and legacy evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: earned-nearfall-paired-576
+          path: |
+            baseline/earned-nearfall-audit.json
+            earned-nearfall-audit.json
+            nearfall-before.md
+            nearfall-after.md
+          if-no-files-found: error
