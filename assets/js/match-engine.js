@@ -2174,6 +2174,31 @@ const Graph=(function makeGraph(){
   return {A:w?M.w:M.f,Df:w?M.f:M.w,side:w?'w':'f'};
  }
  const ACTION_NARRATION_VARIANTS={
+  mat_takedown:[
+   '{A} hooks the near leg and trips {D}, following to the mat.',
+   '{D} widens their stance but {A} completes a clean leg trip.',
+   '{A} takes {D} off balance with a well-timed takedown.'
+  ],
+  power_spinebuster:[
+   '{A} catches {D} charging in and plants them with a spinebuster!',
+   '{D} runs into a spinebuster from {A} and hits the mat hard.',
+   '{A} turns {D}’s momentum into a heavy spinebuster!'
+  ],
+  mat_hold:[
+   '{A} settles their weight on {D}, preventing an easy escape.',
+   '{D} shifts their hips but {A} keeps top control.',
+   '{A} maintains pressure on the mat while {D} searches for space.'
+  ],
+  headlock_takeover:['{A} uses the headlock to bring {D} down under control.','{D} loses their base as {A} takes the headlock to the mat.'],
+  arm_drag:['{A} catches the arm and snaps {D} over with an arm drag.','{D} is pulled off balance by a sharp arm drag from {A}.'],
+  shoulder_tackle:['{A} meets {D} off the ropes with a shoulder tackle.','{D} goes down under a well-timed shoulder tackle from {A}.'],
+  snap_suplex:['{A} sets the grip and takes {D} over with a snap suplex.','{A} lifts cleanly and lands a crisp snap suplex on {D}.'],
+  hip_toss:['{A} turns the tie-up into a hip toss on {D}.','{D} goes over the hip as {A} completes the throw.'],
+  heavy_slam:['{A} scoops {D} and drives them down with a body slam.','{D} takes a heavy body slam after {A} catches the waist.'],
+  mat_scramble:['{D} turns underneath {A} and reverses the mat position.','{D} finds the leverage to roll through and take control.'],
+  rope_crawl:['{D} inches towards the bottom rope as {A} holds on.','{A} maintains the hold while {D} crawls for the ropes.'],
+  roll_inside:['{A} pulls {D} back under the bottom rope before the ten-count.','{D} is returned to the ring as {A} follows inside.'],
+  aerial_attack:['{A} comes off the top and connects with a diving elbow on {D}!','{D} cannot roll away before {A} lands the diving elbow.'],
   // Phase 4: avoid ten identical lock-ups, wrist counters, rope runs or
   // clotheslines in one match. Every variant keeps the same actors, outcome,
   // body part and action; only the commentary angle changes.
@@ -2281,6 +2306,63 @@ const Graph=(function makeGraph(){
    '{A} steadies their breathing; {D} cautiously waits for the next exchange.'
   ]
  };
+
+ // The booth only remembers executed graph events, not attempted narration.
+ // No gameplay random draw, physical rule or move weight is changed.
+ const BROADCAST_NAMES={
+  mat_takedown:'leg trip',grapple_trip:'single-leg trip',power_spinebuster:'spinebuster',
+  arm_drag:'arm drag',headlock_takeover:'headlock takedown',hip_toss:'hip toss',
+  shoulder_tackle:'shoulder tackle',snap_suplex:'snap suplex',heavy_slam:'body slam',
+  clothesline:'clothesline',ankle_pick:'ankle pick',aerial_attack:'diving elbow',
+  springboard_strike:'springboard crossbody',gutbuster:'gutbuster'
+ };
+ const BROADCAST_FAMILIES={
+  mat_takedown:'takedown',grapple_trip:'takedown',headlock_takeover:'takedown',
+  arm_drag:'takedown',hip_toss:'takedown',ankle_pick:'takedown',
+  power_spinebuster:'power',heavy_slam:'power',gutbuster:'power',
+  shoulder_tackle:'running',clothesline:'running',snap_suplex:'suplex',
+  aerial_attack:'aerial',springboard_strike:'springboard'
+ };
+ const BROADCAST_FAMILY_NAMES={
+  takedown:'takedowns',chain:'chain takedowns',power:'power moves',
+  suplex:'suplexes',running:'running knockdowns',aerial:'aerial landings',
+  springboard:'springboard attacks',lucha:'lucha takedowns',
+  neck:'neck attacks',ground:'grounded attacks',strike:'strikes'
+ };
+ function broadcastHistory(g,id,n,side){
+  const count=1+g.events.filter(e=>e.id===id&&e.preControl===side&&!e.reverse).length;
+  return {count,label:BROADCAST_NAMES[id]||n.name,family:BROADCAST_FAMILIES[id]||n.family,
+   impact:n.zone==='mat'&&n.down==='d'&&!n.reverse&&!n.counterOf&&
+    !n.blockOf&&!n.nearfall&&n.family!=='pin'};
+ }
+ function broadcastAction(h,a,d,original){
+  if(!h.impact||!h.label||h.count<3)return original;
+  if(h.count===3)return a+' lands the '+h.label+' on '+d+' again. Three successful uses of that move now.';
+  if(h.count===4)return a+' repeats the '+h.label+' against '+d+'. It works for a fourth time.';
+  return a+' lands the '+h.label+' on '+d+' again — '+h.count+' successful uses so far.';
+ }
+ function broadcastInsight(M,g,h,n,side,attacker,defender){
+  if(!h.impact||!BROADCAST_FAMILY_NAMES[h.family])return;
+  const prior=g.events.filter(e=>{
+   const node=A[e.id];return node&&!node.reverse&&e.preControl===side&&
+    e.position==='mat'&&e.down===(side==='w'?'f':'w')&&
+    (BROADCAST_FAMILIES[e.id]||node.family)===h.family;
+  }).length;
+  if(prior+1===5||prior+1===9)
+   say(M,attacker.short+' has now put '+defender.short+' down with '+
+    (prior+1)+' '+BROADCAST_FAMILY_NAMES[h.family]+
+    '. That pattern is hard to ignore.','story',{who:'colour'});
+ }
+ function broadcastCounter(M,g,n,side,attacker,defender){
+  if(!n.reverse||!n.counterOf)return;
+  const label=BROADCAST_NAMES[n.counterOf]||A[n.counterOf]?.name;
+  if(!label)return;
+  const prior=g.events.filter(e=>e.id===n.counterOf&&e.preControl===side&&!e.reverse).length;
+  if(prior>=2)say(M,defender.short+' has already dealt with '+prior+
+   ' successful '+label+' attacks from '+attacker.short+'. Now comes the answer.',
+   'story',{who:'colour'});
+ }
+
  // Recovery reflects learned pacing, not an invisible refill. Only an
  // actually narrated catch_breath exchange can give the trained benefit.
  const recoveryTraining=actor=>clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1);
@@ -2299,20 +2381,37 @@ const Graph=(function makeGraph(){
    [...n.lines,...ACTION_NARRATION_VARIANTS[id]]:n.lines;
   const roll=Math.floor(M.r()*variants.length);
   g.lastNarrationIndex??={};
-  const index=variants.length>1&&g.lastNarrationIndex[id]===roll?
-   (roll+1)%variants.length:roll;
+  g.narrationHistory??={};
+  const recent=g.narrationHistory[id]||
+   (Number.isInteger(g.lastNarrationIndex[id])?[g.lastNarrationIndex[id]]:[]);
+  let index=roll;
+  for(let shift=0;shift<variants.length;shift++){
+   const candidate=(roll+shift)%variants.length;
+   if(!recent.slice(-(variants.length>2?2:1)).includes(candidate)){index=candidate;break;}
+  }
+  g.narrationHistory[id]=[...recent.slice(-1),index];
   g.lastNarrationIndex[id]=index;
-  const variant=variants[index];
+  const variant=variants[index],broadcast=broadcastHistory(g,id,n,side);
   if(g.damage?.w>=3&&p.control==='w'&&['top_climb','rope_run','clothesline','snap_suplex'].includes(id)&&(!g.lastSell||M.t-g.lastSell>100)){
    const effect=g.targets.w==='left knee'?'hesitates on the damaged knee':g.targets.w==='lower back'?'winces and steadies the lower back':g.targets.w==='ribs'?'takes a painful breath and protects the ribs':'favouring the damaged shoulder';
    say(M,fill(M,'{W} '+effect+' before committing to the next move.'),'story');g.lastSell=M.t;
   }
   let text=fill(M,variant,{A:attacker.short,D:defender.short,part,move:n.kind});
   if(noCountout(M)){
-   if(id==='outside_toss')text=attacker.short+' sends '+defender.short+' out to the floor. There is no count-out in this match.';
-   if(id==='roll_inside')text=attacker.short+' rolls '+defender.short+' back inside to continue the fight; there was no count to beat.';
+   if(id==='outside_toss')text=[
+    attacker.short+' sends '+defender.short+' out to the floor. There is no count-out in this match.',
+    attacker.short+' puts '+defender.short+' on the floor. Neither is under a count-out deadline.',
+    defender.short+' is sent out by '+attacker.short+'. There is no count to beat.'
+   ][index%3];
+   if(id==='roll_inside')text=[
+    attacker.short+' rolls '+defender.short+' back inside to continue the fight; there was no count to beat.',
+    attacker.short+' brings '+defender.short+' inside by choice, not to escape the count.',
+    defender.short+' is returned to the ring by '+attacker.short+'. The rules allowed them to stay outside.'
+   ][index%3];
   }
-  say(M,text,n.kind); // all dialogue is original and event-led
+  say(M,broadcastAction(broadcast,attacker.short,defender.short,text),n.kind);
+  broadcastInsight(M,g,broadcast,n,side,attacker,defender);
+  broadcastCounter(M,g,n,side,attacker,defender);
   const originalDown=n.reverse?side:opp;
   p.position=n.zone;
   p.down=n.down==='d'?originalDown:n.down==='a'?p.control:null;
@@ -4079,10 +4178,10 @@ const VOICE_PREFIX=[[/^Colour: /,'colour'],[/^(?:Road agent|In your ear): /,'run
 const KIND_VOICE={play:'pbp',story:'pbp',crowd:'pbp',agent:'runner'};
 function say(M,text,kind='play',opt={}){
  // Final defence against legacy narration from old saved graphs or generic texture lines.
- if(M.stage==='live'&&M.o?.stip==='submission'&&pinText.test(text)){
-  text=M.w.short+' tries to secure a submission, but '+M.f.short+' works free of the hold.';
-  if(kind==='count')kind='play';
- }
+ // Do not turn an unrelated phrase (e.g. "pin drop") into fictional action.
+ // Only suppress a typed legacy cover or count in submission-only matches.
+ if(M.stage==='live'&&M.o?.stip==='submission'&&
+   (kind==='count'||opt.eventType==='pin'))return null;
  if(noCountout(M)&&/referee (?:is up to|has reached|reaches|begins the count|starts counting|is still counting)|count(?:-?out| is broken)|before (?:the )?referee reaches ten|beat the referee.?s count/i.test(text)){
   text='They fight on without a count-out. Neither wrestler is forced back inside.';
  }
@@ -4892,7 +4991,7 @@ function finish(M){
   else say(M,`${w.short} goes for one more cheap shot, and this time the referee is looking straight at it.`,'bad',{...step(),big:true,pause:1});
   say(M,'The referee calls for the bell!','bell',{...step(),pause:1});
   say(M,`${w.name} is disqualified. ${f.short} wins.`,'bell',{...step(),big:true});
-  say(M,`That was not the finish anybody agreed. ${M.p.name} will want a word.`,'agent',{...step(2),who:'pbp'});
+  say(M,`That was not the finish anybody agreed. ${M.p.name} will want a word.`,'agent',{...step(2),who:'runner'});
   lift(M,-8);
  }else{
   // v3.3: twenty finish routes. The contract chooses who wins; the match so far chooses how.
