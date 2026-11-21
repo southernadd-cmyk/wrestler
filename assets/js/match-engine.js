@@ -2798,8 +2798,12 @@ const Graph=(function makeGraph(){
     if(M.planId==='safe'&&(n.risk||costOf(id)>2.2))continue;
     const repeated=g.events.some(e=>e.id===id&&e.preControl===p.control&&
       M.t-e.t<=80);
-    selected.push([id,(M.t/M.len>=M.nearfallAt[0]?17:10)*
-     trained*(repeated?.18:1)]);
+    // A Technical bout already has a linked grip/throw system. Do not
+    // overwhelm its authored chain choices with timed-cover pressure.
+    // The graph still has genuine earned near-fall opportunities.
+    const pressure=M.planId==='technical'?3:
+     M.t/M.len>=M.nearfallAt[0]?17:10;
+    selected.push([id,pressure*trained*(repeated?.18:1)]);
    }
   }
   // A trained Story wrestler may contest actual opponent pressure while
