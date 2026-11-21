@@ -966,10 +966,21 @@ function showMeeting(){
  const middle=`<b class="fin">${esc(finishLine)}</b><span>${c.stip?esc(stipName(c.stip))+' · ':''}${esc(D.SLOTS[c.slot].name)} · ${st.sheet?.minutes||Math.max(5,c.minutes+(st.fx.minutes||0))} minutes · ${esc(p.name)}</span>`;
  const verdictBad=v.story?.notes?.some(n=>!n.good);
  const agreed=v.agreed.length&&v.stage!=='board'?`<div class="sheetline"><b>In the match layout</b>${v.agreed.map(x=>`<i>${esc(x)}</i>`).join('')}${v.story&&v.stage!=='board'?`<i class="${verdictBad?'bad':'good'}">${esc(OfficeRoom.AGENT)}: ${esc(v.story.verdict)}</i>`:''}</div>`:'';
- // The running order: four beats down the side, the pitches for each across, Dennis's pencil already in.
+ // Choose the finish first. The readout is about preparedness, not a guaranteed result.
+ const routePicker=v.finishes?.length?`<section class="finish-choice" role="group" aria-label="Choose the finish">
+  <div class="rorder-heading"><b>1. How does it end?</b><span>The contracted winner does not change.</span></div>
+  <div class="finish-options">${v.finishes.map(f=>`<button class="decision-option finish-option${f.selected?' on':''}" data-room="${esc(f.id)}" aria-pressed="${f.selected}"><b>${esc(f.label)}</b><small>${esc(f.hint)}</small>${tagChips(f.tags)}</button>`).join('')}</div>
+  ${v.finishPlan?`<div class="finish-readout ${v.finishPlan.kind==='warning'?'warn':v.finishPlan.kind==='conditional'?'conditional':''}" role="status">
+    <b>${v.finishPlan.kind==='warning'?'Needs revision':v.finishPlan.kind==='conditional'?'Must be earned in the ring':'No additional finish threshold'}</b>
+    ${v.finishPlan.requirement?`<span>${esc(v.finishPlan.requirement)}</span>`:''}
+    <p>${esc(v.finishPlan.summary)}</p>
+   </div>`:''}</section>`:'';
+ // The called spots are real selections from the graph, not decorative script lines.
  const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>
+  ${routePicker}
+  <div class="rorder-heading"><b>2. Call the spots</b><span>Dennis adjusts his suggestions when the finish changes. Your choices stay put.</span></div>
   <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span>${esc(c.who)}’s idea</span>${tagChips(c.tags)}</button>`).join('')}</div></div>`).join('')}</div>
-  <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the running order</button></div></div>`:'';
+  <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the finish and running order</button></div></div>`:'';
  const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
  const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
