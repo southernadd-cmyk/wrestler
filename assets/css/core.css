@@ -161,6 +161,20 @@ h1,h2,h3{margin:0;font-weight:400}
 .paper .empty,.win>.wbody>.empty{color:var(--ink-3);border:2px dashed var(--stone-lo)}
 .empty .btn{margin-top:10px}
 
+/* Shared keyboard-accessible record links. */
+.record-link{display:inline;border:0;background:none;padding:0;margin:0;color:inherit;font:inherit;font-weight:inherit;text-align:left;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;cursor:pointer}
+.record-link:hover{color:var(--blood)}
+.well .record-link{color:var(--cyan)}
+.well .record-link:hover{color:var(--gold)}
+.grid tr[aria-selected="true"] .record-link{color:var(--ink)}
+.record-head{display:flex;align-items:flex-start;gap:14px;min-width:0;margin-bottom:12px}
+.record-head>div{min-width:0}
+.record-head p{margin:4px 0}
+.record-name{font:40px/1 var(--jersey);color:var(--blood);overflow-wrap:anywhere}
+.record-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+.record-head+.facts{margin:10px 0}
+@media (max-width:720px){.record-name{font-size:30px}.record-head{gap:10px}.record-head .portrait.x2{width:54px;height:68px}.record-actions .btn{flex:1 1 auto}}
+
 /* key/value lists */
 .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0}
 .kv dt{color:var(--ink-3)}
