@@ -1205,14 +1205,52 @@
   if(N&&((N.banIds||[]).includes(id)||(n.family&&(N.ban||[]).includes(n.family))))return true;
   return st.spice<0&&!!n.risk;
  }
- function seedBoard(st){
-  // Dennis's pencil: his own middle option for the first three, and the booked winner's big spot
-  // if it is safe and physically possible, otherwise a run of near-falls.
-  const win=winSideOf(st);
+ // Read the called spots against the signed method, using actual graph metadata.
+ // A compatible spot can help the build but cannot guarantee the physical condition.
+ function supportsFinish(st,route,c){
+  const n=c?.action&&A[c.action];
+  if(!n||c.impossible||banned(st,c.action))return false;
+  if(route==='limb_finish')return c.owner==='w'&&n.focus>0&&!n.reverse;
+  if(route==='submission_defeat'||route==='injury_gives')return c.owner==='f'&&n.focus>0&&!n.reverse;
+  if(route==='reversal_finisher')return c.owner==='w'&&!!n.reverse;
+  if(route==='finisher_reversed')return c.owner==='f'&&!!n.reverse;
+  if(route==='top_rope')return c.owner==='w'&&(n.requires==='top'||['aerial','springboard'].includes(n.family));
+  if(route==='strike_knockout')return c.owner==='w'&&n.family==='strike';
+  return false;
+ }
+ function finishPlan(st){
+  const route=st.lockRoute||st.board.finish?.route;
+  if(!route)return null;
+  const requirement=ROUTE_CONDITION[route]||null;
+  const supported=SPINE.filter(S=>supportsFinish(st,route,st.board[S.id])).map(S=>S.name.toLowerCase());
+  const available=!ROUTE_STATIC[route]||ROUTE_STATIC[route](st.w,st.f,st);
+  const impossible=SPINE.filter(S=>st.board[S.id]&&(st.board[S.id].impossible||banned(st,st.board[S.id].action))).map(S=>S.name.toLowerCase());
+  let summary=requirement?(supported.length?
+   supported.join(' and ')+' could help set it up, but the required in-ring events must still happen.':
+   'No selected called spot specifically prepares this condition; it must still be earned in the match.'):
+   'No extra physical threshold. The wrestlers still have to execute the agreed moves.';
+  if(route==='outlasted')summary='The running order cannot guarantee the required stamina gap at the bell. This is a particularly uncertain finish.';
+  if(route==='exhausted_cover')summary='Your wrestler must actually become exhausted; the written running order cannot guarantee it.';
+  if(impossible.length)summary+=' Warning: '+impossible.join(' and ')+' contains an impossible or prohibited spot.';
+  if(!available)summary='This method is no longer eligible for the wrestlers or feud. '+summary;
+  return {route,label:ROUTE_NAME[route]||route,requirement,summary,supported,available,blocked:impossible.length,
+   kind:!available||impossible.length?'warning':requirement?'conditional':'direct'};
+ }
+ function seedBoard(st,{refresh=false}={}){
+  // The finish is picked BEFORE called spots. Dennis may revise only his own
+  // pencil marks when it changes; an explicitly chosen spot is never discarded.
+  if(!st.board.finish?.route){
+   const c=finishCards(st).find(c=>c.by==='agent')||finishCards(st)[0];
+   if(c)st.board.finish={by:c.by,owner:'either',route:c.route,label:c.label};
+  }
+  const route=st.board.finish?.route,win=winSideOf(st);
   for(const S of SPINE){
-   const cards=cardsFor(st,S.id);
-   const c=S.id==='payoff'?(cards.find(k=>k.by===win&&!k.risk&&!k.impossible)||cards.find(k=>k.by==='agent')):(cards.find(k=>k.by==='agent')||cards[0]);
-   if(c)st.board[S.id]={by:'agent',owner:c.owner,action:c.action,label:c.label,impossible:!!c.impossible};
+   if(refresh&&st.board[S.id]?.chosen)continue;
+   const cards=cardsFor(st,S.id).filter(c=>!c.impossible&&!banned(st,c.action));
+   const set=cards.filter(c=>supportsFinish(st,route,c));
+   const original=S.id==='payoff'?(cards.find(k=>k.by===win&&!k.risk)||cards.find(k=>k.by==='agent')):(cards.find(k=>k.by==='agent')||cards[0]);
+   const c=set.find(x=>x.by==='agent')||set[0]||original;
+   if(c)st.board[S.id]={by:'agent',owner:c.owner,action:c.action,label:c.label,impossible:false,chosen:false};
   }
  }
  function slotTags(st,S,c){
@@ -1223,6 +1261,7 @@
   if(S.id==='payoff'&&owner!=='either'&&owner!==winSideOf(st)&&['win_clean','lose_clean'].includes(st.finish))t.push('Then loses clean');
   if(c.risk)t.push('High risk');
   if(c.impossible)t.push('Will not work');
+  if(supportsFinish(st,st.board.finish?.route,c))t.push('Helps finish setup');
   if(owner!=='either'&&(who(st,owner)?.learned||[]).includes(c.action))t.push('Learned in training');
   return t;
  }
@@ -1340,7 +1379,10 @@
    if(id==='spots')tags.push('More risk');if(id==='safe')tags.push('Safer');
    return {id:'plan_'+id,label:pl.name,hint:PLAN_HINT[id]||pl.blurb||'',tags};});
   if(st.stage==='board'){
-   const out=[];
+   const out=finishCards(st).map((c,i)=>({id:'route_'+i,label:c.label,
+    hint:(ROUTE_CONDITION[c.route]||'No extra in-ring prerequisite.')+' The booked result does not change.',
+    tags:[...(ROUTE_CONDITION[c.route]?['Conditional finish']:[]),...c.hate.map(side=>nameOf(st,side)+' objects')],
+    route:c.route,selected:st.board.finish?.route===c.route}));
    for(const r of boardView(st))for(const c of r.cards)out.push({id:c.id,label:c.label,hint:r.name+': '+c.who+'’s idea.',tags:c.tags,slot:r.slot,selected:c.selected});
    out.push({id:'board_ok',label:'Agree the running order',hint:'Then deal with whatever comes up.',tags:[]});
    return out;
@@ -1359,22 +1401,45 @@
  function enter(st){
   // Move to whatever comes next, and let the people in the room say their piece.
   while(st.stage==='scene'&&st.at<st.queue.length){if(current(st).open(st)!==false)return;st.queue.splice(st.at,1);}
-  if(st.stage==='scene'){st.stage=st.lockRoute?'curtain':'finish';}
+  if(st.stage==='scene'){st.stage=st.lockRoute||st.board.finish?.route?'curtain':'finish';}
   if(st.stage==='finish'){
    log(st,'agent','The finish. The result is in the contract. How do we get there?');
    for(const c of finishCards(st))if(c.by!=='agent')log(st,c.by,from(st,'finish-pitch',['I’d go “{r}”.','How about “{r}”? I’ve thought about this.','“{r}”. Obviously.','For the finish: “{r}”. It’ll look great.']).replace('{r}',c.label.toLowerCase()));
    return;
   }
   if(st.stage==='curtain'){
+   settleFinish(st);
    if(st.reworked)log(st,'agent','The running order’s had a few rubbings-out. '+verdict(st));
    log(st,'agent','That’s the match layout. '+st.w.short+' is '+word(consent(st,'w'))+'. '+st.f.short+' is '+word(consent(st,'f'))+'. Last word before '+st.w.short+' goes through the curtain?');
   }
+ }
+ function settleFinish(st){
+  if(st.finishSettled)return;
+  const route=st.lockRoute||st.board.finish?.route;
+  if(!route)return;
+  const c=finishCards(st).find(x=>x.route===route);
+  if(c){
+   for(const side of c.hate){st.mood[side]-=6;log(st,side,say(st,'proud',who(st,side),'finish'),'objection');}
+   if(!c.hate.length&&c.by!=='agent')log(st,c.by,say(st,'pleased',who(st,c.by),'finish'));
+  }
+  st.finishSettled=true;
  }
  function act(st,id){
   if(!st||st.stage==='done')throw Error('The meeting is over');
   const o=options(st).find(x=>x.id===id);
   if(!o)throw Error('Not an option backstage: '+id);
   if(st.stage==='board'){
+   if(id.startsWith('route_')){
+    const c=finishCards(st)[+id.slice(6)];
+    if(!c)throw Error('Unknown finish pitch: '+id);
+    if(st.board.finish?.route===c.route)return st;
+    st.board.finish={by:c.by,owner:'either',route:c.route,label:c.label};
+    seedBoard(st,{refresh:true});
+    log(st,'you','“The finish: '+c.label.toLowerCase()+'.”');
+    log(st,'agent','Right. I’ve adjusted my pencil marks for that finish. Any spot you chose yourself stays put.');
+    st.decided.push({stage:'board',situation:'finish',id,label:c.label,tags:o.tags});
+    return st;
+   }
    if(id==='board_ok'){
     log(st,'you','“That’ll do.”');st.decided.push({stage:'board',situation:'board',id,label:o.label,tags:[]});
     settleBoard(st);log(st,'agent',verdict(st)+' Right. Now for the things that always come up.');
@@ -1384,7 +1449,7 @@
    if(st.board[S.id]?.action===c.action)return st;
    log(st,'you','“'+S.name+': the '+c.label+'.”');
    st.decided.push({stage:'board',situation:S.id,id,label:c.label,tags:o.tags});
-   st.board[S.id]={by:c.by,owner:c.owner,action:c.action,label:c.label,impossible:!!c.impossible};
+   st.board[S.id]={by:c.by,owner:c.owner,action:c.action,label:c.label,impossible:!!c.impossible,chosen:true};
    if(c.impossible)log(st,'agent','I’ll write it down. I’ll also write down that it won’t work.');
    else if(c.by!=='agent')log(st,c.by,say(st,'pleased',who(st,c.by),'board'));
    else log(st,'agent',from(st,'board-agent',['Sensible.','My pick. Obviously the right one.','Good. Nobody gets hurt.']));
@@ -1401,7 +1466,7 @@
    log(st,'agent',{story:'A story. Good. Beginning, middle, end. Try to do them in that order.',spots:'Spots. I’ll move my car away from the building.',technical:'Technical. Lovely. Six people will be in heaven.',
     brawl:'A brawl. I’ll warn the front row and the caretaker.',safe:'Safe. Nobody ever got sued for a headlock.'}[st.game]||'Right.');
    seedBoard(st);st.stage='board';
-   log(st,'agent','I’ve pencilled in a running order. Change anything you don’t like. It’s only pencil.');
+   log(st,'agent','First choose how it ends. Then we can put the called spots in an order that earns it. My pencil marks are only suggestions.');
    return st;
   }
   if(st.stage==='scene'){
@@ -1414,8 +1479,6 @@
   if(st.stage==='finish'){
    const c=finishCards(st)[+id.slice(6)];
    st.board.finish={by:c.by,owner:'either',route:c.route,label:c.label};
-   for(const s of c.hate){st.mood[s]-=6;log(st,s,say(st,'proud',who(st,s),'finish'),'objection');}
-   if(!c.hate.length&&c.by!=='agent')log(st,c.by,say(st,'pleased',who(st,c.by),'finish'));
    st.stage='curtain';enter(st);return st;
   }
   if(st.stage==='curtain'){
@@ -1485,13 +1548,16 @@
   return out;
  }
  function view(st){
-  const s=current(st),total=2+st.queue.length+(st.lockRoute?0:1)+1;
+  const s=current(st),total=2+st.queue.length+(st.lockRoute||st.board.finish?.route?0:1)+1;
   const done=st.stage==='plan'?0:st.stage==='board'?1:st.stage==='scene'?2+st.at:st.stage==='finish'?2+st.queue.length:st.stage==='curtain'?total-1:total;
   return {stage:st.stage,situation:s?.id||null,
-   title:fmt(st,st.stage==='plan'?'What sort of match?':st.stage==='board'?'The running order':s?(typeof s.title==='function'?s.title(st):s.title):st.stage==='finish'?'The finish':st.stage==='curtain'?'Last word at the curtain':'Signed'),
-   ask:fmt(st,st.stage==='plan'?'The promoter books the result. You decide what kind of match gets there.':st.stage==='board'?AGENT+' has pencilled it in. Change anything you like, then agree it.':s?(typeof s.ask==='function'?s.ask(st):s.ask):st.stage==='finish'?'How do you get to the booked result?':st.stage==='curtain'?'What do you say as they go out?':''),
+   title:fmt(st,st.stage==='plan'?'What sort of match?':st.stage==='board'?'Plan the finish and called spots':s?(typeof s.title==='function'?s.title(st):s.title):st.stage==='finish'?'The finish':st.stage==='curtain'?'Last word at the curtain':'Signed'),
+   ask:fmt(st,st.stage==='plan'?'The promoter books the result. You decide what kind of match gets there.':st.stage==='board'?'Choose how the booked result happens, then build a running order that supports it.':s?(typeof s.ask==='function'?s.ask(st):s.ask):st.stage==='finish'?'How do you get to the booked result?':st.stage==='curtain'?'What do you say as they go out?':''),
    step:Math.min(done+1,total),total,options:options(st),log:st.log.slice(),agreed:agreed(st),
-   board:st.stage==='board'?boardView(st):null,story:st.stage==='plan'?null:{...story(st),verdict:verdict(st)},
+   board:st.stage==='board'?boardView(st):null,
+   finishes:st.stage==='board'?options(st).filter(o=>o.route):null,
+   finishPlan:st.stage==='board'?finishPlan(st):null,
+   story:st.stage==='plan'?null:{...story(st),verdict:verdict(st)},
    moods:{w:{value:consent(st,'w'),word:word(consent(st,'w'))},f:{value:consent(st,'f'),word:word(consent(st,'f'))}}};
  }
  // ---- the microphone's promise, as a beat on the sheet ----
