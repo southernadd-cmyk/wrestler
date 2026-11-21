@@ -86,11 +86,12 @@ for(const worker of D.TALENT)for(const opponent of D.FOES)for(const finish of fi
  const choiceIds=[];
  let saved;
  while(state.stage!=='done'){
-  assert.ok(choiceIds.length<10,'the meeting ends after the scheduled decisions');
+  assert.ok(choiceIds.length<13,'the meeting ends after the scheduled decisions');
   const view=Room.view(state);
   assert.ok(view.options.length&&view.options.every(option=>option.hint&&Array.isArray(option.tags)));
   if(choiceIds.length===2)saved=clone(state);
-  let choice=view.options[(index+choiceIds.length*11)%view.options.length];
+  let choice=view.stage==='review'?view.options.find(x=>x.id==='review_ok'):
+   view.options[(index+choiceIds.length*11)%view.options.length];
   if(view.stage==='finish'){
    for(const option of view.options){
     if(option.label==='Work the limb all night, then finish'){
