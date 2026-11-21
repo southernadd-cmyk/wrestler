@@ -2359,12 +2359,23 @@ const Graph=(function makeGraph(){
   // grounded rest hold is more credible than an invisible stamina award.
   // Normal rest holds and all other styles/plans retain their old cost.
   if(n.family==='rest'&&exertion<0&&M.planId==='spots'&&M.len>=900&&
-     M.len-M.t>180&&M.len-M.t<=540){
+     M.len-M.t>180&&M.len-M.t<=660){
    const actor=activeSide==='w'?M.w:M.f;
    const trained=recoveryTraining(actor);
-   if(actor.style==='Spectacle'&&trained>=.70&&
-      (M.len-M.t<=480||trained>=.95))
+   if(actor.style==='Spectacle'&&
+      (trained>=.30&&trained<.70&&actor.ring>=70&&actor.safe>=65||
+       trained>=.70&&M.len-M.t<=540&&
+       (M.len-M.t<=480||trained>=.95)))
     effective=exertion-5.8*trained;
+  }
+  // A controlled mat hold is a real Brawl breather too: the wrestler
+  // spends an authored exchange taking pressure off, not a free refill.
+  // Only trained workers in a long match's pre-finish runway earn this.
+  if(n.family==='rest'&&exertion<0&&M.planId==='brawl'&&
+     M.len>=900&&M.len-M.t>180&&M.len-M.t<=660){
+   const actor=activeSide==='w'?M.w:M.f,trained=brawlConditioning(actor);
+   if(actor.style==='Brawl'&&trained>=.70)
+    effective=exertion-5.0*trained;
   }
   if(exertion>0&&fighter(activeSide==='w'?M.w:M.f).trait==='Workhorse')effective*=.8;
   // One narrated rest can start a measured pacing window. This is saved
@@ -2372,11 +2383,12 @@ const Graph=(function makeGraph(){
   let pacedUntil=null;
   if(exertion<0&&(id==='catch_breath'||n.family==='rest')&&
      M.planId==='spots'&&M.len>=900&&M.len-M.t>180&&
-     M.len-M.t<=480){
+     M.len-M.t<=660){
    const actor=activeSide==='w'?M.w:M.f,trained=recoveryTraining(actor);
    const previous=g.pacedRest?.[activeSide];
-   if(actor.style==='Spectacle'&&trained>=.70&&
-      (M.len-M.t<=480||trained>=.95)&&
+   if(actor.style==='Spectacle'&&
+      (trained>=.30&&trained<.70&&actor.ring>=70&&actor.safe>=65||
+       trained>=.70&&M.len-M.t<=480)&&
       (!previous||M.t-previous.at>=80)){
     g.pacedRest??={};
     pacedUntil=M.t+180;
@@ -2389,14 +2401,17 @@ const Graph=(function makeGraph(){
   }
   // Only an actual narrated rest starts a saved, bounded Brawl pacing
   // window. Repeated breathers cannot endlessly extend it.
-  if(id==='catch_breath'&&exertion<0&&M.planId==='brawl'&&M.len>=900&&
-     M.len-M.t>180&&M.len-M.t<=600){
+  if(exertion<0&&M.planId==='brawl'&&M.len>=900&&
+     M.len-M.t>180&&
+     ((id==='catch_breath'&&M.len-M.t<=600)||
+      (n.family==='rest'&&M.len-M.t<=660&&
+       brawlConditioning(activeSide==='w'?M.w:M.f)>=.70))){
    const actor=activeSide==='w'?M.w:M.f,trained=brawlConditioning(actor);
    const previous=g.pacedBrawl?.[activeSide];
    if(actor.style==='Brawl'&&trained>=.25&&
       (!previous||M.t-previous.at>=110)){
     g.pacedBrawl??={};
-    g.pacedBrawl[activeSide]={at:M.t,until:M.t+150};
+    g.pacedBrawl[activeSide]={at:M.t,until:M.t+(trained>=.70?180:150)};
     if(!g.brawlPaceExplained){
      say(M,actor.short+' eases the pressure after that breather, keeping something back for the last hard exchanges.','story');
      g.brawlPaceExplained=true;
@@ -2882,7 +2897,9 @@ const Graph=(function makeGraph(){
   };
   const riskCount=side=>new Set(g.events.filter(e=>landedLateRisk(e,side))
    .map(e=>e.id)).size;
-  const lateFlyerRun=closingFlight&&trainedRecovery>=.70;
+  const lateFlyerRun=closingFlight&&
+   (trainedRecovery>=.70||(trainedRecovery>=.30&&
+    liveSide.ring>=70&&liveSide.safe>=65));
   const lateCount=riskCount(p.control);
   const needsLatePayoff=lateFlyerRun&&lateCount<2;
   const lateUrgency=lateCount===0?1:lateCount===1?.32:0;
@@ -3113,6 +3130,18 @@ const Graph=(function makeGraph(){
   if(agreed)selected.push([agreed[0],1]);
   // v3.4: signature moves. A wrestler's trademark offence, wherever the position allows it.
   if(M.t/M.len>.1)for(const id of prof.signature||[])if(A[id])selected.push([id,.45]);
+  // Offer a real in-ring hold as a paced breather when a trained long-
+  // match worker already controls a grounded opponent. isValid still
+  // checks ring position, control, physical setup and stamina.
+  const canPaceRunway=M.len>=900&&timeLeft>180&&timeLeft<=660&&
+   stamina<68&&((longBrawl&&brawlTraining>=.70)||
+    (longSpot&&trainedRecovery>=.30&&trainedRecovery<.70&&
+     liveSide.ring>=70&&liveSide.safe>=65))&&
+   ['w','f'].includes(p.control)&&!g.pendingAerial&&!g.pendingGrapple&&
+   !g.pendingStrike&&!g.pendingContact;
+  if(canPaceRunway&&p.position==='mat'&&p.down!==p.control&&
+     g.physical?.area==='ring')
+   selected.push(['rs_side_headlock',3.5],['rs_front_chancery',2.4]);
   const weights=new Map();
   for(const [id,w] of selected) if((id!=='top_follow'||affordableSuperplex(M))&&
    !(needsLatePayoff&&trainedRecovery>=.95&&
@@ -3551,6 +3580,64 @@ const Graph=(function makeGraph(){
     const competing=pool.reduce((sum,[id,n])=>
      sum+(id==='catch_breath'?0:n),0);
     recovering[1]=Math.max(recovering[1],competing*.72);
+   }
+  }
+  // The broad move catalogue otherwise buries real recoveries. Reserve
+  // a bounded CHANCE, never a forced selection, for an owned, physically
+  // legal, narrated rest in the runway. Three rests maximum and an
+  // 100-second cooldown ensure that offence still fills the match.
+  // This only biases existing pool actions: it cannot refill stamina,
+  // fabricate offence, waive counters or alter the closing three minutes.
+  if(canPaceRunway&&
+     (p.position==='standing'||p.position==='mat'&&p.down!==p.control&&g.physical?.area==='ring')){
+   const priorRests=g.events.filter(e=>e.preControl===p.control&&
+    (e.id==='catch_breath'||A[e.id]?.family==='rest')&&
+    e.t>=M.len-660&&e.t<=M.t);
+   if(priorRests.length<3&&
+      !priorRests.some(e=>M.t-e.t<100)){
+    const realRest=pool.filter(([id])=>id==='catch_breath'||
+     p.position==='mat'&&A[id]?.family==='rest'&&A[id]?.cost<0);
+    if(realRest.length){
+     const ids=new Set(realRest.map(([id])=>id));
+     const offered=realRest.reduce((n,[,w])=>n+w,0);
+     const competing=pool.reduce((n,[id,w])=>n+(ids.has(id)?0:w),0);
+     const share=longBrawl?.82+.32*brawlTraining:.50+.46*trainedRecovery;
+     if(offered>0&&offered<competing*share){
+      const factor=competing*share/offered;
+      for(const r of realRest)r[1]*=factor;
+     }
+    }
+   }
+  }
+  // Competent, fatigued fliers must still perform *real* named wrestling
+  // if another aerial commitment is not affordable. Only existing,
+  // physically legal low-cost actions are considered; the action pool
+  // and genuine counter/botch rules still decide. Never script a hit.
+  // The elite aerial pay-off path remains completely separate.
+  if(M.planId==='spots'&&M.len>=900&&
+     liveSide.style==='Spectacle'&&
+     trainedRecovery>=.30&&trainedRecovery<.70&&
+     liveSide.ring>=70&&liveSide.safe>=65&&
+     timeLeft>=30&&timeLeft<=180&&
+     ['w','f'].includes(p.control)&&
+     p.position==='standing'&&stamina>=18&&stamina<37){
+   const fresh=pool.filter(([id])=>{
+    const node=A[id];
+    return node&&!node.risk&&!node.reverse&&!node.counterOf&&!node.blockOf&&
+     ['lucha','strike','neck'].includes(node.family)&&
+     costOf(id)<=2.2&&costOf(id)>=0&&
+     !g.events.some(e=>e.id===id&&e.preControl===p.control&&
+      e.t>=M.len-180);
+   });
+   if(fresh.length){
+    const ids=new Set(fresh.map(([id])=>id));
+    const present=fresh.reduce((sum,[,w])=>sum+w,0);
+    const competing=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+    const desired=competing*.65;
+    if(present>0&&present<desired){
+     const factor=desired/present;
+     for(const entry of fresh)entry[1]*=factor;
+    }
    }
   }
   // An agreed beat is not one option among fifty. If it is legal right now, the wrestler takes it
