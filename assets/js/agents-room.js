@@ -241,8 +241,8 @@
   top_rope:(w)=>w.style==='Spectacle'&&kg(w)<110,
   strike_knockout:(w)=>w.style==='Brawl',
   eye_poke:(w)=>['Brawl','Story'].includes(w.style),
-  referee_bump:(w,f,st)=>(st.contract.feudHeat||0)>=40,
-  dq_ref_shove_f:(w,f,st)=>(st.contract.feudHeat||0)>=25,
+  referee_bump:(w,f,st)=>st.heat>=40,
+  dq_ref_shove_f:(w,f,st)=>st.heat>=25,
   dq_low_blow_f:(w,f)=>['Brawl','Story'].includes(f.style),
   dq_ref_shove_w:(w)=>w.ego>=65
  };
@@ -751,7 +751,7 @@
     log(st,'agent','The contract says dirty. I don’t write them. I just read them out and wince.');},
    title:'{W} doesn’t want to cheat',ask:'How do you square it?',
    options(st){
-    const bumpLegal=(st.contract.feudHeat||0)>=40;
+    const bumpLegal=st.heat>=40;
     const a={moodW:2,route:bumpLegal?'referee_bump':'feet_on_ropes'},b={moodW:-6},c={moodW:3,moodF:-2};
     return [
      {id:'accident',label:'“Make it look like an accident.”',hint:bumpLegal?'The referee goes down, and what happens next is nobody’s fault.':'A distraction lets the wrestler use the ropes for leverage, with no referee bump.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'accept',st.w,'dirty'));}},
