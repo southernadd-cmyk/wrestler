@@ -4350,65 +4350,6 @@ const Graph=(function makeGraph(){
     }
    }
   }
-  // A contracted Outlasted finish calls for physical economy, even when
-  // the main match is a Spot-fest. The normal late-flight boosts above
-  // remain valid for every other finish, and all aerial move/skill/risk
-  // guards stay intact. Do not compete with a currently available signed
-  // called beat (or its physical setup): that commitment has priority.
-  if(M.o.sheet?.finishRoute==='outlasted'&&M.outcome==='booked'&&
-     ['win_clean','lose_clean'].includes(M.o.finish)&&M.len>=600){
-   const win=M.o.finish==='win_clean'?'w':'f',
-    lose=win==='w'?'f':'w',
-    winSt=win==='w'?M.wSt:M.fSt,
-    loseSt=lose==='w'?M.wSt:M.fSt,
-    lead=winSt-loseSt,
-    frac=M.t/M.len,
-    late=frac>=.68&&frac<.98,
-    preserve= M.len<900&&frac>=.75&&frac<.98&&
-     lead>=7&&loseSt<38,
-    outlastFlight=M.planId==='spots'&&late&&
-     loseSt<49&&lead<23;
-   if(p.control===win&&!agreed&&(outlastFlight||preserve)){
-    // All candidates are drawn from the *already legal* pool. Even
-    // sensible conservation is optional and the match can audible.
-    const safeWork=pool.filter(([id])=>{
-     const n=A[id],cost=costOf(id);
-     return n&&n.family&&n.family!=='rest'&&cost>0&&cost<=2.2&&
-      !n.risk&&!n.reverse&&!n.counterOf&&!n.blockOf&&!n.nearfall;
-    });
-    if(safeWork.length){
-     const options=new Set(safeWork.map(([id])=>id));
-     const normal=pool.reduce((sum,[id,w])=>sum+(options.has(id)?0:w),0);
-     const already=safeWork.reduce((sum,[,w])=>sum+w,0);
-     const desired=normal*(outlastFlight?.80:.65);
-     if(normal>0&&already>0&&already<desired){
-      const factor=Math.min(6,desired/already);
-      for(const entry of safeWork)entry[1]*=factor;
-     }
-    }
-    // Discourage elective late high-exertion highlights by the intended
-    // winner, never ban them. Ordinary flyers still fly, and any called
-    // flying spot gets its full existing preference above.
-    for(const entry of pool){
-     const n=A[entry[0]],cost=costOf(entry[0]);
-     if(n&&!n.reverse&&!n.counterOf&&!n.blockOf&&
-        n.risk&&cost>=2.5)
-      entry[1]*=outlastFlight?.35:.65;
-    }
-   }
-   // A late endurance story also requires the wrestler who is *losing*
-   // to feel the effort. Reduce only optional recovery selection while
-   // that wrestler is still fresh enough to work. Never remove a legal
-   // breather or override the signed running order.
-   if(outlastFlight&&p.control===lose&&!agreed&&loseSt>=25&&
-      lead<15&&frac<.93){
-    for(const entry of pool){
-     const n=A[entry[0]];
-     if(entry[0]==='catch_breath'||n?.family==='rest'&&costOf(entry[0])<0)
-      entry[1]*=.55;
-    }
-   }
-  }
   // An agreed beat is not one option among fifty. If it is legal right now, the wrestler takes it
   // with odds set by how willing they are, whatever their habits would otherwise suggest.
   if(agreed){
@@ -5170,8 +5111,29 @@ function tick(M){
  const spotWorker=actors(M).A;
  const spotSt=spotWorker===M.w?M.wSt:M.fSt;
  const recoveryWeight=spotSt<28?0:spotSt<42?.4:1;
+ // An agreed Outlasted finish requires the eventual winner to retain
+ // stamina. Extra *unscripted* spectacular spots can otherwise spend that
+ // wrestler's remaining reserves independently of the legal move pool.
+ // Lower only this optional opportunity, never a manually called spot,
+ // already committed flight, scripted signed-sheet beat or move-cost rule.
+ const signedOutlast=M.o.sheet?.finishRoute==='outlasted'&&
+  M.outcome==='booked'&&['win_clean','lose_clean'].includes(M.o.finish)&&
+  M.len>=600;
+ const outlastWinner=signedOutlast?
+  (M.o.finish==='win_clean'?M.w:M.f):null;
+ const outlastLoser=signedOutlast?
+  (M.o.finish==='win_clean'?M.f:M.w):null;
+ const loserSt=outlastLoser===M.w?M.wSt:M.fSt;
+ const winnerSt=outlastWinner===M.w?M.wSt:M.fSt;
+ const lead=winnerSt-loserSt;
+ const electiveWinnerSpot=signedOutlast&&spotWorker===outlastWinner&&
+  ((M.planId==='spots'&&frac>=.33&&frac<.97&&
+    loserSt<64&&lead<23)||
+   (frac>=.76&&frac<.98&&loserSt<38&&lead>=7));
+ const optionalSpotFactor=electiveWinnerSpot?
+  (M.planId==='spots'?.30:.43):1;
  const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*
-  (M.offScript==='showboat'?1.5:1)*recoveryWeight;
+  (M.offScript==='showboat'?1.5:1)*recoveryWeight*optionalSpotFactor;
  let spoke=aerialResolved||grappleResolved;
  // Once both workers contest the turnbuckles for a legal named move,
  // resolve that organic exchange before an unrelated scheduled spectacle.
