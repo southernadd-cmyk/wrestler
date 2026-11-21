@@ -101,6 +101,38 @@ async function journey(browser,name,viewport){
   assert.ok(await page.locator('#view').getByText('Promoters',{exact:true}).first().isVisible(),name+': back must restore promoter list');
   await page.evaluate(()=>window.OfficeUI.go('scouting'));
 
+  // Phase 2: a small, real career-management journey in each responsive viewport.
+  await page.evaluate(()=>window.OfficeUI.go('scouting'));
+  await page.locator('#view [data-scout-query]').fill('Mara Vale');
+  assert.match(await page.locator('#view .management-filters .filter-results').innerText(),/^1 of /,name+': search must narrow free agents');
+  await page.locator('#view [data-clear-scout]').click();
+  await page.locator('#view [data-scout-style]').selectOption('Technical');
+  const tech=await page.evaluate(()=>window.OfficeGame.S.free.filter(w=>w.style==='Technical').length);
+  assert.match(await page.locator('#view .management-filters .filter-results').innerText(),new RegExp('^'+tech+' of '),name+': style filter must use live free agents');
+  await page.locator('#view [data-clear-scout]').click();
+  await page.evaluate(()=>window.OfficeUI.go('scouting','mara'));
+  await page.locator('#view button[data-shortlist="mara"]').click();
+  await page.evaluate(()=>window.OfficeUI.go('scouting','lyra'));
+  await page.locator('#view button[data-shortlist="lyra"]').click();
+  assert.match(await page.locator('#view .scout-comparison').innerText(),/Compare two wrestlers/);
+  assert.match(await page.locator('#view .scout-comparison').innerText(),/Vale/);
+  assert.match(await page.locator('#view .scout-comparison').innerText(),/Knox/);
+  await page.locator('#view [data-clear-shortlist]').click();
+  await page.evaluate(()=>window.OfficeUI.go('desk'));
+  assert.ok(await page.locator('#view .desk-brief').isVisible(),name+': office desk must present next action');
+  await page.evaluate(()=>window.OfficeUI.go('inbox'));
+  await page.locator('#view [data-inbox-filter="action"]').click();
+  assert.match(await page.locator('#view').innerText(),/No messages match this filter/);
+  await page.locator('#view [data-inbox-filter="all"]').click();
+  assert.ok(await page.locator('#view .msglist button').count()>0,name+': all inbox messages must return');
+  await page.evaluate(()=>window.OfficeUI.go('squad'));
+  await page.locator('#view [data-stable-filter]').selectOption('attention');
+  assert.match(await page.locator('#view').innerText(),/0 of 0 shown/);
+  await page.locator('#view [data-clear-stable]').click();
+  // Check layout before entering a match (the post-match journey checks again).
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,
+    name+': management controls must not introduce horizontal overflow');
+
   // Settle a genuine match, then stage an interrupted result screen to test
   // the same localStorage resume route used by a real mid-show reload.
   const cid=await page.evaluate(()=>{
