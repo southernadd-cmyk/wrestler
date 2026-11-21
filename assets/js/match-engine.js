@@ -2766,12 +2766,13 @@ const Graph=(function makeGraph(){
      (repeated?.16:1)]);
    }
   }
-  // Non-Story plans also need a genuinely selected, landed grounding
-  // attack before a scheduled cover. Keep the choices distinct: a
-  // Technical takedown, Brawl power move, Spots high-flyer landing or
-  // Safe, measured trip. Every choice still passes normal move legality,
-  // stamina, training, counter and physical-position gates below.
-  const earnedWindow=M.planId!=='story'&&M.len>=720&&
+  // Technical already has authentic linked takedown/hold chains. Adding
+  // timer-driven bonus candidates before a due cover displaced real
+  // wristlock -> rolling-control -> takedown triples (verified in the
+  // matched 96-bout trace). Preserve that organic pool; the same source
+  // validator earns its scheduled covers from actual Technical landings.
+  // Only the other three plans need more grounding candidates.
+  const earnedWindow=['brawl','spots','safe'].includes(M.planId)&&M.len>=720&&
    // A prepared move family has priority over an unrelated scheduled cover.
    // Preserve the genuine Technical grip, Brawl rope run and Spots
    // aerial payoff instead of crowding their legal continuations.
@@ -2782,8 +2783,6 @@ const Graph=(function makeGraph(){
   if(earnedWindow&&p.position==='standing'&&
       ['w','f'].includes(p.control)&&g.physical?.area==='ring'){
    const groundedOptions={
-    technical:['grapple_trip','mat_takedown','arm_drag','snap_suplex',
-      'hip_toss','headlock_takeover'],
     brawl:['clothesline','power_spinebuster','heavy_slam',
       'short_arm_lariat','shoulder_tackle','body_shot'],
     spots:['sb_dropkick','lc_hurricanrana','high_crossbody',
@@ -2798,11 +2797,7 @@ const Graph=(function makeGraph(){
     if(M.planId==='safe'&&(n.risk||costOf(id)>2.2))continue;
     const repeated=g.events.some(e=>e.id===id&&e.preControl===p.control&&
       M.t-e.t<=80);
-    // A Technical bout already has a linked grip/throw system. Do not
-    // overwhelm its authored chain choices with timed-cover pressure.
-    // The graph still has genuine earned near-fall opportunities.
-    const pressure=M.planId==='technical'?3:
-     M.t/M.len>=M.nearfallAt[0]?17:10;
+    const pressure=M.t/M.len>=M.nearfallAt[0]?17:10;
     selected.push([id,pressure*trained*(repeated?.18:1)]);
    }
   }
