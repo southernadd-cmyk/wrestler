@@ -2953,6 +2953,29 @@ const Graph=(function makeGraph(){
    }
   }
   M[staminaKey]=clamp(M[staminaKey]-effective);
+  // Outlasting is a pacing story, not a free refill. A real legal,
+  // narrated rest can unlock a temporary reduction in routine ten-second
+  // fatigue for the *booked winner only*. Actual move costs still apply
+  // in full and the opponent does not receive an invented stamina debit.
+  // It is stored in graph state, so save/resume remains deterministic.
+  if(exertion<0&&(id==='catch_breath'||n.family==='rest')&&
+     M.o.sheet?.finishRoute==='outlasted'&&M.outcome==='booked'&&
+     ['win_clean','lose_clean'].includes(M.o.finish)&&M.len>=600&&
+     M.t/M.len>=.22&&M.t/M.len<.89){
+   const winner=M.o.finish==='win_clean'?'w':'f';
+   if(activeSide===winner){
+    g.pacedOutlast??={};
+    const prior=g.pacedOutlast[winner],used=prior?.count||0;
+    if(used<4&&(!prior||M.t-prior.at>=100)){
+     g.pacedOutlast[winner]={at:M.t,until:M.t+190,count:used+1};
+     if(!g.pacedOutlastExplained){
+      const who=winner==='w'?M.w:M.f;
+      say(M,who.short+' takes a genuine breather and settles into a measured pace, keeping energy back for the finish.','story');
+      g.pacedOutlastExplained=true;
+     }
+    }
+   }
+  }
   if(exertion<0)g.rests=(g.rests||0)+1;
   g.exertion=(g.exertion||0)+Math.max(0,effective);
   if(id==='near_kickout'||id==='counter_rollup'||n.nearfall) {M.nearfalls++;M.bonus+=n.nearfall?4:5;g.nearfallCount++;}
@@ -3468,6 +3491,23 @@ const Graph=(function makeGraph(){
   const timeLeft=M.len-M.t;
   const trainedFlyer=liveSide.style==='Spectacle'&&trainedRecovery>0;
   const longSpot=M.planId==='spots'&&M.len>=900&&trainedFlyer;
+  // A real standing breather must be available *before* the winner is
+  // exhausted, not merely boosted after the normal low-stamina offer.
+  // The action still passes the original physical isValid and seeded pick.
+  if(M.o.sheet?.finishRoute==='outlasted'&&M.outcome==='booked'&&
+     ['win_clean','lose_clean'].includes(M.o.finish)&&M.len>=600&&
+     M.t/M.len>=.22&&M.t/M.len<.94){
+   const winner=M.o.finish==='win_clean'?'w':'f',
+    loser=winner==='w'?'f':'w',otherSt=loser==='w'?M.wSt:M.fSt;
+   const rests=g.events.filter(e=>e.preControl===winner&&
+    (e.id==='catch_breath'||A[e.id]?.family==='rest'&&costOf(e.id)<0));
+   if(p.control===winner&&p.position==='standing'&&
+      g.physical?.area==='ring'&&!g.physical?.grip&&
+      stamina<80&&stamina-otherSt<27&&rests.length<6&&
+      !rests.some(e=>M.t-e.t<95)&&
+      !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact)
+    selected.push(['catch_breath',9]);
+  }
   const brawlTraining=brawlConditioning(liveSide);
   const longBrawl=M.planId==='brawl'&&M.len>=900&&
    liveSide.style==='Brawl'&&brawlTraining>=.25;
@@ -4233,6 +4273,83 @@ const Graph=(function makeGraph(){
     }
    }
   }
+  // An Outlasted story needs one wrestler to work harder while the
+  // eventual winner manages exertion. Offer only existing, fully legal
+  // in-ring actions; move costs, counters, the opponent's stamina and
+  // real match timing remain authoritative.
+  if(M.o.sheet?.finishRoute==='outlasted'&&M.outcome==='booked'&&
+     ['win_clean','lose_clean'].includes(M.o.finish)&&M.len>=600&&
+     M.t/M.len>=.22&&M.t/M.len<.94){
+   const winner=M.o.finish==='win_clean'?'w':'f',
+    loser=winner==='w'?'f':'w',
+    winSt=winner==='w'?M.wSt:M.fSt,
+    loseSt=loser==='w'?M.wSt:M.fSt,
+    lead=winSt-loseSt;
+   if(p.control===winner&&winSt<80&&lead<27&&
+      !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact){
+    const rests=g.events.filter(e=>e.preControl===winner&&
+     (e.id==='catch_breath'||A[e.id]?.family==='rest'&&costOf(e.id)<0));
+    // Six real rest actions at most, with 95 seconds between them.
+    // This reserves only a CHANCE, never a compulsory action.
+    if(rests.length<6&&!rests.some(e=>M.t-e.t<95)){
+     const options=pool.filter(([id])=>id==='catch_breath'||
+      A[id]?.family==='rest'&&costOf(id)<0);
+     if(options.length){
+      const ids=new Set(options.map(([id])=>id));
+      const competing=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+      const already=options.reduce((sum,[,w])=>sum+w,0);
+      const share=lead<15?1.5:.85;
+      if(already>0&&competing>0&&already<competing*share){
+       const factor=competing*share/already;
+       for(const e of options)e[1]*=factor;
+      }
+     }
+    }
+   }
+   // In between actual rests, favour sound, economical *wrestling*
+   // instead of an all-out attack every exchange. Only already-valid
+   // offensive graph actions with real positive costs can benefit. The
+   // worker can still choose every other legal move, and neither receives
+   // hidden recovery or bonus quality.
+   if(p.control===winner&&winSt<80&&lead<23&&M.t/M.len<.87){
+    const economical=pool.filter(([id])=>{
+     const n=A[id],cost=costOf(id);
+     return n&&n.family&&n.family!=='rest'&&cost>0&&cost<=1.7&&
+      !n.reverse&&!n.counterOf&&!n.blockOf&&!n.nearfall&&!n.risk;
+    });
+    if(economical.length){
+     const ids=new Set(economical.map(([id])=>id));
+     const other=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+     const weight=economical.reduce((sum,[,w])=>sum+w,0);
+     const share=.95;
+     if(weight>0&&other>0&&weight<other*share){
+      const factor=other*share/weight;
+      for(const e of economical)e[1]*=factor;
+     }
+    }
+   }
+   // The wrestler who will lose tries to do more real, draining work,
+   // but can still rest or choose any ordinary move. The pressure stops
+   // once they are exhausted; we do not secretly deduct stamina.
+   if(p.control===loser&&loseSt>=27&&lead<18&&M.t/M.len<.84){
+    const demanding=pool.filter(([id])=>{
+     const n=A[id],cost=costOf(id);
+     return n&&cost>=2.5&&!n.reverse&&!n.counterOf&&!n.blockOf&&
+      !n.nearfall&&n.family!=='rest'&&
+      (M.planId!=='safe'||!n.risk);
+    });
+    if(demanding.length){
+     const ids=new Set(demanding.map(([id])=>id));
+     const competing=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+     const weight=demanding.reduce((sum,[,w])=>sum+w,0);
+     const share=M.planId==='safe'?.38:1.1;
+     if(weight>0&&competing>0&&weight<competing*share){
+      const factor=competing*share/weight;
+      for(const e of demanding)e[1]*=factor;
+     }
+    }
+   }
+  }
   // An agreed beat is not one option among fifty. If it is legal right now, the wrestler takes it
   // with odds set by how willing they are, whatever their habits would otherwise suggest.
   if(agreed){
@@ -4942,17 +5059,21 @@ function tick(M){
  // Real aerial setup/move costs and their safety gates are untouched.
  const pacing=Graph.get(M).pacedRest;
  const paceFactor=(actor,side)=>{
-  if(mode==='pickup'||mode==='slow'||M.len<900)return 1;
+  if(mode==='pickup'||mode==='slow')return 1;
+  const earnedOutlast=Graph.get(M).pacedOutlast?.[side];
+  const outlastFactor=earnedOutlast&&M.t<=earnedOutlast.until?
+   1-(.48+.10*clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1)):1;
+  if(M.len<900)return outlastFactor;
   if(M.planId==='spots'&&actor.style==='Spectacle'&&pacing?.[side]&&
      M.t<=pacing[side].until){
    const skill=clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1);
-   return 1-(skill>=.95?.82:.64)*skill;
+   return Math.min(outlastFactor,1-(skill>=.95?.82:.64)*skill);
   }
   const pacedBrawl=Graph.get(M).pacedBrawl?.[side];
   if(M.planId==='brawl'&&actor.style==='Brawl'&&
      pacedBrawl&&M.t<=pacedBrawl.until)
-   return 1-.45*brawlConditioning(actor);
-  return 1;
+   return Math.min(outlastFactor,1-.45*brawlConditioning(actor));
+  return outlastFactor;
  };
  // Skilled brawlers conserve movement, but actual action costs remain
  // unchanged. This reduction is never unlocked by choosing Brawl alone.
@@ -4990,8 +5111,29 @@ function tick(M){
  const spotWorker=actors(M).A;
  const spotSt=spotWorker===M.w?M.wSt:M.fSt;
  const recoveryWeight=spotSt<28?0:spotSt<42?.4:1;
+ // An agreed Outlasted finish requires the eventual winner to retain
+ // stamina. Extra *unscripted* spectacular spots can otherwise spend that
+ // wrestler's remaining reserves independently of the legal move pool.
+ // Lower only this optional opportunity, never a manually called spot,
+ // already committed flight, scripted signed-sheet beat or move-cost rule.
+ const signedOutlast=M.o.sheet?.finishRoute==='outlasted'&&
+  M.outcome==='booked'&&['win_clean','lose_clean'].includes(M.o.finish)&&
+  M.len>=600;
+ const outlastWinner=signedOutlast?
+  (M.o.finish==='win_clean'?M.w:M.f):null;
+ const outlastLoser=signedOutlast?
+  (M.o.finish==='win_clean'?M.f:M.w):null;
+ const loserSt=outlastLoser===M.w?M.wSt:M.fSt;
+ const winnerSt=outlastWinner===M.w?M.wSt:M.fSt;
+ const lead=winnerSt-loserSt;
+ const electiveWinnerSpot=signedOutlast&&spotWorker===outlastWinner&&
+  ((M.planId==='spots'&&frac>=.33&&frac<.97&&
+    loserSt<64&&lead<23)||
+   (frac>=.76&&frac<.98&&loserSt<38&&lead>=7));
+ const optionalSpotFactor=electiveWinnerSpot?
+  (M.planId==='spots'?.30:.43):1;
  const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*
-  (M.offScript==='showboat'?1.5:1)*recoveryWeight;
+  (M.offScript==='showboat'?1.5:1)*recoveryWeight*optionalSpotFactor;
  let spoke=aerialResolved||grappleResolved;
  // Once both workers contest the turnbuckles for a legal named move,
  // resolve that organic exchange before an unrelated scheduled spectacle.

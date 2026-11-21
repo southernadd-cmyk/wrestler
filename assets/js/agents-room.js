@@ -1229,7 +1229,14 @@
    supported.join(' and ')+' could help set it up, but the required in-ring events must still happen.':
    'No selected called spot specifically prepares this condition; it must still be earned in the match.'):
    'No extra physical threshold. The wrestlers still have to execute the agreed moves.';
-  if(route==='outlasted')summary='The running order cannot guarantee the required stamina gap at the bell. This is a particularly uncertain finish.';
+  if(route==='outlasted'){
+   const minutes=Math.max(5,st.minutes+(st.fx.minutes||0));
+   summary=minutes<10?
+    'Very unlikely in a short match: the loser often has not become exhausted by the bell. A real 15-point stamina gap is still required.':
+    minutes<15?
+    'Risky: the eventual winner must take legal recovery opportunities and the loser must be genuinely exhausted. Neither is guaranteed.':
+    'Long matches make exhaustion more likely, but often tire BOTH wrestlers. Real breathers and costly exchanges must create a 15-point advantage.';
+  }
   if(route==='exhausted_cover')summary='Your wrestler must actually become exhausted; the written running order cannot guarantee it.';
   if(impossible.length)summary+=' Warning: '+impossible.join(' and ')+' contains an impossible or prohibited spot.';
   if(!available)summary='This method is no longer eligible for the wrestlers or feud. '+summary;
