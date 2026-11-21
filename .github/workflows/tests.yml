@@ -88,6 +88,7 @@ jobs:
           node tests/phase6b-all-plan-quality.test.cjs
           node tests/phase9-graph-validation.test.cjs
           node tests/phase9-authored-chains.test.cjs
+          node tests/pre-match-integration.test.cjs
           if test -f tests/flyer-recovery-finish.test.cjs; then
             node tests/flyer-recovery-finish.test.cjs
           fi
