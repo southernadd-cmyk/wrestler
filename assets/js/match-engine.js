@@ -4426,9 +4426,17 @@ function spot(M,big,forced){
  const mapped=(D.SPOTS[A.style]||D.SPOTS.Story).map(move=>({
   move,id:Graph.SCRIPTED_SPOT_IDS[move]
  }));
- const candidates=mapped.filter(x=>Graph.canScriptedSpot(M,x.id,side));
+ // Safe is a conservative match layout, not an override of the
+ // normal move legality system. Every pre-authored scripted spectacle
+ // is risk-tagged; exclude floor impacts, superplexes and flipping dives.
+ // The plain diving elbow is permitted only to a sufficiently skilled
+ // and safety-trained worker. Never add RNG or alter other plans.
+ const safeScripted=M.planId==='safe';
+ const candidates=mapped.filter(x=>
+  (!safeScripted||(x.id==='ar_elbow_point'&&A.ring>=78&&
+    A.safe>=75&&st>=38))&&Graph.canScriptedSpot(M,x.id,side));
  if(!candidates.length){
-  if(forced)say(M,`${A.short} cannot find a legal setup for the requested big move right now.`,'agent',{who:'pbp'});
+  if(forced)say(M,safeScripted?'Road agent: The Safe layout does not permit that dangerous high spot. Keep the legal exchange going.':`${A.short} cannot find a legal setup for the requested big move right now.`,'agent',{who:'pbp'});
   return false;
  }
  const chosen=rnd(M,candidates);
@@ -4466,6 +4474,9 @@ function spot(M,big,forced){
  return true;
 }
 function dive(M){
+ // A special balcony stunt is not ordinary graph wrestling. It cannot
+ // override a Safe layout, even when an old match flag requests one.
+ if(M.planId==='safe')return;
  say(M,`${M.w.short} drives ${M.f.short} through the ropes. They spill towards the aisle, well away from the ring.`,'play',{pause:1});
  say(M,`${M.w.short} is climbing… not the turnbuckle. The balcony.`,'play',{pause:2,big:true});
  const botchP=(.12+(100-M.w.safe)*.004)*M.riskMul;
