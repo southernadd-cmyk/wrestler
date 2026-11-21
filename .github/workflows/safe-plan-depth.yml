@@ -1,0 +1,30 @@
+name: Safe plan depth audit
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/safe-plan-audit.cjs'
+      - '.github/workflows/safe-plan-depth.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  safe-plan-depth:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit 3440 genuine paired Safe and other-plan bouts
+        run: |
+          node tools/graph-lab/safe-plan-audit.cjs 4 --json-file > safe-plan-audit.md
+          cat safe-plan-audit.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: safe-plan-depth-evidence
+          path: |
+            safe-plan-audit.json
+            safe-plan-audit.md
+          if-no-files-found: warn
