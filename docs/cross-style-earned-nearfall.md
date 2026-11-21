@@ -35,6 +35,8 @@ Submission-only stipulations retain the existing **submission escape**, not a ne
 
 ## Measured acceptance
 
+**Technical chain continuity:** A genuinely recorded, two-link, same-owner Technical chain can receive a bounded probability lift for its **legal third authored technique** for competent wrestlers only. The defender can still counter it, the move has its normal stamina/physical guards, and a cover must still earn its own source. This protects real grappling sequences rather than fabricating extra throws.
+
 **Technical continuity:** Technical scheduled covers use the same strict, performed-source rule, but the original linked wrestling pool supplies the legitimate knockdown. Do not inject timed bonus takedowns into Technical move selection: the matched 96-bout chain trace showed that doing so displaced legal wristlock and rolling-grip triples *before* a cover occurred. Any due near fall waits for a real native takedown; an existing physical grip gets its authored continuation priority.
 
 [Cross-style A/B](../.github/workflows/cross-style-nearfall-audit.yml) compares the same **768 matches before and after** (1,536 completed bout runs), logs the exact source and actor, all booked finish outcomes, timed covers/bout, 18-minute nearfall presence, last-three-minute distinct action IDs, last-minute performed offence and stars. It fails if a scheduled count has no verifiable real source, a planned outcome changes, genuine closing activity collapses, or all meaningful near falls disappear. The previously validated Story smoke test also runs. This is a targeted workflow; avoid additional full workflow reruns for documentation edits alone.
