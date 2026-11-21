@@ -236,6 +236,24 @@
   dq_chair_f:'They grab a chair in front of the referee',dq_ref_shove_f:'They shove the referee',dq_low_blow_f:'A low blow the referee sees',
   dq_chair_w:'Snap and use a chair',dq_choke_w:'Choke them past the count of five',dq_ref_shove_w:'Shove the referee'};
  const ROUTE_STATIC={top_rope:(w)=>w.style==='Spectacle'&&kg(w)<110,strike_knockout:(w)=>w.style==='Brawl',eye_poke:(w)=>['Brawl','Story'].includes(w.style)};
+ // These methods are agreed backstage, but must be earned by actual in-ring
+ // events. If the condition is absent at the finish, the road agent calls an
+ // audible to another legal method; the contracted winner does not change.
+ const ROUTE_CONDITION={
+  reversal_finisher:'Needs three genuine reversals by your wrestler.',
+  top_rope:'Needs an aerial specialist who is not exhausted.',
+  limb_finish:'Needs at least four points of focused damage to the opponent.',
+  outlasted:'Needs the loser exhausted and a 15-point stamina gap.',
+  referee_bump:'Needs enough feud heat.',
+  exhausted_cover:'Needs your wrestler exhausted.',
+  injury_gives:'Needs at least three points of focused damage to your wrestler.',
+  finisher_reversed:'Needs three genuine reversals by the opponent.',
+  submission_defeat:'Needs at least four points of focused damage to your wrestler.',
+  dq_ref_shove_f:'Needs enough feud heat.',
+  dq_low_blow_f:'Needs a Brawl or Story opponent.',
+  dq_choke_w:'Needs feud heat or your wrestler to be hurt.',
+  dq_ref_shove_w:'Needs a sufficiently defiant wrestler.'
+ };
  const name=id=>{const n=A[id];return n?.name||id.replace(/_/g,' ');};
  function legal(id,o,r){
   const n=A[id];if(!n)return false;
@@ -1317,8 +1335,13 @@
    return out;
   }
   if(st.stage==='scene'){const s=current(st);return s.options(st).map(o=>({id:o.id,label:fmt(st,o.label),hint:fmt(st,o.hint||''),tags:(o.tags||tagsOf(st,o.fx||{})).map(t=>fmt(st,t))}));}
-  if(st.stage==='finish')return finishCards(st).map((c,i)=>({id:'route_'+i,label:c.label,hint:c.by==='agent'?AGENT+'’s suggestion. It has never let anyone down.':who(st,c.by).short+'’s idea.',
-   tags:[...c.hate.map(s=>who(st,s).short+' ▼'),'Fixes the finish']}));
+  if(st.stage==='finish')return finishCards(st).map((c,i)=>{
+   const condition=ROUTE_CONDITION[c.route];
+   const pitch=c.by==='agent'?AGENT+'’s suggestion.':who(st,c.by).short+'’s idea.';
+   return {id:'route_'+i,label:c.label,
+    hint:pitch+(condition?' '+condition+' If it is not earned in the match, the road agent calls an audible.':''),
+    tags:[...c.hate.map(s=>who(st,s).short+' ▼'),...(condition?['Conditional method']:[]),'Fixes the result']};
+  });
   if(st.stage==='curtain')return Object.entries(D.TALKS).map(([id,t])=>({id:'talk_'+id,label:t.name,hint:t.blurb||'',tags:id==='money'?[st.w.short+' ▼','They will listen']:id==='fire'?['More risk','Crowd ▲']:id==='calm'?['Safer']:[]}));
   return [];
  }

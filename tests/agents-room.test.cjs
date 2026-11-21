@@ -91,6 +91,15 @@ for(const worker of D.TALENT)for(const opponent of D.FOES)for(const finish of fi
   assert.ok(view.options.length&&view.options.every(option=>option.hint&&Array.isArray(option.tags)));
   if(choiceIds.length===2)saved=clone(state);
   let choice=view.options[(index+choiceIds.length*11)%view.options.length];
+  if(view.stage==='finish'){
+   for(const option of view.options){
+    if(option.label==='Work the limb all night, then finish'){
+     assert.match(option.hint,/four points of focused damage/i,'backstage must explain the limb finish requirement');
+     assert.match(option.hint,/audible/i,'backstage must explain legal finish adaptations');
+     assert.ok(option.tags.includes('Conditional method'));
+    }
+   }
+  }
   if(view.stage==='board'){
    // Dennis pencils in all four beats; sometimes we change one, then we agree it.
    assert.equal(view.board.length,4,'the running order has a shine, heat, comeback and big spot');
@@ -193,7 +202,7 @@ for(const sample of matches.slice(0,60))for(const mood of ['happy','sulking']){
 }
 const rate=x=>x.hit/Math.max(1,x.all);
 assert.ok(rate(adherence.happy)-rate(adherence.sulking)>.25,'unhappy wrestlers stray from the sheet ('+rate(adherence.happy).toFixed(2)+' v '+rate(adherence.sulking).toFixed(2)+')');
-let strips=0;
+let strips=0,agreedFinishes=0,finishAudibles=0;
 const STATES=['waiting','due','achieved','adapted','missed'];
 function checkStrip(match,final){
  const strip=Sheets.strip(match,{final});
@@ -234,9 +243,28 @@ for(const sample of matches){
  checkStrip(match,true);
  if(!['double','nc','dq'].includes(match.outcome)){ // v0.3.22 the referee can throw a match out, like an injury stoppage
   assert.equal(match.outcome,'booked');
-  assert.equal(match.final.finishRoute,sheet.finishRoute,'the agreed finish plays out');
+  // The result is contractual; the proposed *method* is conditional on
+  // what actually happened in the ring. A legal audible is not a broken booking.
+  const performed=match.final.finishRoute,agreed=sheet.finishRoute;
+  const legalRoutes=M.FINISH_ROUTES[booking.finish];
+  assert.ok(legalRoutes.some(r=>r.id===performed),'performed finish must be a valid contracted route');
+  assert.equal(match.sheet.performedFinishRoute,performed,'the signed sheet records the actual finish');
+  assert.equal(match.graph.outcome.route,performed,'the outcome graph records the actual finish');
+  if(performed===agreed){
+   assert.ok(!match.finishRouteFallbackFrom,'a performed agreed finish cannot be an audible');
+   agreedFinishes++;
+  }else{
+   assert.equal(match.finishRouteFallbackFrom,agreed,'the road agent identifies the agreed route being replaced');
+   const beat=match.sheet.nodes.find(b=>b.id==='finish');
+   assert.ok(beat,'a signed match has a finish commitment');
+   assert.equal(beat.status,'adapted','the finish commitment is adapted rather than silently achieved');
+   assert.match(beat.why,/agreed.*not physically available/i,'the sheet explains why an audible happened');
+   finishAudibles++;
+  }
   completed++;
  }
 }
 assert.ok(completed>=100,'booked finishes are exercised at scale');
-console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings).toFixed(2)} beats a sheet, ${swaps} running-order changes, ${reworked} rewritten by situations, ${situations.size} situations, ${promos} duels, ${skippedPromos} canceled promos, ${completed} booked finishes; agreed beats land ${Math.round(100*rate(adherence.happy))}% happy v ${Math.round(100*rate(adherence.sulking))}% sulking; ${strips} match strips checked`);
+assert.ok(agreedFinishes>0,'the match must sometimes deliver the signed method');
+assert.ok(finishAudibles>0,'the match must exercise a physically justified audible');
+console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings).toFixed(2)} beats a sheet, ${swaps} running-order changes, ${reworked} rewritten by situations, ${situations.size} situations, ${promos} duels, ${skippedPromos} canceled promos, ${completed} booked finishes (${agreedFinishes} as agreed, ${finishAudibles} audibles); agreed beats land ${Math.round(100*rate(adherence.happy))}% happy v ${Math.round(100*rate(adherence.sulking))}% sulking; ${strips} match strips checked`);
