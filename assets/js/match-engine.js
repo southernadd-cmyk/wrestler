@@ -2754,6 +2754,14 @@ const Graph=(function makeGraph(){
  // Recovery reflects learned pacing, not an invisible refill. Only an
  // actually narrated catch_breath exchange can give the trained benefit.
  const recoveryTraining=actor=>clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1);
+ // Exact-action loop protection is limited to the fourteen audited families.
+ // It picks another *authored description of the same executed action*,
+ // never an invented manoeuvre and never another gameplay RNG draw.
+ const AUDITED_ACTION_REPEATS=new Set([
+  'wristlock','outside_toss','springboard_rise','headlock','taunt',
+  'os_ropes_backdrop','armbar_roll','go_behind','hope_cutoff','leg_wrench',
+  'os_apron_ddt','missile_dropkick','lockup','gd_rib_stomp'
+ ]);
 
  function apply(M,id,options={}){
   const n=A[id],p=Psy.get(M),g=get(M);
@@ -2791,9 +2799,10 @@ const Graph=(function makeGraph(){
    say(M,fill(M,calls[(g.sellCount-1)%calls.length]),'story');g.lastSell=M.t;
   }
   let text=fill(M,variant,{A:attacker.short,D:defender.short,part,move:n.kind});
+  let noCountLines=null;
   if(noCountout(M)){
    if(id==='outside_toss'){
-    const noCountLines=[
+    noCountLines=[
      attacker.short+' sends '+defender.short+' out to the floor. There is no count-out in this match.',
      attacker.short+' puts '+defender.short+' on the floor. Neither is under a count-out deadline.',
      defender.short+' is sent out by '+attacker.short+'. There is no count to beat.',
@@ -2813,7 +2822,29 @@ const Graph=(function makeGraph(){
     defender.short+' is returned to the ring by '+attacker.short+'. The rules allowed them to stay outside.'
    ][index%3];
   }
-  say(M,broadcastAction(broadcast,attacker.short,defender.short,text),n.kind,{actionId:id});
+  let spoken=broadcastAction(broadcast,attacker.short,defender.short,text);
+  if(AUDITED_ACTION_REPEATS.has(id)&&
+     M.log.filter(line=>line.actionId===id&&line.text===spoken).length>=2){
+   // After two identical calls, search the other existing action-specific
+   // descriptions before speaking. A third exact duplicate is not inevitable
+   // just because the normal weighted narration roll revisited a familiar line.
+   // The underlying action and all its physical consequences are unchanged.
+   for(let offset=1;offset<variants.length;offset++){
+    const alternativeIndex=(index+offset)%variants.length;
+    const altText=noCountLines?
+     noCountLines[alternativeIndex%noCountLines.length]:
+     fill(M,variants[alternativeIndex],
+      {A:attacker.short,D:defender.short,part,move:n.kind});
+    const alt=broadcastAction(broadcast,attacker.short,defender.short,altText);
+    if(M.log.filter(line=>line.actionId===id&&line.text===alt).length<2){
+     spoken=alt;
+     g.lastNarrationIndex[id]=alternativeIndex;
+     g.narrationHistory[id]=[...recent.slice(-1),alternativeIndex];
+     break;
+    }
+   }
+  }
+  say(M,spoken,n.kind,{actionId:id});
   broadcastInsight(M,g,broadcast,n,side,attacker,defender);
   broadcastCounter(M,g,n,side,attacker,defender);
   const originalDown=n.reverse?side:opp;

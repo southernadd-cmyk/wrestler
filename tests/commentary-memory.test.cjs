@@ -126,6 +126,7 @@ if(base){
  assert.ok(stats.genericNew<=stats.genericOld,
   'action-only follow-up must not worsen generic triple repeats');
  assert.equal(stats.tripleNew,0,
-  'all fixed-seed action-specific triple repeats must be eliminated');
+  'all fixed-seed action-specific triple repeats must be eliminated: '+
+   JSON.stringify(stats.remainingActionExamples));
 }
 console.log('PASS commentary memory + matched mechanics: '+JSON.stringify(stats));
