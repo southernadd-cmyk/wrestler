@@ -89,6 +89,13 @@ jobs:
           node tests/phase9-graph-validation.test.cjs
           node tests/phase9-authored-chains.test.cjs
           node tests/pre-match-integration.test.cjs
+          # Run the compact booth fixture in the existing PR smoke gate.
+          node tests/commentary-memory.test.cjs
+          # One-time paired witness for the v0.6.1 booth-only patch.
+          if [[ "${{ github.head_ref }}" == "fix/commentary-memory-v061-20261121" ]]; then
+            git fetch --no-tags --depth=1 origin c393c78c53cd2a745da7bb7b8db23dc4ca7ef51e
+            COMMENTARY_BASE_SHA=c393c78c53cd2a745da7bb7b8db23dc4ca7ef51e node tests/commentary-memory.test.cjs
+          fi
           if test -f tests/flyer-recovery-finish.test.cjs; then
             node tests/flyer-recovery-finish.test.cjs
           fi
