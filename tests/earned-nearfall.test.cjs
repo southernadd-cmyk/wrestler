@@ -47,5 +47,5 @@ const prior=p.graph.events.length,node=p.graph.node;
 G.advance(p,p.t/p.len);
 assert.equal(p.graph.node,node,'due real knockdown kept for cover before arc switch');
 assert.equal(p.graph.events.length,prior);
-assert.deepEqual(G.validate().errors,[],'graph unchanged');
+assert.deepEqual(Array.from(G.validate().errors),[],'graph unchanged');
 console.log('PASS earned near falls: source, owner, down position, no forged attack, duplicate cover or false count');
