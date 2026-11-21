@@ -55,8 +55,11 @@ jobs:
              'eligible',before.eligiblePct,'=>',after.eligiblePct,
              'candidate weight',before.offeredSharePct,'=>',after.offeredSharePct);
             if(minutes===12)
-             assert.equal(after.convertedPct,before.convertedPct,
-              'short-match Technical lane must be unchanged');
+             // Timed covers are now genuinely performed in 12-minute bouts,
+             // so their legal grappling exchanges may differ. Require the
+             // authentic grip conversion to remain within sampling tolerance.
+             assert.ok(Math.abs(after.convertedPct-before.convertedPct)<=5,
+              'short-match Technical grip conversion must stay comparable');
             else if(tier==='novice')
              assert.ok(Math.abs(after.convertedPct-before.convertedPct)<=4,
               'novice workers cannot receive direct new skill; a trained opponent may change the match');

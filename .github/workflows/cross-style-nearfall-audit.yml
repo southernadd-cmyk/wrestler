@@ -1,0 +1,80 @@
+name: Cross-style earned near-fall A/B
+on:
+  pull_request:
+    paths:
+      - 'assets/js/match-engine.js'
+      - 'tests/cross-style-earned-nearfall.test.cjs'
+      - 'tools/graph-lab/cross-style-nearfall-audit.cjs'
+      - '.github/workflows/cross-style-nearfall-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    name: Verify real near falls and unchanged booked outcomes in four plans
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact sources, safe styles and physical rules
+        run: |
+          node tests/cross-style-earned-nearfall.test.cjs
+          node tests/earned-nearfall.test.cjs
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: baseline
+      - name: Compare 768 genuine matched bouts on each engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp tools/graph-lab/cross-style-nearfall-audit.cjs baseline/tools/graph-lab/cross-style-nearfall-audit.cjs
+          (cd baseline && node tools/graph-lab/cross-style-nearfall-audit.cjs 8 --json-file > ../cross-nearfall-before.md)
+          node tools/graph-lab/cross-style-nearfall-audit.cjs 8 --json-file > cross-nearfall-after.md
+          echo '# Legacy scheduled nearfall baseline' >> "$GITHUB_STEP_SUMMARY"
+          cat cross-nearfall-before.md >> "$GITHUB_STEP_SUMMARY"
+          echo '# Sourced nearfall patch' >> "$GITHUB_STEP_SUMMARY"
+          cat cross-nearfall-after.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Reject invented covers, result changes or hollow match plans
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const before=require('./baseline/cross-style-nearfall-audit.json');
+          const after=require('./cross-style-nearfall-audit.json');
+          assert.deepEqual(after.errors,[]);
+          assert.equal(after.bouts,768);
+          for(const a of after.rows){
+           const b=before.rows.find(x=>x.plan===a.plan&&x.tier===a.tier&&x.minutes===a.minutes);
+           assert.ok(b);
+           assert.deepEqual(a.finishTypes,b.finishTypes,'never change the booked outcome');
+           assert.equal(a.explicitEarned,a.scheduled,'no legacy fictional scheduled cover');
+           assert.equal(a.verified,a.scheduled,'every scheduled count must cite actual landed owner');
+           assert.equal(a.unproven,0,'no unverifiable scheduled counts');
+           assert.ok(a.stars>=b.stars-.40,a.plan+': stars may not collapse');
+           assert.ok(a.lateDistinct>=b.lateDistinct-1.5,a.plan+': preserve actual last-three-minute variety');
+           assert.ok(a.finalMinuteActions>=b.finalMinuteActions-1.2,a.plan+': keep real last-minute offence');
+           if(a.minutes===18&&a.tier!=='novice')
+            assert.ok(a.scheduledPerBout>=.4,
+             a.plan+': cannot eliminate imaginary covers by eliminating all real covers');
+           console.log(a.plan,a.tier,a.minutes,
+            'sourced',a.verified+'/'+a.scheduled,
+            'covers',b.scheduledPerBout,'=>',a.scheduledPerBout,
+            'stars',b.stars,'=>',a.stars,
+            'late moves',b.lateDistinct,'=>',a.lateDistinct);
+          }
+          NODE
+      - name: Retain independent paired source evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-style-nearfall-paired-1536
+          path: |
+            baseline/cross-style-nearfall-audit.json
+            cross-style-nearfall-audit.json
+            cross-nearfall-before.md
+            cross-nearfall-after.md
+          if-no-files-found: warn

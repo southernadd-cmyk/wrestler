@@ -54,9 +54,16 @@ jobs:
             assert.equal(x.provenancePct,100,
              'Story nearfall must trace exact original knockdown');
            if(x.plan!=='story'){
-            assert.equal(x.stars,old.stars,'other plan stars unchanged');
-            assert.equal(x.scheduledNearfalls,old.scheduledNearfalls,
-             'other plans retain identical scheduled nearfall distribution');
+            // The second-stage rollout intentionally replaces legacy timed
+            // fictions in Technical/Safe; compare quality and actual sources
+            // rather than demanding the old counts remain identical.
+            if(x.scheduledNearfalls>0)assert.equal(x.provenancePct,100,
+             'each cross-style scheduled cover must cite a real landed move');
+            assert.ok(x.stars>=old.stars-.45,
+             'non-Story quality cannot collapse after sourced covers');
+            if(x.minutes===18&&x.tier!=='novice')
+             assert.ok(x.scheduledNearfalls>=.4,
+              'do not replace fictional counts with no covers');
            }
            console.log(x.tier,x.minutes,x.plan,'actual scheduled counts',
             old.scheduledNearfalls,'=>',x.scheduledNearfalls,

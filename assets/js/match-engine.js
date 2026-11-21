@@ -1651,7 +1651,7 @@ const Graph=(function makeGraph(){
   if(readyStoryHope(M))return {id:schedule.id,name:a.label};
   // Preserve the actual mat knockdown for the cover already due. The
   // otherwise routine arc reset would stand everyone up before the count.
-  if(M.planId==='story'&&M.nearfallAt?.length&&
+  if(M.nearfallAt?.length&&M.o.stip!=='submission'&&
      frac>=M.nearfallAt[0]&&earnedNearfallSource(M))
     return {id:schedule.id,name:a.label};
   // Existing in-progress saves may already be in an impossible early finish arc.
@@ -2766,6 +2766,41 @@ const Graph=(function makeGraph(){
      (repeated?.16:1)]);
    }
   }
+  // Technical already has authentic linked takedown/hold chains. Adding
+  // timer-driven bonus candidates before a due cover displaced real
+  // wristlock -> rolling-control -> takedown triples (verified in the
+  // matched 96-bout trace). Preserve that organic pool; the same source
+  // validator earns its scheduled covers from actual Technical landings.
+  // Only the other three plans need more grounding candidates.
+  const earnedWindow=['brawl','spots','safe'].includes(M.planId)&&M.len>=720&&
+   // A prepared move family has priority over an unrelated scheduled cover.
+   // Preserve the genuine Technical grip, Brawl rope run and Spots
+   // aerial payoff instead of crowding their legal continuations.
+   (M.planId!=='spots'||M.len-M.t>180)&&
+   !readyTechnicalGrip(M)&&!readyBrawlRebound(M)&&!readyNamedAerial(M)&&
+   M.nearfallAt?.length&&M.t/M.len>=M.nearfallAt[0]-.10&&
+   M.t/M.len>=.69&&M.t/M.len<=.99;
+  if(earnedWindow&&p.position==='standing'&&
+      ['w','f'].includes(p.control)&&g.physical?.area==='ring'){
+   const groundedOptions={
+    brawl:['clothesline','power_spinebuster','heavy_slam',
+      'short_arm_lariat','shoulder_tackle','body_shot'],
+    spots:['sb_dropkick','lc_hurricanrana','high_crossbody',
+      'ar_moonsault','ar_450','clothesline','snap_suplex'],
+    safe:['arm_drag','grapple_trip','mat_takedown','headlock_takeover','hip_toss']
+   };
+   const striker=p.control==='w'?M.w:M.f;
+   const trained=(striker.ring>=70&&striker.safe>=65)?1.16:1;
+   for(const id of groundedOptions[M.planId]||[]){
+    const n=A[id];
+    if(!n||n.down!=='d'||n.zone!=='mat')continue;
+    if(M.planId==='safe'&&(n.risk||costOf(id)>2.2))continue;
+    const repeated=g.events.some(e=>e.id===id&&e.preControl===p.control&&
+      M.t-e.t<=80);
+    const pressure=M.t/M.len>=M.nearfallAt[0]?17:10;
+    selected.push([id,pressure*trained*(repeated?.18:1)]);
+   }
+  }
   // A trained Story wrestler may contest actual opponent pressure while
   // still underneath in a heat-stage hope arc. The authored counter is
   // selectable but never guaranteed; normal legality, exertion and
@@ -3277,6 +3312,41 @@ const Graph=(function makeGraph(){
     }
    }
   }
+  // A real TWO-step authored Technical chain deserves a fair chance to
+  // complete its legal third link. The former near-fall prep bias crowded
+  // out competent wrestler wristlock -> rolling control -> throw sequences.
+  // Only two actually performed, same-owned graph-linked actions can
+  // qualify; the prospective third link must exist, be legal and match
+  // a real authored technique. Its probability stays below certainty,
+  // with normal physical, stamina and counter rules fully active.
+  // Elite technicians already maintain their chains without this assistance.
+  if(M.planId==='technical'&&M.len>=900&&sameController&&prior&&
+      !!A[prior.id]?.next.some(([nextId])=>nextId===previous.id)&&
+      liveSide.style==='Technical'&&liveSide.ring>=68&&liveSide.ring<85&&
+      liveSide.safe>=60&&previous.preControl===p.control&&
+      prior.preControl===p.control&&prior.control===p.control&&
+      previous.t-prior.t<=20&&M.t-previous.t>=0&&M.t-previous.t<=20){
+   const last=A[g.node];
+   const authored=new Set((last?.next||[]).map(([id])=>id));
+   const technicalFamilies=new Set(['chain','suplex','submission',
+    'ground','neck','pin','rest']);
+   const followups=pool.filter(([id])=>authored.has(id)&&
+    CHAIN_BY_PAIR.has(g.node+'>'+id)&&A[id]&&
+    !A[id].reverse&&!A[id].counterOf&&!A[id].blockOf&&
+    technicalFamilies.has(A[id].family));
+   if(followups.length){
+    const ids=new Set(followups.map(([id])=>id));
+    const owned=followups.reduce((total,[,weight])=>total+weight,0);
+    const other=pool.reduce((total,[id,weight])=>
+     total+(ids.has(id)?0:weight),0);
+    const training=Math.min(1,(liveSide.ring-68)/17);
+    const target=other*1.05;
+    if(owned>0&&owned<target){
+     const factor=Math.min(8,target/owned);
+     for(const item of followups)item[1]*=factor;
+    }
+   }
+  }
   // Restore a bounded, non-forced impact share after the broad action-pool
   // expansion. No reward for bearhugs/holds or an already landed named move.
   if(brawlLate){
@@ -3581,6 +3651,10 @@ const Graph=(function makeGraph(){
      g.physical.locations?.w!=='ring'||g.physical.locations?.f!=='ring')
    return null;
   const used=new Set(g.earnedNearfallSources||[]);
+  // Safe may credit only its controlled, low-cost, non-risky grounding
+  // repertoire. An implausible power spot cannot become its scheduled pin.
+  const safeCovers=new Set(['arm_drag','grapple_trip','mat_takedown',
+   'headlock_takeover','hip_toss','shoulder_tackle']);
   for(let i=g.events.length-1;i>=0;i--){
    const e=g.events[i],n=A[e.id];
    if(M.t-e.t>30)break;
@@ -3588,6 +3662,8 @@ const Graph=(function makeGraph(){
       e.position!=='mat'||e.down!==p.down||!n||n.reverse||
       n.counterOf||n.blockOf||n.down!=='d'||n.zone!=='mat'||
       !(impactFamilies.has(n.family)||classicImpacts.has(e.id))||
+      (M.planId==='safe'&&(n.risk||costOf(e.id)>2.2||
+       !safeCovers.has(e.id)))||
       !['aerialResolution','grappleResolution','strikeResolution','contactResolution']
         .every(key=>!e[key]||e[key]==='landed'))continue;
    const key=e.t+':'+e.id+':'+side;
@@ -4228,19 +4304,18 @@ function tick(M){
  const preparedRun=!spoke&&!topContest&&!preparedFlight&&Graph.readyBrawlRebound(M);
  const preparedGrip=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&Graph.readyTechnicalGrip(M);
  const preparedHope=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&Graph.readyStoryHope(M);
- const earnedCover=M.planId==='story'&&!spoke&&!topContest&&
+ const earnedCover=!spoke&&!topContest&&
   !preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&
-  M.nearfallAt.length&&frac>=M.nearfallAt[0]?
-   Graph.earnedNearfallSource(M):null;
- // A timer may ask for a near fall, but no fictional move may make it
- // happen. Keep the next appointment pending until a real landed
- // knockdown produces a lawful cover opportunity.
+  M.o.stip!=='submission'&&M.nearfallAt.length&&
+  frac>=M.nearfallAt[0]?Graph.earnedNearfallSource(M):null;
+ // All plans must earn their scheduled pin from a genuinely landed,
+ // still-live knockdown. A timer is only an opportunity, never a strike,
+ // unsolicited control switch or imaginary physical relocation.
+ // Submission-only stipulations preserve their non-pin escape sequence.
  if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&
     M.nearfallAt.length&&frac>=M.nearfallAt[0]&&
-    (M.planId!=='story'||M.o.stip==='submission'||earnedCover)){
-  // Roll out to other match plans only after dedicated cross-plan baselines.
-  // Their established scheduled nearfalls remain behaviourally identical.
-  if(M.planId!=='story'||M.o.stip==='submission'){
+    (M.o.stip==='submission'||earnedCover)){
+  if(M.o.stip==='submission'){
    M.nearfallAt.shift();Graph.nearfall(M);spoke=true;
   }else if(Graph.nearfall(M,earnedCover)){
    M.nearfallAt.shift();spoke=true;

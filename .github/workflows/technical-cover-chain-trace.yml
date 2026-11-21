@@ -1,0 +1,40 @@
+name: Technical earned-cover chain diagnostic
+on:
+  pull_request:
+    paths:
+      - 'tools/graph-lab/technical-cover-chain-trace.cjs'
+      - '.github/workflows/technical-cover-chain-trace.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  investigate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Trace live 96-bout Technical graph with covers
+        run: node tools/graph-lab/technical-cover-chain-trace.cjs --json-file > current-trace.txt
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/technical-grappling-depth-20261120
+          path: original
+      - name: Trace 96 historical matching bouts
+        run: |
+          cp tools/graph-lab/technical-cover-chain-trace.cjs original/tools/graph-lab/technical-cover-chain-trace.cjs
+          (cd original && node tools/graph-lab/technical-cover-chain-trace.cjs --json-file > ../original-trace.txt)
+          echo '### Original technical chains' >> "$GITHUB_STEP_SUMMARY"
+          cat original-trace.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '### Modified technical chains' >> "$GITHUB_STEP_SUMMARY"
+          cat current-trace.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: technical-cover-chain-diagnostic
+          path: |
+            technical-cover-chain-trace.json
+            original/technical-cover-chain-trace.json
+            original-trace.txt
+            current-trace.txt
