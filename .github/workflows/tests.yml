@@ -91,11 +91,11 @@ jobs:
           node tests/pre-match-integration.test.cjs
           # Run the compact booth fixture in the existing PR smoke gate.
           node tests/commentary-memory.test.cjs
-          # Branch-scoped paired witness for v0.6.2 texture-only narration.
-          # Use the merged v0.6.1 commit as the control; no extra workflow.
-          if [[ "${{ github.head_ref }}" == "fix/commentary-texture-variety-20261121" ]]; then
-            git fetch --no-tags --depth=1 origin 90e5ba0509231442c15da0738d7e2adc55606de1
-            COMMENTARY_BASE_SHA=90e5ba0509231442c15da0738d7e2adc55606de1 node tests/commentary-memory.test.cjs
+          # v0.6.3 residual-texture audit against the merged v0.6.2 control.
+          # Reuse the existing focused PR job, not new workflows.
+          if [[ "${{ github.head_ref }}" == "fix/commentary-residual-texture-v063-20261121" ]]; then
+            git fetch --no-tags --depth=1 origin 93342b09508d014ce002b1a5f7098ab5a1fa6321
+            COMMENTARY_BASE_SHA=93342b09508d014ce002b1a5f7098ab5a1fa6321 node tests/commentary-memory.test.cjs
           fi
           if test -f tests/flyer-recovery-finish.test.cjs; then
             node tests/flyer-recovery-finish.test.cjs
