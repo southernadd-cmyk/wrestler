@@ -23,11 +23,13 @@
   grid-row:2;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
   background:none;border:none;
  }
- .top .ro{display:block;background:#1a2855;padding:3px 7px}
- .top .ro:nth-child(n+3){display:none}
- .top .ro small{font-size:12px}
- .top .ro small::after{content:' · '}
- .top .ro b{font:700 14px/1.2 'Atkinson Hyperlegible Next',system-ui,sans-serif;letter-spacing:0}
+ /* Keep all four career readouts present: week, bank, reputation and meetings.
+    Two compact columns cost one extra row but avoid hiding important state. */
+ .top .readouts{gap:4px 6px}
+ .top .ro{display:flex;align-items:baseline;justify-content:space-between;gap:3px;min-width:0;background:#1a2855;padding:4px 7px}
+ .top .ro small{font-size:12px;line-height:1.2}
+ .top .ro small::after{content:none}
+ .top .ro b{font:700 14px/1.2 'Atkinson Hyperlegible Next',system-ui,sans-serif;letter-spacing:0;overflow-wrap:anywhere;text-align:right;min-width:0}
  .phone-tabs,.phone-sections{display:grid;gap:3px;background:#121a40}
  .phone-sections{
   grid-area:sections;grid-auto-flow:column;grid-auto-columns:minmax(max-content,1fr);

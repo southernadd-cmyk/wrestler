@@ -67,6 +67,20 @@ async function journey(browser,name,viewport){
   await page.locator('[data-title="new"]').click();
   await page.locator('#app').waitFor({state:'visible'});
   assert.ok(await page.locator('#view').innerText(),'career screen rendered');
+  if(viewport.width<=720){
+    const mobileReadouts=await page.evaluate(()=>[...document.querySelectorAll('#readouts .ro')].map(el=>{
+      const r=el.getBoundingClientRect();
+      return {label:el.querySelector('small')?.textContent||'',value:el.querySelector('b')?.textContent||'',
+        display:getComputedStyle(el).display,left:r.left,right:r.right,top:r.top,bottom:r.bottom};
+    }));
+    assert.equal(mobileReadouts.length,4,'phone: all career readouts must exist');
+    assert.ok(mobileReadouts.every(x=>x.display!=='none'&&x.right<=viewport.width+1&&x.value),
+      'phone: every readout must be visible and within screen width '+JSON.stringify(mobileReadouts));
+    assert.ok(mobileReadouts[2].top>=mobileReadouts[0].bottom-2,
+      'phone: reputation and meetings should occupy the second compact row');
+    assert.match(mobileReadouts[2].label,/Reputation/i);
+    assert.match(mobileReadouts[3].label,/Meetings left/i);
+  }
 
   // Settle a genuine match, then stage an interrupted result screen to test
   // the same localStorage resume route used by a real mid-show reload.
