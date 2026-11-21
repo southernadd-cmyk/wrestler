@@ -49,6 +49,59 @@ function play(m){
  return m;
 }
 
+// The manager picks the method before called spots; rerouting must not erase
+// their own spots, and older stored meetings can still use the legacy finish step.
+{
+ const booking={id:'finish-first-screen',wid:worker.id,rid:opponent.id,pid:promoter.id,
+  finish:'win_clean',slot:'main',minutes:12,eventAbs:31,feudHeat:20};
+ const st=Room.begin(booking,worker,opponent,promoter);
+ st.queue=[];
+ Room.act(st,'plan_story');
+ let view=Room.view(st);
+ assert.equal(st.stage,'board','finishing method and spots are planned together');
+ assert.ok(st.board.finish?.route,'Dennis pencils in a concrete finish before called spots');
+ assert.equal(view.finishes.filter(x=>x.selected).length,1,'one visible finish is selected');
+ assert.ok(view.finishes.length>=2,'the manager has a meaningful finish choice');
+ assert.equal(view.finishPlan.route,st.board.finish.route);
+ assert.ok(view.board.length===4&&view.board.every(row=>row.cards.some(x=>x.selected)));
+ const chosen=Room.options(st).find(o=>o.slot==='opening'&&!o.selected);
+ assert.ok(chosen,'there is a real opening spot to change');
+ Room.act(st,chosen.id);
+ const manual=st.board.opening.action;
+ assert.equal(st.board.opening.chosen,true,'the manual spot is marked distinct from Dennis’s pencil');
+ const finish=Room.options(st).find(o=>o.route&&o.route!==st.board.finish.route);
+ assert.ok(finish,'another eligible way to deliver the same booked outcome exists');
+ Room.act(st,finish.id);
+ assert.equal(st.board.finish.route,finish.route);
+ assert.equal(st.board.opening.action,manual,'changing finish preserves the manager’s called spot');
+ assert.equal(Room.view(st).finishes.filter(x=>x.selected).length,1);
+ assert.equal(Room.view(st).finishPlan.route,finish.route);
+ Room.act(st,'board_ok');
+ assert.equal(st.stage,'curtain','a complete modern sheet does not ask for the finish twice');
+ Room.act(st,Room.options(st)[0].id);
+ assert.equal(st.sheet.finishRoute,finish.route,'the selected method survives into the signed sheet');
+ assert.equal(st.sheet.nodes.at(-1).route,finish.route);
+ assert.equal(st.sheet.nodes.find(n=>n.id==='opening')?.actions[0],manual);
+
+ const old=Room.begin({...booking,id:'old-saved-board'},worker,opponent,promoter);
+ old.queue=[];Room.act(old,'plan_story');
+ delete old.board.finish; // a saved game from before finish-first planning
+ Room.act(old,'board_ok');
+ assert.equal(old.stage,'finish','old saved board uses the existing separate finish step');
+ Room.act(old,Room.options(old)[0].id);
+ assert.equal(old.stage,'curtain');
+ Room.act(old,Room.options(old)[0].id);
+ assert.ok(old.sheet.finishRoute,'old saved plans still sign a real route');
+
+ const focus=Room.begin({...booking,id:'focus-guide'},worker,opponent,promoter);
+ Room.act(focus,'plan_technical');focus.board.finish={route:'limb_finish',by:'agent',label:'Work the limb all night, then finish'};
+ const guide=Room.view(focus).finishPlan;
+ assert.match(guide.requirement,/four points of focused damage/i);
+ assert.match(guide.summary,/in-ring|called spot/i,
+  'the planning readout does not promise artificial focused damage');
+ assert.equal(guide.kind,'conditional');
+}
+
 // All five plans, short/mid/long clocks, cooperative/unhappy workers, matched seeds.
 // The physical engine must remain authoritative even when the sheet differs.
 let bouts=0;
