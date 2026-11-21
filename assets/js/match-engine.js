@@ -2772,6 +2772,11 @@ const Graph=(function makeGraph(){
   // Safe, measured trip. Every choice still passes normal move legality,
   // stamina, training, counter and physical-position gates below.
   const earnedWindow=M.planId!=='story'&&M.len>=720&&
+   // A prepared move family has priority over an unrelated scheduled cover.
+   // Preserve the genuine Technical grip, Brawl rope run and Spots
+   // aerial payoff instead of crowding their legal continuations.
+   (M.planId!=='spots'||M.len-M.t>180)&&
+   !readyTechnicalGrip(M)&&!readyBrawlRebound(M)&&!readyNamedAerial(M)&&
    M.nearfallAt?.length&&M.t/M.len>=M.nearfallAt[0]-.10&&
    M.t/M.len>=.69&&M.t/M.len<=.99;
   if(earnedWindow&&p.position==='standing'&&

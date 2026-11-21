@@ -82,13 +82,16 @@ jobs:
             assert.ok(a.scheduledNearfallsPerBout>=.40,
              'Story bouts must retain legitimate, visible near falls');
            }
+           // Stage 2 deliberately gives Technical and Safe sourced covers.
+           // They are no longer bit-for-bit isolated from the old Story-only
+           // baseline; the paired cross-plan audit verifies their real sources.
            for(const plan of ['technical','safe']){
             const c=find(before,plan),d=find(after,plan);
-            assert.deepEqual(
-             [d.actualHopePct,d.actualHeatHopeComebackPct,d.stars,d.scheduledNearfallsPerBout],
-             [c.actualHopePct,c.actualHeatHopeComebackPct,c.stars,c.scheduledNearfallsPerBout],
-             'non-Story plans must remain identical'
-            );
+            assert.ok(d.stars>=c.stars-.45,
+             plan+' must preserve match quality after genuinely earned covers');
+            if(minutes===18&&tier!=='novice')
+             assert.ok(d.scheduledNearfallsPerBout>=.4,
+              plan+' must retain actual scheduled near falls');
            }
           }
           NODE
