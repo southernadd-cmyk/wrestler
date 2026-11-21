@@ -463,6 +463,40 @@ console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings
     firstRest:rest.length?rest[0].t:null,lastRest:rest.length?rest.at(-1).t:null};
   };
   const winStats=statsFor(winner),loseStats=statsFor(winner==='w'?'f':'w');
+
+  // Compare signed beat delivery and REAL landed named aerial variety rather
+  // than relying on a match-quality check from unrelated (non-Outlasted) bouts.
+  const called=m.sheet?.nodes?.filter(n=>n.id!=='finish'&&n.planned)||[];
+  const beatStats={
+   total:called.length,
+   achieved:called.filter(n=>n.status==='achieved').length,
+   adapted:called.filter(n=>n.status==='adapted').length,
+   missed:called.filter(n=>n.status==='missed').length,
+   negotiated:called.filter(n=>n.negotiated).length,
+   negotiatedAchieved:called.filter(n=>n.negotiated&&n.status==='achieved').length
+  };
+  const namedAerial=e=>{
+   const n=A[e.id];
+   return !!n&&!n.reverse&&!n.counterOf&&!n.blockOf&&n.risk&&
+    ['aerial','springboard','dive','lucha','superplex'].includes(n.family)&&
+    ['aerialResolution','grappleResolution','strikeResolution','contactResolution']
+     .every(k=>!e[k]||e[k]==='landed');
+  };
+  const aerials=(m.graph.events||[]).filter(namedAerial);
+  const aerialStats={
+   attempts:(m.graph.scriptedSpotAttempts||[]).length,
+   scriptedLanded:(m.graph.scriptedSpotAttempts||[]).filter(a=>a.outcome==='landed').length,
+   landings:aerials.length,distinct:new Set(aerials.map(e=>e.id)).size,
+   lateLandings:aerials.filter(e=>e.t>=m.len-180).length,
+   lateDistinct:new Set(aerials.filter(e=>e.t>=m.len-180).map(e=>e.id)).size,
+   winnerLateDistinct:new Set(aerials.filter(e=>e.t>=m.len-180&&e.preControl===winner).map(e=>e.id)).size
+  };
+  const matchStats={
+   stars:m.final.stars,crowdPeak:m.final.crowdPeak,nearFalls:m.final.nearfalls,
+   botches:m.final.botches,spotHits:m.final.spotHits,
+   scriptChecks:m.scriptChecks,scriptHits:m.scriptHits,
+   controlChanges:m.story.changes||0
+  };
   const won=m.finishRoute==='outlasted';
   if(route==='outlasted'&&m.outcome==='booked')
    assert.equal(won,lose<30&&lead>=15,'outlasted must honour exact stamina prerequisites');
@@ -475,6 +509,7 @@ console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings
    winRests:recovery(winner),loseRests:recovery(winner==='w'?'f':'w'),
    winLateRests:lateRecovery(winner),loseLateRests:lateRecovery(winner==='w'?'f':'w'),
    winStats,loseStats,paceCount:m.graph.pacedOutlast?.[winner]?.count||0,
+   beatStats,aerialStats,matchStats,
    totalActions:m.graph.events?.length||0,waypoints:at};
  }
  let seq=0;
@@ -609,6 +644,66 @@ console.log(`PASS v3.7 match night: ${meetings} meetings, ${(spineBeats/meetings
   findingNotes:['Action exertion uses real graph event costs, not passive clock drain.',
    'Reversal actor inferred from graph reversal metadata.',
    'Same seed and sheet as original 120-pair diagnostic.']
+ }));
+
+ const auditQuality=rows=>({
+  n:rows.length,
+  ratings:{signedMean:mean(rows.map(x=>x.planned.matchStats.stars)),
+   controlMean:mean(rows.map(x=>x.noPrep.matchStats.stars)),
+   signedMedian:median(rows.map(x=>x.planned.matchStats.stars)),
+   controlMedian:median(rows.map(x=>x.noPrep.matchStats.stars)),
+   meanDifference:mean(rows.map(x=>x.planned.matchStats.stars-x.noPrep.matchStats.stars)),
+   dropsBy1Plus:rows.filter(x=>x.planned.matchStats.stars<=x.noPrep.matchStats.stars-1).length,
+   risesBy1Plus:rows.filter(x=>x.planned.matchStats.stars>=x.noPrep.matchStats.stars+1).length},
+  calledBeats:{
+   signed:rows.reduce((a,x)=>a+x.planned.beatStats.total,0),
+   control:rows.reduce((a,x)=>a+x.noPrep.beatStats.total,0),
+   achievedSigned:rows.reduce((a,x)=>a+x.planned.beatStats.achieved,0),
+   achievedControl:rows.reduce((a,x)=>a+x.noPrep.beatStats.achieved,0),
+   adaptedSigned:rows.reduce((a,x)=>a+x.planned.beatStats.adapted,0),
+   adaptedControl:rows.reduce((a,x)=>a+x.noPrep.beatStats.adapted,0),
+   missedSigned:rows.reduce((a,x)=>a+x.planned.beatStats.missed,0),
+   missedControl:rows.reduce((a,x)=>a+x.noPrep.beatStats.missed,0),
+   negotiatedSigned:rows.reduce((a,x)=>a+x.planned.beatStats.negotiated,0),
+   negotiatedControl:rows.reduce((a,x)=>a+x.noPrep.beatStats.negotiated,0),
+   negotiatedAchievedSigned:rows.reduce((a,x)=>a+x.planned.beatStats.negotiatedAchieved,0),
+   negotiatedAchievedControl:rows.reduce((a,x)=>a+x.noPrep.beatStats.negotiatedAchieved,0)},
+  aerial:{
+   meanNamedLanded:mean(rows.map(x=>x.planned.aerialStats.landings)),
+   controlMeanNamedLanded:mean(rows.map(x=>x.noPrep.aerialStats.landings)),
+   meanNamedDistinct:mean(rows.map(x=>x.planned.aerialStats.distinct)),
+   controlMeanNamedDistinct:mean(rows.map(x=>x.noPrep.aerialStats.distinct)),
+   meanLateDistinct:mean(rows.map(x=>x.planned.aerialStats.lateDistinct)),
+   controlMeanLateDistinct:mean(rows.map(x=>x.noPrep.aerialStats.lateDistinct)),
+   meanWinnerLateDistinct:mean(rows.map(x=>x.planned.aerialStats.winnerLateDistinct)),
+   controlMeanWinnerLateDistinct:mean(rows.map(x=>x.noPrep.aerialStats.winnerLateDistinct)),
+   scriptedLanded:rows.reduce((a,x)=>a+x.planned.aerialStats.scriptedLanded,0),
+   scriptedControl:rows.reduce((a,x)=>a+x.noPrep.aerialStats.scriptedLanded,0)},
+  other:{
+   meanNearFalls:mean(rows.map(x=>x.planned.matchStats.nearFalls)),
+   controlMeanNearFalls:mean(rows.map(x=>x.noPrep.matchStats.nearFalls)),
+   meanBotches:mean(rows.map(x=>x.planned.matchStats.botches)),
+   controlMeanBotches:mean(rows.map(x=>x.noPrep.matchStats.botches)),
+   meanSpotHits:mean(rows.map(x=>x.planned.matchStats.spotHits)),
+   controlMeanSpotHits:mean(rows.map(x=>x.noPrep.matchStats.spotHits)),
+   meanCrowdPeak:mean(rows.map(x=>x.planned.matchStats.crowdPeak)),
+   controlMeanCrowdPeak:mean(rows.map(x=>x.noPrep.matchStats.crowdPeak))}
+ });
+ const qualityGroups=Object.fromEntries(['plan','minutes'].map(key=>[key,
+  group(results,key,auditQuality)]));
+ console.log('OUTLAST_QUALITY_AUDIT_JSON='+JSON.stringify({
+  version:1,n:results.length,all:auditQuality(results),
+  byPlan:qualityGroups.plan,byMinutes:qualityGroups.minutes,
+  spotByDuration:group(results.filter(x=>x.plan==='spots'),'minutes',auditQuality),
+  longByPlan:group(results.filter(x=>x.minutes===18),'plan',auditQuality),
+  worstRatings:results.map(x=>({plan:x.plan,minutes:x.minutes,finish:x.finish,
+   worker:x.worker,foe:x.foe,stars:x.planned.matchStats.stars,
+   controlStars:x.noPrep.matchStats.stars,
+   diff:num(x.planned.matchStats.stars-x.noPrep.matchStats.stars),
+   achieved:x.planned.beatStats.achieved,controlAchieved:x.noPrep.beatStats.achieved,
+   lateAerials:x.planned.aerialStats.lateDistinct,
+   controlLateAerials:x.noPrep.aerialStats.lateDistinct}))
+   .sort((a,b)=>a.diff-b.diff).slice(0,12)
  }));
  console.log('OUTLAST_STAMINA_DIAGNOSTIC_JSON='+JSON.stringify({
   version:1,fixtures:results.length,pairedRuns:results.length*2,
