@@ -17,6 +17,9 @@ function signed(plan,minutes,finish='win_clean',id='prematch-'+plan+'-'+minutes)
  const c={id,wid:worker.id,rid:opponent.id,pid:promoter.id,slot:'main',
   finish,minutes,eventAbs:25,feudHeat:12};
  const st=Room.begin(c,worker,opponent,promoter);
+ // Isolate the signed running order: randomly drawn room incidents can change
+ // minutes, safety limits or the booked focus and are tested separately.
+ st.queue=[];
  Room.act(st,'plan_'+plan);
  for(let i=0;st.stage!=='done'&&i<20;i++){
   const view=Room.view(st);
