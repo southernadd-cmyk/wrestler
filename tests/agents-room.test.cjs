@@ -105,10 +105,15 @@ for(const worker of D.TALENT)for(const opponent of D.FOES)for(const finish of fi
    assert.equal(view.board.length,4,'the running order has a shine, heat, comeback and big spot');
    assert.ok(view.board.every(row=>row.cards.length>=2&&row.cards.filter(card=>card.selected).length===1),'every slot is pencilled in with alternatives');
    assert.ok(view.story&&typeof view.story.verdict==='string');
+   const finishAlternatives=view.options.filter(option=>option.route&&!option.selected);
+   const finishWasChosen=choiceIds.some(id=>id.startsWith('route_'));
    const swap=view.options.filter(option=>option.id.startsWith('slot_')&&!option.selected);
    const swapped=choiceIds.some(id=>id.startsWith('slot_'));
-   choice=index%3===0&&!swapped&&swap.length?swap[index%swap.length]:view.options.find(option=>option.id==='board_ok');
-   if(choice.id!=='board_ok')swaps++;
+   if(index%5===0&&!finishWasChosen&&finishAlternatives.length)
+    choice=finishAlternatives[Math.floor(index/5)%finishAlternatives.length];
+   else
+    choice=index%3===0&&!swapped&&swap.length?swap[index%swap.length]:view.options.find(option=>option.id==='board_ok');
+   if(choice.id.startsWith('slot_'))swaps++;
   }
   choiceIds.push(choice.id);
   Room.act(state,choice.id);
