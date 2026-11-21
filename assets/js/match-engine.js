@@ -2152,6 +2152,11 @@ const Graph=(function makeGraph(){
  }
  function isValid(M,nodeId){
   const n=A[nodeId],p=Psy.get(M);if(!n)return false;
+  // A restriction agreed backstage is a rule, not a 3% chance of breaking it.
+  // The promoter's separate (possibly defied) note remains preference-based.
+  const limits=M.o.sheet?.signed?M.o.sheet.limits:null;
+  if(limits&&!n.counterOf&&!n.blockOf&&
+    (limits.banIds?.includes(nodeId)||(n.family&&limits.ban?.includes(n.family))))return false;
   if(!physicalLegal(M,nodeId))return false;
   const parent=aerialAlternativeParent(nodeId);
   if(parent&&M.graph?.pendingAerial?.id!==parent)return false;
@@ -4015,8 +4020,10 @@ const Graph=(function makeGraph(){
   return true;
  }
  function special(M){
-  const attempted=spot(M,false,false);
-  if(attempted){vic(M,'spot',.4);root.OfficeSheets?.observe(M,'special_spot',Psy.get(M).control,'spot');}
+  const hits=M.spotHits,attempted=spot(M,false,false);
+  // Graph.apply already records the one real named landing. A failed attempt
+  // must never generate a second, fictitiously successful sheet event.
+  if(attempted&&M.spotHits>hits)vic(M,'spot',.4);
   return attempted;
  }
  function finishCue(M){
@@ -4776,7 +4783,7 @@ function call(M,id){
  if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`,'play',{who:'runner'})}
  if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`,'play',{who:'runner'})}
  if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
- if(id==='big'){const n=M.spots;spot(M,true,true);if(M.spots>n)root.OfficeSheets?.observe(M,'special_spot','w','spot')}
+ if(id==='big')spot(M,true,true);
  if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back to the match layout.`,'play',{who:'runner'})}
  if(id==='home'){const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
   M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
@@ -5002,7 +5009,10 @@ const FINISH_ROUTE_COUNT=Object.values(FINISH_ROUTES).reduce((n,l)=>n+l.length,0
 function pickFinishRoute(M){
  const list=FINISH_ROUTES[M.o.finish]||FINISH_ROUTES.win_clean,x=finishContext(M);
  const agreed=M.o.sheet?.finishRoute&&list.find(r=>r.id===M.o.sheet.finishRoute);
- if(agreed){M.r();return agreed;}
+ // The agreed route is preferred only if its real in-ring preconditions hold.
+ // Otherwise choose another legal route to the SAME contracted result.
+ if(agreed&&agreed.when(x,M,M.w,M.f)){M.r();return agreed;}
+ if(agreed)M.finishRouteFallbackFrom=agreed.id;
  const ok=list.filter(r=>r.when(x,M,M.w,M.f));
  // Specific routes earn more weight than the default, so the match so far shapes the ending.
  const weights=ok.map((r,i)=>i===0&&ok.length>1?.6:1.2);
@@ -5051,6 +5061,15 @@ function finish(M){
  }else{
   // v3.3: twenty finish routes. The contract chooses who wins; the match so far chooses how.
   const route=pickFinishRoute(M);M.finishRoute=route.id;
+  if(M.sheet)M.sheet.performedFinishRoute=route.id;
+  if(M.finishRouteFallbackFrom){
+   const beat=M.sheet?.nodes?.find(b=>b.id==='finish');
+   if(beat&&beat.status==='achieved'){
+    beat.status='adapted';
+    beat.why='The agreed '+M.finishRouteFallbackFrom+' finish was not physically available; '+route.id+' delivered the contracted result instead.';
+   }
+   say(M,'Road agent: the agreed finish was not there. They call an audible and keep the contracted result.','agent',{...step(),who:'runner'});
+  }
   if(M.graph?.outcome)M.graph.outcome.route=route.id;
   route.run(M,w,f,step);
  }
