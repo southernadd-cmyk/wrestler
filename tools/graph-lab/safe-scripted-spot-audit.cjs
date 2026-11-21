@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
-// Deterministic full-tape A/B for a Safe-only scripted-spot eligibility rule.
+// Deterministic MECHANICAL A/B for a Safe-only scripted-spot eligibility rule.
+// Commentary is audited separately: changing spoken lines is not a change
+// to a performed move, earned near fall, match outcome or safety restriction.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const crypto=require('node:crypto'),lab=require('./core.js'),review=require('./match-review.cjs');
 const PLANS=['safe','technical','story','brawl','spots'];
@@ -11,6 +13,12 @@ const SAFE_COVERS=new Set(['arm_drag','grapple_trip','mat_takedown',
  'headlock_takeover','hip_toss','shoulder_tackle']);
 const round=n=>Math.round(n*100)/100;
 const hash=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
+// Exactness here protects the simulated wrestling, not the booth's wording.
+// Keep the complete event ledger and actual consequences in this hash.
+const mechanicalTape=(m,events,shots)=>hash({
+ events,scriptedAttempts:shots,final:m.final,
+ nearfalls:m.nearfalls,botches:m.botches,stamina:m.wSt
+});
 function capture(seeds=2){
  assert.ok(Number.isInteger(seeds)&&seeds>=1&&seeds<=4,'invalid cohort size');
  const root=review.load(),D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,rows=[];
@@ -53,9 +61,12 @@ function capture(seeds=2){
      s.badCovers++;
    }
    const key=[wi,tier,minutes,oi,si,plan].join(':');
-   const tape=hash({events,log:m.log,scriptedAttempts:shots,
-    final:m.final,nearfalls:m.nearfalls,botches:m.botches,stamina:m.wSt});
-   rows.push({key,plan,tape,stars:m.final.stars,finish:m.graph.outcome?.id});
+   const tape=mechanicalTape(m,events,shots);
+   // Preserve commentary comparison as a diagnostic; never require the
+   // dialogue hash to match when the engine deliberately improves narration.
+   const commentaryTape=hash(m.log);
+   rows.push({key,plan,tape,commentaryTape,
+    stars:m.final.stars,finish:m.graph.outcome?.id});
   }
  }
  return {schema:'safe-scripted-boundary-ab-v1',seeds,matches:rows.length,
@@ -73,18 +84,19 @@ function compare(before,after){
  const original=new Map(before.rows.map(row=>[row.key,row]));
  const initialSafeRestriction=before.plans.safe.severe>0;
  // The original #156 comparison began before Safe had the scripted gate,
- // so all four OTHER plans had to remain byte-for-byte identical.
+ // so all four OTHER plans had to remain mechanically identical.
  // Once the gate has landed on main, that historical assumption is false:
  // future Brawl / Spot-fest tuning is allowed only for the documented
- // trained-worker, 18-minute cohorts. Safe/Technical/Story stay exact.
+ // trained-worker, 18-minute cohorts. Safe/Technical/Story mechanics stay exact.
  const protectedPlans=new Set(initialSafeRestriction?
   ['technical','story','brawl','spots']:['safe','technical','story']);
- let identical=0,intendedChanges=0;
+ let identical=0,intendedChanges=0,commentaryChanges=0;
  for(const a of after.rows){
   const b=original.get(a.key);assert.ok(b,'missing matched case '+a.key);
   assert.equal(a.finish,b.finish,'booked finish changed: '+a.key);
+  if(a.commentaryTape!==b.commentaryTape)commentaryChanges++;
   if(protectedPlans.has(a.plan)){
-   assert.equal(a.tape,b.tape,'unaffected plan tape changed: '+a.key);
+   assert.equal(a.tape,b.tape,'unaffected plan MECHANICS changed: '+a.key);
    identical++;
   }else if(!initialSafeRestriction&&a.tape!==b.tape){
    const [worker,tier,minutes]=a.key.split(':');
@@ -94,7 +106,7 @@ function compare(before,after){
    const intended=minutes==='18'&&
     (a.plan==='brawl'&&worker==='0'&&tier==='elite'||
      a.plan==='spots'&&worker==='3'&&tier==='competent');
-   assert.ok(intended,'unexpected changed match tape: '+a.key);
+   assert.ok(intended,'unexpected changed match mechanics: '+a.key);
    intendedChanges++;
   }
  }
@@ -115,12 +127,12 @@ function compare(before,after){
   assert.equal(identical,768,'initial Safe-only change must preserve all other plans');
  }else{
   assert.equal(b.severe,0,'baseline was already restricted');
-  assert.equal(identical,576,'Safe, Technical and Story must be identical');
+  assert.equal(identical,576,'Safe, Technical and Story mechanics must be identical');
  }
  return {status:'PASS',cases:after.matches,
   baselineMode:initialSafeRestriction?'before Safe restriction':'Safe already restricted',
   unaffectedTapesIdentical:identical,intendedChangedTapes:intendedChanges,
-  oldSafe:b,newSafe:a};
+  commentaryChanges,oldSafe:b,newSafe:a};
 }
 function markdown(r){
  const lines=['## Safe scripted-spot matched audit','',
@@ -150,4 +162,4 @@ if(require.main===module){
   }
  }catch(e){console.error(e.stack);process.exitCode=1}
 }
-module.exports={capture,compare,markdown};
+module.exports={capture,compare,markdown,mechanicalTape};
