@@ -1305,14 +1305,22 @@
   return bad?bad.text:good?good.text:'It’s a match. I’ve seen worse. I’ve booked worse.';
  }
  function settleBoard(st){
-  // Feelings about the running order land when you agree it, not every time you change your mind.
+  // A second review must replace the old mood effect, not award it twice.
+  const prior=st.boardMood||{w:0,f:0};
+  st.mood.w-=prior.w;st.mood.f-=prior.f;
+  const delta={w:0,f:0};
   for(const S of SPINE){
    const b=st.board[S.id];if(!b||b.by==='agent')continue;
    const owner=S.id==='payoff'?b.owner:S.owner;
-   if(b.by===owner)st.mood[owner]+=2;else{st.mood[b.by]+=2;st.mood[owner]-=2;}
+   if(b.by===owner)delta[owner]+=2;
+   else{delta[b.by]+=2;delta[owner]-=2;}
   }
   const p=st.board.payoff;
-  if(p&&p.owner!=='either'){const o=other(p.owner),O=who(st,o);if(O.ego>=68&&O.pro<88)st.mood[o]-=3;}
+  if(p&&p.owner!=='either'){
+   const o=other(p.owner),O=who(st,o);
+   if(O.ego>=68&&O.pro<88)delta[o]-=3;
+  }
+  st.mood.w+=delta.w;st.mood.f+=delta.f;st.boardMood=delta;
  }
  const PLAN_HINT={story:'Slow build, big finish.',spots:'Big moves, big pops, big risk.',technical:'Ringcraft first. Purists love it.',brawl:'Loud, messy, tiring.',safe:'Low risk, low ceiling.'};
  function context(st,p){
@@ -1379,7 +1387,7 @@
    if(id==='spots')tags.push('More risk');if(id==='safe')tags.push('Safer');
    return {id:'plan_'+id,label:pl.name,hint:PLAN_HINT[id]||pl.blurb||'',tags};});
   if(st.stage==='board'){
-   const out=finishCards(st).map((c,i)=>({id:'route_'+i,label:c.label,
+   const out=st.lockRoute?[]:finishCards(st).map((c,i)=>({id:'route_'+i,label:c.label,
     hint:(ROUTE_CONDITION[c.route]||'No extra in-ring prerequisite.')+' The booked result does not change.',
     tags:[...(ROUTE_CONDITION[c.route]?['Conditional finish']:[]),...c.hate.map(side=>nameOf(st,side)+' objects')],
     route:c.route,selected:st.board.finish?.route===c.route}));
@@ -1388,6 +1396,12 @@
    return out;
   }
   if(st.stage==='scene'){const s=current(st);return s.options(st).map(o=>({id:o.id,label:fmt(st,o.label),hint:fmt(st,o.hint||''),tags:(o.tags||tagsOf(st,o.fx||{})).map(t=>fmt(st,t))}));}
+  if(st.stage==='review')return [
+   {id:'review_ok',label:'Approve this layout',hint:'Keep the contracted result and move to the last word before the bell.',tags:[]},
+   {id:'review_edit',label:'Revise the called spots',hint:st.lockRoute?
+    'Change the running order. The finish negotiated backstage is locked.':
+    'Change the finish or called spots without replaying backstage incidents.',tags:[]}
+  ];
   if(st.stage==='finish')return finishCards(st).map((c,i)=>{
    const condition=ROUTE_CONDITION[c.route];
    const pitch=c.by==='agent'?AGENT+'’s suggestion.':who(st,c.by).short+'’s idea.';
@@ -1401,7 +1415,11 @@
  function enter(st){
   // Move to whatever comes next, and let the people in the room say their piece.
   while(st.stage==='scene'&&st.at<st.queue.length){if(current(st).open(st)!==false)return;st.queue.splice(st.at,1);}
-  if(st.stage==='scene'){st.stage=st.lockRoute||st.board.finish?.route?'curtain':'finish';}
+  if(st.stage==='scene'){st.stage=st.lockRoute||st.board.finish?.route?'review':'finish';}
+  if(st.stage==='review'){
+   log(st,'agent','The room is settled. One last look at what we agreed, and what the finish still needs.');
+   return;
+  }
   if(st.stage==='finish'){
    log(st,'agent','The finish. The result is in the contract. How do we get there?');
    for(const c of finishCards(st))if(c.by!=='agent')log(st,c.by,from(st,'finish-pitch',['I’d go “{r}”.','How about “{r}”? I’ve thought about this.','“{r}”. Obviously.','For the finish: “{r}”. It’ll look great.']).replace('{r}',c.label.toLowerCase()));
@@ -1442,7 +1460,11 @@
    }
    if(id==='board_ok'){
     log(st,'you','“That’ll do.”');st.decided.push({stage:'board',situation:'board',id,label:o.label,tags:[]});
-    settleBoard(st);log(st,'agent',verdict(st)+' Right. Now for the things that always come up.');
+    settleBoard(st);
+    if(st.reviewing){
+     st.reviewing=false;st.stage='review';enter(st);return st;
+    }
+    log(st,'agent',verdict(st)+' Right. Now for the things that always come up.');
     st.stage='scene';st.at=0;enter(st);return st;
    }
    const m=id.match(/^slot_(\w+)_(\d+)$/),S=SPINE.find(x=>x.id===m[1]),c=cardsFor(st,S.id)[+m[2]];
@@ -1479,6 +1501,14 @@
   if(st.stage==='finish'){
    const c=finishCards(st)[+id.slice(6)];
    st.board.finish={by:c.by,owner:'either',route:c.route,label:c.label};
+   st.stage='review';enter(st);return st;
+  }
+  if(st.stage==='review'){
+   if(id==='review_edit'){
+    st.reviewing=true;st.stage='board';
+    log(st,'agent','Pencil out. We can revise the spots without repeating the conversations.');
+    return st;
+   }
    st.stage='curtain';enter(st);return st;
   }
   if(st.stage==='curtain'){
@@ -1527,7 +1557,7 @@
    workerConsent:consent(st,'w'),opponentConsent:consent(st,'f'),finishRoute:st.lockRoute||st.board.finish?.route||null,note,
    limits:{ban:[...new Set(st.limits.ban)],banIds:[...new Set(st.limits.banIds)]},spice:st.spice,fx:{...st.fx},repStake:st.repStake,entrance:st.entrance.slice(),
    game:st.game,leash:st.leash,talk:st.talk||'none',flags:{...st.flags},crowdMood:st.crowdMood||null,minutes:Math.max(5,st.minutes+(st.fx.minutes||0)),skipPromo:st.skipPromo,
-   stunt:null,bonus:0,story:story(st),negotiation:st.negotiation?JSON.parse(JSON.stringify(st.negotiation)):null,rehearsed:!!st.rehearsed,situations:st.queue.slice(),threads:(st.carry||[]).map(t=>({...t})),threadUsed:st.thread?.id||null,decided:st.decided.map(d=>({...d})),
+   stunt:null,bonus:0,story:story(st),finishPreparation:finishPlan(st),negotiation:st.negotiation?JSON.parse(JSON.stringify(st.negotiation)):null,rehearsed:!!st.rehearsed,situations:st.queue.slice(),threads:(st.carry||[]).map(t=>({...t})),threadUsed:st.thread?.id||null,decided:st.decided.map(d=>({...d})),
    premise:'A running order of '+planned+' '+(planned===1?'move':'moves')+'; '+st.queue.length+' things came up backstage'+(st.reworked?' and '+st.reworked+' '+(st.reworked===1?'beat was':'beats were')+' rewritten':'')+'.',
    speakers:st.log.filter(x=>x.kind!=='you').slice(-6).map(x=>({actor:x.who,text:x.text}))};
  }
@@ -1535,7 +1565,9 @@
   // A plain-language list of what is on the sheet so far.
   const out=[];
   if(st.game)out.push(D.PLANS[st.game].name);
-  for(const S of SLOTS){const b=st.board[S.id];if(b&&S.id!=='finish'&&b.label)out.push(S.name+': '+b.label);}
+  const fr=st.lockRoute||st.board.finish?.route;
+  if(fr)out.push('Finish: '+(ROUTE_NAME[fr]||fr));
+  for(const S of SPINE){const b=st.board[S.id];if(b?.label)out.push(S.name+': '+b.label);}
   if(st.note&&st.note.honour!==null)out.push('Note: '+st.note.short+(st.note.waived?' (withdrawn)':st.note.honour?' (promised)':' (no promise)'));
   const ng=st.negotiation;if(ng?.final)out.push('Changed at '+nameOf(st,ng.by)+'’s request: '+(ng.final.action!==ng.original.action?ng.original.label+' → '+ng.final.label:ng.original.label+' kept')+(ng.reply?.kind==='reservation'?' (reservations)':''));
   if(st.limits.ban.length)out.push('Parts of the ring are off limits');
@@ -1544,19 +1576,19 @@
   if(st.skipPromo)out.push('No promo');
   if(st.leash)out.push(st.leash==='free'?'They call it':'You call it');
   if(st.fx.cash)out.push((st.fx.cash>0?'+£':'−£')+Math.abs(st.fx.cash));
-  const fr=st.lockRoute||st.board.finish?.route;if(fr)out.push('Finish: '+(ROUTE_NAME[fr]||fr));
   return out;
  }
  function view(st){
-  const s=current(st),total=2+st.queue.length+(st.lockRoute||st.board.finish?.route?0:1)+1;
-  const done=st.stage==='plan'?0:st.stage==='board'?1:st.stage==='scene'?2+st.at:st.stage==='finish'?2+st.queue.length:st.stage==='curtain'?total-1:total;
+  const s=current(st),total=4+st.queue.length;
+  const done=st.stage==='plan'?0:st.stage==='board'?1:st.stage==='scene'?2+st.at:
+   ['finish','review'].includes(st.stage)?2+st.queue.length:st.stage==='curtain'?total-1:total;
   return {stage:st.stage,situation:s?.id||null,
-   title:fmt(st,st.stage==='plan'?'What sort of match?':st.stage==='board'?'Plan the finish and called spots':s?(typeof s.title==='function'?s.title(st):s.title):st.stage==='finish'?'The finish':st.stage==='curtain'?'Last word at the curtain':'Signed'),
-   ask:fmt(st,st.stage==='plan'?'The promoter books the result. You decide what kind of match gets there.':st.stage==='board'?'Choose how the booked result happens, then build a running order that supports it.':s?(typeof s.ask==='function'?s.ask(st):s.ask):st.stage==='finish'?'How do you get to the booked result?':st.stage==='curtain'?'What do you say as they go out?':''),
+   title:fmt(st,st.stage==='plan'?'What sort of match?':st.stage==='board'?'Plan the finish and called spots':s?(typeof s.title==='function'?s.title(st):s.title):st.stage==='review'?'Review the complete layout':st.stage==='finish'?'The finish':st.stage==='curtain'?'Last word at the curtain':'Signed'),
+   ask:fmt(st,st.stage==='plan'?'The promoter books the result. You decide what kind of match gets there.':st.stage==='board'?'Choose how the result happens, then build a running order that supports it.':s?(typeof s.ask==='function'?s.ask(st):s.ask):st.stage==='review'?'Backstage decisions are settled. Does the running order still support the agreed finish?':st.stage==='finish'?'How do you get to the booked result?':st.stage==='curtain'?'What do you say as they go out?':''),
    step:Math.min(done+1,total),total,options:options(st),log:st.log.slice(),agreed:agreed(st),
-   board:st.stage==='board'?boardView(st):null,
+   board:st.stage==='board'?boardView(st):null,review:st.stage==='review'?boardView(st):null,
    finishes:st.stage==='board'?options(st).filter(o=>o.route):null,
-   finishPlan:st.stage==='board'?finishPlan(st):null,
+   finishPlan:['board','review','curtain'].includes(st.stage)?finishPlan(st):null,
    story:st.stage==='plan'?null:{...story(st),verdict:verdict(st)},
    moods:{w:{value:consent(st,'w'),word:word(consent(st,'w'))},f:{value:consent(st,'f'),word:word(consent(st,'f'))}}};
  }

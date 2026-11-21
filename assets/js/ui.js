@@ -967,21 +967,37 @@ function showMeeting(){
  const verdictBad=v.story?.notes?.some(n=>!n.good);
  const agreed=v.agreed.length&&v.stage!=='board'?`<div class="sheetline"><b>In the match layout</b>${v.agreed.map(x=>`<i>${esc(x)}</i>`).join('')}${v.story&&v.stage!=='board'?`<i class="${verdictBad?'bad':'good'}">${esc(OfficeRoom.AGENT)}: ${esc(v.story.verdict)}</i>`:''}</div>`:'';
  // Choose the finish first. The readout is about preparedness, not a guaranteed result.
- const routePicker=v.finishes?.length?`<section class="finish-choice" role="group" aria-label="Choose the finish">
-  <div class="rorder-heading"><b>1. How does it end?</b><span>The contracted winner does not change.</span></div>
-  <div class="finish-options">${v.finishes.map(f=>`<button class="decision-option finish-option${f.selected?' on':''}" data-room="${esc(f.id)}" aria-pressed="${f.selected}"><b>${esc(f.label)}</b><small>${esc(f.hint)}</small>${tagChips(f.tags)}</button>`).join('')}</div>
-  ${v.finishPlan?`<div class="finish-readout ${v.finishPlan.kind==='warning'?'warn':v.finishPlan.kind==='conditional'?'conditional':''}" role="status">
+ const finishReadout=v.finishPlan?`<div class="finish-readout ${v.finishPlan.kind==='warning'?'warn':v.finishPlan.kind==='conditional'?'conditional':''}" role="status">
     <b>${v.finishPlan.kind==='warning'?'Needs revision':v.finishPlan.kind==='conditional'?'Must be earned in the ring':'No additional finish threshold'}</b>
     ${v.finishPlan.requirement?`<span>${esc(v.finishPlan.requirement)}</span>`:''}
     <p>${esc(v.finishPlan.summary)}</p>
-   </div>`:''}</section>`:'';
+   </div>`:'';
+ const routePicker=v.board?`<section class="finish-choice" role="group" aria-label="Choose the finish">
+  <div class="rorder-heading"><b>1. How does it end?</b><span>The contracted winner does not change.</span></div>
+  ${v.finishes?.length?`<div class="finish-options">${v.finishes.map(f=>`<button class="decision-option finish-option${f.selected?' on':''}" data-room="${esc(f.id)}" aria-pressed="${f.selected}"><b>${esc(f.label)}</b><small>${esc(f.hint)}</small>${tagChips(f.tags)}</button>`).join('')}</div>`:
+   '<p class="dim">The backstage negotiation has locked the finish. You can still revise the called spots.</p>'}
+  ${finishReadout}</section>`:'';
  // The called spots are real selections from the graph, not decorative script lines.
  const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>
   ${routePicker}
   <div class="rorder-heading"><b>2. Call the spots</b><span>Dennis adjusts his suggestions when the finish changes. Your choices stay put.</span></div>
   <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span>${esc(c.who)}’s idea</span>${tagChips(c.tags)}</button>`).join('')}</div></div>`).join('')}</div>
   <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the finish and running order</button></div></div>`:'';
- const decide=board||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
+ const review=v.review?`<div class="decide2 runorder finish-review">
+   <h3 class="section-h">Review the match <small>${v.step} of ${v.total}</small></h3>
+   <p class="lede">The conversations are over. Check what they changed before the wrestlers go out.</p>
+   <section class="finish-choice"><div class="rorder-heading"><b>Agreed finish</b><span>${esc(v.finishPlan?.label||'Not chosen')}</span></div>
+    ${finishReadout}</section>
+   <div class="rorder-heading"><b>The called spots</b><span>In order, subject to what actually happens in the ring.</span></div>
+   <div class="rorder review-spots">${v.review.map(r=>`<div class="rorder-row">
+    <div class="rorder-slot"><b>${esc(r.name)}</b></div>
+    <p class="review-spot"><b>${esc(r.current||'Called in the ring')}</b>${v.finishPlan?.supported?.includes(r.name.toLowerCase())?'<span class="review-fit">Helps build the finish</span>':''}</p>
+   </div>`).join('')}</div>
+   <p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p>
+   <div class="review-actions"><button class="btn" data-room="review_edit">Revise the called spots</button>
+    <button class="btn go" data-room="review_ok">Approve this layout</button></div>
+  </div>`:'';
+ const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
  const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
  const signing=window.OfficeSigning?.eligible(c);

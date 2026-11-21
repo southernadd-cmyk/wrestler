@@ -358,6 +358,19 @@
 .finish-readout.conditional{border-left-color:var(--gold-lo)}.finish-readout.warn{border-left-color:var(--bad-ink)}
 .finish-readout b{display:inline-block;margin-right:7px}.finish-readout>span{color:var(--ink-2)}
 .finish-readout p{margin:2px 0 0;line-height:1.25}
+/* Final review is deliberately a summary, not another dense picker.
+   It scrolls inside the existing backstage decision area on short screens. */
+.finish-review .review-spots{margin:8px 0}
+.finish-review .review-spot{margin:0;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;
+ padding:8px 10px;border:2px solid var(--ink);background:var(--paper);min-width:0}
+.finish-review .review-spot b{font-size:17px;overflow-wrap:anywhere}
+.finish-review .review-fit{color:var(--good-ink);font-size:14px;font-weight:700}
+.finish-review .rorder-verdict{margin:8px 0}
+.finish-review .review-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+@media(max-width:720px){
+ .finish-review .review-actions{display:grid;grid-template-columns:1fr;gap:6px}
+ .finish-review .review-spot{padding:6px 8px}
+}
 @media (max-width:720px){
  .finish-choice{padding:5px}
  .finish-options{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:4px}

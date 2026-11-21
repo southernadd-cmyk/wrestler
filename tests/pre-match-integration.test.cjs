@@ -77,7 +77,9 @@ function play(m){
  assert.equal(Room.view(st).finishes.filter(x=>x.selected).length,1);
  assert.equal(Room.view(st).finishPlan.route,finish.route);
  Room.act(st,'board_ok');
- assert.equal(st.stage,'curtain','a complete modern sheet does not ask for the finish twice');
+ assert.equal(st.stage,'review','a complete modern sheet reviews the finish after incidents without asking to choose it twice');
+ Room.act(st,'review_ok');
+ assert.equal(st.stage,'curtain');
  Room.act(st,Room.options(st)[0].id);
  assert.equal(st.sheet.finishRoute,finish.route,'the selected method survives into the signed sheet');
  assert.equal(st.sheet.nodes.at(-1).route,finish.route);
@@ -89,6 +91,8 @@ function play(m){
  Room.act(old,'board_ok');
  assert.equal(old.stage,'finish','old saved board uses the existing separate finish step');
  Room.act(old,Room.options(old)[0].id);
+ assert.equal(old.stage,'review','legacy finish selection also reaches the final review');
+ Room.act(old,'review_ok');
  assert.equal(old.stage,'curtain');
  Room.act(old,Room.options(old)[0].id);
  assert.ok(old.sheet.finishRoute,'old saved plans still sign a real route');
@@ -248,4 +252,91 @@ console.log('PASS pre-match integration: '+bouts+' matched generated-sheet bouts
  sample.o.sheet.finishRoute='reversal_finisher';sample.story.control='w';
  assert.equal(Room.bias(sample,reverse.id),unchanged,
   'the finish plan never boosts reversals by the wrong performer');
+}
+
+
+// The finish-first board survives a genuine backstage incident. Afterward the
+// user can revise called spots without replaying scenes or stacking mood effects.
+{
+ const c={id:'post-scene-review',wid:worker.id,rid:opponent.id,pid:promoter.id,
+  slot:'main',finish:'win_clean',minutes:12,eventAbs:39,feudHeat:5};
+ const st=Room.begin(c,worker,opponent,promoter);
+ st.queue=['time_cut'];
+ Room.act(st,'plan_story');
+ assert.equal(st.stage,'board');
+ const first=Room.view(st);
+ assert.ok(first.finishes.length>=1&&first.finishes.some(f=>f.selected),
+  'finish-first planner starts with a selected, viable route');
+ assert.ok(first.finishPlan?.route,'the finish readout is visible alongside called spots');
+ const available=first.finishes.find(x=>!x.selected);
+ if(available){
+  Room.act(st,available.id);
+  assert.equal(Room.view(st).finishPlan.route,available.route,
+   'changing the finish immediately updates the setup assessment');
+ }
+ Room.act(st,'board_ok');
+ assert.equal(st.stage,'scene');
+ Room.act(st,'cut');
+ assert.equal(st.stage,'review','backstage incidents lead to a final review');
+ const view=Room.view(st);
+ assert.equal(view.review.length,4);
+ assert.ok(view.finishPlan?.label&&view.options[0].id==='review_ok');
+ assert.equal(st.fx.minutes,-3);
+ const oldCount=st.decided.filter(x=>x.stage==='scene').length;
+ const oldMoods={...st.mood},oldBoard={...st.boardMood};
+ const oldQueue=st.queue.join(',');
+ const saved=JSON.parse(JSON.stringify(st));
+ Room.act(st,'review_edit');
+ assert.equal(st.stage,'board');
+ const swap=Room.options(st).find(x=>x.slot==='opening'&&!x.selected);
+ assert.ok(swap,'a different real called spot can be chosen');
+ Room.act(st,swap.id);
+ Room.act(st,'board_ok');
+ assert.equal(st.stage,'review','revisions return to review, not to the incident deck');
+ assert.equal(st.fx.minutes,-3,'the backstage time cut is not applied again');
+ assert.equal(st.queue.join(','),oldQueue);
+ assert.equal(st.decided.filter(x=>x.stage==='scene').length,oldCount);
+ assert.equal(st.mood.w,oldMoods.w-oldBoard.w+st.boardMood.w,
+  'review replaces, not repeats, the agreed running-order mood effect (worker)');
+ assert.equal(st.mood.f,oldMoods.f-oldBoard.f+st.boardMood.f,
+  'review replaces, not repeats, the agreed running-order mood effect (opponent)');
+ assert.equal(st.board.opening.label,swap.label,'the new called spot is actually selected');
+ const second=JSON.parse(JSON.stringify(saved));
+ for(const state of [st,second]){
+  if(state.stage==='review'&&state===second){
+   Room.act(state,'review_edit');Room.act(state,swap.id);Room.act(state,'board_ok');
+  }
+  Room.act(state,'review_ok');
+  assert.equal(state.stage,'curtain');
+  Room.act(state,'talk_none');
+  assert.equal(state.stage,'done');
+  assert.equal(state.sheet.minutes,9);
+  assert.equal(state.sheet.finishRoute,st.board.finish.route);
+  assert.ok(state.sheet.finishPreparation?.label);
+ }
+ assert.equal(JSON.stringify(second.sheet),JSON.stringify(st.sheet),
+  'saved final review resumes to the same signed sheet');
+}
+
+// A negotiated finish can be locked after the initial pencil layout. Revising
+// called spots may not silently replace that locked agreement.
+{
+ const pro=D.TALENT.find(w=>w.pro>=78);
+ assert.ok(pro);
+ const c={id:'locked-review',wid:pro.id,rid:opponent.id,pid:promoter.id,
+  slot:'main',finish:'win_dirty',minutes:12,eventAbs:19,feudHeat:0};
+ const st=Room.begin(c,pro,opponent,promoter);
+ st.queue=['scruples'];
+ Room.act(st,'plan_story');Room.act(st,'board_ok');
+ assert.equal(st.stage,'scene');
+ Room.act(st,'accident');
+ assert.equal(st.stage,'review');
+ assert.equal(st.lockRoute,'feet_on_ropes');
+ assert.equal(Room.view(st).finishPlan.route,'feet_on_ropes');
+ Room.act(st,'review_edit');
+ assert.equal(Room.options(st).filter(o=>o.route).length,0,
+  'a backstage-locked finishing method cannot be replaced through revision');
+ Room.act(st,'board_ok');Room.act(st,'review_ok');
+ Room.act(st,'talk_none');
+ assert.equal(st.sheet.finishRoute,'feet_on_ropes');
 }
