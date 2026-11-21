@@ -62,6 +62,8 @@ jobs:
            console.log(tier,minutes,'real hope',b.actualHopePct,'=>',a.actualHopePct,
             'heat-hope-comeback',b.actualHeatHopeComebackPct,'=>',a.actualHeatHopeComebackPct,
             'denied comeback',b.actualHeatHopeDenialComebackPct,'=>',a.actualHeatHopeDenialComebackPct,
+            'late distinct',b.distinctLateFinishOffence,'=>',a.distinctLateFinishOffence,
+            'last minute actions',b.last60ActualOffence,'=>',a.last60ActualOffence,
             'stars',b.stars,'=>',a.stars);
            assert.equal(a.bouts,b.bouts);
            if(tier==='novice'){

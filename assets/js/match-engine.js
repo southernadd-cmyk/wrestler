@@ -2743,6 +2743,29 @@ const Graph=(function makeGraph(){
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
   const entries=arc.entry.map(id=>[id,1]);
   const selected=[...from,...entries];
+  // In a STORY finishing stretch, the match can only earn a dramatic
+  // kick-out if a real worker actually hits a genuine grounding attack.
+  // Promote a few existing, position-valid knockdowns as normal selectable
+  // actions as the next nearfall slot approaches. No authored move or
+  // outcome is guaranteed; the exact physical and skill gates apply
+  // unchanged in the final isValid pool filter.
+  const closingSlot=M.planId==='story'&&M.len>=720&&
+   M.nearfallAt?.length&&M.t/M.len>=M.nearfallAt[0]-.06&&
+   M.t/M.len>=.72&&M.t/M.len<=1;
+  const closingExchange=M.planId==='story'&&M.len>=720&&
+   M.len-M.t<=90&&M.len-M.t>=0;
+  if((closingSlot||closingExchange)&&p.position==='standing'&&
+      ['w','f'].includes(p.control)&&g.physical?.area==='ring'){
+   const striker=p.control==='w'?M.w:M.f;
+   const prepared=striker.style==='Story'&&striker.ring>=70&&striker.psych>=65;
+   for(const id of ['clothesline','snap_suplex','heavy_slam',
+      'power_spinebuster','arm_drag','mat_takedown','short_arm_lariat']){
+    if(!A[id])continue;
+    const repeated=g.events.some(e=>e.id===id&&e.preControl===p.control&&M.t-e.t<=80);
+    selected.push([id,(closingSlot?8.5:5.5)*(prepared?1.2:1)*
+     (repeated?.16:1)]);
+   }
+  }
   // A trained Story wrestler may contest actual opponent pressure while
   // still underneath in a heat-stage hope arc. The authored counter is
   // selectable but never guaranteed; normal legality, exertion and
@@ -4223,7 +4246,14 @@ function tick(M){
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
- if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||preparedHope||M.r()<.64))Graph.step(M);
+ // During the last minute, a Story finish needs an actual physical
+ // exchange rather than a long run of narration-only ticks. The ordinary
+ // graph pool still decides what can be performed; it cannot bypass a
+ // committed move, a defensive counter, positioning or the planned finish.
+ const closingStory=!spoke&&M.planId==='story'&&M.len>=720&&
+  M.len-M.t<=60&&M.len-M.t>=0;
+ if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||
+    preparedHope||closingStory||M.r()<.64))Graph.step(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the

@@ -42,6 +42,11 @@ const submission=make('story','submission');G.apply(submission,'clothesline');
 assert.equal(G.earnedNearfallSource(submission),null,'submission-only has no pin counts');
 const outside=make();G.apply(outside,'clothesline');outside.graph.physical.area='floor';
 assert.equal(G.earnedNearfallSource(outside),null,'no phantom ring cover');
+const closing=make();
+closing.t=closing.len-40;closing.story.position='standing';
+closing.story.down=null;G.resetPhysical(closing);
+assert.ok(G.pool(closing).some(([id])=>id==='clothesline'),
+ 'Story final stretch still offers a real knockdown, never a phantom cover');
 const p=make();G.apply(p,'clothesline');
 const prior=p.graph.events.length,node=p.graph.node;
 G.advance(p,p.t/p.len);
