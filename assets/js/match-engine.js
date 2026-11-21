@@ -2495,7 +2495,7 @@ const Graph=(function makeGraph(){
     defender.short+' is returned to the ring by '+attacker.short+'. The rules allowed them to stay outside.'
    ][index%3];
   }
-  say(M,broadcastAction(broadcast,attacker.short,defender.short,text),n.kind);
+  say(M,broadcastAction(broadcast,attacker.short,defender.short,text),n.kind,{actionId:id});
   broadcastInsight(M,g,broadcast,n,side,attacker,defender);
   broadcastCounter(M,g,n,side,attacker,defender);
   const originalDown=n.reverse?side:opp;
@@ -4276,7 +4276,10 @@ function say(M,text,kind='play',opt={}){
  let who=opt.who;
  for(const [re,v] of VOICE_PREFIX)if(re.test(text)){text=text.replace(re,'');text=text.charAt(0).toUpperCase()+text.slice(1);if(who===undefined)who=v;break}
  if(who===undefined)who=KIND_VOICE[kind]||null;
- const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0,who};M.queue.push(line);M.log.push(line);return line}
+ const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0,who};
+ // Optional booth-only provenance for repetition auditing, not match events.
+ if(opt.actionId)line.actionId=opt.actionId;
+ M.queue.push(line);M.log.push(line);return line}
 
 function phaseFor(frac,M){const ends=Psy.PHASE_ENDS[M?.planId]||Psy.PHASE_ENDS.story;return PHASES.find((p,i)=>frac<ends[i])||PHASES[4]}
 // Grade observed, mechanically connected offence and actual dramatic payoffs.
