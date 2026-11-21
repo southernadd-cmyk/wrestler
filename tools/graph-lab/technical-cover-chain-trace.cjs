@@ -51,7 +51,7 @@ function capture(){
    row.boutsWithNoCoverButNoTriple+=covers.length===0&&triple.length===0;
    if(row.samples.length<16&&covers.some(x=>x.precedingPair))
     row.samples.push({seed:settings.seed,opponent,triples:triple,covers});
-   row.all.push({seed:settings.seed,opponent,triples,pairs:pairs.length,
+   row.all.push({seed:settings.seed,opponent,triples:triple,pairs:pairs.length,
     counts:covers.length,scheduled:covers});
   }
   rows.push(row);
