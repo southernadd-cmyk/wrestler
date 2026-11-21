@@ -2953,6 +2953,29 @@ const Graph=(function makeGraph(){
    }
   }
   M[staminaKey]=clamp(M[staminaKey]-effective);
+  // Outlasting is a pacing story, not a free refill. A real legal,
+  // narrated rest can unlock a temporary reduction in routine ten-second
+  // fatigue for the *booked winner only*. Actual move costs still apply
+  // in full and the opponent does not receive an invented stamina debit.
+  // It is stored in graph state, so save/resume remains deterministic.
+  if(exertion<0&&(id==='catch_breath'||n.family==='rest')&&
+     M.o.sheet?.finishRoute==='outlasted'&&M.outcome==='booked'&&
+     ['win_clean','lose_clean'].includes(M.o.finish)&&M.len>=600&&
+     M.t/M.len>=.22&&M.t/M.len<.89){
+   const winner=M.o.finish==='win_clean'?'w':'f';
+   if(activeSide===winner){
+    g.pacedOutlast??={};
+    const prior=g.pacedOutlast[winner],used=prior?.count||0;
+    if(used<4&&(!prior||M.t-prior.at>=100)){
+     g.pacedOutlast[winner]={at:M.t,until:M.t+190,count:used+1};
+     if(!g.pacedOutlastExplained){
+      const who=winner==='w'?M.w:M.f;
+      say(M,who.short+' takes a genuine breather and settles into a measured pace, keeping energy back for the finish.','story');
+      g.pacedOutlastExplained=true;
+     }
+    }
+   }
+  }
   if(exertion<0)g.rests=(g.rests||0)+1;
   g.exertion=(g.exertion||0)+Math.max(0,effective);
   if(id==='near_kickout'||id==='counter_rollup'||n.nearfall) {M.nearfalls++;M.bonus+=n.nearfall?4:5;g.nearfallCount++;}
@@ -5036,17 +5059,21 @@ function tick(M){
  // Real aerial setup/move costs and their safety gates are untouched.
  const pacing=Graph.get(M).pacedRest;
  const paceFactor=(actor,side)=>{
-  if(mode==='pickup'||mode==='slow'||M.len<900)return 1;
+  if(mode==='pickup'||mode==='slow')return 1;
+  const earnedOutlast=Graph.get(M).pacedOutlast?.[side];
+  const outlastFactor=earnedOutlast&&M.t<=earnedOutlast.until?
+   1-(.48+.10*clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1)):1;
+  if(M.len<900)return outlastFactor;
   if(M.planId==='spots'&&actor.style==='Spectacle'&&pacing?.[side]&&
      M.t<=pacing[side].until){
    const skill=clamp(((actor.ring||0)+(actor.safe||0)-120)/60,0,1);
-   return 1-(skill>=.95?.82:.64)*skill;
+   return Math.min(outlastFactor,1-(skill>=.95?.82:.64)*skill);
   }
   const pacedBrawl=Graph.get(M).pacedBrawl?.[side];
   if(M.planId==='brawl'&&actor.style==='Brawl'&&
      pacedBrawl&&M.t<=pacedBrawl.until)
-   return 1-.45*brawlConditioning(actor);
-  return 1;
+   return Math.min(outlastFactor,1-.45*brawlConditioning(actor));
+  return outlastFactor;
  };
  // Skilled brawlers conserve movement, but actual action costs remain
  // unchanged. This reduction is never unlocked by choosing Brawl alone.
