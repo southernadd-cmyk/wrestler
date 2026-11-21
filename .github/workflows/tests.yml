@@ -96,6 +96,9 @@ jobs:
           if [[ "${{ github.head_ref }}" == "fix/commentary-residual-texture-v063-20261121" ]]; then
             git fetch --no-tags --depth=1 origin 93342b09508d014ce002b1a5f7098ab5a1fa6321
             COMMENTARY_BASE_SHA=93342b09508d014ce002b1a5f7098ab5a1fa6321 node tests/commentary-memory.test.cjs
+          elif [[ "${{ github.head_ref }}" == "fix/commentary-action-variety-v064-20261121" ]]; then
+            git fetch --no-tags --depth=1 origin 4e99f28af5053f4efd74a91409a72891902a7f79
+            COMMENTARY_BASE_SHA=4e99f28af5053f4efd74a91409a72891902a7f79 node tests/commentary-memory.test.cjs
           fi
           if test -f tests/flyer-recovery-finish.test.cjs; then
             node tests/flyer-recovery-finish.test.cjs

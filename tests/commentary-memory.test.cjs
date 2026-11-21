@@ -49,7 +49,7 @@ const exact=(m)=>Object.entries(m.log.reduce((a,l)=>{
 },{})).filter(([,n])=>n>=3);
 const stats={bouts:0,paired:0,tripleOld:0,tripleNew:0,severeOld:0,severeNew:0,
  worst:[],frequentIds:{},repeatedByAction:{},repeatedByTexture:{},textureEvents:{},
- residualTextureExamples:[],genericOld:0,genericNew:0};
+ residualTextureExamples:[],genericOld:0,genericNew:0,remainingActionExamples:[]};
 function run(o,tag){
  const m=lab.runMatch(fresh.root,JSON.parse(JSON.stringify(o)));
  assert.ok(m.done&&m.final,tag+' completes');
@@ -68,6 +68,8 @@ function run(o,tag){
  for(const [line,n] of repetition){
   const id=m.log.find(l=>l.text===line)?.actionId||'(texture)';
   stats.repeatedByAction[id]=(stats.repeatedByAction[id]||0)+1;
+  if(id!=='(texture)'&&stats.remainingActionExamples.length<50)
+   stats.remainingActionExamples.push({tag,actionId:id,line,count:n});
   if(id==='(texture)'){
    stats.genericNew++;
    const texture=m.log.find(l=>l.text===line)?.textureId||'(unattributed)';
@@ -121,7 +123,9 @@ if(base){
   'text-only patch must not raise exact triple-line repetition');
  assert.ok(stats.severeNew<=stats.severeOld,
   'text-only patch must not raise five-plus repeated lines');
- assert.ok(stats.genericNew<stats.genericOld,
-  'targeted narration should reduce exact generic triple repeats');
+ assert.ok(stats.genericNew<=stats.genericOld,
+  'action-only follow-up must not worsen generic triple repeats');
+ assert.equal(stats.tripleNew,0,
+  'all fixed-seed action-specific triple repeats must be eliminated');
 }
 console.log('PASS commentary memory + matched mechanics: '+JSON.stringify(stats));
