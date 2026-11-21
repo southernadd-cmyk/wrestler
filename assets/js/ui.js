@@ -13,6 +13,21 @@ const sorts={};
 
 /* ---------- small helpers ---------- */
 function face(type,id,name,cls='portrait'){return Pt.avatar({key:type+':'+id,name,type},null,cls)}
+// Contextual records use IDs, not names, so a renamed character still opens correctly.
+function recordLink(kind,id,name){
+ if(!id)return esc(name);
+ return `<button class="record-link" data-record="${kind}:${esc(id)}" aria-label="Open ${esc(name)} ${kind==='p'?'promotion':'wrestler'} record">${esc(name)}</button>`;
+}
+function recordBack(){return past.length?'<button class="btn sm" data-hist="back">◀ Back</button>':'<button class="btn sm" data-go="desk">Office desk</button>'}
+function openRecord(key){
+ const [kind,id]=String(key||'').split(':');if(!id)return;
+ if(kind==='w'){
+  if(G.W(id))return go('profile',id);
+  if(!G.F(id)&&!S().free.some(w=>w.id===id))return;
+ }else if(kind==='p'){if(!G.P(id))return}
+ else return;
+ go('record',kind+':'+id);
+}
 function band(v){return v>=80?5:v>=65?4:v>=50?3:v>=35?2:1}
 function bandBar(v){return ['','danger','warn','gold','',''][band(v)]}
 function att(v){return `<span class="att a${band(v)}">${Math.round(v)}</span>`}
@@ -212,7 +227,7 @@ const NAV=[
  ['Territory',[['pyramid','Card pyramid'],['sheets','Booking sheets'],['promoters','Promoters'],['rivalries','Rivalries'],['results','Results']]],
  ['Game',[['game','Save and load']]]
 ];
-const SECTION_OF={profile:'squad'};
+const SECTION_OF={profile:'squad',record:'promoters'};
 const PHONE_WIDTH=720;
 const phoneLayout=()=>innerWidth<=PHONE_WIDTH;
 const PHONE_LABELS={desk:'Today',squad:'Stable',pyramid:'Card ladder',game:'Save and load'};
@@ -251,7 +266,7 @@ function renderChrome(){
  $('#tick').innerHTML=lead?`<b>${G.pending().length?'Action':'News'}</b><button data-tickmsg="${lead.id}">${esc(lead.subject)}. ${esc(lead.from)}.</button><span class="keys">${s.history.length} ${plural(s.history.length,'match','matches')} worked this career</span>`:'';
 }
 
-const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,training:renderTraining,scouting:renderScouting,stables:renderStables,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
+const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,record:renderRecord,training:renderTraining,scouting:renderScouting,stables:renderStables,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
 function render(reset=false){
  if(!S())return;
  const keep={};if(!reset)document.querySelectorAll('#view [data-keep]').forEach(el=>keep[el.dataset.keep]=el.scrollTop);
@@ -410,6 +425,62 @@ function ambitionPanel(w){
  const kind=a.sat<35?'danger':a.sat<55?'warn':'';
  return `<div class="well pad"><p><b>${esc(a.name)}</b> · ${esc(a.mood)} ${bar(a.sat,kind)}</p><p class="dim">${esc(a.counts)} ${esc(a.progress)}</p>${a.words?`<p class="dim">In the long run: ${esc(a.words.charAt(0).toLowerCase()+a.words.slice(1))}.</p>`:''}${a.promise?`<p class="bad">You promised to deliver by ${weekLabel(a.promise.by)}.</p>`:''}${a.history.length?'<ul class="cons">'+a.history.map(h=>`<li class="up">${esc(h.text)}${h.promised?' <span class="dim">(as you promised)</span>':''}</li>`).join('')+'</ul>':''}</div>`;
 }
+
+/* ======================= CONTEXTUAL RECORDS =======================
+   Read-only wrestler and promotion records assembled from existing career state.
+   No new game rules or save fields. */
+function renderRecord(){
+ const s=S(),[kind,id]=String(route.id||'').split(':');
+ if(kind==='p'){
+  const p=G.P(id);if(!p){route={s:'promoters',id:null};return renderPromoters()}
+  const standing=promoterState(p,s.rep),events=[...s.card,...s.futureBookings].filter(c=>c.pid===p.id).sort((a,b)=>a.eventAbs-b.eventAbs);
+  const offers=s.offers.filter(o=>o.pid===p.id);
+  const champions=D.DIVISION_ORDER.map(div=>{
+   const belt=D.belt(p.id,div),held=OfficeTerritory.title(p.id,div),w=held?.holder?(G.W(held.holder)||G.F(held.holder)):null;
+   return `<li><b>${esc(belt.name)}</b>: ${w?recordLink('w',w.id,w.name):'Vacant'} <span class="dim">${held?.defences||0} defences</span></li>`;
+  }).join('');
+  const upcoming=events.length?'<ul class="cons">'+events.map(c=>{
+   const a=G.W(c.wid)||G.F(c.wid),b=G.F(c.rid);
+   return `<li><b>${weekLabel(c.eventAbs)}</b> · ${recordLink('w',a?.id,a?.name||'Departed wrestler')} v ${recordLink('w',b?.id,b?.name||'Opponent')} · ${money(c.purse)}</li>`;
+  }).join('')+'</ul>':'<p class="dim">No dates signed with this promoter.</p>';
+  const links=`<div class="record-actions"><button class="btn sm" data-go="pyramid" data-id="${esc(p.id)}:${esc(D.DIVISION_ORDER[0])}">Card rankings</button><button class="btn sm" data-go="sheets" data-id="${esc(p.id)}">Booking sheet</button><button class="btn sm" data-go="offers">Offers</button></div>`;
+  const head=`<div class="record-head">${face('booker',p.id,p.voice,'portrait x2')}<div><h2 class="record-name">${esc(p.name)}</h2><p>${esc(p.desc)} · ${esc(p.venue)}</p><p class="dim">Booker: ${esc(p.voice)} · ${esc(planFor(p).name)} style</p><p class="${standing.tone}">${esc(standing.text)}</p></div></div>`;
+  const facts=`<div class="facts"><div><small>Your trust</small><b>${p.trust}</b></div><div><small>Reach</small><b>${p.reach}</b></div><div><small>Matches worked</small><b>${p.matches}</b></div><div><small>Best rating</small><b>${p.best?starsText(p.best):'–'}</b></div></div>`;
+  paint('s-split even',
+   win('Promotion record',head+facts+links+'<h3 class="section-h">Business</h3><p>'+bizCell(p)+'</p><h3 class="section-h">Upcoming dates</h3>'+upcoming,{keep:'record-p',actions:recordBack()})+
+   win('Territory history','<h3 class="section-h">Current champions</h3><ul class="cons">'+champions+'</ul><h3 class="section-h">Offers on the table</h3><p>'+offers.length+' '+plural(offers.length,'offer')+' from this promotion.</p><h3 class="section-h">How to work here</h3><p>Promoters book the winner. Your stable earns trust by delivering the agreed match and keeping its commitments.</p>',{h:'h3',keep:'record-p-history'})
+  );return;
+ }
+ if(kind!=='w'){route={s:'desk',id:null};return renderDesk()}
+ const w=G.W(id)||s.free.find(x=>x.id===id)||G.F(id);
+ if(!w){route={s:'pyramid',id:null};return renderPyramid()}
+ const stable=OfficeTerritory.stableFor(id),free=s.free.some(x=>x.id===id),division=D.divisionOf(id);
+ const statusText=stable?'Contracted to '+stable.name:free?'Free agent':'Independent / other circuit';
+ const stat=(label,key)=>`<div class="attr"><span>${label}</span><span>${Number.isFinite(w[key])?att(w[key]):'–'}</span>${Number.isFinite(w[key])?bar(w[key],bandBar(w[key])):'<span></span>'}</div>`;
+ const head=`<div class="record-head">${face('wrestler',w.id,w.name,'portrait x2')}<div><h2 class="record-name">${esc(w.name)}</h2><p>${w.handle?'“'+esc(w.handle)+'” · ':''}${esc(w.style||'Wrestler')} · ${esc(w.tier||'Circuit wrestler')}</p><p class="dim">${esc(statusText)} · ${esc(D.DIVISIONS[division]?.name||'Circuit')} division</p></div></div>`;
+ const titles=OfficeTerritory.titlesOf(id),ranks=s.promoters.flatMap(p=>{
+  const list=OfficeTerritory.promotionRank(p.id,division),n=list.findIndex(x=>x.id===id);
+  return n<0?[]:[{p,place:n+1,row:list[n],total:list.length}];
+ });
+ const rankings=ranks.length?'<ul class="cons">'+ranks.map(r=>`<li>${recordLink('p',r.p.id,r.p.name)} · rank ${r.place}/${r.total} · ${esc(D.SLOTS[r.row.slot]?.name||'Card')} · ${r.row.score} points</li>`).join('')+'</ul>':'<p class="dim">Not currently ranked on these cards.</p>';
+ const recent=s.history.map((h,i)=>({...h,i})).filter(h=>h.wid===id||h.rid===id).slice(0,8);
+ const results=recent.length?'<div class="well"><table class="grid"><thead><tr><th>Week</th><th>Opponent</th><th>Rating</th><th></th></tr></thead><tbody>'+recent.map(h=>{
+  const other=h.wid===id?{id:h.rid,name:h.foe}:{id:h.wid,name:h.name};
+  return `<tr><td>S${h.season} W${h.week}</td><td>${recordLink('w',other.id,other.name||'Opponent')}</td><td>${starsText(h.stars)||'DUD'}</td><td><button class="btn link" data-replay="${h.i}">Match report</button></td></tr>`;
+ }).join('')+'</tbody></table></div>':'<p class="dim">No meetings with your stable recorded yet.</p>';
+ const rivalries=Object.values(s.feuds||{}).filter(f=>f.wid===id||f.rid===id);
+ const feuds=rivalries.length?'<ul class="cons">'+rivalries.map(f=>{
+  const other=f.wid===id?f.rid:f.wid,opponent=G.W(other)||G.F(other);
+  return `<li>${recordLink('w',other,opponent?.name||'Opponent')} · heat ${Math.round(f.heat||0)} · ${f.closed?'finished':'ongoing'}</li>`;
+ }).join('')+'</ul>':'<p class="dim">No rivalry with your stable recorded yet.</p>';
+ const next=stable?`<button class="btn sm" data-go="stables" data-id="w:${esc(id)}">View rival stable</button>`:free?'<button class="btn sm" data-go="scouting" data-id="'+esc(id)+'">View free-agent listing</button>':'<button class="btn sm" data-go="pyramid">Card rankings</button>';
+ const belts=titles.length?'<p>'+titles.map(t=>'<span class="tag hot">'+esc(t.name)+'</span>').join(' ')+'</p>':'';
+ paint('s-split even',
+  win('Wrestler record',head+belts+`<p>${esc(w.bio||'No biography is on file.')}</p><h3 class="section-h">Attributes</h3><div class="well pad attrs">`+stat('Ring','ring')+stat('Psychology','psych')+stat('Safety','safe')+stat('Mic','mic')+stat('Heat','heat')+'</div><p class="dim">Finisher: '+esc(w.finisher||'Not recorded')+'</p><div class="record-actions">'+next+'</div>',{actions:recordBack(),keep:'record-w'})+
+  win('Career and connections','<h3 class="section-h">Promotion rankings</h3>'+rankings+'<h3 class="section-h">Against your stable</h3>'+results+'<h3 class="section-h">Rivalries</h3>'+feuds,{h:'h3',keep:'record-w-history'})
+ );
+}
+
 function renderProfile(){
  const s=S(),w=G.W(route.id);
  if(!w){route={s:'squad',id:null};return renderSquad()}
@@ -436,7 +507,7 @@ function renderProfile(){
   <h3 class="section-h">Biography</h3><p>${esc(w.bio)}</p><p class="dim">Finisher: ${esc(w.finisher)}. Best game plan: ${esc(D.PLANS[D.STYLE_PLAN[w.style]].name.toLowerCase())}.${esc(signatureText(w))}</p>`;
  const nav=s.roster.length>1?`<button class="btn" data-go="profile" data-id="${prev.id}" aria-label="Previous wrestler">◀ ${esc(prev.short)}</button><button class="btn" data-go="profile" data-id="${next.id}" aria-label="Next wrestler">${esc(next.short)} ▶</button>`:'';
  paint('s-profile',
-  win('Wrestler profile',`${face('wrestler',w.id,w.name,'portrait x3')}<div><div class="name">${esc(w.name)}</div>${ownedChamps(w.id)}<div class="handle">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${money(w.wage)} a week</span><span class="chip">${status(w)}</span></div>${ambitionLine(w)}${promise}</div><div class="acts"><button class="btn go" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting</button><span class="dim" style="font-size:13px">${s.focus} of 2 meetings left</span><button class="btn" data-raise="${w.id}" ${window.OfficeAmbitions?.raiseAvailable?.(w.id)?.error?'disabled':''} title="Permanent £40 per week payroll increase. At most once every four weeks.">Give £40/wk raise</button><button class="btn red" data-release="${w.id}">Release</button></div>`,{area:'head',cls:'phead',actions:nav})+
+  win('Wrestler profile',`${face('wrestler',w.id,w.name,'portrait x3')}<div><div class="name">${esc(w.name)}</div>${ownedChamps(w.id)}<div class="handle">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${money(w.wage)} a week</span><span class="chip">${status(w)}</span></div>${ambitionLine(w)}${promise}</div><div class="acts"><button class="btn go" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting</button><span class="dim" style="font-size:13px">${s.focus} of 2 meetings left</span><button class="btn" data-raise="${w.id}" ${window.OfficeAmbitions?.raiseAvailable?.(w.id)?.error?'disabled':''} title="Permanent £40 per week payroll increase. At most once every four weeks.">Give £40/wk raise</button><button class="btn red" data-release="${w.id}">Release</button></div>`,{area:'head',cls:'phead',actions:recordBack()+nav})+
   win('Attributes',atts+`<h4 class="ch-h">Over time</h4>`+formChart(w),{area:'atts',h:'h3',cls:'quiet',keep:'atts'})+
   win('Training',train,{area:'train',h:'h3',keep:'train'})+
   win('Record',record,{area:'record',h:'h3',keep:'rec'})
@@ -1195,6 +1266,7 @@ document.addEventListener('click',e=>{
  const t=e.target.closest('button,[data-openw],[data-selo],[data-self],[data-replay],tr[data-go]');if(!t||t.disabled)return;const d=t.dataset;
  if(t.id==='continue')return proceed();
  if(d.hist)return histMove(d.hist==='back'?-1:1);
+ if(d.record)return openRecord(d.record);
  if(d.go)return go(d.go,d.id||null);
  if(d.openw)return go('profile',d.openw);
  if(d.sort){const [key,k]=d.sort.split(':');const s=sorts[key];sorts[key]=s&&s.k===k?{k,d:-s.d}:{k,d:['name','style','tier'].includes(k)?1:-1};render();return}
