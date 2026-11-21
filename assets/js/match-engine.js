@@ -2218,6 +2218,77 @@ const Graph=(function makeGraph(){
   return {A:w?M.w:M.f,Df:w?M.f:M.w,side:w?'w':'f'};
  }
  const ACTION_NARRATION_VARIANTS={
+  // Graph Lab's repeated-line audit identified these specific hotspots.
+  // A counter remains a counter; an evasion is never narrated as a landing.
+  duck_rebound:[
+   '{D} bends under {A}’s lariat and rebounds at a different angle.',
+   '{A} swings for the lariat; {D} ducks it and keeps running.',
+   '{D} lowers their head under the arm and changes direction off the ropes.',
+   '{A} misses high as {D} uses the rebound to move into clear space.',
+   '{D} ducks the incoming clothesline and heads across the ring again.',
+   '{D} slips past the lariat, turns and takes another running lane.'
+  ],
+  waist_escape:[
+   '{D} separates the hands at the waist and moves behind {A}.',
+   '{A} loses the waist grip as {D} turns out and takes rear position.',
+   '{D} peels the fingers away, pivots and ends up behind {A}.',
+   '{D} breaks the body lock and circles to {A}’s back.',
+   '{A} reaches to keep the waistlock but {D} rotates free and switches behind.'
+  ],
+  target_strike:[
+   '{A} works a short shot into {D}’s {part} and keeps them down on the mat.',
+   '{D} protects the {part} as {A} strikes it again and holds the ground.',
+   '{A} targets the {part} before drawing {D} further from the ropes.',
+   '{D} is grounded while {A} adds another close-range shot to the {part}.',
+   '{A} stays close and lands a compact strike to {D}’s {part}.'
+  ],
+  ch_rolling_wristlock:[
+   '{A} rolls through while keeping {D}’s wrist trapped.',
+   '{D} turns with the pressure as {A} maintains the rolling wristlock.',
+   '{A} changes their angle without releasing the wrist.',
+   '{D} tries to square up, but {A} completes the wristlock rotation.'
+  ],
+  ch_short_arm:[
+   '{A} pulls free of {D}’s grip and resets the arm position.',
+   '{D} loses the controlling hand as {A} slips clear.',
+   '{A} rotates out from the grip and changes the tie-up.',
+   '{A} breaks the short-arm contact before {D} can re-secure it.'
+  ],
+  pw_bearhug:[
+   '{A} closes both arms around {D} and maintains a tight body squeeze.',
+   '{D} tries to create space inside {A}’s bearhug.',
+   '{A} adjusts the body lock and keeps {D} trapped in the bearhug.',
+   '{D} strains against the grip as {A} tightens the bearhug.'
+  ],
+  apron_stand:[
+   '{A} brings {D} towards the apron, both still fighting for position on the floor.',
+   '{D} resists as {A} tries to turn them along the edge of the apron.',
+   '{A} and {D} jockey for control beside the ring.',
+   '{D} braces against the apron while {A} looks for a better grip.'
+  ],
+  probe_strike:[
+   '{A} tests the distance with a forearm and {D} stays upright.',
+   '{D} watches {A} throw a cautious opening forearm.',
+   '{A} measures another strike; {D} does not give up their balance.',
+   '{D} stays square as {A} sends a short probing shot.'
+  ],
+  springboard_evaded:[
+   '{D} rolls out of the landing zone and {A} hits the canvas!',
+   '{A} comes off the ropes but finds only canvas; {D} has moved clear.',
+   '{D} escapes the springboard landing and takes over as {A} falls.',
+   '{A} misses the springboard attack and {D} comes away in control.'
+  ],
+  top_follow:[
+   '{A} climbs after {D} on the turnbuckles; neither has let go of their balance.',
+   '{D} waits on the turnbuckle as {A} follows them up.',
+   '{A} joins {D} high on the ropes and both steady themselves.',
+   'Both wrestlers are perched on the turnbuckles as {A} takes the next step.'
+  ],
+  corner_whip:[
+   '{A} sends {D} into the corner and follows the change of position.',
+   '{D} is driven towards the turnbuckles by {A}’s Irish whip.',
+   '{A} turns the standing exchange into a whip towards the corner.'
+  ],
   strike_trade:[
    '{A} and {D} exchange sharp forearms, neither giving ground.',
    '{A} answers a shot from {D} and both stay on their feet.',
