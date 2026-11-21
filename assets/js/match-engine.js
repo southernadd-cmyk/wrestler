@@ -2218,6 +2218,77 @@ const Graph=(function makeGraph(){
   return {A:w?M.w:M.f,Df:w?M.f:M.w,side:w?'w':'f'};
  }
  const ACTION_NARRATION_VARIANTS={
+  // Graph Lab's repeated-line audit identified these specific hotspots.
+  // A counter remains a counter; an evasion is never narrated as a landing.
+  duck_rebound:[
+   '{D} bends under {A}’s lariat and rebounds at a different angle.',
+   '{A} swings for the lariat; {D} ducks it and keeps running.',
+   '{D} lowers their head under the arm and changes direction off the ropes.',
+   '{A} misses high as {D} uses the rebound to move into clear space.',
+   '{D} ducks the incoming clothesline and heads across the ring again.',
+   '{D} slips past the lariat, turns and takes another running lane.'
+  ],
+  waist_escape:[
+   '{D} separates the hands at the waist and moves behind {A}.',
+   '{A} loses the waist grip as {D} turns out and takes rear position.',
+   '{D} peels the fingers away, pivots and ends up behind {A}.',
+   '{D} breaks the body lock and circles to {A}’s back.',
+   '{A} reaches to keep the waistlock but {D} rotates free and switches behind.'
+  ],
+  target_strike:[
+   '{A} works a short shot into {D}’s {part} and keeps them down on the mat.',
+   '{D} protects the {part} as {A} strikes it again and holds the ground.',
+   '{A} targets the {part} before drawing {D} further from the ropes.',
+   '{D} is grounded while {A} adds another close-range shot to the {part}.',
+   '{A} stays close and lands a compact strike to {D}’s {part}.'
+  ],
+  ch_rolling_wristlock:[
+   '{A} rolls through while keeping {D}’s wrist trapped.',
+   '{D} turns with the pressure as {A} maintains the rolling wristlock.',
+   '{A} changes their angle without releasing the wrist.',
+   '{D} tries to square up, but {A} completes the wristlock rotation.'
+  ],
+  ch_short_arm:[
+   '{A} pulls free of {D}’s grip and resets the arm position.',
+   '{D} loses the controlling hand as {A} slips clear.',
+   '{A} rotates out from the grip and changes the tie-up.',
+   '{A} breaks the short-arm contact before {D} can re-secure it.'
+  ],
+  pw_bearhug:[
+   '{A} closes both arms around {D} and maintains a tight body squeeze.',
+   '{D} tries to create space inside {A}’s bearhug.',
+   '{A} adjusts the body lock and keeps {D} trapped in the bearhug.',
+   '{D} strains against the grip as {A} tightens the bearhug.'
+  ],
+  apron_stand:[
+   '{A} brings {D} towards the apron, both still fighting for position on the floor.',
+   '{D} resists as {A} tries to turn them along the edge of the apron.',
+   '{A} and {D} jockey for control beside the ring.',
+   '{D} braces against the apron while {A} looks for a better grip.'
+  ],
+  probe_strike:[
+   '{A} tests the distance with a forearm and {D} stays upright.',
+   '{D} watches {A} throw a cautious opening forearm.',
+   '{A} measures another strike; {D} does not give up their balance.',
+   '{D} stays square as {A} sends a short probing shot.'
+  ],
+  springboard_evaded:[
+   '{D} rolls out of the landing zone and {A} hits the canvas!',
+   '{A} comes off the ropes but finds only canvas; {D} has moved clear.',
+   '{D} escapes the springboard landing and takes over as {A} falls.',
+   '{A} misses the springboard attack and {D} comes away in control.'
+  ],
+  top_follow:[
+   '{A} climbs after {D} on the turnbuckles; neither has let go of their balance.',
+   '{D} waits on the turnbuckle as {A} follows them up.',
+   '{A} joins {D} high on the ropes and both steady themselves.',
+   'Both wrestlers are perched on the turnbuckles as {A} takes the next step.'
+  ],
+  corner_whip:[
+   '{A} sends {D} into the corner and follows the change of position.',
+   '{D} is driven towards the turnbuckles by {A}’s Irish whip.',
+   '{A} turns the standing exchange into a whip towards the corner.'
+  ],
   strike_trade:[
    '{A} and {D} exchange sharp forearms, neither giving ground.',
    '{A} answers a shot from {D} and both stay on their feet.',
@@ -2368,32 +2439,49 @@ const Graph=(function makeGraph(){
   arm_drag:'arm drag',headlock_takeover:'headlock takedown',hip_toss:'hip toss',
   shoulder_tackle:'shoulder tackle',snap_suplex:'snap suplex',heavy_slam:'body slam',
   clothesline:'clothesline',ankle_pick:'ankle pick',aerial_attack:'diving elbow',
-  springboard_strike:'springboard crossbody',gutbuster:'gutbuster'
+  springboard_strike:'springboard crossbody',gutbuster:'gutbuster',
+  ch_leg_trip:'leg trip',ch_double_leg:'double-leg takedown',
+  ch_snapmare:'snapmare',fr_back_body_drop:'back body drop',
+  fr_flying_forearm:'flying forearm',pw_running_powerbomb:'running powerbomb',
+  sx_german:'German suplex',sx_brainbuster:'brainbuster'
  };
  const BROADCAST_FAMILIES={
   mat_takedown:'takedown',grapple_trip:'takedown',headlock_takeover:'takedown',
   arm_drag:'takedown',hip_toss:'takedown',ankle_pick:'takedown',
+  ch_leg_trip:'takedown',ch_double_leg:'takedown',ch_snapmare:'takedown',
   power_spinebuster:'power',heavy_slam:'power',gutbuster:'power',
   shoulder_tackle:'running',clothesline:'running',snap_suplex:'suplex',
-  aerial_attack:'aerial',springboard_strike:'springboard'
+  aerial_attack:'aerial',springboard_strike:'springboard',
+  fr_back_body_drop:'takedown',fr_flying_forearm:'running',
+  pw_running_powerbomb:'power',sx_german:'suplex',sx_brainbuster:'suplex'
  };
  const BROADCAST_FAMILY_NAMES={
   takedown:'takedowns',chain:'chain takedowns',power:'power moves',
   suplex:'suplexes',running:'running knockdowns',aerial:'aerial landings',
   springboard:'springboard attacks',lucha:'lucha takedowns',
-  neck:'neck attacks',ground:'grounded attacks',strike:'strikes'
+  neck:'neck attacks',ground:'grounded attacks',strike:'strikes',
+  dive:'dives',superplex:'top-rope throws',fire:'comeback attacks'
  };
  function broadcastHistory(g,id,n,side){
-  const count=1+g.events.filter(e=>e.id===id&&e.preControl===side&&!e.reverse).length;
-  return {count,label:BROADCAST_NAMES[id]||n.name,family:BROADCAST_FAMILIES[id]||n.family,
+  // Prior credit is strictly from the performed graph ledger. A counter,
+  // block or a different wrestler using the move does not raise the count.
+  const landed=g.events.filter(e=>e.id===id&&e.preControl===side&&!e.reverse);
+  const answers=g.events.filter(e=>e.preControl===side&&e.reverse&&A[e.id]?.counterOf===id).length;
+  return {count:landed.length+1,answers,
+   label:BROADCAST_NAMES[id]||n.name,family:BROADCAST_FAMILIES[id]||n.family,
    impact:n.zone==='mat'&&n.down==='d'&&!n.reverse&&!n.counterOf&&
     !n.blockOf&&!n.nearfall&&n.family!=='pin'};
  }
  function broadcastAction(h,a,d,original){
   if(!h.impact||!h.label||h.count<3)return original;
-  if(h.count===3)return a+' lands the '+h.label+' on '+d+' again. Three successful uses of that move now.';
-  if(h.count===4)return a+' repeats the '+h.label+' against '+d+'. It works for a fourth time.';
-  return a+' lands the '+h.label+' on '+d+' again — '+h.count+' successful uses so far.';
+  // One count establishes the pattern; future calls vary angle rather than
+  // announcing an ever-growing spreadsheet of successful attempts.
+  if(h.count===3)return a+' lands the '+h.label+' on '+d+' again — the third time it has worked.';
+  if(h.count===4)return a+' goes back to the '+h.label+' and puts '+d+' down once more.';
+  if(h.count===5)return 'Another '+h.label+' from '+a+'. '+d+' is back on the canvas.';
+  if(h.count%4===0||h.count%4===3)return original;
+  if(h.count%4===1)return a+' finds the '+h.label+' again. '+d+' takes another knockdown.';
+  return d+' is caught with the '+h.label+' again from '+a+'. The tactic is still working.';
  }
  function broadcastInsight(M,g,h,n,side,attacker,defender){
   if(!h.impact||!BROADCAST_FAMILY_NAMES[h.family])return;
@@ -2401,20 +2489,29 @@ const Graph=(function makeGraph(){
    const node=A[e.id];return node&&!node.reverse&&e.preControl===side&&
     e.position==='mat'&&e.down===(side==='w'?'f':'w')&&
     (BROADCAST_FAMILIES[e.id]||node.family)===h.family;
-  }).length;
-  if(prior+1===5||prior+1===9)
-   say(M,attacker.short+' has now put '+defender.short+' down with '+
-    (prior+1)+' '+BROADCAST_FAMILY_NAMES[h.family]+
-    '. That pattern is hard to ignore.','story',{who:'colour'});
+  }).length,landings=prior+1;
+  if(landings===5)say(M,attacker.short+' has put '+defender.short+' down five times with '+
+   BROADCAST_FAMILY_NAMES[h.family]+'. That is a clear pattern in the actual exchanges.',
+   'story',{who:'colour'});
+  if(landings===9)say(M,attacker.short+' is still getting '+defender.short+
+   ' to the canvas with '+BROADCAST_FAMILY_NAMES[h.family]+
+   '. Nine successful knockdowns from that family tonight.',
+   'story',{who:'colour'});
  }
  function broadcastCounter(M,g,n,side,attacker,defender){
   if(!n.reverse||!n.counterOf)return;
   const label=BROADCAST_NAMES[n.counterOf]||A[n.counterOf]?.name;
   if(!label)return;
   const prior=g.events.filter(e=>e.id===n.counterOf&&e.preControl===side&&!e.reverse).length;
-  if(prior>=2)say(M,defender.short+' has already dealt with '+prior+
-   ' successful '+label+' attacks from '+attacker.short+'. Now comes the answer.',
+  if(prior<2)return;
+  const pastAnswers=g.events.filter(e=>
+   e.preControl===side&&e.reverse&&A[e.id]?.counterOf===n.counterOf).length;
+  if(pastAnswers===0)say(M,defender.short+' has finally countered the '+label+
+   ' after '+prior+' successful uses by '+attacker.short+'. That is a real answer to the pattern.',
    'story',{who:'colour'});
+  else if(pastAnswers===1&&prior>=4)say(M,defender.short+
+   ' has now countered that '+label+' twice. '+attacker.short+
+   ' cannot assume it will keep landing.','story',{who:'colour'});
  }
 
  // Recovery reflects learned pacing, not an invisible refill. Only an
@@ -2469,7 +2566,7 @@ const Graph=(function makeGraph(){
     defender.short+' is returned to the ring by '+attacker.short+'. The rules allowed them to stay outside.'
    ][index%3];
   }
-  say(M,broadcastAction(broadcast,attacker.short,defender.short,text),n.kind);
+  say(M,broadcastAction(broadcast,attacker.short,defender.short,text),n.kind,{actionId:id});
   broadcastInsight(M,g,broadcast,n,side,attacker,defender);
   broadcastCounter(M,g,n,side,attacker,defender);
   const originalDown=n.reverse?side:opp;
@@ -4250,7 +4347,10 @@ function say(M,text,kind='play',opt={}){
  let who=opt.who;
  for(const [re,v] of VOICE_PREFIX)if(re.test(text)){text=text.replace(re,'');text=text.charAt(0).toUpperCase()+text.slice(1);if(who===undefined)who=v;break}
  if(who===undefined)who=KIND_VOICE[kind]||null;
- const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0,who};M.queue.push(line);M.log.push(line);return line}
+ const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0,who};
+ // Optional booth-only provenance for repetition auditing, not match events.
+ if(opt.actionId)line.actionId=opt.actionId;
+ M.queue.push(line);M.log.push(line);return line}
 
 function phaseFor(frac,M){const ends=Psy.PHASE_ENDS[M?.planId]||Psy.PHASE_ENDS.story;return PHASES.find((p,i)=>frac<ends[i])||PHASES[4]}
 // Grade observed, mechanically connected offence and actual dramatic payoffs.
