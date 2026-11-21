@@ -276,13 +276,18 @@
   const s=current(M);if(!s)return;
   const event=K.commit(M,{action:id,actor,kind});
   const frac=M.t/Math.max(1,M.len);
+  // A scripted spectacle is credited by its landed, named graph action,
+  // not by a generic event emitted for an attempt (including a botch).
+  const performed=M.graph?.events?.at(-1);
+  const landedScripted=kind==='action'&&performed?.id===id&&performed.scriptedSpot===true;
   for(const b of s.nodes){
    if(b.impossible||b.vow||b.corner)continue;
    if(kind!=='outcome'&&!eligibleBeat(M,b))continue;
    if(kind==='outcome'&&b.id!=='finish')continue;
    if(frac<b.window[0]-.10||frac>b.window[1]+.12)continue;
    if(b.owner!=='either'&&b.owner!==actor&&kind!=='outcome')continue;
-   const exact=b.actions.includes(id),alternate=b.backup?.includes(id);
+   const exact=b.actions.includes(id)||(landedScripted&&b.actions.includes('special_spot'));
+   const alternate=b.backup?.includes(id)||(landedScripted&&b.backup?.includes('special_spot'));
    if(!exact&&!alternate)continue;
    const missedBefore=b.id==='finish'?[]:(b.requires||[]).filter(dep=>s.nodes.some(x=>x.id===dep&&x.status==='missed'));
    b.status=missedBefore.length?'adapted':exact?'achieved':'adapted';b.actual=id;b.at=M.t;
@@ -343,7 +348,7 @@
  function report(M){
   const s=current(M);if(!s)return null;
   const achieved=s.nodes.filter(b=>b.status==='achieved').length,adapted=s.nodes.filter(b=>b.status==='adapted').length,missed=s.nodes.filter(b=>b.status==='missed').length;
-  return {method:s.method,focus:s.focus,room:s.v>=4?{premise:s.premise,left:s.clockLeft,route:s.finishRoute}:null,decision:s.decision,revisions:(s.revisions||[]).map(x=>({...x})),calls:(s.calls||[]).map(x=>({...x})),total:s.nodes.length,achieved,adapted,missed,
+  return {method:s.method,focus:s.focus,room:s.v>=4?{premise:s.premise,left:s.clockLeft,route:s.finishRoute,performed:s.performedFinishRoute||null}:null,decision:s.decision,revisions:(s.revisions||[]).map(x=>({...x})),calls:(s.calls||[]).map(x=>({...x})),total:s.nodes.length,achieved,adapted,missed,
    beats:s.nodes.map(b=>({id:b.id,title:b.title,status:b.status,expected:b.actions[0],actual:b.actual,reason:b.why,at:b.at})),
    eventCount:s.ledger.length};
  }
