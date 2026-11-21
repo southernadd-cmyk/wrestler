@@ -1651,8 +1651,9 @@ const Graph=(function makeGraph(){
   if(readyStoryHope(M))return {id:schedule.id,name:a.label};
   // Preserve the actual mat knockdown for the cover already due. The
   // otherwise routine arc reset would stand everyone up before the count.
-  if(M.nearfallAt?.length&&frac>=M.nearfallAt[0]&&
-     earnedNearfallSource(M))return {id:schedule.id,name:a.label};
+  if(M.planId==='story'&&M.nearfallAt?.length&&
+     frac>=M.nearfallAt[0]&&earnedNearfallSource(M))
+    return {id:schedule.id,name:a.label};
   // Existing in-progress saves may already be in an impossible early finish arc.
   // Recover those, and never carry an early-phase arc back into the final stretch.
   const mispaced=(g.arc==='exchange'&&order[schedule.id]<2)
@@ -4194,7 +4195,8 @@ function tick(M){
  const preparedRun=!spoke&&!topContest&&!preparedFlight&&Graph.readyBrawlRebound(M);
  const preparedGrip=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&Graph.readyTechnicalGrip(M);
  const preparedHope=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&Graph.readyStoryHope(M);
- const earnedCover=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&
+ const earnedCover=M.planId==='story'&&!spoke&&!topContest&&
+  !preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&
   M.nearfallAt.length&&frac>=M.nearfallAt[0]?
    Graph.earnedNearfallSource(M):null;
  // A timer may ask for a near fall, but no fictional move may make it
@@ -4202,8 +4204,10 @@ function tick(M){
  // knockdown produces a lawful cover opportunity.
  if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&
     M.nearfallAt.length&&frac>=M.nearfallAt[0]&&
-    (M.o.stip==='submission'||earnedCover)){
-  if(M.o.stip==='submission'){
+    (M.planId!=='story'||M.o.stip==='submission'||earnedCover)){
+  // Roll out to other match plans only after dedicated cross-plan baselines.
+  // Their established scheduled nearfalls remain behaviourally identical.
+  if(M.planId!=='story'||M.o.stip==='submission'){
    M.nearfallAt.shift();Graph.nearfall(M);spoke=true;
   }else if(Graph.nearfall(M,earnedCover)){
    M.nearfallAt.shift();spoke=true;
