@@ -235,7 +235,17 @@
   duck_finisher:'Get caught, get finished',finisher_reversed:'Have our finisher reversed',submission_defeat:'Tap out',
   dq_chair_f:'They grab a chair in front of the referee',dq_ref_shove_f:'They shove the referee',dq_low_blow_f:'A low blow the referee sees',
   dq_chair_w:'Snap and use a chair',dq_choke_w:'Choke them past the count of five',dq_ref_shove_w:'Shove the referee'};
- const ROUTE_STATIC={top_rope:(w)=>w.style==='Spectacle'&&kg(w)<110,strike_knockout:(w)=>w.style==='Brawl',eye_poke:(w)=>['Brawl','Story'].includes(w.style)};
+ // Static prerequisites must be checked when a finish is pitched, not only at the bell.
+ // Dynamic damage, reversals and exhaustion remain things the wrestlers must earn.
+ const ROUTE_STATIC={
+  top_rope:(w)=>w.style==='Spectacle'&&kg(w)<110,
+  strike_knockout:(w)=>w.style==='Brawl',
+  eye_poke:(w)=>['Brawl','Story'].includes(w.style),
+  referee_bump:(w,f,st)=>(st.contract.feudHeat||0)>=40,
+  dq_ref_shove_f:(w,f,st)=>(st.contract.feudHeat||0)>=25,
+  dq_low_blow_f:(w,f)=>['Brawl','Story'].includes(f.style),
+  dq_ref_shove_w:(w)=>w.ego>=65
+ };
  // These methods are agreed backstage, but must be earned by actual in-ring
  // events. If the condition is absent at the finish, the road agent calls an
  // audible to another legal method; the contracted winner does not change.
@@ -243,7 +253,7 @@
   reversal_finisher:'Needs three genuine reversals by your wrestler.',
   top_rope:'Needs an aerial specialist who is not exhausted.',
   limb_finish:'Needs at least four points of focused damage to the opponent.',
-  outlasted:'Needs the loser exhausted and a 15-point stamina gap.',
+  outlasted:'At the bell, the loser needs stamina below 30 and the winner must have at least 15 points more.',
   referee_bump:'Needs enough feud heat.',
   exhausted_cover:'Needs your wrestler exhausted.',
   injury_gives:'Needs at least three points of focused damage to your wrestler.',
@@ -283,7 +293,7 @@
  function pitches(st,slot,{allowAmbition=true}={}){
   const {w,f,seed}=st,S=SLOTS.find(x=>x.id===slot);
   if(slot==='finish'){
-   const all=(MX.FINISH_ROUTES[st.finish]||[]).map(r=>r.id).filter(id=>!ROUTE_STATIC[id]||ROUTE_STATIC[id](w,f));
+   const all=(MX.FINISH_ROUTES[st.finish]||[]).map(r=>r.id).filter(id=>!ROUTE_STATIC[id]||ROUTE_STATIC[id](w,f,st));
    const wPick=all[1+Math.floor(rng(seed,'fin-w')*(all.length-1))]||all[0];
    const rest=all.filter(x=>x!==wPick&&x!==all[0]);
    const fPick=rest.length?pick(rest,seed,'fin-f'):null;
@@ -741,9 +751,10 @@
     log(st,'agent','The contract says dirty. I don’t write them. I just read them out and wince.');},
    title:'{W} doesn’t want to cheat',ask:'How do you square it?',
    options(st){
-    const a={moodW:2,route:'referee_bump'},b={moodW:-6},c={moodW:3,moodF:-2};
+    const bumpLegal=(st.contract.feudHeat||0)>=40;
+    const a={moodW:2,route:bumpLegal?'referee_bump':'feet_on_ropes'},b={moodW:-6},c={moodW:3,moodF:-2};
     return [
-     {id:'accident',label:'“Make it look like an accident.”',hint:'The referee goes down, and what happens next is nobody’s fault.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'accept',st.w,'dirty'));}},
+     {id:'accident',label:'“Make it look like an accident.”',hint:bumpLegal?'The referee goes down, and what happens next is nobody’s fault.':'A distraction lets the wrestler use the ropes for leverage, with no referee bump.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'accept',st.w,'dirty'));}},
      {id:'job',label:'“It’s the job.”',hint:'It is.',fx:b,tags:tagsOf(st,b),run(st){log(st,'w',say(st,'grumble',st.w,'dirty'));}},
      {id:'they_first',label:'“{F} cheats first. Then it’s only fair.”',hint:st.f.short+' has to look like the villain.',fx:c,tags:tagsOf(st,c),run(st){log(st,'f',say(st,'grumble',st.f,'dirty'));}}];}},
   {id:'protect',kind:'match',weight:3,when:x=>x.st.finish.startsWith('lose')&&x.st.w.heat>=40,
@@ -1555,6 +1566,33 @@
   if(late<.15)return 1;
   return clamp(1+(willing(M,side)-42)/11*(late>.6?1.5:1),.8,7);
  }
+ // A signed finish should affect the BUILD, not just be checked at the bell.
+ // Prefer already-legal, physically relevant actions by a small bounded amount.
+ // Never create damage, counters, recovery, spots or a finish event directly.
+ function finishPreparation(M,id){
+  const route=M.o.sheet?.finishRoute,n=A[id],g=M.graph,p=M.story;
+  if(!route||!n||!g||!p)return 1;
+  const frac=M.t/Math.max(1,M.len);
+  if(frac<.15||frac>.86)return 1;
+  if(['limb_finish','submission_defeat','injury_gives'].includes(route)){
+   const victim=route==='limb_finish'?'f':'w',attacker=victim==='f'?'w':'f';
+   const required=route==='injury_gives'?3:4;
+   if(p.control!==attacker||n.reverse||!(n.focus>0)||(g.damage?.[victim]||0)>=required)return 1;
+   const part=MX.GRAPH.PART_OF[g.targets?.[victim]];
+   return !n.part||!part||n.part===part?1.7:1;
+  }
+  if(['reversal_finisher','finisher_reversed'].includes(route)&&n.reverse){
+   const before=route==='reversal_finisher'?'f':'w';
+   const count=(g.events||[]).filter(e=>e.reverse&&e.preControl===before).length;
+   return p.control===before&&count<3?1.45:1;
+  }
+  if(route==='outlasted'&&id==='catch_breath'){
+   const winner=M.o.finish.startsWith('win')?'w':'f',loser=winner==='w'?'f':'w';
+   const winnerSt=winner==='w'?M.wSt:M.fSt,loserSt=loser==='w'?M.wSt:M.fSt;
+   return p.control===winner&&loserSt<60&&winnerSt-loserSt<15?1.4:1;
+  }
+  return 1;
+ }
  // Honouring the promoter's note steers the match; it never makes anything illegal.
  const BARRICADE=['floor_counter'];
  const met=(M,note)=>(M.graph?.events||[]).some(e=>{const n=A[e.id];return n&&!n.counterOf&&!n.blockOf&&((n.family&&note.need.includes(n.family))||BARRICADE.includes(e.id));});
@@ -1564,16 +1602,17 @@
   const lim=sh.limits;
   if(lim&&(lim.banIds.includes(id)||(n.family&&lim.ban.includes(n.family)&&!n.counterOf)))return .03;
   const appetite=sh.spice&&n.risk&&!n.counterOf&&!n.blockOf?(sh.spice>0?1.7:.3):1;
-  const note=sh.note;if(!note||!note.honour)return appetite;
+  const preparation=finishPreparation(M,id);
+  const note=sh.note;if(!note||!note.honour)return appetite*preparation;
   // A promise to the promoter outranks a wrestler's habits.
   if(note.banIds.includes(id)||(n.family&&note.ban.includes(n.family)&&!n.counterOf))return .03;
   if(note.need.length&&!met(M,note)){
-   if(id==='outside_toss')return 5;
-   if((n.family&&note.need.includes(n.family)&&!n.counterOf&&!n.blockOf)||BARRICADE.includes(id))return 6;
-   if(id==='roll_inside')return .25;
+   if(id==='outside_toss')return 5*preparation;
+   if((n.family&&note.need.includes(n.family)&&!n.counterOf&&!n.blockOf)||BARRICADE.includes(id))return 6*preparation;
+   if(id==='roll_inside')return .25*preparation;
   }
-  if(note.needRisk&&n.risk&&!n.counterOf&&!n.blockOf&&!(M.spotHits>0))return 2.5*appetite;
-  return appetite;
+  if(note.needRisk&&n.risk&&!n.counterOf&&!n.blockOf&&!(M.spotHits>0))return 2.5*appetite*preparation;
+  return appetite*preparation;
  }
  function verify(M){
   const note=M.o.sheet?.note;if(!note||note.waived)return null;
