@@ -82,6 +82,25 @@ async function journey(browser,name,viewport){
     assert.match(mobileReadouts[3].label,/Meetings left/i);
   }
 
+  // Navigate the live territory like classic CM: from card to wrestler record,
+  // back to the card, then promoter record and back to the promoter list.
+  // Exercise this at both desktop and phone widths without creating new workflows.
+  await page.evaluate(()=>window.OfficeUI.go('pyramid'));
+  const rankedName=page.locator('#view .tier .record-link[data-record^="w:"]:visible').first();
+  await rankedName.waitFor();
+  await rankedName.click();
+  assert.ok(await page.locator('#view .record-name').isVisible(),name+': wrestler record must open');
+  assert.match(await page.locator('#view').innerText(),/Promotion rankings/);
+  await page.locator('#view [data-hist="back"]').click();
+  assert.ok(await page.locator('#view .tiers').isVisible(),name+': back must restore rankings');
+  await page.evaluate(()=>window.OfficeUI.go('promoters'));
+  await page.locator('#view .record-link[data-record="p:dock"]:visible').first().click();
+  assert.match(await page.locator('#view .record-name').innerText(),/Dockside/);
+  assert.match(await page.locator('#view').innerText(),/Current champions/);
+  await page.locator('#view [data-hist="back"]').click();
+  assert.ok(await page.locator('#view').getByText('Promoters',{exact:true}).first().isVisible(),name+': back must restore promoter list');
+  await page.evaluate(()=>window.OfficeUI.go('scouting'));
+
   // Settle a genuine match, then stage an interrupted result screen to test
   // the same localStorage resume route used by a real mid-show reload.
   const cid=await page.evaluate(()=>{
