@@ -63,7 +63,7 @@ const Psy=(function installPsychology(){
  }
  function get(M){return M.story||(M.story=make(M))}
  function sync(M,side){const s=get(M);if(s.control!==side&&s.control!=='neutral')s.changes++;s.control=side;M.mom=side==='w'?Math.max(18,M.mom):side==='f'?Math.min(-18,M.mom):M.mom;}
- function line(M,words,kind='play'){say(M,fill(M,words),kind)}
+ function line(M,words,kind='play',opt={}){say(M,fill(M,words),kind,opt)}
  function pair(M,words,kind='play'){for(const t of words)line(M,t,kind)}
  function take(M,choices){const s=get(M),pool=choices.filter(x=>!s.recentBeats.includes(x[0]));const choice=rnd(M,pool.length?pool:choices);s.last=choice[0];s.recentBeats.push(choice[0]);if(s.recentBeats.length>4)s.recentBeats.shift();return choice}
  function phase(M){
@@ -276,14 +276,33 @@ const Psy=(function installPsychology(){
   if(!['w','f'].includes(side)||s.control!==side||
      s.position!=='mat'||s.down!==other)return false;
   const attacker=side==='w'?M.w:M.f,defender=other==='w'?M.w:M.f;
-  line(M,attacker.short+' stays on '+defender.short+' after the '+source.label+
-   ', hooks the far leg and goes for the cover!','count');
+  const move=source.label||'knockdown';
+  // Earned covers already require real recorded, mechanically eligible landings.
+  s.coverNarrationCount=(s.coverNarrationCount||0)+1;
+  const covers=[
+   attacker.short+' stays close after the '+move+' and hooks '+defender.short+"'s far leg for the cover!",
+   attacker.short+' follows the '+move+' with an immediate pin attempt on '+defender.short+'.',
+   'After the '+move+', '+attacker.short+' presses '+defender.short+"'s shoulders down and hooks a leg.",
+   attacker.short+' drops into a cover, keeping '+defender.short+' down after the '+move+'.',
+   attacker.short+' hooks '+defender.short+"'s leg right after the "+move+' and waits for the count.',
+   'The '+move+' left '+defender.short+' on the mat; '+attacker.short+' takes the cover.',
+   attacker.short+' folds into a cover after the '+move+'. '+defender.short+' has to kick free.',
+   attacker.short+' tries to keep '+defender.short+' pinned following the '+move+'.'
+  ];
+  line(M,covers[(s.coverNarrationCount-1)%covers.length],'count',
+   {textureId:'earned-nearfall-cover'});
   line(M,'ONE!','count');line(M,'TWO!','count');
+  // Keep exactly one original commentary RNG draw for the real kick-out.
   line(M,rnd(M,[
    defender.short+' lifts a shoulder before three!',
    'TWO AND A HALF! '+defender.short+' finds the escape!',
-   'NO! '+defender.short+' kicks out at the last instant!'
-  ]),'crowd');
+   'NO! '+defender.short+' kicks out at the last instant!',
+   defender.short+' manages to lift a shoulder at two and a half!',
+   'The count stops short of three! '+defender.short+' gets free!',
+   'Shoulder up! '+defender.short+' survives the cover.',
+   'A late kick-out from '+defender.short+' breaks the count!',
+   'The referee signals two — '+defender.short+' has escaped!'
+  ]),'crowd',{textureId:'earned-nearfall-kickout'});
   const late=M.nearfallAt.length===0&&M.crowd>=67;
   M.nearfalls++;lift(M,3+M.crowd*.05*(late?1.4:1));
   mark(M,'nf',side==='w');M.bonus+=late?8:4;
@@ -1585,18 +1604,36 @@ const Graph=(function makeGraph(){
     // descriptions without changing control, down state or gameplay RNG.
     g.matReturnCount=(g.matReturnCount||0)+1;
     const stand=p.down==='w'?'W':p.down==='f'?'F':null;
+    const who=stand?'{'+stand+'}':null;
     const lines=stand?[
-     '{'+stand+'} pushes back up off the mat as the next exchange begins.',
-     '{'+stand+'} finds their footing and forces the fight back upright.',
-     '{'+stand+'} rolls to a knee, then rises to restart the exchange.',
-     '{'+stand+'} stands carefully after the previous exchange.'
+     who+' pushes back up off the mat as the next exchange begins.',
+     who+' finds their footing and forces the fight back upright.',
+     who+' rolls to a knee, then rises to restart the exchange.',
+     who+' stands carefully after the previous exchange.',
+     who+' plants a hand on the canvas and gets back to their feet.',
+     who+' regains a standing position and resets the distance.',
+     who+' rises from the mat and squares up for the next exchange.',
+     who+' uses a knee to push upright after the grounded exchange.',
+     who+' gets off the canvas and returns to a standing exchange.',
+     who+' gets to their feet and steps clear of the previous hold.',
+     who+' comes off the canvas and faces the opponent again.',
+     who+' stands up and re-establishes their footing.',
+     who+' pushes to both feet and prepares to re-engage.',
+     who+' climbs back to standing after the scramble on the mat.',
+     who+' returns to two feet before the next exchange begins.',
+     who+' rolls onto a knee, then comes upright to continue.'
     ]:[
      'Both wrestlers push back up off the mat as the next exchange begins.',
      'They separate on the canvas and regain their feet.',
      'Both competitors rise, measuring the distance between them.',
-     'The action returns to a standing exchange as they regroup.'
+     'The action returns to a standing exchange as they regroup.',
+     'Both competitors get off the canvas and return to their feet.',
+     'The two of them stand up and reset their distance.',
+     'They leave the mat exchange behind and square up again.',
+     'Both stand, facing each other for another exchange.'
     ];
-    say(M,fill(M,lines[(g.matReturnCount-1)%lines.length]));
+    say(M,fill(M,lines[(g.matReturnCount-1)%lines.length]),'play',
+     {textureId:stand?'arc-return-mat-single':'arc-return-mat-both'});
    }
   }
   // Rotate through context-appropriate arc commentary on repeated visits.
@@ -1656,6 +1693,22 @@ const Graph=(function makeGraph(){
     '{W} starts to fight out of trouble. The crowd can sense an opening.',
     '{W} finds a little space and begins to challenge {F} again.',
     'The pressure on {W} loosens; a comeback becomes possible.'
+   ],
+   limb_work:[
+    '{F} has found a target and will not let it go. Every move goes back to the same body part.',
+    '{F} keeps pressure on one vulnerable area while {W} tries to defend it.',
+    'The exchanges return to limb work; {F} is not giving {W} much room.',
+    '{F} isolates a target and slows {W} with sustained pressure.',
+    '{W} is forced to protect the targeted limb as {F} keeps control.',
+    '{F} works methodically, returning to the same weak point on {W}.'
+   ],
+   rest_hold:[
+    '{F} slows it right down with a hold, grinding {W} into the canvas. The crowd tries to rally {W}.',
+    '{F} leans on {W} in a grounded hold, taking pace out of the match.',
+    '{W} is stuck defending the hold while {F} controls the tempo.',
+    '{F} keeps {W} on the canvas and waits for an opening.',
+    'There is little space for {W} to move as {F} maintains the hold.',
+    '{F} continues to wear {W} down with patient mat control.'
    ]
   };
   const alternatives=ARC_NARRATION_VARIANTS[id];
@@ -1665,7 +1718,7 @@ const Graph=(function makeGraph(){
    words=alternatives[count%alternatives.length];
    g.arcNarrationCounts[id]=count+1;
   }
-  if(words)say(M,fill(M,words),'story');
+  if(words)say(M,fill(M,words),'story',{textureId:'arc-entry:'+id});
   if(arc.control==='w'||arc.control==='f'){
    const change=p.control!==arc.control;
    if(change) p.changes++;
@@ -3019,10 +3072,33 @@ const Graph=(function makeGraph(){
   g.grappleAttempts.push({seq,id,side,type,startedT:M.t,outcome:'pending'});
   const key=side==='w'?'wSt':'fSt';
   M[key]=clamp(M[key]-.65);g.exertion=(g.exertion||0)+.65;
-  say(M,n.family==='superplex'?
-   attacker.short+' hooks '+defender.short+' on the turnbuckles and commits to the '+(n.name||id)+'. '+defender.short+' tries to break the grip.':type==='throw'?
-   attacker.short+' secures the grip and prepares the '+(n.name||id)+'. '+defender.short+' braces against the lift.':
-   attacker.short+' works to lock in the '+(n.name||id)+'. '+defender.short+' fights the grip.','play');
+  const name=n.name||id;
+  // A grappling setup is not a completed move: no false landing or effect.
+  // The saved counter changes wording but consumes no gameplay RNG.
+  const openings=n.family==='superplex'?[
+   attacker.short+' hooks '+defender.short+' on the turnbuckles and sets up the '+name+'. '+defender.short+' tries to break the grip.',
+   attacker.short+' looks for the '+name+' from the turnbuckles. '+defender.short+' resists the setup.',
+   attacker.short+' attempts the '+name+' high on the ropes; '+defender.short+' braces against it.',
+   attacker.short+' has '+defender.short+' by the ropes and prepares the '+name+'. The grip is not secure yet.',
+   attacker.short+' tries to arrange the '+name+' in the corner. '+defender.short+' fights the position.',
+   attacker.short+' searches for the '+name+' on the turnbuckles; '+defender.short+' is still resisting.'
+  ]:type==='throw'?[
+   attacker.short+' secures the grip and prepares the '+name+'. '+defender.short+' braces against the lift.',
+   attacker.short+' pulls '+defender.short+' into position for the '+name+'. '+defender.short+' resists.',
+   attacker.short+' tries to set up the '+name+', but '+defender.short+' is still fighting the grip.',
+   attacker.short+' takes hold for the '+name+'. '+defender.short+' prepares to defend the throw.',
+   attacker.short+' looks for the '+name+' while '+defender.short+' tries to break the setup.',
+   attacker.short+' moves into the '+name+' position. '+defender.short+' keeps their balance for now.'
+  ]:[
+   attacker.short+' works to lock in the '+name+'. '+defender.short+' fights the grip.',
+   attacker.short+' reaches for the '+name+', but '+defender.short+' is keeping the hands apart.',
+   attacker.short+' tries to secure the '+name+'. '+defender.short+' refuses to give up the grip.',
+   attacker.short+' moves towards the '+name+' while '+defender.short+' struggles against the setup.',
+   attacker.short+' seeks control for the '+name+'. '+defender.short+' is still defending.',
+   attacker.short+' tests the '+name+' position, with '+defender.short+' resisting the hold.'
+  ];
+  say(M,textureLine(g,'grapple-opening:'+id,openings),'play',
+   {textureId:'grapple-opening:'+id});
   return true;
  }
  function concludeGrapple(M,outcome,actionId=null){
@@ -4081,7 +4157,7 @@ const Graph=(function makeGraph(){
         .every(key=>!e[key]||e[key]==='landed'))continue;
    const key=e.t+':'+e.id+':'+side;
    if(used.has(key))continue;
-   return {id:e.id,t:e.t,side,label:n.name||n.kind||'takedown',key};
+   return {id:e.id,t:e.t,side,label:n.name||BROADCAST_NAMES[e.id]||'knockdown',key};
   }
   return null;
  }

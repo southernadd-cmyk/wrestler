@@ -49,13 +49,15 @@ const exact=(m)=>Object.entries(m.log.reduce((a,l)=>{
 },{})).filter(([,n])=>n>=3);
 const stats={bouts:0,paired:0,tripleOld:0,tripleNew:0,severeOld:0,severeNew:0,
  worst:[],frequentIds:{},repeatedByAction:{},repeatedByTexture:{},textureEvents:{},
- residualTextureExamples:[]};
+ residualTextureExamples:[],genericOld:0,genericNew:0};
 function run(o,tag){
  const m=lab.runMatch(fresh.root,JSON.parse(JSON.stringify(o)));
  assert.ok(m.done&&m.final,tag+' completes');
  assert.ok(m.log.every(l=>!/\bundefined\b|\bNaN\b/.test(l.text)),tag+' has valid booth text');
  assert.ok(!m.log.some(l=>/successful uses so far|It works for a fourth time/.test(l.text)),
   tag+' never narrates the old count loop');
+ assert.ok(!m.log.some(l=>/after the play, hooks the far leg/.test(l.text)),
+  tag+' never attributes a recorded knockdown to a generic play');
  assert.ok(!m.log.some(l=>/cannot complete the spectacular setup safely|drops back down from the turnbuckle as the counter threat develops|They separate in the corner and step out into open ring|There is confidence, and then there is giving an opponent time to think/.test(l.text)),
   tag+' does not replay the four known texture hotspots');
  for(const l of m.log)if(l.textureId)stats.textureEvents[l.textureId]=(stats.textureEvents[l.textureId]||0)+1;
@@ -67,6 +69,7 @@ function run(o,tag){
   const id=m.log.find(l=>l.text===line)?.actionId||'(texture)';
   stats.repeatedByAction[id]=(stats.repeatedByAction[id]||0)+1;
   if(id==='(texture)'){
+   stats.genericNew++;
    const texture=m.log.find(l=>l.text===line)?.textureId||'(unattributed)';
    stats.repeatedByTexture[texture]=(stats.repeatedByTexture[texture]||0)+1;
    if(stats.residualTextureExamples.length<70)
@@ -85,6 +88,8 @@ function run(o,tag){
   const prior=exact(b);
   stats.paired++;stats.tripleOld+=prior.length;
   stats.severeOld+=prior.filter(([,n])=>n>=5).length;
+  stats.genericOld+=prior.filter(([line])=>!b.log.some(l=>
+   l.text===line&&l.actionId)).length;
  }
  return m;
 }
@@ -116,5 +121,7 @@ if(base){
   'text-only patch must not raise exact triple-line repetition');
  assert.ok(stats.severeNew<=stats.severeOld,
   'text-only patch must not raise five-plus repeated lines');
+ assert.ok(stats.genericNew<stats.genericOld,
+  'targeted narration should reduce exact generic triple repeats');
 }
 console.log('PASS commentary memory + matched mechanics: '+JSON.stringify(stats));
