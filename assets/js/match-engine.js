@@ -1537,6 +1537,8 @@ const Graph=(function makeGraph(){
   else if(id==='false_finish')words='They are trading roll-ups and finishing attempts. Every count could be the last.';
   else words='{W} and {F} dig deep. The finishing sequence is close.';
   // Arc switches never teleport the wrestlers. Every needed reset is narrated.
+  // The booth rotates variants through saved graph counters without a random
+  // draw: changing the words must never change the match's selected moves.
   if(prev){
    if(p.position==='outside'){
     g.outsideReturnCount=(g.outsideReturnCount||0)+1;
@@ -1552,8 +1554,32 @@ const Graph=(function makeGraph(){
     ];
     say(M,fill(M,options[(g.outsideReturnCount-1)%options.length]));
    }
-   else if(p.position==='top')say(M,fill(M,p.down==='w'?'{F} drops back down from the turnbuckle as the counter threat develops.':p.down==='f'?'{W} drops back down from the turnbuckle as the counter threat develops.':'The wrestler on the turnbuckle drops back down as the counter threat develops.'));
-   else if(p.position==='corner')say(M,fill(M,'They separate in the corner and step out into open ring.'));
+   else if(p.position==='top'){
+    const returning=p.down==='w'?'F':p.down==='f'?'W':null;
+    const who=returning?'{'+returning+'}':'The wrestler on the ropes';
+    const lines=[
+     who+' steps down from the turnbuckle as the wrestlers reset.',
+     who+' returns to the canvas before the next exchange.',
+     who+' leaves the ropes and regains a standing position.',
+     who+' drops back to the mat and prepares to re-engage.',
+     who+' climbs down from the turnbuckle; the contest continues on the feet.',
+     who+' abandons the high position and resets in the ring.'
+    ];
+    say(M,fill(M,textureLine(g,'arc-return-top',lines)),'play',
+     {textureId:'arc-return-top'});
+   }
+   else if(p.position==='corner'){
+    const lines=[
+     '{W} and {F} leave the corner and return to open ring.',
+     'They break away from the turnbuckles and reset their footing.',
+     'Both wrestlers step clear of the corner before re-engaging.',
+     '{W} and {F} separate at the ropes and move back to the centre.',
+     'The exchange resets with both competitors away from the turnbuckles.',
+     'Both leave the corner and square up again in the ring.'
+    ];
+    say(M,fill(M,textureLine(g,'arc-return-corner',lines)),'play',
+     {textureId:'arc-return-corner'});
+   }
    else if(p.position==='mat'){
     // An arc return is a narrated physical reset, not a new move. Rotate
     // descriptions without changing control, down state or gameplay RNG.
@@ -2434,6 +2460,14 @@ const Graph=(function makeGraph(){
 
  // The booth only remembers executed graph events, not attempted narration.
  // No gameplay random draw, physical rule or move weight is changed.
+ // Booth-only state. Each text family advances when it is actually spoken.
+ // It survives a save/restore but does not consume the gameplay RNG.
+ function textureLine(g,key,lines){
+  g.textureSequence??={};
+  const count=g.textureSequence[key]||0;
+  g.textureSequence[key]=count+1;
+  return lines[count%lines.length];
+ }
  const BROADCAST_NAMES={
   mat_takedown:'leg trip',grapple_trip:'single-leg trip',power_spinebuster:'spinebuster',
   arm_drag:'arm drag',headlock_takeover:'headlock takedown',hip_toss:'hip toss',
@@ -2711,16 +2745,52 @@ const Graph=(function makeGraph(){
    if(!g.signatures[side]++)say(M,fill(M,'Colour: That is the {name} — nobody on this circuit does it quite like {A}.',{A:attacker.short,name:n.name}),'story');
   }
   if(M.t-(g.lastColourAt??-1000)>=100&&M.r()<.33){
+   // Only describe the move that was performed. No new draw or fabricated
+   // near-fall, injury, counter, crowd swing or change of control.
    const reactions={
-    grapple_trip:'Colour: That transition to the leg was perfectly timed.',
-    power_spinebuster:'The ring shook on that impact. {D} felt every bit of it.',
-    springboard_strike:'The timing was perfect! {A} took a chance and the crowd came with them.',
-    springboard_evaded:'A split second too late! That risk changed the whole exchange.',
-    crowd_pose:'Colour: There is confidence, and then there is giving an opponent time to think.',
-    floor_counter:'Colour: One mistake on the floor can cost you the match. The referee is watching.',
-    submission_roll:'Colour: They knew the escape before the hold was even on. Smart wrestling.'
+    grapple_trip:[
+     'The leg trip worked. {D} had no base left to defend it.',
+     '{A} changed levels and took the supporting leg away.',
+     'That is clean timing from {A}; {D} is on the mat.'
+    ],
+    power_spinebuster:[
+     '{A} caught {D} and put them down with real force.',
+     'A spinebuster leaves very little room to soften the landing.',
+     '{D} took the full impact of that spinebuster.'
+    ],
+    springboard_strike:[
+     '{A} committed to the springboard and connected.',
+     'The balance and distance were right for that springboard landing.',
+     '{D} could not clear the path of the springboard attack.'
+    ],
+    springboard_evaded:[
+     '{D} saw the springboard coming and got out of range.',
+     'That springboard only reaches the canvas; {D} moved clear.',
+     '{A} committed to the leap, but {D} was gone before contact.'
+    ],
+    crowd_pose:[
+     'A pause to play to the crowd gives {D} time to measure the distance.',
+     '{A} is drawing a reaction instead of pressing the attack.',
+     '{D} can reset while {A} works the crowd.',
+     'That showboating takes a moment out of the exchange.'
+    ],
+    floor_counter:[
+     '{D} has turned the ringside exchange around.',
+     '{A} lost the advantage on the floor. The next step matters.',
+     '{D} found the answer at ringside rather than in the ring.'
+    ],
+    submission_roll:[
+     'That change in mat position came from an actual counter.',
+     'A small change in leverage has altered this submission exchange.',
+     'That roll broke the grip cleanly. The hold is over.'
+    ]
    };
-   if(reactions[id]){say(M,fill(M,reactions[id],{A:attacker.short,D:defender.short}),'story');g.lastColourAt=M.t;}
+   if(reactions[id]){
+    say(M,fill(M,textureLine(g,'colour:'+id,reactions[id]),
+     {A:attacker.short,D:defender.short}),'story',
+     {who:'colour',textureId:'colour:'+id});
+    g.lastColourAt=M.t;
+   }
   }
  }
  // Two-beat aerial sequence. The pending move lives in the serialised graph:
@@ -4111,7 +4181,18 @@ const Graph=(function makeGraph(){
    else apply(M,'top_climb');
   }else if(n.requires==='top'&&p.position==='corner')apply(M,'top_follow');
   if(!isValid(M,id)){
-   say(M,attacker.short+' cannot complete the spectacular setup safely.','play');
+   // A failed setup is not a performed spot. Vary the explanation without
+   // implying that the move landed, an injury occurred, or the plan changed.
+   const failed=[
+    attacker.short+' cannot complete the planned high-spot setup.',
+    'The necessary opening is not there for '+attacker.short+'. The high spot is abandoned.',
+    attacker.short+' checks the position, but the spectacular sequence cannot proceed.',
+    'No clean route to the planned high spot for '+attacker.short+' this time.',
+    attacker.short+' is unable to make the spectacular setup work from here.',
+    'That high-spot preparation breaks down before '+attacker.short+' can attempt the landing.'
+   ];
+   say(M,textureLine(g,'spot-setup-unavailable',failed),'play',
+    {textureId:'spot-setup-unavailable'});
    g.node=null;return false;
   }
   return true;
@@ -4350,6 +4431,7 @@ function say(M,text,kind='play',opt={}){
  const line={t:fmt(opt.at??M.t),text,kind,big:!!opt.big,pause:opt.pause||0,who};
  // Optional booth-only provenance for repetition auditing, not match events.
  if(opt.actionId)line.actionId=opt.actionId;
+ if(opt.textureId)line.textureId=opt.textureId;
  M.queue.push(line);M.log.push(line);return line}
 
 function phaseFor(frac,M){const ends=Psy.PHASE_ENDS[M?.planId]||Psy.PHASE_ENDS.story;return PHASES.find((p,i)=>frac<ends[i])||PHASES[4]}

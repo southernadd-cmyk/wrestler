@@ -48,13 +48,16 @@ const exact=(m)=>Object.entries(m.log.reduce((a,l)=>{
  return a;
 },{})).filter(([,n])=>n>=3);
 const stats={bouts:0,paired:0,tripleOld:0,tripleNew:0,severeOld:0,severeNew:0,
- worst:[],frequentIds:{},repeatedByAction:{}};
+ worst:[],frequentIds:{},repeatedByAction:{},repeatedByTexture:{},textureEvents:{}};
 function run(o,tag){
  const m=lab.runMatch(fresh.root,JSON.parse(JSON.stringify(o)));
  assert.ok(m.done&&m.final,tag+' completes');
  assert.ok(m.log.every(l=>!/\bundefined\b|\bNaN\b/.test(l.text)),tag+' has valid booth text');
  assert.ok(!m.log.some(l=>/successful uses so far|It works for a fourth time/.test(l.text)),
   tag+' never narrates the old count loop');
+ assert.ok(!m.log.some(l=>/cannot complete the spectacular setup safely|drops back down from the turnbuckle as the counter threat develops|They separate in the corner and step out into open ring|There is confidence, and then there is giving an opponent time to think/.test(l.text)),
+  tag+' does not replay the four known texture hotspots');
+ for(const l of m.log)if(l.textureId)stats.textureEvents[l.textureId]=(stats.textureEvents[l.textureId]||0)+1;
  const repetition=exact(m);
  stats.bouts++;stats.tripleNew+=repetition.length;
  stats.severeNew+=repetition.filter(([,n])=>n>=5).length;
@@ -62,6 +65,10 @@ function run(o,tag){
  for(const [line,n] of repetition){
   const id=m.log.find(l=>l.text===line)?.actionId||'(texture)';
   stats.repeatedByAction[id]=(stats.repeatedByAction[id]||0)+1;
+  if(id==='(texture)'){
+   const texture=m.log.find(l=>l.text===line)?.textureId||'(unattributed)';
+   stats.repeatedByTexture[texture]=(stats.repeatedByTexture[texture]||0)+1;
+  }
  }
  for(const [line,n] of repetition.filter(([,n])=>n>=4).slice(0,3)){
   if(stats.worst.length<15){
@@ -100,4 +107,11 @@ assert.equal(submission.log.at(-1).who,'pbp');
 // rather than claiming that a single aggregate figure explains repetition.
 stats.frequentIds=Object.entries(stats.frequentIds).sort((a,b)=>b[1]-a[1]).slice(0,25);
 stats.repeatedByAction=Object.entries(stats.repeatedByAction).sort((a,b)=>b[1]-a[1]).slice(0,25);
+stats.repeatedByTexture=Object.entries(stats.repeatedByTexture).sort((a,b)=>b[1]-a[1]);
+if(base){
+ assert.ok(stats.tripleNew<=stats.tripleOld,
+  'text-only patch must not raise exact triple-line repetition');
+ assert.ok(stats.severeNew<=stats.severeOld,
+  'text-only patch must not raise five-plus repeated lines');
+}
 console.log('PASS commentary memory + matched mechanics: '+JSON.stringify(stats));
