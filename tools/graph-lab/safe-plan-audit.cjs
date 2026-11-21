@@ -13,6 +13,7 @@ const top=(o,k=10)=>Object.entries(o).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(
  .slice(0,k).map(([id,count])=>({id,count}));
 const fresh=()=>({n:0,stars:0,stamina:0,botches:0,injuries:0,crowd:0,
   riskW:0,riskF:0,performedRisk:0,highRisk:0,riskSetups:0,
+  scriptedRisk:0,organicRisk:0,scriptedPerformedRisk:0,
   rest:0,late:0,lateDistinct:0,offence:0,distinct:0,earlyQ:0,earlyN:0,lateQ:0,lateN:0,
   earned:0,badSources:0,near:0,repeated:0,grapples:0,scripted:0,
   risks:{},families:{},examples:[],badExamples:[]});
@@ -56,9 +57,13 @@ function collect(s,m,G,isSafe){
   if(e.preControl==='f'){s.riskF++;continue;}
   if(e.preControl!=='w')continue;
   s.riskW++;s.risks[e.id]=(s.risks[e.id]||0)+1;
+  if(e.scriptedSpot)s.scriptedRisk++;else s.organicRisk++;
   const setup=['top_follow','top_climb','springboard_rise'].includes(e.id);
   if(setup)s.riskSetups++;
-  if(!setup&&actual(e))s.performedRisk++;
+  if(!setup&&actual(e)){
+   s.performedRisk++;
+   if(e.scriptedSpot)s.scriptedPerformedRisk++;
+  }
   if(['aerial','springboard','superplex','dive'].includes(n.family)||
      /piledriver|barricade|ramp_suplex/.test(e.id))s.highRisk++;
   if(isSafe&&s.examples.length<8)s.examples.push({seed:m.o.seed,
@@ -73,6 +78,8 @@ function output(s,id){
  botches:mean('botches'),injuryBouts:s.injuries,peakCrowd:mean('crowd'),
  workerRisk:mean('riskW'),opponentRisk:mean('riskF'),
  performedRisk:mean('performedRisk'),highRisk:mean('highRisk'),
+  scriptedRisk:mean('scriptedRisk'),organicRisk:mean('organicRisk'),
+  scriptedPerformedRisk:mean('scriptedPerformedRisk'),
  setupRisk:mean('riskSetups'),rests:mean('rest'),lateOffence:mean('late'),
  lateDistinct:mean('lateDistinct'),workerOffence:mean('offence'),
  distinctMoves:mean('distinct'),earlyQ:round(s.earlyQ/Math.max(1,s.earlyN)),
@@ -135,7 +142,7 @@ function capture(seeds=4){
  }
  const rows=kind=>[...maps[kind].entries()].map(([id,s])=>output(s,id));
  return {schema:'safe-plan-depth-v1',totalMatches:total,
-  expected:720*seeds+240+320,seeds,plans:PLANS,workers:WORKERS,
+  expected:720*seeds+240+640,seeds,plans:PLANS,workers:WORKERS,
   tiers:TIERS,minutes:LENGTHS,opponents:OPP,
   methodology:'Each five-plan cell uses the real OfficeMatch engine, identical worker/opponent/seed/booked result/promotion/clock and skills; synthetic tiers preserve body/training identity. Actual-roster and fatigue cells are separate. risk:true is move metadata, not observed injury. Opponent and worker risks separated. No gameplay change.',
   matched:rows('matched'),duration:rows('duration'),
@@ -184,6 +191,14 @@ function markdown(r){
  }
  const risks={};for(const x of r.matched.filter(x=>x.id.endsWith('/safe')))
   for(const item of x.topRisk)risks[item.id]=(risks[item.id]||0)+item.count;
+ o.push('','### Risk source: all styles, controlled','',
+ '| Plan | Player flagged risk | Scripted risk | Organic risk | Scripted performed risk |',
+ '|---|---:|---:|---:|---:|');
+ for(const plan of PLANS){
+  const rows=r.matched.filter(x=>x.id.endsWith('/'+plan));
+  o.push('| '+plan+' | '+avg(rows,'workerRisk')+' | '+avg(rows,'scriptedRisk')+
+   ' | '+avg(rows,'organicRisk')+' | '+avg(rows,'scriptedPerformedRisk')+' |');
+ }
  o.push('','### High-risk events actually selected during Safe','',
   top(risks,15).map(x=>x.id+': '+x.count).join('; '),'',
   'A risk:true flag may mark a setup. Risky move events are not proof of injuries.',

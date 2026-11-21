@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Audit 3440 genuine paired Safe and other-plan bouts
+      - name: Audit 3760 genuine paired Safe and other-plan bouts
         run: |
           node tools/graph-lab/safe-plan-audit.cjs 4 --json-file > safe-plan-audit.md
           cat safe-plan-audit.md >> "$GITHUB_STEP_SUMMARY"
