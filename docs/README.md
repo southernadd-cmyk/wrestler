@@ -1,6 +1,7 @@
 # The Office — documentation guide (v0.5.0)
 
-**Current release:** [v0.5.0 — release guide](v0.5-release.md) · [previous v0.4.0](v0.4-release.md)  
+**Current release:** [v0.5.0 — release guide](v0.5-release.md) · [previous v0.4.0](v0.4-release.md)
+**Latest match-engine audit (21 November):** [Five-plan quality, endurance and commentary findings](reports/five-plan-release-readiness-20261121.md) · [repeatable audit script](../tools/graph-lab/five-plan-release-readiness.cjs)  
 **Next development review:** [Technique coverage and physical realism](technique-and-realism-review.md)  
 **Completed 500-bout audit:** [Findings](reports/v04-technique-position-500.md) · [Machine-readable data](reports/v04-technique-position-500.json) · [Reproduction script](../tools/graph-lab/technique-position-audit.cjs)  
 **Superplex pacing and referee follow-up:** [1,500-bout investigation and verified pacing change](reports/v04-superplex-dq-followup-20261120.md)  
