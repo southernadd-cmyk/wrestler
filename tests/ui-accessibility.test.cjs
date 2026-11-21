@@ -50,4 +50,19 @@ assert.match(ui,/data-clear-shortlist/);
 assert.ok(css.includes('.management-filters{'));
 assert.ok(css.includes('.desk-brief{'));
 assert.ok(css.includes('.office-filter-tabs{'));
+// Phase 3 keeps planning, live broadcast and outcome review accessible and read-only.
+const matchCss=fs.readFileSync(path.join(root,'assets/css/match-night.css'),'utf8');
+for(const token of [
+ 'function backstageBrief(c,P,v)','class="match-brief"',
+ 'class="ringside-plan"','function renderPastCommentary()',
+ 'data-commentary-view="all"','data-commentary-view="key"',
+ 'if(d.commentaryView)','class="result-brief"',
+ 'class="result-log"','<h3 class="section-h">Consequences</h3>'
+])assert.ok(ui.includes(token),'missing match-night context/overview: '+token);
+for(const cls of ['.match-brief{','.ringside-plan{','.commentary-views{','.result-brief{','.result-log>summary{'])
+ assert.ok(matchCss.includes(cls),'missing match-night style: '+cls);
+assert.match(ui,/commentaryView==='key'\?night\.past\.filter/);
+assert.match(ui,/renderPastCommentary\(\);persistNight\(\)/);
+assert.match(ui,/const actualFinish=\{booked:/);
+assert.match(ui,/win\('What changed'/);
 console.log('PASS Office UI keyboard, status indicators, action labels and modal accessibility');

@@ -11,6 +11,7 @@ let route={s:'desk',id:null},past=[],ahead=[];
 let openMsg=null,pick={},selOffer=null,selFree=null,night=null,toastT=0;
 // Presentation preferences only; no changes to career state or match simulation.
 let inboxFilter='all',stableFilter='all',stableQuery='',scoutQuery='',scoutStyle='all',scoutBudget='all',shortlist=[];
+let commentaryView='all'; // local view only: never changes match or commentary generation
 const sorts={};
 
 /* ---------- small helpers ---------- */
@@ -1087,6 +1088,18 @@ function pickCards(options,attr,compact){
 function matchupBar(c,w,f,middle,wNote,fNote){
  return `<div class="match-night-matchup"><div class="mu you">${face('wrestler',w.id,w.name,'portrait x2')}<div><b>${esc(w.short)}</b>${ownedChamps(w.id)}${wNote||''}</div></div><div class="mid">${middle}</div><div class="mu them"><div><b>${esc(f.short)}</b>${fNote||''}</div>${face('wrestler',f.id,f.name,'portrait x2')}</div></div>`;
 }
+function backstageBrief(c,P,v){
+ const finish=D.FINISHES[c.finish]?.name||'Contracted finish';
+ const layout=v.stage==='done'?'Signed':v.review?'Ready for approval':v.board?'Planning called spots':'In discussion';
+ const route=v.finishPlan?.label||'Being agreed';
+ const readiness=v.finishPlan?.kind==='warning'?'Needs revision':v.finishPlan?.kind==='conditional'?'Conditional finish':'No additional finish threshold';
+ return `<section class="match-brief" aria-label="Agreed match brief">
+  <div><small>Promoter’s booking</small><b>${esc(finish)}</b></div>
+  <div><small>Finish route</small><b>${esc(route)}</b></div>
+  <div><small>Running order</small><b>${esc(layout)}</b></div>
+  <div class="${v.finishPlan?.kind==='warning'?'brief-warning':''}"><small>Finish readiness</small><b>${esc(readiness)}</b></div>
+ </section>`;
+}
 function showMeeting(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan,S0=S();
@@ -1141,7 +1154,7 @@ function showMeeting(){
  const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
  const signing=window.OfficeSigning?.eligible(c);
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:signing?'<button class="btn go" data-tv="signing">To the contract signing</button>':st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
- $('#tv').innerHTML=strip(c,'backstage')+'<div class="stage screen s-back">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
+ $('#tv').innerHTML=strip(c,'backstage')+backstageBrief(c,P,v)+'<div class="stage screen s-back">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
   '<div class="tv-foot"><span class="dim">'+esc(v.stage==='done'?(st.sheet.skipPromo?'No promo tonight. Straight to the ring.':'Match layout signed.'):'Every option says what it will cost you.')+'</span>'+nextBtn+'</div>';
  scrollTalk('roomTalk');
  night.stage='meeting';persistNight();
@@ -1201,11 +1214,20 @@ function bell(){
  const promoRes=signed||(P.sheet?.skipPromo?null:night.promo?.v>=4?OfficeMic.result(night.promo):night.promo?.v===2?OfficeStory.Graph.result(night.promo):null);
  if(window.OfficeProgrammeArcs)OfficeProgrammeArcs.prepare(c,P.arcChoice,promoRes);
  night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null,seed:Math.floor(Math.random()*2**31)});
- night.past=[];night.paused=false;
+ night.past=[];night.paused=false;commentaryView='all';
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
- const bench=`<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar" role="progressbar" aria-label="Atmosphere" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
+ const livePlan=`<section class="ringside-plan" aria-label="Match instructions">
+   <h3 class="section-h">Agreed before the bell</h3>
+   <dl><div><dt>Promoter's finish</dt><dd>${esc(D.FINISHES[c.finish]?.name||'Booked finish')}</dd></div>
+   <div><dt>Game plan</dt><dd>${esc(D.PLANS[P.game]?.name||'Set backstage')}</dd></div>
+   <div><dt>Running order</dt><dd>${P.sheet?.signed?'Agreed beats tracked live':P.leash==='free'?'Called in the ring':'No signed running order'}</dd></div></dl>
+   <p>Plans are instructions, not guaranteed results. Watch the match layout and calls as the bout unfolds.</p>
+  </section>`;
+ const bench=`${livePlan}<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar" role="progressbar" aria-label="Atmosphere" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
  $('#tv').innerHTML=`${strip(c)}<header class="score"><div class="side you">${face('wrestler',w.id,w.name,'portrait x2')}<h2>${esc(w.short)}</h2><div class="stam" id="sY" role="progressbar" aria-label="${esc(w.short)} stamina" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i></i></div></div><div class="mid"><div class="live-stars" id="lStars" aria-label="Live rating">–</div><div class="clock" id="lClock">00:00</div><div class="phase" id="lPhase">Entrances</div></div><div class="side them">${face('wrestler',f.id,f.name,'portrait x2')}<h2>${esc(f.short)}</h2><div class="stam" id="sT" role="progressbar" aria-label="${esc(f.short)} stamina" aria-valuemin="0" aria-valuemax="100" aria-valuenow="92"><i></i></div></div></header><div class="mom" role="meter" aria-label="Momentum: positive favours ${esc(w.short)}, negative favours ${esc(f.short)}" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"><i id="lMom" style="width:50%"></i></div><div class="plan-strip" id="lPlan" hidden></div>
- <div class="stage screen s-live">${win('Live commentary',`<div class="feed well"><div class="now" id="lNow" aria-live="polite"><span class="t"></span><span class="tx"></span></div><ol class="past" id="lPast"></ol></div>`,{h:'h3',cls:'quiet',body:'tight',note:`${esc(w.short)} on top: gold bar`})}${win('Ringside',bench,{h:'h3'})}</div><div class="decision" id="decision" hidden></div>`;
+ <div class="stage screen s-live">${win('Live commentary',`<div class="feed well"><div class="now" id="lNow" aria-live="polite"><span class="t"></span><span class="tx"></span></div><div class="commentary-views" role="group" aria-label="Commentary history">
+   <span>Commentary archive</span><button data-commentary-view="all" aria-pressed="true">All lines</button><button data-commentary-view="key" aria-pressed="false">Key moments</button>
+   </div><ol class="past" id="lPast" aria-label="Earlier commentary"></ol></div>`,{h:'h3',cls:'quiet',body:'tight',note:`${esc(w.short)} on top: gold bar`})}${win('Ringside',bench,{h:'h3'})}</div><div class="decision" id="decision" hidden></div>`;
  night.stage='live';updateLive();persistNight();schedule(300);
 }
 function schedule(ms){clearTimeout(night.timer);night.timer=setTimeout(pump,ms)}
@@ -1220,6 +1242,13 @@ function pump(){
  if(M.decision&&!M.queue.length){return schedule(SPEED[night.speed].line*.6+300)}
  const sp=SPEED[night.speed];schedule(sp.line+(line.pause||0)*sp.pause);
 }
+function renderPastCommentary(){
+ const box=$('#lPast');if(!box||!night)return;
+ const lines=commentaryView==='key'?night.past.filter(l=>l.big||['crowd','bad','alert','rating','you'].includes(l.kind)):night.past;
+ box.innerHTML=lines.map(l=>`<li class="${l.kind} ${l.big?'big':''}${voiceCls(l)}"><span class="t">${esc(l.t)}</span><span>${voiceTag(l)}${esc(l.text)}</span></li>`).join('');
+ if(!lines.length&&commentaryView==='key')box.innerHTML='<li class="commentary-empty">No key moments yet. The current call remains visible above.</li>';
+ document.querySelectorAll('[data-commentary-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.commentaryView===commentaryView)));
+}
 function showLine(line,quiet){
  const now=$('#lNow');if(!now)return;
  const prev=now.dataset.line?JSON.parse(now.dataset.line):null;
@@ -1227,7 +1256,7 @@ function showLine(line,quiet){
  now.className='now '+line.kind+(line.big?' big':'')+voiceCls(line);now.dataset.line=JSON.stringify(line);
  now.innerHTML=`<span class="t">${esc(line.t)}</span>${voiceFace(line)}<span class="tx">${booth(line)?`<small class="spk">${esc(booth(line).name)}</small>`:''}${esc(line.text)}</span>`;
  night.past=night.past.filter(x=>x.kind!=='count'||x.text.length>8).slice(0,40);
- $('#lPast').innerHTML=night.past.map(l=>`<li class="${l.kind} ${l.big?'big':''}${voiceCls(l)}"><span class="t">${esc(l.t)}</span><span>${voiceTag(l)}${esc(l.text)}</span></li>`).join('');persistNight();
+ renderPastCommentary();persistNight();
 }
 function updateLive(){
  const M=night.M;if(!$('#lClock'))return;
@@ -1299,12 +1328,20 @@ function result(){
  night.afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish},fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome},plan:c.afterPlan}:null;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
+ const actualFinish={booked:'Booked finish delivered',dq:'Unplanned disqualification',nc:'No contest',double:'Finish broken'}[fin.outcome]||
+  'Finish: '+String(fin.outcome||'Not recorded').replace(/_/g,' ');
+ const matchSummary=`<div class="result-brief" aria-label="Match outcome and plan report">
+  <div><small>Contracted finish</small><b>${esc(D.FINISHES[c.finish]?.name||'Not recorded')}</b></div>
+  <div class="${fin.outcome==='booked'?'':'result-alert'}"><small>Actual outcome</small><b>${esc(actualFinish)}</b></div>
+  <div><small>Layout performed</small><b>${esc(pct)}</b></div>
+  <div><small>Calls accepted</small><b>${fin.callsUsed.length-fin.ignored} of ${fin.callsUsed.length}</b></div>
+ </div>`;
  night.i++;const more=night.i<night.queue.length;
  const sheetHtml=sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><p class="dim">'+(sheetReport.room?esc(sheetReport.room.premise):'Story: '+esc(OfficeSheets.focusOptions(c,w,f,night.plan?.game||'story').find(x=>x.id===sheetReport.focus)?.title||sheetReport.focus||'Performer-led'))+
   ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p>'+(finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+'<div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title.charAt(0).toUpperCase()+b.title.slice(1))+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span></li>').join('')+'</ol></div>':'';
  const story=flowReport(fin,w,f);
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the layout</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div></div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What happened',`${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}<h3 class="section-h" style="margin-top:12px">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul>`,{h:'h3'})}${win('Full commentary',`<div class="well">${logList(fin.log)}</div>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.afterReady?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Next match':'Finish show'}</button><button class="btn go" data-tv="after" title="Play the post-bell angle and microphone">After the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div>${matchSummary}</div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What changed',`<h3 class="section-h">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul><h3 class="section-h">Match statistics</h3>${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}`,{h:'h3'})}${win('Full commentary',`<details class="result-log"><summary>Read full commentary (${fin.log.length} entries)</summary><div class="well">${logList(fin.log)}</div></details>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.afterReady?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Next match':'Finish show'}</button><button class="btn go" data-tv="after" title="Play the post-bell angle and microphone">After the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';night.resultHTML=$('#tv').innerHTML;persistNight();
 }
 function syncAfterEvidence(){
@@ -1335,6 +1372,7 @@ document.addEventListener('click',e=>{
  if(t.id==='continue')return proceed();
  if(d.hist)return histMove(d.hist==='back'?-1:1);
  if(d.record)return openRecord(d.record);
+ if(d.commentaryView){commentaryView=d.commentaryView==='key'?'key':'all';renderPastCommentary();return}
  if(d.go)return go(d.go,d.id||null);
  if(d.openw)return go('profile',d.openw);
  if(d.sort){const [key,k]=d.sort.split(':');const s=sorts[key];sorts[key]=s&&s.k===k?{k,d:-s.d}:{k,d:['name','style','tier'].includes(k)?1:-1};render();return}

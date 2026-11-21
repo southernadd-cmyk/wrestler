@@ -236,6 +236,34 @@ async function journey(browser,name,viewport){
   assert.equal(state.idCount,1,name+': only one settlement marker');
   assert.equal(state.reports,1,name+': one match-night report');
   assert.equal(state.nightSaved,false,name+': no resumable night after finishing');
+  // Phase 3: enter an actual backstage meeting. The matching brief must remain
+  // visible and contained at both phone and desktop widths, without altering the
+  // agreed finish or the underlying booking.
+  await page.evaluate(()=>{
+   const G=window.OfficeGame;G.fresh();const s=G.S;
+   const err=G.sign('rex');if(err)throw new Error('Setup sign failed: '+err);
+   s.card.push({id:'browser-phase3-'+s.week,pid:'crown',wid:'rex',rid:'silas',
+    slot:'main',minutes:14,purse:420,finish:'win_clean',eventAbs:G.abs()});
+   G.save();window.OfficeUI.go('desk');
+  });
+  await page.locator('#continue').click();
+  const brief=page.locator('#tv .match-brief');
+  await brief.waitFor();
+  assert.match(await brief.innerText(),/Promoter.s booking/);
+  assert.match(await brief.innerText(),/Finish route/);
+  assert.match(await brief.innerText(),/Running order/);
+  assert.match(await brief.innerText(),/Finish readiness/);
+  const geometry=await page.evaluate(()=>{
+   const children=[...document.querySelectorAll('#tv .match-brief>div')];
+   return {view:innerWidth,cards:children.map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width}}),
+     stage:document.querySelector('#tv .stage')?.getBoundingClientRect().width};
+  });
+  assert.equal(geometry.cards.length,4,name+': all four booked-plan facts should be present');
+  assert.ok(geometry.cards.every(r=>r.left>=-2&&r.right<=geometry.view+2&&r.width>=80),
+    name+': match brief overflows '+JSON.stringify(geometry));
+  assert.ok(geometry.stage<=geometry.view+2,name+': backstage exceeds viewport');
+  assert.equal(await page.evaluate(()=>window.OfficeGame.S.card[0].finish),'win_clean',
+    name+': presentation must not alter booked finish');
   assert.deepEqual(errors,[],name+': no uncaught browser exceptions');
   console.log('PASS browser '+name+': career, keyboard replay, no overflow, reload, unique report');
  }finally{await context.close();}
