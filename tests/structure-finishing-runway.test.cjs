@@ -471,3 +471,77 @@ assert.equal(G.closingRunway(counterProof),null,
  'real defensive grapple counter breaks false finishing attribution');
 console.log('PASS Phase 9G: '+nearfallArcChecks+
  ' symmetric earned-cover handoffs; uncredited cover rejected; grapple counters remain credible.');
+
+
+// Phase 9H: only a REAL standing continuation may keep one earlier
+// authored impact choice alive. Never insert an action, change control,
+// grant a win, relax physical rules, or create another booked finish.
+let continuedChecks=0;
+for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
+ const m=create(structure,'story');
+ m.t=Math.floor(m.len*.86);m.graph.arc='exchange';
+ step(m,'strike_trade','w');
+ m.t+=10;
+ assert.ok(G.isValid(m,'lockup'),'ordinary in-ring continuation must be legal');
+ G.apply(m,'lockup');
+ assert.equal(m.story.control,'w');
+ const beforeCount=m.graph.events.length,rng=m.r.getState();
+ const extra=G.closingOffers(m,'w');
+ assert.ok(extra.some(([id,weight])=>id==='clothesline'&&weight>0),
+  'actual setup and one real standing continuation retain a legal authored impact');
+ assert.ok(extra.every(([id])=>G.A[id]?.zone==='mat'&&
+   G.A[id]?.down==='d'&&!G.A[id]?.risk&&G.isValid(m,id)),
+  'second chance cannot offer physically invalid or risky attacks');
+ const pool=G.pool(m);
+ assert.ok(pool.some(([id,weight])=>id==='clothesline'&&weight>0));
+ assert.ok(pool.some(([id])=>id!=='clothesline'),
+  'grounding payoff is still a choice, never an automatic hit');
+ assert.equal(m.graph.events.length,beforeCount,
+  'guidance cannot manufacture the missing impact');
+ assert.equal(m.r.getState(),rng,'guidance must not consume gameplay RNG');
+ m.t+=10;
+ assert.ok(G.isValid(m,'clothesline'));
+ G.apply(m,'clothesline');
+ assert.equal(G.closingRunway(m)?.status,'linked',
+  'genuine original setup, intermediate move and impact earn a truthful link');
+ const interrupter=create(structure,'story');
+ interrupter.t=Math.floor(interrupter.len*.86);
+ step(interrupter,'strike_trade','w');interrupter.t+=10;
+ assert.ok(G.isValid(interrupter,'counter_strike'));
+ G.apply(interrupter,'counter_strike');
+ assert.equal(interrupter.story.control,'f',
+  'defensive reversal genuinely changes controller');
+ assert.equal(G.closingOffers(interrupter,'w').length,0,
+  'a real defensive counter ends earlier winning-side continuation');
+ const paused=create(structure,'story');
+ paused.t=Math.floor(paused.len*.86);
+ step(paused,'strike_trade','w');paused.t+=10;
+ G.apply(paused,'catch_breath');
+ assert.equal(G.closingOffers(paused,'w').length,0,
+  'a genuine breather is a meaningful disengagement, not a free link');
+ const metadata=create(structure,'story','win_clean',false);
+ metadata.t=Math.floor(metadata.len*.86);
+ step(metadata,'strike_trade','w');metadata.t+=10;
+ G.apply(metadata,'lockup');
+ assert.equal(G.closingOffers(metadata,'w').length,0);
+ const dirty=create(structure,'story','win_dirty');
+ dirty.t=Math.floor(dirty.len*.86);
+ step(dirty,'strike_trade','w');dirty.t+=10;
+ G.apply(dirty,'lockup');
+ assert.equal(G.closingOffers(dirty,'w').length,0);
+ const first=create(structure,'story');
+ first.t=Math.floor(first.len*.86);
+ step(first,'strike_trade','w');
+ const fresh=G.closingOffers(first,'w').find(([id])=>id==='clothesline');
+ assert.ok(fresh);
+ const used=create(structure,'story');
+ used.t=Math.floor(used.len*.80);
+ step(used,'clothesline','w');used.t+=40;
+ step(used,'strike_trade','w');
+ const repeated=G.closingOffers(used,'w').find(([id])=>id==='clothesline');
+ assert.ok(repeated&&repeated[1]<fresh[1],
+  'repeat move weighting should favour a fresh real ending when possible');
+ continuedChecks++;
+}
+console.log('PASS Phase 9H: '+continuedChecks+
+ ' structures retain optional authored continuations and prefer fresh impacts.');
