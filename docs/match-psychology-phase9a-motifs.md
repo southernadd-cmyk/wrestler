@@ -7,3 +7,5 @@ A motif is marked 'paid' only when the same wrestler subsequently lands the exac
 One motif maximum per match; Safe excludes risky or expensive choices, and metadata-only/legacy matches never activate motifs. Graph state is serialisable, and existing saves without motif state behave normally. Dedicated tests verify all four structures, physical legality, true counter and payoff, owner, grip entry, save restore, Safe and metadata-only isolation.
 
 **Review gate:** Examine the existing 960-match control comparison, ratings, botches and real payoff reachability before merge. Separate 9B selling and 9C causal finishes remain untouched. No new workflows.
+
+Focused PR CI explicitly runs `tests/structure-motifs.test.cjs`, and the existing 960-bout comparison reports actual motif starts and payoffs without another workflow.
