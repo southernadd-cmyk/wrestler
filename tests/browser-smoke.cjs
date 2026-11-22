@@ -411,6 +411,101 @@ async function responsiveAudit(browser,name,viewport){
  }finally{await context.close()}
 }
 
+// Negotiation V2 Phase 1: a real booking-to-meeting journey, including
+// resuming a conversation after the final weekly meeting is spent.
+async function negotiationPrototypeAudit(browser,name,viewport){
+ const context=await browser.newContext({viewport});
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ try{
+  await page.goto(URL,{waitUntil:'domcontentloaded'});
+  await page.locator('[data-title="new"]').click();
+  await page.locator('#app').waitFor({state:'visible'});
+  await page.evaluate(()=>{
+   const G=window.OfficeGame,s=G.S;
+   s.cash=99999;s.rep=65;s.focus=1;
+   const err=G.sign('rex');if(err!==null)throw new Error('Unable to sign Rex: '+err);
+   s.offers=[{id:'neg-phase1',pid:'dock',rid:'magnus',wid:null,slot:'opener',
+    finish:'lose_clean',eventAbs:G.abs(),expiresAbs:G.abs()+1,boost:1,bump:1,haggled:false}];
+   G.save();window.OfficeUI.go('offers','neg-phase1');
+  });
+  await page.locator('#view [data-talkopen="neg-phase1"]:visible').click();
+  await page.locator('#modal.negotiation-dialog[open]').waitFor();
+  assert.match(await page.locator('#modal .neg-transcript').innerText(),/That's the offer/);
+  assert.equal(await page.locator('#modal .neg-contract.is-new').count(),0,
+    name+': original contract must not be shown as a revision');
+  assert.equal(await page.locator('#modal .neg-choices [data-talkaction="ask:protect"]').count(),1);
+  let geometry=await page.evaluate(()=>{
+    const R=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+    return {dialog:R('#modal'),main:R('.neg-main'),aside:R('.neg-aside'),footer:R('.neg-footer'),overflow:document.documentElement.scrollWidth-innerWidth};
+  });
+  assert.ok(geometry.dialog.left>=-2&&geometry.dialog.right<=viewport.width+2,
+    name+': negotiation dialog out of viewport '+JSON.stringify(geometry));
+  assert.ok(geometry.footer.bottom<=geometry.dialog.bottom+2,
+    name+': negotiation signing actions extend below dialog '+JSON.stringify(geometry));
+  assert.ok(geometry.overflow<=2,name+': negotiation creates page overflow '+JSON.stringify(geometry));
+  if(viewport.width<=720)assert.ok(geometry.aside.top>=geometry.main.top,
+    name+': phone should stack contract after conversation '+JSON.stringify(geometry));
+  else assert.ok(geometry.aside.left>=geometry.main.right-2,
+    name+': desktop contract should sit beside dialogue '+JSON.stringify(geometry));
+  if(viewport.width<=720){
+   assert.equal(await page.locator('#modal .neg-terms').getAttribute('open'),null,
+     name+': phone contract should start collapsed');
+   await page.locator('#modal .neg-terms>summary').click();
+   assert.ok(await page.locator('#modal .neg-contract').isVisible(),name+': phone contract should expand');
+  }
+  assert.match(await page.locator('#modal .neg-meeting-note').innerText(),/No meeting used yet/);
+  await page.locator('#modal button[data-talkaction="ask:protect"]').click();
+  assert.equal(await page.evaluate(()=>window.OfficeGame.S.focus),0,
+    name+': requesting revised terms must use exactly one meeting');
+  assert.match(await page.locator('#modal .neg-response h3').innerText(),/Why should the loss be protected/);
+  await page.locator('#modal [data-dlg="close"]').click();
+  await page.locator('#modal[open]').waitFor({state:'hidden'});
+  // The old Offers button blocked resuming discussions after focus reached 0.
+  const resume=page.locator('#view [data-talkopen="neg-phase1"]:visible');
+  assert.equal(await resume.isEnabled(),true,name+': must reopen an unfinished paid meeting');
+  await resume.click();
+  assert.match(await page.locator('#modal .neg-response h3').innerText(),/Why should the loss be protected/);
+  await page.locator('#modal button[data-talkaction="arg:crowd"]').click();
+  assert.match(await page.locator('#modal .neg-verdict').innerText(),/promoter agreed|counteroffer|promoter refused/i);
+  assert.equal(await page.evaluate(()=>window.OfficeGame.S.card.length),0,
+    name+': negotiating must not sign a booking');
+  assert.equal(await page.locator('#modal .neg-contract.is-new').count(),1,
+    name+': revised terms must be distinguished from original');
+  assert.equal(await page.locator('#modal [data-revert="1"]').count(),1,
+    name+': original terms must remain selectable');
+  await page.locator('#modal [data-revert="1"]').click();
+  await page.locator('#modal[open]').waitFor({state:'hidden'});
+  const final=await page.evaluate(()=>({
+    booked:window.OfficeGame.S.card.filter(c=>c.pid==='dock'&&c.wid==='rex').map(c=>c.finish),
+    focus:window.OfficeGame.S.focus
+  }));
+  assert.deepEqual(final.booked,['lose_clean'],name+': signing original terms must revert the negotiated finish');
+  assert.equal(final.focus,0,name+': signing must not spend another meeting');
+  // A promoter-provided stipulation is part of the ORIGINAL offer.
+  await page.evaluate(()=>{
+    const G=window.OfficeGame,s=G.S;s.focus=1;
+    s.offers=[{id:'neg-original-stip',pid:'pulse',rid:'ace',wid:null,slot:'mid',
+      finish:'win_clean',stip:'nodq',eventAbs:G.abs()+1,expiresAbs:G.abs()+1,boost:1,bump:1}];
+    G.save();window.OfficeUI.go('offers','neg-original-stip');
+  });
+  // The previously signed wrestler remains unavailable for this date; test
+  // the original-terms comparison directly with an eligible second wrestler.
+  await page.evaluate(()=>{
+    const G=window.OfficeGame,s=G.S;
+    const err=G.sign('nico');if(err!==null)throw new Error('Unable to sign Nico: '+err);
+    window.OfficeUI.go('offers','neg-original-stip');
+  });
+  await page.locator('#view [data-talkopen="neg-original-stip"]:visible').click();
+  assert.equal(await page.locator('#modal .neg-contract.is-new').count(),0,
+    name+': originally stipulated offers are not negotiated changes');
+  assert.match(await page.locator('#modal .neg-contract').innerText(),/No disqualification/);
+  await page.locator('#modal [data-dlg="close"]').click();
+  assert.deepEqual(errors,[],name+': browser JS errors during a negotiation');
+  console.log('PASS booking negotiation Phase 1 '+name+': conversation, terms, resume and signing');
+ }finally{await context.close()}
+}
+
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
@@ -420,5 +515,7 @@ async function responsiveAudit(browser,name,viewport){
   await responsiveAudit(browser,'tablet',{width:768,height:820});
   await responsiveAudit(browser,'small-phone',{width:360,height:740});
   await responsiveAudit(browser,'desktop-wide',{width:1440,height:900});
+  await negotiationPrototypeAudit(browser,'booking-desktop',{width:1280,height:720});
+  await negotiationPrototypeAudit(browser,'booking-phone',{width:390,height:844});
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1;});
