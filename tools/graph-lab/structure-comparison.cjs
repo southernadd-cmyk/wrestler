@@ -282,6 +282,24 @@ for(let si=0;si<sampleStyles.length;si++){
   r.distinct+=new Set(m.graph.events.map(x=>x.id)).size;
   r.botches+=m.botches;r.controlBotches+=control.botches;
   const closing=m.final.finishingRunway;
+  // Phase 9K evidence must remain a SEPARATE count, never a substitute
+  // for a real unbroken booked finish. A completed cradle is a kick-out.
+  const drama=m.final.nearfallDrama,controlDrama=control.final.nearfallDrama;
+  assert.ok(drama&&controlDrama,'both matches must report witnessed near-fall evidence');
+  for(const [bout,reportNear]of [[m,drama],[control,controlDrama]]){
+   const rng=bout.r.getState(),beforeEvents=JSON.stringify(bout.graph.events);
+   assert.equal(JSON.stringify(E.GRAPH.nearfallDrama(bout)),
+    JSON.stringify(reportNear),'near-fall observer is replayable from real tape');
+   assert.equal(bout.r.getState(),rng,'near-fall observer cannot consume match RNG');
+   assert.equal(JSON.stringify(bout.graph.events),beforeEvents,
+    'near-fall observer cannot write wrestling events');
+   assert.equal(reportNear.total,reportNear.byKind.authored_kickout+
+    reportNear.byKind.earned_cover,'near-fall evidence kinds must reconcile');
+   assert.equal(reportNear.total,reportNear.bySide.w+reportNear.bySide.f,
+    'near-fall evidence needs a real action owner');
+   assert.ok(reportNear.total<=bout.nearfalls,
+    'observed credible nearfalls cannot exceed all recorded kickouts');
+  }
   assert.equal(control.final.finishingRunway,undefined,'metadata control has no finishing runway');
   if(closing){
    const tape=m.graph.events,A=E.GRAPH.A,
@@ -415,11 +433,34 @@ for(let si=0;si<sampleStyles.length;si++){
     namedHits:0,controlNamedHits:0,riskySignedCalls:0,scriptedMoveCounts:{},
     cleanBouts:0,closingRunways:0,bridgedRunways:0,
     closingPairs:{},closingImpactIds:{},closingSetups:{},
-    fullClosingRunways:0,intermediateClosingRunways:0};
+    fullClosingRunways:0,intermediateClosingRunways:0,
+    nearfallDrama:0,authoredKickouts:0,earnedCovers:0,nearfallBouts:0,
+    bothNearfallAndRunway:0,nearfallWithoutRunway:0,
+    nearfallActions:{},safeOrdinaryRisk:0,safeSuperplexRisk:0,
+    safeTopFollow:0,safeScriptedLate:0,safeRiskMoves:{}};
    group.bouts++;group.earned+=witnessed;group.stars+=m.final.stars;
    group.cleanBouts+=Number(['win_clean','lose_clean'].includes(finish));
    group.closingRunways+=Number(!!closing);
    group.bridgedRunways+=Number(!!closing?.spoken);
+   group.nearfallDrama+=drama.total;
+   group.authoredKickouts+=drama.byKind.authored_kickout;
+   group.earnedCovers+=drama.byKind.earned_cover;
+   group.nearfallBouts+=Number(drama.total>0);
+   group.bothNearfallAndRunway+=Number(drama.total>0&&!!closing);
+   group.nearfallWithoutRunway+=Number(drama.total>0&&!closing);
+   for(const mmt of drama.moments)add(group.nearfallActions,mmt.action);
+   if(game==='safe'){
+    const recent=m.graph.events.filter(e=>e.t>=m.len-180&&e.t<=m.len);
+    for(const e of recent){
+     const a=E.GRAPH.A[e.id];
+     if(!a?.risk||a.reverse||a.counterOf||a.blockOf)continue;
+     group.safeOrdinaryRisk++;add(group.safeRiskMoves,e.id);
+     group.safeSuperplexRisk+=Number(a.family==='superplex');
+     group.safeTopFollow+=Number(e.id==='top_follow');
+    }
+    group.safeScriptedLate+=(m.graph.scriptedSpotAttempts||[]).filter(e=>
+     Number.isFinite(e.t)&&e.t>=m.len-180&&e.t<=m.len).length;
+   }
    if(closing){
     add(group.closingPairs,closing.setup.id+'>'+closing.impact.id);
     add(group.closingImpactIds,closing.impact.id);
@@ -462,6 +503,16 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
     distinctClosingImpacts:Object.keys(v.closingImpactIds).length,
     topClosingPairs:top(v.closingPairs,6),
     topClosingSetups:top(v.closingSetups,6),
+    nearfallDrama:v.nearfallDrama,authoredKickouts:v.authoredKickouts,
+    earnedCovers:v.earnedCovers,nearfallBouts:v.nearfallBouts,
+    bothNearfallAndRunway:v.bothNearfallAndRunway,
+    nearfallWithoutRunway:v.nearfallWithoutRunway,
+    topNearfallActions:top(v.nearfallActions,10),
+    safeOrdinaryRisk:v.safeOrdinaryRisk,
+    safeSuperplexRisk:v.safeSuperplexRisk,
+    safeTopFollow:v.safeTopFollow,
+    safeScriptedLate:v.safeScriptedLate,
+    safeRiskMoves:top(v.safeRiskMoves,10),
     scriptedMoveCounts:top(v.scriptedMoveCounts,12)}]));
   const sequences=top(r.sequences,6);
   return [id,{bouts:r.bouts,earnedPct:ratio(r.earned,4*r.bouts),
@@ -535,6 +586,29 @@ if(!quick)assert.equal(Object.values(map).reduce((sum,r)=>
  sum+r.lateLostWithoutRealReversal,0),0,
  'Phase 9H cannot regress Phase 9G physical control continuity');
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
+console.log('PHASE9K_NEARFALL_AUDIT_JSON '+JSON.stringify({
+ schema:'office-phase9k-nearfall-drama-v1',
+ method:'Evidence-only: actual authored cradle two-counts vs earned scheduled covers; separate from late winner-owned closing runway. Safe records actual risk-flagged ordinary graph actions separately from scripted stunts.',
+ byPlan:Object.fromEntries(plans.map(game=>{
+  const x=Object.values(report.structures).map(s=>s.byPlan[game]);
+  return [game,{
+   cleanBouts:x.reduce((a,r)=>a+r.cleanBouts,0),
+   nearfallDrama:x.reduce((a,r)=>a+r.nearfallDrama,0),
+   authoredKickouts:x.reduce((a,r)=>a+r.authoredKickouts,0),
+   earnedCovers:x.reduce((a,r)=>a+r.earnedCovers,0),
+   nearfallBouts:x.reduce((a,r)=>a+r.nearfallBouts,0),
+   bothNearfallAndRunway:x.reduce((a,r)=>a+r.bothNearfallAndRunway,0),
+   nearfallWithoutRunway:x.reduce((a,r)=>a+r.nearfallWithoutRunway,0),
+   closingRunways:x.reduce((a,r)=>a+r.closingRunways,0),
+   safeOrdinaryRisk:x.reduce((a,r)=>a+r.safeOrdinaryRisk,0),
+   safeSuperplexRisk:x.reduce((a,r)=>a+r.safeSuperplexRisk,0),
+   safeTopFollow:x.reduce((a,r)=>a+r.safeTopFollow,0),
+   safeScriptedLate:x.reduce((a,r)=>a+r.safeScriptedLate,0),
+   topNearfallActions:x.flatMap(r=>r.topNearfallActions),
+   safeRiskMoves:x.flatMap(r=>r.safeRiskMoves)
+  }];
+ }))
+}));
 console.log('PHASE9G_TRACE_JSON '+JSON.stringify({
  base:'7bd150ec60fe693c1818d516df4ce19618577849',
  lostCount:phase9gLostWithoutReversal.length,lateLosses:phase9gLostWithoutReversal,

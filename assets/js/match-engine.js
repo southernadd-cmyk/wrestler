@@ -3800,6 +3800,52 @@ const Graph=(function makeGraph(){
   }
   return linked;
  }
+ // Phase 9K: tell genuine near-fall drama APART from a booked finishing
+ // runway. Observed authored cradles are actual kick-outs, not finishes.
+ // The scheduled earned cover must point back to one real, correctly
+ // controlled knockdown. No synthetic move, reversal or winner is inferred.
+ // Does not mutate the tape, match RNG, saved play state or stars.
+ function nearfallDrama(M){
+  const events=get(M).events||[],moments=[],ACTIONS=A;
+  const landed=e=>['aerialResolution','grappleResolution',
+   'strikeResolution','contactResolution'].every(key=>
+    !e[key]||e[key]==='landed');
+  const inRing=e=>!e.physical||
+   (e.physical.area==='ring'&&e.physical.locations?.w==='ring'&&
+    e.physical.locations?.f==='ring');
+  for(const e of events){
+   const node=ACTIONS[e?.id],side=e?.preControl,other=side==='w'?'f':'w';
+   // A narrated authored cradle or rana-pin is an actual two-count.
+   // A countered or blocked attempt is NOT a performed pin.
+   if(node?.nearfall&&['w','f'].includes(side)&&
+      !node.reverse&&!node.counterOf&&!node.blockOf&&landed(e)&&
+      e.control===side&&e.position==='mat'&&e.down===other&&
+      node.zone==='mat'&&inRing(e)){
+    moments.push({kind:'authored_kickout',at:e.t,side,action:e.id,
+     source:null});
+   }else if(e?.id==='scheduled_nearfall'&&e.earned===true&&
+    ['w','f'].includes(e.sourceSide)&&Number.isFinite(e.sourceT)&&
+    typeof e.sourceMove==='string'){
+    const owner=e.sourceSide,opponent=owner==='w'?'f':'w';
+    const src=events.find(x=>x.id===e.sourceMove&&x.t===e.sourceT&&
+     x.preControl===owner&&x.control===owner&&x.position==='mat'&&
+     x.down===opponent&&ACTIONS[x.id]?.zone==='mat'&&
+     ACTIONS[x.id]?.down==='d'&&!ACTIONS[x.id]?.reverse&&
+     !ACTIONS[x.id]?.counterOf&&!ACTIONS[x.id]?.blockOf&&
+     landed(x)&&inRing(x));
+    if(src&&Number.isFinite(e.t)&&e.t>=src.t&&e.t-src.t<=30&&
+       e.control===owner&&e.position==='mat'&&
+       e.down===opponent){
+     moments.push({kind:'earned_cover',at:e.t,side:owner,
+      action:e.sourceMove,source:{id:src.id,at:src.t}});
+    }
+   }
+  }
+  const bySide={w:0,f:0},byKind={authored_kickout:0,earned_cover:0};
+  for(const moment of moments){bySide[moment.side]++;byKind[moment.kind]++;}
+  return {version:1,total:moments.length,bySide,byKind,
+   moments: moments.map(m=>({...m}))};
+ }
  function closingOffers(M,side){
   if(!closingEligible(M)||!['w','f'].includes(side))return [];
   const winner=M.o.finish==='win_clean'?'w':'f';
@@ -5184,7 +5230,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport,closingRunway,closingOffers,closingPlanSetups};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport,closingRunway,closingOffers,closingPlanSetups,nearfallDrama};
 })();
 
 function create(o){
@@ -6364,7 +6410,7 @@ function summary(M){
    workerDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='w'),
    opponentDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='f')
   },
-  evidence:evidenceOf(M),roomNegotiation:M.o.sheet?.negotiation||null,
+  evidence:evidenceOf(M),nearfallDrama:Graph.nearfallDrama(M),roomNegotiation:M.o.sheet?.negotiation||null,
   ...(root.OfficeSheets?.DIRECTOR?.active(M)?{structure:root.OfficeSheets.DIRECTOR.report(M),structureAssessment:structureAssessment(M),
    ...(Graph.motifSummary(M)?{matchMotif:Graph.motifSummary(M)}:{}),
    ...(Graph.sellingReport(M)?{matchSelling:Graph.sellingReport(M)}:{}),

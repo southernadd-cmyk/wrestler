@@ -120,6 +120,9 @@ jobs:
           node tests/structure-motifs.test.cjs
           node tests/structure-selling.test.cjs
           node tests/structure-finishing-runway.test.cjs
+          # Phase 9K: validate the independent nearfall evidence observer,
+          # save/restore, and no-fabricated-event contract in the existing job.
+          node tests/earned-nearfall.test.cjs
           # Phase 7: same real signed plan with and without the active Director,
           # across four structures, four styles, both leads, five plans and three lengths.
           # One existing workflow only; no new scheduled/balance workflows.
