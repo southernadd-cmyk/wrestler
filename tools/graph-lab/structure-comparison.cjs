@@ -121,7 +121,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    commonSequenceShare:ratio(sequences[0]?.count||0,r.bouts),
    topSequences:sequences,...dims}];
  }))};
-assert.equal(report.totalBouts,(quick?160:960));
+assert.equal(report.totalBouts,(quick?320:960));
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
 for(const [id,x] of Object.entries(report.structures))
  console.log('PHASE7 '+id+' '+x.bouts+' active; earned '+x.earnedPct+'%; all four '+x.perfectPct+
