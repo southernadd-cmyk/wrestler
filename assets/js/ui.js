@@ -10,7 +10,7 @@ const S=()=>G.S;
 let route={s:'desk',id:null},past=[],ahead=[];
 let openMsg=null,pick={},selOffer=null,selFree=null,night=null,toastT=0;
 // Presentation preferences only; no changes to career state or match simulation.
-let inboxFilter='all',stableFilter='all',stableQuery='',scoutQuery='',scoutStyle='all',scoutBudget='all',shortlist=[];
+let inboxFilter='all',stableFilter='all',stableQuery='',scoutQuery='',scoutStyle='all',scoutBudget='all',shortlist=[],scoutFiltersOpen=false;
 let commentaryView='all'; // local view only: never changes match or commentary generation
 const sorts={};
 
@@ -399,6 +399,8 @@ function renderObjectives(){
 const WCOLS={name:w=>w.name,style:w=>w.style,heat:w=>w.heat,ring:w=>w.ring,mic:w=>w.mic,psych:w=>w.psych,safe:w=>w.safe,fat:w=>w.fatigue,mor:w=>w.morale,wage:w=>w.wage,fee:w=>w.fee,tier:w=>w.tier};
 const FREE_STATS=[['heat','Heat'],['ring','Ring'],['mic','Mic'],['psych','Psych'],['safe','Safe']];
 const FREE_SORTS=[['name','Wrestler'],['style','Style'],...FREE_STATS,['wage','Wage'],['fee','Fee']];
+// Secondary stats that drop out of the desk table below 1280px so Fee stays visible.
+const FREE_OPTIONAL=['mic','psych','safe'];
 function renderSquad(){
  const s=S();
  const ranked=sortRows('squad',s.roster,WCOLS,{k:'heat',d:-1});
@@ -548,7 +550,7 @@ function renderProfile(){
   <h3 class="section-h">Biography</h3><p>${esc(w.bio)}</p><p class="dim">Finisher: ${esc(w.finisher)}. Best game plan: ${esc(D.PLANS[D.STYLE_PLAN[w.style]].name.toLowerCase())}.${esc(signatureText(w))}</p>`;
  const nav=s.roster.length>1?`<button class="btn" data-go="profile" data-id="${prev.id}" aria-label="Previous wrestler">◀ ${esc(prev.short)}</button><button class="btn" data-go="profile" data-id="${next.id}" aria-label="Next wrestler">${esc(next.short)} ▶</button>`:'';
  paint('s-profile',
-  win('Wrestler profile',`${face('wrestler',w.id,w.name,'portrait x3')}<div><div class="name">${esc(w.name)}</div>${ownedChamps(w.id)}<div class="handle">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${money(w.wage)} a week</span><span class="chip">${status(w)}</span></div>${ambitionLine(w)}${promise}</div><div class="acts"><button class="btn go" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting</button><span class="dim" style="font-size:13px">${s.focus} of 2 meetings left</span><button class="btn" data-raise="${w.id}" ${window.OfficeAmbitions?.raiseAvailable?.(w.id)?.error?'disabled':''} title="Permanent £40 per week payroll increase. At most once every four weeks.">Give £40/wk raise</button><button class="btn red" data-release="${w.id}">Release</button></div>`,{area:'head',cls:'phead',actions:recordBack()+nav})+
+  win('Wrestler profile',`${face('wrestler',w.id,w.name,'portrait x3')}<div><div class="name">${esc(w.name)}</div>${ownedChamps(w.id)}<div class="handle">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${money(w.wage)} a week</span><span class="chip">${status(w)}</span></div>${ambitionLine(w)}${promise}</div><div class="acts"><button class="btn go" data-checkin="${w.id}" ${s.focus<1?'disabled':''}>Private meeting</button><span class="dim" style="font-size:13px">${s.focus} of 2 meetings left</span>${(()=>{const err=window.OfficeAmbitions?.raiseAvailable?.(w.id)?.error;return `<button class="btn" data-raise="${w.id}" ${err?'disabled':''} aria-describedby="raise-note-${w.id}">Give £40/wk raise</button><span id="raise-note-${w.id}" class="dim" style="font-size:13px">${esc(err||'Permanent £40 a week payroll increase. At most once every four weeks.')}</span>`})()}<button class="btn red" data-release="${w.id}">Release</button></div>`,{area:'head',cls:'phead',actions:recordBack()+nav})+
   win('Attributes',atts+`<h4 class="ch-h">Over time</h4>`+formChart(w),{area:'atts',h:'h3',cls:'quiet',keep:'atts'})+
   win('Training',train,{area:'train',h:'h3',keep:'train'})+
   win('Record',record,{area:'record',h:'h3',keep:'rec'})
@@ -592,15 +594,19 @@ function renderScouting(){
  if(s.free.some(w=>w.id===route.id))selFree=route.id;
  if(!selFree||!rows.some(w=>w.id===selFree))selFree=rows[0]?.id||null;
  const w=s.free.find(x=>x.id===selFree);
- const toolbar=`<div class="management-filters" role="search" aria-label="Search free agents">
+ const activeFilters=(q?1:0)+(scoutStyle!=='all'?1:0)+(scoutBudget!=='all'?1:0);
+ // Phones start with the filters folded away so the candidates come first; desktop always shows them.
+ const phoneLayout=window.matchMedia&&window.matchMedia('(max-width:720px)').matches;
+ const filtersOpen=!phoneLayout||scoutFiltersOpen||activeFilters>0;
+ const toolbar=`<details class="free-filters"${filtersOpen?' open':''}><summary>Search and filters${activeFilters?` · ${activeFilters} on`:''}</summary><div class="management-filters" role="search" aria-label="Search free agents">
   <label>Search <input type="search" data-scout-query="1" autocomplete="off" placeholder="Name or style" value="${esc(scoutQuery)}"></label>
   <label>Style <select data-scout-style="1">${[['all','All styles'],...styles.map(v=>[v,v])].map(([key,label])=>
    `<option value="${key}" ${scoutStyle===key?'selected':''}>${label}</option>`).join('')}</select></label>
   <label>Affordability <select data-scout-budget="1"><option value="all" ${scoutBudget==='all'?'selected':''}>All fees</option><option value="affordable" ${scoutBudget==='affordable'?'selected':''}>Can afford fee</option></select></label>
   <span class="filter-results" role="status">${rows.length} of ${s.free.length} available</span>
   <button class="btn sm" data-clear-scout="1" ${!q&&scoutStyle==='all'&&scoutBudget==='all'?'disabled':''}>Clear filters</button>
- </div>`;
- const list=rows.length?`<div class="well free-table"><table class="grid"><thead><tr>${FREE_SORTS.map(([key,label],i)=>th('free',key,label,i>=2?'n':'')).join('')}</tr></thead><tbody>${rows.map(x=>`<tr class="pick" data-self="${x.id}" aria-selected="${x.id===selFree}"><td><button class="row-pick" data-self="${x.id}" aria-pressed="${x.id===selFree}" aria-label="Review ${esc(x.name)}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span></span></button></td><td>${esc(x.style)}</td>${FREE_STATS.map(([key])=>`<td class="n">${att(x[key])}</td>`).join('')}<td class="n">${money(x.wage)}</td><td class="n"><b>${money(x.fee)}</b></td></tr>`).join('')}</tbody></table></div>` :`<div class="empty">${s.free.length?'No free agents match these filters.':'Nobody left on the market.'}</div>`;
+ </div></details>`;
+ const list=rows.length?`<div class="well free-table"><table class="grid"><thead><tr>${FREE_SORTS.map(([key,label],i)=>th('free',key,label,(i>=2?'n':'')+(FREE_OPTIONAL.includes(key)?' free-opt':''))).join('')}</tr></thead><tbody>${rows.map(x=>`<tr class="pick" data-self="${x.id}" aria-selected="${x.id===selFree}"><td><button class="row-pick" data-self="${x.id}" aria-pressed="${x.id===selFree}" aria-label="Review ${esc(x.name)}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span></span></button></td><td>${esc(x.style)}</td>${FREE_STATS.map(([key])=>`<td class="n${FREE_OPTIONAL.includes(key)?' free-opt':''}">${att(x[key])}</td>`).join('')}<td class="n">${money(x.wage)}</td><td class="n"><b>${money(x.fee)}</b></td></tr>`).join('')}</tbody></table></div>` :`<div class="empty">${s.free.length?'No free agents match these filters.':'Nobody left on the market.'}</div>`;
  const sort=sorts.free;
  const cards=rows.length?`<div class="free-cards"><div class="free-sort"><label class="field">Sort by<select data-free-sort>${FREE_SORTS.map(([key,label])=>`<option value="${key}" ${key===sort.k?'selected':''}>${label}</option>`).join('')}</select></label><button class="btn sm" data-sort="free:${sort.k}" aria-label="Reverse sort order">${sort.d>0?'Ascending ▲':'Descending ▼'}</button></div>
   ${rows.map(x=>`<button class="free-card" data-self="${x.id}" aria-pressed="${x.id===selFree}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)} · ${esc(x.style)}</small></span></span>
@@ -609,13 +615,13 @@ function renderScouting(){
  if(w){
   const can=s.cash>=w.fee&&!full;
   detail=`<div class="row" style="align-items:flex-start;gap:14px;flex-wrap:nowrap">${face('wrestler',w.id,w.name,'portrait x2')}<div><div style="font:36px/.9 var(--jersey);color:var(--blood)">${esc(w.name)}</div><div style="font-weight:600;margin:4px 0">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span></div></div></div>
+  <div class="facts" style="margin:10px 0"><div><small>Signing fee</small><b class="${s.cash<w.fee?'neg':''}">${money(w.fee)}</b></div><div><small>Weekly wage</small><b>${money(w.wage)}</b></div></div>
+  <button class="btn go" style="width:100%;min-height:44px" data-sign="${w.id}" ${can?'':'disabled'}>Sign ${esc(w.short)}</button>
+  <p class="dim" style="margin-top:6px">${full?'Your locker room is full. Release someone first.':s.cash<w.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'Wages are paid every week, booked or not.'}</p>
   <p style="margin-top:10px">${esc(w.bio)}</p>
   <div class="well pad attrs">${[['Ring',w.ring],['Psychology',w.psych],['Safety',w.safe],['Mic',w.mic],['Heat',w.heat]].map(([l,v])=>`<div class="attr"><span>${l}</span>${att(v)}${bar(v,bandBar(v))}</div>`).join('')}</div>
   <p class="dim" style="margin-top:8px">${esc(temperament(w))} Finisher: ${esc(w.finisher)}.${esc(signatureText(w))}</p>
-  ${ambitionLine(w)}${(()=>{const team=window.OfficeManagers?.wantedBy(w.id);return team?`<p class="bad" style="margin:6px 0 0">${esc(team.manager)} (${esc(team.name)}) means to sign ${esc(w.short)} next week.</p>`:''})()}
-  <div class="facts" style="margin:10px 0"><div><small>Signing fee</small><b class="${s.cash<w.fee?'neg':''}">${money(w.fee)}</b></div><div><small>Weekly wage</small><b>${money(w.wage)}</b></div></div>
-  <button class="btn go" style="width:100%;min-height:44px" data-sign="${w.id}" ${can?'':'disabled'}>Sign ${esc(w.short)}</button>
-  <p class="dim" style="margin-top:6px">${full?'Your locker room is full. Release someone first.':s.cash<w.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'Wages are paid every week, booked or not.'}</p>`;
+  ${ambitionLine(w)}${(()=>{const team=window.OfficeManagers?.wantedBy(w.id);return team?`<p class="bad" style="margin:6px 0 0">${esc(team.manager)} (${esc(team.name)}) means to sign ${esc(w.short)} next week.</p>`:''})()}`;
  }
  if(w){
   const picked=shortlist.includes(w.id);
@@ -725,7 +731,7 @@ function renderOffers(){
  const offers=s.offers.slice().sort((a,b)=>can(b)-can(a)||a.eventAbs-b.eventAbs||a.expiresAbs-b.expiresAbs);
  if(offers.some(o=>o.id===route.id))selOffer=route.id;
  if(!selOffer||!offers.some(o=>o.id===selOffer))selOffer=(offers.find(can)||offers[0])?.id||null;
- const rows=offers.map(o=>{const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);return `<tr class="pick${sel?'':' unbookable'}" data-selo="${o.id}" aria-selected="${o.id===selOffer}"${sel?'':' title="Nobody in your stable can take this booking."'}><td><button class="row-pick" data-selo="${o.id}" aria-pressed="${o.id===selOffer}" aria-label="Review ${esc(p.name)} booking offer">${weekLabel(o.eventAbs)}<br><span class="dim">${o.eventAbs===G.abs()?'This week':o.expiresAbs>G.abs()?`Reply by ${weekLabel(o.expiresAbs)}`:''}</span></button></td><td class="wrap"><b>${esc(p.name)}</b>${o.tag?` <span class="tag hot">${esc(o.tag)}</span>`:''}${o.stip?` <span class="tag">${esc(window.OfficeStips.STIPS[o.stip].short)}</span>`:''}</td><td class="wrap offer-match">${offerWho(o,sel)}<br><span class="vs-line">v ${recordLink('w',f.id,f.name)}</span></td><td>${o.programme?`${o.programme.beats.length} matches<br><span class="dim">${esc(window.OfficeProgrammes?.TYPE_NAME[o.programme.type]||'Programme')}</span>`:`${esc(D.SLOTS[o.slot].name)}<br>${finishTag(o.finish)}`}</td><td class="n">${sel?money(o.programme?window.OfficeProgrammes.totalPurse(o,sel):G.purse(o,sel)):'<span class="dim">–</span>'}</td></tr>`}).join('');
+ const rows=offers.map(o=>{const p=G.P(o.pid),f=G.F(o.rid),{sel}=offerPick(o);return `<tr class="pick${sel?'':' unbookable'}" data-selo="${o.id}" aria-selected="${o.id===selOffer}"><td><button class="row-pick" data-selo="${o.id}" aria-pressed="${o.id===selOffer}" aria-label="Review ${esc(p.name)} booking offer">${weekLabel(o.eventAbs)}<br><span class="dim">${o.eventAbs===G.abs()?'This week':o.expiresAbs>G.abs()?`Reply by ${weekLabel(o.expiresAbs)}`:''}</span></button></td><td class="wrap"><b>${esc(p.name)}</b>${o.tag?` <span class="tag hot">${esc(o.tag)}</span>`:''}${o.stip?` <span class="tag">${esc(window.OfficeStips.STIPS[o.stip].short)}</span>`:''}</td><td class="wrap offer-match">${offerWho(o,sel)}${sel?'':'<br><span class="dim">No one in your stable can take this booking.</span>'}<br><span class="vs-line">v ${recordLink('w',f.id,f.name)}</span></td><td>${o.programme?`${o.programme.beats.length} matches<br><span class="dim">${esc(window.OfficeProgrammes?.TYPE_NAME[o.programme.type]||'Programme')}</span>`:`${esc(D.SLOTS[o.slot].name)}<br>${finishTag(o.finish)}`}</td><td class="n">${sel?money(o.programme?window.OfficeProgrammes.totalPurse(o,sel):G.purse(o,sel)):'<span class="dim">–</span>'}</td></tr>`}).join('');
  const list=!s.roster.length?`<div class="empty">You need someone under contract before you can take bookings.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`
   :offers.length?`<div class="well"><table class="grid"><thead><tr><th>Show</th><th>Promoter</th><th>Match</th><th>Slot and finish</th><th class="n">Purse</th></tr></thead><tbody>${rows}</tbody></table></div>`
   :`<div class="empty">No offers left this week. Press Continue to move on.</div>`;
@@ -896,7 +902,7 @@ function renderGame(){
 /* ======================= CONVERSATIONS ======================= */
 function renderPrivateMeeting(id){
  const w=G.W(id);if(!w)return;const d=$('#modal');d.classList.remove('negotiation-dialog');delete d.dataset.talkoid;const s=S();
- d.innerHTML=`<header class="tbar"><h2 id="office-dialog-title">Private meeting: ${esc(w.name)}</h2></header><div class="dlg"><p>${esc(w.bio)}</p><div class="terms-compare"><div><small>Morale</small><b>${w.morale}</b></div><div><small>Loyalty</small><b>${w.loyal}</b></div></div><p class="dim">Uses one of your ${s.focus} management meetings left this week, which means one less chance to haggle with a promoter.</p><div class="talk-actions"><button class="choice" data-private="listen" data-wid="${id}" ${s.focus===0?'disabled':''}><b>Listen and reassure</b><span>No promise. Morale +5, loyalty +4.</span></button><button class="choice" data-private="promise" data-wid="${id}" ${s.focus===0||w.promise?.status==='open'?'disabled':''}><b>Promise a featured match</b><span>Morale +8 now. Book a feature or main event within two weeks, or lose 14 morale and 12 loyalty.</span></button><button class="choice" data-private="bonus" data-wid="${id}" ${s.cash<120||s.focus===0?'disabled':''}><b>Pay a £120 loyalty bonus</b><span>Morale +6, loyalty +9. Guaranteed, but not cheap.</span></button></div></div><div class="foot"><button class="btn" data-dlg="close">Leave it for now</button></div>`;
+ d.innerHTML=`<header class="tbar"><h2 id="office-dialog-title">Private meeting: ${esc(w.name)}</h2></header><div class="dlg"><p>${esc(w.bio)}</p><div class="terms-compare"><div><small>Morale</small><b>${w.morale}</b></div><div><small>Loyalty</small><b>${w.loyal}</b></div></div><p class="dim">Uses one of your ${s.focus} management meetings left this week, which means one less chance to haggle with a promoter.</p><div class="talk-actions">${s.focus===0?'<p class="dim">No private meetings left this week, so these options are off.</p>':''}${w.promise?.status==='open'?'<p class="dim">A featured-match promise is already open. Book it before making another.</p>':''}<button class="choice" data-private="listen" data-wid="${id}" ${s.focus===0?'disabled':''}><b>Listen and reassure</b><span>No promise. Morale +5, loyalty +4.</span></button><button class="choice" data-private="promise" data-wid="${id}" ${s.focus===0||w.promise?.status==='open'?'disabled':''}><b>Promise a featured match</b><span>Morale +8 now. Book a feature or main event within two weeks, or lose 14 morale and 12 loyalty.</span></button><button class="choice" data-private="bonus" data-wid="${id}" ${s.cash<120||s.focus===0?'disabled':''}><b>Pay a £120 loyalty bonus</b><span>Morale +6, loyalty +9. Guaranteed, but not cheap.</span></button></div></div><div class="foot"><button class="btn" data-dlg="close">Leave it for now</button></div>`;
  if(!d.open)d.showModal();
 }
 /* v0.3.22 stipulations */
@@ -1342,7 +1348,7 @@ function bell(){
   </section>`;
  const bench=`${livePlan}<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar" role="progressbar" aria-label="Atmosphere" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
  $('#tv').innerHTML=`${strip(c)}<header class="score"><div class="side you">${face('wrestler',w.id,w.name,'portrait x2')}<h2>${esc(w.short)}</h2><div class="stam" id="sY" role="progressbar" aria-label="${esc(w.short)} stamina" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i></i></div></div><div class="mid"><div class="live-stars" id="lStars" aria-label="Live rating">–</div><div class="clock" id="lClock">00:00</div><div class="phase" id="lPhase">Entrances</div></div><div class="side them">${face('wrestler',f.id,f.name,'portrait x2')}<h2>${esc(f.short)}</h2><div class="stam" id="sT" role="progressbar" aria-label="${esc(f.short)} stamina" aria-valuemin="0" aria-valuemax="100" aria-valuenow="92"><i></i></div></div></header><div class="mom" role="meter" aria-label="Momentum: positive favours ${esc(w.short)}, negative favours ${esc(f.short)}" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"><i id="lMom" style="width:50%"></i></div><div class="plan-strip" id="lPlan" hidden></div>
- <div class="stage screen s-live">${win('Live commentary',`<div class="feed well"><div class="now" id="lNow" aria-live="polite"><span class="t"></span><span class="tx"></span></div><div class="commentary-views" role="group" aria-label="Commentary history">
+ <div class="stage screen s-live">${win('Live commentary',`<div class="feed well"><div class="sr" id="lAnnounce" role="status"></div><div class="now" id="lNow"><span class="t"></span><span class="tx"></span></div><div class="commentary-views" role="group" aria-label="Commentary history">
    <span>Commentary archive</span><button data-commentary-view="all" aria-pressed="true">All lines</button><button data-commentary-view="key" aria-pressed="false">Key moments</button>
    </div><ol class="past" id="lPast" aria-label="Earlier commentary"></ol></div>`,{h:'h3',cls:'quiet',body:'tight',note:`${esc(w.short)} on top: gold bar`})}${win('Ringside',bench,{h:'h3'})}</div><div class="decision" id="decision" hidden></div>`;
  night.stage='live';updateLive();persistNight();schedule(300);
@@ -1372,6 +1378,8 @@ function showLine(line,quiet){
  if(prev&&!quiet)night.past.unshift(prev);
  now.className='now '+line.kind+(line.big?' big':'')+voiceCls(line);now.dataset.line=JSON.stringify(line);
  now.innerHTML=`<span class="t">${esc(line.t)}</span>${voiceFace(line)}<span class="tx">${booth(line)?`<small class="spk">${esc(booth(line).name)}</small>`:''}${esc(line.text)}</span>`;
+ // Screen readers hear only the big moments, not every commentary line.
+ if(line.big&&!quiet){const a=$('#lAnnounce');if(a)a.textContent=line.text}
  night.past=night.past.filter(x=>x.kind!=='count'||x.text.length>8).slice(0,40);
  renderPastCommentary();persistNight();
 }
@@ -1679,6 +1687,8 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('mouseover',e=>{const b=e.target.closest('[data-hint]');if(b&&$('#lHint'))$('#lHint').textContent=b.dataset.hint});
 document.addEventListener('focusin',e=>{const b=e.target.closest('[data-hint]');if(b&&$('#lHint'))$('#lHint').textContent=b.dataset.hint});
+// Remember whether the phone filter disclosure was opened, so re-renders keep it open.
+document.addEventListener('toggle',e=>{if(e.target.classList?.contains('free-filters'))scoutFiltersOpen=e.target.open},true);
 document.addEventListener('keydown',e=>{
  if(night?.M&&!$('#tv').hidden){
   const box=$('#decision');if(box&&!box.hidden)return;

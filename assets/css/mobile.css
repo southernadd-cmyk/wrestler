@@ -79,6 +79,12 @@
  .phone-card-line{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:4px 10px}
  .phone-card .who{min-width:0}
  #view .free-table{display:none}
+ #view .free-filters{margin-bottom:8px}
+ #view .free-filters>summary{display:flex;align-items:center;min-height:44px;padding:8px 10px;background:var(--stone-2);border:2px solid var(--ink);font-weight:700;cursor:pointer;list-style:none}
+ #view .free-filters>summary::-webkit-details-marker{display:none}
+ #view .free-filters>summary::after{content:"▾";margin-left:auto;padding-left:8px}
+ #view .free-filters[open]>summary::after{content:"▴"}
+ #view .free-filters>summary:focus-visible{outline:3px dashed var(--ink);outline-offset:2px}
  #view .free-cards{display:grid;gap:7px}
  #view .free-cards .free-card{border-left:4px solid #536596}
  #view .free-cards .free-card:hover,#view .free-cards .free-card:focus-visible{border-left-color:var(--gold)}
