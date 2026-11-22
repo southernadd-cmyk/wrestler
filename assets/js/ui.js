@@ -927,7 +927,7 @@ function renderMeeting(oid,wid){
  let prompt='',options='';
  if(t.step==='start'){
   prompt='What would you like to change?';
-  options=ask('ask:fee','I need a better appearance fee','Ask for 20% more; the promoter might offer less.');
+  options=ask('ask:fee','I need a better appearance fee','Request up to 20% more. Accepting a pay increase costs '+(promoterRead?.feeRaiseCost||2)+' promoter trust as well as a management meeting.');
   if(o.finish==='lose_clean')options+=ask('ask:protect',"I'll take the loss, but protect my wrestler",'Ask for a competitive loss, usually for a lower fee.');
   if(o.slot!=='main')options+=ask('ask:slot','Give my wrestler better billing','Move one place higher on the card in exchange for a lower guaranteed appearance fee.');
   const stip=stipAsks(o,w,oid,wid);
