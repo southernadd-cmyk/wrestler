@@ -52,7 +52,14 @@ async function journey(browser,name,viewport){
   await offered.locator('button[data-talkaction="trade:fee"]').click();
   assert.equal(await page.locator('#modal .neg-trade-summary').count(),1);
   assert.match(await page.locator('#modal .neg-trade-summary').innerText(),/you give|in return/i);
-  assert.match(await page.locator('#modal .neg-contract').innerText(),/proposed terms|not yet accepted/i);
+  // Phone intentionally collapses booking terms. Verify the retained
+  // contents, then actually expand them to test readability.
+  assert.match(await page.locator('#modal .neg-contract').textContent(),/proposed terms|not yet accepted/i);
+  if(viewport.width<=720){
+   await page.locator('#modal .neg-terms>summary').click();
+   assert.ok(await page.locator('#modal .neg-contract').isVisible(),
+    name+': phone contract must expand on request');
+  }
   assert.equal(await page.locator('#modal .neg-contract .changed').count(),3,
    name+': fee, finish and billing must all be visibly revised');
   assert.deepEqual(await page.evaluate(()=>{
