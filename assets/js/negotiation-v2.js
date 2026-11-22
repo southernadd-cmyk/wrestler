@@ -172,7 +172,7 @@
   return 'the requested change';
  };
  const tradeCandidates=(o,w,t)=>{
-  if(!t||!['counter','challenge'].includes(t.step)||t.pushes||t.tradeMade||o.programme)return [];
+  if(!t||!['counter','challenge'].includes(t.step)||t.pushes||t.tradeMade||o.programme||o.title&&t.topic==='slot')return [];
   const p=G.P(o.pid),base=t.original;
   if(!base)return [];
   const baselineFee=G.money(base.fee),target=adjusted(o,t,1),benefit=requestedBenefit(t),out=[];
@@ -212,7 +212,7 @@
      `Receive ${G.money(G.purse({...o,...terms},w))} instead of ${baselineFee}`,terms,
      ({aggressive:15,showman:18,traditional:20,cold:19}[p.personality]||17));
    }
-   if(base.finish==='lose_protected'){
+   if(base.finish==='lose_protected'&&!o.title){
     const terms={...target,finish:'lose_clean',bump:round(base.bump*1.17)};
     add('finish','Accept a clean loss for more pay',
      'Give up protection on the booked loss',
@@ -248,12 +248,12 @@
   return (lines[p.personality]||lines.traditional)+(accepted?details:'');
  };
  const missing=(t,p,detail)=>{
-  t.step='done';t.verdict='refused';t.proposal=null;t.detail=detail;
+  t.step='done';t.verdict='refused';t.proposal=null;t.package=null;t.detail=detail;
   G.save();
  };
  const exit=(o,t,p,reason)=>{
   G.S.offers=G.S.offers.filter(x=>x.id!==o.id);
-  t.step='done';t.proposal=null;t.verdict='walked';t.detail=reason;G.save();
+  t.step='done';t.proposal=null;t.package=null;t.verdict='walked';t.detail=reason;G.save();
   return {offer:o,talk:t,withdrawn:true,detail:reason};
  };
  G.meeting=function(oid,wid){
@@ -280,7 +280,7 @@
   // Old saves whose conversations already reached 'done' remain usable.
   if(t.step==='done'){
    const r=originalMove.call(G,oid,wid,move);
-   if(move==='revert'&&!r.error){apply(o,t.original);t.proposal=null;G.save();}
+   if(move==='revert'&&!r.error){apply(o,t.original);t.proposal=null;t.package=null;G.save();}
    return r;
   }
   if(move==='reply:walk'&&t.step!=='start'){
@@ -288,7 +288,7 @@
   }
   if(move==='reply:original'&&t.step!=='start'){
    apply(o,t.original);
-   t.step='done';t.proposal=null;t.verdict='original';
+   t.step='done';t.proposal=null;t.package=null;t.verdict='original';
    t.detail='The original terms remain available. Nothing is signed yet.';
    log(t,p,"Let's take your original terms instead.",{
     aggressive:"Fine. My first deal still stands. Don't make me repeat it.",
