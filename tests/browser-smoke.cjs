@@ -175,8 +175,11 @@ async function journey(browser,name,viewport){
     assert.equal(mobileReadouts.length,4,'phone: all career readouts must exist');
     assert.ok(mobileReadouts.every(x=>x.display!=='none'&&x.right<=viewport.width+1&&x.value),
       'phone: every readout must be visible and within screen width '+JSON.stringify(mobileReadouts));
-    assert.ok(mobileReadouts[2].top>=mobileReadouts[0].bottom-2,
-      'phone: reputation and meetings should occupy the second compact row');
+    // Since #211 the phone header keeps all four readouts in one compact row.
+    assert.ok(mobileReadouts.every(x=>Math.abs(x.top-mobileReadouts[0].top)<2),
+      'phone: all four readouts should share one compact row '+JSON.stringify(mobileReadouts));
+    assert.ok(mobileReadouts.every((x,i)=>i===0||x.left>=mobileReadouts[i-1].right-1),
+      'phone: readouts should sit side by side in order '+JSON.stringify(mobileReadouts));
     assert.match(mobileReadouts[2].label,/Reputation/i);
     assert.match(mobileReadouts[3].label,/Meetings left/i);
   }
