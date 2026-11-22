@@ -35,16 +35,20 @@ function sequence(M,withSetup=true){
  G.apply(M,'counter_strike');
  assert.equal(M.graph.events.at(-1).control,winner);
  const cue=G.closingOffers(M,winner);
- if(S.DIRECTOR.active(M))
-  assert.ok(cue.some(([id])=>id==='rope_run'),'real counter should offer a genuine physical setup');
- else assert.equal(cue.length,0,'inactive metadata-only match must not acquire finishing guidance');
  if(S.DIRECTOR.active(M)){
+  const valid=G.closingPlanSetups(M);
+  assert.ok(valid.length>=2,
+   'real counter should offer multiple physically authentic plan-specific setups');
+  assert.equal(JSON.stringify(cue.map(([id])=>id)),
+   JSON.stringify(valid.map(([id])=>id)),
+   'counter payoff must come from this plan, not generic rope-run guidance');
   const options=G.pool(M);
-  assert.ok(options.some(([id,weight])=>id==='rope_run'&&weight>0),
-   'witnessed cutoff must make legal real setup available in live pool');
-  assert.ok(options.some(([id])=>id!=='rope_run'&&id!=='front_facelock'),
+  assert.ok(valid.some(([id])=>options.some(([move,weight])=>
+   move===id&&weight>0)),'true counter routes must reach the live pool');
+  assert.ok(options.some(([id])=>!cue.some(([move])=>move===id)),
    'legal alternatives remain available; no scripted sequence');
- }
+ }else assert.equal(cue.length,0,
+  'inactive metadata-only match must not acquire finishing guidance');
  if(withSetup){
   M.t+=10;step(M,'rope_run',winner);
   const finishOptions=G.closingOffers(M,winner);
@@ -547,3 +551,68 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
 }
 console.log('PASS Phase 9H: '+continuedChecks+
  ' structures retain optional authored continuations and prefer fresh impacts.');
+
+
+// Phase 9I: authored setups are different for all FIVE match plans. An
+// existing legal source-to-impact edge is mandatory; never choose a route
+// because its name sounds appropriate to the plan.
+const routeSources={
+ story:new Set(['rope_run','waistlock','front_facelock','strike_trade']),
+ technical:new Set(['waistlock','headlock','go_behind','wristlock']),
+ brawl:new Set(['strike_trade','rope_run','rope_rebound','front_facelock']),
+ spots:new Set(['rope_run','springboard_rise','top_climb','corner_whip']),
+ safe:new Set(['headlock','waistlock','wristlock','front_facelock'])
+};
+let planChecks=0;
+for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
+ for(const game of Object.keys(routeSources)){
+  const m=create(structure,game);
+  m.t=Math.floor(m.len*.86);m.graph.arc='exchange';
+  step(m,'probe_strike','w');
+  const originalRng=m.r.getState(),before=m.graph.events.length;
+  const expected=G.closingPlanSetups(m);
+  const actual=G.closingOffers(m,'w');
+  assert.ok(expected.length>=2,game+' must offer at least two authentic routes');
+  assert.deepEqual(JSON.stringify(actual),JSON.stringify(expected),
+   'real winner offence should use the plan routes, not generic default');
+  for(const [id,weight]of actual){
+   assert.ok(routeSources[game].has(id),'plan '+game+' cannot borrow unrelated setup '+id);
+   assert.ok(G.isValid(m,id),game+' setup physically legal: '+id);
+   assert.ok(weight>0);
+   const source=G.A[id];
+   const targetPosition=source.zone==='standing'?'standing':source.zone;
+   const links=source.next.filter(([move])=>{
+    const n=G.A[move];return !!n&&n.requires===targetPosition&&
+     n.zone==='mat'&&n.down==='d'&&!n.reverse&&!n.counterOf&&
+     !n.blockOf&&!n.nearfall&&
+     (game==='spots'||!n.risk)&&
+     (game!=='safe'||(!n.risk&&n.cost<=2.2));
+   });
+   assert.ok(links.length,game+' source needs a genuinely authored landing: '+id);
+  }
+  assert.equal(m.graph.events.length,before,'offers cannot fabricate a setup');
+  assert.equal(m.r.getState(),originalRng,'offers cannot sample outcome RNG');
+  const pool=G.pool(m);
+  assert.ok(actual.some(([id])=>pool.some(([candidate,w])=>
+   candidate===id&&w>0)),'at least one authored route must reach live pool');
+  assert.ok(pool.some(([id])=>!actual.some(([candidate])=>candidate===id)),
+   'authored route must never become a compulsory move');
+  const opposition=create(structure,game,'win_clean');
+  opposition.t=Math.floor(opposition.len*.86);
+  step(opposition,'probe_strike','f');
+  assert.ok(G.closingOffers(opposition,'f').every(([id])=>
+   !routeSources[game].has(id)),
+   'loser cannot inherit booked winner plan setup routes');
+  const inactive=create(structure,game,'win_clean',false);
+  inactive.t=Math.floor(inactive.len*.86);
+  step(inactive,'probe_strike','w');
+  assert.equal(G.closingOffers(inactive,'w').length,0);
+  const dirty=create(structure,game,'win_dirty');
+  dirty.t=Math.floor(dirty.len*.86);
+  step(dirty,'probe_strike','w');
+  assert.equal(G.closingOffers(dirty,'w').length,0);
+  planChecks++;
+ }
+}
+console.log('PASS Phase 9I: '+planChecks+
+ ' five-plan authored-route checks: real physical edges, no RNG, no free winner control.');
