@@ -223,6 +223,9 @@
   // editorial layout is eligible. Old and traditional saves stay legacy.
   function executionChoice(sheet,selection){
    if(selection==null)return false;
+   // readPlan validates content, but the career boundary must also require
+   // a genuinely SIGNED v4 agreement; a tampered signed flag fails closed.
+   if(!sheet?.signed||sheet.v!==4)throw Error('Selected match structure does not match a signed editorial plan');
    if(!plain(selection)||Object.keys(selection).some(k=>!['id','lead'].includes(k))||
       !Object.prototype.hasOwnProperty.call(DEFINITIONS,selection.id)||
       !['w','f'].includes(selection.lead))
