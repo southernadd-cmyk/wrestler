@@ -63,7 +63,7 @@ const select=(o,topic='protect',arg='crowd')=>{
  assert.equal(t.step,'challenge');
  assert.equal(s.focus,focus-1);
  assert.ok(p.trust<=old-2,'weak argument must incur a visible trust cost');
- assert.equal(t.cost,2);
+ assert.equal(t.cost,3,'Gaz takes a larger trust penalty for an unconvincing demand');
  assert.equal(o.finish,'lose_clean');
  assert.ok(!G.talkMove(o.id,'rex','reply:original').error);
  assert.equal(t.step,'done');
