@@ -1541,6 +1541,9 @@
     'The agreed finish has no guaranteed setup in this layout. Physical conditions still decide whether it is available.'});
   }
   if(items.some(o=>o.intent==='callback'))notes.push({good:true,text:'A tactical callback is an intention only: the earlier exchange must actually happen before the Director may credit it.'});
+  if(st.game)notes.push({good:true,text:structureRead(st).advice});
+  const discussion=structureReview(st)?.discussion;
+  if(discussion)notes.push({good:true,text:discussion});
   if(trouble.length)notes.push({good:false,text:'Revise unsafe or prohibited commitments: '+trouble.join(', ')+'.'});
   return {score:trouble.length?-1:Math.min(2,named.length>=2?2:1),notes};
  }
@@ -1771,7 +1774,7 @@
   // v0.3.12 If the rivalry or the wrestlers' condition gives somebody a reason to ask for a change, that
   // conversation happens straight after the running order is agreed (and is skipped if the board
   // already avoids the problem).
-  if(st.structurePlanning)st.queue=['structure_objection',...st.queue.filter(id=>id!=='structure_objection')];
+  if(st.structurePlanning)st.queue=['structure_objection','structure_huddle',...st.queue.filter(id=>!['structure_objection','structure_huddle'].includes(id))];
   else if(negotiable(st))st.queue=['rival_counter',...st.queue.filter(id=>id!=='rival_counter')];
   const fin={win_clean:w.short+' wins clean',win_dirty:w.short+' wins dirty',lose_protected:w.short+' loses, but protected',lose_clean:w.short+' loses clean',win_dq:w.short+' wins by disqualification',lose_dq:w.short+' gets disqualified'}[c.finish];
   log(st,'agent',pick(['Evening. Doors in ten, so let’s not make a meal of it.','Right. I’ve a flask going cold, so shall we?','The urn’s on. Let’s get this agreed before the raffle starts.'],seed,'hello'));
@@ -1798,7 +1801,9 @@
    if(id===st.promoter.likes)tags.push(st.promoter.name+' crowd ▲');
    if(id===best)tags.push(st.w.short+'’s style');if(id===foeBest)tags.push(st.f.short+'’s style');
    if(id==='spots')tags.push('More risk');if(id==='safe')tags.push('Safer');
-   return {id:'plan_'+id,label:pl.name,hint:PLAN_HINT[id]||pl.blurb||'',tags};});
+   const reading=st.structurePlanning?structureRead(st,id):null;
+   if(reading&&reading.fit!=='Alternative approach')tags.push(reading.fit);
+   return {id:'plan_'+id,label:pl.name,hint:(PLAN_HINT[id]||pl.blurb||'')+(reading?' '+reading.advice:''),tags};});
   if(st.stage==='board'){
    const out=st.lockRoute?[]:finishCards(st).map((c,i)=>({id:'route_'+i,label:c.label,
     hint:(ROUTE_CONDITION[c.route]||'No extra in-ring prerequisite.')+' The booked result does not change.',
@@ -1812,8 +1817,8 @@
   if(st.stage==='review'&&st.structurePlanning&&structureWarnings(st).length)return [
    {id:'review_edit',label:'Resolve unsafe called spots',hint:'A manually selected move became prohibited or impossible. Choose another move or leave the objective open.',tags:['Revision required']}];
   if(st.stage==='review')return [
-   {id:'review_ok',label:'Approve this layout',hint:'Keep the contracted result and move to the last word before the bell.',tags:[]},
-   {id:'review_edit',label:'Revise the called spots',hint:st.lockRoute?
+   {id:'review_ok',label:st.structurePlanning?'Sign this structure and finish':'Approve this layout',hint:'Keep the contracted result and move to the last word before the bell.',tags:[]},
+   {id:'review_edit',label:st.structurePlanning?'Revise the objectives':'Revise the called spots',hint:st.lockRoute?
     'Change the running order. The finish negotiated backstage is locked.':
     'Change the finish or called spots without replaying backstage incidents.',tags:[]}
   ];
@@ -1835,7 +1840,7 @@
   }
   if(st.stage==='scene'){st.stage=st.lockRoute||st.board.finish?.route?'review':'finish';}
   if(st.stage==='review'){
-   log(st,'agent','The room is settled. One last look at what we agreed, and what the finish still needs.');
+   log(st,'agent',st.structurePlanning?'The discussion is settled. Check the promoter’s booked result, finishing route and the dramatic objectives separately.':'The room is settled. One last look at what we agreed, and what the finish still needs.');
    return;
   }
   if(st.stage==='finish'){
@@ -1846,7 +1851,7 @@
   if(st.stage==='curtain'){
    settleFinish(st);
    if(st.reworked)log(st,'agent','The running order’s had a few rubbings-out. '+verdict(st));
-   log(st,'agent','That’s the match layout. '+st.w.short+' is '+word(consent(st,'w'))+'. '+st.f.short+' is '+word(consent(st,'f'))+'. Last word before '+st.w.short+' goes through the curtain?');
+   log(st,'agent',(st.structurePlanning?'The dramatic structure is agreed; the promoter’s booked result still stands. ':'That’s the match layout. ')+st.w.short+' is '+word(consent(st,'w'))+'. '+st.f.short+' is '+word(consent(st,'f'))+'. Last word before '+st.w.short+' goes through the curtain?');
   }
  }
  function settleFinish(st){
@@ -1883,7 +1888,7 @@
     if(st.reviewing){
      st.reviewing=false;st.stage='review';enter(st);return st;
     }
-    log(st,'agent',verdict(st)+' Right. Now for the things that always come up.');
+    log(st,'agent',st.structurePlanning?verdict(st)+' Both wrestlers will now discuss the structure before it becomes a signed agreement.':verdict(st)+' Right. Now for the things that always come up.');
     st.stage='scene';st.at=0;enter(st);return st;
    }
    if(st.structurePlanning&&id.startsWith('objective_')){
@@ -1919,10 +1924,15 @@
    st.consent={w:st.base.workerConsent,f:st.base.opponentConsent};
    if(st.rehearsed){st.consent.w+=6;log(st,'agent',pick([st.w.short+' and I went through it this week. Twice. I’ve still got the bruise.',st.w.short+' rehearsed with me on Tuesday. Knows the running order backwards. Possibly literally.'],st.seed,'rehearsed'));}
    if(st.game===st.promoter.likes)apply(st,{crowd:2});
-   log(st,'agent',{story:'A story. Good. Beginning, middle, end. Try to do them in that order.',spots:'Spots. I’ll move my car away from the building.',technical:'Technical. Lovely. Six people will be in heaven.',
-    brawl:'A brawl. I’ll warn the front row and the caretaker.',safe:'Safe. Nobody ever got sued for a headlock.'}[st.game]||'Right.');
+   log(st,'agent',st.structurePlanning?
+    structureRead(st).label+': '+structureRead(st).advice+' The contracted finish still has to be earned.':
+    ({story:'A story. Good. Beginning, middle, end. Try to do them in that order.',
+     spots:'Spots. I’ll move my car away from the building.',
+     technical:'Technical. Lovely. Six people will be in heaven.',
+     brawl:'A brawl. I’ll warn the front row and the caretaker.',
+     safe:'Safe. Nobody ever got sued for a headlock.'}[st.game]||'Right.'));
    seedBoard(st);st.stage='board';
-   log(st,'agent','First choose how it ends. Then we can put the called spots in an order that earns it. My pencil marks are only suggestions.');
+   log(st,'agent',st.structurePlanning?'First settle how the booked result happens. Then decide which real moves, if any, are named for the four objectives. Both wrestlers will have their say before signing.':'First choose how it ends. Then we can put the called spots in an order that earns it. My pencil marks are only suggestions.');
    return st;
   }
   if(st.stage==='scene'){
@@ -1940,7 +1950,7 @@
   if(st.stage==='review'){
    if(id==='review_edit'){
     st.reviewing=true;st.stage='board';
-    log(st,'agent','Pencil out. We can revise the spots without repeating the conversations.');
+    log(st,'agent',st.structurePlanning?'Pencil out. Revise the objectives without replaying the conversation.':'Pencil out. We can revise the spots without repeating the conversations.');
     return st;
    }
    st.stage='curtain';enter(st);return st;
@@ -1997,9 +2007,13 @@
    limits:{ban:[...new Set(st.limits.ban)],banIds:[...new Set(st.limits.banIds)]},spice:st.spice,fx:{...st.fx},repStake:st.repStake,entrance:st.entrance.slice(),
    game:st.game,leash:st.leash,talk:st.talk||'none',flags:{...st.flags},crowdMood:st.crowdMood||null,minutes:Math.max(5,st.minutes+(st.fx.minutes||0)),skipPromo:st.skipPromo,
    stunt:null,bonus:0,story:story(st),finishPreparation:finishPlan(st),negotiation:st.negotiation?JSON.parse(JSON.stringify(st.negotiation)):null,rehearsed:!!st.rehearsed,situations:st.queue.slice(),threads:(st.carry||[]).map(t=>({...t})),threadUsed:st.thread?.id||null,decided:st.decided.map(d=>({...d})),
-   premise:'A running order of '+planned+' '+(planned===1?'move':'moves')+'; '+st.queue.length+' things came up backstage'+(st.reworked?' and '+st.reworked+' '+(st.reworked===1?'beat was':'beats were')+' rewritten':'')+'.',
+   premise:(st.structurePlanning?'Four dramatic objectives with '+planned+' named '+(planned===1?'move':'moves'):'A running order of '+planned+' '+(planned===1?'move':'moves'))+'; '+st.queue.length+' things came up backstage'+(st.reworked?' and '+st.reworked+' '+(st.reworked===1?'beat was':'beats were')+' rewritten':'')+'.',
    speakers:st.log.filter(x=>x.kind!=='you').slice(-6).map(x=>({actor:x.who,text:x.text})),
-   ...(st.structurePlanning?{structurePlan:structurePlan(st)}:{})};
+   ...(st.structurePlanning?{structurePlan:structurePlan(st),
+    ...(st.structureTalk?.decision?{structureDiscussion:{
+     objective:st.structureTalk.objective,by:st.structureTalk.by,reason:st.structureTalk.reason,
+     decision:st.structureTalk.decision,from:st.structureTalk.original.action,
+     to:st.structureBoard?.[st.structureTalk.objective]?.action||null}}:{})}:{})};
   if(st.structurePlanning){
    const errors=P.STRUCTURES.validatePlan(signed.structurePlan,st.structure,signed);
    if(errors.length)throw Error('Structure plan: '+errors.join('; '));
@@ -2031,13 +2045,14 @@
   const done=st.stage==='plan'?0:st.stage==='board'?1:st.stage==='scene'?2+st.at:
    ['finish','review'].includes(st.stage)?2+st.queue.length:st.stage==='curtain'?total-1:total;
   return {stage:st.stage,situation:s?.id||null,
-   title:fmt(st,st.stage==='plan'?'What sort of match?':st.stage==='board'?'Plan the finish and called spots':s?(typeof s.title==='function'?s.title(st):s.title):st.stage==='review'?'Review the complete layout':st.stage==='finish'?'The finish':st.stage==='curtain'?'Last word at the curtain':'Signed'),
-   ask:fmt(st,st.stage==='plan'?'The promoter books the result. You decide what kind of match gets there.':st.stage==='board'?'Choose how the result happens, then build a running order that supports it.':s?(typeof s.ask==='function'?s.ask(st):s.ask):st.stage==='review'?'Backstage decisions are settled. Does the running order still support the agreed finish?':st.stage==='finish'?'How do you get to the booked result?':st.stage==='curtain'?'What do you say as they go out?':''),
+   title:fmt(st,st.stage==='plan'?(st.structurePlanning?'How should we work this '+structureRead(st).label+'?':'What sort of match?'):st.stage==='board'?(st.structurePlanning?'Agree the finish and dramatic objectives':'Plan the finish and called spots'):s?(typeof s.title==='function'?s.title(st):s.title):st.stage==='review'?(st.structurePlanning?'Review structure and booked finish':'Review the complete layout'):st.stage==='finish'?'The finish':st.stage==='curtain'?'Last word at the curtain':'Signed'),
+   ask:fmt(st,st.stage==='plan'?(st.structurePlanning?'The promoter books the result. Plan '+structureRead(st).focus+'.':'The promoter books the result. You decide what kind of match gets there.'):st.stage==='board'?(st.structurePlanning?'Choose the finishing route, then optionally name legal moves for the dramatic objectives.':'Choose how the result happens, then build a running order that supports it.'):s?(typeof s.ask==='function'?s.ask(st):s.ask):st.stage==='review'?(st.structurePlanning?'Check the booked result, finishing route, performer concerns and four dramatic objectives.':'Backstage decisions are settled. Does the running order still support the agreed finish?'):st.stage==='finish'?'How do you get to the booked result?':st.stage==='curtain'?'What do you say as they go out?':''),
    step:Math.min(done+1,total),total,options:options(st),log:st.log.slice(),agreed:agreed(st),
    board:st.stage==='board'?boardView(st):null,review:st.stage==='review'?boardView(st):null,
    finishes:st.stage==='board'?options(st).filter(o=>o.route):null,
    finishPlan:['board','review','curtain'].includes(st.stage)?finishPlan(st):null,
    story:st.stage==='plan'?null:{...story(st),verdict:verdict(st)},
+   structureBrief:st.structurePlanning?structureReview(st):null,
    moods:{w:{value:consent(st,'w'),word:word(consent(st,'w'))},f:{value:consent(st,'f'),word:word(consent(st,'f'))}}};
  }
  // ---- the microphone's promise, as a beat on the sheet ----
