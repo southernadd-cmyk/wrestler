@@ -56,7 +56,7 @@ function option(o,w,id){
  assert.equal(t.proposal.finish,'lose_protected');
  assert.equal(t.proposal.bump,.75);
  assert.ok(G.purse({...o,...t.proposal},w)<baseFee);
- assert.deepEqual(N.tradeOptions(o,w,t),[],'one trade per negotiation');
+ assert.equal(N.tradeOptions(o,w,t).length,0,'one trade per negotiation');
  assert.match(G.talkMove(o.id,w.id,'trade:stip').error,/not available/i);
  assert.equal(s.focus,0,'trade uses the already-spent meeting');
  assert.equal(p.trust,trust,'accepted trade should not cost additional trust');
@@ -182,7 +182,7 @@ function option(o,w,id){
 {
  const {o,w}=fresh({programme:{beats:[]},slot:'feature'});
  ask(o,w,'fee','trade');
- assert.deepEqual(N.tradeOptions(o,w,o.talk),[]);
+ assert.equal(N.tradeOptions(o,w,o.talk).length,0);
  assert.match(G.talkMove(o.id,w.id,'trade:billing').error,/not available/i);
 }
 {
