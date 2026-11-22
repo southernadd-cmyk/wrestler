@@ -1299,10 +1299,10 @@
    const cost=n.cost??1,crowd=n.crowd??0,name=(n.name||id).toLowerCase();
    const dirty=/rake|bite|poke|hair.pull|referee|low.blow|faked.injury/.test(name);
    const tactical=['technical_exchange','callback','opening_advantage'].includes(obj.intent);
-   const impact=['escalation','finish_build','dominance','reassertion','decisive_payoff'].includes(obj.intent);
+   const impact=['escalation','finish_build','dominance','reassertion','payoff'].includes(obj.intent);
    if(tactical&&(cost<.8||crowd<0||dirty||n.risk))return false;
    if(impact&&(cost<2.4||crowd<2||dirty||n.family==='rest'))return false;
-   if(['exposure','challenge','fighting_return'].includes(obj.intent)&&(cost<1||dirty))return false;
+   if(['exposure','challenge','comeback'].includes(obj.intent)&&(cost<1||dirty))return false;
    if(obj.intent==='evasion'&&!/stall|retreat|plea|mock|duck|rope|roll.out|outside|argument/.test(name))return false;
    if(obj.intent==='escape'&&!/duck|escape|roll|rope|retreat|outside|stall|break|counter/.test(name))return false;
    if(obj.intent==='shortcut'&&!(dirty||n.family==='heel'||crowd<0))return false;
@@ -1538,7 +1538,13 @@
  }
  // Some decisions wreck a beat that was already agreed. Dennis swaps in the nearest thing that still works.
  function reconcile(st){
-  if(st.structurePlanning){structureReconcile(st);return;}
+  if(st.structurePlanning){
+   structureReconcile(st);
+   // Scene decisions may replace or remove a pencilled move. Adjust its
+   // provisional performer-consent effect NOW, not a second time on review.
+   structureSettle(st);
+   return;
+  }
   for(const S of SPINE){
    const b=st.board[S.id];if(!b||!banned(st,b.action))continue;
    const alt=cardsFor(st,S.id).find(c=>c.action!==b.action&&!c.impossible&&!banned(st,c.action)&&(S.id==='payoff'||c.owner===b.owner));
