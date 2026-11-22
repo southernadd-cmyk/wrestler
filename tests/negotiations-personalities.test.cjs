@@ -102,7 +102,7 @@ function scenario(pid,{trust=55,heat=50,pro=80,rep=40,topic='protect',arg='crowd
  const t=G.meeting(o.id,'rex').talk;
  assert.match(t.log[0].text,/4.25 stars/);
  assert.equal(t.log.length,1,'intro adds no fabricated extra exchange');
- G.save();assert.equal(G.load(),true);
+ G.save();assert.ok(G.load(),'the saved career and negotiation should reload');
  const persisted=G.S.offers.find(x=>x.id===o.id).talk;
  assert.equal(persisted.personalityIntro,true);
  assert.match(persisted.log[0].text,/4.25 stars/);
