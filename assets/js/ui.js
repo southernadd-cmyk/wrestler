@@ -113,7 +113,10 @@ function flowPhases(fin){
   g.to=t;g.cOut=c;g.qs+=q;g.n++;if(m>10)g.mine++;else if(m<-10)g.theirs++;
  });
  for(const g of ph){
-  g.q=Math.round(g.qs/g.n);g.d=g.cOut-g.cIn;g.name=Mx.PHASES[g.p]?.name||'';
+  // This chart bins ten-second flow by simulation clock; these are not
+  // American story beats when an alternative Director is active.
+  const neutral=['Opening exchanges','Early contest','Middle exchanges','Late contest','Finishing stretch'];
+  g.q=Math.round(g.qs/g.n);g.d=g.cOut-g.cIn;g.name=fin.structure?(neutral[g.p]||'Match flow'):(Mx.PHASES[g.p]?.name||'');
   g.work=g.q>=FLOW_GOOD?'good':g.q<FLOW_POOR?'poor':'ok';g.tone=g.d>=FLOW_UP?'up':g.d<=FLOW_DOWN?'down':'flat';
   g.verdict=g.tone==='up'?(g.work==='poor'?'Noise over substance':g.work==='good'?'Clicked':'Got them going'):
    g.tone==='down'?(g.work==='poor'?'Fell apart':'Lost them'):(g.work==='good'?'Solid':g.work==='poor'?'Dragged':'Ticked over');
@@ -1437,7 +1440,8 @@ function result(){
  const sheetReport=OfficeSheets.report(M),finalStrip=structureReport?structureStrip(M,{final:true}):OfficeSheets.strip(M,{final:true});
  if(sheetReport){
   const h=S().history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===S().season&&x.week===S().week);
-  if(h){h.sheet=sheetReport;if(structureReport)h.structure=JSON.parse(JSON.stringify(structureReport));}
+  if(h){h.sheet=sheetReport;if(structureReport){h.structure=JSON.parse(JSON.stringify(structureReport));
+   if(fin.structureAssessment)h.structureAssessment=JSON.parse(JSON.stringify(fin.structureAssessment));}}
   if(structureReport){
    const success=structureReport.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length;
    cons.push({text:'Dramatic structure: '+success+' of '+structureReport.objectives.length+' objectives witnessed in the ring.',tone:0});
@@ -1475,8 +1479,24 @@ function result(){
   <div><small>Calls accepted</small><b>${fin.callsUsed.length-fin.ignored} of ${fin.callsUsed.length}</b></div>
  </div>`;
  night.i++;const more=night.i<night.queue.length;
+ const a=structureReport?fin.structureAssessment:null;
+ const structureAssessmentHtml=a?'<section class="structure-assessment" aria-label="Three-part match structure assessment">'+
+  '<h4>What was planned, what happened, and how well it worked</h4>'+
+  '<div class="structure-assessment-grid">'+
+   '<div><b>Plan adherence</b><strong>'+esc(a.planAdherence.namedCalls?
+    a.planAdherence.witnessedCalls+' / '+a.planAdherence.namedCalls+' named moves':'No named moves promised')+'</strong>'+
+    '<p>'+esc(a.planAdherence.adaptedCalls+' objectives worked with different moves; '+
+     a.planAdherence.openObjectives+' deliberately left open.')+'</p></div>'+
+   '<div><b>Structural coherence</b><strong>'+esc(a.structuralCoherence.witnessed+' / '+a.structuralCoherence.total+' witnessed')+'</strong>'+
+    '<p>'+esc(a.structuralCoherence.achieved+' achieved, '+a.structuralCoherence.adapted+
+     ' adapted, '+a.structuralCoherence.missed+' missed.')+'</p></div>'+
+   '<div><b>Execution quality</b><strong>'+esc(starsText(a.executionQuality.stars)||'DUD')+'</strong>'+
+    '<p>'+esc(a.executionQuality.botches+' mistakes; psychology contribution '+
+     (a.executionQuality.psychologyScore>=0?'+':'')+a.executionQuality.psychologyScore.toFixed(2)+
+     ' stars. No structure bonus.')+'</p></div>'+
+  '</div><p class="dim">The star rating is unchanged by structural completion. A named move must be witnessed in its objective window; an achieved objective may use a different move.</p></section>':'';
  const structureHtml=structureReport?'<h3 class="section-h" style="margin-top:12px">Dramatic structure: '+esc(OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===structureReport.id)?.label||structureReport.id)+'</h3>'+
-  '<p class="dim">Only moves performed in the ring count. There is no automatic bonus for following a structure.</p>'+
+  '<p class="dim">Only moves performed in the ring count. There is no automatic bonus for following a structure.</p>'+structureAssessmentHtml+
   (finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+
   '<div class="well"><ol class="structure-result-list">'+structureReport.objectives.map((o,i)=>{
    const planned=structurePlan?.[i],actor=planned?.actor==='w'?w.short:f.short,
