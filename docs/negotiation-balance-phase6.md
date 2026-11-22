@@ -67,7 +67,7 @@ The sweep also guards against three regressions: automatically higher pay on a b
 
 ## Remaining balancing questions
 
-- **Low-leverage talent:** In the four lowest-leverage scenarios, across promoters and arguments, requests for an improved card slot received **0/48** initial counteroffers or agreements. That may appropriately signal that newcomers should build drawing power first, but it deserves hands-on playtesting for clarity and frustration.
+- **Low-leverage talent:** In the lowest-leverage band (four promoters, four styles and three arguments), requests for an improved card slot received **0/48** initial counteroffers or agreements. That may appropriately signal that newcomers should build drawing power first, but it deserves hands-on playtesting for clarity and frustration.
 - **Stipulation utility and injury:** The audit does not attempt to express increased fatigue, risk, feud momentum or crowd reception in arbitrary cash values. Those systems remain subject to their dedicated tests.
 - **Whole-season management economy:** The two weekly management meetings compete with training and other management actions, but the present sweep is per offer, not a representative multi-season policy simulation.
 
