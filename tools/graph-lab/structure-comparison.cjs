@@ -63,15 +63,18 @@ const phase9lByPlan=Object.fromEntries(plans.map(game=>[game,{
  otherPhysicalResponse:0,noPhysicalResponse:0,
  nearfallBeforeClosingSetup:0,nearfallBeforeWitnessedSetup:0,
  sameOwnerAuthoredEdge:0,sameOwnerUnlinked:0,
- sameOwnerWithReset:0,followupActions:{},sourceActions:{},
+ sameOwnerReset:0,sameOwnerCover:0,sameOwnerSetup:0,
+ sameOwnerOffence:0,sameOwnerOther:0,followupActions:{},sourceActions:{},
  byNearfallKind:{authored_kickout:0,earned_cover:0}
 }]));
 function auditPhase9L(game,m,drama,closing){
  const row=phase9lByPlan[game],A=E.GRAPH.A;
  row.cleanBouts++;
+ // This is the first logged NON-REST graph response, not automatically
+ // an attack. Reset, pin, stance and contact moves are split below.
  const realAction=e=>{
   const n=A[e?.id];if(!n||!['w','f'].includes(e.preControl)||
-    n.nearfall||n.blockOf||['rest','heel'].includes(n.family))return false;
+    n.nearfall||n.blockOf||n.family==='rest')return false;
   if((!n.reverse&&(n.cost??1)<.6)||
     (e.physical&&(e.physical.area!=='ring'||
       e.physical.locations?.w!=='ring'||
@@ -89,24 +92,45 @@ function auditPhase9L(game,m,drama,closing){
   row.eligibleLateNearfalls++;
   row.byNearfallKind[moment.kind]++;
   const other=moment.side==='w'?'f':'w';
+  const setups=new Set(['lockup','waistlock','front_facelock',
+   'headlock','wristlock','go_behind','rope_run','rope_rebound',
+   'corner_whip','top_climb','springboard_rise','knuckle_lock',
+   'circle','collar_snap','opponent_study','finish_tease']);
+  const covers=new Set(['cover','early_cover','near_kickout']);
+  const offence=e=>{
+   const n=A[e.id];return (n.zone==='mat'&&n.down==='d'&&
+    !covers.has(e.id))||
+    ['strike','running','suplex','power','neck','fire','ground',
+     'submission','aerial','springboard','lucha','brawl','heel',
+     'technical','corner'].includes(n.family)||
+    ['strike_trade','probe_strike','cheap_shot','body_shot',
+     'stiff_forearm','counter_strike'].includes(e.id);
+  };
   const response=m.graph.events.find(e=>e.t>moment.at&&
    e.t<=moment.at+40&&realAction(e));
   if(!response)row.noPhysicalResponse++;
   else if(response.preControl===moment.side&&
    response.control===moment.side&&!A[response.id].reverse){
+   // This count includes NON-OFFENSIVE graph nodes. Never describe
+   // a stand-up, lockup or pin setup as a landed offensive strike.
    row.continuedPressure++;
-   // A near-fall is witnessed; the same-side follow-through may or may
-   // not use a *direct authored source edge* from the genuine pin/impact.
-   // Do not misrepresent a separate legal move as a source continuation.
-   const sourceId=moment.source?.id||moment.action;
-   const sourceNode=A[sourceId];
-   add(row.sourceActions,sourceId);
-   add(row.followupActions,response.id);
-   if(sourceNode?.next?.some(([id])=>id===response.id))
-    row.sameOwnerAuthoredEdge++;
-   else row.sameOwnerUnlinked++;
-   row.sameOwnerWithReset+=Number(m.graph.events.some(e=>
-    e.id==='stand_reset'&&e.t>moment.at&&e.t<response.t));
+   if(response.id==='stand_reset')row.sameOwnerReset++;
+   else if(covers.has(response.id))row.sameOwnerCover++;
+   else if(setups.has(response.id))row.sameOwnerSetup++;
+   else if(!offence(response))row.sameOwnerOther++;
+   else{
+    row.sameOwnerOffence++;
+    // An earned nearfall does not automatically imply an authored
+    // follow-through: require a DIRECT move-graph edge to the performed
+    // subsequent attack, not merely a legal action from the broad pool.
+    const sourceId=moment.source?.id||moment.action;
+    const sourceNode=A[sourceId];
+    add(row.sourceActions,sourceId);
+    add(row.followupActions,response.id);
+    if(sourceNode?.next?.some(([id])=>id===response.id))
+     row.sameOwnerAuthoredEdge++;
+    else row.sameOwnerUnlinked++;
+   }
   }
   else if(response.preControl===moment.side&&
    response.control===other&&A[response.id].reverse)
@@ -691,14 +715,15 @@ for(const row of Object.values(phase9lByPlan)){
   'each eligible late cover must have exactly one first response classification');
  assert.ok(row.nearfallBeforeWitnessedSetup<=row.nearfallBeforeClosingSetup,
   'witnessed full closing runways must be a subset of real linked runways');
- assert.equal(row.sameOwnerAuthoredEdge+row.sameOwnerUnlinked,row.continuedPressure,
-  'every same-owner continuation must be classified by its actual source edge');
- assert.ok(row.sameOwnerWithReset<=row.continuedPressure,
-  'only real same-owner continuations can be counted after a reset');
+ assert.equal(row.sameOwnerReset+row.sameOwnerCover+
+  row.sameOwnerSetup+row.sameOwnerOffence+row.sameOwnerOther,
+  row.continuedPressure,'same-side graph responses must distinguish actual offence from resets, covers and setups');
+ assert.equal(row.sameOwnerAuthoredEdge+row.sameOwnerUnlinked,row.sameOwnerOffence,
+  'only actual same-side offence may be classified by source-authored graph links');
 }
 console.log('PHASE9L_NEARFALL_RESPONSE_JSON '+JSON.stringify({
  schema:'office-phase9l-nearfall-response-v1',
- method:'Credited 9K nearfalls at 180–40 seconds before bell in Director-active clean matches; first non-rest, physically resolved graph action within 40 seconds. A separate optional timestamp-only link to an actually credited runway setup within 120 seconds is NOT claimed causal.',
+ method:'Credited 9K nearfalls at 180–40 seconds before bell in Director-active clean matches; first non-rest verified graph response within 40 seconds. Same-side resets, covers, setups, actual offence and other nodes are reported separately; only offence counts toward source-authored continuation. A timestamp-only link to a credited runway setup within 120 seconds is NOT claimed causal.',
  byPlan:Object.fromEntries(Object.entries(phase9lByPlan).map(([plan,row])=>
   [plan,{...row,
    followupActions:top(row.followupActions,12),
