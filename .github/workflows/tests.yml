@@ -89,6 +89,11 @@ jobs:
           node tests/phase9-graph-validation.test.cjs
           node tests/phase9-authored-chains.test.cjs
           node tests/pre-match-integration.test.cjs
+          # Short booking-negotiation tests cover real bargaining costs, proposal
+          # acceptance, distinct promoter priorities and safe contract signing.
+          # Keep these in this existing PR gate, not a separate workflow.
+          node tests/negotiations-v2.test.cjs
+          node tests/negotiations-personalities.test.cjs
           # Signed finish choices and legal audibles use the same match-engine boundary.
           node tests/agents-room.test.cjs
           node tests/brawl-endurance.test.cjs
