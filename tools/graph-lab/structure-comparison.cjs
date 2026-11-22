@@ -20,7 +20,7 @@ const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete
  sellingWrestlers:0,sellingStrains:0,sellingLines:0,comebackSelling:0,realBreathers:0,
  closingRunways:0,bridgedRunways:0,closingWins:0,closingLosses:0,cleanBouts:0,
  fullRunways:0,linkedRunways:0,lateWinnerControl:0,lateWinnerSetups:0,lateWinnerImpacts:0,
- protectedFollowthroughs:0,
+ protectedFollowthroughs:0,protectedClosingImpacts:0,
  lateAuthoredLinkSetups:0,latePerformedLinks:0,lateInterruptedSetups:0,
  lateDiversions:0,lateLinksLostAtBell:0,lateLinksStale:0,
  motifStarts:0,motifPaid:0,motifOpen:0,
@@ -104,7 +104,7 @@ for(let si=0;si<sampleStyles.length;si++){
    const winner=finish==='win_clean'?'w':'f',loser=winner==='w'?'f':'w',
     last=m.graph.events,
     since=Math.max(0,m.len-180),
-    setupIds=new Set(['rope_run','rope_rebound','front_facelock',
+    setupIds=new Set(['strike_trade','rope_run','rope_rebound','front_facelock',
      'go_behind','waistlock','wristlock','headlock','corner_whip',
      'top_climb','springboard_rise','leg_wrench','knuckle_lock']);
    // Read-only closing funnel: keep authored possibility, performed impact,
@@ -157,7 +157,9 @@ for(let si=0;si<sampleStyles.length;si++){
   }
   r.events+=m.graph.events.length;r.controlEvents+=control.graph.events.length;
   r.protectedFollowthroughs+=m.graph.closingProtected||0;
+  r.protectedClosingImpacts+=m.graph.closingImpactProtected||0;
   assert.equal(control.graph.closingProtected||0,0,'metadata-only controls cannot protect closing links');
+  assert.equal(control.graph.closingImpactProtected||0,0,'metadata-only controls cannot protect impacts');
   r.distinct+=new Set(m.graph.events.map(x=>x.id)).size;
   r.botches+=m.botches;r.controlBotches+=control.botches;
   const closing=m.final.finishingRunway;
@@ -328,6 +330,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    lateWinnerControl:r.lateWinnerControl,lateWinnerSetups:r.lateWinnerSetups,
    lateWinnerImpacts:r.lateWinnerImpacts,
    protectedFollowthroughs:r.protectedFollowthroughs,
+   protectedClosingImpacts:r.protectedClosingImpacts,
    lateAuthoredLinkSetups:r.lateAuthoredLinkSetups,
    latePerformedLinks:r.latePerformedLinks,
    lateInterruptedSetups:r.lateInterruptedSetups,

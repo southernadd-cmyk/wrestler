@@ -152,6 +152,25 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
  assert.equal(protect.r.getState(),previous,'preservation never consumes the match RNG');
  assert.ok(G.pool(protect).some(([id,weight])=>id==='clothesline'&&weight>0),
   'the physically valid linked move remains available after the saved arc');
+  // Real landed continuation must keep its physically earned position for
+  // one step; a Director reset must not invent a fresh standing exchange.
+  const afterImpact=create(structure,'story');
+  afterImpact.t=Math.floor(afterImpact.len*.92);
+  afterImpact.graph.started=true;afterImpact.graph.arc='exchange';
+  step(afterImpact,'strike_trade','w');
+  afterImpact.t+=10;step(afterImpact,'clothesline','w');
+  assert.equal(afterImpact.story.position,'mat');
+  assert.equal(afterImpact.story.down,'f');
+  afterImpact.t+=10;afterImpact.graph.age=999;
+  const beforeImpactAdvance=afterImpact.r.getState();
+  G.advance(afterImpact,afterImpact.t/afterImpact.len);
+  assert.equal(afterImpact.story.control,'w','actual earned control is retained');
+  assert.equal(afterImpact.story.position,'mat','arc cannot erase genuine knockdown immediately');
+  assert.equal(afterImpact.graph.node,'clothesline','real authored finish link remains present');
+  assert.equal(afterImpact.graph.closingImpactProtected,1,
+   'one follow-through selection was protected');
+  assert.equal(afterImpact.r.getState(),beforeImpactAdvance,
+   'closing protection cannot consume RNG or decide a move');
   const partial=create(structure,'story');
  partial.t=Math.floor(partial.len*.89);partial.graph.arc='exchange';
  step(partial,'rope_run','w');partial.t+=10;step(partial,'clothesline','w');

@@ -1811,6 +1811,32 @@ const Graph=(function makeGraph(){
    g.closingProtected=(g.closingProtected||0)+1;
    return {id:schedule.id,name:a.label};
   }
+  // A genuinely landed, graph-authored setup -> grounding impact can keep
+  // its physical control for ONE subsequent selection near a clean finish.
+  // The ordinary arc clock must not immediately stand up both wrestlers.
+  // No scripted landing, winner change, cover or RNG draw is introduced.
+  const closingLoser=bookedWinner==='w'?'f':'w';
+  if(closingEligible(M)&&M.len-M.t>=10&&M.len-M.t<=90&&
+     M.t/M.len<=.98&&pos.control===bookedWinner&&
+     pos.position==='mat'&&pos.down===closingLoser&&
+     last?.id===g.node&&last.preControl===bookedWinner&&
+     last.control===bookedWinner&&last.position==='mat'&&
+     last.down===closingLoser&&
+     M.t-last.t>=0&&M.t-last.t<=10&&
+     g.physical?.area==='ring'&&
+     !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact&&
+     !(M.nearfallAt?.length&&frac>=M.nearfallAt[0])&&
+     A[last.id]?.zone==='mat'&&A[last.id]?.down==='d'&&
+     !A[last.id]?.reverse&&!A[last.id]?.blockOf&&
+     g.events.slice(0,-1).some(e=>CLOSING_SETUPS.has(e.id)&&
+      e.preControl===bookedWinner&&e.control===bookedWinner&&
+      e.t<last.t&&last.t-e.t<=60&&
+      A[e.id]?.next.some(([id])=>id===last.id))&&
+     !g.events.some(e=>e.t>last.t&&e.preControl===closingLoser&&
+      e.control===closingLoser)){
+   g.closingImpactProtected=(g.closingImpactProtected||0)+1;
+   return {id:schedule.id,name:a.label};
+  }
   // A real Brawl rebound earns ONE opportunity before the arc director
   // changes control or resets the ropes. Only if a named running attack
   // is affordable now. This never performs or credits the attack.
@@ -4711,7 +4737,12 @@ const Graph=(function makeGraph(){
     const desired=ids.has('counter_strike')?.45:
      (ids.has('rope_run')||ids.has('front_facelock'))?.65:.85;
     if(weight>0&&other>0&&weight<other*desired){
-     const scale=Math.min(8,other*desired/weight);
+     // A completed, real authored setup gets a stronger OPTIONAL payoff
+     // choice than an exploratory setup or defensive counter. The previous
+     // 8x cap still drowned legal impacts in a very broad move pool.
+     const authoredImpact=closing.some(([id])=>A[id]?.zone==='mat'&&
+      A[id]?.down==='d');
+     const scale=Math.min(authoredImpact?32:8,other*desired/weight);
      for(const item of targets)item[1]*=scale;
     }
    }
