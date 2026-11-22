@@ -20,6 +20,8 @@ jobs:
     outputs:
       run_full: ${{ steps.paths.outputs.run_full }}
       negotiation_browser: ${{ steps.paths.outputs.negotiation_browser }}
+      browser_smoke: ${{ steps.paths.outputs.browser_smoke }}
+      full_validation: ${{ steps.paths.outputs.full_validation }}
     steps:
       - name: Check out source and history
         uses: actions/checkout@v4
@@ -37,11 +39,21 @@ jobs:
           # Fail safely: unknown refs, manual runs and non-documentation changes get full tests.
           run_full=true
           negotiation_browser=false
+          browser_smoke=false
+          full_validation=false
           if [[ "$EVENT_NAME" != workflow_dispatch && "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$BASE_SHA" != 0000000000000000000000000000000000000000 ]]; then
             mapfile -d '' changed < <(git diff --name-only --no-renames -z "$BASE_SHA" "$HEAD_SHA")
             if (( ${#changed[@]} > 0 )); then
               run_full=false
               for path in "${changed[@]}"; do
+                case "$path" in
+                  tests/browser-smoke.cjs)
+                    browser_smoke=true
+                    ;;
+                  tests/long-match-endurance.test.cjs)
+                    full_validation=true
+                    ;;
+                esac
                 case "$path" in
                   assets/js/negotiation-v2.js|assets/js/negotiation-career.js|tests/negotiation-trade-browser.cjs|tests/negotiation-career-browser.cjs|tests/negotiations-tradeoffs.test.cjs|tests/negotiations-career.test.cjs)
                     negotiation_browser=true
@@ -59,6 +71,8 @@ jobs:
           fi
           echo "run_full=$run_full" >> "$GITHUB_OUTPUT"
           echo "negotiation_browser=$negotiation_browser" >> "$GITHUB_OUTPUT"
+          echo "browser_smoke=$browser_smoke" >> "$GITHUB_OUTPUT"
+          echo "full_validation=$full_validation" >> "$GITHUB_OUTPUT"
           echo "Gameplay checks: $run_full; targeted negotiation browser: $negotiation_browser"
 
   tests:
@@ -99,6 +113,10 @@ jobs:
           node tests/structure-planning-baseline.test.cjs
           node tests/structure-contracts.test.cjs
           node tests/structure-dynamic-planner.test.cjs
+          node tests/long-match-endurance.test.cjs
+          node tests/match-flow.test.cjs
+          node tests/stipulations.test.cjs
+          node tests/ui-accessibility.test.cjs
           # Short booking-negotiation tests cover real bargaining costs, proposal
           # acceptance, distinct promoter priorities and safe contract signing.
           # Keep these in this existing PR gate, not a separate workflow.
@@ -126,16 +144,26 @@ jobs:
           fi
           echo 'PR smoke tests passed. Full simulation and browser suites run on main or via manual dispatch.' >> "$GITHUB_STEP_SUMMARY"
       - name: Run all simulation tests
-        if: needs.classify.outputs.run_full == 'true' && github.event_name != 'pull_request'
+        if: needs.classify.outputs.run_full == 'true' && (github.event_name != 'pull_request' || needs.classify.outputs.full_validation == 'true')
         shell: bash
         run: |
           set -euo pipefail
           node --version
+          failures=()
           for suite in tests/*.test.cjs; do
             echo "::group::$suite"
-            node "$suite"
+            if ! node "$suite"; then
+              failures+=("$suite")
+              echo "::error file=$suite::Regression suite failed"
+            fi
             echo "::endgroup::"
           done
+          if (( ${#failures[@]} )); then
+            printf 'Failed suites: %s\n' "${failures[*]}" >&2
+            printf '### Failed simulation suites\n' >> "$GITHUB_STEP_SUMMARY"
+            printf -- '- %s\n' "${failures[@]}" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
   browser:
     name: Browser journeys (Chromium)
@@ -144,21 +172,21 @@ jobs:
     timeout-minutes: 25
     steps:
       - name: Pull request — browser suite deferred to integration
-        if: github.event_name == 'pull_request' && needs.classify.outputs.run_full == 'true' && needs.classify.outputs.negotiation_browser != 'true'
+        if: github.event_name == 'pull_request' && needs.classify.outputs.run_full == 'true' && needs.classify.outputs.negotiation_browser != 'true' && needs.classify.outputs.browser_smoke != 'true'
         run: echo 'Full Chromium browser journeys run on main or via workflow_dispatch.'
       - name: Documentation-only change — browser tests not needed
         if: needs.classify.outputs.run_full == 'false'
         run: echo 'No game or browser code changed.'
       - name: Check out source
-        if: needs.classify.outputs.run_full == 'true' && (github.event_name != 'pull_request' || needs.classify.outputs.negotiation_browser == 'true')
+        if: needs.classify.outputs.run_full == 'true' && (github.event_name != 'pull_request' || needs.classify.outputs.negotiation_browser == 'true' || needs.classify.outputs.browser_smoke == 'true')
         uses: actions/checkout@v4
       - name: Use Node.js 22
-        if: needs.classify.outputs.run_full == 'true' && (github.event_name != 'pull_request' || needs.classify.outputs.negotiation_browser == 'true')
+        if: needs.classify.outputs.run_full == 'true' && (github.event_name != 'pull_request' || needs.classify.outputs.negotiation_browser == 'true' || needs.classify.outputs.browser_smoke == 'true')
         uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Install isolated browser test tools (CI only)
-        if: needs.classify.outputs.run_full == 'true' && (github.event_name != 'pull_request' || needs.classify.outputs.negotiation_browser == 'true')
+        if: needs.classify.outputs.run_full == 'true' && (github.event_name != 'pull_request' || needs.classify.outputs.negotiation_browser == 'true' || needs.classify.outputs.browser_smoke == 'true')
         run: |
           npm install --no-save --no-package-lock --ignore-scripts playwright@1.58.2
           npx playwright install --with-deps chromium
@@ -173,6 +201,16 @@ jobs:
           for i in {1..40}; do curl -fsS http://127.0.0.1:8765/ > /dev/null && break; sleep 1; done
           node tests/browser-smoke.cjs
           node tests/graph-lab-browser.cjs
+      - name: Run Chromium smoke when its test changes (PR only)
+        if: needs.classify.outputs.run_full == 'true' && github.event_name == 'pull_request' && needs.classify.outputs.browser_smoke == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/office-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for i in {1..40}; do curl -fsS http://127.0.0.1:8765/ > /dev/null && break; sleep 1; done
+          node tests/browser-smoke.cjs
       - name: Check targeted booking negotiations on desktop and phone (PR only)
         if: needs.classify.outputs.run_full == 'true' && github.event_name == 'pull_request' && needs.classify.outputs.negotiation_browser == 'true'
         shell: bash
