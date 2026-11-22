@@ -147,7 +147,8 @@
    x.slot=D.SLOT_ORDER[D.SLOT_ORDER.indexOf(v.slot)+1]||v.slot;
    // Better billing costs cash. Calculate against the ACTUAL slot-adjusted
    // appearance fee rather than the internal bump multiplier.
-   const fraction=degree===1?.90:degree===.5?.84:degree===.75?.87:.77;
+   const counterFraction=.77+(style.slot-.88)*.75;
+   const fraction=degree===1?.90:degree===.5?counterFraction:degree===.75?(.90+counterFraction)/2:.70;
    return atFee(o,G.W(t.wid),x,v.fee*fraction);
   }else if(t.topic==='stip'){
    x.stip=t.stip;
