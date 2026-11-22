@@ -715,18 +715,6 @@
      s.status='missed';s.reason='No sufficient performed evidence in the planned window.';
     }
    });
-   // A non-American match must sometimes move toward its booked finish
-   // before the prior agreed beat is earned. Mark that beat MISSED, never
-   // performed, so the late exchange can still be genuinely witnessed.
-   if(['kings_road','dominant_ace'].includes(M.structureDirector.id)){
-    const states=M.structureDirector.objectives,plan=M.sheet.structurePlan.objectives;
-    const prior=plan[2],final=plan[3];
-    const handoff=Math.max(final.window[0]+.14,prior.window[1]-.07);
-    if(at>=handoff&&states[2]?.status==='pending'&&states[3]?.status==='pending'){
-     states[2].status='missed';
-     states[2].reason='Unwitnessed before the genuine closing handoff; the wrestlers moved on.';
-    }
-   }
   }
   function finalize(M){
    if(!active(M))return;
