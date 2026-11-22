@@ -200,7 +200,12 @@
    apply(o,t.original);
    t.step='done';t.proposal=null;t.verdict='original';
    t.detail='The original terms remain available. Nothing is signed yet.';
-   log(t,p,"Let's take your original terms instead.",'Fine. The original invitation still stands.');
+   log(t,p,"Let's take your original terms instead.",{
+    aggressive:"Fine. My first deal still stands. Don't make me repeat it.",
+    showman:"No problem. The original card is still yours if you want it.",
+    traditional:"Sensible. We can work from the card as written.",
+    cold:"Agreed. The original commercial terms remain."
+   }[p.personality]||'The original offer remains.');
    return result();
   }
   if(t.step==='start'){
@@ -258,18 +263,33 @@
   if(t.step==='challenge'){
    if(move==='reply:reframe'){
     t.step='reason';t.retry=true;
-    log(t,p,'Let me try another argument.','All right. Make this one count.');
+    log(t,p,'Let me try another argument.',{
+     aggressive:'Make it count. I need a reason I can put in front of my crowd.',
+     showman:'Tell me how this becomes a moment the audience remembers.',
+     traditional:'Show me you can deliver the match exactly as promised.',
+     cold:'Bring me a stronger commercial justification. This is your last attempt.'
+    }[p.personality]||'Make this one count.');
     return result();
    }
    if(move==='reply:concede'){
     if(t.strength<t.threshold-27){
      missing(t,p,'No revision available. The initial invitation remains.');
-     log(t,p,'What if we make a greater concession?','No. We are sticking to the original deal.');
+     log(t,p,'What if we make a greater concession?',{
+      aggressive:'That still does not help this card. Original offer only.',
+      showman:'Even with that trade I cannot sell the change. Original terms.',
+      traditional:'I will keep the card as written, thank you.',
+      cold:'The adjustment is not justified, even at that price.'
+     }[p.personality]||'The original offer stands.');
     }else{
      t.proposal=adjusted(o,t,.25);t.kind='counter';t.step='counter';t.pushes=1;
      t.detail=offerText(o,w,t.proposal);
      log(t,p,'I will settle for less to get something agreed.',
-      'I can make this one compromise: '+t.detail+' I cannot go further.');
+      ({
+       aggressive:"A smaller concession, then. Don't push this further: ",
+       showman:"If we can still make the show work, I can do this: ",
+       traditional:"I can make a limited adjustment without rewriting the card: ",
+       cold:"With that concession, the economics work at: "
+      }[p.personality]||'One compromise: ')+t.detail+' This is final.');
     }
     return result();
    }
@@ -280,34 +300,64 @@
     if(!t.proposal)return {error:'No proposal is available.'};
     apply(o,t.proposal);
     t.step='done';t.verdict=t.kind;t.detail=offerText(o,w,t.proposal);
-    log(t,p,'I accept those terms.','Then we have a deal in principle. Sign it to make it official.');
+    log(t,p,'I accept those terms.',{
+     aggressive:'Good. Shake on it, then sign the paperwork.',
+     showman:'Great. Now we have something to promote. Sign the contract.',
+     traditional:'Very well. I will put it on the card once the contract is signed.',
+     cold:'Terms accepted. Signature is required before the booking is confirmed.'
+    }[p.personality]||'Sign the contract to confirm it.');
     return result();
    }
    if(t.step==='counter'&&!t.pushes&&['push:hold','push:trade'].includes(move)){
     t.pushes=1;
     if(move==='push:hold'){
-     // Hardball always strains trust. When trust is already poor and the case
-     // is weak, a promoter can withdraw the ORIGINAL booking as well.
-     const trustBefore=p.trust;p.trust=clamp(p.trust-2);t.cost=(t.cost||0)+2;
-     if(t.strength>=t.threshold-5){
+     // Every promoter has a different tolerance for a hardball ultimatum.
+     const v=profile(p),trustBefore=p.trust;
+     p.trust=clamp(p.trust-v.hardball);t.cost=(t.cost||0)+v.hardball;
+     if(t.strength>=t.threshold-v.holdWindow){
       t.proposal={...t.full};t.kind='agreed';t.step='offer';t.detail=offerText(o,w,t.proposal);
       log(t,p,'I need the full improvement. We have earned it.',
-       'Fine, but do not ask again. '+t.detail+' This is final.');
-     }else if(trustBefore<45&&t.strength<t.threshold-10){
-      log(t,p,'I want the full terms or I cannot agree.','Then I am pulling the entire invitation. Find another show.');
-      return exit(o,t,p,'The promoter withdrew the booking after hardball. Promoter trust −2.');
+       ({
+        aggressive:"You've got the nerve and the draw. Don't ask me twice. ",
+        showman:"I can work with that if we make it a moment. ",
+        traditional:"You have made the case. I will not revisit this. ",
+        cold:"The evidence justifies the full terms, but no more. "
+       }[p.personality]||'My final offer: ')+t.detail);
+     }else if(trustBefore<v.pullBelow&&t.strength<t.threshold-v.pullMargin){
+      log(t,p,'I want the full terms or I cannot agree.',{
+       aggressive:"You don't set ultimatums for my card. Invitation withdrawn.",
+       showman:"I can't build a show around an ultimatum. The booking is off.",
+       traditional:"We are finished. I will not put you on this card.",
+       cold:"The commercial terms are no longer available. This invitation is withdrawn."
+      }[p.personality]||'This booking is withdrawn.');
+      return exit(o,t,p,'The promoter withdrew the booking after hardball. Promoter trust −'+v.hardball+'.');
      }else{
-      t.proposal=null;missing(t,p,'The counteroffer was withdrawn. The original deal remains. Promoter trust −2.');
-      log(t,p,'I will not accept that compromise.','Then the extra terms are off the table. The original offer still stands.');
+      t.proposal=null;missing(t,p,'The counteroffer was withdrawn. Original terms remain. Promoter trust −'+v.hardball+'.');
+      log(t,p,'I will not accept that compromise.',{
+       aggressive:"Then the improvement's gone. Take the original deal.",
+       showman:"That's too far. The original offer is still there, but the extra is off.",
+       traditional:"I have withdrawn the adjustment. The original card remains.",
+       cold:"That demand is not commercially viable. Revised terms withdrawn."
+      }[p.personality]||'The revised terms are withdrawn.');
      }
      return result();
     }
-    if(t.strength>=t.threshold-14){
+    if(t.strength>=t.threshold-profile(p).tradeWindow){
      t.proposal=adjusted(o,t,.75);t.detail=offerText(o,w,t.proposal);
      log(t,p,'Could we meet a little closer to my request?',
-      'One last adjustment: '+t.detail+' That is all I can do.');
+      ({
+       aggressive:"I can move this much, no more: ",
+       showman:"Let's make it work for the crowd. Here's my final compromise: ",
+       traditional:"One sensible adjustment, then the card is locked: ",
+       cold:"A smaller correction is economically supportable: "
+      }[p.personality]||'One last adjustment: ')+t.detail);
     }else{
-     log(t,p,'Could we find a little more room?', 'No. My existing counteroffer stands. No more movement.');
+     log(t,p,'Could we find a little more room?',{
+      aggressive:"No. You've reached my limit. Counteroffer stands.",
+      showman:"I want the show, but that's as far as I can go.",
+      traditional:"No further changes. The counteroffer remains.",
+      cold:"The numbers do not support a further revision. Counteroffer stands."
+     }[p.personality]||'My existing counteroffer stands.');
     }
     return result();
    }
@@ -315,5 +365,7 @@
   }
   return {error:'No response is available at this stage.'};
  };
- root.OfficeNegotiationsV2={active:true};
+ root.OfficeNegotiationsV2={active:true,read,profileFor:pid=>{
+  const p=G.P(pid);return p?profile(p):null;
+ }};
 })(typeof window!=='undefined'?window:globalThis);
