@@ -1551,6 +1551,22 @@ const Graph=(function makeGraph(){
  }
  function enter(M,id,prev){
   const g=get(M),arc=ARCS[id],p=Psy.get(M);
+  const director=root.OfficeSheets?.DIRECTOR;
+  const last=g.events.at(-1),node=A[last?.id];
+  // Phase 9F: a dramatic arc is not a wrestling move. In the final
+  // 90 seconds of a clean match, recent genuinely performed in-ring
+  // action retains its physical owner until a real action contests it.
+  // Apply this to EITHER wrestler, without promising a finish.
+  const keepRealControl=!!prev&&!!director?.active(M)&&
+   closingEligible(M)&&M.len-M.t>=0&&M.len-M.t<=90&&
+   ['w','f'].includes(p.control)&&last?.id===g.node&&
+   last.control===p.control&&closingValidEvent(last)&&
+   M.t-last.t>=0&&M.t-last.t<=40&&
+   g.physical?.area==='ring'&&
+   !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact&&
+   !['rest','heel'].includes(node?.family)&&
+   !['finish_tease','crowd_pose','taunt','catch_breath','circle'].includes(last.id);
+  const beforeControl=p.control;
   let words;
   if(id==='opening')words=M.planId==='brawl'?'{W} and {F} charge together. They start throwing hard forearms.':'{W} and {F} begin cautiously, testing their distance.';
   else if(id==='chain')words='{W} and {F} settle into a series of holds, escapes and counters.';
@@ -1580,7 +1596,7 @@ const Graph=(function makeGraph(){
   // Arc switches never teleport the wrestlers. Every needed reset is narrated.
   // The booth rotates variants through saved graph counters without a random
   // draw: changing the words must never change the match's selected moves.
-  if(prev){
+  if(prev&&!keepRealControl){
    if(p.position==='outside'){
     g.outsideReturnCount=(g.outsideReturnCount||0)+1;
     const options=noCountout(M)?[
@@ -1748,18 +1764,35 @@ const Graph=(function makeGraph(){
    words=alternatives[count%alternatives.length];
    g.arcNarrationCounts[id]=count+1;
   }
-  const director=root.OfficeSheets?.DIRECTOR;
   const role=director?.active(M)&&arc.control!=='neutral'?
    (structureActor(M)||(arc.control==='w'?M.structureDirector.roles.lead:M.structureDirector.roles.other)):arc.control;
   if(director?.active(M)&&arc.control!=='neutral')
    words=(role==='w'?M.w.short:M.f.short)+' seeks the initiative in this exchange.';
+  if(keepRealControl)
+   words=(p.control==='w'?M.w.short:M.f.short)+
+    ' retains the earned advantage as the match enters its next phase.';
   if(words)say(M,fill(M,words),'story',{textureId:'arc-entry:'+id});
+  if(keepRealControl){
+   p.phase=arc.phase;
+   g.arcPhysicalRetained=(g.arcPhysicalRetained||0)+1;
+   if(id==='finish_setup')
+    g.arcFinishControlRetained=(g.arcFinishControlRetained||0)+1;
+   (g.arcPhysicalWitnesses??=[]).push({at:M.t,from:prev,to:id,
+    actor:p.control,move:last.id,moveAt:last.t,
+    position:p.position,down:p.down});
+   if(g.arcPhysicalWitnesses.length>24)g.arcPhysicalWitnesses.shift();
+   return;
+  }
   if(arc.control==='w'||arc.control==='f'){
    const change=p.control!==role;
    if(change)p.changes++;
    p.control=role;
    M.mom=role==='w'?Math.max(25,M.mom):Math.min(-25,M.mom);
   }else p.control='neutral';
+  if(prev&&director?.active(M)&&closingEligible(M)&&
+     M.len-M.t>=0&&M.len-M.t<=90&&
+     ['w','f'].includes(beforeControl)&&p.control!==beforeControl)
+   g.arcLateControlOverrides=(g.arcLateControlOverrides||0)+1;
   p.phase=arc.phase;
   p.position='standing';p.down=null;
   resetPhysical(M);
@@ -1874,7 +1907,7 @@ const Graph=(function makeGraph(){
     const next=selectArc(M,frac);
     if(next!==g.arc){
      const prev=g.arc;g.arc=next;g.age=0;g.visit[next]=(g.visit[next]||0)+1;
-     g.history.push(next);g.transitions++;g.node=null;enter(M,next,prev);
+     g.history.push(next);g.transitions++;enter(M,next,prev);
     }
    }
    return {id:schedule.id,name:ARCS[g.arc].label};
