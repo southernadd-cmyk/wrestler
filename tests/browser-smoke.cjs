@@ -505,6 +505,11 @@ async function negotiationPrototypeAudit(browser,name,viewport){
   await page.locator('#view [data-talkopen="neg-original-stip"]:visible').click();
   assert.equal(await page.locator('#modal .neg-contract.is-new').count(),0,
     name+': originally stipulated offers are not negotiated changes');
+  // Phone layouts intentionally collapse the contract disclosure on each
+  // new negotiation. Open it before asserting on rendered, visible text.
+  const stipTerms=page.locator('#modal .neg-terms');
+  if(!(await stipTerms.evaluate(el=>el.open)))
+   await stipTerms.locator('summary').click();
   assert.match(await page.locator('#modal .neg-contract').innerText(),/No disqualification/);
   await page.locator('#modal [data-dlg="close"]').click();
   assert.deepEqual(errors,[],name+': browser JS errors during a negotiation');

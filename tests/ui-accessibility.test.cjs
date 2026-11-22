@@ -69,7 +69,7 @@ assert.match(ui,/win\('What changed'/);
 for(const marker of ['class="neg-transcript well" role="log"','class="neg-aside" aria-label="Booking terms"',
   'class="neg-response"','class="deal neg-contract','data-talkbook="','data-talkaction="'])
  assert.ok(ui.includes(marker),'Missing accessible negotiation UI: '+marker);
-assert.match(ui,/step==='reason'\?'Resume the discussion'/);
+assert.match(ui,/o\.talk&&o\.talk\.step!=='start'\?'Resume the discussion'/);
 assert.match(ui,/\(!o\.talk\|\|o\.talk\.step==='start'\)&&s\.focus<1/);
 assert.ok(css.includes('dialog.negotiation-dialog[open]'));
 assert.ok(css.includes('.neg-transcript{'));

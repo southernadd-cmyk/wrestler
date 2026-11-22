@@ -31,7 +31,7 @@ function offer(o={}){const s=G.S,x={id:'so-'+(n++),pid:'dock',rid:'silas',slot:'
   const r=G.talkMove(o.id,'rex','arg:crowd');assert.ok(!r.error,r.error);
   const t=o.talk;
   assert.ok(['offer','counter','challenge'].includes(t.step),'initial promoter response should remain actionable');
-  assert.equal(o.stip,undefined,'proposed stipulation is not yet agreed');
+  assert.equal(o.stip,null,'proposed stipulation is not yet agreed');
   if(t.step==='offer'){agreed++;assert.equal(t.proposal.stip,kind);}
   else if(t.step==='counter'){counter++;assert.equal(t.proposal.stip,X.favourite(G.P(pid)));assert.notEqual(t.proposal.stip,kind);}
   else refused++;
@@ -97,7 +97,7 @@ function offer(o={}){const s=G.S,x={id:'so-'+(n++),pid:'dock',rid:'silas',slot:'
    if(stip==='submission'){
     const live=M.log.filter(l=>l.kind!=='story'||l.text!==X.STIPS.submission.announce).filter(l=>l.kind!=='bell');
     assert.doesNotMatch(live.map(l=>l.text).join('\n'),
-     /\b(?:cover|cradle|backslide|roll[- ]?up|pinfall|kicks? out|shoulder up|near.?fall)\b|ONE! TWO!/i,
+     /\b(?:cover(?!\s+up\b)|cradle|backslide|roll[- ]?up|pinfall|kicks? out|shoulder up|near.?fall)\b|ONE! TWO!/i,
      'submission-only cannot narrate any live pin or nearfall');
     assert.ok(!M.graph.events.some(e=>/^(cover|early_cover|near_kickout|counter_rollup|scheduled_nearfall)$/.test(e.id)),
      'submission-only cannot enter a pin graph node');
