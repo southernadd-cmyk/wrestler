@@ -25,10 +25,21 @@ This is an **audit and narrow balance repair**, not a rewrite of match plans, st
 ## Rejected trial: forced late handoff
 An early handoff at roughly 84% match progress was tested in successful run **45055257129**. Although it enabled some adapted closing objectives, it prematurely marked many King's Road tactical callbacks and Dominant Ace reassertions missed. This **reduced** their overall earned objective rates compared with the earlier causal-payoff-only trial. The handoff was deliberately discarded. No final objective is made successful by timing alone.
 
-## Expected retest comparison
-The causal-payoff-only trial (successful CI run **45054636935**) moved King's Road from 49.8% to **54.6%** earned objectives and 13.3% to **22.5%** full layouts; Dominant Ace from 55.2% to **57.3%** and 5.8% to **12.5%**. At that point Heel still completed 98.1%, proving weights alone were insufficient.
+## Final accepted result — CI run 45055654404, code head `1d60691`
+The final 960-match run retained the pressure-backed Heel escape and causal closing setup, while **removing** the unsuccessful early handoff.
 
-The subsequent danger-evidence trial (successful CI run **45055257129**) brought Heel to **85.0%** witnessed objectives and **45.0%** completed layouts with **116 different four-stage action paths in 120 bouts**, while preserving all 120 booked results. That same run included the *rejected* handoff for King/Ace, so the final accepted build must be verified again with it removed.
+| Structure | Objectives witnessed, before → after | Completed all four, before → after | Distinct action paths after | Active/control stars after |
+|---|---:|---:|---:|---:|
+| Classic American | 54.2% → **54.2%** | 18.3% → **18.3%** | 101/120 | 2.594 / 2.633 |
+| King's Road | 49.8% → **54.6%** | 13.3% → **22.5%** | 99/120 | 2.554 / 2.596 |
+| Chickenshit Heel | 98.8% → **85.0%** | 95.0% → **45.0%** | **116/120** | 2.571 / 2.623 |
+| Dominant Ace | 55.2% → **57.3%** | 5.8% → **12.5%** | 107/120 | 2.612 / 2.621 |
+
+The Director observed **54** real danger-backed Heel escapes; all were independently validated against a preceding actual opponent attack. It also verified **34** King's Road and **12** Dominant Ace single-impact closing payoffs against a *different* witnessed setup within 150 seconds. **All 480 active matches retained their booked result**, and all 480 matched metadata-only controls completed. No final finish-route fallback occurred in the active samples.
+
+This does **not** mean the other three structures should be forced toward 85% completion: a missed dramatic objective can be a genuine consequence of choices and execution. King's Road and Dominant Ace still have relatively difficult closing goals, especially at eight minutes. That remains worth monitoring in Phase 8 expansion, but adding a forced schedule transition harmed coherent matches and has been rejected.
+
+Node PR regressions for Phases 0–6, including the unchanged Phase 0 120-match fingerprint `18391d10abb5b86aca4b43834549a5ddcf9cf2ee15d915af92cda5aa3b1946b6`, and real desktop/mobile Chromium checks passed.
 
 ## Guardrails
-Phase 0 legacy fingerprint, Phases 1–6 contracts, actual finish methods, in-progress save determinism, the five performance plans, previous career match-quality checks and browser journeys must remain green. The new audit measures named-call success independently of structure coherence, and does not change the existing star-rating formula. A miss stays a miss; an adapted objective must have witnessed physical evidence. Keep the Phase 7 PR unmerged until the final CI is green and the A/B comparison has been read.
+Phase 0 legacy fingerprint, Phases 1–6 contracts, actual finish methods, in-progress save determinism, the five performance plans, previous career match-quality checks and browser journeys must remain green. The new audit measures named-call success independently of structure coherence, and does not change the existing star-rating formula. A miss stays a miss; an adapted objective must have witnessed physical evidence. The Phase 7 PR remains unmerged pending explicit approval.
