@@ -113,8 +113,11 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
  const naturalLoss=create(structure,'story','win_clean');
  naturalLoss.t=Math.floor(naturalLoss.len*.82);
  step(naturalLoss,'probe_strike','f');
- assert.equal(G.closingOffers(naturalLoss,'f').length,0,
-  'the opponent cannot inherit the booked clean winner’s setup preference');
+ const opponentOffers=G.closingOffers(naturalLoss,'f');
+ assert.ok(!opponentOffers.some(([id])=>id==='rope_run'||id==='waistlock'),
+  'the eventual loser cannot inherit the booked winner’s finishing setups');
+ assert.ok(opponentOffers.some(([id])=>id==='counter_strike'),
+  'real loser pressure may still invite a genuine defensive counter');
   const partial=create(structure,'story');
  partial.t=Math.floor(partial.len*.89);partial.graph.arc='exchange';
  step(partial,'rope_run','w');partial.t+=10;step(partial,'clothesline','w');
