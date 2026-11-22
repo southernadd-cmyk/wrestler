@@ -227,7 +227,7 @@
  .past{max-height:9em;font-size:19px}
  .tape{grid-template-columns:1fr 1fr}
  .tape .cmp{grid-column:1/-1;grid-row:2}
- .tv-foot{position:sticky;bottom:0}
+ .tv-foot{position:sticky;bottom:0;z-index:3}
 }
 
 @media (max-width:600px){
