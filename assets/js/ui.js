@@ -772,6 +772,8 @@ function renderFixtures(){
 }
 
 /* ======================= TERRITORY ======================= */
+// Secondary territory sections start folded on phones so the rankings and belts come first.
+function pyrFold(title,body){return `<details class="pyr-fold"${phoneLayout()?'':' open'}><summary><h3 class="section-h">${esc(title)}</h3></summary>${body}</details>`}
 function renderPyramid(){
  const s=S(),t=OfficeTerritory.ensure(),[pid,dv]=String(route.id||'').split(':');
  const p=D.PROMOS.find(x=>x.id===pid)||D.PROMOS[0],div=D.DIVISIONS[dv]?dv:'men';
@@ -793,7 +795,7 @@ function renderPyramid(){
  const news=t.reports.slice(0,4).flatMap(r=>r.lines).map(l=>`<li>${esc(l)}</li>`).join('');
  paint('s-split',
   win(esc(p.name)+' '+esc(D.DIVISIONS[div].name.toLowerCase())+' pyramid',pyr,{keep:'pyr',note:`Season ${s.season}, week ${s.week}`})+
-  win('Champions',`${belts}<h3 class="section-h" style="margin-top:12px">Rival stables</h3>${teams}<h3 class="section-h" style="margin-top:12px">Circuit news</h3>${news?`<ul class="fulllog well" style="color:var(--white)">${news}</ul>`:'<p class="dim">Other promotions report their results after you advance the week.</p>'}`,{h:'h3',keep:'rivals'})
+  win('Champions',`${belts}${pyrFold('Rival stables',teams)}${pyrFold('Circuit news',news?`<ul class="fulllog well" style="color:var(--white)">${news}</ul>`:'<p class="dim">Other promotions report their results after you advance the week.</p>')}`,{h:'h3',keep:'rivals'})
  );
 }
 function promoterState(p,rep){

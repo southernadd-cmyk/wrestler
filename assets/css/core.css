@@ -522,6 +522,14 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .belt-row small{display:block;font-size:13px;color:var(--dim)}
 .belt-row b{display:block;font-weight:600;overflow-wrap:anywhere}
 .pent.champ{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.pyr-fold{margin-top:12px}
+.pyr-fold>summary{display:flex;align-items:center;gap:8px;min-height:36px;cursor:pointer;list-style:none}
+.pyr-fold>summary::-webkit-details-marker{display:none}
+.pyr-fold>summary .section-h{margin:0}
+.pyr-fold>summary::after{content:"▾";color:var(--blood);font-size:18px}
+.pyr-fold[open]>summary::after{content:"▴"}
+.pyr-fold>summary:focus-visible{outline:3px dashed var(--ink);outline-offset:2px}
+@media(max-width:720px){.pyr-fold>summary{min-height:44px;padding:4px 8px;background:var(--stone-2);border:2px solid var(--ink)}}
 .title-line{display:grid;gap:4px;margin:10px 0 4px}
 .belt-badge{display:inline-grid;grid-template-columns:96px auto;gap:8px;align-items:center;font-weight:600}
 @media(max-width:720px){.belt-hero{grid-template-columns:1fr}.belt-list{grid-template-columns:1fr}}
