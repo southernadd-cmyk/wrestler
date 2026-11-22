@@ -8,6 +8,13 @@ assert.ok(source.includes('class="mf-breakdown-section"'),'real match flow repor
 const {chromium}=require('playwright');
 const URL='http://127.0.0.1:8765/';
 
+// Phones fold the free-agent search and filters into a disclosure so the
+// candidates come first. Open it the way a player would before using them.
+async function openScoutFilters(page){
+ const d=page.locator('#view details.free-filters');
+ if(await d.count()&&!(await d.evaluate(el=>el.open)))await d.locator('summary').click();
+}
+
 // Match-night broadcast geometry. The live line, commentary history and
 // large events must never resize their window as lines are replaced.
 async function commentaryHeightAudit(page,name,viewport){
@@ -168,8 +175,11 @@ async function journey(browser,name,viewport){
     assert.equal(mobileReadouts.length,4,'phone: all career readouts must exist');
     assert.ok(mobileReadouts.every(x=>x.display!=='none'&&x.right<=viewport.width+1&&x.value),
       'phone: every readout must be visible and within screen width '+JSON.stringify(mobileReadouts));
-    assert.ok(mobileReadouts[2].top>=mobileReadouts[0].bottom-2,
-      'phone: reputation and meetings should occupy the second compact row');
+    // Since #211 the phone header keeps all four readouts in one compact row.
+    assert.ok(mobileReadouts.every(x=>Math.abs(x.top-mobileReadouts[0].top)<2),
+      'phone: all four readouts should share one compact row '+JSON.stringify(mobileReadouts));
+    assert.ok(mobileReadouts.every((x,i)=>i===0||x.left>=mobileReadouts[i-1].right-1),
+      'phone: readouts should sit side by side in order '+JSON.stringify(mobileReadouts));
     assert.match(mobileReadouts[2].label,/Reputation/i);
     assert.match(mobileReadouts[3].label,/Meetings left/i);
   }
@@ -195,6 +205,7 @@ async function journey(browser,name,viewport){
 
   // Phase 2: a small, real career-management journey in each responsive viewport.
   await page.evaluate(()=>window.OfficeUI.go('scouting'));
+  await openScoutFilters(page);
   await page.locator('#view [data-scout-query]').fill('Mara Vale');
   assert.match(await page.locator('#view .management-filters .filter-results').innerText(),/^1 of /,name+': search must narrow free agents');
   await page.locator('#view [data-clear-scout]').click();
@@ -472,6 +483,7 @@ async function responsiveAudit(browser,name,viewport){
   });
   const values=await page.locator('#view [data-scout-style] option').evaluateAll(opts=>opts.map(o=>o.value));
   assert.ok(values.includes(style),name+': active market style missing from Scouting options');
+  await openScoutFilters(page);
   await page.locator('#view [data-scout-style]').selectOption(style);
   assert.match(await page.locator('#view .filter-results').first().innerText(),/^1 of /,
     name+': new market style cannot filter available wrestlers');
