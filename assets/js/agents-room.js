@@ -1358,6 +1358,9 @@
    w:lite(w),f:lite(f),promoter:{id:pid,name:p?.name||'the promoter',voice:p?.voice||'The promoter',likes:p?.likes||null,tv:!!p?.tv},
    stage:'plan',at:0,queue:[],mood:{w:0,f:0},consent:{w:70,f:70},board:{},note:null,limits:{ban:[],banIds:[]},fx:{},flags:{},entrance:[],
    spice:0,leash:null,talk:null,stunt:null,lockRoute:null,skipPromo:false,repStake:0,decided:[],log:[],said:{},base:null,contract:{...c},rehearsed:!!opts.rehearsed};
+  // Metadata-only opt-in for Phase 1; live meetings never select this yet.
+  // Old in-progress meetings have no structure property.
+  if(opts.structure!==undefined)st.structure=P.STRUCTURES.create(opts.structure);
   st.loserSide=st.finish.startsWith('win')?'f':'w';
   st.queue=draw(st,p,opts.recent||[]);
   // The oldest thread due with this wrestler, opponent or promoter comes up first.
@@ -1560,13 +1563,14 @@
   base.nodes.forEach((n,i)=>{n.requires=i?[base.nodes[i-1].id]:[];});
   const problems=K.validate(base.nodes);if(problems.length)throw Error('Backstage sheet: '+problems.join(', '));
   const note=st.note?{id:st.note.id,short:st.note.short,ban:st.note.ban||[],banIds:st.note.banIds||[],need:st.note.need||[],needRisk:!!st.note.needRisk,honour:!!st.note.honour,waived:!!st.note.waived,argued:!!st.note.argued,promoter:st.promoter.voice}:null;
-  return {...base,v:4,method:planned>=3?'detailed':planned>=1?'landmarks':'live',focus:'authentic',decision:'agreed',signed:true,confirmed:true,disputed:false,issues:[],
+  const signed={...base,v:4,method:planned>=3?'detailed':planned>=1?'landmarks':'live',focus:'authentic',decision:'agreed',signed:true,confirmed:true,disputed:false,issues:[],
    workerConsent:consent(st,'w'),opponentConsent:consent(st,'f'),finishRoute:st.lockRoute||st.board.finish?.route||null,note,
    limits:{ban:[...new Set(st.limits.ban)],banIds:[...new Set(st.limits.banIds)]},spice:st.spice,fx:{...st.fx},repStake:st.repStake,entrance:st.entrance.slice(),
    game:st.game,leash:st.leash,talk:st.talk||'none',flags:{...st.flags},crowdMood:st.crowdMood||null,minutes:Math.max(5,st.minutes+(st.fx.minutes||0)),skipPromo:st.skipPromo,
    stunt:null,bonus:0,story:story(st),finishPreparation:finishPlan(st),negotiation:st.negotiation?JSON.parse(JSON.stringify(st.negotiation)):null,rehearsed:!!st.rehearsed,situations:st.queue.slice(),threads:(st.carry||[]).map(t=>({...t})),threadUsed:st.thread?.id||null,decided:st.decided.map(d=>({...d})),
    premise:'A running order of '+planned+' '+(planned===1?'move':'moves')+'; '+st.queue.length+' things came up backstage'+(st.reworked?' and '+st.reworked+' '+(st.reworked===1?'beat was':'beats were')+' rewritten':'')+'.',
    speakers:st.log.filter(x=>x.kind!=='you').slice(-6).map(x=>({actor:x.who,text:x.text}))};
+  return st.structure?P.STRUCTURES.attach(signed,st.structure):signed;
  }
  function agreed(st){
   // A plain-language list of what is on the sheet so far.
