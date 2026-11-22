@@ -1540,7 +1540,7 @@ const Graph=(function makeGraph(){
   else if(id==='comeback')words='{F} rushes in once too often. {W} sidesteps and takes control!';
   else if(id==='resurgence')words='{W} keeps the pressure on. {F} struggles to find a way back.';
   else if(id==='exchange')words='Both wrestlers scramble to their feet. The advantage is there to be taken.';
-  else if(id==='nearfall')words='They know one mistake could settle this. Every cover now matters.';
+  else if(id==='nearfall')words=M.o.stip==='submission'?'They know one opening could settle this. Every hold and escape matters.':'They know one mistake could settle this. Every cover now matters.';
   else if(id==='escalation')words='The pace rises as both wrestlers start looking for their big attacks.';
   else if(id==='stalling')words='Nobody wants to commit. One of them keeps finding reasons to stop the action, and the crowd is getting restless.';
   else if(id==='test_strength')words='{W} and {F} reach for each other’s hands. This is going to be a test of strength.';
@@ -1553,7 +1553,7 @@ const Graph=(function makeGraph(){
   else if(id==='double_down')words='They collide, and both go down. The referee starts a count.';
   else if(id==='top_rope_battle')words='The action moves to the corner. Somebody is going up top.';
   else if(id==='submission_battle')words='It goes to the mat. Whoever finds a submission first could end this.';
-  else if(id==='false_finish')words='They are trading roll-ups and finishing attempts. Every count could be the last.';
+  else if(id==='false_finish')words=M.o.stip==='submission'?'They are trading submission attempts and escapes. One locked-in hold could decide it.':'They are trading roll-ups and finishing attempts. Every count could be the last.';
   else words='{W} and {F} dig deep. The finishing sequence is close.';
   // Arc switches never teleport the wrestlers. Every needed reset is narrated.
   // The booth rotates variants through saved graph counters without a random
