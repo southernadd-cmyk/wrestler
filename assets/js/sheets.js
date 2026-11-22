@@ -152,8 +152,75 @@
    return bad.length?{mode:'unsupported',id:null,contract:null,errors:bad}:
     {mode:'metadata_only',id:sheet.structure.id,contract:JSON.parse(JSON.stringify(sheet.structure)),errors:[]};
   }
+  // Phase 2, still a signed EDITORIAL plan, not an executable instruction
+  // to Graph or a record of moves landed. No structure objective can bypass
+  // match physics or silently change the contracted winner or finish route.
+  function validatePlan(plan,structure,sheet){
+   const bad=[];
+   const structureBad=validate(structure);
+   if(structureBad.length)return ['Invalid structure: '+structureBad.join('; ')];
+   if(!plain(plan))return ['Structure editorial plan must be an object'];
+   for(const k of Object.keys(plan))
+    if(!['version','structureId','roles','finishRoute','objectives','objections'].includes(k))
+     bad.push('Unexpected plan field '+k);
+   if(plan.version!==1||plan.structureId!==structure.id)bad.push('Structure plan version or identity mismatch');
+   const roles=plan.roles;
+   if(!plain(roles)||roles.lead!==structure.roles.lead||roles.other!==structure.roles.other)
+    bad.push('Structure plan role mismatch');
+   if(plan.finishRoute!==(sheet?.finishRoute||null))bad.push('Editorial plan changes signed finish');
+   if(!Array.isArray(plan.objectives)||plan.objectives.length!==structure.objectives.length){
+    bad.push('Structure objective count mismatch');return bad;
+   }
+   plan.objectives.forEach((obj,i)=>{
+    const known=structure.objectives[i];
+    if(!plain(obj)){bad.push('Objective '+i+' must be an object');return}
+    for(const k of Object.keys(obj))
+     if(!['id','title','intent','actor','window','requires','commitment','call'].includes(k))
+      bad.push('Unexpected objective plan field '+k);
+    for(const k of ['id','title','intent','actor'])
+     if(obj[k]!==known[k])bad.push('Objective '+i+' changes '+k);
+    if(JSON.stringify(obj.window)!==JSON.stringify(known.window)||
+       JSON.stringify(obj.requires)!==JSON.stringify(known.requires))
+     bad.push('Objective '+i+' changes timing or dependencies');
+    if(obj.commitment!==(obj.call?'landmark':'guide'))bad.push('Objective '+i+' commitment must reflect actual signed call');
+    if(obj.call!=null){
+     const c=obj.call;
+     if(!plain(c)){bad.push('Invalid called spot '+i);return}
+     for(const k of Object.keys(c))
+      if(!['action','owner','proposedBy','label','source','chosen','backups'].includes(k))
+       bad.push('Unexpected called spot field '+k);
+     if(typeof c.action!=='string'||!actions[c.action])bad.push('Unknown named move in objective '+i);
+     if(!['w','f'].includes(c.owner)||(known.actor!=='either'&&c.owner!==known.actor))
+      bad.push('Move owner contradicts dramatic role '+i);
+     if(!['agent','w','f'].includes(c.proposedBy)||!['suggested','manual','negotiated','revised'].includes(c.source))
+      bad.push('Unknown provenance for called spot '+i);
+     if(typeof c.chosen!=='boolean'||typeof c.label!=='string'||!c.label.trim()||c.label.length>120)
+      bad.push('Incomplete called spot agreement '+i);
+     if(!Array.isArray(c.backups)||c.backups.length>2||
+       c.backups.some(move=>typeof move!=='string'||!actions[move]||move===c.action)||
+       new Set(c.backups).size!==c.backups.length)
+      bad.push('Invalid legal-alternative metadata '+i);
+     if('status' in c||'actual' in c||'at' in c)bad.push('A planned spot must not claim to be performed '+i);
+    }
+   });
+   if(!Array.isArray(plan.objections)||plan.objections.length>10||
+      plan.objections.some(x=>!plain(x)||!structure.objectives.some(o=>o.id===x.objective)||
+       !['safety','prohibited'].includes(x.reason)||!['replace','open','keep'].includes(x.decision)||
+       typeof x.from!=='string'||!actions[x.from]||(x.to!=null&&!actions[x.to])))
+    bad.push('Invalid structure objection ledger');
+   return bad;
+  }
+  function readPlan(sheet){
+   if(!sheet||sheet.structurePlan==null)return {mode:'absent',plan:null,errors:[]};
+   const structure=read(sheet);
+   if(structure.mode!=='metadata_only')return {mode:'unsupported',plan:null,
+    errors:structure.errors.length?structure.errors:['Missing supported structure contract']};
+   const errors=validatePlan(sheet.structurePlan,structure.contract,sheet);
+   return errors.length?{mode:'unsupported',plan:null,errors}:
+    {mode:'editorial',plan:JSON.parse(JSON.stringify(sheet.structurePlan)),errors:[]};
+  }
   function catalogue(){return Object.entries(DEFINITIONS).map(([id,def])=>({id,label:def.label,objectiveIds:def.objectives.map(d=>d[0])}));}
-  return Object.freeze({VERSION,catalogue,create,validate,attach,read});
+  return Object.freeze({VERSION,catalogue,create,validate,attach,read,validatePlan,readPlan});
  })();
  const MODE={
   detailed:{label:'Detailed layout',desc:'Both performers agree a sequence of specific beats. Highest commitment, less room for improvisation.',weight:13},

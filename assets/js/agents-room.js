@@ -1193,7 +1193,259 @@
       run(st){log(st,side,tline(REPLY_LINES.reservation,st,side,{}),'objection');st.negotiation.demand={...d,granted:'no'};st.negotiation.reply.kind='reservation';st.negotiation.summary+=' The condition was refused.';}}];
    }}
  );
+ // A structure-specific, causal safety discussion, not a transplanted
+ // "proper comeback" conversation from the American match template.
+ SITUATIONS.push({
+  id:'structure_objection',kind:'match',weight:0,followup:true,when:x=>!!x.st.structurePlanning,
+  open(st){
+   structureSeed(st,{refresh:true});
+   const issue=structureSlots(st).map(obj=>{
+    const b=st.structureBoard?.[obj.id];
+    if(!b?.action)return null;
+    const O=who(st,b.owner);
+    if(!O)return null;
+    const prohibited=banned(st,b.action)||!legal(b.action,O,who(st,other(b.owner)));
+    const vulnerable=!!A[b.action]?.risk&&((O.fatigue||0)>=45||!!O.injury||(O.safe||65)<58);
+    if(!prohibited&&!vulnerable)return null;
+    const alternative=structureCards(st,obj).find(c=>c.owner===b.owner&&c.action!==b.action&&!c.risk)||
+     structureCards(st,obj).find(c=>c.action!==b.action)||null;
+    return {id:obj.id,title:obj.title,original:{...b},by:b.owner,prohibited,vulnerable,alternative};
+   }).find(Boolean);
+   if(!issue)return false;
+   st.structureObjection=issue;
+   log(st,issue.by,nameOf(st,issue.by)+': “I’m not convinced the '+issue.original.label+
+    ' is right for '+issue.title+'. Can we change it?”','objection');
+   return true;
+  },
+  title:st=>st.structureObjection?.title||'The running order needs attention',
+  ask:st=>'That move was proposed for a dramatic objective. How do we handle the concern?',
+  options(st){
+   const issue=st.structureObjection;if(!issue)return [];
+   const a=issue.alternative;
+   const out=[
+    {id:'replace',label:a?'“Use the '+a.label+' instead.”':'“Leave the move open.”',
+     hint:'Preserves the dramatic objective, not a guaranteed move landing.',tags:['Revises the agreement'],
+     run(st){
+      st.structureBoard[issue.id]=a?{...a,chosen:true,open:false,source:'negotiated'}:
+       {owner:issue.by,action:null,label:'Call this objective in the ring',by:'agent',chosen:true,open:true,source:'open'};
+      (st.structureObjections??=[]).push({objective:issue.id,reason:issue.prohibited?'prohibited':'safety',
+       from:issue.original.action,to:a?.action||null,decision:'replace'});
+      log(st,'agent','Rewritten, and kept in the same dramatic objective. No one has promised it will land.');
+     }},
+    {id:'open',label:'“No named move. Call this part in the ring.”',
+     hint:'Removes the physical commitment, not the intended structure.',tags:['No called spot'],
+     run(st){
+      st.structureBoard[issue.id]={owner:issue.by,action:null,label:'Call this objective in the ring',
+       by:'agent',chosen:true,open:true,source:'open'};
+      (st.structureObjections??=[]).push({objective:issue.id,reason:issue.prohibited?'prohibited':'safety',
+       from:issue.original.action,to:null,decision:'open'});
+      log(st,'agent','The objective stays on the sheet, but that risky move is no longer agreed.');
+     }}
+   ];
+   if(!issue.prohibited)out.push({id:'keep',label:'“Keep it, with their reservations noted.”',
+    hint:'The move is physically possible, but the performer is unhappy.',tags:[nameOf(st,issue.by)+' ▼'],
+    run(st){
+     st.mood[issue.by]-=4;
+     (st.structureObjections??=[]).push({objective:issue.id,reason:'safety',
+      from:issue.original.action,to:issue.original.action,decision:'keep'});
+     log(st,issue.by,'“I’ll work it. I still think it’s a bad idea.”','objection');
+    }});
+   return out;
+  }
+ });
  const SPINE=SLOTS.filter(S=>S.id!=='finish');
+ // Opt-in Phase 2 planner: no classic slots, no implied face/heel assignment.
+ // These categories are candidate REAL graph moves; the structure objective
+ // is not satisfied until a later Director can prove its actual event predicate.
+ const OBJECTIVE_FAMILIES={
+  opening_advantage:['chain','strike','running'],
+  pressure:['ground','power','corner','submission'],
+  comeback:['fire','running','lucha','strike'],
+  payoff:['suplex','power','neck','aerial','submission'],
+  technical_exchange:['chain','submission'],
+  escalation:['suplex','power','strike','corner'],
+  callback:['chain','submission'],
+  finish_build:['power','suplex','neck','aerial','submission'],
+  evasion:['heel','outside'],
+  exposure:['chain','running','fire'],
+  shortcut:['heel','strike','corner'],
+  escape:['heel','outside','running','chain'],
+  dominance:['power','suplex'],
+  challenge:['fire','running','chain'],
+  reassertion:['power','suplex','neck']
+ };
+ const STRUCTURE_INCOMPATIBLE=new Set([
+  'big_spot','debut','wont_job','leash','crowd','request','protect',
+  'promise_due','rival_counter','rival_counter_reply'
+ ]);
+ const structureSlots=st=>st.structure?.objectives||[];
+ const structureSlot=(st,id)=>structureSlots(st).find(x=>x.id===id)||null;
+ // A wrestler must actually be able to attempt a graph action. No invented
+ // spots and no signatures that violate stature or the current safety limits.
+ function structurePool(st,obj,owner){
+  const o=who(st,owner),r=who(st,other(owner));
+  if(!o||!r)return [];
+  const families=OBJECTIVE_FAMILIES[obj.intent]||[];
+  const known=[...(D.PROFILES[o.id]?.signature||[]),...(o.learned||[])];
+  const ids=[...new Set([...known,...families.flatMap(f=>CAT.members[f]||[])])];
+  const cutoff=Math.min(.98,obj.window[1]+.08);
+  return ids.filter(id=>{
+   const n=A[id];
+   if(!n||typeof n.after!=='number'||n.after>cutoff||n.nearfall||n.blockOf||
+     !legal(id,o,r)||banned(st,id)||!(families.includes(n.family)||
+     families.some(f=>(CAT.members[f]||[]).includes(id))))return false;
+   // A dramatic objective cannot be "earned" by irrelevant filler: no
+   // eye rakes in clean technical exchanges, no breathers as huge finishes.
+   const cost=n.cost??1,crowd=n.crowd??0,name=(n.name||id).toLowerCase();
+   const dirty=/rake|bite|poke|hair.pull|referee|low.blow|faked.injury/.test(name);
+   const tactical=['technical_exchange','callback','opening_advantage'].includes(obj.intent);
+   const impact=['escalation','finish_build','dominance','reassertion','payoff'].includes(obj.intent);
+   if(tactical&&(cost<.8||crowd<0||dirty||n.risk))return false;
+   if(impact&&(cost<2.4||crowd<2||dirty||n.family==='rest'))return false;
+   if(['exposure','challenge','comeback'].includes(obj.intent)&&(cost<1||dirty))return false;
+   if(obj.intent==='evasion'&&!/stall|retreat|plea|mock|duck|rope|roll.out|outside|argument/.test(name))return false;
+   if(obj.intent==='escape'&&!/duck|escape|roll|rope|retreat|outside|stall|break|counter/.test(name))return false;
+   if(obj.intent==='shortcut'&&!(dirty||n.family==='heel'||crowd<0))return false;
+   return ['evasion','escape'].includes(obj.intent)?cost>=-1:cost>=0;
+  }).sort((a,b)=>{
+   const A1=A[a],B1=A[b],famA=families.indexOf(A1.family),famB=families.indexOf(B1.family);
+   const rankA=(famA>=0?4-famA:0)+(A1.crowd||0)*.5+appeal(a,o)*.4;
+   const rankB=(famB>=0?4-famB:0)+(B1.crowd||0)*.5+appeal(b,o)*.4;
+   return rankB-rankA||a.localeCompare(b);
+  });
+ }
+ function structureCards(st,obj){
+  const permitted=obj.actor==='either'?['w','f']:[obj.actor],cards=[];
+  for(const side of permitted){
+   const pool=structurePool(st,obj,side);
+   if(!pool.length)continue;
+   const first=pool[0],soft=pool.slice().sort((a,b)=>pain(a)-pain(b)||a.localeCompare(b)).find(id=>id!==first);
+   cards.push({by:side,owner:side,action:first,label:name(first),risk:!!A[first]?.risk});
+   if(soft)cards.push({by:'agent',owner:side,action:soft,label:name(soft),risk:!!A[soft]?.risk});
+  }
+  const used=new Set();
+  return cards.filter(c=>{
+   const k=c.owner+'|'+c.action;if(used.has(k))return false;used.add(k);return true;
+  });
+ }
+ function structureSeed(st,{refresh=false}={}){
+  st.structureBoard??={};
+  const route=st.lockRoute||st.board.finish?.route;
+  for(const obj of structureSlots(st)){
+   const old=st.structureBoard[obj.id];
+   if(refresh&&(old?.chosen||old?.open))continue;
+   const cards=structureCards(st,obj),index=structureSlots(st).indexOf(obj);
+   const preferred=obj.actor==='either'?(index%2?st.structure.roles.other:st.structure.roles.lead):obj.actor;
+   const ordered=cards.slice().sort((a,b)=>Number(b.owner===preferred)-Number(a.owner===preferred));
+   const used=new Set(Object.values(st.structureBoard).map(b=>b.action).filter(Boolean));
+   const distinct=ordered.filter(c=>!used.has(c.action));
+   const eligible=distinct.length?distinct:ordered;
+   const helpful=eligible.filter(c=>supportsFinish(st,route,c));
+   const choice=helpful.find(c=>c.by==='agent')||helpful[0]||eligible.find(c=>c.by==='agent')||eligible[0];
+   st.structureBoard[obj.id]=choice?
+    {...choice,chosen:false,open:false,source:'suggested'}:
+    {owner:obj.actor,action:null,label:'Call this objective in the ring',by:'agent',chosen:false,open:true,source:'open'};
+  }
+ }
+ function structureBoardView(st){
+  return structureSlots(st).map(obj=>{
+   const cur=st.structureBoard?.[obj.id];
+   const cards=structureCards(st,obj).map((c,i)=>({
+    id:'objective_'+obj.id+'_'+i,label:c.label,by:c.by,
+    who:c.by==='agent'?AGENT:nameOf(st,c.by),risk:!!c.risk,
+    selected:!!cur&&cur.action===c.action&&cur.owner===c.owner,
+    tags:[...(c.by==='agent'?['Dennis’s suggestion']:['Wrestler’s suggestion']),
+     ...(c.risk?['High risk']:[]),...(supportsFinish(st,st.board.finish?.route,c)?['May support the finish']:[])]
+   }));
+   cards.push({id:'objective_'+obj.id+'_open',label:'Call this objective in the ring',by:'agent',who:AGENT,
+    selected:!!cur?.open,risk:false,tags:['No named move commitment']});
+   const owned=obj.actor==='either'?'Both wrestlers may contribute':nameOf(st,obj.actor)+' leads';
+   return {slot:obj.id,name:obj.title,ask:owned+'. Agree a real move if you want, or leave it open.',
+    cards,current:cur?.label||null,actor:obj.actor,intent:obj.intent,window:obj.window.slice()};
+  });
+ }
+ function structureReconcile(st){
+  // Incidental backstage scenes must NOT silently replace viable suggestions.
+  // Re-pitch only a genuinely prohibited/impossible move below, or fill
+  // genuinely absent entries (old/partial room saves).
+  if(!st.structureBoard||structureSlots(st).some(o=>!st.structureBoard[o.id]))
+   structureSeed(st,{refresh:true});
+  for(const obj of structureSlots(st)){
+   const b=st.structureBoard[obj.id];
+   if(!b?.action)continue;
+   if(!banned(st,b.action)&&legal(b.action,who(st,b.owner),who(st,other(b.owner)))){
+    if(b.conflict)delete b.conflict;
+    continue;
+   }
+   if(b.chosen){
+    b.conflict='This explicitly selected spot is now prohibited or impossible. Revise or leave the objective open.';
+    log(st,'agent','The '+b.label+' is no longer safe or available for '+obj.title+'. I have kept your choice marked for review, rather than silently deleting it.');
+   }else{
+    const alt=structureCards(st,obj).find(c=>c.action!==b.action);
+    st.structureBoard[obj.id]=alt?{...alt,chosen:false,open:false,source:'revised'}:
+     {owner:obj.actor,action:null,label:'Call this objective in the ring',by:'agent',open:true,chosen:false,source:'open'};
+    log(st,'agent','The proposed '+b.label+' is ruled out. I’ve revised the suggestion for '+obj.title+'.');
+   }
+   st.reworked=(st.reworked||0)+1;
+  }
+ }
+ function structureWarnings(st){
+  return structureSlots(st).filter(obj=>{
+   const b=st.structureBoard?.[obj.id];
+   return b?.action&&(b.conflict||banned(st,b.action)||
+    !legal(b.action,who(st,b.owner),who(st,other(b.owner))));
+  }).map(obj=>obj.title);
+ }
+ function structureStory(st){
+  const b=st.structureBoard||{},items=structureSlots(st),named=items.filter(x=>b[x.id]?.action);
+  const trouble=structureWarnings(st),notes=[],route=st.lockRoute||st.board.finish?.route;
+  if(named.length>=2)notes.push({good:true,text:named.length+' real moves are pencilled into this '+st.structure.id.replace(/_/g,' ')+' layout.'});
+  else notes.push({good:true,text:'Most of the dramatic objectives remain open. The wrestlers will call the details in the ring.'});
+  if(route){
+   const support=named.filter(o=>supportsFinish(st,route,b[o.id]));
+   notes.push({good:true,text:support.length?
+    support.length+' called '+(support.length===1?'spot may':'spots may')+' help set up the agreed finish. That still must be earned in the ring.':
+    'The agreed finish has no guaranteed setup in this layout. Physical conditions still decide whether it is available.'});
+  }
+  if(items.some(o=>o.intent==='callback'))notes.push({good:true,text:'A tactical callback is an intention only: the earlier exchange must actually happen before the Director may credit it.'});
+  if(trouble.length)notes.push({good:false,text:'Revise unsafe or prohibited commitments: '+trouble.join(', ')+'.'});
+  return {score:trouble.length?-1:Math.min(2,named.length>=2?2:1),notes};
+ }
+ function structureSettle(st){
+  const prev=st.boardMood||{w:0,f:0},delta={w:0,f:0};
+  st.mood.w-=prev.w;st.mood.f-=prev.f;
+  for(const obj of structureSlots(st)){
+   const b=st.structureBoard?.[obj.id];
+   if(!b?.action||b.by==='agent')continue;
+   if(b.by===b.owner)delta[b.owner]+=2;
+   else if(b.by==='w'||b.by==='f'){delta[b.by]+=2;delta[b.owner]-=2;}
+  }
+  st.mood.w+=delta.w;st.mood.f+=delta.f;st.boardMood=delta;
+ }
+ function structurePlan(st){
+  const selected=structureSlots(st).map(obj=>{
+   const b=st.structureBoard?.[obj.id]||null,action=b?.action||null;
+   if(action&&(banned(st,action)||!legal(action,who(st,b.owner),who(st,other(b.owner)))))
+    throw Error('Unsafe structure spot must be revised: '+obj.id);
+   return {id:obj.id,intent:obj.intent,title:obj.title,actor:obj.actor,
+    window:obj.window.slice(),requires:obj.requires.slice(),
+    commitment:action?'landmark':'guide',
+    call:action?{action,owner:b.owner,proposedBy:b.by,label:b.label,source:b.source||'suggested',
+     chosen:!!b.chosen,backups:structureCards(st,obj).filter(c=>c.owner===b.owner&&c.action!==action).slice(0,2).map(c=>c.action)}:null};
+  });
+  return {version:1,structureId:st.structure.id,roles:{...st.structure.roles},
+   finishRoute:st.lockRoute||st.board.finish?.route||null,
+   objectives:selected,objections:(st.structureObjections||[]).map(n=>({...n}))};
+ }
+ // Signed move nodes remain finish-only for this disabled runtime path: no
+ // phantom American shine/heat/comeback and no unearned structure penalties.
+ function structureNodes(st,base){
+  const f=base.nodes.find(n=>n.id==='finish');
+  if(!f)throw Error('No agreed finish node');
+  f.route=st.lockRoute||st.board.finish?.route||null;f.requires=[];
+  base.nodes=[f];
+  return base;
+ }
  const winSideOf=st=>st.finish.startsWith('win')?'w':'f';
  const slotOwner=(S,c)=>S.id==='payoff'?c.owner:S.owner;
  const cardsFor=(st,slot)=>pitches(st,slot).filter(c=>c.action);
@@ -1222,9 +1474,11 @@
   const route=st.lockRoute||st.board.finish?.route;
   if(!route)return null;
   const requirement=ROUTE_CONDITION[route]||null;
-  const supported=SPINE.filter(S=>supportsFinish(st,route,st.board[S.id])).map(S=>S.name.toLowerCase());
+  const slots=st.structurePlanning?structureSlots(st).map(o=>({id:o.id,name:o.title})):SPINE;
+  const chosen=st.structurePlanning?st.structureBoard||{}:st.board;
+  const supported=slots.filter(S=>supportsFinish(st,route,chosen[S.id])).map(S=>S.name.toLowerCase());
   const available=!ROUTE_STATIC[route]||ROUTE_STATIC[route](st.w,st.f,st);
-  const impossible=SPINE.filter(S=>st.board[S.id]&&(st.board[S.id].impossible||banned(st,st.board[S.id].action))).map(S=>S.name.toLowerCase());
+  const impossible=slots.filter(S=>chosen[S.id]?.action&&(chosen[S.id].impossible||banned(st,chosen[S.id].action))).map(S=>S.name.toLowerCase());
   let summary=requirement?(supported.length?
    supported.join(' and ')+' could help set it up, but the required in-ring events must still happen.':
    'No selected called spot specifically prepares this condition; it must still be earned in the match.'):
@@ -1250,6 +1504,7 @@
    const c=finishCards(st).find(c=>c.by==='agent')||finishCards(st)[0];
    if(c)st.board.finish={by:c.by,owner:'either',route:c.route,label:c.label};
   }
+  if(st.structurePlanning){structureSeed(st,{refresh});return;}
   const route=st.board.finish?.route,win=winSideOf(st);
   for(const S of SPINE){
    if(refresh&&st.board[S.id]?.chosen)continue;
@@ -1273,6 +1528,7 @@
   return t;
  }
  function boardView(st){
+  if(st.structurePlanning)return structureBoardView(st);
   return SPINE.map(S=>{
    const cur=st.board[S.id];
    const cards=cardsFor(st,S.id).map((c,i)=>({id:'slot_'+S.id+'_'+i,label:c.label,by:c.by,who:c.by==='agent'?AGENT:nameOf(st,c.by),
@@ -1282,6 +1538,13 @@
  }
  // Some decisions wreck a beat that was already agreed. Dennis swaps in the nearest thing that still works.
  function reconcile(st){
+  if(st.structurePlanning){
+   structureReconcile(st);
+   // Scene decisions may replace or remove a pencilled move. Adjust its
+   // provisional performer-consent effect NOW, not a second time on review.
+   structureSettle(st);
+   return;
+  }
   for(const S of SPINE){
    const b=st.board[S.id];if(!b||!banned(st,b.action))continue;
    const alt=cardsFor(st,S.id).find(c=>c.action!==b.action&&!c.impossible&&!banned(st,c.action)&&(S.id==='payoff'||c.owner===b.owner));
@@ -1294,6 +1557,7 @@
  }
  // Does the running order tell a story the booked finish can pay off?
  function story(st){
+  if(st.structurePlanning)return structureStory(st);
   const b=st.board,win=winSideOf(st),notes=[],has=k=>!!b[k]?.action;let score=0;
   if(has('pressure')&&has('reversal')){score++;notes.push({good:true,text:'Heat, then the comeback. In that order. Lovely.'});}
   else if(has('reversal')){score--;notes.push({good:false,text:'A comeback from what? Nobody’s been beaten up yet.'});}
@@ -1312,6 +1576,7 @@
   return bad?bad.text:good?good.text:'It’s a match. I’ve seen worse. I’ve booked worse.';
  }
  function settleBoard(st){
+  if(st.structurePlanning){structureSettle(st);return;}
   // A second review must replace the old mood effect, not award it twice.
   const prior=st.boardMood||{w:0,f:0};
   st.mood.w-=prior.w;st.mood.f-=prior.f;
@@ -1337,7 +1602,7 @@
  function draw(st,p,recent){
   // A seeded, weighted draw without replacement, skipping what this career has seen lately.
   const x=context(st,p),want=['feature','main'].includes(st.slot)?3:2;
-  let poolS=SITUATIONS.filter(s=>{if(s.followup)return false;try{return s.when(x)}catch(e){return false}});
+  let poolS=SITUATIONS.filter(s=>{if(s.followup||(st.structurePlanning&&STRUCTURE_INCOMPATIBLE.has(s.id)))return false;try{return s.when(x)}catch(e){return false}});
   const fresh=poolS.filter(s=>!recent.includes(s.id));if(fresh.length>=want)poolS=fresh;
   const out=[];let flavour=0;
   for(let n=0;n<want&&poolS.length;n++){
@@ -1361,15 +1626,20 @@
   // Metadata-only opt-in for Phase 1; live meetings never select this yet.
   // Old in-progress meetings have no structure property.
   if(opts.structure!==undefined)st.structure=P.STRUCTURES.create(opts.structure);
+  if(opts.structurePlanning===true){
+   if(!st.structure)throw Error('Structure planning requires a valid structure selection');
+   st.structurePlanning=true;
+  }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
   st.queue=draw(st,p,opts.recent||[]);
   // The oldest thread due with this wrestler, opponent or promoter comes up first.
-  const due=(opts.threads||[]).find(t=>{const x=SITUATIONS.find(q=>q.id===t.sit);return x&&(t.sid?t.sid===w.id||(!x.ownWrestler&&t.sid===f.id):true)&&(t.pid?t.pid===p?.id:true);});
+  const due=(opts.threads||[]).find(t=>{const x=SITUATIONS.find(q=>q.id===t.sit);return x&&!(st.structurePlanning&&STRUCTURE_INCOMPATIBLE.has(t.sit))&&(t.sid?t.sid===w.id||(!x.ownWrestler&&t.sid===f.id):true)&&(t.pid?t.pid===p?.id:true);});
   if(due){st.thread={...due,side:due.sid===f.id&&due.sid!==w.id?'f':'w'};st.queue=[due.sit,...st.queue.filter(id=>id!==due.sit)].slice(0,st.queue.length);}
   // v0.3.12 If the rivalry or the wrestlers' condition gives somebody a reason to ask for a change, that
   // conversation happens straight after the running order is agreed (and is skipped if the board
   // already avoids the problem).
-  if(negotiable(st))st.queue=['rival_counter',...st.queue.filter(id=>id!=='rival_counter')];
+  if(st.structurePlanning)st.queue=['structure_objection',...st.queue.filter(id=>id!=='structure_objection')];
+  else if(negotiable(st))st.queue=['rival_counter',...st.queue.filter(id=>id!=='rival_counter')];
   const fin={win_clean:w.short+' wins clean',win_dirty:w.short+' wins dirty',lose_protected:w.short+' loses, but protected',lose_clean:w.short+' loses clean',win_dq:w.short+' wins by disqualification',lose_dq:w.short+' gets disqualified'}[c.finish];
   log(st,'agent',pick(['Evening. Doors in ten, so let’s not make a meal of it.','Right. I’ve a flask going cold, so shall we?','The urn’s on. Let’s get this agreed before the raffle starts.'],seed,'hello'));
   log(st,'agent','Contract says '+fin+'. That part isn’t up for discussion. So, what sort of match are we having?');
@@ -1406,6 +1676,8 @@
    return out;
   }
   if(st.stage==='scene'){const s=current(st);return s.options(st).map(o=>({id:o.id,label:fmt(st,o.label),hint:fmt(st,o.hint||''),tags:(o.tags||tagsOf(st,o.fx||{})).map(t=>fmt(st,t))}));}
+  if(st.stage==='review'&&st.structurePlanning&&structureWarnings(st).length)return [
+   {id:'review_edit',label:'Resolve unsafe called spots',hint:'A manually selected move became prohibited or impossible. Choose another move or leave the objective open.',tags:['Revision required']}];
   if(st.stage==='review')return [
    {id:'review_ok',label:'Approve this layout',hint:'Keep the contracted result and move to the last word before the bell.',tags:[]},
    {id:'review_edit',label:'Revise the called spots',hint:st.lockRoute?
@@ -1424,7 +1696,10 @@
  }
  function enter(st){
   // Move to whatever comes next, and let the people in the room say their piece.
-  while(st.stage==='scene'&&st.at<st.queue.length){if(current(st).open(st)!==false)return;st.queue.splice(st.at,1);}
+  while(st.stage==='scene'&&st.at<st.queue.length){
+   if(st.structurePlanning&&STRUCTURE_INCOMPATIBLE.has(st.queue[st.at])){st.queue.splice(st.at,1);continue;}
+   if(current(st).open(st)!==false)return;st.queue.splice(st.at,1);
+  }
   if(st.stage==='scene'){st.stage=st.lockRoute||st.board.finish?.route?'review':'finish';}
   if(st.stage==='review'){
    log(st,'agent','The room is settled. One last look at what we agreed, and what the finish still needs.');
@@ -1469,6 +1744,7 @@
     return st;
    }
    if(id==='board_ok'){
+    if(st.structurePlanning&&structureWarnings(st).length)throw Error('Resolve prohibited structure commitments before signing');
     log(st,'you','“That’ll do.”');st.decided.push({stage:'board',situation:'board',id,label:o.label,tags:[]});
     settleBoard(st);
     if(st.reviewing){
@@ -1476,6 +1752,21 @@
     }
     log(st,'agent',verdict(st)+' Right. Now for the things that always come up.');
     st.stage='scene';st.at=0;enter(st);return st;
+   }
+   if(st.structurePlanning&&id.startsWith('objective_')){
+    const match=id.match(/^objective_([a-z][a-z0-9_]+)_(\d+|open)$/);
+    if(!match)throw Error('Invalid objective choice '+id);
+    const obj=structureSlot(st,match[1]);if(!obj)throw Error('Unknown structure objective '+id);
+    const choice=match[2]==='open'?null:structureCards(st,obj)[+match[2]];
+    if(match[2]!=='open'&&!choice)throw Error('Unavailable structure move '+id);
+    const next=choice?{...choice,chosen:true,open:false,source:'manual'}:
+     {owner:obj.actor,action:null,label:'Call this objective in the ring',by:'agent',chosen:true,open:true,source:'open'};
+    st.structureBoard??={};st.structureBoard[obj.id]=next;
+    log(st,'you','“'+obj.title+': '+(choice?'the '+choice.label:'call it in the ring')+'.”');
+    st.decided.push({stage:'board',situation:obj.id,id,label:choice?.label||'Call in the ring',tags:o.tags});
+    if(choice&&choice.by!=='agent')log(st,choice.by,say(st,'pleased',who(st,choice.by),'board'));
+    else log(st,'agent','Noted. The objective is distinct from a guaranteed landed move.');
+    return st;
    }
    const m=id.match(/^slot_(\w+)_(\d+)$/),S=SPINE.find(x=>x.id===m[1]),c=cardsFor(st,S.id)[+m[2]];
    if(st.board[S.id]?.action===c.action)return st;
@@ -1544,6 +1835,10 @@
   // What was agreed becomes an ordinary signed match sheet the engine already knows how to perform.
   const {w,f}=st,base=JSON.parse(JSON.stringify(st.base));
   let planned=0;
+  if(st.structurePlanning){
+   structureNodes(st,base);
+   planned=structureSlots(st).filter(obj=>!!st.structureBoard?.[obj.id]?.action).length;
+  }else{
   for(const n of base.nodes){
    const b=st.board[n.id];
    if(n.id==='finish'){n.route=st.lockRoute||b?.route||null;continue;}
@@ -1561,6 +1856,7 @@
   if(st.negotiation?.final){for(const n of base.nodes)if(n.id===st.negotiation.slot||(st.negotiation.demand?.granted==='yes'&&st.negotiation.demand.kind==='payoff'&&n.id==='payoff'))n.negotiated=true;}
   base.nodes=base.nodes.filter(n=>n.id==='finish'||n.planned);
   base.nodes.forEach((n,i)=>{n.requires=i?[base.nodes[i-1].id]:[];});
+  }
   const problems=K.validate(base.nodes);if(problems.length)throw Error('Backstage sheet: '+problems.join(', '));
   const note=st.note?{id:st.note.id,short:st.note.short,ban:st.note.ban||[],banIds:st.note.banIds||[],need:st.note.need||[],needRisk:!!st.note.needRisk,honour:!!st.note.honour,waived:!!st.note.waived,argued:!!st.note.argued,promoter:st.promoter.voice}:null;
   const signed={...base,v:4,method:planned>=3?'detailed':planned>=1?'landmarks':'live',focus:'authentic',decision:'agreed',signed:true,confirmed:true,disputed:false,issues:[],
@@ -1569,7 +1865,12 @@
    game:st.game,leash:st.leash,talk:st.talk||'none',flags:{...st.flags},crowdMood:st.crowdMood||null,minutes:Math.max(5,st.minutes+(st.fx.minutes||0)),skipPromo:st.skipPromo,
    stunt:null,bonus:0,story:story(st),finishPreparation:finishPlan(st),negotiation:st.negotiation?JSON.parse(JSON.stringify(st.negotiation)):null,rehearsed:!!st.rehearsed,situations:st.queue.slice(),threads:(st.carry||[]).map(t=>({...t})),threadUsed:st.thread?.id||null,decided:st.decided.map(d=>({...d})),
    premise:'A running order of '+planned+' '+(planned===1?'move':'moves')+'; '+st.queue.length+' things came up backstage'+(st.reworked?' and '+st.reworked+' '+(st.reworked===1?'beat was':'beats were')+' rewritten':'')+'.',
-   speakers:st.log.filter(x=>x.kind!=='you').slice(-6).map(x=>({actor:x.who,text:x.text}))};
+   speakers:st.log.filter(x=>x.kind!=='you').slice(-6).map(x=>({actor:x.who,text:x.text})),
+   ...(st.structurePlanning?{structurePlan:structurePlan(st)}:{})};
+  if(st.structurePlanning){
+   const errors=P.STRUCTURES.validatePlan(signed.structurePlan,st.structure,signed);
+   if(errors.length)throw Error('Structure plan: '+errors.join('; '));
+  }
   return st.structure?P.STRUCTURES.attach(signed,st.structure):signed;
  }
  function agreed(st){
@@ -1578,7 +1879,10 @@
   if(st.game)out.push(D.PLANS[st.game].name);
   const fr=st.lockRoute||st.board.finish?.route;
   if(fr)out.push('Finish: '+(ROUTE_NAME[fr]||fr));
-  for(const S of SPINE){const b=st.board[S.id];if(b?.label)out.push(S.name+': '+b.label);}
+  if(st.structurePlanning){
+   out.push('Structure: '+(P.STRUCTURES.catalogue().find(x=>x.id===st.structure.id)?.label||st.structure.id));
+   for(const obj of structureSlots(st)){const b=st.structureBoard?.[obj.id];if(b)out.push(obj.title+': '+(b.action?b.label:'call it in the ring'));}
+  }else for(const S of SPINE){const b=st.board[S.id];if(b?.label)out.push(S.name+': '+b.label);}
   if(st.note&&st.note.honour!==null)out.push('Note: '+st.note.short+(st.note.waived?' (withdrawn)':st.note.honour?' (promised)':' (no promise)'));
   const ng=st.negotiation;if(ng?.final)out.push('Changed at '+nameOf(st,ng.by)+'’s request: '+(ng.final.action!==ng.original.action?ng.original.label+' → '+ng.final.label:ng.original.label+' kept')+(ng.reply?.kind==='reservation'?' (reservations)':''));
   if(st.limits.ban.length)out.push('Parts of the ring are off limits');
