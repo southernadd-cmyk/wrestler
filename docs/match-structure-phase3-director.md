@@ -27,3 +27,9 @@ Player-facing structure selection, structural scoring or career rewards, and a r
 The first trace (four matches) found 2/16 objectives: an evasive lead had no accessible avoidance moves; a real retaliatory strike could not satisfy exposure; `st_eye_rake` was proposed but the Director accepted only `heel` family offences; `hl_rope_leverage` was mistakenly suggested as a defensive escape; and reversal preferences were assigned to the attacker.
 
 The targeted repair adds valid, authored stalling, counter, unfair-shortcut and escape candidates **only while the Chickenshit structure is explicitly active**. All are still selected probabilistically from the normal physical graph after `isValid` checks. Successful objectives require provenance on the actual performed-event tape. Evasion excludes mere strutting; shortcut requires genuinely illicit action; exposure requires a meaningful retaliation/counter; escape offers defensive reversals only after a recent recorded opponent attack. The signed `hl_rope_leverage` in older editorial plans stays untouched but cannot be miscredited as a successful escape. New Phase 2 sheets no longer suggest it as one.
+
+## Broad regression (new fixture)
+
+The active Heel Director is also exercised through a deterministic mixed-fixture matrix of four wrestling styles, both dramatic lead assignments, five independent performance plans, 8/12/18-minute bouts, two seeds and varying booked outcomes (240 fully simulated matches). This does not require every objective to succeed; it checks witnessed events, correct actor, chronological dependencies, signed finish and immutable metadata, and a minimum credible reachability floor. It reports per-objective, per-style, per-lead and per-length attainment for review.
+
+Unrelated structures retain their original pre-repair move-weight calculation. Merely returning both wrestlers to the ring (`roll_inside`) is not evidence of a desperate defensive escape.

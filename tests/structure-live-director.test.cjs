@@ -10,10 +10,11 @@ vm.runInNewContext(script.slice(0,cut),{window:root,console,Math,Date,JSON});
 const {OfficeData:D,OfficeMatch:E,OfficeRoom:Room,OfficeSheets:S}=root;
 const copy=x=>JSON.parse(JSON.stringify(x));
 const w=D.TALENT.find(x=>x.style==='Spectacle'),f=D.FOES[0],p=D.PROMOS[0];
-function signed(id,lead,game,seed){
- const contract={id:'p3-'+id+'-'+lead+'-'+game+'-'+seed,wid:w.id,rid:f.id,pid:p.id,slot:'main',
-  finish:seed%2?'win_clean':'lose_clean',minutes:12,eventAbs:61,feudHeat:20};
- const st=Room.begin(contract,w,f,p,{structure:{id,lead},structurePlanning:true});
+function signed(id,lead,game,seed,options={}){
+ const worker=options.worker||w,foe=options.foe||f;
+ const contract={id:'p3-'+id+'-'+lead+'-'+game+'-'+seed,wid:worker.id,rid:foe.id,pid:p.id,slot:'main',
+  finish:options.finish||(seed%2?'win_clean':'lose_clean'),minutes:options.minutes||12,eventAbs:61,feudHeat:20};
+ const st=Room.begin(contract,worker,foe,p,{structure:{id,lead},structurePlanning:true});
  st.queue=[];Room.act(st,'plan_'+game);
  assert.equal(st.stage,'board');
  Room.act(st,'board_ok');
@@ -22,10 +23,10 @@ function signed(id,lead,game,seed){
  Room.act(st,'talk_none');
  assert.equal(st.stage,'done');
  assert.equal(S.STRUCTURES.readPlan(st.sheet).mode,'editorial');
- return {contract,sheet:st.sheet};
+ return {contract,sheet:st.sheet,worker,foe};
 }
 function make(pair,seed,execute){
- return E.create({w:{...w,fatigue:4,flags:{}},f,p,slot:'main',minutes:pair.sheet.minutes,
+ return E.create({w:{...(pair.worker||w),fatigue:4,flags:{}},f:pair.foe||f,p,slot:'main',minutes:pair.sheet.minutes,
   finish:pair.contract.finish,feudHeat:20,
   plan:{game:pair.sheet.game,leash:'script',talk:'none'},
   seed,preparation:{},flags:{},sheet:copy(pair.sheet),
@@ -103,6 +104,72 @@ for(const id of ids)for(const lead of ['w','f'])for(const game of plans){
  assert.equal(JSON.stringify(pair.sheet),untouched,'runtime cannot rewrite the signed intention');
  played++;
 }
+// Wider diagnostic: varying roles, styles, finish contracts, length and plan.
+// Match construction is probabilistic. We check sound causal evidence rather
+// than requiring a staged 100% objective completion rate.
+{
+ const styles=['Story','Technical','Brawl','Spectacle'];
+ const finishTypes=['win_clean','lose_clean','win_dirty','lose_protected'];
+ const totals={bouts:0,earned:0,goals:[0,0,0,0],byLead:{w:{bouts:0,earned:0},f:{bouts:0,earned:0}},
+  byStyle:{},byLength:{}};
+ for(let styleIndex=0;styleIndex<styles.length;styleIndex++){
+  const style=styles[styleIndex],opponentStyle=styles[(styleIndex+1)%styles.length];
+  const worker=D.TALENT.find(x=>x.style===style);
+  const foe=D.FOES.find(x=>x.style===opponentStyle)||
+   D.ALL.find(x=>x.style===opponentStyle&&x.id!==worker?.id);
+  assert.ok(worker&&foe&&foe.id!==worker.id,'four distinct styles must be available');
+  totals.byStyle[style]={bouts:0,earned:0};
+  for(const lead of ['w','f'])for(const game of ['story','technical','brawl','spots','safe'])
+   for(const minutes of [8,12,18])for(let sample=0;sample<2;sample++){
+    const seed=930001+styleIndex*10000+plans.indexOf(game)*1000+minutes*17+
+     sample*31+(lead==='f'?5:0);
+    const finish=finishTypes[(styleIndex+sample+minutes/2)%finishTypes.length];
+    const pair=signed('chickenshit_heel',lead,game,seed,{worker,foe,minutes,finish});
+    const source=JSON.stringify(pair.sheet);
+    const escape=pair.sheet.structurePlan.objectives.at(-1).call;
+    assert.notEqual(escape?.action,'hl_rope_leverage','rope leverage must not be proposed as a defensive escape');
+    const M=make(pair,seed,true);drive(M);
+    assert.equal(M.graph.outcome?.id,finish,'the booked match result remains the authority');
+    assert.equal(S.STRUCTURES.readPlan(M.sheet).mode,'editorial','runtime must not rewrite the signed plan');
+    assert.equal(JSON.stringify(pair.sheet),source,'the signed editorial agreement is immutable');
+    assert.equal(S.report(M).total,1,'the contracted finish remains the only standard beat');
+    const observed=M.final.structure.objectives,sourceEvents=M.graph.events;
+    totals.bouts++;totals.byLead[lead].bouts++;totals.byStyle[style].bouts++;
+    const lengthKey=String(minutes);totals.byLength[lengthKey]??={bouts:0,earned:0};totals.byLength[lengthKey].bouts++;
+    for(let i=0;i<4;i++){
+     const obj=observed[i],plan=pair.sheet.structurePlan.objectives[i];
+     assert.equal(obj.id,plan.id);
+     assert.ok(['achieved','adapted','missed'].includes(obj.status));
+     if(obj.status!=='missed'){
+      totals.earned++;totals.goals[i]++;totals.byLead[lead].earned++;
+      totals.byStyle[style].earned++;totals.byLength[lengthKey].earned++;
+      assert.ok(obj.evidence.length>0);
+     }
+     for(const ev of obj.evidence){
+      assert.equal(ev.actor,plan.actor,'no objective may be credited to the other wrestler');
+      const performed=sourceEvents.find(x=>x.t===ev.at&&x.id===ev.id);
+      assert.ok(performed,'only a performed graph event is valid evidence');
+      assert.ok(ev.at>=plan.window[0]*M.len-30&&ev.at<=plan.window[1]*M.len+60);
+      if(obj.intent==='evasion')assert.notEqual(ev.id,'hl_strut','mere posing is not evasive action');
+      if(obj.intent==='escape')assert.notEqual(ev.id,'roll_inside','returning both wrestlers to the ring is not defensive escape');
+     }
+     if(obj.status==='achieved'&&i>0){
+      const required=observed[i-1];assert.notEqual(required.status,'missed',
+       'a later achieved objective cannot erase a missed prerequisite');
+      assert.ok(obj.at>=required.at,'later objective must follow its prerequisite');
+     }
+    }
+   }
+ }
+ console.log('Phase 3 Heel mixed-fixture diagnostic: '+JSON.stringify(totals));
+ // A healthy structure must be reachable with both dramatic leads and across
+ // all three match lengths; these are deliberately modest deterministic
+ // smoke floors, not targets for a forced four-beat script.
+ assert.ok(totals.earned>=totals.bouts*4*.35,'Heel objectives must substantially outperform the original 2/16');
+ for(const side of ['w','f'])assert.ok(totals.byLead[side].earned>0,'both lead assignments must produce performed evidence');
+ for(const result of Object.values(totals.byLength))assert.ok(result.earned>0,'8, 12 and 18 minute bouts require reachable objectives');
+}
+
 // Phase 1 metadata alone cannot become executed structures.
 {
  const pair=signed('kings_road','f','technical',901);

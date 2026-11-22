@@ -1290,7 +1290,7 @@
   // An escape is a reversal, release or physical retreat, NOT rope leverage,
   // showboating or another illicit attacking move.
   const escapeMoves=['wrist_escape','waist_escape','headlock_escape','mat_scramble',
-   'counter_strike','floor_counter','armbar_roll','roll_inside'];
+   'counter_strike','floor_counter','armbar_roll'];
   const ids=[...new Set([...known,...families.flatMap(f=>CAT.members[f]||[]),
    ...(obj.intent==='escape'?escapeMoves:[])])];
   const cutoff=Math.min(.98,obj.window[1]+.08);

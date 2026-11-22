@@ -609,7 +609,7 @@
   }
   const DIRTY=/cheap_shot|eye_rake|_rake|_thumb|hair_pull|_bite|low_blow|choke|rope_leverage|fake_injury|distraction_apron|_poke|_low_blow_tease/;
   const EVASIVE=/^hl_(?:stall|beg|ref_argue|distraction_apron)$|^floor_regroup$/;
-  const ESCAPE=/wrist_escape|waist_escape|headlock_escape|mat_scramble|floor_counter|roll_inside|armbar_roll|counter_strike|rope_break/;
+  const ESCAPE=/wrist_escape|waist_escape|headlock_escape|mat_scramble|floor_counter|armbar_roll|counter_strike/;
   const EXPOSURE_CORE=new Set(['clothesline','arm_drag','snap_suplex','short_arm_lariat','counter_strike','shoulder_tackle','mat_takedown','heavy_slam']);
   function fits(o,e,n,actor){
    if(o.actor!=='either'&&o.actor!==actor)return false;
@@ -687,7 +687,16 @@
   const performer=(side,n)=>n.reverse||n.blockOf?(side==='w'?'f':'w'):side;
   function bias(M,id,side){
    const x=current(M),n=actions[id];if(!x||!n)return 1;
-   const o=x.objective,frac=M.t/Math.max(1,M.len),actor=performer(side,n);
+   const o=x.objective,frac=M.t/Math.max(1,M.len);
+   // Keep all three non-Heel directors on their already-tested tuning.
+   // Their dramaturgy must not change as a side effect of the Heel repair.
+   if(M.structureDirector.id!=='chickenshit_heel'){
+    if(frac<o.window[0]-.07||o.actor!=='either'&&o.actor!==side)return 1;
+    if(o.call?.action===id&&o.call.owner===side)return 4.6;
+    return F[o.intent]?.includes(n.family)&&
+     (!['evasion','shortcut','escape'].includes(o.intent)||fits(o,{id},n,side))?2.8:1;
+   }
+   const actor=performer(side,n);
    if(frac<o.window[0]-.07||o.actor!=='either'&&o.actor!==actor)return 1;
    if(o.call?.action===id&&o.call.owner===actor&&fits(o,{id},n,actor))return 4.6;
    return fits(o,{id},n,actor)?2.8:1;
@@ -699,7 +708,7 @@
    evasion:['hl_stall','hl_beg','hl_ref_argue','hl_distraction_apron'],
    exposure:['counter_strike','clothesline','arm_drag','st_headbutt','st_roundhouse','ch_rollthrough','shoulder_tackle'],
    shortcut:['st_eye_rake','hl_rake','hl_thumb','hl_hair_pull','hl_bite','hl_rope_leverage','hl_fake_injury','cheap_shot'],
-   escape:['counter_strike','wrist_escape','headlock_escape','waist_escape','mat_scramble','armbar_roll','floor_counter','roll_inside']
+   escape:['counter_strike','wrist_escape','headlock_escape','waist_escape','mat_scramble','armbar_roll','floor_counter']
   };
   function offers(M,side){
    if(M.structureDirector?.id!=='chickenshit_heel')return [];
