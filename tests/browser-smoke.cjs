@@ -8,6 +8,68 @@ assert.ok(source.includes('class="mf-breakdown-section"'),'real match flow repor
 const {chromium}=require('playwright');
 const URL='http://127.0.0.1:8765/';
 
+// Match-night broadcast geometry. The live line, commentary history and
+// large events must never resize their window as lines are replaced.
+async function commentaryHeightAudit(page,name,viewport){
+ const metrics=await page.evaluate(()=>{
+  const tv=document.querySelector('#tv'),old=tv.innerHTML,wasHidden=tv.hidden;
+  tv.hidden=false;
+  tv.innerHTML='<div class="stage screen s-live"><section class="win quiet">'+
+    '<header class="tbar"><h3>Live commentary</h3></header>'+
+    '<div class="wbody tight"><div class="feed well">'+
+    '<div class="now" id="lNow" aria-live="polite"></div>'+
+    '<div class="commentary-views"><span>Commentary archive</span>'+
+    '<button>All lines</button><button>Key moments</button></div>'+
+    '<ol class="past" id="lPast"></ol></div></div></section>'+
+    '<section class="win"><header class="tbar"><h3>Ringside</h3></header><div class="wbody">Coaching panel</div></section></div>';
+  const now=document.querySelector('#lNow'),feed=document.querySelector('#tv .s-live .feed'),
+    past=document.querySelector('#lPast');
+  const cases=[
+   ['normal','The wrestler locks up in the middle of the ring.',0],
+   ['big','The action changes, and this is a much longer commentary line explaining a dramatic moment in the match. '.repeat(3),2],
+   ['count','ONE!',0],
+   ['count','ONE! TWO! THREE! The referee counts and the crowd reacts wildly to this incredible moment! '.repeat(4),8],
+   ['rating','A remarkable ending brings everyone in the building to their feet.',20]
+  ];
+  const result=cases.map(([kind,line,history])=>{
+   now.className='now '+kind;
+   now.innerHTML='<span class="t">08:23</span><span class="spk-pf"></span><span class="tx">'+line+'</span>';
+   past.innerHTML=Array.from({length:history},(_,i)=>'<li><span class="t">09:23</span><span>Earlier call '+i+'</span></li>').join('');
+   const box=now.getBoundingClientRect(),fb=feed.getBoundingClientRect(),text=now.querySelector('.tx'),
+    tr=text.getBoundingClientRect();
+   return {kind,nowHeight:box.height,feedHeight:fb.height,
+    boxLeft:box.left,boxRight:box.right,textRight:tr.right,textLeft:tr.left,
+    textScrollWidth:text.scrollWidth,textClientWidth:text.clientWidth,
+    textScrollHeight:text.scrollHeight,textClientHeight:text.clientHeight,
+    textOverflow:getComputedStyle(text).overflowY,
+    historicalLines:past.children.length,
+    currentText:text.textContent};
+  });
+  tv.innerHTML=old;tv.hidden=wasHidden;
+  return result;
+ });
+ const expected=viewport.width<=720?(viewport.height<=760?98:112):viewport.width<=900?124:148;
+ const base=metrics[0];
+ for(const m of metrics){
+  assert.ok(Math.abs(m.nowHeight-expected)<2,
+    name+': '+m.kind+' changes live commentary height '+JSON.stringify(m));
+  assert.ok(Math.abs(m.nowHeight-base.nowHeight)<1,
+    name+': event line changes live commentary card height');
+  assert.ok(Math.abs(m.feedHeight-base.feedHeight)<1,
+    name+': event line or archive length changes overall panel height');
+  assert.ok(m.textLeft>=m.boxLeft-1&&m.textRight<=m.boxRight+1,
+    name+': commentary text spills outside its card '+JSON.stringify(m));
+  assert.ok(m.textScrollWidth<=m.textClientWidth+2,
+    name+': event font causes horizontal overflow '+JSON.stringify(m));
+  assert.equal(m.textOverflow,'auto',name+': extra-long lines need internal scrolling');
+  assert.ok(m.currentText.length>0,name+': long commentary must not be truncated in DOM');
+ }
+ const huge=metrics.find(m=>m.kind==='count'&&m.currentText.length>100);
+ assert.ok(huge.textScrollHeight>=huge.textClientHeight,
+   name+': oversize count must remain accessible by scrolling');
+ console.log('PASS live commentary stable height '+name+': '+expected+'px');
+}
+
 async function journey(browser,name,viewport){
  const context=await browser.newContext({viewport});
  const page=await context.newPage(),errors=[];
@@ -66,6 +128,7 @@ async function journey(browser,name,viewport){
   await page.locator('[data-title="new"]').waitFor();
   await page.locator('[data-title="new"]').click();
   await page.locator('#app').waitFor({state:'visible'});
+  await commentaryHeightAudit(page,name,viewport);
   assert.ok(await page.locator('#view').innerText(),'career screen rendered');
   if(viewport.width<=720){
     const mobileReadouts=await page.evaluate(()=>[...document.querySelectorAll('#readouts .ro')].map(el=>{
@@ -279,6 +342,7 @@ async function responsiveAudit(browser,name,viewport){
   await page.goto(URL,{waitUntil:'domcontentloaded'});
   await page.locator('[data-title="new"]').click();
   await page.locator('#app').waitFor({state:'visible'});
+  await commentaryHeightAudit(page,name,viewport);
   const screens=['desk','inbox','squad','scouting','offers','fixtures','pyramid','promoters','rivalries','results','sheets'];
   for(const screen of screens){
    await page.evaluate(s=>window.OfficeUI.go(s),screen);
