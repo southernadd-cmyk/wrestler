@@ -86,16 +86,17 @@ function sign(c,plan,selection){
  Room.act(st,'board_ok');
  assert.equal(st.stage,'review');
  const snap=asJSON(st);
- Room.act(st,'review_edit');
- assert.equal(st.stage,'board');
- Room.act(st,'board_ok');
- assert.equal(st.stage,'review');
- Room.act(st,'review_ok');
- Room.act(st,'talk_none');
- assert.equal(st.stage,'done');
- assert.equal(st.sheet.finishRoute,signedFinish);
- // Saved backstage review must retain the same agreement without replaying decisions.
- Room.act(snap,'review_ok');Room.act(snap,'talk_none');
+ for(const state of [st,snap]){
+  Room.act(state,'review_edit');
+  assert.equal(state.stage,'board');
+  Room.act(state,'board_ok');
+  assert.equal(state.stage,'review');
+  Room.act(state,'review_ok');
+  Room.act(state,'talk_none');
+  assert.equal(state.stage,'done');
+  assert.equal(state.sheet.finishRoute,signedFinish);
+ }
+ // Saving halfway through the final review must not repeat incidents or change agreements.
  assert.equal(JSON.stringify(snap.sheet),JSON.stringify(st.sheet));
  return st.sheet;
 }
