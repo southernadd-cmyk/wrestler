@@ -18,3 +18,7 @@ The finishing runway is a **read-only proof extracted from the physical tape**, 
 
 ## Verification and rollout
 A focused test runs 4 structures × 5 plans, both possible booked clean winners, real graph legality, intervention, expiry, metadata-only isolation and save/replay. The **existing** 960-bout matched A/B structure test independently checks each credited sequence against graph events and reports witnessed and verbally bridged runways. Review reachability, finish agreement, star/botch drift and remaining uncoupled endings. No extra workflows. No merge until reviewed.
+
+## 960-bout reachability refinement
+
+Initial full controls confirmed only **2** closing sequences in 480 actively structured matches, even while other test gates passed. The existing huge selection pool was drowning small additive offers. Phase 9C now uses an evidence-triggered, capped (max 8×) *relative weighting* for eligible counters/setups/impacts in the final section. This is a probability preference only, with ordinary move legality, defensive outcomes, stamina, risk, signed calls, rating and finish unchanged. The audit adds clean-finish denominators plus per-plan counts to measure whether this improves real sequences rather than only tests.

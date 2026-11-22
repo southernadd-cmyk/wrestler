@@ -4656,6 +4656,25 @@ const Graph=(function makeGraph(){
     }
    }
   }
+  // Phase 9C: large pooled repertoires diluted tiny closing guidance.
+  // After REAL recent pressure/counter/setup, provide legal continuations
+  // a bounded relative choice share. This never forces a successful move,
+  // changes its physics, alters safety, or bypasses a later agreed call.
+  const closing=closingOffers(M,p.control);
+  if(closing.length){
+   const ids=new Set(closing.map(([id])=>id));
+   const targets=pool.filter(([id])=>ids.has(id));
+   if(targets.length){
+    const weight=targets.reduce((sum,[,w])=>sum+w,0),
+     other=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+    const desired=ids.has('counter_strike')?.45:
+     (ids.has('rope_run')||ids.has('front_facelock'))?.65:.85;
+    if(weight>0&&other>0&&weight<other*desired){
+     const scale=Math.min(8,other*desired/weight);
+     for(const item of targets)item[1]*=scale;
+    }
+   }
+  }
   // An agreed beat is not one option among fifty. If it is legal right now, the wrestler takes it
   // with odds set by how willing they are, whatever their habits would otherwise suggest.
   if(agreed){

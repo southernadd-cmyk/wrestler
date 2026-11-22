@@ -38,6 +38,13 @@ function sequence(M,withSetup=true){
  if(S.DIRECTOR.active(M))
   assert.ok(cue.some(([id])=>id==='rope_run'),'real counter should offer a genuine physical setup');
  else assert.equal(cue.length,0,'inactive metadata-only match must not acquire finishing guidance');
+ if(S.DIRECTOR.active(M)){
+  const options=G.pool(M);
+  assert.ok(options.some(([id,weight])=>id==='rope_run'&&weight>0),
+   'witnessed cutoff must make legal real setup available in live pool');
+  assert.ok(options.some(([id])=>id!=='rope_run'&&id!=='front_facelock'),
+   'legal alternatives remain available; no scripted sequence');
+ }
  if(withSetup){
   M.t+=10;step(M,'rope_run',winner);
   const finishOptions=G.closingOffers(M,winner);
