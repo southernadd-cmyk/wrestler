@@ -98,6 +98,7 @@ jobs:
           node tests/pre-match-integration.test.cjs
           node tests/structure-planning-baseline.test.cjs
           node tests/structure-contracts.test.cjs
+          node tests/structure-dynamic-planner.test.cjs
           # Short booking-negotiation tests cover real bargaining costs, proposal
           # acceptance, distinct promoter priorities and safe contract signing.
           # Keep these in this existing PR gate, not a separate workflow.
