@@ -66,7 +66,8 @@ function option(o,w,id){
  assert.equal(restored.finish,'lose_clean','saved proposal must not change the live offer');
  assert.equal(G.talkMove(o.id,w.id,'reply:accept').error,undefined);
  assert.equal(restored.finish,'lose_protected');
- assert.equal(restored.bump,.75);
+ assert.equal(restored.bump,restored.talk.proposal.bump,'accepted terms must match the saved proposal');
+ assert.ok(G.purse(restored,G.W('rex'))<baseFee,'the accepted package must reduce the actual appearance fee');
  assert.equal(G.book(o.id,w.id),null);
  assert.equal(G.S.card[0].finish,'lose_protected');
  assert.ok(G.S.card[0].purse<baseFee);
