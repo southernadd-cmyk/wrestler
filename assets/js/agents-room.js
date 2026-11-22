@@ -1370,7 +1370,11 @@
   structureSeed(st,{refresh:true});
   for(const obj of structureSlots(st)){
    const b=st.structureBoard[obj.id];
-   if(!b?.action||(!banned(st,b.action)&&legal(b.action,who(st,b.owner),who(st,other(b.owner)))))continue;
+   if(!b?.action)continue;
+   if(!banned(st,b.action)&&legal(b.action,who(st,b.owner),who(st,other(b.owner)))){
+    if(b.conflict)delete b.conflict;
+    continue;
+   }
    if(b.chosen){
     b.conflict='This explicitly selected spot is now prohibited or impossible. Revise or leave the objective open.';
     log(st,'agent','The '+b.label+' is no longer safe or available for '+obj.title+'. I have kept your choice marked for review, rather than silently deleting it.');
@@ -1626,7 +1630,7 @@
   // v0.3.12 If the rivalry or the wrestlers' condition gives somebody a reason to ask for a change, that
   // conversation happens straight after the running order is agreed (and is skipped if the board
   // already avoids the problem).
-  if(st.structure)st.queue=['structure_objection',...st.queue.filter(id=>id!=='structure_objection')];
+  if(st.structurePlanning)st.queue=['structure_objection',...st.queue.filter(id=>id!=='structure_objection')];
   else if(negotiable(st))st.queue=['rival_counter',...st.queue.filter(id=>id!=='rival_counter')];
   const fin={win_clean:w.short+' wins clean',win_dirty:w.short+' wins dirty',lose_protected:w.short+' loses, but protected',lose_clean:w.short+' loses clean',win_dq:w.short+' wins by disqualification',lose_dq:w.short+' gets disqualified'}[c.finish];
   log(st,'agent',pick(['Evening. Doors in ten, so let’s not make a meal of it.','Right. I’ve a flask going cold, so shall we?','The urn’s on. Let’s get this agreed before the raffle starts.'],seed,'hello'));
