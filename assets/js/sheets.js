@@ -142,7 +142,8 @@
    return bad.length?{mode:'unsupported',id:null,contract:null,errors:bad}:
     {mode:'metadata_only',id:sheet.structure.id,contract:JSON.parse(JSON.stringify(sheet.structure)),errors:[]};
   }
-  return Object.freeze({VERSION,DEFINITIONS,create,validate,attach,read});
+  function catalogue(){return Object.entries(DEFINITIONS).map(([id,def])=>({id,label:def.label,objectiveIds:def.objectives.map(d=>d[0])}));}
+  return Object.freeze({VERSION,catalogue,create,validate,attach,read});
  })();
  const MODE={
   detailed:{label:'Detailed layout',desc:'Both performers agree a sequence of specific beats. Highest commitment, less room for improvisation.',weight:13},
