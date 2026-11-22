@@ -1253,6 +1253,78 @@
    return out;
   }
  });
+ // Guaranteed structure-specific debate follows the existing safety objection.
+ // Choices revise a legal named call or release it, never the booked result.
+ SITUATIONS.push({
+  id:'structure_huddle',kind:'match',weight:0,followup:true,when:x=>!!x.st.structurePlanning,
+  open(st){
+   const route=st.lockRoute||st.board.finish?.route||null,available=[];
+   for(const obj of structureSlots(st)){
+    const b=st.structureBoard?.[obj.id],owner=b?.owner;
+    if(!b?.action||!['w','f'].includes(owner))continue;
+    const alts=structureCards(st,obj).filter(c=>c.owner===owner&&c.action!==b.action&&
+     !banned(st,c.action)&&legal(c.action,who(st,owner),who(st,other(owner))));
+    const rank=c=>(supportsFinish(st,route,c)?4:0)-(c.risk?st.game==='safe'?5:1:0);
+    alts.sort((a,z)=>rank(z)-rank(a)||a.action.localeCompare(z.action));
+    available.push({obj,b,owner,alt:alts[0]||null});
+   }
+   if(!available.length)return false;
+   const opponents=available.filter(x=>x.owner===st.structure.roles.other),
+    pool=opponents.length?opponents:available;
+   const x=pool[Math.floor(rng(st.seed,'structure-huddle-'+st.game)*pool.length)];
+   st.structureTalk={objective:x.obj.id,title:x.obj.title,by:x.owner,
+    original:{...x.b},alternative:x.alt?{...x.alt}:null,
+    reason:x.b.risk&&st.game==='safe'?'risk':
+     x.alt&&supportsFinish(st,route,x.alt)&&!supportsFinish(st,route,x.b)?'finish_support':'pacing',
+    decision:null};
+   const read=structureRead(st),v=STRUCTURE_VOICES[voice(who(st,x.owner))]||STRUCTURE_VOICES.stoic;
+   log(st,'agent',read.label+' means '+read.focus+'. '+read.advice+' The promoter has already booked '+(D.FINISHES[st.finish]?.name||st.finish)+'.');
+   log(st,x.owner,'“'+v.replace('{move}',x.b.label.toLowerCase()).replace('{goal}',x.obj.title.toLowerCase())+'”','objection');
+   log(st,other(x.owner),'“I can work a change. Just make sure we both know what comes next.”');
+   return true;
+  },
+  title:st=>st.structureTalk?.title||'Talk through the structure',
+  ask:st=>{
+   const t=st.structureTalk;
+   return !t?'':t.original.label+' is pencilled in for '+t.title+'. '+
+    (t.reason==='risk'?'The safer approach makes the risk matter.':
+     t.reason==='finish_support'?'A different legal move may support the finish better.':
+     'A performer wants a more convincing rhythm.')+
+    ' The promoter’s winner and agreed finishing route stay fixed.';
+  },
+  options(st){
+   const t=st.structureTalk;if(!t)return [];
+   const side=t.by,name=nameOf(st,side),opp=nameOf(st,other(side)),a=t.alternative;
+   const out=[{id:'keep',label:'“Keep the '+t.original.label+'.”',
+    hint:'Preserve the named call and finish; '+name+' loses 2 consent for being overruled.',
+    tags:[name+' ▼','Keeps original call'],
+    run(st){
+     st.mood[side]-=2;t.decision='keep';
+     log(st,side,'“Fine. But I wanted it noted.”','objection');
+     log(st,'agent','Kept the call; the reservation remains on the record.');
+    }}];
+   if(a)out.push({id:'revise',label:'“Use the '+a.label+' instead.”',
+    hint:'One legal move replaces another for the same wrestler. '+name+' +2 consent; '+opp+' −1 for readjusting.',
+    tags:[name+' ▲',opp+' ▼','Changes named call'],
+    run(st){
+     st.structureBoard[t.objective]={...a,chosen:true,open:false,source:'negotiated'};
+     st.mood[side]+=2;st.mood[other(side)]-=1;t.decision='revise';
+     log(st,side,'“That move I can work.”');
+     log(st,'agent','Revised '+t.title+'; the dramatic objective and booked finish still stand.');
+    }});
+   out.push({id:'open',label:'“Call this objective in the ring.”',
+    hint:'Removes the named commitment, not the objective. '+name+' +3 consent; '+opp+' −2 for uncertainty.',
+    tags:[name+' ▲',opp+' ▼','No promised move'],
+    run(st){
+     st.structureBoard[t.objective]={owner:side,action:null,label:'Call this objective in the ring',
+      by:'agent',chosen:true,open:true,source:'open'};
+     st.mood[side]+=3;st.mood[other(side)]-=2;t.decision='open';
+     log(st,side,'“Good. I will find the opening when it comes.”');
+     log(st,'agent','The objective remains, but no one has promised the move will land.');
+    }});
+   return out;
+  }
+ });
  const SPINE=SLOTS.filter(S=>S.id!=='finish');
  // Opt-in Phase 2 planner: no classic slots, no implied face/heel assignment.
  // These categories are candidate REAL graph moves; the structure objective
@@ -1278,6 +1350,61 @@
   'big_spot','debut','wont_job','leash','crowd','request','protect',
   'promise_due','rival_counter','rival_counter_reply'
  ]);
+ // Phase 5: narrative guidance only. No hidden match-graph multipliers.
+ const STRUCTURE_READ={
+  classic_american:{focus:'opening advantage, heat, comeback and payoff',best:['story','safe'],warn:['spots'],
+   hints:{story:'Make the changes of control clear.',spots:'Too many early highlights can flatten the comeback.',
+    technical:'Use patient control to earn the comeback.',brawl:'Keep the turning points readable amid the brawl.',
+    safe:'A careful layout can still produce a convincing comeback.'}},
+  kings_road:{focus:'technical exchanges, escalation and a tactical callback',best:['technical','story'],warn:['spots'],
+   hints:{story:'Give the first exchanges time to matter again later.',
+    spots:'Leave room between major moves for earlier technique to pay off.',
+    technical:'Let counters and holds establish the later callbacks.',
+    brawl:'Keep the early tactical thread visible through the strikes.',
+    safe:'Build from legal reversals instead of unnecessary spectacle.'}},
+  chickenshit_heel:{focus:'evasion, exposure, a shortcut and a defensive escape',best:['story','brawl'],warn:['spots'],
+   hints:{story:'Let the opponent catch the heel before the shortcut.',
+    spots:'Spectacle can crowd out the heel being exposed.',
+    technical:'Counters can expose the shortcut before it changes the match.',
+    brawl:'Make the cheap shot a response to being caught.',
+    safe:'The villain can cheat without an unsafe impact.'}},
+  dominant_ace:{focus:'ace superiority, a credible challenge and the answer',best:['story','technical'],warn:['spots'],
+   hints:{story:'The challenger needs a real moment before the ace answers.',
+    spots:'Save the major offence until the challenge feels credible.',
+    technical:'Controlled wrestling can make the answer more convincing.',
+    brawl:'Give the challenger resistance, not an unbroken squash.',
+    safe:'Precision can establish superiority without reckless risk.'}}
+ };
+ const STRUCTURE_VOICES={
+  grand:'I can sell {goal}, but the {move} deserves another look.',
+  gruff:'The {move} for {goal}? Not convinced.',
+  eager:'Could we change the {move}? I want {goal} to mean something.',
+  stoic:'I can work {goal}. The {move} is the bit I question.',
+  precise:'The {move} is not the best use of my {goal} window.',
+  earnest:'Could we rethink the {move}, for {goal}?',
+  sermon:'The {goal} must tell the story, not merely the {move}.',
+  slippery:'The {move} is fine on paper. I have a better idea for {goal}.'
+ };
+ function structureRead(st,game=st.game){
+  if(!st.structurePlanning)return null;
+  const d=STRUCTURE_READ[st.structure.id],label=P.STRUCTURES.catalogue().find(x=>x.id===st.structure.id)?.label||st.structure.id;
+  return {label,focus:d?.focus||'the dramatic objectives',
+   advice:d?.hints?.[game]||'Only performed graph actions can fulfil an objective.',
+   fit:d?.best?.includes(game)?'Strong structural fit':d?.warn?.includes(game)?'Pacing trade-off':'Alternative approach'};
+ }
+ function structureReview(st){
+  if(!st.structurePlanning)return null;
+  const info=structureRead(st),route=st.lockRoute||st.board.finish?.route||null;
+  const named=structureSlots(st).filter(o=>st.structureBoard?.[o.id]?.action).length,t=st.structureTalk;
+  const discussion=t?.decision==='revise'?'Negotiated '+t.title+': '+t.original.label+' became '+(st.structureBoard?.[t.objective]?.label||'another legal move')+'.':
+   t?.decision==='open'?'Negotiated '+t.title+': no named move is promised.':
+   t?.decision==='keep'?'Kept '+t.original.label+' for '+t.title+' despite '+nameOf(st,t.by)+'’s reservation.':null;
+  return {label:info.label,focus:info.focus,lead:nameOf(st,st.structure.roles.lead),
+   booked:D.FINISHES[st.finish]?.name||st.finish,
+   route:route?ROUTE_NAME[route]||route:'Not selected',
+   approach:st.game?D.PLANS[st.game]?.name||st.game:'Not selected',
+   advice:info.advice,named,open:4-named,discussion};
+ }
  const structureSlots=st=>st.structure?.objectives||[];
  const structureSlot=(st,id)=>structureSlots(st).find(x=>x.id===id)||null;
  // A wrestler must actually be able to attempt a graph action. No invented
