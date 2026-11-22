@@ -34,6 +34,7 @@ const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
  sellingWrestlers:0,sellingStrains:0,sellingLines:0,comebackSelling:0,realBreathers:0,
  closingRunways:0,bridgedRunways:0,closingWins:0,closingLosses:0,cleanBouts:0,
+ closingWithInterveningAction:0,closingReusedImpacts:0,closingPairs:{},closingImpactIds:{},
  fullRunways:0,linkedRunways:0,lateWinnerControl:0,lateWinnerSetups:0,lateWinnerImpacts:0,
  protectedFollowthroughs:0,protectedClosingImpacts:0,
  protectedCounterExchanges:0,protectedOpposingImpacts:0,extendedClosingImpacts:0,
@@ -316,6 +317,16 @@ for(let si=0;si<sampleStyles.length;si++){
     r.linkedRunways++;
    }
    r.closingRunways++;
+   add(r.closingPairs,setup.id+'>'+impact.id);
+   add(r.closingImpactIds,impact.id);
+   // A real same-owned move between setup and impact still permits the
+   // original authored link, but only if the established evidence passes
+   // all of the unchanged control-break and source checks above.
+   r.closingWithInterveningAction+=Number(tape.some(e=>e.t>setup.t&&
+    e.t<impact.t&&!!A[e.id]&&e.preControl===closing.winner&&
+    e.control===closing.winner&&!A[e.id].reverse));
+   r.closingReusedImpacts+=Number(tape.some(e=>e.id===impact.id&&
+    e.t<impact.t&&e.t>=impact.t-150&&e.preControl===closing.winner));
    r.closingFinalMinuteRunways+=Number(m.len-closing.impact.at<=60);
    r.bridgedRunways+=Number(!!closing.spoken);
    r.closingWins+=Number(closing.winner==='w');
@@ -449,6 +460,12 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    cleanBouts:r.cleanBouts,
    closingRunways:r.closingRunways,bridgedRunways:r.bridgedRunways,
    fullRunways:r.fullRunways,linkedRunways:r.linkedRunways,
+   closingWithInterveningAction:r.closingWithInterveningAction,
+   closingReusedImpacts:r.closingReusedImpacts,
+   distinctClosingPairs:Object.keys(r.closingPairs).length,
+   distinctClosingImpacts:Object.keys(r.closingImpactIds).length,
+   topClosingPairs:top(r.closingPairs,10),
+   topClosingImpacts:top(r.closingImpactIds,10),
    lateWinnerControl:r.lateWinnerControl,lateWinnerSetups:r.lateWinnerSetups,
    lateWinnerImpacts:r.lateWinnerImpacts,
    protectedFollowthroughs:r.protectedFollowthroughs,
@@ -483,6 +500,10 @@ assert.equal(report.totalBouts,(quick?320:960));
 for(const r of Object.values(map)){
  assert.ok(r.closingRunways<=r.cleanBouts,'only clean finishes may earn 9C runways');
  assert.equal(r.closingRunways,r.fullRunways+r.linkedRunways,'graded evidence totals must reconcile');
+ assert.ok(r.closingWithInterveningAction<=r.closingRunways,
+  'only truthful runways can credit intermediate authored follow-through');
+ assert.ok(Object.keys(r.closingPairs).length<=r.closingRunways,
+  'distinct finishing combinations require performed links');
  assert.ok(r.closingRunways<=r.lateWinnerControl,
   'a verified finishing runway must preserve winner control at the bell');
  assert.ok(r.closingRunways<=r.lateWinnerSetups,
@@ -490,6 +511,11 @@ for(const r of Object.values(map)){
  assert.ok(r.closingRunways<=r.lateWinnerImpacts,
   'a verified finishing runway must include a real late impact');
 }
+// Phase 9G established zero unearned late winner-control losses on this
+// exact matched full sample. Closing-timing changes must not reintroduce any.
+if(!quick)assert.equal(Object.values(map).reduce((sum,r)=>
+ sum+r.lateLostWithoutRealReversal,0),0,
+ 'Phase 9H cannot regress Phase 9G physical control continuity');
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
 console.log('PHASE9G_TRACE_JSON '+JSON.stringify({
  base:'7bd150ec60fe693c1818d516df4ce19618577849',

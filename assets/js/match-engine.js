@@ -3791,6 +3791,40 @@ const Graph=(function makeGraph(){
      g.events.some(e=>closingPressure(e,loser)&&
       e.t<last.t&&last.t-e.t<=100))
    return [['rope_run',3.6],['front_facelock',2.2]];
+  // Phase 9H: one authentic same-owner standing continuation should not
+  // erase a freshly earned authored setup. The old guidance vanished as
+  // soon as the next legal action was a lockup, controlled step or exchange
+  // rather than an immediate grounding impact. Give the original authored
+  // impact ONE more optional selection, never a new edge or forced landing.
+  // The physical state, last actual event, timed source and normal pool
+  // validity remain authoritative. Deliberate rests/disengagements and
+  // counters terminate this chance; no handed-off control is inferred.
+  if(side===winner&&M.len-M.t<=70&&M.len-M.t>=30&&
+     p.position==='standing'&&p.down===null&&
+     g.physical?.area==='ring'&&last.id===g.node&&
+     last.preControl===winner&&last.control===winner&&
+     !node.reverse&&!node.counterOf&&!node.blockOf&&!node.nearfall&&
+     !['rest','heel'].includes(node.family)&&
+     !['catch_breath','circle','crowd_pose','taunt','finish_tease',
+      'stand_reset','double_down_count','rope_crawl'].includes(last.id)){
+   const source=g.events.at(-2),authored=A[source?.id];
+   if(source&&CLOSING_SETUPS.has(source.id)&&
+      source.preControl===winner&&source.control===winner&&
+      source.t<last.t&&last.t-source.t<=20&&
+      M.t-source.t>=0&&M.t-source.t<=40&&
+      closingValidEvent(source)&&
+      !g.events.slice(-2).some(e=>e.control===loser)){
+    const targets=(authored?.next||[]).filter(([id])=>
+     A[id]?.zone==='mat'&&A[id]?.down==='d'&&
+     !A[id]?.reverse&&!A[id]?.counterOf&&!A[id]?.blockOf&&
+     !A[id]?.risk&&isValid(M,id));
+    if(targets.length)return targets.map(([id])=>{
+     const repeated=g.events.some(e=>e.id===id&&
+      e.preControl===winner&&e.t>=M.t-150);
+     return [id,repeated?1.1:2.8];
+    });
+   }
+  }
   // A clean winner can earn a real closing setup by taking control through
   // ordinary in-ring offence, not only by executing a named reversal.
   // This is a candidate choice after a performed standing action, NEVER an
