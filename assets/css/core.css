@@ -556,3 +556,117 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .system-alert{margin:14px 0;padding:9px 12px;border-left:4px solid var(--blood);background:var(--paper)}
 .system-alert .section-h{margin-bottom:6px}
 .system-alert .feud-last{color:var(--ink-2)}
+
+
+/* Booking negotiations V2, Phase 1: conversation-first meeting.
+   The career/negotiation engine is unchanged. Only #modal with this class
+   uses the wider, two-pane layout; all other dialogs keep their old chrome. */
+dialog.negotiation-dialog[open]{
+ display:flex;flex-direction:column;
+ width:min(1020px,calc(100vw - 30px));
+ max-width:calc(100vw - 30px);
+ height:min(745px,calc(100dvh - 30px));
+ max-height:calc(100dvh - 30px);
+ overflow:hidden;
+}
+.negotiation-dialog>.tbar{flex:none;min-width:0}
+.negotiation-dialog>.tbar h2{min-width:0;overflow-wrap:anywhere}
+.neg-intro{
+ display:flex;align-items:center;justify-content:space-between;gap:8px 18px;flex-wrap:wrap;
+ flex:none;padding:8px 14px;background:var(--paper);border-bottom:2px solid var(--stone-lo);
+}
+.neg-intro b{font-weight:700}
+.neg-intro span:last-child{font-size:16px;color:var(--ink-2)}
+.neg-layout{
+ display:grid;grid-template-columns:minmax(0,1.65fr) minmax(265px,.95fr);
+ flex:1;min-height:0;min-width:0;overflow:hidden;
+}
+.neg-main{
+ display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;
+}
+.neg-section-header{
+ display:flex;align-items:baseline;justify-content:space-between;gap:4px 12px;flex-wrap:wrap;
+ padding:7px 12px;background:var(--stone-2);border-bottom:1px solid var(--stone-lo);
+}
+.neg-section-header b{font:24px/1 var(--jersey);color:var(--blood)}
+.neg-section-header span{font-size:15px;color:var(--ink-2)}
+.neg-transcript{
+ display:flex;flex:1 1 auto;flex-direction:column;gap:8px;
+ min-height:85px;overflow:auto;scrollbar-color:var(--well-line) var(--well);
+ padding:12px;background:var(--well);
+}
+.neg-message{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.neg-message.is-you{flex-direction:row-reverse}
+.neg-message .portrait{width:36px;height:45px;flex:none}
+.neg-avatar-you{
+ display:grid;place-items:center;flex:none;width:36px;height:36px;
+ border:1px solid var(--gold);font:16px/1 var(--jersey);
+ background:var(--stone);color:var(--ink);
+}
+.neg-speech{min-width:0;max-width:94%;padding:6px 10px;border-left:4px solid var(--cyan);
+ background:var(--well-row);overflow-wrap:anywhere}
+.neg-message.is-you .neg-speech{border-left-color:var(--gold);background:#2B3155}
+.neg-speech b{display:block;font-size:15px;color:var(--cyan)}
+.neg-message.is-you .neg-speech b{color:var(--gold)}
+.neg-speech p{margin:2px 0 0;color:var(--white)}
+.neg-response{flex:0 1 auto;min-height:0;max-height:49%;overflow:auto;padding:10px 12px;border-top:2px solid var(--ink)}
+.neg-response h3{font:25px/1.05 var(--jersey);color:var(--blood);margin:0 0 7px}
+.neg-tip{margin:0 0 7px;color:var(--ink-2);font-size:15px}
+.neg-choices{display:grid;gap:5px}
+.neg-choices>.neg-choice{min-height:48px;padding:6px 10px;overflow-wrap:anywhere}
+.neg-choices>.neg-choice span{font-size:16px}
+.neg-more{min-width:0;border:1px solid var(--stone-lo);padding:0 9px}
+.neg-more>summary{cursor:pointer;padding:7px 0;min-height:36px;font-weight:700}
+.neg-more .stip-ask{font-size:15px;margin:6px 0}
+.neg-more .stip-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}
+.neg-more .choice{min-width:0;padding:7px 9px}
+.neg-more .choice span{font-size:15px}
+.neg-verdict{padding:10px 12px;background:var(--paper);border:2px solid var(--ink);border-left:6px solid var(--good-ink)}
+.neg-verdict.is-refused{border-left-color:var(--bad-ink)}
+.neg-verdict b{font-weight:700}
+.neg-verdict p{margin:5px 0}
+.neg-verdict small{font-size:15px;color:var(--ink-2)}
+.neg-aside{min-width:0;min-height:0;overflow:auto;padding:9px 10px;background:var(--stone-2);border-left:2px solid var(--ink)}
+.neg-terms{min-width:0}
+.neg-terms>summary{cursor:pointer;padding:4px 0 8px;font:24px/1 var(--jersey);color:var(--blood)}
+.neg-contract{margin:0 0 10px}
+.neg-contract dl{grid-template-columns:repeat(2,minmax(0,1fr))}
+.neg-contract dl>div{min-width:0;border-bottom:1px solid var(--well-line)}
+.neg-contract dd{display:flex;flex-direction:column;gap:2px;overflow-wrap:anywhere}
+.neg-contract dd s{font-size:16px;line-height:1.2}
+.neg-contract-note{margin:0;padding:8px 10px;font-size:15px;color:var(--dim)}
+.neg-meeting-note{font-size:16px;color:var(--ink-2);margin:8px 2px}
+.neg-footer{flex:none;gap:6px;align-items:stretch;padding:9px 12px;background:var(--stone);border-top:2px solid var(--stone-lo)}
+.neg-footer .btn.two{flex:0 1 auto;min-width:180px;max-width:33%;padding:6px 10px}
+.neg-footer .btn.two span,.neg-footer .btn.two small{overflow-wrap:anywhere}
+.neg-footer .btn.two.later{margin-right:auto}
+@media(max-width:720px){
+ dialog.negotiation-dialog[open]{
+  width:calc(100vw - 12px);max-width:calc(100vw - 12px);
+  height:calc(100dvh - 12px);max-height:calc(100dvh - 12px);
+ }
+ .negotiation-dialog>.tbar{padding:6px 9px}
+ .negotiation-dialog>.tbar h2{font-size:24px}
+ .negotiation-dialog>.tbar .note{font-size:14px}
+ .neg-intro{padding:6px 9px;font-size:14px}
+ .neg-intro span:last-child{font-size:13px}
+ .neg-layout{display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
+ .neg-main{flex:0 0 auto;min-height:auto;overflow:visible}
+ .neg-section-header{padding:6px 9px}
+ .neg-transcript{flex:0 0 auto;min-height:100px;max-height:27dvh;overflow-y:auto;padding:9px}
+ .neg-speech p{font-size:15px;line-height:1.3}
+ .neg-response{flex:0 0 auto;max-height:none;overflow:visible;padding:9px}
+ .neg-choices>.neg-choice{min-height:48px}
+ .neg-more .stip-grid{grid-template-columns:1fr}
+ .neg-aside{flex:0 0 auto;min-height:auto;overflow:visible;padding:6px 9px;border-left:0;border-top:2px solid var(--stone-lo)}
+ .neg-terms>summary{font-size:22px;min-height:38px}
+ .neg-meeting-note{margin:5px 1px;font-size:13px}
+ .neg-footer{padding:6px;gap:5px;flex-wrap:wrap}
+ .neg-footer .btn.two{flex:1 1 45%;min-width:0;max-width:none;min-height:44px;font-size:15px}
+ .neg-footer .btn.two.later{flex:1 1 100%;margin:0}
+ .neg-footer .btn.two small{font-size:12px}
+}
+@media(max-height:590px){
+ dialog.negotiation-dialog[open]{height:calc(100dvh - 10px);max-height:calc(100dvh - 10px)}
+ .neg-transcript{min-height:65px}
+}
