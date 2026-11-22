@@ -158,6 +158,95 @@
    Math.round(13+(p.personality==='cold'?8:0));
   return {strength:base+bonus-(p.personality==='cold'?7:0)+personalityEdge(p,w,t,arg),threshold:{fee:58,protect:62,slot:69}[t.topic]};
  };
+ // Phase 4 — concrete, negotiated exchanges. These packages use the existing
+ // permitted slot/finish/stipulation vocabulary; they never change the winner.
+ // Building options is pure: proposed changes do not mutate live offers.
+ const compatibleStip=(o,kind)=>
+  !!X.STIPS[kind]&&!(o.programme||o.stip)&&
+  !(['nodq','anywhere'].includes(kind)&&['win_dq','lose_dq'].includes(o.finish));
+ const requestedBenefit=(t)=>{
+  if(t.topic==='fee')return 'a higher appearance fee';
+  if(t.topic==='slot')return 'better card billing';
+  if(t.topic==='protect')return 'a protected loss';
+  if(t.topic==='stip')return (X.STIPS[t.stip]?.name||'the requested stipulation').toLowerCase();
+  return 'the requested change';
+ };
+ const tradeCandidates=(o,w,t)=>{
+  if(!t||!['counter','challenge'].includes(t.step)||t.pushes||t.tradeMade||o.programme)return [];
+  const p=G.P(o.pid),base=t.original;
+  if(!base)return [];
+  const baselineFee=G.money(base.fee),target=adjusted(o,t,1),benefit=requestedBenefit(t),out=[];
+  const add=(id,label,give,get,terms,bonus)=>{
+   if(!terms||terms.slot===base.slot&&terms.finish===base.finish&&
+    (terms.stip||null)===(base.stip||null)&&Math.abs(terms.bump-base.bump)<.0001)return;
+   out.push({id,label,give,get,terms,bonus,hint:give+' In return: '+get+'.'});
+  };
+  if(t.topic!=='fee'){
+   // A larger explicit fee discount may secure a protection, slot or stipulation
+   // that the promoter would not grant at the existing fee.
+   const factor=t.topic==='protect'?.75:t.topic==='slot'?.78:.80;
+   const terms={...target,bump:round(base.bump*factor)};
+   const price=G.money(G.purse({...o,...terms},w));
+   add('fee','Cut the fee for the booking',`Offer ${price} instead of ${baselineFee}`,`Get ${benefit}`,terms,
+    ({aggressive:20,showman:17,traditional:17,cold:21}[p.personality]||17));
+   // For a protection or billing demand, working the promoter's favourite
+   // stipulation can be a different concession from reducing pay.
+   if(['protect','slot'].includes(t.topic)&&!base.stip&&!o.title){
+    const fav=X.favourite(p);
+    if(compatibleStip(o,fav)){
+     const terms={...target,stip:fav,bump:round(base.bump*(t.topic==='protect'?.90:.97))};
+     const st=X.STIPS[fav],price=G.money(G.purse({...o,...terms},w));
+     add('stip','Take their preferred match rules',
+      `Accept ${st.name} (+${st.tired} fatigue)`, `Get ${benefit} for ${price}`,terms,
+      ({aggressive:20,showman:20,traditional:15,cold:14}[p.personality]||16));
+    }
+   }
+  }else{
+   // More money in exchange for a worse booking position, a less protected
+   // defeat, or a physically tougher match. Every price is explicit.
+   const i=D.SLOT_ORDER.indexOf(base.slot);
+   if(i>0&&!o.title){
+    const terms={...target,slot:D.SLOT_ORDER[i-1],bump:round(base.bump*1.15)};
+    add('billing','Give up card position',
+     `Move from ${D.SLOTS[base.slot].name} to ${D.SLOTS[terms.slot].name}`,
+     `Receive ${G.money(G.purse({...o,...terms},w))} instead of ${baselineFee}`,terms,
+     ({aggressive:15,showman:18,traditional:20,cold:19}[p.personality]||17));
+   }
+   if(base.finish==='lose_protected'){
+    const terms={...target,finish:'lose_clean',bump:round(base.bump*1.17)};
+    add('finish','Accept a clean loss for more pay',
+     'Give up protection on the booked loss',
+     `Receive ${G.money(G.purse({...o,...terms},w))} instead of ${baselineFee}`,terms,
+     ({aggressive:17,showman:16,traditional:18,cold:18}[p.personality]||17));
+   }
+   if(!base.stip&&!o.title){
+    const fav=X.favourite(p);
+    if(compatibleStip(o,fav)){
+     const terms={...target,stip:fav,bump:round(base.bump*1.16)};
+     const st=X.STIPS[fav];
+     add('stip','Work their preferred stipulation',
+      `Accept ${st.name} (+${st.tired} fatigue)`,
+      `Receive ${G.money(G.purse({...o,...terms},w))} instead of ${baselineFee}`,terms,
+      ({aggressive:20,showman:20,traditional:15,cold:14}[p.personality]||17));
+    }
+   }
+  }
+  return out;
+ };
+ const tradeReply=(p,accepted,details)=>{
+  const lines=accepted?{
+   aggressive:"That's a proper trade. I'll give you this, and I expect you to deliver: ",
+   showman:"We can sell that exchange to the crowd. Here's the package: ",
+   traditional:"Those concessions make the revised card workable: ",
+   cold:"The exchange is commercially justifiable at these terms: "
+  }:{
+   aggressive:"Even with that concession, I won't change the card.",
+   showman:"That trade still doesn't make the show better.",
+   traditional:"The proposed exchange is not suitable for the card.",
+   cold:"The numbers do not justify that trade."
+  };
+  return (lines[p.personality]||lines.traditional)+(accepted?details:'');
+ };
  const missing=(t,p,detail)=>{
   t.step='done';t.verdict='refused';t.proposal=null;t.detail=detail;
   G.save();
