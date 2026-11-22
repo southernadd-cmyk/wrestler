@@ -11,10 +11,10 @@ const G=root.OfficeGame,N=root.OfficeNegotiationsV2,D=root.OfficeData;
 const ids=['dock','pulse','crown','union'],topics=['fee','slot','protect'],args=['crowd','reliability','trade'],
  styles=['Brawl','Story','Spectacle','Technical'],
  levels=[
-  {id:'rookie',trust:25,heat:20,pro:45,rep:25},
-  {id:'developing',trust:40,heat:40,pro:60,rep:40},
-  {id:'established',trust:60,heat:65,pro:78,rep:65},
-  {id:'star',trust:80,heat:85,pro:92,rep:85}
+  {id:'rookie',trust:25,heat:20,pro:45,rep:50},
+  {id:'developing',trust:40,heat:40,pro:60,rep:55},
+  {id:'established',trust:60,heat:65,pro:78,rep:70},
+  {id:'star',trust:80,heat:85,pro:92,rep:90}
  ];
  let serial=0;
 function start(pid,level,style,topic,arg,slot){
