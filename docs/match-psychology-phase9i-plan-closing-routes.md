@@ -29,3 +29,9 @@ This replaces *only one* generic closing-offer branch. Genuine winner reversals,
 
 ## Interpretation
 A different set of actual performer-selected routes is a better measure of stylistic variety than merely increasing aggregate runway counts. A plan with few safe legal options must not be forced into a spectacular or implausible finish to hit a numerical target.
+
+## First measured candidate and narrowed extension
+
+The first full 960-bout PR simulation was **7/7 green** with 480/480 booked outcomes, zero unearned late control losses, zero finish fallbacks, and Spots crediting 5 closings instead of the baseline 2. However, 25 total credited runways versus 24 baseline concealed a fall in **fully witnessed pressure→counter→setup→impact endings from 13 to 11**. We are not calling that a convincing win.
+
+The remaining generic post-**performed-reversal** setup offer still used `rope_run/front_facelock` for all five plans. The second, focused version uses the **same source-authored, legally feasible plan routes** for this specific post-counter invitation. A real losing-side attack and performed defensive reversal are mandatory; no counter, success or winning control is fabricated. Old-saves fallback, sign-off and destination `isValid` are unchanged. All five plans and all four structures have an explicit witness test for the genuinely-earned counter path. Re-test full 960-bout statistics and reject any regression in finish truth, booked outcome, physical legality or relative quality.

@@ -35,16 +35,20 @@ function sequence(M,withSetup=true){
  G.apply(M,'counter_strike');
  assert.equal(M.graph.events.at(-1).control,winner);
  const cue=G.closingOffers(M,winner);
- if(S.DIRECTOR.active(M))
-  assert.ok(cue.some(([id])=>id==='rope_run'),'real counter should offer a genuine physical setup');
- else assert.equal(cue.length,0,'inactive metadata-only match must not acquire finishing guidance');
  if(S.DIRECTOR.active(M)){
+  const valid=G.closingPlanSetups(M);
+  assert.ok(valid.length>=2,
+   'real counter should offer multiple physically authentic plan-specific setups');
+  assert.equal(JSON.stringify(cue.map(([id])=>id)),
+   JSON.stringify(valid.map(([id])=>id)),
+   'counter payoff must come from this plan, not generic rope-run guidance');
   const options=G.pool(M);
-  assert.ok(options.some(([id,weight])=>id==='rope_run'&&weight>0),
-   'witnessed cutoff must make legal real setup available in live pool');
-  assert.ok(options.some(([id])=>id!=='rope_run'&&id!=='front_facelock'),
+  assert.ok(valid.some(([id])=>options.some(([move,weight])=>
+   move===id&&weight>0)),'true counter routes must reach the live pool');
+  assert.ok(options.some(([id])=>!cue.some(([move])=>move===id)),
    'legal alternatives remain available; no scripted sequence');
- }
+ }else assert.equal(cue.length,0,
+  'inactive metadata-only match must not acquire finishing guidance');
  if(withSetup){
   M.t+=10;step(M,'rope_run',winner);
   const finishOptions=G.closingOffers(M,winner);

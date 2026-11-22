@@ -3820,8 +3820,16 @@ const Graph=(function makeGraph(){
   if(side===winner&&p.position==='standing'&&
      last.preControl===loser&&last.control===winner&&node.reverse&&
      g.events.some(e=>closingPressure(e,loser)&&
-      e.t<last.t&&last.t-e.t<=100))
-   return [['rope_run',3.6],['front_facelock',2.2]];
+      e.t<last.t&&last.t-e.t<=100)){
+   // The defender EARNED control through a performed reversal. Its next
+   // optional setup should suit the actual match plan, not always be the
+   // same American rope-run / front-facelock combination. Every offered
+   // source still has a real, legal authored impact edge. The counter is
+   // never scripted or granted by this director.
+   const planRoutes=closingPlanSetups(M);
+   return planRoutes.length?planRoutes.map(([id,w])=>[id,w*1.7]):
+    [['rope_run',3.6],['front_facelock',2.2]];
+  }
   // Phase 9H: one authentic same-owner standing continuation should not
   // erase a freshly earned authored setup. The old guidance vanished as
   // soon as the next legal action was a lockup, controlled step or exchange
