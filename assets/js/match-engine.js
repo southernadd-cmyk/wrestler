@@ -1792,6 +1792,25 @@ const Graph=(function makeGraph(){
       isAerialParent(id)&&isValid(M,id)))
     return {id:schedule.id,name:a.label};
   }
+  // Preserve one *physically available* link after a real late setup.
+  // The structure arc clock must not discard its current controller and
+  // location before the performer gets even one seeded legal choice.
+  // No performed attack, success, position reset or finish is granted here.
+  const bookedWinner=M.o.finish==='win_clean'?'w':'f';
+  if(closingEligible(M)&&M.t/M.len>=.74&&M.t/M.len<=.95&&
+     M.len-M.t>=20&&pos.control===bookedWinner&&
+     pos.position==='standing'&&pos.down===null&&
+     last?.id===g.node&&CLOSING_SETUPS.has(last.id)&&
+     last.preControl===bookedWinner&&last.control===bookedWinner&&
+     M.t-last.t>=0&&M.t-last.t<=10&&
+     g.physical?.area==='ring'&&
+     !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact&&
+     A[last.id].next.some(([id])=>A[id]?.zone==='mat'&&
+      A[id]?.down==='d'&&!A[id]?.reverse&&!A[id]?.blockOf&&
+      !A[id]?.risk&&isValid(M,id))){
+   g.closingProtected=(g.closingProtected||0)+1;
+   return {id:schedule.id,name:a.label};
+  }
   // A real Brawl rebound earns ONE opportunity before the arc director
   // changes control or resets the ropes. Only if a named running attack
   // is affordable now. This never performs or credits the attack.

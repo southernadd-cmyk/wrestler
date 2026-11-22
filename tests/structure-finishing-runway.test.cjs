@@ -137,6 +137,21 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
  assert.equal(direct?.setup.id,'strike_trade');
  assert.equal(direct?.impact.id,'clothesline');
  assert.equal(direct?.cutoff,null,'an ordinary exchange cannot fabricate a counter');
+  // A current legal standing setup must survive ONE optional graph step
+ // even when an arc age threshold would otherwise erase its ownership.
+ const protect=create(structure,'story');
+ protect.t=Math.floor(protect.len*.85);
+ protect.graph.started=true;protect.graph.arc='exchange';
+ step(protect,'strike_trade','w');
+ protect.t+=10;protect.graph.age=999;
+ const previous=protect.r.getState();
+ G.advance(protect,protect.t/protect.len);
+ assert.equal(protect.graph.node,'strike_trade','arc transition must not erase an owned closing setup');
+ assert.equal(protect.story.control,'w','no narrative control teleportation during handoff');
+ assert.equal(protect.graph.closingProtected,1,'exactly one available follow-through protected');
+ assert.equal(protect.r.getState(),previous,'preservation never consumes the match RNG');
+ assert.ok(G.pool(protect).some(([id,weight])=>id==='clothesline'&&weight>0),
+  'the physically valid linked move remains available after the saved arc');
   const partial=create(structure,'story');
  partial.t=Math.floor(partial.len*.89);partial.graph.arc='exchange';
  step(partial,'rope_run','w');partial.t+=10;step(partial,'clothesline','w');

@@ -20,6 +20,7 @@ const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete
  sellingWrestlers:0,sellingStrains:0,sellingLines:0,comebackSelling:0,realBreathers:0,
  closingRunways:0,bridgedRunways:0,closingWins:0,closingLosses:0,cleanBouts:0,
  fullRunways:0,linkedRunways:0,lateWinnerControl:0,lateWinnerSetups:0,lateWinnerImpacts:0,
+ protectedFollowthroughs:0,
  motifStarts:0,motifPaid:0,motifOpen:0,
  finishes:0,finishFallbacks:0,named:0,namedHit:0,controlNamedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
@@ -113,6 +114,8 @@ for(let si=0;si<sampleStyles.length;si++){
     E.GRAPH.A[e.id]?.down==='d'));
   }
   r.events+=m.graph.events.length;r.controlEvents+=control.graph.events.length;
+  r.protectedFollowthroughs+=m.graph.closingProtected||0;
+  assert.equal(control.graph.closingProtected||0,0,'metadata-only controls cannot protect closing links');
   r.distinct+=new Set(m.graph.events.map(x=>x.id)).size;
   r.botches+=m.botches;r.controlBotches+=control.botches;
   const closing=m.final.finishingRunway;
@@ -282,6 +285,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    fullRunways:r.fullRunways,linkedRunways:r.linkedRunways,
    lateWinnerControl:r.lateWinnerControl,lateWinnerSetups:r.lateWinnerSetups,
    lateWinnerImpacts:r.lateWinnerImpacts,
+   protectedFollowthroughs:r.protectedFollowthroughs,
    closingWins:r.closingWins,closingLosses:r.closingLosses,
    bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,dangerEscapes:r.dangerEscapes,
    namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),controlNamedHitPct:ratio(r.controlNamedHit,r.named),openObjectives:r.open,
