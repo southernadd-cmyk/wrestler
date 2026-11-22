@@ -37,6 +37,124 @@
    nodes.forEach(n=>visit(n.id));return bad;
   }
  };
+ // Phase 1: a separately versioned, descriptive structure contract.
+ // NOT consumed by live match logic, scoring, commentary or planning slots yet.
+ // Legacy sheets carry no 'structure' field and remain byte-for-byte compatible.
+ const STRUCTURES=(function(){
+  const VERSION=1;
+  // Dramatic lead is NOT the player's wrestler, winner, babyface or heel.
+  const DEFINITIONS={
+   classic_american:{label:'Classic American',objectives:[
+    ['opening_edge','Establish an early advantage','opening_advantage','lead',[.02,.32]],
+    ['sustained_pressure','Build sustained pressure','pressure','other',[.20,.65]],
+    ['fighting_return','Fight back from the disadvantage','comeback','lead',[.43,.85]],
+    ['decisive_payoff','Build to an appropriate payoff','payoff','either',[.62,.98]]
+   ]},
+   kings_road:{label:"King's Road",objectives:[
+    ['technical_open','Establish an even technical contest','technical_exchange','either',[.02,.36]],
+    ['earned_escalation','Escalate through actual offence','escalation','either',[.20,.70]],
+    ['tactical_callback','Revisit a meaningful earlier exchange','callback','either',[.44,.89]],
+    ['final_confrontation','Build a decisive closing exchange','finish_build','either',[.70,1]]
+   ]},
+   chickenshit_heel:{label:'Chickenshit Heel',objectives:[
+    ['avoid_confrontation','Avoid a fair confrontation','evasion','lead',[0,.35]],
+    ['caught_out','Let the opponent expose the evasion','exposure','other',[.15,.63]],
+    ['unfair_advantage','Seek an opportunistic or unfair advantage','shortcut','lead',[.33,.85]],
+    ['desperate_escape','Struggle to survive the closing danger','escape','lead',[.64,1]]
+   ]},
+   dominant_ace:{label:'Dominant Ace',objectives:[
+    ['establish_superiority','Establish convincing superiority','dominance','lead',[0,.40]],
+    ['opponent_challenge','Allow a credible opponent challenge','challenge','other',[.20,.68]],
+    ['answer_challenge','Reassert superiority through real offence','reassertion','lead',[.46,.88]],
+    ['decisive_statement','Build to a decisive ending','finish_build','lead',[.70,1]]
+   ]}
+  };
+  const OWNERS=new Set(['w','f','either']),COMMITMENTS=new Set(['guide','landmark','required']);
+  const plain=o=>o&&typeof o==='object'&&!Array.isArray(o);
+  const validId=s=>typeof s==='string'&&/^[a-z][a-z0-9_]{1,63}$/.test(s);
+  function validate(value){
+   const problems=[];
+   if(!plain(value))return ['Structure contract must be a JSON object'];
+   for(const key of Object.keys(value))if(!['version','id','execution','roles','objectives'].includes(key))
+    problems.push('Unknown structure contract field '+key);
+   if(value.version!==VERSION)problems.push('Unsupported structure version '+value.version);
+   const def=Object.prototype.hasOwnProperty.call(DEFINITIONS,value.id)?DEFINITIONS[value.id]:null;
+   if(!def)problems.push('Unknown structure '+value.id);
+   if(value.execution!=='metadata_only')problems.push('Phase 1 structures must be metadata_only');
+   const roles=value.roles;
+   if(!plain(roles)||!['w','f'].includes(roles.lead)||roles.other!==(roles.lead==='w'?'f':'w')||
+     Object.keys(roles).some(k=>!['lead','other'].includes(k)))
+    problems.push('Roles must assign one explicit lead and the opposite side');
+   if(!Array.isArray(value.objectives)||!value.objectives.length||value.objectives.length>16){
+    problems.push('Structure objectives must be a non-empty bounded array');return problems;
+   }
+   if(def&&value.objectives.length!==def.objectives.length)problems.push('Unexpected number of '+value.id+' objectives');
+   const seen=new Set();
+   value.objectives.forEach((obj,i)=>{
+    if(!plain(obj)){problems.push('Invalid objective at '+i);return}
+    for(const key of Object.keys(obj))if(!['id','title','intent','actor','window','requires','commitment'].includes(key))
+     problems.push('Unknown objective field '+key);
+    if(!validId(obj.id)||seen.has(obj.id))problems.push('Missing or duplicate objective ID '+obj.id);
+    if(def&&obj.id!==def.objectives[i]?.[0])problems.push('Objective ID mismatches signed template at '+i);
+    // A v1 objective is a fixed description, not a free-form substitute.
+    const expected=def?.objectives[i];
+    if(expected&&plain(roles)&&['w','f'].includes(roles.lead)){
+     const actor=expected[3]==='lead'?roles.lead:expected[3]==='other'?roles.other:'either';
+     if(obj.actor!==actor)problems.push('Objective actor contradicts assigned role '+obj.id);
+     if(obj.intent!==expected[2])problems.push('Objective intent contradicts signed template '+obj.id);
+     const predecessor=i?def.objectives[i-1]?.[0]:null;
+     if(!Array.isArray(obj.requires)||obj.requires.length!==(i?1:0)||
+       (i&&obj.requires[0]!==predecessor))problems.push('Objective dependencies contradict signed template '+obj.id);
+    }
+    if(typeof obj.title!=='string'||!obj.title.trim()||obj.title.length>120)problems.push('Invalid objective title '+obj.id);
+    if(!validId(obj.intent))problems.push('Invalid objective intent '+obj.id);
+    if(!OWNERS.has(obj.actor))problems.push('Invalid objective actor '+obj.id);
+    const win=obj.window;
+    if(!Array.isArray(win)||win.length!==2||!win.every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=1)||
+      win[0]>=win[1])problems.push('Invalid objective window '+obj.id);
+    if(!COMMITMENTS.has(obj.commitment))problems.push('Invalid objective commitment '+obj.id);
+    if(!Array.isArray(obj.requires)||obj.requires.some(dep=>!validId(dep)||!seen.has(dep))||
+      new Set(obj.requires).size!==obj.requires.length)problems.push('Unordered or unknown prerequisite for '+obj.id);
+    seen.add(obj.id);
+   });
+   return problems;
+  }
+  function create(selection){
+   const spec=typeof selection==='string'?{id:selection}:selection;
+   if(!plain(spec)||!Object.prototype.hasOwnProperty.call(DEFINITIONS,spec.id))throw Error('Unknown match structure');
+   for(const k of Object.keys(spec))if(!['id','lead'].includes(k))throw Error('Unexpected structure selection field '+k);
+   const lead=spec.lead===undefined&&spec.id==='classic_american'?'w':spec.lead;
+   if(lead!=='w'&&lead!=='f')throw Error('Match structure requires explicit lead side w or f');
+   const other=lead==='w'?'f':'w';
+   const objectives=DEFINITIONS[spec.id].objectives.map((d,i)=>({
+    id:d[0],title:d[1],intent:d[2],
+    actor:d[3]==='lead'?lead:d[3]==='other'?other:'either',
+    window:[...d[4]],requires:i?[DEFINITIONS[spec.id].objectives[i-1][0]]:[],
+    commitment:'landmark'
+   }));
+   const contract={version:VERSION,id:spec.id,execution:'metadata_only',roles:{lead,other},objectives};
+   const bad=validate(contract);if(bad.length)throw Error('Invalid structure contract: '+bad.join('; '));
+   return contract;
+  }
+  // Preserve the completed traditional sheet and its separately agreed finish.
+  function attach(sheet,spec){
+   if(!sheet?.signed||sheet.v!==4||!Array.isArray(sheet.nodes)||!sheet.nodes.some(b=>b.id==='finish'))
+    throw Error('A completed signed v4 match sheet is required');
+   if(Object.prototype.hasOwnProperty.call(sheet,'structure'))throw Error('Match sheet already has a structure contract');
+   const value=plain(spec)&&Object.prototype.hasOwnProperty.call(spec,'version')?
+    JSON.parse(JSON.stringify(spec)):create(spec);
+   const bad=validate(value);if(bad.length)throw Error('Invalid structure contract: '+bad.join('; '));
+   return {...sheet,structure:value};
+  }
+  function read(sheet){
+   if(!sheet||sheet.structure==null)return {mode:'legacy',id:'classic_american',contract:null,errors:[]};
+   const bad=validate(sheet.structure);
+   return bad.length?{mode:'unsupported',id:null,contract:null,errors:bad}:
+    {mode:'metadata_only',id:sheet.structure.id,contract:JSON.parse(JSON.stringify(sheet.structure)),errors:[]};
+  }
+  function catalogue(){return Object.entries(DEFINITIONS).map(([id,def])=>({id,label:def.label,objectiveIds:def.objectives.map(d=>d[0])}));}
+  return Object.freeze({VERSION,catalogue,create,validate,attach,read});
+ })();
  const MODE={
   detailed:{label:'Detailed layout',desc:'Both performers agree a sequence of specific beats. Highest commitment, less room for improvisation.',weight:13},
   landmarks:{label:'Key moments',desc:'Agree the essential dramatic beats and call the transitions live. Recommended.',weight:8},
@@ -379,5 +497,5 @@
   });
   return {beats,head:final?null:pct(frac),done:beats.filter(b=>b.state==='achieved'||b.state==='adapted').length,total:beats.length};
  }
- root.OfficeGraphKernel=K;root.OfficeSheets={MODE,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
+ root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
