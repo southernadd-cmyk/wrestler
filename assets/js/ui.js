@@ -908,11 +908,12 @@ function renderMeeting(oid,wid){
  const o=res.offer,t=res.talk,w=G.W(wid),p=G.P(o.pid),f=G.F(o.rid),d=$('#modal');
  d.dataset.talkoid=oid;d.classList.add('negotiation-dialog');
  const orig=t.original,cur={slot:o.slot,finish:o.finish,fee:G.purse(o,w),stip:o.stip||null},done=t.step==='done';
- const changed=orig.slot!==cur.slot||orig.finish!==cur.finish||orig.fee!==cur.fee||(orig.stip||null)!==cur.stip;
+ const originalStip=t.topic==='stip'?(orig.stip||null):cur.stip;
+ const changed=orig.slot!==cur.slot||orig.finish!==cur.finish||orig.fee!==cur.fee||originalStip!==cur.stip;
  const slotN=k=>esc(D.SLOTS[k].name),finN=k=>esc(D.FINISHES[k].name);
  const term=(label,a,b)=>a===b?`<div><dt>${label}</dt><dd>${b}</dd></div>`:`<div class="changed"><dt>${label}</dt><dd><s>${a}</s><b>${b}</b></dd></div>`;
  const chip=!done?['','Original offer']:t.verdict==='agreed'?['good','Agreed']:t.verdict==='counter'?['warn','Counteroffer']:t.verdict==='refused'?['bad','Refused']:['','Original'];
- const deal=`<section class="deal neg-contract${changed?' is-new':''}"><header><small>Terms you would sign</small><span class="deal-chip ${chip[0]}">${chip[1]}</span></header><dl>${term('Card position',slotN(orig.slot),slotN(cur.slot))}${term('Booked finish',finN(orig.finish),finN(cur.finish))}${orig.stip||cur.stip?term('Stipulation',esc(stipName(orig.stip)||'None'),esc(stipName(cur.stip)||'None')):''}${term('Appearance fee',money(orig.fee),money(cur.fee))}</dl><p class="neg-contract-note">${changed?'Changed values highlighted.':'Original offer.'} Nothing is booked until you sign.</p></section>`;
+ const deal=`<section class="deal neg-contract${changed?' is-new':''}"><header><small>Terms you would sign</small><span class="deal-chip ${chip[0]}">${chip[1]}</span></header><dl>${term('Card position',slotN(orig.slot),slotN(cur.slot))}${term('Booked finish',finN(orig.finish),finN(cur.finish))}${originalStip||cur.stip?term('Stipulation',esc(stipName(originalStip)||'None'),esc(stipName(cur.stip)||'None')):''}${term('Appearance fee',money(orig.fee),money(cur.fee))}</dl><p class="neg-contract-note">${changed?'Changed values highlighted.':'Original offer.'} Nothing is booked until you sign.</p></section>`;
  const transcript=t.log.map(x=>`<div class="neg-message ${x.who==='You'?'is-you':'is-booker'}">${x.who==='You'?'<span class="neg-avatar-you" aria-hidden="true">YOU</span>':face('booker',p.id,p.voice,'portrait')}<div class="neg-speech"><b>${esc(x.who==='You'?'You':p.voice)}</b><p>${esc(x.text)}</p></div></div>`).join('');
  const ids=`data-oid="${oid}" data-wid="${wid}"`;
  const ask=(id,label,hint)=>`<button class="choice neg-choice" data-talkaction="${id}" ${ids}><b>${label}</b><span>${hint}</span></button>`;
