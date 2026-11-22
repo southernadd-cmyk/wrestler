@@ -1196,7 +1196,7 @@
  // A structure-specific, causal safety discussion, not a transplanted
  // "proper comeback" conversation from the American match template.
  SITUATIONS.push({
-  id:'structure_objection',kind:'match',weight:0,followup:true,when:x=>!!x.st.structure,
+  id:'structure_objection',kind:'match',weight:0,followup:true,when:x=>!!x.st.structurePlanning,
   open(st){
    structureSeed(st);
    const issue=structureSlots(st).map(obj=>{
@@ -1443,8 +1443,8 @@
   const route=st.lockRoute||st.board.finish?.route;
   if(!route)return null;
   const requirement=ROUTE_CONDITION[route]||null;
-  const slots=st.structure?structureSlots(st).map(o=>({id:o.id,name:o.title})):SPINE;
-  const chosen=st.structure?st.structureBoard||{}:st.board;
+  const slots=st.structurePlanning?structureSlots(st).map(o=>({id:o.id,name:o.title})):SPINE;
+  const chosen=st.structurePlanning?st.structureBoard||{}:st.board;
   const supported=slots.filter(S=>supportsFinish(st,route,chosen[S.id])).map(S=>S.name.toLowerCase());
   const available=!ROUTE_STATIC[route]||ROUTE_STATIC[route](st.w,st.f,st);
   const impossible=slots.filter(S=>chosen[S.id]?.action&&(chosen[S.id].impossible||banned(st,chosen[S.id].action))).map(S=>S.name.toLowerCase());
@@ -1473,7 +1473,7 @@
    const c=finishCards(st).find(c=>c.by==='agent')||finishCards(st)[0];
    if(c)st.board.finish={by:c.by,owner:'either',route:c.route,label:c.label};
   }
-  if(st.structure){structureSeed(st,{refresh});return;}
+  if(st.structurePlanning){structureSeed(st,{refresh});return;}
   const route=st.board.finish?.route,win=winSideOf(st);
   for(const S of SPINE){
    if(refresh&&st.board[S.id]?.chosen)continue;
@@ -1497,7 +1497,7 @@
   return t;
  }
  function boardView(st){
-  if(st.structure)return structureBoardView(st);
+  if(st.structurePlanning)return structureBoardView(st);
   return SPINE.map(S=>{
    const cur=st.board[S.id];
    const cards=cardsFor(st,S.id).map((c,i)=>({id:'slot_'+S.id+'_'+i,label:c.label,by:c.by,who:c.by==='agent'?AGENT:nameOf(st,c.by),
@@ -1507,7 +1507,7 @@
  }
  // Some decisions wreck a beat that was already agreed. Dennis swaps in the nearest thing that still works.
  function reconcile(st){
-  if(st.structure){structureReconcile(st);return;}
+  if(st.structurePlanning){structureReconcile(st);return;}
   for(const S of SPINE){
    const b=st.board[S.id];if(!b||!banned(st,b.action))continue;
    const alt=cardsFor(st,S.id).find(c=>c.action!==b.action&&!c.impossible&&!banned(st,c.action)&&(S.id==='payoff'||c.owner===b.owner));
@@ -1520,7 +1520,7 @@
  }
  // Does the running order tell a story the booked finish can pay off?
  function story(st){
-  if(st.structure)return structureStory(st);
+  if(st.structurePlanning)return structureStory(st);
   const b=st.board,win=winSideOf(st),notes=[],has=k=>!!b[k]?.action;let score=0;
   if(has('pressure')&&has('reversal')){score++;notes.push({good:true,text:'Heat, then the comeback. In that order. Lovely.'});}
   else if(has('reversal')){score--;notes.push({good:false,text:'A comeback from what? Nobody’s been beaten up yet.'});}
@@ -1539,7 +1539,7 @@
   return bad?bad.text:good?good.text:'It’s a match. I’ve seen worse. I’ve booked worse.';
  }
  function settleBoard(st){
-  if(st.structure){structureSettle(st);return;}
+  if(st.structurePlanning){structureSettle(st);return;}
   // A second review must replace the old mood effect, not award it twice.
   const prior=st.boardMood||{w:0,f:0};
   st.mood.w-=prior.w;st.mood.f-=prior.f;
@@ -1565,7 +1565,7 @@
  function draw(st,p,recent){
   // A seeded, weighted draw without replacement, skipping what this career has seen lately.
   const x=context(st,p),want=['feature','main'].includes(st.slot)?3:2;
-  let poolS=SITUATIONS.filter(s=>{if(s.followup||(st.structure&&STRUCTURE_INCOMPATIBLE.has(s.id)))return false;try{return s.when(x)}catch(e){return false}});
+  let poolS=SITUATIONS.filter(s=>{if(s.followup||(st.structurePlanning&&STRUCTURE_INCOMPATIBLE.has(s.id)))return false;try{return s.when(x)}catch(e){return false}});
   const fresh=poolS.filter(s=>!recent.includes(s.id));if(fresh.length>=want)poolS=fresh;
   const out=[];let flavour=0;
   for(let n=0;n<want&&poolS.length;n++){
@@ -1589,6 +1589,10 @@
   // Metadata-only opt-in for Phase 1; live meetings never select this yet.
   // Old in-progress meetings have no structure property.
   if(opts.structure!==undefined)st.structure=P.STRUCTURES.create(opts.structure);
+  if(opts.structurePlanning===true){
+   if(!st.structure)throw Error('Structure planning requires a valid structure selection');
+   st.structurePlanning=true;
+  }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
   st.queue=draw(st,p,opts.recent||[]);
   // The oldest thread due with this wrestler, opponent or promoter comes up first.
@@ -1635,7 +1639,7 @@
    return out;
   }
   if(st.stage==='scene'){const s=current(st);return s.options(st).map(o=>({id:o.id,label:fmt(st,o.label),hint:fmt(st,o.hint||''),tags:(o.tags||tagsOf(st,o.fx||{})).map(t=>fmt(st,t))}));}
-  if(st.stage==='review'&&st.structure&&structureWarnings(st).length)return [
+  if(st.stage==='review'&&st.structurePlanning&&structureWarnings(st).length)return [
    {id:'review_edit',label:'Resolve unsafe called spots',hint:'A manually selected move became prohibited or impossible. Choose another move or leave the objective open.',tags:['Revision required']}];
   if(st.stage==='review')return [
    {id:'review_ok',label:'Approve this layout',hint:'Keep the contracted result and move to the last word before the bell.',tags:[]},
@@ -1656,7 +1660,7 @@
  function enter(st){
   // Move to whatever comes next, and let the people in the room say their piece.
   while(st.stage==='scene'&&st.at<st.queue.length){
-   if(st.structure&&STRUCTURE_INCOMPATIBLE.has(st.queue[st.at])){st.queue.splice(st.at,1);continue;}
+   if(st.structurePlanning&&STRUCTURE_INCOMPATIBLE.has(st.queue[st.at])){st.queue.splice(st.at,1);continue;}
    if(current(st).open(st)!==false)return;st.queue.splice(st.at,1);
   }
   if(st.stage==='scene'){st.stage=st.lockRoute||st.board.finish?.route?'review':'finish';}
@@ -1703,7 +1707,7 @@
     return st;
    }
    if(id==='board_ok'){
-    if(st.structure&&structureWarnings(st).length)throw Error('Resolve prohibited structure commitments before signing');
+    if(st.structurePlanning&&structureWarnings(st).length)throw Error('Resolve prohibited structure commitments before signing');
     log(st,'you','“That’ll do.”');st.decided.push({stage:'board',situation:'board',id,label:o.label,tags:[]});
     settleBoard(st);
     if(st.reviewing){
@@ -1712,7 +1716,7 @@
     log(st,'agent',verdict(st)+' Right. Now for the things that always come up.');
     st.stage='scene';st.at=0;enter(st);return st;
    }
-   if(st.structure&&id.startsWith('objective_')){
+   if(st.structurePlanning&&id.startsWith('objective_')){
     const match=id.match(/^objective_([a-z][a-z0-9_]+)_(\d+|open)$/);
     if(!match)throw Error('Invalid objective choice '+id);
     const obj=structureSlot(st,match[1]);if(!obj)throw Error('Unknown structure objective '+id);
@@ -1794,7 +1798,7 @@
   // What was agreed becomes an ordinary signed match sheet the engine already knows how to perform.
   const {w,f}=st,base=JSON.parse(JSON.stringify(st.base));
   let planned=0;
-  if(st.structure){
+  if(st.structurePlanning){
    structureNodes(st,base);
    planned=structureSlots(st).filter(obj=>!!st.structureBoard?.[obj.id]?.action).length;
   }else{
@@ -1825,8 +1829,8 @@
    stunt:null,bonus:0,story:story(st),finishPreparation:finishPlan(st),negotiation:st.negotiation?JSON.parse(JSON.stringify(st.negotiation)):null,rehearsed:!!st.rehearsed,situations:st.queue.slice(),threads:(st.carry||[]).map(t=>({...t})),threadUsed:st.thread?.id||null,decided:st.decided.map(d=>({...d})),
    premise:'A running order of '+planned+' '+(planned===1?'move':'moves')+'; '+st.queue.length+' things came up backstage'+(st.reworked?' and '+st.reworked+' '+(st.reworked===1?'beat was':'beats were')+' rewritten':'')+'.',
    speakers:st.log.filter(x=>x.kind!=='you').slice(-6).map(x=>({actor:x.who,text:x.text})),
-   ...(st.structure?{structurePlan:structurePlan(st)}:{})};
-  if(st.structure){
+   ...(st.structurePlanning?{structurePlan:structurePlan(st)}:{})};
+  if(st.structurePlanning){
    const errors=P.STRUCTURES.validatePlan(signed.structurePlan,st.structure,signed);
    if(errors.length)throw Error('Structure plan: '+errors.join('; '));
   }
@@ -1838,7 +1842,7 @@
   if(st.game)out.push(D.PLANS[st.game].name);
   const fr=st.lockRoute||st.board.finish?.route;
   if(fr)out.push('Finish: '+(ROUTE_NAME[fr]||fr));
-  if(st.structure){
+  if(st.structurePlanning){
    out.push('Structure: '+(P.STRUCTURES.catalogue().find(x=>x.id===st.structure.id)?.label||st.structure.id));
    for(const obj of structureSlots(st)){const b=st.structureBoard?.[obj.id];if(b)out.push(obj.title+': '+(b.action?b.label:'call it in the ring'));}
   }else for(const S of SPINE){const b=st.board[S.id];if(b?.label)out.push(S.name+': '+b.label);}
