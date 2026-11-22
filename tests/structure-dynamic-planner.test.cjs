@@ -111,10 +111,14 @@ for(let i=0;i<ids.length;i++)for(const lead of ['w','f'])for(const plan of plans
  assert.equal(S.readPlan(M.sheet).mode,'editorial','signed intention survives the match');
  played++;
 }
-// Phase 1 remains separate: metadata alone MUST NOT switch to the Phase 2 board.
+// Phase 1 metadata-only agreement and legacy meeting draw must remain identical.
 {
  const c=contract('phase2-phase1-parity');
+ const ordinary=Room.begin(c,w,f,p);
  const st=Room.begin(c,w,f,p,{structure:{id:'kings_road',lead:'f'}});
+ assert.equal(JSON.stringify(st.queue),JSON.stringify(ordinary.queue),
+  'Phase 1 metadata alone cannot add Phase 2 objections or alter backstage scenes');
+ assert.equal(st.structurePlanning,undefined);
  st.queue=[];
  Room.act(st,'plan_story');
  assert.equal(st.structurePlanning,undefined);
@@ -142,6 +146,54 @@ for(let i=0;i<ids.length;i++)for(const lead of ['w','f'])for(const plan of plans
  assert.ok(!st.structureBoard[row.slot].conflict);
  Room.act(st,'board_ok');
  assert.equal(st.stage,'scene');
+}
+// Risky real moves still require wrestler consent, and objections remain
+// separate from the booked finish and without invented performed evidence.
+{
+ const c=contract('phase2-risk-objection');
+ const st=Room.begin(c,w,f,p,{structure:{id:'kings_road',lead:'w'},structurePlanning:true});
+ st.w.fatigue=62;st.f.fatigue=62;
+ st.queue=['structure_objection'];
+ Room.act(st,'plan_spots');
+ const risky=Room.view(st).board.flatMap(x=>x.cards).find(x=>x.risk);
+ assert.ok(risky,'the opt-in structure planner must offer a genuine risky candidate');
+ const objId=risky.id.match(/^objective_(.+)_\d+$/)[1];
+ Room.act(st,risky.id);
+ const agreedMove=st.structureBoard[objId].action;
+ Room.act(st,'board_ok');
+ assert.equal(st.stage,'scene');
+ assert.equal(Room.view(st).situation,'structure_objection');
+ const objections=Room.options(st).map(x=>x.id);
+ assert.ok(objections.includes('replace')&&objections.includes('open')&&objections.includes('keep'));
+ Room.act(st,'open');
+ assert.equal(st.stage,'review');
+ assert.equal(st.structureBoard[objId].action,null);
+ assert.equal(st.structureObjections[0].from,agreedMove);
+ assert.equal(st.structureObjections[0].to,null);
+ const mood=JSON.stringify(st.mood);
+ Room.act(st,'review_edit');Room.act(st,'board_ok');
+ assert.equal(JSON.stringify(st.mood),mood,'revision must not double-charge objections');
+ Room.act(st,'review_ok');Room.act(st,'talk_none');
+ assert.equal(S.readPlan(st.sheet).mode,'editorial');
+ assert.equal(st.sheet.structurePlan.objections[0].decision,'open');
+ assert.equal(st.sheet.finishRoute,st.sheet.structurePlan.finishRoute);
+}
+// A carried legacy payoff promise is *not* silently fulfilled or consumed
+// when its scene is incompatible with structure-aware editorial planning.
+{
+ const c=contract('phase2-carried-promise');
+ const thread={id:'deferred-promise-1',sit:'promise_due',sid:w.id,at:31};
+ const st=Room.begin(c,w,f,p,{structure:{id:'dominant_ace',lead:'f'},structurePlanning:true,threads:[thread]});
+ assert.equal(st.thread,undefined,'leave incompatible prior promises for a later meeting');
+ assert.equal(st.queue.includes('promise_due'),false);
+}
+// Metadata readers must preserve the originally signed editorial intention.
+{
+ const {st}=begin('classic_american','f','story',200);
+ const signed=sign(st),copy=S.readPlan(signed);
+ const before=JSON.stringify(signed.structurePlan);
+ copy.plan.objectives[0].title='tampered outside the signed sheet';
+ assert.equal(JSON.stringify(signed.structurePlan),before);
 }
 // Future execution modes and false claims of achieved objectives are rejected.
 {
