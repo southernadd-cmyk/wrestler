@@ -1365,9 +1365,11 @@
   });
  }
  function structureReconcile(st){
-  // Recompute Dennis's guesses only. The manager's selected spots and
-  // explicit 'call it live' decisions must survive backstage incidents.
-  structureSeed(st,{refresh:true});
+  // Incidental backstage scenes must NOT silently replace viable suggestions.
+  // Re-pitch only a genuinely prohibited/impossible move below, or fill
+  // genuinely absent entries (old/partial room saves).
+  if(!st.structureBoard||structureSlots(st).some(o=>!st.structureBoard[o.id]))
+   structureSeed(st,{refresh:true});
   for(const obj of structureSlots(st)){
    const b=st.structureBoard[obj.id];
    if(!b?.action)continue;
