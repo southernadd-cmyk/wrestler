@@ -10,7 +10,7 @@ vm.runInNewContext(script.slice(0,cut),{window:root,console,Date,Math,JSON});
 const D=root.OfficeData,E=root.OfficeMatch,Room=root.OfficeRoom,Sheets=root.OfficeSheets,S=Sheets.STRUCTURES;
 assert.equal(S.VERSION,1);
 const ids=['classic_american','kings_road','chickenshit_heel','dominant_ace'];
-assert.deepEqual(S.catalogue().map(x=>x.id),ids);
+assert.equal(JSON.stringify(S.catalogue().map(x=>x.id)),JSON.stringify(ids));
 assert.equal(new Set(S.catalogue().flatMap(x=>x.objectiveIds)).size>=4,true);
 const asJSON=o=>JSON.parse(JSON.stringify(o));
 const validSides=['w','f'];
@@ -21,7 +21,7 @@ for(const id of ids)for(const lead of validSides){
  assert.equal(s.roles.lead,lead);
  assert.equal(s.roles.other,lead==='w'?'f':'w');
  assert.equal(s.objectives.length,4);
- assert.deepEqual(S.validate(s),[]);
+ assert.equal(S.validate(s).length,0);
  assert.ok(s.objectives.every((o,i)=>o.commitment==='landmark'&&
   !('status' in o)&&!('actual' in o)&&!('at' in o)&&
   (i===0?o.requires.length===0:o.requires[0]===s.objectives[i-1].id)));
@@ -41,7 +41,7 @@ assert.throws(()=>S.create('kings_road'),/explicit lead/);
 assert.throws(()=>S.create({id:'kings_road'}),/explicit lead/);
 assert.throws(()=>S.create({id:'unknown_structure',lead:'w'}),/Unknown/);
 assert.throws(()=>S.create({id:'kings_road',lead:'w',finish:'win_clean'}),/Unexpected/);
-assert.deepEqual(S.read({v:4,signed:true}),{mode:'legacy',id:'classic_american',contract:null,errors:[]});
+assert.equal(JSON.stringify(S.read({v:4,signed:true})),JSON.stringify({mode:'legacy',id:'classic_american',contract:null,errors:[]}));
 
 const template=S.create({id:'kings_road',lead:'f'});
 for(const broken of [
