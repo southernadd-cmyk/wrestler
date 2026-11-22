@@ -145,7 +145,10 @@
    x.bump=round(v.bump*factor(.92,style.protect,.76));
   }else if(t.topic==='slot'){
    x.slot=D.SLOT_ORDER[D.SLOT_ORDER.indexOf(v.slot)+1]||v.slot;
-   x.bump=round(v.bump*factor(1,style.slot,.79));
+   // Better billing costs cash. Calculate against the ACTUAL slot-adjusted
+   // appearance fee rather than the internal bump multiplier.
+   const fraction=degree===1?.90:degree===.5?.84:degree===.75?.87:.77;
+   return atFee(o,G.W(t.wid),x,v.fee*fraction);
   }else if(t.topic==='stip'){
    x.stip=t.stip;
    x.bump=round(v.bump*factor(t.lastArg==='trade'?1:1.1,.9,.8));
@@ -159,7 +162,13 @@
   const bonus=arg==='crowd'?Math.round(w.heat*.2+(p.personality==='showman'?9:0)):
    arg==='reliability'?Math.round(w.pro*.16+(p.personality==='traditional'?9:0)):
    Math.round(13+(p.personality==='cold'?8:0));
-  return {strength:base+bonus-(p.personality==='cold'?7:0)+personalityEdge(p,w,t,arg),threshold:{fee:58,protect:62,slot:69}[t.topic]};
+  // Expensive fee increases and promotions up the card require a stronger
+  // justification. All stakes come from the offered contract, not dice rolls.
+  const price=G.purse(o,w);
+  const financialStake=t.topic==='fee'?Math.min(30,Math.max(0,Math.round((price-450)/35))):0;
+  const cardStake=t.topic==='slot'?({opener:0,mid:9,feature:27,main:0}[o.slot]||0):0;
+  return {strength:base+bonus-(p.personality==='cold'?7:0)+personalityEdge(p,w,t,arg),
+   threshold:{fee:58,protect:62,slot:69}[t.topic]+financialStake+cardStake};
  };
  // Phase 4 — concrete, negotiated exchanges. These packages use the existing
  // permitted slot/finish/stipulation vocabulary; they never change the winner.
@@ -332,7 +341,7 @@
    if(!option)return {error:'This trade is not available for the current booking and negotiation stage.'};
    t.tradeMade=id;t.pushes=1;
    if(!Number.isFinite(t.strength)||!Number.isFinite(t.threshold)||
-       t.strength+option.bonus<t.threshold-4){
+       t.strength+option.bonus<t.threshold+9){
     const fee=1;p.trust=clamp(p.trust-fee);t.cost=(t.cost||0)+fee;
     t.step='done';t.verdict='refused';t.proposal=null;t.package=null;
     t.detail='The promoter declined the proposed exchange; original terms remain. Trust −1.';
