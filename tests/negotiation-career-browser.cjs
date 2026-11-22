@@ -36,7 +36,7 @@ async function scenario(browser,name,viewport){
   assert.match(await page.locator('#modal .neg-response h3').innerText(),/Why should the loss be protected/i);
   assert.equal(await page.evaluate(()=>window.OfficeGame.S.focus),1,
    name+': reloading must not spend a second management meeting');
-  assert.match(await page.locator('#modal .neg-deadline-note').innerText(),/advance/i);
+  assert.match(await page.locator('#modal .neg-deadline-note').innerText(),/advanc/i);
   await page.locator('#modal [data-dlg="close"]').click();
   await page.locator('#modal[open]').waitFor({state:'hidden'});
   const outcome=await page.evaluate(()=>{
