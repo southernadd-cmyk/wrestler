@@ -1304,6 +1304,7 @@ function bell(){
    <h3 class="section-h">Agreed before the bell</h3>
    <dl><div><dt>Promoter's finish</dt><dd>${esc(D.FINISHES[c.finish]?.name||'Booked finish')}</dd></div>
    <div><dt>Game plan</dt><dd>${esc(D.PLANS[P.game]?.name||'Set backstage')}</dd></div>
+   ${structureExecution?'<div><dt>Structure</dt><dd>'+esc(OfficeSheets.STRUCTURES.catalogue().find(s=>s.id===P.structureChoice.id)?.label||P.structureChoice.id)+' · '+esc(P.structureChoice.lead==='w'?w.short:f.short)+' leads</dd></div>':''}
    <div><dt>Running order</dt><dd>${Mx.structureReport(night.M)?'Four objectives tracked live':P.sheet?.signed?'Agreed beats tracked live':P.leash==='free'?'Called in the ring':'No signed running order'}</dd></div></dl>
    <p>Plans are instructions, not guaranteed results. Watch the match layout and calls as the bout unfolds.</p>
   </section>`;
@@ -1342,15 +1343,23 @@ function showLine(line,quiet){
  night.past=night.past.filter(x=>x.kind!=='count'||x.text.length>8).slice(0,40);
  renderPastCommentary();persistNight();
 }
+const STRUCTURE_PHASE_NAME={
+ opening_advantage:'Opening advantage',pressure:'Pressure',comeback:'Comeback',payoff:'Payoff',
+ technical_exchange:'Technical exchange',escalation:'Escalation',callback:'Callback',finish_build:'Finish build',
+ evasion:'Evasion',exposure:'Opponent answers',shortcut:'Unfair advantage',escape:'Survival',
+ dominance:'Ace controls',challenge:'Challenger rally',reassertion:'Ace responds'
+};
 function updateLive(){
  const M=night.M;if(!$('#lClock'))return;
+ const structure=Mx.structureReport(M);
  $('#lClock').textContent=Mx.fmt(M.t)+' / '+Mx.fmt(M.len);
- $('#lPhase').textContent=Mx.phaseName(M);
+ const intent=structure&&OfficeSheets.DIRECTOR.current(M)?.objective?.intent;
+ $('#lPhase').textContent=structure&&M.stage==='live'?
+  (STRUCTURE_PHASE_NAME[intent]||'Agreed finish'):Mx.phaseName(M);
  $('#lStars').textContent=M.qN?starsText(Mx.liveStars(M))||'DUD':'–';
  $('#lCrowd').textContent=Math.round(M.crowd);$('#lCrowdBar').style.width=M.crowd+'%';$('#lCrowdBar').parentElement.setAttribute('aria-valuenow',Math.round(M.crowd));
  $('#lMom').style.width=(50+M.mom/2)+'%';$('#lMom').parentElement.setAttribute('aria-valuenow',Math.round(M.mom));
  const y=$('#sY'),t=$('#sT');y.querySelector('i').style.width=M.wSt+'%';t.querySelector('i').style.width=M.fSt+'%';y.setAttribute('aria-valuenow',Math.round(M.wSt));t.setAttribute('aria-valuenow',Math.round(M.fSt));y.classList.toggle('low',M.wSt<30);t.classList.toggle('low',M.fSt<30);
- const structure=Mx.structureReport(M);
  $('#lSheet').textContent=structure?structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structure.objectives.length+' objectives':M.sheet?.signed?M.sheet.nodes.filter(b=>b.status==='achieved'||b.status==='adapted').length+'/'+M.sheet.nodes.length+' beats':M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the layout';$('#lSheet').className=M.offScript?'warnv':'';
  updateStrip(M);
  $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
