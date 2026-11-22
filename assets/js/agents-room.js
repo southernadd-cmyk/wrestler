@@ -1299,7 +1299,7 @@
    const cost=n.cost??1,crowd=n.crowd??0,name=(n.name||id).toLowerCase();
    const dirty=/rake|bite|poke|hair.pull|referee|low.blow|faked.injury/.test(name);
    const tactical=['technical_exchange','callback','opening_advantage'].includes(obj.intent);
-   const impact=['escalation','finish_build','dominance','reassertion','payoff','challenge'].includes(obj.intent);
+   const impact=['escalation','finish_build','dominance','reassertion','decisive_payoff','challenge'].includes(obj.intent);
    if(tactical&&(cost<0||crowd<0||dirty||n.risk))return false;
    if(impact&&(cost<1.3||crowd<1||dirty||n.family==='rest'))return false;
    if(obj.intent==='evasion'&&!/stall|retreat|plea|mock|duck|rope|roll.out|outside|argument/.test(name))return false;
