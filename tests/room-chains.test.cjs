@@ -12,11 +12,12 @@ const byId=id=>Room.SITUATIONS.find(s=>s.id===id);
 
 // The deck: 36 drawable situations and 11 follow-ups that are never drawn on their own (v0.3.12 adds the
 // rivalry counter-proposal and its reply, which only open when there is a real reason for them).
-const followups=Room.SITUATIONS.filter(s=>s.followup&&s.id!=='structure_objection').map(s=>s.id);
+const followups=Room.SITUATIONS.filter(s=>s.followup&&!['structure_objection','structure_huddle'].includes(s.id)).map(s=>s.id);
 // Phase 2 adds an experimental opt-in structure objection. The original
 // meeting chain scenarios must still count only their eleven legacy follow-ups.
-assert.equal(Room.SITUATIONS.length,48);assert.equal(followups.length,11);
+assert.equal(Room.SITUATIONS.length,49);assert.equal(followups.length,11);
 assert.ok(Room.SITUATIONS.some(s=>s.id==='structure_objection'&&s.followup));
+assert.ok(Room.SITUATIONS.some(s=>s.id==='structure_huddle'&&s.followup));
 const W=D.ALL.find(w=>w.id==='rex'),F=D.ALL.find(w=>w.id==='silas'),F2=D.ALL.find(w=>w.id==='night'),P=D.PROMOS[0],P2=D.PROMOS[2];
 let n=0;
 const booking=(w,f,p,o={})=>({id:'chain-'+(n++),wid:w.id,rid:f.id,pid:p.id,finish:'lose_protected',slot:'main',minutes:15,eventAbs:o.at??10,feudHeat:40,...o});

@@ -1189,6 +1189,22 @@ function showMeeting(){
     ${v.finishPlan.requirement?`<span>${esc(v.finishPlan.requirement)}</span>`:''}
     <p>${esc(v.finishPlan.summary)}</p>
    </div>`:'';
+ // Phase 5 keeps contracted result, finishing route and dramatic
+ // intentions visibly separate. The room's conversation record is an
+ // agreement, not evidence of a performed move or guaranteed star bonus.
+ const structurePanel=v.structureBrief&&['review','done'].includes(v.stage)?
+  `<section class="structure-review" aria-label="Structure and signed finish summary">
+   <h3 class="section-h">Dramatic structure versus booked result</h3>
+   <dl>
+    <div><dt>Promoter's booked result</dt><dd>${esc(v.structureBrief.booked)}</dd></div>
+    <div><dt>Agreed finishing route</dt><dd>${esc(v.structureBrief.route)}</dd></div>
+    <div><dt>Dramatic structure</dt><dd>${esc(v.structureBrief.label)} · ${esc(v.structureBrief.lead)} leads</dd></div>
+    <div><dt>Performance approach</dt><dd>${esc(v.structureBrief.approach)}</dd></div>
+   </dl>
+   <p>${esc(v.structureBrief.focus)}. ${esc(v.structureBrief.advice)}</p>
+   <p><b>${v.structureBrief.named} named moves, ${v.structureBrief.open} objectives left open.</b> These are instructions, not guaranteed actions.</p>
+   ${v.structureBrief.discussion?'<p class="structure-conversation"><b>Backstage agreement:</b> '+esc(v.structureBrief.discussion)+'</p>':''}
+  </section>`:'';
  const routePicker=v.board?`<section class="finish-choice" role="group" aria-label="Choose the finish">
   <div class="rorder-heading"><b>1. How does it end?</b><span>The contracted winner does not change.</span></div>
   ${v.finishes?.length?`<div class="finish-options">${v.finishes.map(f=>`<button class="decision-option finish-option${f.selected?' on':''}" data-room="${esc(f.id)}" aria-pressed="${f.selected}"><b>${esc(f.label)}</b><small>${esc(f.hint)}</small>${tagChips(f.tags)}</button>`).join('')}</div>`:
@@ -1205,16 +1221,17 @@ function showMeeting(){
    <p class="lede">The conversations are over. Check what they changed before the wrestlers go out.</p>
    <section class="finish-choice"><div class="rorder-heading"><b>Agreed finish</b><span>${esc(v.finishPlan?.label||'Not chosen')}</span></div>
     ${finishReadout}</section>
+   ${structurePanel}
    <div class="rorder-heading"><b>${st.structurePlanning?"The dramatic objectives":"The called spots"}</b><span>In order, subject to what actually happens in the ring.</span></div>
    <div class="rorder review-spots">${v.review.map(r=>`<div class="rorder-row">
-    <div class="rorder-slot"><b>${esc(r.name)}</b></div>
-    <p class="review-spot"><b>${esc(r.current||'Called in the ring')}</b>${v.finishPlan?.supported?.includes(r.name.toLowerCase())?'<span class="review-fit">Helps build the finish</span>':''}</p>
+    <div class="rorder-slot"><b>${esc(r.name)}</b>${st.structurePlanning?'<small>'+esc(r.actor==='w'?w.short:r.actor==='f'?f.short:'Either wrestler')+' · '+Math.round(r.window[0]*100)+'–'+Math.round(r.window[1]*100)+'% of match</small>':''}</div>
+    <p class="review-spot"><b>${esc(r.current||'Called in the ring')}</b>${v.finishPlan?.supported?.includes(r.name.toLowerCase())?'<span class="review-fit">May help build the finish</span>':''}</p>
    </div>`).join('')}</div>
    <p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p>
-   <div class="review-actions"><button class="btn" data-room="review_edit">Revise the called spots</button>
+   <div class="review-actions"><button class="btn" data-room="review_edit">${st.structurePlanning?'Revise the objectives':'Revise the called spots'}</button>
     <button class="btn go" data-room="review_ok">Approve this layout</button></div>
   </div>`:'';
- const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
+ const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${structurePanel}${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
  const descriptions={traditional:'Original shine, heat, comeback and finish. No Structure Director.',
   classic_american:'Guided opening, pressure, comeback and payoff.',
