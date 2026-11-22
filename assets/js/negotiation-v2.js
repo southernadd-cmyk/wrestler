@@ -110,6 +110,7 @@
   const p=G.P(o.pid),v=profile(p),past=G.S.history?.find(h=>h.pid===p.id&&h.wid===w.id);
   return {
    name:v.name,priority:v.priority,signal:v.signal,warning:v.warning,
+   failureCost:v.failed,hardballCost:v.hardball,
    evidence:past&&Number.isFinite(past.stars)?
     'Past booking: '+w.short+' earned '+past.stars+' stars on '+p.name+'.':
     'No completed booking with this wrestler recorded for '+p.name+'.'
