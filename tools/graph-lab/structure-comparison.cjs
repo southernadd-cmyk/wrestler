@@ -274,8 +274,10 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    topSequences:sequences,...dims}];
  }))};
 assert.equal(report.totalBouts,(quick?320:960));
-for(const r of Object.values(map))assert.ok(r.closingRunways<=r.cleanBouts,'only clean finishes may earn 9C runways');
- assert.equal(r.closingRunways,r.fullRunways+r.linkedRunways,'evidence levels add up');
+for(const r of Object.values(map)){
+ assert.ok(r.closingRunways<=r.cleanBouts,'only clean finishes may earn 9C runways');
+ assert.equal(r.closingRunways,r.fullRunways+r.linkedRunways,'graded evidence totals must reconcile');
+}
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
 // Focused read-only risk report for Phase 8: the existing seeded 960-match
 // comparison, no new workflow or extra stochastic fixture.
