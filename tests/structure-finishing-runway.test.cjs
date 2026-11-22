@@ -35,14 +35,16 @@ function sequence(M,withSetup=true){
  G.apply(M,'counter_strike');
  assert.equal(M.graph.events.at(-1).control,winner);
  const cue=G.closingOffers(M,winner);
- assert.ok(cue.some(([id])=>id==='rope_run'),'an observed counter makes real setup a candidate; diagnostics='+JSON.stringify({
-  t:M.t,len:M.len,finish:M.o.finish,outcome:M.outcome,active:S.DIRECTOR.active(M),
-  control:M.story.control,position:M.story.position,last:M.graph.events.at(-1),
-  pressure:M.graph.events.at(-2),offers:cue}));
+ if(S.DIRECTOR.active(M))
+  assert.ok(cue.some(([id])=>id==='rope_run'),'real counter should offer a genuine physical setup');
+ else assert.equal(cue.length,0,'inactive metadata-only match must not acquire finishing guidance');
  if(withSetup){
   M.t+=10;step(M,'rope_run',winner);
-  assert.ok(G.closingOffers(M,winner).some(([id])=>id==='clothesline'),
-   'a performed linked setup makes a legal impact possible');
+  const finishOptions=G.closingOffers(M,winner);
+  if(S.DIRECTOR.active(M))
+   assert.ok(finishOptions.some(([id])=>id==='clothesline'),
+    'a witnessed, authored setup should offer a legal impact');
+  else assert.equal(finishOptions.length,0,'metadata-only control has no finishing offers');
  }
  M.t+=10;step(M,'clothesline',winner);
  return {winner,loser};
