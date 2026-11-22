@@ -3422,6 +3422,10 @@ const Graph=(function makeGraph(){
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
   const entries=arc.entry.map(id=>[id,1]);
   const selected=[...from,...entries];
+  // Only the explicitly activated Chickenshit structure gets additional
+  // real candidate moves. Every offer still goes through isValid below.
+  if(root.OfficeSheets?.DIRECTOR?.active(M))
+   selected.push(...root.OfficeSheets.DIRECTOR.offers(M,p.control));
   // In a STORY finishing stretch, the match can only earn a dramatic
   // kick-out if a real worker actually hits a genuine grounding attack.
   // Promote a few existing, position-valid knockdowns as normal selectable

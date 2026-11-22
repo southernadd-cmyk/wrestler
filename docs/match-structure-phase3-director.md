@@ -21,3 +21,9 @@ The **existing** Simulation tests PR job includes Phase 0's 120-match baseline f
 The Phase 3 test prints earned and missed objective counts by structure. **Green CI alone is not sufficient**: inspect actual per-structure attainment and sample tapes before merging or exposing this option. No new GitHub Actions workflow was created.
 
 Player-facing structure selection, structural scoring or career rewards, and a redesigned dynamic structure visualization remain out of scope until execution evidence is credible.
+
+## Chickenshit Heel causal repair
+
+The first trace (four matches) found 2/16 objectives: an evasive lead had no accessible avoidance moves; a real retaliatory strike could not satisfy exposure; `st_eye_rake` was proposed but the Director accepted only `heel` family offences; `hl_rope_leverage` was mistakenly suggested as a defensive escape; and reversal preferences were assigned to the attacker.
+
+The targeted repair adds valid, authored stalling, counter, unfair-shortcut and escape candidates **only while the Chickenshit structure is explicitly active**. All are still selected probabilistically from the normal physical graph after `isValid` checks. Successful objectives require provenance on the actual performed-event tape. Evasion excludes mere strutting; shortcut requires genuinely illicit action; exposure requires a meaningful retaliation/counter; escape offers defensive reversals only after a recent recorded opponent attack. The signed `hl_rope_leverage` in older editorial plans stays untouched but cannot be miscredited as a successful escape. New Phase 2 sheets no longer suggest it as one.

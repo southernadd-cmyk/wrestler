@@ -607,13 +607,23 @@
    }
    return null;
   }
+  const DIRTY=/cheap_shot|eye_rake|_rake|_thumb|hair_pull|_bite|low_blow|choke|rope_leverage|fake_injury|distraction_apron|_poke|_low_blow_tease/;
+  const EVASIVE=/^hl_(?:stall|beg|ref_argue|distraction_apron)$|^floor_regroup$/;
+  const ESCAPE=/wrist_escape|waist_escape|headlock_escape|mat_scramble|floor_counter|roll_inside|armbar_roll|counter_strike|rope_break/;
+  const EXPOSURE_CORE=new Set(['clothesline','arm_drag','snap_suplex','short_arm_lariat','counter_strike','shoulder_tackle','mat_takedown','heavy_slam']);
   function fits(o,e,n,actor){
    if(o.actor!=='either'&&o.actor!==actor)return false;
    const id=e.id,kind=o.intent,f=n.family||'';
-   if(n.blockOf||n.nearfall)return kind==='escape'&&!!n.blockOf;
-   if(kind==='evasion')return (f==='heel'||f==='outside')&&/stall|retreat|strut|argue|roll_inside|duck|outside|plea/.test(id);
-   if(kind==='shortcut')return f==='heel'&&/cheap|rake|poke|hair|bite|low|rope|choke|shot|ref_argue/.test(id);
-   if(kind==='escape')return !!n.reverse||/wrist_escape|waist_escape|mat_scramble|roll_inside|rope_break|duck|counter/.test(id);
+   if(n.nearfall||n.blockOf&&kind!=='escape')return false;
+   if(kind==='evasion')return !n.reverse&&EVASIVE.test(id);
+   if(kind==='shortcut')return !n.reverse&&!n.blockOf&&DIRTY.test(id);
+   if(kind==='escape')return !!n.reverse||!!n.blockOf||ESCAPE.test(id);
+   if(kind==='exposure'){
+    if(n.reverse)return true; // genuine counter of the heel's initiative
+    if(EXPOSURE_CORE.has(id))return true;
+    return ['strike','running','chain','fire','power','suplex','neck','aerial','springboard','lucha'].includes(f)&&
+      (n.cost??1)>=1&&!(n.crowd<0);
+   }
    if(!F[kind]?.includes(f))return false;
    if(['escalation','finish_build','payoff'].includes(kind))
     return (n.cost??0)>=1.4&&(n.crowd??0)>=0;
@@ -626,21 +636,25 @@
    if(intent==='callback')return ev.some(x=>previous.some(p=>p.family===x.family&&x.at>=p.at+30&&(x.id===p.id||x.actor!==p.actor)));
    if(intent==='evasion')return ev.length>=1; // A witnessed evasive action, not a posed intention.
    if(['escalation','finish_build'].includes(intent))return moves.size>=2;
-   if(['opening_advantage','pressure','comeback','exposure','dominance','challenge','reassertion','evasion'].includes(intent))
+   if(intent==='exposure')return ev.some(e=>e.countered||e.impact)||moves.size>=2;
+   if(['opening_advantage','pressure','comeback','dominance','challenge','reassertion','evasion'].includes(intent))
     return ev.length>=2&&moves.size>=2;
    return ev.length>0;
   }
   function observe(M,e){
    if(!active(M)||!e||!Number.isFinite(e.t)||!M.graph?.events?.includes(e))return;
    const n=actions[e.id];if(!n)return; // ignore attempted / invented / outcome cues
-   const actor=n.reverse?e.control:e.preControl;
+   const actor=n.blockOf?(e.preControl==='w'?'f':'w'):n.reverse?e.control:e.preControl;
    if(actor!=='w'&&actor!=='f')return;
    const states=M.structureDirector.objectives,plan=M.sheet.structurePlan.objectives,frac=e.t/Math.max(1,M.len);
    for(let i=0;i<states.length;i++){
     const s=states[i],o=plan[i];
     if(s.status!=='pending'||frac<o.window[0]-.04||frac>o.window[1]+.08||
        o.requires.some(id=>states.some(x=>x.id===id&&x.status==='pending'))||!fits(o,e,n,actor))continue;
-    const fact={id:e.id,at:e.t,actor,family:n.family||null};
+    const fact={id:e.id,at:e.t,actor,family:n.family||null,
+     countered:!!n.reverse,impact:!!n.reverse||(!n.blockOf&&
+      (['strike','running','power','suplex','neck','aerial','springboard','lucha'].includes(n.family)||
+       EXPOSURE_CORE.has(e.id))&&(n.cost??1)>=1)};
     if(s.evidence.some(x=>x.id===fact.id&&x.at===fact.at&&x.actor===actor))return;
     s.evidence.push(fact);if(s.evidence.length>12)s.evidence.shift();
     // A tactical callback can refer to any earlier witnessed exchange.
@@ -668,12 +682,48 @@
     s.status='missed';s.reason='The bell came before enough performed evidence.';
    }
   }
-  function bias(M,id,actor){
+  // The action pool is built for the controller, but the defending side
+  // PERFORMS a reversal or block. Never weight that for the attacker.
+  const performer=(side,n)=>n.reverse||n.blockOf?(side==='w'?'f':'w'):side;
+  function bias(M,id,side){
    const x=current(M),n=actions[id];if(!x||!n)return 1;
-   const o=x.objective,frac=M.t/Math.max(1,M.len);
+   const o=x.objective,frac=M.t/Math.max(1,M.len),actor=performer(side,n);
    if(frac<o.window[0]-.07||o.actor!=='either'&&o.actor!==actor)return 1;
-   if(o.call?.action===id&&o.call.owner===actor)return 4.6;
-   return F[o.intent]?.includes(n.family)&&(!['evasion','shortcut','escape'].includes(o.intent)||fits(o,{id},n,actor))?2.8:1;
+   if(o.call?.action===id&&o.call.owner===actor&&fits(o,{id},n,actor))return 4.6;
+   return fits(o,{id},n,actor)?2.8:1;
+  }
+  // Add *available* authored actions to the same ordinary graph pool, not
+  // scripted results. isValid, stamina, location, safety, pending exact-parent
+  // defences, performer consent, and subsequent RNG all still apply.
+  const HEEL_GUIDES={
+   evasion:['hl_stall','hl_beg','hl_ref_argue','hl_distraction_apron'],
+   exposure:['counter_strike','clothesline','arm_drag','st_headbutt','st_roundhouse','ch_rollthrough','shoulder_tackle'],
+   shortcut:['st_eye_rake','hl_rake','hl_thumb','hl_hair_pull','hl_bite','hl_rope_leverage','hl_fake_injury','cheap_shot'],
+   escape:['counter_strike','wrist_escape','headlock_escape','waist_escape','mat_scramble','armbar_roll','floor_counter','roll_inside']
+  };
+  function offers(M,side){
+   if(M.structureDirector?.id!=='chickenshit_heel')return [];
+   const goal=current(M);if(!goal)return [];
+   const o=goal.objective,arr=HEEL_GUIDES[o.intent]||[];
+   const last=M.graph?.events?.at(-1),time=M.t;
+   // A counter is only presented as a desperate escape when an opponent
+   // has actually attacked in the preceding exchange, not as free offence.
+   const realPressure=last&&last.control===side&&last.preControl===side&&
+    time-last.t>=0&&time-last.t<=35&&actions[last.id]&&
+    !actions[last.id].reverse&&!actions[last.id].blockOf&&
+    (actions[last.id].cost??1)>=.7&&
+    !['rest','heel'].includes(actions[last.id].family);
+   const out=[],seen=new Set();
+   for(const id of [o.call?.action,...arr]){
+    if(!id||seen.has(id))continue;seen.add(id);
+    const n=actions[id];if(!n)continue;
+    const actor=performer(side,n);
+    if(!fits(o,{id},n,actor))continue;
+    if(o.intent==='escape'&&n.reverse&&!realPressure)continue;
+    // An eligible called spot is a stronger *preference*, never a landing.
+    out.push([id,id===o.call?.action?9:6.5]);
+   }
+   return out;
   }
   function arcBias(M,id){
    const x=current(M);return x&&ARC[x.objective.intent]?.includes(id)?5.6:1;
@@ -684,7 +734,7 @@
    return {version:d.version,id:d.id,roles:{...d.roles},
     objectives:d.objectives.map(s=>({...s,evidence:s.evidence.map(x=>({...x}))}))};
   }
-  return {active,init,current,observe,advance,finalize,bias,arcBias,report};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
