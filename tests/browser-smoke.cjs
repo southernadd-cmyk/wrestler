@@ -312,6 +312,7 @@ async function responsiveAudit(browser,name,viewport){
    G.save();window.OfficeUI.go('inbox');
   });
   await page.locator('#view [data-inbox-filter="reports"]').click();
+  await page.locator('#view button[data-msg="p4-report"]').click();
   assert.match(await page.locator('#view .letter h2').innerText(),/Phase 4 audit report/,
     name+': report filter should select a report, not an unrelated pending message');
   assert.ok(await page.locator('#view .msglist button').count()>0,
