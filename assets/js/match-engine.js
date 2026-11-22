@@ -3682,6 +3682,37 @@ const Graph=(function makeGraph(){
  const CLOSING_SETUPS=new Set(['strike_trade','rope_run','rope_rebound','front_facelock',
   'go_behind','waistlock','wristlock','headlock','corner_whip',
   'top_climb','springboard_rise','leg_wrench','knuckle_lock']);
+ // Phase 9I: a finishing ROUTE starts with a believable plan-specific
+ // setup, never a preselected outcome or automatic move.
+ // Each source must have an existing, position-compatible authored impact.
+ const CLOSING_PLAN_SETUPS=Object.freeze({
+  story:Object.freeze([['rope_run',1.8],['waistlock',1.4],
+   ['front_facelock',1.65],['strike_trade',1.3]]),
+  technical:Object.freeze([['waistlock',1.8],['headlock',1.65],
+   ['go_behind',1.5],['wristlock',1.2]]),
+  brawl:Object.freeze([['strike_trade',1.9],['rope_run',1.7],
+   ['rope_rebound',1.4],['front_facelock',1.05]]),
+  spots:Object.freeze([['rope_run',1.8],['springboard_rise',1.65],
+   ['top_climb',1.35],['corner_whip',1.05]]),
+  safe:Object.freeze([['headlock',1.8],['waistlock',1.55],
+   ['wristlock',1.3],['front_facelock',1.05]])
+ });
+ function closingPlanSetups(M){
+  const sources=CLOSING_PLAN_SETUPS[M.planId]||CLOSING_PLAN_SETUPS.story;
+  return sources.filter(([id])=>{
+   const source=A[id];if(!source||!isValid(M,id))return false;
+   // Source's destination position must be compatible with the real next
+   // action, not merely a vaguely related graph node.
+   const position=source.zone==='standing'?'standing':source.zone;
+   return source.next.some(([nextId])=>{
+    const n=A[nextId];return !!n&&n.requires===position&&
+     n.zone==='mat'&&n.down==='d'&&!n.reverse&&
+     !n.counterOf&&!n.blockOf&&!n.nearfall&&
+     (M.planId==='spots'||!n.risk)&&
+     (M.planId!=='safe'||(!n.risk&&costOf(nextId)<=2.2));
+   });
+  });
+ }
  function closingEligible(M){
   return !!root.OfficeSheets?.DIRECTOR?.active(M)&&M.outcome==='booked'&&
    ['win_clean','lose_clean'].includes(M.o.finish);
@@ -3837,7 +3868,11 @@ const Graph=(function makeGraph(){
      (node.cost??1)>=.7&&!['rest','heel'].includes(node.family)&&
      !g.events.some(e=>e.preControl===winner&&CLOSING_SETUPS.has(e.id)&&
        e.t>=M.t-70&&e.t<=M.t)){
-   return [['rope_run',1.8],['waistlock',1.4]];
+   // Choose one of the plan's genuine graph pathways only after a
+   // performed current-controller action. Existing legal alternatives
+   // still compete in the pool. Unknown old saves use a safe fallback.
+   const routes=closingPlanSetups(M);
+   return routes.length?routes:[['rope_run',1.8],['waistlock',1.4]];
   }
   if(side===winner&&last.preControl===winner&&last.control===winner&&
      CLOSING_SETUPS.has(last.id)){
@@ -5141,7 +5176,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport,closingRunway,closingOffers};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport,closingRunway,closingOffers,closingPlanSetups};
 })();
 
 function create(o){

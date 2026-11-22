@@ -413,11 +413,23 @@ for(let si=0;si<sampleStyles.length;si++){
     botches:0,controlBotches:0,scriptedAttempts:0,controlScriptedAttempts:0,
     scriptedBotches:0,controlScriptedBotches:0,balconyBotches:0,controlBalconyBotches:0,
     namedHits:0,controlNamedHits:0,riskySignedCalls:0,scriptedMoveCounts:{},
-    cleanBouts:0,closingRunways:0,bridgedRunways:0};
+    cleanBouts:0,closingRunways:0,bridgedRunways:0,
+    closingPairs:{},closingImpactIds:{},closingSetups:{},
+    fullClosingRunways:0,intermediateClosingRunways:0};
    group.bouts++;group.earned+=witnessed;group.stars+=m.final.stars;
    group.cleanBouts+=Number(['win_clean','lose_clean'].includes(finish));
    group.closingRunways+=Number(!!closing);
    group.bridgedRunways+=Number(!!closing?.spoken);
+   if(closing){
+    add(group.closingPairs,closing.setup.id+'>'+closing.impact.id);
+    add(group.closingImpactIds,closing.impact.id);
+    add(group.closingSetups,closing.setup.id);
+    group.fullClosingRunways+=Number(closing.status==='witnessed');
+    group.intermediateClosingRunways+=Number(
+     m.graph.events.some(e=>!!E.GRAPH.A[e.id]&&
+      e.t>closing.setup.at&&e.t<closing.impact.at&&
+      e.preControl===closing.winner&&e.control===closing.winner));
+   }
    group.botches+=m.botches;group.controlBotches+=control.botches;
    group.scriptedAttempts+=risk.attempts;group.controlScriptedAttempts+=controlRisk.attempts;
    group.scriptedBotches+=risk.failed;group.controlScriptedBotches+=controlRisk.failed;
@@ -444,6 +456,12 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
     riskySignedCalls:v.riskySignedCalls,
     cleanBouts:v.cleanBouts,closingRunways:v.closingRunways,
     bridgedRunways:v.bridgedRunways,
+    fullClosingRunways:v.fullClosingRunways,
+    intermediateClosingRunways:v.intermediateClosingRunways,
+    distinctClosingPairs:Object.keys(v.closingPairs).length,
+    distinctClosingImpacts:Object.keys(v.closingImpactIds).length,
+    topClosingPairs:top(v.closingPairs,6),
+    topClosingSetups:top(v.closingSetups,6),
     scriptedMoveCounts:top(v.scriptedMoveCounts,12)}]));
   const sequences=top(r.sequences,6);
   return [id,{bouts:r.bouts,earnedPct:ratio(r.earned,4*r.bouts),
