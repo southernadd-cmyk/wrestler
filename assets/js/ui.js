@@ -1151,16 +1151,25 @@ function pickCards(options,attr,compact){
 function matchupBar(c,w,f,middle,wNote,fNote){
  return `<div class="match-night-matchup"><div class="mu you">${face('wrestler',w.id,w.name,'portrait x2')}<div><b>${esc(w.short)}</b>${ownedChamps(w.id)}${wNote||''}</div></div><div class="mid">${middle}</div><div class="mu them"><div><b>${esc(f.short)}</b>${fNote||''}</div>${face('wrestler',f.id,f.name,'portrait x2')}</div></div>`;
 }
+// The room view only carries finishPlan while the board, review or curtain is
+// on screen. Remember the last readiness check for this match so the brief
+// does not fall back to "being agreed" once the finish has been signed off.
+const briefFinishSeen={cid:null,plan:null};
 function backstageBrief(c,P,v){
  const finish=D.FINISHES[c.finish]?.name||'Contracted finish';
- const layout=v.stage==='done'?'Signed':v.review?'Ready for approval':v.board?'Planning called spots':'In discussion';
- const route=v.finishPlan?.label||'Being agreed';
- const readiness=v.finishPlan?.kind==='warning'?'Needs revision':v.finishPlan?.kind==='conditional'?'Conditional finish':'No additional finish threshold';
+ if(briefFinishSeen.cid!==c.id){briefFinishSeen.cid=c.id;briefFinishSeen.plan=null;}
+ if(v.finishPlan)briefFinishSeen.plan=v.finishPlan;
+ const plan=v.finishPlan||(v.stage!=='plan'&&v.stage!=='board'?briefFinishSeen.plan:null);
+ const agreedRoute=(v.agreed||[]).find(x=>x.startsWith('Finish: '))?.slice(8);
+ const layout=v.stage==='done'?'Signed':v.stage==='curtain'?'Approved':v.review?'Ready for approval':v.board?'Planning called spots':
+  v.stage==='scene'||v.stage==='finish'?'Agreed':'In discussion';
+ const route=plan?.label||agreedRoute||'Being agreed';
+ const readiness=plan?.kind==='warning'?'Needs revision':plan?.kind==='conditional'?'Conditional finish':'No additional finish threshold';
  return `<section class="match-brief" aria-label="Agreed match brief">
   <div><small>Promoter’s booking</small><b>${esc(finish)}</b></div>
   <div><small>Finish route</small><b>${esc(route)}</b></div>
   <div><small>Running order</small><b>${esc(layout)}</b></div>
-  <div class="${v.finishPlan?.kind==='warning'?'brief-warning':''}"><small>Finish readiness</small><b>${esc(readiness)}</b></div>
+  <div class="${plan?.kind==='warning'?'brief-warning':''}"><small>Finish readiness</small><b>${esc(readiness)}</b></div>
  </section>`;
 }
 function showMeeting(){
