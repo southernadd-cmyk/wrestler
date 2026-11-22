@@ -736,7 +736,7 @@ function renderOffers(){
   ${o.programme?programmePanel(o,sel):`<dl class="kv"><dt>Show</dt><dd>${weekLong(o.eventAbs)}</dd><dt>Slot</dt><dd>${esc(D.SLOTS[o.slot].name)}, ${mins} minutes</dd><dt>Finish</dt><dd>${finishTag(o.finish)}</dd>${o.stip?`<dt>Stipulation</dt><dd><span class="tag hot">${esc(stipName(o.stip))}</span></dd>`:''}<dt>Reply by</dt><dd>${weekLong(o.expiresAbs)}</dd></dl>`}
   ${sel?fitNotes(o,sel):''}
   ${o.programme&&options.length?`<div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(window.OfficeProgrammes.totalPurse(o,sel))}</span><button class="btn go" style="min-height:44px;min-width:170px" data-book="${o.id}">Sign the programme</button></div><p class="dim" style="margin-top:6px">Signing books every date. Pull out of any of them and you walk out of the whole programme.</p>`:options.length?`<div class="row" style="justify-content:space-between;margin-top:10px"><span class="purse">${money(G.purse(o,sel))}</span><button class="btn go" style="min-height:44px;min-width:170px" data-book="${o.id}">${o.eventAbs>G.abs()?'Commit to date':'Book this week'}</button></div>
-  <div class="row" style="margin-top:8px"><button class="btn" data-talkopen="${o.id}" ${!negotiated&&s.focus<1?'disabled':''}>${negotiated?'Read the conversation':'Negotiate with '+esc(p.voice)}</button><span class="dim" style="font-size:13px">${negotiated?`${esc(o.talk.verdict)}. ${esc(o.talk.detail)}`:`Uses one of ${s.focus} meetings left`}</span></div>`
+  <div class="row" style="margin-top:8px"><button class="btn" data-talkopen="${o.id}" ${(!o.talk||o.talk.step==='start')&&s.focus<1?'disabled':''}>${negotiated?'Review the discussion':o.talk?.step==='reason'?'Resume the discussion':'Speak with '+esc(p.voice)}</button><span class="dim" style="font-size:13px">${negotiated?`${esc(o.talk.verdict)}. ${esc(o.talk.detail)}`:`Uses one of ${s.focus} meetings left`}</span></div>`
   :`<p class="bad" style="margin-top:10px">${(()=>{const w=s.roster.find(w=>(!o.wid||w.id===o.wid)&&D.divisionOf(w)===D.divisionOf(o.rid));if(!w)return 'No wrestler in your stable is eligible for this division.';const dates=o.programme?o.programme.beats:[{at:o.eventAbs,rid:o.rid}];return esc(dates.map(b=>G.bookingConflict(w.id,b.rid,b.at)||(!G.availableAt(w,b.at)?w.short+' isn’t free on '+weekLabel(b.at)+'.':null)).find(Boolean)||'No suitable wrestler is free for every agreed date.');})()}</p>`}`;
  }
  const cards=s.roster.length?offers.map(o=>{
@@ -891,7 +891,7 @@ function renderGame(){
 
 /* ======================= CONVERSATIONS ======================= */
 function renderPrivateMeeting(id){
- const w=G.W(id);if(!w)return;const d=$('#modal');delete d.dataset.talkoid;const s=S();
+ const w=G.W(id);if(!w)return;const d=$('#modal');d.classList.remove('negotiation-dialog');delete d.dataset.talkoid;const s=S();
  d.innerHTML=`<header class="tbar"><h2 id="office-dialog-title">Private meeting: ${esc(w.name)}</h2></header><div class="dlg"><p>${esc(w.bio)}</p><div class="terms-compare"><div><small>Morale</small><b>${w.morale}</b></div><div><small>Loyalty</small><b>${w.loyal}</b></div></div><p class="dim">Uses one of your ${s.focus} management meetings left this week, which means one less chance to haggle with a promoter.</p><div class="talk-actions"><button class="choice" data-private="listen" data-wid="${id}" ${s.focus===0?'disabled':''}><b>Listen and reassure</b><span>No promise. Morale +5, loyalty +4.</span></button><button class="choice" data-private="promise" data-wid="${id}" ${s.focus===0||w.promise?.status==='open'?'disabled':''}><b>Promise a featured match</b><span>Morale +8 now. Book a feature or main event within two weeks, or lose 14 morale and 12 loyalty.</span></button><button class="choice" data-private="bonus" data-wid="${id}" ${s.cash<120||s.focus===0?'disabled':''}><b>Pay a £120 loyalty bonus</b><span>Morale +6, loyalty +9. Guaranteed, but not cheap.</span></button></div></div><div class="foot"><button class="btn" data-dlg="close">Leave it for now</button></div>`;
  if(!d.open)d.showModal();
 }
@@ -905,31 +905,60 @@ function stipAsks(o,w,oid,wid){
 }
 function renderMeeting(oid,wid){
  const res=G.meeting(oid,wid);if(res.error){toast(res.error);return}
- const o=res.offer,t=res.talk,w=G.W(wid),p=G.P(o.pid),f=G.F(o.rid),d=$('#modal');d.dataset.talkoid=oid;
- // One "on the table" panel: what the sign button will book, with anything the meeting changed struck through.
- const orig=t.original,cur={slot:o.slot,finish:o.finish,fee:G.purse(o,w)},done=t.step==='done';
- const changed=orig.slot!==cur.slot||orig.finish!==cur.finish||orig.fee!==cur.fee||(t.topic==='stip'&&(o.stip||null)!==(t.original.stip||null));
+ const o=res.offer,t=res.talk,w=G.W(wid),p=G.P(o.pid),f=G.F(o.rid),d=$('#modal');
+ d.dataset.talkoid=oid;d.classList.add('negotiation-dialog');
+ const orig=t.original,cur={slot:o.slot,finish:o.finish,fee:G.purse(o,w),stip:o.stip||null},done=t.step==='done';
+ const changed=orig.slot!==cur.slot||orig.finish!==cur.finish||orig.fee!==cur.fee||(orig.stip||null)!==cur.stip;
  const slotN=k=>esc(D.SLOTS[k].name),finN=k=>esc(D.FINISHES[k].name);
- const line=(label,a,b)=>a===b?`<div><dt>${label}</dt><dd>${b}</dd></div>`:`<div class="changed"><dt>${label}</dt><dd><s>${a}</s> <b>${b}</b></dd></div>`;
- const chip=!done?['','Original offer']:t.verdict==='agreed'?['good','Agreed']:t.verdict==='counter'?['warn','Counteroffer']:t.verdict==='refused'?['bad','Refused']:['','Original offer'];
- const deal=`<section class="deal${changed?' is-new':''}"><header><small>${changed?'New terms on the table':'On the table'}</small><span class="deal-chip ${chip[0]}">${chip[1]}</span></header><dl>${line('Slot',slotN(orig.slot),slotN(cur.slot))}${line('Finish',finN(orig.finish),finN(cur.finish))}${(o.stip||t.original.stip)?line('Stipulation',esc(stipName(t.original.stip)||'None'),esc(stipName(o.stip)||'None')):''}${line('Fee',money(orig.fee),money(cur.fee))}</dl></section>`;
- const reply=`Reply by ${weekLabel(o.expiresAbs)}`;
- const transcript=t.log.map(x=>`<div class="talk-line"><b>${esc(x.who)}</b><p>${esc(x.text)}</p></div>`).join('');
- let opts='';
- if(t.step==='start')opts=`<div class="talk-actions"><p>What are you asking ${esc(p.voice)} to change?</p><button class="choice" data-talkaction="ask:fee" data-oid="${oid}" data-wid="${wid}"><b>Increase the fee</b><span>Ask for 20% more. A counteroffer may be smaller.</span></button>${o.finish==='lose_clean'?`<button class="choice" data-talkaction="ask:protect" data-oid="${oid}" data-wid="${wid}"><b>Protect the loss</b><span>Keep the loss, but make it competitive. Expect lower pay.</span></button>`:''}${o.slot!=='main'?`<button class="choice" data-talkaction="ask:slot" data-oid="${oid}" data-wid="${wid}"><b>Better billing</b><span>A higher spot on the card, possibly for less money.</span></button>`:''}${stipAsks(o,w,oid,wid)}</div>`;
- else if(t.step==='reason')opts=`<div class="talk-actions"><p>Make your argument. Trust, ${esc(w.short)}’s reputation, the crowd and the promoter’s priorities all count.</p><button class="choice" data-talkaction="arg:crowd" data-oid="${oid}" data-wid="${wid}"><b>Business case</b><span>${esc(w.short)} brings viewers. Stronger with a popular wrestler and a showman booker.</span></button><button class="choice" data-talkaction="arg:reliability" data-oid="${oid}" data-wid="${wid}"><b>Track record</b><span>Dependable work and a clean finish. Suits a traditional booker.</span></button><button class="choice" data-talkaction="arg:trade" data-oid="${oid}" data-wid="${wid}"><b>Financial compromise</b><span>Give ground on money for a better opportunity.</span></button></div>`;
- else opts=`<p class="talk-next">${changed?`Sign the new terms, take the original offer instead, or leave it. Nothing is booked until you sign.`:`The original offer stands. Sign it or leave it; nothing is booked until you sign.`}</p>`;
- // Every footer button says what it does: what gets signed, or that nothing does.
- const btn=(cls,attrs,label,sub)=>`<button class="btn two ${cls}" ${attrs}><span>${label}</span><small>${sub}</small></button>`;
+ const term=(label,a,b)=>a===b?`<div><dt>${label}</dt><dd>${b}</dd></div>`:`<div class="changed"><dt>${label}</dt><dd><s>${a}</s><b>${b}</b></dd></div>`;
+ const chip=!done?['','Original offer']:t.verdict==='agreed'?['good','Agreed']:t.verdict==='counter'?['warn','Counteroffer']:t.verdict==='refused'?['bad','Refused']:['','Original'];
+ const deal=`<section class="deal neg-contract${changed?' is-new':''}"><header><small>Terms you would sign</small><span class="deal-chip ${chip[0]}">${chip[1]}</span></header><dl>${term('Card position',slotN(orig.slot),slotN(cur.slot))}${term('Booked finish',finN(orig.finish),finN(cur.finish))}${orig.stip||cur.stip?term('Stipulation',esc(stipName(orig.stip)||'None'),esc(stipName(cur.stip)||'None')):''}${term('Appearance fee',money(orig.fee),money(cur.fee))}</dl><p class="neg-contract-note">${changed?'Changed values highlighted.':'Original offer.'} Nothing is booked until you sign.</p></section>`;
+ const transcript=t.log.map(x=>`<div class="neg-message ${x.who==='You'?'is-you':'is-booker'}">${x.who==='You'?'<span class="neg-avatar-you" aria-hidden="true">YOU</span>':face('booker',p.id,p.voice,'portrait')}<div class="neg-speech"><b>${esc(x.who==='You'?'You':p.voice)}</b><p>${esc(x.text)}</p></div></div>`).join('');
  const ids=`data-oid="${oid}" data-wid="${wid}"`;
- const later=btn('later','data-dlg="close"','Decide later',t.step==='start'?`Nothing signed. No meeting used. ${reply}`:changed?`Nothing signed. New terms held. ${reply}`:`Nothing signed. ${reply}`);
- const signOrig=done&&changed?btn('',`data-talkbook="${oid}" data-revert="1" ${ids}`,`Sign original, ${money(orig.fee)}`,`${slotN(orig.slot)}, ${finN(orig.finish).toLowerCase()}`):'';
- const signCur=btn('go',`data-talkbook="${oid}" ${ids}`,done?`Sign for ${money(cur.fee)}`:`Sign as offered, ${money(cur.fee)}`,`${slotN(cur.slot)}, ${finN(cur.finish).toLowerCase()}${o.stip?', '+esc(stipName(o.stip).toLowerCase()):''}`);
- d.innerHTML=`<header class="tbar"><h2 id="office-dialog-title">${esc(p.name)}: meeting with ${esc(p.voice)}</h2></header><div class="dlg"><p><b>${esc(w.name)} v ${esc(f.name)}</b></p>${deal}<div class="talk-log well">${transcript}</div>${opts}</div><div class="foot">${later}${signOrig}${signCur}</div>`;
- if(!d.open)d.showModal();const lg=d.querySelector('.talk-log');if(lg)lg.scrollTop=lg.scrollHeight;(done?d.querySelector('.btn.go'):d.querySelector('[data-talkaction]'))?.focus();
+ const ask=(id,label,hint)=>`<button class="choice neg-choice" data-talkaction="${id}" ${ids}><b>${label}</b><span>${hint}</span></button>`;
+ let prompt='',options='';
+ if(t.step==='start'){
+  prompt='What would you like to change?';
+  options=ask('ask:fee','I need a better appearance fee','Ask for 20% more; the promoter might offer less.');
+  if(o.finish==='lose_clean')options+=ask('ask:protect',"I'll take the loss, but protect my wrestler",'Ask for a competitive loss, usually for a lower fee.');
+  if(o.slot!=='main')options+=ask('ask:slot','Give my wrestler better billing','Ask for one place higher on the card, possibly for less money.');
+  const stip=stipAsks(o,w,oid,wid);
+  if(stip)options+=`<details class="neg-more"><summary>Ask about a match stipulation</summary>${stip}</details>`;
+ }else if(t.step==='reason'){
+  prompt=t.topic==='fee'?'Why should the fee go up?':t.topic==='protect'?'Why should the loss be protected?':t.topic==='slot'?'Why does your wrestler deserve better billing?':'Why does this stipulation work?';
+  options=ask('arg:crowd','The crowd will pay for this','Use drawing power and audience interest.')
+   +ask('arg:reliability','You know we can deliver','Emphasise professionalism and executing the agreed finish.')
+   +ask('arg:trade',"Let's find a commercial compromise",'Make a pragmatic business argument instead of asking for a favour.');
+ }else{
+  prompt='The promoter has answered';
+  const outcome=t.verdict==='agreed'?'The promoter agreed.':t.verdict==='counter'?'A counteroffer is on the table.':t.verdict==='refused'?'The promoter refused.':'The original terms stand.';
+  options=`<section class="neg-verdict ${t.verdict==='refused'?'is-refused':''}"><b>${outcome}</b><p>${esc(t.detail||'')}</p><small>${changed?'Sign the revised offer, sign the original, or leave both unsigned.':'The original offer can still be signed.'}</small></section>`;
+ }
+ const response=`<div class="neg-response"><h3>${prompt}</h3>${t.step==='start'?'<p class="neg-tip">Making a request uses one meeting. Reading the offer costs nothing.</p>':''}<div class="neg-choices">${options}</div></div>`;
+ const btn=(cls,attrs,label,sub)=>`<button class="btn two ${cls}" ${attrs}><span>${label}</span><small>${sub}</small></button>`;
+ const reply=`Reply by ${weekLabel(o.expiresAbs)}`;
+ const later=btn('later','data-dlg="close"','Decide later',`Nothing signed. ${reply}`);
+ const original=done&&changed?btn('',`data-talkbook="${oid}" data-revert="1" ${ids}`,`Sign original · ${money(orig.fee)}`,`${slotN(orig.slot)} · ${finN(orig.finish)}`):'';
+ const sign=btn('go',`data-talkbook="${oid}" ${ids}`,done&&changed?'Sign revised terms':done?'Sign original terms':'Sign as offered',`${money(cur.fee)} · ${slotN(cur.slot)} · ${finN(cur.finish)}`);
+ d.innerHTML=`<header class="tbar"><h2 id="office-dialog-title">Speaking with ${esc(p.voice)}</h2><span class="note">${esc(p.name)}</span></header>
+ <div class="neg-intro"><span><b>${esc(w.name)}</b> versus <b>${esc(f.name)}</b></span><span>${reply}</span></div>
+ <div class="neg-layout">
+  <section class="neg-main" aria-label="Conversation with ${esc(p.voice)}">
+   <div class="neg-section-header"><b>Conversation</b><span>${esc(p.desc)} · Trust ${p.trust}</span></div>
+   <div class="neg-transcript well" role="log" aria-label="Negotiation history" aria-live="off">${transcript}</div>
+   ${response}
+  </section>
+  <aside class="neg-aside" aria-label="Booking terms">
+   <details class="neg-terms"${phoneLayout()?'':' open'}><summary>Current contract terms${changed?' · revised':''}</summary>${deal}</details>
+   <p class="neg-meeting-note">${t.step==='start'?'No meeting used yet':`Meeting used · ${S().focus} left this week`}. The promoter decides the winner; this cannot be reversed by negotiation.</p>
+  </aside>
+ </div>
+ <div class="foot neg-footer">${later}${original}${sign}</div>`;
+ if(!d.open)d.showModal();const lg=d.querySelector('.neg-transcript');if(lg)lg.scrollTop=lg.scrollHeight;
+ (done?d.querySelector('.neg-footer .btn.go'):d.querySelector('[data-talkaction]'))?.focus({preventScroll:true});
 }
 function dialog(title,html,buttons=[['Close','close']]){
- const d=$('#modal');delete d.dataset.talkoid;
+ const d=$('#modal');d.classList.remove('negotiation-dialog');delete d.dataset.talkoid;
  d.innerHTML=`<header class="tbar"><h2 id="office-dialog-title">${esc(title)}</h2></header><div class="dlg">${html}</div><div class="foot">${buttons.map(([l,a,c])=>`<button class="btn ${c||''}" data-dlg="${a}">${l}</button>`).join('')}</div>`;
  d.showModal();return d;
 }
@@ -1564,7 +1593,7 @@ window.addEventListener('DOMContentLoaded',()=>{
  posterBill();showSaveStatus();
  const d=$('#modal');d.addEventListener('close',()=>{
   const oid=d.dataset.talkoid;if(oid&&S()){const o=S().offers.find(x=>x.id===oid);if(o?.talk?.step==='start'){o.talk=null;G.save();}}
-  delete d.dataset.talkoid;if(S()&&!$('#app').hidden)render();
+  delete d.dataset.talkoid;d.classList.remove('negotiation-dialog');if(S()&&!$('#app').hidden)render();
  });
  if(G.hasSave())$('#loadBtn').hidden=false;
  $('#title').hidden=false;
