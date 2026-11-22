@@ -61,4 +61,57 @@ G.advance(p,p.t/p.len);
 assert.equal(p.graph.node,node,'due real knockdown kept for cover before arc switch');
 assert.equal(p.graph.events.length,prior);
 assert.deepEqual(Array.from(G.validate().errors),[],'graph unchanged');
+// Phase 9K: physically witnessed kick-outs are NOT finishing impacts.
+const authored=make('safe'),rollId='pn_magistral';
+assert.ok(G.isValid(authored,rollId),'authored La Magistral must be legal');
+G.apply(authored,rollId);
+const authoredDrama=G.nearfallDrama(authored);
+assert.equal(authoredDrama.total,1,'one real authored cradle earns one dramatic kick-out');
+assert.equal(authoredDrama.byKind.authored_kickout,1);
+assert.equal(authoredDrama.byKind.earned_cover,0);
+assert.equal(authoredDrama.moments[0].action,rollId);
+assert.equal(authoredDrama.moments[0].side,'w');
+assert.equal(authoredDrama.moments[0].source,null,
+ 'authored pin is its own event, not an imagined predecessor');
+assert.equal(G.closingRunway(authored),null,
+ 'a real cradle kick-out cannot masquerade as a booked finishing runway');
+const earnedDrama=G.nearfallDrama(m);
+assert.equal(earnedDrama.total,1);
+assert.equal(earnedDrama.byKind.earned_cover,1);
+assert.equal(earnedDrama.byKind.authored_kickout,0);
+assert.equal(earnedDrama.moments[0].source.id,'clothesline');
+assert.equal(earnedDrama.moments[0].source.at,950);
+const oldRng=m.r.getState(),oldEvents=JSON.stringify(m.graph.events);
+assert.equal(JSON.stringify(G.nearfallDrama(m)),JSON.stringify(earnedDrama),
+ 'observer output is reproducible on the same tape');
+assert.equal(m.r.getState(),oldRng,'observer consumes no match RNG');
+assert.equal(JSON.stringify(m.graph.events),oldEvents,'observer cannot change events');
+const restored=M.restore(JSON.parse(JSON.stringify({...m,rState:m.r.getState()})));
+assert.equal(JSON.stringify(G.nearfallDrama(restored)),JSON.stringify(earnedDrama),
+ 'saved / restored tape has identical near-fall evidence');
+const forged=make();
+forged.graph.events.push({id:'scheduled_nearfall',t:960,earned:true,
+ sourceMove:'clothesline',sourceT:950,sourceSide:'w',control:'w',
+ position:'mat',down:'f'});
+assert.equal(G.nearfallDrama(forged).total,0,
+ 'a fabricated source reference is not a credible near-fall');
+const broken=make('safe');
+G.apply(broken,rollId);
+broken.graph.events.at(-1).contactResolution='block';
+assert.equal(G.nearfallDrama(broken).total,0,
+ 'blocked cradle is not a performed two-count');
+const generic=make();
+G.apply(generic,'near_kickout');
+assert.equal(G.nearfallDrama(generic).total,0,
+ 'standalone graph near-kickout without proof is not authored pin drama');
+const finalCover=make('safe');
+G.apply(finalCover,rollId);
+finalCover.stage='finish';finalCover.queue=[];
+M.next(finalCover);
+assert.equal(finalCover.final.nearfallDrama?.total,1,
+ 'final match summary retains independent near-fall evidence');
+assert.equal(finalCover.final.nearfallDrama.byKind.authored_kickout,1);
+assert.equal(finalCover.final.finishingRunway,undefined,
+ 'nearfall evidence must not produce a false finishing-runway report');
+console.log('PASS Phase 9K: genuine authored pins and earned covers are independent, saved, RNG-free near-fall evidence');
 console.log('PASS earned near falls: source, owner, down position, no forged attack, duplicate cover or false count');
