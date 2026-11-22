@@ -14,6 +14,10 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const ids=S.STRUCTURES.catalogue().map(x=>x.id),plans=['story','technical','brawl','spots','safe'];
 const styles=['Technical','Brawl','Spectacle','Story'],p=D.PROMOS[0];
 const quick=process.argv.includes('--quick');
+// Read-only diagnostic: reproduce the exact clean-bout control losses after
+// a performed late setup -> impact, with no recorded opposing reversal.
+// Never alter the seeded match, selection pool, counters or score.
+const noReversalLossTraces=[];
 const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styles;
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
@@ -165,6 +169,44 @@ for(let si=0;si<sampleStyles.length;si++){
      A[e.id]?.reverse&&e.preControl===winner&&e.control===loser);
     r.lateLostAfterRealReversal+=Number(reversed);
     r.lateLostWithoutRealReversal+=Number(!reversed);
+    if(!reversed){
+     const i=last.indexOf(latestLateImpact);
+     const prior=last[i-1];
+     const subsequent=last.slice(i).filter(e=>!!A[e.id]&&e.t<=m.len);
+     let previous=latestLateImpact;
+     const actions=subsequent.map((e,j)=>{
+      const silentBefore=j>0&&
+       ['w','f'].includes(previous.control)&&
+       ['w','f'].includes(e.preControl)&&
+       previous.control!==e.preControl;
+      const out={timeLeft:m.len-e.t,id:e.id,actor:e.preControl,
+       after:e.control,position:e.position,down:e.down,arc:e.arc,
+       reverse:!!A[e.id]?.reverse,
+       grounded:e.position==='mat',silentBefore,
+       ...(e.strikeResolution?{strike:e.strikeResolution}:{}),
+       ...(e.grappleResolution?{grapple:e.grappleResolution}:{}),
+       ...(e.contactResolution?{contact:e.contactResolution}:{})};
+      previous=e;
+      return out;
+     });
+     const finalPerformed=subsequent.at(-1)||latestLateImpact;
+     noReversalLossTraces.push({
+      case:c.id,seed,structure:id,lead,plan:game,duration:minutes,
+      booked:finish,winner,loser,
+      latestImpact:{timeLeft:m.len-latestLateImpact.t,id:latestLateImpact.id,
+       actor:latestLateImpact.preControl,control:latestLateImpact.control},
+      priorImpact:{id:prior?.id,actor:prior?.preControl,control:prior?.control,
+       timeLeft:prior?m.len-prior.t:null},
+      bell:{control:m.story.control,position:m.story.position,
+       down:m.story.down,arc:m.graph.arc},
+      lastAction:{id:finalPerformed.id,control:finalPerformed.control,
+       timeLeft:m.len-finalPerformed.t},
+      silentAfterLast:finalPerformed.control!==m.story.control,
+      silentGaps:actions.filter(e=>e.silentBefore).length,
+      realLoserActions:actions.filter(e=>e.actor===loser&&e.after===loser).length,
+      actions,arcHistory:m.graph.history.slice(-10)
+     });
+    }
    }
    r.lateWinnerControl+=Number(m.story.control===winner);
    r.lateWinnerSetups+=Number(last.some(e=>e.t>=since&&e.t<=m.len&&
@@ -393,6 +435,15 @@ for(const r of Object.values(map)){
   'a verified finishing runway must include a real late impact');
 }
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
+// Nine scoped deterministic witnesses on the merged Phase 9E baseline.
+// An absence of an authored "reverse" is NOT proof no genuine wrestling
+// action happened. The trace includes all performed late actions and any
+// control discontinuity between consecutive real events.
+console.log('PHASE9E_UNREVERSED_LOSS_TRACES '+JSON.stringify({
+ base:'38887cacda5d73afa77094c4647c20702a1e6e73',
+ total:noReversalLossTraces.length,
+ cases:noReversalLossTraces
+}));
 // Focused read-only risk report for Phase 8: the existing seeded 960-match
 // comparison, no new workflow or extra stochastic fixture.
 console.log('PHASE8_RISK_JSON '+JSON.stringify({
