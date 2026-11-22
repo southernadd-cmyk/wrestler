@@ -17,6 +17,7 @@ const quick=process.argv.includes('--quick');
 const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styles;
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
+ motifStarts:0,motifPaid:0,motifOpen:0,
  finishes:0,finishFallbacks:0,named:0,namedHit:0,controlNamedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
 const add=(o,k,n=1)=>o[k]=(o[k]||0)+n;
@@ -95,6 +96,17 @@ for(let si=0;si<sampleStyles.length;si++){
   r.events+=m.graph.events.length;r.controlEvents+=control.graph.events.length;
   r.distinct+=new Set(m.graph.events.map(x=>x.id)).size;
   r.botches+=m.botches;r.controlBotches+=control.botches;
+  const motif=m.final.matchMotif;
+  assert.equal(control.final.matchMotif,undefined,'metadata-only control must not have motif');
+  if(motif){
+   const tries=m.graph.grappleAttempts.filter(x=>x.id===motif.action&&x.side===motif.owner);
+   assert.ok(tries.some(x=>['counter','block'].includes(x.outcome)&&
+    x.resolvedT===motif.firstFailedAt),'a genuine failed attempt began this motif');
+   const paid=tries.some(x=>x.outcome==='landed'&&
+    x.startedT>motif.firstFailedAt&&x.resolvedT===motif.paidAt);
+   assert.equal(motif.status==='paid',paid,'earned payoff must be real later landing');
+   r.motifStarts++;r.motifPaid+=Number(paid);r.motifOpen+=Number(!paid);
+  }
   const risk=scriptedBreakdown(m),controlRisk=scriptedBreakdown(control);
   if(game==='safe'){
    // No unsafe scripted stunt or balcony dive can enter a Safe layout.
@@ -184,6 +196,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    meanEvents:avg(r.events,r.bouts),controlEvents:avg(r.controlEvents,r.bouts),
    meanDistinctActions:avg(r.distinct,r.bouts),
    botches:r.botches,controlBotches:r.controlBotches,
+   motifStarts:r.motifStarts,motifPaid:r.motifPaid,motifOpen:r.motifOpen,
    bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,dangerEscapes:r.dangerEscapes,
    namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),controlNamedHitPct:ratio(r.controlNamedHit,r.named),openObjectives:r.open,
    objectiveStatus:r.objectives,topActions:top(r.firstActions,12),
