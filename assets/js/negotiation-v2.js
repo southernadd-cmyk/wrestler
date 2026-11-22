@@ -64,7 +64,8 @@
  };
  const introLine=(p,w,o)=>{
   const past=G.S.history?.find(h=>h.pid===p.id&&h.wid===w.id);
-  const remembered=past&&Number.isFinite(past.stars)?
+  const realMemory=root.OfficeNegotiationCareer?.memory?.(p.id,w.id);
+  const remembered=realMemory?.line?' '+realMemory.line:past&&Number.isFinite(past.stars)?
     ' I remember your last match on my show: '+past.stars+' stars.':'';
   const lines={
    aggressive:"If I'm moving anyone on my card, I need a fighter who brings the crowd with them.",
@@ -108,12 +109,14 @@
  };
  const read=(o,w)=>{
   const p=G.P(o.pid),v=profile(p),past=G.S.history?.find(h=>h.pid===p.id&&h.wid===w.id);
+  const realMemory=root.OfficeNegotiationCareer?.memory?.(p.id,w.id);
   return {
    name:v.name,priority:v.priority,signal:v.signal,warning:v.warning,
    failureCost:v.failed,hardballCost:v.hardball,
-   evidence:past&&Number.isFinite(past.stars)?
-    'Past booking: '+w.short+' earned '+past.stars+' stars on '+p.name+'.':
-    'No completed booking with this wrestler recorded for '+p.name+'.'
+   evidence:realMemory?.evidence||(
+    past&&Number.isFinite(past.stars)?
+     'Past booking: '+w.short+' earned '+past.stars+' stars on '+p.name+'.':
+     'No completed booking with this wrestler recorded for '+p.name+'.')
   };
  };
  const log=(t,p,player,promoter)=>{t.log.push({who:'You',text:player},{who:p.voice,text:promoter});t.turns++;G.save()};
