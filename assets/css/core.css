@@ -679,8 +679,9 @@ dialog.negotiation-dialog[open]{
  .neg-meeting-note{margin:5px 1px;font-size:13px}
  .neg-footer{padding:6px;gap:5px;flex-wrap:wrap}
  .neg-footer .btn.two{flex:1 1 45%;min-width:0;max-width:none;min-height:44px;font-size:15px}
- .neg-footer .btn.two.later{flex:1 1 100%;margin:0}
- .neg-footer .btn.two small{font-size:12px}
+ /* "Decide later" shares a row with the signing button, so a two-button footer is one row. */
+ .neg-footer .btn.two.later{flex:1 1 40%;margin:0}
+ .neg-footer .btn.two small{font-size:13px}
 }
 @media(max-height:590px){
  dialog.negotiation-dialog[open]{height:calc(100dvh - 10px);max-height:calc(100dvh - 10px)}

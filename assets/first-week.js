@@ -57,7 +57,9 @@
   const s=current(),d=t.dataset;
   if(d.firstweek){if(!s)return;const m=ensure(s);m.open=d.firstweek==='open'?true:!m.open;root.OfficeGame?.save?.();refresh();return}
   if(!s)return;
-  if(d.sign&&s.roster?.some(w=>w.id===d.sign))saveFlag('signed');
+  // Signing is confirmed in a dialog (data-dlg="sign:<id>"); the direct data-sign path stays for older markup.
+  const signed=d.sign||(d.dlg?.startsWith('sign:')?d.dlg.slice(5):null);
+  if(signed&&s.roster?.some(w=>w.id===signed))saveFlag('signed');
   else if((d.book||d.talkbook)&&(s.card?.length||s.futureBookings?.length))saveFlag('booked');
   else queueMicrotask(refresh);
  }
