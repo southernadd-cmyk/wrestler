@@ -14,6 +14,19 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const ids=S.STRUCTURES.catalogue().map(x=>x.id),plans=['story','technical','brawl','spots','safe'];
 const styles=['Technical','Brawl','Spectacle','Story'],p=D.PROMOS[0];
 const quick=process.argv.includes('--quick');
+// Reuse the nine concrete seed witnesses from the merged Phase 9E diagnostic.
+// Retain factual evidence without assuming that an altered physical sequence
+// must still have the exact same future RNG path.
+const nineCases=new Set([
+ 'p7-0-kings_road-w-technical-8','p7-0-kings_road-w-safe-8',
+ 'p7-0-dominant_ace-w-safe-8','p7-0-dominant_ace-f-story-8',
+ 'p7-2-classic_american-f-safe-18',
+ 'p7-2-chickenshit_heel-f-technical-8',
+ 'p7-2-chickenshit_heel-f-safe-18',
+ 'p7-2-dominant_ace-w-technical-18',
+ 'p7-3-classic_american-f-spots-12'
+]);
+const nineCaseEvidence=[];
 const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styles;
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
@@ -22,6 +35,7 @@ const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete
  fullRunways:0,linkedRunways:0,lateWinnerControl:0,lateWinnerSetups:0,lateWinnerImpacts:0,
  protectedFollowthroughs:0,protectedClosingImpacts:0,
  protectedCounterExchanges:0,protectedOpposingImpacts:0,extendedClosingImpacts:0,
+ arcPhysicalRetained:0,arcFinishControlRetained:0,arcLateControlOverrides:0,
  lateLostAfterRealReversal:0,lateLostWithoutRealReversal:0,
  lateAuthoredLinkSetups:0,latePerformedLinks:0,lateInterruptedSetups:0,
  lateDiversions:0,lateLinksLostAtBell:0,lateLinksStale:0,
@@ -180,6 +194,36 @@ for(let si=0;si<sampleStyles.length;si++){
   r.extendedClosingImpacts+=m.graph.closingImpactExtended||0;
   r.protectedOpposingImpacts+=m.graph.closingOpponentImpactProtected||0;
   r.protectedCounterExchanges+=m.graph.closingReversalProtected||0;
+  r.arcPhysicalRetained+=m.graph.arcPhysicalRetained||0;
+  r.arcFinishControlRetained+=m.graph.arcFinishControlRetained||0;
+  r.arcLateControlOverrides+=m.graph.arcLateControlOverrides||0;
+  assert.equal(control.graph.arcPhysicalRetained||0,0,
+   'metadata-only controls cannot earn director handoff protection');
+  for(const guard of m.graph.arcPhysicalWitnesses||[]){
+   const actual=m.graph.events.find(e=>e.id===guard.move&&e.t===guard.moveAt);
+   assert.ok(actual,'late arc handoff requires a performed action');
+   assert.equal(actual.control,guard.actor,'handoff keeps actual control');
+   assert.ok(guard.at-actual.t>=0&&guard.at-actual.t<=40,
+    'arc handoff evidence must be recent');
+  }
+  if(nineCases.has(c.id)){
+   const raw=m.graph.events,late=raw.filter(e=>e.t>=m.len-90&&e.t<=m.len);
+   const gaps=late.slice(1).filter((e,i)=>
+    ['w','f'].includes(late[i].control)&&
+    ['w','f'].includes(e.preControl)&&
+    late[i].control!==e.preControl);
+   nineCaseEvidence.push({case:c.id,seed,finish,
+    bell:m.story.control,latestEvent:late.at(-1)?.id||null,
+    latestControl:late.at(-1)?.control||null,
+    silentAfterLast:!!late.length&&late.at(-1).control!==m.story.control,
+    interEventGaps:gaps.length,
+    retained:m.graph.arcPhysicalRetained||0,
+    retainedAtFinish:m.graph.arcFinishControlRetained||0,
+    lateArcOverrides:m.graph.arcLateControlOverrides||0,
+    bookedOutcome:m.graph.outcome?.id,
+    finishingStatus:m.final.finishingRunway?.status||null
+   });
+  }
   assert.equal(control.graph.closingProtected||0,0,'metadata-only controls cannot protect closing links');
   assert.equal(control.graph.closingImpactProtected||0,0,'metadata-only controls cannot protect impacts');
   assert.equal(control.graph.closingReversalProtected||0,0,'metadata-only controls cannot protect reversals');
@@ -362,6 +406,9 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    protectedCounterExchanges:r.protectedCounterExchanges,
    protectedOpposingImpacts:r.protectedOpposingImpacts,
    extendedClosingImpacts:r.extendedClosingImpacts,
+   arcPhysicalRetained:r.arcPhysicalRetained,
+   arcFinishControlRetained:r.arcFinishControlRetained,
+   arcLateControlOverrides:r.arcLateControlOverrides,
    lateAuthoredLinkSetups:r.lateAuthoredLinkSetups,
    latePerformedLinks:r.latePerformedLinks,
    lateInterruptedSetups:r.lateInterruptedSetups,
@@ -393,6 +440,11 @@ for(const r of Object.values(map)){
   'a verified finishing runway must include a real late impact');
 }
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
+console.log('PHASE9F_NINE_CASE_JSON '+JSON.stringify({
+ base:'38887cacda5d73afa77094c4647c20702a1e6e73',
+ total:nineCaseEvidence.length,
+ cases:nineCaseEvidence
+}));
 // Focused read-only risk report for Phase 8: the existing seeded 960-match
 // comparison, no new workflow or extra stochastic fixture.
 console.log('PHASE8_RISK_JSON '+JSON.stringify({

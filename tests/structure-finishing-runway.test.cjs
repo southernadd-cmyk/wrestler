@@ -283,3 +283,114 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
  assert.equal(G.closingRunway(dirty),null);
 }
 console.log('PASS Phase 9C: 4 structures x 5 plans, real reversal/linked impact, clean winner on both sides, controls, interruption, stale evidence, saves and immutable result.');
+
+
+// Phase 9F: a screenplay transition near the bell must not itself count as
+// a performed reversal or erase actual in-ring ownership. These focused
+// checks complement the nine real fixed-seed full-bout replays below.
+let observedArcHandoffs=0;
+for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
+ for(const owner of ['w','f']){
+  const m=create(structure,'story','win_clean');
+  m.t=m.len-30;m.stage='live';m.graph.started=true;
+  m.graph.arc='false_finish';m.graph.age=999;
+  step(m,'probe_strike',owner); // genuine standing, non-finisher offence
+  m.t+=10;
+  const beforeEvents=m.graph.events.length,
+   beforeControl=m.story.control, beforeNode=m.graph.node,
+   beforePhysical=copy(m.graph.physical);
+  G.advance(m,m.t/m.len);
+  if(m.graph.arc!=='false_finish'){
+   observedArcHandoffs++;
+   assert.equal(m.story.control,beforeControl,
+    'late arc cannot assign or neutralise earned control');
+   assert.equal(m.graph.node,beforeNode,
+    'late arc cannot erase the last real, still-current action');
+   assert.equal(JSON.stringify(m.graph.physical),JSON.stringify(beforePhysical),
+    'late arc cannot silently stand up or relocate performers');
+   assert.equal(m.graph.arcPhysicalRetained,1,
+    'only the real owned physical state can keep control');
+  }
+  assert.equal(m.graph.events.length,beforeEvents,
+   'arc handoff cannot fabricate a move');
+  const unplanned=create(structure,'story','win_clean',false);
+  unplanned.t=unplanned.len-30;unplanned.stage='live';
+  unplanned.graph.started=true;unplanned.graph.arc='false_finish';
+  unplanned.graph.age=999;
+  step(unplanned,'probe_strike',owner);
+  unplanned.t+=10;G.advance(unplanned,unplanned.t/unplanned.len);
+  assert.equal(unplanned.graph.arcPhysicalRetained||0,0,
+   'the metadata-only baseline must retain its old director-free behaviour');
+ }
+}
+assert.ok(observedArcHandoffs>=1,
+ 'a live arc transition must exercise the new physical handoff');
+
+// Replay the EXACT nine clean match seeds identified by the read-only
+// investigation, including all 4 structures, both finish directions,
+// Technical, Safe, Story and Spots, and 8/12/18-minute durations.
+// Do not force winners, manipulate the RNG, or inject a missing counter.
+// These are actual normal E.next() matches with signed editor sheets.
+const caseRows=[
+ [0,'kings_road','w','technical',8,'lose_clean',1037049],
+ [0,'kings_road','w','safe',8,'win_clean',1038186],
+ [0,'dominant_ace','w','safe',8,'win_clean',1050388],
+ [0,'dominant_ace','f','story',8,'lose_clean',1048913],
+ [2,'classic_american','f','safe',18,'win_clean',1053438],
+ [2,'chickenshit_heel','f','technical',8,'win_clean',1063793],
+ [2,'chickenshit_heel','f','safe',18,'win_clean',1065640],
+ [2,'dominant_ace','w','technical',18,'win_clean',1070563],
+ [3,'classic_american','f','spots',12,'lose_clean',1062934]
+];
+const styles9f=['Technical','Brawl','Spectacle','Story'];
+let retainedInNine=0,overridesInNine=0;
+for(const [si,structure,lead,game,minutes,finish,seed] of caseRows){
+ const main=D.TALENT.find(x=>x.style===styles9f[si]);
+ const foe=D.FOES.find(x=>x.style===styles9f[(si+1)%4])||
+  D.ALL.find(x=>x.style===styles9f[(si+1)%4]&&x.id!==main?.id);
+ assert.ok(main&&foe,'seed pairing exists');
+ const c={id:'p7-'+si+'-'+structure+'-'+lead+'-'+game+'-'+minutes,
+  wid:main.id,rid:foe.id,pid:p.id,slot:'main',finish,minutes,
+  eventAbs:54,feudHeat:22};
+ const expectedSeed=1030001+si*10301+
+  S.STRUCTURES.catalogue().findIndex(x=>x.id===structure)*6101+
+  ['story','technical','brawl','spots','safe'].indexOf(game)*379+
+  minutes*71+(lead==='f'?41:0);
+ assert.equal(seed,expectedSeed,'replay exact independently measured seed');
+ const st=Room.begin(c,main,foe,p,
+  {structure:{id:structure,lead},structurePlanning:true});
+ st.queue=[];Room.act(st,'plan_'+game);
+ assert.equal(st.stage,'board');Room.act(st,'board_ok');
+ assert.equal(st.stage,'review');Room.act(st,'review_ok');
+ Room.act(st,'talk_none');assert.equal(st.stage,'done');
+ const m=E.create({w:{...main,fatigue:5,flags:{}},f:foe,p,
+  slot:'main',finish,minutes:st.sheet.minutes,seed,feudHeat:22,
+  flags:{},preparation:{},plan:{game,leash:'script',talk:'none'},
+  sheet:copy(st.sheet),structureExecution:true});
+ for(let i=0;i<9000&&!m.done;i++){
+  if(m.decision&&!m.queue.length){
+   const opts=m.decision.options||[];
+   const choice=opts.find(x=>['job','keep','protect','work'].includes(x.id))||
+    opts.find(x=>!['home','cut','stop'].includes(x.id))||opts[0];
+   assert.ok(choice,'seeded match decision available');
+   E.resolve(m,choice.id);
+  }
+  E.next(m);
+ }
+ assert.ok(m.done&&m.final,'seeded clean match finished normally');
+ assert.equal(m.graph.outcome?.id,finish,
+  'agreed winner and method unchanged in exact-seed replay');
+ assert.ok(!m.final.starParts.some(x=>x[0]==='structure'),
+  'dramatic director cannot award invented stars');
+ for(const witness of m.graph.arcPhysicalWitnesses||[]){
+  const source=m.graph.events.find(x=>x.id===witness.move&&x.t===witness.moveAt);
+  assert.ok(source,'preserved control must be backed by a performed event');
+  assert.equal(source.control,witness.actor,'no fictitious controller');
+  assert.ok(witness.at-source.t>=0&&witness.at-source.t<=40,
+   'physical ownership is bounded to a fresh witnessed action');
+ }
+ retainedInNine+=m.graph.arcPhysicalRetained||0;
+ overridesInNine+=m.graph.arcLateControlOverrides||0;
+}
+console.log('PASS Phase 9F: nine exact-seed clean finishes, symmetric legal arc ownership, '+observedArcHandoffs+
+ ' forced handoffs, '+retainedInNine+' earned guards and '+overridesInNine+' late arc control overrides.');
