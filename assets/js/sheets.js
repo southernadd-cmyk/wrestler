@@ -652,7 +652,13 @@
    if(intent==='technical_exchange')return sides.size===2&&moves.size>=2;
    if(intent==='callback')return ev.some(x=>previous.some(p=>p.family===x.family&&x.at>=p.at+30&&(x.id===p.id||x.actor!==p.actor)));
    if(intent==='evasion')return ev.length>=1; // A witnessed evasive action, not a posed intention.
-   if(['escalation','finish_build'].includes(intent))return moves.size>=2;
+   // A final attack can grow out of a different, actually witnessed late
+   // setup: two distinct qualifying closing moves remain sufficient, but
+   // one impactful closing move plus an earlier earned beat is also causal.
+   // Never credit the signed call alone or a phantom hit.
+   if(intent==='finish_build')return moves.size>=2||ev.some(e=>e.impact&&
+    previous.some(p=>p.id!==e.id&&p.at<e.at&&e.at-p.at<=150));
+   if(intent==='escalation')return moves.size>=2;
    if(intent==='exposure')return ev.some(e=>e.countered||e.impact)||moves.size>=2;
    if(['opening_advantage','pressure','comeback','dominance','challenge','reassertion','evasion'].includes(intent))
     return ev.length>=2&&moves.size>=2;
@@ -750,12 +756,15 @@
     if(!fits(o,{id},n,actor))continue;
     if(o.intent==='escape'&&n.reverse&&!realPressure)continue;
     // An eligible called spot is a stronger *preference*, never a landing.
-    out.push([id,id===o.call?.action?9:6.5]);
+    // Phase 7: preferences, not automatic execution. Ease the old near-
+    // deterministic Heel shortcuts without removing any legal option.
+    out.push([id,id===o.call?.action?5.5:3.5]);
    }
    return out;
   }
   function arcBias(M,id){
-   const x=current(M);return x&&ARC[x.objective.intent]?.includes(id)?5.6:1;
+   const x=current(M);return x&&ARC[x.objective.intent]?.includes(id)?
+    (M.structureDirector.id==='chickenshit_heel'?3.4:5.6):1;
   }
   function report(M){
    if(!active(M))return null;

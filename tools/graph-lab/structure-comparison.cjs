@@ -17,7 +17,7 @@ const quick=process.argv.includes('--quick');
 const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styles;
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
- finishes:0,finishFallbacks:0,named:0,namedHit:0,open:0,objectives:{},
+ finishes:0,finishFallbacks:0,named:0,namedHit:0,open:0,causalFinals:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
 const add=(o,k,n=1)=>o[k]=(o[k]||0)+n;
 const ratio=(n,d)=>+(100*n/Math.max(1,d)).toFixed(1);
@@ -87,6 +87,12 @@ for(let si=0;si<sampleStyles.length;si++){
     'structure evidence from real recorded action');
    assert.ok(e.progress>=plan.window[0]-.04001&&e.progress<=plan.window[1]+.08001,
     'evidence in intended time window');
+   if(o.intent==='finish_build'&&o.evidence.length===1){
+    const earlier=v.objectives.slice(0,k).flatMap(x=>x.evidence);
+    assert.ok(e.impact&&earlier.some(p=>p.id!==e.id&&p.at<e.at&&e.at-p.at<=150),
+     'one closing impact needs a different witnessed setup inside 150 seconds');
+    r.causalFinals++;
+   }
    sequence.push(e.id);add(r.firstActions,o.id+':'+e.id);
   }
   if(witnessed===4)r.complete++;
@@ -114,7 +120,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    meanEvents:avg(r.events,r.bouts),controlEvents:avg(r.controlEvents,r.bouts),
    meanDistinctActions:avg(r.distinct,r.bouts),
    botches:r.botches,controlBotches:r.controlBotches,
-   bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,
+   bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,
    namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),openObjectives:r.open,
    objectiveStatus:r.objectives,topActions:top(r.firstActions,12),
    uniqueSequences:Object.keys(r.sequences).length,
