@@ -907,6 +907,9 @@ function renderMeeting(oid,wid){
  const res=G.meeting(oid,wid);if(res.error){toast(res.error);return}
  const o=res.offer,t=res.talk,w=G.W(wid),p=G.P(o.pid),f=G.F(o.rid),d=$('#modal');
  d.dataset.talkoid=oid;d.classList.add('negotiation-dialog');
+ const promoterRead=window.OfficeNegotiationsV2?.read?.(o,w)||null;
+ const promoterPriorities=promoterRead?`<section class="neg-profile" aria-label="Promoter priorities"><b>${esc(p.voice)} · ${esc(promoterRead.name)}</b><p>${esc(promoterRead.priority)}</p><small>${esc(promoterRead.evidence)}</small></section>`:'';
+ const promoterAdvice=promoterRead?`<p class="neg-advice"><b>Reading the room:</b> ${esc(promoterRead.signal)}</p>`:'';
  const orig=t.original,proposed=t.proposal||null,shown=proposed||o;
  const cur={slot:shown.slot,finish:shown.finish,fee:G.purse({...o,...shown},w),stip:shown.stip||null},done=t.step==='done';
  const originalStip=Object.prototype.hasOwnProperty.call(orig,'stip')?orig.stip:(t.topic==='stip'?null:cur.stip);
@@ -934,7 +937,7 @@ function renderMeeting(oid,wid){
   if(t.retry)options+='<p class="neg-tip">Final attempt. Your previous argument cannot be repeated.</p>';
  }else if(t.step==='challenge'){
   prompt='The promoter is unconvinced';
-  options='<p class="neg-tip">Your first argument failed. You have spent a meeting and lost promoter trust.</p>'
+  options='<p class="neg-tip">Your first argument failed. You spent a meeting and lost '+(t.cost||promoterRead?.failureCost||2)+' promoter trust.</p>'
    +ask('reply:reframe','Let me make one final argument','Try a different reason. A second rejection ends the negotiation.')
    +ask('reply:concede',"I'll offer something in return",'Propose a smaller improvement, usually at a lower fee.')
    +ask('reply:original',"I'll take your original offer",'Keep the original invitation and stop bargaining.');
@@ -943,7 +946,7 @@ function renderMeeting(oid,wid){
   options=ask('reply:accept','I accept these proposed terms','Agree in principle. You must still sign the contract.');
   if(t.step==='counter'&&!t.pushes){
    options+=ask('push:trade','Could we meet a little closer?','One final compromise request. The offer may not improve.');
-   options+=ask('push:hold','I want the full change','Hardball: trust −2; with low trust, this could lose the whole booking.');
+   options+=ask('push:hold','I want the full change','Hardball: promoter trust −'+(promoterRead?.hardballCost||2)+'; with low trust, the promoter may withdraw the booking.');
   }
   options+=ask('reply:original',"I'll take the original offer",'Keep the initial invitation without the revision.');
   options+=ask('reply:walk','We are not doing this booking','Withdraw the invitation completely. This cannot be undone.');
@@ -952,7 +955,7 @@ function renderMeeting(oid,wid){
   const outcome=t.verdict==='agreed'?'Revised terms accepted.':t.verdict==='counter'?'Compromise accepted.':t.verdict==='refused'?'The promoter refused.':'The original terms stand.';
   options=`<section class="neg-verdict ${t.verdict==='refused'?'is-refused':''}"><b>${outcome}</b><p>${esc(t.detail||'')}</p><small>${changed?'Sign the revised offer, sign the original, or leave both unsigned.':'The original offer can still be signed.'}</small></section>`;
  }
- const response=`<div class="neg-response"><h3>${prompt}</h3>${t.step==='start'?'<p class="neg-tip">Reading or signing the original offer is free. Asking for better terms uses one meeting; failed arguments can reduce promoter trust.</p>':''}<div class="neg-choices">${options}</div></div>`;
+ const response=`<div class="neg-response"><h3>${prompt}</h3>${promoterAdvice}${t.step==='start'?'<p class="neg-tip">Reading or signing the original offer is free. Asking for better terms uses one meeting; failed arguments can reduce promoter trust.</p>':''}<div class="neg-choices">${options}</div></div>`;
  const btn=(cls,attrs,label,sub)=>`<button class="btn two ${cls}" ${attrs}><span>${label}</span><small>${sub}</small></button>`;
  const reply=`Reply by ${weekLabel(o.expiresAbs)}`;
  const later=btn('later','data-dlg="close"','Decide later',`Nothing signed. ${reply}`);
@@ -963,6 +966,7 @@ function renderMeeting(oid,wid){
  <div class="neg-layout">
   <section class="neg-main" aria-label="Conversation with ${esc(p.voice)}">
    <div class="neg-section-header"><b>Conversation</b><span>${esc(p.desc)} · Trust ${p.trust}</span></div>
+   ${promoterPriorities}
    <div class="neg-transcript well" role="log" aria-label="Negotiation history" aria-live="off">${transcript}</div>
    ${response}
   </section>
