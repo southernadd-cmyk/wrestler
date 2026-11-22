@@ -18,6 +18,7 @@ const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styl
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
  sellingWrestlers:0,sellingStrains:0,sellingLines:0,comebackSelling:0,realBreathers:0,
+ closingRunways:0,bridgedRunways:0,closingWins:0,closingLosses:0,
  motifStarts:0,motifPaid:0,motifOpen:0,
  finishes:0,finishFallbacks:0,named:0,namedHit:0,controlNamedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
@@ -97,6 +98,35 @@ for(let si=0;si<sampleStyles.length;si++){
   r.events+=m.graph.events.length;r.controlEvents+=control.graph.events.length;
   r.distinct+=new Set(m.graph.events.map(x=>x.id)).size;
   r.botches+=m.botches;r.controlBotches+=control.botches;
+  const closing=m.final.finishingRunway;
+  assert.equal(control.final.finishingRunway,undefined,
+   'metadata-only control must not credit a physical closing runway');
+  if(closing){
+   const tape=m.graph.events,graph=E.GRAPH.A;
+   const exact=e=>tape.find(x=>x.id===e.id&&x.t===e.at);
+   const [threat,cut,setup,impact]=
+    ['pressure','cutoff','setup','impact'].map(key=>exact(closing[key]));
+   assert.ok(threat&&cut&&setup&&impact,'all four closing witnesses on real event tape');
+   assert.ok(threat.t<cut.t&&cut.t<setup.t&&setup.t<impact.t,'strict causal ordering');
+   assert.equal(closing.winner,finish==='win_clean'?'w':'f',
+    'closing performer must be the contracted clean winner');
+   assert.equal(threat.preControl,closing.loser);
+   assert.equal(cut.preControl,closing.loser);assert.equal(cut.control,closing.winner);
+   assert.ok(graph[cut.id]?.reverse,'cutoff must be a real reversal');
+   assert.equal(setup.preControl,closing.winner);
+   assert.equal(impact.preControl,closing.winner);
+   assert.equal(impact.position,'mat');assert.equal(impact.down,closing.loser);
+   assert.ok(graph[setup.id]?.next?.some(([id])=>id===impact.id),
+    'an authored same-performer setup-to-impact link is mandatory');
+   for(const event of tape)
+    if(event.t>cut.t&&event.t<impact.t&&
+       event.preControl===closing.loser&&event.control===closing.loser&&
+       !graph[event.id]?.reverse&&!graph[event.id]?.blockOf)
+     assert.fail('opponent interrupted credited closing sequence');
+   r.closingRunways++;r.bridgedRunways+=Number(!!closing.spoken);
+   r.closingWins+=Number(closing.winner==='w');
+   r.closingLosses+=Number(closing.winner==='f');
+  }
   const selling=m.final.matchSelling;
   assert.equal(control.final.matchSelling,undefined,'metadata-only cannot acquire Phase 9B selling');
   if(selling){
@@ -216,6 +246,8 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    sellingWrestlers:r.sellingWrestlers,sellingStrains:r.sellingStrains,
    sellingLines:r.sellingLines,comebackSelling:r.comebackSelling,
    realBreathers:r.realBreathers,
+   closingRunways:r.closingRunways,bridgedRunways:r.bridgedRunways,
+   closingWins:r.closingWins,closingLosses:r.closingLosses,
    bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,dangerEscapes:r.dangerEscapes,
    namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),controlNamedHitPct:ratio(r.controlNamedHit,r.named),openObjectives:r.open,
    objectiveStatus:r.objectives,topActions:top(r.firstActions,12),
