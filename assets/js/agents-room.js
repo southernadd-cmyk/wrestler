@@ -1264,15 +1264,15 @@
   payoff:['suplex','power','neck','aerial','submission'],
   technical_exchange:['chain','submission'],
   escalation:['suplex','power','strike','corner'],
-  callback:['chain','ground','submission'],
+  callback:['chain','submission'],
   finish_build:['power','suplex','neck','aerial','submission'],
-  evasion:['heel','rest','outside','chain'],
-  exposure:['fire','chain','running'],
+  evasion:['heel','outside'],
+  exposure:['chain','running','fire'],
   shortcut:['heel','strike','corner'],
-  escape:['chain','fire','running'],
-  dominance:['power','suplex','strike'],
+  escape:['heel','outside','running','chain'],
+  dominance:['power','suplex'],
   challenge:['fire','running','chain'],
-  reassertion:['power','suplex','neck','strike']
+  reassertion:['power','suplex','neck']
  };
  const STRUCTURE_INCOMPATIBLE=new Set([
   'big_spot','debut','wont_job','leash','crowd','request','protect',
@@ -1299,12 +1299,14 @@
    const cost=n.cost??1,crowd=n.crowd??0,name=(n.name||id).toLowerCase();
    const dirty=/rake|bite|poke|hair.pull|referee|low.blow|faked.injury/.test(name);
    const tactical=['technical_exchange','callback','opening_advantage'].includes(obj.intent);
-   const impact=['escalation','finish_build','dominance','reassertion','decisive_payoff','challenge'].includes(obj.intent);
-   if(tactical&&(cost<0||crowd<0||dirty||n.risk))return false;
-   if(impact&&(cost<1.3||crowd<1||dirty||n.family==='rest'))return false;
+   const impact=['escalation','finish_build','dominance','reassertion','decisive_payoff'].includes(obj.intent);
+   if(tactical&&(cost<.8||crowd<0||dirty||n.risk))return false;
+   if(impact&&(cost<2.4||crowd<2||dirty||n.family==='rest'))return false;
+   if(['exposure','challenge','fighting_return'].includes(obj.intent)&&(cost<1||dirty))return false;
    if(obj.intent==='evasion'&&!/stall|retreat|plea|mock|duck|rope|roll.out|outside|argument/.test(name))return false;
+   if(obj.intent==='escape'&&!/duck|escape|roll|rope|retreat|outside|stall|break|counter/.test(name))return false;
    if(obj.intent==='shortcut'&&!(dirty||n.family==='heel'||crowd<0))return false;
-   return cost>=0;
+   return ['evasion','escape'].includes(obj.intent)?cost>=-1:cost>=0;
   }).sort((a,b)=>{
    const A1=A[a],B1=A[b],famA=families.indexOf(A1.family),famB=families.indexOf(B1.family);
    const rankA=(famA>=0?4-famA:0)+(A1.crowd||0)*.5+appeal(a,o)*.4;
@@ -1335,8 +1337,11 @@
    const cards=structureCards(st,obj),index=structureSlots(st).indexOf(obj);
    const preferred=obj.actor==='either'?(index%2?st.structure.roles.other:st.structure.roles.lead):obj.actor;
    const ordered=cards.slice().sort((a,b)=>Number(b.owner===preferred)-Number(a.owner===preferred));
-   const helpful=ordered.filter(c=>supportsFinish(st,route,c));
-   const choice=helpful.find(c=>c.by==='agent')||helpful[0]||ordered.find(c=>c.by==='agent')||ordered[0];
+   const used=new Set(Object.values(st.structureBoard).map(b=>b.action).filter(Boolean));
+   const distinct=ordered.filter(c=>!used.has(c.action));
+   const eligible=distinct.length?distinct:ordered;
+   const helpful=eligible.filter(c=>supportsFinish(st,route,c));
+   const choice=helpful.find(c=>c.by==='agent')||helpful[0]||eligible.find(c=>c.by==='agent')||eligible[0];
    st.structureBoard[obj.id]=choice?
     {...choice,chosen:false,open:false,source:'suggested'}:
     {owner:obj.actor,action:null,label:'Call this objective in the ring',by:'agent',chosen:false,open:true,source:'open'};
