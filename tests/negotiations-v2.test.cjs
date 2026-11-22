@@ -69,17 +69,21 @@ const select=(o,topic='protect',arg='crowd')=>{
  assert.equal(t.step,'done');
  assert.equal(G.book(o.id,'rex'),null);
 }
-// The player can push once and can concede instead of gambling the whole booking.
+// A better counter requires giving something tangible: no free upward
+// push remains. The manager may make one package offer then accept it.
 {
  const {o}=setup({trust:35,heat:17,pro:55,rep:20});
  const t=select(o,'protect','trade');
  assert.equal(t.step,'counter');
  assert.equal(o.finish,'lose_clean');
- assert.ok(!G.talkMove(o.id,'rex','push:trade').error);
+ assert.match(G.talkMove(o.id,'rex','push:trade').error,/concrete concession/i);
  assert.equal(t.step,'counter');
- assert.ok(t.proposal);
- assert.match(G.talkMove(o.id,'rex','push:trade').error,/permitted|Accept|response/i,
-  'a second push must be prohibited');
+ assert.ok(root.OfficeNegotiationsV2.tradeOptions(o,G.W('rex'),t).some(x=>x.id==='fee'));
+ assert.ok(!G.talkMove(o.id,'rex','trade:fee').error);
+ assert.equal(t.step,'offer');
+ assert.ok(t.proposal);assert.ok(t.package);
+ assert.match(G.talkMove(o.id,'rex','trade:fee').error,/not available/i,
+  'repeated trade requests must be prohibited');
  assert.ok(!G.talkMove(o.id,'rex','reply:accept').error);
  assert.equal(t.step,'done');
  assert.equal(o.finish,'lose_protected');
