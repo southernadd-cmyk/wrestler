@@ -1262,9 +1262,9 @@
   pressure:['ground','power','corner','submission'],
   comeback:['fire','running','lucha','strike'],
   payoff:['suplex','power','neck','aerial','submission'],
-  technical_exchange:['chain','ground','submission'],
+  technical_exchange:['chain','submission'],
   escalation:['suplex','power','strike','corner'],
-  callback:['chain','ground','fire','submission'],
+  callback:['chain','ground','submission'],
   finish_build:['power','suplex','neck','aerial','submission'],
   evasion:['heel','rest','outside','chain'],
   exposure:['fire','chain','running'],
@@ -1291,10 +1291,26 @@
   const cutoff=Math.min(.98,obj.window[1]+.08);
   return ids.filter(id=>{
    const n=A[id];
-   return n&&typeof n.after==='number'&&n.after<=cutoff&&
-    !n.nearfall&&(n.cost??1)>-1&&legal(id,o,r)&&!banned(st,id)&&
-    (families.includes(n.family)||families.some(f=>(CAT.members[f]||[]).includes(id)));
-  }).sort((a,b)=>appeal(b,o)-appeal(a,o)||a.localeCompare(b));
+   if(!n||typeof n.after!=='number'||n.after>cutoff||n.nearfall||n.blockOf||
+     !legal(id,o,r)||banned(st,id)||!(families.includes(n.family)||
+     families.some(f=>(CAT.members[f]||[]).includes(id))))return false;
+   // A dramatic objective cannot be "earned" by irrelevant filler: no
+   // eye rakes in clean technical exchanges, no breathers as huge finishes.
+   const cost=n.cost??1,crowd=n.crowd??0,name=(n.name||id).toLowerCase();
+   const dirty=/rake|bite|poke|hair.pull|referee|low.blow|faked.injury/.test(name);
+   const tactical=['technical_exchange','callback','opening_advantage'].includes(obj.intent);
+   const impact=['escalation','finish_build','dominance','reassertion','payoff','challenge'].includes(obj.intent);
+   if(tactical&&(cost<0||crowd<0||dirty||n.risk))return false;
+   if(impact&&(cost<1.3||crowd<1||dirty||n.family==='rest'))return false;
+   if(obj.intent==='evasion'&&!/stall|retreat|plea|mock|duck|rope|roll.out|outside|argument/.test(name))return false;
+   if(obj.intent==='shortcut'&&!(dirty||n.family==='heel'||crowd<0))return false;
+   return cost>=0;
+  }).sort((a,b)=>{
+   const A1=A[a],B1=A[b],famA=families.indexOf(A1.family),famB=families.indexOf(B1.family);
+   const rankA=(famA>=0?4-famA:0)+(A1.crowd||0)*.5+appeal(a,o)*.4;
+   const rankB=(famB>=0?4-famB:0)+(B1.crowd||0)*.5+appeal(b,o)*.4;
+   return rankB-rankA||a.localeCompare(b);
+  });
  }
  function structureCards(st,obj){
   const permitted=obj.actor==='either'?['w','f']:[obj.actor],cards=[];
@@ -1316,9 +1332,11 @@
   for(const obj of structureSlots(st)){
    const old=st.structureBoard[obj.id];
    if(refresh&&(old?.chosen||old?.open))continue;
-   const cards=structureCards(st,obj);
-   const helpful=cards.filter(c=>supportsFinish(st,route,c));
-   const choice=helpful.find(c=>c.by==='agent')||helpful[0]||cards.find(c=>c.by==='agent')||cards[0];
+   const cards=structureCards(st,obj),index=structureSlots(st).indexOf(obj);
+   const preferred=obj.actor==='either'?(index%2?st.structure.roles.other:st.structure.roles.lead):obj.actor;
+   const ordered=cards.slice().sort((a,b)=>Number(b.owner===preferred)-Number(a.owner===preferred));
+   const helpful=ordered.filter(c=>supportsFinish(st,route,c));
+   const choice=helpful.find(c=>c.by==='agent')||helpful[0]||ordered.find(c=>c.by==='agent')||ordered[0];
    st.structureBoard[obj.id]=choice?
     {...choice,chosen:false,open:false,source:'suggested'}:
     {owner:obj.actor,action:null,label:'Call this objective in the ring',by:'agent',chosen:false,open:true,source:'open'};
