@@ -19,28 +19,28 @@
    name:'Hard-nosed',priority:'An exciting physical show, especially credible brawlers',
    warning:'Ultimatums may cost you the entire booking, particularly when trust is low.',
    signal:'Gaz responds to a tough, credible draw and to sensible concessions.',
-   counter:{fee:1.07,protect:.82,slot:.88},failed:3,hardball:3,pullBelow:50,pullMargin:6,
+   counter:{fee:1.07,protect:.82,slot:.88},failed:3,hardball:3,feeRaiseCost:2,pullBelow:50,pullMargin:6,
    holdWindow:4,tradeWindow:13
   },
   showman:{
    name:'Crowd-first',priority:'Crowd reaction, memorable moments and marketable billing',
    warning:'Willing to compromise for a draw; an empty promise will not move the card.',
    signal:'Nina is receptive to strong audience interest, especially for a featured spot.',
-   counter:{fee:1.13,protect:.90,slot:.95},failed:1,hardball:1,pullBelow:27,pullMargin:14,
+   counter:{fee:1.13,protect:.90,slot:.95},failed:1,hardball:1,feeRaiseCost:1,pullBelow:27,pullMargin:14,
    holdWindow:7,tradeWindow:16
   },
   traditional:{
    name:'Traditional',priority:'Reliability, professionalism and protecting the written card',
    warning:'A clean finish is difficult to change. A proven worker has more leverage.',
    signal:'Harold respects dependable work and arguments grounded in match delivery.',
-   counter:{fee:1.08,protect:.86,slot:.91},failed:2,hardball:3,pullBelow:43,pullMargin:10,
+   counter:{fee:1.08,protect:.86,slot:.91},failed:2,hardball:3,feeRaiseCost:2,pullBelow:43,pullMargin:10,
    holdWindow:4,tradeWindow:12
   },
   cold:{
    name:'Commercial',priority:'Clear financial value and dependable technical quality',
    warning:'Poorly justified demands and hardball can seriously damage the relationship.',
    signal:'Vivian will negotiate when the numbers and the talent justify the change.',
-   counter:{fee:1.05,protect:.80,slot:.86},failed:2,hardball:4,pullBelow:55,pullMargin:8,
+   counter:{fee:1.05,protect:.80,slot:.86},failed:2,hardball:4,feeRaiseCost:3,pullBelow:55,pullMargin:8,
    holdWindow:2,tradeWindow:11
   }
  };
@@ -112,7 +112,7 @@
   const realMemory=root.OfficeNegotiationCareer?.memory?.(p.id,w.id);
   return {
    name:v.name,priority:v.priority,signal:v.signal,warning:v.warning,
-   failureCost:v.failed,hardballCost:v.hardball,
+   failureCost:v.failed,hardballCost:v.hardball,feeRaiseCost:v.feeRaiseCost,
    evidence:realMemory?.evidence||(
     past&&Number.isFinite(past.stars)?
      'Past booking: '+w.short+' earned '+past.stars+' stars on '+p.name+'.':
@@ -342,7 +342,7 @@
    if(!option)return {error:'This trade is not available for the current booking and negotiation stage.'};
    t.tradeMade=id;t.pushes=1;
    if(!Number.isFinite(t.strength)||!Number.isFinite(t.threshold)||
-       t.strength+option.bonus<t.threshold+9){
+       t.strength+option.bonus<t.threshold+5){
     const fee=1;p.trust=clamp(p.trust-fee);t.cost=(t.cost||0)+fee;
     t.step='done';t.verdict='refused';t.proposal=null;t.package=null;
     t.detail='The promoter declined the proposed exchange; original terms remain. Trust −1.';
@@ -447,8 +447,19 @@
   if(t.step==='counter'||t.step==='offer'){
    if(move==='reply:accept'){
     if(!t.proposal)return {error:'No proposal is available.'};
+    // Even a star's successful pay rise is not free: bookers dislike being
+    // pressed on guarantees. The consequence is transparent and only charged
+    // if the player accepts a genuinely higher fee, never for direct signing.
+    const raised=t.topic==='fee'&&G.purse({...o,...t.proposal},w)>t.original.fee;
+    const feeCost=raised?profile(p).feeRaiseCost:0;
+    if(feeCost){
+     p.trust=clamp(p.trust-feeCost);
+     t.cost=(t.cost||0)+feeCost;
+     t.feeCost=feeCost;
+    }
     apply(o,t.proposal);
-    t.step='done';t.verdict=t.kind;t.detail=offerText(o,w,t.proposal);
+    t.step='done';t.verdict=t.kind;
+    t.detail=offerText(o,w,t.proposal)+(feeCost?' Promoter trust −'+feeCost+'.':'');
     log(t,p,'I accept those terms.',{
      aggressive:'Good. Shake on it, then sign the paperwork.',
      showman:'Great. Now we have something to promote. Sign the contract.',
