@@ -1825,7 +1825,7 @@ const Graph=(function makeGraph(){
      M.t-last.t>=0&&M.t-last.t<=10&&
      g.physical?.area==='ring'&&
      !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact&&
-     !(M.nearfallAt?.length&&frac>=M.nearfallAt[0])&&
+     // A due earned near-fall already needs the very same real mat state.
      A[last.id]?.zone==='mat'&&A[last.id]?.down==='d'&&
      !A[last.id]?.reverse&&!A[last.id]?.blockOf&&
      g.events.slice(0,-1).some(e=>CLOSING_SETUPS.has(e.id)&&
