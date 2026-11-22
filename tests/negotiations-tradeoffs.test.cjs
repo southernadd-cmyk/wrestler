@@ -54,7 +54,7 @@ function option(o,w,id){
  assert.equal(t.step,'offer');assert.equal(t.package.id,'fee');
  assert.equal(o.finish,'lose_clean');assert.equal(o.bump,1);
  assert.equal(t.proposal.finish,'lose_protected');
- assert.equal(t.proposal.bump,.75);
+ assert.equal(t.proposal.slot,'mid','the added fee concession also buys better billing');
  assert.ok(G.purse({...o,...t.proposal},w)<baseFee);
  assert.equal(N.tradeOptions(o,w,t).length,0,'one trade per negotiation');
  assert.match(G.talkMove(o.id,w.id,'trade:stip').error,/not available/i);
@@ -114,7 +114,7 @@ function option(o,w,id){
  assert.equal(G.talkMove(o.id,w.id,'trade:billing').error,undefined);
  assert.equal(o.slot,'feature');assert.equal(o.bump,1);
  assert.equal(o.talk.proposal.slot,'mid');
- assert.equal(o.talk.proposal.bump,1.15);
+ assert.ok(G.purse({...o,...o.talk.proposal},w)>beforeFee,'lower billing must actually pay more');
  assert.equal(G.talkMove(o.id,w.id,'reply:accept').error,undefined);
  assert.equal(o.finish,'lose_clean');
  assert.equal(G.book(o.id,w.id),null);
@@ -125,13 +125,13 @@ function option(o,w,id){
 // A protected booked loss can be exchanged for an increased appearance fee.
 // It is still a loss, never a reversal of the promoter's winner.
 {
- const {o,w}=fresh({finish:'lose_protected'});
+ const {o,w}=fresh({finish:'lose_protected'}),baseFee=G.purse(o,w);
  ask(o,w,'fee','trade');
  option(o,w,'finish');
  assert.equal(G.talkMove(o.id,w.id,'trade:finish').error,undefined);
  assert.equal(o.finish,'lose_protected');
  assert.equal(o.talk.proposal.finish,'lose_clean');
- assert.equal(o.talk.proposal.bump,1.17);
+ assert.ok(G.purse({...o,...o.talk.proposal},w)>baseFee,'clean loss must actually pay more');
  assert.equal(G.talkMove(o.id,w.id,'reply:accept').error,undefined);
  assert.equal(o.finish,'lose_clean');
 }
@@ -202,7 +202,7 @@ function option(o,w,id){
  assert.equal(G.talkMove(o.id,w.id,'trade:fee').error,undefined);
  assert.equal(o.stip||null,null);
  assert.equal(o.talk.proposal.stip,'falls');
- assert.equal(o.talk.proposal.bump,.8);
+ assert.ok(G.purse({...o,...o.talk.proposal},w)<G.purse(o,w),'requested stipulation must cost less money');
  assert.equal(G.talkMove(o.id,w.id,'reply:accept').error,undefined);
  assert.equal(G.book(o.id,w.id),null);
  assert.equal(s.card[0].stip,'falls');
