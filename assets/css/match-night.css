@@ -603,6 +603,11 @@
  overflow-x:hidden;overflow-y:auto;overflow-wrap:anywhere;
  overscroll-behavior:contain;line-height:1.08;
 }
+/* Size the live line so a typical call (median 67, 95% under 90 characters) fits the
+   fixed box without scrolling; the box height and internal scroll for rare long
+   lines are unchanged. Counts and ratings keep their own, larger sizes below. */
+#tv .s-live #lNow{font-size:clamp(24px,2.6vw,30px)}
+#tv .s-live #lNow .tx small.spk{margin-bottom:1px;font-size:max(.42em,10px)}
 #tv .s-live #lNow.count{font-size:clamp(38px,5.4vw,68px)}
 #tv .s-live #lNow.count .tx,
 #tv .s-live #lNow.rating .tx{text-align:center}
@@ -615,7 +620,9 @@
 }
 @media(max-width:720px){
  #tv .s-live .feed{height:268px}
- #tv .s-live #lNow{height:112px;min-height:112px;max-height:112px}
+ #tv .s-live #lNow{height:112px;min-height:112px;max-height:112px;font-size:20px}
+ /* The match clock is already in the score header; give the words that width instead. */
+ #tv .s-live #lNow .t{display:none}
  #tv .s-live #lNow.count{font-size:clamp(30px,8vw,44px)}
 }
 @media(max-width:720px) and (max-height:760px){
