@@ -3364,6 +3364,71 @@ const Graph=(function makeGraph(){
    {textureId:'grapple-opening:'+id});
   return true;
  }
+
+ // Phase 9A. One emergent grapple motif per active structured bout.
+ // A real defended commitment starts it; the same wrestler later landing
+ // the identical move is the only valid payoff.
+ function motifWitness(M,pending,outcome,id){
+  if(!root.OfficeSheets?.DIRECTOR?.active(M))return;
+  const g=get(M),e=g.events.at(-1),n=A[pending.id];
+  if(!e||!n||e.id!==id||e.grappleAttemptSeq!==pending.seq||
+     e.attemptedMove!==pending.id||e.grappleResolution!==outcome)return;
+  const m=g.matchMotif;
+  if(m){
+   if(m.id!==pending.id||m.side!==pending.side||
+      m.status!=='open'||pending.at<=m.startedAt)return;
+   if(outcome==='counter'||outcome==='block'){
+    m.failures=Math.min(8,m.failures+1);m.lastAt=M.t;
+   }else if(outcome==='landed'&&id===pending.id){
+    m.status='paid';m.paidAt=M.t;m.payoffSeq=pending.seq;
+    const who=pending.side==='w'?M.w:M.f;
+    say(M,who.short+' finally connects with the '+(n.name||'grapple')+
+     ' after '+m.failures+' earlier defended attempt'+(m.failures===1?'':'s')+
+     '. There is a story behind that move.','story',{textureId:'match-motif-payoff'});
+   }
+   return;
+  }
+  if(!['counter','block'].includes(outcome)||M.t/M.len>.62||
+     !['suplex','power','neck','submission','chain','superplex'].includes(n.family)||
+     (M.planId==='safe'&&(n.risk||costOf(pending.id)>2.2)))return;
+  g.matchMotif={version:1,id:pending.id,side:pending.side,
+   status:'open',startedAt:M.t,firstSeq:pending.seq,lastAt:M.t,
+   failures:1,paidAt:null,payoffSeq:null};
+  const who=pending.side==='w'?M.w:M.f;
+  say(M,who.short+' has been denied the '+(n.name||'grapple')+
+   '. That could be worth revisiting later.','story',{textureId:'match-motif-start'});
+ }
+ function motifOffers(M,side){
+  if(!root.OfficeSheets?.DIRECTOR?.active(M))return [];
+  const g=get(M),m=g.matchMotif,p=Psy.get(M);
+  if(!m||m.status!=='open'||m.side!==side||M.t-m.lastAt<60||
+     M.t/M.len<Math.max(.36,m.startedAt/M.len+.12)||M.t/M.len>.9||
+     M.len-M.t<40||(M.planId==='safe'&&(A[m.id]?.risk||costOf(m.id)>2.2)))return [];
+  const required=PHYSICAL_GRIP_MOVES[m.id],held=g.physical?.grip;
+  if(required&&(!held||held.side!==side||held.type!==required||M.t-held.at>20)){
+   const entry={'front-facelock':'front_facelock','rear-waist':'go_behind',
+    'upper-body':'lockup','body-clinch':'pw_bearhug','head':'headlock',
+    'wrist':'wristlock','ground-leg':'leg_wrench',
+    'ground-arm':'rs_wrist_mat','ground-head':'rs_side_headlock',
+    'ground-back':'rs_mat_stretch'}[required];
+   return entry&&A[entry]?.requires===p.position?[[entry,4.0]]:[];
+  }
+  return [[m.id,8.0]];
+ }
+ function motifSummary(M){
+  const m=M.graph?.matchMotif;
+  if(!root.OfficeSheets?.DIRECTOR?.active(M)||!m)return null;
+  const attempts=M.graph.grappleAttempts||[];
+  if(!attempts.some(x=>x.seq===m.firstSeq&&x.id===m.id&&x.side===m.side&&
+     ['counter','block'].includes(x.outcome)&&x.resolvedT===m.startedAt))return null;
+  const paid=m.status==='paid'&&attempts.some(x=>x.seq===m.payoffSeq&&
+   x.id===m.id&&x.side===m.side&&x.outcome==='landed'&&
+   x.startedT>m.startedAt&&x.resolvedT===m.paidAt);
+  return {version:1,action:m.id,owner:m.side,firstFailedAt:m.startedAt,
+   defendedAttempts:m.failures,status:paid?'paid':'open',
+   ...(paid?{paidAt:m.paidAt}:{}),
+   explanation:'Real defended grapple; a payoff requires the same move to land later.'};
+ }
  function concludeGrapple(M,outcome,actionId=null){
   const g=get(M),pending=g.pendingGrapple;
   if(!pending)return false;
@@ -3377,6 +3442,7 @@ const Graph=(function makeGraph(){
     event.grappleAttemptSeq=pending.seq;
     event.attemptedMove=pending.id;
     event.grappleResolution=outcome;
+    motifWitness(M,pending,outcome,actionId);
    }
   }
   return true;
@@ -3425,8 +3491,10 @@ const Graph=(function makeGraph(){
   const selected=[...from,...entries];
   // Only the explicitly activated Chickenshit structure gets additional
   // real candidate moves. Every offer still goes through isValid below.
-  if(root.OfficeSheets?.DIRECTOR?.active(M))
+  if(root.OfficeSheets?.DIRECTOR?.active(M)){
    selected.push(...root.OfficeSheets.DIRECTOR.offers(M,p.control));
+   selected.push(...motifOffers(M,p.control));
+  }
   // In a STORY finishing stretch, the match can only earn a dramatic
   // kick-out if a real worker actually hits a genuine grounding attack.
   // Promote a few existing, position-valid knockdowns as normal selectable
@@ -4682,7 +4750,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary};
 })();
 
 function create(o){
@@ -5845,7 +5913,8 @@ function summary(M){
    opponentDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='f')
   },
   evidence:evidenceOf(M),roomNegotiation:M.o.sheet?.negotiation||null,
-  ...(root.OfficeSheets?.DIRECTOR?.active(M)?{structure:root.OfficeSheets.DIRECTOR.report(M),structureAssessment:structureAssessment(M)}:{}),
+  ...(root.OfficeSheets?.DIRECTOR?.active(M)?{structure:root.OfficeSheets.DIRECTOR.report(M),structureAssessment:structureAssessment(M),
+   ...(Graph.motifSummary(M)?{matchMotif:Graph.motifSummary(M)}:{})}:{}),
   psychology:{archetype:M.planId,construction:constructionOf(M),controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 // v0.3.12 What happened, as structured facts a rivalry can cite later: who reversed whom and which kind
