@@ -29,6 +29,28 @@ const nineCases=new Set([
 const nineCaseEvidence=[];
 const phase9gLostWithoutReversal=[];
 const phase9gThreeGapTraces=[];
+// Phase 9J diagnostic only. Keep these in the audit process, never in the
+// match engine or its saved games. Source names are copied from the PR #207
+// proposed vocabulary and reported as observations, not guaranteed origins.
+const PLAN9J=Object.freeze({
+ story:['rope_run','waistlock','front_facelock','strike_trade'],
+ technical:['waistlock','headlock','go_behind','wristlock'],
+ brawl:['strike_trade','rope_run','rope_rebound','front_facelock'],
+ spots:['rope_run','springboard_rise','top_climb','corner_whip'],
+ safe:['headlock','waistlock','wristlock','front_facelock']
+});
+const routeReport=Object.fromEntries(plans.map(game=>[game,{
+ clean:0,observedTickOffers:0,routeOfferTicks:0,postCounterOfferTicks:0,
+ routeTickSelections:0,nonRouteTickSelections:0,noActionAfterOffer:0,
+ routeOffers:{},tickSelected:{},observedRouteMoves:{},
+ lateRouteMoves:{},linkedRoutePayoffs:{},directRoutePayoffs:{},
+ routeDiversions:{},countedFinishingPairs:{},
+ lateRiskyMoves:{},lateRiskyTotal:0,lateNonRiskyMoves:{},
+ lateScriptedAttempts:0,lateScriptedBotches:0,
+ lateRiskyByActor:{},lateRiskySources:{},ordinaryAerialActions:{},
+ lateNamedHighCost:{},lateNoWrestlingEvents:0
+}]));
+
 const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styles;
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
@@ -83,7 +105,7 @@ function realNamedCalls(m,sheet){
   });
  }).length;
 }
-function run(sheet,c,w,f,seed,execute){
+function run(sheet,c,w,f,seed,execute,offeredSamples=null){
  const m=E.create({w:{...w,fatigue:5,flags:{}},f,p,slot:'main',
   finish:c.finish,minutes:sheet.minutes,feudHeat:22,seed,flags:{},
   preparation:{},plan:{game:sheet.game,leash:'script',talk:'none'},
@@ -94,7 +116,38 @@ function run(sheet,c,w,f,seed,execute){
     opts.find(x=>!['home','cut','stop'].includes(x.id))||opts[0];
    assert.ok(choice,'live decision');E.resolve(m,choice.id);
   }
+  // Read-only snapshot BEFORE the next E.next call: an observed
+  // opportunity, not proof that the same offers reached the move picker.
+  // E.next can advance an arc or process another stage first.
+  let snapshot=null;
+  if(offeredSamples&&m.stage==='live'&&m.graph&&
+     m.t>=m.len-180&&m.t<=m.len-20&&
+     !m.graph.pendingAerial&&!m.graph.pendingGrapple&&
+     !m.graph.pendingStrike&&!m.graph.pendingContact&&
+     ['w','f'].includes(m.story.control)){
+   const owner=m.story.control,at=m.t,eventsBefore=m.graph.events.length;
+   const rngBefore=m.r.getState(),raw=E.GRAPH.closingOffers(m,owner);
+   assert.equal(m.r.getState(),rngBefore,'read-only offer snapshot cannot use match RNG');
+   const planIds=new Set(E.GRAPH.closingPlanSetups(m).map(([id])=>id));
+   const routes=raw.map(([id])=>id).filter(id=>planIds.has(id));
+   if(routes.length){
+    const previous=m.graph.events.at(-1),winner=c.finish==='win_clean'?'w':'f';
+    snapshot={at,left:m.len-at,owner,arc:m.graph.arc,routes,
+     stage:m.stage,lastId:previous?.id||null,
+     earnedCounter:owner===winner&&!!E.GRAPH.A[previous?.id]?.reverse&&
+      previous?.preControl!==owner&&previous?.control===owner,
+     eventsBefore,chosen:[],selected:null};
+   }
+  }
   E.next(m);
+  if(snapshot){
+   snapshot.chosen=m.graph.events.slice(snapshot.eventsBefore)
+    .filter(e=>!!E.GRAPH.A[e.id]).map(e=>({
+     id:e.id,preControl:e.preControl,control:e.control,t:e.t}));
+   snapshot.selected=snapshot.chosen.find(e=>e.preControl===snapshot.owner)?.id||null;
+   delete snapshot.eventsBefore;
+   offeredSamples.push(snapshot);
+  }
  }
  assert.ok(m.done&&m.final,'real match finishes');
  if(m.outcome==='booked')assert.equal(m.graph.outcome?.id,c.finish,'booked finish unchanged');
@@ -113,7 +166,10 @@ for(let si=0;si<sampleStyles.length;si++){
   const seed=1030001+si*10301+ids.indexOf(id)*6101+plans.indexOf(game)*379+minutes*71+(lead==='f'?41:0);
   const sheet=sign(c,w,f,game,id,lead),before=JSON.stringify(sheet);
   assert.equal(S.STRUCTURES.readPlan(sheet).mode,'editorial');
-  const m=run(sheet,c,w,f,seed,true),control=run(sheet,c,w,f,seed,false),r=map[id];
+  const offeredSamples=[],
+   m=run(sheet,c,w,f,seed,true,
+    ['win_clean','lose_clean'].includes(finish)?offeredSamples:null),
+   control=run(sheet,c,w,f,seed,false),r=map[id];
   assert.equal(JSON.stringify(sheet),before,'signed plan immutable');
   assert.equal(E.structureReport(control),null,'metadata control not active');
   const v=m.final.structure,a=m.final.structureAssessment;
@@ -122,6 +178,56 @@ for(let si=0;si<sampleStyles.length;si++){
   r.bouts++;r.stars+=m.final.stars;r.controlStars+=control.final.stars;
   r.cleanBouts+=Number(['win_clean','lose_clean'].includes(finish));
   if(['win_clean','lose_clean'].includes(finish)){
+   const rr=routeReport[game],A9=E.GRAPH.A,winning=finish==='win_clean'?'w':'f',
+    routeIds=new Set(PLAN9J[game]);
+   rr.clean++;
+   for(const snap of offeredSamples){
+    rr.observedTickOffers++;rr.routeOfferTicks++;
+    rr.postCounterOfferTicks+=Number(snap.earnedCounter);
+    for(const src of snap.routes)add(rr.routeOffers,src);
+    if(snap.selected&&snap.routes.includes(snap.selected)){
+     rr.routeTickSelections++;add(rr.tickSelected,snap.selected);
+    }else if(snap.selected){
+     rr.nonRouteTickSelections++;add(rr.tickSelected,'other:'+snap.selected);
+    }else rr.noActionAfterOffer++;
+   }
+   const lateTape=m.graph.events.filter(e=>e.t>=m.len-180&&
+    e.t<=m.len&&A9[e.id]);
+   if(game==='safe'){
+    for(const e of lateTape){
+     const a=A9[e.id];if(a.reverse||a.counterOf||a.blockOf)continue;
+     if(a.risk){
+      rr.lateRiskyTotal++;add(rr.lateRiskyMoves,e.id);
+      add(rr.lateRiskyByActor,e.preControl||'unknown');
+      if(['aerial','springboard','superplex','dive','lucha'].includes(a.family))
+       add(rr.ordinaryAerialActions,e.id);
+      const preceding=lateTape.filter(x=>x.t<=e.t&&x!==e).at(-1);
+      add(rr.lateRiskySources,preceding?.id||'none');
+     }else add(rr.lateNonRiskyMoves,e.id);
+     if((a.cost||0)>=3.5)add(rr.lateNamedHighCost,e.id);
+    }
+    const attempts=(m.graph.scriptedSpotAttempts||[]).filter(x=>
+     (x.startedT??x.at??x.t??-1)>=m.len-180);
+    rr.lateScriptedAttempts+=attempts.length;
+    rr.lateScriptedBotches+=attempts.filter(x=>x.outcome==='botched').length;
+   }
+   for(const e of lateTape){
+    if(e.preControl!==winning||e.control!==winning||
+       !routeIds.has(e.id))continue;
+    add(rr.lateRouteMoves,e.id);
+    const next=lateTape.filter(x=>x.t>e.t&&x.t-e.t<=60&&A9[x.id]);
+    const authored=new Set((A9[e.id]?.next||[]).map(([id])=>id));
+    const good=next.find(x=>authored.has(x.id)&&
+     x.preControl===winning&&x.control===winning&&
+     x.position==='mat'&&x.down===(winning==='w'?'f':'w'));
+    if(good){
+     add(rr.linkedRoutePayoffs,e.id+'>'+good.id);
+     if(next[0]===good)add(rr.directRoutePayoffs,e.id+'>'+good.id);
+    }else if(next.length)add(rr.routeDiversions,e.id+'>'+next[0].id);
+   }
+   const closing9=m.final.finishingRunway;
+   if(closing9)add(rr.countedFinishingPairs,
+     closing9.setup.id+'>'+closing9.impact.id);
    const winner=finish==='win_clean'?'w':'f',loser=winner==='w'?'f':'w',
     last=m.graph.events,
     since=Math.max(0,m.len-180),
@@ -535,6 +641,22 @@ if(!quick)assert.equal(Object.values(map).reduce((sum,r)=>
  sum+r.lateLostWithoutRealReversal,0),0,
  'Phase 9H cannot regress Phase 9G physical control continuity');
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
+console.log('PHASE9J_ROUTE_DIAGNOSTIC '+JSON.stringify({
+ basis:'PR207 dbece903 / main 9027d53',
+ note:'Offers are PRE-tick snapshots; same-tick selection is approximate because E.next can advance an arc. Actual move, landing and Safe-risk counts come only from performed action tapes.',
+ plans:Object.fromEntries(plans.map(game=>{
+  const r=routeReport[game],out={};
+  for(const k of ['clean','observedTickOffers','routeOfferTicks',
+   'postCounterOfferTicks','routeTickSelections','nonRouteTickSelections',
+   'noActionAfterOffer','lateRiskyTotal','lateScriptedAttempts',
+   'lateScriptedBotches'])out[k]=r[k];
+  for(const k of ['routeOffers','tickSelected','lateRouteMoves','linkedRoutePayoffs',
+   'directRoutePayoffs','routeDiversions','countedFinishingPairs',
+   'lateRiskyMoves','lateNonRiskyMoves','lateRiskySources','ordinaryAerialActions',
+   'lateNamedHighCost','lateRiskyByActor'])out[k]=top(r[k],20);
+  return [game,out];
+ }))
+}));
 console.log('PHASE9G_TRACE_JSON '+JSON.stringify({
  base:'7bd150ec60fe693c1818d516df4ce19618577849',
  lostCount:phase9gLostWithoutReversal.length,lateLosses:phase9gLostWithoutReversal,
