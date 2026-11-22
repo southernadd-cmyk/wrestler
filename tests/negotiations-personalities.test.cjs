@@ -13,7 +13,7 @@ vm.runInNewContext(script.slice(0,cut),{
 const G=root.OfficeGame,V=root.OfficeNegotiationsV2;
 assert.ok(V?.active&&V.read&&V.profileFor,'Phase 3 negotiation profile API is installed');
 let seq=0;
-function scenario(pid,{trust=55,heat=50,pro=80,rep=40,topic='protect',arg='crowd',finish='lose_clean'}={}){
+function scenario(pid,{trust=55,heat=40,pro=80,rep=40,topic='protect',arg='crowd',finish='lose_clean'}={}){
  G.fresh();const s=G.S;
  s.cash=99999;s.rep=rep;s.focus=2;
  assert.equal(G.sign('rex'),null);
