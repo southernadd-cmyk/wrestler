@@ -32,3 +32,9 @@ The full matched audit showed only four strict pressure → counter → setup �
 The original 9C pilot could only offer the setup after an observed reversal or after a setup already in progress. In the closing quarter of an active **clean** bout, a newly performed winner-owned standing strike or other legal offence can now invite `rope_run` or `waistlock` as ordinary weighted setup candidates. The wrestler must truly control the ring, the prior action must be recorded as completed and non-resting, and the move still passes the existing physical validator, training, stamina and Safe gates. No invented reversal or immediate impact, no help in dirty/metadata-only bouts, and no influence over the final contracted result.
 
 The existing 960-bout comparison now reports a diagnostic funnel: eligible clean matches where the booked winner retained control at the bell, had actually performed a late setup, and had actually landed a recent grounding impact. These are **descriptive** and not assigned star points or used to force outcomes.
+
+## Direct authored follow-through improvement
+
+The first owner-initiative iteration passed all nine checks (run 45067442704) but produced only 17 qualifying sequences against the previous 14 in 240 clean matches. The new diagnostic funnel recorded 124 clean matches with the winner controlling at the bell, 133 with a late winner-owned setup and 191 with a late winner-owned grounding impact; these groups overlap. The narrower problem is often connecting **the actual setup** to **its physically performed impact**, not a lack of late wrestling.
+
+The existing graph already authors `strike_trade → clothesline`. A performed late striking exchange can now count as the setup to that directly linked impact, avoiding a contrived extra rope run. The follow-through remains an optional, physically legal weighted action. No extra reversal, damage, injury, star points or changed finish is introduced.

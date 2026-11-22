@@ -118,6 +118,25 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
   'the eventual loser cannot inherit the booked winner’s finishing setups');
  assert.ok(opponentOffers.some(([id])=>id==='counter_strike'),
   'real loser pressure may still invite a genuine defensive counter');
+  // The authored strike_trade -> clothesline follow-through is a
+ // legitimate *direct* transition; no additional rope run is scripted.
+ const straight=create(structure,'story');
+ straight.t=Math.floor(straight.len*.85);straight.graph.arc='exchange';
+ step(straight,'strike_trade','w');
+ const immediate=G.closingOffers(straight,'w');
+ assert.ok(immediate.some(([id])=>id==='clothesline'),
+  'genuine striking exchanges can offer an authored grounded impact');
+ const immediatePool=G.pool(straight);
+ assert.ok(immediatePool.some(([id,weight])=>id==='clothesline'&&weight>0),
+  'the real legal impact must compete in the weighted live pool');
+ assert.ok(immediatePool.some(([id])=>id!=='clothesline'),
+  'the next move is still optional, with alternatives');
+ straight.t+=10;step(straight,'clothesline','w');
+ const direct=G.closingRunway(straight);
+ assert.equal(direct?.status,'linked','authored direct strikes can earn a truthful closing link');
+ assert.equal(direct?.setup.id,'strike_trade');
+ assert.equal(direct?.impact.id,'clothesline');
+ assert.equal(direct?.cutoff,null,'an ordinary exchange cannot fabricate a counter');
   const partial=create(structure,'story');
  partial.t=Math.floor(partial.len*.89);partial.graph.arc='exchange';
  step(partial,'rope_run','w');partial.t+=10;step(partial,'clothesline','w');

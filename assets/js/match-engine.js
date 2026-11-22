@@ -3565,7 +3565,10 @@ const Graph=(function makeGraph(){
  // Only a genuine opponent attack, an earned reversal, an authored setup
  // and a legal same-owner impact in the final exchanges can witness it.
  // The agreed finish and its physical prerequisites remain independent.
- const CLOSING_SETUPS=new Set(['rope_run','rope_rebound','front_facelock',
+ // A performed strike trade can naturally lead to the already-authored
+ // clothesline edge. Recognise that actual setup rather than inserting
+ // an unnecessary Irish whip or claiming a non-existent reversal.
+ const CLOSING_SETUPS=new Set(['strike_trade','rope_run','rope_rebound','front_facelock',
   'go_behind','waistlock','wristlock','headlock','corner_whip',
   'top_climb','springboard_rise','leg_wrench','knuckle_lock']);
  function closingEligible(M){
