@@ -17,7 +17,7 @@ const quick=process.argv.includes('--quick');
 const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styles;
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
- finishes:0,finishFallbacks:0,named:0,namedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
+ finishes:0,finishFallbacks:0,named:0,namedHit:0,controlNamedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
 const add=(o,k,n=1)=>o[k]=(o[k]||0)+n;
 const ratio=(n,d)=>+(100*n/Math.max(1,d)).toFixed(1);
@@ -29,6 +29,21 @@ function sign(c,w,f,game,id,lead){
  assert.equal(st.stage,'board');Room.act(st,'board_ok');
  assert.equal(st.stage,'review');Room.act(st,'review_ok');Room.act(st,'talk_none');
  assert.equal(st.stage,'done');return st.sheet;
+}
+// Matched controls have no Director; audit named calls independently from
+// real tape actions rather than trusting the structure ledger's status.
+function realNamedCalls(m,sheet){
+ return sheet.structurePlan.objectives.filter(o=>{
+  if(!o.call)return false;
+  const n=E.GRAPH.A[o.call.action],len=Math.max(1,m.len);
+  return !!n&&m.graph.events.some(e=>{
+   if(e.id!==o.call.action||!Number.isFinite(e.t))return false;
+   const actor=n.blockOf?(e.preControl==='w'?'f':e.preControl==='f'?'w':null):
+    n.reverse?e.control:e.preControl;
+   return actor===o.call.owner&&e.t/len>=o.window[0]-.04&&
+    e.t/len<=o.window[1]+.08;
+  });
+ }).length;
 }
 function run(sheet,c,w,f,seed,execute){
  const m=E.create({w:{...w,fatigue:5,flags:{}},f,p,slot:'main',
@@ -73,6 +88,9 @@ for(let si=0;si<sampleStyles.length;si++){
   r.finishFallbacks+=Number(!!m.finishRouteFallbackFrom);
   r.finishes+=Number(m.graph.outcome?.id===finish);
   r.named+=a.planAdherence.namedCalls;r.namedHit+=a.planAdherence.witnessedCalls;
+  const real=realNamedCalls(m,sheet),controlReal=realNamedCalls(control,sheet);
+  assert.equal(a.planAdherence.witnessedCalls,real,'named call proved independently from performed tape');
+  r.controlNamedHit+=controlReal;
   r.open+=a.planAdherence.openObjectives;
   let witnessed=0;const sequence=[];
   for(let k=0;k<4;k++){
@@ -132,7 +150,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    meanDistinctActions:avg(r.distinct,r.bouts),
    botches:r.botches,controlBotches:r.controlBotches,
    bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,dangerEscapes:r.dangerEscapes,
-   namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),openObjectives:r.open,
+   namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),controlNamedHitPct:ratio(r.controlNamedHit,r.named),openObjectives:r.open,
    objectiveStatus:r.objectives,topActions:top(r.firstActions,12),
    uniqueSequences:Object.keys(r.sequences).length,
    commonSequenceShare:ratio(sequences[0]?.count||0,r.bouts),
