@@ -1342,7 +1342,9 @@
   });
  }
  function structureReconcile(st){
-  structureSeed(st);
+  // Recompute Dennis's guesses only. The manager's selected spots and
+  // explicit 'call it live' decisions must survive backstage incidents.
+  structureSeed(st,{refresh:true});
   for(const obj of structureSlots(st)){
    const b=st.structureBoard[obj.id];
    if(!b?.action||(!banned(st,b.action)&&legal(b.action,who(st,b.owner),who(st,other(b.owner)))))continue;
