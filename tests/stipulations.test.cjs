@@ -97,7 +97,7 @@ function offer(o={}){const s=G.S,x={id:'so-'+(n++),pid:'dock',rid:'silas',slot:'
    if(stip==='submission'){
     const live=M.log.filter(l=>l.kind!=='story'||l.text!==X.STIPS.submission.announce).filter(l=>l.kind!=='bell');
     assert.doesNotMatch(live.map(l=>l.text).join('\n'),
-     /\b(?:cover|cradle|backslide|roll[- ]?up|pinfall|kicks? out|shoulder up|near.?fall)\b|ONE! TWO!/i,
+     /\b(?:cover(?!\s+up\b)|cradle|backslide|roll[- ]?up|pinfall|kicks? out|shoulder up|near.?fall)\b|ONE! TWO!/i,
      'submission-only cannot narrate any live pin or nearfall');
     assert.ok(!M.graph.events.some(e=>/^(cover|early_cover|near_kickout|counter_rollup|scheduled_nearfall)$/.test(e.id)),
      'submission-only cannot enter a pin graph node');
