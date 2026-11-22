@@ -48,8 +48,8 @@ function scenario(pid,{trust=55,heat=50,pro=80,rep=40,topic='protect',arg='crowd
  assert.equal(new Set(states.map(x=>x[1])).size,3,'promoters must produce materially different decisions');
  for(const [pid,v] of cases){
   assert.equal(v.o.finish,'lose_clean','no promoter may silently amend the finish');
-  assert.match(v.t.log.at(-1).text,new RegExp({dock:'crowd|point',pulse:'sell|audience',
-    crown:'card|original',union:'commercial'}[pid],'i'));
+  assert.match(v.t.log.at(-1).text,new RegExp({dock:'strong enough|crowd',pulse:'sell|audience',
+    crown:'limited change|card',union:'commercial'}[pid],'i'));
  }
 }
 // The same fee demand can yield different counteroffer amounts because
