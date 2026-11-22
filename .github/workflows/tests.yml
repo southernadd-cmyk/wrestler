@@ -118,6 +118,7 @@ jobs:
           node tests/structure-phase5-discussion.test.cjs
           node tests/structure-phase6-commentary.test.cjs
           node tests/structure-motifs.test.cjs
+          node tests/structure-selling.test.cjs
           # Phase 7: same real signed plan with and without the active Director,
           # across four structures, four styles, both leads, five plans and three lengths.
           # One existing workflow only; no new scheduled/balance workflows.
