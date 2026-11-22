@@ -1811,30 +1811,43 @@ const Graph=(function makeGraph(){
    g.closingProtected=(g.closingProtected||0)+1;
    return {id:schedule.id,name:a.label};
   }
-  // A genuinely landed, graph-authored setup -> grounding impact can keep
-  // its physical control for ONE subsequent selection near a clean finish.
-  // The ordinary arc clock must not immediately stand up both wrestlers.
-  // No scripted landing, winner change, cover or RNG draw is introduced.
-  const closingLoser=bookedWinner==='w'?'f':'w';
-  if(closingEligible(M)&&M.len-M.t>=10&&M.len-M.t<=90&&
-     M.t/M.len<=.98&&pos.control===bookedWinner&&
-     pos.position==='mat'&&pos.down===closingLoser&&
-     last?.id===g.node&&last.preControl===bookedWinner&&
-     last.control===bookedWinner&&last.position==='mat'&&
-     last.down===closingLoser&&
+  // One actual reversal may keep its real controller for ONE selection
+  // before a dramatic arc can rewrite physical control. This applies
+  // equally to both wrestlers, including a legitimate defensive counter.
+  const controller=pos.control,opponent=controller==='w'?'f':'w';
+  if(closingEligible(M)&&M.len-M.t>=0&&M.len-M.t<=90&&
+     ['w','f'].includes(controller)&&last?.id===g.node&&
+     last.reverse&&closingValidEvent(last)&&
+     last.preControl===opponent&&last.control===controller&&
      M.t-last.t>=0&&M.t-last.t<=10&&
      g.physical?.area==='ring'&&
+     !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact){
+   g.closingReversalProtected=(g.closingReversalProtected||0)+1;
+   return {id:schedule.id,name:a.label};
+  }
+  // Preserve the physical mat position after an actually performed,
+  // authored setup -> grounding impact for at most TWO exchange ticks.
+  // Do not assign control, pick an attack, or privilege the booked winner.
+  const matActor=pos.control,matOpponent=matActor==='w'?'f':'w';
+  if(closingEligible(M)&&M.len-M.t>=0&&M.len-M.t<=90&&
+     ['w','f'].includes(matActor)&&
+     pos.position==='mat'&&pos.down===matOpponent&&
+     last?.id===g.node&&last.preControl===matActor&&
+     last.control===matActor&&last.position==='mat'&&
+     last.down===matOpponent&&
+     M.t-last.t>=0&&M.t-last.t<=20&&g.physical?.area==='ring'&&
      !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact&&
-     // A due earned near-fall already needs the very same real mat state.
      A[last.id]?.zone==='mat'&&A[last.id]?.down==='d'&&
      !A[last.id]?.reverse&&!A[last.id]?.blockOf&&
      g.events.slice(0,-1).some(e=>CLOSING_SETUPS.has(e.id)&&
-      e.preControl===bookedWinner&&e.control===bookedWinner&&
+      e.preControl===matActor&&e.control===matActor&&
       e.t<last.t&&last.t-e.t<=60&&
-      A[e.id]?.next.some(([id])=>id===last.id))&&
-     !g.events.some(e=>e.t>last.t&&e.preControl===closingLoser&&
-      e.control===closingLoser)){
+      A[e.id]?.next.some(([id])=>id===last.id))){
    g.closingImpactProtected=(g.closingImpactProtected||0)+1;
+   if(M.t-last.t>10)
+    g.closingImpactExtended=(g.closingImpactExtended||0)+1;
+   if(matActor!==bookedWinner)
+    g.closingOpponentImpactProtected=(g.closingOpponentImpactProtected||0)+1;
    return {id:schedule.id,name:a.label};
   }
   // A real Brawl rebound earns ONE opportunity before the arc director
@@ -3642,6 +3655,13 @@ const Graph=(function makeGraph(){
    n.family!=='rest'&&n.family!=='heel'&&
    (n.cost??1)>=.6;
  }
+ // A performed opponent reversal breaks an earlier finish link even if
+ // the screenplay later silently assigns control to the booked winner.
+ function closingControlBreak(e,winner,loser){
+  return closingPressure(e,loser)||
+   (closingValidEvent(e)&&!!A[e.id]?.reverse&&
+    e.preControl===winner&&e.control===loser);
+ }
  function closingRunway(M){
   if(!closingEligible(M))return null;
   const g=get(M),winner=M.o.finish==='win_clean'?'w':'f',
@@ -3656,14 +3676,14 @@ const Graph=(function makeGraph(){
    const impact=latest[k];
    if(!closingImpact(impact,winner,loser)||impact.t<earliest||
       impact.t>M.t||M.t-impact.t>90)continue;
-   if(latest.slice(k+1).some(e=>closingPressure(e,loser)))continue;
+   if(latest.slice(k+1).some(e=>closingControlBreak(e,winner,loser)))continue;
    for(let j=k-1;j>=0;j--){
     const setup=latest[j];
     if(setup.t<impact.t-60)break;
     if(setup.t>=impact.t||!CLOSING_SETUPS.has(setup.id)||
        setup.preControl!==winner||setup.control!==winner||
        !A[setup.id].next.some(([id])=>id===impact.id))continue;
-    if(latest.slice(j+1,k).some(e=>closingPressure(e,loser)))continue;
+    if(latest.slice(j+1,k).some(e=>closingControlBreak(e,winner,loser)))continue;
     // Two genuinely performed linked actions count as construction, but
     // never claim an unobserved earlier opponent counter.
     if(!linked)linked={version:1,status:'linked',winner,loser,bookedFinish:M.o.finish,
@@ -3676,7 +3696,7 @@ const Graph=(function makeGraph(){
      if(cutoff.t<setup.t-100)break;
      if(cutoff.t>=setup.t||cutoff.preControl!==loser||
         cutoff.control!==winner||!A[cutoff.id]?.reverse)continue;
-     if(latest.slice(i+1,j).some(e=>closingPressure(e,loser)))continue;
+     if(latest.slice(i+1,j).some(e=>closingControlBreak(e,winner,loser)))continue;
      // A planned takeover without performed opponent pressure cannot count
      // as a cut-off; require a prior real attack from the other wrestler.
      const threatened=latest.slice(0,i).reverse().find(e=>

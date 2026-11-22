@@ -21,6 +21,8 @@ const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete
  closingRunways:0,bridgedRunways:0,closingWins:0,closingLosses:0,cleanBouts:0,
  fullRunways:0,linkedRunways:0,lateWinnerControl:0,lateWinnerSetups:0,lateWinnerImpacts:0,
  protectedFollowthroughs:0,protectedClosingImpacts:0,
+ protectedCounterExchanges:0,protectedOpposingImpacts:0,extendedClosingImpacts:0,
+ lateLostAfterRealReversal:0,lateLostWithoutRealReversal:0,
  lateAuthoredLinkSetups:0,latePerformedLinks:0,lateInterruptedSetups:0,
  lateDiversions:0,lateLinksLostAtBell:0,lateLinksStale:0,
  lateLinksFinalMinute:0,lateLinksFinalHalfMinute:0,closingFinalMinuteRunways:0,
@@ -124,7 +126,8 @@ for(let si=0;si<sampleStyles.length;si++){
     e.preControl===winner&&e.control===winner&&setupIds.has(e.id));
    let hasAuthored=false,hasLinked=false,hasInterruption=false,
     hasDiversion=false,hasLateLink=false,
-    hasFinalMinuteLink=false,hasFinalHalfMinuteLink=false;
+    hasFinalMinuteLink=false,hasFinalHalfMinuteLink=false,
+    latestLateImpact=null;
    for(const setup of setupEvents){
     const links=new Set((A[setup.id]?.next||[]).map(([id])=>id).filter(id=>
       A[id]?.zone==='mat'&&A[id]?.down==='d'&&!A[id]?.reverse&&
@@ -140,7 +143,11 @@ for(let si=0;si<sampleStyles.length;si++){
       e.position==='mat'&&e.down===loser);
     if(linked){
      hasLinked=true;
-     if(m.len-linked.t<=90)hasLateLink=true;
+     if(m.len-linked.t<=90){
+      hasLateLink=true;
+      if(!latestLateImpact||linked.t>latestLateImpact.t)
+       latestLateImpact=linked;
+     }
      if(m.len-linked.t<=60)hasFinalMinuteLink=true;
      if(m.len-linked.t<=30)hasFinalHalfMinuteLink=true;
     }
@@ -153,6 +160,12 @@ for(let si=0;si<sampleStyles.length;si++){
    r.lateLinksFinalMinute+=Number(hasFinalMinuteLink);
    r.lateLinksFinalHalfMinute+=Number(hasFinalHalfMinuteLink);
    r.lateLinksLostAtBell+=Number(hasLateLink&&m.story.control!==winner);
+   if(latestLateImpact&&m.story.control!==winner){
+    const reversed=tape.some(e=>e.t>latestLateImpact.t&&
+     A[e.id]?.reverse&&e.preControl===winner&&e.control===loser);
+    r.lateLostAfterRealReversal+=Number(reversed);
+    r.lateLostWithoutRealReversal+=Number(!reversed);
+   }
    r.lateWinnerControl+=Number(m.story.control===winner);
    r.lateWinnerSetups+=Number(last.some(e=>e.t>=since&&e.t<=m.len&&
     e.preControl===winner&&e.control===winner&&setupIds.has(e.id)));
@@ -164,8 +177,13 @@ for(let si=0;si<sampleStyles.length;si++){
   r.events+=m.graph.events.length;r.controlEvents+=control.graph.events.length;
   r.protectedFollowthroughs+=m.graph.closingProtected||0;
   r.protectedClosingImpacts+=m.graph.closingImpactProtected||0;
+  r.extendedClosingImpacts+=m.graph.closingImpactExtended||0;
+  r.protectedOpposingImpacts+=m.graph.closingOpponentImpactProtected||0;
+  r.protectedCounterExchanges+=m.graph.closingReversalProtected||0;
   assert.equal(control.graph.closingProtected||0,0,'metadata-only controls cannot protect closing links');
   assert.equal(control.graph.closingImpactProtected||0,0,'metadata-only controls cannot protect impacts');
+  assert.equal(control.graph.closingReversalProtected||0,0,'metadata-only controls cannot protect reversals');
+  assert.equal(control.graph.closingImpactExtended||0,0,'metadata-only controls cannot extend impacts');
   r.distinct+=new Set(m.graph.events.map(x=>x.id)).size;
   r.botches+=m.botches;r.controlBotches+=control.botches;
   const closing=m.final.finishingRunway;
@@ -183,6 +201,9 @@ for(let si=0;si<sampleStyles.length;si++){
    assert.equal(impact.control,closing.winner);
    assert.equal(impact.position,'mat');
    assert.equal(impact.down,closing.loser);
+   assert.ok(!tape.some(e=>e.t>impact.t&&A[e.id]?.reverse&&
+     e.preControl===closing.winner&&e.control===closing.loser),
+    'reported finish cannot erase a performed opponent reversal');
    assert.ok(A[setup.id]?.next?.some(([id])=>id===impact.id),
     'a real authored edge must connect the setup and impact');
    if(closing.status==='witnessed'){
@@ -338,11 +359,16 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    lateWinnerImpacts:r.lateWinnerImpacts,
    protectedFollowthroughs:r.protectedFollowthroughs,
    protectedClosingImpacts:r.protectedClosingImpacts,
+   protectedCounterExchanges:r.protectedCounterExchanges,
+   protectedOpposingImpacts:r.protectedOpposingImpacts,
+   extendedClosingImpacts:r.extendedClosingImpacts,
    lateAuthoredLinkSetups:r.lateAuthoredLinkSetups,
    latePerformedLinks:r.latePerformedLinks,
    lateInterruptedSetups:r.lateInterruptedSetups,
    lateDiversions:r.lateDiversions,
    lateLinksLostAtBell:r.lateLinksLostAtBell,
+   lateLostAfterRealReversal:r.lateLostAfterRealReversal,
+   lateLostWithoutRealReversal:r.lateLostWithoutRealReversal,
    lateLinksStale:r.lateLinksStale,
    lateLinksFinalMinute:r.lateLinksFinalMinute,
    lateLinksFinalHalfMinute:r.lateLinksFinalHalfMinute,

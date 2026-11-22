@@ -205,6 +205,61 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
    'one follow-through selection was protected');
   assert.equal(afterImpact.r.getState(),beforeImpactAdvance,
    'closing protection cannot consume RNG or decide a move');
+  // Phase 9E: one additional real mat handoff, without a free attack.
+  afterImpact.t+=10;afterImpact.graph.age=999;
+  const extraRng=afterImpact.r.getState();
+  G.advance(afterImpact,afterImpact.t/afterImpact.len);
+  assert.equal(afterImpact.story.position,'mat','real impact survives second clock handoff');
+  assert.equal(afterImpact.story.control,'w','controller is still the actual attacker');
+  assert.equal(afterImpact.graph.closingImpactExtended,1,'bounded second handoff counted');
+  assert.equal(afterImpact.r.getState(),extraRng,'handoff makes no RNG draw');
+  // Symmetric: the booked loser must not lose a physically earned landing.
+  const loserImpact=create(structure,'story');
+  loserImpact.t=Math.floor(loserImpact.len*.92);
+  loserImpact.graph.started=true;loserImpact.graph.arc='exchange';
+  step(loserImpact,'strike_trade','f');
+  loserImpact.t+=10;step(loserImpact,'clothesline','f');
+  loserImpact.t+=10;loserImpact.graph.age=999;
+  G.advance(loserImpact,loserImpact.t/loserImpact.len);
+  assert.equal(loserImpact.story.control,'f','opponent also retains true mat control');
+  assert.equal(loserImpact.graph.closingOpponentImpactProtected,1);
+  assert.equal(G.closingRunway(loserImpact),null,'loser landing cannot imply winner finish');
+  // A REAL mat reversal still changes control and must not be erased by
+  // an expired dramatic arc or falsely attributed to the booked winner.
+  const reversed=create(structure,'story');
+  reversed.t=Math.floor(reversed.len*.89);
+  reversed.graph.started=true;reversed.graph.arc='exchange';
+  step(reversed,'strike_trade','w');
+  reversed.t+=10;step(reversed,'clothesline','w');
+  reversed.t+=10;
+  assert.ok(G.isValid(reversed,'mat_scramble'),'genuine mat counter remains legal');
+  G.apply(reversed,'mat_scramble');
+  assert.equal(reversed.story.control,'f','defender actually reverses ownership');
+  reversed.t+=10;reversed.graph.age=999;
+  const reverseRng=reversed.r.getState();
+  G.advance(reversed,reversed.t/reversed.len);
+  assert.equal(reversed.story.control,'f','arc cannot erase a performed reversal');
+  assert.equal(reversed.graph.node,'mat_scramble','latest real counter remains present');
+  assert.equal(reversed.graph.closingReversalProtected,1,'one defended exchange protected');
+  assert.equal(reversed.r.getState(),reverseRng,'counter handoff does not roll');
+  assert.equal(G.closingRunway(reversed),null,'booked winner no longer in control');
+  reversed.story.control='w'; // simulate a later unearned arc reset
+  assert.equal(G.closingRunway(reversed),null,
+   'performed opponent reversal cannot become a fictitious finishing link');
+  // A winner-owned *real* counter earns the same, unbiased protection.
+  const winnerCounter=create(structure,'story');
+  winnerCounter.t=Math.floor(winnerCounter.len*.88);
+  winnerCounter.graph.started=true;winnerCounter.graph.arc='exchange';
+  step(winnerCounter,'strike_trade','f');
+  winnerCounter.t+=10;
+  assert.ok(G.isValid(winnerCounter,'counter_strike'));
+  G.apply(winnerCounter,'counter_strike');
+  winnerCounter.t+=10;winnerCounter.graph.age=999;
+  const wcRng=winnerCounter.r.getState();
+  G.advance(winnerCounter,winnerCounter.t/winnerCounter.len);
+  assert.equal(winnerCounter.story.control,'w','real winner reversal stays intact');
+  assert.equal(winnerCounter.graph.closingReversalProtected,1);
+  assert.equal(winnerCounter.r.getState(),wcRng);
   const partial=create(structure,'story');
  partial.t=Math.floor(partial.len*.89);partial.graph.arc='exchange';
  step(partial,'rope_run','w');partial.t+=10;step(partial,'clothesline','w');
