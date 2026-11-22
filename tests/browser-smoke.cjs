@@ -316,6 +316,25 @@ async function journey(browser,name,viewport){
   assert.match(await brief.innerText(),/Finish route/);
   assert.match(await brief.innerText(),/Running order/);
   assert.match(await brief.innerText(),/Finish readiness/);
+  // Phase 4: exercise actual user controls on desktop and mobile.
+  assert.equal(await page.locator('#tv .structure-option').count(),5);
+  await page.locator('#tv [data-structure="kings_road"]').click();
+  assert.equal(await page.evaluate(()=>window.OfficeUI.night.plan.room.structurePlanning),true);
+  await page.locator('#tv [data-structurelead="f"]').click();
+  const chosen=await page.evaluate(()=>{
+   const p=window.OfficeUI.night.plan;
+   const saved=JSON.parse(localStorage.getItem('the-office-v23-match'));
+   return {choice:p.structureChoice,lead:p.room.structure.roles.lead,
+    saved:saved.plan.structureChoice,finish:window.OfficeGame.S.card[0].finish};
+  });
+  assert.equal(chosen.choice.id,'kings_road');
+  assert.equal(chosen.choice.lead,'f');
+  assert.equal(chosen.lead,'f');
+  assert.equal(chosen.saved.lead,'f');
+  assert.equal(chosen.finish,'win_clean');
+  await page.locator('#tv [data-structure="traditional"]').click();
+  assert.equal(await page.evaluate(()=>window.OfficeUI.night.plan.structureChoice==null),true);
+  assert.equal(await page.evaluate(()=>!!window.OfficeUI.night.plan.room.structurePlanning),false);
   const geometry=await page.evaluate(()=>{
    const children=[...document.querySelectorAll('#tv .match-brief>div')];
    return {view:innerWidth,cards:children.map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width}}),
