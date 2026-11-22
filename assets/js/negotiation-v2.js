@@ -126,12 +126,25 @@
  };
  const adjusted=(o,t,degree)=>{
   const v=t.original, x={slot:v.slot,finish:v.finish,stip:v.stip||null,bump:v.bump};
-  if(t.topic==='fee')x.bump=round(v.bump*(degree===1?1.2:degree===.5?1.1:degree===.75?1.15:1.05));
-  else if(t.topic==='protect'){x.finish='lose_protected';x.bump=round(v.bump*(degree===1?.92:degree===.5?.84:degree===.75?.88:.76));}
-  else if(t.topic==='slot'){x.slot=D.SLOT_ORDER[D.SLOT_ORDER.indexOf(v.slot)+1]||v.slot;x.bump=round(v.bump*(degree===1?1:degree===.5?.9:degree===.75?.95:.8));}
-  else if(t.topic==='stip'){
+  const style=profile(G.P(o.pid)).counter;
+  // Full demand, partial counteroffer, improved counteroffer and small
+  // concession each pay differently based on the booker's priorities.
+  const factor=(full,counter,minimum)=>{
+   if(degree===1)return full;
+   if(degree===.5)return counter;
+   if(degree===.75)return (full+counter)/2;
+   return minimum;
+  };
+  if(t.topic==='fee')x.bump=round(v.bump*factor(1.20,style.fee,1.04));
+  else if(t.topic==='protect'){
+   x.finish='lose_protected';
+   x.bump=round(v.bump*factor(.92,style.protect,.76));
+  }else if(t.topic==='slot'){
+   x.slot=D.SLOT_ORDER[D.SLOT_ORDER.indexOf(v.slot)+1]||v.slot;
+   x.bump=round(v.bump*factor(1,style.slot,.79));
+  }else if(t.topic==='stip'){
    x.stip=t.stip;
-   x.bump=round(v.bump*(degree===1?(t.lastArg==='trade'?1:1.1):degree===.75?.9:.8));
+   x.bump=round(v.bump*factor(t.lastArg==='trade'?1:1.1,.9,.8));
   }
   return x;
  };
@@ -142,7 +155,7 @@
   const bonus=arg==='crowd'?Math.round(w.heat*.2+(p.personality==='showman'?9:0)):
    arg==='reliability'?Math.round(w.pro*.16+(p.personality==='traditional'?9:0)):
    Math.round(13+(p.personality==='cold'?8:0));
-  return {strength:base+bonus-(p.personality==='cold'?7:0),threshold:{fee:58,protect:62,slot:69}[t.topic]};
+  return {strength:base+bonus-(p.personality==='cold'?7:0)+personalityEdge(p,w,t,arg),threshold:{fee:58,protect:62,slot:69}[t.topic]};
  };
  const missing=(t,p,detail)=>{
   t.step='done';t.verdict='refused';t.proposal=null;t.detail=detail;
@@ -155,8 +168,18 @@
  };
  G.meeting=function(oid,wid){
   const r=originalMeeting.call(G,oid,wid);
-  if(!r.error&&r.talk?.original&&!Object.prototype.hasOwnProperty.call(r.talk.original,'stip')){
-   r.talk.original.stip=r.offer.stip||null;G.save();
+  if(!r.error&&r.talk?.original){
+   let changed=false;
+   if(!Object.prototype.hasOwnProperty.call(r.talk.original,'stip')){
+    r.talk.original.stip=r.offer.stip||null;changed=true;
+   }
+   // Only add flavour to a genuinely new, unstarted conversation. Old saves
+   // with an in-progress transcript retain exactly what was previously said.
+   if(r.talk.step==='start'&&!r.talk.personalityIntro&&r.talk.log?.length===1){
+    r.talk.log[0].text+=introLine(G.P(r.offer.pid),G.W(wid),r.offer);
+    r.talk.personalityIntro=true;changed=true;
+   }
+   if(changed)G.save();
   }
   return r;
  };
@@ -180,7 +203,14 @@
    log(t,p,"Let's take your original terms instead.",'Fine. The original invitation still stands.');
    return result();
   }
-  if(t.step==='start')return originalMove.call(G,oid,wid,move);
+  if(t.step==='start'){
+   const r=originalMove.call(G,oid,wid,move);
+   if(!r.error&&t.step==='reason'&&t.log?.length){
+    t.log[t.log.length-1].text=openingReply(p,t);
+    G.save();
+   }
+   return r;
+  }
   if(t.step==='reason'){
    if(typeof move!=='string'||!move.startsWith('arg:'))return {error:'Choose an argument.'};
    const arg=move.slice(4);
