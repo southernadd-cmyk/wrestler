@@ -629,7 +629,7 @@
    return ev.length>0;
   }
   function observe(M,e){
-   if(!active(M)||!e||!Number.isFinite(e.t))return;
+   if(!active(M)||!e||!Number.isFinite(e.t)||!M.graph?.events?.includes(e))return;
    const n=actions[e.id];if(!n)return; // ignore attempted / invented / outcome cues
    const actor=n.reverse?e.control:e.preControl;
    if(actor!=='w'&&actor!=='f')return;
