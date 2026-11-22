@@ -1797,7 +1797,7 @@ const Graph=(function makeGraph(){
   // location before the performer gets even one seeded legal choice.
   // No performed attack, success, position reset or finish is granted here.
   const bookedWinner=M.o.finish==='win_clean'?'w':'f';
-  if(closingEligible(M)&&M.t/M.len>=.74&&M.t/M.len<=.95&&
+  if(closingEligible(M)&&M.t/M.len>=.74&&M.t/M.len<=.98&&
      M.len-M.t>=20&&pos.control===bookedWinner&&
      pos.position==='standing'&&pos.down===null&&
      last?.id===g.node&&CLOSING_SETUPS.has(last.id)&&
@@ -3694,10 +3694,16 @@ const Graph=(function makeGraph(){
   return linked;
  }
  function closingOffers(M,side){
-  if(!closingEligible(M)||M.t/M.len<.74||M.t/M.len>.95||
-     M.len-M.t<30||!['w','f'].includes(side))return [];
+  if(!closingEligible(M)||!['w','f'].includes(side))return [];
+  const winner=M.o.finish==='win_clean'?'w':'f';
+  // The booked winner can still *choose* a real authored setup/impact
+  // during the last minute. The earlier 95% cutoff retired legal offers
+  // while the evidence window remained open. Keep losing-side pressure
+  // on the original deadline; no belated free counter or control change.
+  const winnerWindow=side===winner;
+  if(M.t/M.len<.74||M.t/M.len>(winnerWindow?.98:.95)||
+     M.len-M.t<(winnerWindow?20:30))return [];
   const g=get(M),p=Psy.get(M),last=g.events.at(-1),
-   winner=M.o.finish==='win_clean'?'w':'f',
    loser=winner==='w'?'f':'w',node=A[last?.id];
   if(!closingValidEvent(last)||M.t-last.t>25||
      g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)return [];

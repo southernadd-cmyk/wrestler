@@ -23,6 +23,7 @@ const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete
  protectedFollowthroughs:0,protectedClosingImpacts:0,
  lateAuthoredLinkSetups:0,latePerformedLinks:0,lateInterruptedSetups:0,
  lateDiversions:0,lateLinksLostAtBell:0,lateLinksStale:0,
+ lateLinksFinalMinute:0,lateLinksFinalHalfMinute:0,closingFinalMinuteRunways:0,
  motifStarts:0,motifPaid:0,motifOpen:0,
  finishes:0,finishFallbacks:0,named:0,namedHit:0,controlNamedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
@@ -122,7 +123,8 @@ for(let si=0;si<sampleStyles.length;si++){
    const setupEvents=tape.filter(e=>e.t>=earliest&&
     e.preControl===winner&&e.control===winner&&setupIds.has(e.id));
    let hasAuthored=false,hasLinked=false,hasInterruption=false,
-    hasDiversion=false,hasLateLink=false;
+    hasDiversion=false,hasLateLink=false,
+    hasFinalMinuteLink=false,hasFinalHalfMinuteLink=false;
    for(const setup of setupEvents){
     const links=new Set((A[setup.id]?.next||[]).map(([id])=>id).filter(id=>
       A[id]?.zone==='mat'&&A[id]?.down==='d'&&!A[id]?.reverse&&
@@ -139,6 +141,8 @@ for(let si=0;si<sampleStyles.length;si++){
     if(linked){
      hasLinked=true;
      if(m.len-linked.t<=90)hasLateLink=true;
+     if(m.len-linked.t<=60)hasFinalMinuteLink=true;
+     if(m.len-linked.t<=30)hasFinalHalfMinuteLink=true;
     }
    }
    r.lateAuthoredLinkSetups+=Number(hasAuthored);
@@ -146,6 +150,8 @@ for(let si=0;si<sampleStyles.length;si++){
    r.lateInterruptedSetups+=Number(hasInterruption);
    r.lateDiversions+=Number(hasDiversion);
    r.lateLinksStale+=Number(hasLinked&&!hasLateLink);
+   r.lateLinksFinalMinute+=Number(hasFinalMinuteLink);
+   r.lateLinksFinalHalfMinute+=Number(hasFinalHalfMinuteLink);
    r.lateLinksLostAtBell+=Number(hasLateLink&&m.story.control!==winner);
    r.lateWinnerControl+=Number(m.story.control===winner);
    r.lateWinnerSetups+=Number(last.some(e=>e.t>=since&&e.t<=m.len&&
@@ -195,6 +201,7 @@ for(let si=0;si<sampleStyles.length;si++){
     r.linkedRunways++;
    }
    r.closingRunways++;
+   r.closingFinalMinuteRunways+=Number(m.len-closing.impact.at<=60);
    r.bridgedRunways+=Number(!!closing.spoken);
    r.closingWins+=Number(closing.winner==='w');
    r.closingLosses+=Number(closing.winner==='f');
@@ -337,6 +344,9 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    lateDiversions:r.lateDiversions,
    lateLinksLostAtBell:r.lateLinksLostAtBell,
    lateLinksStale:r.lateLinksStale,
+   lateLinksFinalMinute:r.lateLinksFinalMinute,
+   lateLinksFinalHalfMinute:r.lateLinksFinalHalfMinute,
+   closingFinalMinuteRunways:r.closingFinalMinuteRunways,
    closingWins:r.closingWins,closingLosses:r.closingLosses,
    bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,dangerEscapes:r.dangerEscapes,
    namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),controlNamedHitPct:ratio(r.controlNamedHit,r.named),openObjectives:r.open,
