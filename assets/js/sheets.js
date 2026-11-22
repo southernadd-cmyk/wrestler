@@ -96,6 +96,16 @@
      problems.push('Unknown objective field '+key);
     if(!validId(obj.id)||seen.has(obj.id))problems.push('Missing or duplicate objective ID '+obj.id);
     if(def&&obj.id!==def.objectives[i]?.[0])problems.push('Objective ID mismatches signed template at '+i);
+    // A v1 objective is a fixed description, not a free-form substitute.
+    const expected=def?.objectives[i];
+    if(expected&&plain(roles)&&['w','f'].includes(roles.lead)){
+     const actor=expected[3]==='lead'?roles.lead:expected[3]==='other'?roles.other:'either';
+     if(obj.actor!==actor)problems.push('Objective actor contradicts assigned role '+obj.id);
+     if(obj.intent!==expected[2])problems.push('Objective intent contradicts signed template '+obj.id);
+     const predecessor=i?def.objectives[i-1]?.[0]:null;
+     if(!Array.isArray(obj.requires)||obj.requires.length!==(i?1:0)||
+       (i&&obj.requires[0]!==predecessor))problems.push('Objective dependencies contradict signed template '+obj.id);
+    }
     if(typeof obj.title!=='string'||!obj.title.trim()||obj.title.length>120)problems.push('Invalid objective title '+obj.id);
     if(!validId(obj.intent))problems.push('Invalid objective intent '+obj.id);
     if(!OWNERS.has(obj.actor))problems.push('Invalid objective actor '+obj.id);

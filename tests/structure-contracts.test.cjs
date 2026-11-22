@@ -54,6 +54,9 @@ for(const broken of [
  {...template,objectives:template.objectives.map((x,i)=>i===1?{...x,window:[.9,.1]}:x)},
  {...template,objectives:template.objectives.map((x,i)=>i===1?{...x,requires:['final_confrontation']}:x)},
  {...template,objectives:template.objectives.map((x,i)=>i===1?{...x,actor:'heel'}:x)},
+ {...template,objectives:template.objectives.map((x,i)=>i===1?{...x,actor:'w'}:x)},
+ {...template,objectives:template.objectives.map((x,i)=>i===1?{...x,intent:'control'}:x)},
+ {...template,objectives:template.objectives.map((x,i)=>i===1?{...x,requires:[]}:x)},
  {...template,objectives:template.objectives.map((x,i)=>i===1?{...x,status:'achieved'}:x)}
 ]){
  assert.ok(S.validate(asJSON(broken)).length,'tampered/future contracts must not be silently accepted');
