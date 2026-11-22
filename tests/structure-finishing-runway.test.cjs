@@ -64,6 +64,7 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
   const originalRng=m.r.getState(),report=G.closingRunway(m);
   assert.ok(report,'actual last-minute reversal, setup and impact earn closing report');
   assert.equal(report.winner,'w');assert.equal(report.bookedFinish,'win_clean');
+  assert.equal(report.status,'witnessed','full four-beat evidence is distinct');
   assert.equal(report.pressure.id,'strike_trade');
   assert.equal(report.cutoff.id,'counter_strike');
   assert.equal(report.setup.id,'rope_run');
@@ -84,6 +85,15 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
   sequence(control);
   assert.equal(G.closingRunway(control),null,'metadata-only control unchanged');
  }
+ const partial=create(structure,'story');
+ partial.t=Math.floor(partial.len*.89);partial.graph.arc='exchange';
+ step(partial,'rope_run','w');partial.t+=10;step(partial,'clothesline','w');
+ const support=G.closingRunway(partial);
+ assert.equal(support?.status,'linked','genuine authored two-action finish construction');
+ assert.equal(support?.pressure,null,'must not invent an earlier attack');
+ assert.equal(support?.cutoff,null,'must not invent a reversal');
+ assert.equal(support?.setup.id,'rope_run');
+ assert.equal(support?.impact.id,'clothesline');
  const reverse=create(structure,'story','lose_clean');
  sequence(reverse);
  assert.equal(G.closingRunway(reverse)?.winner,'f','the loser is not secretly favoured');

@@ -22,3 +22,7 @@ A focused test runs 4 structures × 5 plans, both possible booked clean winners,
 ## 960-bout reachability refinement
 
 Initial full controls confirmed only **2** closing sequences in 480 actively structured matches, even while other test gates passed. The existing huge selection pool was drowning small additive offers. Phase 9C now uses an evidence-triggered, capped (max 8×) *relative weighting* for eligible counters/setups/impacts in the final section. This is a probability preference only, with ordinary move legality, defensive outcomes, stamina, risk, signed calls, rating and finish unchanged. The audit adds clean-finish denominators plus per-plan counts to measure whether this improves real sequences rather than only tests.
+
+## Graded evidence
+
+The full matched audit showed only four strict pressure → counter → setup → impact runways among 240 eligible clean matches. Phase 9C therefore also records a separate, weaker but truthful `linked` status for a real, same-owner authored setup → impact late in the match, without claiming an earlier reversal or opponent pressure. `witnessed` still demands all four physical events; `linked` sets `cutoff:null` and `pressure:null`. Both categories remain opt-in, clean-finish-only, cannot change the booked result or add stars, and have separate first-party audit counts.

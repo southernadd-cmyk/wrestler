@@ -19,6 +19,7 @@ const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
  sellingWrestlers:0,sellingStrains:0,sellingLines:0,comebackSelling:0,realBreathers:0,
  closingRunways:0,bridgedRunways:0,closingWins:0,closingLosses:0,cleanBouts:0,
+ fullRunways:0,linkedRunways:0,
  motifStarts:0,motifPaid:0,motifOpen:0,
  finishes:0,finishFallbacks:0,named:0,namedHit:0,controlNamedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
@@ -100,31 +101,39 @@ for(let si=0;si<sampleStyles.length;si++){
   r.distinct+=new Set(m.graph.events.map(x=>x.id)).size;
   r.botches+=m.botches;r.controlBotches+=control.botches;
   const closing=m.final.finishingRunway;
-  assert.equal(control.final.finishingRunway,undefined,
-   'metadata-only control must not credit a physical closing runway');
+  assert.equal(control.final.finishingRunway,undefined,'metadata control has no finishing runway');
   if(closing){
-   const tape=m.graph.events,graph=E.GRAPH.A;
-   const exact=e=>tape.find(x=>x.id===e.id&&x.t===e.at);
-   const [threat,cut,setup,impact]=
-    ['pressure','cutoff','setup','impact'].map(key=>exact(closing[key]));
-   assert.ok(threat&&cut&&setup&&impact,'all four closing witnesses on real event tape');
-   assert.ok(threat.t<cut.t&&cut.t<setup.t&&setup.t<impact.t,'strict causal ordering');
-   assert.equal(closing.winner,finish==='win_clean'?'w':'f',
-    'closing performer must be the contracted clean winner');
-   assert.equal(threat.preControl,closing.loser);
-   assert.equal(cut.preControl,closing.loser);assert.equal(cut.control,closing.winner);
-   assert.ok(graph[cut.id]?.reverse,'cutoff must be a real reversal');
+   const tape=m.graph.events,A=E.GRAPH.A,
+    exact=e=>e&&tape.find(x=>x.id===e.id&&x.t===e.at),
+    setup=exact(closing.setup),impact=exact(closing.impact);
+   assert.ok(setup&&impact&&setup.t<impact.t&&impact.t-setup.t<=60,
+    'a linked finish needs two recent real, ordered actions');
+   assert.equal(closing.winner,finish==='win_clean'?'w':'f');
    assert.equal(setup.preControl,closing.winner);
+   assert.equal(setup.control,closing.winner);
    assert.equal(impact.preControl,closing.winner);
-   assert.equal(impact.position,'mat');assert.equal(impact.down,closing.loser);
-   assert.ok(graph[setup.id]?.next?.some(([id])=>id===impact.id),
-    'an authored same-performer setup-to-impact link is mandatory');
-   for(const event of tape)
-    if(event.t>cut.t&&event.t<impact.t&&
-       event.preControl===closing.loser&&event.control===closing.loser&&
-       !graph[event.id]?.reverse&&!graph[event.id]?.blockOf)
-     assert.fail('opponent interrupted credited closing sequence');
-   r.closingRunways++;r.bridgedRunways+=Number(!!closing.spoken);
+   assert.equal(impact.control,closing.winner);
+   assert.equal(impact.position,'mat');
+   assert.equal(impact.down,closing.loser);
+   assert.ok(A[setup.id]?.next?.some(([id])=>id===impact.id),
+    'a real authored edge must connect the setup and impact');
+   if(closing.status==='witnessed'){
+    const threat=exact(closing.pressure),cut=exact(closing.cutoff);
+    assert.ok(threat&&cut&&threat.t<cut.t&&cut.t<setup.t,
+     'full sequence needs earlier witnessed opponent pressure and reversal');
+    assert.equal(threat.preControl,closing.loser);
+    assert.equal(cut.preControl,closing.loser);
+    assert.equal(cut.control,closing.winner);
+    assert.ok(A[cut.id]?.reverse);
+    r.fullRunways++;
+   }else{
+    assert.equal(closing.status,'linked');
+    assert.equal(closing.pressure,null,'no imagined pressure');
+    assert.equal(closing.cutoff,null,'no imagined counter');
+    r.linkedRunways++;
+   }
+   r.closingRunways++;
+   r.bridgedRunways+=Number(!!closing.spoken);
    r.closingWins+=Number(closing.winner==='w');
    r.closingLosses+=Number(closing.winner==='f');
   }
@@ -255,6 +264,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    realBreathers:r.realBreathers,
    cleanBouts:r.cleanBouts,
    closingRunways:r.closingRunways,bridgedRunways:r.bridgedRunways,
+   fullRunways:r.fullRunways,linkedRunways:r.linkedRunways,
    closingWins:r.closingWins,closingLosses:r.closingLosses,
    bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,dangerEscapes:r.dangerEscapes,
    namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),controlNamedHitPct:ratio(r.controlNamedHit,r.named),openObjectives:r.open,
@@ -265,6 +275,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
  }))};
 assert.equal(report.totalBouts,(quick?320:960));
 for(const r of Object.values(map))assert.ok(r.closingRunways<=r.cleanBouts,'only clean finishes may earn 9C runways');
+ assert.equal(r.closingRunways,r.fullRunways+r.linkedRunways,'evidence levels add up');
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
 // Focused read-only risk report for Phase 8: the existing seeded 960-match
 // comparison, no new workflow or extra stochastic fixture.

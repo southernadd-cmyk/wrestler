@@ -3603,10 +3603,11 @@ const Graph=(function makeGraph(){
   // the last impact. A finish-cue event is not an offensive landing.
   const latest=events.filter(e=>closingValidEvent(e));
   const window=Math.min(220,M.len*.34),earliest=M.t-window;
+  let linked=null;
   for(let k=latest.length-1;k>=0;k--){
    const impact=latest[k];
    if(!closingImpact(impact,winner,loser)||impact.t<earliest||
-      impact.t>M.t||M.t-impact.t>80)continue;
+      impact.t>M.t||M.t-impact.t>90)continue;
    if(latest.slice(k+1).some(e=>closingPressure(e,loser)))continue;
    for(let j=k-1;j>=0;j--){
     const setup=latest[j];
@@ -3615,6 +3616,13 @@ const Graph=(function makeGraph(){
        setup.preControl!==winner||setup.control!==winner||
        !A[setup.id].next.some(([id])=>id===impact.id))continue;
     if(latest.slice(j+1,k).some(e=>closingPressure(e,loser)))continue;
+    // Two genuinely performed linked actions count as construction, but
+    // never claim an unobserved earlier opponent counter.
+    if(!linked)linked={version:1,status:'linked',winner,loser,bookedFinish:M.o.finish,
+     pressure:null,cutoff:null,
+     setup:{id:setup.id,at:setup.t,side:winner},
+     impact:{id:impact.id,at:impact.t,side:winner},
+     explanation:'A real, same-wrestler authored setup-to-impact sequence. No cutoff or opponent pressure is inferred, and the contracted finisher is not counted as a physical graph landing.'};
     for(let i=j-1;i>=0;i--){
      const cutoff=latest[i];
      if(cutoff.t<setup.t-100)break;
@@ -3635,7 +3643,7 @@ const Graph=(function makeGraph(){
     }
    }
   }
-  return null;
+  return linked;
  }
  function closingOffers(M,side){
   if(!closingEligible(M)||M.t/M.len<.74||M.t/M.len>.95||
@@ -3655,12 +3663,9 @@ const Graph=(function makeGraph(){
    return [['rope_run',3.6],['front_facelock',2.2]];
   if(side===winner&&last.preControl===winner&&last.control===winner&&
      CLOSING_SETUPS.has(last.id)){
-   // A prepared setup has to follow a real earned reversal. Merely
-   // standing in the correct place is insufficient.
-   const cut=g.events.some(e=>e.t<last.t&&last.t-e.t<=100&&
-    e.preControl===loser&&e.control===winner&&A[e.id]?.reverse&&
-    g.events.some(p=>closingPressure(p,loser)&&p.t<e.t&&e.t-p.t<=100));
-   if(cut)return node.next.filter(([id])=>A[id]?.zone==='mat'&&
+   // A performed setup can offer a real authored impact even without a
+   // witnessed counter; the final report distinguishes those two cases.
+   return node.next.filter(([id])=>A[id]?.zone==='mat'&&
     A[id]?.down==='d'&&!A[id]?.reverse&&!A[id]?.risk).map(([id])=>[id,2.8]);
   }
   return [];
@@ -6099,9 +6104,12 @@ function finish(M){
   if(M.finishingRunway&&['finisher','top_rope','limb_finish','strike_knockout','outlasted'].includes(route.id)){
    const evidence=M.finishingRunway,who=evidence.winner==='w'?w:f;
    const move=id=>Graph.A[id]?.name||id.replaceAll('_',' ');
-   say(M,who.short+' actually turned the pressure around, worked through the '+
-    move(evidence.setup.id)+' and connected with the '+move(evidence.impact.id)+
-    '. Those real exchanges have brought the agreed finish into view.',
+   const story=evidence.status==='witnessed'?
+    who.short+' genuinely countered the pressure, then worked through the '+
+     move(evidence.setup.id)+' and connected with the '+move(evidence.impact.id)+'.':
+    who.short+' connected the '+move(evidence.setup.id)+' with the '+
+     move(evidence.impact.id)+'.';
+   say(M,story+' Those real exchanges have brought the agreed finish into view.',
     'story',{...step(3),who:'colour',textureId:'causal-finish-runway'});
    evidence.spoken=true;
   }
