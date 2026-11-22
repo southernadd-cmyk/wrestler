@@ -149,7 +149,8 @@ for(const id of ids)for(const lead of ['w','f'])for(const game of plans){
       assert.equal(ev.actor,plan.actor,'no objective may be credited to the other wrestler');
       const performed=sourceEvents.find(x=>x.t===ev.at&&x.id===ev.id);
       assert.ok(performed,'only a performed graph event is valid evidence');
-      assert.ok(ev.at>=plan.window[0]*M.len-30&&ev.at<=plan.window[1]*M.len+60);
+      assert.ok(ev.at/M.len>=plan.window[0]-.04-1e-9&&ev.at/M.len<=plan.window[1]+.08+1e-9,
+       'director evidence must respect the configured fractional window');
       if(obj.intent==='evasion')assert.notEqual(ev.id,'hl_strut','mere posing is not evasive action');
       if(obj.intent==='escape')assert.notEqual(ev.id,'roll_inside','returning both wrestlers to the ring is not defensive escape');
      }
