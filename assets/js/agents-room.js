@@ -1194,6 +1194,167 @@
    }}
  );
  const SPINE=SLOTS.filter(S=>S.id!=='finish');
+ // Opt-in Phase 2 planner: no classic slots, no implied face/heel assignment.
+ // These categories are candidate REAL graph moves; the structure objective
+ // is not satisfied until a later Director can prove its actual event predicate.
+ const OBJECTIVE_FAMILIES={
+  opening_advantage:['chain','strike','running'],
+  pressure:['ground','power','corner','submission'],
+  comeback:['fire','running','lucha','strike'],
+  payoff:['suplex','power','neck','aerial','submission'],
+  technical_exchange:['chain','ground','submission'],
+  escalation:['suplex','power','strike','corner'],
+  callback:['chain','ground','fire','submission'],
+  finish_build:['power','suplex','neck','aerial','submission'],
+  evasion:['heel','rest','outside','chain'],
+  exposure:['fire','chain','running'],
+  shortcut:['heel','strike','corner'],
+  escape:['chain','fire','running'],
+  dominance:['power','suplex','strike'],
+  challenge:['fire','running','chain'],
+  reassertion:['power','suplex','neck','strike']
+ };
+ const STRUCTURE_INCOMPATIBLE=new Set([
+  'big_spot','debut','wont_job','leash','crowd','request','protect',
+  'promise_due','rival_counter','rival_counter_reply'
+ ]);
+ const structureSlots=st=>st.structure?.objectives||[];
+ const structureSlot=(st,id)=>structureSlots(st).find(x=>x.id===id)||null;
+ // A wrestler must actually be able to attempt a graph action. No invented
+ // spots and no signatures that violate stature or the current safety limits.
+ function structurePool(st,obj,owner){
+  const o=who(st,owner),r=who(st,other(owner));
+  if(!o||!r)return [];
+  const families=OBJECTIVE_FAMILIES[obj.intent]||[];
+  const known=[...(D.PROFILES[o.id]?.signature||[]),...(o.learned||[])];
+  const ids=[...new Set([...known,...families.flatMap(f=>CAT.members[f]||[])])];
+  const cutoff=Math.min(.98,obj.window[1]+.08);
+  return ids.filter(id=>{
+   const n=A[id];
+   return n&&typeof n.after==='number'&&n.after<=cutoff&&
+    !n.nearfall&&(n.cost??1)>-1&&legal(id,o,r)&&!banned(st,id)&&
+    (families.includes(n.family)||families.some(f=>(CAT.members[f]||[]).includes(id)));
+  }).sort((a,b)=>appeal(b,o)-appeal(a,o)||a.localeCompare(b));
+ }
+ function structureCards(st,obj){
+  const permitted=obj.actor==='either'?['w','f']:[obj.actor],cards=[];
+  for(const side of permitted){
+   const pool=structurePool(st,obj,side);
+   if(!pool.length)continue;
+   const first=pool[0],soft=pool.slice().sort((a,b)=>pain(a)-pain(b)||a.localeCompare(b)).find(id=>id!==first);
+   cards.push({by:side,owner:side,action:first,label:name(first),risk:!!A[first]?.risk});
+   if(soft)cards.push({by:'agent',owner:side,action:soft,label:name(soft),risk:!!A[soft]?.risk});
+  }
+  const used=new Set();
+  return cards.filter(c=>{
+   const k=c.owner+'|'+c.action;if(used.has(k))return false;used.add(k);return true;
+  });
+ }
+ function structureSeed(st,{refresh=false}={}){
+  st.structureBoard??={};
+  const route=st.lockRoute||st.board.finish?.route;
+  for(const obj of structureSlots(st)){
+   const old=st.structureBoard[obj.id];
+   if(refresh&&(old?.chosen||old?.open))continue;
+   const cards=structureCards(st,obj);
+   const helpful=cards.filter(c=>supportsFinish(st,route,c));
+   const choice=helpful.find(c=>c.by==='agent')||helpful[0]||cards.find(c=>c.by==='agent')||cards[0];
+   st.structureBoard[obj.id]=choice?
+    {...choice,chosen:false,open:false,source:'suggested'}:
+    {owner:obj.actor,action:null,label:'Call this objective in the ring',by:'agent',chosen:false,open:true,source:'open'};
+  }
+ }
+ function structureBoardView(st){
+  return structureSlots(st).map(obj=>{
+   const cur=st.structureBoard?.[obj.id];
+   const cards=structureCards(st,obj).map((c,i)=>({
+    id:'objective_'+obj.id+'_'+i,label:c.label,by:c.by,
+    who:c.by==='agent'?AGENT:nameOf(st,c.by),risk:!!c.risk,
+    selected:!!cur&&cur.action===c.action&&cur.owner===c.owner,
+    tags:[...(c.by==='agent'?['Dennis’s suggestion']:['Wrestler’s suggestion']),
+     ...(c.risk?['High risk']:[]),...(supportsFinish(st,st.board.finish?.route,c)?['May support the finish']:[])]
+   }));
+   cards.push({id:'objective_'+obj.id+'_open',label:'Call this objective in the ring',by:'agent',who:AGENT,
+    selected:!!cur?.open,risk:false,tags:['No named move commitment']});
+   const owned=obj.actor==='either'?'Both wrestlers may contribute':nameOf(st,obj.actor)+' leads';
+   return {slot:obj.id,name:obj.title,ask:owned+'. Agree a real move if you want, or leave it open.',
+    cards,current:cur?.label||null,actor:obj.actor,intent:obj.intent,window:obj.window.slice()};
+  });
+ }
+ function structureReconcile(st){
+  structureSeed(st);
+  for(const obj of structureSlots(st)){
+   const b=st.structureBoard[obj.id];
+   if(!b?.action||(!banned(st,b.action)&&legal(b.action,who(st,b.owner),who(st,other(b.owner)))))continue;
+   if(b.chosen){
+    b.conflict='This explicitly selected spot is now prohibited or impossible. Revise or leave the objective open.';
+    log(st,'agent','The '+b.label+' is no longer safe or available for '+obj.title+'. I have kept your choice marked for review, rather than silently deleting it.');
+   }else{
+    const alt=structureCards(st,obj).find(c=>c.action!==b.action);
+    st.structureBoard[obj.id]=alt?{...alt,chosen:false,open:false,source:'revised'}:
+     {owner:obj.actor,action:null,label:'Call this objective in the ring',by:'agent',open:true,chosen:false,source:'open'};
+    log(st,'agent','The proposed '+b.label+' is ruled out. I’ve revised the suggestion for '+obj.title+'.');
+   }
+   st.reworked=(st.reworked||0)+1;
+  }
+ }
+ function structureWarnings(st){
+  return structureSlots(st).filter(obj=>{
+   const b=st.structureBoard?.[obj.id];
+   return b?.action&&(b.conflict||banned(st,b.action)||
+    !legal(b.action,who(st,b.owner),who(st,other(b.owner))));
+  }).map(obj=>obj.title);
+ }
+ function structureStory(st){
+  const b=st.structureBoard||{},items=structureSlots(st),named=items.filter(x=>b[x.id]?.action);
+  const trouble=structureWarnings(st),notes=[],route=st.lockRoute||st.board.finish?.route;
+  if(named.length>=2)notes.push({good:true,text:named.length+' real moves are pencilled into this '+st.structure.id.replace(/_/g,' ')+' layout.'});
+  else notes.push({good:true,text:'Most of the dramatic objectives remain open. The wrestlers will call the details in the ring.'});
+  if(route){
+   const support=named.filter(o=>supportsFinish(st,route,b[o.id]));
+   notes.push({good:true,text:support.length?
+    support.length+' called '+(support.length===1?'spot may':'spots may')+' help set up the agreed finish. That still must be earned in the ring.':
+    'The agreed finish has no guaranteed setup in this layout. Physical conditions still decide whether it is available.'});
+  }
+  if(items.some(o=>o.intent==='callback'))notes.push({good:true,text:'A tactical callback is an intention only: the earlier exchange must actually happen before the Director may credit it.'});
+  if(trouble.length)notes.push({good:false,text:'Revise unsafe or prohibited commitments: '+trouble.join(', ')+'.'});
+  return {score:trouble.length?-1:Math.min(2,named.length>=2?2:1),notes};
+ }
+ function structureSettle(st){
+  const prev=st.boardMood||{w:0,f:0},delta={w:0,f:0};
+  st.mood.w-=prev.w;st.mood.f-=prev.f;
+  for(const obj of structureSlots(st)){
+   const b=st.structureBoard?.[obj.id];
+   if(!b?.action||b.by==='agent')continue;
+   if(b.by===b.owner)delta[b.owner]+=2;
+   else if(b.by==='w'||b.by==='f'){delta[b.by]+=2;delta[b.owner]-=2;}
+  }
+  st.mood.w+=delta.w;st.mood.f+=delta.f;st.boardMood=delta;
+ }
+ function structurePlan(st){
+  const selected=structureSlots(st).map(obj=>{
+   const b=st.structureBoard?.[obj.id]||null,action=b?.action||null;
+   if(action&&(banned(st,action)||!legal(action,who(st,b.owner),who(st,other(b.owner)))))
+    throw Error('Unsafe structure spot must be revised: '+obj.id);
+   return {id:obj.id,intent:obj.intent,title:obj.title,actor:obj.actor,
+    window:obj.window.slice(),requires:obj.requires.slice(),
+    commitment:action?'landmark':'guide',
+    call:action?{action,owner:b.owner,proposedBy:b.by,label:b.label,source:b.source||'suggested',
+     chosen:!!b.chosen,backups:structureCards(st,obj).filter(c=>c.owner===b.owner&&c.action!==action).slice(0,2).map(c=>c.action)}:null};
+  });
+  return {version:1,structureId:st.structure.id,roles:{...st.structure.roles},
+   finishRoute:st.lockRoute||st.board.finish?.route||null,
+   objectives:selected,objections:(st.structureObjections||[]).map(n=>({...n}))};
+ }
+ // Signed move nodes remain finish-only for this disabled runtime path: no
+ // phantom American shine/heat/comeback and no unearned structure penalties.
+ function structureNodes(st,base){
+  const f=base.nodes.find(n=>n.id==='finish');
+  if(!f)throw Error('No agreed finish node');
+  f.route=st.lockRoute||st.board.finish?.route||null;f.requires=[];
+  base.nodes=[f];
+  return base;
+ }
  const winSideOf=st=>st.finish.startsWith('win')?'w':'f';
  const slotOwner=(S,c)=>S.id==='payoff'?c.owner:S.owner;
  const cardsFor=(st,slot)=>pitches(st,slot).filter(c=>c.action);
