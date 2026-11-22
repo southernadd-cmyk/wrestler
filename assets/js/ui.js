@@ -353,7 +353,7 @@ function renderInbox(){
  const controls=`<div class="office-filter-tabs" role="group" aria-label="Filter messages">${filters.map(([key,label,n])=>
   `<button class="btn sm ${inboxFilter===key?'go':''}" data-inbox-filter="${key}" aria-pressed="${inboxFilter===key}">${label} <span class="filter-count">${n}</span></button>`).join('')}</div>`;
  if(phoneLayout()&&list.some(m=>m.id===route.id))openMsg=route.id;
- if(!openMsg||!list.some(m=>m.id===openMsg))openMsg=(G.pending()[0]||list[0])?.id;
+ if(!openMsg||!list.some(m=>m.id===openMsg))openMsg=(list.find(m=>m.kind==='decision'&&!m.answer)||list[0])?.id||null;
  const m=list.find(x=>x.id===openMsg);if(m&&!m.read&&m.kind!=='decision'&&(!phoneLayout()||route.id===m.id)){m.read=true;G.save()}
  const items=list.map(x=>`<li><button data-msg="${x.id}" class="${!x.read?'unread':''} ${x.kind==='decision'&&!x.answer?'need':''}" ${x.id===openMsg?'aria-current="true"':''}><span class="pip">${x.kind==='decision'&&!x.answer?'<span class="sr">Needs a reply. </span>':!x.read?'<span class="sr">Unread. </span>':''}</span><span class="from">${esc(x.from)}</span><span class="wk">S${x.season} W${x.week}</span><span class="subj">${esc(x.subject)}</span></button></li>`).join('');
  let letter='<div class="empty">No messages in this view.</div>';
@@ -579,6 +579,8 @@ function renderScouting(){
  const s=S(),full=s.roster.length>=5;
  shortlist=shortlist.filter(id=>s.free.some(w=>w.id===id));
  const sorted=sortRows('free',s.free,WCOLS,{k:'fee',d:-1});
+ const styles=[...new Set(s.free.map(w=>w.style).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+ if(scoutStyle!=='all'&&!styles.includes(scoutStyle))scoutStyle='all';
  const q=scoutQuery.trim().toLocaleLowerCase();
  const rows=sorted.filter(w=>(!q||(w.name+' '+(w.handle||'')+' '+(w.style||'')).toLocaleLowerCase().includes(q))&&
    (scoutStyle==='all'||w.style===scoutStyle)&&
@@ -588,7 +590,7 @@ function renderScouting(){
  const w=s.free.find(x=>x.id===selFree);
  const toolbar=`<div class="management-filters" role="search" aria-label="Search free agents">
   <label>Search <input type="search" data-scout-query="1" autocomplete="off" placeholder="Name or style" value="${esc(scoutQuery)}"></label>
-  <label>Style <select data-scout-style="1">${[['all','All styles'],...['Story','Technical','Brawl','Spectacle'].map(v=>[v,v])].map(([key,label])=>
+  <label>Style <select data-scout-style="1">${[['all','All styles'],...styles.map(v=>[v,v])].map(([key,label])=>
    `<option value="${key}" ${scoutStyle===key?'selected':''}>${label}</option>`).join('')}</select></label>
   <label>Affordability <select data-scout-budget="1"><option value="all" ${scoutBudget==='all'?'selected':''}>All fees</option><option value="affordable" ${scoutBudget==='affordable'?'selected':''}>Can afford fee</option></select></label>
   <span class="filter-results" role="status">${rows.length} of ${s.free.length} available</span>
