@@ -28,7 +28,9 @@ assert.ok(restEvent.exertion< -4&&brawl.wSt>first+4,
  'stamina is earned by actually performing the authored hold');
 assert.ok(brawl.graph.pacedBrawl?.w?.until>brawl.t);
 const restored=M.restore(JSON.parse(JSON.stringify({...brawl,rState:brawl.r.getState()})));
-assert.deepEqual(restored.graph.pacedBrawl,brawl.graph.pacedBrawl);
+// The restored save is a plain JSON object; the running match state is from
+// the browser VM realm. Compare their serialised values, not VM prototypes.
+assert.equal(JSON.stringify(restored.graph.pacedBrawl),JSON.stringify(brawl.graph.pacedBrawl));
 for(const [skill,minutes] of [['novice',18],['elite',12]]){
  const novice=scene('brick','brawl',skill==='novice'?50:92,
   skill==='novice'?45:91,skill==='novice'?52:84,minutes);
