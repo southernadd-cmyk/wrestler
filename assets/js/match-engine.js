@@ -4938,7 +4938,17 @@ function structureAssessment(M){
  let witnessedCalls=0,adaptedCalls=0;
  plan.forEach((o,i)=>{
   if(!o.call)return;
-  const witnessed=states[i].evidence.some(e=>e.id===o.call.action&&e.actor===o.call.owner);
+  // A real agreed move may land after the dramatic objective was already
+  // resolved. Count it from the physical tape, not the closed objective ledger.
+  // A reversal/block belongs to the defender, not the initiating attacker.
+  const n=Graph.A[o.call.action],duration=Math.max(1,M.len);
+  const witnessed=!!n&&M.graph?.events?.some(e=>{
+   if(e.id!==o.call.action||!Number.isFinite(e.t))return false;
+   const performer=n.blockOf?(e.preControl==='w'?'f':e.preControl==='f'?'w':null):
+    n.reverse?e.control:e.preControl;
+   return performer===o.call.owner&&
+    e.t/duration>=o.window[0]-.04&&e.t/duration<=o.window[1]+.08;
+  });
   if(witnessed)witnessedCalls++;
   else if(['achieved','adapted'].includes(states[i].status))adaptedCalls++;
  });
@@ -4955,7 +4965,7 @@ function structureAssessment(M){
   planAdherence:{namedCalls,witnessedCalls,adaptedCalls,
    unfulfilledCalls:namedCalls-witnessedCalls-adaptedCalls,
    openObjectives:plan.length-namedCalls,
-   explanation:'Named calls count only when the agreed performer executes that move in its intended objective window.'},
+   explanation:'Named calls count from actual graph actions by the agreed performer in the signed window, even if the broader objective already resolved.'},
   structuralCoherence:{total:states.length,achieved,adapted,missed,witnessed:achieved+adapted,
    explanation:detail[report.id]||'Objectives require time-ordered graph-event evidence.'},
   executionQuality:{stars:stars(M,true),botches:M.botches,psychologyScore:construction.score,

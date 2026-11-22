@@ -17,18 +17,43 @@ const quick=process.argv.includes('--quick');
 const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styles;
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
- finishes:0,finishFallbacks:0,named:0,namedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
+ finishes:0,finishFallbacks:0,named:0,namedHit:0,controlNamedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
 const add=(o,k,n=1)=>o[k]=(o[k]||0)+n;
 const ratio=(n,d)=>+(100*n/Math.max(1,d)).toFixed(1);
 const avg=(n,d)=>+(n/Math.max(1,d)).toFixed(3);
 const top=(obj,n=5)=>Object.entries(obj).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,n).map(([name,count])=>({name,count}));
+// A reported botch is not an invalid ordinary graph move. In this engine,
+// only a scripted spectacle attempt or an extraordinary balcony dive increments
+// M.botches. Record those actual attempts rather than guessing from risky calls.
+const scriptedBreakdown=m=>{
+ const attempts=m.graph.scriptedSpotAttempts||[];
+ const failed=attempts.filter(x=>x.outcome==='botched');
+ assert.ok(failed.length<=m.botches,'scripted failed attempts are real botches');
+ return {attempts:attempts.length,failed:failed.length,balcony:m.botches-failed.length,
+  moveCounts:attempts.reduce((out,x)=>(add(out,x.id+':'+x.outcome),out),{})};
+};
 function sign(c,w,f,game,id,lead){
  const st=Room.begin(c,w,f,p,{structure:{id,lead},structurePlanning:true});
  st.queue=[];Room.act(st,'plan_'+game);
  assert.equal(st.stage,'board');Room.act(st,'board_ok');
  assert.equal(st.stage,'review');Room.act(st,'review_ok');Room.act(st,'talk_none');
  assert.equal(st.stage,'done');return st.sheet;
+}
+// Matched controls have no Director; audit named calls independently from
+// real tape actions rather than trusting the structure ledger's status.
+function realNamedCalls(m,sheet){
+ return sheet.structurePlan.objectives.filter(o=>{
+  if(!o.call)return false;
+  const n=E.GRAPH.A[o.call.action],len=Math.max(1,m.len);
+  return !!n&&m.graph.events.some(e=>{
+   if(e.id!==o.call.action||!Number.isFinite(e.t))return false;
+   const actor=n.blockOf?(e.preControl==='w'?'f':e.preControl==='f'?'w':null):
+    n.reverse?e.control:e.preControl;
+   return actor===o.call.owner&&e.t/len>=o.window[0]-.04&&
+    e.t/len<=o.window[1]+.08;
+  });
+ }).length;
 }
 function run(sheet,c,w,f,seed,execute){
  const m=E.create({w:{...w,fatigue:5,flags:{}},f,p,slot:'main',
@@ -70,9 +95,20 @@ for(let si=0;si<sampleStyles.length;si++){
   r.events+=m.graph.events.length;r.controlEvents+=control.graph.events.length;
   r.distinct+=new Set(m.graph.events.map(x=>x.id)).size;
   r.botches+=m.botches;r.controlBotches+=control.botches;
+  const risk=scriptedBreakdown(m),controlRisk=scriptedBreakdown(control);
+  if(game==='safe'){
+   // No unsafe scripted stunt or balcony dive can enter a Safe layout.
+   assert.equal(risk.balcony,0,'Safe: no balcony botches');
+   assert.equal(controlRisk.balcony,0,'Safe control: no balcony botches');
+   for(const x of m.graph.scriptedSpotAttempts||[])
+    assert.equal(x.id,'ar_elbow_point','Safe: only the guarded elbow may be scripted');
+  }
   r.finishFallbacks+=Number(!!m.finishRouteFallbackFrom);
   r.finishes+=Number(m.graph.outcome?.id===finish);
   r.named+=a.planAdherence.namedCalls;r.namedHit+=a.planAdherence.witnessedCalls;
+  const real=realNamedCalls(m,sheet),controlReal=realNamedCalls(control,sheet);
+  assert.equal(a.planAdherence.witnessedCalls,real,'named call proved independently from performed tape');
+  r.controlNamedHit+=controlReal;
   r.open+=a.planAdherence.openObjectives;
   let witnessed=0;const sequence=[];
   for(let k=0;k<4;k++){
@@ -110,8 +146,18 @@ for(let si=0;si<sampleStyles.length;si++){
   add(r.sequences,sequence.join('>'));
   for(const [key,label] of [['byPlan',game],['byLength',String(minutes)],
    ['byStyle',style],['byLead',lead]]){
-   const group=r[key][label]??={bouts:0,earned:0,stars:0};
+   const group=r[key][label]??={bouts:0,earned:0,stars:0,
+    botches:0,controlBotches:0,scriptedAttempts:0,controlScriptedAttempts:0,
+    scriptedBotches:0,controlScriptedBotches:0,balconyBotches:0,controlBalconyBotches:0,
+    namedHits:0,controlNamedHits:0,riskySignedCalls:0,scriptedMoveCounts:{}};
    group.bouts++;group.earned+=witnessed;group.stars+=m.final.stars;
+   group.botches+=m.botches;group.controlBotches+=control.botches;
+   group.scriptedAttempts+=risk.attempts;group.controlScriptedAttempts+=controlRisk.attempts;
+   group.scriptedBotches+=risk.failed;group.controlScriptedBotches+=controlRisk.failed;
+   group.balconyBotches+=risk.balcony;group.controlBalconyBotches+=controlRisk.balcony;
+   group.namedHits+=real;group.controlNamedHits+=controlReal;
+   group.riskySignedCalls+=sheet.structurePlan.objectives.filter(o=>o.call&&E.GRAPH.A[o.call.action]?.risk).length;
+   for(const [name,count] of Object.entries(risk.moveCounts))add(group.scriptedMoveCounts,name,count);
   }
  }
 }
@@ -122,7 +168,14 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
   const r=map[id],dims={};
   for(const key of ['byPlan','byLength','byStyle','byLead'])
    dims[key]=Object.fromEntries(Object.entries(r[key]).map(([k,v])=>[k,{
-    bouts:v.bouts,earnedPct:ratio(v.earned,4*v.bouts),meanStars:avg(v.stars,v.bouts)}]));
+    bouts:v.bouts,earnedPct:ratio(v.earned,4*v.bouts),meanStars:avg(v.stars,v.bouts),
+    botches:v.botches,controlBotches:v.controlBotches,
+    scriptedAttempts:v.scriptedAttempts,controlScriptedAttempts:v.controlScriptedAttempts,
+    scriptedBotches:v.scriptedBotches,controlScriptedBotches:v.controlScriptedBotches,
+    balconyBotches:v.balconyBotches,controlBalconyBotches:v.controlBalconyBotches,
+    namedHits:v.namedHits,controlNamedHits:v.controlNamedHits,
+    riskySignedCalls:v.riskySignedCalls,
+    scriptedMoveCounts:top(v.scriptedMoveCounts,12)}]));
   const sequences=top(r.sequences,6);
   return [id,{bouts:r.bouts,earnedPct:ratio(r.earned,4*r.bouts),
    perfectPct:ratio(r.complete,r.bouts),missed:r.missed,
@@ -132,7 +185,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    meanDistinctActions:avg(r.distinct,r.bouts),
    botches:r.botches,controlBotches:r.controlBotches,
    bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,dangerEscapes:r.dangerEscapes,
-   namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),openObjectives:r.open,
+   namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),controlNamedHitPct:ratio(r.controlNamedHit,r.named),openObjectives:r.open,
    objectiveStatus:r.objectives,topActions:top(r.firstActions,12),
    uniqueSequences:Object.keys(r.sequences).length,
    commonSequenceShare:ratio(sequences[0]?.count||0,r.bouts),
@@ -140,6 +193,15 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
  }))};
 assert.equal(report.totalBouts,(quick?320:960));
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
+// Focused read-only risk report for Phase 8: the existing seeded 960-match
+// comparison, no new workflow or extra stochastic fixture.
+console.log('PHASE8_RISK_JSON '+JSON.stringify({
+ schema:'office-phase8-botch-attribution-v1',
+ structures:Object.fromEntries(Object.entries(report.structures).map(([id,x])=>[id,{
+  overall:{botches:x.botches,controlBotches:x.controlBotches,
+   namedHitPct:x.namedHitPct,controlNamedHitPct:x.controlNamedHitPct},
+  byPlan:x.byPlan,byStyle:x.byStyle,byLength:x.byLength}]))
+}));
 for(const [id,x] of Object.entries(report.structures))
  console.log('PHASE7 '+id+' '+x.bouts+' active; earned '+x.earnedPct+'%; all four '+x.perfectPct+
  '%; distinct sequences '+x.uniqueSequences+'; top sequence '+x.commonSequenceShare+

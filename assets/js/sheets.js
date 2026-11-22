@@ -647,6 +647,10 @@
    if(['dominance','reassertion'].includes(kind))return (n.cost??0)>=.9&&(n.crowd??0)>=0;
    return true;
   }
+  // Planning and live recognition use the same objective compatibility.
+  function compatibleCall(o,id,owner){
+   const n=actions[id];return !!n&&fits(o,{id},n,owner);
+  }
   function enough(intent,ev,previous){
    const moves=new Set(ev.map(x=>x.id)),sides=new Set(ev.map(x=>x.actor));
    if(intent==='technical_exchange')return sides.size===2&&moves.size>=2;
@@ -732,10 +736,12 @@
    // Keep all three non-Heel directors on their already-tested tuning.
    // Their dramaturgy must not change as a side effect of the Heel repair.
    if(M.structureDirector.id!=='chickenshit_heel'){
-    if(frac<o.window[0]-.07||o.actor!=='either'&&o.actor!==side)return 1;
-    if(o.call?.action===id&&o.call.owner===side)return 4.6;
+    // Defensive moves belong to the defender, not the source attacker.
+    const actor=performer(side,n);
+    if(frac<o.window[0]-.07||o.actor!=='either'&&o.actor!==actor)return 1;
+    if(o.call?.action===id&&o.call.owner===actor&&fits(o,{id},n,actor))return 4.6;
     return F[o.intent]?.includes(n.family)&&
-     (!['evasion','shortcut','escape'].includes(o.intent)||fits(o,{id},n,side))?2.8:1;
+     (!['evasion','shortcut','escape'].includes(o.intent)||fits(o,{id},n,actor))?2.8:1;
    }
    const actor=performer(side,n);
    if(frac<o.window[0]-.07||o.actor!=='either'&&o.actor!==actor)return 1;
@@ -752,9 +758,19 @@
    escape:['counter_strike','wrist_escape','headlock_escape','waist_escape','mat_scramble','armbar_roll','floor_counter']
   };
   function offers(M,side){
-   if(M.structureDirector?.id!=='chickenshit_heel')return [];
    const goal=current(M);if(!goal)return [];
-   const o=goal.objective,arr=HEEL_GUIDES[o.intent]||[];
+   const o=goal.objective;
+   if(M.structureDirector.id!=='chickenshit_heel'){
+    // Phase 8: the signed action must enter the pool before its bias matters.
+    // The ordinary graph validator still enforces exact-parent counters,
+    // position, location, stamina, training and safety; never script a result.
+    const id=o.call?.action,n=actions[id],frac=M.t/Math.max(1,M.len);
+    if(!n||frac<o.window[0]-.04||frac>o.window[1]+.08||
+       o.call.owner!==performer(side,n)||!fits(o,{id},n,o.call.owner))return [];
+    return [[id,4.2]];
+   }
+   // Retain the Phase 7 Heel pool and weights unchanged.
+   const arr=HEEL_GUIDES[o.intent]||[];
    const last=M.graph?.events?.at(-1),time=M.t;
    // A counter is only presented as a desperate escape when an opponent
    // has actually attacked in the preceding exchange, not as free offence.
@@ -787,7 +803,7 @@
    return {version:d.version,id:d.id,roles:{...d.roles},
     objectives:d.objectives.map(s=>({...s,evidence:s.evidence.map(x=>({...x}))}))};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);

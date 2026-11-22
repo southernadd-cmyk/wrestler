@@ -1424,7 +1424,7 @@
   return ids.filter(id=>{
    const n=A[id];
    if(!n||typeof n.after!=='number'||n.after>cutoff||n.nearfall||n.blockOf||
-     !legal(id,o,r)||banned(st,id)||!(families.includes(n.family)||
+     !legal(id,o,r)||banned(st,id)||!P.DIRECTOR.compatibleCall(obj,id,owner)||!(families.includes(n.family)||
      families.some(f=>(CAT.members[f]||[]).includes(id))||
      obj.intent==='escape'&&escapeMoves.includes(id)))return false;
    // A dramatic objective cannot be "earned" by irrelevant filler: no
