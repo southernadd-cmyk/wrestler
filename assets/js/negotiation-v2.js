@@ -298,6 +298,28 @@
    }[p.personality]||'The original offer remains.');
    return result();
   }
+  // Concrete exchange is one FINAL bargaining action after a rejection or
+  // counteroffer. The proposal is staged, never silently installed.
+  if(typeof move==='string'&&move.startsWith('trade:')){
+   const id=move.slice(6),option=tradeCandidates(o,w,t).find(x=>x.id===id);
+   if(!option)return {error:'This trade is not available for the current booking and negotiation stage.'};
+   t.tradeMade=id;t.pushes=1;
+   if(!Number.isFinite(t.strength)||!Number.isFinite(t.threshold)||
+       t.strength+option.bonus<t.threshold-4){
+    const fee=1;p.trust=clamp(p.trust-fee);t.cost=(t.cost||0)+fee;
+    t.step='done';t.verdict='refused';t.proposal=null;t.package=null;
+    t.detail='The promoter declined the proposed exchange; original terms remain. Trust −1.';
+    log(t,p,option.give+' in return for '+option.get+'.',
+     tradeReply(p,false,'')+' The original offer still stands.');
+    return result();
+   }
+   t.proposal={...option.terms};t.kind='counter';t.step='offer';
+   t.package={id:option.id,give:option.give,get:option.get};
+   t.detail=offerText(o,w,t.proposal);
+   log(t,p,option.give+' in return for '+option.get+'.',
+    tradeReply(p,true,t.detail)+' Accept the package, then sign if you agree.');
+   return result();
+  }
   if(t.step==='start'){
    const r=originalMove.call(G,oid,wid,move);
    if(!r.error&&t.step==='reason'&&t.log?.length){
@@ -455,7 +477,9 @@
   }
   return {error:'No response is available at this stage.'};
  };
- root.OfficeNegotiationsV2={active:true,read,profileFor:pid=>{
+ root.OfficeNegotiationsV2={active:true,read,
+  tradeOptions:(o,w,t)=>tradeCandidates(o,w,t).map(({id,label,hint,give,get})=>({id,label,hint,give,get})),
+  profileFor:pid=>{
   const p=G.P(pid);return p?profile(p):null;
  }};
 })(typeof window!=='undefined'?window:globalThis);
