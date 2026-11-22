@@ -929,7 +929,7 @@ function renderMeeting(oid,wid){
   prompt='What would you like to change?';
   options=ask('ask:fee','I need a better appearance fee','Ask for 20% more; the promoter might offer less.');
   if(o.finish==='lose_clean')options+=ask('ask:protect',"I'll take the loss, but protect my wrestler",'Ask for a competitive loss, usually for a lower fee.');
-  if(o.slot!=='main')options+=ask('ask:slot','Give my wrestler better billing','Ask for one place higher on the card, possibly for less money.');
+  if(o.slot!=='main')options+=ask('ask:slot','Give my wrestler better billing','Move one place higher on the card in exchange for a lower guaranteed appearance fee.');
   const stip=stipAsks(o,w,oid,wid);
   if(stip)options+=`<details class="neg-more"><summary>Ask about a match stipulation</summary>${stip}</details>`;
  }else if(t.step==='reason'){
