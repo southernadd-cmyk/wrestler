@@ -64,7 +64,9 @@ for(let i=0;i<240;i++){
  if(f==='win_dirty'&&x.outcome==='booked'){
   const ix=x.log.findIndex(line=>/fistful of tights|feet on the ropes|thumb in the eye|holding the ropes for leverage/.test(line.text));
   const ref=x.log.findIndex(line=>line.text.includes('referee turns back'));
-  const one=x.log.findIndex((line,j)=>j>ix&&line.text==='ONE!');
+  // Earlier legitimate near-falls may have their own ONE! count. Check
+  // the count AFTER the referee actually returns for this dirty finish.
+  const one=x.log.findIndex((line,j)=>j>ref&&line.text==='ONE!');
   assert.ok(ix>=0&&ix<ref&&ref<one,
    'dirty pin before referee count: fixture '+i+', route '+x.finishRoute+
    ', outcome '+x.outcome+', positions '+[ix,ref,one].join(','));
