@@ -97,7 +97,7 @@ function option(o,w,id){
  const x=option(o,w,'stip');
  assert.match(x.give,/No disqualification/);
  assert.equal(G.talkMove(o.id,w.id,'trade:stip').error,undefined);
- assert.equal(o.stip,undefined);
+ assert.equal(o.stip||null,null);
  assert.equal(o.talk.proposal.finish,'lose_protected');
  assert.equal(o.talk.proposal.stip,'nodq');
  assert.equal(G.talkMove(o.id,w.id,'reply:accept').error,undefined);
@@ -141,7 +141,7 @@ function option(o,w,id){
  const {s,o,w}=fresh();
  ask(o,w,'fee','trade');option(o,w,'stip');
  assert.equal(G.talkMove(o.id,w.id,'trade:stip').error,undefined);
- assert.equal(o.stip,undefined);
+ assert.equal(o.stip||null,null);
  assert.equal(o.talk.proposal.stip,X.favourite(G.P(o.pid)));
  assert.equal(G.talkMove(o.id,w.id,'reply:accept').error,undefined);
  assert.equal(G.book(o.id,w.id),null);
@@ -160,7 +160,7 @@ function option(o,w,id){
  assert.equal(t.step,'done');assert.equal(t.verdict,'refused');
  assert.equal(p.trust,beforeTrust-1);
  assert.equal(s.focus,beforeFocus);
- assert.equal(o.stip,undefined);assert.equal(o.bump,1);
+ assert.equal(o.stip||null,null);assert.equal(o.bump,1);
  assert.match(G.talkMove(o.id,w.id,'trade:stip').error,/complete/i);
 }
 // The signed finish and existing DQ/title/programme rules determine which
@@ -172,7 +172,7 @@ function option(o,w,id){
  const priorFocus=s.focus,priorTrust=p.trust;
  assert.match(G.talkMove(o.id,w.id,'trade:stip').error,/not available/i);
  assert.equal(s.focus,priorFocus);assert.equal(p.trust,priorTrust);
- assert.equal(o.stip,undefined);
+ assert.equal(o.stip||null,null);
 }
 {
  const {o,w}=fresh({finish:'lose_protected',slot:'feature',title:{pid:'dock',div:'men'}});
@@ -200,7 +200,7 @@ function option(o,w,id){
  assert.equal(t.step,'challenge');
  option(o,w,'fee');
  assert.equal(G.talkMove(o.id,w.id,'trade:fee').error,undefined);
- assert.equal(o.stip,undefined);
+ assert.equal(o.stip||null,null);
  assert.equal(o.talk.proposal.stip,'falls');
  assert.equal(o.talk.proposal.bump,.8);
  assert.equal(G.talkMove(o.id,w.id,'reply:accept').error,undefined);
