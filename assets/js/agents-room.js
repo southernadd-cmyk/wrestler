@@ -1625,7 +1625,7 @@
   st.loserSide=st.finish.startsWith('win')?'f':'w';
   st.queue=draw(st,p,opts.recent||[]);
   // The oldest thread due with this wrestler, opponent or promoter comes up first.
-  const due=(opts.threads||[]).find(t=>{const x=SITUATIONS.find(q=>q.id===t.sit);return x&&(t.sid?t.sid===w.id||(!x.ownWrestler&&t.sid===f.id):true)&&(t.pid?t.pid===p?.id:true);});
+  const due=(opts.threads||[]).find(t=>{const x=SITUATIONS.find(q=>q.id===t.sit);return x&&!(st.structurePlanning&&STRUCTURE_INCOMPATIBLE.has(t.sit))&&(t.sid?t.sid===w.id||(!x.ownWrestler&&t.sid===f.id):true)&&(t.pid?t.pid===p?.id:true);});
   if(due){st.thread={...due,side:due.sid===f.id&&due.sid!==w.id?'f':'w'};st.queue=[due.sit,...st.queue.filter(id=>id!==due.sit)].slice(0,st.queue.length);}
   // v0.3.12 If the rivalry or the wrestlers' condition gives somebody a reason to ask for a change, that
   // conversation happens straight after the running order is agreed (and is skipped if the board
