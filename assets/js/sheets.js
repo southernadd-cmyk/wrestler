@@ -78,7 +78,7 @@
    for(const key of Object.keys(value))if(!['version','id','execution','roles','objectives'].includes(key))
     problems.push('Unknown structure contract field '+key);
    if(value.version!==VERSION)problems.push('Unsupported structure version '+value.version);
-   const def=DEFINITIONS[value.id];
+   const def=Object.prototype.hasOwnProperty.call(DEFINITIONS,value.id)?DEFINITIONS[value.id]:null;
    if(!def)problems.push('Unknown structure '+value.id);
    if(value.execution!=='metadata_only')problems.push('Phase 1 structures must be metadata_only');
    const roles=value.roles;
@@ -111,7 +111,7 @@
   }
   function create(selection){
    const spec=typeof selection==='string'?{id:selection}:selection;
-   if(!plain(spec)||!DEFINITIONS[spec.id])throw Error('Unknown match structure');
+   if(!plain(spec)||!Object.prototype.hasOwnProperty.call(DEFINITIONS,spec.id))throw Error('Unknown match structure');
    for(const k of Object.keys(spec))if(!['id','lead'].includes(k))throw Error('Unexpected structure selection field '+k);
    const lead=spec.lead===undefined&&spec.id==='classic_american'?'w':spec.lead;
    if(lead!=='w'&&lead!=='f')throw Error('Match structure requires explicit lead side w or f');
