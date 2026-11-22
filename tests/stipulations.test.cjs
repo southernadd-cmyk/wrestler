@@ -31,7 +31,7 @@ function offer(o={}){const s=G.S,x={id:'so-'+(n++),pid:'dock',rid:'silas',slot:'
   const r=G.talkMove(o.id,'rex','arg:crowd');assert.ok(!r.error,r.error);
   const t=o.talk;
   assert.ok(['offer','counter','challenge'].includes(t.step),'initial promoter response should remain actionable');
-  assert.equal(o.stip,undefined,'proposed stipulation is not yet agreed');
+  assert.equal(o.stip,null,'proposed stipulation is not yet agreed');
   if(t.step==='offer'){agreed++;assert.equal(t.proposal.stip,kind);}
   else if(t.step==='counter'){counter++;assert.equal(t.proposal.stip,X.favourite(G.P(pid)));assert.notEqual(t.proposal.stip,kind);}
   else refused++;
