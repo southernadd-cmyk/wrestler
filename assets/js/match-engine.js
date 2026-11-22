@@ -3043,6 +3043,7 @@ const Graph=(function makeGraph(){
    ...(options.scriptedSpot?{scriptedSpot:true,scriptedBig:!!options.big}:{})});
   if(g.events.length>220)g.events.shift();
   root.OfficeSheets?.DIRECTOR?.observe(M,g.events[g.events.length-1]);
+  structureCommentary(M);
   if(id==='cheap_shot')referee(M,side);
   if(M.o.promo?.tactic?.kind==='counter'&&n.reverse&&side==='f'&&p.control==='w'&&
      M.t/M.len>=.58&&(M.o.promo.tactic.nodes.includes(id)||(!!n.counterOf&&(!M.o.promo.tactic.families||M.o.promo.tactic.families.includes(n.family))))&&!g.promoCounterPaid){
@@ -4715,6 +4716,7 @@ function create(o){
  if(o.sheet?.signed)M.sheet=JSON.parse(JSON.stringify(o.sheet));
  Graph.init(M);
  root.OfficeSheets?.DIRECTOR?.init(M);
+ if(root.OfficeSheets?.DIRECTOR?.active(M))M.structureSpoken={};
  M.crowdStart=M.crowd;M.crowdPeak=M.crowd;
  return M;
 }
@@ -4844,7 +4846,8 @@ function vicCard(M){
 // Between exchanges Vic picks something to talk about: the stage of the match, the feud, the crowd or the card.
 function vicChat(M){
  const card=vicCard(M),heat=M.o.feudHeat||0,said=M.vicSaid||[];
- const topics=[M.phase?.id,M.o.blowoff?'blowoff':heat>=35?'feud':null,M.crowd>=75?'loud':M.crowd<35?'flat':null,'card'].filter(Boolean);
+ // Alternative structures get objective-specific commentary, not legacy American beat labels.
+ const topics=[root.OfficeSheets?.DIRECTOR?.active(M)?null:M.phase?.id,M.o.blowoff?'blowoff':heat>=35?'feud':null,M.crowd>=75?'loud':M.crowd<35?'flat':null,'card'].filter(Boolean);
  const open=topics.filter(t=>(t==='card'?card:VIC[t]||[]).some(x=>!said.includes(x)));
  if(!open.length)return null;
  const tag=open[Math.floor(vicRoll(M,'topic')*open.length)];
@@ -4876,6 +4879,89 @@ function say(M,text,kind='play',opt={}){
  if(opt.textureId)line.textureId=opt.textureId;
  M.queue.push(line);M.log.push(line);return line}
 
+
+/* Phase 6 is deliberately presentation-only: structure acknowledgements are
+   emitted after verified graph events; no RNG draw or star modifier is added. */
+const STRUCTURE_WORDS={
+ classic_american:{
+  opening_advantage:'{actor} has established an early edge. That opening is there on the canvas, not just on the running order.',
+  pressure:'{actor} has made the pressure count. Now the fightback has something meaningful to overcome.',
+  comeback:'There is the earned fightback from {actor}! The earlier pressure was real.',
+  payoff:'A genuine payoff to the earlier control and resistance. The story has built towards this moment.'},
+ kings_road:{
+  technical_exchange:'Both wrestlers have contributed to the technical exchanges. Those holds and counters really happened.',
+  escalation:'The wrestling is escalating through heavier attacks. The earlier groundwork is beginning to matter.',
+  callback:'That exchange returns to technique they actually used earlier. A detail from the opening has paid off.',
+  finish_build:'The finishing stretch is being built through real exchanges, not just a promised spectacular move.'},
+ chickenshit_heel:{
+  evasion:'There is the deliberate evasion. The avoidance was actually performed.',
+  exposure:'The evasion has caught up with the heel. The opponent has genuinely exposed those tactics.',
+  shortcut:'That unfair shortcut really happened. The rule-breaking is part of the match, not merely the plan.',
+  escape:'There is an actual escape from the pressure. The heel has found a way out of trouble.'},
+ dominant_ace:{
+  dominance:'{actor} has established control through performed offence. The ace is making that advantage real.',
+  challenge:'A genuine challenge to the ace’s control. The dominant wrestler has something to answer.',
+  reassertion:'The ace has responded with actual offence and reasserted control.',
+  payoff:'That superiority has a witnessed final statement, rather than merely a talking point.'}
+};
+const STRUCTURE_LABELS={classic_american:'Classic American',kings_road:"King’s Road",
+ chickenshit_heel:'Chickenshit Heel',dominant_ace:'Dominant Ace'};
+function structureCommentary(M){
+ const director=root.OfficeSheets?.DIRECTOR;
+ if(!director?.active(M))return;
+ const r=director.report(M),plan=M.sheet?.structurePlan?.objectives||[];
+ if(!M.structureSpoken){
+  // Older resumed bouts must not replay milestones already completed.
+  M.structureSpoken=Object.fromEntries(r.objectives.filter(x=>x.status!=='pending').map(x=>[x.id,x.status]));
+  return;
+ }
+ r.objectives.forEach((state,i)=>{
+  if(state.status==='pending'||M.structureSpoken[state.id])return;
+  const o=plan[i];if(!o)return;
+  const performed=state.evidence.find(e=>e.at===state.at);
+  if(state.status!=='missed'&&(!performed||!M.graph?.events?.some(e=>e.id===performed.id&&e.t===performed.at)))
+   return;
+  M.structureSpoken[state.id]=state.status;
+  const side=o.actor==='either'?performed?.actor||r.roles.lead:o.actor,
+   actor=side==='f'?M.f.short:M.w.short;
+  const wording=state.status==='missed'?
+   'The window for '+o.title.toLowerCase()+' has passed without sufficient performed evidence. That part of the plan did not come together.':
+   (STRUCTURE_WORDS[r.id]?.[o.intent]||'The planned '+o.title.toLowerCase()+' has been supported by real exchanges.')
+    .replaceAll('{actor}',actor);
+  say(M,wording,'story',{who:'colour',textureId:'structure-'+r.id+'-'+state.id});
+ });
+}
+function structureAssessment(M){
+ const report=root.OfficeSheets?.DIRECTOR?.report(M),plan=M.sheet?.structurePlan?.objectives;
+ if(!report||!Array.isArray(plan)||plan.length!==report.objectives.length)return null;
+ const states=report.objectives,namedCalls=plan.filter(x=>x.call).length;
+ let witnessedCalls=0,adaptedCalls=0;
+ plan.forEach((o,i)=>{
+  if(!o.call)return;
+  const witnessed=states[i].evidence.some(e=>e.id===o.call.action&&e.actor===o.call.owner);
+  if(witnessed)witnessedCalls++;
+  else if(['achieved','adapted'].includes(states[i].status))adaptedCalls++;
+ });
+ const achieved=states.filter(x=>x.status==='achieved').length,
+  adapted=states.filter(x=>x.status==='adapted').length,
+  missed=states.filter(x=>x.status==='missed').length,
+  construction=constructionOf(M);
+ const detail={
+  classic_american:'The opening, pressure, comeback and payoff are separately evidenced.',
+  kings_road:'A callback requires proof that a previous technical exchange occurred.',
+  chickenshit_heel:'Evasion, exposure, a shortcut and escape need genuine in-ring actions.',
+  dominant_ace:'Control alone is insufficient: a challenge and an answer must follow.'};
+ return {version:1,id:report.id,
+  planAdherence:{namedCalls,witnessedCalls,adaptedCalls,
+   unfulfilledCalls:namedCalls-witnessedCalls-adaptedCalls,
+   openObjectives:plan.length-namedCalls,
+   explanation:'Named calls count only when the agreed performer executes that move in its intended objective window.'},
+  structuralCoherence:{total:states.length,achieved,adapted,missed,witnessed:achieved+adapted,
+   explanation:detail[report.id]||'Objectives require time-ordered graph-event evidence.'},
+  executionQuality:{stars:stars(M,true),botches:M.botches,psychologyScore:construction.score,
+   linkedPairs:construction.linkedPairs,
+   explanation:'Existing star calculation only. Structural completion adds no rating bonus.'}};
+}
 function phaseFor(frac,M){const ends=Psy.PHASE_ENDS[M?.planId]||Psy.PHASE_ENDS.story;return PHASES.find((p,i)=>frac<ends[i])||PHASES[4]}
 // Grade observed, mechanically connected offence and actual dramatic payoffs.
 // Never infer good wrestling from spot counts, named moves alone or the match plan.
@@ -5058,6 +5144,7 @@ function entrances(M){
  if(M.o.promo)say(M,M.o.promo.hook,'story',{at:0});
  if(M.o.memory?.recall)say(M,M.o.memory.recall,'story',{at:0,who:'runner'});
  if(M.sheet?.signed)say(M,'Road agent: '+M.sheet.method+' match layout agreed. The finish is contracted; the action must be earned.','story',{at:0});
+ if(root.OfficeSheets?.DIRECTOR?.active(M))say(M,'Tonight’s '+(STRUCTURE_LABELS[M.structureDirector.id]||'alternative')+' layout sets four intended objectives. They count only if actually performed.','story',{at:0,who:'runner'});
  const notes={
   grudge:'The talk is finished. These two have scores to settle, and neither wants to back down.',
   underdog:'There is a gulf in experience here, but a wrestling match is not won on paper.',
@@ -5226,6 +5313,7 @@ function tick(M){
  // incidents
  root.OfficeSheets?.advance(M);
  root.OfficeSheets?.DIRECTOR?.advance(M);
+ structureCommentary(M);
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
@@ -5725,6 +5813,10 @@ function finish(M){
  }
  M.t=at;M.stage='over';
  M.final=summary(M);
+ if(M.final.structureAssessment){
+  const a=M.final.structureAssessment,b=a.structuralCoherence,c=a.planAdherence;
+  say(M,(STRUCTURE_LABELS[a.id]||'The planned structure')+': '+b.witnessed+' of '+b.total+' dramatic objectives witnessed; '+c.witnessedCalls+' of '+c.namedCalls+' named calls evidenced. The rating is earned by the wrestling itself.','story',{who:'colour',textureId:'structure-final'});
+ }
  if(M.outcome!=='nc'&&M.outcome!=='double')vic(M,M.final.stars>=4?'great':M.final.stars>=2.5?'good':'poor',1,{...step(3)});
  say(M,`Final rating: ${starText(M.final.stars)}`,'rating',{...step(2),big:true});
 }
@@ -5743,7 +5835,7 @@ function summary(M){
    opponentDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='f')
   },
   evidence:evidenceOf(M),roomNegotiation:M.o.sheet?.negotiation||null,
-  ...(root.OfficeSheets?.DIRECTOR?.active(M)?{structure:root.OfficeSheets.DIRECTOR.report(M)}:{}),
+  ...(root.OfficeSheets?.DIRECTOR?.active(M)?{structure:root.OfficeSheets.DIRECTOR.report(M),structureAssessment:structureAssessment(M)}:{}),
   psychology:{archetype:M.planId,construction:constructionOf(M),controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 // v0.3.12 What happened, as structured facts a rivalry can cite later: who reversed whom and which kind
@@ -5770,5 +5862,5 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,structureReport:M=>root.OfficeSheets?.DIRECTOR?.report(M)||null,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
+root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,structureReport:M=>root.OfficeSheets?.DIRECTOR?.report(M)||null,structureAssessment,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
 })(typeof window!=='undefined'?window:globalThis);
