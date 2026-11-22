@@ -171,6 +171,12 @@
   if(t.topic==='stip')return (X.STIPS[t.stip]?.name||'the requested stipulation').toLowerCase();
   return 'the requested change';
  };
+ // The game's fees depend on billing and finish multipliers. Price a trade
+ // against the real fee instead of equating a bump multiplier with money.
+ const atFee=(o,w,x,wanted)=>{
+  const base=o.talk.original,without=G.purse({...o,...x,bump:base.bump},w);
+  return {...x,bump:round(base.bump*wanted/Math.max(1,without))};
+ };
  const tradeCandidates=(o,w,t)=>{
   if(!t||!['counter','challenge'].includes(t.step)||t.pushes||t.tradeMade||o.programme||o.title&&t.topic==='slot')return [];
   const p=G.P(o.pid),base=t.original;
@@ -182,51 +188,68 @@
    out.push({id,label,give,get,terms,bonus,hint:give+' In return: '+get+'.'});
   };
   if(t.topic!=='fee'){
-   // A larger explicit fee discount may secure a protection, slot or stipulation
-   // that the promoter would not grant at the existing fee.
-   const factor=t.topic==='protect'?.75:t.topic==='slot'?.78:.80;
-   const terms={...target,bump:round(base.bump*factor)};
-   const price=G.money(G.purse({...o,...terms},w));
-   add('fee','Cut the fee for the booking',`Offer ${price} instead of ${baselineFee}`,`Get ${benefit}`,terms,
-    ({aggressive:20,showman:17,traditional:17,cold:21}[p.personality]||17));
-   // For a protection or billing demand, working the promoter's favourite
-   // stipulation can be a different concession from reducing pay.
+   let terms={...target},extra='';
+   // If a counter already grants protection or improved billing, a bigger
+   // discount must buy a second improvement rather than a dominated package.
+   if(t.step==='counter'){
+    if(t.topic==='protect'){
+     const next=D.SLOT_ORDER[D.SLOT_ORDER.indexOf(base.slot)+1];
+     if(next&&!o.title){terms.slot=next;extra='better billing';}
+     else terms=null;
+    }else if(t.topic==='slot'){
+     const next=D.SLOT_ORDER[D.SLOT_ORDER.indexOf(terms.slot)+1];
+     if(base.finish==='lose_clean'&&!o.title){
+      terms.finish='lose_protected';extra='a protected loss';
+     }else if(next&&!o.title){terms.slot=next;extra='another step up the card';}
+     else terms=null;
+    }else if(t.topic==='stip'&&t.proposal?.stip===t.stip){
+     terms=null;
+    }
+   }
+   if(terms){
+    terms=atFee(o,w,terms,base.fee*.80);
+    const price=G.money(G.purse({...o,...terms},w));
+    const get=extra?'Get '+benefit+' AND '+extra:'Get '+benefit;
+    add('fee','Cut the fee for a better booking','Offer '+price+' instead of '+baselineFee,get,terms,
+     ({aggressive:20,showman:17,traditional:17,cold:21}[p.personality]||17));
+   }
+   // Accepting a tougher stipulation is an alternative concession.
    if(['protect','slot'].includes(t.topic)&&!base.stip&&!o.title){
     const fav=X.favourite(p);
     if(compatibleStip(o,fav)){
      const terms={...target,stip:fav,bump:round(base.bump*(t.topic==='protect'?.90:.97))};
      const st=X.STIPS[fav],price=G.money(G.purse({...o,...terms},w));
      add('stip','Take their preferred match rules',
-      `Accept ${st.name} (+${st.tired} fatigue)`, `Get ${benefit} for ${price}`,terms,
+      'Accept '+st.name+' (+'+st.tired+' fatigue)', 'Get '+benefit+' for '+price,terms,
       ({aggressive:20,showman:20,traditional:15,cold:14}[p.personality]||16));
     }
    }
   }else{
-   // More money in exchange for a worse booking position, a less protected
-   // defeat, or a physically tougher match. Every price is explicit.
+   // A worse slot, a clean loss, or a tougher match must genuinely buy MORE
+   // money, even after the slot/finish multiplier changes.
    const i=D.SLOT_ORDER.indexOf(base.slot);
    if(i>0&&!o.title){
-    const terms={...target,slot:D.SLOT_ORDER[i-1],bump:round(base.bump*1.15)};
+    const terms=atFee(o,w,{...target,slot:D.SLOT_ORDER[i-1]},base.fee*1.25);
     add('billing','Give up card position',
-     `Move from ${D.SLOTS[base.slot].name} to ${D.SLOTS[terms.slot].name}`,
-     `Receive ${G.money(G.purse({...o,...terms},w))} instead of ${baselineFee}`,terms,
+     'Move from '+D.SLOTS[base.slot].name+' to '+D.SLOTS[terms.slot].name,
+     'Receive '+G.money(G.purse({...o,...terms},w))+' instead of '+baselineFee,terms,
      ({aggressive:15,showman:18,traditional:20,cold:19}[p.personality]||17));
    }
    if(base.finish==='lose_protected'&&!o.title){
-    const terms={...target,finish:'lose_clean',bump:round(base.bump*1.17)};
+    const terms=atFee(o,w,{...target,finish:'lose_clean'},base.fee*1.25);
     add('finish','Accept a clean loss for more pay',
      'Give up protection on the booked loss',
-     `Receive ${G.money(G.purse({...o,...terms},w))} instead of ${baselineFee}`,terms,
+     'Receive '+G.money(G.purse({...o,...terms},w))+' instead of '+baselineFee,terms,
      ({aggressive:17,showman:16,traditional:18,cold:18}[p.personality]||17));
    }
    if(!base.stip&&!o.title){
     const fav=X.favourite(p);
     if(compatibleStip(o,fav)){
-     const terms={...target,stip:fav,bump:round(base.bump*1.16)};
+     const terms=atFee(o,w,{...target,stip:fav},base.fee*1.20);
      const st=X.STIPS[fav];
      add('stip','Work their preferred stipulation',
-      `Accept ${st.name} (+${st.tired} fatigue)`,
-      `Receive ${G.money(G.purse({...o,...terms},w))} instead of ${baselineFee}`,terms,
+      'Accept '+st.name+' (+'+st.tired+' fatigue)',
+      'Receive '+G.money(G.purse({...o,...terms},w))+' instead of '+baselineFee,terms,
       ({aggressive:20,showman:20,traditional:15,cold:14}[p.personality]||17));
     }
    }
@@ -300,6 +323,7 @@
   }
   // Concrete exchange is one FINAL bargaining action after a rejection or
   // counteroffer. The proposal is staged, never silently installed.
+  if(move==='push:trade')return {error:'Offer a concrete concession instead of requesting extra terms for free.'};
   if(typeof move==='string'&&move.startsWith('trade:')){
    const id=move.slice(6),option=tradeCandidates(o,w,t).find(x=>x.id===id);
    if(!option)return {error:'This trade is not available for the current booking and negotiation stage.'};
