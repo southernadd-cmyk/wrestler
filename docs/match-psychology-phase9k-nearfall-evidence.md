@@ -30,3 +30,7 @@ A hard restriction on the entire ordinary superplex family would be **a separate
 - Audit 480 Director-active + 480 metadata-only matches, by plan and by structure: genuine authored kickouts, real earned scheduled covers, matches with both nearfalls and runways, Safe ordinary risk events versus scheduled scripted spots.
 - Preserve booked outcomes, zero unexplained late control losses, no new workflow, no new ratings or move balancing.
 - Merge only after CI and explicit approval.
+
+## CI comparison detail
+
+The first PR CI run's cross-style paired Safe audit failed because the historical `mechanicalTape` hash included **the entire final report**. Adding the new read-only `final.nearfallDrama` field changed that hash even though the original wrestling outcome and other existing final fields remained unaltered. The fix excludes **only `nearfallDrama`** from that historical *mechanical comparison hash* while keeping the exact graph events, scripted attempts, all original final fields, nearfall counters, botches and stamina in the hash. This is not a blanket waiver or changed safety threshold. The focused PR simulation workflow also now explicitly runs the existing `earned-nearfall.test.cjs` (including Phase 9K assertions) in the **same** workflow, rather than relying only on the full post-merge suite.

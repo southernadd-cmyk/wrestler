@@ -15,10 +15,15 @@ const round=n=>Math.round(n*100)/100;
 const hash=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
 // Exactness here protects the simulated wrestling, not the booth's wording.
 // Keep the complete event ledger and actual consequences in this hash.
-const mechanicalTape=(m,events,shots)=>hash({
- events,scriptedAttempts:shots,final:m.final,
- nearfalls:m.nearfalls,botches:m.botches,stamina:m.wSt
-});
+const mechanicalTape=(m,events,shots)=>{
+ // Phase 9K adds *only* a read-only final evidence summary. Exclude that
+ // new diagnostic field from historical exact-match hashes, but retain
+ // every existing final value, actual move, booked outcome and consequence.
+ // A missing field in the historical baseline is not a wrestling change.
+ const {nearfallDrama,...mechanicalFinal}=m.final||{};
+ return hash({events,scriptedAttempts:shots,final:mechanicalFinal,
+  nearfalls:m.nearfalls,botches:m.botches,stamina:m.wSt});
+};
 function capture(seeds=2){
  assert.ok(Number.isInteger(seeds)&&seeds>=1&&seeds<=4,'invalid cohort size');
  const root=review.load(),D=root.OfficeData,M=root.OfficeMatch,G=M.GRAPH,rows=[];
