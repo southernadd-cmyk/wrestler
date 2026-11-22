@@ -26,11 +26,11 @@ function damage(M,attacker){
  M.graph.arc='control';
  const victim=attacker==='w'?'f':'w';
  for(let i=0;i<2;i++){
-  assert.equal(G.isValid(M,'target_strike'),true,'focused damage needs legal performed attacks');
-  G.apply(M,'target_strike');
+  assert.equal(G.isValid(M,'target_hold'),true,'focused damage needs legal performed grounded holds');
+  G.apply(M,'target_hold');
  }
  assert.ok(M.graph.damage[victim]>=3);
- assert.equal(M.graph.events.filter(e=>e.id==='target_strike'&&e.victim===victim).length,2);
+ assert.equal(M.graph.events.filter(e=>e.id==='target_hold'&&e.victim===victim).length,2);
  return victim;
 }
 for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
