@@ -1163,7 +1163,12 @@ function showMeeting(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan,S0=S();
  if(!P.room||P.room.cid!==c.id||P.room.v!==3){
-  P.room=OfficeRoom.begin(c,w,f,p,{recent:S0.roomRecent||[],threads:OfficeRoom.liveThreads(S0.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)});P.sheet=null;P.confirmed=false;
+  const opts={recent:S0.roomRecent||[],threads:OfficeRoom.liveThreads(S0.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)};
+  if(P.structureChoice){
+   opts.structure={id:P.structureChoice.id,lead:P.structureChoice.lead};
+   opts.structurePlanning=true;
+  }
+  P.room=OfficeRoom.begin(c,w,f,p,opts);P.sheet=null;P.confirmed=false;
  }
  const st=P.room,v=OfficeRoom.view(st);
  if(v.stage==='done'&&!P.confirmed){
@@ -1191,7 +1196,7 @@ function showMeeting(){
  // The called spots are real selections from the graph, not decorative script lines.
  const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>
   ${routePicker}
-  <div class="rorder-heading"><b>2. Call the spots</b><span>Dennis adjusts his suggestions when the finish changes. Your choices stay put.</span></div>
+  <div class="rorder-heading"><b>${st.structurePlanning?"2. Plan the dramatic objectives":"2. Call the spots"}</b><span>${st.structurePlanning?"Agree an optional real move for each objective or leave it to the wrestlers.":"Dennis adjusts his suggestions when the finish changes. Your choices stay put."}</span></div>
   <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span>${esc(c.who)}’s idea</span>${tagChips(c.tags)}</button>`).join('')}</div></div>`).join('')}</div>
   <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the finish and running order</button></div></div>`:'';
  const review=v.review?`<div class="decide2 runorder finish-review">
@@ -1199,7 +1204,7 @@ function showMeeting(){
    <p class="lede">The conversations are over. Check what they changed before the wrestlers go out.</p>
    <section class="finish-choice"><div class="rorder-heading"><b>Agreed finish</b><span>${esc(v.finishPlan?.label||'Not chosen')}</span></div>
     ${finishReadout}</section>
-   <div class="rorder-heading"><b>The called spots</b><span>In order, subject to what actually happens in the ring.</span></div>
+   <div class="rorder-heading"><b>${st.structurePlanning?"The dramatic objectives":"The called spots"}</b><span>In order, subject to what actually happens in the ring.</span></div>
    <div class="rorder review-spots">${v.review.map(r=>`<div class="rorder-row">
     <div class="rorder-slot"><b>${esc(r.name)}</b></div>
     <p class="review-spot"><b>${esc(r.current||'Called in the ring')}</b>${v.finishPlan?.supported?.includes(r.name.toLowerCase())?'<span class="review-fit">Helps build the finish</span>':''}</p>
@@ -1210,7 +1215,20 @@ function showMeeting(){
   </div>`:'';
  const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
- const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
+ const descriptions={traditional:'Original shine, heat, comeback and finish. No Structure Director.',
+  classic_american:'Guided opening, pressure, comeback and payoff.',
+  kings_road:'Technical exchanges, escalation, callback and finish build.',
+  chickenshit_heel:'Avoid, get exposed, use a shortcut, then escape.',
+  dominant_ace:'Take control, absorb a challenge and reassert dominance.'};
+ const selected=P.structureChoice?.id||'traditional';
+ const variants=[{id:'traditional',label:'Traditional (current)'},...OfficeSheets.STRUCTURES.catalogue()];
+ // Choose BEFORE the first backstage decision. The meeting is re-created
+ // only while still at its initial plan stage, never after a signed decision.
+ const chooser=v.stage==='plan'?'<section class="structure-chooser" aria-label="Match structure choice"><div class="rorder-heading"><b>Match structure</b><span>Optional. Choose before planning the match.</span></div>'+
+  '<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small></button>').join('')+'</div>'+
+  (P.structureChoice?'<div class="structure-lead"><span>Dramatic lead (not the booked winner)</span><div role="group" aria-label="Which wrestler leads the structure?">'+[{id:'w',name:w.short},{id:'f',name:f.short}].map(x=>'<button class="btn'+(P.structureChoice.lead===x.id?' on':'')+'" data-structurelead="'+x.id+'" aria-pressed="'+(P.structureChoice.lead===x.id)+'">'+esc(x.name)+'</button>').join('')+'</div></div>':'')+
+  '<p class="dim structure-help">The promoter\'s booked result is unchanged. The structure guides legal, performed actions rather than guaranteeing moves.</p></section>':'';
+ const body=matchupBar(c,w,f,middle,wNote,fNote)+chooser+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
  const signing=window.OfficeSigning?.eligible(c);
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:signing?'<button class="btn go" data-tv="signing">To the contract signing</button>':st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
  $('#tv').innerHTML=strip(c,'backstage')+backstageBrief(c,P,v)+'<div class="stage screen s-back">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
@@ -1272,7 +1290,13 @@ function bell(){
  const signed=window.OfficeSigning&&night.signing?.cid===c.id?OfficeSigning.result(night.signing):null;
  const promoRes=signed||(P.sheet?.skipPromo?null:night.promo?.v>=4?OfficeMic.result(night.promo):night.promo?.v===2?OfficeStory.Graph.result(night.promo):null);
  if(window.OfficeProgrammeArcs)OfficeProgrammeArcs.prepare(c,P.arcChoice,promoRes);
- night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null,seed:Math.floor(Math.random()*2**31)});
+ const matchSheet=P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null;
+ // Verify the signed plan AFTER vow and ringside additions. Refuse a stale
+ // or imported mismatch rather than activating the wrong dramatic layout.
+ let structureExecution;
+ try{structureExecution=OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.structureChoice);}
+ catch(err){console.warn('Match structure refused',err);toast('Signed structure mismatch. Review the backstage layout.');return showMeeting();}
+ night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:matchSheet,structureExecution,seed:Math.floor(Math.random()*2**31)});
  night.past=[];night.paused=false;commentaryView='all';
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const livePlan=`<section class="ringside-plan" aria-label="Match instructions">
@@ -1492,6 +1516,20 @@ document.addEventListener('click',e=>{
  if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
  if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
  if(d.plan){night.plan[d.plan]=d.val;if(d.plan==='game'){night.plan.sheet=null;night.plan.focus=null;night.plan.confirmed=false;}t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
+ if(d.structure||d.structurelead){
+  const P=night?.plan,room=P?.room;
+  if(night?.stage!=='meeting'||!room||room.stage!=='plan')return;
+  if(d.structure){
+   const ids=OfficeSheets.STRUCTURES.catalogue().map(x=>x.id);
+   if(d.structure!=='traditional'&&!ids.includes(d.structure))return;
+   P.structureChoice=d.structure==='traditional'?null:{id:d.structure,lead:P.structureChoice?.lead||'w'};
+  }else{
+   if(!P.structureChoice||!['w','f'].includes(d.structurelead))return;
+   P.structureChoice={...P.structureChoice,lead:d.structurelead};
+  }
+  P.room=null;P.sheet=null;P.confirmed=false;
+  return showMeeting();
+ }
  if(d.sheetmode){if(!OfficeSheets.MODE[d.sheetmode])return;night.plan.method=d.sheetmode;night.plan.sheet=null;night.plan.confirmed=false;return showMeeting()}
  if(d.room){const st=night?.plan?.room;if(night?.stage!=='meeting'||!st||st.stage==='done')return;
   if(!OfficeRoom.options(st).some(o=>o.id===d.room))return;OfficeRoom.act(st,d.room);return showMeeting()}
