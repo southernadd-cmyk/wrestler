@@ -59,11 +59,15 @@ for(let i=0;i<240;i++){
  assert.doesNotMatch(text,/\{(?:W|F|A|D|move|part|fin)\}|undefined|NaN/,'no unfilled placeholders');
  const times=x.log.map(line=>{const [m,s]=line.t.split(':').map(Number);return m*60+s;});
  for(let j=1;j<times.length;j++)assert.ok(times[j]>=times[j-1],'timestamps must be chronological');
- if(f==='win_dirty'){
+ // A booked dirty finish can be superseded by a real DQ, injury stoppage,
+ // or live-manager override. Those endings must not fabricate a dirty pin.
+ if(f==='win_dirty'&&x.outcome==='booked'){
   const ix=x.log.findIndex(line=>/fistful of tights|feet on the ropes|thumb in the eye|holding the ropes for leverage/.test(line.text));
   const ref=x.log.findIndex(line=>line.text.includes('referee turns back'));
   const one=x.log.findIndex((line,j)=>j>ix&&line.text==='ONE!');
-  assert.ok(ix>=0&&ix<ref&&ref<one,'dirty pin occurs before referee sees and counts it');
+  assert.ok(ix>=0&&ix<ref&&ref<one,
+   'dirty pin before referee count: fixture '+i+', route '+x.finishRoute+
+   ', outcome '+x.outcome+', positions '+[ix,ref,one].join(','));
  }
  count++;
 }
