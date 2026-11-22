@@ -1198,7 +1198,7 @@
  SITUATIONS.push({
   id:'structure_objection',kind:'match',weight:0,followup:true,when:x=>!!x.st.structurePlanning,
   open(st){
-   structureSeed(st);
+   structureSeed(st,{refresh:true});
    const issue=structureSlots(st).map(obj=>{
     const b=st.structureBoard?.[obj.id];
     if(!b?.action)return null;
