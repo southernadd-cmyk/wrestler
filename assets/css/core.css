@@ -670,3 +670,25 @@ dialog.negotiation-dialog[open]{
  dialog.negotiation-dialog[open]{height:calc(100dvh - 10px);max-height:calc(100dvh - 10px)}
  .neg-transcript{min-height:65px}
 }
+
+
+/* Booking negotiations V2 Phase 3: read the promoter before making a pitch. */
+.neg-profile{
+ flex:none;min-width:0;max-width:100%;padding:7px 12px;
+ background:var(--paper);border-bottom:2px solid var(--stone-lo);
+ overflow-wrap:anywhere;
+}
+.neg-profile b{display:block;color:var(--blood);font-weight:700;font-size:16px;line-height:1.2}
+.neg-profile p{margin:3px 0;font-size:15px;line-height:1.25}
+.neg-profile small{font-size:13px;color:var(--ink-2)}
+.neg-advice{
+ margin:0 0 8px;padding:5px 8px;border-left:3px solid var(--gold);
+ background:var(--paper);font-size:15px;line-height:1.3;
+}
+.neg-advice b{color:var(--blood)}
+@media(max-width:720px){
+ .neg-profile{padding:5px 9px}
+ .neg-profile p{font-size:14px}
+ .neg-profile small{font-size:12px}
+ .neg-advice{font-size:14px}
+}
