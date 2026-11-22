@@ -1229,7 +1229,10 @@ function showMeeting(){
   '<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small></button>').join('')+'</div>'+
   (P.structureChoice?'<div class="structure-lead"><span>Dramatic lead (not the booked winner)</span><div role="group" aria-label="Which wrestler leads the structure?">'+[{id:'w',name:w.short},{id:'f',name:f.short}].map(x=>'<button class="btn'+(P.structureChoice.lead===x.id?' on':'')+'" data-structurelead="'+x.id+'" aria-pressed="'+(P.structureChoice.lead===x.id)+'">'+esc(x.name)+'</button>').join('')+'</div></div>':'')+
   '<p class="dim structure-help">The promoter\'s booked result is unchanged. The structure guides legal, performed actions rather than guaranteeing moves.</p></section>':'';
- const body=matchupBar(c,w,f,middle,wNote,fNote)+chooser+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
+ // Put structure selection INSIDE the scrolling decision panel. An extra
+ // flex child above the conversation could clip mobile plan buttons.
+ const decisionWithStructure=chooser?decide.replace('<div class="decide2">','<div class="decide2">'+chooser):decide;
+ const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decisionWithStructure+agreed;
  const signing=window.OfficeSigning?.eligible(c);
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:signing?'<button class="btn go" data-tv="signing">To the contract signing</button>':st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
  $('#tv').innerHTML=strip(c,'backstage')+backstageBrief(c,P,v)+'<div class="stage screen s-back">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
