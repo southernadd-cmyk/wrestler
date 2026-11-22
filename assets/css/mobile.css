@@ -17,7 +17,7 @@
  .top .histnav [data-hist="fwd"]{display:none}
  .top .histnav .btn{min-width:40px;min-height:40px;font-size:18px}
  .top .logo{grid-column:2;grid-row:1;font-size:clamp(22px,6.8vw,32px);letter-spacing:0}
- .top #continue{grid-column:3;grid-row:1;padding:3px 8px;min-width:106px;font-size:22px}
+ .top #continue{grid-column:3;grid-row:1;padding:3px 8px;min-width:106px;min-height:40px;font-size:22px}
  .top #continue small{font:12px/1.15 'Atkinson Hyperlegible Next',system-ui,sans-serif}
  .top .readouts{
   grid-row:2;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
@@ -25,8 +25,10 @@
  }
  /* Keep all four career readouts present: week, bank, reputation and meetings.
     Two compact columns cost one extra row but avoid hiding important state. */
- .top .readouts{gap:4px 6px}
- .top .ro{display:flex;align-items:baseline;justify-content:space-between;gap:3px;min-width:0;background:#1a2855;padding:4px 7px}
+ /* Phone header: all four readouts in one compact row, labels above values, so the
+    section and content areas keep most of a 740px-tall screen. */
+ .top .readouts{gap:4px;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .top .ro{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:0;background:#1a2855;padding:3px 6px}
  .top .ro small{font-size:12px;line-height:1.2}
  .top .ro small::after{content:none}
  .top .ro b{font:700 14px/1.2 'Atkinson Hyperlegible Next',system-ui,sans-serif;letter-spacing:0;overflow-wrap:anywhere;text-align:right;min-width:0}
