@@ -723,3 +723,9 @@ dialog.negotiation-dialog[open]{
  .neg-trade-options>.neg-choice{min-height:50px}
  .neg-trade-summary{padding:7px}
 }
+
+
+/* Phase 5: time-limited promoter offers. Never hide expiry in fine print. */
+.neg-deadline-tag{display:inline-block;margin-left:9px;font-weight:700;color:var(--blood);font-size:14px}
+.neg-deadline-note{margin:0;padding:7px 12px;background:var(--paper);border-bottom:2px solid var(--stone-lo);color:var(--blood);font-size:15px;line-height:1.25;font-weight:700}
+@media(max-width:720px){.neg-deadline-tag{display:block;margin-left:0}.neg-deadline-note{padding:5px 9px;font-size:13px}}
