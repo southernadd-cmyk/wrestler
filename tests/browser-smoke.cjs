@@ -109,6 +109,35 @@ async function journey(browser,name,viewport){
     const result={grid:box('.mf-cols'),phase:box('.mf-phase-section'),moments:box('.mf-moments-section'),stars:box('.mf-breakdown-section')};
     host.remove();return result;
   });
+
+  // Phase 6: inspect the new three-part report at the actual page viewport.
+  // No fabricated result ratings: this is a pure CSS overflow/layout audit.
+  const structureLayout=await page.evaluate(()=>{
+    const host=document.createElement('section');
+    host.className='structure-assessment';
+    host.style.cssText='position:absolute;left:0;top:20px;width:min(1080px,100%);visibility:hidden';
+    host.innerHTML='<h4>Match structure assessment</h4><div class="structure-assessment-grid">'+
+      ['Plan adherence','Structural coherence','Execution quality'].map(x=>
+      '<div><b>'+x+'</b><strong>2 of 4 witnessed</strong><p>Read the evidence, not the promise.</p></div>').join('')+'</div>';
+    document.body.appendChild(host);
+    const grid=host.querySelector('.structure-assessment-grid'),bounds=grid.getBoundingClientRect();
+    const cards=[...grid.children].map(el=>{const r=el.getBoundingClientRect();
+      return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}});
+    host.remove();
+    return {grid:{left:bounds.left,right:bounds.right,width:bounds.width},cards};
+  });
+  assert.equal(structureLayout.cards.length,3,name+': all three independent readings must be present');
+  assert.ok(structureLayout.cards.every(x=>x.left>=-2&&x.right<=viewport.width+2&&x.width>80),
+    name+': report extends beyond viewport '+JSON.stringify(structureLayout));
+  if(viewport.width<=780){
+    assert.ok(structureLayout.cards[1].top>=structureLayout.cards[0].bottom-2&&
+      structureLayout.cards[2].top>=structureLayout.cards[1].bottom-2,
+      name+': phone report should stack three readings '+JSON.stringify(structureLayout));
+  }else{
+    assert.ok(Math.abs(structureLayout.cards[0].top-structureLayout.cards[1].top)<2&&
+      Math.abs(structureLayout.cards[1].top-structureLayout.cards[2].top)<2,
+      name+': desktop report should use three balanced columns '+JSON.stringify(structureLayout));
+  }
   if(viewport.width>900){
     assert.ok(Math.abs(flowLayout.phase.left-flowLayout.stars.left)<2 &&
       Math.abs(flowLayout.phase.right-flowLayout.stars.right)<2,

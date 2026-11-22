@@ -116,6 +116,7 @@ jobs:
           node tests/structure-live-director.test.cjs
           node tests/structure-career-activation.test.cjs
           node tests/structure-phase5-discussion.test.cjs
+          node tests/structure-phase6-commentary.test.cjs
           # Career integration refactored the signed-sheet handoff. Keep the
           # lightweight creative-loop contract guard in the existing PR gate.
           node tests/creative-loop.test.cjs
