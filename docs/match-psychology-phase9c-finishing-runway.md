@@ -26,3 +26,9 @@ Initial full controls confirmed only **2** closing sequences in 480 actively str
 ## Graded evidence
 
 The full matched audit showed only four strict pressure → counter → setup → impact runways among 240 eligible clean matches. Phase 9C therefore also records a separate, weaker but truthful `linked` status for a real, same-owner authored setup → impact late in the match, without claiming an earlier reversal or opponent pressure. `witnessed` still demands all four physical events; `linked` sets `cutoff:null` and `pressure:null`. Both categories remain opt-in, clean-finish-only, cannot change the booked result or add stars, and have separate first-party audit counts.
+
+## Late control handoff reachability
+
+The original 9C pilot could only offer the setup after an observed reversal or after a setup already in progress. In the closing quarter of an active **clean** bout, a newly performed winner-owned standing strike or other legal offence can now invite `rope_run` or `waistlock` as ordinary weighted setup candidates. The wrestler must truly control the ring, the prior action must be recorded as completed and non-resting, and the move still passes the existing physical validator, training, stamina and Safe gates. No invented reversal or immediate impact, no help in dirty/metadata-only bouts, and no influence over the final contracted result.
+
+The existing 960-bout comparison now reports a diagnostic funnel: eligible clean matches where the booked winner retained control at the bell, had actually performed a late setup, and had actually landed a recent grounding impact. These are **descriptive** and not assigned star points or used to force outcomes.

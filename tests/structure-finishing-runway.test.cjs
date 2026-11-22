@@ -85,7 +85,37 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
   sequence(control);
   assert.equal(G.closingRunway(control),null,'metadata-only control unchanged');
  }
- const partial=create(structure,'story');
+ // Ordinary performed offence, not only a signed or countered action,
+ // can invite the next legal stage of an earned clean finishing sequence.
+ const natural=create(structure,'story');
+ natural.t=Math.floor(natural.len*.82);natural.graph.arc='exchange';
+ step(natural,'probe_strike','w');
+ const options=G.closingOffers(natural,'w');
+ assert.ok(options.some(([id])=>id==='rope_run'),
+  'a real late standing attack may invite a safe rope setup');
+ assert.ok(options.some(([id])=>id==='waistlock'),
+  'a real late standing attack may invite a legal grappling setup');
+ const realPool=G.pool(natural);
+ assert.ok(realPool.some(([id,w])=>id==='rope_run'&&w>0),
+  'only a physically legal closing move enters the live weighted pool');
+ assert.ok(realPool.some(([id])=>!['rope_run','waistlock'].includes(id)),
+  'winning continuation remains a choice rather than a script');
+ const naturalControl=create(structure,'story','win_clean',false);
+ naturalControl.t=Math.floor(naturalControl.len*.82);
+ step(naturalControl,'probe_strike','w');
+ assert.equal(G.closingOffers(naturalControl,'w').length,0,
+  'metadata-only match has no new offers');
+ const naturalDirty=create(structure,'story','win_dirty');
+ naturalDirty.t=Math.floor(naturalDirty.len*.82);
+ step(naturalDirty,'probe_strike','w');
+ assert.equal(G.closingOffers(naturalDirty,'w').length,0,
+  'dirty finish cannot silently receive clean-finish setup help');
+ const naturalLoss=create(structure,'story','win_clean');
+ naturalLoss.t=Math.floor(naturalLoss.len*.82);
+ step(naturalLoss,'probe_strike','f');
+ assert.equal(G.closingOffers(naturalLoss,'f').length,0,
+  'the opponent cannot inherit the booked clean winner’s setup preference');
+  const partial=create(structure,'story');
  partial.t=Math.floor(partial.len*.89);partial.graph.arc='exchange';
  step(partial,'rope_run','w');partial.t+=10;step(partial,'clothesline','w');
  const support=G.closingRunway(partial);

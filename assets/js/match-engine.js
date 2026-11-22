@@ -3661,6 +3661,20 @@ const Graph=(function makeGraph(){
      g.events.some(e=>closingPressure(e,loser)&&
       e.t<last.t&&last.t-e.t<=100))
    return [['rope_run',3.6],['front_facelock',2.2]];
+  // A clean winner can earn a real closing setup by taking control through
+  // ordinary in-ring offence, not only by executing a named reversal.
+  // This is a candidate choice after a performed standing action, NEVER an
+  // invented counter, automatic control switch, or scripted successful move.
+  // Leave the stronger cutoff narrative for actual observed reversals.
+  if(side===winner&&p.position==='standing'&&p.down===null&&
+     g.physical?.area==='ring'&&last.preControl===winner&&
+     last.control===winner&&!node.reverse&&!node.blockOf&&
+     !node.nearfall&&!CLOSING_SETUPS.has(last.id)&&
+     (node.cost??1)>=.7&&!['rest','heel'].includes(node.family)&&
+     !g.events.some(e=>e.preControl===winner&&CLOSING_SETUPS.has(e.id)&&
+       e.t>=M.t-70&&e.t<=M.t)){
+   return [['rope_run',1.8],['waistlock',1.4]];
+  }
   if(side===winner&&last.preControl===winner&&last.control===winner&&
      CLOSING_SETUPS.has(last.id)){
    // A performed setup can offer a real authored impact even without a
