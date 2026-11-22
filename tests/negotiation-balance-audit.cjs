@@ -37,6 +37,7 @@ function start(pid,level,style,topic,arg,slot){
 }
 const per={};const byLevel={},byArg={};let total=0,banned=0,hardball=0,withdrawn=0,
  hardballWon=0,hardballLostCounter=0,tradeAvailable=0,tradeAccepted=0,
+ acceptedFeeTrustCost=0,acceptedFeeRaises=0,
  casesWithNoChoice=0,originalAltered=0,feeUnchanged=0;
 function counter(map,key){return map[key]||(map[key]={n:0,agreed:0,counter:0,rejected:0,
  feeGain:0,feeLoss:0,slotUp:0,protected:0,trustLost:0,offerWithdrawn:0,hardballWon:0,hardballTried:0});}
@@ -56,6 +57,13 @@ for(const pid of ids)for(const lv of levels)for(const style of styles)for(const 
   const proposal=t.proposal;
   assert.ok(proposal);
   const proposedFee=G.purse({...o,...proposal},w);
+  // A player must not receive an automatic cash raise AND higher billing.
+  if(topic==='slot')assert.ok(proposedFee<oldFee,
+   'Improved billing must have a genuinely lower GUARANTEED fee');
+  if(topic==='fee')assert.ok(proposedFee>oldFee,
+   'An agreed pay demand must be a genuine pay increase');
+  if(topic==='protect')assert.ok(proposedFee<oldFee,
+   'Protecting an agreed clean loss must give back money');
   for(const b of series){
    b.feeGain+=Math.max(0,proposedFee-oldFee);
    b.feeLoss+=Math.max(0,oldFee-proposedFee);
@@ -71,7 +79,16 @@ for(const pid of ids)for(const lv of levels)for(const style of styles)for(const 
     const candidate=choices[0];
     const tr=G.talkMove(o.id,w.id,'trade:'+candidate.id);
     assert.equal(tr.error,undefined);
-    if(o.talk.step==='offer')tradeAccepted++;
+    if(o.talk.step==='offer'){
+     tradeAccepted++;
+     if(topic==='fee'){
+      const before=p.trust;
+      assert.equal(G.talkMove(o.id,w.id,'reply:accept').error,undefined);
+      const cost=N.profileFor(pid).feeRaiseCost;
+      assert.equal(p.trust,before-cost,'accepted fee raise must have promoter cost');
+      acceptedFeeTrustCost+=cost;acceptedFeeRaises++;
+     }
+    }
    }
    const y=start(pid,lv,style,topic,arg,slot),p0=y.p.trust;
    assert.equal(y.t.step,'counter','hardball subscenario must be comparable');
@@ -83,6 +100,12 @@ for(const pid of ids)for(const lv of levels)for(const style of styles)for(const 
    else if(y.t.step==='offer'){hardballWon++;for(const b of series)b.hardballWon++;}
    else if(y.t.step==='done'){hardballLostCounter++;}
    assert.ok(y.p.trust<=p0,'hardball may never increase trust');
+  }else if(topic==='fee'){
+   const before=p.trust;
+   assert.equal(G.talkMove(o.id,w.id,'reply:accept').error,undefined);
+   const cost=N.profileFor(pid).feeRaiseCost;
+   assert.equal(p.trust,before-cost,'an accepted fee raise costs promoter trust');
+   acceptedFeeTrustCost+=cost;acceptedFeeRaises++;
   }
  }else{
   assert.equal(o.bump,1,'refused initial request retains the original');
@@ -90,6 +113,16 @@ for(const pid of ids)for(const lv of levels)for(const style of styles)for(const 
  }
 }
 assert.equal(total,ids.length*levels.length*styles.length*topics.length*args.length);
+assert.ok(tradeAvailable>0&&tradeAccepted>0&&tradeAccepted<tradeAvailable,
+ 'Concrete trades must be useful but not guaranteed');
+assert.ok(hardballWon>0&&withdrawn>0,
+ 'Hardball must carry both genuine upside and the possibility of losing the invitation');
+assert.ok(per['dock:fee'].rejected>0&&per['union:fee'].rejected>0,
+ 'Promoters must be able to refuse unsupported fee demands');
+assert.ok(byLevel['star:slot'].rejected>0,
+ 'Even a star must sometimes face resistance to taking a main-event place');
+assert.ok(acceptedFeeRaises>0&&acceptedFeeTrustCost>0,
+ 'Cash negotiation must incur real promoter relationship cost');
 const nice=(obj)=>Object.fromEntries(Object.entries(obj).sort(([a],[b])=>a.localeCompare(b)).map(([k,r])=>[k,{
  n:r.n,agreed:r.agreed,counter:r.counter,rejected:r.rejected,
  acceptancePct:+((r.agreed+r.counter)/r.n*100).toFixed(1),
@@ -100,6 +133,7 @@ const nice=(obj)=>Object.fromEntries(Object.entries(obj).sort(([a],[b])=>a.local
 console.log('NEGOTIATION_BALANCE_AUDIT_BEGIN');
 console.log(JSON.stringify({scenarios:total,hardball,hardballWon,hardballLostCounter,withdrawn,
  tradeAvailable,tradeAccepted,casesWithNoChoice,feeUnchanged,
+ acceptedFeeRaises,acceptedFeeTrustCost,
  byPromoterAndTopic:nice(per),byLeverageAndTopic:nice(byLevel),
  byPromoterTopicArgument:nice(byArg)},null,2));
 console.log('NEGOTIATION_BALANCE_AUDIT_END');
