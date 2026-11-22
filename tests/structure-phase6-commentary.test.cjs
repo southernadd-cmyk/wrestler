@@ -49,7 +49,7 @@ for(const id of structures)for(const lead of ['w','f'])for(const game of layouts
  // before the first commentary observation without changing the match.
  if(bouts===1){
   for(let n=0;n<45;n++)take(M);
-  const resumed=E.restore(clone(M));
+  const resumed=E.restore(clone({...M,rState:M.r.getState()}));
   for(let n=0;n<80;n++){
    const a=take(M),b=take(resumed);
    assert.equal(JSON.stringify(a),JSON.stringify(b),'commentary diverges on restore');
