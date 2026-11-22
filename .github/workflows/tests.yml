@@ -43,7 +43,7 @@ jobs:
               run_full=false
               for path in "${changed[@]}"; do
                 case "$path" in
-                  assets/js/negotiation-v2.js|tests/negotiation-trade-browser.cjs|tests/negotiations-tradeoffs.test.cjs)
+                  assets/js/negotiation-v2.js|assets/js/negotiation-career.js|tests/negotiation-trade-browser.cjs|tests/negotiation-career-browser.cjs|tests/negotiations-tradeoffs.test.cjs|tests/negotiations-career.test.cjs)
                     negotiation_browser=true
                     ;;
                 esac
@@ -102,6 +102,7 @@ jobs:
           node tests/negotiations-v2.test.cjs
           node tests/negotiations-personalities.test.cjs
           node tests/negotiations-tradeoffs.test.cjs
+          node tests/negotiations-career.test.cjs
           # Signed finish choices and legal audibles use the same match-engine boundary.
           node tests/agents-room.test.cjs
           node tests/brawl-endurance.test.cjs
@@ -178,3 +179,4 @@ jobs:
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           for i in {1..40}; do curl -fsS http://127.0.0.1:8765/ > /dev/null && break; sleep 1; done
           node tests/negotiation-trade-browser.cjs
+          node tests/negotiation-career-browser.cjs
