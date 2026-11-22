@@ -1539,6 +1539,16 @@ const Graph=(function makeGraph(){
   // Even the no-edge fallback must respect the late-arc timing guard.
   return pick(M,weights)||(frac>.75&&canArc(M,'escalation',frac)?'escalation':g.arc);
  }
+ // Objective actors determine which wrestler a structure wants to see
+ // in control; a defensive escape instead gives the opponent an attack to
+ // counter. This guides existing arcs, never credits an unperformed action.
+ function structureActor(M){
+  const director=root.OfficeSheets?.DIRECTOR;
+  if(!director?.active(M))return null;
+  const obj=director.current(M)?.objective;
+  if(!obj||obj.actor==='either'||M.t/Math.max(1,M.len)<obj.window[0]-.07)return null;
+  return obj.intent==='escape'?(obj.actor==='w'?'f':'w'):obj.actor;
+ }
  function enter(M,id,prev){
   const g=get(M),arc=ARCS[id],p=Psy.get(M);
   let words;
@@ -1739,14 +1749,12 @@ const Graph=(function makeGraph(){
    g.arcNarrationCounts[id]=count+1;
   }
   const director=root.OfficeSheets?.DIRECTOR;
-  if(director?.active(M)&&arc.control!=='neutral'){
-   const role=arc.control==='w'?M.structureDirector.roles.lead:M.structureDirector.roles.other;
+  const role=director?.active(M)&&arc.control!=='neutral'?
+   (structureActor(M)||(arc.control==='w'?M.structureDirector.roles.lead:M.structureDirector.roles.other)):arc.control;
+  if(director?.active(M)&&arc.control!=='neutral')
    words=(role==='w'?M.w.short:M.f.short)+' seeks the initiative in this exchange.';
-  }
   if(words)say(M,fill(M,words),'story',{textureId:'arc-entry:'+id});
   if(arc.control==='w'||arc.control==='f'){
-   const role=director?.active(M)?
-    (arc.control==='w'?M.structureDirector.roles.lead:M.structureDirector.roles.other):arc.control;
    const change=p.control!==role;
    if(change)p.changes++;
    p.control=role;
@@ -4429,7 +4437,11 @@ const Graph=(function makeGraph(){
   if(p.position==='outside'&&g.floorTicks>=4){apply(M,'roll_inside');g.floorTicks=0;return;}
   if(p.control==='neutral'){
    const advantage=(M.w.ring-M.f.ring)+(M.wSt-M.fSt)*.3;
-   p.control=M.r()<Math.max(.3,Math.min(.7,.5+advantage/250))?'w':'f';p.changes++;
+   const base=Math.max(.3,Math.min(.7,.5+advantage/250));
+   const actor=structureActor(M);
+   // A signed objective may favour initial initiative, not guarantee it.
+   const chance=actor==='w'?Math.min(.85,base+.22):actor==='f'?Math.max(.15,base-.22):base;
+   p.control=M.r()<chance?'w':'f';p.changes++;
   }
   const candidates=validPool(M),id=pick(M,candidates);
   if(id){

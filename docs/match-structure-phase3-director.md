@@ -10,7 +10,7 @@ The original signed agreement remains editorial and immutable. `M.structureDirec
 
 ## Actual match behaviour
 
-The director guides graph arc selection and legal, physically eligible moves by objective. The signed named call is a higher-weight preference, never a guaranteed landing. Real `Graph.apply` events can satisfy objective predicates only if they actually appear on the performed tape with matching actor, intent, time window and prerequisites. The director never grants a free move, a phantom control switch, stars, a cover or an override of the booked winner and finish rules.
+The director guides graph arc selection and legal, physically eligible moves by objective. The explicit dramatic actor governs which wrestler an arc favours; a defensive escape instead invites the opponent's attack for a genuine counter. Neutral initiative remains probabilistic. The signed named call is a higher-weight preference, never a guaranteed landing. Real `Graph.apply` events can satisfy objective predicates only if they actually appear on the performed tape with matching actor, intent, time window and prerequisites. The director never grants a free move, a phantom control switch, stars, a cover or an override of the booked winner and finish rules.
 
 Some objectives need multiple distinct landed actions; the King's Road tactical callback must reuse an earlier **performed** exchange; evasion and illegal shortcuts require a real relevant graph action. Missed commitments remain recorded, and later objectives may be marked adapted rather than rewriting the signed sheet.
 

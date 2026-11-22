@@ -80,6 +80,7 @@ for(const id of ids)for(const lead of ['w','f'])for(const game of plans){
   if(item.status==='missed')diagnostics[id].missed++;
   for(const evidence of item.evidence){
    assert.ok(E.GRAPH.A[evidence.id],'only a real authored action can count');
+   if(planned.actor!=='either')assert.equal(evidence.actor,planned.actor,'the event must belong to the signed dramatic actor');
    assert.ok(M.graph.events.some(e=>e.id===evidence.id&&e.t===evidence.at),
     'credited evidence must occur on the real graph tape');
   }
