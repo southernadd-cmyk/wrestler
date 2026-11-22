@@ -66,6 +66,20 @@ for(const id of ids)for(const lead of ['w','f'])for(const game of plans){
  assert.deepEqual(Object.keys(copy(M.final.structure)).sort(),
   ['id','objectives','roles','version'].sort());
  const result=E.structureReport(M);
+ if(id==='chickenshit_heel'){
+  const view=pair.sheet.structurePlan.objectives.map((o,i)=>({
+   goal:o.id,window:o.window,actor:o.actor,call:o.call?.action||null,
+   state:result.objectives[i].status,evidence:result.objectives[i].evidence.map(e=>e.id+'@'+e.at)}));
+  const windows=pair.sheet.structurePlan.objectives.map(o=>({
+   goal:o.id,events:M.graph.events.filter(e=>e.t>=o.window[0]*M.len-20&&e.t<=o.window[1]*M.len+50)
+    .filter(e=>E.GRAPH.A[e.id])
+    .map(e=>[e.t,e.id,e.preControl,e.control,E.GRAPH.A[e.id].family])
+    .slice(0,35)
+  }));
+  console.log('PHASE3 HEEL TRACE '+JSON.stringify({
+   lead,game,seed,states:view,arcs:M.graph.history,windows,
+   counts:M.graph.events.length}));
+ }
  diagnostics[id].bouts++;
  assert.equal(JSON.stringify(result),JSON.stringify(M.final.structure));
  assert.equal(result.objectives.length,4);
