@@ -1711,7 +1711,15 @@ const Graph=(function makeGraph(){
     '{F} continues to wear {W} down with patient mat control.'
    ]
   };
-  const alternatives=ARC_NARRATION_VARIANTS[id];
+  // Submissions-only contests still use the narrative 'nearfall' arc for
+  // tension, but a pin-cover line would promise a finish outlawed by the stip.
+  // Preserve the same deterministic rotation counter and gameplay RNG.
+  const alternatives=M.o.stip==='submission'&&id==='nearfall'?[
+   'They know one mistake could settle this. Every grip and escape matters.',
+   'One submission counter changes the momentum. Both wrestlers know it.',
+   'The next meaningful advantage could become a decisive hold.',
+   'The contest is close enough that neither wrestler can afford a trapped limb.'
+  ]:ARC_NARRATION_VARIANTS[id];
   if(alternatives){
    g.arcNarrationCounts??={};
    const count=g.arcNarrationCounts[id]||0;
