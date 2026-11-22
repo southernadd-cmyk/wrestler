@@ -29,12 +29,20 @@ function offer(o={}){const s=G.S,x={id:'so-'+(n++),pid:'dock',rid:'silas',slot:'
   assert.ok(!G.talkMove(o.id,'rex','ask:stip:'+kind).error);
   assert.equal(s.focus,f0-1,'a meeting is used');
   const r=G.talkMove(o.id,'rex','arg:crowd');assert.ok(!r.error,r.error);
-  const t=o.talk;assert.equal(t.step,'done');
-  if(t.verdict==='agreed'){agreed++;assert.equal(o.stip,kind);}
-  else if(t.verdict==='counter'){counter++;assert.equal(o.stip,X.favourite(G.P(pid)));assert.notEqual(o.stip,kind);}
-  else{refused++;assert.equal(o.stip,undefined);}
+  const t=o.talk;
+  assert.ok(['offer','counter','challenge'].includes(t.step),'initial promoter response should remain actionable');
+  assert.equal(o.stip,undefined,'proposed stipulation is not yet agreed');
+  if(t.step==='offer'){agreed++;assert.equal(t.proposal.stip,kind);}
+  else if(t.step==='counter'){counter++;assert.equal(t.proposal.stip,X.favourite(G.P(pid)));assert.notEqual(t.proposal.stip,kind);}
+  else refused++;
   assert.ok(t.log.every(l=>!clean.test(l.text)));
-  if(o.stip){assert.ok(!G.talkMove(o.id,'rex','revert').error);assert.equal(o.stip,null,'taking the original terms drops it');}
+  if(t.proposal){
+   assert.ok(!G.talkMove(o.id,'rex','reply:accept').error,'accept the promoter reply');
+   assert.equal(o.stip,t.proposal.stip,'accepted terms become the live offer');
+   assert.equal(t.step,'done');
+   assert.ok(!G.talkMove(o.id,'rex','revert').error);
+   assert.equal(o.stip,null,'taking the original terms drops it');
+  }
  }
  assert.ok(agreed>=1&&counter>=1&&refused>=1,`varied answers: ${agreed} agreed, ${counter} countered, ${refused} refused`);
  const s=career();const o=offer({programme:{}});assert.match(G.talkMove(o.id,'rex','ask:stip:nodq').error||'',/programme/i);

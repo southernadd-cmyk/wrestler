@@ -110,7 +110,7 @@ function play(seed,weeks=48,hook=null){
   if(wk%4===0&&s.focus>0&&root.OfficeStips){
    const o=s.offers.find(x=>!x.programme&&!x.stip&&!x.talk&&s.roster.some(w=>D.divisionOf(w)===D.divisionOf(x.rid)&&G.availableAt(w,x.eventAbs)&&(!x.wid||x.wid===w.id)));
    const w=o&&s.roster.find(w=>D.divisionOf(w)===D.divisionOf(o.rid)&&G.availableAt(w,o.eventAbs)&&(!o.wid||o.wid===w.id));
-   if(w){const kinds=Object.keys(root.OfficeStips.STIPS);if(!G.talkMove(o.id,w.id,'ask:stip:'+kinds[pick(kinds.length)]).error){G.talkMove(o.id,w.id,'arg:'+['crowd','reliability','trade'][pick(3)]);stats.stipAsks++;if(o.stip)stats.stips++;}}
+   if(w){const kinds=Object.keys(root.OfficeStips.STIPS);if(!G.talkMove(o.id,w.id,'ask:stip:'+kinds[pick(kinds.length)]).error){G.talkMove(o.id,w.id,'arg:'+['crowd','reliability','trade'][pick(3)]);if(o.talk?.proposal)G.talkMove(o.id,w.id,'reply:accept');stats.stipAsks++;if(o.stip)stats.stips++;}}
   }
   // Sign programmes; book this week's and next week's work.
   for(const o of s.offers.filter(x=>x.programme)){if(!G.book(o.id,o.wid))stats.programmes++;}
