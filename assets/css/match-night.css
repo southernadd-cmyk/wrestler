@@ -496,7 +496,8 @@
 .mf-ph b{overflow:hidden;text-overflow:ellipsis;padding:0 4px}
 .mf-ph.w-good{background:var(--good)}.mf-ph.w-ok{background:var(--stone-2)}.mf-ph.w-poor{background:var(--mf-poor)}
 .mf-crowd .mf-track{height:150px;background:var(--deep);border:1px solid var(--well-line)}
-.mf-crowd .mf-lab{line-height:1.1}
+/* The "100" tick sits at the top of the label column; start the word below it so they don't overlap. */
+.mf-crowd .mf-lab{line-height:1.1;padding-top:18px}
 .mf-lab small{position:absolute;right:8px;font-size:15px;line-height:1;background:none;border:0;box-shadow:none;padding:0;color:var(--dim)}
 .mf-lab small.top{top:0}.mf-lab small.mid{top:50%;transform:translateY(-50%)}.mf-lab small.bot{bottom:0}
 .mf-grid{stroke:var(--well-line);stroke-width:1;vector-effect:non-scaling-stroke;stroke-dasharray:4 4}
