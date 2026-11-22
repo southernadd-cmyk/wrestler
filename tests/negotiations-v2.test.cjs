@@ -88,6 +88,33 @@ const select=(o,topic='protect',arg='crowd')=>{
  assert.equal(t.step,'done');
  assert.equal(o.finish,'lose_protected');
 }
+// A star can still bargain for cash, but the agreed raise costs goodwill
+// even if the promoter is persuaded. Signing directly avoids that cost.
+{
+ for(const [pid,cost] of [['dock',2],['pulse',1],['crown',2],['union',3]]){
+  const {o,w,p,s}=setup({pid,trust:80,heat:85,pro:92,rep:90});
+  const base=G.purse(o,w),old=p.trust;
+  const t=select(o,'fee','trade');
+  assert.ok(['counter','offer'].includes(t.step),pid+' must make a valid proposal');
+  assert.equal(p.trust,old,'successful argument should not charge before accepting');
+  assert.ok(!G.talkMove(o.id,w.id,'reply:accept').error);
+  assert.ok(G.purse(o,w)>base,'accepted fee proposal must raise cash');
+  assert.equal(p.trust,old-cost,pid+' pay raise incurs transparent promoter trust cost');
+  assert.equal(t.feeCost,cost);
+  assert.equal(s.focus,1,'one management meeting used');
+  assert.equal(G.book(o.id,w.id),null);
+  assert.ok(s.card[0].purse>base);
+ }
+}
+{
+ const {o,p}=setup({pid:'union',trust:80,heat:85,pro:92,rep:90});
+ const trust=p.trust;
+ const t=select(o,'fee','trade');
+ assert.ok(['counter','offer'].includes(t.step));
+ assert.ok(!G.talkMove(o.id,'rex','reply:original').error);
+ assert.equal(p.trust,trust,'signing original after discussing money does not pay the accepted-raise trust cost');
+ assert.equal(G.book(o.id,'rex'),null);
+}
 // Hardball against a low-trust promoter can lose the full invitation.
 {
  const {s,o,p}=setup({trust:35,heat:17,pro:55,rep:20});
