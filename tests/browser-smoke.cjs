@@ -467,11 +467,17 @@ async function negotiationPrototypeAudit(browser,name,viewport){
   await resume.click();
   assert.match(await page.locator('#modal .neg-response h3').innerText(),/Why should the loss be protected/);
   await page.locator('#modal button[data-talkaction="arg:crowd"]').click();
-  assert.match(await page.locator('#modal .neg-verdict').innerText(),/promoter agreed|counteroffer|promoter refused/i);
+  assert.match(await page.locator('#modal .neg-response h3').innerText(),/promoter is willing|promoter has countered/i);
   assert.equal(await page.evaluate(()=>window.OfficeGame.S.card.length),0,
     name+': negotiating must not sign a booking');
   assert.equal(await page.locator('#modal .neg-contract.is-new').count(),1,
-    name+': revised terms must be distinguished from original');
+    name+': unaccepted proposed terms must be visible and distinct');
+  assert.equal(await page.evaluate(()=>window.OfficeGame.S.offers.find(o=>o.id==='neg-phase1').finish),'lose_clean',
+    name+': unaccepted proposal must not change original finish');
+  await page.locator('#modal button[data-talkaction="reply:accept"]').click();
+  assert.match(await page.locator('#modal .neg-verdict').innerText(),/accepted/i);
+  assert.equal(await page.evaluate(()=>window.OfficeGame.S.offers.find(o=>o.id==='neg-phase1').finish),'lose_protected',
+    name+': explicit acceptance must update terms before signing');
   assert.equal(await page.locator('#modal [data-revert="1"]').count(),1,
     name+': original terms must remain selectable');
   await page.locator('#modal [data-revert="1"]').click();
