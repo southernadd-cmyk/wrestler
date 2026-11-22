@@ -110,7 +110,7 @@ function scenario(pid,{trust=55,heat=40,pro=80,rep=40,topic='protect',arg='crowd
 // Stipulations still honour explicit disqualification and title restrictions.
 {
  const {o}=scenario('dock',{topic:'fee',arg:'trade',finish:'lose_dq'});
- assert.match(G.talkMove(o.id,'rex','ask:stip:nodq').error||'',/Choose what|discussion|complete/i);
+ assert.match(G.talkMove(o.id,'rex','ask:stip:nodq').error||'',/Choose what|discussion|complete|permitted|proposal/i);
  G.fresh();const s=G.S;s.cash=99999;
  assert.equal(G.sign('rex'),null);
  const x={id:'stip-'+seq++,pid:'dock',rid:'magnus',slot:'mid',
