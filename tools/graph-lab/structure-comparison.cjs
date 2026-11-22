@@ -17,6 +17,7 @@ const quick=process.argv.includes('--quick');
 const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styles;
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
+ sellingWrestlers:0,sellingStrains:0,sellingLines:0,comebackSelling:0,realBreathers:0,
  motifStarts:0,motifPaid:0,motifOpen:0,
  finishes:0,finishFallbacks:0,named:0,namedHit:0,controlNamedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
@@ -96,6 +97,21 @@ for(let si=0;si<sampleStyles.length;si++){
   r.events+=m.graph.events.length;r.controlEvents+=control.graph.events.length;
   r.distinct+=new Set(m.graph.events.map(x=>x.id)).size;
   r.botches+=m.botches;r.controlBotches+=control.botches;
+  const selling=m.final.matchSelling;
+  assert.equal(control.final.matchSelling,undefined,'metadata-only cannot acquire Phase 9B selling');
+  if(selling){
+   let counted=0;
+   for(const [side,s] of Object.entries(selling.wrestlers)){
+    assert.ok(m.graph.damage[side]>=3,'selling needs witnessed focused damage');
+    assert.ok(s.sellingLines<=3&&s.sellingLines<=s.strenuousMoves,
+     'selling narration must be bounded by performed exertion');
+    r.sellingWrestlers++;r.sellingStrains+=s.strenuousMoves;
+    r.sellingLines+=s.sellingLines;r.comebackSelling+=s.comebackLines;
+    r.realBreathers+=s.realBreathers;counted+=s.strenuousMoves;
+   }
+   assert.equal(counted,m.graph.events.filter(x=>x.sellingStrain).length,
+    'every strained action must exist in the physical graph');
+  }
   const motif=m.final.matchMotif;
   assert.equal(control.final.matchMotif,undefined,'metadata-only control must not have motif');
   if(motif){
@@ -197,6 +213,9 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    meanDistinctActions:avg(r.distinct,r.bouts),
    botches:r.botches,controlBotches:r.controlBotches,
    motifStarts:r.motifStarts,motifPaid:r.motifPaid,motifOpen:r.motifOpen,
+   sellingWrestlers:r.sellingWrestlers,sellingStrains:r.sellingStrains,
+   sellingLines:r.sellingLines,comebackSelling:r.comebackSelling,
+   realBreathers:r.realBreathers,
    bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,dangerEscapes:r.dangerEscapes,
    namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),controlNamedHitPct:ratio(r.controlNamedHit,r.named),openObjectives:r.open,
    objectiveStatus:r.objectives,topActions:top(r.firstActions,12),

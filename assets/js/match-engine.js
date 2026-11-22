@@ -2810,6 +2810,63 @@ const Graph=(function makeGraph(){
   'os_apron_ddt','missile_dropkick','lockup','gd_rib_stomp'
  ]);
 
+
+ // Phase 9B. The only trigger for selling is witnessed on-target graph damage.
+ // Keep signed finishes, legacy behaviour and match-star calculations intact.
+ const sellingActive=M=>!!root.OfficeSheets?.DIRECTOR?.active(M);
+ const sellingFamilies={
+  'lower back':['power','suplex','superplex','neck'],
+  ribs:['power','suplex','superplex','aerial','springboard'],
+  'left knee':['running','aerial','springboard','dive','lucha'],
+  ankle:['running','aerial','springboard','dive','lucha'],
+  shoulder:['power','suplex','superplex','neck'],
+  neck:['power','suplex','superplex','aerial']};
+ function sellingStrain(M,id,side){
+  if(!sellingActive(M)||!['w','f'].includes(side))return 0;
+  const g=get(M),s=g.selling?.[side],n=A[id],cost=costOf(id);
+  if(!s||!n||n.reverse||n.counterOf||n.blockOf||n.nearfall||
+     n.family==='rest'||cost<1.4||(g.damage?.[side]||0)<3)return 0;
+  const lift=['snap_suplex','heavy_slam','power_spinebuster'].includes(id),
+   run=['rope_run','top_climb','clothesline','springboard_strike'].includes(id);
+  if(!(sellingFamilies[s.part]||[]).includes(n.family)&&
+     !(lift&&['lower back','ribs','shoulder','neck'].includes(s.part))&&
+     !(run&&['left knee','ankle'].includes(s.part)))return 0;
+  const extra=.22+Math.min(.24,Math.max(0,(g.damage[side]-3)*.08));
+  return Number((M.t<(s.reliefUntil||0)?extra*.5:extra).toFixed(3));
+ }
+ function sellingWeight(M,id,side){
+  const extra=sellingStrain(M,id,side);
+  return extra?Math.max(.74,1-extra*.55):1;
+ }
+ function sellingReport(M){
+  if(!sellingActive(M))return null;
+  const g=M.graph||{},wrestlers={};
+  for(const side of ['w','f']){
+   const s=g.selling?.[side];if(!s)continue;
+   wrestlers[side]={part:s.part,firstTargetedAt:s.startedAt,
+    focusedDamage:g.damage?.[side]||0,strenuousMoves:s.strenuousMoves||0,
+    sellingLines:s.sellingLines||0,comebackLines:s.comebackLines||0,
+    realBreathers:s.realBreathers||0};
+  }
+  return Object.keys(wrestlers).length?{version:1,wrestlers,
+   explanation:'Witnessed focused damage persists into the comeback; only real actions carry strain.'}:null;
+ }
+ function sellingNarration(M,id,side,extra){
+  if(!extra||!sellingActive(M))return;
+  const g=get(M),s=g.selling?.[side];if(!s)return;
+  s.strenuousMoves=(s.strenuousMoves||0)+1;
+  const comeback=['hope','second_hope','comeback','resurgence'].includes(g.arc);
+  if((s.sellingLines||0)>=3||M.t-(s.lastSpokenAt??-1000)<110)return;
+  const who=side==='w'?M.w:M.f,action=A[id]?.name||id.replaceAll('_',' ');
+  say(M,comeback?
+   who.short+' lands the '+action+' but has to protect the worked '+s.part+
+     '. The comeback has not erased that damage.':
+   who.short+' follows through on the '+action+' and visibly favours the worked '+
+     s.part+'. That earlier damage still matters.','story',
+   {who:'colour',textureId:'selling-'+side+'-'+(s.sellingLines||0)});
+  s.lastSpokenAt=M.t;s.sellingLines=(s.sellingLines||0)+1;
+  if(comeback)s.comebackLines=(s.comebackLines||0)+1;
+ }
  function apply(M,id,options={}){
   const n=A[id],p=Psy.get(M),g=get(M);
   const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';
@@ -2835,7 +2892,7 @@ const Graph=(function makeGraph(){
   g.narrationHistory[id]=[...recent.slice(-1),index];
   g.lastNarrationIndex[id]=index;
   const variant=variants[index],broadcast=broadcastHistory(g,id,n,side);
-  if(g.damage?.w>=3&&p.control==='w'&&['top_climb','rope_run','clothesline','snap_suplex'].includes(id)&&(!g.lastSell||M.t-g.lastSell>100)){
+  if(!sellingActive(M)&&g.damage?.w>=3&&p.control==='w'&&['top_climb','rope_run','clothesline','snap_suplex'].includes(id)&&(!g.lastSell||M.t-g.lastSell>100)){
    const effect=g.targets.w==='left knee'?'hesitates on the damaged knee':g.targets.w==='lower back'?'winces and steadies the lower back':g.targets.w==='ribs'?'takes a painful breath and protects the ribs':'favours the damaged shoulder';
    g.sellCount=(g.sellCount||0)+1;
    const calls=[
@@ -2900,7 +2957,16 @@ const Graph=(function makeGraph(){
   recordPhysical(M,id,side,opp,n);
   // A limb-specific move only adds to the worked body part when it hits that part.
   const onTarget=!n.part||!PART_OF[part]||n.part===PART_OF[part];
-  if(n.focus&&onTarget){g.damage[victim]=(g.damage[victim]||0)+n.focus;if(victim==='w')p.focusHits+=n.focus;}
+  if(n.focus&&onTarget){
+   g.damage[victim]=(g.damage[victim]||0)+n.focus;
+   if(victim==='w')p.focusHits+=n.focus;
+   if(sellingActive(M)&&g.damage[victim]>=3){
+    g.selling??={};
+    g.selling[victim]??={version:1,part:g.targets?.[victim]||part,
+     startedAt:M.t,strenuousMoves:0,sellingLines:0,
+     comebackLines:0,realBreathers:0,reliefUntil:0};
+   }
+  }
   if(n.crowd)lift(M,n.crowd*(n.family?CROWD_SCALE:1));
   const exertion=costOf(id),activeSide=n.reverse?opp:side,staminaKey=activeSide==='w'?'wSt':'fSt';
   let effective=exertion;
@@ -2959,6 +3025,8 @@ const Graph=(function makeGraph(){
     effective=exertion-5.0*trained;
   }
   if(exertion>0&&fighter(activeSide==='w'?M.w:M.f).trait==='Workhorse')effective*=.8;
+  const sellingExtra=sellingStrain(M,id,activeSide);
+  effective+=sellingExtra;
   // One narrated rest can start a measured pacing window. This is saved
   // graph state, not an automatic refill. Actual move costs stay unchanged.
   let pacedUntil=null;
@@ -3023,6 +3091,12 @@ const Graph=(function makeGraph(){
     }
    }
   }
+  if(exertion<0&&sellingActive(M)&&g.selling?.[activeSide]&&
+     (id==='catch_breath'||n.family==='rest')){
+   const s=g.selling[activeSide];
+   s.realBreathers=(s.realBreathers||0)+1;
+   s.reliefUntil=M.t+90;
+  }
   if(exertion<0)g.rests=(g.rests||0)+1;
   g.exertion=(g.exertion||0)+Math.max(0,effective);
   if(id==='near_kickout'||id==='counter_rollup'||n.nearfall) {M.nearfalls++;M.bonus+=n.nearfall?4:5;g.nearfallCount++;}
@@ -3040,8 +3114,10 @@ const Graph=(function makeGraph(){
   g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective,
    physical:{locations:{...g.physical.locations},area:g.physical.area,grip:g.physical.grip?.type||null,topSide:g.physical.topSide},
    ...(pacedUntil!==null?{pacedRecoveryUntil:pacedUntil}:{}),
+   ...(sellingExtra>0?{sellingStrain:{part:g.selling[activeSide].part,extraCost:sellingExtra}}:{}),
    ...(options.scriptedSpot?{scriptedSpot:true,scriptedBig:!!options.big}:{})});
   if(g.events.length>220)g.events.shift();
+  sellingNarration(M,id,activeSide,sellingExtra);
   root.OfficeSheets?.DIRECTOR?.observe(M,g.events[g.events.length-1]);
   structureCommentary(M);
   if(id==='cheap_shot')referee(M,side);
@@ -4035,6 +4111,8 @@ const Graph=(function makeGraph(){
     if(publicTactic.kind==='misdirect'&&publicTactic.nodes.includes(id))n*=1.65;
     if(publicTactic.kind==='win'&&publicTactic.nodes.includes(id)&&M.t/M.len>.58)n*=1.4;
    }
+   // Only a soft selection bias; physics and booked finishes are unchanged.
+   n*=sellingWeight(M,id,p.control);
    weights.set(id,(weights.get(id)||0)+n);
   }
   const pool=[...weights.entries()];
@@ -4750,7 +4828,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport};
 })();
 
 function create(o){
@@ -5914,7 +5992,8 @@ function summary(M){
   },
   evidence:evidenceOf(M),roomNegotiation:M.o.sheet?.negotiation||null,
   ...(root.OfficeSheets?.DIRECTOR?.active(M)?{structure:root.OfficeSheets.DIRECTOR.report(M),structureAssessment:structureAssessment(M),
-   ...(Graph.motifSummary(M)?{matchMotif:Graph.motifSummary(M)}:{})}:{}),
+   ...(Graph.motifSummary(M)?{matchMotif:Graph.motifSummary(M)}:{}),
+   ...(Graph.sellingReport(M)?{matchSelling:Graph.sellingReport(M)}:{})}:{}),
   psychology:{archetype:M.planId,construction:constructionOf(M),controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 // v0.3.12 What happened, as structured facts a rivalry can cite later: who reversed whom and which kind
