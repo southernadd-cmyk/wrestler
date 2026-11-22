@@ -137,6 +137,40 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
  assert.equal(direct?.setup.id,'strike_trade');
  assert.equal(direct?.impact.id,'clothesline');
  assert.equal(direct?.cutoff,null,'an ordinary exchange cannot fabricate a counter');
+  // Phase 9D: at 95.9% the old clock stopped offering any closing moves.
+  // Preserve an actual legal late strike, one real selectable continuation
+  // and the physical context across the Director's forced arc reset.
+  const lastMinute=create(structure,'story');
+  lastMinute.t=Math.floor(lastMinute.len*.959);
+  lastMinute.graph.started=true;lastMinute.graph.arc='exchange';
+  step(lastMinute,'strike_trade','w');
+  assert.ok(G.closingOffers(lastMinute,'w').some(([id])=>id==='clothesline'),
+   'a legitimate winner-owned last-minute setup still has an authored impact');
+  lastMinute.t+=10;lastMinute.graph.age=999;
+  const lateState=lastMinute.r.getState();
+  G.advance(lastMinute,lastMinute.t/lastMinute.len);
+  assert.equal(lastMinute.graph.node,'strike_trade',
+   'last-minute arc expiry may not erase this real physical setup');
+  assert.equal(lastMinute.r.getState(),lateState,
+   'last-minute protection makes no RNG draw');
+  assert.ok(G.pool(lastMinute).some(([id,weight])=>id==='clothesline'&&weight>0),
+   'late continuation enters the actual legal action pool');
+  assert.ok(G.pool(lastMinute).some(([id])=>id!=='clothesline'),
+   'the impact is not forced');
+  step(lastMinute,'clothesline','w');
+  lastMinute.t=lastMinute.len;
+  assert.equal(G.closingRunway(lastMinute)?.status,'linked',
+   'real late combination remains recent enough at the booked bell');
+  const lateOpponent=create(structure,'story');
+  lateOpponent.t=Math.floor(lateOpponent.len*.959);
+  step(lateOpponent,'strike_trade','f');
+  assert.equal(G.closingOffers(lateOpponent,'f').length,0,
+   'the losing side receives no late-window closing guidance');
+  const tooLate=create(structure,'story');
+  tooLate.t=tooLate.len-10;
+  step(tooLate,'strike_trade','w');
+  assert.equal(G.closingOffers(tooLate,'w').length,0,
+   'cannot offer a two-beat finishing sequence without sufficient clock');
   // A current legal standing setup must survive ONE optional graph step
  // even when an arc age threshold would otherwise erase its ownership.
  const protect=create(structure,'story');
