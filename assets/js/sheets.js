@@ -564,5 +564,123 @@
   });
   return {beats,head:final?null:pct(frac),done:beats.filter(b=>b.state==='achieved'||b.state==='adapted').length,total:beats.length};
  }
- root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
+ // Phase 3: explicit opt-in runtime. Signed editorial objectives are immutable;
+ // success is witnessed only by real graph actions, never a proposed move.
+ const DIRECTOR=(function(){
+  const F={
+   opening_advantage:['chain','strike','running'],pressure:['ground','power','submission'],
+   comeback:['fire','strike','running'],payoff:['power','suplex','neck','aerial'],
+   technical_exchange:['chain','submission'],escalation:['strike','power','suplex','neck','aerial'],
+   callback:['chain','submission'],finish_build:['power','suplex','neck','strike','aerial'],
+   evasion:['heel','outside'],exposure:['strike','running','chain'],
+   shortcut:['heel'],escape:['heel','outside','chain','fire'],
+   dominance:['power','suplex','neck'],challenge:['fire','strike','running','chain'],
+   reassertion:['power','suplex','neck']
+  };
+  const ARC={
+   technical_exchange:['chain','test_strength','exchange'],
+   escalation:['exchange','fighting_spirit','escalation'],
+   callback:['chain','exchange','submission_battle'],
+   evasion:['stalling','chain'],exposure:['exchange','shine'],
+   shortcut:['cutoff','floor_heat'],escape:['hope','exchange'],
+   dominance:['shine','control'],challenge:['exchange','comeback'],
+   reassertion:['escalation','control'],
+   opening_advantage:['shine','chain'],pressure:['control','limb_work'],
+   comeback:['comeback','exchange'],payoff:['escalation','exchange'],
+   finish_build:['escalation','finish_setup']
+  };
+  const active=M=>M?.structureDirector?.version===1&&M.structureDirector.mode==='active';
+  function init(M){
+   if(M.o.structureExecution!==true)return;
+   const r=STRUCTURES.readPlan(M.sheet);
+   if(!M.sheet?.signed||r.mode!=='editorial')throw Error('Active structure requires a valid signed editorial plan');
+   M.structureDirector={version:1,mode:'active',id:r.plan.structureId,roles:{...r.plan.roles},
+    objectives:r.plan.objectives.map(o=>({id:o.id,intent:o.intent,status:'pending',at:null,reason:null,evidence:[]}))};
+  }
+  function current(M){
+   if(!active(M))return null;
+   const states=M.structureDirector.objectives,plan=M.sheet.structurePlan.objectives,at=M.t/Math.max(1,M.len);
+   for(let i=0;i<states.length;i++){
+    if(states[i].status!=='pending'||at>plan[i].window[1]+.08)continue;
+    if(plan[i].requires.some(id=>states.some(s=>s.id===id&&s.status==='pending')))continue;
+    return {state:states[i],objective:plan[i],index:i};
+   }
+   return null;
+  }
+  function fits(o,e,n,actor){
+   if(o.actor!=='either'&&o.actor!==actor)return false;
+   const id=e.id,kind=o.intent,f=n.family||'';
+   if(n.blockOf||n.nearfall)return kind==='escape'&&!!n.blockOf;
+   if(kind==='evasion')return (f==='heel'||f==='outside')&&/stall|retreat|strut|argue|roll_inside|duck|outside|plea/.test(id);
+   if(kind==='shortcut')return f==='heel'&&/cheap|rake|poke|hair|bite|low|rope|choke|shot|hl_/.test(id);
+   if(kind==='escape')return !!n.reverse||/wrist_escape|waist_escape|mat_scramble|roll_inside|rope_break|duck|counter/.test(id);
+   if(!F[kind]?.includes(f))return false;
+   if(['escalation','finish_build','payoff','dominance','reassertion'].includes(kind))
+    return (n.cost??0)>=1.4&&(n.crowd??0)>=0;
+   return true;
+  }
+  function enough(intent,ev,previous){
+   const moves=new Set(ev.map(x=>x.id)),sides=new Set(ev.map(x=>x.actor));
+   if(intent==='technical_exchange')return sides.size===2&&moves.size>=2;
+   if(intent==='callback')return ev.some(x=>previous.some(p=>p.family===x.family&&x.at>=p.at+30&&(x.id===p.id||x.actor!==p.actor)));
+   if(['escalation','finish_build'].includes(intent))return moves.size>=2;
+   if(['opening_advantage','pressure','comeback','exposure','dominance','challenge','reassertion','evasion'].includes(intent))
+    return ev.length>=2&&moves.size>=2;
+   return ev.length>0;
+  }
+  function observe(M,e){
+   if(!active(M)||!e||!Number.isFinite(e.t))return;
+   const n=actions[e.id];if(!n)return; // ignore attempted / invented / outcome cues
+   const actor=n.reverse?e.control:e.preControl;
+   if(actor!=='w'&&actor!=='f')return;
+   const states=M.structureDirector.objectives,plan=M.sheet.structurePlan.objectives,frac=e.t/Math.max(1,M.len);
+   for(let i=0;i<states.length;i++){
+    const s=states[i],o=plan[i];
+    if(s.status!=='pending'||frac<o.window[0]-.04||frac>o.window[1]+.08||
+       o.requires.some(id=>states.some(x=>x.id===id&&x.status==='pending'))||!fits(o,e,n,actor))continue;
+    const fact={id:e.id,at:e.t,actor,family:n.family||null};
+    if(s.evidence.some(x=>x.id===fact.id&&x.at===fact.at&&x.actor===actor))return;
+    s.evidence.push(fact);if(s.evidence.length>12)s.evidence.shift();
+    if(enough(o.intent,s.evidence,i?states[i-1].evidence:[])){
+     s.status=o.requires.some(id=>states.some(x=>x.id===id&&x.status==='missed'))?'adapted':'achieved';
+     s.at=e.t;s.reason='Verified from time-ordered performed graph actions.';
+    }
+    return; // One landing cannot finish two objectives.
+   }
+  }
+  function advance(M){
+   if(!active(M))return;
+   const at=M.t/Math.max(1,M.len);
+   M.structureDirector.objectives.forEach((s,i)=>{
+    if(s.status==='pending'&&at>M.sheet.structurePlan.objectives[i].window[1]+.08){
+     s.status='missed';s.reason='No sufficient performed evidence in the planned window.';
+    }
+   });
+  }
+  function finalize(M){
+   if(!active(M))return;
+   advance(M);
+   for(const s of M.structureDirector.objectives)if(s.status==='pending'){
+    s.status='missed';s.reason='The bell came before enough performed evidence.';
+   }
+  }
+  function bias(M,id,actor){
+   const x=current(M),n=actions[id];if(!x||!n)return 1;
+   const o=x.objective,frac=M.t/Math.max(1,M.len);
+   if(frac<o.window[0]-.07||o.actor!=='either'&&o.actor!==actor)return 1;
+   if(o.call?.action===id&&o.call.owner===actor)return 2.7;
+   return F[o.intent]?.includes(n.family)&&(!['evasion','shortcut','escape'].includes(o.intent)||fits(o,{id},n,actor))?1.55:1;
+  }
+  function arcBias(M,id){
+   const x=current(M);return x&&ARC[x.objective.intent]?.includes(id)?3.2:1;
+  }
+  function report(M){
+   if(!active(M))return null;
+   const d=M.structureDirector;
+   return {version:d.version,id:d.id,roles:{...d.roles},
+    objectives:d.objectives.map(s=>({...s,evidence:s.evidence.map(x=>({...x}))}))};
+  }
+  return {active,init,current,observe,advance,finalize,bias,arcBias,report};
+ })();
+ root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
