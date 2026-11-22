@@ -11,3 +11,7 @@ Phase 7's controlled 960-bout audit recorded low named-call completion in Classi
 
 ## Review gate
 Run the existing Simulation tests workflow (do not create another). Require the exact Phase 0 fingerprint, Phase 1–7 safeguards, matched 960 bouts crossing all four structures, two leads, five plans, four style pairings and three lengths, plus Chromium browser journeys. Inspect the active/control call difference, structure coherence, match quality, booked finishes, fallout and safety before deciding on merge. Never force a called move, booked result, or automatic rating.
+
+
+## Focused botch attribution diagnostic
+The match engine increments `M.botches` only for **scripted spectacle attempts** and the extraordinary balcony dive, not the ordinary, `isValid`-gated graph attacks that the Phase 8 called-spot Director can offer. Therefore, a rise in `M.botches` is a real match-quality concern, but does **not** establish that the called move itself became unsafe. The audit now reports, by structure, plan, style and duration: active/control botches; scripted spot attempts and failures; balcony botches; and the prevalence of risky named calls. Safe-layout assertions verify that any scripted attempt is restricted to the already guarded diving elbow and cannot include balcony botches. Check the actual data before altering the 4.2 preference weight. All analysis runs in the existing CI workflow, with no new test workflows.
