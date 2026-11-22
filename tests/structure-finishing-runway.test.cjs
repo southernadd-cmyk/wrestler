@@ -616,3 +616,60 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
 }
 console.log('PASS Phase 9I: '+planChecks+
  ' five-plan authored-route checks: real physical edges, no RNG, no free winner control.');
+
+
+// Phase 9L: a counted cover must not erase every genuine post-cover
+// mat-wrestling possibility. Only a witnessed real source can offer
+// its own legal, non-risk, in-ring follow-through for one normal tick.
+// The source never forces a move, changes match ownership or scores a finish.
+for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
+ for(const game of ['story','technical','brawl','spots','safe']){
+  const earned=create(structure,game);
+  earned.t=earned.len-110;
+  earned.nearfallAt=[.8,.85];
+  earned.graph.arc='nearfall';
+  step(earned,'grapple_trip','w');
+  const source=G.earnedNearfallSource(earned);
+  assert.ok(source,'actual in-ring takedown must source a counted cover: '+game);
+  assert.equal(G.nearfall(earned,source),true,
+   'only the actual performed takedown may earn a counted cover');
+  const rng=earned.r.getState(),events=JSON.stringify(earned.graph.events);
+  const routes=G.nearfallFollowupOffers(earned,'w');
+  assert.ok(routes.length,'real mat source retains at least one legal authored response');
+  assert.ok(routes.every(([id])=>G.A[source.id].next.some(([dest])=>dest===id)&&
+   G.isValid(earned,id)&&!G.A[id].risk&&!G.A[id].reverse),
+   'post-cover offers must be actual source-authored, currently legal and non-risk');
+  assert.ok(routes.every(([id])=>!['cover','early_cover','near_kickout'].includes(id)),
+   'cannot schedule fabricated duplicate nearfalls from a counted cover');
+  if(game==='safe')assert.ok(routes.every(([id])=>G.A[id].cost===undefined||
+   G.A[id].cost<=2.2),'Safe does not acquire high-risk/high-cost continuations');
+  const pool=G.pool(earned);
+  assert.ok(routes.some(([id])=>pool.some(([move,w])=>move===id&&w>0)),
+   'genuine response gets a real selectable place in the live pool');
+  assert.ok(pool.some(([id])=>!routes.some(([r])=>r===id)),
+   'normal alternatives remain selectable, not a scripted next move');
+  assert.equal(JSON.stringify(G.nearfallFollowupOffers(earned,'w')),
+   JSON.stringify(routes),'deterministic observer chooses no wrestling move');
+  assert.equal(earned.r.getState(),rng,'post-cover choice does not draw match RNG');
+  assert.equal(JSON.stringify(earned.graph.events),events,
+   'post-cover offer never creates a fictional attack event');
+  assert.equal(G.nearfallFollowupOffers(earned,'f').length,0,
+   'opponent cannot steal the earned attacker-side follow-through');
+  const saved=E.restore(copy({...earned,rState:earned.r.getState()}));
+  assert.equal(JSON.stringify(G.nearfallFollowupOffers(saved,'w')),
+   JSON.stringify(routes),'save/restore retains the exact eligible continuation');
+  earned.t=earned.len-30;
+  assert.equal(G.nearfallFollowupOffers(earned,'w').length,0,
+   'not enough time to offer an extra late source-follow-through');
+  const inactive=create(structure,game,'win_clean',false);
+  inactive.t=inactive.len-110;
+  inactive.nearfallAt=[.8,.85];
+  inactive.graph.arc='nearfall';
+  step(inactive,'grapple_trip','w');
+  assert.ok(G.earnedNearfallSource(inactive));
+  assert.equal(G.nearfall(inactive,G.earnedNearfallSource(inactive)),true);
+  assert.equal(G.nearfallFollowupOffers(inactive,'w').length,0,
+   'metadata-only control must not acquire a Director-only benefit');
+ }
+}
+console.log('PASS Phase 9L: 4 structures x 5 plans, source-authored, legal, symmetric, optional post-cover offence with no RNG or save drift.');
