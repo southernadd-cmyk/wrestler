@@ -115,6 +115,7 @@ jobs:
           node tests/long-match-endurance.test.cjs
           node tests/match-flow.test.cjs
           node tests/stipulations.test.cjs
+          node tests/ui-accessibility.test.cjs
           # Short booking-negotiation tests cover real bargaining costs, proposal
           # acceptance, distinct promoter priorities and safe contract signing.
           # Keep these in this existing PR gate, not a separate workflow.
@@ -147,11 +148,21 @@ jobs:
         run: |
           set -euo pipefail
           node --version
+          failures=()
           for suite in tests/*.test.cjs; do
             echo "::group::$suite"
-            node "$suite"
+            if ! node "$suite"; then
+              failures+=("$suite")
+              echo "::error file=$suite::Regression suite failed"
+            fi
             echo "::endgroup::"
           done
+          if (( ${#failures[@]} )); then
+            printf 'Failed suites: %s\n' "${failures[*]}" >&2
+            printf '### Failed simulation suites\n' >> "$GITHUB_STEP_SUMMARY"
+            printf -- '- %s\n' "${failures[@]}" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
   browser:
     name: Browser journeys (Chromium)
