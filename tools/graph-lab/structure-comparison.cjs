@@ -38,6 +38,7 @@ const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete
  protectedFollowthroughs:0,protectedClosingImpacts:0,
  protectedCounterExchanges:0,protectedOpposingImpacts:0,extendedClosingImpacts:0,
  arcPhysicalRetained:0,arcFinishControlRetained:0,arcLateControlOverrides:0,
+ arcEarnedNearfallRetained:0,
  lateLostAfterRealReversal:0,lateLostWithoutRealReversal:0,
  lateAuthoredLinkSetups:0,latePerformedLinks:0,lateInterruptedSetups:0,
  lateDiversions:0,lateLinksLostAtBell:0,lateLinksStale:0,
@@ -135,7 +136,7 @@ for(let si=0;si<sampleStyles.length;si++){
     return !!n&&Number.isFinite(e.t)&&e.t>=0&&e.t<=m.len&&
       !n.blockOf&&!n.nearfall&&
       ['aerialResolution','grappleResolution','strikeResolution','contactResolution']
-       .every(k=>!e[k]||e[k]==='landed');
+       .every(k=>!e[k]||e[k]==='landed'||(n.reverse&&e[k]==='counter'));
    };
    const tape=last.filter(cleanEvent);
    const setupEvents=tape.filter(e=>e.t>=earliest&&
@@ -221,10 +222,13 @@ for(let si=0;si<sampleStyles.length;si++){
   r.protectedOpposingImpacts+=m.graph.closingOpponentImpactProtected||0;
   r.protectedCounterExchanges+=m.graph.closingReversalProtected||0;
   r.arcPhysicalRetained+=m.graph.arcPhysicalRetained||0;
+  r.arcEarnedNearfallRetained+=m.graph.arcEarnedNearfallRetained||0;
   r.arcFinishControlRetained+=m.graph.arcFinishControlRetained||0;
   r.arcLateControlOverrides+=m.graph.arcLateControlOverrides||0;
   assert.equal(control.graph.arcPhysicalRetained||0,0,
    'metadata-only controls cannot earn director handoff protection');
+  assert.equal(control.graph.arcEarnedNearfallRetained||0,0,
+   'metadata-only controls cannot inherit credited cover control');
   for(const guard of m.graph.arcPhysicalWitnesses||[]){
    const actual=m.graph.events.find(e=>e.id===guard.move&&e.t===guard.moveAt);
    assert.ok(actual,'late arc handoff requires a performed action');
@@ -233,7 +237,10 @@ for(let si=0;si<sampleStyles.length;si++){
     'arc handoff evidence must be recent');
   }
   if(nineCases.has(c.id)){
-   const raw=m.graph.events,late=raw.filter(e=>e.t>=m.len-90&&e.t<=m.len);
+   // Count only performed graph actions; a scheduled nearfall or outcome
+   // has no preControl and must never masquerade as a wrestling takeover.
+   const raw=m.graph.events,late=raw.filter(e=>!!E.GRAPH.A[e.id]&&
+    e.t>=m.len-90&&e.t<=m.len);
    const gaps=late.slice(1).filter((e,i)=>
     ['w','f'].includes(late[i].control)&&
     ['w','f'].includes(e.preControl)&&
@@ -245,7 +252,9 @@ for(let si=0;si<sampleStyles.length;si++){
      case:c.id,seed,booked:finish,
      gaps:gaps.map(e=>({id:e.id,at:m.len-e.t,pre:e.preControl,
       after:e.control,arc:e.arc,reverse:!!E.GRAPH.A[e.id]?.reverse,
-      preceding:late[late.indexOf(e)-1]?.id||null})),
+      preceding:late[late.indexOf(e)-1]?.id||null,
+      voluntaryBreak:['catch_breath','crowd_pose','taunt'].includes(
+       late[late.indexOf(e)-1]?.id)})),
      lastMinute:late.map(e=>({id:e.id,at:m.len-e.t,pre:e.preControl,
       after:e.control,arc:e.arc,reverse:!!E.GRAPH.A[e.id]?.reverse})),
      arcOverrides:m.graph.arcLateControlOverrides||0,
@@ -448,6 +457,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    protectedOpposingImpacts:r.protectedOpposingImpacts,
    extendedClosingImpacts:r.extendedClosingImpacts,
    arcPhysicalRetained:r.arcPhysicalRetained,
+   arcEarnedNearfallRetained:r.arcEarnedNearfallRetained,
    arcFinishControlRetained:r.arcFinishControlRetained,
    arcLateControlOverrides:r.arcLateControlOverrides,
    lateAuthoredLinkSetups:r.lateAuthoredLinkSetups,

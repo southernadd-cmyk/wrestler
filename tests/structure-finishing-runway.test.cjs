@@ -394,3 +394,80 @@ for(const [si,structure,lead,game,minutes,finish,seed] of caseRows){
 }
 console.log('PASS Phase 9F: nine exact-seed clean finishes, symmetric legal arc ownership, '+observedArcHandoffs+
  ' forced handoffs, '+retainedInNine+' earned guards and '+overridesInNine+' late arc control overrides.');
+
+
+// Phase 9G: credited real near-falls replace the current graph node with
+// stand_reset, but the booked arc director must still recognise the actual
+// landed grounding source. A successful kick-out is NOT a performed takeover.
+let nearfallArcChecks=0;
+for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
+ for(const owner of ['w','f']){
+  const m=create(structure,'safe','win_clean');
+  m.t=m.len-40;m.stage='live';m.graph.started=true;
+  m.graph.arc='false_finish';m.graph.age=999;
+  step(m,'shoulder_tackle',owner);
+  m.t+=10;
+  const source=G.earnedNearfallSource(m);
+  assert.ok(source,'real shoulder tackle provides a legal controlled cover');
+  assert.equal(source.side,owner);
+  assert.equal(G.nearfall(m,source),true,'credited cover genuinely resolves');
+  assert.equal(m.graph.events.at(-1).id,'scheduled_nearfall');
+  assert.equal(m.graph.events.at(-1).earned,true);
+  assert.equal(m.graph.node,'stand_reset','a counted cover resets next move node');
+  const eventCount=m.graph.events.length;
+  const before={control:m.story.control,position:m.story.position,
+   down:m.story.down,physical:JSON.stringify(m.graph.physical)};
+  m.t+=10;m.graph.age=999;
+  G.advance(m,m.t/m.len);
+  assert.notEqual(m.graph.arc,'false_finish',
+   'late arc transition genuinely occurred after earned cover');
+  assert.equal(m.story.control,before.control,
+   'arc cannot steal initiative after an earned two-count');
+  assert.equal(m.story.position,before.position);
+  assert.equal(m.story.down,before.down);
+  assert.equal(JSON.stringify(m.graph.physical),before.physical);
+  assert.equal(m.graph.node,'stand_reset',
+   'counted cover still requires a normal legal stand-up');
+  assert.equal(m.graph.arcEarnedNearfallRetained,1);
+  const witness=m.graph.arcPhysicalWitnesses.at(-1);
+  assert.equal(witness.move,'shoulder_tackle',
+   'cover source must be real grounding action, never pseudo event');
+  assert.equal(witness.actor,owner,'both booked sides receive equal protection');
+  assert.equal(witness.afterEarnedNearfall,true);
+  assert.equal(m.graph.events.length,eventCount,
+   'dramatic handoff cannot invent a landing, reversal or nearfall');
+  nearfallArcChecks++;
+ }
+}
+// A legacy/unevidenced scheduled count cannot fabricate an earned landing.
+const unearnedCover=create('classic_american','safe');
+unearnedCover.t=unearnedCover.len-40;unearnedCover.stage='live';
+unearnedCover.graph.started=true;unearnedCover.graph.arc='false_finish';
+unearnedCover.graph.age=999;
+step(unearnedCover,'shoulder_tackle','w');
+unearnedCover.t+=10;
+unearnedCover.graph.events.push({id:'scheduled_nearfall',t:unearnedCover.t,
+ arc:'false_finish',control:'w',position:'mat',down:'f',earned:false});
+unearnedCover.graph.node='stand_reset';
+unearnedCover.t+=10;G.advance(unearnedCover,unearnedCover.t/unearnedCover.len);
+assert.equal(unearnedCover.graph.arcEarnedNearfallRetained||0,0,
+ 'an uncredited count must not receive real-impact continuity');
+
+// A successfully performed defensive grapple COUNTER is neither a missed
+// landing nor an uninterrupted winning sequence. Verify attribution even
+// when a later dramatic reset happens to restore the booked winner.
+const counterProof=create('classic_american','story');
+sequence(counterProof);
+assert.ok(G.closingRunway(counterProof),'real linked impact witnessed');
+counterProof.t+=10;
+G.apply(counterProof,'sm_crossface_rev');
+const counterEvent=counterProof.graph.events.at(-1);
+assert.equal(counterEvent.reverse,true);
+assert.equal(counterEvent.preControl,'w');
+assert.equal(counterEvent.control,'f');
+counterEvent.grappleResolution='counter'; // actual grapple attempt outcome
+counterProof.story.control='w'; // later unearned dramatic reset, not a move
+assert.equal(G.closingRunway(counterProof),null,
+ 'real defensive grapple counter breaks false finishing attribution');
+console.log('PASS Phase 9G: '+nearfallArcChecks+
+ ' symmetric earned-cover handoffs; uncredited cover rejected; grapple counters remain credible.');
