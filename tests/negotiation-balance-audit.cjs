@@ -66,6 +66,13 @@ for(const pid of ids)for(const lv of levels)for(const style of styles)for(const 
    const choices=N.tradeOptions(o,w,t);
    if(choices.length)tradeAvailable++;
    else casesWithNoChoice++;
+   // If we take one supported trade, check the economic terms really change.
+   if(choices.length){
+    const candidate=choices[0];
+    const tr=G.talkMove(o.id,w.id,'trade:'+candidate.id);
+    assert.equal(tr.error,undefined);
+    if(o.talk.step==='offer')tradeAccepted++;
+   }
    const y=start(pid,lv,style,topic,arg,slot),p0=y.p.trust;
    assert.equal(y.t.step,'counter','hardball subscenario must be comparable');
    const outcome=G.talkMove(y.o.id,y.w.id,'push:hold');
@@ -76,13 +83,6 @@ for(const pid of ids)for(const lv of levels)for(const style of styles)for(const 
    else if(y.t.step==='offer'){hardballWon++;for(const b of series)b.hardballWon++;}
    else if(y.t.step==='done'){hardballLostCounter++;}
    assert.ok(y.p.trust<=p0,'hardball may never increase trust');
-   // If we take one supported trade, check the economic terms really change.
-   if(choices.length){
-    const candidate=choices[0];
-    const tr=G.talkMove(o.id,w.id,'trade:'+candidate.id);
-    assert.equal(tr.error,undefined);
-    if(o.talk.step==='offer')tradeAccepted++;
-   }
   }
  }else{
   assert.equal(o.bump,1,'refused initial request retains the original');
