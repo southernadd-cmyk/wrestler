@@ -947,7 +947,6 @@ function renderMeeting(oid,wid){
   prompt=t.step==='counter'?'The promoter has countered':t.package?'The promoter accepts your trade':'The promoter is willing';
   options=ask('reply:accept','I accept these proposed terms','Agree in principle. You must still sign the contract.');
   if(t.step==='counter'&&!t.pushes){
-   options+=ask('push:trade','Could we meet a little closer?','One final compromise request. The offer may not improve.');
    options+=ask('push:hold','I want the full change','Hardball: promoter trust −'+(promoterRead?.hardballCost||2)+'; with low trust, the promoter may withdraw the booking.');
   }
   if(t.step==='counter')options+=tradePanel;
