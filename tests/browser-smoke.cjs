@@ -268,10 +268,92 @@ async function journey(browser,name,viewport){
   console.log('PASS browser '+name+': career, keyboard replay, no overflow, reload, unique report');
  }finally{await context.close();}
 }
+// Phase 4 layout audit: actual rendered career screens across laptop,
+// tablet and narrow/wide desktops, complementing the two full match journeys.
+// We test the outer viewport, not deliberate horizontal scrolling inside tables.
+async function responsiveAudit(browser,name,viewport){
+ const context=await browser.newContext({viewport});
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ try{
+  await page.goto(URL,{waitUntil:'domcontentloaded'});
+  await page.locator('[data-title="new"]').click();
+  await page.locator('#app').waitFor({state:'visible'});
+  const screens=['desk','inbox','squad','scouting','offers','fixtures','pyramid','promoters','rivalries','results','sheets'];
+  for(const screen of screens){
+   await page.evaluate(s=>window.OfficeUI.go(s),screen);
+   const geom=await page.evaluate(()=>{
+    const rect=el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width}};
+    const top=document.querySelector('#app .top'),view=document.querySelector('#view'),filter=document.querySelector('#view .management-filters');
+    return {page:document.documentElement.scrollWidth-innerWidth,
+     app:rect(document.querySelector('#app')),view:rect(view),top:rect(top),
+     filter:filter?rect(filter):null,
+     screen:document.querySelector('#view .screen')?.className||''};
+   });
+   assert.ok(geom.page<=2,name+': '+screen+' overflows document by '+geom.page+'px');
+   assert.ok(geom.app.right<=viewport.width+2&&geom.top.right<=viewport.width+2,
+     name+': '+screen+' top layout extends beyond viewport '+JSON.stringify(geom));
+   assert.ok(geom.view.width>=200&&geom.view.right<=viewport.width+2,
+     name+': '+screen+' main view clipped '+JSON.stringify(geom));
+   if(geom.filter)assert.ok(geom.filter.left>=-2&&geom.filter.right<=viewport.width+2,
+     name+': '+screen+' management filter overflows viewport '+JSON.stringify(geom));
+   assert.ok(geom.screen.includes('screen'),name+': '+screen+' did not render a screen');
+  }
+  // A report should display its own contents even if a different decision
+  // remains pending in the Inbox. Previously the detail pane could be blank.
+  await page.evaluate(()=>{
+   const G=window.OfficeGame,s=G.S;
+   s.inbox.push({id:'p4-pending',kind:'decision',from:'Office secretary',season:s.season,week:s.week,
+    subject:'Awaiting a decision',body:['Confirm the budget.'],read:false,
+    options:[{id:'yes',label:'Agree',hint:'Proceed'}],answer:null});
+   s.inbox.push({id:'p4-report',kind:'news',from:'Match night desk',season:s.season,week:s.week,
+    subject:'Phase 4 audit report',body:['Results posted.'],read:false,
+    sections:[{title:'Match recap',lines:['Report is readable']} ]});
+   G.save();window.OfficeUI.go('inbox');
+  });
+  await page.locator('#view [data-inbox-filter="reports"]').click();
+  assert.match(await page.locator('#view .letter h2').innerText(),/Phase 4 audit report/,
+    name+': report filter should select a report, not an unrelated pending message');
+  assert.ok(await page.locator('#view .msglist button').count()>0,
+    name+': reports list should contain report');
+  await page.evaluate(()=>window.OfficeUI.go('scouting'));
+  // All styles in the active market must be filterable, not just four
+  // historically hard-coded labels.
+  const style=await page.evaluate(()=>{
+    const G=window.OfficeGame;G.S.free[0].style='Strong Style';
+    window.OfficeUI.go('scouting');return G.S.free[0].style;
+  });
+  const values=await page.locator('#view [data-scout-style] option').evaluateAll(opts=>opts.map(o=>o.value));
+  assert.ok(values.includes(style),name+': active market style missing from Scouting options');
+  await page.locator('#view [data-scout-style]').selectOption(style);
+  assert.match(await page.locator('#view .filter-results').first().innerText(),/^1 of /,
+    name+': new market style cannot filter available wrestlers');
+  if(viewport.width<=720){
+   const grid=await page.evaluate(()=>{
+    const p=document.querySelector('#view .management-filters'),r=p.getBoundingClientRect();
+    const q=p.querySelector('label:first-child').getBoundingClientRect();
+    return {toolbar:r.width,query:q.width,queryLeft:q.left,toolbarLeft:r.left};
+   });
+   assert.ok(grid.query>=grid.toolbar-32,
+     name+': mobile search should occupy a full, readable row '+JSON.stringify(grid));
+   await page.evaluate(()=>window.OfficeUI.go('inbox'));
+   const tabs=await page.locator('#view .office-filter-tabs button').evaluateAll(btns=>btns.map(el=>el.getBoundingClientRect().top));
+   assert.ok(tabs.length===4&&Math.abs(tabs[0]-tabs[1])<2&&tabs[2]>tabs[0]+20&&Math.abs(tabs[2]-tabs[3])<2,
+    name+': mobile inbox filters should be balanced 2 by 2 '+JSON.stringify(tabs));
+  }
+  assert.deepEqual(errors,[],name+': script errors while auditing screens');
+  console.log('PASS responsive audit '+name+': '+screens.length+' screens, inbox and scouting');
+ }finally{await context.close()}
+}
+
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
   await journey(browser,'desktop',{width:1280,height:720});
   await journey(browser,'phone',{width:390,height:844});
+  await responsiveAudit(browser,'laptop',{width:1024,height:768});
+  await responsiveAudit(browser,'tablet',{width:768,height:820});
+  await responsiveAudit(browser,'small-phone',{width:360,height:740});
+  await responsiveAudit(browser,'desktop-wide',{width:1440,height:900});
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1;});
