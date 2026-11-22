@@ -53,12 +53,12 @@ async function journey(browser,name,viewport){
   assert.equal(await page.locator('#modal .neg-trade-summary').count(),1);
   assert.match(await page.locator('#modal .neg-trade-summary').innerText(),/you give|in return/i);
   assert.match(await page.locator('#modal .neg-contract').innerText(),/proposed terms|not yet accepted/i);
-  assert.equal(await page.locator('#modal .neg-contract .changed').count(),2,
-   name+': both fee and finish must be visibly revised');
+  assert.equal(await page.locator('#modal .neg-contract .changed').count(),3,
+   name+': fee, finish and billing must all be visibly revised');
   assert.deepEqual(await page.evaluate(()=>{
    const o=window.OfficeGame.S.offers.find(x=>x.id==='trade-browser');
-   return {finish:o.finish,bump:o.bump,pending:o.talk.proposal?.finish,step:o.talk.step,focus:window.OfficeGame.S.focus};
-  }),{finish:'lose_clean',bump:1,pending:'lose_protected',step:'offer',focus:0},
+   return {finish:o.finish,bump:o.bump,pending:o.talk.proposal?.finish,pendingSlot:o.talk.proposal?.slot,step:o.talk.step,focus:window.OfficeGame.S.focus};
+  }),{finish:'lose_clean',bump:1,pending:'lose_protected',pendingSlot:'mid',step:'offer',focus:0},
    name+': proposal must be unsigned and preserve initial terms');
   await page.locator('#modal [data-talkaction="reply:accept"]').click();
   assert.match(await page.locator('#modal .neg-trade-summary').innerText(),/Accepted package/i);
@@ -68,9 +68,9 @@ async function journey(browser,name,viewport){
   await page.locator('#modal[open]').waitFor({state:'hidden'});
   const signed=await page.evaluate(()=>{
    const s=window.OfficeGame.S,o=s.card.find(x=>x.pid==='dock'&&x.wid==='rex');
-   return {finish:o?.finish,focus:s.focus,booked:s.card.length,offerExists:s.offers.some(x=>x.id==='trade-browser')};
+   return {finish:o?.finish,slot:o?.slot,focus:s.focus,booked:s.card.length,offerExists:s.offers.some(x=>x.id==='trade-browser')};
   });
-  assert.deepEqual(signed,{finish:'lose_protected',focus:0,booked:1,offerExists:false},
+  assert.deepEqual(signed,{finish:'lose_protected',slot:'mid',focus:0,booked:1,offerExists:false},
    name+': agreed package must be signed exactly once');
   assert.deepEqual(errors,[],name+': uncaught browser errors');
   console.log('PASS negotiation trade browser '+name+': give/get, proposal, acceptance, sign and layout');
