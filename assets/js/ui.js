@@ -918,10 +918,12 @@ function renderMeeting(oid,wid){
  const slotN=k=>esc(D.SLOTS[k].name),finN=k=>esc(D.FINISHES[k].name);
  const term=(label,a,b)=>a===b?`<div><dt>${label}</dt><dd>${b}</dd></div>`:`<div class="changed"><dt>${label}</dt><dd><s>${a}</s><b>${b}</b></dd></div>`;
  const chip=pending?['warn','Proposed · unsigned']:!done?['','Original offer']:t.verdict==='agreed'?['good','Accepted terms']:t.verdict==='counter'?['warn','Accepted compromise']:t.verdict==='refused'?['bad','Refused']:['','Original'];
- const deal=`<section class="deal neg-contract${changed?' is-new':''}"><header><small>Terms you would sign</small><span class="deal-chip ${chip[0]}">${chip[1]}</span></header><dl>${term('Card position',slotN(orig.slot),slotN(cur.slot))}${term('Booked finish',finN(orig.finish),finN(cur.finish))}${originalStip||cur.stip?term('Stipulation',esc(stipName(originalStip)||'None'),esc(stipName(cur.stip)||'None')):''}${term('Appearance fee',money(orig.fee),money(cur.fee))}</dl><p class="neg-contract-note">${pending?'Proposed terms are not accepted yet.':changed?'Accepted changes are highlighted.':'Original invitation.'} Nothing is booked until you sign.</p></section>`;
+ const deal=`<section class="deal neg-contract${changed?' is-new':''}"><header><small>${pending?'Proposed terms · not yet accepted':'Terms you would sign'}</small><span class="deal-chip ${chip[0]}">${chip[1]}</span></header><dl>${term('Card position',slotN(orig.slot),slotN(cur.slot))}${term('Booked finish',finN(orig.finish),finN(cur.finish))}${originalStip||cur.stip?term('Stipulation',esc(stipName(originalStip)||'None'),esc(stipName(cur.stip)||'None')):''}${term('Appearance fee',money(orig.fee),money(cur.fee))}</dl><p class="neg-contract-note">${pending?'Proposed terms are not accepted yet.':changed?'Accepted changes are highlighted.':'Original invitation.'} Nothing is booked until you sign.</p></section>`;
  const transcript=t.log.map(x=>`<div class="neg-message ${x.who==='You'?'is-you':'is-booker'}">${x.who==='You'?'<span class="neg-avatar-you" aria-hidden="true">YOU</span>':face('booker',p.id,p.voice,'portrait')}<div class="neg-speech"><b>${esc(x.who==='You'?'You':p.voice)}</b><p>${esc(x.text)}</p></div></div>`).join('');
  const ids=`data-oid="${oid}" data-wid="${wid}"`;
  const ask=(id,label,hint)=>`<button class="choice neg-choice" data-talkaction="${id}" ${ids}><b>${label}</b><span>${hint}</span></button>`;
+ const trades=window.OfficeNegotiationsV2?.tradeOptions?.(o,w,t)||[];
+ const tradePanel=trades.length?`<details class="neg-trade-menu"><summary>Offer a concrete trade (${trades.length})</summary><p>Make one final exchange. Giving something up can make a stronger request acceptable; a rejected trade costs one promoter trust.</p><div class="neg-trade-options">${trades.map(x=>ask('trade:'+x.id,esc(x.label),esc(x.hint))).join('')}</div></details>`:'';
  let prompt='',options='';
  if(t.step==='start'){
   prompt='What would you like to change?';
@@ -939,15 +941,15 @@ function renderMeeting(oid,wid){
   prompt='The promoter is unconvinced';
   options='<p class="neg-tip">Your first argument failed. You spent a meeting and lost '+(t.cost||promoterRead?.failureCost||2)+' promoter trust.</p>'
    +ask('reply:reframe','Let me make one final argument','Try a different reason. A second rejection ends the negotiation.')
-   +ask('reply:concede',"I'll offer something in return",'Propose a smaller improvement, usually at a lower fee.')
+   +(tradePanel||ask('reply:concede',"I'll offer something in return",'Try for a smaller improvement at a lower fee.'))
    +ask('reply:original',"I'll take your original offer",'Keep the original invitation and stop bargaining.');
  }else if(t.step==='counter'||t.step==='offer'){
-  prompt=t.step==='counter'?'The promoter has countered':'The promoter is willing';
+  prompt=t.step==='counter'?'The promoter has countered':t.package?'The promoter accepts your trade':'The promoter is willing';
   options=ask('reply:accept','I accept these proposed terms','Agree in principle. You must still sign the contract.');
   if(t.step==='counter'&&!t.pushes){
-   options+=ask('push:trade','Could we meet a little closer?','One final compromise request. The offer may not improve.');
    options+=ask('push:hold','I want the full change','Hardball: promoter trust −'+(promoterRead?.hardballCost||2)+'; with low trust, the promoter may withdraw the booking.');
   }
+  if(t.step==='counter')options+=tradePanel;
   options+=ask('reply:original',"I'll take the original offer",'Keep the initial invitation without the revision.');
   options+=ask('reply:walk','We are not doing this booking','Withdraw the invitation completely. This cannot be undone.');
  }else{
@@ -955,6 +957,7 @@ function renderMeeting(oid,wid){
   const outcome=t.verdict==='agreed'?'Revised terms accepted.':t.verdict==='counter'?'Compromise accepted.':t.verdict==='refused'?'The promoter refused.':'The original terms stand.';
   options=`<section class="neg-verdict ${t.verdict==='refused'?'is-refused':''}"><b>${outcome}</b><p>${esc(t.detail||'')}</p><small>${changed?'Sign the revised offer, sign the original, or leave both unsigned.':'The original offer can still be signed.'}</small></section>`;
  }
+ const tradeSummary=t.package?`<section class="neg-trade-summary" aria-label="Negotiated exchange"><b>What you are trading</b><dl><div><dt>You give</dt><dd>${esc(t.package.give)}</dd></div><div><dt>In return</dt><dd>${esc(t.package.get)}</dd></div></dl><small>${pending?'Proposal only — you must accept it before signing.':'Accepted package — sign to book the match.'}</small></section>`:'';
  const response=`<div class="neg-response"><h3>${prompt}</h3>${promoterAdvice}${t.step==='start'?'<p class="neg-tip">Reading or signing the original offer is free. Asking for better terms uses one meeting; failed arguments can reduce promoter trust.</p>':''}<div class="neg-choices">${options}</div></div>`;
  const btn=(cls,attrs,label,sub)=>`<button class="btn two ${cls}" ${attrs}><span>${label}</span><small>${sub}</small></button>`;
  const reply=`Reply by ${weekLabel(o.expiresAbs)}`;
@@ -972,6 +975,7 @@ function renderMeeting(oid,wid){
   </section>
   <aside class="neg-aside" aria-label="Booking terms">
    <details class="neg-terms"${phoneLayout()?'':' open'}><summary>${pending?'Proposed terms (not agreed)':changed?'Accepted contract terms':'Original contract terms'}</summary>${deal}</details>
+   ${tradeSummary}
    <p class="neg-meeting-note">${t.step==='start'?'No meeting used yet':`Meeting used · ${S().focus} left this week`}. ${t.cost?`Promoter trust lost here: −${t.cost}. `:''}The promoter decides the winner; this cannot be reversed by negotiation.</p>
   </aside>
  </div>
