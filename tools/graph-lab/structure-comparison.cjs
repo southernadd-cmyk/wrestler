@@ -61,7 +61,10 @@ const phase9lByPlan=Object.fromEntries(plans.map(game=>[game,{
  cleanBouts:0,lateNearfalls:0,insufficientClock:0,eligibleLateNearfalls:0,
  continuedPressure:0,earnedDefensiveReversal:0,opponentOffence:0,
  otherPhysicalResponse:0,noPhysicalResponse:0,
- nearfallBeforeClosingSetup:0,nearfallBeforeWitnessedSetup:0
+ nearfallBeforeClosingSetup:0,nearfallBeforeWitnessedSetup:0,
+ sameOwnerAuthoredEdge:0,sameOwnerUnlinked:0,
+ sameOwnerWithReset:0,followupActions:{},sourceActions:{},
+ byNearfallKind:{authored_kickout:0,earned_cover:0}
 }]));
 function auditPhase9L(game,m,drama,closing){
  const row=phase9lByPlan[game],A=E.GRAPH.A;
@@ -84,13 +87,27 @@ function auditPhase9L(game,m,drama,closing){
   // require the full normal four-tick / 40-second observation window.
   if(moment.at>m.len-40){row.insufficientClock++;continue;}
   row.eligibleLateNearfalls++;
+  row.byNearfallKind[moment.kind]++;
   const other=moment.side==='w'?'f':'w';
   const response=m.graph.events.find(e=>e.t>moment.at&&
    e.t<=moment.at+40&&realAction(e));
   if(!response)row.noPhysicalResponse++;
   else if(response.preControl===moment.side&&
-   response.control===moment.side&&!A[response.id].reverse)
+   response.control===moment.side&&!A[response.id].reverse){
    row.continuedPressure++;
+   // A near-fall is witnessed; the same-side follow-through may or may
+   // not use a *direct authored source edge* from the genuine pin/impact.
+   // Do not misrepresent a separate legal move as a source continuation.
+   const sourceId=moment.source?.id||moment.action;
+   const sourceNode=A[sourceId];
+   add(row.sourceActions,sourceId);
+   add(row.followupActions,response.id);
+   if(sourceNode?.next?.some(([id])=>id===response.id))
+    row.sameOwnerAuthoredEdge++;
+   else row.sameOwnerUnlinked++;
+   row.sameOwnerWithReset+=Number(m.graph.events.some(e=>
+    e.id==='stand_reset'&&e.t>moment.at&&e.t<response.t));
+  }
   else if(response.preControl===moment.side&&
    response.control===other&&A[response.id].reverse)
    row.earnedDefensiveReversal++;
@@ -674,11 +691,18 @@ for(const row of Object.values(phase9lByPlan)){
   'each eligible late cover must have exactly one first response classification');
  assert.ok(row.nearfallBeforeWitnessedSetup<=row.nearfallBeforeClosingSetup,
   'witnessed full closing runways must be a subset of real linked runways');
+ assert.equal(row.sameOwnerAuthoredEdge+row.sameOwnerUnlinked,row.continuedPressure,
+  'every same-owner continuation must be classified by its actual source edge');
+ assert.ok(row.sameOwnerWithReset<=row.continuedPressure,
+  'only real same-owner continuations can be counted after a reset');
 }
 console.log('PHASE9L_NEARFALL_RESPONSE_JSON '+JSON.stringify({
  schema:'office-phase9l-nearfall-response-v1',
  method:'Credited 9K nearfalls at 180–40 seconds before bell in Director-active clean matches; first non-rest, physically resolved graph action within 40 seconds. A separate optional timestamp-only link to an actually credited runway setup within 120 seconds is NOT claimed causal.',
- byPlan:phase9lByPlan
+ byPlan:Object.fromEntries(Object.entries(phase9lByPlan).map(([plan,row])=>
+  [plan,{...row,
+   followupActions:top(row.followupActions,12),
+   sourceActions:top(row.sourceActions,12)}]))
 }));
 console.log('PHASE9G_TRACE_JSON '+JSON.stringify({
  base:'7bd150ec60fe693c1818d516df4ce19618577849',
