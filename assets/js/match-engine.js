@@ -1792,6 +1792,51 @@ const Graph=(function makeGraph(){
       isAerialParent(id)&&isValid(M,id)))
     return {id:schedule.id,name:a.label};
   }
+  // Preserve one *physically available* link after a real late setup.
+  // The structure arc clock must not discard its current controller and
+  // location before the performer gets even one seeded legal choice.
+  // No performed attack, success, position reset or finish is granted here.
+  const bookedWinner=M.o.finish==='win_clean'?'w':'f';
+  if(closingEligible(M)&&M.t/M.len>=.74&&M.t/M.len<=.95&&
+     M.len-M.t>=20&&pos.control===bookedWinner&&
+     pos.position==='standing'&&pos.down===null&&
+     last?.id===g.node&&CLOSING_SETUPS.has(last.id)&&
+     last.preControl===bookedWinner&&last.control===bookedWinner&&
+     M.t-last.t>=0&&M.t-last.t<=10&&
+     g.physical?.area==='ring'&&
+     !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact&&
+     A[last.id].next.some(([id])=>A[id]?.zone==='mat'&&
+      A[id]?.down==='d'&&!A[id]?.reverse&&!A[id]?.blockOf&&
+      !A[id]?.risk&&isValid(M,id))){
+   g.closingProtected=(g.closingProtected||0)+1;
+   return {id:schedule.id,name:a.label};
+  }
+  // A genuinely landed, graph-authored setup -> grounding impact can keep
+  // its physical control for ONE subsequent selection near a clean finish.
+  // The ordinary arc clock must not immediately stand up both wrestlers.
+  // No scripted landing, winner change, cover or RNG draw is introduced.
+  const closingLoser=bookedWinner==='w'?'f':'w';
+  if(closingEligible(M)&&M.len-M.t>=10&&M.len-M.t<=90&&
+     M.t/M.len<=.98&&pos.control===bookedWinner&&
+     pos.position==='mat'&&pos.down===closingLoser&&
+     last?.id===g.node&&last.preControl===bookedWinner&&
+     last.control===bookedWinner&&last.position==='mat'&&
+     last.down===closingLoser&&
+     M.t-last.t>=0&&M.t-last.t<=10&&
+     g.physical?.area==='ring'&&
+     !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact&&
+     // A due earned near-fall already needs the very same real mat state.
+     A[last.id]?.zone==='mat'&&A[last.id]?.down==='d'&&
+     !A[last.id]?.reverse&&!A[last.id]?.blockOf&&
+     g.events.slice(0,-1).some(e=>CLOSING_SETUPS.has(e.id)&&
+      e.preControl===bookedWinner&&e.control===bookedWinner&&
+      e.t<last.t&&last.t-e.t<=60&&
+      A[e.id]?.next.some(([id])=>id===last.id))&&
+     !g.events.some(e=>e.t>last.t&&e.preControl===closingLoser&&
+      e.control===closingLoser)){
+   g.closingImpactProtected=(g.closingImpactProtected||0)+1;
+   return {id:schedule.id,name:a.label};
+  }
   // A real Brawl rebound earns ONE opportunity before the arc director
   // changes control or resets the ropes. Only if a named running attack
   // is affordable now. This never performs or credits the attack.
@@ -3560,6 +3605,133 @@ const Graph=(function makeGraph(){
   return concludeGrapple(M,counter?'counter':blocked?'block':'landed',
    counter?rev:blocked?blk:id);
  }
+
+ // Phase 9C: a finishing runway is EVIDENCE, not a prescribed set of moves.
+ // Only a genuine opponent attack, an earned reversal, an authored setup
+ // and a legal same-owner impact in the final exchanges can witness it.
+ // The agreed finish and its physical prerequisites remain independent.
+ // A performed strike trade can naturally lead to the already-authored
+ // clothesline edge. Recognise that actual setup rather than inserting
+ // an unnecessary Irish whip or claiming a non-existent reversal.
+ const CLOSING_SETUPS=new Set(['strike_trade','rope_run','rope_rebound','front_facelock',
+  'go_behind','waistlock','wristlock','headlock','corner_whip',
+  'top_climb','springboard_rise','leg_wrench','knuckle_lock']);
+ function closingEligible(M){
+  return !!root.OfficeSheets?.DIRECTOR?.active(M)&&M.outcome==='booked'&&
+   ['win_clean','lose_clean'].includes(M.o.finish);
+ }
+ function closingValidEvent(e){
+  const n=A[e?.id];
+  return !!n&&Number.isFinite(e.t)&&
+   ['w','f'].includes(e.preControl)&&
+   !n.blockOf&&!n.nearfall&&
+   ['aerialResolution','grappleResolution','strikeResolution','contactResolution']
+    .every(k=>!e[k]||e[k]==='landed');
+ }
+ function closingImpact(e,winner,loser){
+  const n=A[e?.id];
+  return closingValidEvent(e)&&!n.reverse&&!n.counterOf&&
+   e.preControl===winner&&e.control===winner&&
+   e.position==='mat'&&e.down===loser&&
+   n.zone==='mat'&&n.down==='d';
+ }
+ function closingPressure(e,loser){
+  const n=A[e?.id];
+  return closingValidEvent(e)&&!n.reverse&&!n.counterOf&&
+   e.preControl===loser&&e.control===loser&&
+   n.family!=='rest'&&n.family!=='heel'&&
+   (n.cost??1)>=.6;
+ }
+ function closingRunway(M){
+  if(!closingEligible(M))return null;
+  const g=get(M),winner=M.o.finish==='win_clean'?'w':'f',
+   loser=winner==='w'?'f':'w',events=g.events||[];
+  if(Psy.get(M).control!==winner)return null;
+  // No retroactive link when the losing wrestler regained control after
+  // the last impact. A finish-cue event is not an offensive landing.
+  const latest=events.filter(e=>closingValidEvent(e));
+  const window=Math.min(220,M.len*.34),earliest=M.t-window;
+  let linked=null;
+  for(let k=latest.length-1;k>=0;k--){
+   const impact=latest[k];
+   if(!closingImpact(impact,winner,loser)||impact.t<earliest||
+      impact.t>M.t||M.t-impact.t>90)continue;
+   if(latest.slice(k+1).some(e=>closingPressure(e,loser)))continue;
+   for(let j=k-1;j>=0;j--){
+    const setup=latest[j];
+    if(setup.t<impact.t-60)break;
+    if(setup.t>=impact.t||!CLOSING_SETUPS.has(setup.id)||
+       setup.preControl!==winner||setup.control!==winner||
+       !A[setup.id].next.some(([id])=>id===impact.id))continue;
+    if(latest.slice(j+1,k).some(e=>closingPressure(e,loser)))continue;
+    // Two genuinely performed linked actions count as construction, but
+    // never claim an unobserved earlier opponent counter.
+    if(!linked)linked={version:1,status:'linked',winner,loser,bookedFinish:M.o.finish,
+     pressure:null,cutoff:null,
+     setup:{id:setup.id,at:setup.t,side:winner},
+     impact:{id:impact.id,at:impact.t,side:winner},
+     explanation:'A real, same-wrestler authored setup-to-impact sequence. No cutoff or opponent pressure is inferred, and the contracted finisher is not counted as a physical graph landing.'};
+    for(let i=j-1;i>=0;i--){
+     const cutoff=latest[i];
+     if(cutoff.t<setup.t-100)break;
+     if(cutoff.t>=setup.t||cutoff.preControl!==loser||
+        cutoff.control!==winner||!A[cutoff.id]?.reverse)continue;
+     if(latest.slice(i+1,j).some(e=>closingPressure(e,loser)))continue;
+     // A planned takeover without performed opponent pressure cannot count
+     // as a cut-off; require a prior real attack from the other wrestler.
+     const threatened=latest.slice(0,i).reverse().find(e=>
+      closingPressure(e,loser)&&e.t<cutoff.t&&cutoff.t-e.t<=100);
+     if(!threatened)continue;
+     return {version:1,status:'witnessed',winner,loser,bookedFinish:M.o.finish,
+      pressure:{id:threatened.id,at:threatened.t,side:loser},
+      cutoff:{id:cutoff.id,at:cutoff.t,side:winner},
+      setup:{id:setup.id,at:setup.t,side:winner},
+      impact:{id:impact.id,at:impact.t,side:winner},
+      explanation:'Real opponent pressure, a genuine reversal, an authored same-side setup-to-impact link and unbroken closing control. The contracted finish is not treated as a graph landing.'};
+    }
+   }
+  }
+  return linked;
+ }
+ function closingOffers(M,side){
+  if(!closingEligible(M)||M.t/M.len<.74||M.t/M.len>.95||
+     M.len-M.t<30||!['w','f'].includes(side))return [];
+  const g=get(M),p=Psy.get(M),last=g.events.at(-1),
+   winner=M.o.finish==='win_clean'?'w':'f',
+   loser=winner==='w'?'f':'w',node=A[last?.id];
+  if(!closingValidEvent(last)||M.t-last.t>25||
+     g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)return [];
+  if(side===loser&&p.position==='standing'&&
+     closingPressure(last,loser))
+   return [['counter_strike',2.6]]; // Defender performs the counter.
+  if(side===winner&&p.position==='standing'&&
+     last.preControl===loser&&last.control===winner&&node.reverse&&
+     g.events.some(e=>closingPressure(e,loser)&&
+      e.t<last.t&&last.t-e.t<=100))
+   return [['rope_run',3.6],['front_facelock',2.2]];
+  // A clean winner can earn a real closing setup by taking control through
+  // ordinary in-ring offence, not only by executing a named reversal.
+  // This is a candidate choice after a performed standing action, NEVER an
+  // invented counter, automatic control switch, or scripted successful move.
+  // Leave the stronger cutoff narrative for actual observed reversals.
+  if(side===winner&&p.position==='standing'&&p.down===null&&
+     g.physical?.area==='ring'&&last.preControl===winner&&
+     last.control===winner&&!node.reverse&&!node.blockOf&&
+     !node.nearfall&&!CLOSING_SETUPS.has(last.id)&&
+     (node.cost??1)>=.7&&!['rest','heel'].includes(node.family)&&
+     !g.events.some(e=>e.preControl===winner&&CLOSING_SETUPS.has(e.id)&&
+       e.t>=M.t-70&&e.t<=M.t)){
+   return [['rope_run',1.8],['waistlock',1.4]];
+  }
+  if(side===winner&&last.preControl===winner&&last.control===winner&&
+     CLOSING_SETUPS.has(last.id)){
+   // A performed setup can offer a real authored impact even without a
+   // witnessed counter; the final report distinguishes those two cases.
+   return node.next.filter(([id])=>A[id]?.zone==='mat'&&
+    A[id]?.down==='d'&&!A[id]?.reverse&&!A[id]?.risk).map(([id])=>[id,2.8]);
+  }
+  return [];
+ }
  function validPool(M){
   const g=get(M),p=Psy.get(M),arc=ARCS[g.arc],current=A[g.node],pattern=PATTERNS[M.planId]||PATTERNS.story;
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
@@ -3570,6 +3742,7 @@ const Graph=(function makeGraph(){
   if(root.OfficeSheets?.DIRECTOR?.active(M)){
    selected.push(...root.OfficeSheets.DIRECTOR.offers(M,p.control));
    selected.push(...motifOffers(M,p.control));
+   selected.push(...closingOffers(M,p.control));
   }
   // In a STORY finishing stretch, the match can only earn a dramatic
   // kick-out if a real worker actually hits a genuine grounding attack.
@@ -4550,6 +4723,30 @@ const Graph=(function makeGraph(){
     }
    }
   }
+  // Phase 9C: large pooled repertoires diluted tiny closing guidance.
+  // After REAL recent pressure/counter/setup, provide legal continuations
+  // a bounded relative choice share. This never forces a successful move,
+  // changes its physics, alters safety, or bypasses a later agreed call.
+  const closing=closingOffers(M,p.control);
+  if(closing.length){
+   const ids=new Set(closing.map(([id])=>id));
+   const targets=pool.filter(([id])=>ids.has(id));
+   if(targets.length){
+    const weight=targets.reduce((sum,[,w])=>sum+w,0),
+     other=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+    const desired=ids.has('counter_strike')?.45:
+     (ids.has('rope_run')||ids.has('front_facelock'))?.65:.85;
+    if(weight>0&&other>0&&weight<other*desired){
+     // A completed, real authored setup gets a stronger OPTIONAL payoff
+     // choice than an exploratory setup or defensive counter. The previous
+     // 8x cap still drowned legal impacts in a very broad move pool.
+     const authoredImpact=closing.some(([id])=>A[id]?.zone==='mat'&&
+      A[id]?.down==='d');
+     const scale=Math.min(authoredImpact?32:8,other*desired/weight);
+     for(const item of targets)item[1]*=scale;
+    }
+   }
+  }
   // An agreed beat is not one option among fifty. If it is legal right now, the wrestler takes it
   // with odds set by how willing they are, whatever their habits would otherwise suggest.
   if(agreed){
@@ -4828,7 +5025,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport,closingRunway,closingOffers};
 })();
 
 function create(o){
@@ -5916,6 +6113,9 @@ function pickFinishRoute(M){
 }
 /* ---- the finish ---- */
 function finish(M){
+ // Snapshot the real closing tape BEFORE the scripted finish extends M.t.
+ // No random draw, finish-route change or synthetic move is introduced.
+ M.finishingRunway=Graph.closingRunway(M);
  Graph.finishCue(M);
  const w=M.w,f=M.f,o=M.o;let at=M.t;const step=(n=4)=>(at+=n,{at});
  // The microphone story is a real obligation, not flavour text.
@@ -5965,6 +6165,21 @@ function finish(M){
    say(M,'Road agent: the agreed finish was not there. They call an audible and keep the contracted result.','agent',{...step(),who:'runner'});
   }
   if(M.graph?.outcome)M.graph.outcome.route=route.id;
+  // Only credit the bridge when the chosen route is compatible with
+  // the already witnessed last exchanges. Never claim the scripted finisher
+  // itself was a previously executed physical-graph landing.
+  if(M.finishingRunway&&['finisher','top_rope','limb_finish','strike_knockout','outlasted'].includes(route.id)){
+   const evidence=M.finishingRunway,who=evidence.winner==='w'?w:f;
+   const move=id=>Graph.A[id]?.name||id.replaceAll('_',' ');
+   const story=evidence.status==='witnessed'?
+    who.short+' genuinely countered the pressure, then worked through the '+
+     move(evidence.setup.id)+' and connected with the '+move(evidence.impact.id)+'.':
+    who.short+' connected the '+move(evidence.setup.id)+' with the '+
+     move(evidence.impact.id)+'.';
+   say(M,story+' Those real exchanges have brought the agreed finish into view.',
+    'story',{...step(3),who:'colour',textureId:'causal-finish-runway'});
+   evidence.spoken=true;
+  }
   route.run(M,w,f,step);
  }
  M.t=at;M.stage='over';
@@ -5993,7 +6208,8 @@ function summary(M){
   evidence:evidenceOf(M),roomNegotiation:M.o.sheet?.negotiation||null,
   ...(root.OfficeSheets?.DIRECTOR?.active(M)?{structure:root.OfficeSheets.DIRECTOR.report(M),structureAssessment:structureAssessment(M),
    ...(Graph.motifSummary(M)?{matchMotif:Graph.motifSummary(M)}:{}),
-   ...(Graph.sellingReport(M)?{matchSelling:Graph.sellingReport(M)}:{})}:{}),
+   ...(Graph.sellingReport(M)?{matchSelling:Graph.sellingReport(M)}:{}),
+   ...(M.finishingRunway?{finishingRunway:{...M.finishingRunway}}:{})}:{}),
   psychology:{archetype:M.planId,construction:constructionOf(M),controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 // v0.3.12 What happened, as structured facts a rivalry can cite later: who reversed whom and which kind

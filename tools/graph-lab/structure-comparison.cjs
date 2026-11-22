@@ -18,6 +18,11 @@ const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styl
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
  sellingWrestlers:0,sellingStrains:0,sellingLines:0,comebackSelling:0,realBreathers:0,
+ closingRunways:0,bridgedRunways:0,closingWins:0,closingLosses:0,cleanBouts:0,
+ fullRunways:0,linkedRunways:0,lateWinnerControl:0,lateWinnerSetups:0,lateWinnerImpacts:0,
+ protectedFollowthroughs:0,protectedClosingImpacts:0,
+ lateAuthoredLinkSetups:0,latePerformedLinks:0,lateInterruptedSetups:0,
+ lateDiversions:0,lateLinksLostAtBell:0,lateLinksStale:0,
  motifStarts:0,motifPaid:0,motifOpen:0,
  finishes:0,finishFallbacks:0,named:0,namedHit:0,controlNamedHit:0,open:0,causalFinals:0,dangerEscapes:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
@@ -94,9 +99,106 @@ for(let si=0;si<sampleStyles.length;si++){
   assert.ok(v&&a&&v.objectives.length===4,'evidenced structure report');
   assert.ok(!m.final.starParts.some(x=>x[0]==='structure'),'no automatic stars');
   r.bouts++;r.stars+=m.final.stars;r.controlStars+=control.final.stars;
+  r.cleanBouts+=Number(['win_clean','lose_clean'].includes(finish));
+  if(['win_clean','lose_clean'].includes(finish)){
+   const winner=finish==='win_clean'?'w':'f',loser=winner==='w'?'f':'w',
+    last=m.graph.events,
+    since=Math.max(0,m.len-180),
+    setupIds=new Set(['strike_trade','rope_run','rope_rebound','front_facelock',
+     'go_behind','waistlock','wristlock','headlock','corner_whip',
+     'top_climb','springboard_rise','leg_wrench','knuckle_lock']);
+   // Read-only closing funnel: keep authored possibility, performed impact,
+   // diversions and real interruptions separate from final attribution.
+   // Use the same bounded closing tape as Phase 9C; no gameplay RNG.
+   const A=E.GRAPH.A,earliest=m.len-Math.min(220,m.len*.34);
+   const cleanEvent=e=>{
+    const n=A[e.id];
+    return !!n&&Number.isFinite(e.t)&&e.t>=0&&e.t<=m.len&&
+      !n.blockOf&&!n.nearfall&&
+      ['aerialResolution','grappleResolution','strikeResolution','contactResolution']
+       .every(k=>!e[k]||e[k]==='landed');
+   };
+   const tape=last.filter(cleanEvent);
+   const setupEvents=tape.filter(e=>e.t>=earliest&&
+    e.preControl===winner&&e.control===winner&&setupIds.has(e.id));
+   let hasAuthored=false,hasLinked=false,hasInterruption=false,
+    hasDiversion=false,hasLateLink=false;
+   for(const setup of setupEvents){
+    const links=new Set((A[setup.id]?.next||[]).map(([id])=>id).filter(id=>
+      A[id]?.zone==='mat'&&A[id]?.down==='d'&&!A[id]?.reverse&&
+      !A[id]?.counterOf&&!A[id]?.blockOf));
+    if(!links.size)continue;
+    hasAuthored=true;
+    const following=tape.filter(e=>e.t>setup.t&&e.t-setup.t<=60);
+    const next=following[0];
+    if(next&&next.preControl===loser)hasInterruption=true;
+    if(next&&next.preControl===winner&&!links.has(next.id))hasDiversion=true;
+    const linked=following.find(e=>links.has(e.id)&&
+      e.preControl===winner&&e.control===winner&&
+      e.position==='mat'&&e.down===loser);
+    if(linked){
+     hasLinked=true;
+     if(m.len-linked.t<=90)hasLateLink=true;
+    }
+   }
+   r.lateAuthoredLinkSetups+=Number(hasAuthored);
+   r.latePerformedLinks+=Number(hasLinked);
+   r.lateInterruptedSetups+=Number(hasInterruption);
+   r.lateDiversions+=Number(hasDiversion);
+   r.lateLinksStale+=Number(hasLinked&&!hasLateLink);
+   r.lateLinksLostAtBell+=Number(hasLateLink&&m.story.control!==winner);
+   r.lateWinnerControl+=Number(m.story.control===winner);
+   r.lateWinnerSetups+=Number(last.some(e=>e.t>=since&&e.t<=m.len&&
+    e.preControl===winner&&e.control===winner&&setupIds.has(e.id)));
+   r.lateWinnerImpacts+=Number(last.some(e=>e.t>=since&&e.t<=m.len&&
+    e.preControl===winner&&e.control===winner&&e.position==='mat'&&
+    e.down===loser&&E.GRAPH.A[e.id]?.zone==='mat'&&
+    E.GRAPH.A[e.id]?.down==='d'));
+  }
   r.events+=m.graph.events.length;r.controlEvents+=control.graph.events.length;
+  r.protectedFollowthroughs+=m.graph.closingProtected||0;
+  r.protectedClosingImpacts+=m.graph.closingImpactProtected||0;
+  assert.equal(control.graph.closingProtected||0,0,'metadata-only controls cannot protect closing links');
+  assert.equal(control.graph.closingImpactProtected||0,0,'metadata-only controls cannot protect impacts');
   r.distinct+=new Set(m.graph.events.map(x=>x.id)).size;
   r.botches+=m.botches;r.controlBotches+=control.botches;
+  const closing=m.final.finishingRunway;
+  assert.equal(control.final.finishingRunway,undefined,'metadata control has no finishing runway');
+  if(closing){
+   const tape=m.graph.events,A=E.GRAPH.A,
+    exact=e=>e&&tape.find(x=>x.id===e.id&&x.t===e.at),
+    setup=exact(closing.setup),impact=exact(closing.impact);
+   assert.ok(setup&&impact&&setup.t<impact.t&&impact.t-setup.t<=60,
+    'a linked finish needs two recent real, ordered actions');
+   assert.equal(closing.winner,finish==='win_clean'?'w':'f');
+   assert.equal(setup.preControl,closing.winner);
+   assert.equal(setup.control,closing.winner);
+   assert.equal(impact.preControl,closing.winner);
+   assert.equal(impact.control,closing.winner);
+   assert.equal(impact.position,'mat');
+   assert.equal(impact.down,closing.loser);
+   assert.ok(A[setup.id]?.next?.some(([id])=>id===impact.id),
+    'a real authored edge must connect the setup and impact');
+   if(closing.status==='witnessed'){
+    const threat=exact(closing.pressure),cut=exact(closing.cutoff);
+    assert.ok(threat&&cut&&threat.t<cut.t&&cut.t<setup.t,
+     'full sequence needs earlier witnessed opponent pressure and reversal');
+    assert.equal(threat.preControl,closing.loser);
+    assert.equal(cut.preControl,closing.loser);
+    assert.equal(cut.control,closing.winner);
+    assert.ok(A[cut.id]?.reverse);
+    r.fullRunways++;
+   }else{
+    assert.equal(closing.status,'linked');
+    assert.equal(closing.pressure,null,'no imagined pressure');
+    assert.equal(closing.cutoff,null,'no imagined counter');
+    r.linkedRunways++;
+   }
+   r.closingRunways++;
+   r.bridgedRunways+=Number(!!closing.spoken);
+   r.closingWins+=Number(closing.winner==='w');
+   r.closingLosses+=Number(closing.winner==='f');
+  }
   const selling=m.final.matchSelling;
   assert.equal(control.final.matchSelling,undefined,'metadata-only cannot acquire Phase 9B selling');
   if(selling){
@@ -177,8 +279,12 @@ for(let si=0;si<sampleStyles.length;si++){
    const group=r[key][label]??={bouts:0,earned:0,stars:0,
     botches:0,controlBotches:0,scriptedAttempts:0,controlScriptedAttempts:0,
     scriptedBotches:0,controlScriptedBotches:0,balconyBotches:0,controlBalconyBotches:0,
-    namedHits:0,controlNamedHits:0,riskySignedCalls:0,scriptedMoveCounts:{}};
+    namedHits:0,controlNamedHits:0,riskySignedCalls:0,scriptedMoveCounts:{},
+    cleanBouts:0,closingRunways:0,bridgedRunways:0};
    group.bouts++;group.earned+=witnessed;group.stars+=m.final.stars;
+   group.cleanBouts+=Number(['win_clean','lose_clean'].includes(finish));
+   group.closingRunways+=Number(!!closing);
+   group.bridgedRunways+=Number(!!closing?.spoken);
    group.botches+=m.botches;group.controlBotches+=control.botches;
    group.scriptedAttempts+=risk.attempts;group.controlScriptedAttempts+=controlRisk.attempts;
    group.scriptedBotches+=risk.failed;group.controlScriptedBotches+=controlRisk.failed;
@@ -203,6 +309,8 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
     balconyBotches:v.balconyBotches,controlBalconyBotches:v.controlBalconyBotches,
     namedHits:v.namedHits,controlNamedHits:v.controlNamedHits,
     riskySignedCalls:v.riskySignedCalls,
+    cleanBouts:v.cleanBouts,closingRunways:v.closingRunways,
+    bridgedRunways:v.bridgedRunways,
     scriptedMoveCounts:top(v.scriptedMoveCounts,12)}]));
   const sequences=top(r.sequences,6);
   return [id,{bouts:r.bouts,earnedPct:ratio(r.earned,4*r.bouts),
@@ -216,6 +324,20 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    sellingWrestlers:r.sellingWrestlers,sellingStrains:r.sellingStrains,
    sellingLines:r.sellingLines,comebackSelling:r.comebackSelling,
    realBreathers:r.realBreathers,
+   cleanBouts:r.cleanBouts,
+   closingRunways:r.closingRunways,bridgedRunways:r.bridgedRunways,
+   fullRunways:r.fullRunways,linkedRunways:r.linkedRunways,
+   lateWinnerControl:r.lateWinnerControl,lateWinnerSetups:r.lateWinnerSetups,
+   lateWinnerImpacts:r.lateWinnerImpacts,
+   protectedFollowthroughs:r.protectedFollowthroughs,
+   protectedClosingImpacts:r.protectedClosingImpacts,
+   lateAuthoredLinkSetups:r.lateAuthoredLinkSetups,
+   latePerformedLinks:r.latePerformedLinks,
+   lateInterruptedSetups:r.lateInterruptedSetups,
+   lateDiversions:r.lateDiversions,
+   lateLinksLostAtBell:r.lateLinksLostAtBell,
+   lateLinksStale:r.lateLinksStale,
+   closingWins:r.closingWins,closingLosses:r.closingLosses,
    bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,dangerEscapes:r.dangerEscapes,
    namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),controlNamedHitPct:ratio(r.controlNamedHit,r.named),openObjectives:r.open,
    objectiveStatus:r.objectives,topActions:top(r.firstActions,12),
@@ -224,6 +346,16 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    topSequences:sequences,...dims}];
  }))};
 assert.equal(report.totalBouts,(quick?320:960));
+for(const r of Object.values(map)){
+ assert.ok(r.closingRunways<=r.cleanBouts,'only clean finishes may earn 9C runways');
+ assert.equal(r.closingRunways,r.fullRunways+r.linkedRunways,'graded evidence totals must reconcile');
+ assert.ok(r.closingRunways<=r.lateWinnerControl,
+  'a verified finishing runway must preserve winner control at the bell');
+ assert.ok(r.closingRunways<=r.lateWinnerSetups,
+  'a verified finishing runway must include a real late setup');
+ assert.ok(r.closingRunways<=r.lateWinnerImpacts,
+  'a verified finishing runway must include a real late impact');
+}
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
 // Focused read-only risk report for Phase 8: the existing seeded 960-match
 // comparison, no new workflow or extra stochastic fixture.
