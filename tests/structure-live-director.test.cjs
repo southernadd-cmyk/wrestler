@@ -39,8 +39,8 @@ function drive(M){
  assert.ok(M.done&&M.final,'an actual match must complete');
 }
 let signedCount=0,played=0,events=0,earned=0;
-const diagnostics=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0}]));
 const ids=S.STRUCTURES.catalogue().map(x=>x.id);
+const diagnostics=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0}]));
 const plans=['story','technical','brawl','spots','safe'];
 const signedRows=[];
 for(const id of ids)for(const lead of ['w','f'])for(const game of plans){
