@@ -195,7 +195,7 @@ function historyDetails(h){
  const official=h.outcome==='dq'?'Disqualification — agreed finish not delivered':
   h.outcome==='nc'?'No contest':h.outcome==='double'?'Agreed finish broken':'As booked';
  const structure=h.structure,counts=structure?.objectives?.filter(x=>x.status==='achieved'||x.status==='adapted').length;
- return `<p><b>Booked finish:</b ${esc(booked)} · <b>Official result:</b> ${esc(official)}</p>${boutStakes(h)?'<p>'+boutStakes(h)+'</p>':''}${structure?'<p><b>Match structure:</b> '+esc(OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===structure.id)?.label||structure.id)+' · '+counts+'/'+structure.objectives.length+' objectives witnessed</p>':''}`;
+ return `<p><b>Booked finish:</b> ${esc(booked)} · <b>Official result:</b> ${esc(official)}</p>${boutStakes(h)?'<p>'+boutStakes(h)+'</p>':''}${structure?'<p><b>Match structure:</b> '+esc(OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===structure.id)?.label||structure.id)+' · '+counts+'/'+structure.objectives.length+' objectives witnessed</p>':''}`;
 }
 function starsText(s){return Mx.starText(s)}
 function weekLabel(a){return `S${Math.floor((a-1)/16)+1} W${(a-1)%16+1}`}
