@@ -113,6 +113,7 @@ jobs:
           node tests/structure-planning-baseline.test.cjs
           node tests/structure-contracts.test.cjs
           node tests/structure-dynamic-planner.test.cjs
+          node tests/structure-live-director.test.cjs
           node tests/long-match-endurance.test.cjs
           node tests/match-flow.test.cjs
           node tests/stipulations.test.cjs

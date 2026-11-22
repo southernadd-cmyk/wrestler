@@ -1267,9 +1267,9 @@
   callback:['chain','submission'],
   finish_build:['power','suplex','neck','aerial','submission'],
   evasion:['heel','outside'],
-  exposure:['chain','running','fire'],
+  exposure:['chain','running','fire','strike'],
   shortcut:['heel','strike','corner'],
-  escape:['heel','outside','running','chain'],
+  escape:['chain','outside'],
   dominance:['power','suplex'],
   challenge:['fire','running','chain'],
   reassertion:['power','suplex','neck']
@@ -1287,13 +1287,19 @@
   if(!o||!r)return [];
   const families=OBJECTIVE_FAMILIES[obj.intent]||[];
   const known=[...(D.PROFILES[o.id]?.signature||[]),...(o.learned||[])];
-  const ids=[...new Set([...known,...families.flatMap(f=>CAT.members[f]||[])])];
+  // An escape is a reversal, release or physical retreat, NOT rope leverage,
+  // showboating or another illicit attacking move.
+  const escapeMoves=['wrist_escape','waist_escape','headlock_escape','mat_scramble',
+   'counter_strike','floor_counter','armbar_roll'];
+  const ids=[...new Set([...known,...families.flatMap(f=>CAT.members[f]||[]),
+   ...(obj.intent==='escape'?escapeMoves:[])])];
   const cutoff=Math.min(.98,obj.window[1]+.08);
   return ids.filter(id=>{
    const n=A[id];
    if(!n||typeof n.after!=='number'||n.after>cutoff||n.nearfall||n.blockOf||
      !legal(id,o,r)||banned(st,id)||!(families.includes(n.family)||
-     families.some(f=>(CAT.members[f]||[]).includes(id))))return false;
+     families.some(f=>(CAT.members[f]||[]).includes(id))||
+     obj.intent==='escape'&&escapeMoves.includes(id)))return false;
    // A dramatic objective cannot be "earned" by irrelevant filler: no
    // eye rakes in clean technical exchanges, no breathers as huge finishes.
    const cost=n.cost??1,crowd=n.crowd??0,name=(n.name||id).toLowerCase();
@@ -1304,7 +1310,7 @@
    if(impact&&(cost<2.4||crowd<2||dirty||n.family==='rest'))return false;
    if(['exposure','challenge','comeback'].includes(obj.intent)&&(cost<1||dirty))return false;
    if(obj.intent==='evasion'&&!/stall|retreat|plea|mock|duck|rope|roll.out|outside|argument/.test(name))return false;
-   if(obj.intent==='escape'&&!/duck|escape|roll|rope|retreat|outside|stall|break|counter/.test(name))return false;
+   if(obj.intent==='escape'&&!(n.reverse||escapeMoves.includes(id)))return false;
    if(obj.intent==='shortcut'&&!(dirty||n.family==='heel'||crowd<0))return false;
    return ['evasion','escape'].includes(obj.intent)?cost>=-1:cost>=0;
   }).sort((a,b)=>{

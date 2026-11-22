@@ -1485,6 +1485,12 @@ const Graph=(function makeGraph(){
  }
  function canArc(M,id,frac){
   const g=get(M),n=ARCS[id];if(!n)return false;
+  if(root.OfficeSheets?.DIRECTOR?.active(M)){
+   // Bypass classic narrative order, but retain arc timing and finish safety.
+   if(id==='finish_setup'&&frac<Math.max(.88,(Psy.PHASE_ENDS[M.planId]||Psy.PHASE_ENDS.story)[3]+.08))return false;
+   if(n.earliest&&frac<n.earliest||n.latest&&frac>n.latest)return false;
+   return (g.visit[id]||0)<=4||id==='finish_setup';
+  }
   // The narrative clock determines when a major phase is eligible. The action
   // graph can still weave through holds, cut-offs and ordinary exchanges.
   const schedule=phaseFor(frac,M),phaseOrder={open:0,shine:1,heat:2,comeback:3,stretch:4};
@@ -1501,6 +1507,12 @@ const Graph=(function makeGraph(){
  }
  function selectArc(M,frac){
   const g=get(M),arc=ARCS[g.arc],pattern=PATTERNS[M.planId]||PATTERNS.story;
+  if(root.OfficeSheets?.DIRECTOR?.active(M)){
+   if(frac>.93&&canArc(M,'finish_setup',frac))return 'finish_setup';
+   const links=arc.out.filter(([id])=>canArc(M,id,frac))
+    .map(([id,w])=>[id,w*root.OfficeSheets.DIRECTOR.arcBias(M,id)]);
+   return pick(M,links)||g.arc;
+  }
   if(frac>.93&&g.arc!=='finish_setup')return 'finish_setup';
   if(frac>.81&&!arc.late)return 'escalation';
   if(frac>.67&&['open','shine','heat'].includes(arc.phase))return 'comeback';
@@ -1526,6 +1538,16 @@ const Graph=(function makeGraph(){
   });
   // Even the no-edge fallback must respect the late-arc timing guard.
   return pick(M,weights)||(frac>.75&&canArc(M,'escalation',frac)?'escalation':g.arc);
+ }
+ // Objective actors determine which wrestler a structure wants to see
+ // in control; a defensive escape instead gives the opponent an attack to
+ // counter. This guides existing arcs, never credits an unperformed action.
+ function structureActor(M){
+  const director=root.OfficeSheets?.DIRECTOR;
+  if(!director?.active(M))return null;
+  const obj=director.current(M)?.objective;
+  if(!obj||obj.actor==='either'||M.t/Math.max(1,M.len)<obj.window[0]-.07)return null;
+  return obj.intent==='escape'?(obj.actor==='w'?'f':'w'):obj.actor;
  }
  function enter(M,id,prev){
   const g=get(M),arc=ARCS[id],p=Psy.get(M);
@@ -1726,12 +1748,17 @@ const Graph=(function makeGraph(){
    words=alternatives[count%alternatives.length];
    g.arcNarrationCounts[id]=count+1;
   }
+  const director=root.OfficeSheets?.DIRECTOR;
+  const role=director?.active(M)&&arc.control!=='neutral'?
+   (structureActor(M)||(arc.control==='w'?M.structureDirector.roles.lead:M.structureDirector.roles.other)):arc.control;
+  if(director?.active(M)&&arc.control!=='neutral')
+   words=(role==='w'?M.w.short:M.f.short)+' seeks the initiative in this exchange.';
   if(words)say(M,fill(M,words),'story',{textureId:'arc-entry:'+id});
   if(arc.control==='w'||arc.control==='f'){
-   const change=p.control!==arc.control;
-   if(change) p.changes++;
-   p.control=arc.control;
-   M.mom=arc.control==='w'?Math.max(25,M.mom):Math.min(-25,M.mom);
+   const change=p.control!==role;
+   if(change)p.changes++;
+   p.control=role;
+   M.mom=role==='w'?Math.max(25,M.mom):Math.min(-25,M.mom);
   }else p.control='neutral';
   p.phase=arc.phase;
   p.position='standing';p.down=null;
@@ -1782,6 +1809,18 @@ const Graph=(function makeGraph(){
     return {id:schedule.id,name:a.label};
   // Existing in-progress saves may already be in an impossible early finish arc.
   // Recover those, and never carry an early-phase arc back into the final stretch.
+  if(root.OfficeSheets?.DIRECTOR?.active(M)){
+   // Preserve earlier pending physical exchanges. Director biases real arc
+   // transitions; it never performs a move or changes the booked finish.
+   if(g.age>=a.max||(g.age>=a.min&&M.r()<.16)){
+    const next=selectArc(M,frac);
+    if(next!==g.arc){
+     const prev=g.arc;g.arc=next;g.age=0;g.visit[next]=(g.visit[next]||0)+1;
+     g.history.push(next);g.transitions++;g.node=null;enter(M,next,prev);
+    }
+   }
+   return {id:schedule.id,name:ARCS[g.arc].label};
+  }
   const mispaced=(g.arc==='exchange'&&order[schedule.id]<2)
    ||(a.phase==='comeback'&&order[schedule.id]<3)
    ||(a.phase==='stretch'&&g.arc!=='exchange'&&schedule.id!=='stretch')
@@ -3003,6 +3042,7 @@ const Graph=(function makeGraph(){
    ...(pacedUntil!==null?{pacedRecoveryUntil:pacedUntil}:{}),
    ...(options.scriptedSpot?{scriptedSpot:true,scriptedBig:!!options.big}:{})});
   if(g.events.length>220)g.events.shift();
+  root.OfficeSheets?.DIRECTOR?.observe(M,g.events[g.events.length-1]);
   if(id==='cheap_shot')referee(M,side);
   if(M.o.promo?.tactic?.kind==='counter'&&n.reverse&&side==='f'&&p.control==='w'&&
      M.t/M.len>=.58&&(M.o.promo.tactic.nodes.includes(id)||(!!n.counterOf&&(!M.o.promo.tactic.families||M.o.promo.tactic.families.includes(n.family))))&&!g.promoCounterPaid){
@@ -3382,6 +3422,10 @@ const Graph=(function makeGraph(){
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
   const entries=arc.entry.map(id=>[id,1]);
   const selected=[...from,...entries];
+  // Only the explicitly activated Chickenshit structure gets additional
+  // real candidate moves. Every offer still goes through isValid below.
+  if(root.OfficeSheets?.DIRECTOR?.active(M))
+   selected.push(...root.OfficeSheets.DIRECTOR.offers(M,p.control));
   // In a STORY finishing stretch, the match can only earn a dramatic
   // kick-out if a real worker actually hits a genuine grounding attack.
   // Promote a few existing, position-valid knockdowns as normal selectable
@@ -3910,6 +3954,7 @@ const Graph=(function makeGraph(){
    if(M.o.sheet?.v>=4&&root.OfficeRoom)n*=root.OfficeRoom.bias(M,id);
    if(A[id].reverse&&M.sheet?.v>=4&&root.OfficeRoom)n*=root.OfficeRoom.feed(M,p.control==='f'?'f':'w');
    if(root.OfficeSheets?.boost){const sb=root.OfficeSheets.boost(M,id,p.control==='f'?'f':'w');n*=sb>1?sb*SHEET_PULL:sb;}
+   n*=root.OfficeSheets?.DIRECTOR?.bias(M,id,p.control==='f'?'f':'w')||1;
    // The public promo is a tactical declaration. Counter promises favour
    // genuine worker reversals of opponent control, not arbitrary bonuses.
    const publicTactic=M.o.promo?.tactic;
@@ -4396,7 +4441,11 @@ const Graph=(function makeGraph(){
   if(p.position==='outside'&&g.floorTicks>=4){apply(M,'roll_inside');g.floorTicks=0;return;}
   if(p.control==='neutral'){
    const advantage=(M.w.ring-M.f.ring)+(M.wSt-M.fSt)*.3;
-   p.control=M.r()<Math.max(.3,Math.min(.7,.5+advantage/250))?'w':'f';p.changes++;
+   const base=Math.max(.3,Math.min(.7,.5+advantage/250));
+   const actor=structureActor(M);
+   // A signed objective may favour initial initiative, not guarantee it.
+   const chance=actor==='w'?Math.min(.85,base+.22):actor==='f'?Math.max(.15,base-.22):base;
+   p.control=M.r()<chance?'w':'f';p.changes++;
   }
   const candidates=validPool(M),id=pick(M,candidates);
   if(id){
@@ -4665,6 +4714,7 @@ function create(o){
  M.story=Psy.make(M);
  if(o.sheet?.signed)M.sheet=JSON.parse(JSON.stringify(o.sheet));
  Graph.init(M);
+ root.OfficeSheets?.DIRECTOR?.init(M);
  M.crowdStart=M.crowd;M.crowdPeak=M.crowd;
  return M;
 }
@@ -5175,6 +5225,7 @@ function tick(M){
  if(!M.hints.tired&&M.wSt<30){M.hints.tired=1;say(M,`In your ear: ${w.short} is blown up. Slow it down or take it home.`,'agent');}
  // incidents
  root.OfficeSheets?.advance(M);
+ root.OfficeSheets?.DIRECTOR?.advance(M);
  incidents(M,frac);
  if(M.decision)return;
  // play-by-play
@@ -5679,6 +5730,7 @@ function finish(M){
 }
 function summary(M){
  root.OfficeSheets?.closeVows?.(M);
+ root.OfficeSheets?.DIRECTOR?.finalize(M);
  const s=stars(M,true);
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
@@ -5691,6 +5743,7 @@ function summary(M){
    opponentDirty:!!M.graph?.events?.some(e=>e.id==='cheap_shot'&&e.preControl==='f')
   },
   evidence:evidenceOf(M),roomNegotiation:M.o.sheet?.negotiation||null,
+  ...(root.OfficeSheets?.DIRECTOR?.active(M)?{structure:root.OfficeSheets.DIRECTOR.report(M)}:{}),
   psychology:{archetype:M.planId,construction:constructionOf(M),controlChanges:Psy.get(M).changes,target:Psy.get(M).target,targetingBeats:Psy.get(M).focusHits,hopeSpots:Psy.get(M).hopeSpots,graph:{nodes:M.graph?.steps||0,arcs:M.graph?.history?.slice()||[],edges:M.graph?.transitions||0,damage:{...(M.graph?.damage||{w:0,f:0})},nearfallCount:M.graph?.nearfallCount||0,pattern:M.graph?.pattern||M.planId,texture:M.graph?.texture||'classic',restBeats:M.graph?.rests||0,exertion:Math.round(M.graph?.exertion||0),outcome:M.graph?.outcome||null,actions:M.graph?.events?.slice(-40).map(e=>e.id)||[]}},preparation:{note:Object.keys(M.prep).some(k=>M.prep[k]>=1.5)?`${M.w.short}'s preparation helped in the match: ${Object.entries(M.prep).filter(([,v])=>v>=1.5).map(([k])=>k).join(', ')}.`:null},adj:{...M.adj},minutes:Math.round(M.t/60),plan:M.planId,leash:M.leash,talk:M.talk,stamina:Math.round(M.wSt)};
 }
 // v0.3.12 What happened, as structured facts a rivalry can cite later: who reversed whom and which kind
@@ -5717,5 +5770,5 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
+root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,structureReport:M=>root.OfficeSheets?.DIRECTOR?.report(M)||null,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);return M}};
 })(typeof window!=='undefined'?window:globalThis);
