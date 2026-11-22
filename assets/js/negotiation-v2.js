@@ -19,7 +19,7 @@
    name:'Hard-nosed',priority:'An exciting physical show, especially credible brawlers',
    warning:'Ultimatums may cost you the entire booking, particularly when trust is low.',
    signal:'Gaz responds to a tough, credible draw and to sensible concessions.',
-   counter:{fee:1.07,protect:.82,slot:.88},failed:3,hardball:3,pullBelow:50,pullMargin:10,
+   counter:{fee:1.07,protect:.82,slot:.88},failed:3,hardball:3,pullBelow:50,pullMargin:6,
    holdWindow:4,tradeWindow:13
   },
   showman:{
@@ -49,7 +49,7 @@
  // universal "best argument" button. This modifies existing skill/trust scores.
  const personalityEdge=(p,w,t,arg)=>{
   if(t.topic==='stip')return 0; // Existing stipulation taste/fit/feud rules already differ by promoter.
-  if(p.personality==='aggressive')return t.topic==='protect'?(w.style==='Brawl'?9:2):
+  if(p.personality==='aggressive')return t.topic==='protect'?(w.style==='Brawl'?5:2):
    t.topic==='slot'?(w.heat>=60?4:-6):arg==='trade'?4:-9;
   if(p.personality==='showman')return t.topic==='slot'?(arg==='crowd'?10:3)+(w.heat>=60?4:-4):
    t.topic==='fee'?(w.heat>=65?5:-5):w.heat>=60?5:-4;
@@ -216,34 +216,41 @@
    const arg=move.slice(4);
    if(t.retry&&t.lastArg===arg)return {error:'That argument has already failed. Choose another.'};
    if(!['crowd','reliability','trade'].includes(arg))return {error:'Choose a valid argument.'};
+   // Let the existing engine apply its stipulation-specific validity and
+   // preferred-stipulation rules; no unaccepted change may remain on the offer.
+   const trustBefore=p.trust;
    const r=originalMove.call(G,oid,wid,move);
    if(r.error)return r;
-   const proposal=snap(o),kind=t.verdict;
-   apply(o,t.original); // Existing rules calculated a proposal: undo until accepted.
-   t.lastArg=arg;t.kind=kind;t.full=adjusted(o,t,1);
-   const measured=pressure(o,w,t,arg);
+   const engineProposal=snap(o),engineKind=t.verdict;
+   apply(o,t.original);
+   p.trust=trustBefore; // Relationship penalties are applied once, below.
+   t.lastArg=arg;
+   const measured=pressure(o,w,t,arg),v=profile(p);
    t.strength=measured.strength;t.threshold=measured.threshold;
-   t.verdict=null;t.proposal=kind==='refused'?null:proposal;t.pushes=0;
+   const kind=t.topic==='stip'?engineKind:
+    measured.strength>=measured.threshold?'agreed':
+    measured.strength>=measured.threshold-17?'counter':'refused';
+   const proposal=kind==='refused'?null:
+    t.topic==='stip'?engineProposal:adjusted(o,t,kind==='agreed'?1:.5);
+   t.kind=kind;t.full=adjusted(o,t,1);
+   t.verdict=null;t.proposal=proposal;t.pushes=0;
    if(kind==='agreed'){
     t.step='offer';t.detail=offerText(o,w,proposal);
-    t.log[t.log.length-1].text='That works for me. '+t.detail+' Tell me if you accept, then sign it.';
+    t.log[t.log.length-1].text=caseReply(p,t,'agreed',t.detail);
    }else if(kind==='counter'){
     t.step='counter';t.detail=offerText(o,w,proposal);
-    t.log[t.log.length-1].text='Not everything you asked for. My counter is '+t.detail+' You may accept or make one final push.';
+    t.log[t.log.length-1].text=caseReply(p,t,'counter',t.detail);
    }else{
-    // A wasted meeting plus a measurable relationship cost is the risk of a weak demand.
-    p.trust=clamp(p.trust-2);
-    t.cost=(t.cost||0)+2;
+    p.trust=clamp(p.trust-v.failed);
+    t.cost=(t.cost||0)+v.failed;
     if(t.retry){
-     missing(t,p,'The original terms remain. Your final argument was rejected (promoter trust −2).');
-     t.log[t.log.length-1].text='I have heard the final case. No changes. We are finished here.';
+     missing(t,p,'Original terms remain. Your final argument was rejected (promoter trust −'+v.failed+').');
+     t.log[t.log.length-1].text=caseReply(p,t,'refused','No changes. The conversation is over.');
     }else{
      t.step='challenge';
-     t.log[t.log.length-1].text=p.personality==='cold'?'That does not add up. Try one different argument, or concede something.':
-      p.personality==='aggressive'?'That is not enough. Make a better case or give me a concession.':
-      p.personality==='traditional'?'I am not rewriting my card on that argument. One last chance.':
-      'I am not sold. Give me one more reason or offer something back.';
-     t.detail='First argument rejected; promoter trust −2.';
+     t.log[t.log.length-1].text=caseReply(p,t,'refused',
+      'You have one more argument or a chance to concede.');
+     t.detail='Argument rejected; promoter trust −'+v.failed+'.';
     }
    }
    G.save();return result();
