@@ -8,6 +8,13 @@ assert.ok(source.includes('class="mf-breakdown-section"'),'real match flow repor
 const {chromium}=require('playwright');
 const URL='http://127.0.0.1:8765/';
 
+// Phones fold the free-agent search and filters into a disclosure so the
+// candidates come first. Open it the way a player would before using them.
+async function openScoutFilters(page){
+ const d=page.locator('#view details.free-filters');
+ if(await d.count()&&!(await d.evaluate(el=>el.open)))await d.locator('summary').click();
+}
+
 // Match-night broadcast geometry. The live line, commentary history and
 // large events must never resize their window as lines are replaced.
 async function commentaryHeightAudit(page,name,viewport){
@@ -195,6 +202,7 @@ async function journey(browser,name,viewport){
 
   // Phase 2: a small, real career-management journey in each responsive viewport.
   await page.evaluate(()=>window.OfficeUI.go('scouting'));
+  await openScoutFilters(page);
   await page.locator('#view [data-scout-query]').fill('Mara Vale');
   assert.match(await page.locator('#view .management-filters .filter-results').innerText(),/^1 of /,name+': search must narrow free agents');
   await page.locator('#view [data-clear-scout]').click();
@@ -472,6 +480,7 @@ async function responsiveAudit(browser,name,viewport){
   });
   const values=await page.locator('#view [data-scout-style] option').evaluateAll(opts=>opts.map(o=>o.value));
   assert.ok(values.includes(style),name+': active market style missing from Scouting options');
+  await openScoutFilters(page);
   await page.locator('#view [data-scout-style]').selectOption(style);
   assert.match(await page.locator('#view .filter-results').first().innerText(),/^1 of /,
     name+': new market style cannot filter available wrestlers');
