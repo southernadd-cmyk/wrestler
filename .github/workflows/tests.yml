@@ -117,6 +117,10 @@ jobs:
           node tests/structure-career-activation.test.cjs
           node tests/structure-phase5-discussion.test.cjs
           node tests/structure-phase6-commentary.test.cjs
+          # Phase 7: same real signed plan with and without the active Director,
+          # across four structures, four styles, both leads, five plans and three lengths.
+          # One existing workflow only; no new scheduled/balance workflows.
+          node tools/graph-lab/structure-comparison.cjs
           # Career integration refactored the signed-sheet handoff. Keep the
           # lightweight creative-loop contract guard in the existing PR gate.
           node tests/creative-loop.test.cjs
