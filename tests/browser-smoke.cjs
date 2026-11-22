@@ -346,6 +346,40 @@ async function journey(browser,name,viewport){
   assert.ok(geometry.stage<=geometry.view+2,name+': backstage exceeds viewport');
   assert.equal(await page.evaluate(()=>window.OfficeGame.S.card[0].finish),'win_clean',
     name+': presentation must not alter booked finish');
+  // Phase 5: from a real structure choice, through the wrestler's objection,
+  // to a signed sheet. Uses actual UI buttons at desktop and phone widths.
+  await page.locator('#tv [data-structure="kings_road"]').click();
+  await page.locator('#tv [data-room="plan_technical"]').click();
+  await page.locator('#tv [data-room="board_ok"]').click();
+  let discussed=false;
+  for(let i=0;i<14;i++){
+   const step=await page.evaluate(()=>{
+    const r=window.OfficeUI.night.plan.room,v=window.OfficeRoom.view(r);
+    return {stage:r.stage,situation:v.situation,ids:v.options.map(o=>o.id)};
+   });
+   if(step.stage==='review')break;
+   assert.equal(step.stage,'scene',name+': structured review should follow real backstage scenes');
+   const id=step.situation==='structure_huddle'?(discussed=true,'open'):
+     step.ids.includes('replace')?'replace':step.ids.includes('open')?'open':step.ids[0];
+   assert.ok(id,name+': backstage scene has an available response');
+   await page.locator('#tv [data-room="'+id+'"]').click();
+  }
+  assert.equal(discussed,true,name+': at least one performed backstage structure discussion');
+  assert.match(await page.locator('#tv .structure-review').innerText(),/Dramatic structure versus booked result/);
+  assert.match(await page.locator('#tv .structure-review').innerText(),/Backstage agreement/);
+  await page.locator('#tv [data-room="review_ok"]').click();
+  await page.locator('#tv [data-room="talk_none"]').click();
+  const signedStructure=await page.evaluate(()=>{
+   const st=window.OfficeUI.night.plan.room,sh=st.sheet;
+   return {stage:st.stage,dialogue:sh.structureDiscussion?.decision,
+    structure:sh.structurePlan?.structureId,valid:window.OfficeSheets.STRUCTURES.readPlan(sh).mode,
+    finish:sh.finish,booked:window.OfficeGame.S.card[0]?.finish};
+  });
+  assert.equal(signedStructure.stage,'done');
+  assert.equal(signedStructure.dialogue,'open');
+  assert.equal(signedStructure.structure,'kings_road');
+  assert.equal(signedStructure.valid,'editorial');
+  assert.equal(signedStructure.finish,signedStructure.booked);
   assert.deepEqual(errors,[],name+': no uncaught browser exceptions');
   console.log('PASS browser '+name+': career, keyboard replay, no overflow, reload, unique report');
  }finally{await context.close();}
