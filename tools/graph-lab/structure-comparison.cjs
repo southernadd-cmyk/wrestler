@@ -27,6 +27,8 @@ const nineCases=new Set([
  'p7-3-classic_american-f-spots-12'
 ]);
 const nineCaseEvidence=[];
+const phase9gLostWithoutReversal=[];
+const phase9gThreeGapTraces=[];
 const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styles;
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
@@ -36,6 +38,7 @@ const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete
  protectedFollowthroughs:0,protectedClosingImpacts:0,
  protectedCounterExchanges:0,protectedOpposingImpacts:0,extendedClosingImpacts:0,
  arcPhysicalRetained:0,arcFinishControlRetained:0,arcLateControlOverrides:0,
+ arcEarnedNearfallRetained:0,
  lateLostAfterRealReversal:0,lateLostWithoutRealReversal:0,
  lateAuthoredLinkSetups:0,latePerformedLinks:0,lateInterruptedSetups:0,
  lateDiversions:0,lateLinksLostAtBell:0,lateLinksStale:0,
@@ -133,7 +136,7 @@ for(let si=0;si<sampleStyles.length;si++){
     return !!n&&Number.isFinite(e.t)&&e.t>=0&&e.t<=m.len&&
       !n.blockOf&&!n.nearfall&&
       ['aerialResolution','grappleResolution','strikeResolution','contactResolution']
-       .every(k=>!e[k]||e[k]==='landed');
+       .every(k=>!e[k]||e[k]==='landed'||(n.reverse&&e[k]==='counter'));
    };
    const tape=last.filter(cleanEvent);
    const setupEvents=tape.filter(e=>e.t>=earliest&&
@@ -179,6 +182,30 @@ for(let si=0;si<sampleStyles.length;si++){
      A[e.id]?.reverse&&e.preControl===winner&&e.control===loser);
     r.lateLostAfterRealReversal+=Number(reversed);
     r.lateLostWithoutRealReversal+=Number(!reversed);
+    if(!reversed){
+     const original=m.graph.events.filter(e=>A[e.id]&&e.t>=latestLateImpact.t);
+     const takeovers=[];
+     for(let idx=1;idx<original.length;idx++){
+      const left=original[idx-1],right=original[idx];
+      if(left.control!==right.preControl)
+       takeovers.push({from:left.id,fromT:m.len-left.t,fromController:left.control,
+        to:right.id,toT:m.len-right.t,toActor:right.preControl,
+        toControl:right.control,toArc:right.arc,reverse:!!A[right.id].reverse});
+     }
+     phase9gLostWithoutReversal.push({
+      case:c.id,seed,structure:id,lead,game,minutes,booked:finish,winner,
+      latestImpact:{id:latestLateImpact.id,left:m.len-latestLateImpact.t},
+      bell:{control:m.story.control,position:m.story.position,arc:m.graph.arc},
+      lastMove:original.at(-1)?{id:original.at(-1).id,control:original.at(-1).control,
+       left:m.len-original.at(-1).t}:null,
+      arcOverrides:m.graph.arcLateControlOverrides||0,
+      physicalRetained:m.graph.arcPhysicalRetained||0,
+      arcWitnesses:m.graph.arcPhysicalWitnesses||[],
+      takeoverGaps:takeovers,actions:original.map(e=>({id:e.id,
+       left:m.len-e.t,actor:e.preControl,control:e.control,reverse:!!A[e.id].reverse,
+       position:e.position,down:e.down,arc:e.arc,physical:e.physical?.area||null}))
+     });
+    }
    }
    r.lateWinnerControl+=Number(m.story.control===winner);
    r.lateWinnerSetups+=Number(last.some(e=>e.t>=since&&e.t<=m.len&&
@@ -195,10 +222,13 @@ for(let si=0;si<sampleStyles.length;si++){
   r.protectedOpposingImpacts+=m.graph.closingOpponentImpactProtected||0;
   r.protectedCounterExchanges+=m.graph.closingReversalProtected||0;
   r.arcPhysicalRetained+=m.graph.arcPhysicalRetained||0;
+  r.arcEarnedNearfallRetained+=m.graph.arcEarnedNearfallRetained||0;
   r.arcFinishControlRetained+=m.graph.arcFinishControlRetained||0;
   r.arcLateControlOverrides+=m.graph.arcLateControlOverrides||0;
   assert.equal(control.graph.arcPhysicalRetained||0,0,
    'metadata-only controls cannot earn director handoff protection');
+  assert.equal(control.graph.arcEarnedNearfallRetained||0,0,
+   'metadata-only controls cannot inherit credited cover control');
   for(const guard of m.graph.arcPhysicalWitnesses||[]){
    const actual=m.graph.events.find(e=>e.id===guard.move&&e.t===guard.moveAt);
    assert.ok(actual,'late arc handoff requires a performed action');
@@ -207,11 +237,31 @@ for(let si=0;si<sampleStyles.length;si++){
     'arc handoff evidence must be recent');
   }
   if(nineCases.has(c.id)){
-   const raw=m.graph.events,late=raw.filter(e=>e.t>=m.len-90&&e.t<=m.len);
+   // Count only performed graph actions; a scheduled nearfall or outcome
+   // has no preControl and must never masquerade as a wrestling takeover.
+   const raw=m.graph.events,late=raw.filter(e=>!!E.GRAPH.A[e.id]&&
+    e.t>=m.len-90&&e.t<=m.len);
    const gaps=late.slice(1).filter((e,i)=>
     ['w','f'].includes(late[i].control)&&
     ['w','f'].includes(e.preControl)&&
     late[i].control!==e.preControl);
+   if(gaps.length&&['p7-2-chickenshit_heel-f-technical-8',
+     'p7-2-chickenshit_heel-f-safe-18',
+     'p7-2-dominant_ace-w-technical-18'].includes(c.id)){
+    phase9gThreeGapTraces.push({
+     case:c.id,seed,booked:finish,
+     gaps:gaps.map(e=>({id:e.id,at:m.len-e.t,pre:e.preControl,
+      after:e.control,arc:e.arc,reverse:!!E.GRAPH.A[e.id]?.reverse,
+      preceding:late[late.indexOf(e)-1]?.id||null,
+      voluntaryBreak:['catch_breath','crowd_pose','taunt'].includes(
+       late[late.indexOf(e)-1]?.id)})),
+     lastMinute:late.map(e=>({id:e.id,at:m.len-e.t,pre:e.preControl,
+      after:e.control,arc:e.arc,reverse:!!E.GRAPH.A[e.id]?.reverse})),
+     arcOverrides:m.graph.arcLateControlOverrides||0,
+     arcHistory:m.graph.history.slice(-10),
+     physicalWitnesses:m.graph.arcPhysicalWitnesses||[]
+    });
+   }
    nineCaseEvidence.push({case:c.id,seed,finish,
     bell:m.story.control,latestEvent:late.at(-1)?.id||null,
     latestControl:late.at(-1)?.control||null,
@@ -407,6 +457,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    protectedOpposingImpacts:r.protectedOpposingImpacts,
    extendedClosingImpacts:r.extendedClosingImpacts,
    arcPhysicalRetained:r.arcPhysicalRetained,
+   arcEarnedNearfallRetained:r.arcEarnedNearfallRetained,
    arcFinishControlRetained:r.arcFinishControlRetained,
    arcLateControlOverrides:r.arcLateControlOverrides,
    lateAuthoredLinkSetups:r.lateAuthoredLinkSetups,
@@ -440,6 +491,11 @@ for(const r of Object.values(map)){
   'a verified finishing runway must include a real late impact');
 }
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
+console.log('PHASE9G_TRACE_JSON '+JSON.stringify({
+ base:'7bd150ec60fe693c1818d516df4ce19618577849',
+ lostCount:phase9gLostWithoutReversal.length,lateLosses:phase9gLostWithoutReversal,
+ gapCount:phase9gThreeGapTraces.length,threeOriginalGaps:phase9gThreeGapTraces
+}));
 console.log('PHASE9F_NINE_CASE_JSON '+JSON.stringify({
  base:'38887cacda5d73afa77094c4647c20702a1e6e73',
  total:nineCaseEvidence.length,

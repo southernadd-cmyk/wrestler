@@ -1552,20 +1552,37 @@ const Graph=(function makeGraph(){
  function enter(M,id,prev){
   const g=get(M),arc=ARCS[id],p=Psy.get(M);
   const director=root.OfficeSheets?.DIRECTOR;
-  const last=g.events.at(-1),node=A[last?.id];
+  const last=g.events.at(-1);
+  // A scheduled near-fall is bookkeeping for a real counted cover, not
+  // the underlying grounding attack. Its deliberately selected stand_reset
+  // node must not make the original landing disappear at an arc transition.
+  // Only a verified *earned* cover with its exact still-present physical
+  // source may preserve that source's current wrestler and mat position.
+  const earnedCover=last?.id==='scheduled_nearfall'&&last.earned===true&&
+   g.node==='stand_reset'&&last.sourceSide===p.control&&
+   last.control===p.control&&last.position===p.position&&
+   last.down===p.down&&p.position==='mat'&&
+   M.t-last.t>=0&&M.t-last.t<=30?
+    g.events.find(e=>e.id===last.sourceMove&&e.t===last.sourceT&&
+     e.preControl===last.sourceSide&&e.control===last.sourceSide&&
+     e.position==='mat'&&e.down===last.down&&
+     A[e.id]?.zone==='mat'&&A[e.id]?.down==='d'&&
+     !A[e.id]?.reverse&&!A[e.id]?.blockOf&&closingValidEvent(e)):null;
+  const proof=earnedCover||last,node=A[proof?.id];
   // Phase 9F: a dramatic arc is not a wrestling move. In the final
   // 90 seconds of a clean match, recent genuinely performed in-ring
   // action retains its physical owner until a real action contests it.
   // Apply this to EITHER wrestler, without promising a finish.
   const keepRealControl=!!prev&&!!director?.active(M)&&
    closingEligible(M)&&M.len-M.t>=0&&M.len-M.t<=90&&
-   ['w','f'].includes(p.control)&&last?.id===g.node&&
-   last.control===p.control&&closingValidEvent(last)&&
-   M.t-last.t>=0&&M.t-last.t<=40&&
+   ['w','f'].includes(p.control)&&
+   (last?.id===g.node||!!earnedCover)&&
+   proof?.control===p.control&&closingValidEvent(proof)&&
+   M.t-proof.t>=0&&M.t-proof.t<=40&&
    g.physical?.area==='ring'&&
    !g.pendingAerial&&!g.pendingGrapple&&!g.pendingStrike&&!g.pendingContact&&
    !['rest','heel'].includes(node?.family)&&
-   !['finish_tease','crowd_pose','taunt','catch_breath','circle'].includes(last.id);
+   !['finish_tease','crowd_pose','taunt','catch_breath','circle'].includes(proof.id);
   const beforeControl=p.control;
   let words;
   if(id==='opening')words=M.planId==='brawl'?'{W} and {F} charge together. They start throwing hard forearms.':'{W} and {F} begin cautiously, testing their distance.';
@@ -1775,11 +1792,14 @@ const Graph=(function makeGraph(){
   if(keepRealControl){
    p.phase=arc.phase;
    g.arcPhysicalRetained=(g.arcPhysicalRetained||0)+1;
+   if(earnedCover)
+    g.arcEarnedNearfallRetained=(g.arcEarnedNearfallRetained||0)+1;
    if(id==='finish_setup')
     g.arcFinishControlRetained=(g.arcFinishControlRetained||0)+1;
    (g.arcPhysicalWitnesses??=[]).push({at:M.t,from:prev,to:id,
-    actor:p.control,move:last.id,moveAt:last.t,
-    position:p.position,down:p.down});
+    actor:p.control,move:proof.id,moveAt:proof.t,
+    position:p.position,down:p.down,
+    ...(earnedCover?{afterEarnedNearfall:true}: {})});
    if(g.arcPhysicalWitnesses.length>24)g.arcPhysicalWitnesses.shift();
    return;
   }
@@ -3671,8 +3691,11 @@ const Graph=(function makeGraph(){
   return !!n&&Number.isFinite(e.t)&&
    ['w','f'].includes(e.preControl)&&
    !n.blockOf&&!n.nearfall&&
+   // A performed defensive counter is a SUCCESSFUL reversal, even though
+   // its parent attempt correctly records resolution='counter', not 'landed'.
+   // Never count blocked, interrupted or aborted attempts as an impact.
    ['aerialResolution','grappleResolution','strikeResolution','contactResolution']
-    .every(k=>!e[k]||e[k]==='landed');
+    .every(k=>!e[k]||e[k]==='landed'||(n.reverse&&e[k]==='counter'));
  }
  function closingImpact(e,winner,loser){
   const n=A[e?.id];
