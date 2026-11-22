@@ -153,6 +153,13 @@
  #tv .s-live .speed .btn{min-height:38px;font-size:13px;white-space:normal}
  #tv .s-live .gauge{margin-bottom:4px}
  #tv .s-live .callhint{min-height:0;font-size:16px;margin:4px 0}
+ /* Calls are the only live decision: on phones they come first in the Ringside panel,
+    ahead of the agreed-plan summary, so they are on screen while commentary runs. */
+ #tv .s-live .wbody:has(> .calls){display:flex;flex-direction:column}
+ #tv .s-live .wbody:has(> .calls)>.callsleft{order:-3}
+ #tv .s-live .wbody:has(> .calls)>.calls{order:-2}
+ #tv .s-live .wbody:has(> .calls)>.callhint{order:-1}
+ #tv .s-live .wbody:has(> .calls)>.ringside-plan{order:1;margin-top:8px}
  #tv .decision{padding:8px}
  #tv .decision .win{max-height:calc(100dvh - 16px)}
  #tv .decision .wbody{overflow:auto}
