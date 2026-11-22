@@ -479,7 +479,7 @@ console.log('PASS Phase 9G: '+nearfallArcChecks+
 let continuedChecks=0;
 for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
  const m=create(structure,'story');
- m.t=Math.floor(m.len*.86);m.graph.arc='exchange';
+ m.t=Math.floor(m.len*.93);m.graph.arc='exchange';
  step(m,'strike_trade','w');
  m.t+=10;
  assert.ok(G.isValid(m,'lockup'),'ordinary in-ring continuation must be legal');
@@ -505,7 +505,7 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
  assert.equal(G.closingRunway(m)?.status,'linked',
   'genuine original setup, intermediate move and impact earn a truthful link');
  const interrupter=create(structure,'story');
- interrupter.t=Math.floor(interrupter.len*.86);
+ interrupter.t=Math.floor(interrupter.len*.93);
  step(interrupter,'strike_trade','w');interrupter.t+=10;
  assert.ok(G.isValid(interrupter,'counter_strike'));
  G.apply(interrupter,'counter_strike');
@@ -514,30 +514,32 @@ for(const structure of S.STRUCTURES.catalogue().map(x=>x.id)){
  assert.equal(G.closingOffers(interrupter,'w').length,0,
   'a real defensive counter ends earlier winning-side continuation');
  const paused=create(structure,'story');
- paused.t=Math.floor(paused.len*.86);
+ paused.t=Math.floor(paused.len*.93);
  step(paused,'strike_trade','w');paused.t+=10;
  G.apply(paused,'catch_breath');
  assert.equal(G.closingOffers(paused,'w').length,0,
   'a genuine breather is a meaningful disengagement, not a free link');
  const metadata=create(structure,'story','win_clean',false);
- metadata.t=Math.floor(metadata.len*.86);
+ metadata.t=Math.floor(metadata.len*.93);
  step(metadata,'strike_trade','w');metadata.t+=10;
  G.apply(metadata,'lockup');
  assert.equal(G.closingOffers(metadata,'w').length,0);
  const dirty=create(structure,'story','win_dirty');
- dirty.t=Math.floor(dirty.len*.86);
+ dirty.t=Math.floor(dirty.len*.93);
  step(dirty,'strike_trade','w');dirty.t+=10;
  G.apply(dirty,'lockup');
  assert.equal(G.closingOffers(dirty,'w').length,0);
  const first=create(structure,'story');
- first.t=Math.floor(first.len*.86);
- step(first,'strike_trade','w');
+ first.t=Math.floor(first.len*.93);
+ step(first,'strike_trade','w');first.t+=10;
+ G.apply(first,'lockup');
  const fresh=G.closingOffers(first,'w').find(([id])=>id==='clothesline');
  assert.ok(fresh);
  const used=create(structure,'story');
- used.t=Math.floor(used.len*.80);
+ used.t=Math.floor(used.len*.88);
  step(used,'clothesline','w');used.t+=40;
- step(used,'strike_trade','w');
+ step(used,'strike_trade','w');used.t+=10;
+ G.apply(used,'lockup');
  const repeated=G.closingOffers(used,'w').find(([id])=>id==='clothesline');
  assert.ok(repeated&&repeated[1]<fresh[1],
   'repeat move weighting should favour a fresh real ending when possible');

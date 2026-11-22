@@ -511,6 +511,11 @@ for(const r of Object.values(map)){
  assert.ok(r.closingRunways<=r.lateWinnerImpacts,
   'a verified finishing runway must include a real late impact');
 }
+// Phase 9G established zero unearned late winner-control losses on this
+// exact matched full sample. Closing-timing changes must not reintroduce any.
+if(!quick)assert.equal(Object.values(map).reduce((sum,r)=>
+ sum+r.lateLostWithoutRealReversal,0),0,
+ 'Phase 9H cannot regress Phase 9G physical control continuity');
 console.log('PHASE7_AUDIT_JSON '+JSON.stringify(report));
 console.log('PHASE9G_TRACE_JSON '+JSON.stringify({
  base:'7bd150ec60fe693c1818d516df4ce19618577849',

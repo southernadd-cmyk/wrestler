@@ -3799,7 +3799,8 @@ const Graph=(function makeGraph(){
   // The physical state, last actual event, timed source and normal pool
   // validity remain authoritative. Deliberate rests/disengagements and
   // counters terminate this chance; no handed-off control is inferred.
-  if(side===winner&&p.position==='standing'&&p.down===null&&
+  if(side===winner&&M.len-M.t<=70&&M.len-M.t>=30&&
+     p.position==='standing'&&p.down===null&&
      g.physical?.area==='ring'&&last.id===g.node&&
      last.preControl===winner&&last.control===winner&&
      !node.reverse&&!node.counterOf&&!node.blockOf&&!node.nearfall&&
@@ -3842,15 +3843,8 @@ const Graph=(function makeGraph(){
      CLOSING_SETUPS.has(last.id)){
    // A performed setup can offer a real authored impact even without a
    // witnessed counter; the final report distinguishes those two cases.
-   // Keep every authored legal candidate, but favour an impact not
-   // already performed by this controller in the recent finishing stretch.
-   // This varies actual landed combinations without manufacturing one.
    return node.next.filter(([id])=>A[id]?.zone==='mat'&&
-    A[id]?.down==='d'&&!A[id]?.reverse&&!A[id]?.risk).map(([id])=>{
-     const repeated=g.events.some(e=>e.id===id&&
-      e.preControl===winner&&e.t>=M.t-150);
-     return [id,repeated?1.1:2.8];
-    });
+    A[id]?.down==='d'&&!A[id]?.reverse&&!A[id]?.risk).map(([id])=>[id,2.8]);
   }
   return [];
  }
