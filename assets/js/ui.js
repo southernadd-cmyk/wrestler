@@ -194,7 +194,8 @@ function historyDetails(h){
  const booked=D.FINISHES[h.bookedFinish||h.finish]?.name||'not recorded';
  const official=h.outcome==='dq'?'Disqualification — agreed finish not delivered':
   h.outcome==='nc'?'No contest':h.outcome==='double'?'Agreed finish broken':'As booked';
- return `<p><b>Booked finish:</b> ${esc(booked)} · <b>Official result:</b> ${esc(official)}</p>${boutStakes(h)?'<p>'+boutStakes(h)+'</p>':''}`;
+ const structure=h.structure,counts=structure?.objectives?.filter(x=>x.status==='achieved'||x.status==='adapted').length;
+ return `<p><b>Booked finish:</b> ${esc(booked)} · <b>Official result:</b> ${esc(official)}</p>${boutStakes(h)?'<p>'+boutStakes(h)+'</p>':''}${structure?'<p><b>Match structure:</b> '+esc(OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===structure.id)?.label||structure.id)+' · '+counts+'/'+structure.objectives.length+' objectives witnessed</p>':''}`;
 }
 function starsText(s){return Mx.starText(s)}
 function weekLabel(a){return `S${Math.floor((a-1)/16)+1} W${(a-1)%16+1}`}
@@ -1163,7 +1164,12 @@ function showMeeting(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan,S0=S();
  if(!P.room||P.room.cid!==c.id||P.room.v!==3){
-  P.room=OfficeRoom.begin(c,w,f,p,{recent:S0.roomRecent||[],threads:OfficeRoom.liveThreads(S0.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)});P.sheet=null;P.confirmed=false;
+  const opts={recent:S0.roomRecent||[],threads:OfficeRoom.liveThreads(S0.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)};
+  if(P.structureChoice){
+   opts.structure={id:P.structureChoice.id,lead:P.structureChoice.lead};
+   opts.structurePlanning=true;
+  }
+  P.room=OfficeRoom.begin(c,w,f,p,opts);P.sheet=null;P.confirmed=false;
  }
  const st=P.room,v=OfficeRoom.view(st);
  if(v.stage==='done'&&!P.confirmed){
@@ -1191,7 +1197,7 @@ function showMeeting(){
  // The called spots are real selections from the graph, not decorative script lines.
  const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>
   ${routePicker}
-  <div class="rorder-heading"><b>2. Call the spots</b><span>Dennis adjusts his suggestions when the finish changes. Your choices stay put.</span></div>
+  <div class="rorder-heading"><b>${st.structurePlanning?"2. Plan the dramatic objectives":"2. Call the spots"}</b><span>${st.structurePlanning?"Agree an optional real move for each objective or leave it to the wrestlers.":"Dennis adjusts his suggestions when the finish changes. Your choices stay put."}</span></div>
   <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span>${esc(c.who)}’s idea</span>${tagChips(c.tags)}</button>`).join('')}</div></div>`).join('')}</div>
   <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the finish and running order</button></div></div>`:'';
  const review=v.review?`<div class="decide2 runorder finish-review">
@@ -1199,7 +1205,7 @@ function showMeeting(){
    <p class="lede">The conversations are over. Check what they changed before the wrestlers go out.</p>
    <section class="finish-choice"><div class="rorder-heading"><b>Agreed finish</b><span>${esc(v.finishPlan?.label||'Not chosen')}</span></div>
     ${finishReadout}</section>
-   <div class="rorder-heading"><b>The called spots</b><span>In order, subject to what actually happens in the ring.</span></div>
+   <div class="rorder-heading"><b>${st.structurePlanning?"The dramatic objectives":"The called spots"}</b><span>In order, subject to what actually happens in the ring.</span></div>
    <div class="rorder review-spots">${v.review.map(r=>`<div class="rorder-row">
     <div class="rorder-slot"><b>${esc(r.name)}</b></div>
     <p class="review-spot"><b>${esc(r.current||'Called in the ring')}</b>${v.finishPlan?.supported?.includes(r.name.toLowerCase())?'<span class="review-fit">Helps build the finish</span>':''}</p>
@@ -1210,7 +1216,23 @@ function showMeeting(){
   </div>`:'';
  const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
- const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decide+agreed;
+ const descriptions={traditional:'Original shine, heat, comeback and finish. No Structure Director.',
+  classic_american:'Guided opening, pressure, comeback and payoff.',
+  kings_road:'Technical exchanges, escalation, callback and finish build.',
+  chickenshit_heel:'Avoid, get exposed, use a shortcut, then escape.',
+  dominant_ace:'Take control, absorb a challenge and reassert dominance.'};
+ const selected=P.structureChoice?.id||'traditional';
+ const variants=[{id:'traditional',label:'Traditional (current)'},...OfficeSheets.STRUCTURES.catalogue()];
+ // Choose BEFORE the first backstage decision. The meeting is re-created
+ // only while still at its initial plan stage, never after a signed decision.
+ const chooser=v.stage==='plan'?'<section class="structure-chooser" aria-label="Match structure choice"><div class="rorder-heading"><b>Match structure</b><span>Optional. Choose before planning the match.</span></div>'+
+  '<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small></button>').join('')+'</div>'+
+  (P.structureChoice?'<div class="structure-lead"><span>Dramatic lead (not the booked winner)</span><div role="group" aria-label="Which wrestler leads the structure?">'+[{id:'w',name:w.short},{id:'f',name:f.short}].map(x=>'<button class="btn'+(P.structureChoice.lead===x.id?' on':'')+'" data-structurelead="'+x.id+'" aria-pressed="'+(P.structureChoice.lead===x.id)+'">'+esc(x.name)+'</button>').join('')+'</div></div>':'')+
+  '<p class="dim structure-help">The promoter\'s booked result is unchanged. The structure guides legal, performed actions rather than guaranteeing moves.</p></section>':'';
+ // Put structure selection INSIDE the scrolling decision panel. An extra
+ // flex child above the conversation could clip mobile plan buttons.
+ const decisionWithStructure=chooser?decide.replace('<div class="decide2">','<div class="decide2">'+chooser):decide;
+ const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decisionWithStructure+agreed;
  const signing=window.OfficeSigning?.eligible(c);
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:signing?'<button class="btn go" data-tv="signing">To the contract signing</button>':st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
  $('#tv').innerHTML=strip(c,'backstage')+backstageBrief(c,P,v)+'<div class="stage screen s-back">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
@@ -1272,14 +1294,21 @@ function bell(){
  const signed=window.OfficeSigning&&night.signing?.cid===c.id?OfficeSigning.result(night.signing):null;
  const promoRes=signed||(P.sheet?.skipPromo?null:night.promo?.v>=4?OfficeMic.result(night.promo):night.promo?.v===2?OfficeStory.Graph.result(night.promo):null);
  if(window.OfficeProgrammeArcs)OfficeProgrammeArcs.prepare(c,P.arcChoice,promoRes);
- night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null,seed:Math.floor(Math.random()*2**31)});
+ const matchSheet=P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null;
+ // Verify the signed plan AFTER vow and ringside additions. Refuse a stale
+ // or imported mismatch rather than activating the wrong dramatic layout.
+ let structureExecution;
+ try{structureExecution=OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.structureChoice);}
+ catch(err){console.warn('Match structure refused',err);toast('Signed structure mismatch. Review the backstage layout.');return showMeeting();}
+ night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:matchSheet,structureExecution,seed:Math.floor(Math.random()*2**31)});
  night.past=[];night.paused=false;commentaryView='all';
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const livePlan=`<section class="ringside-plan" aria-label="Match instructions">
    <h3 class="section-h">Agreed before the bell</h3>
    <dl><div><dt>Promoter's finish</dt><dd>${esc(D.FINISHES[c.finish]?.name||'Booked finish')}</dd></div>
    <div><dt>Game plan</dt><dd>${esc(D.PLANS[P.game]?.name||'Set backstage')}</dd></div>
-   <div><dt>Running order</dt><dd>${P.sheet?.signed?'Agreed beats tracked live':P.leash==='free'?'Called in the ring':'No signed running order'}</dd></div></dl>
+   ${structureExecution?'<div><dt>Structure</dt><dd>'+esc(OfficeSheets.STRUCTURES.catalogue().find(s=>s.id===P.structureChoice.id)?.label||P.structureChoice.id)+' · '+esc(P.structureChoice.lead==='w'?w.short:f.short)+' leads</dd></div>':''}
+   <div><dt>Running order</dt><dd>${Mx.structureReport(night.M)?'Four objectives tracked live':P.sheet?.signed?'Agreed beats tracked live':P.leash==='free'?'Called in the ring':'No signed running order'}</dd></div></dl>
    <p>Plans are instructions, not guaranteed results. Watch the match layout and calls as the bout unfolds.</p>
   </section>`;
  const bench=`${livePlan}<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar" role="progressbar" aria-label="Atmosphere" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
@@ -1317,15 +1346,24 @@ function showLine(line,quiet){
  night.past=night.past.filter(x=>x.kind!=='count'||x.text.length>8).slice(0,40);
  renderPastCommentary();persistNight();
 }
+const STRUCTURE_PHASE_NAME={
+ opening_advantage:'Opening advantage',pressure:'Pressure',comeback:'Comeback',payoff:'Payoff',
+ technical_exchange:'Technical exchange',escalation:'Escalation',callback:'Callback',finish_build:'Finish build',
+ evasion:'Evasion',exposure:'Opponent answers',shortcut:'Unfair advantage',escape:'Survival',
+ dominance:'Ace controls',challenge:'Challenger rally',reassertion:'Ace responds'
+};
 function updateLive(){
  const M=night.M;if(!$('#lClock'))return;
+ const structure=Mx.structureReport(M);
  $('#lClock').textContent=Mx.fmt(M.t)+' / '+Mx.fmt(M.len);
- $('#lPhase').textContent=Mx.phaseName(M);
+ const intent=structure&&OfficeSheets.DIRECTOR.current(M)?.objective?.intent;
+ $('#lPhase').textContent=structure&&M.stage==='live'?
+  (STRUCTURE_PHASE_NAME[intent]||'Agreed finish'):Mx.phaseName(M);
  $('#lStars').textContent=M.qN?starsText(Mx.liveStars(M))||'DUD':'–';
  $('#lCrowd').textContent=Math.round(M.crowd);$('#lCrowdBar').style.width=M.crowd+'%';$('#lCrowdBar').parentElement.setAttribute('aria-valuenow',Math.round(M.crowd));
  $('#lMom').style.width=(50+M.mom/2)+'%';$('#lMom').parentElement.setAttribute('aria-valuenow',Math.round(M.mom));
  const y=$('#sY'),t=$('#sT');y.querySelector('i').style.width=M.wSt+'%';t.querySelector('i').style.width=M.fSt+'%';y.setAttribute('aria-valuenow',Math.round(M.wSt));t.setAttribute('aria-valuenow',Math.round(M.fSt));y.classList.toggle('low',M.wSt<30);t.classList.toggle('low',M.fSt<30);
- $('#lSheet').textContent=M.sheet?.signed?M.sheet.nodes.filter(b=>b.status==='achieved'||b.status==='adapted').length+'/'+M.sheet.nodes.length+' beats':M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the layout';$('#lSheet').className=M.offScript?'warnv':'';
+ $('#lSheet').textContent=structure?structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structure.objectives.length+' objectives':M.sheet?.signed?M.sheet.nodes.filter(b=>b.status==='achieved'||b.status==='adapted').length+'/'+M.sheet.nodes.length+' beats':M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the layout';$('#lSheet').className=M.offScript?'warnv':'';
  updateStrip(M);
  $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
  document.querySelectorAll('[data-call]').forEach(b=>b.disabled=!Mx.canCall(M,b.dataset.call));
@@ -1339,10 +1377,27 @@ function stripInner(m){
  return `<div class="ps-track">${[...new Set(m.beats.map(b=>b.lane))].sort().map(l=>`<div class="ps-lane${l===2?' vow-lane':''}">${m.beats.filter(b=>b.lane===l).map(b=>
   `<div class="ps-beat s-${b.state} own-${b.owner}${b.vow?' vow':''}" style="left:${b.start}%;width:${b.width}%" title="${esc(b.title)}" role="img" aria-label="${esc(b.title)}"><b>${STRIP_ICON[b.state]?STRIP_ICON[b.state]+' ':''}<span class="ps-full">${esc(b.slot)}</span><span class="ps-short">${esc(STRIP_SHORT[b.slot]||b.slot)}</span></b><span>${esc(cap(b.move))}</span>${b.mark!=null?`<em class="ps-mark" style="left:${b.mark}%"></em>`:''}</div>`).join('')}</div>`).join('')}${m.head!=null?`<i class="ps-head" style="left:${m.head}%"></i>`:''}</div>`;
 }
+// Signed structure objectives use their real timing and actual performed
+// events; do not present an American shine/heat/comeback for King's Road.
+function structureStrip(M,{final=false}={}){
+ const report=Mx.structureReport(M),plan=M.sheet?.structurePlan?.objectives;
+ if(!report||!Array.isArray(plan))return null;
+ const frac=Math.min(1,M.t/Math.max(1,M.len));
+ return {head:final?100:Math.round(frac*100),beats:plan.map((o,i)=>{
+  const state=report.objectives[i],first=state.evidence.find(e=>e.at===state.at),
+    progress=first?.progress??null,window=o.window;
+  return {lane:i%2,start:window[0]*100,width:(window[1]-window[0])*100,
+   owner:o.actor,slot:o.title,short:['Open','Answer','Build','Finish'][i],
+   title:o.title+(o.call?' · called: '+o.call.label:' · called in the ring'),
+   move:o.call?.label||'Called live',
+   state:state.status==='pending'&&frac>=window[0]?'due':state.status,
+   mark:progress==null?null:Math.max(0,Math.min(100,(progress-window[0])/Math.max(.001,window[1]-window[0])*100))};
+ })};
+}
 function stripKey(m){return m?JSON.stringify(m.beats.map(b=>[b.state,b.mark])):''}
 function updateStrip(M){
  const ps=$('#lPlan');if(!ps)return;
- const m=OfficeSheets.strip(M);ps.hidden=!m;if(!m)return;
+ const m=structureStrip(M)||OfficeSheets.strip(M);ps.hidden=!m;if(!m)return;
  const key=stripKey(m);
  if(ps.dataset.key!==key){ps.innerHTML=stripInner(m);ps.dataset.key=key;}
  const h=ps.querySelector('.ps-head');if(h)h.style.left=m.head+'%';
@@ -1361,14 +1416,21 @@ function result(){
  c.afterPlan=night.plan?.after||'none';
  const cons=G.applyResult(c,fin);
  if(window.OfficeRingside)cons.push(...OfficeRingside.settle(c,M));
- const sheetReport=OfficeSheets.report(M),finalStrip=OfficeSheets.strip(M,{final:true});
+ const structureReport=Mx.structureReport(M),structurePlan=structureReport?M.sheet?.structurePlan?.objectives:null;
+ const sheetReport=OfficeSheets.report(M),finalStrip=structureReport?structureStrip(M,{final:true}):OfficeSheets.strip(M,{final:true});
  if(sheetReport){
   const h=S().history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===S().season&&x.week===S().week);
-  if(h)h.sheet=sheetReport;
-  cons.push({text:'Match layout: '+sheetReport.achieved+' performed, '+sheetReport.adapted+' adapted, '+sheetReport.missed+' missed.',tone:sheetReport.missed>2?-1:1});
-  if(sheetReport.achieved>=3&&sheetReport.missed===0&&fin.stars>=3.5)
-   OfficeMemory.remember(w.id,'chemistry',w.short+' remembers how well the agreed match with '+f.short+' came together.',f.id,3,4,c.id+':chemistry');
-  if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed match layout against '+f.short+'.',f.id,-2,0,c.id+':sheet');
+  if(h){h.sheet=sheetReport;if(structureReport)h.structure=JSON.parse(JSON.stringify(structureReport));}
+  if(structureReport){
+   const success=structureReport.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length;
+   cons.push({text:'Dramatic structure: '+success+' of '+structureReport.objectives.length+' objectives witnessed in the ring.',tone:0});
+   // No five-beat chemistry reward for a four-objective structure.
+  }else{
+   cons.push({text:'Match layout: '+sheetReport.achieved+' performed, '+sheetReport.adapted+' adapted, '+sheetReport.missed+' missed.',tone:sheetReport.missed>2?-1:1});
+   if(sheetReport.achieved>=3&&sheetReport.missed===0&&fin.stars>=3.5)
+    OfficeMemory.remember(w.id,'chemistry',w.short+' remembers how well the agreed match with '+f.short+' came together.',f.id,3,4,c.id+':chemistry');
+   if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed match layout against '+f.short+'.',f.id,-2,0,c.id+':sheet');
+  }
   G.save();
  }
  const baseConsequences=cons.map(x=>x.text);
@@ -1386,7 +1448,7 @@ function result(){
  night.after=null;
  night.afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish},fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome},plan:c.afterPlan}:null;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
- const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
+ const pct=structureReport?structureReport.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structureReport.objectives.length+' objectives':sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  const actualFinish={booked:'Booked finish delivered',dq:'Unplanned disqualification',nc:'No contest',double:'Finish broken'}[fin.outcome]||
   'Finish: '+String(fin.outcome||'Not recorded').replace(/_/g,' ');
  const matchSummary=`<div class="result-brief" aria-label="Match outcome and plan report">
@@ -1396,7 +1458,17 @@ function result(){
   <div><small>Calls accepted</small><b>${fin.callsUsed.length-fin.ignored} of ${fin.callsUsed.length}</b></div>
  </div>`;
  night.i++;const more=night.i<night.queue.length;
- const sheetHtml=sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><p class="dim">'+(sheetReport.room?esc(sheetReport.room.premise):'Story: '+esc(OfficeSheets.focusOptions(c,w,f,night.plan?.game||'story').find(x=>x.id===sheetReport.focus)?.title||sheetReport.focus||'Performer-led'))+
+ const structureHtml=structureReport?'<h3 class="section-h" style="margin-top:12px">Dramatic structure: '+esc(OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===structureReport.id)?.label||structureReport.id)+'</h3>'+
+  '<p class="dim">Only moves performed in the ring count. There is no automatic bonus for following a structure.</p>'+
+  (finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+
+  '<div class="well"><ol class="structure-result-list">'+structureReport.objectives.map((o,i)=>{
+   const planned=structurePlan?.[i],actor=planned?.actor==='w'?w.short:f.short,
+    actual=o.evidence.find(e=>e.at===o.at)||o.evidence.at(-1),
+    move=actual?(Mx.GRAPH.A[actual.id]?.name||actual.id.replace(/_/g,' ')):'No qualifying move witnessed';
+   return '<li><b>'+esc(planned?.title||o.id)+'</b> · <span class="structure-status s-'+esc(o.status)+'">'+esc(o.status)+'</span> · '+esc(actor)+
+    '<small>Called: '+esc(planned?.call?.label||'In the ring')+' · Performed: '+esc(move)+(o.at!=null?' at '+esc(Mx.fmt(o.at)):'')+'</small></li>';
+  }).join('')+'</ol></div>':'';
+ const sheetHtml=structureReport?structureHtml:sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><p class="dim">'+(sheetReport.room?esc(sheetReport.room.premise):'Story: '+esc(OfficeSheets.focusOptions(c,w,f,night.plan?.game||'story').find(x=>x.id===sheetReport.focus)?.title||sheetReport.focus||'Performer-led'))+
   ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p>'+(finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+'<div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title.charAt(0).toUpperCase()+b.title.slice(1))+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span></li>').join('')+'</ol></div>':'';
  const story=flowReport(fin,w,f);
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the layout</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
@@ -1492,6 +1564,20 @@ document.addEventListener('click',e=>{
  if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
  if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
  if(d.plan){night.plan[d.plan]=d.val;if(d.plan==='game'){night.plan.sheet=null;night.plan.focus=null;night.plan.confirmed=false;}t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
+ if(d.structure||d.structurelead){
+  const P=night?.plan,room=P?.room;
+  if(night?.stage!=='meeting'||!room||room.stage!=='plan')return;
+  if(d.structure){
+   const ids=OfficeSheets.STRUCTURES.catalogue().map(x=>x.id);
+   if(d.structure!=='traditional'&&!ids.includes(d.structure))return;
+   P.structureChoice=d.structure==='traditional'?null:{id:d.structure,lead:P.structureChoice?.lead||'w'};
+  }else{
+   if(!P.structureChoice||!['w','f'].includes(d.structurelead))return;
+   P.structureChoice={...P.structureChoice,lead:d.structurelead};
+  }
+  P.room=null;P.sheet=null;P.confirmed=false;
+  return showMeeting();
+ }
  if(d.sheetmode){if(!OfficeSheets.MODE[d.sheetmode])return;night.plan.method=d.sheetmode;night.plan.sheet=null;night.plan.confirmed=false;return showMeeting()}
  if(d.room){const st=night?.plan?.room;if(night?.stage!=='meeting'||!st||st.stage==='done')return;
   if(!OfficeRoom.options(st).some(o=>o.id===d.room))return;OfficeRoom.act(st,d.room);return showMeeting()}

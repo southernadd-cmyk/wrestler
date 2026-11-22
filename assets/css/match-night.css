@@ -623,3 +623,26 @@
  #tv .s-live #lNow{height:98px;min-height:98px;max-height:98px}
  #tv .s-live #lNow.count{font-size:clamp(28px,7.8vw,40px)}
 }
+
+/* Phase 4 — opt-in structure selection, using the backstage design language. */
+.structure-chooser{padding:9px 11px;margin:8px 0;background:var(--stone-2);border:2px solid var(--ink)}
+.structure-chooser .rorder-heading{margin:0 0 6px}
+.structure-options{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.structure-option{min-width:0;padding:7px 8px;text-align:left;background:var(--stone);border:2px solid var(--ink);color:var(--ink);cursor:pointer}
+.structure-option b{display:block;font-size:15px;line-height:1.2}
+.structure-option small{display:block;font-size:12px;line-height:1.3;margin-top:3px;color:var(--ink-2)}
+.structure-option.on,.structure-option[aria-pressed="true"]{background:var(--gold);box-shadow:inset 2px 2px 0 var(--gold-lo)}
+.structure-option:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.structure-lead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 0}
+.structure-lead>span{font-size:14px;font-weight:700}
+.structure-lead>div{display:flex;gap:5px}
+.structure-lead .btn.on{background:var(--gold);color:var(--ink)}
+.structure-help{margin:7px 0 0;font-size:13px}
+.structure-result-list{padding-left:1.3em;margin:0;display:grid;gap:8px}
+.structure-result-list li{overflow-wrap:anywhere}
+.structure-result-list small{display:block;color:var(--ink-2);font-size:14px;margin:3px 0}
+.structure-status.s-achieved{color:#206b2a}
+.structure-status.s-adapted{color:#775003}
+.structure-status.s-missed{color:#a53127}
+@media(max-width:1000px){.structure-options{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.structure-options{grid-template-columns:repeat(2,minmax(0,1fr))}.structure-option{padding:9px 7px}}
