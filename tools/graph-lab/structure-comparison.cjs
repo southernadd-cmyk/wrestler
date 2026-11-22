@@ -17,7 +17,7 @@ const quick=process.argv.includes('--quick');
 const durations=quick?[8,18]:[8,12,18],sampleStyles=quick?styles.slice(0,2):styles;
 const map=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0,complete:0,stars:0,
  controlStars:0,events:0,controlEvents:0,distinct:0,botches:0,controlBotches:0,
- finishes:0,finishFallbacks:0,named:0,namedHit:0,open:0,causalFinals:0,objectives:{},
+ finishes:0,finishFallbacks:0,named:0,namedHit:0,open:0,causalFinals:0,handoffs:0,dangerEscapes:0,objectives:{},
  sequences:{},firstActions:{},byPlan:{},byLength:{},byStyle:{},byLead:{}}]));
 const add=(o,k,n=1)=>o[k]=(o[k]||0)+n;
 const ratio=(n,d)=>+(100*n/Math.max(1,d)).toFixed(1);
@@ -80,11 +80,23 @@ for(let si=0;si<sampleStyles.length;si++){
    assert.equal(o.id,plan.id);
    assert.ok(['achieved','adapted','missed'].includes(o.status));
    add(r.objectives,o.id+':'+o.status);
+   if(o.reason?.includes('genuine closing handoff'))r.handoffs++;
    if(o.status==='missed'){r.missed++;sequence.push('-');continue;}
    r.earned++;witnessed++;
    const e=o.evidence.find(e=>e.at===o.at)||o.evidence.at(-1);
    assert.ok(e&&m.graph.events.some(x=>x.id===e.id&&x.t===e.at),
     'structure evidence from real recorded action');
+   if(id==='chickenshit_heel'&&o.intent==='escape'){
+    assert.equal(e.threatened,true,'credited escape must answer genuine danger');
+    const opposite=lead==='w'?'f':'w',horizon=Math.min(150,m.len*.18);
+    assert.ok(m.graph.events.some(x=>{
+     const n=E.GRAPH.A[x.id];
+     return x.t<e.at&&e.at-x.t<=horizon&&x.preControl===opposite&&
+      n&&!n.reverse&&!n.blockOf&&!n.nearfall&&(n.cost??0)>=1.5&&
+      ['strike','running','power','suplex','neck','submission','aerial','fire','ground','corner'].includes(n.family);
+    }),'recent danger must be recorded in physical graph events');
+    r.dangerEscapes++;
+   }
    assert.ok(e.progress>=plan.window[0]-.04001&&e.progress<=plan.window[1]+.08001,
     'evidence in intended time window');
    if(o.intent==='finish_build'&&o.evidence.length===1){
@@ -120,7 +132,7 @@ const report={schema:'office-structure-phase7-audit-v1',mode:quick?'quick':'full
    meanEvents:avg(r.events,r.bouts),controlEvents:avg(r.controlEvents,r.bouts),
    meanDistinctActions:avg(r.distinct,r.bouts),
    botches:r.botches,controlBotches:r.controlBotches,
-   bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,
+   bookedFinishes:r.finishes,finishFallbacks:r.finishFallbacks,causalFinals:r.causalFinals,handoffs:r.handoffs,dangerEscapes:r.dangerEscapes,
    namedCalls:r.named,namedHitPct:ratio(r.namedHit,r.named),openObjectives:r.open,
    objectiveStatus:r.objectives,topActions:top(r.firstActions,12),
    uniqueSequences:Object.keys(r.sequences).length,

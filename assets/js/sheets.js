@@ -652,6 +652,9 @@
    if(intent==='technical_exchange')return sides.size===2&&moves.size>=2;
    if(intent==='callback')return ev.some(x=>previous.some(p=>p.family===x.family&&x.at>=p.at+30&&(x.id===p.id||x.actor!==p.actor)));
    if(intent==='evasion')return ev.length>=1; // A witnessed evasive action, not a posed intention.
+   // Escape needs recent real opponent pressure, not just an incidental
+   // defensive action with no threat to escape from.
+   if(intent==='escape')return ev.some(x=>x.threatened);
    // A final attack can grow out of a different, actually witnessed late
    // setup: two distinct qualifying closing moves remain sufficient, but
    // one impactful closing move plus an earlier earned beat is also causal.
@@ -677,7 +680,19 @@
     // Capture progress at the action's actual instant. Live 'go home' /
     // 'cut' decisions can subsequently change M.len; a later final duration
     // must never make a legitimately witnessed move appear out of window.
+    // The escape is earned only when a REAL opponent attack occurred close
+    // to this recorded defensive move. No synthetic damage or control switch.
+    const dangerRange=Math.min(150,M.len*.18);
+    const threatened=o.intent==='escape'&&M.graph.events.slice(0,-1).some(previous=>{
+     const attack=actions[previous.id];
+     return previous.t<e.t&&e.t-previous.t<=dangerRange&&
+      (previous.preControl==='w'||previous.preControl==='f')&&previous.preControl!==actor&&
+      attack&&!attack.reverse&&!attack.blockOf&&!attack.nearfall&&
+      (attack.cost??0)>=1.5&&
+      ['strike','running','power','suplex','neck','submission','aerial','fire','ground','corner'].includes(attack.family);
+    });
     const fact={id:e.id,at:e.t,progress:frac,actor,family:n.family||null,
+     ...(o.intent==='escape'?{threatened}:{}),
      countered:!!n.reverse,impact:!!n.reverse||(!n.blockOf&&
       (['strike','running','power','suplex','neck','aerial','springboard','lucha'].includes(n.family)||
        EXPOSURE_CORE.has(e.id))&&(n.cost??1)>=1)};
@@ -700,6 +715,18 @@
      s.status='missed';s.reason='No sufficient performed evidence in the planned window.';
     }
    });
+   // A non-American match must sometimes move toward its booked finish
+   // before the prior agreed beat is earned. Mark that beat MISSED, never
+   // performed, so the late exchange can still be genuinely witnessed.
+   if(['kings_road','dominant_ace'].includes(M.structureDirector.id)){
+    const states=M.structureDirector.objectives,plan=M.sheet.structurePlan.objectives;
+    const prior=plan[2],final=plan[3];
+    const handoff=Math.max(final.window[0]+.14,prior.window[1]-.07);
+    if(at>=handoff&&states[2]?.status==='pending'&&states[3]?.status==='pending'){
+     states[2].status='missed';
+     states[2].reason='Unwitnessed before the genuine closing handoff; the wrestlers moved on.';
+    }
+   }
   }
   function finalize(M){
    if(!active(M))return;
