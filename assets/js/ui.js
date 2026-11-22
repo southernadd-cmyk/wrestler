@@ -194,7 +194,8 @@ function historyDetails(h){
  const booked=D.FINISHES[h.bookedFinish||h.finish]?.name||'not recorded';
  const official=h.outcome==='dq'?'Disqualification — agreed finish not delivered':
   h.outcome==='nc'?'No contest':h.outcome==='double'?'Agreed finish broken':'As booked';
- return `<p><b>Booked finish:</b> ${esc(booked)} · <b>Official result:</b> ${esc(official)}</p>${boutStakes(h)?'<p>'+boutStakes(h)+'</p>':''}`;
+ const structure=h.structure,counts=structure?.objectives?.filter(x=>x.status==='achieved'||x.status==='adapted').length;
+ return `<p><b>Booked finish:</b ${esc(booked)} · <b>Official result:</b> ${esc(official)}</p>${boutStakes(h)?'<p>'+boutStakes(h)+'</p>':''}${structure?'<p><b>Match structure:</b> '+esc(OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===structure.id)?.label||structure.id)+' · '+counts+'/'+structure.objectives.length+' objectives witnessed</p>':''}`;
 }
 function starsText(s){return Mx.starText(s)}
 function weekLabel(a){return `S${Math.floor((a-1)/16)+1} W${(a-1)%16+1}`}
@@ -1303,7 +1304,7 @@ function bell(){
    <h3 class="section-h">Agreed before the bell</h3>
    <dl><div><dt>Promoter's finish</dt><dd>${esc(D.FINISHES[c.finish]?.name||'Booked finish')}</dd></div>
    <div><dt>Game plan</dt><dd>${esc(D.PLANS[P.game]?.name||'Set backstage')}</dd></div>
-   <div><dt>Running order</dt><dd>${P.sheet?.signed?'Agreed beats tracked live':P.leash==='free'?'Called in the ring':'No signed running order'}</dd></div></dl>
+   <div><dt>Running order</dt><dd>${Mx.structureReport(night.M)?'Four objectives tracked live':P.sheet?.signed?'Agreed beats tracked live':P.leash==='free'?'Called in the ring':'No signed running order'}</dd></div></dl>
    <p>Plans are instructions, not guaranteed results. Watch the match layout and calls as the bout unfolds.</p>
   </section>`;
  const bench=`${livePlan}<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar" role="progressbar" aria-label="Atmosphere" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
@@ -1349,7 +1350,8 @@ function updateLive(){
  $('#lCrowd').textContent=Math.round(M.crowd);$('#lCrowdBar').style.width=M.crowd+'%';$('#lCrowdBar').parentElement.setAttribute('aria-valuenow',Math.round(M.crowd));
  $('#lMom').style.width=(50+M.mom/2)+'%';$('#lMom').parentElement.setAttribute('aria-valuenow',Math.round(M.mom));
  const y=$('#sY'),t=$('#sT');y.querySelector('i').style.width=M.wSt+'%';t.querySelector('i').style.width=M.fSt+'%';y.setAttribute('aria-valuenow',Math.round(M.wSt));t.setAttribute('aria-valuenow',Math.round(M.fSt));y.classList.toggle('low',M.wSt<30);t.classList.toggle('low',M.fSt<30);
- $('#lSheet').textContent=M.sheet?.signed?M.sheet.nodes.filter(b=>b.status==='achieved'||b.status==='adapted').length+'/'+M.sheet.nodes.length+' beats':M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the layout';$('#lSheet').className=M.offScript?'warnv':'';
+ const structure=Mx.structureReport(M);
+ $('#lSheet').textContent=structure?structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structure.objectives.length+' objectives':M.sheet?.signed?M.sheet.nodes.filter(b=>b.status==='achieved'||b.status==='adapted').length+'/'+M.sheet.nodes.length+' beats':M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the layout';$('#lSheet').className=M.offScript?'warnv':'';
  updateStrip(M);
  $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
  document.querySelectorAll('[data-call]').forEach(b=>b.disabled=!Mx.canCall(M,b.dataset.call));
@@ -1363,10 +1365,27 @@ function stripInner(m){
  return `<div class="ps-track">${[...new Set(m.beats.map(b=>b.lane))].sort().map(l=>`<div class="ps-lane${l===2?' vow-lane':''}">${m.beats.filter(b=>b.lane===l).map(b=>
   `<div class="ps-beat s-${b.state} own-${b.owner}${b.vow?' vow':''}" style="left:${b.start}%;width:${b.width}%" title="${esc(b.title)}" role="img" aria-label="${esc(b.title)}"><b>${STRIP_ICON[b.state]?STRIP_ICON[b.state]+' ':''}<span class="ps-full">${esc(b.slot)}</span><span class="ps-short">${esc(STRIP_SHORT[b.slot]||b.slot)}</span></b><span>${esc(cap(b.move))}</span>${b.mark!=null?`<em class="ps-mark" style="left:${b.mark}%"></em>`:''}</div>`).join('')}</div>`).join('')}${m.head!=null?`<i class="ps-head" style="left:${m.head}%"></i>`:''}</div>`;
 }
+// Signed structure objectives use their real timing and actual performed
+// events; do not present an American shine/heat/comeback for King's Road.
+function structureStrip(M,{final=false}={}){
+ const report=Mx.structureReport(M),plan=M.sheet?.structurePlan?.objectives;
+ if(!report||!Array.isArray(plan))return null;
+ const frac=Math.min(1,M.t/Math.max(1,M.len));
+ return {head:final?100:Math.round(frac*100),beats:plan.map((o,i)=>{
+  const state=report.objectives[i],first=state.evidence.find(e=>e.at===state.at),
+    progress=first?.progress??null,window=o.window;
+  return {lane:i%2,start:window[0]*100,width:(window[1]-window[0])*100,
+   owner:o.actor,slot:o.title,short:['Open','Answer','Build','Finish'][i],
+   title:o.title+(o.call?' · called: '+o.call.label:' · called in the ring'),
+   move:o.call?.label||'Called live',
+   state:state.status==='pending'&&frac>=window[0]?'due':state.status,
+   mark:progress==null?null:Math.max(0,Math.min(100,(progress-window[0])/Math.max(.001,window[1]-window[0])*100))};
+ })};
+}
 function stripKey(m){return m?JSON.stringify(m.beats.map(b=>[b.state,b.mark])):''}
 function updateStrip(M){
  const ps=$('#lPlan');if(!ps)return;
- const m=OfficeSheets.strip(M);ps.hidden=!m;if(!m)return;
+ const m=structureStrip(M)||OfficeSheets.strip(M);ps.hidden=!m;if(!m)return;
  const key=stripKey(m);
  if(ps.dataset.key!==key){ps.innerHTML=stripInner(m);ps.dataset.key=key;}
  const h=ps.querySelector('.ps-head');if(h)h.style.left=m.head+'%';
@@ -1385,14 +1404,21 @@ function result(){
  c.afterPlan=night.plan?.after||'none';
  const cons=G.applyResult(c,fin);
  if(window.OfficeRingside)cons.push(...OfficeRingside.settle(c,M));
- const sheetReport=OfficeSheets.report(M),finalStrip=OfficeSheets.strip(M,{final:true});
+ const structureReport=Mx.structureReport(M),structurePlan=structureReport?M.sheet?.structurePlan?.objectives:null;
+ const sheetReport=OfficeSheets.report(M),finalStrip=structureReport?structureStrip(M,{final:true}):OfficeSheets.strip(M,{final:true});
  if(sheetReport){
   const h=S().history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===S().season&&x.week===S().week);
-  if(h)h.sheet=sheetReport;
-  cons.push({text:'Match layout: '+sheetReport.achieved+' performed, '+sheetReport.adapted+' adapted, '+sheetReport.missed+' missed.',tone:sheetReport.missed>2?-1:1});
-  if(sheetReport.achieved>=3&&sheetReport.missed===0&&fin.stars>=3.5)
-   OfficeMemory.remember(w.id,'chemistry',w.short+' remembers how well the agreed match with '+f.short+' came together.',f.id,3,4,c.id+':chemistry');
-  if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed match layout against '+f.short+'.',f.id,-2,0,c.id+':sheet');
+  if(h){h.sheet=sheetReport;if(structureReport)h.structure=JSON.parse(JSON.stringify(structureReport));}
+  if(structureReport){
+   const success=structureReport.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length;
+   cons.push({text:'Dramatic structure: '+success+' of '+structureReport.objectives.length+' objectives witnessed in the ring.',tone:0});
+   // No five-beat chemistry reward for a four-objective structure.
+  }else{
+   cons.push({text:'Match layout: '+sheetReport.achieved+' performed, '+sheetReport.adapted+' adapted, '+sheetReport.missed+' missed.',tone:sheetReport.missed>2?-1:1});
+   if(sheetReport.achieved>=3&&sheetReport.missed===0&&fin.stars>=3.5)
+    OfficeMemory.remember(w.id,'chemistry',w.short+' remembers how well the agreed match with '+f.short+' came together.',f.id,3,4,c.id+':chemistry');
+   if(sheetReport.missed>=3)OfficeMemory.remember(w.id,'sheet_changes',w.short+' remembers how far the match departed from the agreed match layout against '+f.short+'.',f.id,-2,0,c.id+':sheet');
+  }
   G.save();
  }
  const baseConsequences=cons.map(x=>x.text);
@@ -1410,7 +1436,7 @@ function result(){
  night.after=null;
  night.afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish},fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome},plan:c.afterPlan}:null;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
- const pct=sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
+ const pct=structureReport?structureReport.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structureReport.objectives.length+' objectives':sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  const actualFinish={booked:'Booked finish delivered',dq:'Unplanned disqualification',nc:'No contest',double:'Finish broken'}[fin.outcome]||
   'Finish: '+String(fin.outcome||'Not recorded').replace(/_/g,' ');
  const matchSummary=`<div class="result-brief" aria-label="Match outcome and plan report">
@@ -1420,7 +1446,17 @@ function result(){
   <div><small>Calls accepted</small><b>${fin.callsUsed.length-fin.ignored} of ${fin.callsUsed.length}</b></div>
  </div>`;
  night.i++;const more=night.i<night.queue.length;
- const sheetHtml=sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><p class="dim">'+(sheetReport.room?esc(sheetReport.room.premise):'Story: '+esc(OfficeSheets.focusOptions(c,w,f,night.plan?.game||'story').find(x=>x.id===sheetReport.focus)?.title||sheetReport.focus||'Performer-led'))+
+ const structureHtml=structureReport?'<h3 class="section-h" style="margin-top:12px">Dramatic structure: '+esc(OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===structureReport.id)?.label||structureReport.id)+'</h3>'+
+  '<p class="dim">Only moves performed in the ring count. There is no automatic bonus for following a structure.</p>'+
+  (finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+
+  '<div class="well"><ol class="structure-result-list">'+structureReport.objectives.map((o,i)=>{
+   const planned=structurePlan?.[i],actor=planned?.actor==='w'?w.short:f.short,
+    actual=o.evidence.find(e=>e.at===o.at)||o.evidence.at(-1),
+    move=actual?(Mx.GRAPH.A[actual.id]?.name||actual.id.replace(/_/g,' ')):'No qualifying move witnessed';
+   return '<li><b>'+esc(planned?.title||o.id)+'</b> · <span class="structure-status s-'+esc(o.status)+'">'+esc(o.status)+'</span> · '+esc(actor)+
+    '<small>Called: '+esc(planned?.call?.label||'In the ring')+' · Performed: '+esc(move)+(o.at!=null?' at '+esc(Mx.fmt(o.at)):'')+'</small></li>';
+  }).join('')+'</ol></div>':'';
+ const sheetHtml=structureReport?structureHtml:sheetReport?'<h3 class="section-h" style="margin-top:12px">Agreed versus performed</h3><p class="dim">'+(sheetReport.room?esc(sheetReport.room.premise):'Story: '+esc(OfficeSheets.focusOptions(c,w,f,night.plan?.game||'story').find(x=>x.id===sheetReport.focus)?.title||sheetReport.focus||'Performer-led'))+
   ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p>'+(finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+'<div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title.charAt(0).toUpperCase()+b.title.slice(1))+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span></li>').join('')+'</ol></div>':'';
  const story=flowReport(fin,w,f);
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the layout</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
