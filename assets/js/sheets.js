@@ -570,12 +570,12 @@
   const F={
    opening_advantage:['chain','strike','running'],pressure:['ground','power','submission'],
    comeback:['fire','strike','running'],payoff:['power','suplex','neck','aerial'],
-   technical_exchange:['chain','submission'],escalation:['strike','power','suplex','neck','aerial'],
+   technical_exchange:['chain','submission','ground'],escalation:['strike','power','suplex','neck','aerial'],
    callback:['chain','submission'],finish_build:['power','suplex','neck','strike','aerial'],
    evasion:['heel','outside'],exposure:['strike','running','chain'],
    shortcut:['heel'],escape:['heel','outside','chain','fire'],
-   dominance:['power','suplex','neck'],challenge:['fire','strike','running','chain'],
-   reassertion:['power','suplex','neck']
+   dominance:['power','suplex','neck','ground','strike','chain'],challenge:['fire','strike','running','chain','ground','power'],
+   reassertion:['power','suplex','neck','ground','strike','chain']
   };
   const ARC={
    technical_exchange:['chain','test_strength','exchange'],
@@ -612,17 +612,19 @@
    const id=e.id,kind=o.intent,f=n.family||'';
    if(n.blockOf||n.nearfall)return kind==='escape'&&!!n.blockOf;
    if(kind==='evasion')return (f==='heel'||f==='outside')&&/stall|retreat|strut|argue|roll_inside|duck|outside|plea/.test(id);
-   if(kind==='shortcut')return f==='heel'&&/cheap|rake|poke|hair|bite|low|rope|choke|shot|hl_/.test(id);
+   if(kind==='shortcut')return f==='heel'&&/cheap|rake|poke|hair|bite|low|rope|choke|shot|ref_argue/.test(id);
    if(kind==='escape')return !!n.reverse||/wrist_escape|waist_escape|mat_scramble|roll_inside|rope_break|duck|counter/.test(id);
    if(!F[kind]?.includes(f))return false;
-   if(['escalation','finish_build','payoff','dominance','reassertion'].includes(kind))
+   if(['escalation','finish_build','payoff'].includes(kind))
     return (n.cost??0)>=1.4&&(n.crowd??0)>=0;
+   if(['dominance','reassertion'].includes(kind))return (n.cost??0)>=.9&&(n.crowd??0)>=0;
    return true;
   }
   function enough(intent,ev,previous){
    const moves=new Set(ev.map(x=>x.id)),sides=new Set(ev.map(x=>x.actor));
    if(intent==='technical_exchange')return sides.size===2&&moves.size>=2;
    if(intent==='callback')return ev.some(x=>previous.some(p=>p.family===x.family&&x.at>=p.at+30&&(x.id===p.id||x.actor!==p.actor)));
+   if(intent==='evasion')return ev.length>=1; // A witnessed evasive action, not a posed intention.
    if(['escalation','finish_build'].includes(intent))return moves.size>=2;
    if(['opening_advantage','pressure','comeback','exposure','dominance','challenge','reassertion','evasion'].includes(intent))
     return ev.length>=2&&moves.size>=2;
@@ -641,7 +643,9 @@
     const fact={id:e.id,at:e.t,actor,family:n.family||null};
     if(s.evidence.some(x=>x.id===fact.id&&x.at===fact.at&&x.actor===actor))return;
     s.evidence.push(fact);if(s.evidence.length>12)s.evidence.shift();
-    if(enough(o.intent,s.evidence,i?states[i-1].evidence:[])){
+    // A tactical callback can refer to any earlier witnessed exchange.
+    const prior=states.slice(0,i).flatMap(x=>x.evidence);
+    if(enough(o.intent,s.evidence,prior)){
      s.status=o.requires.some(id=>states.some(x=>x.id===id&&x.status==='missed'))?'adapted':'achieved';
      s.at=e.t;s.reason='Verified from time-ordered performed graph actions.';
     }
@@ -668,11 +672,11 @@
    const x=current(M),n=actions[id];if(!x||!n)return 1;
    const o=x.objective,frac=M.t/Math.max(1,M.len);
    if(frac<o.window[0]-.07||o.actor!=='either'&&o.actor!==actor)return 1;
-   if(o.call?.action===id&&o.call.owner===actor)return 2.7;
-   return F[o.intent]?.includes(n.family)&&(!['evasion','shortcut','escape'].includes(o.intent)||fits(o,{id},n,actor))?1.55:1;
+   if(o.call?.action===id&&o.call.owner===actor)return 4.6;
+   return F[o.intent]?.includes(n.family)&&(!['evasion','shortcut','escape'].includes(o.intent)||fits(o,{id},n,actor))?2.8:1;
   }
   function arcBias(M,id){
-   const x=current(M);return x&&ARC[x.objective.intent]?.includes(id)?3.2:1;
+   const x=current(M);return x&&ARC[x.objective.intent]?.includes(id)?5.6:1;
   }
   function report(M){
    if(!active(M))return null;

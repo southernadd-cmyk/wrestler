@@ -39,6 +39,7 @@ function drive(M){
  assert.ok(M.done&&M.final,'an actual match must complete');
 }
 let signedCount=0,played=0,events=0,earned=0;
+const diagnostics=Object.fromEntries(ids.map(id=>[id,{bouts:0,earned:0,missed:0}]));
 const ids=S.STRUCTURES.catalogue().map(x=>x.id);
 const plans=['story','technical','brawl','spots','safe'];
 const signedRows=[];
@@ -65,6 +66,7 @@ for(const id of ids)for(const lead of ['w','f'])for(const game of plans){
  assert.deepEqual(Object.keys(copy(M.final.structure)).sort(),
   ['id','objectives','roles','version'].sort());
  const result=E.structureReport(M);
+ diagnostics[id].bouts++;
  assert.equal(JSON.stringify(result),JSON.stringify(M.final.structure));
  assert.equal(result.objectives.length,4);
  for(let i=0;i<result.objectives.length;i++){
@@ -72,9 +74,10 @@ for(const id of ids)for(const lead of ['w','f'])for(const game of plans){
   assert.equal(item.id,planned.id);
   assert.ok(['achieved','adapted','missed'].includes(item.status));
   if(item.status==='achieved'||item.status==='adapted'){
-   earned++;
+   earned++;diagnostics[id].earned++;
    assert.ok(item.at!==null&&item.evidence.length);
   }
+  if(item.status==='missed')diagnostics[id].missed++;
   for(const evidence of item.evidence){
    assert.ok(E.GRAPH.A[evidence.id],'only a real authored action can count');
    assert.ok(M.graph.events.some(e=>e.id===evidence.id&&e.t===evidence.at),
@@ -117,5 +120,7 @@ for(const id of ids)for(const lead of ['w','f'])for(const game of plans){
  assert.equal(a.finishRoute,b.finishRoute);
 }
 assert.ok(events>0,'the live match graph must actually run');
+assert.ok(earned>0,'active structure must earn real graph objectives');
+console.log('Phase 3 objective outcomes: '+JSON.stringify(diagnostics));
 console.log('PASS Phase 3 active Director: '+signedCount+' signed layouts, '+played+
  ' live structured matches, '+earned+' witnessed objectives; finish, provenance, legacy isolation and deterministic restore.');
