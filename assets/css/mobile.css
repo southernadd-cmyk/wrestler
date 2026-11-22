@@ -155,3 +155,30 @@
  #tv .s-live .section-h{margin:5px 0}
  #tv .s-live .wbody{padding:6px}
 }
+
+
+/* Phase 4: small-screen management controls with predictable scanning order. */
+@media(max-width:720px){
+ #view .management-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:8px}
+ #view .management-filters label,#view .management-filters label:first-child{min-width:0;min-height:0}
+ #view .management-filters label:first-child{grid-column:1/-1}
+ #view .management-filters .filter-results{min-width:0;overflow-wrap:anywhere}
+ #view .management-filters .btn{min-width:0;margin:0;white-space:normal}
+ #view .office-filter-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ #view .office-filter-tabs .btn{min-width:0;min-height:44px;justify-content:space-between;gap:6px}
+ #view .desk-brief>div,#view .phone-card .who>span{min-width:0}
+ #view .desk-brief b,#view .desk-brief span,#view .phone-card{overflow-wrap:anywhere}
+ #view .facts b,#tv .facts b{overflow-wrap:anywhere}
+ #view .phone-card .record-link{display:inline-block;min-height:36px;line-height:27px;padding:4px 1px}
+ #view .phone-card .record-link:focus-visible{outline-color:var(--gold)}
+}
+/* Shorter phones: keep section selection and filter controls usable without
+   shrinking them into tiny buttons. The page itself remains the only scroller. */
+@media(max-width:390px){
+ #view{padding:8px}
+ #view .screen{gap:8px}
+ #view .management-filters{padding:7px;gap:6px}
+ #view .office-filter-tabs{padding:5px}
+ #view .free-stats{gap:2px}
+ #view .free-card{padding:7px}
+}
