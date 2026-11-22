@@ -219,8 +219,22 @@
    return errors.length?{mode:'unsupported',plan:null,errors}:
     {mode:'editorial',plan:JSON.parse(JSON.stringify(sheet.structurePlan)),errors:[]};
   }
+  // Career activation is opt-in: only a final, matching signed Phase 2
+  // editorial layout is eligible. Old and traditional saves stay legacy.
+  function executionChoice(sheet,selection){
+   if(selection==null)return false;
+   if(!plain(selection)||Object.keys(selection).some(k=>!['id','lead'].includes(k))||
+      !Object.prototype.hasOwnProperty.call(DEFINITIONS,selection.id)||
+      !['w','f'].includes(selection.lead))
+    throw Error('Invalid selected match structure');
+   const r=readPlan(sheet);
+   if(r.mode!=='editorial'||r.plan.structureId!==selection.id||
+      r.plan.roles.lead!==selection.lead)
+    throw Error('Selected match structure does not match a signed editorial plan');
+   return true;
+  }
   function catalogue(){return Object.entries(DEFINITIONS).map(([id,def])=>({id,label:def.label,objectiveIds:def.objectives.map(d=>d[0])}));}
-  return Object.freeze({VERSION,catalogue,create,validate,attach,read,validatePlan,readPlan});
+  return Object.freeze({VERSION,catalogue,create,validate,attach,read,validatePlan,readPlan,executionChoice});
  })();
  const MODE={
   detailed:{label:'Detailed layout',desc:'Both performers agree a sequence of specific beats. Highest commitment, less room for improvisation.',weight:13},
