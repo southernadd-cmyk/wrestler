@@ -658,3 +658,15 @@
 .structure-review p{font-size:14px;line-height:1.3;margin:7px 0 0}
 .structure-review .structure-conversation{padding:6px 8px;background:var(--gold);border-left:4px solid var(--ink)}
 @media(max-width:600px){.structure-review dl{grid-template-columns:minmax(0,1fr)}.structure-review{padding:6px}}
+
+/* Phase 6: three independent readings of one actual match.
+   No coloured verdict or star bonus is implied by a completed objective. */
+.structure-assessment{margin:10px 0 13px;padding:10px;border:2px solid var(--ink);background:var(--stone)}
+.structure-assessment h4{font-size:16px;line-height:1.3;margin:0 0 8px}
+.structure-assessment-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.structure-assessment-grid>div{min-width:0;padding:10px;background:var(--paper);border-left:3px solid var(--well-line)}
+.structure-assessment-grid b{font-size:13px;display:block;color:var(--ink-2)}
+.structure-assessment-grid strong{font-size:18px;display:block;margin:4px 0;overflow-wrap:anywhere}
+.structure-assessment-grid p{font-size:13px;line-height:1.4;margin:0}
+.structure-assessment>.dim{font-size:13px;margin:8px 0 0;line-height:1.4}
+@media(max-width:780px){.structure-assessment-grid{grid-template-columns:1fr}.structure-assessment{padding:8px}}
