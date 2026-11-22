@@ -651,7 +651,10 @@
     const s=states[i],o=plan[i];
     if(s.status!=='pending'||frac<o.window[0]-.04||frac>o.window[1]+.08||
        o.requires.some(id=>states.some(x=>x.id===id&&x.status==='pending'))||!fits(o,e,n,actor))continue;
-    const fact={id:e.id,at:e.t,actor,family:n.family||null,
+    // Capture progress at the action's actual instant. Live 'go home' /
+    // 'cut' decisions can subsequently change M.len; a later final duration
+    // must never make a legitimately witnessed move appear out of window.
+    const fact={id:e.id,at:e.t,progress:frac,actor,family:n.family||null,
      countered:!!n.reverse,impact:!!n.reverse||(!n.blockOf&&
       (['strike','running','power','suplex','neck','aerial','springboard','lucha'].includes(n.family)||
        EXPOSURE_CORE.has(e.id))&&(n.cost??1)>=1)};

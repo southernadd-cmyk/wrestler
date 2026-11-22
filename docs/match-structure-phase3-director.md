@@ -33,3 +33,7 @@ The targeted repair adds valid, authored stalling, counter, unfair-shortcut and 
 The active Heel Director is also exercised through a deterministic mixed-fixture matrix of four wrestling styles, both dramatic lead assignments, five independent performance plans, 8/12/18-minute bouts, two seeds and varying booked outcomes (240 fully simulated matches). This does not require every objective to succeed; it checks witnessed events, correct actor, chronological dependencies, signed finish and immutable metadata, and a minimum credible reachability floor. It reports per-objective, per-style, per-lead and per-length attainment for review.
 
 Unrelated structures retain their original pre-repair move-weight calculation. Merely returning both wrestlers to the ring (`roll_inside`) is not evidence of a desperate defensive escape.
+
+## In-match duration changes
+
+A live manager decision can shorten the running match length. Every witnessed objective now stores the fraction of the match elapsed **when its performed action was observed**, alongside the absolute timestamp. This ensures that an earlier legitimate move is not retrospectively invalidated by a later decision to go home early. The mixed-duration test checks the original action-time fraction, not the final shortened match length. No outcome, finish, or simulated beat is changed.
