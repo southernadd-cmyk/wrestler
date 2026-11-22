@@ -11,6 +11,110 @@
  const snap=o=>({slot:o.slot,finish:o.finish,stip:o.stip||null,bump:o.bump||1});
  const apply=(o,x)=>{o.slot=x.slot;o.finish=x.finish;o.bump=x.bump;o.stip=x.stip||null};
  const round=n=>+n.toFixed(4);
+ // Promoters disagree about WHAT constitutes a good business case. Profiles
+ // affect outcomes, offers, hardball tolerance and how they speak; they do not
+ // alter the underlying finish/winner or invent wrestler/promoter history.
+ const PERSONALITIES={
+  aggressive:{
+   name:'Hard-nosed',priority:'An exciting physical show, especially credible brawlers',
+   warning:'Ultimatums may cost you the entire booking, particularly when trust is low.',
+   signal:'Gaz responds to a tough, credible draw and to sensible concessions.',
+   counter:{fee:1.07,protect:.82,slot:.88},failed:3,hardball:3,pullBelow:50,pullMargin:10,
+   holdWindow:4,tradeWindow:13
+  },
+  showman:{
+   name:'Crowd-first',priority:'Crowd reaction, memorable moments and marketable billing',
+   warning:'Willing to compromise for a draw; an empty promise will not move the card.',
+   signal:'Nina is receptive to strong audience interest, especially for a featured spot.',
+   counter:{fee:1.13,protect:.90,slot:.95},failed:1,hardball:1,pullBelow:27,pullMargin:14,
+   holdWindow:7,tradeWindow:16
+  },
+  traditional:{
+   name:'Traditional',priority:'Reliability, professionalism and protecting the written card',
+   warning:'A clean finish is difficult to change. A proven worker has more leverage.',
+   signal:'Harold respects dependable work and arguments grounded in match delivery.',
+   counter:{fee:1.08,protect:.86,slot:.91},failed:2,hardball:3,pullBelow:43,pullMargin:10,
+   holdWindow:4,tradeWindow:12
+  },
+  cold:{
+   name:'Commercial',priority:'Clear financial value and dependable technical quality',
+   warning:'Poorly justified demands and hardball can seriously damage the relationship.',
+   signal:'Vivian will negotiate when the numbers and the talent justify the change.',
+   counter:{fee:1.05,protect:.80,slot:.86},failed:2,hardball:4,pullBelow:55,pullMargin:8,
+   holdWindow:2,tradeWindow:11
+  }
+ };
+ const profile=p=>PERSONALITIES[p.personality]||PERSONALITIES.traditional;
+ // Different strengths for different requests and evidence, not merely one
+ // universal "best argument" button. This modifies existing skill/trust scores.
+ const personalityEdge=(p,w,t,arg)=>{
+  if(t.topic==='stip')return 0; // Existing stipulation taste/fit/feud rules already differ by promoter.
+  if(p.personality==='aggressive')return t.topic==='protect'?(w.style==='Brawl'?9:2):
+   t.topic==='slot'?(w.heat>=60?4:-6):arg==='trade'?4:-9;
+  if(p.personality==='showman')return t.topic==='slot'?(arg==='crowd'?10:3)+(w.heat>=60?4:-4):
+   t.topic==='fee'?(w.heat>=65?5:-5):w.heat>=60?5:-4;
+  if(p.personality==='traditional')return t.topic==='protect'?
+    (-9+(arg==='reliability'&&w.pro>=80?9:0)):
+    t.topic==='slot'?(arg==='reliability'?8:-5)+(w.pro>=85?3:0):
+    arg==='reliability'?6:-6;
+  if(p.personality==='cold')return t.topic==='fee'?
+    (arg==='trade'?8:-9)+(w.heat>=70?3:0):
+    t.topic==='slot'?(arg==='reliability'&&w.pro>=80?7:-8):-8;
+  return 0;
+ };
+ const introLine=(p,w,o)=>{
+  const past=G.S.history?.find(h=>h.pid===p.id&&h.wid===w.id);
+  const remembered=past&&Number.isFinite(past.stars)?
+    ' I remember your last match on my show: '+past.stars+' stars.':'';
+  const lines={
+   aggressive:"If I'm moving anyone on my card, I need a fighter who brings the crowd with them.",
+   showman:"Give me something people will talk about after the show, not just a name on the poster.",
+   traditional:"I've written this card carefully. Give me a reason to change it.",
+   cold:"Show me what the booking is worth. Sentiment does not pay the bills."
+  };
+  return ' '+(lines[p.personality]||lines.traditional)+remembered;
+ };
+ const openingReply=(p,t)=>{
+  const topics={fee:'the money',protect:'the finish',slot:'the billing',stip:'the stipulation'};
+  const x=topics[t.topic]||'the booking';
+  return {
+   aggressive:'You want to change '+x+'? Give me a reason that holds up in front of a live crowd.',
+   showman:'Interesting. How does changing '+x+' give the audience a moment to remember?',
+   traditional:'That was not the card I planned. What makes changing '+x+' the responsible choice?',
+   cold:'What concrete value does changing '+x+' deliver? Keep it measurable.'
+  }[p.personality]||'Make the case.';
+ };
+ const caseReply=(p,t,kind,detail)=>{
+  const lines={
+   aggressive:{
+    agreed:"That's a strong enough argument. ",counter:"You've got a point, but I'm not giving you everything. ",
+    refused:"That doesn't convince me. Bring something better, or take what I offered. "
+   },
+   showman:{
+    agreed:"That's something we can sell. ",counter:"I can sell part of that idea. ",
+    refused:"I'm not seeing the audience for that yet. "
+   },
+   traditional:{
+    agreed:"That is a reasonable adjustment to the card. ",counter:"I can make one limited change without upsetting the show. ",
+    refused:"The original card remains the sounder decision. "
+   },
+   cold:{
+    agreed:"Those figures make sense. ",counter:"The calculation supports a smaller adjustment. ",
+    refused:"The commercial case does not hold. "
+   }
+  };
+  return (lines[p.personality]||lines.traditional)[kind]+detail+
+    (kind==='agreed'?' Accept these terms and then sign.':kind==='counter'?' Take this or make one final push.':'');
+ };
+ const read=(o,w)=>{
+  const p=G.P(o.pid),v=profile(p),past=G.S.history?.find(h=>h.pid===p.id&&h.wid===w.id);
+  return {
+   name:v.name,priority:v.priority,signal:v.signal,warning:v.warning,
+   evidence:past&&Number.isFinite(past.stars)?
+    'Past booking: '+w.short+' earned '+past.stars+' stars on '+p.name+'.':
+    'No completed booking with this wrestler recorded for '+p.name+'.'
+  };
+ };
  const log=(t,p,player,promoter)=>{t.log.push({who:'You',text:player},{who:p.voice,text:promoter});t.turns++;G.save()};
  const offerText=(o,w,x)=>{
   const before=o.talk.original, parts=[];
