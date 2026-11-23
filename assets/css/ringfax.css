@@ -209,96 +209,115 @@ button.rf-index-half:hover,button.rf-index-half:focus-visible{background:#00f;co
 @media(prefers-reduced-motion:reduce){.rf-screen,.rf-row,.rf-console{animation:none;transition:none}}
 
 
-/* Page 777 is intentionally a different, complete 1980s teletext game page:
-   Bamboozle-style speech bubble, original yellow quiz host, four white answer
-   labels with solid coloured blocks, blue prompt, and Fastext question marks.
-   All controls are real buttons and respect the existing quiz engine. */
+/* P777 shares Ringfax's ordinary 40-column / six-row header. Beneath it,
+   the quiz uses a bespoke 1980s Bamboozle-inspired teletext composition.
+   The Brian Dixon tribute host is an original crisp pixel mosaic. */
 .rf-wrap.rf-quiz-active{display:flex;flex-direction:column;align-items:center;
  justify-content:center;gap:0;overflow:hidden}
-.rf-wrap.rf-quiz-active .rf-display{width:100%;height:100%;min-height:0;max-height:100%;
- flex:1;overflow:hidden}
-.rf-wrap.rf-quiz-active .rf-screen{position:relative;container-type:size;
- display:block;aspect-ratio:4/3;width:auto;height:100%;max-height:100%;
- max-width:100%;padding:0;overflow:hidden}
+.rf-wrap.rf-quiz-active .rf-display{width:100%;height:100%;max-height:100%;
+ flex:1;min-height:0;overflow:hidden}
+.rf-wrap.rf-quiz-active .rf-screen{position:relative;container-type:size;display:block;
+ aspect-ratio:auto;width:100%;height:100%;max-height:100%;max-width:100%;
+ padding:0;overflow:hidden}
 .rf-wrap.rf-quiz-active .rf-console{display:none}
-.rf-quiz-screen>.rf-teletext-grid{position:absolute;inset:0;visibility:hidden;pointer-events:none;
- display:grid;grid-template-rows:repeat(25,minmax(0,1fr));overflow:hidden}
+.rf-quiz-screen>.rf-teletext-grid{position:absolute;inset:0;visibility:hidden;
+ pointer-events:none;display:grid;grid-template-rows:repeat(25,minmax(0,1fr))}
 .rf-quiz-screen>.rf-teletext-grid .rf-row{min-height:0}
-.rf-bz-page{position:absolute;inset:0;display:grid;
- grid-template-rows:8% 31% 1% 43% 8% 1% 8%;
- overflow:hidden;background:#000;color:#fff;font-family:'VT323','Lucida Console',monospace;
- font-size:clamp(12px,min(4.4cqw,4.2cqh),51px);line-height:1.05;letter-spacing:0;
- font-variant-ligatures:none;-webkit-font-smoothing:none;text-shadow:none}
-.rf-bz-top{min-width:0;display:grid;grid-template-columns:1fr 2.45fr .75fr 2fr;
- align-items:center;gap:1.2cqw;overflow:hidden;white-space:nowrap;
- padding:0 2cqw;font-size:.85em;line-height:1}
-.rf-bz-code,.rf-bz-number{color:#fff}
-.rf-bz-brand{min-width:0;height:82%;display:flex;align-items:center;
- justify-content:center;background:#00f;overflow:hidden}
-.rf-bz-brand .rf-logo-svg{height:80%;width:88%;display:block;shape-rendering:crispEdges}
-.rf-bz-number{text-align:center}
-.rf-bz-clock{color:#ff0;text-align:right;min-width:0;font-size:.78em}
-.rf-bz-hero{display:grid;grid-template-columns:minmax(0,68%) minmax(0,32%);
- gap:0;min-height:0;align-items:center;padding:0 2cqw;position:relative}
-.rf-bz-bubble{align-self:start;position:relative;z-index:2;min-width:0;
- height:77%;max-height:100%;margin:1.5cqh 0 0;padding:1.2cqh 2.6cqw;
- background:#fff;color:#0000ac;display:flex;flex-direction:column;
- justify-content:center;gap:.6cqh;line-height:1.04;overflow:visible;
- font-size:.88em}
+/* Draw the same pixel logo, teletext header text and blue page title as P100.
+   The position is intentional: 1+4+1 rows of the standard 25-row raster. */
+.rf-bz-shared-header{position:absolute;inset:0 0 auto;height:24%;z-index:2;
+ display:grid;grid-template-rows:1fr 4fr 1fr;overflow:hidden;
+ font:inherit;line-height:1;background:#000}
+.rf-bz-header-line{min-height:0;overflow:hidden;white-space:pre;
+ color:#fff;font:inherit;line-height:1}
+.rf-bz-channel{display:flex;justify-content:center;align-items:center;
+ min-height:0;background:#00f;overflow:hidden}
+.rf-bz-channel .rf-logo-svg{display:block;width:94%;height:83%;
+ shape-rendering:crispEdges;image-rendering:pixelated}
+.rf-bz-page-title{min-width:0;min-height:0;display:flex;align-items:center;
+ justify-content:space-between;gap:1cqw;overflow:hidden;
+ background:#00f;color:#fff;padding:0 1.5cqw;font:inherit;line-height:1}
+.rf-bz-page-title span{min-width:0;white-space:nowrap;overflow:hidden}
+.rf-bz-home{display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+ background:#ff0;color:#000;border:0;border-radius:0;box-shadow:none;
+ padding:0 1.2cqw;min-height:80%;font:inherit;font-size:.9em;line-height:1;
+ cursor:pointer}
+.rf-bz-home:hover,.rf-bz-home:focus-visible{background:#fff;color:#00f;
+ outline:2px solid #ff0;outline-offset:-2px}
+.rf-bz-page{position:absolute;inset:24% 0 0;overflow:hidden;
+ display:grid;grid-template-rows:38% 1% 40% 10% 1% 10%;
+ background:#000;color:#fff;font-family:'VT323','Lucida Console',monospace;
+ font-size:clamp(13px,min(5cqw,5.3cqh),60px);line-height:1.04;
+ letter-spacing:0;font-variant-ligatures:none;-webkit-font-smoothing:none;
+ text-shadow:none}
+.rf-bz-hero{display:grid;grid-template-columns:minmax(0,70%) minmax(0,30%);
+ padding:0 1.5cqw;align-items:center;min-height:0;gap:0;position:relative}
+.rf-bz-bubble{display:flex;flex-direction:column;justify-content:center;
+ position:relative;z-index:1;min-width:0;height:88%;max-height:100%;
+ padding:.9cqh 2.4cqw;gap:.5cqh;line-height:1.03;overflow:visible;
+ background:#fff;color:#0000aa;font-size:.88em}
 .rf-bz-bubble strong{display:block;font:inherit;font-weight:700}
-.rf-bz-bubble span{display:block;overflow-wrap:break-word;font-size:.96em}
-.rf-bz-bubble::after{content:"";position:absolute;right:6%;bottom:-2.5cqh;
- width:29%;height:2.5cqh;border:solid #ff0;
- border-width:0 0 .8cqh .8cqw;pointer-events:none}
-.rf-bz-mascot{align-self:stretch;display:flex;justify-content:center;
- align-items:end;min-height:0;overflow:hidden;position:relative}
-.rf-bz-face{display:block;width:100%;height:100%;image-rendering:pixelated;
- overflow:visible;shape-rendering:crispEdges}
-.rf-bz-rule{background:#f00;margin:0 2cqw;min-height:2px}
+.rf-bz-bubble span{display:block;font-size:.98em;overflow-wrap:break-word}
+.rf-bz-bubble::after{content:"";position:absolute;right:7%;bottom:-1.9cqh;
+ width:25%;height:2.2cqh;border:solid #ff0;border-width:0 0 .75cqh .7cqw;
+ pointer-events:none}
+.rf-bz-mascot{min-height:0;align-self:stretch;display:flex;align-items:center;
+ justify-content:center;overflow:hidden}
+.rf-bz-face{width:100%;height:98%;max-width:100%;display:block;
+ image-rendering:pixelated;shape-rendering:crispEdges}
+.rf-bz-rule{background:#f00;min-height:2px;margin:0 1.5cqw}
 .rf-bz-answers{display:grid;grid-template-rows:repeat(4,minmax(0,1fr));
- min-width:0;min-height:0;padding:1cqh 4cqw;gap:.2cqh}
-.rf-bz-choice{display:flex;align-items:center;gap:4cqw;width:100%;min-width:0;
- min-height:0;margin:0;padding:0 3cqw;border:0;border-radius:0;background:#000;
- color:#fff;font:inherit;text-align:left;line-height:1.05;cursor:pointer;box-shadow:none}
-.rf-bz-square{display:block;flex:0 0 auto;height:min(7.3cqh,6.4cqw);
- width:min(7.3cqh,6.4cqw);background:var(--rf-bz-colour);box-shadow:none}
-.rf-bz-answer{display:block;min-width:0;max-width:100%;overflow-wrap:normal;
- font-size:1.18em;white-space:normal}
+ min-width:0;min-height:0;padding:.5cqh 2.5cqw;gap:.2cqh}
+.rf-bz-choice{display:flex;align-items:center;gap:3.5cqw;
+ width:100%;min-width:0;min-height:0;margin:0;padding:0 2.5cqw;
+ border:0;border-radius:0;background:#000;color:#fff;
+ font:inherit;line-height:1.04;text-align:left;cursor:pointer;box-shadow:none}
+.rf-bz-square{display:block;flex:0 0 auto;width:min(7cqh,5.5cqw);
+ height:min(7cqh,5.5cqw);background:var(--rf-bz-colour)}
+.rf-bz-answer{display:block;min-width:0;max-width:100%;
+ font-size:1.22em;line-height:1.02;overflow-wrap:break-word}
 .rf-bz-red{--rf-bz-colour:#f00}
 .rf-bz-green{--rf-bz-colour:#0f0}
 .rf-bz-yellow{--rf-bz-colour:#ff0}
 .rf-bz-cyan{--rf-bz-colour:#0ff}
-.rf-bz-choice:hover,.rf-bz-choice:focus-visible{background:#00129f;
+.rf-bz-choice:hover,.rf-bz-choice:focus-visible{background:#00149e;
  outline:2px solid #fff;outline-offset:-2px}
 .rf-bz-choice:active .rf-bz-square{outline:3px solid #fff}
 .rf-bz-instruction{display:flex;align-items:center;justify-content:center;
- margin:.65cqh 2cqw;color:#fff;background:#00f;font-size:.95em;
- line-height:1;min-width:0;white-space:nowrap;overflow:hidden}
+ min-width:0;margin:.5cqh 1.5cqw;overflow:hidden;
+ background:#00f;color:#fff;font-size:.92em;line-height:1;
+ white-space:nowrap}
 .rf-bz-footer{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
- gap:0;min-height:0;align-items:center}
-.rf-bz-fast{min-width:0;min-height:100%;height:100%;padding:0;margin:0;border:0;
- border-radius:0;background:#000;color:var(--rf-bz-colour);font:inherit;
- font-size:1.03em;text-align:center;cursor:pointer}
-.rf-bz-fast:hover,.rf-bz-fast:focus-visible{background:#00f;
- outline:2px solid white;outline-offset:-2px}
+ align-items:center;gap:0;min-height:0}
+.rf-bz-fast{display:flex;align-items:center;justify-content:center;
+ min-height:100%;height:100%;min-width:0;margin:0;padding:0;
+ background:#000;border:0;border-radius:0;box-shadow:none;
+ color:var(--rf-bz-colour);font:inherit;font-size:1.05em;line-height:1;
+ text-align:center;cursor:pointer}
+span.rf-bz-fast{cursor:default}
+button.rf-bz-fast:hover,button.rf-bz-fast:focus-visible{background:#00f;
+ outline:2px solid #fff;outline-offset:-2px}
 @media(max-width:720px){
  .rf-wrap.rf-quiz-active{display:flex;padding:0}
- .rf-wrap.rf-quiz-active .rf-display{height:100%;width:100%;max-height:100%}
- .rf-wrap.rf-quiz-active .rf-screen{width:100%;max-width:100%;height:100%;aspect-ratio:auto}
- .rf-bz-page{font-size:clamp(12px,min(4.5cqw,4.2cqh),27px)}
- .rf-bz-top{grid-template-columns:.72fr 1.7fr .5fr 1.8fr;padding:0 1cqw;gap:.7cqw}
- .rf-bz-hero{grid-template-columns:minmax(0,71%) minmax(0,29%);padding:0 1cqw}
- .rf-bz-bubble{padding:1cqh 2cqw;font-size:.85em;line-height:1.06}
- .rf-bz-bubble span{font-size:.94em}
- .rf-bz-answers{padding:1cqh 1cqw}
- .rf-bz-choice{padding:0 2cqw;gap:3.5cqw}
- .rf-bz-square{width:min(6cqh,10cqw);height:min(6cqh,10cqw)}
- .rf-bz-instruction{font-size:.83em;margin:.8cqh 1cqw}
- .rf-bz-answer{font-size:1.12em}
+ .rf-wrap.rf-quiz-active .rf-display{width:100%;height:100%;max-height:100%}
+ .rf-wrap.rf-quiz-active .rf-screen{width:100%;height:100%;max-width:100%;
+  max-height:100%;aspect-ratio:auto}
+ .rf-bz-page{font-size:clamp(12px,min(5.3cqw,5.4cqh),28px)}
+ .rf-bz-page-title{padding:0 1cqw}
+ .rf-bz-home{font-size:.84em;padding:0 1.5cqw}
+ .rf-bz-hero{grid-template-columns:minmax(0,72%) minmax(0,28%);
+  padding:0 .7cqw}
+ .rf-bz-bubble{padding:.8cqh 1.8cqw;font-size:.85em}
+ .rf-bz-bubble span{font-size:.97em}
+ .rf-bz-answers{padding:.4cqh 1cqw}
+ .rf-bz-choice{padding:0 1cqw;gap:3cqw}
+ .rf-bz-square{width:min(6cqh,9cqw);height:min(6cqh,9cqw)}
+ .rf-bz-answer{font-size:1.18em}
+ .rf-bz-instruction{font-size:.81em;margin:.5cqh 1cqw}
  .rf-bz-rule{margin:0 1cqw}
 }
 @media(max-height:550px){
- .rf-bz-page{font-size:clamp(10px,min(4.3cqw,4.5cqh),35px)}
- .rf-bz-bubble{margin-top:.5cqh;height:87%;font-size:.82em}
+ .rf-bz-page{font-size:clamp(11px,min(4.6cqw,5.0cqh),36px)}
+ .rf-bz-bubble{font-size:.82em}
  .rf-bz-answers{padding-top:0;padding-bottom:0}
 }
