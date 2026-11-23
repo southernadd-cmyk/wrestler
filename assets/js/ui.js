@@ -1554,7 +1554,18 @@ function updateLive(){
  $('#lSheet').textContent=structure?structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structure.objectives.length+' objectives':M.sheet?.signed?M.sheet.nodes.filter(b=>b.status==='achieved'||b.status==='adapted').length+'/'+M.sheet.nodes.length+' beats':M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the layout';$('#lSheet').className=M.offScript?'warnv':'';
  updateStrip(M);
  $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
- document.querySelectorAll('[data-call]').forEach(b=>b.disabled=!Mx.canCall(M,b.dataset.call));
+ document.querySelectorAll('[data-call]').forEach(b=>{
+  b.disabled=!Mx.canCall(M,b.dataset.call);
+  if(b.dataset.call==='big'){
+   const pending=!!M.bigSpotRequest;
+   b.classList.toggle('pending',pending);
+   b.setAttribute('aria-label',pending?
+    'Big spot queued. Waiting for a legal opening.':'Hit the big spot');
+   if(b.lastChild?.nodeType===3)b.lastChild.textContent=pending?'Big spot queued':'Hit the big spot';
+  }
+ });
+ if(M.bigSpotRequest&&$('#lHint'))
+  $('#lHint').textContent='Big spot queued: the wrestlers are looking for a legal opening. If none arrives, the call is returned.';
  const pb=document.querySelector('[data-pause]');if(pb){pb.textContent=M.done?'See the result':night.paused?'Resume':'Pause';pb.setAttribute('aria-pressed',night.paused);pb.disabled=false}
  if(M.done&&night.paused){result();return}
 }
