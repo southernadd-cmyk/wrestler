@@ -212,34 +212,25 @@
  const fast=[100,200,300,500];
  // 4 x 4 pixel-cell letters, sized like a real teletext mosaic masthead.
  // Every row remains exactly forty character cells (no SVG or raster image).
- const LETTERS={
-  A:[' ██ ','█  █','████','█  █'],B:['███ ','█  █','███ ','███ '],
-  C:[' ███','█   ','█   ',' ███'],D:['███ ','█  █','█  █','███ '],
-  E:['████','██  ','██  ','████'],F:['████','██  ','██  ','█   '],
-  G:[' ███','█   ','█ ██',' ███'],H:['█  █','█  █','████','█  █'],
-  I:['████',' ██ ',' ██ ','████'],J:['████','  █ ','  █ ','███ '],
-  K:['█  █','█ █ ','██  ','█ █ '],L:['█   ','█   ','█   ','████'],
-  M:['█  █','████','█  █','█  █'],N:['█  █','██ █','█ ██','█  █'],
-  O:[' ██ ','█  █','█  █',' ██ '],P:['███ ','█  █','███ ','█   '],
-  Q:[' ██ ','█  █','█ ██',' ███'],R:['███ ','█  █','███ ','█ ██'],
-  S:[' ███','█   ',' ██ ','███ '],T:['████',' ██ ',' ██ ',' ██ '],
-  U:['█  █','█  █','█  █','████'],V:['█  █','█  █','█  █',' ██ '],
-  W:['█  █','█  █','████','█  █'],X:['█  █',' ██ ',' ██ ','█  █'],
-  Y:['█  █',' ██ ',' ██ ',' ██ '],Z:['████','  █ ',' █  ','████'],
-  ' ':['    ','    ','    ','    ']
- };
+ // Original teletext used limited block graphics. Oversized Unicode block glyphs
+ // are not reliably cell-width on mobile fallback fonts; use a readable wordmark.
+ const centring=(label)=>(' '.repeat(Math.max(0,Math.floor((40-label.length)/2)))+label).slice(0,40).padEnd(40,' ');
+
  const BANNERS={
   100:['RINGFAX','yellow'],101:['LATEST','cyan'],200:['RESULTS','green'],
   201:['RATINGS','yellow'],300:['RANKINGS','green'],302:['TITLES','cyan'],
   500:['FANZONE','magenta'],501:['LETTERS','yellow']
  };
  function mosaic(word){
-  const chars=word.split('').map(c=>LETTERS[c]||LETTERS[' ']);
-  return [0,1,2,3].map(i=>{
-   const rendered=chars.map(c=>c[i]).join(' ');
-   return (' '.repeat(Math.max(0,Math.floor((40-rendered.length)/2)))+rendered).slice(0,40).padEnd(40,' ');
-  });
+  const heading=String(word).replace(/[^A-Z0-9 ]/g,'').slice(0,28);
+  return [
+   ' '.repeat(40),
+   centring(heading==='RINGFAX'?'R I N G F A X':heading),
+   centring('WRESTLING INFORMATION SERVICE'),
+   ' '.repeat(40)
+  ];
  }
+
  const fastext=[
   {text:'101 NEWS  ',page:101,colour:'red'},
   {text:'200 RESULT',page:200,colour:'green'},
@@ -262,7 +253,7 @@
   const header='P'+num+' RINGFAX '+num+'  S'+(s?.season||1)+' W'+(s?.week||1);
   rows.push(item(header.padEnd(31,' ')+clock(),'white'));
   const [heading,colour]=BANNERS[C.page]||['SEARCH','red'];
-  for(const value of mosaic(heading))rows.push({text:value,colour,background:'blue'});
+  mosaic(heading).forEach((value,i)=>rows.push({text:value,colour:i===1?colour:'white',background:'blue'}));
   const title=p?.title||'PAGE NOT FOUND';
   const pageInfo=chunks.length>1?'  '+(sub+1)+'/'+chunks.length:'';
   rows.push(item(' '+title.slice(0,35-pageInfo.length).padEnd(35-pageInfo.length,' ')+pageInfo,'white','blue'));
@@ -379,24 +370,37 @@
    '</section>';
  }
  function fit(){
-  const d=root.document;if(!d)return;
-  const el=d.querySelector('#rf-screen');if(!el)return;
-  const getStyle=root.getComputedStyle;if(typeof getStyle!=='function')return;
-  const cs=getStyle(el),padX=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0),
-   padY=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);
-  const width=Math.max(0,el.clientWidth-padX-4),height=Math.max(0,el.clientHeight-padY-4);
-  if(!width||!height)return;
-  const measure=d.createElement('span');
-  measure.textContent='MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM';
-  measure.style.cssText='position:absolute;left:-99999px;top:-99999px;visibility:hidden;white-space:pre;font-family:VT323,monospace;font-size:100px;letter-spacing:0';
-  el.appendChild(measure);
-  const charWidth=Math.max(0.35,measure.getBoundingClientRect().width/4000);
-  measure.remove();
-  const size=Math.min(36,height/(25*1.13),width/(40*charWidth));
-  const glyph=Math.max(8,Math.floor(size*100)/100);
-  const tracking=Math.max(0,Math.min(glyph*.38,(width-40*glyph*charWidth)/40));
-  el.style.setProperty('--rf-font-size',glyph+'px');
-  el.style.setProperty('--rf-tracking',tracking+'px');
+  const d=root.document;
+  const el=d?.querySelector('#rf-screen');
+  if(!el||typeof root.getComputedStyle!=='function')return;
+  const cs=root.getComputedStyle(el),
+   px=name=>parseFloat(cs[name])||0,
+   width=el.clientWidth-px('paddingLeft')-px('paddingRight')-2,
+   height=el.clientHeight-px('paddingTop')-px('paddingBottom')-2;
+  if(width<=0||height<=0)return;
+  // Measure ACTUAL rendered text. On Android, teletext fallback fonts and
+  // Unicode mosaics don't necessarily share the width of a VT323 letter.
+  const probe=d.createElement('span');
+  probe.style.cssText='position:absolute;left:-99999px;top:-99999px;visibility:hidden;white-space:pre;font-family:VT323,monospace;font-size:100px;font-weight:400;letter-spacing:0';
+  el.appendChild(probe);
+  const strings=['M'.repeat(40),'W'.repeat(40),'0'.repeat(40),'RINGFAX'.repeat(5).padEnd(40,' ')];
+  const ratio=Math.max(...strings.map(value=>{
+   probe.textContent=value;
+   return probe.getBoundingClientRect().width/4000;
+  }));
+  probe.remove();
+  let size=Math.min(36,height/(25*1.12),width/(40*ratio))*.965;
+  size=Math.max(7.5,Math.floor(size*100)/100);
+  el.style.setProperty('--rf-font-size',size+'px');
+  el.style.setProperty('--rf-tracking','0px');
+  // Measure again after layout; padding, browser font fallback and zoom can
+  // differ from an offscreen width probe. Don't accept clipped characters.
+  for(let attempt=0;attempt<5;attempt++){
+   const rows=el.querySelectorAll('.rf-row');
+   if(!Array.from(rows).some(row=>row.scrollWidth>row.clientWidth+1))break;
+   size=Math.max(7.5,Math.floor(size*95)/100);
+   el.style.setProperty('--rf-font-size',size+'px');
+  }
  }
  if(root.document&&root.document.fonts?.ready)root.document.fonts.ready.then(fit);
  if(root.addEventListener)root.addEventListener('resize',fit);
