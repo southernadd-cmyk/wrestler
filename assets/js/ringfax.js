@@ -729,6 +729,67 @@
   }
   return false;
  }
+
+ // The secret quiz is displayed as a complete Bamboozle-era TV page.
+ // Game state, 40x25 text data, keyboard controls and checkpoint logic are unchanged.
+ function quizMascot(){
+  return '<svg class="rf-bz-face" viewBox="0 0 36 36" aria-hidden="true" focusable="false" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
+   '<path fill="#ff0" d="M11 3h11v2h3v2h3v3h2v14h-2v3h-3v2H9v-2H6v-3H4V11h3V8h2V5h2z M29 16h3v-3h2v2h2v6h-2v3h-4z"/>'+
+   '<path fill="#000" d="M11 11h2v5h-2z M22 11h2v5h-2z M9 9h5v2H9z M21 9h5v2h-5z M8 19h3v2H8z M25 19h3v2h-3z M11 22h2v2h-2z M13 24h12v2H13z M25 22h2v2h-2z M16 28h5v2h-5z"/>'+
+   '<path fill="#fff" d="M10 32h5v2h-5z M23 32h5v2h-5z M5 4h3v1H6v3H5z M29 4h3v4h-1V5h-2z M5 29h1v3h3v1H5z M31 29h1v4h-4v-1h3z"/>'+
+   '<path fill="#00f" d="M7 30h9v3H7z M22 30h9v3h-9z"/></svg>';
+ }
+ function quizPresentation(){
+  const stage=quizState.stage,links=quizFooter(),q=QUIZ_QUESTIONS[quizState.index],n=quizState.index+1;
+  let title,message,choices;
+  if(stage==='question'){
+   title='Question '+n+'. Wrestling.'; message=q.q; choices=q.a;
+  }else if(stage==='intro'){
+   title='Welcome to The Quiz Ref!';
+   message='12 questions. Four colours. One wrestling champion. Are you ready?';
+   choices=['Start quiz','How to play','Back to index','Start quiz'];
+  }else if(stage==='rules'){
+   title='How to play';
+   message='Choose red, green, yellow or cyan. Wrong answers return you to the last checkpoint.';
+   choices=['Start quiz','Go back','Back to index','Start quiz'];
+  }else if(stage==='wrong'){
+   title='You have been bodyslammed!';
+   message='Correct: '+q.a[q.correct]+'. '+(quizState.reveal?q.fact:'Retry from question '+(quizState.checkpoint+1)+'.');
+   choices=['Try again','Reveal trivia','Back to index','Try again'];
+  }else{
+   title='You are the Quiz Champion!';
+   message='Twelve questions answered! Wrong turns: '+quizState.misses+'. A main-event performance.';
+   choices=['Play again','Rules','Back to index','Play again'];
+  }
+  const choicesHtml=links.map((link,i)=>{
+   const colour=QUIZ_COLOURS[i],label=choices[i];
+   return '<button type="button" class="rf-bz-choice rf-bz-'+colour+
+    '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
+    '" aria-label="'+escape(colour+' choice: '+label)+'">'+
+    '<span class="rf-bz-square" aria-hidden="true"></span>'+
+    '<span class="rf-bz-answer">'+escape(label)+'</span></button>';
+  }).join('');
+  const footer=links.map((link,i)=>'<button type="button" class="rf-bz-fast rf-bz-'+QUIZ_COLOURS[i]+
+   '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
+   '" aria-label="'+escape(QUIZ_COLOURS[i]+' Fastext: '+choices[i])+'">?????</button>').join('');
+  const now=new Date(),day=String(now.getDate()).padStart(2,'0'),
+   month=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()];
+  return '<div class="rf-bz-page rf-bz-stage-'+stage+'">'+
+   '<div class="rf-bz-top"><span class="rf-bz-code">P777</span>'+
+   '<div class="rf-bz-brand">'+pixelLogo('RINGFAX')+'</div>'+
+   '<span class="rf-bz-number">777</span>'+
+   '<span class="rf-bz-clock">'+month+day+' '+clock().replace("/",":")+'</span></div>'+
+   '<div class="rf-bz-hero"><div class="rf-bz-bubble"><strong>'+escape(title)+
+   '</strong><span>'+escape(message)+'</span></div>'+
+   '<div class="rf-bz-mascot">'+quizMascot()+'</div></div>'+
+   '<div class="rf-bz-rule" aria-hidden="true"></div>'+
+   '<div class="rf-bz-answers" role="group" aria-label="Four colour answer keys">'+choicesHtml+'</div>'+
+   '<div class="rf-bz-instruction">PRESS THE COLOUR OF YOUR CHOICE.</div>'+
+   '<div class="rf-bz-rule" aria-hidden="true"></div>'+
+   '<div class="rf-bz-footer" role="group" aria-label="Fastext colour keys">'+footer+'</div>'+
+   '</div>';
+ }
+
  function view(s){
   const v=screen(s),pages=build(s),favourites=[
    [100,'Index','Home'],[101,'Headline','Editorial'],[102,(s?.week||1)===1?'Outlook':'News','Scene reports'],
@@ -804,7 +865,8 @@
    '<button data-rf-action="go" data-rf-value="100" type="button">100 INDEX</button>'+
    '<button data-rf-action="go" data-rf-value="200" type="button">200 RESULTS</button>'+
    '<button data-rf-action="go" data-rf-value="500" type="button">500 FANS</button></div>'+
-   '<div id="rf-screen" class="rf-screen" role="region" aria-label="Ringfax teletext page">'+rows+'</div>'+
+   '<div id="rf-screen" class="rf-screen'+(C.page===777?' rf-quiz-screen':'')+'" role="region" aria-label="Ringfax teletext page">'+
+    (C.page===777?'<div class="rf-teletext-grid" aria-hidden="true">'+rows+'</div>'+quizPresentation():rows)+'</div>'+
    '<p class="rf-display-caption">LIVE FROM THE CIRCUIT <span>●</span> READ-ONLY EDITION <span>●</span> '+escape(v.title)+'</p>'+
    '</div>'+
    '<aside class="rf-console" aria-label="Ringfax controls">'+
