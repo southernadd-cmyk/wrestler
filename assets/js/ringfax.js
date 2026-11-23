@@ -197,6 +197,7 @@
    const p=Number(value);if(!Number.isInteger(p)||p<0||p>999)return false;
    C.page=p;C.sub=0;C.entry='';C.hold=false;
   }else if(action==='clear')C.entry='';
+  else if(action==='backspace')C.entry=C.entry.slice(0,-1);
   else if(action==='left'||action==='right'){
    const len=Math.max(1,Math.ceil((pages[C.page]?.lines.length||1)/19));
    C.sub=(C.sub+(action==='left'?-1:1)+len)%len;C.hold=true;
@@ -209,31 +210,90 @@
   if(k==='ArrowLeft')return press('left',null,s);
   if(k==='ArrowRight')return press('right',null,s);
   if(k===' '||k==='Spacebar')return press('hold',null,s);
-  if(k==='Backspace')return press('clear',null,s);
+  if(k==='Backspace')return press('backspace',null,s);
   const i=['F1','F2','F3','F4'].indexOf(k);
   if(i>=0)return press('go',fast[i],s);
   return false;
  }
  function view(s){
-  const v=screen(s);
-  const rows=v.rows.map((r,i)=>'<div class="rf-row rf-'+(i===1?'banner':i===23?'fastext':r.colour)+'">'+escape(r.text)+'</div>').join('');
-  const pads=Array.from({length:10},(_,i)=>'<button type="button" data-rf-action="digit" data-rf-value="'+i+'" aria-label="Ringfax digit '+i+'">'+i+'</button>').join('');
-  const anchors=fast.map((p,i)=>'<button type="button" class="rf-fast rf-fast-'+i+'" data-rf-action="go" data-rf-value="'+p+'">'+['Index','Results','Rankings','Fanzone'][i]+'</button>').join('');
+  const v=screen(s),pages=build(s),favourites=[
+   [100,'Index','Home'],[101,'Latest','Headlines'],[200,'Results','Match records'],
+   [201,'Ratings','Match grades'],[300,'Rankings','Card ladder'],[302,'Champions','Title holders'],
+   [500,'Fanzone','Fan discussion'],[501,'Letters','Reader mail']
+  ];
+  const rows=v.rows.map((r,i)=>{
+   const match=i>=4&&i<=22&&v.page===100?r.text.match(/^\s*(\d{3})\s+\S/):null;
+   const jump=match&&pages[Number(match[1])]?Number(match[1]):null;
+   const tag=jump!==null?'button':'div';
+   const attrs=jump!==null?' type="button" data-rf-action="go" data-rf-value="'+jump+'" title="Open page '+jump+'" aria-label="Open Ringfax page '+jump+'"':'';
+   return '<'+tag+' class="rf-row rf-'+(i===1?'banner':i===23?'fastext':r.colour)+(jump!==null?' rf-row-link':'')+'"'+attrs+'>'+escape(r.text)+'</'+tag+'>';
+  }).join('');
+  const quick=favourites.map(([number,label,desc])=>
+   '<button type="button" class="rf-page-link'+(v.page===number?' is-current':'')+'" data-rf-action="go" data-rf-value="'+number+'"'+
+   (v.page===number?' aria-current="page"':'')+'><span class="rf-link-number">'+number+'</span>'+
+   '<span class="rf-link-name">'+escape(label)+'</span><span class="rf-link-detail">'+escape(desc)+'</span></button>').join('');
+  const pads=[1,2,3,4,5,6,7,8,9,0].map(n=>
+   '<button type="button" data-rf-action="digit" data-rf-value="'+n+'" aria-label="Ringfax digit '+n+'">'+n+'</button>').join('');
   const refs=(s?.history||[]).filter(h=>h?.cid&&h?.wid).slice(0,2).map(h=>
    '<button class="btn sm" type="button" data-record="w:'+escape(h.wid)+'">Open '+escape(h.name||'wrestler')+' record</button>').join('');
+  const srText=escape('Page '+v.page+', '+v.title+', subpage '+(v.sub+1)+' of '+v.subpages+'. '+
+   v.rows.slice(4,23).map(r=>r.text.trim()).filter(Boolean).join(' '));
   return '<section class="rf-wrap" aria-label="Ringfax wrestling teletext">'+
-   '<div class="rf-heading"><div><h2>Ringfax</h2><p>The wrestling information service — fictional readers, real career results.</p></div><span>PAGE '+v.page+'</span></div>'+
+   '<div class="rf-display">'+
+   '<header class="rf-display-header"><div class="rf-brand"><span class="rf-signal" aria-hidden="true">■</span>'+
+   '<strong>RINGFAX</strong><span class="rf-brand-tag">WRESTLING INFORMATION SERVICE</span></div>'+
+   '<span class="rf-edition">S'+(s?.season||1)+' W'+(s?.week||1)+' <span class="rf-edition-page">P'+v.page+'</span></span></header>'+
+   '<div class="rf-mini-nav">'+
+   '<button data-rf-action="go" data-rf-value="100" type="button">100 INDEX</button>'+
+   '<button data-rf-action="go" data-rf-value="200" type="button">200 RESULTS</button>'+
+   '<button data-rf-action="go" data-rf-value="500" type="button">500 FANS</button></div>'+
    '<div id="rf-screen" class="rf-screen" aria-hidden="true">'+rows+'</div>'+
-   '<div class="rf-controls" aria-label="Ringfax remote">'+anchors+
-   '<div class="rf-remote"><button type="button" data-rf-action="left" aria-label="Previous subpage">◀</button>'+
-   '<button type="button" data-rf-action="hold">'+(C.hold?'Resume':'Hold')+'</button>'+
-   '<button type="button" data-rf-action="right" aria-label="Next subpage">▶</button>'+
-   '<button type="button" data-rf-action="clear">Clear</button>'+pads+'</div></div>'+
-   '<p class="rf-help">Type three digits, use F1–F4 for coloured shortcuts, or browse with the remote. Fictional fan voices appear after real completed matches.</p>'+
+   '<p class="rf-display-caption">LIVE FROM THE CIRCUIT <span>●</span> READ-ONLY EDITION <span>●</span> '+escape(v.title)+'</p>'+
+   '</div>'+
+   '<aside class="rf-console" aria-label="Ringfax controls">'+
+   '<div class="rf-console-title"><span>RINGFAX DIRECTORY</span><strong>PAGE '+v.page+'</strong></div>'+
+   '<div class="rf-page-grid" role="group" aria-label="Go to a Ringfax page">'+quick+'</div>'+
+   '<div class="rf-operator"><div class="rf-operator-label"><span>GO TO PAGE</span><span>3 DIGITS</span></div>'+
+   '<div class="rf-jump"><input id="rf-page-entry" type="text" inputmode="numeric" autocomplete="off"'+
+   ' maxlength="3" pattern="[0-9]{3}" placeholder="e.g. 501" aria-label="Ringfax three-digit page number">'+
+   '<button type="button" data-rf-action="jump" aria-label="Open entered Ringfax page">GO</button></div></div>'+
+   '<div class="rf-sub-nav" role="group" aria-label="Reader subpages">'+
+   '<button type="button" data-rf-action="left" aria-label="Previous Ringfax subpage"'+(v.subpages<2?' disabled':'')+'>◀ PREV</button>'+
+   '<span aria-label="Subpage '+(v.sub+1)+' of '+v.subpages+'">'+(v.sub+1)+' / '+v.subpages+'</span>'+
+   '<button type="button" data-rf-action="right" aria-label="Next Ringfax subpage"'+(v.subpages<2?' disabled':'')+'>NEXT ▶</button></div>'+
+   '<button type="button" class="rf-hold" data-rf-action="hold" aria-pressed="'+C.hold+'">'+(C.hold?'▶ RESUME AUTOMATIC PAGES':'Ⅱ HOLD THIS SUBPAGE')+'</button>'+
+   '<details class="rf-keypad"><summary>TELETEXT NUMBER PAD <span aria-hidden="true">▾</span></summary>'+
+   '<div class="rf-pad-grid">'+pads+'<button type="button" data-rf-action="clear">CLEAR</button></div></details>'+
    (refs?'<div class="rf-records">'+refs+'</div>':'')+
-   '<details class="rf-access"><summary>Read this teletext page as plain text</summary><pre>'+escape(v.rows.map(r=>r.text.trimEnd()).join('\n'))+'</pre></details>'+
+   '<p class="rf-help">Choose a page above, enter its number, or click a numbered line on page 100. Arrow keys change subpages; F1–F4 open the coloured sections.</p>'+
+   '<details class="rf-access"><summary>READ PAGE AS TEXT</summary><pre>'+escape(v.rows.map(r=>r.text.trimEnd()).join('\n'))+'</pre></details>'+
+   '<p class="rf-disclaimer">Fan comments are fictional; match results come from your career.</p>'+
+   '</aside>'+
+   '<p id="rf-announcement" class="sr" role="status" aria-live="polite">'+srText+'</p>'+
    '</section>';
  }
+ function fit(){
+  const d=root.document;if(!d)return;
+  const el=d.querySelector('#rf-screen');if(!el)return;
+  const getStyle=root.getComputedStyle;if(typeof getStyle!=='function')return;
+  const cs=getStyle(el),padX=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0),
+   padY=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);
+  const width=Math.max(0,el.clientWidth-padX-4),height=Math.max(0,el.clientHeight-padY-4);
+  if(!width||!height)return;
+  const measure=d.createElement('span');
+  measure.textContent='MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM';
+  measure.style.cssText='position:absolute;left:-99999px;top:-99999px;visibility:hidden;white-space:pre;font-family:VT323,monospace;font-size:100px;letter-spacing:0';
+  el.appendChild(measure);
+  const charWidth=Math.max(0.35,measure.getBoundingClientRect().width/4000);
+  measure.remove();
+  const size=Math.min(36,height/(25*1.13),width/(40*charWidth));
+  const glyph=Math.max(8,Math.floor(size*100)/100);
+  const tracking=Math.max(0,Math.min(glyph*.38,(width-40*glyph*charWidth)/40));
+  el.style.setProperty('--rf-font-size',glyph+'px');
+  el.style.setProperty('--rf-tracking',tracking+'px');
+ }
+ if(root.document&&root.document.fonts?.ready)root.document.fonts.ready.then(fit);
+ if(root.addEventListener)root.addEventListener('resize',fit);
  if(typeof root.setInterval==='function'&&root.document){
   root.setInterval(()=>{
    if(C.hold||root.document.hidden||!root.document.querySelector('#rf-screen'))return;
@@ -241,5 +301,5 @@
    if(n>1){C.sub=(C.sub+1)%n;root.document.dispatchEvent(new root.Event('ringfax-page-rotated'));}
   },8000);
  }
- root.OfficeRingfax={build,screen,view,press,key,voices,reset:()=>{C.page=100;C.sub=0;C.entry='';C.hold=false;}};
+ root.OfficeRingfax={build,screen,view,fit,press,key,voices,reset:()=>{C.page=100;C.sub=0;C.entry='';C.hold=false;}};
 })(typeof window!=='undefined'?window:globalThis);
