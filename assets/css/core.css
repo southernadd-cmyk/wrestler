@@ -95,7 +95,7 @@ h1,h2,h3{margin:0;font-weight:400}
 .bar{display:inline-block;vertical-align:middle;width:72px;height:10px;background:var(--well);border:1px solid var(--ink);position:relative}
 .bar i{position:absolute;inset:0 auto 0 0;background:var(--good);background-image:repeating-linear-gradient(90deg,transparent 0 5px,rgba(0,0,0,.45) 5px 6px)}
 .bar.warn i{background-color:var(--warn)}.bar.danger i{background-color:var(--bad)}.bar.cool i{background-color:var(--cyan)}.bar.gold i{background-color:var(--gold)}
-.att{display:inline-block;min-width:2ch;text-align:right;font-weight:600}
+.att{display:inline-block;min-width:2ch;text-align:right;font-weight:600;font-family:'Atkinson Hyperlegible Next',Arial,sans-serif;font-variant-numeric:tabular-nums}
 .a5{color:var(--a5)}.a4{color:var(--a4)}.a3{color:var(--a3)}.a2{color:var(--a2)}.a1{color:var(--a1)}
 
 .portrait{image-rendering:pixelated;width:36px;height:45px;border:1px solid var(--ink);background:var(--deep);flex:none;display:block}
