@@ -1,21 +1,6 @@
 name: Phase 9 match quality A/B
 
 on:
-  pull_request:
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'assets/js/data.js'
-      - 'tests/match-quality-p0.test.cjs'
-      - 'tools/graph-lab/compare-match-quality.cjs'
-      - '.github/workflows/match-quality-p0.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'assets/js/data.js'
-      - 'tests/match-quality-p0.test.cjs'
-      - 'tools/graph-lab/compare-match-quality.cjs'
-      - '.github/workflows/match-quality-p0.yml'
   workflow_dispatch:
 
 permissions:
