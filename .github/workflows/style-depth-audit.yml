@@ -1,20 +1,7 @@
 name: Non-flyer style depth audit
 on:
-  pull_request:
-    paths:
-      - 'tools/graph-lab/style-depth-audit.cjs'
-      - 'tests/style-depth-audit.test.cjs'
-      - '.github/workflows/style-depth-audit.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'tools/graph-lab/style-depth-audit.cjs'
-      - 'tests/style-depth-audit.test.cjs'
-      - '.github/workflows/style-depth-audit.yml'
-      - 'assets/js/match-engine.js'
-      - 'assets/js/data.js'
-      - 'assets/js/roster-registry.js'
   workflow_dispatch:
+
 permissions:
   contents: read
 concurrency:
