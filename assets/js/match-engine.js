@@ -3846,6 +3846,39 @@ const Graph=(function makeGraph(){
   return {version:1,total:moments.length,bySide,byKind,
    moments: moments.map(m=>({...m}))};
  }
+ // Phase 9L: after a genuinely EARNED counted cover, the original
+ // grounding move can still have real, positionally legal grounded
+ // follow-throughs. The standard stand_reset after a scheduled cover
+ // intentionally breaks that graph node's ordinary next[] route. Offer
+ // the SOURCE-AUTHORED mat response once, without bypassing any counter,
+ // cover, current control, Director, safety or fatigue constraint.
+ // Both wrestlers receive identical treatment; never favour the winner.
+ function nearfallFollowupOffers(M,side){
+  if(!closingEligible(M)||!['w','f'].includes(side)||
+     M.len-M.t<40||M.len-M.t>180)return [];
+  const g=get(M),p=Psy.get(M),last=g.events.at(-1),
+   other=side==='w'?'f':'w';
+  if(!last||M.t-last.t<0||M.t-last.t>20||
+     p.control!==side||p.position!=='mat'||p.down!==other||
+     last.control!==side||last.position!=='mat'||last.down!==other||
+     g.physical?.area!=='ring'||g.pendingAerial||
+     g.pendingGrapple||g.pendingStrike||g.pendingContact)return [];
+  const evidence=nearfallDrama(M).moments.find(m=>
+   m.at===last.t&&m.side===side&&
+   (last.id==='scheduled_nearfall'?
+    m.kind==='earned_cover'&&m.source?.id===last.sourceMove&&
+     m.source.at===last.sourceT:
+    m.kind==='authored_kickout'&&m.action===last.id));
+  if(!evidence)return [];
+  const source=A[evidence.source?.id||evidence.action];
+  return (source?.next||[]).filter(([id])=>{
+   const n=A[id];return !!n&&n.requires==='mat'&&n.zone==='mat'&&
+    n.down==='d'&&!n.nearfall&&!n.reverse&&!n.counterOf&&
+    !n.blockOf&&n.family!=='rest'&&n.family!=='heel'&&!n.risk&&
+    !['cover','early_cover','near_kickout','scheduled_nearfall'].includes(id)&&
+    (M.planId!=='safe'||costOf(id)<=2.2)&&isValid(M,id);
+  }).map(([id,w])=>[id,Math.max(.8,w)*1.8]);
+ }
  function closingOffers(M,side){
   if(!closingEligible(M)||!['w','f'].includes(side))return [];
   const winner=M.o.finish==='win_clean'?'w':'f';
@@ -3942,6 +3975,8 @@ const Graph=(function makeGraph(){
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
   const entries=arc.entry.map(id=>[id,1]);
   const selected=[...from,...entries];
+  const postCoverOffers=nearfallFollowupOffers(M,p.control);
+  selected.push(...postCoverOffers);
   // Only the explicitly activated Chickenshit structure gets additional
   // real candidate moves. Every offer still goes through isValid below.
   if(root.OfficeSheets?.DIRECTOR?.active(M)){
@@ -4928,6 +4963,22 @@ const Graph=(function makeGraph(){
     }
    }
   }
+  // One verified source-authored mat continuation can otherwise disappear
+  // inside the broad action pool after a scheduled cover's stand_reset.
+  // Give legal options a bounded, non-forced chance; opponent reversals,
+  // standing-up and all other valid choices remain available.
+  if(postCoverOffers.length){
+   const ids=new Set(postCoverOffers.map(([id])=>id));
+   const targets=pool.filter(([id])=>ids.has(id));
+   if(targets.length){
+    const owned=targets.reduce((sum,[,w])=>sum+w,0),
+     other=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+    if(owned>0&&other>0&&owned<other*.38){
+     const factor=Math.min(6,other*.38/owned);
+     for(const option of targets)option[1]*=factor;
+    }
+   }
+  }
   // Phase 9C: large pooled repertoires diluted tiny closing guidance.
   // After REAL recent pressure/counter/setup, provide legal continuations
   // a bounded relative choice share. This never forces a successful move,
@@ -5230,7 +5281,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport,closingRunway,closingOffers,closingPlanSetups,nearfallDrama};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport,closingRunway,closingOffers,closingPlanSetups,nearfallDrama,nearfallFollowupOffers};
 })();
 
 function create(o){
