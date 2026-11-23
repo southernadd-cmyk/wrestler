@@ -135,6 +135,27 @@ assert.ok(R.view(s).includes('rf-index-half'),'index rows provide individual col
 assert.ok(R.view(s).includes('rf-mosaic'),'block headings render as text cells');
 assert.equal(JSON.stringify(s),original,'opening and reading the teletext cannot mutate career state');
 assert.equal(s.seed,seed,'Ringfax cannot consume the main career RNG');
+// The original opening letters were 20 rows and broke TICKETSTUB's final
+// sentence onto a nearly empty second page. All four now stay together.
+const openingLetters=grid(501);
+assert.equal(openingLetters.subpages,1,'week-one readers letters must fit on one page');
+assert.equal(R.build(s)[501].subpages.length,1,'single editorial page, not 17-row slicing');
+assert.ok(R.build(s)[501].lines.length<=17,'week-one letters stay within the content budget');
+for(const handle of ['GRAPPLEGRAN','HEELTURN78','MATWORKMICK','TICKETSTUB']){
+ assert.equal(openingLetters.rows.filter(r=>r.text.includes('FROM: '+handle)).length,1,
+  'the entire opening letter from '+handle+' stays in view');
+}
+assert.ok(openingLetters.rows.some(r=>r.text.includes('Earn our ticket money')),
+ 'the last letter is not orphaned on a second subpage');
+assert.ok(!R.view(s).includes('class="rf-sub-nav"'),
+ 'single-page readers letters show no previous or next controls');
+assert.ok(!R.view(s).includes('class="rf-hold"'),
+ 'single-page readers letters show no pointless Hold control');
+assert.ok(!openingLetters.rows[24].text.includes('HOLD')&&!openingLetters.rows[24].text.includes('SUBPAGES'),
+ 'single-page teletext status line does not advertise nonexistent subpages');
+for(const key of ['ArrowLeft','ArrowRight',' '])
+ assert.equal(R.key(key,s),false,'single-page '+key+' does not navigate or hold');
+assert.equal(R.screen(s).sub,0,'single-page navigation cannot change the subpage');
 const empty=grid(500);
 assert.match(empty.rows.map(x=>x.text).join(' '),/OPENING WEEK/i,'opening-week fan opinions appear before the first match');
 assert.match(empty.rows.map(x=>x.text).join(' '),/GRAPPLEGRAN|HEELTURN78/,'at least one named fictional opening-week reader appears');
@@ -170,9 +191,33 @@ assert.ok(R.view(s).includes('data-rf-value="500"'),'the Fanzone has a direct sh
 assert.equal(typeof R.fit,'function','the screen has a viewport font fitting hook');
 assert.ok(R.view(s).includes('plain text'));
 let letters=grid(501);
-assert.ok(letters.subpages>=1,'readers letters support multiple subpages');
+const letterStory=R.build(s)[501];
+assert.ok(letters.subpages>=2,'five post-match letters can span complete subpages');
+assert.equal(letterStory.subpages.length,letters.subpages,'custom subpage model matches the screen');
+const contributorNames=R.voices(h,5).map(f=>f.name);
+for(const name of contributorNames){
+ assert.ok(letterStory.subpages.some(rows=>rows.some(row=>row.text.includes('FROM: '+name))),
+  'post-match letter from '+name+' must not disappear');
+}
+for(const [i,rows] of letterStory.subpages.entries()){
+ assert.ok(rows.length<=17,'post-match subpage '+(i+1)+' stays within 17 lines');
+ assert.equal(rows[0].text.trim(),'LETTERS TO RINGFAX','every subpage repeats the letters masthead');
+ assert.ok(rows.slice(2).some(row=>row.text.startsWith('FROM: ')),
+  'every subpage identifies the author instead of beginning with an orphaned paragraph');
+}
+assert.ok(R.view(s).includes('class="rf-sub-nav"'),
+ 'multipage letters show previous/next navigation');
+assert.ok(R.view(s).includes('class="rf-hold"'),
+ 'multipage letters show Hold');
+assert.ok(letters.rows[24].text.includes('SUBPAGES'),'multipage teletext has page navigation prompt');
 R.press('right',null,s);
-assert.ok(R.screen(s).sub<letters.subpages,'subpage right wraps inside the page');
+assert.equal(R.screen(s).sub,1,'right navigates to a genuine second letter page');
+assert.equal(R.screen(s).rows[6].text.trim(),'LETTERS TO RINGFAX',
+ 'following subpage starts with a full letter heading');
+assert.ok(R.view(s).includes('aria-pressed="true"'),
+ 'turning a subpage manually pauses automatic rotation');
+R.press('left',null,s);
+assert.equal(R.screen(s).sub,0,'left returns to the first subpage');
 assert.ok(R.view(s).includes('data-record="w:rex"'),'a real wrestler profile link is provided');
 
 grid(999);
