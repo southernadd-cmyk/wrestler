@@ -12,7 +12,7 @@ let openMsg=null,pick={},selOffer=null,selFree=null,night=null,toastT=0;
 // Presentation preferences only; no changes to career state or match simulation.
 let inboxFilter='all',stableFilter='all',stableQuery='',scoutQuery='',scoutStyle='all',scoutBudget='all',shortlist=[],scoutFiltersOpen=false;
 let commentaryView='all'; // local view only: never changes match or commentary generation
-let trainingSelected=null,trainingPane='development'; // training-screen presentation only
+let trainingSelected=null,trainingPane='development',trainingReportWeek=null; // training-screen presentation only
 const sorts={};
 
 /* ---------- small helpers ---------- */
@@ -558,6 +558,41 @@ function renderProfile(){
  );
 }
 
+function trainingReportsPanel(){
+ const s=S(),reviews=Array.isArray(s.trainingReviews)?s.trainingReviews:[],latest=reviews.at(-1);
+ const report=(trainingReportWeek!=null?reviews.find(r=>String(r.a)===String(trainingReportWeek)):null)||latest;
+ if(!report)return '<div class="empty">Training reports appear here after your first completed week.</div>';
+ const selector=`<label class="field">Completed week<select data-trainweek aria-label="Choose training report">${reviews.slice().reverse().map(r=>`<option value="${r.a}" ${r===report?'selected':''}>${weekLabel(r.a)}</option>`).join('')}</select></label>`;
+ const points=(report.entries||[]).reduce((sum,e)=>sum+['ring','mic','psych','safe'].reduce((a,k)=>a+Math.max(0,e.delta?.[k]||0),0),0);
+ const entries=(report.entries||[]).map(e=>{
+  const improvements=['ring','mic','psych','safe'].filter(k=>(e.delta?.[k]||0)>0).map(k=>`${k} +${e.delta[k]}`).join(', ')||'No whole skill point gained';
+  const fatigue=e.delta?.fatigue||0;
+  const notes=(e.notes||[]).join(' ');
+  return `<article class="train-report-entry"><div class="train-report-entry-top"><button class="btn link" data-trainpick="${esc(e.id)}">${esc(e.name)}</button><b>${money(e.cost||0)}</b></div>
+   <p><b>${esc(improvements)}</b> · Fatigue ${fatigue>0?'+':''}${fatigue}${e.worked?' · Worked a match':''}${e.injuryAfter>e.injuryBefore?' · Training injury':''}</p>
+   ${notes?`<small>${esc(notes)}</small>`:''}</article>`;
+ }).join('');
+ return `<div class="train-report-panel"><h3 class="section-h">Completed-week review</h3>${selector}
+  <div class="train-review-totals">
+   <div><small>Skill points gained</small><b>${points}</b></div>
+   <div><small>Training and promo spend</small><b>${money(report.trainingCost||0)}</b></div>
+   <div><small>Coach wages</small><b>${money(report.coachCost||0)}</b></div>
+  </div><div class="train-report-list">${entries||'<p>No wrestlers were on the roster that week.</p>'}</div>
+  <p class="train-footnote">Real completed-week changes, not forecasts. Training spend excludes the separate coach wage.</p></div>`;
+}
+function trainingAdvicePanel(w){
+ const advice=G.trainingAdvice(w),forecast=G.trainingForecast(w);
+ const items=advice.map(a=>{
+  const action=['focus','intensity','session'].includes(a.kind);
+  return `<div class="train-recommendation ${a.priority==='urgent'?'urgent':''}"><div><b>${esc(a.title)}</b><p>${esc(a.why)}</p></div>
+   ${action?`<button type="button" class="btn sm" data-advice-kind="${esc(a.kind)}" data-advice-wid="${esc(w.id)}" data-advice-value="${esc(a.value)}">Apply</button>`:''}</div>`;
+ }).join('');
+ const projected=forecast?.kind==='skill'?`If the week ended now: +${forecast.gain} ${esc(forecast.stat)} point(s), ${forecast.progress}% of the next point banked; fatigue ${forecast.fatigue}; adjusted injury chance ${forecast.riskPct.toFixed(1)}%.`
+  :forecast?.kind==='rest'?`Projected fatigue if the week ended now: ${forecast.fatigue}.`
+  :forecast?.kind==='promo'?`Projected heat +${forecast.heat}; fatigue ${forecast.fatigue}.`:'';
+ return `<section class="train-intelligence"><div class="train-section-heading"><h3 class="section-h">Dennis's assessment</h3><small>Suggestions, not orders</small></div>
+  <div class="train-advice-list">${items}</div>${projected?`<p class="train-projection"><b>Current-week outlook:</b> ${esc(projected)} Further matches and sessions may change the outcome.</p>`:''}</section>`;
+}
 function renderTraining(){
  const s=S(),roster=s.roster;
  const chosen=roster.find(w=>w.id===trainingSelected)||roster[0];
@@ -587,9 +622,12 @@ function renderTraining(){
  const tabs=`<div class="train-tabs" role="group" aria-label="Training view">
   <button type="button" class="btn sm ${trainingPane==='development'?'go':''}" data-trainpane="development" aria-pressed="${trainingPane==='development'}">Wrestler development</button>
   <button type="button" class="btn sm ${trainingPane==='coaches'?'go':''}" data-trainpane="coaches" aria-pressed="${trainingPane==='coaches'}">Coaching staff</button>
+  <button type="button" class="btn sm ${trainingPane==='reports'?'go':''}" data-trainpane="reports" aria-pressed="${trainingPane==='reports'}">Weekly reports</button>
  </div>`;
  let details='';
- if(trainingPane==='coaches'){
+ if(trainingPane==='reports'){
+  details=`${tabs}${trainingReportsPanel()}`;
+ }else if(trainingPane==='coaches'){
   const c=s.coach?G.COACHES[s.coach]:null;
   const current=c?`<div class="train-staff-current"><b>${esc(c.name)}</b>
    <p>Boosts ${esc(c.stat)} training by ${Math.round(c.boost*100)}% for eligible wrestlers. ${money(c.wage)} is charged every week, even when nobody trains that skill.</p>
@@ -648,7 +686,7 @@ function renderTraining(){
    <div class="train-effect"><b>${money(G.trainingCost(w))} this week</b><p>${esc(expectation)}</p>${paused?`<p>${esc(trainNote(w))}</p>`:''}</div>
    <h3 class="section-h">Development programme</h3>${programme}
    ${w.prepHistory?.length?`<p class="train-footnote">Last completed: ${esc(D.TRAINING[w.prepHistory[0].focus]?.name||w.prepHistory[0].focus)} · +${w.prepHistory[0].gains} points (${weekLabel(w.prepHistory[0].week)}).</p>`:''}
-   ${sessions}`;
+   ${sessions}${trainingAdvicePanel(w)}`;
  }
  paint('s-split s-train',
   win('Stable training',overview,{keep:'train-roster'})+
@@ -1651,6 +1689,11 @@ document.addEventListener('click',e=>{
  if(d.commentaryView){commentaryView=d.commentaryView==='key'?'key':'all';renderPastCommentary();return}
  if(d.trainpick){trainingSelected=d.trainpick;trainingPane='development';render();return;}
  if(d.trainpane){trainingPane=d.trainpane;render();return;}
+ if(d.adviceKind){
+  const method={focus:G.setTraining,intensity:G.setIntensity,session:G.setSession}[d.adviceKind];
+  if(!method)return;
+  const err=method(d.adviceWid,d.adviceValue);render();toast(err||'Training plan updated.');return;
+ }
  if(d.go)return go(d.go,d.id||null);
  if(d.openw)return go('profile',d.openw);
  if(d.sort){const [key,k]=d.sort.split(':');const s=sorts[key];sorts[key]=s&&s.k===k?{k,d:-s.d}:{k,d:['name','style','tier'].includes(k)?1:-1};render();return}
@@ -1777,6 +1820,7 @@ document.addEventListener('change',e=>{
  if(d.scoutStyle!==undefined){scoutStyle=t.value;render();return}
  if(d.scoutBudget!==undefined){scoutBudget=t.value;render();return}
  if(d.freeSort!==undefined){sorts.free={k:t.value,d:['name','style'].includes(t.value)?1:-1};render();return}
+ if(d.trainweek!==undefined){trainingReportWeek=t.value;render();return;}
  if(d.session){const err=G.setSession(d.session,t.value);if(err){toast(err);render();return}const w=G.W(d.session);render();toast(t.value==='none'?`${w.short}: no session with Dennis this week.`:`${w.short}: ${t.selectedOptions[0]?.textContent.replace(' — Dennis suggests','').toLowerCase()} with Dennis.`);return}
  if(d.train){G.setTraining(d.train,t.value);render();toast(`${G.W(d.train).short}: ${D.TRAINING[t.value].name.toLowerCase()} this week.`);return}
  if(d.intensity){G.setIntensity(d.intensity,t.value);render();toast(`${G.W(d.intensity).short}: ${G.INTENSITY[t.value].name}, ${money(G.trainingCost(G.W(d.intensity)))} a week.`);return}
