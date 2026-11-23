@@ -289,6 +289,8 @@ Training still runs on a weekly focus and intensity, with blocks, camps and a sp
 
 Dennis suggests a session for each wrestler from their last report: a rehearsal after a match that drifted from the match layout, mic work after losing the room, a move for somebody with no big spot of their own. Set sessions in **Roster → Training** or on a wrestler’s profile.
 
+The **Roster → Training** desk now lets you select one wrestler, see Dennis's condition and preparation advice, and apply a suggested focus, intensity or available session. Its current-week outlook uses the existing training formula to estimate skill growth, fatigue and injury risk; working another match or scheduling a session can change that projection. **Weekly reports** record what actually happened when the week advanced, including skill gains, fatigue changes, specialist wages and training spend. These last twelve reports are stored alongside the career; older saves load with an empty report history and begin collecting new reviews as weeks advance. The training and match rules are unchanged.
+
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
 <p align="center"><img src="docs/readme/05-match-night.svg" alt="MATCH NIGHT — BACKSTAGE TO RINGSIDE" width="100%"></p>
