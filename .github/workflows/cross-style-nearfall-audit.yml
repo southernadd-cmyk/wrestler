@@ -1,12 +1,7 @@
 name: Cross-style earned near-fall A/B
 on:
-  pull_request:
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'tests/cross-style-earned-nearfall.test.cjs'
-      - 'tools/graph-lab/cross-style-nearfall-audit.cjs'
-      - '.github/workflows/cross-style-nearfall-audit.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
