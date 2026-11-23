@@ -23,16 +23,51 @@ for(const number of openingPages){
  assert.ok(R.build(s)[number].lines.length<=17,'no overflowing opening story on page '+number);
 }
 const edition=R.build(s);
-assert.equal(s.promoters.length,4,'fixture has four actual promotion records');
-assert.ok(edition[101].lines.some(r=>r.text.includes('CHAMPIONSHIP')),
- 'opening news contains real title information');
-assert.ok(edition[102].lines.some(r=>r.text.includes('TITLES:')),
- 'season preview has the title picture');
-
-assert.equal(edition[102].title,'SEASON PREVIEW','page 102 is preview only in week one');
-assert.ok(grid(100).rows.some(r=>r.text.includes('102 SEASON')),
- 'week-one index labels page 102 as season preview');
-// Project an isolated second-week circuit ledger without altering the fixture.
+assert.equal(s.promoters.length,4,'fixture has four promotions for genuine source data');
+const editorialTitles={
+ 101:'LATEST HEADLINE',102:'SEASON OUTLOOK',103:'THE GRAPEVINE',
+ 104:'FROM THE ROAD',200:'AFTER THE BELL',201:'THE CRITIC',
+ 300:'ONES TO WATCH',301:'THE LONG VIEW',302:'TITLE TALK'
+};
+for(const [page,title] of Object.entries(editorialTitles)){
+ assert.equal(edition[page].title,title,'page '+page+' is an editorial feature');
+ assert.ok(edition[page].lines.some(row=>row.text.trim()),'page '+page+' is substantive');
+}
+const fullEdition=Object.values(edition).filter(p=>p.number!==777).flatMap(p=>p.lines)
+ .map(r=>r.text.trim()).join('\n');
+for(const duplicate of [
+ 'CHAMPIONS - THE ENTIRE CIRCUIT','RECENT COMPLETED MATCHES',
+ 'RECORDED MATCH RATINGS','CARD LADDER /','THE CIRCUIT CARD LEADERS',
+ 'BOOKINGS AND OPPORTUNITIES','THE FOUR PROMOTIONS'
+]){
+ assert.ok(!fullEdition.includes(duplicate),
+  'Ringfax should not duplicate the Office management screen '+duplicate);
+}
+assert.ok(grid(100).rows.some(row=>row.text.includes('102 OUTLOOK')),
+ 'week-one index labels page 102 as an outlook');
+assert.ok(edition[102].lines.some(row=>row.text.includes('THE BIG QUESTION')),
+ 'season outlook provides editorial questions rather than a titles table');
+assert.ok(edition[300].lines.some(row=>row.text.includes('EDITORS PICKS')),
+ 'watchlist is editorial, not the Card Ladder');
+assert.ok(!edition[300].lines.some(row=>/^\d\.\s/.test(row.text)),
+ 'watchlist must not display ranking positions');
+assert.ok(edition[302].lines.some(row=>row.text.includes('PRESSURE')),
+ 'title page discusses stakes instead of listing every champion');
+assert.ok(edition[302].lines.length<=17,'title opinion column fits one subpage');
+for(const x of [200,201,300,302]){
+ const source=edition[x].lines.map(row=>row.text).join(' ');
+ assert.ok(!source.includes('stars'),'editorial page '+x+' must not copy match grades');
+}
+const forum=edition[500].lines.map(row=>row.text.trim()).filter(Boolean).join('|');
+const mail=edition[501].lines.map(row=>row.text.trim()).filter(Boolean).join('|');
+assert.ok(forum.includes('BALCONYSEAT')&&forum.includes('KAYFABEKEV'),
+ 'Fanzone contains distinct opening-week forum contributors');
+assert.ok(!mail.includes('BALCONYSEAT')&&!mail.includes('KAYFABEKEV'),
+ 'letters are not just a repeat of the forum');
+assert.ok(mail.includes('GRAPPLEGRAN')&&mail.includes('TICKETSTUB'),
+ 'letters retain the different written correspondence');
+const freshSnapshot=JSON.stringify(s);
+// Week two uses current, actual circuit news and never reprints the preview.
 const weekTwo=JSON.parse(JSON.stringify(s));
 weekTwo.week=2;
 const oldHolder=weekTwo.territory.titles.dock.men.holder;
@@ -52,75 +87,24 @@ weekTwo.territory.business??={};
 weekTwo.territory.business.dock={buzz:49};
 const weekTwoBefore=JSON.stringify(weekTwo);
 const weekTwoNews=R.build(weekTwo);
-assert.equal(weekTwoNews[102].title,'CIRCUIT NEWS','after week one page 102 changes to news');
-assert.ok(weekTwoNews[102].lines.some(r=>r.text.includes('TITLE CHANGES')),
- 'verified belt changes become follow-up news');
-assert.ok(weekTwoNews[102].lines.some(r=>r.text.includes('THIS WEEK IN THE RING')),
- 'actual weekly circuit results are included');
-assert.ok(weekTwoNews[102].lines.some(r=>r.text.includes('PROMOTION BUZZ')),
- 'live public-interest data appears when available');
-assert.ok(weekTwoNews[102].lines.some(r=>r.text.includes(root.OfficeData.findWrestler(challenger).name)),
- 'news uses the verified winning wrestler');
-assert.ok(!weekTwoNews[102].lines.some(r=>r.text.includes('SEASON PREVIEW')),
- 'week two cannot keep the stale season preview');
-assert.ok(weekTwoNews[102].lines.length<=17,'weekly news fits one teletext page');
-assert.equal(JSON.stringify(weekTwo),weekTwoBefore,'news must not mutate the world');
+assert.equal(weekTwoNews[102].title,'CIRCUIT NEWS',
+ 'page 102 becomes live news from week two onward');
+assert.ok(weekTwoNews[102].lines.some(row=>row.text.includes('TITLE CHANGES')),
+ 'verified title change produces news commentary');
+assert.ok(weekTwoNews[102].lines.some(row=>row.text.includes('THIS WEEK IN THE RING')),
+ 'confirmed result underpins the newsroom story');
+assert.ok(weekTwoNews[102].lines.some(row=>row.text.includes('PROMOTION BUZZ')),
+ 'buzz is covered editorially without reproducing numeric standings');
+assert.ok(weekTwoNews[102].lines.length<=17,'weekly edition fits one page');
+assert.equal(JSON.stringify(weekTwo),weekTwoBefore,'week two editorial cannot change state');
 const noReport=JSON.parse(JSON.stringify(weekTwo));
 delete noReport.territory.lastResults;
 noReport.territory.titleLog=[];
 assert.equal(R.build(noReport)[102].title,'CIRCUIT NEWS',
- 'weeks without reports must not regress to preview');
+ 'news page is not a stale season preview in quiet weeks');
 assert.ok(R.build(noReport)[102].lines.some(r=>r.text.includes('No new verified circuit results')),
- 'empty weeks must not invent matches');
-
-for(const p of s.promoters){
- assert.ok(edition[104].lines.some(r=>r.text.includes(p.name.toUpperCase())),
-  'promoter guide includes real promoter '+p.name);
- assert.ok(edition[301].lines.some(r=>r.text.includes(p.name.toUpperCase())),
-  'all-promotion rank view includes '+p.name);
-}
-assert.equal(edition[103].lines.filter(r=>r.text.startsWith('OFFER ')).length,
- Math.min(5,s.offers.filter(o=>o.pid&&o.rid).length),
- 'booking desk previews actual available offers, not made-up fixtures');
-assert.ok(edition[103].lines.some(r=>r.text.includes('NOT SIGNED')),
- 'booking offers are clearly distinguished from accepted fixtures');
-assert.ok(edition[200].lines.some(r=>r.text.includes('NOT RESULTS')),
- 'previews on results page cannot be mistaken for results');
-assert.ok(edition[201].lines.some(r=>r.text.includes('NOT MATCH RATINGS')),
- 'opening card scores are not presented as match grades');
-assert.ok(edition[300].lines[1].text.includes('MEN')&&
- edition[300].lines[1].text.includes('WOMEN'),
- 'card rankings include both real divisions');
-const realChampion=s.territory.titles.dock.men.holder;
-const championName=root.OfficeData.findWrestler(realChampion)?.name||realChampion;
-assert.ok(edition[500].lines.some(r=>r.text.includes(championName)),
- 'opening Fanzone discusses an actual current titleholder');
-assert.ok(edition[501].lines.some(r=>r.text.includes(championName)),
- 'opening letters have the same factual title context');
-
-
-const titlePage=R.build(s)[302];
-const championView=grid(302);
-assert.equal(championView.subpages,1,'all eight champions must fit one Ringfax page');
-assert.ok(titlePage.lines.length<=17,'champions must fit the available 17 content rows');
-assert.equal(titlePage.lines[1].text.length,40,'division columns fill exactly 40 cells');
-assert.match(titlePage.lines[1].text.slice(0,20),/MEN/);
-assert.match(titlePage.lines[1].text.slice(20,40),/WOMEN/);
-for(const promoter of s.promoters){
- const idx=titlePage.lines.findIndex(row=>row.text.trim()===promoter.name.toUpperCase());
- assert.ok(idx>=0,'champions show promoter '+promoter.name);
- const names=root.OfficeData.DIVISION_ORDER.map(div=>{
-  const id=s.territory.titles[promoter.id][div].holder;
-  return id?root.OfficeData.findWrestler(id)?.name||id:'VACANT';
- });
- assert.equal(titlePage.lines[idx+1].text.slice(0,20).trim(),names[0],'mens holder from real title state');
- assert.equal(titlePage.lines[idx+1].text.slice(20,40).trim(),names[1],'womens holder from real title state');
-}
-const previousTitle=s.territory.titles.dock.men;
-s.territory.titles.dock.men={...previousTitle,holder:null};
-assert.match(R.build(s)[302].lines.find((row,i,all)=>i>0&&all[i-1].text.trim()==='DOCKSIDE').text.slice(0,20),/VACANT/,'vacated belt is identified');
-s.territory.titles.dock.men=previousTitle;
-assert.equal(grid(302).subpages,1,'vacated title still fits on one page');
+ 'do not invent match results during quiet weeks');
+assert.equal(JSON.stringify(s),freshSnapshot,'reading the edition remains read-only');
 
 const index=grid(100);
 assert.ok(index.rows.slice(1,5).some(x=>x.text.includes('RINGFAX')),'model retains a readable RINGFAX text equivalent');
@@ -158,7 +142,7 @@ for(const key of ['ArrowLeft','ArrowRight',' '])
 assert.equal(R.screen(s).sub,0,'single-page navigation cannot change the subpage');
 const empty=grid(500);
 assert.match(empty.rows.map(x=>x.text).join(' '),/OPENING WEEK/i,'opening-week fan opinions appear before the first match');
-assert.match(empty.rows.map(x=>x.text).join(' '),/GRAPPLEGRAN|HEELTURN78/,'at least one named fictional opening-week reader appears');
+assert.match(empty.rows.map(x=>x.text).join(' '),/BALCONYSEAT|KAYFABEKEV/,'Fanzone uses distinct readers from the Letters page');
 assert.doesNotMatch(empty.rows.map(x=>x.text).join(' '),/WINNER:/,'opening-week letters do not invent match results');
 
 s.cash=99999;
@@ -178,9 +162,9 @@ assert.equal(new Set(R.voices(h,3).map(f=>f.name)).size,3,'first fan page contai
 assert.ok(R.voices(h,3).every(f=>f.sourceId===h.cid),'every fan letter is anchored in the actual result');
 
 const news=grid(101);
-assert.match(news.rows.map(x=>x.text).join(' '),/WINNER: Silas Rush/,'news uses the actual winner, not an invented one');
+assert.match(news.rows.map(x=>x.text).join(' '),/Rex|Silas/,'editorial headline refers to the actual participants');
 const results=grid(200);
-assert.match(results.rows.map(x=>x.text).join(' '),/WINNER: Silas Rush/,'results identify the settled winner');
+assert.match(results.rows.map(x=>x.text).join(' '),/CHEAP SEATS/,'post-match column reports fan reaction, not the results table');
 let fan=grid(500);
 assert.match(fan.rows.map(x=>x.text).join('\n'),/THE FANZONE/);
 assert.match(fan.rows.map(x=>x.text).join('\n'),/GRAPPLE|HEELTURN|MATWORK|BALCONY|KAYFABE|TICKET|FRONTROW|BIGSPOT/);
@@ -192,9 +176,16 @@ assert.equal(typeof R.fit,'function','the screen has a viewport font fitting hoo
 assert.ok(R.view(s).includes('plain text'));
 let letters=grid(501);
 const letterStory=R.build(s)[501];
+const postMatchForum=R.build(s)[500].lines.map(row=>row.text).join('\n');
+const postMatchLetters=letterStory.lines.map(row=>row.text).join('\n');
+for(const name of R.voices(h,8).slice(0,3).map(f=>f.name))
+ assert.ok(!postMatchLetters.includes('FROM: '+name),
+  'post-match letters should not repeat Fanzone author '+name);
+assert.notEqual(postMatchForum,postMatchLetters,'post-match forums and mail have different content');
+
 assert.ok(letters.subpages>=2,'five post-match letters can span complete subpages');
 assert.equal(letterStory.subpages.length,letters.subpages,'custom subpage model matches the screen');
-const contributorNames=R.voices(h,5).map(f=>f.name);
+const contributorNames=R.voices(h,8).slice(3,8).map(f=>f.name);
 for(const name of contributorNames){
  assert.ok(letterStory.subpages.some(rows=>rows.some(row=>row.text.includes('FROM: '+name))),
   'post-match letter from '+name+' must not disappear');
