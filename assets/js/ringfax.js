@@ -28,7 +28,7 @@
    fact:'Big Daddy beat Haystacks at Wembley.',source:'https://wrestlingheritage.co.uk/shirley-crabtree/'},
   {q:'Who teamed with Dynamite Kid as the British Bulldogs?',
    a:['Bret Hart','Finlay','Davey Boy Smith','William Regal'],correct:2,
-   fact:'Davey Boy Smith was Dynamite Kid\\u0027s tag partner.',source:'https://www.wwe.com/superstars/britishbulldog'},
+   fact:"Davey Boy Smith was Dynamite Kid's tag partner.",source:'https://www.wwe.com/superstars/britishbulldog'},
   {q:"What was Dynamite Kid's real name?",
    a:['Davey Boy Smith','Thomas Billington','Darren Matthews','Peter Thornley'],correct:1,
    fact:'Dynamite Kid was Thomas Billington.',source:'https://www.wwe.com/article/dynamite-kid-passes-away'},
