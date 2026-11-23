@@ -18,7 +18,10 @@ function grid(page){
 }
 for(const p of [100,101,200,201,300,302,500,501])grid(p);
 const index=grid(100);
-assert.ok(index.rows.slice(1,5).some(x=>x.text.includes('R I N G F A X')),'readable Ringfax wordmark replaces broken block characters');
+assert.ok(index.rows.slice(1,5).some(x=>x.text.includes('RINGFAX')),'model retains a readable RINGFAX text equivalent');
+assert.ok(R.view(s).includes('class="rf-logo-svg"'),'masthead uses a scalable custom pixel logo');
+assert.ok(R.view(s).includes('shape-rendering="crispEdges"'),'logo uses crisp pixel edges, not Unicode font blocks');
+assert.match(R.view(s),/rf-logo-svg[^>]*>\s*<path fill="#ffed00" d="M[\d ]+h1v1h-1z/,'pixel paths are present in the masthead');
 assert.ok(index.rows.slice(1,5).every(x=>!x.text.includes('█')),'masthead does not use oversized fallback glyphs');
 assert.ok(index.rows.slice(1,5).every(x=>x.background==='blue'),'mosaic logo has a blue field');
 assert.equal(index.rows[23].segments?.length,4,'four in-grid Fastext controls');
