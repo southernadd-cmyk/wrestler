@@ -1,15 +1,6 @@
 name: Five-meeting rivalry audit
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'assets/js/data.js'
-      - 'assets/js/roster-registry.js'
-      - 'assets/js/technique-backgrounds.js'
-      - 'assets/js/technique-registry.js'
-      - 'tools/repeated-rivalry-audit.cjs'
   schedule:
     - cron: '33 7 * * 2'
   workflow_dispatch:
