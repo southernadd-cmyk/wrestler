@@ -1,33 +1,138 @@
-/* Ringfax: eight-colour teletext with fixed 40x25 character grid. */
-.s-ringfax{min-height:0;padding:0}
-.rf-wrap{display:flex;flex-direction:column;gap:12px;min-width:0;max-width:100%;padding:clamp(10px,2vw,22px)}
-.rf-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.rf-heading h2{margin:0;font-size:24px}
-.rf-heading p{margin:5px 0 0;color:var(--muted,#65717c);font-size:13px}
-.rf-heading>span{font:700 13px/1.4 ui-monospace,monospace;white-space:nowrap}
-.rf-screen{--rf-cell:clamp(12px,1.7vw,22px);box-sizing:border-box;max-width:100%;width:max-content;min-width:0;margin:auto;padding:clamp(7px,1.8vw,22px);border:12px solid #1b202b;border-radius:9px;background:#000;box-shadow:inset 0 0 18px #122137,0 4px 16px #0003;font-family:'VT323','Courier New',monospace;font-size:var(--rf-cell);line-height:1.18;letter-spacing:0;color:#eee}
-.rf-row{box-sizing:border-box;white-space:pre;height:1.18em;max-width:100%;font-weight:400}
-.rf-white{color:#f9f9f9}.rf-yellow{color:#ffff00}.rf-cyan{color:#00ffff}.rf-green{color:#00ff00}.rf-red{color:#ff3838}.rf-blue{color:#4a66ff}.rf-banner{background:#0000ff;color:#fff}.rf-fastext{background:#101010;color:#00ff00}
-.rf-controls{display:flex;flex-direction:column;gap:8px;max-width:630px;margin:0 auto;width:100%}
-.rf-controls button{cursor:pointer;border:1px solid #4a5164;border-radius:3px;background:#1c2536;color:#fff;font:700 12px/1.25 ui-monospace,monospace;padding:8px 10px;min-height:36px}
-.rf-controls button:focus-visible{outline:3px solid #f9d95b;outline-offset:2px}
-.rf-controls>.rf-fast{flex:1}
-.rf-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
-.rf-fast-0{background:#ba1e29!important}.rf-fast-1{background:#087638!important}.rf-fast-2{background:#a18200!important}.rf-fast-3{background:#007d97!important}
-.rf-remote{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
-.rf-remote button{min-width:37px}
-.rf-help{font-size:12px;line-height:1.5;max-width:630px;margin:0 auto;color:var(--muted,#667)}
-.rf-access,.rf-records{max-width:630px;margin:0 auto;width:100%}
-.rf-records{display:flex;flex-wrap:wrap;gap:6px}
-.rf-access summary{cursor:pointer;font-weight:bold}
-.rf-access pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;border:1px solid currentColor;font:12px/1.45 ui-monospace,monospace}
-@media(max-width:720px){
- .rf-screen{--rf-cell:clamp(9px,2.6vw,14px);padding:5px;border-width:6px;box-shadow:none}
- .rf-wrap{padding:8px}
- .rf-heading h2{font-size:19px}
- .rf-heading p{font-size:11px}
- .rf-controls button{padding:8px 5px;font-size:11px}
- .rf-remote button{flex:1 0 14%}
+/* RINGFAX teletext station. The Office's #view is a fixed-height viewport:
+   the 25-row screen MUST own the available height, not push the controls below it. */
+#view:has(> .s-ringfax){overflow:hidden;padding:8px;overscroll-behavior:contain}
+#view>.s-ringfax{display:block;height:100%;min-height:0;min-width:0}
+.rf-wrap{width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,300px);gap:10px;
+ color:#eef3ff}
+.rf-display{display:flex;flex-direction:column;min-width:0;min-height:0;
+ padding:7px 9px;gap:6px;background:#101939;border:2px solid #000;
+ box-shadow:inset 2px 2px 0 #3b4b83,inset -2px -2px 0 #060b23,3px 3px 0 #0006}
+.rf-display-header{display:flex;align-items:center;justify-content:space-between;gap:9px;
+ min-height:31px;color:#d9e7ff;font:17px/1.15 var(--tt,'VT323',monospace);
+ letter-spacing:.04em}
+.rf-brand{display:flex;gap:9px;align-items:center;white-space:nowrap;min-width:0}
+.rf-brand strong{font:24px/1 var(--jersey,'Jersey 10',sans-serif);letter-spacing:.08em;color:#fff267}
+.rf-signal{color:#24ff97;font-size:12px}
+.rf-brand-tag{color:#92b2e0;font-size:14px;white-space:nowrap}
+.rf-edition{color:#b1c7ef;white-space:nowrap}
+.rf-edition-page{color:#fff267;margin-left:6px}
+.rf-mini-nav{display:none}
+.rf-screen{--rf-font-size:22px;--rf-tracking:0px;min-width:0;min-height:0;
+ width:100%;flex:1;overflow:hidden;background:#000;color:#f5f5f5;
+ border:5px solid #060910;outline:1px solid #3d5070;
+ padding:9px 12px;display:grid;grid-template-rows:repeat(25,minmax(0,1fr));
+ font-family:var(--tt,'VT323',monospace);font-size:var(--rf-font-size);line-height:1.05;
+ letter-spacing:var(--rf-tracking);font-weight:400;text-shadow:0 0 1px currentColor}
+.rf-row{display:block;width:100%;min-height:0;min-width:0;overflow:hidden;white-space:pre;
+ margin:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;
+ font:inherit;line-height:1.05;letter-spacing:inherit;text-align:left}
+.rf-row.rf-white{color:#f6f6f6}
+.rf-row.rf-yellow{color:#fff35a}
+.rf-row.rf-cyan{color:#72f2ff}
+.rf-row.rf-green{color:#76fb7d}
+.rf-row.rf-red{color:#ff7474}
+.rf-row.rf-blue{color:#8e9eff}
+.rf-row.rf-banner{background:#1539cd;color:#fff}
+.rf-row.rf-fastext{background:#111e39;color:#6bff90}
+.rf-row-link{cursor:pointer}
+.rf-row-link:hover,.rf-row-link:focus-visible{color:#000!important;background:#ffe86d!important;
+ text-shadow:none;outline:2px solid #fff;outline-offset:-2px}
+.rf-display-caption{display:flex;gap:11px;align-items:center;justify-content:center;
+ min-height:17px;margin:0;text-align:center;font:13px/1 var(--tt,'VT323',monospace);
+ letter-spacing:.12em;color:#a7c4ee;text-transform:uppercase}
+.rf-display-caption span{color:#48e8bd}
+.rf-console{min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+ padding:12px;background:#d0c8b7;border:2px solid #080d1d;color:#15151d;
+ box-shadow:inset 2px 2px 0 #f4e7ca,inset -2px -2px 0 #827763;
+ scrollbar-color:#7d8294 #d0c8b7;font-family:var(--px,'Jersey 15',sans-serif)}
+.rf-console-title{display:flex;align-items:center;justify-content:space-between;gap:8px;
+ border-bottom:3px double #7a725f;margin-bottom:9px;padding-bottom:7px}
+.rf-console-title>span{font:24px/1 var(--jersey,'Jersey 10',sans-serif);color:#8a1825}
+.rf-console-title strong{font:20px/1 var(--tt,'VT323',monospace);white-space:nowrap;color:#18275b}
+.rf-page-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.rf-page-link{display:flex;flex-direction:column;gap:1px;text-align:left;min-width:0;
+ min-height:64px;padding:7px 9px;border:2px solid #191b20;background:#f4edda;
+ color:#252126;box-shadow:inset 2px 2px 0 #fff,inset -2px -2px 0 #b3a995;cursor:pointer}
+.rf-page-link:hover{background:#fff8dc}
+.rf-page-link.is-current{background:#ffd443;border-color:#251e10;
+ box-shadow:inset 2px 2px 0 #fff2a3,inset -2px -2px 0 #ad811b}
+.rf-link-number{font:21px/1 var(--tt,'VT323',monospace);color:#961928}
+.rf-link-name{font:19px/1 var(--jersey,'Jersey 10',sans-serif);text-transform:uppercase}
+.rf-link-detail{font:12px/1.2 'Atkinson Hyperlegible Next',system-ui,sans-serif;
+ color:#47423d;overflow-wrap:anywhere}
+.rf-operator{margin-top:12px;border-top:2px solid #8b8275;padding-top:9px}
+.rf-operator-label{display:flex;justify-content:space-between;font:18px/1.2 var(--tt,'VT323',monospace);
+ color:#352e2d;letter-spacing:.06em}
+.rf-jump{display:flex;gap:7px;margin:5px 0 10px}
+.rf-jump input{display:block;width:100%;min-width:0;flex:1;min-height:43px;
+ border:2px inset #726958;border-radius:0;background:#101a35;color:#fff76b;
+ font:25px/1.2 var(--tt,'VT323',monospace);letter-spacing:.12em;padding:4px 9px}
+.rf-jump input::placeholder{color:#a0afd2}
+.rf-jump button{flex:0 0 59px;min-height:43px;border:2px solid #111;
+ background:#ffcd31;color:#191500;font:25px/1 var(--jersey,'Jersey 10',sans-serif)}
+.rf-sub-nav{display:grid;grid-template-columns:1fr auto 1fr;gap:5px;align-items:center}
+.rf-sub-nav button,.rf-hold{min-height:42px;border:2px solid #1d1a1b;
+ background:#18265b;color:#f7f2de;font:18px/1 var(--tt,'VT323',monospace)}
+.rf-sub-nav>span{font:23px/1 var(--tt,'VT323',monospace);color:#1d315c;
+ min-width:43px;text-align:center}
+.rf-sub-nav button:disabled{cursor:not-allowed;opacity:.43}
+.rf-hold{display:block;width:100%;margin-top:6px;background:#514668}
+.rf-hold[aria-pressed="true"]{background:#21723e}
+.rf-keypad{margin-top:10px;border-top:1px solid #90877a;padding-top:9px}
+.rf-keypad summary,.rf-access summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+ font:17px/1.25 var(--tt,'VT323',monospace);color:#3b3040}
+.rf-keypad summary:focus-visible,.rf-access summary:focus-visible{outline:2px solid #111}
+.rf-pad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px}
+.rf-pad-grid button{min-height:35px;background:#e6e3dc;border:2px solid #353535;color:#1a1a1a;
+ font:22px/1 var(--tt,'VT323',monospace)}
+.rf-pad-grid button:last-child{grid-column:span 2;background:#d8c3af}
+.rf-help{font:12px/1.45 'Atkinson Hyperlegible Next',system-ui,sans-serif;color:#38342e;margin:12px 0 0}
+.rf-records{margin-top:9px;display:flex;gap:5px;flex-wrap:wrap}
+.rf-records .btn{font-size:15px;max-width:100%;min-width:0}
+.rf-access{margin-top:9px;border-top:1px solid #988d7a;padding-top:8px}
+.rf-access pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#111;
+ background:#e5e2d8;padding:10px;font:12px/1.4 monospace;max-height:200px;overflow:auto}
+.rf-disclaimer{color:#584d43;font:11px/1.3 'Atkinson Hyperlegible Next',system-ui,sans-serif;
+ margin:10px 0 0}
+.rf-console button:focus-visible,.rf-console input:focus-visible,.rf-mini-nav button:focus-visible{
+ outline:3px solid #b01d21;outline-offset:2px}
+.rf-console button:disabled{opacity:.45}
+@media(max-width:1100px){
+ #view:has(> .s-ringfax){overflow:hidden}
+ .rf-wrap{display:flex;flex-direction:column;overflow-y:auto;gap:9px}
+ .rf-display{flex:0 0 auto;height:clamp(340px,calc(100dvh - 286px),590px)}
+ .rf-console{overflow:visible;flex:0 0 auto;display:block}
+ .rf-page-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .rf-page-link{min-height:53px}
+ .rf-brand-tag{display:none}
+ .rf-mini-nav{display:flex;gap:6px}
+ .rf-mini-nav button{flex:1;min-width:0;min-height:35px;padding:3px 7px;background:#1a3973;
+ border:1px solid #5a74b3;color:#f0f7ff;font:18px/1 var(--tt,'VT323',monospace)}
 }
-@media(max-width:370px){.rf-screen{--rf-cell:9px;letter-spacing:-.08px}}
-@media(prefers-reduced-motion:reduce){.rf-screen{animation:none;transition:none}}
+@media(max-width:720px){
+ #view:has(> .s-ringfax){padding:4px;overflow:hidden}
+ .rf-wrap{gap:6px}
+ .rf-display{height:clamp(320px,calc(100dvh - 295px),505px);padding:5px;gap:4px;border-width:1px}
+ .rf-display-header{min-height:26px}
+ .rf-brand strong{font-size:21px}
+ .rf-edition{font-size:14px}
+ .rf-mini-nav button{font-size:15px;min-height:30px}
+ .rf-screen{border-width:3px;padding:4px 5px}
+ .rf-display-caption{display:none}
+ .rf-console{padding:10px}
+ .rf-console-title>span{font-size:22px}
+ .rf-page-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .rf-page-link{min-height:55px;padding:5px 7px}
+ .rf-link-name{font-size:18px}
+ .rf-link-detail{font-size:11px}
+ .rf-help{font-size:12px}
+}
+@media(max-height:650px) and (min-width:1101px){
+ .rf-console{padding:8px}
+ .rf-page-link{min-height:54px;padding:5px 7px}
+ .rf-link-detail{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+ .rf-screen,.rf-row,.rf-console{animation:none;transition:none}
+}

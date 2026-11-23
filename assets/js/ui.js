@@ -287,10 +287,17 @@ function render(reset=false){
  const focused=document.activeElement;
  const focusAttr=!reset&&focused?.closest?.('#view')?['data-selo','data-self','data-sort','data-free-sort','data-trainpick','data-trainpane','data-train','data-intensity','data-session'].find(a=>focused.hasAttribute(a)):null;
  const focusValue=focusAttr?focused.getAttribute(focusAttr):null;
+ const rfFocus=!reset&&route.s==='ringfax'&&focused?.closest?.('#view')?{id:focused.id||null,action:focused.dataset.rfAction||null,value:focused.dataset.rfValue||null}:null;
  if(!SCREENS[route.s])route={s:'desk',id:null};
  SCREENS[route.s]();renderChrome();
  document.querySelectorAll('#view [data-keep]').forEach(el=>{if(keep[el.dataset.keep])el.scrollTop=keep[el.dataset.keep]});
  if(focusAttr){[...document.querySelectorAll('#view ['+focusAttr+']')].find(el=>el.getAttribute(focusAttr)===focusValue&&el.getClientRects().length)?.focus({preventScroll:true})}
+ if(rfFocus){
+  const target=rfFocus.id?document.getElementById(rfFocus.id):
+   [...document.querySelectorAll('#view [data-rf-action]')].find(el=>el.dataset.rfAction===rfFocus.action&&(el.dataset.rfValue||null)===rfFocus.value);
+  target?.focus?.({preventScroll:true});
+ }
+ if(route.s==='ringfax')OfficeRingfax.fit?.();
  if(reset){$('#view').scrollTop=0;window.scrollTo(0,0)}
 }
 function paint(cls,html){$('#view').innerHTML=`<div class="screen ${cls}">${html}</div>`}
@@ -1702,7 +1709,15 @@ document.addEventListener('click',e=>{
  if(t.id==='continue')return proceed();
  if(d.hist)return histMove(d.hist==='back'?-1:1);
  if(d.record)return openRecord(d.record);
- if(d.rfAction){if(OfficeRingfax.press(d.rfAction,d.rfValue,S()))render();return;}
+ if(d.rfAction){
+  const field=$('#rf-page-entry');
+  const value=d.rfAction==='jump'?field?.value?.trim():d.rfValue;
+  if(d.rfAction==='jump'&&!/^[0-9]{3}$/.test(value||'')){
+   field?.setAttribute('aria-invalid','true');field?.focus();return;
+  }
+  if(OfficeRingfax.press(d.rfAction==='jump'?'go':d.rfAction,value,S()))render();
+  return;
+ }
  if(d.commentaryView){commentaryView=d.commentaryView==='key'?'key':'all';renderPastCommentary();return}
  if(d.trainpick){trainingSelected=d.trainpick;trainingPane='development';render();return;}
  if(d.trainpane){trainingPane=d.trainpane;render();return;}
@@ -1859,7 +1874,12 @@ document.addEventListener('focusin',e=>{const b=e.target.closest('[data-hint]');
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('free-filters'))scoutFiltersOpen=e.target.open},true);
 document.addEventListener('ringfax-page-rotated',()=>{if(route.s==='ringfax'&&S())render()});
 document.addEventListener('keydown',e=>{
- if(route.s==='ringfax'&&!e.target.closest('input,textarea,select,[contenteditable]')&&OfficeRingfax.key(e.key,S())){e.preventDefault();render();return;}
+ if(route.s==='ringfax'&&e.target?.matches?.('#rf-page-entry')&&e.key==='Enter'){
+  e.preventDefault();const value=e.target.value.trim();
+  if(!/^[0-9]{3}$/.test(value)){e.target.setAttribute('aria-invalid','true');return;}
+  if(OfficeRingfax.press('go',value,S()))render();return;
+ }
+ if(route.s==='ringfax'&&(/^F[1-4]$/.test(e.key)||!e.target?.closest?.('input,textarea,select,[contenteditable]'))&&OfficeRingfax.key(e.key,S())){e.preventDefault();render();return;}
  if(night?.M&&!$('#tv').hidden){
   const box=$('#decision');if(box&&!box.hidden)return;
   if(e.key===' '){e.preventDefault();night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}
