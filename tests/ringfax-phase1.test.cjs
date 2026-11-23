@@ -38,6 +38,10 @@ assert.equal(JSON.stringify(R.voices(h,3)),expected,'fan voices are deterministi
 assert.equal(new Set(R.voices(h,3).map(f=>f.name)).size,3,'first fan page contains three distinct contributors');
 assert.ok(R.voices(h,3).every(f=>f.sourceId===h.cid),'every fan letter is anchored in the actual result');
 
+const news=grid(101);
+assert.match(news.rows.map(x=>x.text).join(' '),/WINNER: Silas Rush/,'news uses the actual winner, not an invented one');
+const results=grid(200);
+assert.match(results.rows.map(x=>x.text).join(' '),/WINNER: Silas Rush/,'results identify the settled winner');
 let fan=grid(500);
 assert.match(fan.rows.map(x=>x.text).join('\n'),/THE FANZONE/);
 assert.match(fan.rows.map(x=>x.text).join('\n'),/GRAPPLE|HEELTURN|MATWORK|BALCONY|KAYFABE|TICKET|FRONTROW|BIGSPOT/);
