@@ -113,4 +113,66 @@ assert.ok(html.indexOf('assets/js/ringfax.js')<html.indexOf('assets/js/ui.js'),'
 assert.ok(ui.includes("['ringfax','Ringfax']"),'Ringfax appears in ordinary navigation');
 assert.ok(ui.includes("ringfax:renderRingfax"),'Ringfax route has a real screen');
 assert.ok(ui.includes('ringfax-page-rotated'),'subpage auto-rotation integrates with the route');
-console.log('PASS Ringfax Phase 1: read-only, 40x25 pages, actual results, deterministic Fanzone, remote and route');
+
+// Secret page 777 is not linked from the directory: it must be entered manually.
+R.press('go',100,s);
+assert.ok(!R.view(s).includes('data-rf-value="777"'),'secret quiz is not openly listed');
+const quizBank=R.quizQuestions;
+assert.equal(quizBank.length,12,'Bamboozle-style run has twelve questions');
+for(const [i,q] of quizBank.entries()){
+ assert.equal(q.a.length,4,'quiz question '+(i+1)+' has four colours');
+ assert.equal(new Set(q.a).size,4,'each option must be different');
+ assert.ok(Number.isInteger(q.correct)&&q.correct>=0&&q.correct<4,'one correct answer');
+ assert.match(q.source,/^https:\/\//,'trivia question has a verifiable source');
+}
+const beforeQuiz=JSON.stringify(s),quizSeed=s.seed;
+for(const d of ['7','7','7'])assert.ok(R.press('digit',d,s));
+assert.equal(R.screen(s).page,777);
+assert.equal(R.quizInfo().stage,'intro');
+assert.equal(R.screen(s).subpages,1,'quiz intro fits one teletext page');
+assert.ok(R.view(s).includes('rf-quiz-active'),'secret page exposes answer controls');
+assert.equal(R.key('F2',s),true,'green button opens the rules');
+assert.equal(R.quizInfo().stage,'rules');
+assert.equal(R.key('F1',s),true,'red starts quiz from rules');
+assert.equal(R.quizInfo().stage,'question');
+assert.equal(R.view(s).split('class="rf-row rf-quiz-answer').length-1,4,'question rows are clickable');
+assert.equal(R.screen(s).rows[23].segments.length,4);
+assert.ok(R.screen(s).rows[23].segments.every(f=>f.action==='quiz-answer'));
+
+// Wrong-answer detour, optional reveal and comeback.
+assert.ok(R.press('quiz-answer',(quizBank[0].correct+1)%4,s));
+assert.equal(R.quizInfo().stage,'wrong');
+assert.equal(R.key('F2',s),true);
+assert.equal(R.quizInfo().reveal,true);
+assert.equal(R.key('F1',s),true);
+assert.equal(R.quizInfo().index,0,'wrong answer restarts at checkpoint');
+for(let i=0;i<quizBank.length;i++){
+ const info=R.quizInfo();
+ assert.equal(info.stage,'question','question '+(i+1)+' is active');
+ assert.equal(info.index,i);
+ const page=R.screen(s);
+ assert.equal(page.subpages,1,'one question per complete teletext page');
+ assert.ok(page.rows.every(row=>row.text.length===40),'question grid never overflows');
+ if(i===5){
+  assert.equal(info.checkpoint,4,'checkpoint after question four');
+  R.press('quiz-answer',(quizBank[i].correct+1)%4,s);
+  assert.equal(R.quizInfo().stage,'wrong');
+  R.press('quiz-retry',null,s);
+  assert.equal(R.quizInfo().index,4,'mid-run wrong answer returns to question five');
+  R.press('quiz-answer',quizBank[4].correct,s);
+  assert.equal(R.quizInfo().index,5);
+ }
+ assert.ok(R.press('quiz-answer',quizBank[i].correct,s));
+}
+assert.equal(R.quizInfo().stage,'won','all twelve correct answers win');
+assert.equal(R.quizInfo().checkpoint,12);
+assert.match(R.screen(s).rows.map(row=>row.text).join(' '),/QUIZ CHAMPION/);
+assert.equal(R.screen(s).subpages,1);
+assert.equal(JSON.stringify(s),beforeQuiz,'quiz cannot change any career property');
+assert.equal(s.seed,quizSeed,'quiz consumes zero game RNG');
+R.press('go',100,s);
+R.press('go',777,s);
+assert.equal(R.quizInfo().stage,'intro','re-entering the hidden page gives a fresh quiz');
+R.press('go',100,s);
+
+console.log('PASS Ringfax Phase 1 + secret quiz: read-only, 40x25 pages, actual results, deterministic Fanzone, remote and route');
