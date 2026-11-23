@@ -190,67 +190,91 @@ async function run(browser,name,viewport){
   await page.keyboard.press('F4');
   assert.match(await page.locator('#rf-screen').innerText(),/THE FANZONE/);
 
-  // Easter egg: only a manually entered page 777 opens the quiz.
+  // Easter egg: a manually entered page 777 opens a complete classic
+  // Bamboozle-style page, with an original quiz host and square colour keys.
   const originalCareer=await page.evaluate(()=>JSON.stringify(window.OfficeGame.S));
   await page.locator('#rf-page-entry').fill('777');
   await page.locator('[data-rf-action="jump"]').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'intro',
-   name+': secret 777 should begin on the intro page');
-  assert.equal(await page.locator('#rf-screen .rf-row').count(),25);
-  await page.locator('.rf-quiz-remote .rf-quiz-key-red').click();
-  const introInfo=await page.evaluate(()=>window.OfficeRingfax.quizInfo());
-  assert.equal(introInfo.stage,'question');
-  assert.equal(await page.locator('#rf-screen .rf-quiz-answer').count(),4,
-   name+': each answer is accessible by tapping the teletext choice');
-  assert.equal(await page.locator('.rf-quiz-remote .rf-quiz-key').count(),4,
-   name+': four large colour buttons sit outside the text grid');
-  // Check what Chromium actually paints, not just a CSS class. The four
-  // on-page answers must match the touch keys AND their Fastext counterparts.
-  const answerColours=await page.evaluate(()=>{
-   const codes=['red','green','yellow','cyan'],out=[];
-   for(let i=0;i<4;i++){
-    const row=document.querySelector('#rf-screen .rf-quiz-answer[data-rf-value="'+i+'"]');
-    const key=document.querySelector('.rf-quiz-remote .rf-quiz-key[data-rf-value="'+i+'"]');
-    const fast=document.querySelector('#rf-screen .rf-fast-seg[data-rf-value="'+i+'"]');
-    out.push({name:codes[i],row:getComputedStyle(row).color,
-     key:getComputedStyle(key).color,fast:getComputedStyle(fast).color,
-     text:row.textContent.trim()});
-   }
-   return out;
+   name+': secret 777 starts at intro');
+  assert.equal(await page.locator('#rf-screen .rf-row').count(),25,
+   name+': underlying accessible 40x25 teletext model is preserved');
+  assert.equal(await page.locator('.rf-bz-page').count(),1,
+   name+': page 777 has one full-screen quiz composition');
+  assert.equal(await page.locator('.rf-bz-face').count(),1,
+   name+': original yellow pixel mascot is rendered');
+  assert.equal(await page.locator('.rf-bz-brand .rf-logo-svg').count(),1,
+   name+': legible yellow Ringfax pixel ident in blue masthead');
+  assert.equal(await page.locator('.rf-bz-bubble').count(),1,
+   name+': question lives in a white speech bubble');
+  assert.equal(await page.locator('.rf-bz-choice').count(),4,
+   name+': four choices are available on the intro page');
+  await page.locator('.rf-bz-choice.rf-bz-red').click();
+  assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'question');
+  assert.equal(await page.locator('.rf-bz-choice').count(),4,
+   name+': all four answers have a real colour-square button');
+  assert.equal(await page.locator('.rf-bz-fast').count(),4,
+   name+': four matching Fastext question mark groups');
+  assert.match(await page.locator('.rf-bz-instruction').innerText(),
+   /PRESS THE COLOUR OF YOUR CHOICE/);
+  const quizLayout=await page.evaluate(()=>{
+   const box=el=>{const r=el.getBoundingClientRect();
+    return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+   const screen=document.querySelector('#rf-screen'),page=document.querySelector('.rf-bz-page');
+   const bubble=document.querySelector('.rf-bz-bubble'),mascot=document.querySelector('.rf-bz-mascot');
+   const choices=[...document.querySelectorAll('.rf-bz-choice')];
+   const footer=document.querySelector('.rf-bz-footer');
+   return {screen:box(screen),page:box(page),bubble:box(bubble),mascot:box(mascot),
+    choices:choices.map(box),footer:box(footer),scroll:document.documentElement.scrollWidth-innerWidth};
+  });
+  assert.ok(quizLayout.page.left>=quizLayout.screen.left-2&&
+   quizLayout.page.right<=quizLayout.screen.right+2,
+   name+': quiz composition fits inside teletext display');
+  assert.ok(quizLayout.bubble.right<=quizLayout.mascot.right+2,
+   name+': speech bubble does not cover the entire quiz mascot');
+  assert.ok(quizLayout.choices.every(x=>x.height>20&&
+   x.left>=quizLayout.screen.left-2&&x.right<=quizLayout.screen.right+2),
+   name+': four answer rows fit the display '+JSON.stringify(quizLayout));
+  assert.ok(quizLayout.footer.bottom<=quizLayout.screen.bottom+2,
+   name+': colour question marks do not spill below the screen');
+  assert.ok(quizLayout.scroll<=2,name+': quiz must not cause horizontal scroll');
+  const actualColours=await page.evaluate(()=>{
+   const codes=['red','green','yellow','cyan'];
+   return codes.map(c=>{
+    const answer=document.querySelector('.rf-bz-choice.rf-bz-'+c);
+    const square=answer.querySelector('.rf-bz-square');
+    const fast=document.querySelector('.rf-bz-fast.rf-bz-'+c);
+    return {answer:getComputedStyle(answer).color,
+     square:getComputedStyle(square).backgroundColor,
+     footer:getComputedStyle(fast).color,text:answer.innerText.trim()};
+   });
   });
   const rgb=['rgb(255, 0, 0)','rgb(0, 255, 0)','rgb(255, 255, 0)','rgb(0, 255, 255)'];
-  for(const [i,answer] of answerColours.entries()){
-   assert.equal(answer.row,rgb[i],name+': on-screen answer has the correct teletext colour');
-   assert.equal(answer.row,answer.key,name+': answer matches its touch button');
-   assert.equal(answer.row,answer.fast,name+': answer matches its Fastext key');
-   assert.ok(answer.text.startsWith(answer.name.toUpperCase()+': '),
-    name+': answer is labelled by colour');
+  for(const [i,answer] of actualColours.entries()){
+   assert.equal(answer.answer,'rgb(255, 255, 255)',
+    name+': answer '+i+' text is white as on classic Bamboozle');
+   assert.equal(answer.square,rgb[i],
+    name+': answer '+i+' uses a solid teletext colour square');
+   assert.equal(answer.footer,rgb[i],
+    name+': bottom Fastext question marks match the square');
+   assert.ok(answer.text.length>0,name+': answer '+i+' has a label');
   }
-  await page.locator('#rf-screen .rf-quiz-answer[data-rf-value="0"]').hover();
-  assert.equal(await page.locator('#rf-screen .rf-quiz-answer[data-rf-value="0"]')
-   .evaluate(el=>getComputedStyle(el).color),rgb[0],
-   name+': hovering an answer must not erase its red colour');
+  await page.locator('.rf-bz-choice.rf-bz-red').hover();
+  assert.equal(await page.locator('.rf-bz-choice.rf-bz-red')
+   .evaluate(el=>getComputedStyle(el).color),'rgb(255, 255, 255)',
+   name+': hover must not erase the white answer text');
 
-  if(viewport.width<=720){
-   const gq=await page.evaluate(()=>{
-    const r=el=>{const v=el.getBoundingClientRect();return {top:v.top,bottom:v.bottom,height:v.height}};
-    const view=document.querySelector('#view'),keys=[...document.querySelectorAll('.rf-quiz-remote .rf-quiz-key')];
-    return {view:r(view),keys:keys.map(r)};
-   });
-   assert.ok(gq.keys.every(k=>k.height>=42&&k.bottom<=gq.view.bottom+2),
-    name+': phone quiz buttons must remain visible and finger-sized '+JSON.stringify(gq));
-  }
   const correct=await page.evaluate(()=>window.OfficeRingfax.quizQuestions[0].correct);
-  await page.locator('.rf-quiz-remote [data-rf-action="quiz-answer"][data-rf-value="'+((correct+1)%4)+'"]').click();
+  await page.locator('.rf-bz-choice[data-rf-action="quiz-answer"][data-rf-value="'+((correct+1)%4)+'"]').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'wrong',
    name+': wrong colour should enter the penalty page');
-  await page.locator('.rf-quiz-remote .rf-quiz-key-green').click();
+  await page.locator('.rf-bz-choice.rf-bz-green').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().reveal),true,
    name+': green button reveals the trivia fact');
-  await page.locator('.rf-quiz-remote .rf-quiz-key-red').click();
+  await page.locator('.rf-bz-choice.rf-bz-red').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().index),0,
    name+': retry restores the checkpoint');
-  await page.locator('.rf-quiz-remote [data-rf-action="quiz-answer"][data-rf-value="'+correct+'"]').click();
+  await page.locator('.rf-bz-choice[data-rf-action="quiz-answer"][data-rf-value="'+correct+'"]').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().index),1,
    name+': correct answer advances a round');
   assert.equal(await page.evaluate(()=>JSON.stringify(window.OfficeGame.S)),originalCareer,
