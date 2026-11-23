@@ -73,7 +73,7 @@ function hydrate(x){
  if(!x || ![20,21,22].includes(x.v) || !Array.isArray(x.roster)||!Array.isArray(x.offers))return null;
  if(!Array.isArray(x.free))x.free=[];
  x.v=22;x.careerSeed??=x.seed;x.systemErrors??=[];x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.trainingReviews=Array.isArray(x.trainingReviews)?x.trainingReviews.slice(-12):[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));x.resultIds??=[...x.seasonResults,...(x.history||[])].map(h=>h.cid).filter(Boolean).slice(-2048);
- for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
+ for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;w.wear??={};w.niggle??=0;w.nigglePart??=null;w.relapse??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
  root.OfficeTerritory?.prepare(x);
  root.OfficeWorldV4?.activate(x);
  return x;
@@ -159,7 +159,7 @@ function sign(id){
  if(S.cash<w.fee)return `You need ${money(w.fee)} to sign ${w.name}.`;
  reconcileOwnership(id,{reason:'The booked opponent joined your stable'});
  S.cash-=w.fee;S.free=S.free.filter(x=>x.id!==id);
- S.roster.push({...w,trend:[],program:null,prep:{},prepHistory:[],session:null,learned:[],learning:null,micWork:{},rehearsedAt:null,training:'ring',intensity:'light',progress:{},startSkills:{ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe},promise:null,injury:0,matches:0,wins:0,starSum:0,best:0,lastRaise:0,flags:{},joined:abs()});
+ S.roster.push({...w,trend:[],program:null,prep:{},prepHistory:[],session:null,learned:[],learning:null,micWork:{},rehearsedAt:null,training:'ring',intensity:'light',progress:{},startSkills:{ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe},promise:null,injury:0,matches:0,wins:0,starSum:0,best:0,lastRaise:0,flags:{},joined:abs(),wear:{},niggle:0,nigglePart:null,relapse:null});
  snapshot(S.roster.at(-1));
  if(S.worldV4)root.OfficeWorldV4?.markPlayer(S,id);
  // Keep the original invitations but guarantee a suitable current-week offer after the first signing.
@@ -533,9 +533,26 @@ function applyResult(c,fin){
  if(double){w.loyal=clamp(w.loyal+10);add(`${w.short} will never forget you backed them.`,1)}
  if(fin.refused)add(`${w.short} refused to break the finish. Pros don’t.`,0);
  // body
- const tired=Math.round(fin.minutes*1.15+(fin.plan==='spots'?6:fin.plan==='brawl'?4:fin.plan==='safe'?-3:0)+(fin.stamina<25?5:0));
+ const tired=Math.round(fin.minutes*1.15+(fin.plan==='spots'?6:fin.plan==='brawl'?4:fin.plan==='safe'?-3:0)+(fin.stamina<25?5:0)+(w.niggle>0?10:0));
  w.fatigue=clamp(w.fatigue+tired);
- if(fin.injury){const wk=fin.injury+(fin.workingHurt?1:0);w.injury=Math.max(w.injury||0,wk);w.injurySince=abs();add(`${w.short} is injured (${fin.injuryPart}): out ${wk} week${wk>1?'s':''}.`,-1)}
+ if(fin.injury){
+  const part=fin.injuryPart||'body',base=fin.injury+(fin.workingHurt?1:0);
+  w.wear??={};const prior=w.wear[part]||0;w.wear[part]=prior+1;
+  // A repeat injury to the same body part lasts longer, up to two extra weeks.
+  const full=base+Math.min(2,prior),quick=Math.max(1,full-1);
+  w.injury=Math.max(w.injury||0,full);w.injurySince=abs();w.niggle=0;w.nigglePart=null;w.relapse=null;
+  add(`${w.short} is injured (${part}): out ${full} week${full>1?'s':''}, pending your decision.`,-1);
+  msg({from:w.name,subject:`${w.short}’s ${part}`,kind:'decision',dtype:'injury',args:[w.id],part,full,quick,
+   body:[`${w.name} has a ${part} injury. Full rest takes ${full} week${full>1?'s':''}. Get them back early and the injury may flare again.`],
+   options:[
+    {id:'rest',label:'Full rest',hint:`Out ${full} week${full>1?'s':''}. No setback risk.`},
+    {id:'quick',label:'Quick return',hint:`Back in ${quick} week${quick>1?'s':''}, but a ${Math.round(INJURY_SETBACK*100)}% chance of a setback on return.`},
+    {id:'work',label:'Work through it',hint:`Available now. Matches tire them more for about ${full} week${full>1?'s':''}, and the knock may flare (${Math.round(INJURY_FLARE*100)}% a match).`}]});
+ }else if(w.niggle>0&&rand()<INJURY_FLARE){
+  const part=w.nigglePart||'body';w.wear??={};w.wear[part]=(w.wear[part]||0)+1;
+  w.injury=2;w.injurySince=abs();w.niggle=0;w.nigglePart=null;
+  add(`${w.short}’s ${part} flares up from working hurt. Out 2 weeks.`,-1);
+ }
  if(fin.preparation?.note){add(fin.preparation.note,1);}
  if(w.prep){for(const key in w.prep)w.prep[key]=Math.max(0,w.prep[key]-2);}
  w.flags={};
@@ -564,6 +581,7 @@ function applyResult(c,fin){
 }
 
 /* ---------- dilemmas ---------- */
+const INJURY_SETBACK=.3,INJURY_FLARE=.15;
 const DILEMMAS={
  raise:{when:w=>w.heat>=60&&w.ego>=65&&abs()-w.lastRaise>=6,
   make:w=>({from:w.name,subject:'About my money',body:[`“I’m the reason people buy tickets to these shows. I want that reflected in my pay. Another £50 a week.”`],
@@ -590,6 +608,12 @@ const DILEMMAS={
    options:[{id:'rest',label:'Rest this week',hint:'Training set to rest, fatigue −15 now. Any booking this week is pulled (booker trust −6).'},{id:'work',label:'You’re working',hint:'Morale +2. Their next match carries a much higher injury risk.'}]}),
   resolve:(m,w,o)=>{if(o==='rest'){w.training='rest';w.fatigue=clamp(w.fatigue-15);const c=S.card.find(x=>x.wid===w.id);if(c){P(c.pid).trust=clamp(P(c.pid).trust-6);S.card=S.card.filter(x=>x!==c)}return `${w.short} is resting this week.`}
    w.flags.pushThrough=true;w.morale=clamp(w.morale+2);return `${w.short} nods. “Your call.”`}},
+ injury:{resolve:(m,w,o)=>{
+   if(!w.injury)return `${w.short} has already recovered. Nothing to decide.`;
+   if(o==='rest')return `${w.short} takes the full layoff.`;
+   if(o==='quick'){w.injury=Math.min(w.injury,m.quick);w.relapse={part:m.part,chance:INJURY_SETBACK};return `${w.short} is back in ${w.injury} week${w.injury>1?'s':''}. The doctor says it could go again.`}
+   w.injury=0;w.niggle=Math.max(w.niggle||0,m.full);w.nigglePart=m.part;
+   return `${w.short} wrestles through the ${m.part} knock. Expect a harder time for about ${m.full} week${m.full>1?'s':''}.`;}},
  unhappy:{when:w=>w.morale<25,
   make:w=>({from:w.name,subject:'I’m done',body:[`“I don’t enjoy this any more. I don’t enjoy the matches, I don’t enjoy the drives, and I don’t enjoy you telling me what to do.”`],
    options:[{id:'off',label:'Give them the week off',hint:'Training set to rest. Morale +12.'},{id:'pay',label:'Pay a £250 bonus',hint:'Morale +18. Costs £250.'},{id:'grow',label:'Tell them to grow up',hint:'Morale −5. They may walk out for good.'}]}),
@@ -692,6 +716,10 @@ function endWeek(){
   runSession(w,worked,lines);
   if(w.program&&!isInjured){w.program.left--;if(w.program.left<=0){const old=w.program;w.prepHistory??=[];w.prepHistory.unshift({week:abs(),focus:old.focus,type:old.type,gains:old.gains});w.prepHistory=w.prepHistory.slice(0,8);w.program=null;w.intensity='light';w.training='rest';lines.push(`${w.short} completes ${old.total}-week development (${old.gains} skill points gained). Rest scheduled next week.`);}}
   if(isInjured&&w.injury && (w.injurySince??abs()-1)<abs()){w.injury--;if(!w.injury)lines.push(`${w.short} is fit again.`)}
+  if(w.niggle>0){w.niggle--;if(!w.niggle){w.nigglePart=null;lines.push(`${w.short}’s knock has settled.`)}}
+  if(w.relapse&&!w.injury){const r=w.relapse;w.relapse=null;w.wear??={};
+   if(rand()<INJURY_SETBACK){w.injury=2;w.injurySince=abs();w.wear[r.part]=(w.wear[r.part]||0)+1;lines.push(`${w.short} has set back the ${r.part} injury on the return. Out 2 more weeks.`)}
+   else lines.push(`${w.short} is cleared to wrestle again.`)}
   w.morale=clamp(w.morale+(w.morale<60?2:w.morale>75?-1:0)+(w.fatigue>70?-2:0));
   const delta={};for(const k of ['ring','mic','psych','safe','fatigue','heat'])if(w[k]!==before[k])delta[k]=w[k]-before[k];
   review.entries.push({id:w.id,name:w.name,focus,intensity:intensityName,session,cost:weeklyCost,worked,delta,
