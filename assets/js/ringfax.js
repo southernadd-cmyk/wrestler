@@ -519,6 +519,15 @@
   const circuitTitles=s?.territory?.titles||{};
   const bookings=scheduled(s);
   const openingWeek=(s?.week||1)===1;
+  // A source-grounded brief fills available room, never creates an orphan
+  // second subpage. The article's repeated title is stripped by add().
+  const addOpeningNote=(title,lines,heading,copy,colour='white')=>{
+   if(!openingWeek||!copy)return;
+   const extra=[item(''),item(' '+heading,'cyan')];
+   paragraphs(extra,copy,colour);
+   const visible=lines.length-(lines[0]?.text.trim()===title?1:0);
+   if(visible+extra.length<=17)lines.push(...extra);
+  };
   const mainPromo=promos[0]||null;
   const champ=mainPromo&&circuitTitles[mainPromo.id]?.[D?.DIVISION_ORDER?.[0]]?.holder;
   let a=[
@@ -561,6 +570,9 @@
    a.push(item(''));
    paragraphs(a,'Who gets talked about first? The opening bell will tell us.','green');
    a.push(item(''),item(' 102 SEASON OUTLOOK / 500 FANS','cyan'));
+   if(first&&last)addOpeningNote('LATEST HEADLINE',a,'FROM THE BOOKERS',
+    (first.voice||first.name)+' favours '+first.desc.toLowerCase()+
+    '; '+(last.voice||last.name)+' takes a different view at '+last.name+'.');
   }
   add(101,'LATEST HEADLINE',a);
 
@@ -568,7 +580,8 @@
   if(openingWeek){
    a=[item('THE SEASON AHEAD','yellow'),item('')];
    paragraphs(a,'THE BIG QUESTION','cyan');
-   paragraphs(a,'Can the smaller halls make as much noise as the televised shows?');
+   paragraphs(a,'Can '+(promos[0]?.venue||'a small hall')+
+    ' create as much noise as '+(promos.at(-1)?.venue||'a big arena')+'?');
    a.push(item(''));
    paragraphs(a,'THE DIFFERENT SCHOOLS','cyan');
    const first=promos[0],last=promos.at(-1);
@@ -577,7 +590,7 @@
      '. '+last.name+' offers '+last.desc.toLowerCase()+'.');
    a.push(item(''));
    paragraphs(a,'WATCH THE NEW NAMES','green');
-   paragraphs(a,'No winner is decided by a card ladder. Someone still has to earn the reaction.');
+   paragraphs(a,'A card position cannot make a crowd care. The opening shows still have to earn it.');
    a.push(item(''),item(' EDITORS WATCHLIST: PAGE 300','yellow'));
    add(102,'SEASON OUTLOOK',a);
   }else{
@@ -627,6 +640,9 @@
   paragraphs(a,'THE REAL QUESTION','cyan');
   paragraphs(a,'Whose style will work in a room that does not already love them?');
   a.push(item(''),item(' OPINION, NOT A CONTRACT','yellow'));
+  if(!h&&promos[0]&&promos.at(-1))addOpeningNote('THE GRAPEVINE',a,
+   'THE SCOUTS ARGUE',promos[0].voice+' looks for '+promos[0].desc.toLowerCase()+
+   '; '+promos.at(-1).voice+' prizes '+promos.at(-1).desc.toLowerCase()+'.','green');
   add(103,'THE GRAPEVINE',a);
   a=[item('FROM THE ROAD','yellow'),item(' THE CIRCUIT HAS MANY FACES','cyan'),item('')];
   const roadShows=[promos[0],promos.at(-1)].filter(Boolean);
@@ -637,6 +653,9 @@
   }
   paragraphs(a,'A good bout in a warehouse may feel very different on a national broadcast.','yellow');
   a.push(item(''),item(' WHAT DO THE FANS THINK? P500','cyan'));
+  if(promos[1]&&promos[2])addOpeningNote('FROM THE ROAD',a,'TWO MORE STOPS',
+   promos[1].venue+' and '+promos[2].venue+
+   ' promise very different nights on the same circuit.');
   add(104,'FROM THE ROAD',a);
   a=[item('AFTER THE BELL','yellow'),item(' A VIEW FROM THE CHEAP SEATS','cyan'),item('')];
   if(h){
@@ -654,6 +673,9 @@
    paragraphs(a,'The match record will keep the result. This page will report the reaction.','yellow');
   }
   a.push(item(''),item(' MORE FAN VIEWS: PAGE 500','cyan'));
+  if(!h&&promos[0]&&promos[1])addOpeningNote('AFTER THE BELL',a,'EARLY VERDICT',
+   promos[0].venue+' will judge the fight, while '+promos[1].venue+
+   ' may remember one big moment. Neither has seen a result yet.','green');
   add(200,'AFTER THE BELL',a);
   a=[item('THE CRITICS CORNER','yellow'),item(' OPINION, NOT A SCOREBOARD','cyan'),item('')];
   if(h){
@@ -676,6 +698,8 @@
    paragraphs(a,'We will argue about the work once the season gets under way.','yellow');
   }
   a.push(item(''),item(' WRITE BACK ON PAGE 501','cyan'));
+  if(!h)addOpeningNote('THE CRITIC',a,'THE CRITICS TEST',
+   'Can a wrestler make a defeat worthwhile? Can a favourite keep a cold crowd? A rating alone will never tell us.','yellow');
   add(201,'THE CRITIC',a);
   // Card ladder selects editorial subjects; Ringfax does not display ranking
   // positions or numeric scores that are already available in The Office.
@@ -701,6 +725,8 @@
   }
   if(!picks.length)paragraphs(a,'The first names to break through must show us something in the ring.');
   a.push(item(''),item(' WHO WOULD YOU PICK? PAGE 501','green'));
+  if(picks.length)addOpeningNote('ONES TO WATCH',a,'WHAT TO WATCH',
+   'These names are in the frame, but their next crowd will decide what the headlines are.','green');
   add(300,'ONES TO WATCH',a);
   a=[item('THE LONG VIEW','yellow'),item(' STORYLINES / READER THEORIES','cyan'),item('')];
   const ongoing=Object.values(s?.feuds||{}).filter(f=>f&&f.heat>0&&!f.closed)
@@ -717,6 +743,9 @@
    paragraphs(a,'A rivalry is earned one encounter at a time. You cannot read it from the rankings.');
   }
   a.push(item(''),item(' READER ARGUMENTS ON PAGE 500','cyan'));
+  if(!ongoing.length&&promos[2])addOpeningNote('THE LONG VIEW',a,
+   'BOOKER TO WATCH',(promos[2].voice||promos[2].name)+' at '+promos[2].name+
+   ' likes a long story. Week one is the opening chapter, not the payoff.','yellow');
   add(301,'THE LONG VIEW',a);
   // Card Ladder already owns champion tables. This editorial only examines
   // the pressure around a genuine title, without reproducing the rankings.
@@ -733,8 +762,12 @@
   }else paragraphs(a,'An open belt creates opportunity. The next result could change the story.','yellow');
   a.push(item(''));
   paragraphs(a,'A title only matters when somebody makes fans believe it is worth fighting for.','green');
-  a.push(item(''),item(' THE OFFICIAL TITLE LIST IS IN','cyan'),
-   item(' THE CARD LADDER SCREEN','yellow'));
+  const otherDivision=D?.DIVISION_ORDER?.[1]||'women';
+  const otherHolder=titlePromo&&circuitTitles[titlePromo.id]?.[otherDivision]?.holder;
+  const otherContender=titlePromo&&leader(s,titlePromo.id,otherDivision,otherHolder);
+  if(otherHolder&&otherContender)addOpeningNote('TITLE TALK',a,
+   'THE OTHER TITLE',wrestlerName(otherHolder)+' holds the other Dockside belt.'+
+   ' Could '+wrestlerName(otherContender[0])+' make their reign uncomfortable?');
   add(302,'TITLE TALK',a);
   // Opening-week letters are explicitly opinions about the season, not invented match results.
   const opening=openingFans(s);
