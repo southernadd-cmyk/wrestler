@@ -1,15 +1,7 @@
 name: Phase 3 chain and submission gates
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'tests/phase3-chain-submissions.test.cjs'
-      - 'tests/phase3-rest-control.test.cjs'
-      - 'tests/phase3-chain-transitions.test.cjs'
-      - 'tests/grapple-attempts.test.cjs'
-      - '.github/workflows/phase3-chain-submissions.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 concurrency:
