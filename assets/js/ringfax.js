@@ -27,7 +27,7 @@
   return out.length?out:[''];
  }
  function hash(str){let n=2166136261;for(const c of text(str)){n^=c.charCodeAt(0);n=Math.imul(n,16777619);}return n>>>0;}
- function item(value,colour='white'){return {text:line(value),colour};}
+ function item(value,colour='white',background='black'){return {text:line(value),colour,background};}
  function paragraphs(lines,value,colour='white'){
   for(const part of wrap(value,38))lines.push(item(' '+part,colour));
  }
@@ -75,11 +75,29 @@
  function build(s){
   const h=latest(s),recent=recents(s),P={};
   const add=(number,title,lines)=>{P[number]={number,title,lines:lines.slice()};};
-  let a=[item(' THE WORLD OF WRESTLING','yellow'),item(''),item('LATEST FROM THE CIRCUIT','cyan')];
-  if(h){paragraphs(a,'MATCH: '+h.name+' versus '+h.foe);paragraphs(a,'S'+h.season+' W'+h.week+' / '+score(h),'yellow');}
-  else paragraphs(a,'No completed matches yet. Sign a wrestler and work a show.');
-  a.push(item(''),item('101  LATEST HEADLINE','cyan'),item('200  RESULTS AND MATCHES','cyan'),item('201  MATCH GRADES','cyan'),
-    item('300  PROMOTION RANKINGS','cyan'),item('302  CHAMPIONS','cyan'),item('500  THE FANZONE','green'),item('501  READERS LETTERS','green'));
+  // A proper two-column teletext index, not a conventional app menu.
+  // Each 20-character half remains individually clickable in the renderer.
+  const pair=(left,right,colour='white')=>({text:line(left,20)+line(right,20),colour,background:'black'});
+  let a=[
+   item('  NEWS AND RESULTS    SPORT & FANS','yellow'),
+   item('  --------------------------------','blue'),
+   pair('101 HEADLINES','300 RANKINGS','white'),
+   pair('200 RESULTS','302 TITLES','cyan'),
+   pair('201 RATINGS','500 FANZONE','white'),
+   pair('100 INDEX','501 LETTERS','cyan'),
+   item('  --------------------------------','blue'),
+   item(''),
+   item('  LATEST FROM THE WRESTLING WORLD','yellow')
+  ];
+  if(h){
+   paragraphs(a,h.name+' versus '+h.foe,'cyan');
+   paragraphs(a,'Season '+h.season+' week '+h.week+' / '+score(h));
+  }else{
+   paragraphs(a,'A new season on the circuit.','cyan');
+   paragraphs(a,'Match reports follow the first bell.');
+  }
+  a.push(item(''),item('  FAN OPINION: THE FANZONE 500','green'),
+   item('  READERS LETTERS .......... 501','yellow'));
   add(100,'RINGFAX INDEX',a);
 
   a=[item('THE LATEST FROM THE RING','yellow'),item('')];
@@ -192,22 +210,68 @@
   return P;
  }
  const fast=[100,200,300,500];
+ // 4 x 4 pixel-cell letters, sized like a real teletext mosaic masthead.
+ // Every row remains exactly forty character cells (no SVG or raster image).
+ const LETTERS={
+  A:[' ██ ','█  █','████','█  █'],B:['███ ','█  █','███ ','███ '],
+  C:[' ███','█   ','█   ',' ███'],D:['███ ','█  █','█  █','███ '],
+  E:['████','██  ','██  ','████'],F:['████','██  ','██  ','█   '],
+  G:[' ███','█   ','█ ██',' ███'],H:['█  █','█  █','████','█  █'],
+  I:['████',' ██ ',' ██ ','████'],J:['████','  █ ','  █ ','███ '],
+  K:['█  █','█ █ ','██  ','█ █ '],L:['█   ','█   ','█   ','████'],
+  M:['█  █','████','█  █','█  █'],N:['█  █','██ █','█ ██','█  █'],
+  O:[' ██ ','█  █','█  █',' ██ '],P:['███ ','█  █','███ ','█   '],
+  Q:[' ██ ','█  █','█ ██',' ███'],R:['███ ','█  █','███ ','█ ██'],
+  S:[' ███','█   ',' ██ ','███ '],T:['████',' ██ ',' ██ ',' ██ '],
+  U:['█  █','█  █','█  █','████'],V:['█  █','█  █','█  █',' ██ '],
+  W:['█  █','█  █','████','█  █'],X:['█  █',' ██ ',' ██ ','█  █'],
+  Y:['█  █',' ██ ',' ██ ',' ██ '],Z:['████','  █ ',' █  ','████'],
+  ' ':['    ','    ','    ','    ']
+ };
+ const BANNERS={
+  100:['RINGFAX','yellow'],101:['LATEST','cyan'],200:['RESULTS','green'],
+  201:['RATINGS','yellow'],300:['RANKINGS','green'],302:['TITLES','cyan'],
+  500:['FANZONE','magenta'],501:['LETTERS','yellow']
+ };
+ function mosaic(word){
+  const chars=word.split('').map(c=>LETTERS[c]||LETTERS[' ']);
+  return [0,1,2,3].map(i=>{
+   const rendered=chars.map(c=>c[i]).join(' ');
+   return (' '.repeat(Math.max(0,Math.floor((40-rendered.length)/2)))+rendered).slice(0,40).padEnd(40,' ');
+  });
+ }
+ const fastext=[
+  {text:'101 NEWS  ',page:101,colour:'red'},
+  {text:'200 RESULT',page:200,colour:'green'},
+  {text:'300 RANKS ',page:300,colour:'yellow'},
+  {text:'500 FANS  ',page:500,colour:'cyan'}
+ ];
+ function clock(){
+  const now=new Date();
+  const digits=x=>String(x).padStart(2,'0');
+  return digits(now.getHours())+':'+digits(now.getMinutes())+'/'+digits(now.getSeconds());
+ }
  function screen(s){
   const pages=build(s),p=pages[C.page]||null;
-  const full=p?.lines||[item('PAGE NOT FOUND','red'),item(''),item('ENTER A PAGE NUMBER TO TRY AGAIN','yellow')];
+  const full=p?.lines||[item('PAGE NOT FOUND','red'),item(''),item('ENTER A VALID PAGE NUMBER','yellow')];
   const chunks=[];
-  for(let i=0;i<full.length;i+=19)chunks.push(full.slice(i,i+19));
+  for(let i=0;i<full.length;i+=17)chunks.push(full.slice(i,i+17));
   if(!chunks.length)chunks.push([]);
   const sub=Math.min(C.sub,chunks.length-1),body=chunks[sub],rows=[];
-  rows.push(item('RINGFAX P'+String(C.page).padStart(3,'0')+'  S'+(s?.season||1)+' W'+(s?.week||1)+'   '+(p?'':'SEARCHING'),'yellow'));
-  rows.push(item(' ' +(p?.title||'PAGE NOT FOUND'),'white'));
-  rows.push(item(' '+(p?'SUBPAGE '+(sub+1)+'/'+chunks.length:'NO DATA AT THIS ADDRESS'),'cyan'));
-  rows.push(item(''));
-  for(let i=0;i<19;i++)rows.push(body[i]||item(''));
-  rows.push(item('RED:100 GRN:200 YEL:300 CYN:500','green'));
-  rows.push(item('PAGE '+(C.entry||String(C.page).padStart(3,'0'))+'   '+(C.hold?'HOLD':'')+'  LEFT/RIGHT:MORE','yellow'));
-  if(rows.length!==25||rows.some(r=>r.text.length!==40))throw Error('Ringfax grid must be 25 rows of 40 cells');
-  return {page:C.page,title:p?.title||'Page not found',rows,sub,subpages:chunks.length,exists:!!p};
+  const num=String(C.page).padStart(3,'0');
+  const header='P'+num+' RINGFAX '+num+'  S'+(s?.season||1)+' W'+(s?.week||1);
+  rows.push(item(header.padEnd(31,' ')+clock(),'white'));
+  const [heading,colour]=BANNERS[C.page]||['SEARCH','red'];
+  for(const value of mosaic(heading))rows.push({text:value,colour,background:'blue'});
+  const title=p?.title||'PAGE NOT FOUND';
+  const pageInfo=chunks.length>1?'  '+(sub+1)+'/'+chunks.length:'';
+  rows.push(item(' '+title.slice(0,35-pageInfo.length).padEnd(35-pageInfo.length,' ')+pageInfo,'white','blue'));
+  for(let i=0;i<17;i++)rows.push(body[i]||item(''));
+  rows.push({...item(fastext.map(f=>f.text).join('')) ,segments:fastext});
+  rows.push(item('PAGE '+(C.entry||num).padEnd(3,' ')+'   '+(C.hold?'HOLD  ':'AUTO  ')+'  < > SUBPAGES','yellow'));
+  if(rows.length!==25||rows.some(row=>row.text.length!==40))
+   throw Error('Ringfax grid must be 25 rows of 40 cells');
+  return {page:C.page,title,rows,sub,subpages:chunks.length,exists:!!p};
  }
  function press(action,value,s){
   const state=s||root.OfficeGame?.S;
@@ -222,7 +286,7 @@
   }else if(action==='clear')C.entry='';
   else if(action==='backspace')C.entry=C.entry.slice(0,-1);
   else if(action==='left'||action==='right'){
-   const len=Math.max(1,Math.ceil((pages[C.page]?.lines.length||1)/19));
+   const len=Math.max(1,Math.ceil((pages[C.page]?.lines.length||1)/17));
    C.sub=(C.sub+(action==='left'?-1:1)+len)%len;C.hold=true;
   }else if(action==='hold')C.hold=!C.hold;
   else return false;
@@ -245,11 +309,30 @@
    [500,'Fanzone','Fan discussion'],[501,'Letters','Reader mail']
   ];
   const rows=v.rows.map((r,i)=>{
-   const match=i>=4&&i<=22&&v.page===100?r.text.match(/^\s*(\d{3})\s+\S/):null;
-   const jump=match&&pages[Number(match[1])]?Number(match[1]):null;
-   const tag=jump!==null?'button':'div';
-   const attrs=jump!==null?' type="button" data-rf-action="go" data-rf-value="'+jump+'" title="Open page '+jump+'" aria-label="Open Ringfax page '+jump+'"':'';
-   return '<'+tag+' class="rf-row rf-'+(i===1?'banner':i===23?'fastext':r.colour)+(jump!==null?' rf-row-link':'')+'"'+attrs+'>'+escape(r.text)+'</'+tag+'>';
+   // Four genuine teletext Fastext fields: click the colour to turn the page.
+   if(r.segments){
+    return '<div class="rf-row rf-fastext">'+r.segments.map(f=>
+     '<button type="button" class="rf-fast-seg rf-fast-'+f.colour+
+     '" data-rf-action="go" data-rf-value="'+f.page+'" aria-label="Open '+f.page+
+     '">'+escape(f.text)+'</button>').join('')+'</div>';
+   }
+   // Index rows have two independently navigable 20-cell columns.
+   if(v.page===100&&i>=6&&i<=22){
+    const halves=[r.text.slice(0,20),r.text.slice(20,40)];
+    const links=halves.map(x=>x.match(/^\s*(\d{3})\s+\S/));
+    if(links.some(x=>x&&pages[Number(x[1])])){
+     return '<div class="rf-row rf-'+r.colour+' rf-index-row">'+halves.map((half,j)=>{
+      const m=links[j],jump=m&&pages[Number(m[1])]?Number(m[1]):null;
+      return jump!==null?
+       '<button type="button" class="rf-index-half" data-rf-action="go" data-rf-value="'+jump+
+       '" aria-label="Open Ringfax page '+jump+'">'+escape(half)+'</button>':
+       '<span class="rf-index-half">'+escape(half)+'</span>';
+     }).join('')+'</div>';
+    }
+   }
+   const bg=r.background&&r.background!=='black'?' rf-bg-'+r.background:'';
+   return '<div class="rf-row rf-'+r.colour+bg+(i>=1&&i<=4?' rf-mosaic':'')+
+    (i===0?' rf-header':i===5?' rf-section':'')+'">'+escape(r.text)+'</div>';
   }).join('');
   const quick=favourites.map(([number,label,desc])=>
    '<button type="button" class="rf-page-link'+(v.page===number?' is-current':'')+'" data-rf-action="go" data-rf-value="'+number+'"'+
@@ -260,7 +343,7 @@
   const refs=(s?.history||[]).filter(h=>h?.cid&&h?.wid).slice(0,2).map(h=>
    '<button class="btn sm" type="button" data-record="w:'+escape(h.wid)+'">Open '+escape(h.name||'wrestler')+' record</button>').join('');
   const srText=escape('Page '+v.page+', '+v.title+', subpage '+(v.sub+1)+' of '+v.subpages+'. '+
-   v.rows.slice(4,23).map(r=>r.text.trim()).filter(Boolean).join(' '));
+   v.rows.slice(6,23).map(r=>r.text.trim()).filter(Boolean).join(' '));
   return '<section class="rf-wrap" aria-label="Ringfax wrestling teletext">'+
    '<div class="rf-display">'+
    '<header class="rf-display-header"><div class="rf-brand"><span class="rf-signal" aria-hidden="true">■</span>'+
@@ -318,9 +401,14 @@
  if(root.document&&root.document.fonts?.ready)root.document.fonts.ready.then(fit);
  if(root.addEventListener)root.addEventListener('resize',fit);
  if(typeof root.setInterval==='function'&&root.document){
+  // Broadcast clock is real wall-clock time, never an invented in-game day.
+  root.setInterval(()=>{
+   const h=root.document.querySelector('#rf-screen .rf-header');
+   if(h&&root.OfficeGame?.S)h.textContent=screen(root.OfficeGame.S).rows[0].text;
+  },1000);
   root.setInterval(()=>{
    if(C.hold||root.document.hidden||!root.document.querySelector('#rf-screen'))return;
-   const p=build(root.OfficeGame?.S)[C.page],n=Math.ceil((p?.lines.length||0)/19);
+   const p=build(root.OfficeGame?.S)[C.page],n=Math.ceil((p?.lines.length||0)/17);
    if(n>1){C.sub=(C.sub+1)%n;root.document.dispatchEvent(new root.Event('ringfax-page-rotated'));}
   },8000);
  }

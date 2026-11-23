@@ -17,6 +17,13 @@ function grid(page){
  return v;
 }
 for(const p of [100,101,200,201,300,302,500,501])grid(p);
+const index=grid(100);
+assert.ok(index.rows.slice(1,5).some(x=>x.text.includes('█')),'mosaic logo uses true block characters');
+assert.ok(index.rows.slice(1,5).every(x=>x.background==='blue'),'mosaic logo has a blue field');
+assert.equal(index.rows[23].segments?.length,4,'four in-grid Fastext controls');
+assert.equal(index.rows[23].segments.reduce((n,x)=>n+x.text.length,0),40,'Fastext is exactly forty cells');
+assert.ok(R.view(s).includes('rf-index-half'),'index rows provide individual column links');
+assert.ok(R.view(s).includes('rf-mosaic'),'block headings render as text cells');
 assert.equal(JSON.stringify(s),original,'opening and reading the teletext cannot mutate career state');
 assert.equal(s.seed,seed,'Ringfax cannot consume the main career RNG');
 const empty=grid(500);

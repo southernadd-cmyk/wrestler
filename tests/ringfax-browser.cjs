@@ -22,6 +22,11 @@ async function run(browser,name,viewport){
     wrap:box(wrap),rows:rows.map(r=>({...box(r),length:r.textContent.length,scroll:r.scrollWidth,client:r.clientWidth})),
     font:getComputedStyle(screen).fontSize, overflowX:document.documentElement.scrollWidth-window.innerWidth,
     directoryButtons:consoleEl.querySelectorAll('.rf-page-link').length,
+    mosaicRows:screen.querySelectorAll('.rf-mosaic').length,
+    fastext:screen.querySelectorAll('.rf-fast-seg').length,
+    screenBackground:getComputedStyle(screen).backgroundColor,
+    bannerBackground:getComputedStyle(rows[1]).backgroundColor,
+    hasModernBevel:getComputedStyle(consoleEl).boxShadow!=='none',
     jump:box(consoleEl.querySelector('#rf-page-entry')),
     pager:box(consoleEl.querySelector('.rf-sub-nav'))};
   });
@@ -35,6 +40,11 @@ async function run(browser,name,viewport){
    name+': teletext overruns game viewport '+JSON.stringify(g));
   assert.ok(g.overflowX<=2,name+': horizontal overflow '+JSON.stringify(g));
   assert.equal(g.directoryButtons,8,name+': all page shortcuts must be discoverable');
+  assert.equal(g.mosaicRows,4,name+': four row block heading');
+  assert.equal(g.fastext,4,name+': four Fastext choices must be in screen');
+  assert.equal(g.screenBackground,'rgb(0, 0, 0)',name+': black screen');
+  assert.equal(g.bannerBackground,'rgb(0, 0, 255)',name+': blue masthead');
+  assert.equal(g.hasModernBevel,false,name+': no modern bevels');
   if(viewport.width>1100){
    assert.ok(g.display.right<=g.console.left+1,name+': desktop columns overlap');
    assert.ok(g.screen.bottom<=g.view.bottom+1,name+': teletext is clipped behind footer');
@@ -47,8 +57,9 @@ async function run(browser,name,viewport){
   }
 
   // Click a line in the teletext itself (not just the separate directory).
-  await page.locator('#rf-screen [data-rf-value="500"]').click();
+  await page.locator('#rf-screen .rf-index-half[data-rf-value="500"]').click();
   assert.match(await page.locator('#rf-screen').innerText(),/THE FANZONE/);
+  assert.equal(await page.locator('#rf-screen .rf-row').count(),25,'Fanzone uses a full 25-row grid');
   await page.locator('.rf-page-link[data-rf-value="501"]').click();
   assert.match(await page.locator('#rf-screen').innerText(),/READERS LETTERS/);
   // Direct page entry should work without forcing users to find a numeric pad.
