@@ -53,6 +53,14 @@ for (const [column, promoter] of data.PROMOS.entries()) {
 assert.equal(positions.size, all.length + data.PROMOS.length);
 
 game.fresh();
+assert.deepEqual(JSON.parse(JSON.stringify(game.S.identity)),
+ {manager:'Alex Morgan',stable:'The New Guard',portrait:0});
+const untouchedSeed=game.S.seed;
+assert.equal(game.setIdentity({manager:'  Ada   Lovelace ',stable:'  Royal   Mat ',portrait:8}),true);
+assert.equal(game.S.identity.manager,'Ada Lovelace');
+assert.equal(game.S.identity.stable,'Royal Mat');
+assert.equal(game.S.identity.portrait,8);
+assert.equal(game.S.seed,untouchedSeed,'changing the player portrait never advances simulation RNG');
 assert.equal(game.S.free.length, 20);
 assert.equal(game.S.territory.teams.flatMap(team => team.roster).length, 44);
 assert.equal(territory.rank().length, 60);
@@ -68,6 +76,7 @@ assert.ok(game.S.offers.every(o => territory.opponents(o.pid, o.slot).some(w => 
 
 assert.equal(game.sign('mara'), null);
 const oldSave = JSON.parse(JSON.stringify(game.S));
+delete oldSave.identity;
 delete oldSave.worldV4;
 oldSave.free = oldSave.free.filter(w => data.TALENT.findIndex(x => x.id === w.id) < 8 && w.id !== 'sol');
 oldSave.free[0].fee = 1234;
@@ -79,6 +88,9 @@ delete oldSave.territory.stablesReady;
 delete oldSave.territory.cards;
 storage.set('the-office-v22', JSON.stringify(oldSave));
 game.load();
+assert.equal(game.S.identity.manager,'Alex Morgan','legacy saves receive a compatible default manager');
+assert.equal(game.S.identity.stable,'The New Guard','legacy saves receive a compatible default stable');
+assert.equal(game.S.identity.portrait,0,'legacy saves receive the default portrait');
 assert.equal(game.S.free.length, 18);
 assert.equal(game.S.free[0].fee, 1234);
 assert.equal(game.S.roster[0].id, 'mara');
@@ -117,4 +129,15 @@ const weekFive = JSON.stringify(game.S.territory);
 territory.evolve();
 assert.equal(JSON.stringify(game.S.territory), weekFive);
 
-console.log('roster: 80 wrestlers, six agencies, four promotion ladders, AI transfers and save migration passed');
+game.fresh({manager:'  Jane  Smith  ',stable:' Smiths & Co ',portrait:15});
+assert.equal(game.S.identity.manager,'Jane Smith');
+assert.equal(game.S.identity.stable,'Smiths & Co');
+assert.equal(game.S.identity.portrait,15);
+const customSeed=game.S.seed;
+game.setIdentity({manager:'New Manager',stable:'Old Firm',portrait:999});
+assert.equal(game.S.identity.portrait,0,'out-of-range portrait indexes are safely reset');
+assert.equal(game.S.seed,customSeed);
+game.load();
+assert.equal(game.S.identity.manager,'New Manager','identity survives automatic save and load');
+assert.equal(game.S.identity.stable,'Old Firm');
+console.log('roster: 80 wrestlers, six agencies, four promotion ladders, identity persistence and save migration passed');
