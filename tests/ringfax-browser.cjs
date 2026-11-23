@@ -217,8 +217,18 @@ async function run(browser,name,viewport){
    name+': question lives in a white speech bubble');
   assert.equal(await page.locator('.rf-bz-choice').count(),2,
    name+': intro has exactly two meaningful controls, without duplicate Start quiz');
-  assert.equal(await page.locator('.rf-bz-face rect').count(),34,
-   name+': Brian Dixon tribute uses a crisp multi-block Teletext portrait');
+  const mascot=await page.evaluate(()=>{
+   const svg=document.querySelector('.rf-bz-face'),paths=[...svg.querySelectorAll('path')];
+   return {viewBox:svg.getAttribute('viewBox'),crisp:svg.getAttribute('shape-rendering'),
+    fills:paths.map(x=>x.getAttribute('fill')),
+    count:paths.length,detail:paths.map(x=>(x.getAttribute('d')||'').length).reduce((a,b)=>a+b,0)};
+  });
+  assert.equal(mascot.viewBox,'0 0 56 47',name+': higher detail teletext mosaic viewBox');
+  assert.equal(mascot.crisp,'crispEdges',name+': rectangular pixels have sharp edges');
+  assert.equal(mascot.count,5,name+': five-colour original character SVG');
+  assert.ok(mascot.detail>4000,name+': portrait has enough detail for expressive face');
+  assert.deepEqual(mascot.fills,['#fff','#ff0','#00f','#0ff','#f00'],
+   name+': mascot is limited to the authentic teletext colour palette');
   await page.locator('.rf-bz-choice.rf-bz-red').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'question');
   assert.equal(await page.locator('.rf-bz-choice').count(),4,
