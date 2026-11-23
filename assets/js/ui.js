@@ -12,6 +12,7 @@ let openMsg=null,pick={},selOffer=null,selFree=null,night=null,toastT=0;
 // Presentation preferences only; no changes to career state or match simulation.
 let inboxFilter='all',stableFilter='all',stableQuery='',scoutQuery='',scoutStyle='all',scoutBudget='all',shortlist=[],scoutFiltersOpen=false;
 let commentaryView='all'; // local view only: never changes match or commentary generation
+let trainingSelected=null,trainingPane='development'; // training-screen presentation only
 const sorts={};
 
 /* ---------- small helpers ---------- */
@@ -278,7 +279,7 @@ function render(reset=false){
  if(!S())return;
  const keep={};if(!reset)document.querySelectorAll('#view [data-keep]').forEach(el=>keep[el.dataset.keep]=el.scrollTop);
  const focused=document.activeElement;
- const focusAttr=!reset&&focused?.closest?.('#view')?['data-selo','data-self','data-sort','data-free-sort'].find(a=>focused.hasAttribute(a)):null;
+ const focusAttr=!reset&&focused?.closest?.('#view')?['data-selo','data-self','data-sort','data-free-sort','data-trainpick','data-trainpane','data-train','data-intensity','data-session'].find(a=>focused.hasAttribute(a)):null;
  const focusValue=focusAttr?focused.getAttribute(focusAttr):null;
  if(!SCREENS[route.s])route={s:'desk',id:null};
  SCREENS[route.s]();renderChrome();
@@ -558,14 +559,100 @@ function renderProfile(){
 }
 
 function renderTraining(){
- const s=S();
- const table=s.roster.length?`<div class="well"><table class="grid"><thead><tr><th>Wrestler</th><th class="n">Ring</th><th class="n">Mic</th><th class="n">Psych</th><th class="n">Safe</th><th>Fatigue</th><th>Focus</th><th>Intensity</th></tr></thead><tbody>${s.roster.map(w=>{const [a,b]=trainSelects(w);return `<tr><td class="wrap" style="min-width:12ch;max-width:18ch"><button class="btn link" data-openw="${w.id}" title="${esc(trainNote(w))}">${esc(w.name)}</button></td><td class="n">${att(w.ring)}</td><td class="n">${att(w.mic)}</td><td class="n">${att(w.psych)}</td><td class="n">${att(w.safe)}</td><td>${bar(w.fatigue,fatKind(w.fatigue))} ${w.fatigue}</td><td>${a}</td><td>${b}</td></tr><tr class="session-row"><td colspan="8"><label class="session-field"><span>Session with Dennis</span>${sessionSelect(w)}</label><span class="dim">${esc(sessionNote(w))}</span></td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">Sign someone before planning training.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`;
- const coach=s.coach?`<div class="well pad"><dl class="kv"><dt>Employed</dt><dd>${esc(G.COACHES[s.coach].name)}</dd><dt>Salary</dt><dd>${money(G.coachWage())} a week</dd><dt>Specialism</dt><dd>${esc(G.COACHES[s.coach].stat)} training +${Math.round(G.COACHES[s.coach].boost*100)}%</dd></dl></div><p style="margin-top:10px"><button class="btn red" data-firecoach="1">End contract</button></p>`
-  :`<p class="lede">One specialist at a time. Wages are due even if nobody trains.</p><div class="well"><table class="grid"><thead><tr><th>Specialist</th><th class="n">Cost</th><th></th></tr></thead><tbody>${Object.entries(G.COACHES).map(([id,c])=>`<tr><td class="wrap">${esc(c.name)}<br><span class="dim">${esc(c.stat)} training +${Math.round(c.boost*100)}%</span></td><td class="n">${money(c.fee)}<br><span class="dim">${money(c.wage)}/wk</span></td><td class="n"><button class="btn sm" data-hirecoach="${id}" ${s.cash<c.fee?'disabled':''}>Hire</button></td></tr>`).join('')}</tbody></table></div>`;
- const cards=s.roster.map(w=>`<article class="phone-card"><div class="who">${face('wrestler',w.id,w.name)}<div><button class="btn link" data-openw="${w.id}">${esc(w.name)}</button><small>Fatigue ${w.fatigue} · ${esc(trainNote(w))}</small></div></div>${trainControls(w)}<p class="dim" style="margin:4px 0 0">${esc(sessionNote(w))}</p></article>`).join('');
+ const s=S(),roster=s.roster;
+ const chosen=roster.find(w=>w.id===trainingSelected)||roster[0];
+ trainingSelected=chosen?.id||null;
+ const bookedSessions=roster.filter(w=>w.session).length;
+ const alerts=roster.filter(w=>w.injury||w.fatigue>=60).length;
+ const programmes=roster.filter(w=>w.program).length;
+ const figures=`<div class="train-overview" aria-label="Training at a glance">
+  <div><small>Weekly training bill</small><b>${money(G.trainingBill())}</b></div>
+  <div><small>Dennis's sessions</small><b>${bookedSessions} / ${G.SESSION_CAP}</b></div>
+  <div><small>Condition alerts</small><b class="${alerts?'bad':''}">${alerts}</b></div>
+  <div><small>Active programmes</small><b>${programmes}</b></div>
+ </div>`;
+ const people=roster.length?roster.map(w=>{
+  const selected=w.id===chosen.id;
+  const condition=w.injury?`Injured · ${w.injury} ${plural(w.injury,'week')}`:w.fatigue>=60?'Rest recommended':w.fatigue>=40?'Fatigue building':'Available';
+  const line=w.program?`${w.program.type==='camp'?'Residential camp':'Training block'} · ${w.program.left} wk left`:w.training==='rest'?'Rest':w.training==='promo'?'Promo':`${D.TRAINING[w.training]?.name||'Training'} · ${G.INTENSITY[w.intensity||'light']?.name||'Light drills'}`;
+  return `<button type="button" class="train-person ${selected?'selected':''}" data-trainpick="${esc(w.id)}" aria-pressed="${selected}" aria-label="Manage training for ${esc(w.name)}">
+   ${face('wrestler',w.id,w.name)}
+   <span class="train-person-main"><b>${esc(w.name)}</b><small>${esc(line)}</small><small class="${w.injury||w.fatigue>=60?'bad':''}">${esc(condition)}</small></span>
+   <span class="train-person-fatigue"><small>Fatigue ${Math.round(w.fatigue)}</small>${bar(w.fatigue,fatKind(w.fatigue))}</span>
+  </button>`;
+ }).join(''):`<div class="empty">Sign a wrestler to begin training.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`;
+ const overview=`${figures}<p class="train-context">Select a wrestler to manage their weekly training. Plans continue until you change them.</p>
+ <div class="train-roster well" role="group" aria-label="Stable training roster">${people}</div>
+ <p class="train-footnote">Condition alerts identify injuries or fatigue of 60+. Sessions with Dennis are shared across the whole stable.</p>`;
+ const tabs=`<div class="train-tabs" role="group" aria-label="Training view">
+  <button type="button" class="btn sm ${trainingPane==='development'?'go':''}" data-trainpane="development" aria-pressed="${trainingPane==='development'}">Wrestler development</button>
+  <button type="button" class="btn sm ${trainingPane==='coaches'?'go':''}" data-trainpane="coaches" aria-pressed="${trainingPane==='coaches'}">Coaching staff</button>
+ </div>`;
+ let details='';
+ if(trainingPane==='coaches'){
+  const c=s.coach?G.COACHES[s.coach]:null;
+  const current=c?`<div class="train-staff-current"><b>${esc(c.name)}</b>
+   <p>Boosts ${esc(c.stat)} training by ${Math.round(c.boost*100)}% for eligible wrestlers. ${money(c.wage)} is charged every week, even when nobody trains that skill.</p>
+   <button class="btn sm red" data-firecoach="1">End coaching contract</button></div>`:
+   `<p class="train-context">No specialist employed. You can employ one coach at a time.</p>`;
+  const options=Object.entries(G.COACHES).map(([id,o])=>`<div class="train-coach-option">
+   <div><b>${esc(o.name)}</b><small>${esc(o.stat)} training +${Math.round(o.boost*100)}%</small><small>${money(o.fee)} hiring fee · ${money(o.wage)}/week</small></div>
+   <button type="button" class="btn sm" data-hirecoach="${esc(id)}" ${s.coach||s.cash<o.fee?'disabled':''}>Hire</button>
+  </div>`).join('');
+  details=`${tabs}<h3 class="section-h">Specialist coaching</h3>${current}
+   ${c?`<p class="train-footnote">Release your current coach before hiring a replacement. No hiring fee is refunded.</p>`:`<div class="train-coach-list well">${options}</div>`}
+   <p class="train-context">Bank balance: ${money(s.cash)}. Coach wages are included in the weekly training bill.</p>`;
+ }else if(!chosen){
+  details=`${tabs}<div class="empty">Your wrestler development plans will appear here once you sign someone.</div>`;
+ }else{
+  const w=chosen,[focusSelect,intensitySelect]=trainSelects(w);
+  const trainingFocus=D.TRAINING[w.training];
+  const mode=G.INTENSITY[w.intensity||'light']||G.INTENSITY.light;
+  const camp=w.program?.type==='camp';
+  const skill=trainingFocus?.stat;
+  const coached=!!(skill&&s.coach&&G.COACHES[s.coach]?.stat===skill);
+  const baseRisk=camp?1.5:mode.risk*100;
+  const paused=!!(w.injury||w.program);
+  const canProgramme=!paused&&w.training!=='rest'&&w.training!=='promo';
+  const statRow=(label,key)=>{
+   const val=w[key],since=val-(w.startSkills?.[key]??val);
+   return `<div class="train-attribute"><span>${esc(label)}</span><b>${att(val)}${since>0?` <small class="good">+${since}</small>`:''}</b><small>${Math.round((w.progress?.[key]||0)*100)}% to next</small></div>`;
+  };
+  const attributes=`<div class="train-attributes well">${statRow('Ring','ring')}${statRow('Psych','psych')}${statRow('Safety','safe')}${statRow('Mic','mic')}</div>`;
+  let expectation='';
+  if(w.injury)expectation='Injured: weekly skill training is unavailable; recovery takes priority.';
+  else if(w.training==='rest')expectation='Rest reduces fatigue. Recovery is greater in weeks without a match.';
+  else if(w.training==='promo')expectation='Producing a promo costs £40 a week and builds heat, not a training attribute.';
+  else expectation=`Base progress: ${camp?'1.9':mode.gain} skill points/week before skill, fatigue, rookie and coach modifiers. Base injury chance: ${baseRisk.toFixed(1)}% per week; fatigue and matches can increase it.${coached?' Your specialist coach helps this focus.':''}`;
+  const programme=w.program?`<div class="train-programme-active">
+   <b>${w.program.type==='camp'?'Residential camp':`${w.program.total}-week development block`}</b>
+   <p>${w.program.left} ${plural(w.program.left,'week')} remaining · ${w.program.gains} ${plural(w.program.gains,'skill point')} gained · ${money(G.trainingCost(w))}/week.</p>
+   ${camp?'<p>Unavailable for bookings until camp ends.</p>':''}
+   <button class="btn sm red" data-cancelprogram="${esc(w.id)}">End programme early</button></div>`:
+   `<div class="train-programme-options"><button class="btn sm" data-program="block3" data-wid="${esc(w.id)}" ${canProgramme?'':'disabled'}>3-week block</button>
+    <button class="btn sm" data-program="block6" data-wid="${esc(w.id)}" ${canProgramme?'':'disabled'}>6-week block</button>
+    <button class="btn sm" data-program="camp" data-wid="${esc(w.id)}" ${canProgramme?'':'disabled'}>3-week camp · £185/wk</button></div>
+    <p class="train-footnote">Blocks lock focus and intensity. Camps prevent bookings; conflicting bookings must be cleared first.</p>`;
+  const tip=G.sessionTip(w);
+  const suggested=tip?G.sessionOptions(w).find(o=>o.value===tip.value):null;
+  const why=suggested?`<p class="train-advice"><b>Dennis recommends:</b> ${esc(suggested.label)}. ${esc(tip.why)} ${esc(suggested.hint||'')}</p>`:'';
+  const sessions=`<div class="train-session"><div class="train-section-heading"><h3 class="section-h">A session with Dennis</h3><small>${bookedSessions} of ${G.SESSION_CAP} booked</small></div>
+   ${why}<label class="field">This week's session${sessionSelect(w)}</label>
+   <p class="train-context">${esc(sessionNote(w)||'Choose a rehearsal, a big-spot move or mic practice. Sessions are on top of the weekly training focus.')}</p></div>`;
+  details=`${tabs}<div class="train-wrestler-head">${face('wrestler',w.id,w.name,'portrait x2')}
+   <div><h3>${esc(w.name)}</h3><p>${esc(w.style||'Wrestler')} · ${status(w)}</p><p>Fatigue ${Math.round(w.fatigue)} ${bar(w.fatigue,fatKind(w.fatigue))}</p></div>
+   <button class="btn sm" data-openw="${esc(w.id)}">Full profile</button></div>
+   ${attributes}
+   <h3 class="section-h">Weekly training</h3>
+   <div class="train-settings"><label class="field">Focus${focusSelect}</label><label class="field">Intensity${intensitySelect}</label></div>
+   <div class="train-effect"><b>${money(G.trainingCost(w))} this week</b><p>${esc(expectation)}</p>${paused?`<p>${esc(trainNote(w))}</p>`:''}</div>
+   <h3 class="section-h">Development programme</h3>${programme}
+   ${w.prepHistory?.length?`<p class="train-footnote">Last completed: ${esc(D.TRAINING[w.prepHistory[0].focus]?.name||w.prepHistory[0].focus)} · +${w.prepHistory[0].gains} points (${weekLabel(w.prepHistory[0].week)}).</p>`:''}
+   ${sessions}`;
+ }
  paint('s-split s-train',
-  win('Training schedule',`<p class="lede">Set a focus and intensity once and it keeps running every week. Fixed blocks and camps are set from each wrestler’s profile. Dennis has time for ${G.SESSION_CAP} sessions a week across the stable: ${S().roster.filter(x=>x.session).length} booked.</p>${phoneList(table,cards)}`,{keep:'train',note:`Weekly bill ${money(G.trainingBill())}`})+
-  win('Coaching staff',coach,{h:'h3',keep:'coach'})
+  win('Stable training',overview,{keep:'train-roster'})+
+  win('Development and coaching',details,{h:'h3',keep:'train-detail'})
  );
 }
 
@@ -1562,6 +1649,8 @@ document.addEventListener('click',e=>{
  if(d.hist)return histMove(d.hist==='back'?-1:1);
  if(d.record)return openRecord(d.record);
  if(d.commentaryView){commentaryView=d.commentaryView==='key'?'key':'all';renderPastCommentary();return}
+ if(d.trainpick){trainingSelected=d.trainpick;trainingPane='development';render();return;}
+ if(d.trainpane){trainingPane=d.trainpane;render();return;}
  if(d.go)return go(d.go,d.id||null);
  if(d.openw)return go('profile',d.openw);
  if(d.sort){const [key,k]=d.sort.split(':');const s=sorts[key];sorts[key]=s&&s.k===k?{k,d:-s.d}:{k,d:['name','style','tier'].includes(k)?1:-1};render();return}
