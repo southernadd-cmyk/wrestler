@@ -212,9 +212,51 @@
  const fast=[100,200,300,500];
  // 4 x 4 pixel-cell letters, sized like a real teletext mosaic masthead.
  // Every row remains exactly forty character cells (no SVG or raster image).
- // Original teletext used limited block graphics. Oversized Unicode block glyphs
- // are not reliably cell-width on mobile fallback fonts; use a readable wordmark.
- const centring=(label)=>(' '.repeat(Math.max(0,Math.floor((40-label.length)/2)))+label).slice(0,40).padEnd(40,' ');
+ // A 5×7 ORIGINAL bitmap alphabet used for the Ringfax channel ident.
+ // Unlike VT323/Unicode block characters, SVG pixel shapes render identically
+ // on Android, Chromium desktop and browser zoom. No BBC lettering is copied.
+ const PIXELS={
+  A:['01110','10001','10001','11111','10001','10001','10001'],
+  B:['11110','10001','10001','11110','10001','10001','11110'],
+  C:['01111','10000','10000','10000','10000','10000','01111'],
+  D:['11110','10001','10001','10001','10001','10001','11110'],
+  E:['11111','10000','10000','11110','10000','10000','11111'],
+  F:['11111','10000','10000','11110','10000','10000','10000'],
+  G:['01111','10000','10000','10111','10001','10001','01111'],
+  H:['10001','10001','10001','11111','10001','10001','10001'],
+  I:['11111','00100','00100','00100','00100','00100','11111'],
+  J:['00111','00010','00010','00010','10010','10010','01100'],
+  K:['10001','10010','10100','11000','10100','10010','10001'],
+  L:['10000','10000','10000','10000','10000','10000','11111'],
+  M:['10001','11011','10101','10101','10001','10001','10001'],
+  N:['10001','11001','10101','10011','10001','10001','10001'],
+  O:['01110','10001','10001','10001','10001','10001','01110'],
+  P:['11110','10001','10001','11110','10000','10000','10000'],
+  Q:['01110','10001','10001','10001','10101','10010','01101'],
+  R:['11110','10001','10001','11110','10100','10010','10001'],
+  S:['01111','10000','10000','01110','00001','00001','11110'],
+  T:['11111','00100','00100','00100','00100','00100','00100'],
+  U:['10001','10001','10001','10001','10001','10001','01110'],
+  V:['10001','10001','10001','10001','10001','01010','00100'],
+  W:['10001','10001','10001','10101','10101','11011','10001'],
+  X:['10001','10001','01010','00100','01010','10001','10001'],
+  Y:['10001','10001','01010','00100','00100','00100','00100'],
+  Z:['11111','00001','00010','00100','01000','10000','11111'],
+  ' ':['00000','00000','00000','00000','00000','00000','00000']
+ };
+ function pixelLogo(word){
+  const chars=String(word).toUpperCase().split('').filter(c=>PIXELS[c]).slice(0,9);
+  const width=chars.length*6-1;
+  let path='';
+  for(let c=0;c<chars.length;c++){
+   for(let y=0;y<7;y++)for(let x=0;x<5;x++){
+    if(PIXELS[chars[c]][y][x]==='1')path+='M'+(c*6+x)+' '+y+'h1v1h-1z';
+   }
+  }
+  return '<svg class="rf-logo-svg" xmlns="http://www.w3.org/2000/svg" '+
+   'viewBox="0 0 '+width+' 7" preserveAspectRatio="none" aria-hidden="true" focusable="false" '+
+   'shape-rendering="crispEdges"><path fill="#ffed00" d="'+path+'"/></svg>';
+ }
 
  const BANNERS={
   100:['RINGFAX','yellow'],101:['LATEST','cyan'],200:['RESULTS','green'],
@@ -222,13 +264,11 @@
   500:['FANZONE','magenta'],501:['LETTERS','yellow']
  };
  function mosaic(word){
-  const heading=String(word).replace(/[^A-Z0-9 ]/g,'').slice(0,28);
-  return [
-   ' '.repeat(40),
-   centring(heading==='RINGFAX'?'R I N G F A X':heading),
-   centring('WRESTLING INFORMATION SERVICE'),
-   ' '.repeat(40)
-  ];
+  // Leave a text equivalent inside the 40×25 model; the graphic is painted
+  // on top of these blue cells, never substituted for the page content.
+  const label=String(word).toUpperCase().slice(0,30);
+  return [(' '.repeat(40)),(' '+label).padEnd(40,' '),
+   ' '.repeat(40),' '.repeat(40)];
  }
 
  const fastext=[
@@ -306,6 +346,13 @@
      '<button type="button" class="rf-fast-seg rf-fast-'+f.colour+
      '" data-rf-action="go" data-rf-value="'+f.page+'" aria-label="Open '+f.page+
      '">'+escape(f.text)+'</button>').join('')+'</div>';
+   }
+   // The row is still exactly 40 cells. A scalable 5×7 pixel logo overlays
+   // rows 1–4; this does not alter the teletext model or its navigation.
+   if(i===1){
+    const title=BANNERS[v.page]?.[0]||'SEARCH';
+    return '<div class="rf-row rf-mosaic rf-bg-blue rf-logo-row">'+escape(r.text)+
+     '<div class="rf-logo-art" aria-hidden="true">'+pixelLogo(title)+'</div></div>';
    }
    // Index rows have two independently navigable 20-cell columns.
    if(v.page===100&&i>=6&&i<=22){
