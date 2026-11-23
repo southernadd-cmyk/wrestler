@@ -734,12 +734,12 @@ function renderScouting(){
  const list=rows.length?`<div class="well free-table"><table class="grid"><thead><tr>${FREE_SORTS.map(([key,label],i)=>th('free',key,label,(i>=2?'n':'')+(FREE_OPTIONAL.includes(key)?' free-opt':''))).join('')}</tr></thead><tbody>${rows.map(x=>`<tr class="pick" data-self="${x.id}" data-selected="${x.id===selFree}"><td><button class="row-pick" data-self="${x.id}" aria-pressed="${x.id===selFree}" aria-label="Review ${esc(x.name)}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span></span></button></td><td>${esc(x.style)}</td>${FREE_STATS.map(([key])=>`<td class="n${FREE_OPTIONAL.includes(key)?' free-opt':''}">${att(x[key])}</td>`).join('')}<td class="n">${money(x.wage)}</td><td class="n"><b>${money(x.fee)}</b></td></tr>`).join('')}</tbody></table></div>` :`<div class="empty">${s.free.length?'No free agents match these filters.':'Nobody left on the market.'}</div>`;
  const sort=sorts.free;
  const cards=rows.length?`<div class="free-cards"><div class="free-sort"><label class="field">Sort by<select data-free-sort>${FREE_SORTS.map(([key,label])=>`<option value="${key}" ${key===sort.k?'selected':''}>${label}</option>`).join('')}</select></label><button class="btn sm" data-sort="free:${sort.k}" aria-label="Reverse sort order">${sort.d>0?'Ascending ▲':'Descending ▼'}</button></div>
-  ${rows.map(x=>`<button class="free-card" data-self="${x.id}" aria-pressed="${x.id===selFree}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)} · ${esc(x.style)}</small></span></span>
+  ${rows.map(x=>`<button class="free-card" data-self="${x.id}" aria-pressed="${x.id===selFree}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)} · ${esc(x.style)} · ${esc(D.DIVISIONS[D.divisionOf(x)].name)}</small></span></span>
    <span class="free-stats">${FREE_STATS.map(([key,label])=>`<span><small>${label}</small>${att(x[key])}</span>`).join('')}</span><span class="free-costs"><span><small>Weekly wage</small>${money(x.wage)}</span><span><small>Signing fee</small>${money(x.fee)}</span></span></button>`).join('')}</div>`:'';
  let detail='<div class="empty">Select a wrestler.</div>';
  if(w){
   const can=s.cash>=w.fee&&!full;
-  detail=`<div class="row" style="align-items:flex-start;gap:14px;flex-wrap:nowrap">${face('wrestler',w.id,w.name,'portrait x2')}<div><div style="font:36px/.9 var(--jersey);color:var(--blood)">${esc(w.name)}</div><div style="font-weight:600;margin:4px 0">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span></div></div></div>
+  detail=`<div class="row" style="align-items:flex-start;gap:14px;flex-wrap:nowrap">${face('wrestler',w.id,w.name,'portrait x2')}<div><div style="font:36px/.9 var(--jersey);color:var(--blood)">${esc(w.name)}</div><div style="font-weight:600;margin:4px 0">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${esc(D.DIVISIONS[D.divisionOf(w)].name)}</span></div></div></div>
   <div class="facts" style="margin:10px 0"><div><small>Signing fee</small><b class="${s.cash<w.fee?'neg':''}">${money(w.fee)}</b></div><div><small>Weekly wage</small><b>${money(w.wage)}</b></div></div>
   <button class="btn go" style="width:100%;min-height:44px" data-sign="${w.id}" ${can?'':'disabled'}>Sign ${esc(w.short)}</button>
   <p class="dim" style="margin-top:6px">${full?'Your locker room is full. Release someone first.':s.cash<w.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'Wages are paid every week, booked or not.'}</p>
@@ -1160,7 +1160,9 @@ function persistNight(){
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
-function openTV(){$('#toast').classList.remove('show');$('#tv').hidden=false;document.body.style.overflow='hidden'}
+let tvPreviousFocus=null;
+function openTV(){tvPreviousFocus=document.activeElement;$('#toast').classList.remove('show');$('#tv').hidden=false;$('#app').inert=true;$('#tv').setAttribute('tabindex','-1');$('#tv').focus();document.body.style.overflow='hidden'}
+function closeTVFocus(){$('#app').inert=false;$('#tv').removeAttribute('tabindex');if(tvPreviousFocus?.isConnected)tvPreviousFocus.focus();tvPreviousFocus=null}
 function resumeNight(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(NIGHT_STORE)||'null')}catch(e){}
  // After the last match the card is empty, but a post-match segment still waiting for its last word comes back.
@@ -1664,7 +1666,7 @@ function syncAfterEvidence(){
  if(r)r.consequences=[...(r.baseConsequences||r.consequences||[]),...(h?.after?.effects||[])];
 }
 function endNight(){
- clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';
+ clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';closeTVFocus();
  const res=night?.results||[],before=night?.before||null,speed=night?.speed||'normal';clearNight();night={speed};
  // Finish all weekly systems first; the report then reads their settled state.
  G.endWeek();
@@ -1754,7 +1756,7 @@ document.addEventListener('click',e=>{
  if(d.act==='export'){const blob=new Blob([JSON.stringify(S())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`the-office-s${S().season}w${S().week}.json`;a.click();return}
  if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(![20,21,22].includes(x.v))throw 0;G.S=x;if(!G.S)throw 0;G.save();startApp('desk');toast('Save loaded.')}catch(err){toast('That file isn’t a valid save from v2 to v2.3.')}})};i.click();return}
  if(d.act==='newgame'){dialog('Start a new career?','<p>Your current career will be overwritten.</p>',[['Cancel','close'],['Start again','newgame','red']]);return}
- if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('sign:')){const id=d.dlg.slice(5),err=G.sign(id);if(err){render();return toast(err)}const w=G.W(id);selFree=null;refreshList('scouting');return toast(`${w.name} signed. Wages ${money(w.wage)} a week.`)}if(d.dlg.startsWith('raise:')){const r=window.OfficeAmbitions?.giveRaise?.(d.dlg.slice(6));render();toast(r?.error||r?.text||'Wage review unavailable.');return}if(d.dlg.startsWith('withdraw:')){const said=G.unbook(d.dlg.slice(9));render();toast(said||'Programme withdrawn.');return}if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';startApp('scouting')}return}
+ if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('sign:')){const id=d.dlg.slice(5),err=G.sign(id);if(err){render();return toast(err)}const w=G.W(id);selFree=null;refreshList('scouting');return toast(`${w.name} signed. Wages ${money(w.wage)} a week.`)}if(d.dlg.startsWith('raise:')){const r=window.OfficeAmbitions?.giveRaise?.(d.dlg.slice(6));render();toast(r?.error||r?.text||'Wage review unavailable.');return}if(d.dlg.startsWith('withdraw:')){const said=G.unbook(d.dlg.slice(9));render();toast(said||'Programme withdrawn.');return}if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';closeTVFocus();startApp('scouting')}return}
  if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
  if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
  if(d.plan){night.plan[d.plan]=d.val;if(d.plan==='game'){night.plan.sheet=null;night.plan.focus=null;night.plan.confirmed=false;}t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
