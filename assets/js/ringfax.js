@@ -511,6 +511,7 @@
  function build(s){
   syncQuizWeek(s);
   const h=latest(s),recent=recents(s),P={};
+  const stable=s?.identity?.stable||'the player's stable',manager=s?.identity?.manager||'the manager';
   // The blue header already shows an article title, so don't repeat it
   // as the first editorial line. This applies consistently to every page.
   const add=(number,title,lines,subpages=null)=>{
@@ -547,6 +548,7 @@
    pair('501 LETTERS','777 RINGFAX QUIZ','cyan'),
    item(' --------------------------------','blue'),
    item(' THE OFFICE, THROUGH FANS EYES','yellow'),
+   item(' STABLE: '+stable.slice(0,31),'green'),
    item(' SEASON '+(s?.season||1)+' / WEEK '+(s?.week||1),'cyan'),
    item(' NOT ANOTHER RESULTS TABLE','green'),
    item(' READ THE STORY BEHIND THE STATS','white'),
@@ -557,6 +559,7 @@
   a=[item(h?'THE EDITORIAL LEAD':'WELCOME TO THE CIRCUIT','yellow'),item('')];
   if(h){
    paragraphs(a,'THE BELL HAS RUNG','cyan');
+   paragraphs(a,stable+' are represented by '+manager+'.','yellow');
    paragraphs(a,h.name+' met '+h.foe+' at '+(h.promoter||promotionName(h.pid)||'the circuit')+'.');
    a.push(item(''));
    if(h.outcome==='dq'||h.outcome==='nc')
@@ -568,6 +571,7 @@
    a.push(item(''),item(' MORE COMMENT: 200 AND 201','cyan'));
   }else{
    paragraphs(a,'FOUR PROMOTIONS. DIFFERENT TASTES.','cyan');
+   paragraphs(a,manager+' takes charge of '+stable+'.','green');
    paragraphs(a,'On one circuit, brawls and technical wrestling are chasing the same fans.');
    a.push(item(''));
    const first=promos[0],last=promos.at(-1);
@@ -666,6 +670,7 @@
   a=[item('AFTER THE BELL','yellow'),item(' A VIEW FROM THE CHEAP SEATS','cyan'),item('')];
   if(h){
    paragraphs(a,h.name+' and '+h.foe+' have left the ring.');
+   paragraphs(a,'For '+stable+', the next show is the test.','cyan');
    a.push(item(''));
    const fan=voices(h,1)[0];
    a.push(item(' '+fan.name+' SAYS:','green'));
