@@ -23,6 +23,15 @@
 .rf-red{color:#f00}.rf-blue{color:#00f}.rf-magenta{color:#f0f}
 .rf-bg-blue{background:#00f}
 .rf-mosaic{background:#00f;line-height:1.0;font-weight:600;text-shadow:none}
+/* Bold 5×7 SVG pixels, not glyphs. Occupies the complete blue masthead band,
+   staying legible even when Android renders VT323 at tiny text sizes. */
+.rf-logo-row{position:relative;z-index:1;overflow:visible!important}
+.rf-logo-art{position:absolute;left:0;top:0;width:100%;height:400%;
+ display:flex;align-items:center;justify-content:center;z-index:2;
+ background:#00f;overflow:hidden;pointer-events:none}
+.rf-logo-svg{display:block;width:94%;height:83%;max-width:100%;max-height:100%;
+ shape-rendering:crispEdges;image-rendering:pixelated;overflow:hidden}
+
 .rf-section{background:#00f;color:#fff;line-height:1.08}
 .rf-header{color:#fff;line-height:1.05}
 .rf-index-row{display:flex;align-items:stretch;justify-content:stretch;gap:0}
