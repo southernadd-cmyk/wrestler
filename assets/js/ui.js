@@ -18,8 +18,9 @@ const sorts={};
 
 /* ---------- small helpers ---------- */
 function face(type,id,name,cls='portrait'){return Pt.avatar({key:type+':'+id,name,type},null,cls)}
+function playerIdentity(){return G.normaliseIdentity(S()?.identity);}
 function identityCard(includeEdit=false){
- const p=G.normaliseIdentity(S()?.identity);
+ const p=playerIdentity();
  return '<div class="player-identity-card">'+Pt.playerPortrait(p.portrait,p.manager,'portrait')+
   '<div class="player-identity-text"><b>'+esc(p.manager)+'</b><span>'+esc(p.stable)+'</span>'+
   (includeEdit?'<button class="btn sm" type="button" data-act="profile">Edit identity</button>':'')+
@@ -383,7 +384,7 @@ function renderDesk(){
   win('This week',ledgerFacts()+booksChart(),{area:'ledger',h:'h3',cls:'quiet',body:'tight'})+
   win('In-tray',`<div class="phone-only"><div class="phone-progress"><div><small>Reputation</small><b>${s.rep}</b></div><div><small>Meetings left</small><b>${s.focus} of 2</b></div></div></div><div class="well">${briefing}${tray}</div>`,{area:'tray',cls:'desk-actions',body:'tight',keep:'tray'})+
   win('Next dates',`<div class="well">${datesHtml}</div>`,{area:'dates',h:'h3',body:'tight',keep:'dates'})+
-  win('Stable condition',`<div class="well">${squad}</div>`,{area:'squad',h:'h3',body:'tight',keep:'cond',actions:'<button class="btn" data-go="training">Training</button>'})
+  win('Stable condition · '+esc(playerIdentity().stable),`<div class="well">${squad}</div>`,{area:'squad',h:'h3',body:'tight',keep:'cond',actions:'<button class="btn" data-go="training">Training</button>'})
  );
 }
 
@@ -409,7 +410,7 @@ function renderInbox(){
   const sender=String(m.from||''),promoter=s.promoters.find(p=>sender===p.voice||sender===p.name||sender.startsWith(p.voice+',')||sender.startsWith(p.name+','));
   const person=promoter?null:[...s.roster,...s.free,...(D.ALL||[]),...(D.FOES||[])].find(w=>sender===w.name||sender.startsWith(w.name+','));
   const senderRecord=promoter?recordLink('p',promoter.id,promoter.name):person?recordLink('w',person.id,person.name):'';
-  letter=`<article class="letter">${mgr?`<div class="letter-face">${face('manager',mgr.id,mgr.manager,'portrait')}</div>`:''}<div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.${senderRecord?' · '+senderRecord:''}</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
+  letter=`<article class="letter"><div class="meta">To ${esc(playerIdentity().manager)} · ${esc(playerIdentity().stable)}</div>${mgr?`<div class="letter-face">${face('manager',mgr.id,mgr.manager,'portrait')}</div>`:''}<div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.${senderRecord?' · '+senderRecord:''}</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
   if(Array.isArray(m.sections)&&m.sections.length){
    letter+='<div class="report-sections">'+m.sections.map(section=>'<section><h3 class="section-h">'+esc(section.title)+'</h3><ul class="cons">'+(section.lines||[]).map(line=>'<li>'+esc(line)+'</li>').join('')+'</ul></section>').join('')+'</div>';
    letter+='<div class="report-links"><button class="btn" data-go="pyramid">Card ladder</button><button class="btn" data-go="squad">Your roster</button><button class="btn" data-go="offers">Offers</button></div>';
@@ -422,7 +423,7 @@ function renderInbox(){
  }
  const need=G.pending().length;
  paint('s-inbox'+phonePane(route.id,m?.id),
-  win('Inbox',`${controls}<div class="well inbox-results">${items?`<ul class="msglist">${items}</ul>`:'<div class="empty">No messages match this filter.</div>'}</div>`,{body:'tight',keep:'msgs',cls:'phone-master',note:need?`${need} awaiting reply`:`${list.length} ${plural(list.length,'message')}`})+
+  win('Inbox · '+esc(playerIdentity().stable),`${controls}<div class="well inbox-results">${items?`<ul class="msglist">${items}</ul>`:'<div class="empty">No messages match this filter.</div>'}</div>`,{body:'tight',keep:'msgs',cls:'phone-master',note:need?`${need} awaiting reply`:`${list.length} ${plural(list.length,'message')}`})+
   win(m?.kind==='decision'&&!m.answer?'Your decision':'Message',`<div class="paper" style="min-height:100%">${letter}</div>`,{body:'tight',keep:'letter',cls:'quiet phone-inspector',h:'h3',actions:phoneBack('inbox','Inbox')})
  );
 }
@@ -472,7 +473,7 @@ function renderSquad(){
  const cards=rows.map(w=>`<button class="phone-card" data-openw="${w.id}"><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b>${ownedChamps(w.id)}<small>${esc(w.tier)} · ${esc(w.style)}</small></span></span><span class="phone-card-line"><span>Fatigue ${w.fatigue} · Morale ${w.morale}</span><span>${status(w)}</span></span><small>${money(w.wage)} a week</small></button>`).join('');
  const open=5-s.roster.length;
  const openPlaces=s.roster.length&&open>0?`<div class="open-places"><div><b>${open} open ${plural(open,'place')}</b><span>More wrestlers means more of this week’s offers you can fill.</span></div><button class="btn go" data-go="scouting">Find free agents</button></div>`:'';
- paint('s-full',win('Your stable',`${toolbar}${phoneList(table,cards)}${openPlaces}<p class="dim" style="margin-top:10px"><span class="phone-table">Select a wrestler to open their profile. Click a column heading to sort.</span><span class="phone-only">Tap a wrestler to open their profile.</span></p>`,{keep:'squad',note:`${s.roster.length} of 5 places filled. Wages ${money(G.wages())} a week.`,actions:'<button class="btn" data-go="training">Training</button><button class="btn" data-go="scouting">Free agents</button>'}));
+ paint('s-full',win(esc(playerIdentity().stable),`<p class="dim">Managed by ${esc(playerIdentity().manager)}</p>${toolbar}${phoneList(table,cards)}${openPlaces}<p class="dim" style="margin-top:10px"><span class="phone-table">Select a wrestler to open their profile. Click a column heading to sort.</span><span class="phone-only">Tap a wrestler to open their profile.</span></p>`,{keep:'squad',note:`${s.roster.length} of 5 places filled. Wages ${money(G.wages())} a week.`,actions:'<button class="btn" data-go="training">Training</button><button class="btn" data-go="scouting">Free agents</button>'}));
 }
 
 function temperament(w){
@@ -1549,7 +1550,7 @@ function bell(){
  let structureExecution;
  try{structureExecution=OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.structureChoice);}
  catch(err){console.warn('Match structure refused',err);toast('Signed structure mismatch. Review the backstage layout.');return showMeeting();}
- night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:matchSheet,structureExecution,seed:Math.floor(Math.random()*2**31)});
+ night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:matchSheet,structureExecution,identity:{...playerIdentity()},seed:Math.floor(Math.random()*2**31)});
  night.past=[];night.paused=false;commentaryView='all';
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const livePlan=`<section class="ringside-plan" aria-label="Match instructions">
@@ -1560,7 +1561,7 @@ function bell(){
    <div><dt>Running order</dt><dd>${Mx.structureReport(night.M)?'Four objectives tracked live':P.sheet?.signed?'Agreed beats tracked live':P.leash==='free'?'Called in the ring':'No signed running order'}</dd></div></dl>
    <p>Plans are instructions, not guaranteed results. Watch the match layout and calls as the bout unfolds.</p>
   </section>`;
- const bench=`${livePlan}<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar" role="progressbar" aria-label="Atmosphere" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">Your calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
+ const bench=`${livePlan}<div class="gauge"><label>Atmosphere <b id="lCrowd">0</b></label><div class="gbar" role="progressbar" aria-label="Atmosphere" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="lCrowdBar"></i></div></div><div class="gauge"><label>Game plan <b id="lSheet">–</b></label></div><div class="callsleft" style="margin-bottom:6px">Calls left <span id="lCalls">●●●</span></div><div class="calls">${callBtns}</div><div class="callhint well" id="lHint">${esc(playerIdentity().manager)}'s calls go to the wrestler. They don’t always listen.</div><h3 class="section-h">Commentary speed</h3><div class="speed" role="group" aria-label="Commentary speed"><button class="btn" data-pause>Pause</button>${['slow','normal','fast','skip'].map(s=>`<button class="btn" data-speed="${s}" aria-pressed="${night.speed===s}">${{slow:'Slow',normal:'Normal',fast:'Fast',skip:'To the end'}[s]}</button>`).join('')}</div>`;
  $('#tv').innerHTML=`${strip(c)}<header class="score"><div class="side you">${face('wrestler',w.id,w.name,'portrait x2')}<h2>${esc(w.short)}</h2><div class="stam" id="sY" role="progressbar" aria-label="${esc(w.short)} stamina" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i></i></div></div><div class="mid"><div class="live-stars" id="lStars" aria-label="Live rating">–</div><div class="clock" id="lClock">00:00</div><div class="phase" id="lPhase">Entrances</div></div><div class="side them">${face('wrestler',f.id,f.name,'portrait x2')}<h2>${esc(f.short)}</h2><div class="stam" id="sT" role="progressbar" aria-label="${esc(f.short)} stamina" aria-valuemin="0" aria-valuemax="100" aria-valuenow="92"><i></i></div></div></header><div class="mom" role="meter" aria-label="Momentum: positive favours ${esc(w.short)}, negative favours ${esc(f.short)}" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"><i id="lMom" style="width:50%"></i></div><div class="plan-strip" id="lPlan" hidden></div>
  <div class="stage screen s-live">${win('Live commentary',`<div class="feed well"><div class="sr" id="lAnnounce" role="status"></div><div class="now" id="lNow"><span class="t"></span><span class="tx"></span></div><div class="commentary-views" role="group" aria-label="Commentary history">
    <span>Commentary archive</span><button data-commentary-view="all" aria-pressed="true">All lines</button><button data-commentary-view="key" aria-pressed="false">Key moments</button>
