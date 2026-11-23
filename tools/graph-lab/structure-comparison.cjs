@@ -54,6 +54,99 @@ const top=(obj,n=5)=>Object.entries(obj).sort((a,b)=>b[1]-a[1]||a[0].localeCompa
 // A reported botch is not an invalid ordinary graph move. In this engine,
 // only a scripted spectacle attempt or an extraordinary balcony dive increments
 // M.botches. Record those actual attempts rather than guessing from risky calls.
+// Phase 9L: diagnose the first genuine physical response to a credited
+// late near-fall. Observes existing 9K evidence; no extra match simulation,
+// action, RNG selection, altered finish rule or star credit.
+const phase9lByPlan=Object.fromEntries(plans.map(game=>[game,{
+ cleanBouts:0,lateNearfalls:0,insufficientClock:0,eligibleLateNearfalls:0,
+ continuedPressure:0,earnedDefensiveReversal:0,opponentOffence:0,
+ otherPhysicalResponse:0,noPhysicalResponse:0,
+ nearfallBeforeClosingSetup:0,nearfallBeforeWitnessedSetup:0,
+ sameOwnerAuthoredEdge:0,sameOwnerUnlinked:0,
+ sameOwnerReset:0,sameOwnerCover:0,sameOwnerSetup:0,
+ sameOwnerOffence:0,sameOwnerOther:0,followupActions:{},sourceActions:{},
+ byNearfallKind:{authored_kickout:0,earned_cover:0}
+}]));
+function auditPhase9L(game,m,drama,closing){
+ const row=phase9lByPlan[game],A=E.GRAPH.A;
+ row.cleanBouts++;
+ // This is the first logged NON-REST graph response, not automatically
+ // an attack. Reset, pin, stance and contact moves are split below.
+ const realAction=e=>{
+  const n=A[e?.id];if(!n||!['w','f'].includes(e.preControl)||
+    n.nearfall||n.blockOf||n.family==='rest')return false;
+  if((!n.reverse&&(n.cost??1)<.6)||
+    (e.physical&&(e.physical.area!=='ring'||
+      e.physical.locations?.w!=='ring'||
+      e.physical.locations?.f!=='ring')))return false;
+  return ['aerialResolution','grappleResolution',
+   'strikeResolution','contactResolution'].every(k=>
+    !e[k]||e[k]==='landed'||(n.reverse&&e[k]==='counter'));
+ };
+ for(const moment of drama.moments){
+  if(moment.at<m.len-180||moment.at>m.len)continue;
+  row.lateNearfalls++;
+  // A late bell does not prove that the engine abandoned a response:
+  // require the full normal four-tick / 40-second observation window.
+  if(moment.at>m.len-40){row.insufficientClock++;continue;}
+  row.eligibleLateNearfalls++;
+  row.byNearfallKind[moment.kind]++;
+  const other=moment.side==='w'?'f':'w';
+  const setups=new Set(['lockup','waistlock','front_facelock',
+   'headlock','wristlock','go_behind','rope_run','rope_rebound',
+   'corner_whip','top_climb','springboard_rise','knuckle_lock',
+   'circle','collar_snap','opponent_study','finish_tease']);
+  const covers=new Set(['cover','early_cover','near_kickout']);
+  const offence=e=>{
+   const n=A[e.id];return (n.zone==='mat'&&n.down==='d'&&
+    !covers.has(e.id))||
+    ['strike','running','suplex','power','neck','fire','ground',
+     'submission','aerial','springboard','lucha','brawl','heel',
+     'technical','corner'].includes(n.family)||
+    ['strike_trade','probe_strike','cheap_shot','body_shot',
+     'stiff_forearm','counter_strike'].includes(e.id);
+  };
+  const response=m.graph.events.find(e=>e.t>moment.at&&
+   e.t<=moment.at+40&&realAction(e));
+  if(!response)row.noPhysicalResponse++;
+  else if(response.preControl===moment.side&&
+   response.control===moment.side&&!A[response.id].reverse){
+   // This count includes NON-OFFENSIVE graph nodes. Never describe
+   // a stand-up, lockup or pin setup as a landed offensive strike.
+   row.continuedPressure++;
+   if(response.id==='stand_reset')row.sameOwnerReset++;
+   else if(covers.has(response.id))row.sameOwnerCover++;
+   else if(setups.has(response.id))row.sameOwnerSetup++;
+   else if(!offence(response))row.sameOwnerOther++;
+   else{
+    row.sameOwnerOffence++;
+    // An earned nearfall does not automatically imply an authored
+    // follow-through: require a DIRECT move-graph edge to the performed
+    // subsequent attack, not merely a legal action from the broad pool.
+    const sourceId=moment.source?.id||moment.action;
+    const sourceNode=A[sourceId];
+    add(row.sourceActions,sourceId);
+    add(row.followupActions,response.id);
+    if(sourceNode?.next?.some(([id])=>id===response.id))
+     row.sameOwnerAuthoredEdge++;
+    else row.sameOwnerUnlinked++;
+   }
+  }
+  else if(response.preControl===moment.side&&
+   response.control===other&&A[response.id].reverse)
+   row.earnedDefensiveReversal++;
+  else if(response.preControl===other&&response.control===other&&
+   !A[response.id].reverse)row.opponentOffence++;
+  else row.otherPhysicalResponse++;
+  // Temporal co-occurrence is not causation. Only a real final runway
+  // whose setup occurred AFTER this near-fall qualifies for this field.
+  if(closing&&closing.setup.at>moment.at&&
+   closing.setup.at-moment.at<=120){
+   row.nearfallBeforeClosingSetup++;
+   row.nearfallBeforeWitnessedSetup+=Number(closing.status==='witnessed');
+  }
+ }
+}
 const scriptedBreakdown=m=>{
  const attempts=m.graph.scriptedSpotAttempts||[];
  const failed=attempts.filter(x=>x.outcome==='botched');
@@ -286,6 +379,7 @@ for(let si=0;si<sampleStyles.length;si++){
   // for a real unbroken booked finish. A completed cradle is a kick-out.
   const drama=m.final.nearfallDrama,controlDrama=control.final.nearfallDrama;
   assert.ok(drama&&controlDrama,'both matches must report witnessed near-fall evidence');
+  if(['win_clean','lose_clean'].includes(finish))auditPhase9L(game,m,drama,closing);
   for(const [bout,reportNear]of [[m,drama],[control,controlDrama]]){
    const rng=bout.r.getState(),beforeEvents=JSON.stringify(bout.graph.events);
    assert.equal(JSON.stringify(E.GRAPH.nearfallDrama(bout)),
@@ -608,6 +702,32 @@ console.log('PHASE9K_NEARFALL_AUDIT_JSON '+JSON.stringify({
    safeRiskMoves:x.flatMap(r=>r.safeRiskMoves)
   }];
  }))
+}));
+// Phase 9L diagnostic only: count what *actually* follows a witnessed
+// late nearfall. Do not treat a non-reversal opponent move as an earned
+// takeover and do not count a nearfall as the contracted finish.
+for(const row of Object.values(phase9lByPlan)){
+ assert.equal(row.lateNearfalls,row.insufficientClock+row.eligibleLateNearfalls,
+  'late covers must reconcile with sufficient-clock opportunities');
+ assert.equal(row.eligibleLateNearfalls,row.continuedPressure+
+  row.earnedDefensiveReversal+row.opponentOffence+
+  row.otherPhysicalResponse+row.noPhysicalResponse,
+  'each eligible late cover must have exactly one first response classification');
+ assert.ok(row.nearfallBeforeWitnessedSetup<=row.nearfallBeforeClosingSetup,
+  'witnessed full closing runways must be a subset of real linked runways');
+ assert.equal(row.sameOwnerReset+row.sameOwnerCover+
+  row.sameOwnerSetup+row.sameOwnerOffence+row.sameOwnerOther,
+  row.continuedPressure,'same-side graph responses must distinguish actual offence from resets, covers and setups');
+ assert.equal(row.sameOwnerAuthoredEdge+row.sameOwnerUnlinked,row.sameOwnerOffence,
+  'only actual same-side offence may be classified by source-authored graph links');
+}
+console.log('PHASE9L_NEARFALL_RESPONSE_JSON '+JSON.stringify({
+ schema:'office-phase9l-nearfall-response-v1',
+ method:'Credited 9K nearfalls at 180–40 seconds before bell in Director-active clean matches; first non-rest verified graph response within 40 seconds. Same-side resets, covers, setups, actual offence and other nodes are reported separately; only offence counts toward source-authored continuation. A timestamp-only link to a credited runway setup within 120 seconds is NOT claimed causal.',
+ byPlan:Object.fromEntries(Object.entries(phase9lByPlan).map(([plan,row])=>
+  [plan,{...row,
+   followupActions:top(row.followupActions,12),
+   sourceActions:top(row.sourceActions,12)}]))
 }));
 console.log('PHASE9G_TRACE_JSON '+JSON.stringify({
  base:'7bd150ec60fe693c1818d516df4ce19618577849',
