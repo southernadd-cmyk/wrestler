@@ -1,11 +1,7 @@
 name: Brawl running payoff comparison
 on:
-  pull_request:
-    paths:
-      - 'tools/graph-lab/brawl-running-depth.cjs'
-      - 'tests/brawl-running-payoff.test.cjs'
-      - '.github/workflows/brawl-running-payoff.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
