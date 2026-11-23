@@ -367,7 +367,17 @@
   add(104,'PROMOTER DIRECTORY',a);
 
   a=[item('RECENT COMPLETED MATCHES','yellow'),item('')];
-  if(!recent.length)paragraphs(a,'No match results recorded yet.');
+  if(!recent.length){
+   paragraphs(a,'No completed results on record.','cyan');
+   a.push(item(''),item(' UPCOMING / NOT RESULTS','yellow'));
+   if(bookings.length){
+    for(const o of bookings.slice(0,3)){
+     a.push(item(' '+o.rfKind+' '+eventWeek(o),'green'));
+     a.push(item(' '+promotionName(o.pid)+' - '+wrestlerName(o.rid)));
+    }
+   }else paragraphs(a,'No current bookings.');
+   a.push(item(''),item(' 103: THE BOOKING DESK','yellow'));
+  }
   recent.slice(0,8).forEach((r,i)=>{
    a.push(item('S'+r.season+' W'+r.week+' '+(i+1)+'. '+text(r.name),'cyan'));
    paragraphs(a,'v '+text(r.foe)+' / '+score(r),'white');
@@ -378,7 +388,16 @@
 
   a=[item('RECORDED MATCH RATINGS','yellow'),item('')];
   const ratings=recent.filter(r=>Number.isFinite(r.stars));
-  if(!ratings.length)paragraphs(a,'No rated matches recorded yet.');
+  if(!ratings.length){
+   paragraphs(a,'No matches rated yet. Star scores appear only after completed bouts.','cyan');
+   a.push(item(''),item(' OPENING WEEK CARD WATCH','yellow'),
+    item(' CARD SCORES ARE NOT MATCH RATINGS','green'));
+   for(const promo of promos.slice(0,4)){
+    const top=leader(s,promo.id,D?.DIVISION_ORDER?.[0]);
+    if(top)a.push(item(' '+promo.name+': '+rankName(top[0])+' ['+Math.round(top[1].score)+']'));
+   }
+   a.push(item(''),item(' 300/301: CURRENT RANKINGS','cyan'));
+  }
   ratings.slice(0,8).forEach(r=>{
    paragraphs(a,'S'+r.season+' W'+r.week+' '+r.name+' v '+r.foe,'cyan');
    a.push(item(' '+r.stars.toFixed(2)+' stars','yellow'));
@@ -389,16 +408,35 @@
   }
   add(201,'MATCH GRADES',a);
 
-  const p=s?.promoters?.[0]||D?.PROMOS?.[0]||null;
-  const div=D?.DIVISION_ORDER?.[0]||null;
-  const cards=s?.territory?.cards?.[p?.id]||{};
-  const ranked=Object.entries(cards).filter(([id,row])=>row&&Number.isFinite(row.score)&&(!div||D?.divisionOf?.(id)===div))
-    .sort((x,y)=>y[1].score-x[1].score).slice(0,10);
-  a=[item('PROMOTION: '+(p?.name||'Unknown'),'yellow'),item('DIVISION: '+(div||'unavailable'),'cyan'),item('')];
-  if(!ranked.length)paragraphs(a,'Card rankings are not available for this promotion.');
-  ranked.forEach(([id,v],i)=>a.push(item(' '+String(i+1).padStart(2,' ')+' '+rankName(id).slice(0,27)+' '+Math.round(v.score),'white')));
-  a.push(item(''),item('A SINGLE PROMOTION / DIVISION','cyan'));
+  const p=promos[0]||null;
+  const divs=D?.DIVISION_ORDER||[];
+  const col=v=>text(v).replace(/\s+/g,' ').trim().slice(0,20).padEnd(20,' ');
+  const ranking=(pid,div)=>Object.entries(s?.territory?.cards?.[pid]||{})
+   .filter(([id,v])=>v&&Number.isFinite(v.score)&&D?.divisionOf?.(id)===div)
+   .sort((x,y)=>y[1].score-x[1].score||wrestlerName(x[0]).localeCompare(wrestlerName(y[0])));
+  a=[item('CARD LADDER / '+(p?.name||'CIRCUIT').toUpperCase(),'yellow'),
+     {text:col('MEN / POINTS')+col('WOMEN / POINTS'),colour:'cyan'}];
+  const rankedDivs=divs.slice(0,2).map(div=>ranking(p?.id,div).slice(0,6));
+  for(let i=0;i<6;i++){
+   const labels=rankedDivs.map(rows=>rows[i]?
+    (i+1)+'. '+rankName(rows[i][0])+' '+Math.round(rows[i][1].score):'');
+   a.push({text:col(labels[0])+col(labels[1]),colour:i===0?'yellow':'white'});
+  }
+  a.push(item(''),item(' CARD RANKS, NOT MATCH RATINGS','green'),
+   item(' 301: LEADERS IN ALL PROMOTIONS','cyan'));
   add(300,'CARD RANKINGS',a);
+
+  a=[item('THE CIRCUIT CARD LEADERS','yellow'),
+    {text:col('MEN - TOP RANK')+col('WOMEN - TOP RANK'),colour:'cyan'}];
+  for(const promo of promos){
+   a.push(item(' '+promo.name.toUpperCase(),'yellow'));
+   const leaders=divs.slice(0,2).map(div=>leader(s,promo.id,div));
+   a.push({text:col(leaders[0]?rankName(leaders[0][0]):'NOT RANKED')+
+    col(leaders[1]?rankName(leaders[1][0]):'NOT RANKED'),colour:'white'});
+   a.push(item(''));
+  }
+  a.push(item(''),item(' CURRENT CARD ORDER','green'));
+  add(301,'CIRCUIT LEADERS',a);
 
   // Four promotions × two divisions fit on one 17-line teletext page.
   // Every promotion uses a full-width header and one pair of 20-cell columns.
