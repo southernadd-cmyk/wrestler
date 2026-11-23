@@ -6157,7 +6157,8 @@ function regularBigMoment(M,id){
 function witnessOrdinaryBigSpot(M){
  const pending=M.bigSpotRequest;if(!pending)return;
  const event=(M.graph?.events||[]).findLast(e=>
-  e.t>pending.at&&e.preControl==='w'&&regularBigMoment(M,e.id)&&
+  e.t>pending.at&&e.t/Math.max(1,M.len)>=.35&&
+  e.preControl==='w'&&regularBigMoment(M,e.id)&&
   !e.botched&&!e.blocked);
  if(!event)return;
  const evidence=M.ringsideEvidence?.[pending.index];
