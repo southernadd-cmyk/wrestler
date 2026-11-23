@@ -242,7 +242,7 @@
  }
  const fastext=[
   {text:'101 NEWS  ',page:101,colour:'red'},
-  {text:'200 RESULTS',page:200,colour:'green'},
+  {text:'200 RESULT',page:200,colour:'green'},
   {text:'300 RANKS ',page:300,colour:'yellow'},
   {text:'500 FANS  ',page:500,colour:'cyan'}
  ];
