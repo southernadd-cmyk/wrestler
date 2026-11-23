@@ -231,7 +231,9 @@
   }
   return out;
  }
- const wrestlerName=id=>id?(D?.findWrestler?.(id)?.name||String(id)):'VACANT';
+ const person=id=>D?.findWrestler?.(id)||D?.TALENT?.find(w=>w.id===id)||
+  D?.FOES?.find(w=>w.id===id)||null;
+ const wrestlerName=id=>id?(person(id)?.name||String(id)):'VACANT';
  const promotionName=id=>D?.PROMOS?.find(p=>p.id===id)?.name||String(id||'Unknown');
  function leader(s,pid,div,exclude=null){
   const cards=s?.territory?.cards?.[pid]||{};
@@ -267,6 +269,22 @@
    {name:'TICKETSTUB',quote:first?
     first.venue+' is one venue I would visit. Earn our ticket money.':
     'Promoters have to earn our ticket money.'}
+  ];
+ }
+ function openingForum(s){
+  const p=D?.PROMOS||[];
+  const first=p[0],last=p.at(-1);
+  const top=first&&leader(s,first.id,D?.DIVISION_ORDER?.[0]);
+  return [
+   {name:'BALCONYSEAT',quote:first?
+    'A room like '+first.venue+' can turn one good comeback into a local legend.':
+    'A loud little hall can make a star.'},
+   {name:'KAYFABEKEV',quote:last?
+    'Big television stages are fine, but who will actually earn the boos at '+last.name+'?':
+    'Give me somebody worth booing.'},
+   {name:'BIGSPOTBOB',quote:top?
+    'I would buy a ticket for '+wrestlerName(top[0])+'. I am not promising a classic.':
+    'Give us one moment we will talk about tomorrow.'}
   ];
  }
  function build(s){
@@ -440,10 +458,12 @@
   // Card ladder selects editorial subjects; Ringfax does not display ranking
   // positions or numeric scores that are already available in The Office.
   const one=promos[0],two=promos[1]||promos[0];
-  const picks=[one&&leader(s,one.id,D?.DIVISION_ORDER?.[0]),
-   two&&leader(s,two.id,D?.DIVISION_ORDER?.[1])].filter(Boolean);
+  const picks=[one&&leader(s,one.id,D?.DIVISION_ORDER?.[0],
+    s?.territory?.titles?.[one.id]?.[D?.DIVISION_ORDER?.[0]]?.holder),
+   two&&leader(s,two.id,D?.DIVISION_ORDER?.[1],
+    s?.territory?.titles?.[two.id]?.[D?.DIVISION_ORDER?.[1]]?.holder)].filter(Boolean);
   const makeSpotlight=id=>{
-   const w=D?.findWrestler?.(id)||{},style=w.style||'Wrestling';
+   const w=person(id)||{},style=w.style||'General';
    const angle=style==='Technical'?'Can ring craft win a noisy crowd over?':
     style==='Brawl'?'Hard contact gets attention. Can it carry a story?':
     style==='Spectacle'?'Big moments travel. Timing makes them matter.':
@@ -454,7 +474,7 @@
   for(const [i,entry] of picks.slice(0,2).entries()){
    const subject=makeSpotlight(entry[0]);
    a.push(item(' '+subject.name.toUpperCase(),'yellow'));
-   paragraphs(a,subject.style+' wrestling: '+subject.angle);
+   paragraphs(a,subject.style+': '+subject.angle);
    if(i===0)a.push(item(''));
   }
   if(!picks.length)paragraphs(a,'The first names to break through must show us something in the ring.');
@@ -496,7 +516,7 @@
   add(302,'TITLE TALK',a);
   // Opening-week letters are explicitly opinions about the season, not invented match results.
   const opening=openingFans(s);
-  const fans=h?voices(h,3):opening.slice(0,3);
+  const fans=h?voices(h,8).slice(0,3):openingForum(s);
   a=[item('WHAT THE FANS ARE SAYING','yellow'),item('')];
   if(h){
    paragraphs(a,'TOPIC: '+h.name+' v '+h.foe,'cyan');
@@ -522,7 +542,7 @@
   // Repeat a small title only when a real additional page is required.
   const letterTopic=(s?.week||1)===1?'OPENING WEEK / READERS MAIL':'READERS MAIL / THE CIRCUIT';
   const letterIntro=()=>[item('LETTERS TO RINGFAX','yellow'),item(letterTopic,'cyan')];
-  const people=h?voices(h,5):opening;
+  const people=h?voices(h,8).slice(3,8):opening;
   const letterBlocks=people.map(f=>{
    const lines=[item('FROM: '+f.name,'green')];
    if(h)paragraphs(lines,'RE: '+h.name+' v '+h.foe,'cyan');
