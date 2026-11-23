@@ -907,7 +907,18 @@ dialog.negotiation-dialog[open]{
 .mf-no-moments{margin:8px 0;padding:12px;background:var(--stone-2);border:1px solid var(--stone-lo)}
 
 
-/* Player identity — native 48x60 pixel portraits, no extra image download. */
+/* Sixteen 48x60 manager cutouts in a single 4x4 sprite atlas.
+   Pixelated scaling preserves the native grid at every UI size. */
+.player-manager-portrait{
+ display:block;
+ image-rendering:pixelated;
+ background-image:url('../portraits/player-managers.webp');
+ background-size:400% 400%;
+ background-origin:content-box;
+ background-clip:content-box;
+ background-repeat:no-repeat;
+}
+/* Player identity — bundled native 48x60 manager portraits. */
 .player-identity-card{display:flex;align-items:center;gap:10px;min-width:0;
  padding:8px;background:var(--stone-2);border:2px solid var(--ink);margin-bottom:10px}
 .player-identity-card>.portrait{width:48px;height:60px;flex:0 0 48px}
