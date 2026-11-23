@@ -1,12 +1,7 @@
 name: Technical grappling depth audit
 on:
-  pull_request:
-    paths:
-      - 'tools/graph-lab/technical-depth-audit.cjs'
-      - 'tools/graph-lab/technical-grip-continuity.cjs'
-      - 'tests/technical-depth-audit.test.cjs'
-      - '.github/workflows/technical-depth-audit.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
