@@ -84,4 +84,21 @@ assert.equal(home.ringsideEvidence[0].newLength,home.len);
 until(home,()=>home.done);
 assert.equal(home.graph.outcome.id,contracted,'accepted go-home instruction does not change booked finish');
 assert.ok(Array.isArray(home.final.ringsideEvidence[0].missedObjectives));
+// A Technical worker must be able to fulfil a queued highlight with an
+// actual ordinary graph attack, not just one of twelve extreme spectacles.
+const technician=D.TALENT.find(w=>w.style==='Technical'),red=D.FOES.find(w=>w.id==='red');
+const technical=E.create({
+ w:{...technician,fatigue:0,flags:{}},f:red,p:D.PROMOS[0],
+ slot:'main',minutes:12,finish:'win_clean',
+ plan:{game:'story',leash:'script',talk:'calm'},preparation:{},flags:{},seed:123400
+});
+until(technical,()=>technical.stage==='live'&&technical.t>=160);
+technical.listen=101;
+assert.equal(E.call(technical,'big'),true);
+until(technical,()=>technical.ringsideEvidence?.[0]?.status!=='pending');
+const performed=technical.ringsideEvidence[0];
+assert.equal(performed.status,'witnessed','technical high point must not depend on extreme scripted stunts');
+assert.equal(performed.kind,'ordinary-graph');
+assert.ok(technical.graph.events.some(e=>e.id===performed.action&&e.t===performed.atAction),
+ 'big moment must refer to a real performed move');
 console.log('PASS ringside evidence: deferred big spot and four other evidence-based calls');
