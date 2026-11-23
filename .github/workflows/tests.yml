@@ -22,6 +22,7 @@ jobs:
       negotiation_browser: ${{ steps.paths.outputs.negotiation_browser }}
       browser_smoke: ${{ steps.paths.outputs.browser_smoke }}
       ringfax_browser: ${{ steps.paths.outputs.ringfax_browser }}
+      ringfax_only: ${{ steps.paths.outputs.ringfax_only }}
       full_validation: ${{ steps.paths.outputs.full_validation }}
     steps:
       - name: Check out source and history
@@ -42,17 +43,29 @@ jobs:
           negotiation_browser=false
           browser_smoke=false
           ringfax_browser=false
+          ringfax_only=false
           full_validation=false
           if [[ "$EVENT_NAME" != workflow_dispatch && "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$BASE_SHA" != 0000000000000000000000000000000000000000 ]]; then
             mapfile -d '' changed < <(git diff --name-only --no-renames -z "$BASE_SHA" "$HEAD_SHA")
             if (( ${#changed[@]} > 0 )); then
               run_full=false
+              ringfax_only=true
               for path in "${changed[@]}"; do
+                # Ringfax-only PRs do not need match engine, training or
+                # wrestling simulation audits. Any other changed path falls
+                # back to the existing comprehensive PR gate.
+                case "$path" in
+                  assets/js/ringfax.js|assets/css/ringfax.css|tests/ringfax-browser.cjs|tests/ringfax-phase0-baseline.test.cjs|tests/ringfax-phase1.test.cjs)
+                    ;;
+                  *)
+                    ringfax_only=false
+                    ;;
+                esac
                 case "$path" in
                   tests/browser-smoke.cjs)
                     browser_smoke=true
                     ;;
-                  tests/ringfax-browser.cjs|assets/js/ringfax.js|assets/css/ringfax.css)
+                  tests/ringfax-browser.cjs|tests/ringfax-phase0-baseline.test.cjs|tests/ringfax-phase1.test.cjs|assets/js/ringfax.js|assets/css/ringfax.css)
                     ringfax_browser=true
                     ;;
                   tests/long-match-endurance.test.cjs)
@@ -78,6 +91,7 @@ jobs:
           echo "negotiation_browser=$negotiation_browser" >> "$GITHUB_OUTPUT"
           echo "browser_smoke=$browser_smoke" >> "$GITHUB_OUTPUT"
           echo "ringfax_browser=$ringfax_browser" >> "$GITHUB_OUTPUT"
+          echo "ringfax_only=$ringfax_only" >> "$GITHUB_OUTPUT"
           echo "full_validation=$full_validation" >> "$GITHUB_OUTPUT"
           echo "Gameplay checks: $run_full; targeted negotiation browser: $negotiation_browser"
 
@@ -95,18 +109,28 @@ jobs:
         with:
           node-version: '22'
       - name: Use Python 3.12
+        if: github.event_name != 'pull_request' || needs.classify.outputs.ringfax_only != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Check portrait atlas, portraits and README gallery are up to date
+        if: github.event_name != 'pull_request' || needs.classify.outputs.ringfax_only != 'true'
         run: |
           python -m pip install --quiet pillow
           python tools/build_portraits.py --check
       - name: Documentation-only check complete
         if: needs.classify.outputs.run_full == 'false'
         run: echo 'Portrait and README generation verified; gameplay suite not needed.'
+      - name: Ringfax-only PR checks (no unrelated simulation suites)
+        if: github.event_name == 'pull_request' && needs.classify.outputs.ringfax_only == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/ringfax-phase0-baseline.test.cjs
+          node tests/ringfax-phase1.test.cjs
+          echo 'Ringfax source and read-only quiz contracts passed.' >> "$GITHUB_STEP_SUMMARY"
       - name: Focused pull request safety checks (no full simulation matrix)
-        if: needs.classify.outputs.run_full == 'true' && github.event_name == 'pull_request'
+        if: needs.classify.outputs.run_full == 'true' && github.event_name == 'pull_request' && needs.classify.outputs.ringfax_only != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -215,6 +239,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Cache Playwright Chromium downloads
+        if: needs.classify.outputs.run_full == 'true' && (github.event_name != 'pull_request' || needs.classify.outputs.negotiation_browser == 'true' || needs.classify.outputs.browser_smoke == 'true' || needs.classify.outputs.ringfax_browser == 'true')
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-chromium-playwright-1.58.2
       - name: Install isolated browser test tools (CI only)
         if: needs.classify.outputs.run_full == 'true' && (github.event_name != 'pull_request' || needs.classify.outputs.negotiation_browser == 'true' || needs.classify.outputs.browser_smoke == 'true' || needs.classify.outputs.ringfax_browser == 'true')
         run: |
