@@ -27,6 +27,8 @@ async function run(browser,name,viewport){
     }).map(x=>({page:x.dataset.rfValue,bottom:x.getBoundingClientRect().bottom})),
     mastheadText:rows.slice(1,5).map(x=>x.textContent).join(' '),
     mosaicRows:screen.querySelectorAll('.rf-mosaic').length,
+    logo:box(screen.querySelector('.rf-logo-svg')),
+    logoPixelPath:screen.querySelector('.rf-logo-svg path')?.getAttribute('d')||'',
     fastext:screen.querySelectorAll('.rf-fast-seg').length,
     screenBackground:getComputedStyle(screen).backgroundColor,
     bannerBackground:getComputedStyle(rows[1]).backgroundColor,
@@ -45,7 +47,12 @@ async function run(browser,name,viewport){
   assert.ok(g.overflowX<=2,name+': horizontal overflow '+JSON.stringify(g));
   assert.equal(g.directoryButtons,8,name+': all page shortcuts must be discoverable');
   assert.equal(g.mosaicRows,4,name+': four row block heading');
-  assert.ok(g.mastheadText.includes('R I N G F A X'),name+': masthead must say Ringfax legibly');
+  assert.ok(g.mastheadText.includes('RINGFAX'),name+': text alternative identifies Ringfax');
+  assert.ok(g.logoPixelPath.length>400,name+': wordmark is composed of explicit pixel paths');
+  assert.ok(g.logo.width>=g.screen.width*.80,name+': wordmark must dominate the blue bar, not look like a small label '+JSON.stringify(g));
+  assert.ok(g.logo.height>=g.rows[1].height*2.5,name+': wordmark must fill most of the four-row masthead');
+  assert.ok(g.logo.top>=g.rows[1].top-2&&g.logo.bottom<=g.rows[4].bottom+2,
+   name+': logo must be entirely contained within its blue four-row banner');
   assert.ok(!g.mastheadText.includes('█'),name+': fallback block glyphs are unreadable on phone');
   assert.ok(g.rows.every(x=>x.scroll<=x.client+2),name+': text cells clip horizontally '+JSON.stringify(g.rows.filter(x=>x.scroll>x.client+2)));
   assert.equal(g.fastext,4,name+': four Fastext choices must be in screen');
