@@ -664,10 +664,51 @@ function seasonEnd(){
  const g=goalList(),done=g.filter(x=>x.done).length,grant=S.rep*8+done*200;
  S.cash+=grant;
  msg({from:'The office',subject:`Season ${S.season} review`,kind:'info',body:[`${done} of 4 objectives met.`,...g.map(x=>(x.done?'✓ ':'✗ ')+x.text),`Sponsorship and bonuses: ${money(grant)}.`]});
+ const aged=ageRoster();
  S.season++;S.week=1;S.goals={};
  msg({from:'The office',subject:`Season ${S.season} objectives`,kind:'info',body:['This season, the business wants you to:',...goalList().map(x=>'• '+x.text)]});
+ return aged;
+}
+// Season-end ageing. Rumours come one season before a retirement, so the player gets warning.
+// Roster-only: free agents keep their data-file age. Retirement chance is rolled with the career RNG.
+function retireChance(age){return age>=38?Math.min(.6,(age-37)*.12):0}
+function ageRoster(){
+ const retired=[];
+ // 1. Wrestlers rumoured last season retire now, 70% of the time. Otherwise they stay another year.
+ for(const w of [...S.roster]){
+  if(!w.retireWarned)continue;
+  w.retireWarned=false;
+  if(rand()<.7){retired.push(w);continue}
+  msg({from:'Ringfax',subject:`${w.short} is staying on`,kind:'info',body:[`${w.name} has said the retirement talk was premature. They will keep wrestling for now.`]});
+ }
+ for(const w of retired){
+  reconcileOwnership(w.id,{outgoing:true,reason:`${w.name} retired`});
+  S.roster=S.roster.filter(x=>x.id!==w.id);
+  msg({from:'The office',subject:`${w.name} has retired`,kind:'info',body:[`${w.name} (${w.age}) has left the roster. Any bookings for them were cancelled.`]});
+ }
+ // 2. Everyone left gets a year older: rookies grow towards a hidden ceiling, mid-30s trade ring for psychology, veterans decline.
+ for(const w of S.roster){
+  w.age=(w.age??30)+1;
+  w.ceiling??=clamp(Math.max(w.ring,w.mic,w.psych)+12,0,95);
+  if(w.age<=25){
+   const gain=Math.max(0,Math.ceil((w.ceiling-w.ring)*.3));
+   w.ring=clamp(w.ring+gain);
+   w.mic=clamp(Math.min(w.mic+1,Math.max(w.mic,w.ceiling)));
+   w.psych=clamp(Math.min(w.psych+1,Math.max(w.psych,w.ceiling)));
+  }
+  if(w.age>=34)w.psych=clamp(w.psych+1);
+  if(w.age>=35)w.ring=clamp(w.ring-(w.age>=37?2:1));
+ }
+ // 3. Veterans over 38 may be rumoured to retire next season. The rumour is the advance signal.
+ for(const w of S.roster){
+  const p=retireChance(w.age);
+  if(!p||w.retireWarned||rand()>=p)continue;
+  w.retireWarned=true;
+  msg({from:'Ringfax',subject:`Retirement whispers: ${w.short}`,kind:'info',body:[`Sources say ${w.name} is considering hanging up the boots. Expect an announcement at the end of next season.`]});
+ }
+ return {retired:retired.map(w=>w.id)};
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance};
 })(typeof window!=='undefined'?window:globalThis);
