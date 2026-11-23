@@ -1181,7 +1181,7 @@ function dialog(title,html,buttons=[['Close','close']]){
  d.showModal();return d;
 }
 // Create and edit the player's identity without mutating a live save before
-// confirmation. Portraits are locally generated pixel art and never affect
+// confirmation. Bundled illustrated pixel portraits never affect
 // career random seeds, bookings, wrestling outcomes or rival managers.
 function identitySetup(mode='new'){
  identityMode=mode;
