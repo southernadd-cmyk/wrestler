@@ -7,7 +7,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const cp=require('node:child_process');
 const lab=require('../tools/graph-lab/core.js');
 const files=['data.js','roster-registry.js','technique-registry.js',
- 'technique-backgrounds.js','match-graph.js','match-engine.js'];
+ 'technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'];
 const dir=path.join(__dirname,'../assets/js');
 function world(baseline){
  const root={};

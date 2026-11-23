@@ -26,7 +26,7 @@ if(!Number.isSafeInteger(seedBase)||seedBase<=0||
  !Number.isSafeInteger(seedStep)||seedStep<1)throw Error('seed arguments must be positive integers');
 const directory=path.resolve(__dirname,'../../assets/js');
 const names=['data.js','roster-registry.js','technique-registry.js',
- 'technique-backgrounds.js','match-graph.js','match-engine.js'];
+ 'technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'];
 const source=names.map(name=>fs.readFileSync(path.join(directory,name),'utf8'));
 const before="  const n=A[id],p=Psy.get(M),g=get(M);\n"+
  "  const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';";

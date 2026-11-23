@@ -8,7 +8,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 const window={};
-for(const name of ['data.js','roster-registry.js','match-graph.js','match-engine.js']){
+for(const name of ['data.js','roster-registry.js','match-graph.js','match-commentary.js','match-engine.js']){
   const src=fs.readFileSync(path.join(root,'assets','js',name),'utf8');
   vm.runInNewContext(src,{window,console,Date,Math,JSON},{filename:name});
 }

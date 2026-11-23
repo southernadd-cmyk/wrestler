@@ -10,7 +10,7 @@ const oldPath=path.resolve(process.argv[2]||'/tmp/office-phase2-main');
 const count=Number(process.argv[3]||1000);
 if(!Number.isSafeInteger(count)||count<1||count>5000)throw Error('Expected 1..5000 bouts');
 const js=['data.js','roster-registry.js','technique-registry.js',
- 'technique-backgrounds.js','match-graph.js','match-engine.js'];
+ 'technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'];
 function open(dir){
  const root={};
  for(const name of js)vm.runInNewContext(

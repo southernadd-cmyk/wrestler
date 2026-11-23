@@ -43,7 +43,7 @@ assert.equal(after.ceiling,Math.max(60,55,50)+12);
 // Retirement: a rumoured wrestler either retires (removed, bookings cancelled) or stays on with a message.
 S=freshWithRoster();
 const rumoured=S.roster[0];
-rumoured.age=40;rumoured.retireWarned=true;
+rumoured.age=30;rumoured.retireWarned=true;// under 38: no fresh rumour can be rolled, so the outcome is only the 70% retirement check
 const before=G.S.roster.length;
 out=G.ageRoster();
 assert.equal(G.S.roster.length,before-out.retired.length);
