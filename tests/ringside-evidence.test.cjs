@@ -25,9 +25,11 @@ const tired=setup(24002);
 tired.stage='live';tired.listen=100;tired.wSt=10;
 assert.equal(E.call(tired,'big'),true);
 assert.equal(tired.spots,0,'an illegal forced attempt does not count as a landed spot');
-assert.equal(tired.ringsideEvidence[0].status,'unavailable');
+assert.equal(tired.ringsideEvidence[0].status,'pending','a queued high spot waits for a legal opening');
 assert.equal(tired.graph.events.length,0,'a refused high spot never creates a fake graph action');
 assert.equal(tired.final,undefined);
+until(tired,()=>tired.ringsideEvidence[0].status!=='pending');
+assert.equal(tired.ringsideEvidence[0].status,'unavailable','the call is returned once the match passes without an opening');
 // A refused immediate opening must no longer consume the player's option.
 const queue=setup(24003);
 queue.stage='live';queue.t=20;queue.listen=101;queue.r=()=>.99;

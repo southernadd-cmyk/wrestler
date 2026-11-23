@@ -27,10 +27,10 @@ if(!Number.isSafeInteger(seedBase)||seedBase<=0||
 const directory=path.resolve(__dirname,'../../assets/js');
 const names=['data.js','roster-registry.js','technique-registry.js',
  'technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'];
-const source=names.map(name=>fs.readFileSync(path.join(directory,name),'utf8'));
-const before="  const n=A[id],p=Psy.get(M),g=get(M);\n"+
+const source=names.map(name=>fs.readFileSync(path.join(directory,name),'utf8').replace(/\r\n/g,'\n'));
+const before="  const n=A[id],p=$d.Psy.get(M),g=get(M);\n"+
  "  const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';";
-const after="  const n=A[id],p=Psy.get(M),g=get(M);\n"+
+const after="  const n=A[id],p=$d.Psy.get(M),g=get(M);\n"+
  "  const __audit={position:p.position,down:p.down,control:p.control,valid:isValid(M,id)};\n"+
  "  const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';";
 const record="  g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective,";
