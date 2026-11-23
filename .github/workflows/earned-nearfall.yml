@@ -1,12 +1,7 @@
 name: Earned near falls and finish continuity A/B
 on:
-  pull_request:
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'tests/earned-nearfall.test.cjs'
-      - 'tools/graph-lab/earned-nearfall-audit.cjs'
-      - '.github/workflows/earned-nearfall.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
