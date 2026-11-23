@@ -296,7 +296,7 @@
    a.push(item(' '+h.name+' v '+h.foe,'cyan'),
     item(' S'+h.season+' W'+h.week+' / '+score(h)));
   }else{
-   a.push(item(' SEASON '+(s?.season||1)+' OPENS','cyan'),
+   a.push(item(' SEASON '+(s?.season||1)+((s?.week||1)===1?' OPENS':' / WEEK '+s.week),'cyan'),
     item(' '+promos.length+' PROMOTIONS / '+(D?.DIVISION_ORDER?.length||0)*promos.length+' TITLES'));
   }
   if(champ)a.push(item(' '+mainPromo.name+': '+wrestlerName(champ),'yellow'));
@@ -305,7 +305,7 @@
 
   add(100,'RINGFAX INDEX',a);
 
-  a=[item(h?'LATEST FROM THE RING':'OPENING WEEK: CIRCUIT NEWS','yellow'),item('')];
+  a=[item(h?'LATEST FROM THE RING':((s?.week||1)===1?'OPENING WEEK: CIRCUIT NEWS':'CIRCUIT NEWS / THIS WEEK'),'yellow'),item('')];
   if(h){
    paragraphs(a,h.name+' versus '+h.foe,'cyan');
    paragraphs(a,'Reported from '+text(h.promoter||h.pid||'the circuit')+'.');
@@ -390,7 +390,7 @@
   const ratings=recent.filter(r=>Number.isFinite(r.stars));
   if(!ratings.length){
    paragraphs(a,'No matches rated yet. Star scores appear only after completed bouts.','cyan');
-   a.push(item(''),item(' OPENING WEEK CARD WATCH','yellow'),
+   a.push(item(''),item(' CURRENT CARD WATCH','yellow'),
     item(' CARD SCORES ARE NOT MATCH RATINGS','green'));
    for(const promo of promos.slice(0,4)){
     const top=leader(s,promo.id,D?.DIVISION_ORDER?.[0]);
@@ -480,7 +480,7 @@
     a.push(item(''));
    });
   }else{
-   paragraphs(a,'OPENING WEEK / FIRST IMPRESSIONS','cyan');
+   paragraphs(a,(s?.week||1)===1?'OPENING WEEK / FIRST IMPRESSIONS':'CIRCUIT OPINIONS','cyan');
    a.push(item(''));
    for(const f of fans){
     a.push(item(' '+f.name,'green'));
@@ -500,7 +500,7 @@
     a.push(item(''));
    });
   }else{
-   paragraphs(a,'OPENING WEEK / READERS MAIL','cyan');
+   paragraphs(a,(s?.week||1)===1?'OPENING WEEK / READERS MAIL':'READERS MAIL / THE CIRCUIT','cyan');
    a.push(item(''));
    for(const f of opening){
     a.push(item('FROM: '+f.name,'green'));
