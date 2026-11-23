@@ -388,8 +388,9 @@ async function journey(browser,name,viewport){
   assert.ok(geometry.stage<=geometry.view+2,name+': backstage exceeds viewport');
   assert.equal(await page.evaluate(()=>window.OfficeGame.S.card[0].finish),'win_clean',
     name+': presentation must not alter booked finish');
-  // Phase 5: from a real structure choice, through the wrestler's objection,
-  // to a signed sheet. Uses actual UI buttons at desktop and phone widths.
+  // Phase 5: selecting Traditional re-renders and closes the optional disclosure.
+  // Reopen Advanced before making another structure selection.
+  await page.locator('#tv .structure-chooser summary').click();
   await page.locator('#tv [data-structure="kings_road"]').click();
   await page.locator('#tv [data-room="plan_technical"]').click();
   await page.locator('#tv [data-room="board_ok"]').click();
