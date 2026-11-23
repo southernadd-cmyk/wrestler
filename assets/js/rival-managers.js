@@ -235,7 +235,7 @@
    a.lastBid=week;
    const wants=(ambition(s,wr.id)?.sat??50)<35||(wr.loyal||50)<45;
    G.msg?.({from:`${team.manager}, ${team.name}`,subject:`An offer for ${wr.short}`,kind:'decision',dtype:'agent_bid',args:[wr.id,team.id,fee],
-    body:[`“I’ll be straight with you. I want ${wr.name}, and I’ll pay ${G.money(fee)} to make it happen today.”`,
+    body:[`${s.identity?.manager||'Manager'}, I know ${s.identity?.stable||'your stable'} have ${wr.name} under contract.`, `“I’ll be straight with you. I want ${wr.name}, and I’ll pay ${G.money(fee)} to make it happen today.”`,
      `Road agent: ${wants?`${wr.short} has been listening. I would not count on them staying happy if you say no.`:`${wr.short} hasn’t asked to go. Saying no might even help.`}`],
     options:[{id:'accept',label:`Sell for ${G.money(fee)}`,hint:`${wr.short} joins ${team.name} today. The money is yours.`},
      {id:'counter',label:`Ask for ${G.money(Math.round(fee*1.4/10)*10)}`,hint:'They may pay it. They may walk away.'},
