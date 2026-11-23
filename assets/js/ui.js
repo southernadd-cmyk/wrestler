@@ -152,7 +152,7 @@ function flowMoments(fin){
    b.s-a.s||b.index-a.index)[0];
   const reaction=near.find(l=>l.kind==='crowd'&&l.index>event.index&&
    l.s>=event.s&&l.s<=s.t1+5);
-  return {...s,action:event.text,reaction:reaction?.text||'',eventIndex:event.index};
+  return {...s,at:event.t,action:event.text,reaction:reaction?.text||'',eventIndex:event.index};
  };
  const rises=pick(sw.filter(s=>s.d>=5).map(explain).filter(Boolean).sort((a,b)=>b.d-a.d),3);
  const drops=pick(sw.filter(s=>s.d<=-4).map(explain).filter(Boolean).sort((a,b)=>a.d-b.d),2);
@@ -193,7 +193,7 @@ function flowReport(fin,w,f){
  const rows=ph.map(g=>`<tr class="t-${g.tone}"><th scope="row">${esc(g.name)}<small>${esc(Mx.fmt(g.from))}–${esc(Mx.fmt(g.to))}</small></th><td><span class="mf-bar w-${g.work}" role="img" aria-label="Work ${Math.round(g.q)} out of 100"><i style="width:${Math.max(4,Math.min(100,(g.q-30)/45*100))}%"></i></span> <small>${Math.round(g.q)}</small></td><td class="n">${g.cIn}→${g.cOut} <b class="chip ${g.tone}">${g.d>0?'+':''}${g.d}</b></td><td class="n">${g.mine===g.theirs?'Even':`${esc(g.mine>g.theirs?w.short:f.short)} ${Math.round(Math.max(g.mine,g.theirs)/g.n*100)}%`}</td><td class="v">${esc(g.verdict)}</td></tr>`).join('');
  const table=`<div class="well mf-table-wrap"><table class="grid mf-table"><thead><tr><th>Phase</th><th>Work</th><th class="n">Crowd</th><th class="n">On top</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>`;
  const mom=flowMoments(fin);
- const moments=mom.length?`<ol class="mf-moments well">${mom.map(m=>`<li class="${m.d>0?'up':'down'}"><span class="t">${esc(Mx.fmt(m.t1))}</span><b class="chip ${m.d>0?'up':'down'}">${m.d>0?'+':''}${m.d}</b><span class="mf-highlight-event"><strong>${esc(m.action)}</strong>${m.reaction?'<small class="mf-highlight-reaction">'+esc(m.reaction)+'</small>':''}</span></li>`).join('')}</ol>`:'<p class="dim mf-no-moments">No sudden crowd swings in this bout. The phase-by-phase report still shows how the match built.</p>';
+ const moments=mom.length?`<ol class="mf-moments well">${mom.map(m=>`<li class="${m.d>0?'up':'down'}"><span class="t">${esc(m.at)}</span><b class="chip ${m.d>0?'up':'down'}">${m.d>0?'+':''}${m.d}</b><span class="mf-highlight-event"><strong>${esc(m.action)}</strong>${m.reaction?'<small class="mf-highlight-reaction">'+esc(m.reaction)+'</small>':''}</span></li>`).join('')}</ol>`:'<p class="dim mf-no-moments">No crowd swing had a clear wrestling turning point in the commentary. The phase-by-phase report still shows how the match built.</p>';
  const parts=(fin.starParts||[]).filter(p=>Math.abs(p[2])>=.01),maxAbs=Math.max(.5,...parts.map(p=>Math.abs(p[2])));
  const breakdown=parts.length?`<div class="mf-parts well">${parts.map(([k,label,v])=>`<div class="mf-part ${v>=0?'pos':'neg'}"><span>${esc(label)}</span><span class="mf-pbar"><i style="${v>=0?'left':'right'}:50%;width:${Math.abs(v)/maxAbs*50}%"></i></span><b>${v>=0?'+':'−'}${Math.abs(v).toFixed(2)}</b></div>`).join('')}<div class="mf-part total"><span>Rating</span><span></span><b>${starsText(fin.stars)||'DUD'}</b></div></div>`:'';
  return `${head}${flowGraphic(fin,w,f,ph)}<div class="mf-cols"><div class="mf-phase-section"><h3 class="section-h">Phase by phase</h3>${table}</div><div class="mf-moments-section"><h3 class="section-h">Moments that moved the room</h3>${moments}</div>${breakdown?`<div class="mf-breakdown-section"><h3 class="section-h">Where the stars came from</h3>${breakdown}</div>`:''}</div>`;
