@@ -79,7 +79,7 @@
  function quizPage(){
   const l=[item(' THE QUIZ REF: UK WRESTLING','yellow'),item('')];
   if(quizState.stage==='intro'){
-   paragraphs(l,'YOU HAVE FOUND SECRET PAGE 777!','green');
+   paragraphs(l,'WELCOME TO THE QUIZ REF!','green');
    l.push(item(''));
    paragraphs(l,'12 QUESTIONS. FOUR COLOUR BUTTONS.');
    paragraphs(l,'ONE CHANCE TO BE THE CHAMPION.');
@@ -307,13 +307,13 @@
    pair('200 AFTER BELL','201 THE CRITIC','white'),
    pair('300 WATCHLIST','301 STORYLINES','cyan'),
    pair('302 TITLE TALK','500 FANZONE','white'),
-   pair('501 LETTERS','100 INDEX','cyan'),
+   pair('501 LETTERS','777 QUIZ REF','cyan'),
    item(' --------------------------------','blue'),
    item(' THE OFFICE, THROUGH FANS EYES','yellow'),
    item(' SEASON '+(s?.season||1)+' / WEEK '+(s?.week||1),'cyan'),
    item(' NOT ANOTHER RESULTS TABLE','green'),
    item(' READ THE STORY BEHIND THE STATS','white'),
-   item(' FAN ARGUMENTS: P500 AND P501','yellow')
+   item(' TEST YOUR KNOWLEDGE: PAGE 777','yellow')
   ];
   add(100,'RINGFAX INDEX',a);
 
@@ -639,7 +639,7 @@
   100:['RINGFAX','yellow'],101:['HEADLINE','cyan'],102:['SEASON','yellow'],
   103:['GRAPEVINE','green'],104:['THE ROAD','cyan'],200:['AFTER','green'],
   201:['CRITIC','yellow'],300:['WATCH','green'],301:['STORIES','yellow'],302:['TALK','cyan'],
-  500:['FANZONE','magenta'],501:['LETTERS','yellow'],777:['QUIZ','yellow']
+  500:['FANZONE','magenta'],501:['LETTERS','yellow'],777:['RINGFAX','yellow']
  };
  function mosaic(word){
   // Leave a text equivalent inside the 40×25 model; the graphic is painted
@@ -723,6 +723,7 @@
   if(k==='ArrowRight')return press('right',null,s);
   if(k===' '||k==='Spacebar')return press('hold',null,s);
   if(k==='Backspace')return press('backspace',null,s);
+  if(k==='Escape'&&C.page===777)return press('go',100,s);
   const i=['F1','F2','F3','F4'].indexOf(k);
   if(i>=0){const link=C.page===777?quizFooter()[i]:null;
    return link?press(link.action,link.value,s):press('go',fast[i],s);
@@ -730,7 +731,7 @@
   return false;
  }
 
- // The secret quiz is displayed as a complete Bamboozle-era TV page.
+ // The quiz shares Ringfax's standard masthead, with a Bamboozle-style game below.
  // Game state, 40x25 text data, keyboard controls and checkpoint logic are unchanged.
  function quizMascot(){
   return '<svg class="rf-bz-face" viewBox="0 0 36 36" aria-hidden="true" focusable="false" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
@@ -747,21 +748,21 @@
   }else if(stage==='intro'){
    title='Welcome to The Quiz Ref!';
    message='12 questions. Four colours. One wrestling champion. Are you ready?';
-   choices=['Start quiz','How to play','Back to index','Start quiz'];
+   choices=['Start quiz','How to play'];
   }else if(stage==='rules'){
    title='How to play';
    message='Choose red, green, yellow or cyan. Wrong answers return you to the last checkpoint.';
-   choices=['Start quiz','Go back','Back to index','Start quiz'];
+   choices=['Start quiz','Go back'];
   }else if(stage==='wrong'){
    title='You have been bodyslammed!';
    message='Correct: '+q.a[q.correct]+'. '+(quizState.reveal?q.fact:'Retry from question '+(quizState.checkpoint+1)+'.');
-   choices=['Try again','Reveal trivia','Back to index','Try again'];
+   choices=['Try again','Reveal trivia'];
   }else{
    title='You are the Quiz Champion!';
    message='Twelve questions answered! Wrong turns: '+quizState.misses+'. A main-event performance.';
-   choices=['Play again','Rules','Back to index','Play again'];
+   choices=['Play again','Rules'];
   }
-  const choicesHtml=links.map((link,i)=>{
+  const choicesHtml=links.slice(0,choices.length).map((link,i)=>{
    const colour=QUIZ_COLOURS[i],label=choices[i];
    return '<button type="button" class="rf-bz-choice rf-bz-'+colour+
     '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
@@ -772,13 +773,7 @@
   const footer=links.map((link,i)=>'<button type="button" class="rf-bz-fast rf-bz-'+QUIZ_COLOURS[i]+
    '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
    '" aria-label="'+escape(QUIZ_COLOURS[i]+' Fastext: '+choices[i])+'">?????</button>').join('');
-  const now=new Date(),day=String(now.getDate()).padStart(2,'0'),
-   month=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()];
   return '<div class="rf-bz-page rf-bz-stage-'+stage+'">'+
-   '<div class="rf-bz-top"><span class="rf-bz-code">P777</span>'+
-   '<div class="rf-bz-brand">'+pixelLogo('RINGFAX')+'</div>'+
-   '<span class="rf-bz-number">777</span>'+
-   '<span class="rf-bz-clock">'+month+day+' '+clock().replace("/",":")+'</span></div>'+
    '<div class="rf-bz-hero"><div class="rf-bz-bubble"><strong>'+escape(title)+
    '</strong><span>'+escape(message)+'</span></div>'+
    '<div class="rf-bz-mascot">'+quizMascot()+'</div></div>'+
@@ -811,6 +806,10 @@
     const title=BANNERS[v.page]?.[0]||'SEARCH';
     return '<div class="rf-row rf-mosaic rf-bg-blue rf-logo-row">'+escape(r.text)+
      '<div class="rf-logo-art" aria-hidden="true">'+pixelLogo(title)+'</div></div>';
+   }
+   if(C.page===777&&i===5){
+    return '<div class="rf-row rf-section rf-bz-heading">'+escape(r.text)+
+     '<button type="button" class="rf-bz-home" data-rf-action="go" data-rf-value="100" aria-label="Return to Ringfax index page 100">100 INDEX</button></div>';
    }
    if(C.page===777&&r.answerIndex!==undefined){
     return '<button type="button" class="rf-row rf-quiz-answer rf-'+r.colour+
