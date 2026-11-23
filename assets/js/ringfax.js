@@ -271,7 +271,7 @@
  }
  function build(s){
   const h=latest(s),recent=recents(s),P={};
-  const add=(number,title,lines)=>{P[number]={number,title,lines:lines.slice()};};
+  const add=(number,title,lines,subpages=null)=>{P[number]={number,title,lines:lines.slice(),...(subpages?{subpages:subpages.map(rows=>rows.slice())}:{})};};
   // A proper two-column teletext index, not a conventional app menu.
   // Each 20-character half remains individually clickable in the renderer.
   const pair=(left,right,colour='white')=>({text:line(left,20)+line(right,20),colour,background:'black'});
@@ -538,25 +538,52 @@
   }
   add(500,'THE FANZONE',a);
 
-  a=[item('LETTERS TO RINGFAX','yellow'),item('')];
-  if(h){
-   const expanded=voices(h,5);
-   expanded.forEach(f=>{
-    a.push(item('FROM: '+f.name,'green'));
-    paragraphs(a,'RE: '+h.name+' v '+h.foe,'cyan');
-    paragraphs(a,f.quote);
-    a.push(item(''));
-   });
-  }else{
-   paragraphs(a,(s?.week||1)===1?'OPENING WEEK / READERS MAIL':'READERS MAIL / THE CIRCUIT','cyan');
-   a.push(item(''));
-   for(const f of opening){
-    a.push(item('FROM: '+f.name,'green'));
-    paragraphs(a,f.quote);
-    a.push(item(''));
+  // Keep every letter together. Ordinary 17-line slicing orphaned the final
+  // two lines of TICKETSTUB's letter on an almost empty second subpage.
+  // Repeat a small title only when a real additional page is required.
+  const letterTopic=(s?.week||1)===1?'OPENING WEEK / READERS MAIL':'READERS MAIL / THE CIRCUIT';
+  const letterIntro=()=>[item('LETTERS TO RINGFAX','yellow'),item(letterTopic,'cyan')];
+  const people=h?voices(h,5):opening;
+  const letterBlocks=people.map(f=>{
+   const lines=[item('FROM: '+f.name,'green')];
+   if(h)paragraphs(lines,'RE: '+h.name+' v '+h.foe,'cyan');
+   paragraphs(lines,f.quote);
+   return lines;
+  });
+  const letterPages=[];
+  let letterRows=letterIntro();
+  for(const block of letterBlocks){
+   // Add a gap only between complete letters, not before the first entry.
+   const spacer=letterRows.length>letterIntro().length?1:0;
+   if(letterRows.length+spacer+block.length>17&&letterRows.length>letterIntro().length){
+    letterPages.push(letterRows);
+    letterRows=letterIntro();
    }
+   if(letterRows.length>letterIntro().length)letterRows.push(item(''));
+   // Long quotations can span a subpage, but their author is repeated; never
+   // begin a page with unlabelled trailing text.
+   if(letterRows.length+block.length>17){
+    const prefix=block.slice(0,1);
+    let remaining=block.slice(1);
+    while(remaining.length){
+     const available=17-letterRows.length-prefix.length;
+     if(available<1){
+      letterPages.push(letterRows);
+      letterRows=letterIntro().concat(prefix);
+      continue;
+     }
+     const body=remaining.splice(0,available);
+     letterRows.push(...body);
+     if(remaining.length){
+      letterPages.push(letterRows);
+      letterRows=letterIntro().concat(item('FROM: '+people[letterBlocks.indexOf(block)].name+' (CONT)','green'));
+     }
+    }
+   }else letterRows.push(...block);
   }
-  add(501,'READERS LETTERS',a);
+  letterPages.push(letterRows);
+  const allLetters=letterPages.flat();
+  add(501,'READERS LETTERS',allLetters,letterPages);
   add(777,'THE QUIZ REF',quizPage());
   return P;
  }
