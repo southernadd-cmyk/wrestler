@@ -1144,9 +1144,11 @@ function proceed(){
  if(G.pending().length){inboxFilter='action';openMsg=G.pending()[0].id;go('inbox',phoneLayout()?openMsg:null);toast('Reply to the messages marked in red first.');return}
  if(s.card.length){startNight();return}
  if(!s.roster.length&&s.week===1){go('scouting');toast('Sign a wrestler first.');return}
- G.endWeek();
- if(s.over){gameOver();return}
- openMsg=null;past=[];ahead=[];route={s:'desk',id:null};render(true);
+ // An empty week costs real money and an opportunity. Show the consequences before advancing.
+ const cost=G.wages()+G.overhead()+G.trainingBill();
+ const outstanding=s.offers.filter(o=>o.eventAbs===G.abs()).length;
+ dialog('Advance without a booking?',`<p>No matches are booked this week. You will earn <b>£0 in match purses</b> and pay an estimated <b>${money(cost)}</b> in wages, overheads and training.</p><p>Your bank is projected to move from <b>${money(s.cash)}</b> to <b>${money(s.cash-cost)}</b>.</p><p>${outstanding?outstanding+' current-week '+plural(outstanding,'offer')+' may expire. ':''}Advancing uses up this week of the season and any active sponsor trial.</p>`,[['Review offers','review-week-offers'],['Advance anyway','confirm-empty-week','red']]);
+ return;
  toast(`Week ${s.week}. ${s.offers.length} ${plural(s.offers.length,'offer')} on the table.`);
 }
 function gameOver(){
@@ -1488,7 +1490,10 @@ function bell(){
 }
 function schedule(ms){clearTimeout(night.timer);night.timer=setTimeout(pump,ms)}
 function pump(){
- const M=night?.M;if(!M||night.paused)return;
+ const M=night?.M;if(!M)return;
+ // Completed bouts never require Resume just to reveal their result.
+ if(M.done)return result();
+ if(night.paused)return;
  if(M.decision&&!M.queue.length)return showDecision();
  if(night.speed==='skip'){let line,n=0,got=0;while(n++<4000){if(M.decision&&!M.queue.length)break;line=Mx.next(M);if(!line)break;night.past.unshift(line);got++}
   if(got)showLine(night.past.shift(),true);updateLive();if(M.decision)return showDecision();if(M.done){clearTimeout(night.timer);night.timer=setTimeout(()=>{if(night?.M===M)result()},900);return}return schedule(10)}
@@ -1537,7 +1542,8 @@ function updateLive(){
  updateStrip(M);
  $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
  document.querySelectorAll('[data-call]').forEach(b=>b.disabled=!Mx.canCall(M,b.dataset.call));
- const pb=document.querySelector('[data-pause]');if(pb){pb.textContent=night.paused?'Resume':'Pause';pb.setAttribute('aria-pressed',night.paused)}
+ const pb=document.querySelector('[data-pause]');if(pb){pb.textContent=M.done?'See the result':night.paused?'Resume':'Pause';pb.setAttribute('aria-pressed',night.paused);pb.disabled=false}
+ if(M.done&&night.paused){result();return}
 }
 // The running order along the match clock. Two lanes so neighbouring beats never sit on top of each other.
 const STRIP_SHORT={Shine:'Shine',Heat:'Heat',Comeback:'Back','Big spot':'Spot',Finish:'Fin',Vow:'Vow'};
@@ -1758,6 +1764,16 @@ document.addEventListener('click',e=>{
  if(d.act==='export'){const blob=new Blob([JSON.stringify(S())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`the-office-s${S().season}w${S().week}.json`;a.click();return}
  if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(![20,21,22].includes(x.v))throw 0;G.S=x;if(!G.S)throw 0;G.save();startApp('desk');toast('Save loaded.')}catch(err){toast('That file isn’t a valid save from v2 to v2.3.')}})};i.click();return}
  if(d.act==='newgame'){dialog('Start a new career?','<p>Your current career will be overwritten.</p>',[['Cancel','close'],['Start again','newgame','red']]);return}
+ if(d.dlg==='review-week-offers'){$('#modal').close();return go('offers')}
+ if(d.dlg==='confirm-empty-week'){
+  $('#modal').close();
+  if(S().card.length||G.pending().length)return proceed();
+  G.endWeek();
+  if(S().over)return gameOver();
+  openMsg=null;past=[];ahead=[];route={s:'desk',id:null};render(true);
+  toast(`Week ${S().week}. ${S().offers.length} ${plural(S().offers.length,'offer')} on the table.`);
+  return;
+ }
  if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('sign:')){const id=d.dlg.slice(5),err=G.sign(id);if(err){render();return toast(err)}const w=G.W(id);selFree=null;refreshList('scouting');return toast(`${w.name} signed. Wages ${money(w.wage)} a week.`)}if(d.dlg.startsWith('raise:')){const r=window.OfficeAmbitions?.giveRaise?.(d.dlg.slice(6));render();toast(r?.error||r?.text||'Wage review unavailable.');return}if(d.dlg.startsWith('withdraw:')){const said=G.unbook(d.dlg.slice(9));render();toast(said||'Programme withdrawn.');return}if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';closeTVFocus();startApp('scouting')}return}
  if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
  if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
@@ -1806,8 +1822,8 @@ document.addEventListener('click',e=>{
  if(d.tv==='done'){night.afterReady=null;return endNight();}
  if(d.call)return doCall(d.call);
  if(d.decide)return decideNow(d.decide);
- if(d.speed!==undefined){night.speed=d.speed;document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===night.speed));if(!night.paused)schedule(50);return}
- if(t.hasAttribute('data-pause')){night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}
+ if(d.speed!==undefined){night.speed=d.speed;document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===night.speed));if(night.speed==='skip'&&night.paused)night.paused=false;if(!night.paused)schedule(50);updateLive();return}
+ if(t.hasAttribute('data-pause')){if(night.M?.done)return result();night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}
 });
 document.addEventListener('input',e=>{
  const el=e.target;

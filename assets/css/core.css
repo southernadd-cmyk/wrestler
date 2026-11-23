@@ -54,6 +54,8 @@ h1,h2,h3{margin:0;font-weight:400}
 .btn:hover:not(:disabled){background:#D4CDBA}
 .btn:active:not(:disabled),.btn[aria-pressed="true"]{box-shadow:var(--bevel-in);padding-top:6px;padding-bottom:4px}
 .btn:disabled{color:var(--stone-lo);cursor:not-allowed;text-shadow:1px 1px 0 var(--stone-hi)}
+/* Disabled primary actions must not resemble an available yellow confirmation. */
+.btn.go:disabled{background:var(--stone);color:var(--ink-2);box-shadow:none;border-color:var(--stone-lo);text-shadow:none}
 .btn.go{background:var(--gold);box-shadow:inset 2px 2px 0 var(--gold-hi),inset -2px -2px 0 var(--gold-lo)}
 .btn.go:hover:not(:disabled){background:#FFD149}
 .btn.go:active:not(:disabled){box-shadow:inset 2px 2px 0 var(--gold-lo),inset -2px -2px 0 var(--gold-hi)}
@@ -280,7 +282,7 @@ label.field,.letter .meta,.kv dt{color:var(--ink-2)}
 .management-filters label{display:flex;flex:1 1 130px;flex-direction:column;gap:3px;min-width:0;font-size:15px;color:var(--ink-2)}
 .management-filters label:first-child{flex:2 1 165px}
 .management-filters input,.management-filters select{width:100%;min-width:0;min-height:34px;padding:4px 8px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:0;box-shadow:var(--bevel-in);font-size:17px}
-.management-filters .filter-results{align-self:center;font-size:15px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.management-filters .filter-results{flex:1 0 100%;align-self:center;font-size:15px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .management-filters .btn{margin-left:auto}
 /* Desktop shows the filters inline; the disclosure summary is a phone-only control. */
 .free-filters>summary{display:none}
