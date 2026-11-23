@@ -1,19 +1,25 @@
 # CI execution policy — The Office
 
-Keep GitHub Actions useful without launching a dozen long simulations for every development commit.
+The normal release path is deliberately small. **Target: two to three minutes for an ordinary PR or deployment**, excluding GitHub runner queue and Pages propagation. Measure real timings before claiming that target has been achieved.
 
-## Every pull request update (fast feedback)
-- **Simulation tests:** run the focused Node smoke tests and relevant aerial/graph legality checks. Do **not** run the entire `tests/*.test.cjs` matrix or install Chromium on each PR commit. Documentation-only changes retain the portrait/README consistency check.
-- **Phase 9 match quality A/B:** run when match-engine, plan data, or its quality tests change.
-- **Curated technique gate:** run when curated technique registry/training metadata or its tests change; edits to `match-engine.js` alone no longer fan out into this workflow.
-- PR workflows share a per-workflow/PR **concurrency key** with `cancel-in-progress: true`: only the newest PR revision should continue.
+## Normal pull requests and `main` pushes
 
-## Integration and intentional full verification
-- **Main-branch integration:** run the full simulation suite, Chromium browser journeys and the relevant dedicated graph/career/technique audits after changes land on `main`.
-- **Manual full checks:** every heavyweight workflow also supports `workflow_dispatch` so a reviewer can run it against the feature branch before merging high-risk engine changes.
-- Existing weekly audit schedules remain in place. Main-branch and manual runs are **not** automatically cancelled by new PR commits.
-- Run the complete relevant validation **once on the final candidate** rather than repeatedly on each exploratory commit; batch related code/test changes before pushing when practical.
+- **One required status check:** `Regression suite (Node 22)` in `.github/workflows/tests.yml`. This keeps the existing branch-protection check name.
+- **Documentation / newsletter artwork / workflow-only updates:** classify the diff and succeed. Do **not** install Python or Chromium, rebuild portraits, or run gameplay tests.
+- **JavaScript changes:** syntax-check changed JS and run only a small, relevant set of existing Node tests. Ringfax, match mechanics, negotiations, training, save/career and UI have separate selections.
+- **Changes that cannot be classified:** use a conservative, small smoke set rather than silently skipping all checks.
+- **No automatic full matrix or browser download.** Browser checks are expensive and should not hold up routine text, layout or editorial work.
+- Do not add a regression suite or GitHub workflow for every tiny fix. Prefer updating existing focused coverage only when it protects an important shared contract.
 
-The main match-engine file is used by most audits. Filtering by file paths alone cannot prevent an Actions storm if every heavyweight workflow triggers on `match-engine.js`; the heavyweight PR triggers have therefore been removed. The tests themselves have **not** been deleted.
+## Deeper verification, separate from the release gate
 
-If GitHub branch protection lists a heavyweight workflow as a required pull-request check, update its required status checks to use the fast PR gates. Otherwise GitHub may wait for a check that intentionally runs only on `main` or through manual dispatch.
+- Use **Actions → Simulation tests → Run workflow** for the full `tests/*.test.cjs` matrix and desktop/mobile Chromium journeys when a risky engine or integration change warrants it.
+- The 25 existing specialist graph, wrestling-style, career and A/B workflows remain accessible through `workflow_dispatch`; any pre-existing weekly schedules are preserved. They no longer launch automatically on normal PRs or `main` pushes.
+- For significant match-engine changes, run the relevant full comparison *on demand*, preferably once on a final candidate. Evaluate the result before merging a risky mechanical change; don't attach it automatically to every commit.
+- A separate GitHub Pages publication may run independently; this policy governs the **simulation/testing** workflows, not Pages hosting itself.
+
+## Guardrails
+
+The short gate is **not** proof that all gameplay is regression-free. It protects common contracts rapidly, while deeper audits provide optional evidence before risky changes. Keep all original tests and historical baselines in the repository. If the required branch-protection check name changes, update GitHub rules at the same time; avoid requiring checks that no longer run for each PR.
+
+After changing these triggers, compare actual CI durations on a documentation PR and a gameplay PR and review whether the selected tests meet the two-to-three-minute goal.
