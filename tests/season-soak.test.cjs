@@ -122,7 +122,7 @@ function career(seed,style){
 }
 
 const runs=[];
-for(const [seed,style] of [[11,'steady'],[23,'spender'],[37,'lean'],[58,'steady'],[71,'spender'],[94,'steady']])runs.push({seed,style,...career(seed,style)});
+for(const [seed,style] of [[11,'steady'],[23,'spender'],[37,'lean'],[58,'steady'],[71,'spender'],[94,'steady'],[5,'lean'],[17,'spender'],[42,'steady'],[88,'lean']])runs.push({seed,style,...career(seed,style)});
 // The same seed replays the same career.
 const again=career(11,'steady');
 assert.equal(JSON.stringify({...again,routes:[...again.routes],variants:[...again.variants],moves:[...again.moves],landedMoves:[...again.landedMoves]}),
