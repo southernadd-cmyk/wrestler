@@ -364,7 +364,7 @@ function renderDesk(){
  const brief=pending?
   {heading:pending+' '+plural(pending,'decision')+' awaiting reply',why:'Reply before you can advance the week.',go:'inbox',cta:'Review decisions'}:
   !s.roster.length?
-  {heading:'Build your stable',why:'Sign your first wrestler before accepting bookings.',go:'scouting',cta:'Find talent'}:
+  {heading:'Build '+G.normaliseIdentity(s.identity).stable,why:'Sign your first wrestler before accepting bookings.',go:'scouting',cta:'Find talent'}:
   s.card.length?
   {heading:s.card.length+' '+plural(s.card.length,'match')+' booked',why:'Check the card and prepare for match night.',go:'fixtures',cta:'Review card'}:
   s.offers.length?
@@ -383,12 +383,12 @@ function renderDesk(){
   win('This week',ledgerFacts()+booksChart(),{area:'ledger',h:'h3',cls:'quiet',body:'tight'})+
   win('In-tray',`<div class="phone-only"><div class="phone-progress"><div><small>Reputation</small><b>${s.rep}</b></div><div><small>Meetings left</small><b>${s.focus} of 2</b></div></div></div><div class="well">${briefing}${tray}</div>`,{area:'tray',cls:'desk-actions',body:'tight',keep:'tray'})+
   win('Next dates',`<div class="well">${datesHtml}</div>`,{area:'dates',h:'h3',body:'tight',keep:'dates'})+
-  win('Stable condition',`<div class="well">${squad}</div>`,{area:'squad',h:'h3',body:'tight',keep:'cond',actions:'<button class="btn" data-go="training">Training</button>'})
+  win('Stable condition · '+esc(G.normaliseIdentity(s.identity).stable),`<div class="well">${squad}</div>`,{area:'squad',h:'h3',body:'tight',keep:'cond',actions:'<button class="btn" data-go="training">Training</button>'})
  );
 }
 
 function renderInbox(){
- const s=S(),all=s.inbox;
+ const s=S(),all=s.inbox,identity=G.normaliseIdentity(s.identity);
  const list=all.filter(m=>inboxFilter==='all'||(inboxFilter==='action'&&m.kind==='decision'&&!m.answer)||
   (inboxFilter==='unread'&&!m.read)||(inboxFilter==='reports'&&Array.isArray(m.sections)&&m.sections.length));
  if(phoneLayout()&&list.some(m=>m.id===route.id))openMsg=route.id;
@@ -409,7 +409,7 @@ function renderInbox(){
   const sender=String(m.from||''),promoter=s.promoters.find(p=>sender===p.voice||sender===p.name||sender.startsWith(p.voice+',')||sender.startsWith(p.name+','));
   const person=promoter?null:[...s.roster,...s.free,...(D.ALL||[]),...(D.FOES||[])].find(w=>sender===w.name||sender.startsWith(w.name+','));
   const senderRecord=promoter?recordLink('p',promoter.id,promoter.name):person?recordLink('w',person.id,person.name):'';
-  letter=`<article class="letter">${mgr?`<div class="letter-face">${face('manager',mgr.id,mgr.manager,'portrait')}</div>`:''}<div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.${senderRecord?' · '+senderRecord:''}</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
+  letter=`<article class="letter">${mgr?`<div class="letter-face">${face('manager',mgr.id,mgr.manager,'portrait')}</div>`:''}<div class="meta">From ${esc(m.from)}. To ${esc(identity.manager)} (${esc(identity.stable)}). Season ${m.season}, week ${m.week}.${senderRecord?' · '+senderRecord:''}</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
   if(Array.isArray(m.sections)&&m.sections.length){
    letter+='<div class="report-sections">'+m.sections.map(section=>'<section><h3 class="section-h">'+esc(section.title)+'</h3><ul class="cons">'+(section.lines||[]).map(line=>'<li>'+esc(line)+'</li>').join('')+'</ul></section>').join('')+'</div>';
    letter+='<div class="report-links"><button class="btn" data-go="pyramid">Card ladder</button><button class="btn" data-go="squad">Your roster</button><button class="btn" data-go="offers">Offers</button></div>';
@@ -422,7 +422,7 @@ function renderInbox(){
  }
  const need=G.pending().length;
  paint('s-inbox'+phonePane(route.id,m?.id),
-  win('Inbox',`${controls}<div class="well inbox-results">${items?`<ul class="msglist">${items}</ul>`:'<div class="empty">No messages match this filter.</div>'}</div>`,{body:'tight',keep:'msgs',cls:'phone-master',note:need?`${need} awaiting reply`:`${list.length} ${plural(list.length,'message')}`})+
+  win('Inbox · '+esc(identity.stable),`${controls}<div class="well inbox-results">${items?`<ul class="msglist">${items}</ul>`:'<div class="empty">No messages match this filter.</div>'}</div>`,{body:'tight',keep:'msgs',cls:'phone-master',note:need?`${need} awaiting reply`:`${list.length} ${plural(list.length,'message')}`})+
   win(m?.kind==='decision'&&!m.answer?'Your decision':'Message',`<div class="paper" style="min-height:100%">${letter}</div>`,{body:'tight',keep:'letter',cls:'quiet phone-inspector',h:'h3',actions:phoneBack('inbox','Inbox')})
  );
 }
@@ -472,7 +472,7 @@ function renderSquad(){
  const cards=rows.map(w=>`<button class="phone-card" data-openw="${w.id}"><span class="who">${face('wrestler',w.id,w.name)}<span><b>${esc(w.name)}</b>${ownedChamps(w.id)}<small>${esc(w.tier)} · ${esc(w.style)}</small></span></span><span class="phone-card-line"><span>Fatigue ${w.fatigue} · Morale ${w.morale}</span><span>${status(w)}</span></span><small>${money(w.wage)} a week</small></button>`).join('');
  const open=5-s.roster.length;
  const openPlaces=s.roster.length&&open>0?`<div class="open-places"><div><b>${open} open ${plural(open,'place')}</b><span>More wrestlers means more of this week’s offers you can fill.</span></div><button class="btn go" data-go="scouting">Find free agents</button></div>`:'';
- paint('s-full',win('Your stable',`${toolbar}${phoneList(table,cards)}${openPlaces}<p class="dim" style="margin-top:10px"><span class="phone-table">Select a wrestler to open their profile. Click a column heading to sort.</span><span class="phone-only">Tap a wrestler to open their profile.</span></p>`,{keep:'squad',note:`${s.roster.length} of 5 places filled. Wages ${money(G.wages())} a week.`,actions:'<button class="btn" data-go="training">Training</button><button class="btn" data-go="scouting">Free agents</button>'}));
+ paint('s-full',win(esc(G.normaliseIdentity(s.identity).stable),`${toolbar}${phoneList(table,cards)}${openPlaces}<p class="dim" style="margin-top:10px"><span class="phone-table">Select a wrestler to open their profile. Click a column heading to sort.</span><span class="phone-only">Tap a wrestler to open their profile.</span></p>`,{keep:'squad',note:`${s.roster.length} of 5 places filled. Wages ${money(G.wages())} a week.`,actions:'<button class="btn" data-go="training">Training</button><button class="btn" data-go="scouting">Free agents</button>'}));
 }
 
 function temperament(w){
@@ -1549,7 +1549,7 @@ function bell(){
  let structureExecution;
  try{structureExecution=OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.structureChoice);}
  catch(err){console.warn('Match structure refused',err);toast('Signed structure mismatch. Review the backstage layout.');return showMeeting();}
- night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:matchSheet,structureExecution,seed:Math.floor(Math.random()*2**31)});
+ night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:matchSheet,structureExecution,identity:G.normaliseIdentity(S().identity),seed:Math.floor(Math.random()*2**31)});
  night.past=[];night.paused=false;commentaryView='all';
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const livePlan=`<section class="ringside-plan" aria-label="Match instructions">

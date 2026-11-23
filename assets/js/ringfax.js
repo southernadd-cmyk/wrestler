@@ -511,6 +511,7 @@
  function build(s){
   syncQuizWeek(s);
   const h=latest(s),recent=recents(s),P={};
+  const identity=root.OfficeGame?.normaliseIdentity?.(s?.identity)||{manager:'Alex Morgan',stable:'The New Guard'};
   // The blue header already shows an article title, so don't repeat it
   // as the first editorial line. This applies consistently to every page.
   const add=(number,title,lines,subpages=null)=>{
@@ -546,7 +547,7 @@
    pair('302 TITLE TALK','500 FANZONE','white'),
    pair('501 LETTERS','777 RINGFAX QUIZ','cyan'),
    item(' --------------------------------','blue'),
-   item(' THE OFFICE, THROUGH FANS EYES','yellow'),
+   item(' '+identity.stable.toUpperCase().slice(0,37),'yellow'),
    item(' SEASON '+(s?.season||1)+' / WEEK '+(s?.week||1),'cyan'),
    item(' NOT ANOTHER RESULTS TABLE','green'),
    item(' READ THE STORY BEHIND THE STATS','white'),
@@ -562,9 +563,9 @@
    if(h.outcome==='dq'||h.outcome==='nc')
     paragraphs(a,'A controversial ending has given the fans something to argue about.','yellow');
    else if(Number.isFinite(h.stars)&&h.stars>=3.5)
-    paragraphs(a,'This contest has people talking. The next booking will carry new expectations.','green');
+    paragraphs(a,identity.stable+' has given fans something to discuss. The next booking carries new expectations.','green');
    else
-    paragraphs(a,'The contest is over, but opinion on what it means has only begun.','green');
+    paragraphs(a,identity.stable+' has another performance to answer for. The argument about it has only begun.','green');
    a.push(item(''),item(' MORE COMMENT: 200 AND 201','cyan'));
   }else{
    paragraphs(a,'FOUR PROMOTIONS. DIFFERENT TASTES.','cyan');
@@ -574,7 +575,7 @@
    if(first&&last)
     paragraphs(a,first.name+' has a very different stage from '+last.name+'.','yellow');
    a.push(item(''));
-   paragraphs(a,'Who gets talked about first? The opening bell will tell us.','green');
+   paragraphs(a,identity.stable+' has a new manager in '+identity.manager+'. The opening bell will tell us what follows.','green');
    a.push(item(''),item(' 102 SEASON OUTLOOK / 500 FANS','cyan'));
    if(first&&last)addOpeningNote('LATEST HEADLINE',a,'FROM THE BOOKERS',
     (first.voice||first.name)+' favours '+first.desc.toLowerCase()+

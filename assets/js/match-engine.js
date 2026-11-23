@@ -541,6 +541,9 @@ function entrances(M){
  say(M,`${M.f.name} comes out first. ${fh>=60?'Boos rain down.':'A smattering of jeers.'}`,'play',{at:0});
  const pop=wh<30?'Polite applause. Not many know the name yet.':wh<55?'A decent reaction.':wh<75?`A big pop for ${M.w.short}.`:`The roof comes off for ${M.w.short}!`;
  say(M,`Here comes ${M.w.name}. ${pop}`,wh>=75?'crowd':'play',{at:0,big:wh>=75});
+ // Identity is read-only presentation: no additional random draw, stat or finish change.
+ if(M.o.identity?.stable&&M.o.identity?.manager)
+  say(M,`${M.w.short} represents ${M.o.identity.stable}. ${M.o.identity.manager} is calling the shots tonight.`,'story',{at:0,who:'colour'});
  if(M.o.blowoff)say(M,'This is the end of the road for these two. Everyone here knows it.','story',{at:0});
  else if((M.o.feudHeat||0)>=35)say(M,'Bad blood here. These two have history.','story',{at:0});
  if(M.o.promo)say(M,M.o.promo.hook,'story',{at:0});
@@ -1036,7 +1039,7 @@ function canCall(M,id){
 function call(M,id){
  if(!canCall(M,id))return false;
  M.calls--;M.callsUsed.push(id);const w=M.w;mark(M,'call:'+id,1);
- say(M,`You shout from ringside: “${CALLS[id].name}.”`,'you');
+ say(M,M.o.identity?.manager?`${M.o.identity.manager} calls from ringside: “${CALLS[id].name}.”`:`You shout from ringside: “${CALLS[id].name}.”`,'you');
  const listen=M.listen+(id==='home'?20:0)+(id==='sheet'&&M.leash==='script'?10:0);
  if(M.r()*100>listen){M.ignored++;say(M,rnd(M,[`${w.short} waves you away.`,`${w.short} doesn’t even look over.`,`${w.short} hears you. Does the opposite.`]),'bad');if(w.ego>=70)M.adj.morale-=1;return true}
  root.OfficeSheets?.intervention(M,id);
@@ -1109,7 +1112,7 @@ function decide(M,id){
 function resolve(M,choice){
  const d=M.decision;if(!d)return;M.decision=null;const w=M.w,f=M.f;
  const opt=d.options.find(o=>o.id===choice)||d.options[0];
- say(M,`Your call: “${opt.label}”`,'you');
+ say(M,M.o.identity?.manager?`${M.o.identity.manager} calls: “${opt.label}”`:`Your call: “${opt.label}”`,'you');
  if(d.id==='injury'){
   if(choice==='home'){if(M.len-M.t>60)M.shortened=true;M.len=Math.min(M.len,M.t+50);M.nearfallAt=[];say(M,`${w.short} nods through gritted teeth. Straight to the finish.`,'play',{who:'runner'})}
   if(choice==='work'){M.workingHurt=true;lift(M,5);M.adj.heat+=3;say(M,`${w.short} waves off the referee. The crowd start clapping. Brave, or daft.`,'crowd')}
