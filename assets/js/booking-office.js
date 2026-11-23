@@ -28,8 +28,9 @@
  const styleOf=p=>STYLE[p.personality]||STYLE.traditional;
 
  function blank(week){
-  return {v:1,promos:Object.fromEntries(D.PROMOS.map((p,i)=>[p.id,{live:[],done:[],
-   next:Object.fromEntries(D.DIVISION_ORDER.map((d,j)=>[d,week+i+j*2]))}]))};
+  return {v:1,promos:Object.fromEntries(D.PROMOS.map(p=>[p.id,{live:[],done:[],
+   // Every booker can start planning in the opening week, rather than waiting for a staggered offset.
+   next:Object.fromEntries(D.DIVISION_ORDER.map(d=>[d,week]))}]))};
  }
 
  // ---------------------------------------------------------------------------------------------
@@ -112,7 +113,7 @@
     if(live.some(x=>x.type===type))continue;
     const story=propose(type,p,div,pool,free,week);
     if(!story)continue;
-    pr.live.push(story);cast.add(story.a);cast.add(story.b);pr.next[div]=week+3;
+    pr.live.push(story);cast.add(story.a);cast.add(story.b);pr.next[div]=week+2;
     notes.push(announce(p,story));
     break;
    }
@@ -282,17 +283,30 @@
  // ---------------------------------------------------------------------------------------------
  // For the booking sheets.
  function view(pid,s=root.OfficeGame?.S){
-  const p=D.PROMOS.find(x=>x.id===pid),pr=s?.territory?.booking?.promos?.[pid];
+  const p=D.PROMOS.find(x=>x.id===pid),t=s?.territory;
   if(!p)return null;
   const name=id=>D.findWrestler(id)?.name||id;
+  const upcomingWeek=s?T.absWeek(s)+1:null;
+  // A read-only forecast: the next week's existing player contracts have first claim on opponents.
+  const busy=new Set((s?.futureBookings||[]).filter(c=>c.eventAbs===upcomingWeek).map(c=>c.rid));
+  const forecast=t&&upcomingWeek?decide(s,t,upcomingWeek,busy):null;
+  const firstLook=!!t&&!t.booking;
+  // Week one has no committed circuit results. Show the opening *plans* without pretending that
+  // the forecast's first-round winners and played beats have already happened.
+  const pr=(t?.booking?.promos|| (firstLook?forecast?.state.promos:null))?.[pid];
   const story=x=>{
-   const next=x.beats.find(b=>!b.done),played=x.beats.filter(b=>b.done);
+   const next=firstLook?x.beats[0]:x.beats.find(b=>!b.done),played=firstLook?[]:x.beats.filter(b=>b.done);
    return {id:x.id,type:x.type,typeName:TYPE_NAME[x.type],div:x.div,a:x.a,b:x.b,aName:name(x.a),bName:name(x.b),heat:Math.round(x.heat),
     next:next?{at:next.at,kind:next.kind}:null,payoff:x.beats.at(-1).at,played:played.length,total:x.beats.length,
     record:played.map(b=>({winner:name(b.winner),loser:name(b.winner===x.a?(b.opp||x.b):x.a)})),
     status:x.status||'live',ended:x.ended||null,text:x.text||null};
   };
   return {pid,name:p.name,voice:p.voice,style:p.personality,blurb:`${p.voice} ${styleOf(p).blurb}`,
+   firstLook,upcomingWeek,
+   upcoming:(forecast?.bill||[]).filter(m=>m.pid===pid).map(m=>({
+    div:m.div,a:m.a.id,b:m.b.id,aName:name(m.a.id),bName:name(m.b.id),title:!!m.title,
+    storyline:m.story?TYPE_NAME[m.story.type]:null
+   })),
    live:(pr?.live||[]).map(story),done:(pr?.done||[]).map(story)};
  }
 
