@@ -734,11 +734,29 @@
  // The quiz shares Ringfax's standard masthead, with a Bamboozle-style game below.
  // Game state, 40x25 text data, keyboard controls and checkpoint logic are unchanged.
  function quizMascot(){
-  return '<svg class="rf-bz-face" viewBox="0 0 36 36" aria-hidden="true" focusable="false" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
-   '<path fill="#ff0" d="M11 3h11v2h3v2h3v3h2v14h-2v3h-3v2H9v-2H6v-3H4V11h3V8h2V5h2z M29 16h3v-3h2v2h2v6h-2v3h-4z"/>'+
-   '<path fill="#000" d="M11 11h2v5h-2z M22 11h2v5h-2z M9 9h5v2H9z M21 9h5v2h-5z M8 19h3v2H8z M25 19h3v2h-3z M11 22h2v2h-2z M13 24h12v2H13z M25 22h2v2h-2z M16 28h5v2h-5z"/>'+
-   '<path fill="#fff" d="M10 32h5v2h-5z M23 32h5v2h-5z M5 4h3v1H6v3H5z M29 4h3v4h-1V5h-2z M5 29h1v3h3v1H5z M31 29h1v4h-4v-1h3z"/>'+
-   '<path fill="#00f" d="M7 30h9v3H7z M22 30h9v3h-9z"/></svg>';
+  // An original wrestling quiz host assembled from rectangular teletext pixels.
+  // The limited palette and crisp edges echo 2x3 teletext mosaics, not a copied sprite.
+  const rects=[
+   [14,1,11,2,'w'],[12,3,2,2,'w'],[25,3,2,2,'w'],
+   [11,4,16,2,'y'],[9,6,20,3,'y'],[7,9,24,14,'y'],
+   [9,23,20,4,'y'],[12,27,15,2,'y'],
+   [30,13,4,3,'y'],[33,11,2,3,'y'],[35,13,3,2,'y'],
+   [35,16,2,4,'y'],[31,19,5,2,'y'],
+   [10,10,5,2,'k'],[22,10,5,2,'k'],
+   [12,12,2,5,'k'],[23,12,2,5,'k'],
+   [14,12,1,2,'w'],[25,12,1,2,'w'],
+   [9,19,5,2,'k'],[25,19,4,2,'k'],
+   [11,21,3,2,'k'],[25,21,3,2,'k'],
+   [13,23,13,2,'k'],[16,26,6,2,'k'],
+   [8,29,11,4,'b'],[22,29,11,4,'b'],
+   [10,33,9,2,'w'],[23,33,9,2,'w'],
+   [8,7,2,2,'w'],[27,7,2,2,'w']
+  ];
+  const colours={y:'#ff0',w:'#fff',b:'#00f',k:'#000'};
+  return '<svg class="rf-bz-face" viewBox="0 0 40 36" preserveAspectRatio="xMidYMid meet" '+
+   'aria-hidden="true" focusable="false" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
+   rects.map(([x,y,width,height,c])=>'<rect x="'+x+'" y="'+y+'" width="'+width+
+    '" height="'+height+'" fill="'+colours[c]+'"/>').join('')+'</svg>';
  }
  function quizPresentation(){
   const stage=quizState.stage,links=quizFooter(),q=QUIZ_QUESTIONS[quizState.index],n=quizState.index+1;
@@ -807,10 +825,7 @@
     return '<div class="rf-row rf-mosaic rf-bg-blue rf-logo-row">'+escape(r.text)+
      '<div class="rf-logo-art" aria-hidden="true">'+pixelLogo(title)+'</div></div>';
    }
-   if(C.page===777&&i===5){
-    return '<div class="rf-row rf-section rf-bz-heading">'+escape(r.text)+
-     '<button type="button" class="rf-bz-home" data-rf-action="go" data-rf-value="100" aria-label="Return to Ringfax index page 100">100 INDEX</button></div>';
-   }
+
    if(C.page===777&&r.answerIndex!==undefined){
     return '<button type="button" class="rf-row rf-quiz-answer rf-'+r.colour+
      '" data-rf-action="quiz-answer" data-rf-value="'+r.answerIndex+
@@ -835,6 +850,14 @@
    return '<div class="rf-row rf-'+r.colour+bg+(i>=1&&i<=4?' rf-mosaic':'')+
     (i===0?' rf-header':i===5?' rf-section':'')+'">'+escape(r.text)+'</div>';
   }).join('');
+  // Reuse the same actual 40-column header text and four-row mosaic ident used
+  // on every other Ringfax page; only the body becomes the quiz composition.
+  const quizHeader='<div class="rf-bz-shared-header">'+
+   '<div class="rf-bz-header-line">'+escape(v.rows[0].text)+'</div>'+
+   '<div class="rf-bz-channel">'+pixelLogo('RINGFAX')+'</div>'+
+   '<div class="rf-bz-page-title"><span>'+escape(v.title)+'</span>'+
+   '<button type="button" class="rf-bz-home" data-rf-action="go" data-rf-value="100" '+
+   'aria-label="Return to Ringfax index page 100">100 INDEX</button></div></div>';
   const quick=favourites.map(([number,label,desc])=>
    '<button type="button" class="rf-page-link'+(v.page===number?' is-current':'')+'" data-rf-action="go" data-rf-value="'+number+'"'+
    (v.page===number?' aria-current="page"':'')+'><span class="rf-link-number">'+number+'</span>'+
@@ -865,7 +888,7 @@
    '<button data-rf-action="go" data-rf-value="200" type="button">200 RESULTS</button>'+
    '<button data-rf-action="go" data-rf-value="500" type="button">500 FANS</button></div>'+
    '<div id="rf-screen" class="rf-screen'+(C.page===777?' rf-quiz-screen':'')+'" role="region" aria-label="Ringfax teletext page">'+
-    (C.page===777?'<div class="rf-teletext-grid" aria-hidden="true">'+rows+'</div>'+quizPresentation():rows)+'</div>'+
+    (C.page===777?'<div class="rf-teletext-grid" aria-hidden="true">'+rows+'</div>'+quizHeader+quizPresentation():rows)+'</div>'+
    '<p class="rf-display-caption">LIVE FROM THE CIRCUIT <span>●</span> READ-ONLY EDITION <span>●</span> '+escape(v.title)+'</p>'+
    '</div>'+
    '<aside class="rf-console" aria-label="Ringfax controls">'+
