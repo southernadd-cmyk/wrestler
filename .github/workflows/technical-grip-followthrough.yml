@@ -1,11 +1,7 @@
 name: Technical owned-grip payoff A/B
 on:
-  pull_request:
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'tests/technical-grip-followthrough.test.cjs'
-      - '.github/workflows/technical-grip-followthrough.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
