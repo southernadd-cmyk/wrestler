@@ -468,12 +468,7 @@
   add(302,'TITLE PICTURE',a);
 
   // Opening-week letters are explicitly opinions about the season, not invented match results.
-  const opening=[
-   {name:'GRAPPLEGRAN',quote:'A new season. Give me a clean finish and a wrestler I can get behind.'},
-   {name:'HEELTURN78',quote:'Everyone wants a hero. I want a villain worth booing.'},
-   {name:'MATWORKMICK',quote:'All I ask is one proper technical contest. The bells will tell the story.'},
-   {name:'TICKETSTUB',quote:'Tickets are not free. The promoters need to earn our money.'}
-  ];
+  const opening=openingFans(s);
   const fans=h?voices(h,3):opening.slice(0,3);
   a=[item('WHAT THE FANS ARE SAYING','yellow'),item('')];
   if(h){
@@ -567,8 +562,9 @@
  }
 
  const BANNERS={
-  100:['RINGFAX','yellow'],101:['LATEST','cyan'],200:['RESULTS','green'],
-  201:['RATINGS','yellow'],300:['RANKINGS','green'],302:['TITLES','cyan'],
+  100:['RINGFAX','yellow'],101:['LATEST','cyan'],102:['SEASON','yellow'],
+  103:['BOOKINGS','green'],104:['PROMOS','cyan'],200:['RESULTS','green'],
+  201:['RATINGS','yellow'],300:['RANKINGS','green'],301:['LEADERS','yellow'],302:['TITLES','cyan'],
   500:['FANZONE','magenta'],501:['LETTERS','yellow'],777:['QUIZ','yellow']
  };
  function mosaic(word){
