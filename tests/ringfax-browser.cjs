@@ -270,6 +270,8 @@ async function run(browser,name,viewport){
    quizLayout.home.top>=quizLayout.header.top &&
    quizLayout.home.bottom<=quizLayout.header.bottom+2,
    name+': 100 INDEX return control is not clipped');
+  assert.ok(quizLayout.mascot.width>=quizLayout.screen.width*.34,
+   name+': portrait owns enough width to be clearly readable on every viewport');
   assert.ok(quizLayout.bubble.right<=quizLayout.mascot.right+2,
    name+': speech bubble does not cover the entire quiz mascot');
   assert.ok(quizLayout.choices.every(x=>x.height>20&&
