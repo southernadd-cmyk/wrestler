@@ -201,7 +201,7 @@ async function run(browser,name,viewport){
    name+': index link navigates to the quiz');
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'intro',
    name+': secret 777 starts at intro');
-  assert.equal(await page.locator('#rf-screen .rf-row').count(),25,
+  assert.equal(await page.locator('#rf-screen>.rf-teletext-grid>.rf-row').count(),25,
    name+': underlying accessible 40x25 teletext model is preserved');
   assert.equal(await page.locator('.rf-bz-page').count(),1,
    name+': page 777 has one full-screen quiz composition');
