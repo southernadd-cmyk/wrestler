@@ -16,7 +16,43 @@ function grid(page){
  for(const [i,row] of v.rows.entries())assert.equal(row.text.length,40,'row '+i+' should have exactly 40 cells on page '+page);
  return v;
 }
-for(const p of [100,101,200,201,300,302,500,501])grid(p);
+for(const p of [100,101,102,103,104,200,201,300,301,302,500,501])grid(p);
+const openingPages=[100,101,102,103,104,200,201,300,301,302];
+for(const number of openingPages){
+ assert.equal(grid(number).subpages,1,'opening-week page '+number+' must fit one teletext page');
+ assert.ok(R.build(s)[number].lines.length<=17,'no overflowing opening story on page '+number);
+}
+const edition=R.build(s);
+assert.equal(s.promoters.length,4,'fixture has four actual promotion records');
+assert.ok(edition[101].lines.some(r=>r.text.includes('CHAMPIONSHIP')),
+ 'opening news contains real title information');
+assert.ok(edition[102].lines.some(r=>r.text.includes('TITLES:')),
+ 'season preview has the title picture');
+for(const p of s.promoters){
+ assert.ok(edition[104].lines.some(r=>r.text.includes(p.name.toUpperCase())),
+  'promoter guide includes real promoter '+p.name);
+ assert.ok(edition[301].lines.some(r=>r.text.includes(p.name.toUpperCase())),
+  'all-promotion rank view includes '+p.name);
+}
+assert.equal(edition[103].lines.filter(r=>r.text.includes(' OFFER ')).length,
+ Math.min(5,s.offers.filter(o=>o.pid&&o.rid).length),
+ 'booking desk previews actual available offers, not made-up fixtures');
+assert.ok(edition[103].lines.some(r=>r.text.includes('NOT SIGNED')),
+ 'booking offers are clearly distinguished from accepted fixtures');
+assert.ok(edition[200].lines.some(r=>r.text.includes('NOT RESULTS')),
+ 'previews on results page cannot be mistaken for results');
+assert.ok(edition[201].lines.some(r=>r.text.includes('NOT MATCH RATINGS')),
+ 'opening card scores are not presented as match grades');
+assert.ok(edition[300].lines[1].text.includes('MEN')&&
+ edition[300].lines[1].text.includes('WOMEN'),
+ 'card rankings include both real divisions');
+const realChampion=s.territory.titles.dock.men.holder;
+const championName=root.OfficeData.findWrestler(realChampion)?.name||realChampion;
+assert.ok(edition[500].lines.some(r=>r.text.includes(championName)),
+ 'opening Fanzone discusses an actual current titleholder');
+assert.ok(edition[501].lines.some(r=>r.text.includes(championName)),
+ 'opening letters have the same factual title context');
+
 
 const titlePage=R.build(s)[302];
 const championView=grid(302);
