@@ -734,99 +734,85 @@
  // The quiz shares Ringfax's standard masthead, with a Bamboozle-style game below.
  // Game state, 40x25 text data, keyboard controls and checkpoint logic are unchanged.
 
+
  function quizMascot(){
-  // Original pixel-art tribute to All Star Wrestling promoter Brian Dixon:
-  // bald crown, grey side hair, open eyes, pronounced nose, broad grin and
-  // checked shirt. The three-quarter face turns left into the question bubble.
-  // Integer-cell rasterisation, five genuine Teletext colours, no image asset.
-  const w=68,h=65,p=Array.from({length:h},()=>Array(w).fill('.'));
-  const dot=(x,y,c)=>{x|=0;y|=0;if(x>=0&&x<w&&y>=0&&y<h)p[y][x]=c;};
-  const oval=(cx,cy,rx,ry,c)=>{
-   for(let y=Math.max(0,Math.floor(cy-ry));y<=Math.min(h-1,Math.ceil(cy+ry));y++)
-    for(let x=Math.max(0,Math.floor(cx-rx));x<=Math.min(w-1,Math.ceil(cx+rx));x++)
-     if(((x+.5-cx)/rx)**2+((y+.5-cy)/ry)**2<=1)dot(x,y,c);
-  };
-  const polygon=(points,c)=>{
-   const lowY=Math.max(0,Math.floor(Math.min(...points.map(v=>v[1]))));
-   const highY=Math.min(h-1,Math.ceil(Math.max(...points.map(v=>v[1]))));
-   const lowX=Math.max(0,Math.floor(Math.min(...points.map(v=>v[0]))));
-   const highX=Math.min(w-1,Math.ceil(Math.max(...points.map(v=>v[0]))));
-   for(let y=lowY;y<=highY;y++)for(let x=lowX;x<=highX;x++){
+  // Hand-drawn, Bamboozle-era Teletext pixel portrait. This original character
+  // is a loose Brian Dixon tribute: bald crown, silver sides, strong nose and
+  // warm smile. Deliberately limit the palette and detail so it reads at 1x.
+  const w=56,h=52,p=Array.from({length:h},()=>Array(w).fill('.'));
+  const pixel=(x,y,c)=>{if(x>=0&&x<w&&y>=0&&y<h)p[y][x]=c;};
+  const polygon=(pts,c)=>{
+   const minX=Math.max(0,Math.floor(Math.min(...pts.map(a=>a[0]))));
+   const maxX=Math.min(w-1,Math.ceil(Math.max(...pts.map(a=>a[0]))));
+   const minY=Math.max(0,Math.floor(Math.min(...pts.map(a=>a[1]))));
+   const maxY=Math.min(h-1,Math.ceil(Math.max(...pts.map(a=>a[1]))));
+   for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
     let inside=false;
-    for(let i=0,j=points.length-1;i<points.length;j=i++){
-     const a=points[i],b=points[j];
+    for(let i=0,k=pts.length-1;i<pts.length;k=i++){
+     const a=pts[i],b=pts[k];
      if((a[1]>y+.5)!==(b[1]>y+.5)&&
         x+.5<(b[0]-a[0])*(y+.5-a[1])/(b[1]-a[1])+a[0])inside=!inside;
     }
-    if(inside)dot(x,y,c);
+    if(inside)pixel(x,y,c);
    }
   };
-  const stroke=(x0,y0,x1,y1,c,r=0)=>{
-   const steps=Math.max(Math.abs(x1-x0),Math.abs(y1-y0),1)*2;
-   for(let i=0;i<=steps;i++){
-    const x=Math.round(x0+(x1-x0)*i/steps),y=Math.round(y0+(y1-y0)*i/steps);
-    for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)dot(x+dx,y+dy,c);
+  const line=(points,c,thickness=1)=>{
+   for(let k=1;k<points.length;k++){
+    const [x0,y0]=points[k-1],[x1,y1]=points[k];
+    const steps=Math.max(1,Math.abs(x1-x0),Math.abs(y1-y0));
+    for(let i=0;i<=steps;i++){
+     const x=Math.round(x0+(x1-x0)*i/steps),y=Math.round(y0+(y1-y0)*i/steps);
+     for(let dy=0;dy<thickness;dy++)for(let dx=0;dx<thickness;dx++)pixel(x+dx,y+dy,c);
+    }
    }
   };
-  // Broad red-and-white checked shirt and open collar.
-  polygon([[2,65],[3,58],[8,53],[20,49],[49,48],[60,51],[68,58],[68,65]],'R');
-  polygon([[8,53],[19,50],[23,55],[21,65],[5,65]],'W');
-  polygon([[53,51],[62,53],[68,60],[68,65],[55,65]],'W');
-  for(const x of [5,15,25,39,52,63])stroke(x,54,x+1,64,'W',1);
-  for(const y of [57,62])stroke(4,y,67,y,'W');
-  polygon([[22,49],[31,50],[48,47],[53,52],[47,63],[27,61]],'B');
-  polygon([[25,47],[47,46],[49,57],[42,61],[30,57]],'Y');
-  polygon([[25,48],[33,53],[37,56],[28,60],[18,51]],'W');
-  polygon([[47,47],[43,54],[41,57],[50,61],[57,51]],'W');
-  stroke(36,57,43,60,'R',1);
-  // White hair remains at the sides: the crown is entirely bald.
-  polygon([[21,16],[17,19],[14,25],[12,32],[15,39],[23,38],[25,27],[26,19]],'W');
-  polygon([[46,15],[51,17],[57,23],[59,35],[56,40],[51,35],[48,27]],'W');
-  polygon([[17,21],[14,29],[14,35],[18,37],[21,27]],'C');
-  polygon([[55,22],[58,30],[58,35],[54,31]],'C');
-  // Asymmetrical head, turned towards the left-hand question bubble.
-  polygon([[29,5],[40,5],[48,9],[54,16],[55,27],[54,34],[56,39],[53,47],
-           [47,54],[37,58],[27,55],[20,50],[16,42],[15,32],[17,21],[22,11]],'Y');
-  oval(56,35,6,9,'Y');oval(58,36,3,6,'R');oval(59,36,2,4,'Y');
-  oval(17,34,3,7,'Y');
-  polygon([[51,17],[54,20],[56,26],[56,31],[53,33],[52,27]],'W');
-  polygon([[18,17],[21,16],[22,24],[18,30],[16,28]],'W');
-  stroke(53,21,54,27,'C',1);
-  // High forehead, smile creases, wrinkles and cheek shadows.
-  oval(35,17,9,5,'W');oval(37,18,9,4,'Y');
-  oval(24,37,7,10,'W');oval(27,36,8,9,'Y');
-  polygon([[46,34],[52,36],[53,45],[48,50],[42,51]],'R');
-  polygon([[44,34],[50,35],[50,43],[46,47],[41,47]],'Y');
-  stroke(26,21,37,20,'R');stroke(38,20,46,21,'R');
-  stroke(25,24,34,23,'R');stroke(39,23,47,24,'R');
-  // Two uncovered eyes, not the spectacles mistakenly drawn earlier.
-  stroke(23,29,32,28,'B',1);stroke(38,28,47,29,'B',1);
-  stroke(24,32,32,32,'W',1);stroke(39,32,47,32,'W',1);
-  stroke(28,32,29,34,'.',1);stroke(42,32,43,34,'.',1);
-  dot(28,32,'B');dot(42,32,'B');
-  // Nose projects left of centre; facial expression directs towards quiz.
-  stroke(34,34,29,40,'R');stroke(28,40,22,42,'R',1);
-  polygon([[29,36],[31,37],[28,42],[22,43],[24,46],[32,45],[35,42]],'W');
-  stroke(24,45,27,45,'B');stroke(32,45,34,44,'R');
-  stroke(19,39,22,43,'R');stroke(48,37,51,41,'R');
-  stroke(49,40,52,42,'R');stroke(24,47,28,51,'R');
-  stroke(49,46,47,51,'R');
-  polygon([[29,48],[34,49],[42,49],[49,47],[48,51],[43,54],[36,55],[31,52]],'B');
-  polygon([[31,49],[38,50],[46,49],[45,52],[36,53],[32,51]],'W');
-  stroke(30,48,35,49,'R');stroke(45,49,49,47,'R');
-  stroke(33,54,39,56,'R');
-  stroke(8,56,9,64,'R');stroke(57,55,58,64,'R');
-  const colours={W:'#fff',Y:'#ff0',B:'#00f',C:'#0ff',R:'#f00'};
-  const shapes={W:'',Y:'',B:'',C:'',R:''};
+  // Just a hint of blue suit and white lapels: the face owns the picture.
+  polygon([[8,52],[9,45],[17,41],[24,40],[42,40],[52,46],[56,52]],'B');
+  polygon([[17,42],[28,47],[23,52],[13,46]],'W');
+  polygon([[40,42],[34,47],[38,52],[47,45]],'W');
+  // White side hair wraps a deliberately bald crown.
+  polygon([[40,7],[45,10],[49,14],[50,21],[51,29],[49,38],[44,42],[41,37]],'W');
+  polygon([[17,9],[13,12],[10,17],[10,25],[13,30],[17,23]],'W');
+  // Three-quarter face looking towards the question bubble at left.
+  polygon([[26,4],[35,4],[42,7],[45,12],[46,17],[46,24],
+   [45,30],[42,36],[38,41],[31,44],[23,43],[19,40],
+   [15,36],[14,31],[11,29],[11,26],[16,24],[17,19],
+   [17,12],[21,7]],'Y');
+  polygon([[24,8],[29,6],[37,7],[39,9],[30,9],[24,12]],'W');
+  polygon([[42,9],[45,12],[47,17],[45,21],[44,16]],'W');
+  polygon([[16,12],[13,16],[12,22],[15,21],[18,15]],'W');
+  // A distinct right ear, outlined with negative-space black.
+  polygon([[45,24],[51,22],[52,25],[52,31],[48,35],[45,32]],'Y');
+  line([[49,24],[47,26],[48,30]],'.',2);
+  // Heavy eyebrows, uncovered eyes and pupils.
+  line([[18,18],[23,17],[27,18]],'.',2);
+  line([[31,17],[36,16],[40,17]],'.',2);
+  polygon([[19,21],[24,20],[27,21],[26,24],[20,24]],'W');
+  polygon([[32,20],[37,19],[40,21],[39,24],[33,24]],'W');
+  polygon([[22,21],[24,21],[24,24],[22,24]],'.');
+  polygon([[34,21],[36,21],[36,24],[34,24]],'.');
+  // Chunky left-projecting nose, not red blotches or spectacle frames.
+  line([[28,25],[27,30],[20,32],[19,34],[23,35]],'.',2);
+  line([[27,35],[30,34]],'.');
+  // A single expressive smiling mouth with small white teeth.
+  polygon([[20,35],[25,37],[32,38],[38,37],[41,34],
+   [39,39],[35,41],[28,41],[23,39]],'.');
+  polygon([[24,37],[31,39],[38,37],[37,39],[30,40],[26,39]],'W');
+  line([[16,33],[18,36],[20,37]],'.',2);
+  line([[41,31],[43,33],[42,35]],'.',2);
+  line([[28,43],[34,43]],'.');
+  line([[24,45],[30,48]],'.');
+  line([[37,45],[33,49]],'.');
+  const colours={Y:'#ff0',W:'#fff',B:'#00f'},shapes={Y:'',W:'',B:''};
   for(let y=0;y<h;y++)for(let x=0;x<w;){
-   const colour=p[y][x],start=x;
-   while(x<w&&p[y][x]===colour)x++;
-   if(shapes[colour]!==undefined)shapes[colour]+='M'+start+' '+y+'h'+(x-start)+'v1h-'+(x-start)+'z';
+   const c=p[y][x],start=x;
+   while(x<w&&p[y][x]===c)x++;
+   if(shapes[c]!==undefined)shapes[c]+='M'+start+' '+y+'h'+(x-start)+'v1h-'+(x-start)+'z';
   }
-  // Crop away empty backdrop and lower clothing, prioritising the large face.
-  return '<svg class="rf-bz-face" viewBox="10 4 56 54" data-facing="left" preserveAspectRatio="xMidYMid meet" '+
-   'aria-hidden="true" focusable="false" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
-   Object.entries(shapes).map(([colour,d])=>'<path fill="'+colours[colour]+'" d="'+d+'"/>').join('')+
+  return '<svg class="rf-bz-face" viewBox="0 0 56 52" data-facing="left" '+
+   'preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false" '+
+   'shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
+   Object.entries(shapes).map(([c,d])=>'<path fill="'+colours[c]+'" d="'+d+'"/>').join('')+
    '</svg>';
  }
  function quizPresentation(){
