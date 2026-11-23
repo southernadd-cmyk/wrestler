@@ -548,6 +548,9 @@
 .mf-moments{list-style:none;margin:0;padding:6px 10px;font:19px/1.25 var(--tt);color:var(--white);display:grid;gap:6px}
 .mf-moments li{display:grid;grid-template-columns:3.2em 3.4em minmax(0,1fr);gap:8px;align-items:start}
 .mf-moments .t{color:var(--dim)}
+.mf-highlight-event{display:block;min-width:0}
+.mf-highlight-event strong{font-weight:600}
+.mf-highlight-reaction{display:block;margin-top:3px;color:var(--dim);font-size:.92em;line-height:1.2}
 .mf-parts{padding:6px 10px;display:grid;gap:4px;font:18px/1.2 var(--tt);color:var(--white)}
 .mf-part{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr) 4.2em;gap:8px;align-items:center}
 .mf-part b{text-align:right}
