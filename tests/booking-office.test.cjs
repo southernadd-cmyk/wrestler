@@ -16,6 +16,24 @@ assert.equal(JSON.stringify(G.S),before,'decide() is pure');
 assert.ok(plan.bill.length>=8&&plan.state.promos.dock,'a plan and a card come back');
 console.log('PASS deciding the week reads the career and changes nothing');
 
+// Opening booking sheets must show the tentative week-two card and opening stories without
+// committing fictitious week-one results or changing the save merely by viewing them.
+{
+ const s=fresh(),before=JSON.stringify(s),initial=B.blank(T.absWeek(s)+1);
+ assert.ok(Object.values(initial.promos).every(p=>Object.values(p.next).every(week=>week===2)),
+  'every promoter and division can start planning in the opening week');
+ const views=D.PROMOS.map(p=>B.view(p.id,s));
+ assert.equal(JSON.stringify(s),before,'looking at the booking sheets is read-only');
+ assert.ok(views.every(v=>v.firstLook&&v.upcomingWeek===2),'all sheets preview the opening circuit show');
+ assert.ok(views.reduce((n,v)=>n+v.upcoming.length,0)>=8,'the opening sheets show the actual circuit card');
+ assert.ok(views.reduce((n,v)=>n+v.live.length,0)>=2,'opening storylines no longer all wait several weeks');
+ assert.ok(views.every(v=>v.live.every(x=>x.played===0&&x.record.length===0&&x.next?.at>=2)),
+  'a forecast must not claim that any match has already been wrestled');
+ s.card=[];G.endWeek();
+ assert.ok(D.PROMOS.every(p=>!B.view(p.id,s).firstLook),'after the opening show the sheets show committed storylines');
+ console.log('PASS opening week has full, provisional booking sheets with no fictitious results');
+}
+
 // 2. Two seasons on the circuit: storylines start, play out and finish; the card stays sound.
 fresh();G.sign('rex');
 const mine=new Set(G.S.roster.map(w=>w.id));

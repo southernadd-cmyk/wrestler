@@ -1,0 +1,331 @@
+/* RINGFAX / Classic Ceefax mode.
+   A 40-column rasterised teletext page, NOT a card/dashboard or simulated PC monitor.
+   The 8 on-screen colours are black, white, red, green, blue, yellow, cyan, magenta. */
+#view:has(> .s-ringfax){overflow:hidden;padding:5px;background:#000;overscroll-behavior:contain}
+#view>.s-ringfax{display:block;height:100%;min-height:0;min-width:0}
+.rf-wrap{height:100%;width:100%;min-height:0;min-width:0;overflow:hidden;display:grid;
+ grid-template-columns:minmax(0,1fr) 224px;gap:5px;background:#000;color:#fff}
+.rf-display{min-width:0;min-height:0;overflow:hidden;display:flex;align-items:center;
+ justify-content:center;background:#000;padding:0}
+.rf-display-header,.rf-mini-nav,.rf-display-caption{display:none}
+.rf-screen{--rf-font-size:22px;--rf-tracking:0px;min-width:0;min-height:0;
+ height:100%;max-height:100%;width:auto;max-width:100%;aspect-ratio:4/3;overflow:hidden;
+ padding:7px 10px;background:#000;border:0;outline:0;
+ display:grid;grid-template-rows:repeat(25,minmax(0,1fr));align-content:stretch;
+ color:#fff;font-family:'VT323','Lucida Console','Courier New',monospace;
+ font-size:var(--rf-font-size);line-height:1;letter-spacing:var(--rf-tracking);
+ font-variant-ligatures:none;font-feature-settings:"liga" 0;
+ text-shadow:none;-webkit-font-smoothing:none}
+.rf-row{display:block;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;
+ white-space:pre;margin:0;padding:0;border:0;border-radius:0;background:#000;
+ color:#fff;text-align:left;font:inherit;line-height:1.06;letter-spacing:inherit}
+.rf-white{color:#fff}.rf-yellow{color:#ff0}.rf-cyan{color:#0ff}.rf-green{color:#0f0}
+.rf-red{color:#f00}.rf-blue{color:#00f}.rf-magenta{color:#f0f}
+.rf-bg-blue{background:#00f}
+.rf-mosaic{background:#00f;line-height:1.0;font-weight:600;text-shadow:none}
+/* Bold 5×7 SVG pixels, not glyphs. Occupies the complete blue masthead band,
+   staying legible even when Android renders VT323 at tiny text sizes. */
+.rf-logo-row{position:relative;z-index:1;overflow:visible!important}
+.rf-logo-art{position:absolute;left:0;top:0;width:100%;height:400%;
+ display:flex;align-items:center;justify-content:center;z-index:2;
+ background:#00f;overflow:hidden;pointer-events:none}
+.rf-logo-svg{display:block;width:94%;height:83%;max-width:100%;max-height:100%;
+ shape-rendering:crispEdges;image-rendering:pixelated;overflow:hidden}
+
+.rf-section{background:#00f;color:#fff;line-height:1.08}
+.rf-header{color:#fff;line-height:1.05}
+.rf-index-row{display:flex;align-items:stretch;justify-content:stretch;gap:0}
+.rf-index-half{display:block;flex:0 0 50%;width:50%;min-width:0;border:0;margin:0;padding:0;
+ text-align:left;white-space:pre;overflow:hidden;background:#000;color:inherit;
+ font:inherit;line-height:inherit;letter-spacing:inherit;cursor:default}
+button.rf-index-half{cursor:pointer}
+button.rf-index-half:hover,button.rf-index-half:focus-visible{background:#00f;color:#ff0;
+ outline:0;text-decoration:underline}
+.rf-fastext{display:flex;gap:0;background:#000}
+.rf-fast-seg{display:block;flex:0 0 25%;width:25%;margin:0;padding:0;border:0;
+ cursor:pointer;white-space:pre;text-align:left;overflow:hidden;
+ background:#000;font:inherit;line-height:inherit;letter-spacing:inherit}
+.rf-fast-red{color:#f00}.rf-fast-green{color:#0f0}
+.rf-fast-yellow{color:#ff0}.rf-fast-cyan{color:#0ff}
+.rf-fast-seg:hover,.rf-fast-seg:focus-visible{background:#00f;outline:0;text-decoration:underline}
+.rf-row button:focus-visible{outline:1px solid #fff;outline-offset:-1px}
+.rf-console{min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+ padding:8px;background:#000;border-left:3px solid #00f;color:#fff;
+ scrollbar-color:#00f #000;font-family:'VT323','Lucida Console',monospace}
+.rf-console-title{display:flex;align-items:center;justify-content:space-between;gap:4px;
+ padding:0 0 5px;margin-bottom:8px;border-bottom:2px solid #00f}
+.rf-console-title>span{font:24px/1 'VT323',monospace;color:#0ff}
+.rf-console-title strong{font:23px/1 'VT323',monospace;color:#ff0;white-space:nowrap}
+.rf-page-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}
+.rf-page-link{display:flex;flex-direction:column;gap:1px;min-width:0;min-height:54px;
+ border:0;border-left:3px solid #00f;padding:6px 4px;box-shadow:none;border-radius:0;
+ text-align:left;background:#07072d;color:#fff;cursor:pointer}
+.rf-page-link:hover{background:#00f}
+.rf-page-link.is-current{background:#00f;border-left-color:#ff0}
+.rf-link-number{font:22px/1 'VT323',monospace;color:#ff0}
+.rf-link-name{font:20px/1 'VT323',monospace;color:#fff;text-transform:uppercase}
+.rf-link-detail{display:none}
+.rf-operator{margin-top:11px;border-top:2px solid #00f;padding-top:6px}
+.rf-operator-label{display:flex;align-items:center;justify-content:space-between;
+ font:21px/1 'VT323',monospace;color:#0ff}
+.rf-jump{display:flex;gap:5px;margin:5px 0 9px}
+.rf-jump input{display:block;width:100%;min-width:0;flex:1;min-height:38px;
+ border:1px solid #0ff;border-radius:0;background:#000;color:#ff0;box-shadow:none;
+ font:25px/1.1 'VT323',monospace;letter-spacing:.16em;padding:2px 6px}
+.rf-jump input::placeholder{color:#0ff;opacity:.7}
+.rf-jump button{flex:0 0 38px;min-height:38px;border:0;border-radius:0;background:#00f;
+ color:#fff;font:24px/1 'VT323',monospace}
+.rf-sub-nav{display:grid;grid-template-columns:1fr auto 1fr;gap:3px;align-items:center}
+.rf-sub-nav button,.rf-hold{border:1px solid #00f;border-radius:0;background:#000;
+ color:#fff;font:20px/1 'VT323',monospace;min-height:38px;padding:5px 2px;box-shadow:none}
+.rf-sub-nav>span{min-width:34px;text-align:center;font:20px/1 'VT323',monospace;color:#ff0}
+.rf-sub-nav button:disabled{cursor:not-allowed;opacity:.45}
+.rf-hold{width:100%;margin-top:5px;border-color:#00f;color:#0ff}
+.rf-hold[aria-pressed="true"]{background:#00f;color:#ff0}
+.rf-keypad{margin-top:11px;border-top:1px solid #00f;padding-top:7px}
+.rf-keypad summary,.rf-access summary{cursor:pointer;display:flex;align-items:center;
+ justify-content:space-between;color:#0ff;font:18px/1.1 'VT323',monospace}
+.rf-pad-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;margin-top:6px}
+.rf-pad-grid button{min-height:34px;border:1px solid #00f;background:#000;color:#fff;
+ font:22px/1 'VT323',monospace}
+.rf-pad-grid button:last-child{grid-column:span 2;color:#ff0}
+.rf-console button:focus-visible,.rf-console input:focus-visible,.rf-keypad summary:focus-visible,
+.rf-access summary:focus-visible{outline:2px solid #ff0;outline-offset:1px}
+.rf-console button:disabled{opacity:.45}
+.rf-help{margin:9px 0 0;color:#0ff;font:15px/1.12 'VT323',monospace}
+.rf-records{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.rf-records .btn{min-height:28px;max-width:100%;min-width:0;
+ background:#00f;border:0;color:#fff;font:17px/1 'VT323',monospace;box-shadow:none}
+.rf-access{margin-top:8px;border-top:1px solid #00f;padding-top:7px}
+.rf-access pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;
+ background:#000;color:#fff;border:1px solid #00f;padding:8px;font:15px/1.1 'VT323',monospace}
+.rf-disclaimer{margin:10px 0 0;color:#0f0;font:14px/1.1 'VT323',monospace}
+/* Hidden quiz page 777: large touchable Fastext choices, still within
+   the original black/blue teletext presentation. */
+/* Each on-screen answer uses exactly the same teletext colour as its
+   corresponding Fastext / touch key. Never inherit the default button white. */
+.rf-quiz-answer{cursor:pointer;background:#000;appearance:none;
+ text-align:left;display:block;width:100%;min-width:0;font:inherit;letter-spacing:inherit}
+.rf-row.rf-quiz-answer.rf-red,.rf-quiz-key.rf-quiz-key-red{color:#f00}
+.rf-row.rf-quiz-answer.rf-green,.rf-quiz-key.rf-quiz-key-green{color:#0f0}
+.rf-row.rf-quiz-answer.rf-yellow,.rf-quiz-key.rf-quiz-key-yellow{color:#ff0}
+.rf-row.rf-quiz-answer.rf-cyan,.rf-quiz-key.rf-quiz-key-cyan{color:#0ff}
+.rf-quiz-answer:hover,.rf-quiz-answer:focus-visible{background:#0000a8;
+ outline:2px solid #fff;outline-offset:-2px}
+.rf-quiz-remote{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:5px;margin:0 0 10px}
+.rf-quiz-key{display:flex;flex-direction:column;align-items:flex-start;
+ justify-content:center;gap:3px;min-width:0;min-height:56px;
+ padding:6px;border:2px solid currentColor;border-radius:0;
+ background:#000;color:#fff;cursor:pointer;text-align:left;
+ font:17px/1.1 'VT323','Lucida Console',monospace;
+ overflow-wrap:anywhere}
+.rf-quiz-key-colour{display:block;font-weight:700;letter-spacing:.05em}
+.rf-quiz-key-red{border-color:#f00}.rf-quiz-key-red .rf-quiz-key-colour{color:inherit}
+.rf-quiz-key-green{border-color:#0f0}.rf-quiz-key-green .rf-quiz-key-colour{color:inherit}
+.rf-quiz-key-yellow{border-color:#ff0}.rf-quiz-key-yellow .rf-quiz-key-colour{color:inherit}
+.rf-quiz-key-cyan{border-color:#0ff}.rf-quiz-key-cyan .rf-quiz-key-colour{color:inherit}
+.rf-quiz-key:hover,.rf-quiz-key:focus-visible{background:#0026a8;outline:2px solid #fff;outline-offset:1px}
+@media(max-width:1100px){
+ #view:has(> .s-ringfax){overflow:hidden}
+ .rf-wrap{display:flex;flex-direction:column;overflow-y:auto;gap:4px}
+ .rf-display{flex:0 0 auto;height:clamp(330px,calc(100dvh - 280px),590px)}
+ .rf-screen{width:auto;max-width:100%;height:100%;max-height:100%;aspect-ratio:4/3}
+ .rf-console{flex:0 0 auto;overflow:visible;border-left:0;border-top:3px solid #00f;padding:8px}
+ .rf-console-title{margin:0 0 5px}
+ .rf-page-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .rf-page-link{min-height:44px}
+}
+@media(max-width:720px){
+ .rf-wrap.rf-quiz-active .rf-console{display:block;overflow:visible;min-height:0;
+  padding:2px 3px 1px;border-top:2px solid #00f}
+ .rf-wrap.rf-quiz-active .rf-console-title,
+ .rf-wrap.rf-quiz-active .rf-page-grid,
+ .rf-wrap.rf-quiz-active .rf-operator,
+ .rf-wrap.rf-quiz-active .rf-sub-nav,
+ .rf-wrap.rf-quiz-active .rf-hold,
+ .rf-wrap.rf-quiz-active .rf-keypad,
+ .rf-wrap.rf-quiz-active .rf-help,
+ .rf-wrap.rf-quiz-active .rf-access,
+ .rf-wrap.rf-quiz-active .rf-records,
+ .rf-wrap.rf-quiz-active .rf-disclaimer{display:none}
+ .rf-wrap.rf-quiz-active .rf-quiz-remote{display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:0}
+ .rf-wrap.rf-quiz-active .rf-quiz-key{min-height:43px;height:43px;gap:2px;
+  font-size:14px;line-height:1.05;padding:3px 5px}
+ .rf-wrap.rf-quiz-active .rf-quiz-key-colour{font-size:13px}
+
+ /* The Office already has fixed top and bottom chrome. Share the remaining
+    height between the complete teletext grid and a small, ALWAYS-visible
+    remote; do not make players scroll down to change page. */
+ #view:has(> .s-ringfax){padding:3px;overflow:hidden}
+ #view>.s-ringfax{height:100%;min-height:0}
+ .rf-wrap{display:grid;grid-template-columns:minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr) auto;gap:2px;overflow:hidden}
+ .rf-display{height:auto;min-height:0;max-height:100%;width:100%;
+  flex:none;overflow:hidden}
+ .rf-screen{aspect-ratio:auto;width:100%;height:100%;max-height:100%;
+  min-height:0;padding:3px 4px;letter-spacing:0}
+ .rf-row{letter-spacing:0}
+ .rf-mosaic{font-weight:700}
+ .rf-console{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:3px 4px;align-items:center;min-width:0;min-height:0;
+  flex:none;height:auto;overflow:visible;border-left:0;border-top:2px solid #00f;
+  padding:3px 2px 1px}
+ .rf-console-title,.rf-keypad,.rf-help,.rf-records,.rf-disclaimer{display:none}
+ .rf-page-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}
+ /* F1-F4 and direct entry still reach every page. Prioritise the 4 most
+    useful touch shortcuts rather than burying all 8 under the viewport. */
+ .rf-page-link:nth-child(2),.rf-page-link:nth-child(3),
+ .rf-page-link:nth-child(5),.rf-page-link:nth-child(6){display:none}
+ .rf-page-link{min-height:32px;height:32px;gap:0;padding:2px 4px;border-left-width:2px;
+  display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px}
+ .rf-link-number{font-size:17px;line-height:1}
+ .rf-link-name{font-size:15px;line-height:1}
+ .rf-operator{grid-column:1;margin:0;padding:0;border:0;min-width:0}
+ .rf-operator-label{display:none}
+ .rf-jump{margin:0;gap:3px}
+ .rf-jump input{min-height:33px;height:33px;font-size:19px;padding:2px 5px}
+ .rf-jump button{flex-basis:32px;min-height:33px;font-size:18px}
+ .rf-sub-nav{grid-column:2;min-width:0;gap:2px}
+ .rf-sub-nav button{min-height:33px;font-size:15px;padding:2px}
+ .rf-sub-nav>span{min-width:25px;font-size:16px}
+ .rf-hold{grid-column:1;margin:0;min-height:27px;padding:2px;font-size:15px}
+ .rf-access{grid-column:2;margin:0;padding:0;border:0;min-width:0}
+ .rf-access summary{display:flex;min-height:27px;align-items:center;justify-content:center;
+  font-size:16px;line-height:1.1}
+ .rf-access[open] pre{position:relative;z-index:2;max-height:25dvh;
+  background:#000;color:#fff}
+ .rf-wrap:has(.rf-access[open]){overflow-y:auto;display:flex;flex-direction:column}
+ .rf-wrap:has(.rf-access[open]) .rf-display{height: min(55dvh,390px);min-height:290px}
+ .rf-wrap:has(.rf-access[open]) .rf-console{display:block}
+}
+@media(max-width:390px){
+ .rf-page-link{padding:2px;gap:2px}
+ .rf-link-number{font-size:16px}
+ .rf-link-name{font-size:14px}
+ .rf-sub-nav button{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){.rf-screen,.rf-row,.rf-console{animation:none;transition:none}}
+
+
+/* P777 shares Ringfax's ordinary 40-column / six-row header. Beneath it,
+   the quiz uses a bespoke 1980s Bamboozle-inspired teletext composition.
+   The Brian Dixon tribute host is an original crisp pixel mosaic. */
+.rf-wrap.rf-quiz-active{display:flex;flex-direction:column;align-items:center;
+ justify-content:center;gap:0;overflow:hidden}
+.rf-wrap.rf-quiz-active .rf-display{width:100%;height:100%;max-height:100%;
+ flex:1;min-height:0;overflow:hidden}
+.rf-wrap.rf-quiz-active .rf-screen{position:relative;container-type:size;display:block;
+ aspect-ratio:4/3;width:auto;height:100%;max-height:100%;max-width:100%;
+ padding:0;overflow:hidden}
+.rf-wrap.rf-quiz-active .rf-console{display:none}
+.rf-quiz-screen>.rf-teletext-grid{position:absolute;inset:0;visibility:hidden;
+ pointer-events:none;display:grid;grid-template-rows:repeat(25,minmax(0,1fr))}
+.rf-quiz-screen>.rf-teletext-grid .rf-row{min-height:0}
+/* Page 777 reuses the exact six .rf-row elements painted on normal pages.
+   No special SVG scaling, separate masthead font, or alternate logo renderer. */
+.rf-bz-shared-header{position:absolute;inset:0 0 auto;height:24%;z-index:2;
+ display:grid;grid-template-rows:repeat(6,minmax(0,1fr));
+ min-width:0;overflow:hidden;background:#000}
+.rf-bz-shared-header>.rf-row{min-height:0;min-width:0}
+.rf-bz-shared-header .rf-logo-art{height:400%}
+.rf-bz-home{position:absolute;right:1%;bottom:1px;z-index:5;
+ display:flex;align-items:center;justify-content:center;min-height:0;
+ height:14%;padding:0 .8cqw;background:#ff0;color:#000;border:0;
+ border-radius:0;box-shadow:none;font:inherit;font-size:.8em;line-height:1;
+ cursor:pointer}
+.rf-bz-home:hover,.rf-bz-home:focus-visible{background:#fff;color:#00f;
+ outline:2px solid #ff0;outline-offset:-2px}
+.rf-bz-page{position:absolute;inset:24% 0 0;overflow:hidden;
+ display:grid;grid-template-rows:34% 1% 47% 9% 1% 8%;
+ background:#000;color:#fff;font-family:'VT323','Lucida Console',monospace;
+ font-size:clamp(13px,min(5cqw,5.3cqh),60px);line-height:1.04;
+ letter-spacing:0;font-variant-ligatures:none;-webkit-font-smoothing:none;
+ text-shadow:none}
+.rf-bz-hero{display:grid;grid-template-columns:minmax(0,59%) minmax(0,41%);
+ padding:0 1.5cqw;align-items:center;min-height:0;gap:0;position:relative}
+.rf-bz-bubble{display:flex;flex-direction:column;justify-content:center;
+ position:relative;z-index:1;min-width:0;height:91%;max-height:100%;
+ padding:.9cqh 2.4cqw;gap:.5cqh;line-height:1.03;overflow:visible;
+ background:#fff;color:#0000aa;font-size:.88em}
+.rf-bz-bubble strong{display:block;font:inherit;font-weight:700}
+.rf-bz-bubble span{display:block;font-size:.98em;overflow-wrap:break-word}
+.rf-bz-bubble::after{content:"";position:absolute;right:7%;bottom:-1.9cqh;
+ width:25%;height:2.2cqh;border:solid #fff;border-width:0 0 .75cqh .7cqw;
+ pointer-events:none}
+.rf-bz-mascot{min-height:0;align-self:stretch;display:flex;align-items:flex-end;
+ justify-content:center;overflow:hidden}
+.rf-bz-face{width:100%;height:100%;max-width:100%;display:block;
+ image-rendering:pixelated;shape-rendering:crispEdges}
+.rf-bz-rule{background:#f00;min-height:2px;margin:0 1.5cqw}
+.rf-bz-answers{display:grid;grid-template-rows:repeat(4,minmax(0,1fr));
+ min-width:0;min-height:0;padding:.5cqh 2.5cqw;gap:.2cqh}
+.rf-bz-choice{display:flex;align-items:center;gap:3cqw;
+ width:100%;min-width:0;min-height:0;margin:0;padding:0 2.5cqw;
+ border:0;border-radius:0;background:#000;color:#fff;
+ font:inherit;line-height:1.04;text-align:left;cursor:pointer;box-shadow:none}
+.rf-bz-square{display:block;flex:0 0 auto;width:min(7cqh,5.5cqw);
+ height:min(7cqh,5.5cqw);background:var(--rf-bz-colour)}
+.rf-bz-answer{display:block;min-width:0;max-width:100%;
+ font-size:1.35em;line-height:1.02;overflow-wrap:break-word}
+.rf-bz-red{--rf-bz-colour:#f00}
+.rf-bz-green{--rf-bz-colour:#0f0}
+.rf-bz-yellow{--rf-bz-colour:#ff0}
+.rf-bz-cyan{--rf-bz-colour:#0ff}
+.rf-bz-choice:hover,.rf-bz-choice:focus-visible{background:#00149e;
+ outline:2px solid #fff;outline-offset:-2px}
+.rf-bz-choice:active .rf-bz-square{outline:3px solid #fff}
+.rf-bz-instruction{display:flex;align-items:center;justify-content:center;
+ min-width:0;margin:.5cqh 1.5cqw;overflow:hidden;
+ background:#00f;color:#fff;font-size:.92em;line-height:1;
+ white-space:nowrap}
+.rf-bz-footer{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+ align-items:center;gap:0;min-height:0}
+.rf-bz-fast{display:flex;align-items:center;justify-content:center;
+ min-height:100%;height:100%;min-width:0;margin:0;padding:0;
+ background:#000;border:0;border-radius:0;box-shadow:none;
+ color:var(--rf-bz-colour);font:inherit;font-size:1.05em;line-height:1;
+ text-align:center;cursor:pointer}
+span.rf-bz-fast{cursor:default}
+button.rf-bz-fast:hover,button.rf-bz-fast:focus-visible{background:#00f;
+ outline:2px solid #fff;outline-offset:-2px}
+@media(max-width:720px){
+ .rf-wrap.rf-quiz-active{display:flex;padding:0}
+ .rf-wrap.rf-quiz-active .rf-display{width:100%;height:100%;max-height:100%}
+ .rf-wrap.rf-quiz-active .rf-screen{width:100%;height:100%;max-width:100%;
+  max-height:100%;aspect-ratio:auto}
+ .rf-bz-page{font-size:clamp(12px,min(5.3cqw,5.4cqh),28px)}
+ .rf-bz-home{font-size:.84em;padding:0 1.5cqw}
+ .rf-bz-hero{grid-template-columns:minmax(0,59%) minmax(0,41%);
+  padding:0 .7cqw}
+ .rf-bz-bubble{padding:.8cqh 1.8cqw;font-size:.85em}
+ .rf-bz-bubble span{font-size:.97em}
+ .rf-bz-answers{padding:.4cqh 1cqw}
+ .rf-bz-choice{padding:0 1cqw;gap:3cqw}
+ .rf-bz-square{width:min(6cqh,9cqw);height:min(6cqh,9cqw)}
+ .rf-bz-answer{font-size:1.18em}
+ .rf-bz-instruction{font-size:.81em;margin:.5cqh 1cqw}
+ .rf-bz-rule{margin:0 1cqw}
+}
+@media(max-height:550px){
+ .rf-bz-page{font-size:clamp(11px,min(4.6cqw,5.0cqh),36px)}
+ .rf-bz-bubble{font-size:.82em}
+ .rf-bz-answers{padding-top:0;padding-bottom:0}
+}
+
+/* Two actions on intro/rules/results should not leave half the answer panel blank. */
+.rf-bz-stage-intro{grid-template-rows:42% 1% 34% 12% 1% 10%}
+.rf-bz-stage-rules,.rf-bz-stage-wrong,.rf-bz-stage-won{grid-template-rows:42% 1% 34% 12% 1% 10%}
+.rf-bz-stage-intro .rf-bz-answers,
+.rf-bz-stage-rules .rf-bz-answers,
+.rf-bz-stage-wrong .rf-bz-answers,
+.rf-bz-stage-won .rf-bz-answers{
+ grid-template-rows:repeat(2,minmax(0,1fr));
+}
+.rf-bz-stage-intro .rf-bz-choice,
+.rf-bz-stage-rules .rf-bz-choice,
+.rf-bz-stage-wrong .rf-bz-choice,
+.rf-bz-stage-won .rf-bz-choice{
+ align-items:center;
+}

@@ -54,6 +54,8 @@ h1,h2,h3{margin:0;font-weight:400}
 .btn:hover:not(:disabled){background:#D4CDBA}
 .btn:active:not(:disabled),.btn[aria-pressed="true"]{box-shadow:var(--bevel-in);padding-top:6px;padding-bottom:4px}
 .btn:disabled{color:var(--stone-lo);cursor:not-allowed;text-shadow:1px 1px 0 var(--stone-hi)}
+/* Disabled primary actions must not resemble an available yellow confirmation. */
+.btn.go:disabled{background:var(--stone);color:var(--ink-2);box-shadow:none;border-color:var(--stone-lo);text-shadow:none}
 .btn.go{background:var(--gold);box-shadow:inset 2px 2px 0 var(--gold-hi),inset -2px -2px 0 var(--gold-lo)}
 .btn.go:hover:not(:disabled){background:#FFD149}
 .btn.go:active:not(:disabled){box-shadow:inset 2px 2px 0 var(--gold-lo),inset -2px -2px 0 var(--gold-hi)}
@@ -116,6 +118,15 @@ h1,h2,h3{margin:0;font-weight:400}
 .ro b.neg{color:var(--bad)}
 #continue{min-width:190px;min-height:52px;flex-direction:column;gap:0;font:28px/1 var(--jersey);letter-spacing:.03em}
 #continue small{font:400 16px/1.1 var(--px);letter-spacing:0}
+#continue:focus-visible{outline:3px dashed var(--cyan);outline-offset:2px}
+.grid tbody tr[data-selected="true"] .row-pick:focus-visible{outline-color:var(--ink)}
+/* WCAG: headings on stone surfaces need darker crimson than title bars. */
+.nav h4,.section-h,.record-name,.letter h2{color:#7E141C}
+/* The deep match-layout well must use vivid status colours, not light-paper inks. */
+.tv .well .good,.tv .win .well .good{color:var(--good)}
+.tv .well .bad,.tv .win .well .bad{color:var(--bad)}
+/* Secondary ink on the darker stone panel. */
+label.field,.letter .meta,.kv dt{color:var(--ink-2)}
 
 .nav{grid-area:nav;display:flex;flex-direction:column;gap:2px;margin:10px 0 10px 10px;padding:8px 6px 10px;overflow:auto;background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.45)}
 .nav h4{margin:10px 4px 4px;font:22px/1 var(--jersey);font-weight:400;color:var(--blood);letter-spacing:.02em}
@@ -145,7 +156,7 @@ h1,h2,h3{margin:0;font-weight:400}
 .grid tbody tr[data-selected="true"] td{background:var(--gold);color:var(--ink)}
 /* Offers nobody in the stable can take: still readable, clearly secondary. */
 .grid tbody tr.unbookable:not([data-selected="true"]) td{color:var(--dim);background:var(--well)}
-.grid tbody tr.unbookable:not([data-selected="true"]) td>*{opacity:.6}
+.grid tbody tr.unbookable:not([data-selected="true"]) td>*{opacity:1}
 .grid tbody tr[data-selected="true"] .att,.grid tbody tr[data-selected="true"] .dim,.grid tbody tr[data-selected="true"] .stars{color:var(--ink)}
 .grid tbody tr[data-selected="true"] .tag.tw{color:var(--good-ink)}.grid tbody tr[data-selected="true"] .tag.tl{color:var(--bad-ink)}
 .grid td.wrap,.who small{white-space:normal}
@@ -204,7 +215,7 @@ h1,h2,h3{margin:0;font-weight:400}
   grid-template-rows:minmax(0,1.85fr) minmax(150px,1fr) minmax(150px,1fr);
  }
  .s-desk>.win{min-width:0;min-height:0}
- .s-desk .wbody{overscroll-behavior:contain}
+ /* Allow wheel events to reach the desk when inner windows cannot scroll. */
  .s-desk .wbody.tight>.well{min-height:0}
  .s-desk .facts>div{padding:5px 8px}
  .s-desk .facts small{font-size:14px}
@@ -271,7 +282,7 @@ h1,h2,h3{margin:0;font-weight:400}
 .management-filters label{display:flex;flex:1 1 130px;flex-direction:column;gap:3px;min-width:0;font-size:15px;color:var(--ink-2)}
 .management-filters label:first-child{flex:2 1 165px}
 .management-filters input,.management-filters select{width:100%;min-width:0;min-height:34px;padding:4px 8px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:0;box-shadow:var(--bevel-in);font-size:17px}
-.management-filters .filter-results{align-self:center;font-size:15px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.management-filters .filter-results{flex:1 0 100%;align-self:center;font-size:15px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .management-filters .btn{margin-left:auto}
 /* Desktop shows the filters inline; the disclosure summary is a phone-only control. */
 .free-filters>summary{display:none}
@@ -430,7 +441,7 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .btn.two.later{margin-right:auto}
 .talk-outcome{margin-top:12px;padding:10px 12px;background:var(--paper);border:2px solid var(--ink);border-left:8px solid var(--blood)}
 .talk-outcome b{font:24px/1 var(--jersey);font-weight:400;color:var(--blood)}
-#toast{position:fixed;right:16px;bottom:calc(46px + env(safe-area-inset-bottom,0px));z-index:80;max-width:min(420px,90vw);background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.5);padding:8px 12px 8px 14px;border-left:8px solid var(--gold);font-weight:600;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .15s,transform .15s}
+#toast{position:fixed;left:16px;right:auto;bottom:calc(46px + env(safe-area-inset-bottom,0px));z-index:80;max-width:min(420px,90vw);background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.5);padding:8px 12px 8px 14px;border-left:8px solid var(--gold);font-weight:600;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .15s,transform .15s}
 #toast.show{opacity:1;transform:none}
 
 /* ---------- title screen ---------- */
@@ -749,3 +760,148 @@ dialog.negotiation-dialog[open]{
 .neg-deadline-tag{display:inline-block;margin-left:9px;font-weight:700;color:var(--blood);font-size:14px}
 .neg-deadline-note{margin:0;padding:7px 12px;background:var(--paper);border-bottom:2px solid var(--stone-lo);color:var(--blood);font-size:15px;line-height:1.25;font-weight:700}
 @media(max-width:720px){.neg-deadline-tag{display:block;margin-left:0}.neg-deadline-note{padding:5px 9px;font-size:13px}}
+
+
+/* Training management desk: one selected wrestler, visible context and decisions.
+   No new training mechanics or career save fields. */
+.s-split.s-train{grid-template-columns:minmax(250px,.9fr) minmax(0,1.65fr)}
+.s-train .wbody{min-width:0}
+.train-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-bottom:9px}
+.train-overview>div{background:var(--well);color:var(--white);padding:8px 10px;border:1px solid var(--well-line);min-width:0}
+.train-overview small{display:block;font-size:14px;color:var(--dim);line-height:1.2}
+.train-overview b{display:block;color:var(--gold);font:28px/1.05 var(--jersey);margin-top:3px}
+.train-overview b.bad{color:var(--bad)}
+.train-context{font-size:15px;line-height:1.3;color:var(--ink-2);margin:6px 0}
+.train-footnote{color:var(--ink-2);font-size:14px;line-height:1.3;margin:7px 0}
+.train-roster{display:grid;gap:2px;padding:4px;min-height:0}
+.train-person{display:flex;align-items:center;gap:9px;min-width:0;width:100%;min-height:66px;padding:6px 8px;text-align:left;color:var(--white);border:2px solid transparent;background:var(--well-row)}
+.train-person:hover{background:var(--well-hover)}
+.train-person.selected{border-color:var(--gold);background:var(--well-hover)}
+.train-person .portrait{width:30px;height:38px}
+.train-person-main{min-width:0;display:grid;gap:1px;flex:1}
+.train-person-main b{font-size:18px;color:var(--white);line-height:1.1;overflow-wrap:anywhere}
+.train-person.selected .train-person-main b{color:var(--gold)}
+.train-person-main small{font-size:13px;color:var(--dim);line-height:1.2}
+.train-person-main small.bad{color:var(--bad)}
+.train-person-fatigue{display:grid;gap:3px;min-width:74px;justify-items:end}
+.train-person-fatigue small{font-size:13px;color:var(--dim);white-space:nowrap}
+.train-person-fatigue .bar{width:65px}
+.train-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.train-tabs .btn{flex:1;min-width:0}
+.train-wrestler-head{display:flex;align-items:center;gap:10px;margin-bottom:9px;min-width:0}
+.train-wrestler-head>div{flex:1;min-width:0}
+.train-wrestler-head h3{font:32px/1 var(--jersey);color:var(--blood);overflow-wrap:anywhere}
+.train-wrestler-head p{margin:3px 0;font-size:16px;line-height:1.2}
+.train-wrestler-head p .bar{margin-left:5px}
+.train-wrestler-head .btn{align-self:center}
+.train-attributes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;padding:5px}
+.train-attribute{min-width:0;padding:5px 7px;background:var(--well-row);display:grid;gap:2px}
+.train-attribute>span{font-size:14px;color:var(--dim)}
+.train-attribute>b{font-size:20px}
+.train-attribute small{font-size:13px;color:var(--dim)}
+.train-attribute b small.good{color:var(--good)}
+.train-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:8px}
+.train-settings label{min-width:0}
+.train-settings select,.train-session select{width:100%;min-width:0;font-size:16px}
+.train-effect{background:var(--paper);border-left:5px solid var(--gold-lo);padding:7px 10px;font-size:15px;line-height:1.3}
+.train-effect>b{color:var(--blood)}
+.train-effect p{margin:3px 0}
+.train-programme-active{background:var(--paper);border-left:5px solid var(--blood);padding:9px;margin:5px 0 7px}
+.train-programme-active p{font-size:15px;line-height:1.3;margin:4px 0}
+.train-programme-options{display:flex;flex-wrap:wrap;gap:6px}
+.train-programme-options .btn{flex:1;font-size:16px;white-space:normal}
+.train-session{border-top:1px solid var(--stone-lo);margin-top:10px;padding-top:5px}
+.train-section-heading{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.train-section-heading small{font-size:14px;color:var(--ink-2)}
+.train-advice{padding:7px 10px;background:var(--paper);border-left:4px solid var(--gold-lo);font-size:15px;line-height:1.3;margin:5px 0 9px}
+.train-advice b{color:var(--blood)}
+.train-session .field{margin-top:5px}
+.train-staff-current{background:var(--paper);border-left:5px solid var(--gold-lo);padding:10px;margin-bottom:10px}
+.train-staff-current p{margin:5px 0 12px;font-size:16px}
+.train-coach-list{padding:5px;display:grid;gap:4px}
+.train-coach-option{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px;background:var(--well-row)}
+.train-coach-option>div{display:grid;gap:2px}
+.train-coach-option b{color:var(--white);font-size:17px}
+.train-coach-option small{color:var(--dim);font-size:14px}
+@media(min-width:901px) and (max-height:880px){
+ #view>.s-train{height:100%}
+ #view>.s-train>.win>.wbody{overflow-y:auto}
+}
+@media(max-width:1120px){
+ .train-attributes{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .train-person-fatigue{min-width:65px}
+}
+@media(max-width:900px){
+ .s-split.s-train{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto}
+ .s-train .train-roster{display:flex;overflow-x:auto;gap:5px}
+ .s-train .train-person{flex:0 0 225px;width:225px}
+ .s-train .train-person-fatigue{display:none}
+}
+@media(max-width:720px){
+ .s-train .wbody{padding:8px}
+ .train-overview{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .train-overview>div{padding:6px 5px}
+ .train-overview small{font-size:11px}
+ .train-overview b{font-size:22px}
+ .train-wrestler-head .portrait.x2{width:45px;height:57px}
+ .train-wrestler-head h3{font-size:26px}
+ .train-wrestler-head .btn{font-size:14px;padding:4px}
+ .train-attributes{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .train-attribute{padding:4px}
+ .train-attribute>span,.train-attribute small{font-size:12px}
+ .train-attribute>b{font-size:16px}
+ .train-settings{gap:6px}
+ .train-settings select,.train-session select{font-size:14px;min-height:42px}
+ .train-programme-options .btn{flex:1 1 42%}
+}
+@media(max-width:390px){
+ .train-overview{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .train-tabs .btn{font-size:15px}
+ .train-settings{grid-template-columns:minmax(0,1fr)}
+ .train-attributes{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+
+/* Phase 2: training advice and the completed-week ledger. */
+.train-intelligence{border-top:1px solid var(--stone-lo);margin-top:10px;padding-top:5px}
+.train-advice-list{display:grid;gap:5px;margin:6px 0}
+.train-recommendation{display:flex;gap:9px;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--paper);border-left:4px solid var(--stone-lo)}
+.train-recommendation.urgent{border-left-color:var(--blood)}
+.train-recommendation>div{min-width:0;flex:1}
+.train-recommendation b{display:block;font-size:16px;color:var(--blood)}
+.train-recommendation p{font-size:14px;color:var(--ink-2);line-height:1.3;margin:2px 0 0}
+.train-recommendation .btn{flex:none}
+.train-projection{background:var(--well);color:var(--white);padding:8px 10px;font-size:14px;line-height:1.3}
+.train-projection b{color:var(--gold)}
+.train-review-teaser{background:var(--paper);border-left:4px solid var(--gold-lo);padding:7px 10px;margin-top:9px;font-size:14px}
+.train-review-teaser b{display:block;color:var(--blood)}
+.train-review-teaser p{margin:4px 0}
+.train-report-panel{min-width:0}
+.train-report-panel>label{margin:8px 0}
+.train-review-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:8px 0}
+.train-review-totals>div{background:var(--well);color:var(--white);padding:8px;min-width:0}
+.train-review-totals small{display:block;color:var(--dim);font-size:13px;line-height:1.2}
+.train-review-totals b{display:block;color:var(--gold);font:26px/1.1 var(--jersey);margin-top:4px}
+.train-report-list{display:grid;gap:5px}
+.train-report-entry{padding:8px 10px;background:var(--paper);border-left:3px solid var(--stone-lo)}
+.train-report-entry-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.train-report-entry-top .btn.link{font-weight:700;font-size:17px;text-align:left}
+.train-report-entry-top b{flex:none}
+.train-report-entry p{font-size:15px;line-height:1.3;margin:4px 0}
+.train-report-entry small{display:block;font-size:13px;color:var(--ink-2);line-height:1.3}
+@media(max-width:720px){
+ .train-review-totals>div{padding:6px 5px}
+ .train-review-totals small{font-size:11px}
+ .train-review-totals b{font-size:22px}
+ .train-recommendation{padding:7px;align-items:flex-start}
+ .train-recommendation .btn{min-height:42px}
+ .train-tabs .btn{flex:1 1 30%;font-size:14px}
+}
+@media(max-width:390px){
+ .train-review-totals{grid-template-columns:1fr 1fr}
+}
+
+/* Explain stat colours in words, without relying on hue alone. */
+.stat-legend{margin:7px 0 10px;font-size:13px;line-height:1.4;color:var(--ink-2)}
+.stat-legend b{color:var(--ink);font-weight:700}
+.mf-no-moments{margin:8px 0;padding:12px;background:var(--stone-2);border:1px solid var(--stone-lo)}

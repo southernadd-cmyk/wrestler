@@ -12,6 +12,7 @@ let openMsg=null,pick={},selOffer=null,selFree=null,night=null,toastT=0;
 // Presentation preferences only; no changes to career state or match simulation.
 let inboxFilter='all',stableFilter='all',stableQuery='',scoutQuery='',scoutStyle='all',scoutBudget='all',shortlist=[],scoutFiltersOpen=false;
 let commentaryView='all'; // local view only: never changes match or commentary generation
+let trainingSelected=null,trainingPane='development',trainingReportWeek=null; // training-screen presentation only
 const sorts={};
 
 /* ---------- small helpers ---------- */
@@ -34,6 +35,8 @@ function openRecord(key){
 function band(v){return v>=80?5:v>=65?4:v>=50?3:v>=35?2:1}
 function bandBar(v){return ['','danger','warn','gold','',''][band(v)]}
 function att(v){return `<span class="att a${band(v)}">${Math.round(v)}</span>`}
+const STAT_HELP={ring:'Technical wrestling and execution in the ring',psych:'Psychology: pacing, selling and telling a match story',safe:'Safety: controlling risk and protecting opponents',mic:'Speaking and performing promos',heat:'Audience interest and intensity around a wrestler'};
+const statLegend='<p class="stat-legend">Ratings: <b>under 35</b> developing · <b>35–49</b> basic · <b>50–64</b> solid · <b>65–79</b> strong · <b>80+</b> exceptional. Colours are a quick guide; the numbers are the rating.</p>';
 /* ---------- charts (v3.8) ----------
    Plain line and bar charts in the office's own colours. The plot is an SVG stretched to fit;
    dots, marks and labels are HTML laid over it, so text stays crisp at any width. */
@@ -171,14 +174,15 @@ function flowReport(fin,w,f){
  const rows=ph.map(g=>`<tr class="t-${g.tone}"><th scope="row">${esc(g.name)}<small>${esc(Mx.fmt(g.from))}–${esc(Mx.fmt(g.to))}</small></th><td><span class="mf-bar w-${g.work}" role="img" aria-label="Work ${Math.round(g.q)} out of 100"><i style="width:${Math.max(4,Math.min(100,(g.q-30)/45*100))}%"></i></span> <small>${Math.round(g.q)}</small></td><td class="n">${g.cIn}→${g.cOut} <b class="chip ${g.tone}">${g.d>0?'+':''}${g.d}</b></td><td class="n">${g.mine===g.theirs?'Even':`${esc(g.mine>g.theirs?w.short:f.short)} ${Math.round(Math.max(g.mine,g.theirs)/g.n*100)}%`}</td><td class="v">${esc(g.verdict)}</td></tr>`).join('');
  const table=`<div class="well mf-table-wrap"><table class="grid mf-table"><thead><tr><th>Phase</th><th>Work</th><th class="n">Crowd</th><th class="n">On top</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>`;
  const mom=flowMoments(fin);
- const moments=mom.length?`<ol class="mf-moments well">${mom.map(m=>`<li class="${m.d>0?'up':'down'}"><span class="t">${esc(Mx.fmt(m.t1))}</span><b class="chip ${m.d>0?'up':'down'}">${m.d>0?'+':''}${m.d}</b><span>${esc(m.text)}</span></li>`).join('')}</ol>`:'<p class="dim">The crowd never swung hard either way.</p>';
+ const moments=mom.length?`<ol class="mf-moments well">${mom.map(m=>`<li class="${m.d>0?'up':'down'}"><span class="t">${esc(Mx.fmt(m.t1))}</span><b class="chip ${m.d>0?'up':'down'}">${m.d>0?'+':''}${m.d}</b><span>${esc(m.text)}</span></li>`).join('')}</ol>`:'<p class="dim mf-no-moments">No sudden crowd swings in this bout. The phase-by-phase report still shows how the match built.</p>';
  const parts=(fin.starParts||[]).filter(p=>Math.abs(p[2])>=.01),maxAbs=Math.max(.5,...parts.map(p=>Math.abs(p[2])));
  const breakdown=parts.length?`<div class="mf-parts well">${parts.map(([k,label,v])=>`<div class="mf-part ${v>=0?'pos':'neg'}"><span>${esc(label)}</span><span class="mf-pbar"><i style="${v>=0?'left':'right'}:50%;width:${Math.abs(v)/maxAbs*50}%"></i></span><b>${v>=0?'+':'−'}${Math.abs(v).toFixed(2)}</b></div>`).join('')}<div class="mf-part total"><span>Rating</span><span></span><b>${starsText(fin.stars)||'DUD'}</b></div></div>`:'';
  return `${head}${flowGraphic(fin,w,f,ph)}<div class="mf-cols"><div class="mf-phase-section"><h3 class="section-h">Phase by phase</h3>${table}</div><div class="mf-moments-section"><h3 class="section-h">Moments that moved the room</h3>${moments}</div>${breakdown?`<div class="mf-breakdown-section"><h3 class="section-h">Where the stars came from</h3>${breakdown}</div>`:''}</div>`;
 }
 function bar(v,kind=''){return `<span class="bar ${kind}" role="img" aria-label="${Math.round(v)} out of 100"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></span>`}
 function fatKind(f){return f>=60?'danger':f>=40?'warn':'cool'}
-function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3600)}
+function clearToast(){clearTimeout(toastT);$('#toast')?.classList.remove('show')}
+function toast(t){const el=$('#toast');if(!el)return;el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3000)}
 function finishTag(k){const f=D.FINISHES[k];return `<span class="tag ${f.win?'tw':'tl'}">${esc(f.name)}</span>`}
 function recordedFinishTag(h){
  const planned=D.FINISHES[h.bookedFinish||h.finish]?.name||'not recorded';
@@ -231,13 +235,13 @@ const NAV=[
  ['Office',[['desk','Desk'],['inbox','Inbox'],['objectives','Objectives']]],
  ['Roster',[['squad','Your stable'],['training','Training'],['scouting','Free agents'],['stables','Rival stables']]],
  ['Bookings',[['offers','Offers'],['fixtures','Fixtures']]],
- ['Territory',[['pyramid','Card pyramid'],['sheets','Booking sheets'],['promoters','Promoters'],['rivalries','Rivalries'],['results','Results']]],
+ ['Territory',[['pyramid','Card ladder'],['sheets','Booking sheets'],['promoters','Promoters'],['rivalries','Rivalries'],['results','Results'],['ringfax','Ringfax']]],
  ['Game',[['game','Save and load']]]
 ];
 const SECTION_OF={profile:'squad',record:'promoters'};
 const PHONE_WIDTH=720;
 const phoneLayout=()=>innerWidth<=PHONE_WIDTH;
-const PHONE_LABELS={desk:'Today',squad:'Stable',pyramid:'Card ladder',game:'Save and load'};
+const PHONE_LABELS={desk:'Desk',squad:'Your stable',pyramid:'Card ladder',game:'Save and load'};
 const phonePane=(routeId,recordId)=>' phone-pair'+(recordId&&routeId===recordId?' phone-detail':'');
 const phoneBack=(screen,label)=>`<button class="btn phone-only" data-go="${screen}">‹ ${label}</button>`;
 function phoneList(table,cards){
@@ -248,11 +252,13 @@ function refreshList(screen){
  render();
 }
 function go(s,id=null){
+ clearToast();
  if(route.s===s&&route.id===id){render(innerWidth<=900);return}
  past.push(route);if(past.length>40)past.shift();ahead=[];
  route={s,id};render(true);
 }
 function histMove(dir){
+ clearToast();
  const from=dir<0?past:ahead,to=dir<0?ahead:past;
  if(!from.length)return;to.push(route);route=from.pop();render(true);
 }
@@ -273,17 +279,25 @@ function renderChrome(){
  $('#tick').innerHTML=lead?`<b>${G.pending().length?'Action':'News'}</b><button data-tickmsg="${lead.id}">${esc(lead.subject)}. ${esc(lead.from)}.</button><span class="keys">${s.history.length} ${plural(s.history.length,'match','matches')} worked this career</span>`:'';
 }
 
-const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,record:renderRecord,training:renderTraining,scouting:renderScouting,stables:renderStables,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
+function renderRingfax(){paint('s-ringfax',OfficeRingfax.view(S()))}
+const SCREENS={ringfax:renderRingfax,desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,record:renderRecord,training:renderTraining,scouting:renderScouting,stables:renderStables,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
 function render(reset=false){
  if(!S())return;
  const keep={};if(!reset)document.querySelectorAll('#view [data-keep]').forEach(el=>keep[el.dataset.keep]=el.scrollTop);
  const focused=document.activeElement;
- const focusAttr=!reset&&focused?.closest?.('#view')?['data-selo','data-self','data-sort','data-free-sort'].find(a=>focused.hasAttribute(a)):null;
+ const focusAttr=!reset&&focused?.closest?.('#view')?['data-selo','data-self','data-sort','data-free-sort','data-trainpick','data-trainpane','data-train','data-intensity','data-session'].find(a=>focused.hasAttribute(a)):null;
  const focusValue=focusAttr?focused.getAttribute(focusAttr):null;
+ const rfFocus=!reset&&route.s==='ringfax'&&focused?.closest?.('#view')?{id:focused.id||null,action:focused.dataset.rfAction||null,value:focused.dataset.rfValue||null}:null;
  if(!SCREENS[route.s])route={s:'desk',id:null};
  SCREENS[route.s]();renderChrome();
  document.querySelectorAll('#view [data-keep]').forEach(el=>{if(keep[el.dataset.keep])el.scrollTop=keep[el.dataset.keep]});
  if(focusAttr){[...document.querySelectorAll('#view ['+focusAttr+']')].find(el=>el.getAttribute(focusAttr)===focusValue&&el.getClientRects().length)?.focus({preventScroll:true})}
+ if(rfFocus){
+  const target=rfFocus.id?document.getElementById(rfFocus.id):
+   [...document.querySelectorAll('#view [data-rf-action]')].find(el=>el.dataset.rfAction===rfFocus.action&&(el.dataset.rfValue||null)===rfFocus.value);
+  target?.focus?.({preventScroll:true});
+ }
+ if(route.s==='ringfax')OfficeRingfax.fit?.();
  if(reset){$('#view').scrollTop=0;window.scrollTo(0,0)}
 }
 function paint(cls,html){$('#view').innerHTML=`<div class="screen ${cls}">${html}</div>`}
@@ -313,7 +327,7 @@ function trayItems(){
   if(w.morale<35)out.push({k:'urgent',ic:'!',t:`${w.short}’s morale is low`,d:`Morale ${w.morale}. A private meeting may help.`,go:'profile',id:w.id,b:'Profile'});
   if(w.promise?.status==='open')out.push({k:'',ic:'▸',t:`Promise to ${w.short}: a featured match`,d:`Due by ${weekLabel(w.promise.deadline)}.`,go:'offers',b:'Offers'});
  }
- if(s.roster.length&&s.focus>0)out.push({k:'',ic:'▸',t:`${s.focus} management ${plural(s.focus,'meeting')} left this week`,d:'Use them to haggle with promoters or talk to your wrestlers.',go:'offers',b:'Offers'});
+ if(s.roster.length&&s.focus>0)out.push({k:'',ic:'▸',t:`${s.focus} management ${plural(s.focus,'meeting')} left this week`,d:'Use them to haggle with promoters or talk to your wrestlers.',go:'offers',b:'Review offers'});
  if(!out.length)out.push({k:'ok',ic:'✓',t:'All quiet',d:'Press Continue to move on to next week.'});
  return out;
 }
@@ -335,7 +349,7 @@ function renderDesk(){
  else if(s.monthReview&&s.season===1)mission=win(s.monthReview.passed?'Backer invested £450':'Backer declined funding',`<p>Best match in the trial: ${s.monthReview.best}★. Training and promos: ${money(s.monthReview.business?.training||0)}. Contract improvements: ${money(s.monthReview.business?.negotiated||0)}. Promises kept ${s.monthReview.business?.kept||0}, broken ${s.monthReview.business?.broken||0}.</p><p class="dim">The regional circuit runs to week 16. Checkpoints are under Objectives.</p><button class="btn sm" data-go="objectives">Objectives</button>`,{area:'mission',note:'Trial review'});
  const tray=`<ul class="tray">${trayItems().map(x=>`<li class="${x.k}"><span class="ic">${x.ic}</span><span><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span>${x.go?`<button class="btn sm" data-go="${x.go}" ${x.id?`data-id="${x.id}"`:''}>${x.b}</button>`:'<span></span>'}</li>`).join('')}</ul>`;
  const dates=[...s.card.map(c=>({...c,eventAbs:G.abs()})),...s.futureBookings].sort((a,b)=>a.eventAbs-b.eventAbs).slice(0,6);
- const datesHtml=dates.length?`<table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th></tr></thead><tbody>${dates.map(c=>`<tr><td>${c.eventAbs===G.abs()?'<b>This week</b>':weekLabel(c.eventAbs)}</td><td>${recordLink('w',c.wid,G.W(c.wid)?.short||'Departed')} v ${recordLink('w',c.rid,G.F(c.rid)?.short||'Opponent')}</td><td class="dim">${recordLink('p',c.pid,G.P(c.pid)?.name||'Promotion')}</td><td class="n">${money(c.purse)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">No dates signed.<br><button class="btn sm" data-go="offers">See offers</button></div>`;
+ const datesHtml=dates.length?`<table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th></tr></thead><tbody>${dates.map(c=>`<tr><td>${c.eventAbs===G.abs()?'<b>This week</b>':weekLabel(c.eventAbs)}</td><td>${recordLink('w',c.wid,G.W(c.wid)?.short||'Departed')} v ${recordLink('w',c.rid,G.F(c.rid)?.short||'Opponent')}</td><td class="dim">${recordLink('p',c.pid,G.P(c.pid)?.name||'Promotion')}</td><td class="n">${money(c.purse)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">No dates signed.<br><button class="btn sm" data-go="offers">Offers</button></div>`;
  const squad=s.roster.length?`<table class="grid"><thead><tr><th>Wrestler</th><th>Fatigue</th><th class="n">Morale</th><th>Status</th></tr></thead><tbody>${s.roster.map(w=>`<tr class="pick" data-openw="${w.id}"><td><button class="row-pick" data-openw="${w.id}" aria-label="Open ${esc(w.name)} profile">${esc(w.name)}</button></td><td>${bar(w.fatigue,fatKind(w.fatigue))} ${w.fatigue}</td><td class="n">${att(w.morale)}</td><td>${status(w)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">An empty stable can’t take bookings.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`;
  paint('s-desk'+(mission?'':' nomission'),
   mission+
@@ -348,17 +362,19 @@ function renderDesk(){
 
 function renderInbox(){
  const s=S(),all=s.inbox;
+ const list=all.filter(m=>inboxFilter==='all'||(inboxFilter==='action'&&m.kind==='decision'&&!m.answer)||
+  (inboxFilter==='unread'&&!m.read)||(inboxFilter==='reports'&&Array.isArray(m.sections)&&m.sections.length));
+ if(phoneLayout()&&list.some(m=>m.id===route.id))openMsg=route.id;
+ if(!openMsg||!list.some(m=>m.id===openMsg))openMsg=(list.find(m=>m.kind==='decision'&&!m.answer)||list[0])?.id||null;
+ const m=list.find(x=>x.id===openMsg);if(m&&!m.read&&m.kind!=='decision'&&(!phoneLayout()||route.id===m.id)){m.read=true;G.save()}
+ // Update filter totals after the selected message has been marked read.
  const filters=[['all','All',all.length],
   ['action','Action',all.filter(m=>m.kind==='decision'&&!m.answer).length],
   ['unread','Unread',all.filter(m=>!m.read).length],
   ['reports','Reports',all.filter(m=>Array.isArray(m.sections)&&m.sections.length).length]];
- const list=all.filter(m=>inboxFilter==='all'||(inboxFilter==='action'&&m.kind==='decision'&&!m.answer)||
-  (inboxFilter==='unread'&&!m.read)||(inboxFilter==='reports'&&Array.isArray(m.sections)&&m.sections.length));
  const controls=`<div class="office-filter-tabs" role="group" aria-label="Filter messages">${filters.map(([key,label,n])=>
   `<button class="btn sm ${inboxFilter===key?'go':''}" data-inbox-filter="${key}" aria-pressed="${inboxFilter===key}">${label} <span class="filter-count">${n}</span></button>`).join('')}</div>`;
- if(phoneLayout()&&list.some(m=>m.id===route.id))openMsg=route.id;
- if(!openMsg||!list.some(m=>m.id===openMsg))openMsg=(list.find(m=>m.kind==='decision'&&!m.answer)||list[0])?.id||null;
- const m=list.find(x=>x.id===openMsg);if(m&&!m.read&&m.kind!=='decision'&&(!phoneLayout()||route.id===m.id)){m.read=true;G.save()}
+
  const items=list.map(x=>`<li><button data-msg="${x.id}" class="${!x.read?'unread':''} ${x.kind==='decision'&&!x.answer?'need':''}" ${x.id===openMsg?'aria-current="true"':''}><span class="pip">${x.kind==='decision'&&!x.answer?'<span class="sr">Needs a reply. </span>':!x.read?'<span class="sr">Unread. </span>':''}</span><span class="from">${esc(x.from)}</span><span class="wk">S${x.season} W${x.week}</span><span class="subj">${esc(x.subject)}</span></button></li>`).join('');
  let letter='<div class="empty">No messages in this view.</div>';
  if(m){
@@ -369,7 +385,7 @@ function renderInbox(){
   letter=`<article class="letter">${mgr?`<div class="letter-face">${face('manager',mgr.id,mgr.manager,'portrait')}</div>`:''}<div class="meta">From ${esc(m.from)}. Season ${m.season}, week ${m.week}.${senderRecord?' · '+senderRecord:''}</div><h2>${esc(m.subject)}</h2>${m.body.map(p=>`<p>${esc(p)}</p>`).join('')}`;
   if(Array.isArray(m.sections)&&m.sections.length){
    letter+='<div class="report-sections">'+m.sections.map(section=>'<section><h3 class="section-h">'+esc(section.title)+'</h3><ul class="cons">'+(section.lines||[]).map(line=>'<li>'+esc(line)+'</li>').join('')+'</ul></section>').join('')+'</div>';
-   letter+='<div class="report-links"><button class="btn" data-go="pyramid">Territory and rankings</button><button class="btn" data-go="squad">Your roster</button><button class="btn" data-go="offers">Next bookings</button></div>';
+   letter+='<div class="report-links"><button class="btn" data-go="pyramid">Card ladder</button><button class="btn" data-go="squad">Your roster</button><button class="btn" data-go="offers">Offers</button></div>';
   }
   if(m.kind==='decision'){
    if(m.answer)letter+=`<div class="outcome"><b>You chose: ${esc(m.options.find(o=>o.id===m.answer)?.label)}</b><br>${esc(m.outcome)}</div>`;
@@ -499,7 +515,7 @@ function renderRecord(){
  if(!w){route={s:'pyramid',id:null};return renderPyramid()}
  const stable=OfficeTerritory.stableFor(id),free=s.free.some(x=>x.id===id),division=D.divisionOf(id);
  const statusText=stable?'Contracted to '+stable.name:free?'Free agent':'Independent / other circuit';
- const stat=(label,key)=>`<div class="attr"><span>${label}</span><span>${Number.isFinite(w[key])?att(w[key]):'–'}</span>${Number.isFinite(w[key])?bar(w[key],bandBar(w[key])):'<span></span>'}</div>`;
+ const stat=(label,key)=>`<div class="attr"><span title="${esc(STAT_HELP[key]||'')}">${esc(label)}</span><span>${Number.isFinite(w[key])?att(w[key]):'–'}</span>${Number.isFinite(w[key])?bar(w[key],bandBar(w[key])):'<span></span>'}</div>`;
  const head=`<div class="record-head">${face('wrestler',w.id,w.name,'portrait x2')}<div><h2 class="record-name">${esc(w.name)}</h2><p>${w.handle?'“'+esc(w.handle)+'” · ':''}${esc(w.style||'Wrestler')} · ${esc(w.tier||'Circuit wrestler')}</p><p class="dim">${esc(statusText)} · ${esc(D.DIVISIONS[division]?.name||'Circuit')} division</p></div></div>`;
  const titles=OfficeTerritory.titlesOf(id),ranks=s.promoters.flatMap(p=>{
   const list=OfficeTerritory.promotionRank(p.id,division),n=list.findIndex(x=>x.id===id);
@@ -516,10 +532,10 @@ function renderRecord(){
   const other=f.wid===id?f.rid:f.wid,opponent=G.W(other)||G.F(other);
   return `<li>${recordLink('w',other,opponent?.name||'Opponent')} · heat ${Math.round(f.heat||0)} · ${f.closed?'finished':'ongoing'}</li>`;
  }).join('')+'</ul>':'<p class="dim">No rivalry with your stable recorded yet.</p>';
- const next=stable?`<button class="btn sm" data-go="stables" data-id="w:${esc(id)}">View rival stable</button>`:free?'<button class="btn sm" data-go="scouting" data-id="'+esc(id)+'">View free-agent listing</button>':'<button class="btn sm" data-go="pyramid">Card rankings</button>';
+ const next=stable?`<button class="btn sm" data-go="stables" data-id="w:${esc(id)}">View rival stable</button>`:free?'<button class="btn sm" data-go="scouting" data-id="'+esc(id)+'">View free-agent listing</button>':'<button class="btn sm" data-go="pyramid">Card ladder</button>';
  const belts=titles.length?'<p>'+titles.map(t=>'<span class="tag hot">'+esc(t.name)+'</span>').join(' ')+'</p>':'';
  paint('s-split even',
-  win('Wrestler record',head+belts+`<p>${esc(w.bio||'No biography is on file.')}</p><h3 class="section-h">Attributes</h3><div class="well pad attrs">`+stat('Ring','ring')+stat('Psychology','psych')+stat('Safety','safe')+stat('Mic','mic')+stat('Heat','heat')+'</div><p class="dim">Finisher: '+esc(w.finisher||'Not recorded')+'</p><div class="record-actions">'+next+'</div>',{actions:recordBack(),keep:'record-w'})+
+  win('Wrestler record',head+belts+`<p>${esc(w.bio||'No biography is on file.')}</p><h3 class="section-h">Attributes</h3><div class="well pad attrs">`+stat('Ring','ring')+stat('Psychology','psych')+stat('Safety','safe')+stat('Mic','mic')+stat('Heat','heat')+'</div>'+statLegend+'<p class="dim">Finisher: '+esc(w.finisher||'Not recorded')+'</p><div class="record-actions">'+next+'</div>',{actions:recordBack(),keep:'record-w'})+
   win('Career and connections','<h3 class="section-h">Promotion rankings</h3>'+rankings+'<h3 class="section-h">Against your stable</h3>'+results+'<h3 class="section-h">Rivalries</h3>'+feuds,{h:'h3',keep:'record-w-history'})
  );
 }
@@ -557,15 +573,139 @@ function renderProfile(){
  );
 }
 
+function trainingReportsPanel(){
+ const s=S(),reviews=Array.isArray(s.trainingReviews)?s.trainingReviews:[],latest=reviews.at(-1);
+ const report=(trainingReportWeek!=null?reviews.find(r=>String(r.a)===String(trainingReportWeek)):null)||latest;
+ if(!report)return '<div class="empty">Training reports appear here after your first completed week.</div>';
+ const selector=`<label class="field">Completed week<select data-trainweek aria-label="Choose training report">${reviews.slice().reverse().map(r=>`<option value="${r.a}" ${r===report?'selected':''}>${weekLabel(r.a)}</option>`).join('')}</select></label>`;
+ const points=(report.entries||[]).reduce((sum,e)=>sum+['ring','mic','psych','safe'].reduce((a,k)=>a+Math.max(0,e.delta?.[k]||0),0),0);
+ const entries=(report.entries||[]).map(e=>{
+  const improvements=['ring','mic','psych','safe'].filter(k=>(e.delta?.[k]||0)>0).map(k=>`${k} +${e.delta[k]}`).join(', ')||'No whole skill point gained';
+  const fatigue=e.delta?.fatigue||0;
+  const notes=(e.notes||[]).join(' ');
+  return `<article class="train-report-entry"><div class="train-report-entry-top"><button class="btn link" data-trainpick="${esc(e.id)}">${esc(e.name)}</button><b>${money(e.cost||0)}</b></div>
+   <p><b>${esc(improvements)}</b> · Fatigue ${fatigue>0?'+':''}${fatigue}${e.worked?' · Worked a match':''}${e.injuryAfter>e.injuryBefore?' · Training injury':''}</p>
+   ${notes?`<small>${esc(notes)}</small>`:''}</article>`;
+ }).join('');
+ return `<div class="train-report-panel"><h3 class="section-h">Completed-week review</h3>${selector}
+  <div class="train-review-totals">
+   <div><small>Skill points gained</small><b>${points}</b></div>
+   <div><small>Training and promo spend</small><b>${money(report.trainingCost||0)}</b></div>
+   <div><small>Coach wages</small><b>${money(report.coachCost||0)}</b></div>
+  </div><div class="train-report-list">${entries||'<p>No wrestlers were on the roster that week.</p>'}</div>
+  <p class="train-footnote">Real completed-week changes, not forecasts. Training spend excludes the separate coach wage.</p></div>`;
+}
+function trainingAdvicePanel(w){
+ const advice=G.trainingAdvice?.(w)||[],forecast=G.trainingForecast?.(w);
+ const items=advice.map(a=>{
+  const action=['focus','intensity','session'].includes(a.kind);
+  return `<div class="train-recommendation ${a.priority==='urgent'?'urgent':''}"><div><b>${esc(a.title)}</b><p>${esc(a.why)}</p></div>
+   ${action?`<button type="button" class="btn sm" data-advice-kind="${esc(a.kind)}" data-advice-wid="${esc(w.id)}" data-advice-value="${esc(a.value)}">Apply</button>`:''}</div>`;
+ }).join('');
+ const projected=forecast?.kind==='skill'?`If the week ended now: +${forecast.gain} ${esc(forecast.stat)} point(s), ${forecast.progress}% of the next point banked; fatigue ${forecast.fatigue}; adjusted injury chance ${forecast.riskPct.toFixed(1)}%.`
+  :forecast?.kind==='rest'?`Projected fatigue if the week ended now: ${forecast.fatigue}.`
+  :forecast?.kind==='promo'?`Projected heat +${forecast.heat}; fatigue ${forecast.fatigue}.`:'';
+ return `<section class="train-intelligence"><div class="train-section-heading"><h3 class="section-h">Dennis's assessment</h3><small>Suggestions, not orders</small></div>
+  <div class="train-advice-list">${items}</div>${projected?`<p class="train-projection"><b>Current-week outlook:</b> ${esc(projected)} Further matches and sessions may change the outcome.</p>`:''}</section>`;
+}
 function renderTraining(){
- const s=S();
- const table=s.roster.length?`<div class="well"><table class="grid"><thead><tr><th>Wrestler</th><th class="n">Ring</th><th class="n">Mic</th><th class="n">Psych</th><th class="n">Safe</th><th>Fatigue</th><th>Focus</th><th>Intensity</th></tr></thead><tbody>${s.roster.map(w=>{const [a,b]=trainSelects(w);return `<tr><td class="wrap" style="min-width:12ch;max-width:18ch"><button class="btn link" data-openw="${w.id}" title="${esc(trainNote(w))}">${esc(w.name)}</button></td><td class="n">${att(w.ring)}</td><td class="n">${att(w.mic)}</td><td class="n">${att(w.psych)}</td><td class="n">${att(w.safe)}</td><td>${bar(w.fatigue,fatKind(w.fatigue))} ${w.fatigue}</td><td>${a}</td><td>${b}</td></tr><tr class="session-row"><td colspan="8"><label class="session-field"><span>Session with Dennis</span>${sessionSelect(w)}</label><span class="dim">${esc(sessionNote(w))}</span></td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">Sign someone before planning training.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`;
- const coach=s.coach?`<div class="well pad"><dl class="kv"><dt>Employed</dt><dd>${esc(G.COACHES[s.coach].name)}</dd><dt>Salary</dt><dd>${money(G.coachWage())} a week</dd><dt>Specialism</dt><dd>${esc(G.COACHES[s.coach].stat)} training +${Math.round(G.COACHES[s.coach].boost*100)}%</dd></dl></div><p style="margin-top:10px"><button class="btn red" data-firecoach="1">End contract</button></p>`
-  :`<p class="lede">One specialist at a time. Wages are due even if nobody trains.</p><div class="well"><table class="grid"><thead><tr><th>Specialist</th><th class="n">Cost</th><th></th></tr></thead><tbody>${Object.entries(G.COACHES).map(([id,c])=>`<tr><td class="wrap">${esc(c.name)}<br><span class="dim">${esc(c.stat)} training +${Math.round(c.boost*100)}%</span></td><td class="n">${money(c.fee)}<br><span class="dim">${money(c.wage)}/wk</span></td><td class="n"><button class="btn sm" data-hirecoach="${id}" ${s.cash<c.fee?'disabled':''}>Hire</button></td></tr>`).join('')}</tbody></table></div>`;
- const cards=s.roster.map(w=>`<article class="phone-card"><div class="who">${face('wrestler',w.id,w.name)}<div><button class="btn link" data-openw="${w.id}">${esc(w.name)}</button><small>Fatigue ${w.fatigue} · ${esc(trainNote(w))}</small></div></div>${trainControls(w)}<p class="dim" style="margin:4px 0 0">${esc(sessionNote(w))}</p></article>`).join('');
+ const s=S(),roster=s.roster;
+ const chosen=roster.find(w=>w.id===trainingSelected)||roster[0];
+ trainingSelected=chosen?.id||null;
+ const bookedSessions=roster.filter(w=>w.session).length;
+ const alerts=roster.filter(w=>w.injury||w.fatigue>=60).length;
+ const programmes=roster.filter(w=>w.program).length;
+ const figures=`<div class="train-overview" aria-label="Training at a glance">
+  <div><small>Weekly training bill</small><b>${money(G.trainingBill())}</b></div>
+  <div><small>Dennis's sessions</small><b>${bookedSessions} / ${G.SESSION_CAP}</b></div>
+  <div><small>Condition alerts</small><b class="${alerts?'bad':''}">${alerts}</b></div>
+  <div><small>Active programmes</small><b>${programmes}</b></div>
+ </div>`;
+ const people=roster.length?roster.map(w=>{
+  const selected=w.id===chosen.id;
+  const condition=w.injury?`Injured · ${w.injury} ${plural(w.injury,'week')}`:w.fatigue>=60?'Rest recommended':w.fatigue>=40?'Fatigue building':'Available';
+  const line=w.program?`${w.program.type==='camp'?'Residential camp':'Training block'} · ${w.program.left} wk left`:w.training==='rest'?'Rest':w.training==='promo'?'Promo':`${D.TRAINING[w.training]?.name||'Training'} · ${G.INTENSITY[w.intensity||'light']?.name||'Light drills'}`;
+  return `<button type="button" class="train-person ${selected?'selected':''}" data-trainpick="${esc(w.id)}" aria-pressed="${selected}" aria-label="Manage training for ${esc(w.name)}">
+   ${face('wrestler',w.id,w.name)}
+   <span class="train-person-main"><b>${esc(w.name)}</b><small>${esc(line)}</small><small class="${w.injury||w.fatigue>=60?'bad':''}">${esc(condition)}</small></span>
+   <span class="train-person-fatigue"><small>Fatigue ${Math.round(w.fatigue)}</small>${bar(w.fatigue,fatKind(w.fatigue))}</span>
+  </button>`;
+ }).join(''):`<div class="empty">Sign a wrestler to begin training.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`;
+ const overview=`${figures}<p class="train-context">Select a wrestler to manage their weekly training. Plans continue until you change them.</p>
+ <div class="train-roster well" role="group" aria-label="Stable training roster">${people}</div>
+ <p class="train-footnote">Condition alerts identify injuries or fatigue of 60+. Sessions with Dennis are shared across the whole stable.</p>${s.trainingReviews?.length?`<div class="train-review-teaser"><b>Last completed week: ${weekLabel(s.trainingReviews.at(-1).a)}</b><p>${money(s.trainingReviews.at(-1).trainingCost||0)} spent on training and promos</p><button class="btn sm" data-trainpane="reports">Read review</button></div>`:''}`;
+ const tabs=`<div class="train-tabs" role="group" aria-label="Training view">
+  <button type="button" class="btn sm ${trainingPane==='development'?'go':''}" data-trainpane="development" aria-pressed="${trainingPane==='development'}">Wrestler development</button>
+  <button type="button" class="btn sm ${trainingPane==='coaches'?'go':''}" data-trainpane="coaches" aria-pressed="${trainingPane==='coaches'}">Coaching staff</button>
+  <button type="button" class="btn sm ${trainingPane==='reports'?'go':''}" data-trainpane="reports" aria-pressed="${trainingPane==='reports'}">Weekly reports</button>
+ </div>`;
+ let details='';
+ if(trainingPane==='reports'){
+  details=`${tabs}${trainingReportsPanel()}`;
+ }else if(trainingPane==='coaches'){
+  const c=s.coach?G.COACHES[s.coach]:null;
+  const current=c?`<div class="train-staff-current"><b>${esc(c.name)}</b>
+   <p>Boosts ${esc(c.stat)} training by ${Math.round(c.boost*100)}% for eligible wrestlers. ${money(c.wage)} is charged every week, even when nobody trains that skill.</p>
+   <button class="btn sm red" data-firecoach="1">End coaching contract</button></div>`:
+   `<p class="train-context">No specialist employed. You can employ one coach at a time.</p>`;
+  const options=Object.entries(G.COACHES).map(([id,o])=>`<div class="train-coach-option">
+   <div><b>${esc(o.name)}</b><small>${esc(o.stat)} training +${Math.round(o.boost*100)}%</small><small>${money(o.fee)} hiring fee · ${money(o.wage)}/week</small></div>
+   <button type="button" class="btn sm" data-hirecoach="${esc(id)}" ${s.coach||s.cash<o.fee?'disabled':''}>Hire</button>
+  </div>`).join('');
+  details=`${tabs}<h3 class="section-h">Specialist coaching</h3>${current}
+   ${c?`<p class="train-footnote">Release your current coach before hiring a replacement. No hiring fee is refunded.</p>`:`<div class="train-coach-list well">${options}</div>`}
+   <p class="train-context">Bank balance: ${money(s.cash)}. Coach wages are included in the weekly training bill.</p>`;
+ }else if(!chosen){
+  details=`${tabs}<div class="empty">Your wrestler development plans will appear here once you sign someone.</div>`;
+ }else{
+  const w=chosen,[focusSelect,intensitySelect]=trainSelects(w);
+  const trainingFocus=D.TRAINING[w.training];
+  const mode=G.INTENSITY[w.intensity||'light']||G.INTENSITY.light;
+  const camp=w.program?.type==='camp';
+  const skill=trainingFocus?.stat;
+  const coached=!!(skill&&s.coach&&G.COACHES[s.coach]?.stat===skill);
+  const baseRisk=camp?1.5:mode.risk*100;
+  const paused=!!(w.injury||w.program);
+  const canProgramme=!paused&&w.training!=='rest'&&w.training!=='promo';
+  const statRow=(label,key)=>{
+   const val=w[key],since=val-(w.startSkills?.[key]??val);
+   return `<div class="train-attribute"><span title="${esc(STAT_HELP[key]||'')}">${esc(label)}</span><b>${att(val)}${since>0?` <small class="good">+${since}</small>`:''}</b><small>${Math.round((w.progress?.[key]||0)*100)}% to next</small></div>`;
+  };
+  const attributes=`<div class="train-attributes well">${statRow('Ring','ring')}${statRow('Psych','psych')}${statRow('Safety','safe')}${statRow('Mic','mic')}</div>${statLegend}`;
+  let expectation='';
+  if(w.injury)expectation='Injured: weekly skill training is unavailable; recovery takes priority.';
+  else if(w.training==='rest')expectation='Rest reduces fatigue. Recovery is greater in weeks without a match.';
+  else if(w.training==='promo')expectation='Producing a promo costs £40 a week and builds heat, not a training attribute.';
+  else expectation=`Dennis says: This work starts at roughly ${camp?'1.9':mode.gain} skill points a week, but the wrestler's ability, experience, fatigue and coaching change the actual gain. The starting injury risk is ${baseRisk.toFixed(1)}% a week, and tired wrestlers or match nights can raise it.${coached?' Your specialist coach should help.':''}`;
+  const programme=w.program?`<div class="train-programme-active">
+   <b>${w.program.type==='camp'?'Residential camp':`${w.program.total}-week development block`}</b>
+   <p>${w.program.left} ${plural(w.program.left,'week')} remaining · ${w.program.gains} ${plural(w.program.gains,'skill point')} gained · ${money(G.trainingCost(w))}/week.</p>
+   ${camp?'<p>Unavailable for bookings until camp ends.</p>':''}
+   <button class="btn sm red" data-cancelprogram="${esc(w.id)}">End programme early</button></div>`:
+   `<div class="train-programme-options"><button class="btn sm" data-program="block3" data-wid="${esc(w.id)}" ${canProgramme?'':'disabled'}>3-week block</button>
+    <button class="btn sm" data-program="block6" data-wid="${esc(w.id)}" ${canProgramme?'':'disabled'}>6-week block</button>
+    <button class="btn sm" data-program="camp" data-wid="${esc(w.id)}" ${canProgramme?'':'disabled'}>3-week camp · £185/wk</button></div>
+    <p class="train-footnote">Blocks lock focus and intensity. Camps prevent bookings; conflicting bookings must be cleared first.</p>`;
+  const tip=G.sessionTip(w);
+  const suggested=tip?G.sessionOptions(w).find(o=>o.value===tip.value):null;
+  const why=suggested?`<p class="train-advice"><b>Dennis recommends:</b> ${esc(suggested.label)}. ${esc(tip.why)} ${esc(suggested.hint||'')}</p>`:'';
+  const sessions=`<div class="train-session"><div class="train-section-heading"><h3 class="section-h">A session with Dennis</h3><small>${bookedSessions} of ${G.SESSION_CAP} booked</small></div>
+   <label class="field">This week's session${sessionSelect(w)}</label>
+   <p class="train-context">${esc(sessionNote(w)||'Choose a rehearsal, a big-spot move or mic practice. Sessions are on top of the weekly training focus.')}</p></div>`;
+  details=`${tabs}<div class="train-wrestler-head">${face('wrestler',w.id,w.name,'portrait x2')}
+   <div><h3>${esc(w.name)}</h3><p>${esc(w.style||'Wrestler')} · ${status(w)}</p><p>Fatigue ${Math.round(w.fatigue)} ${bar(w.fatigue,fatKind(w.fatigue))}</p></div>
+   <button class="btn sm" data-openw="${esc(w.id)}">Full profile</button></div>
+   ${attributes}
+   <h3 class="section-h">Weekly training</h3>
+   <div class="train-settings"><label class="field">Focus${focusSelect}</label><label class="field">Intensity${intensitySelect}</label></div>
+   <div class="train-effect"><b>${money(G.trainingCost(w))} this week</b><p>${esc(expectation)}</p>${paused?`<p>${esc(trainNote(w))}</p>`:''}</div>
+   <h3 class="section-h">Development programme</h3>${programme}
+   ${w.prepHistory?.length?`<p class="train-footnote">Last completed: ${esc(D.TRAINING[w.prepHistory[0].focus]?.name||w.prepHistory[0].focus)} · +${w.prepHistory[0].gains} points (${weekLabel(w.prepHistory[0].week)}).</p>`:''}
+   ${trainingAdvicePanel(w)}${sessions}`;
+ }
  paint('s-split s-train',
-  win('Training schedule',`<p class="lede">Set a focus and intensity once and it keeps running every week. Fixed blocks and camps are set from each wrestler’s profile. Dennis has time for ${G.SESSION_CAP} sessions a week across the stable: ${S().roster.filter(x=>x.session).length} booked.</p>${phoneList(table,cards)}`,{keep:'train',note:`Weekly bill ${money(G.trainingBill())}`})+
-  win('Coaching staff',coach,{h:'h3',keep:'coach'})
+  win('Stable training',overview,{keep:'train-roster'})+
+  win('Development and coaching',details,{h:'h3',keep:'train-detail'})
  );
 }
 
@@ -609,12 +749,12 @@ function renderScouting(){
  const list=rows.length?`<div class="well free-table"><table class="grid"><thead><tr>${FREE_SORTS.map(([key,label],i)=>th('free',key,label,(i>=2?'n':'')+(FREE_OPTIONAL.includes(key)?' free-opt':''))).join('')}</tr></thead><tbody>${rows.map(x=>`<tr class="pick" data-self="${x.id}" data-selected="${x.id===selFree}"><td><button class="row-pick" data-self="${x.id}" aria-pressed="${x.id===selFree}" aria-label="Review ${esc(x.name)}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span></span></button></td><td>${esc(x.style)}</td>${FREE_STATS.map(([key])=>`<td class="n${FREE_OPTIONAL.includes(key)?' free-opt':''}">${att(x[key])}</td>`).join('')}<td class="n">${money(x.wage)}</td><td class="n"><b>${money(x.fee)}</b></td></tr>`).join('')}</tbody></table></div>` :`<div class="empty">${s.free.length?'No free agents match these filters.':'Nobody left on the market.'}</div>`;
  const sort=sorts.free;
  const cards=rows.length?`<div class="free-cards"><div class="free-sort"><label class="field">Sort by<select data-free-sort>${FREE_SORTS.map(([key,label])=>`<option value="${key}" ${key===sort.k?'selected':''}>${label}</option>`).join('')}</select></label><button class="btn sm" data-sort="free:${sort.k}" aria-label="Reverse sort order">${sort.d>0?'Ascending ▲':'Descending ▼'}</button></div>
-  ${rows.map(x=>`<button class="free-card" data-self="${x.id}" aria-pressed="${x.id===selFree}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)} · ${esc(x.style)}</small></span></span>
+  ${rows.map(x=>`<button class="free-card" data-self="${x.id}" aria-pressed="${x.id===selFree}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)} · ${esc(x.style)} · ${esc(D.DIVISIONS[D.divisionOf(x)].name)}</small></span></span>
    <span class="free-stats">${FREE_STATS.map(([key,label])=>`<span><small>${label}</small>${att(x[key])}</span>`).join('')}</span><span class="free-costs"><span><small>Weekly wage</small>${money(x.wage)}</span><span><small>Signing fee</small>${money(x.fee)}</span></span></button>`).join('')}</div>`:'';
  let detail='<div class="empty">Select a wrestler.</div>';
  if(w){
   const can=s.cash>=w.fee&&!full;
-  detail=`<div class="row" style="align-items:flex-start;gap:14px;flex-wrap:nowrap">${face('wrestler',w.id,w.name,'portrait x2')}<div><div style="font:36px/.9 var(--jersey);color:var(--blood)">${esc(w.name)}</div><div style="font-weight:600;margin:4px 0">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span></div></div></div>
+  detail=`<div class="row" style="align-items:flex-start;gap:14px;flex-wrap:nowrap">${face('wrestler',w.id,w.name,'portrait x2')}<div><div style="font:36px/.9 var(--jersey);color:var(--blood)">${esc(w.name)}</div><div style="font-weight:600;margin:4px 0">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${esc(D.DIVISIONS[D.divisionOf(w)].name)}</span></div></div></div>
   <div class="facts" style="margin:10px 0"><div><small>Signing fee</small><b class="${s.cash<w.fee?'neg':''}">${money(w.fee)}</b></div><div><small>Weekly wage</small><b>${money(w.wage)}</b></div></div>
   <button class="btn go" style="width:100%;min-height:44px" data-sign="${w.id}" ${can?'':'disabled'}>Sign ${esc(w.short)}</button>
   <p class="dim" style="margin-top:6px">${full?'Your locker room is full. Release someone first.':s.cash<w.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'Wages are paid every week, booked or not.'}</p>
@@ -763,7 +903,7 @@ function renderOffers(){
 function renderFixtures(){
  const s=S();
  const card=s.card.length?`<div class="well"><table class="grid"><thead><tr><th>Match</th><th>Promoter</th><th>Slot</th><th>Finish</th><th class="n">Purse</th><th></th></tr></thead><tbody>${s.card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>{const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);return `<tr><td><span class="who">${face('wrestler',w.id,w.name)}<span><b>${recordLink('w',w.id,w.name)} v ${recordLink('w',f.id,f.name)}</b><small>${c.minutes} minutes${c.tag?`, ${esc(c.tag)}`:''}</small>${boutStakes(c)}</span></span></td><td>${recordLink('p',p.id,p.name)}</td><td>${esc(D.SLOTS[c.slot].name)}</td><td>${finishTag(c.finish)}</td><td class="n"><b>${money(c.purse)}</b></td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw from programme':'Pull out'}</button></td></tr>`}).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. Continue takes you to ringside.</p>`
-  :`<div class="empty">Nothing booked this week.<br><button class="btn sm" data-go="offers">See offers</button></div>`;
+  :`<div class="empty">Nothing booked this week.<br><button class="btn sm" data-go="offers">Offers</button></div>`;
  const fut=s.futureBookings.slice().sort((a,b)=>a.eventAbs-b.eventAbs);
  const future=fut.length?`<div class="well"><table class="grid"><thead><tr><th>When</th><th>Match</th><th>Promoter</th><th class="n">Purse</th><th></th></tr></thead><tbody>${fut.map(c=>`<tr><td>${weekLabel(c.eventAbs)}</td><td>${recordLink('w',c.wid,G.W(c.wid)?.name||'Departed wrestler')} v ${recordLink('w',c.rid,G.F(c.rid)?.name||'Opponent')}<br><span class="dim">${esc(D.SLOTS[c.slot].name)} · ${esc(D.FINISHES[c.finish]?.name||'Finish not recorded')}</span>${boutStakes(c)}</td><td>${esc(G.P(c.pid)?.name||'')}</td><td class="n">${money(c.purse)}</td><td class="n"><button class="btn link" data-unbook="${c.id}">${c.programme?'Withdraw programme':'Cancel'}</button></td></tr>`).join('')}</tbody></table></div><p class="dim" style="margin-top:8px">Purses are paid after the match. Ordinary cancellations cost 6 trust. Withdrawing from a programme cancels every remaining date and costs 15 trust. A booked wrestler can’t attend camp that week.</p>`
   :'<div class="empty">No future dates signed.</div>';
@@ -841,11 +981,13 @@ function renderSheets(){
    <p><b>${esc(x.aName)}</b> ${x.type==='title'?'chasing':x.type==='rise'?'climbing towards':'v'} <b>${esc(x.bName)}</b></p>
    <p>Heat ${bar(x.heat,x.heat>=70?'gold':'')} ${x.heat}</p><p class="dim">${esc(step)}</p>${rec}</article>`;
  };
- const live=v.live.length?`<div class="story-grid">${v.live.map(card).join('')}</div>`:`<div class="empty">Nothing on the board this week. ${esc(p.voice)} is planning.</div>`;
+ const live=v.live.length?`<div class="story-grid">${v.live.map(card).join('')}</div>`:`<div class="empty">No multi-match storyline is active. The booker still puts together a weekly card.</div>`;
+ const early=v.firstLook?`<p class="dim">Opening plans for ${weekLabel(v.upcomingWeek)}. These are provisional: no circuit matches have been played yet.</p>`:'';
+ const upcoming=v.upcoming.length?`<ul class="cons">${v.upcoming.map(m=>`<li><b>${esc(D.DIVISIONS[m.div]?.name||m.div)}</b> · ${recordLink('w',m.a,m.aName)} v ${recordLink('w',m.b,m.bName)}${m.title?' · <span class="tag hot">Title</span>':m.storyline?' · '+esc(m.storyline):''}</li>`).join('')}</ul>`:'<p class="dim">No circuit matches pencilled in for this promoter next week.</p>';
  const done=v.done.length?`<ul class="cons">${v.done.map(x=>`<li class="${x.status==='dropped'?'':'up'}"><b>${esc(x.typeName)}</b> · ${esc(x.text||'')} <span class="dim">${x.ended?weekLabel(x.ended):''}</span></li>`).join('')}</ul>`:'<p class="dim">No storyline has finished here yet.</p>';
  const M=window.OfficeManagers,pushing=M?.lobbyAt(p.id)||[];
  const lobby=pushing.length?`<ul class="cons">${pushing.map(l=>`<li><b>${esc(l.manager)}</b> (${esc(l.team)}) is pushing <b>${esc(l.name)}</b>${l.want?` · wants ${esc(l.want.toLowerCase())}`:''}</li>`).join('')}</ul>`:'<p class="dim">No manager is working this booker this week.</p>';
- paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">On the board</h3>${live}${yourProgrammes(p)}<h3 class="section-h">Managers in the booker’s ear</h3>${lobby}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">Bookers plan the circuit’s matches around these storylines and choose who wins to serve them. They do not always stick to the plan.</p>`,{keep:'sheets',note:esc(p.name)}));
+ paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">Next circuit card · ${weekLabel(v.upcomingWeek)} (provisional)</h3>${upcoming}<h3 class="section-h">On the board</h3>${early}${live}${yourProgrammes(p)}<h3 class="section-h">Managers in the booker’s ear</h3>${lobby}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">The card is a forecast, not a signed result. Bookers plan matches around their storylines and may change their minds before the bell.</p>`,{keep:'sheets',note:esc(p.name)}));
 }
 
 function rivalrySnapshot(f){
@@ -1015,9 +1157,11 @@ function proceed(){
  if(G.pending().length){inboxFilter='action';openMsg=G.pending()[0].id;go('inbox',phoneLayout()?openMsg:null);toast('Reply to the messages marked in red first.');return}
  if(s.card.length){startNight();return}
  if(!s.roster.length&&s.week===1){go('scouting');toast('Sign a wrestler first.');return}
- G.endWeek();
- if(s.over){gameOver();return}
- openMsg=null;past=[];ahead=[];route={s:'desk',id:null};render(true);
+ // An empty week costs real money and an opportunity. Show the consequences before advancing.
+ const cost=G.wages()+G.overhead()+G.trainingBill();
+ const outstanding=s.offers.filter(o=>o.eventAbs===G.abs()).length;
+ dialog('Advance without a booking?',`<p>No matches are booked this week. You will earn <b>£0 in match purses</b> and pay an estimated <b>${money(cost)}</b> in wages, overheads and training.</p><p>Your bank is projected to move from <b>${money(s.cash)}</b> to <b>${money(s.cash-cost)}</b>.</p><p>${outstanding?outstanding+' current-week '+plural(outstanding,'offer')+' may expire. ':''}Advancing uses up this week of the season and any active sponsor trial.</p>`,[['Review offers','review-week-offers'],['Advance anyway','confirm-empty-week','red']]);
+ return;
  toast(`Week ${s.week}. ${s.offers.length} ${plural(s.offers.length,'offer')} on the table.`);
 }
 function gameOver(){
@@ -1033,7 +1177,9 @@ function persistNight(){
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
-function openTV(){$('#toast').classList.remove('show');$('#tv').hidden=false;document.body.style.overflow='hidden'}
+let tvPreviousFocus=null;
+function openTV(){tvPreviousFocus=document.activeElement;clearToast();$('#tv').hidden=false;$('#app').inert=true;$('#tv').setAttribute('tabindex','-1');$('#tv').focus();document.body.style.overflow='hidden'}
+function closeTVFocus(){$('#app').inert=false;$('#tv').removeAttribute('tabindex');if(tvPreviousFocus?.isConnected)tvPreviousFocus.focus();tvPreviousFocus=null}
 function resumeNight(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(NIGHT_STORE)||'null')}catch(e){}
  // After the last match the card is empty, but a post-match segment still waiting for its last word comes back.
@@ -1172,12 +1318,12 @@ function backstageBrief(c,P,v){
  const layout=v.stage==='done'?'Signed':v.stage==='curtain'?'Approved':v.review?'Ready for approval':v.board?'Planning called spots':
   v.stage==='scene'||v.stage==='finish'?'Agreed':'In discussion';
  const route=plan?.label||agreedRoute||'Being agreed';
- const readiness=plan?.kind==='warning'?'Needs revision':plan?.kind==='conditional'?'Conditional finish':'No additional finish threshold';
+ const readiness=plan?.kind==='warning'?'Dennis wants changes':plan?.kind==='conditional'?'Depends on the match':'Nothing extra needed';
  return `<section class="match-brief" aria-label="Agreed match brief">
   <div><small>Promoter’s booking</small><b>${esc(finish)}</b></div>
   <div><small>Finish route</small><b>${esc(route)}</b></div>
   <div><small>Running order</small><b>${esc(layout)}</b></div>
-  <div class="${plan?.kind==='warning'?'brief-warning':''}"><small>Finish readiness</small><b>${esc(readiness)}</b></div>
+  <div class="${plan?.kind==='warning'?'brief-warning':''}"><small>Finish</small><b>${esc(readiness)}</b></div>
  </section>`;
 }
 function showMeeting(){
@@ -1253,7 +1399,7 @@ function showMeeting(){
   </div>`:'';
  const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${structurePanel}${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
- const descriptions={traditional:'Original shine, heat, comeback and finish. No Structure Director.',
+ const descriptions={traditional:'Start strong, take the pressure, fight back and reach the finish.',
   classic_american:'Guided opening, pressure, comeback and payoff.',
   kings_road:'Technical exchanges, escalation, callback and finish build.',
   chickenshit_heel:'Avoid, get exposed, use a shortcut, then survive.',
@@ -1262,10 +1408,10 @@ function showMeeting(){
  const variants=[{id:'traditional',label:'Traditional (current)'},...OfficeSheets.STRUCTURES.catalogue()];
  // Choose BEFORE the first backstage decision. The meeting is re-created
  // only while still at its initial plan stage, never after a signed decision.
- const chooser=v.stage==='plan'?'<section class="structure-chooser" aria-label="Match structure choice"><div class="rorder-heading"><b>Match structure</b><span>Optional. Choose before planning the match.</span></div>'+
+ const chooser=v.stage==='plan'?'<details class="structure-chooser" aria-label="Advanced match structure"'+(P.structureChoice?' open':'')+'><summary>Advanced: shape the match <small>(optional)</small></summary><p class="dim">This sets the order of the story, not the wrestling style or the booked winner.</p>'+ 
   '<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small></button>').join('')+'</div>'+
   (P.structureChoice?'<div class="structure-lead"><span>Dramatic lead (not the booked winner)</span><div role="group" aria-label="Which wrestler leads the structure?">'+[{id:'w',name:w.short},{id:'f',name:f.short}].map(x=>'<button class="btn'+(P.structureChoice.lead===x.id?' on':'')+'" data-structurelead="'+x.id+'" aria-pressed="'+(P.structureChoice.lead===x.id)+'">'+esc(x.name)+'</button>').join('')+'</div></div>':'')+
-  '<p class="dim structure-help">The promoter\'s booked result is unchanged. The structure guides legal, performed actions rather than guaranteeing moves.</p></section>':'';
+  '<p class="dim structure-help">The promoter\'s booked result is unchanged. This guides the action, but cannot guarantee particular moves.</p></details>':'';
  // Put structure selection INSIDE the scrolling decision panel. An extra
  // flex child above the conversation could clip mobile plan buttons.
  const decisionWithStructure=chooser?decide.replace('<div class="decide2">','<div class="decide2">'+chooser):decide;
@@ -1357,7 +1503,10 @@ function bell(){
 }
 function schedule(ms){clearTimeout(night.timer);night.timer=setTimeout(pump,ms)}
 function pump(){
- const M=night?.M;if(!M||night.paused)return;
+ const M=night?.M;if(!M)return;
+ // Completed bouts never require Resume just to reveal their result.
+ if(M.done)return result();
+ if(night.paused)return;
  if(M.decision&&!M.queue.length)return showDecision();
  if(night.speed==='skip'){let line,n=0,got=0;while(n++<4000){if(M.decision&&!M.queue.length)break;line=Mx.next(M);if(!line)break;night.past.unshift(line);got++}
   if(got)showLine(night.past.shift(),true);updateLive();if(M.decision)return showDecision();if(M.done){clearTimeout(night.timer);night.timer=setTimeout(()=>{if(night?.M===M)result()},900);return}return schedule(10)}
@@ -1405,8 +1554,20 @@ function updateLive(){
  $('#lSheet').textContent=structure?structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structure.objectives.length+' objectives':M.sheet?.signed?M.sheet.nodes.filter(b=>b.status==='achieved'||b.status==='adapted').length+'/'+M.sheet.nodes.length+' beats':M.leash==='free'?'Called live':M.offScript?(M.offScript==='showboat'?'Showboating':'Audibles'):'On the layout';$('#lSheet').className=M.offScript?'warnv':'';
  updateStrip(M);
  $('#lCalls').textContent='●'.repeat(M.calls)+'○'.repeat(3-M.calls);
- document.querySelectorAll('[data-call]').forEach(b=>b.disabled=!Mx.canCall(M,b.dataset.call));
- const pb=document.querySelector('[data-pause]');if(pb){pb.textContent=night.paused?'Resume':'Pause';pb.setAttribute('aria-pressed',night.paused)}
+ document.querySelectorAll('[data-call]').forEach(b=>{
+  b.disabled=!Mx.canCall(M,b.dataset.call);
+  if(b.dataset.call==='big'){
+   const pending=!!M.bigSpotRequest;
+   b.classList.toggle('pending',pending);
+   b.setAttribute('aria-label',pending?
+    'Big spot queued. Waiting for a legal opening.':'Hit the big spot');
+   if(b.lastChild?.nodeType===3)b.lastChild.textContent=pending?'Big spot queued':'Hit the big spot';
+  }
+ });
+ if(M.bigSpotRequest&&$('#lHint'))
+  $('#lHint').textContent='Big spot queued: the wrestlers are looking for a legal opening. If none arrives, the call is returned.';
+ const pb=document.querySelector('[data-pause]');if(pb){pb.textContent=M.done?'See the result':night.paused?'Resume':'Pause';pb.setAttribute('aria-pressed',night.paused);pb.disabled=false}
+ if(M.done&&night.paused){result();return}
 }
 // The running order along the match clock. Two lanes so neighbouring beats never sit on top of each other.
 const STRIP_SHORT={Shine:'Shine',Heat:'Heat',Comeback:'Back','Big spot':'Spot',Finish:'Fin',Vow:'Vow'};
@@ -1537,7 +1698,7 @@ function syncAfterEvidence(){
  if(r)r.consequences=[...(r.baseConsequences||r.consequences||[]),...(h?.after?.effects||[])];
 }
 function endNight(){
- clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';
+ clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';closeTVFocus();
  const res=night?.results||[],before=night?.before||null,speed=night?.speed||'normal';clearNight();night={speed};
  // Finish all weekly systems first; the report then reads their settled state.
  G.endWeek();
@@ -1559,7 +1720,23 @@ document.addEventListener('click',e=>{
  if(t.id==='continue')return proceed();
  if(d.hist)return histMove(d.hist==='back'?-1:1);
  if(d.record)return openRecord(d.record);
+ if(d.rfAction){
+  const field=$('#rf-page-entry');
+  const value=d.rfAction==='jump'?field?.value?.trim():d.rfValue;
+  if(d.rfAction==='jump'&&!/^[0-9]{3}$/.test(value||'')){
+   field?.setAttribute('aria-invalid','true');field?.focus();return;
+  }
+  if(OfficeRingfax.press(d.rfAction==='jump'?'go':d.rfAction,value,S()))render();
+  return;
+ }
  if(d.commentaryView){commentaryView=d.commentaryView==='key'?'key':'all';renderPastCommentary();return}
+ if(d.trainpick){trainingSelected=d.trainpick;trainingPane='development';render();return;}
+ if(d.trainpane){trainingPane=d.trainpane;render();return;}
+ if(d.adviceKind){
+  const method={focus:G.setTraining,intensity:G.setIntensity,session:G.setSession}[d.adviceKind];
+  if(!method)return;
+  const err=method(d.adviceWid,d.adviceValue);render();toast(err||'Training plan updated.');return;
+ }
  if(d.go)return go(d.go,d.id||null);
  if(d.openw)return go('profile',d.openw);
  if(d.sort){const [key,k]=d.sort.split(':');const s=sorts[key];sorts[key]=s&&s.k===k?{k,d:-s.d}:{k,d:['name','style','tier'].includes(k)?1:-1};render();return}
@@ -1620,7 +1797,17 @@ document.addEventListener('click',e=>{
  if(d.act==='export'){const blob=new Blob([JSON.stringify(S())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`the-office-s${S().season}w${S().week}.json`;a.click();return}
  if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(![20,21,22].includes(x.v))throw 0;G.S=x;if(!G.S)throw 0;G.save();startApp('desk');toast('Save loaded.')}catch(err){toast('That file isn’t a valid save from v2 to v2.3.')}})};i.click();return}
  if(d.act==='newgame'){dialog('Start a new career?','<p>Your current career will be overwritten.</p>',[['Cancel','close'],['Start again','newgame','red']]);return}
- if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('sign:')){const id=d.dlg.slice(5),err=G.sign(id);if(err){render();return toast(err)}const w=G.W(id);selFree=null;refreshList('scouting');return toast(`${w.name} signed. Wages ${money(w.wage)} a week.`)}if(d.dlg.startsWith('raise:')){const r=window.OfficeAmbitions?.giveRaise?.(d.dlg.slice(6));render();toast(r?.error||r?.text||'Wage review unavailable.');return}if(d.dlg.startsWith('withdraw:')){const said=G.unbook(d.dlg.slice(9));render();toast(said||'Programme withdrawn.');return}if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';startApp('scouting')}return}
+ if(d.dlg==='review-week-offers'){$('#modal').close();return go('offers')}
+ if(d.dlg==='confirm-empty-week'){
+  $('#modal').close();
+  if(S().card.length||G.pending().length)return proceed();
+  G.endWeek();
+  if(S().over)return gameOver();
+  openMsg=null;past=[];ahead=[];route={s:'desk',id:null};render(true);
+  toast(`Week ${S().week}. ${S().offers.length} ${plural(S().offers.length,'offer')} on the table.`);
+  return;
+ }
+ if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('sign:')){const id=d.dlg.slice(5),err=G.sign(id);if(err){render();return toast(err)}const w=G.W(id);selFree=null;refreshList('scouting');return toast(`${w.name} signed. Wages ${money(w.wage)} a week.`)}if(d.dlg.startsWith('raise:')){const r=window.OfficeAmbitions?.giveRaise?.(d.dlg.slice(6));render();toast(r?.error||r?.text||'Wage review unavailable.');return}if(d.dlg.startsWith('withdraw:')){const said=G.unbook(d.dlg.slice(9));render();toast(said||'Programme withdrawn.');return}if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';closeTVFocus();startApp('scouting')}return}
  if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
  if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
  if(d.plan){night.plan[d.plan]=d.val;if(d.plan==='game'){night.plan.sheet=null;night.plan.focus=null;night.plan.confirmed=false;}t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
@@ -1668,8 +1855,8 @@ document.addEventListener('click',e=>{
  if(d.tv==='done'){night.afterReady=null;return endNight();}
  if(d.call)return doCall(d.call);
  if(d.decide)return decideNow(d.decide);
- if(d.speed!==undefined){night.speed=d.speed;document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===night.speed));if(!night.paused)schedule(50);return}
- if(t.hasAttribute('data-pause')){night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}
+ if(d.speed!==undefined){night.speed=d.speed;document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===night.speed));if(night.speed==='skip'&&night.paused)night.paused=false;if(!night.paused)schedule(50);updateLive();return}
+ if(t.hasAttribute('data-pause')){if(night.M?.done)return result();night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}
 });
 document.addEventListener('input',e=>{
  const el=e.target;
@@ -1686,6 +1873,7 @@ document.addEventListener('change',e=>{
  if(d.scoutStyle!==undefined){scoutStyle=t.value;render();return}
  if(d.scoutBudget!==undefined){scoutBudget=t.value;render();return}
  if(d.freeSort!==undefined){sorts.free={k:t.value,d:['name','style'].includes(t.value)?1:-1};render();return}
+ if(d.trainweek!==undefined){trainingReportWeek=t.value;render();return;}
  if(d.session){const err=G.setSession(d.session,t.value);if(err){toast(err);render();return}const w=G.W(d.session);render();toast(t.value==='none'?`${w.short}: no session with Dennis this week.`:`${w.short}: ${t.selectedOptions[0]?.textContent.replace(' — Dennis suggests','').toLowerCase()} with Dennis.`);return}
  if(d.train){G.setTraining(d.train,t.value);render();toast(`${G.W(d.train).short}: ${D.TRAINING[t.value].name.toLowerCase()} this week.`);return}
  if(d.intensity){G.setIntensity(d.intensity,t.value);render();toast(`${G.W(d.intensity).short}: ${G.INTENSITY[t.value].name}, ${money(G.trainingCost(G.W(d.intensity)))} a week.`);return}
@@ -1695,7 +1883,14 @@ document.addEventListener('mouseover',e=>{const b=e.target.closest('[data-hint]'
 document.addEventListener('focusin',e=>{const b=e.target.closest('[data-hint]');if(b&&$('#lHint'))$('#lHint').textContent=b.dataset.hint});
 // Remember whether the phone filter disclosure was opened, so re-renders keep it open.
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('free-filters'))scoutFiltersOpen=e.target.open},true);
+document.addEventListener('ringfax-page-rotated',()=>{if(route.s==='ringfax'&&S())render()});
 document.addEventListener('keydown',e=>{
+ if(route.s==='ringfax'&&e.target?.matches?.('#rf-page-entry')&&e.key==='Enter'){
+  e.preventDefault();const value=e.target.value.trim();
+  if(!/^[0-9]{3}$/.test(value)){e.target.setAttribute('aria-invalid','true');return;}
+  if(OfficeRingfax.press('go',value,S()))render();return;
+ }
+ if(route.s==='ringfax'&&(/^F[1-4]$/.test(e.key)||!e.target?.closest?.('input,textarea,select,[contenteditable]'))&&OfficeRingfax.key(e.key,S())){e.preventDefault();render();return;}
  if(night?.M&&!$('#tv').hidden){
   const box=$('#decision');if(box&&!box.hidden)return;
   if(e.key===' '){e.preventDefault();night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}

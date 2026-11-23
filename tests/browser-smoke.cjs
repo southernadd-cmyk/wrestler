@@ -355,8 +355,10 @@ async function journey(browser,name,viewport){
   assert.match(await brief.innerText(),/Promoter.s booking/);
   assert.match(await brief.innerText(),/Finish route/);
   assert.match(await brief.innerText(),/Running order/);
-  assert.match(await brief.innerText(),/Finish readiness/);
+  assert.match(await brief.innerText(),/Finish\s*\n\s*Nothing extra needed/);
   // Phase 4: exercise actual user controls on desktop and mobile.
+  const structureDisclosure=page.locator('#tv .structure-chooser');
+  await structureDisclosure.locator('summary').click();
   assert.equal(await page.locator('#tv .structure-option').count(),5);
   await page.locator('#tv [data-structure="kings_road"]').click();
   assert.equal(await page.evaluate(()=>window.OfficeUI.night.plan.room.structurePlanning),true);
@@ -386,8 +388,9 @@ async function journey(browser,name,viewport){
   assert.ok(geometry.stage<=geometry.view+2,name+': backstage exceeds viewport');
   assert.equal(await page.evaluate(()=>window.OfficeGame.S.card[0].finish),'win_clean',
     name+': presentation must not alter booked finish');
-  // Phase 5: from a real structure choice, through the wrestler's objection,
-  // to a signed sheet. Uses actual UI buttons at desktop and phone widths.
+  // Phase 5: selecting Traditional re-renders and closes the optional disclosure.
+  // Reopen Advanced before making another structure selection.
+  await page.locator('#tv .structure-chooser summary').click();
   await page.locator('#tv [data-structure="kings_road"]').click();
   await page.locator('#tv [data-room="plan_technical"]').click();
   await page.locator('#tv [data-room="board_ok"]').click();

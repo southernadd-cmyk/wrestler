@@ -4513,6 +4513,11 @@ const Graph=(function makeGraph(){
    if(A[id].reverse&&M.sheet?.v>=4&&root.OfficeRoom)n*=root.OfficeRoom.feed(M,p.control==='f'?'f':'w');
    if(root.OfficeSheets?.boost){const sb=root.OfficeSheets.boost(M,id,p.control==='f'?'f':'w');n*=sb>1?sb*SHEET_PULL:sb;}
    n*=root.OfficeSheets?.DIRECTOR?.bias(M,id,p.control==='f'?'f':'w')||1;
+   // A queued ringside highlight favours already-legal authored attacks,
+   // not a new move, synthetic setup or forced landing. Agreed calls still
+   // receive their existing priority below.
+   if(M.bigSpotRequest&&p.control==='w'&&regularBigMoment(M,id))
+    n*=10;
    // The public promo is a tactical declaration. Counter promises favour
    // genuine worker reversals of opponent control, not arbitrary bonuses.
    const publicTactic=M.o.promo?.tactic;
@@ -5889,6 +5894,11 @@ function tick(M){
  const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*
   (M.offScript==='showboat'?1.5:1)*recoveryWeight*optionalSpotFactor;
  let spoke=aerialResolved||grappleResolved;
+ // A requested spectacular spot waits for a physically legal setup. The
+ // script never awards one merely because the manager pressed a button.
+ if(M.bigSpotRequest&&!spoke){
+  spoke=tryPendingBigSpot(M);
+ }
  // Once both workers contest the turnbuckles for a legal named move,
  // resolve that organic exchange before an unrelated scheduled spectacle.
  // Deferred nearfalls are still available on a later tick.
@@ -5934,6 +5944,30 @@ function tick(M){
   M.len-M.t<=60&&M.len-M.t>=0;
  if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||
     preparedHope||closingStory||M.r()<.64))Graph.step(M);
+ // Count the *performed* big moment, not the request or a failed setup.
+ if(M.bigSpotRequest)witnessOrdinaryBigSpot(M);
+ if(M.bigSpotRequest&&M.t>=M.bigSpotRequest.expires)closePendingBigSpot(M);
+ // An accepted request to get back on the layout is not proof of compliance.
+ // Wait for a real, legal, landed graph action by our wrestler.
+ if(M.layoutReturn){
+  const request=M.layoutReturn;
+  const action=Graph.get(M).events?.slice(request.from).find(e=>
+   e.preControl==='w'&&e.id&&Graph.A[e.id]&&!e.blocked&&!e.botched);
+  if(action){
+   M.offScript=null;M.comply=clamp(M.comply+15);
+   say(M,`${w.short} follows through with ${Graph.A[action.id].name||'a legal exchange'}. The layout is back on track.`,'agent',{who:'runner'});
+   request.status='witnessed';request.action=action.id;request.atAction=action.t;
+   M.layoutReturn=null;
+  }else if(M.t-request.at>=90){
+   say(M,'Road agent: The instruction was heard, but there is still no in-ring evidence of a return to the layout.','agent',{who:'runner'});
+   request.status='unfulfilled';M.layoutReturn=null;
+  }
+ }
+ // Record the result of completed calls from actual stamina, crowd and graph
+ // history. This observer is read-only and does not award a move or rating.
+ const activePace=M.ringsideEvidence?.findLast(e=>e.status==='pending'&&
+  ['slow','pickup','crowd'].includes(e.id));
+ if(activePace&&M.mode?.type!==activePace.id)settlePaceEvidence(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
@@ -6106,17 +6140,108 @@ function nearfall(M){
 }
 
 /* ---- ringside calls ---- */
+// Preflight mirrors the *existing* forced-spot legal candidate pool.
+ // No RNG, no physical relocation, and no new moves are introduced here.
+// Technical and conservative workers have a valid big moment too: a real,
+ // suitably impactful move from the ordinary, connected graph. A safe match
+ // cannot use risky stunts merely because the manager demands excitement.
+function regularBigMoment(M,id){
+ const n=Graph.A[id];if(!n||n.reverse||n.counterOf||n.blockOf||
+  n.nearfall||n.risk||M.t/Math.max(1,M.len)<.35)return false;
+ const families=['suplex','power','neck','running','strike','ground','submission','chain'];
+ if(!families.includes(n.family))return false;
+ if(n.family==='submission')return (n.cost||0)>=1.8&&(n.crowd||0)>=3;
+ if(n.family==='chain')return (n.cost||0)>=1.8&&(n.crowd||0)>=3;
+ return (n.cost||0)>=2.2&&(n.crowd||0)>=2;
+}
+function witnessOrdinaryBigSpot(M){
+ const pending=M.bigSpotRequest;if(!pending)return;
+ const event=(M.graph?.events||[]).findLast(e=>
+  e.t>pending.at&&e.t/Math.max(1,M.len)>=.35&&
+  e.preControl==='w'&&regularBigMoment(M,e.id)&&
+  !e.botched&&!e.blocked);
+ if(!event)return;
+ const evidence=M.ringsideEvidence?.[pending.index];
+ if(evidence){
+  evidence.status='witnessed';evidence.atAction=event.t;
+  evidence.action=event.id;evidence.kind='ordinary-graph';
+ }
+ M.bigSpotRequest=null;
+ say(M,`Road agent: ${M.w.short} found a genuine big moment with ${Graph.A[event.id].name||'a legal attack'}.`,'agent',{who:'runner'});
+}
+function availableBigSpot(M){
+ if(M.wSt<28)return false;
+ const safe=M.planId==='safe';
+ return (D.SPOTS[M.w.style]||D.SPOTS.Story).some(move=>{
+  const id=Graph.SCRIPTED_SPOT_IDS[move];
+  return (!safe||(id==='ar_elbow_point'&&M.w.ring>=78&&
+   M.w.safe>=75&&M.wSt>=38))&&Graph.canScriptedSpot(M,id,'w');
+ });
+}
+function settlePaceEvidence(M){
+ const e=M.ringsideEvidence?.findLast(e=>e.status==='pending'&&
+  ['slow','pickup','crowd'].includes(e.id));
+ if(!e)return;
+ const events=(M.graph?.events||[]).filter(x=>x.t>e.at&&Graph.A[x.id]);
+ const offence=events.find(x=>x.preControl==='w'&&
+  !Graph.A[x.id].reverse&&!Graph.A[x.id].blockOf&&
+  Graph.A[x.id].family!=='rest'&&(Graph.A[x.id].cost||0)>0);
+ const realRest=events.find(x=>x.preControl==='w'&&
+  (x.id==='catch_breath'||Graph.A[x.id].family==='rest'));
+ e.staminaDelta=Math.round(M.wSt-e.staminaStart);
+ e.crowdDelta=Math.round(M.crowd-e.crowdStart);
+ e.atEnd=M.t;
+ if(e.id==='slow'){
+  e.status='applied';if(realRest)e.action=realRest.id;
+  if(M.stage==='live')say(M,realRest?
+   `Road agent: A genuine breather helped ${M.w.short} manage the slower stretch.`:
+   e.staminaDelta>0?`Road agent: The reduced tempo recovered ${M.w.short}'s stamina; no rest hold was performed.`:
+   'Road agent: The tempo dropped, but there was no recorded rest hold or net stamina gain.','agent',{who:'runner'});
+ }else if(e.id==='pickup'){
+  e.status=offence?'witnessed':'no-offence';
+  if(offence){e.action=offence.id;e.atAction=offence.t;}
+  if(M.stage==='live')say(M,offence?
+   `Road agent: ${M.w.short} answered the faster-pace call with performed offence.`:
+   'Road agent: The pace was called, but no qualifying attack was performed during that stretch.','agent',{who:'runner'});
+ }else{
+  e.status=e.crowdDelta>0?'responded':'flat';
+  if(M.stage==='live')say(M,e.crowdDelta>0?
+   'The crowd is louder after that appeal, though the wrestling slowed.':
+   'The crowd has not grown any louder after the appeal.','crowd');
+ }
+}
+function closePendingBigSpot(M){
+ const pending=M.bigSpotRequest;if(!pending)return;
+ const evidence=M.ringsideEvidence?.[pending.index];
+ if(evidence){evidence.status='unavailable';evidence.reason='No physically legal opening before the finish';}
+ M.calls=Math.min(3,M.calls+1); // Reserve only: no attempt means no spent call.
+ const idx=M.callsUsed.lastIndexOf('big');if(idx>=0)M.callsUsed.splice(idx,1);
+ M.bigSpotRequest=null;
+ if(M.stage==='live')say(M,'Road agent: The high-spot opening never arrived. Your ringside call is returned.','agent',{who:'runner'});
+}
+function tryPendingBigSpot(M){
+ const pending=M.bigSpotRequest;
+ if(!pending||M.stage!=='live'||!availableBigSpot(M))return false;
+ const before=Graph.get(M).events.length;
+ if(!spot(M,true,true))return false; // setup must still pass actual graph legality
+ const landed=Graph.get(M).events.slice(before).some(e=>e.scriptedSpot===true);
+ const evidence=M.ringsideEvidence?.[pending.index];
+ if(evidence){evidence.status=landed?'witnessed':'botched';evidence.atAction=M.t;}
+ M.bigSpotRequest=null;
+ return true;
+}
 const CALLS={
- slow:{name:'Slow it down',hint:'Rest hold. Recover stamina; the crowd may cool.'},
- pickup:{name:'Pick it up',hint:'Faster pace. Crowd up if they have the legs.'},
- big:{name:'Hit the big spot',hint:'One big move now. Huge pop or a nasty botch.'},
- crowd:{name:'Work the crowd',hint:'Play to the seats. Builds noise, stalls the match.'},
- home:{name:'Take it home',hint:'Go to the finish now. Early means a shorter, weaker match.'},
+ slow:{name:'Slow it down',hint:'Ease the pace to recover energy; a rest hold is not guaranteed.'},
+ pickup:{name:'Pick it up',hint:'Demand a faster spell; whether they find offence is tracked.'},
+ big:{name:'Hit the big spot',hint:'Queue a major move from their own repertoire. A real attempt can still fail; unfulfilled calls are returned.'},
+ crowd:{name:'Work the crowd',hint:'Appeal to the crowd; their actual response is tracked.'},
+ home:{name:'Take it home',hint:'Request a shortened finish. Missed structure objectives are reported.'},
  sheet:{name:'Back to the layout',hint:'Pull an improvising worker back to the plan.'}
 };
 function canCall(M,id){
  if(M.done||M.stage!=='live'||M.decision||M.calls<=0)return false;
  if(id==='sheet')return !!M.offScript;
+ if(id==='big')return !M.bigSpotRequest&&M.len-M.t>45;
  if(id==='home')return M.len-M.t>45;
  return true;
 }
@@ -6127,12 +6252,45 @@ function call(M,id){
  const listen=M.listen+(id==='home'?20:0)+(id==='sheet'&&M.leash==='script'?10:0);
  if(M.r()*100>listen){M.ignored++;say(M,rnd(M,[`${w.short} waves you away.`,`${w.short} doesn’t even look over.`,`${w.short} hears you. Does the opposite.`]),'bad');if(w.ego>=70)M.adj.morale-=1;return true}
  root.OfficeSheets?.intervention(M,id);
- if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`,'play',{who:'runner'})}
- if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`,'play',{who:'runner'})}
- if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
- if(id==='big')spot(M,true,true);
- if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back to the match layout.`,'play',{who:'runner'})}
- if(id==='home'){const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
+ if(['slow','pickup','crowd','home'].includes(id))settlePaceEvidence(M);
+ if(id==='slow'){
+  M.mode={type:'slow',ticks:6};
+  (M.ringsideEvidence??=[]).push({id,at:M.t,status:'pending',
+   staminaStart:M.wSt,crowdStart:M.crowd});
+  say(M,`${w.short} agrees to ease the tempo. Whether a real rest hold occurs is up to the wrestling.`,'play',{who:'runner'});
+ }
+ if(id==='pickup'){
+  M.mode={type:'pickup',ticks:6};
+  (M.ringsideEvidence??=[]).push({id,at:M.t,status:'pending',
+   staminaStart:M.wSt,crowdStart:M.crowd});
+  say(M,`${w.short} hears the call to speed up. The next exchanges will show whether it pays off.`,'play',{who:'runner'});
+ }
+ if(id==='crowd'){
+  M.mode={type:'crowd',ticks:5};
+  (M.ringsideEvidence??=[]).push({id,at:M.t,status:'pending',
+   staminaStart:M.wSt,crowdStart:M.crowd});
+  say(M,`${w.short} turns to the crowd, arms out wide. Will they respond?`,'crowd');
+ }
+ if(id==='big'){
+  const evidence={id,at:M.t,status:'pending'};
+  const list=M.ringsideEvidence??(M.ringsideEvidence=[]);
+  const index=list.push(evidence)-1;
+  M.bigSpotRequest={index,at:M.t,expires:Math.max(M.t,M.len-40)};
+  if(!tryPendingBigSpot(M)){
+   if(M.wSt<28)M.mode={type:'slow',ticks:3};
+   say(M,M.planId==='safe'?
+    `Safe layout: ${w.short} will look for a legal high-impact move, not a dangerous stunt. The call returns if no opening appears.`:
+    `${w.short} accepts the call and looks for a big moment from the legal match repertoire. It is queued, not guaranteed.`,'agent',{who:'runner'});
+  }
+ }
+ if(id==='sheet'){
+  const request={id,at:M.t,from:Graph.get(M).events.length,status:'pending'};
+  (M.ringsideEvidence??=[]).push(request);
+  M.layoutReturn=request;
+  say(M,`${w.short} acknowledges the call. We will see whether the next exchanges follow the layout.`,'agent',{who:'runner'});
+ }
+ if(id==='home'){const originalLen=M.len;const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
+  (M.ringsideEvidence??=[]).push({id,at:M.t,status:'applied',oldLength:originalLen,newLength:M.len});
   M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
   say(M,`${w.short} relays it to ${M.f.short}: take it home.`,'play',{who:'runner'})}
  return true;
@@ -6439,6 +6597,10 @@ function finish(M){
   route.run(M,w,f,step);
  }
  M.t=at;M.stage='over';
+ // The bell can interrupt an accepted order. Do not turn an unperformed
+ // request into a successful call or invent a move at the result.
+ if(M.bigSpotRequest)closePendingBigSpot(M);
+ settlePaceEvidence(M);
  M.final=summary(M);
  if(M.final.structureAssessment){
   const a=M.final.structureAssessment,b=a.structuralCoherence,c=a.planAdherence;
@@ -6451,8 +6613,12 @@ function summary(M){
  root.OfficeSheets?.closeVows?.(M);
  root.OfficeSheets?.DIRECTOR?.finalize(M);
  const s=stars(M,true);
+ // Final structure evidence is already settled above; a shortened match may
+ // legitimately miss an agreed objective. Report its identity without credit.
+ const ringsideEvidence=(M.ringsideEvidence||[]).map(e=>e.id==='home'?
+  {...e,missedObjectives:(M.structureDirector?.objectives||[]).filter(o=>o.status==='missed').map(o=>o.id)}:{...e});
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
-  script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
+  script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,...(ringsideEvidence.length?{ringsideEvidence}:{}),injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,finishRoute:M.finishRoute||null,crowdTrace:[...(M.crowdTrace||[]),[M.t,Math.round(M.crowd)]],flow:(M.flow||[]).slice(),marks:(M.marks||[]).slice(),starParts:starParts(M).map(([k,label,v])=>[k,label,Math.round(v*100)/100]),len:M.len,rehearsed:!!M.o.sheet?.rehearsed,roomNote:root.OfficeRoom?.verify(M)||null,roomBonus:M.o.sheet?.bonus||0,roomFx:M.o.sheet?.fx||null,roomThreads:M.o.sheet?.threads||null,roomThreadUsed:M.o.sheet?.threadUsed||null,roomRepStake:M.o.sheet?.repStake||0,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
   resent:M.resent,promo:M.o.promo||null,
   promoSignals:{
