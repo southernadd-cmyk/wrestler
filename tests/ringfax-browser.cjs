@@ -88,6 +88,22 @@ async function run(browser,name,viewport){
   await page.locator('#rf-page-entry').fill('302');
   await page.locator('[data-rf-action="jump"]').click();
   assert.match(await page.locator('#rf-screen').innerText(),/TITLE PICTURE/);
+  const titles=await page.evaluate(()=>{
+   const G=window.OfficeGame, R=window.OfficeRingfax, D=window.OfficeData;
+   const page=R.screen(G.S), data=R.build(G.S)[302];
+   const holders=G.S.promoters.flatMap(p=>D.DIVISION_ORDER.map(div=>({
+    pid:p.id,holder:G.S.territory.titles[p.id]?.[div]?.holder,
+    name:p.name,division:div
+   })));
+   return {subpages:page.subpages,contentLines:data.lines.length,holders,
+    rendered:page.rows.slice(6,23).map(r=>r.text).join(' ')};
+  });
+  assert.equal(titles.subpages,1,name+': all champions fit one 302 subpage');
+  assert.ok(titles.contentLines<=17,name+': full title data exceeds a teletext page');
+  assert.equal(titles.holders.length,8,name+': four promotions by two divisions');
+  assert.ok(titles.holders.every(t=>titles.rendered.includes(t.name.toUpperCase())),
+   name+': all four promotions must be displayed together');
+
   // Preserve keyboard access to the teletext service.
   await page.keyboard.press('F4');
   assert.match(await page.locator('#rf-screen').innerText(),/THE FANZONE/);

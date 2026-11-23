@@ -17,6 +17,30 @@ function grid(page){
  return v;
 }
 for(const p of [100,101,200,201,300,302,500,501])grid(p);
+
+const titlePage=R.build(s)[302];
+const championView=grid(302);
+assert.equal(championView.subpages,1,'all eight champions must fit one Ringfax page');
+assert.ok(titlePage.lines.length<=17,'champions must fit the available 17 content rows');
+assert.equal(titlePage.lines[1].text.length,40,'division columns fill exactly 40 cells');
+assert.match(titlePage.lines[1].text.slice(0,20),/MEN/);
+assert.match(titlePage.lines[1].text.slice(20,40),/WOMEN/);
+for(const promoter of s.promoters){
+ const idx=titlePage.lines.findIndex(row=>row.text.trim()===promoter.name.toUpperCase());
+ assert.ok(idx>=0,'champions show promoter '+promoter.name);
+ const names=root.OfficeData.DIVISION_ORDER.map(div=>{
+  const id=s.territory.titles[promoter.id][div].holder;
+  return id?root.OfficeData.findWrestler(id)?.name||id:'VACANT';
+ });
+ assert.equal(titlePage.lines[idx+1].text.slice(0,20).trim(),names[0],'mens holder from real title state');
+ assert.equal(titlePage.lines[idx+1].text.slice(20,40).trim(),names[1],'womens holder from real title state');
+}
+const previousTitle=s.territory.titles.dock.men;
+s.territory.titles.dock.men={...previousTitle,holder:null};
+assert.match(R.build(s)[302].lines.find((row,i,all)=>i>0&&all[i-1].text.trim()==='DOCKSIDE').text.slice(0,20),/VACANT/,'vacated belt is identified');
+s.territory.titles.dock.men=previousTitle;
+assert.equal(grid(302).subpages,1,'vacated title still fits on one page');
+
 const index=grid(100);
 assert.ok(index.rows.slice(1,5).some(x=>x.text.includes('RINGFAX')),'model retains a readable RINGFAX text equivalent');
 assert.ok(R.view(s).includes('class="rf-logo-svg"'),'masthead uses a scalable custom pixel logo');
