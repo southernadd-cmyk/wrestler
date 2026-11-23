@@ -95,7 +95,7 @@ for(const worker of D.TALENT)for(const opponent of D.FOES)for(const finish of fi
   if(view.stage==='finish'){
    for(const option of view.options){
     if(option.label==='Work the limb all night, then finish'){
-     assert.match(option.hint,/four points of focused damage/i,'backstage must explain the limb finish requirement');
+     assert.match(option.hint,/focused damage on the opponent worth at least four/i,'backstage must explain the limb finish requirement');
      assert.match(option.hint,/audible/i,'backstage must explain legal finish adaptations');
      assert.ok(option.tags.includes('Conditional method'));
     }

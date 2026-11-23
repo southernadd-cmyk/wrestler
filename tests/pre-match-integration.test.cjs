@@ -100,7 +100,7 @@ function play(m){
  const focus=Room.begin({...booking,id:'focus-guide'},worker,opponent,promoter);
  Room.act(focus,'plan_technical');focus.board.finish={route:'limb_finish',by:'agent',label:'Work the limb all night, then finish'};
  const guide=Room.view(focus).finishPlan;
- assert.match(guide.requirement,/four points of focused damage/i);
+ assert.match(guide.requirement,/focused damage on the opponent worth at least four/i);
  assert.match(guide.summary,/in-ring|called spot/i,
   'the planning readout does not promise artificial focused damage');
  assert.equal(guide.kind,'conditional');
