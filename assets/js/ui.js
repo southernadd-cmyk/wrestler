@@ -1879,7 +1879,7 @@ document.addEventListener('keydown',e=>{
   if(!/^[0-9]{3}$/.test(value)){e.target.setAttribute('aria-invalid','true');return;}
   if(OfficeRingfax.press('go',value,S()))render();return;
  }
- if(route.s==='ringfax'&&!e.target?.closest?.('input,textarea,select,[contenteditable]')&&OfficeRingfax.key(e.key,S())){e.preventDefault();render();return;}
+ if(route.s==='ringfax'&&(/^F[1-4]$/.test(e.key)||!e.target?.closest?.('input,textarea,select,[contenteditable]'))&&OfficeRingfax.key(e.key,S())){e.preventDefault();render();return;}
  if(night?.M&&!$('#tv').hidden){
   const box=$('#decision');if(box&&!box.hidden)return;
   if(e.key===' '){e.preventDefault();night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}
