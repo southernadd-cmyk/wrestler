@@ -3,6 +3,165 @@
 (function installRingfax(root){'use strict';
  const D=root.OfficeData;
  const C={page:100,sub:0,entry:'',hold:false};
+
+ // RINGFAX SECRET PAGE 777 — THE QUIZ REF (inspired by teletext quizzes,
+ // not copying Bamboozle's name, presenter or question copy).
+ // Each factual answer is traceable to the source in the question bank.
+ const QUIZ_QUESTIONS=[
+  {q:"What was Big Daddy's real name?",
+   a:['Mick McManus','Shirley Crabtree','Peter Thornley','Max Crabtree'],correct:1,
+   fact:'Big Daddy was Shirley Crabtree.',source:'https://wrestlingheritage.co.uk/shirley-crabtree/'},
+  {q:'Which channel carried wrestling in the classic World of Sport programme?',
+   a:['BBC One','Channel 4','ITV','BBC Two'],correct:2,
+   fact:'World of Sport featured ITV wrestling.',source:'https://www.wrestling-titles.com/europe/uk/britainhistory.html'},
+  {q:'Who was the famous voice of televised British wrestling?',
+   a:['Dickie Davies','Kent Walton','Harry Carpenter','Brian Moore'],correct:1,
+   fact:'Kent Walton commentated for decades.',source:'https://wrestlingheritage.co.uk/kent-walton/'},
+  {q:'Whom did Kendo Nagasaki unmask in 1966?',
+   a:['Count Bartelli','Mick McManus','Billy Robinson','Giant Haystacks'],correct:0,
+   fact:'Count Bartelli lost his mask in 1966.',source:'https://wrestlingheritage.co.uk/count-bartelli/'},
+  {q:'In what year did ITV end its original regular wrestling coverage?',
+   a:['1986','1990','1988','1992'],correct:2,
+   fact:'The original ITV run ended in 1988.',source:'https://wrestlingheritage.co.uk/a-year-of-wrestling-1988/'},
+  {q:'Who faced Big Daddy at Wembley Arena in 1981?',
+   a:['Kendo Nagasaki','Giant Haystacks','Mick McManus','Johnny Saint'],correct:1,
+   fact:'Big Daddy beat Haystacks at Wembley.',source:'https://wrestlingheritage.co.uk/shirley-crabtree/'},
+  {q:'Who teamed with Dynamite Kid as the British Bulldogs?',
+   a:['Bret Hart','Finlay','Davey Boy Smith','William Regal'],correct:2,
+   fact:"Davey Boy Smith was Dynamite Kid's tag partner.",source:'https://www.wwe.com/superstars/britishbulldog'},
+  {q:"What was Dynamite Kid's real name?",
+   a:['Davey Boy Smith','Thomas Billington','Darren Matthews','Peter Thornley'],correct:1,
+   fact:'Dynamite Kid was Thomas Billington.',source:'https://www.wwe.com/article/dynamite-kid-passes-away'},
+  {q:'Which title did British Bulldog win at SummerSlam 1992?',
+   a:['WWE Championship','European Championship','Intercontinental Title','World Tag Team Title'],correct:2,
+   fact:'He beat Bret Hart for the Intercontinental title.',source:'https://www.wwe.com/shows/summerslam/1992'},
+  {q:'Where was SummerSlam 1992 held?',
+   a:['Royal Albert Hall','Wembley Arena','Wembley Stadium','Manchester Arena'],correct:2,
+   fact:'The event was held at Wembley Stadium.',source:'https://www.wwe.com/shows/summerslam/1992/venue'},
+  {q:'Which wrestler was a Blackpool native known as Regal?',
+   a:['William Regal','Johnny Saint','Dynamite Kid','Davey Boy Smith'],correct:0,
+   fact:'William Regal came from Blackpool.',source:'https://www.wwe.com/superstars/william-regal'},
+  {q:'What weapon was strongly associated with Belfast wrestler Finlay?',
+   a:['Kendo stick','Shillelagh','Brass bell','Steel chair'],correct:1,
+   fact:'Finlay was famous for his shillelagh.',source:'https://www.wwe.com/superstars/finlay'}
+ ];
+ const quizState={stage:'intro',index:0,checkpoint:0,misses:0,reveal:false};
+ const QUIZ_COLOURS=['red','green','yellow','cyan'];
+ function quizReset(){
+  quizState.stage='intro';quizState.index=0;quizState.checkpoint=0;
+  quizState.misses=0;quizState.reveal=false;
+ }
+ function quizInfo(){
+  return {stage:quizState.stage,index:quizState.index,checkpoint:quizState.checkpoint,
+   misses:quizState.misses,total:QUIZ_QUESTIONS.length,reveal:quizState.reveal};
+ }
+ function quizFooter(){
+  const f=(colour,tag,action,value)=>({colour,text:tag.padEnd(10,' ').slice(0,10),action,value});
+  if(quizState.stage==='question')return QUIZ_COLOURS.map((colour,i)=>
+   f(colour,['RED A','GRN B','YEL C','CYN D'][i],'quiz-answer',i));
+  if(quizState.stage==='wrong')return [
+   f('red','RED RETRY','quiz-retry'),f('green','GRN REVEAL','quiz-reveal'),
+   f('yellow','YEL INDEX','go',100),f('cyan','CYN RETRY','quiz-retry')
+  ];
+  if(quizState.stage==='rules')return [
+   f('red','RED START','quiz-start'),f('green','GRN BACK','quiz-back'),
+   f('yellow','YEL INDEX','go',100),f('cyan','CYN START','quiz-start')
+  ];
+  if(quizState.stage==='won')return [
+   f('red','RED AGAIN','quiz-start'),f('green','GRN RULES','quiz-rules'),
+   f('yellow','YEL INDEX','go',100),f('cyan','CYN AGAIN','quiz-start')
+  ];
+  return [
+   f('red','RED START','quiz-start'),f('green','GRN RULES','quiz-rules'),
+   f('yellow','YEL INDEX','go',100),f('cyan','CYN START','quiz-start')
+  ];
+ }
+ function quizPage(){
+  const l=[item(' THE QUIZ REF: UK WRESTLING','yellow'),item('')];
+  if(quizState.stage==='intro'){
+   paragraphs(l,'YOU HAVE FOUND SECRET PAGE 777!','green');
+   l.push(item(''));
+   paragraphs(l,'12 QUESTIONS. FOUR COLOUR BUTTONS.');
+   paragraphs(l,'ONE CHANCE TO BE THE CHAMPION.');
+   l.push(item(''));
+   paragraphs(l,'A WRONG ANSWER SENDS YOU TO THE SIN BIN.','cyan');
+   paragraphs(l,'CHECKPOINTS AFTER Q4 AND Q8.');
+   l.push(item(''));
+   paragraphs(l,'RED OR CYAN: START THE QUIZ','yellow');
+  }else if(quizState.stage==='rules'){
+   paragraphs(l,'RED, GREEN, YELLOW OR CYAN.','cyan');
+   paragraphs(l,'CHOOSE ONE ANSWER PER QUESTION.');
+   l.push(item(''));
+   paragraphs(l,'WRONG ANSWER? A TRIVIA DETOUR.');
+   paragraphs(l,'RETRY FROM THE LAST CHECKPOINT.');
+   l.push(item(''));
+   paragraphs(l,'NO MONEY. NO SAVES. JUST GLORY!','green');
+   paragraphs(l,'TO PLAY, PRESS RED OR CYAN.');
+  }else if(quizState.stage==='question'){
+   const q=QUIZ_QUESTIONS[quizState.index];
+   l.push(item(' QUESTION '+(quizState.index+1)+' / '+QUIZ_QUESTIONS.length,'cyan'));
+   l.push(item(' ROUND '+(Math.floor(quizState.index/4)+1)+' OF 3','yellow'));
+   l.push(item(''));
+   paragraphs(l,q.q,'white');
+   l.push(item(''));
+   q.a.forEach((choice,i)=>{
+    l.push({...item(' '+['A','B','C','D'][i]+'. '+choice,QUIZ_COLOURS[i]),answerIndex:i});
+    l.push(item(''));
+   });
+   l.push(item(' PRESS A COLOUR TO ANSWER','yellow'));
+  }else if(quizState.stage==='wrong'){
+   const q=QUIZ_QUESTIONS[quizState.index];
+   paragraphs(l,'YOU HAVE BEEN BODYSLAMMED!','red');
+   l.push(item(''));
+   paragraphs(l,'THAT WAS NOT THE RIGHT ANSWER.');
+   paragraphs(l,'RETRY FROM QUESTION '+(quizState.checkpoint+1)+'.','cyan');
+   l.push(item(''));
+   paragraphs(l,'CORRECT: '+q.a[q.correct],'yellow');
+   l.push(item(''));
+   if(quizState.reveal)paragraphs(l,q.fact,'green');
+   else paragraphs(l,'GREEN: REVEAL A TRIVIA FACT.');
+   l.push(item(''));
+   paragraphs(l,'RED OR CYAN: GET BACK IN THE RING');
+  }else if(quizState.stage==='won'){
+   paragraphs(l,'YOU ARE THE QUIZ CHAMPION!','yellow');
+   l.push(item(''));
+   paragraphs(l,'TWELVE QUESTIONS. ALL ANSWERED.');
+   paragraphs(l,'THAT IS A MAIN-EVENT PERFORMANCE.','green');
+   l.push(item(''));
+   paragraphs(l,'WRONG TURNS: '+quizState.misses,'cyan');
+   l.push(item(''));
+   paragraphs(l,'RED: PLAY AGAIN. YELLOW: INDEX.');
+  }
+  return l;
+ }
+ function quizPress(action,value){
+  const stage=quizState.stage;
+  if(action==='quiz-start'){
+   quizState.stage='question';quizState.index=0;quizState.checkpoint=0;
+   quizState.misses=0;quizState.reveal=false;return true;
+  }
+  if(action==='quiz-rules'){quizState.stage='rules';return true;}
+  if(action==='quiz-back'){if(stage!=='rules')return false;quizState.stage='intro';return true;}
+  if(action==='quiz-reveal'){if(stage!=='wrong')return false;quizState.reveal=!quizState.reveal;return true;}
+  if(action==='quiz-retry'){
+   if(stage!=='wrong')return false;
+   quizState.index=quizState.checkpoint;quizState.stage='question';quizState.reveal=false;
+   return true;
+  }
+  if(action==='quiz-answer'){
+   if(stage!=='question'||!['0','1','2','3'].includes(String(value)))return false;
+   const correct=QUIZ_QUESTIONS[quizState.index].correct===Number(value);
+   if(!correct){
+    quizState.stage='wrong';quizState.misses++;quizState.reveal=false;return true;
+   }
+   quizState.index++;
+   if(quizState.index%4===0)quizState.checkpoint=quizState.index;
+   quizState.stage=quizState.index===QUIZ_QUESTIONS.length?'won':'question';
+   return true;
+  }
+  return false;
+ }
+
  const HANDLES=[
   ['GRAPPLEGRAN','traditional'],['HEELTURN78','contrarian'],
   ['MATWORKMICK','technical'],['BALCONYSEAT','underdog'],
@@ -223,6 +382,7 @@
    }
   }
   add(501,'READERS LETTERS',a);
+  add(777,'THE QUIZ REF',quizPage());
   return P;
  }
  const fast=[100,200,300,500];
@@ -277,7 +437,7 @@
  const BANNERS={
   100:['RINGFAX','yellow'],101:['LATEST','cyan'],200:['RESULTS','green'],
   201:['RATINGS','yellow'],300:['RANKINGS','green'],302:['TITLES','cyan'],
-  500:['FANZONE','magenta'],501:['LETTERS','yellow']
+  500:['FANZONE','magenta'],501:['LETTERS','yellow'],777:['QUIZ','yellow']
  };
  function mosaic(word){
   // Leave a text equivalent inside the 40×25 model; the graphic is painted
@@ -314,22 +474,30 @@
   const pageInfo=chunks.length>1?'  '+(sub+1)+'/'+chunks.length:'';
   rows.push(item(' '+title.slice(0,35-pageInfo.length).padEnd(35-pageInfo.length,' ')+pageInfo,'white','blue'));
   for(let i=0;i<17;i++)rows.push(body[i]||item(''));
-  rows.push({...item(fastext.map(f=>f.text).join('')) ,segments:fastext});
+  const links=C.page===777?quizFooter():fastext;
+  rows.push({...item(links.map(f=>f.text).join('')) ,segments:links});
   rows.push(item('PAGE '+(C.entry||num).padEnd(3,' ')+'   '+(C.hold?'HOLD  ':'AUTO  ')+'  < > SUBPAGES','yellow'));
   if(rows.length!==25||rows.some(row=>row.text.length!==40))
    throw Error('Ringfax grid must be 25 rows of 40 cells');
   return {page:C.page,title,rows,sub,subpages:chunks.length,exists:!!p};
  }
  function press(action,value,s){
+  if(action.startsWith('quiz-')){
+   if(C.page!==777)return false;
+   C.sub=0;C.hold=true;
+   return quizPress(action,value);
+  }
   const state=s||root.OfficeGame?.S;
   const pages=build(state);
   if(action==='digit'){
    if(!/^[0-9]$/.test(text(value)))return false;
    C.entry=(C.entry+value).slice(0,3);
-   if(C.entry.length===3){C.page=Number(C.entry);C.sub=0;C.entry='';C.hold=false;}
+   if(C.entry.length===3){const next=Number(C.entry);if(next===777&&C.page!==777)quizReset();
+    C.page=next;C.sub=0;C.entry='';C.hold=next===777;}
   }else if(action==='go'){
    const p=Number(value);if(!Number.isInteger(p)||p<0||p>999)return false;
-   C.page=p;C.sub=0;C.entry='';C.hold=false;
+   if(p===777&&C.page!==777)quizReset();
+   C.page=p;C.sub=0;C.entry='';C.hold=p===777;
   }else if(action==='clear')C.entry='';
   else if(action==='backspace')C.entry=C.entry.slice(0,-1);
   else if(action==='left'||action==='right'){
@@ -346,7 +514,9 @@
   if(k===' '||k==='Spacebar')return press('hold',null,s);
   if(k==='Backspace')return press('backspace',null,s);
   const i=['F1','F2','F3','F4'].indexOf(k);
-  if(i>=0)return press('go',fast[i],s);
+  if(i>=0){const link=C.page===777?quizFooter()[i]:null;
+   return link?press(link.action,link.value,s):press('go',fast[i],s);
+  }
   return false;
  }
  function view(s){
@@ -360,7 +530,8 @@
    if(r.segments){
     return '<div class="rf-row rf-fastext">'+r.segments.map(f=>
      '<button type="button" class="rf-fast-seg rf-fast-'+f.colour+
-     '" data-rf-action="go" data-rf-value="'+f.page+'" aria-label="Open '+f.page+
+     '" data-rf-action="'+(f.action||'go')+'" data-rf-value="'+(f.value??f.page??'')+
+     '" aria-label="'+escape(f.action==='quiz-answer'?'Answer '+['A','B','C','D'][f.value]:'Select '+f.text.trim())+
      '">'+escape(f.text)+'</button>').join('')+'</div>';
    }
    // The row is still exactly 40 cells. A scalable 5×7 pixel logo overlays
@@ -369,6 +540,12 @@
     const title=BANNERS[v.page]?.[0]||'SEARCH';
     return '<div class="rf-row rf-mosaic rf-bg-blue rf-logo-row">'+escape(r.text)+
      '<div class="rf-logo-art" aria-hidden="true">'+pixelLogo(title)+'</div></div>';
+   }
+   if(C.page===777&&r.answerIndex!==undefined){
+    return '<button type="button" class="rf-row rf-quiz-answer rf-'+r.colour+
+     '" data-rf-action="quiz-answer" data-rf-value="'+r.answerIndex+
+     '" aria-label="Answer '+['A','B','C','D'][r.answerIndex]+': '+escape(r.text.trim())+
+     '">'+escape(r.text)+'</button>';
    }
    // Index rows have two independently navigable 20-cell columns.
    if(v.page===100&&i>=6&&i<=22){
@@ -394,11 +571,21 @@
    '<span class="rf-link-name">'+escape(label)+'</span><span class="rf-link-detail">'+escape(desc)+'</span></button>').join('');
   const pads=[1,2,3,4,5,6,7,8,9,0].map(n=>
    '<button type="button" data-rf-action="digit" data-rf-value="'+n+'" aria-label="Ringfax digit '+n+'">'+n+'</button>').join('');
+  const quizControls=C.page===777?'<div class="rf-quiz-remote" role="group" aria-label="Quiz colour buttons">'+
+   quizFooter().map((link,i)=>{
+    const a=quizState.stage==='question'?QUIZ_QUESTIONS[quizState.index].a[i]:
+     (link.action==='go'?'EXIT TO INDEX':link.text.trim().replace(/^(RED|GRN|YEL|CYN)\s+/,''));
+    return '<button type="button" class="rf-quiz-key rf-quiz-key-'+link.colour+
+     '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
+     '" aria-label="'+escape((quizState.stage==='question'?['Red','Green','Yellow','Cyan'][i]+' answer: ':'')+a)+
+     '"><span class="rf-quiz-key-colour">'+['RED','GREEN','YELLOW','CYAN'][i]+
+     '</span><span>'+escape(a)+'</span></button>';
+   }).join('')+'</div>':'';
   const refs=(s?.history||[]).filter(h=>h?.cid&&h?.wid).slice(0,2).map(h=>
    '<button class="btn sm" type="button" data-record="w:'+escape(h.wid)+'">Open '+escape(h.name||'wrestler')+' record</button>').join('');
   const srText=escape('Page '+v.page+', '+v.title+', subpage '+(v.sub+1)+' of '+v.subpages+'. '+
    v.rows.slice(6,23).map(r=>r.text.trim()).filter(Boolean).join(' '));
-  return '<section class="rf-wrap" aria-label="Ringfax wrestling teletext">'+
+  return '<section class="rf-wrap'+(C.page===777?' rf-quiz-active':'')+'" aria-label="Ringfax wrestling teletext">'+
    '<div class="rf-display">'+
    '<header class="rf-display-header"><div class="rf-brand"><span class="rf-signal" aria-hidden="true">■</span>'+
    '<strong>RINGFAX</strong><span class="rf-brand-tag">WRESTLING INFORMATION SERVICE</span></div>'+
@@ -407,10 +594,11 @@
    '<button data-rf-action="go" data-rf-value="100" type="button">100 INDEX</button>'+
    '<button data-rf-action="go" data-rf-value="200" type="button">200 RESULTS</button>'+
    '<button data-rf-action="go" data-rf-value="500" type="button">500 FANS</button></div>'+
-   '<div id="rf-screen" class="rf-screen" aria-hidden="true">'+rows+'</div>'+
+   '<div id="rf-screen" class="rf-screen" role="region" aria-label="Ringfax teletext page">'+rows+'</div>'+
    '<p class="rf-display-caption">LIVE FROM THE CIRCUIT <span>●</span> READ-ONLY EDITION <span>●</span> '+escape(v.title)+'</p>'+
    '</div>'+
    '<aside class="rf-console" aria-label="Ringfax controls">'+
+   quizControls+
    '<div class="rf-console-title"><span>RINGFAX DIRECTORY</span><strong>PAGE '+v.page+'</strong></div>'+
    '<div class="rf-page-grid" role="group" aria-label="Go to a Ringfax page">'+quick+'</div>'+
    '<div class="rf-operator"><div class="rf-operator-label"><span>GO TO PAGE</span><span>3 DIGITS</span></div>'+
@@ -474,10 +662,12 @@
    if(h&&root.OfficeGame?.S)h.textContent=screen(root.OfficeGame.S).rows[0].text;
   },1000);
   root.setInterval(()=>{
-   if(C.hold||root.document.hidden||!root.document.querySelector('#rf-screen'))return;
+   if(C.page===777||C.hold||root.document.hidden||!root.document.querySelector('#rf-screen'))return;
    const p=build(root.OfficeGame?.S)[C.page],n=Math.ceil((p?.lines.length||0)/17);
    if(n>1){C.sub=(C.sub+1)%n;root.document.dispatchEvent(new root.Event('ringfax-page-rotated'));}
   },8000);
  }
- root.OfficeRingfax={build,screen,view,fit,press,key,voices,reset:()=>{C.page=100;C.sub=0;C.entry='';C.hold=false;}};
+ root.OfficeRingfax={build,screen,view,fit,press,key,voices,quizInfo,
+  quizQuestions:QUIZ_QUESTIONS.map(q=>({...q,a:q.a.slice()})),
+  reset:()=>{C.page=100;C.sub=0;C.entry='';C.hold=false;quizReset();}};
 })(typeof window!=='undefined'?window:globalThis);
