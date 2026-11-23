@@ -8,7 +8,7 @@
 .rf-display{min-width:0;min-height:0;overflow:hidden;display:flex;align-items:center;
  justify-content:center;background:#000;padding:0}
 .rf-display-header,.rf-mini-nav,.rf-display-caption{display:none}
-.rf-screen{--rf-font-size:22px;--rf-tracking:0px;min-width:0;min-height:0;
+.rf-screen{--rf-font-size:22px;--rf-tracking:0px;--rf-stretch:1;--rf-row-width:100%;min-width:0;min-height:0;
  height:100%;max-height:100%;width:auto;max-width:100%;aspect-ratio:4/3;overflow:hidden;
  padding:7px 10px;background:#000;border:0;outline:0;
  display:grid;grid-template-rows:repeat(25,minmax(0,1fr));align-content:stretch;
@@ -16,7 +16,11 @@
  font-size:var(--rf-font-size);line-height:1;letter-spacing:var(--rf-tracking);
  font-variant-ligatures:none;font-feature-settings:"liga" 0;
  text-shadow:none;-webkit-font-smoothing:none}
-.rf-row{display:block;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;
+/* Teletext characters must occupy all forty cells, not only the left half
+   of a tall 4:3 screen. Fit computes the intrinsic width of 40 glyphs and
+   stretches the character CELLS horizontally, including clickable columns. */
+.rf-row{display:block;width:var(--rf-row-width);height:100%;min-width:0;min-height:0;overflow:hidden;
+ transform:scaleX(var(--rf-stretch));transform-origin:left center;
  white-space:pre;margin:0;padding:0;border:0;border-radius:0;background:#000;
  color:#fff;text-align:left;font:inherit;line-height:1.06;letter-spacing:inherit}
 .rf-white{color:#fff}.rf-yellow{color:#ff0}.rf-cyan{color:#0ff}.rf-green{color:#0f0}
@@ -105,7 +109,7 @@ button.rf-index-half:hover,button.rf-index-half:focus-visible{background:#00f;co
 /* Each on-screen answer uses exactly the same teletext colour as its
    corresponding Fastext / touch key. Never inherit the default button white. */
 .rf-quiz-answer{cursor:pointer;background:#000;appearance:none;
- text-align:left;display:block;width:100%;min-width:0;font:inherit;letter-spacing:inherit}
+ text-align:left;display:block;width:var(--rf-row-width);min-width:0;font:inherit;letter-spacing:inherit}
 .rf-row.rf-quiz-answer.rf-red,.rf-quiz-key.rf-quiz-key-red{color:#f00}
 .rf-row.rf-quiz-answer.rf-green,.rf-quiz-key.rf-quiz-key-green{color:#0f0}
 .rf-row.rf-quiz-answer.rf-yellow,.rf-quiz-key.rf-quiz-key-yellow{color:#ff0}
