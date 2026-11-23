@@ -166,7 +166,6 @@
    l.push(item(''));
    q.a.forEach((choice,i)=>{
     l.push({...item(' '+QUIZ_COLOURS[i].toUpperCase()+': '+choice,QUIZ_COLOURS[i]),answerIndex:i});
-    l.push(item(''));
    });
    l.push(item(' PRESS A COLOUR TO ANSWER','yellow'));
   }else if(quizState.stage==='wrong'){
