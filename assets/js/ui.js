@@ -196,7 +196,7 @@ function boutStakes(c){
 function historyDetails(h){
  const booked=D.FINISHES[h.bookedFinish||h.finish]?.name||'not recorded';
  const official=h.outcome==='dq'?'Disqualification — agreed finish not delivered':
-  h.outcome==='nc'?'No contest':h.outcome==='double'?'Agreed finish broken':'As booked';
+  h.outcome==='nc'?'No contest':h.outcome==='double'?'Finish broken':'As booked';
  const structure=h.structure,counts=structure?.objectives?.filter(x=>x.status==='achieved'||x.status==='adapted').length;
  return `<p><b>Booked finish:</b> ${esc(booked)} · <b>Official result:</b> ${esc(official)}</p>${boutStakes(h)?'<p>'+boutStakes(h)+'</p>':''}${structure?'<p><b>Match structure:</b> '+esc(OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===structure.id)?.label||structure.id)+' · '+counts+'/'+structure.objectives.length+' objectives witnessed</p>':''}`;
 }
@@ -397,7 +397,7 @@ function renderObjectives(){
 
 /* ======================= ROSTER ======================= */
 const WCOLS={name:w=>w.name,style:w=>w.style,heat:w=>w.heat,ring:w=>w.ring,mic:w=>w.mic,psych:w=>w.psych,safe:w=>w.safe,fat:w=>w.fatigue,mor:w=>w.morale,wage:w=>w.wage,fee:w=>w.fee,tier:w=>w.tier};
-const FREE_STATS=[['heat','Heat'],['ring','Ring'],['mic','Mic'],['psych','Psych'],['safe','Safe']];
+const FREE_STATS=[['heat','Draw'],['ring','Ring'],['mic','Mic'],['psych','Psych'],['safe','Safe']];
 const FREE_SORTS=[['name','Wrestler'],['style','Style'],...FREE_STATS,['wage','Wage'],['fee','Fee']];
 // Secondary stats that drop out of the desk table below 1280px so Fee stays visible.
 const FREE_OPTIONAL=['mic','psych','safe'];
@@ -574,7 +574,7 @@ function scoutingComparison(free){
  const pair=shortlist.map(id=>free.find(w=>w.id===id)).filter(Boolean);
  if(!pair.length)return '';
  if(pair.length===1)return `<p class="dim scout-shortlist-status">Shortlisted: ${esc(pair[0].name)}. Choose another free agent to compare.</p>`;
- const fields=[['Ring','ring'],['Psychology','psych'],['Safety','safe'],['Mic','mic'],['Heat','heat'],['Signing fee','fee'],['Weekly wage','wage']];
+ const fields=[['Ring','ring'],['Psychology','psych'],['Safety','safe'],['Mic','mic'],['Draw','heat'],['Signing fee','fee'],['Weekly wage','wage']];
  return `<section class="scout-comparison" aria-label="Compare free agents"><h3 class="section-h">Compare two wrestlers</h3>
   <div class="well"><table class="grid scout-compare-table"><thead><tr><th>Attribute</th>${pair.map(w=>`<th>${esc(w.short||w.name)}</th>`).join('')}</tr></thead><tbody>
   ${fields.map(([label,key])=>`<tr><th scope="row">${label}</th>${pair.map(w=>`<td class="n">${key==='fee'||key==='wage'?money(w[key]):att(w[key])}</td>`).join('')}</tr>`).join('')}
@@ -857,7 +857,7 @@ function rivalrySnapshot(f){
  let last='No previous match';
  if(m){
   const result=m.outcome==='nc'?'No contest':m.outcome==='dq'?(m.winner==='w'?'Opponent disqualified':'Your wrestler disqualified'):
-   m.outcome==='double'?'Agreed finish broken':m.winner==='w'?'Your wrestler won':m.winner==='f'?'Opponent won':'No decision';
+   m.outcome==='double'?'Finish broken':m.winner==='w'?'Your wrestler won':m.winner==='f'?'Opponent won':'No decision';
   last=result+(Number.isFinite(m.abs)&&m.abs>0?' · '+weekLabel(m.abs):'');
   if(m.ringside?.job==='runin'&&m.ringside.fired)last+=' · '+(m.ringside.dq?'Caught run-in caused DQ':m.ringside.ok?'Unseen run-in':'Interference caught');
  }
@@ -1256,7 +1256,7 @@ function showMeeting(){
  const descriptions={traditional:'Original shine, heat, comeback and finish. No Structure Director.',
   classic_american:'Guided opening, pressure, comeback and payoff.',
   kings_road:'Technical exchanges, escalation, callback and finish build.',
-  chickenshit_heel:'Avoid, get exposed, use a shortcut, then escape.',
+  chickenshit_heel:'Avoid, get exposed, use a shortcut, then survive.',
   dominant_ace:'Take control, absorb a challenge and reassert dominance.'};
  const selected=P.structureChoice?.id||'traditional';
  const variants=[{id:'traditional',label:'Traditional (current)'},...OfficeSheets.STRUCTURES.catalogue()];
@@ -1342,7 +1342,7 @@ function bell(){
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const livePlan=`<section class="ringside-plan" aria-label="Match instructions">
    <h3 class="section-h">Agreed before the bell</h3>
-   <dl><div><dt>Promoter's finish</dt><dd>${esc(D.FINISHES[c.finish]?.name||'Booked finish')}</dd></div>
+   <dl><div><dt>Booked finish</dt><dd>${esc(D.FINISHES[c.finish]?.name||'Booked finish')}</dd></div>
    <div><dt>Game plan</dt><dd>${esc(D.PLANS[P.game]?.name||'Set backstage')}</dd></div>
    ${structureExecution?'<div><dt>Structure</dt><dd>'+esc(OfficeSheets.STRUCTURES.catalogue().find(s=>s.id===P.structureChoice.id)?.label||P.structureChoice.id)+' · '+esc(P.structureChoice.lead==='w'?w.short:f.short)+' leads</dd></div>':''}
    <div><dt>Running order</dt><dd>${Mx.structureReport(night.M)?'Four objectives tracked live':P.sheet?.signed?'Agreed beats tracked live':P.leash==='free'?'Called in the ring':'No signed running order'}</dd></div></dl>
@@ -1492,7 +1492,7 @@ function result(){
  const actualFinish={booked:'Booked finish delivered',dq:'Unplanned disqualification',nc:'No contest',double:'Finish broken'}[fin.outcome]||
   'Finish: '+String(fin.outcome||'Not recorded').replace(/_/g,' ');
  const matchSummary=`<div class="result-brief" aria-label="Match outcome and plan report">
-  <div><small>Contracted finish</small><b>${esc(D.FINISHES[c.finish]?.name||'Not recorded')}</b></div>
+  <div><small>Booked finish</small><b>${esc(D.FINISHES[c.finish]?.name||'Not recorded')}</b></div>
   <div class="${fin.outcome==='booked'?'':'result-alert'}"><small>Actual outcome</small><b>${esc(actualFinish)}</b></div>
   <div><small>Layout performed</small><b>${esc(pct)}</b></div>
   <div><small>Calls accepted</small><b>${fin.callsUsed.length-fin.ignored} of ${fin.callsUsed.length}</b></div>

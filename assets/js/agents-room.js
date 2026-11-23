@@ -252,13 +252,13 @@
  const ROUTE_CONDITION={
   reversal_finisher:'Needs three genuine reversals by your wrestler.',
   top_rope:'Needs an aerial specialist who is not exhausted.',
-  limb_finish:'Needs at least four points of focused damage to the opponent.',
-  outlasted:'At the bell, the loser needs stamina below 30 and the winner must have at least 15 points more.',
+  limb_finish:'Needs focused damage on the opponent worth at least four.',
+  outlasted:'At the bell, the loser needs stamina below 30 and the winner must have at least 15 more stamina.',
   referee_bump:'Needs enough feud heat.',
   exhausted_cover:'Needs your wrestler exhausted.',
-  injury_gives:'Needs at least three points of focused damage to your wrestler.',
+  injury_gives:'Needs focused damage on your wrestler worth at least three.',
   finisher_reversed:'Needs three genuine reversals by the opponent.',
-  submission_defeat:'Needs at least four points of focused damage to your wrestler.',
+  submission_defeat:'Needs focused damage on your wrestler worth at least four.',
   dq_ref_shove_f:'Needs enough feud heat.',
   dq_low_blow_f:'Needs a Brawl or Story opponent.',
   dq_choke_w:'Needs feud heat or your wrestler to be hurt.',
@@ -321,7 +321,7 @@
    const cards=[];
    if(a.mine)cards.push({by:'w',owner:'w',action:a.mine,impossible:a.impossible});
    if(b.mine)cards.push({by:'f',owner:'f',action:b.mine,impossible:b.impossible});
-   cards.push({by:'agent',owner:'either',action:'scheduled_nearfall',label:'A run of near-falls instead'});
+   cards.push({by:'agent',owner:'either',action:'scheduled_nearfall',label:'A run of near falls instead'});
    return cards.map(c=>({...c,slot,label:c.label||name(c.action),risk:!!A[c.action]?.risk}));
   }
   const o=S.owner==='w'?w:f,r=S.owner==='w'?f:w,m=make(o,r,S.owner,S.owner);
@@ -539,9 +539,9 @@
     const m=s==='w'?'moodW':'moodF',o=s==='w'?'moodF':'moodW',unsafe=c.risk&&X.safe<58;
     const keep={[m]:X.ego>=68?-5:-2};
     const give={[m]:4,[o]:held?(Y.ego>=68?-5:-2):undefined,crowd:c.risk?2:1,plan:{slot:'payoff',owner:s,by:s,action:c.action,label:c.label,impossible:c.impossible}};
-    const none={[m]:1,[o]:held?-1:undefined,spice:-1,plan:{slot:'payoff',owner:'either',by:'agent',action:'scheduled_nearfall',label:'A run of near-falls'}};
+    const none={[m]:1,[o]:held?-1:undefined,spice:-1,plan:{slot:'payoff',owner:'either',by:'agent',action:'scheduled_nearfall',label:'A run of near falls'}};
     const out=[
-     {id:'keep',label:cur&&cur.action!=='scheduled_nearfall'?'“The '+cur.label+' stays.”':'“Near-falls. As agreed.”',hint:'The running order stands. '+X.short+' takes it badly.',fx:keep,tags:tagsOf(st,keep),
+     {id:'keep',label:cur&&cur.action!=='scheduled_nearfall'?'“The '+cur.label+' stays.”':'“Near falls. As agreed.”',hint:'The running order stands. '+X.short+' takes it badly.',fx:keep,tags:tagsOf(st,keep),
       run(st){log(st,s,say(st,'grumble',X,'spot'));}},
      {id:'give',label:'“Fine. The '+c.label+'.”',hint:X.short+' gets the moment.'+(unsafe?' '+Y.short+' does not trust '+X.short+' with it.':''),fx:give,
       tags:[...tagsOf(st,give),...(c.risk?['High risk']:[]),...(c.impossible?['Will not work']:[])],
@@ -553,7 +553,7 @@
     const later={[m]:-1};
     out.push({id:'later',label:'“Not tonight. Next time it’s yours.”',hint:X.short+' takes the promise, and will hold you to it.',fx:later,tags:[...tagsOf(st,later),'Comes back next time'],
      run(st){log(st,s,say(st,'accept',X,'later'));carry(st,{sit:'promise_due',sid:X.id});}});
-    if(cur?.action!=='scheduled_nearfall')out.push({id:'nobody',label:'“Then nobody gets it. Near-falls.”',hint:AGENT+'’s compromise. Nobody is thrilled.',fx:none,tags:tagsOf(st,none),
+    if(cur?.action!=='scheduled_nearfall')out.push({id:'nobody',label:'“Then nobody gets it. Near falls.”',hint:AGENT+'’s compromise. Nobody is thrilled.',fx:none,tags:tagsOf(st,none),
      run(st){log(st,'agent','Cheaper on the knees. I approve.');}});
     return out;}},
   {id:'debut',kind:'match',weight:3,when:x=>!!pitchFor(x.st,'payoff','w'),
@@ -622,7 +622,7 @@
     const a={spice:-1,crowd:-2},b={flags:{pushThrough:true},crowd:3,heat:2},c={flags:{pushThrough:true},moodW:-5};
     return [
      {id:'around',label:'“We’ll work around it.”',hint:'Nothing risky tonight.',fx:a,tags:tagsOf(st,a),run(st){log(st,'w',say(st,'accept',st.w,'hurt'));}},
-     {id:'sell',label:'“Work it into the match.”',hint:st.f.short+' goes after it and the crowd can see it is real.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','Selling a real injury. Bold. Stupid, but bold.');}},
+     {id:'sell',label:'“Sell the injury in the match.”',hint:st.f.short+' goes after it and the crowd can see it is real.',fx:b,tags:tagsOf(st,b),run(st){log(st,'agent','Selling a real injury. Bold. Stupid, but bold.');}},
      {id:'fine',label:'“You’re fine. Walk it off.”',hint:'Costs nothing. Fixes nothing. It may still hurt next time.',fx:c,tags:[...tagsOf(st,c),'Comes back next time'],run(st){log(st,'w',say(st,'grumble',st.w,'hurt'));carry(st,{sit:'still_hurting',sid:st.w.id});}}];}},
   {id:'daft',kind:'flavour',weight:3,when:()=>true,
    open(st){const score=x=>x.ego-(x.psych||50)*.4+rng(st.seed,'aob'+x.id)*30;st.daftSide=score(st.w)>=score(st.f)?'w':'f';
@@ -989,7 +989,7 @@
    options(st){
     const s=st.promised||'w',X=who(st,s),c=st.promisedPitch,m=s==='w'?'moodW':'moodF';
     const keep={[m]:5,crowd:1,...(c?{plan:{slot:'payoff',owner:s,by:s,action:c.action,label:c.label,impossible:c.impossible}}:{})};
-    const brk={[m]:-7,...(s==='w'?{morale:-4}:{})},none={[m]:-3,plan:{slot:'payoff',owner:'either',by:'agent',action:'scheduled_nearfall',label:'A run of near-falls'}};
+    const brk={[m]:-7,...(s==='w'?{morale:-4}:{})},none={[m]:-3,plan:{slot:'payoff',owner:'either',by:'agent',action:'scheduled_nearfall',label:'A run of near falls'}};
     return [
      {id:'keep',label:'“A promise is a promise.”',hint:X.short+' gets the big spot'+(c?': the '+c.label+'.':'.'),fx:keep,tags:tagsOf(st,keep),run(st){log(st,s,say(st,'pleased',X,'promise'));}},
      {id:'break',label:'“Things have changed.”',hint:X.short+' will remember this one too.',fx:brk,tags:tagsOf(st,brk),run(st){log(st,s,say(st,'grumble',X,'promise'),'objection');}},
@@ -1056,7 +1056,7 @@
   if(p?.action&&p.owner&&p.owner!=='either'&&A[p.action]?.risk){
    const O=who(st,p.owner),hurt=p.owner==='w'&&(x.injuredW||!!st.w.injury),tired=(O.fatigue||0)>=45;
    if(hurt||tired){
-    const alt=cardFor(st,'payoff',p.owner,c=>!c.risk)||{action:'scheduled_nearfall',label:'A run of near-falls',owner:'either',by:'agent'};
+    const alt=cardFor(st,'payoff',p.owner,c=>!c.risk)||{action:'scheduled_nearfall',label:'A run of near falls',owner:'either',by:'agent'};
     mk('safety',p.owner,'payoff',{...alt,by:p.owner},hurt?(p.owner==='w'&&x.injuredW?'The last time '+st.w.short+' and '+st.f.short+' met, '+st.w.short+' went home hurt.':st.w.short+' is not fully fit.'):O.short+' is running on empty this week.',
      {credible:hurt||(O.fatigue||0)>=60});
    }
@@ -1150,7 +1150,7 @@
    options(st){
     const n=st.negotiation;if(!n)return [];
     const by=n.by,m=by==='w'?'moodW':'moodF';
-    const agentAlt=n.slot==='payoff'?{action:'scheduled_nearfall',label:'A run of near-falls',owner:'either',by:'agent'}:
+    const agentAlt=n.slot==='payoff'?{action:'scheduled_nearfall',label:'A run of near falls',owner:'either',by:'agent'}:
      cardsFor(st,n.slot).find(c=>c.by==='agent'&&c.action!==n.original.action&&c.action!==n.proposal.action&&!banned(st,c.action))||null;
     const yes={[m]:3,plan:{slot:n.slot,owner:n.proposal.owner,by:n.proposal.by,action:n.proposal.action,label:n.proposal.label}};
     const mid=agentAlt?{[m]:1,plan:{slot:n.slot,owner:agentAlt.owner,by:'agent',action:agentAlt.action,label:agentAlt.label}}:null;
@@ -1165,8 +1165,8 @@
        if(credible){
         const t=tline({grand:'Then I decline. Politely. Absolutely.',gruff:'No. I’m not doing it.',eager:'I can’t. I really can’t. Sorry!',stoic:'No. I’m not doing it on this body.',precise:'I decline. That is not negotiable.',earnest:'I’m sorry, I just can’t do it safely.',sermon:'I will not.',slippery:'Yeah, that’s a no from me.'},st,by,{});
         negoLog(st,by,t,'objection');
-        const safe={action:'scheduled_nearfall',label:'A run of near-falls',owner:'either',by:'agent'};
-        apply(st,{plan:{slot:n.slot,...safe}});log(st,'agent','Then it’s near-falls. I’m not having anybody carried out on my watch.');
+        const safe={action:'scheduled_nearfall',label:'A run of near falls',owner:'either',by:'agent'};
+        apply(st,{plan:{slot:n.slot,...safe}});log(st,'agent','Then it’s near falls. I’m not having anybody carried out on my watch.');
         negoSettle(st,'refused',safe);st.negotiation.reply={side:by,who:nameOf(st,by),kind:'refused',text:t};
         st.negotiation.summary=nameOf(st,by)+' refused the '+n.original.label+'; it became '+safe.label+'.';
        }else{log(st,by,say(st,'grumble',who(st,by),'nego'),'objection');negoSettle(st,'keep',null);st.negotiation.reply={side:by,who:nameOf(st,by),kind:'reservation',text:null};
@@ -1182,7 +1182,7 @@
     const r=st.negotiation?.reply;if(!r?.demand)return [];
     const d=r.demand,side=r.side,m=side==='w'?'moodW':'moodF';
     const grant=d.kind==='payoff'?{[m]:4,plan:{slot:'payoff',owner:side,by:side,action:d.action,label:d.label}}:{[m]:3,minutes:2};
-    const half=d.kind==='payoff'?{[m]:1,plan:{slot:'payoff',owner:'either',by:'agent',action:'scheduled_nearfall',label:'A run of near-falls'}}:{[m]:1,minutes:1};
+    const half=d.kind==='payoff'?{[m]:1,plan:{slot:'payoff',owner:'either',by:'agent',action:'scheduled_nearfall',label:'A run of near falls'}}:{[m]:1,minutes:1};
     const no={[m]:-4};
     return [
      {id:'grant',label:d.kind==='payoff'?'“The big spot’s yours.”':'“Two more minutes.”',hint:d.kind==='payoff'?nameOf(st,side)+' gets the '+d.label+'.':'The match runs two minutes longer.',fx:grant,tags:tagsOf(st,grant),
@@ -1686,7 +1686,7 @@
    const alt=cardsFor(st,S.id).find(c=>c.action!==b.action&&!c.impossible&&!banned(st,c.action)&&(S.id==='payoff'||c.owner===b.owner));
    if(alt){
     st.board[S.id]={by:'agent',owner:alt.owner,action:alt.action,label:alt.label};
-    log(st,'agent','That rules out the '+b.label+'. '+(alt.action==='scheduled_nearfall'?'The big spot becomes a run of near-falls.':nameOf(st,alt.owner)+' does the '+alt.label+' instead.'));
+    log(st,'agent','That rules out the '+b.label+'. '+(alt.action==='scheduled_nearfall'?'The big spot becomes a run of near falls.':nameOf(st,alt.owner)+' does the '+alt.label+' instead.'));
    }else{delete st.board[S.id];log(st,'agent','That rules out the '+b.label+', and there’s nothing sensible to put in its place. '+S.name+' will be called in the ring.');}
    st.reworked=(st.reworked||0)+1;
   }
@@ -1992,7 +1992,7 @@
    n.backup=b.action==='scheduled_nearfall'?[]:cardsFor(st,n.id).filter(c=>c.action!==b.action&&!c.impossible&&c.owner===b.owner&&!banned(st,c.action)).map(c=>c.action).slice(0,2);
    if(n.id==='payoff'&&b.action!=='scheduled_nearfall')n.backup.push('scheduled_nearfall');
    n.title=n.id==='opening'?O.short+' gets the early edge with the '+b.label:n.id==='pressure'?O.short+' takes over with the '+b.label:
-    n.id==='reversal'?O.short+' comes back with the '+b.label:O?O.short+' hits the '+b.label:'A run of near-falls';
+    n.id==='reversal'?O.short+' comes back with the '+b.label:O?O.short+' hits the '+b.label:'A run of near falls';
    n.planned=true;n.impossible=!!b.impossible;if(b.action!=='scheduled_nearfall')planned++;
   }
   // Only what was actually agreed is a commitment. Everything else is left to the wrestlers, and is not judged.
