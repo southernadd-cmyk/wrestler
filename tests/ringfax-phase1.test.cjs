@@ -18,7 +18,8 @@ function grid(page){
 }
 for(const p of [100,101,200,201,300,302,500,501])grid(p);
 const index=grid(100);
-assert.ok(index.rows.slice(1,5).some(x=>x.text.includes('█')),'mosaic logo uses true block characters');
+assert.ok(index.rows.slice(1,5).some(x=>x.text.includes('R I N G F A X')),'readable Ringfax wordmark replaces broken block characters');
+assert.ok(index.rows.slice(1,5).every(x=>!x.text.includes('█')),'masthead does not use oversized fallback glyphs');
 assert.ok(index.rows.slice(1,5).every(x=>x.background==='blue'),'mosaic logo has a blue field');
 assert.equal(index.rows[23].segments?.length,4,'four in-grid Fastext controls');
 assert.equal(index.rows[23].segments.reduce((n,x)=>n+x.text.length,0),40,'Fastext is exactly forty cells');
