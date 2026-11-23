@@ -289,7 +289,7 @@
    '<div class="rf-pad-grid">'+pads+'<button type="button" data-rf-action="clear">CLEAR</button></div></details>'+
    (refs?'<div class="rf-records">'+refs+'</div>':'')+
    '<p class="rf-help">Choose a page above, enter its number, or click a numbered line on page 100. Arrow keys change subpages; F1–F4 open the coloured sections.</p>'+
-   '<details class="rf-access"><summary>READ PAGE AS PLAIN TEXT</summary><pre>'+escape(v.rows.map(r=>r.text.trimEnd()).join('\n'))+'</pre></details>'+
+   '<details class="rf-access"><summary>Read this page as plain text</summary><pre>'+escape(v.rows.map(r=>r.text.trimEnd()).join('\n'))+'</pre></details>'+
    '<p class="rf-disclaimer">Fan comments are fictional; match results come from your career.</p>'+
    '</aside>'+
    '<p id="rf-announcement" class="sr" role="status" aria-live="polite">'+srText+'</p>'+
