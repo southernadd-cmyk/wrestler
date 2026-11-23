@@ -75,7 +75,7 @@ assert.equal(G.isValid(tired,'top_climb'),false,'exhausted wrestler avoids high-
 const beforeRest=tired.wSt;G.apply(tired,'catch_breath');
 assert.ok(tired.wSt>beforeRest,'taking a breath restores stamina');
 tired.stage='live';tired.calls=3;tired.listen=100;tired.wSt=10;assert.equal(E.call(tired,'big'),true);
-assert.ok(tired.log.some(l=>/looks for a physically legal opening/.test(l.text)),'unsafe high spot waits for a legal opportunity');
+assert.ok(tired.log.some(l=>/looks for a big moment from the legal match repertoire/.test(l.text)),'unsafe high spot waits for a legal opportunity');
 assert.equal(tired.mode?.type,'slow','an exhausted forced spot also changes pacing towards recovery');
 assert.equal(tired.spots,0,'no false successful spot recorded');
 const brief=E.scout(get('juno'),get('rex'),'technical',60);
