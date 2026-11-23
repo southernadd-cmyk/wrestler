@@ -217,7 +217,7 @@ async function run(browser,name,viewport){
    name+': question lives in a white speech bubble');
   assert.equal(await page.locator('.rf-bz-choice').count(),2,
    name+': intro has exactly two meaningful controls, without duplicate Start quiz');
-  assert.equal(await page.locator('.rf-bz-face rect').count(),35,
+  assert.equal(await page.locator('.rf-bz-face rect').count(),34,
    name+': Brian Dixon tribute uses a crisp multi-block Teletext portrait');
   await page.locator('.rf-bz-choice.rf-bz-red').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'question');
