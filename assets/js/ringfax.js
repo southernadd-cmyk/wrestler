@@ -7,7 +7,7 @@
  // RINGFAX PAGE 777 — THE WRESTLING QUIZ CHALLENGE (inspired by teletext quizzes,
  // not copying Bamboozle's name, presenter or question copy).
  // Each factual answer is traceable to the source in the question bank.
- const QUIZ_QUESTIONS=[
+ const QUIZ_POOL=[
   {q:"What was Big Daddy's real name?",
    a:['Mick McManus','Shirley Crabtree','Peter Thornley','Max Crabtree'],correct:1,
    fact:'Big Daddy was Shirley Crabtree.',source:'https://wrestlingheritage.co.uk/shirley-crabtree/'},
@@ -44,7 +44,67 @@
   {q:'What weapon was strongly associated with Belfast wrestler Finlay?',
    a:['Kendo stick','Shillelagh','Brass bell','Steel chair'],correct:1,
    fact:'Finlay was famous for his shillelagh.',source:'https://www.wwe.com/superstars/finlay'}
+,
+  {q:"Who was nicknamed Rollerball?",a:["Mark Rocco","Jim Breaks","Tony St Clair","Steve Grey"],correct:0,fact:"Mark Rocco's famous ring nickname was Rollerball.",source:"https://wrestlingheritage.co.uk/mark-rollerball-rocco/"},
+  {q:"Which masked wrestler did Mark Rocco portray in Japan?",a:["Tiger Mask","Black Tiger","Kendo Nagasaki","The Outlaw"],correct:1,fact:"Rocco wrestled in Japan as Black Tiger.",source:"https://wrestlingheritage.co.uk/mark-rollerball-rocco/"},
+  {q:"What British ring name did the original Tiger Mask use?",a:["Sammy Lee","Johnny Saint","Jon Cortez","Bobby Ryan"],correct:0,fact:"Satoru Sayama wrestled in Britain as Sammy Lee.",source:"https://wrestlingheritage.co.uk/mark-rollerball-rocco/"},
+  {q:"Who founded Wrestling Enterprises in 1970?",a:["Jackie Pallo","Brian Dixon","Max Crabtree","Norman Morrell"],correct:1,fact:"Brian Dixon founded Wrestling Enterprises in 1970.",source:"https://www.wrestling-titles.com/europe/uk/asw/"},
+  {q:"Wrestling Enterprises later became which promotion?",a:["Joint Promotions","Dale Martin","All Star Wrestling","Big Time Wrestling"],correct:2,fact:"Wrestling Enterprises became All Star Wrestling.",source:"https://www.wrestling-titles.com/europe/uk/asw/"},
+  {q:"What year did Wrestling Enterprises begin?",a:["1960","1970","1980","1990"],correct:1,fact:"Brian Dixon's promotion began in 1970.",source:"https://www.wrestling-titles.com/europe/uk/asw/"},
+  {q:"Who beat Jim Breaks for the world lightweight title in 1976?",a:["Steve Grey","George Kidd","Johnny Saint","Marty Jones"],correct:2,fact:"Johnny Saint took the world lightweight title in November 1976.",source:"https://wrestlingheritage.co.uk/a-year-of-wrestling-1976/"},
+  {q:"Who retired as world lightweight champion in 1976?",a:["George Kidd","Les Kellett","Mark Rocco","Johnny Saint"],correct:0,fact:"George Kidd retired in 1976.",source:"https://wrestlingheritage.co.uk/a-year-of-wrestling-1976/"},
+  {q:"Who beat Mark Rocco for the British light-heavyweight title in 1976?",a:["Marty Jones","Jim Breaks","Dave Finlay","Johnny Saint"],correct:0,fact:"Marty Jones won that title from Rocco in December 1976.",source:"https://wrestlingheritage.co.uk/a-year-of-wrestling-1976/"},
+  {q:"Which wrestler was also known as Mr TV?",a:["Mick McManus","Kent Walton","Jackie Pallo","Big Daddy"],correct:2,fact:"Jackie Pallo became known as Mr TV.",source:"https://wrestlingheritage.co.uk/jackie-pallo/"},
+  {q:"Which wrestler was nicknamed the Dulwich Destroyer?",a:["Mick McManus","Jackie Pallo","Johnny Saint","Jim Breaks"],correct:0,fact:"Mick McManus was known as the Dulwich Destroyer.",source:"https://wrestlingheritage.co.uk/mick-mcmanus/"},
+  {q:"Which British star had a legendary feud with Jackie Pallo?",a:["Davey Boy Smith","Mick McManus","Mark Rocco","Steve Grey"],correct:1,fact:"Jackie Pallo and Mick McManus had a celebrated rivalry.",source:"https://wrestlingheritage.co.uk/the-mcmanus-pallo-feud/"},
+  {q:"Which commentator was a fixture on ITV's televised wrestling?",a:["Kent Walton","Brian Moore","Barry Davies","John Motson"],correct:0,fact:"Kent Walton became the voice of ITV wrestling.",source:"https://wrestlingheritage.co.uk/commentators-a-z/"},
+  {q:"Who also appeared as a mid-round ITV wrestling analyst?",a:["Bret Hart","Mick McManus","Frank Bruno","Dynamite Kid"],correct:1,fact:"McManus contributed mid-round analysis with Kent Walton.",source:"https://wrestlingheritage.co.uk/commentators-a-z/"},
+  {q:"Which Japanese wrestler appeared for All Star as Fuji Yamada?",a:["Jushin Liger","Shinjiro Otani","Satoru Sayama","Mitsuharu Misawa"],correct:0,fact:"Fuji Yamada later became Jushin Thunder Liger.",source:"https://wrestlingheritage.co.uk/fuji-yamada/"},
+  {q:"Who did Fuji Yamada defeat for a world title in 1986?",a:["Giant Haystacks","Rollerball Rocco","Big Daddy","Johnny Saint"],correct:1,fact:"Fuji Yamada won the world heavy-middleweight title from Mark Rocco.",source:"https://wrestlingheritage.co.uk/fuji-yamada/"},
+  {q:"Which Japanese ring name was associated with Fuji Yamada?",a:["Black Tiger","Tiger Mask","Jushin Liger","The Great Sasuke"],correct:2,fact:"Fuji Yamada became famous as Jushin Thunder Liger.",source:"https://wrestlingheritage.co.uk/fuji-yamada/"},
+  {q:"What venue hosted WWF SummerSlam 1992?",a:["Wembley Arena","Royal Albert Hall","Wembley Stadium","The O2"],correct:2,fact:"SummerSlam 1992 took place at Wembley Stadium.",source:"https://www.wwe.com/shows/summerslam/1992"},
+  {q:"Who entered SummerSlam 1992 as Intercontinental Champion?",a:["British Bulldog","Bret Hart","Randy Savage","The Undertaker"],correct:1,fact:"Bret Hart held the Intercontinental title entering his match.",source:"https://www.wwe.com/shows/summerslam/1992"},
+  {q:"Who won the Intercontinental title at SummerSlam 1992?",a:["British Bulldog","Mr Perfect","Shawn Michaels","Bret Hart"],correct:0,fact:"British Bulldog beat Bret Hart to win the title.",source:"https://www.wwe.com/shows/summerslam/1992"},
+  {q:"Which boxer accompanied British Bulldog at SummerSlam 1992?",a:["Frank Bruno","Lennox Lewis","Nigel Benn","Chris Eubank"],correct:1,fact:"Lennox Lewis accompanied British Bulldog at Wembley.",source:"https://www.wwe.com/shows/summerslam/history/greatestmatches"},
+  {q:"How were Bret Hart and British Bulldog related in 1992?",a:["Brothers","Cousins","Brothers-in-law","Uncle and nephew"],correct:2,fact:"Bret Hart and Davey Boy Smith were brothers-in-law.",source:"https://www.wwe.com/shows/summerslam/1992"},
+  {q:"In which city was SummerSlam 1992 held?",a:["Cardiff","Manchester","Birmingham","London"],correct:3,fact:"Wembley Stadium is in London.",source:"https://www.wwe.com/shows/summerslam/1992"},
+  {q:"Who became the first WWE United Kingdom Champion?",a:["Pete Dunne","Tyler Bate","Trent Seven","Wolfgang"],correct:1,fact:"Tyler Bate won the inaugural UK Championship tournament.",source:"https://www.wwe.com/shows/wwe-united-kingdom-championship-tournament/2017"},
+  {q:"Who did Tyler Bate defeat in the inaugural UK title final?",a:["Pete Dunne","Mark Andrews","Wolfgang","Joseph Conners"],correct:0,fact:"Tyler Bate beat Pete Dunne in the first UK title final.",source:"https://www.wwe.com/shows/wwe-united-kingdom-championship-tournament/2017"},
+  {q:"Where was the first WWE United Kingdom Championship tournament held?",a:["Liverpool","Blackpool","Leeds","Bristol"],correct:1,fact:"The inaugural tournament took place in Blackpool.",source:"https://www.wwe.com/shows/wwe-united-kingdom-championship-tournament/2017"},
+  {q:"Who won the UK title from Tyler Bate at TakeOver Chicago in 2017?",a:["Trent Seven","Wolfgang","Pete Dunne","Mark Andrews"],correct:2,fact:"Pete Dunne defeated Tyler Bate in Chicago.",source:"https://www.wwe.com/shows/wwenxt/nxt-takeover-chicago-2017-05-20/article/wwe-united-kingdom-championship-pete-dunne"},
+  {q:"What nickname is associated with Pete Dunne?",a:["The Bruiserweight","The Hitman","The Dynamite Kid","The Villain"],correct:0,fact:"Pete Dunne is known as The Bruiserweight.",source:"https://www.wwe.com/shows/wwe-united-kingdom-championship-tournament/2017"},
+  {q:"Which famous British wrestler was known for his technical lightweight style?",a:["Big Daddy","Johnny Saint","Giant Haystacks","Mick McManus"],correct:1,fact:"Johnny Saint was celebrated for brilliant lightweight wrestling.",source:"https://wrestlingheritage.co.uk/johnny-saint/"},
+  {q:"Which promotion signed Johnny Saint in the early 1980s?",a:["Joint Promotions","Wrestling Enterprises","WCW","TNA"],correct:1,fact:"Johnny Saint joined Brian Dixon's Wrestling Enterprises.",source:"https://wrestlingheritage.co.uk/a-year-of-wrestling-1982/"},
+  {q:"Which British wrestler's feud with Tiger Mask continued in Japan?",a:["Mark Rocco","Mick McManus","Jim Breaks","Giant Haystacks"],correct:0,fact:"Rocco and Tiger Mask clashed in Japan as Black Tiger and Tiger Mask.",source:"https://wrestlingheritage.co.uk/a-year-of-wrestling-1981/"},
+  {q:"Which wrestler was billed as the son of Jackie Pallo?",a:["Mick McManus Jr","Jackie Pallo Jr","Johnny Saint Jr","Bert Royal Jr"],correct:1,fact:"Jackie Pallo Junior followed his father into wrestling.",source:"https://wrestlingheritage.co.uk/jackie-pallo-jr/"},
+  {q:"Which British wrestler was renowned for mock tantrums in the ring?",a:["Jim Breaks","Johnny Saint","Billy Robinson","Davey Boy Smith"],correct:0,fact:"Jim Breaks was famous for his tantrums and crowd work.",source:"https://wrestlingheritage.co.uk/jim-breaks/"},
+  {q:"Who was the champion Johnny Saint followed after George Kidd retired?",a:["Jim Breaks","George Kidd","Tony St Clair","Mark Rocco"],correct:1,fact:"Saint followed George Kidd as a world lightweight champion.",source:"https://wrestlingheritage.co.uk/a-year-of-wrestling-1976/"},
+  {q:"In which year did Pete Dunne first win the WWE UK Championship?",a:["2015","2016","2017","2019"],correct:2,fact:"Pete Dunne won the title at TakeOver Chicago in 2017.",source:"https://www.wwe.com/shows/wwenxt/nxt-takeover-chicago-2017-05-20/article/wwe-united-kingdom-championship-pete-dunne"},
+  {q:"Which city hosted the 2017 NXT TakeOver where Pete Dunne won the UK title?",a:["Cardiff","Chicago","Toronto","Orlando"],correct:1,fact:"Pete Dunne won the UK title at NXT TakeOver: Chicago.",source:"https://www.wwe.com/shows/wwenxt/nxt-takeover-chicago-2017-05-20/article/wwe-united-kingdom-championship-pete-dunne"}
  ];
+
+ // Rotate without affecting career RNG or persistent saves. Each block of
+ // four weeks draws disjoint 12-question sets from a shuffled 48-question pool.
+ const QUIZ_SIZE=12;
+ let QUIZ_QUESTIONS=QUIZ_POOL.slice(0,QUIZ_SIZE);
+ let quizWeekKey='';
+ function syncQuizWeek(s){
+  const season=Math.max(1,Math.trunc(Number(s?.season)||1));
+  const week=Math.max(1,Math.trunc(Number(s?.week)||1));
+  const key=season+':'+week;
+  if(key===quizWeekKey)return;
+  quizWeekKey=key;
+  const cycle=Math.floor((week-1)/4),slot=(week-1)%4;
+  let seed=(Math.imul(season,0x9e3779b1)^Math.imul(cycle+1,0x85ebca6b)^0x51ed270b)>>>0;
+  const order=QUIZ_POOL.slice();
+  for(let i=order.length-1;i>0;i--){
+   seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;
+   const j=(seed>>>0)%(i+1);
+   [order[i],order[j]]=[order[j],order[i]];
+  }
+  QUIZ_QUESTIONS=order.slice(slot*QUIZ_SIZE,(slot+1)*QUIZ_SIZE);
+  quizReset();
+ }
  const quizState={stage:'intro',index:0,checkpoint:0,misses:0,reveal:false};
  const QUIZ_COLOURS=['red','green','yellow','cyan'];
  function quizReset(){
@@ -288,6 +348,7 @@
   ];
  }
  function build(s){
+  syncQuizWeek(s);
   const h=latest(s),recent=recents(s),P={};
   const add=(number,title,lines,subpages=null)=>{P[number]={number,title,lines:lines.slice(),...(subpages?{subpages:subpages.map(rows=>rows.slice())}:{})};};
   // A proper two-column teletext index, not a conventional app menu.
@@ -688,6 +749,7 @@
   return {page:C.page,title,rows,sub,subpages:chunks.length,exists:!!p};
  }
  function press(action,value,s){
+  syncQuizWeek(s||root.OfficeGame?.S);
   if(action.startsWith('quiz-')){
    if(C.page!==777)return false;
    C.sub=0;C.hold=true;
@@ -788,7 +850,7 @@
    title='Question '+n+'. Wrestling.'; message=q.q; choices=q.a;
   }else if(stage==='intro'){
    title='RINGFAX QUIZ';
-   message='12 questions. Four colours. One wrestling champion. Are you ready?';
+   message='New questions every game week. Twelve questions, four colours. Ready?';
    choices=['Start quiz','How to play'];
   }else if(stage==='rules'){
    title='How to play';
@@ -990,6 +1052,6 @@
   },8000);
  }
  root.OfficeRingfax={build,screen,view,fit,press,key,voices,quizInfo,
-  quizQuestions:QUIZ_QUESTIONS.map(q=>({...q,a:q.a.slice()})),
+  get quizQuestions(){return QUIZ_QUESTIONS.map(q=>({...q,a:q.a.slice()}));},
   reset:()=>{C.page=100;C.sub=0;C.entry='';C.hold=false;quizReset();}};
 })(typeof window!=='undefined'?window:globalThis);
