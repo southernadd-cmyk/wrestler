@@ -44,6 +44,14 @@
  }
  const rankName=id=>D?.findWrestler?.(id)?.short||D?.findWrestler?.(id)?.name||text(id);
  const score=h=>Number.isFinite(h?.stars)?h.stars.toFixed(2)+' stars':'rating not recorded';
+ function resultLine(h){
+  if(h?.outcome==='nc')return 'NO CONTEST';
+  if(!h?.finish||!root.OfficeOutcome?.interpret)return 'RESULT NOT AVAILABLE';
+  const out=root.OfficeOutcome.interpret(h,{actualOutcome:h.outcome,bookedFinish:h.bookedFinish});
+  if(out.winner==='w')return 'WINNER: '+h.name;
+  if(out.winner==='f')return 'WINNER: '+h.foe;
+  return 'RESULT NOT AVAILABLE';
+ }
  function voices(h,count=3){
   if(!h)return [];
   const rotation=hash(h.cid+'|fan')%HANDLES.length,out=[];
@@ -79,6 +87,7 @@
    paragraphs(a,h.name+' versus '+h.foe,'cyan');
    paragraphs(a,'Reported from '+text(h.promoter||h.pid||'the circuit')+'.');
    paragraphs(a,'S'+h.season+' W'+h.week+' / '+score(h),'yellow');
+   paragraphs(a,resultLine(h),'green');
    if(h.outcome==='dq')paragraphs(a,'Match ended by disqualification.');
    else if(h.outcome==='nc')paragraphs(a,'Match ended with no contest.');
    else if(h.outcome==='double')paragraphs(a,'The agreed finish was broken.');
@@ -91,6 +100,7 @@
   recent.slice(0,8).forEach((r,i)=>{
    a.push(item('S'+r.season+' W'+r.week+' '+(i+1)+'. '+text(r.name),'cyan'));
    paragraphs(a,'v '+text(r.foe)+' / '+score(r),'white');
+   paragraphs(a,resultLine(r),'green');
    a.push(item(''));
   });
   add(200,'RESULTS',a);
