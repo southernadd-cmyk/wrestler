@@ -236,7 +236,7 @@ assert.ok(ui.includes('ringfax-page-rotated'),'subpage auto-rotation integrates 
 R.press('go',100,s);
 assert.ok(R.view(s).includes('class="rf-index-half" data-rf-action="go" data-rf-value="777"'),
  'page 100 contains a working quiz link');
-assert.ok(R.screen(s).rows.some(row=>row.text.includes('777 QUIZ REF')),
+assert.ok(R.screen(s).rows.some(row=>row.text.includes('777 RINGFAX QUIZ')),
  'the quiz is listed on the index teletext grid');
 const quizBank=R.quizQuestions;
 assert.equal(quizBank.length,12,'Bamboozle-style run has twelve questions');
