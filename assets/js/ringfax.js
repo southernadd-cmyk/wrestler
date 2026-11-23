@@ -334,6 +334,38 @@
 
   add(101,'LATEST HEADLINE',a);
 
+  // Read-only editorial pages: real titleholders, promoters and current offers.
+  a=[item('SEASON PREVIEW / THE CIRCUIT','yellow'),
+     item(' FOUR PROMOTERS, TWO DIVISIONS','cyan'),item('')];
+  for(const p of promos){
+   a.push(item(' '+p.name.toUpperCase(),'yellow'));
+   a.push(item(' '+(p.desc||'WRESTLING')+' / '+(p.tv?'ON TV':'LIVE SHOWS')));
+   const m=circuitTitles[p.id]?.[D?.DIVISION_ORDER?.[0]]?.holder;
+   const w=circuitTitles[p.id]?.[D?.DIVISION_ORDER?.[1]]?.holder;
+   a.push(item(' TITLES: '+(m?rankName(m):'VACANT')+' / '+(w?rankName(w):'VACANT'),'green'));
+  }
+  a.push(item(''),item(' 302: ALL CHAMPIONS','cyan'));
+  add(102,'SEASON PREVIEW',a);
+
+  a=[item('BOOKINGS AND OPPORTUNITIES','yellow'),
+     item(' OFFERS ARE NOT SIGNED FIXTURES','cyan'),item('')];
+  if(!bookings.length)paragraphs(a,'No current offers or signed cards. Check back after the next update.');
+  for(const o of bookings.slice(0,5)){
+   a.push(item(' '+o.rfKind+' '+eventWeek(o)+' / '+promotionName(o.pid),'yellow'));
+   a.push(item(' '+(o.wid?wrestlerName(o.wid)+' v ':'Opponent: ')+wrestlerName(o.rid)));
+  }
+  a.push(item(''),item(' FINISHED MATCHES GO ON P200','green'));
+  add(103,'BOOKING DESK',a);
+
+  a=[item('THE FOUR PROMOTIONS','yellow'),item('')];
+  for(const p of promos){
+   a.push(item(' '+p.name.toUpperCase(),'cyan'));
+   a.push(item(' '+(p.desc||'WRESTLING')));
+   a.push(item(' '+p.venue+' / REACH '+p.reach+(p.tv?' / TV':' / LIVE'),'yellow'));
+  }
+  a.push(item(''),item(' P102: TITLES / P103: BOOKINGS','green'));
+  add(104,'PROMOTER DIRECTORY',a);
+
   a=[item('RECENT COMPLETED MATCHES','yellow'),item('')];
   if(!recent.length)paragraphs(a,'No match results recorded yet.');
   recent.slice(0,8).forEach((r,i)=>{
