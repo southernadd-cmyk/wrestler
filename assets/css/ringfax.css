@@ -1,0 +1,33 @@
+/* Ringfax: eight-colour teletext with fixed 40x25 character grid. */
+.s-ringfax{min-height:0;padding:0}
+.rf-wrap{display:flex;flex-direction:column;gap:12px;min-width:0;max-width:100%;padding:clamp(10px,2vw,22px)}
+.rf-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.rf-heading h2{margin:0;font-size:24px}
+.rf-heading p{margin:5px 0 0;color:var(--muted,#65717c);font-size:13px}
+.rf-heading>span{font:700 13px/1.4 ui-monospace,monospace;white-space:nowrap}
+.rf-screen{--rf-cell:clamp(12px,1.7vw,22px);box-sizing:border-box;max-width:100%;width:max-content;min-width:0;margin:auto;padding:clamp(7px,1.8vw,22px);border:12px solid #1b202b;border-radius:9px;background:#000;box-shadow:inset 0 0 18px #122137,0 4px 16px #0003;font-family:'VT323','Courier New',monospace;font-size:var(--rf-cell);line-height:1.18;letter-spacing:0;color:#eee}
+.rf-row{box-sizing:border-box;white-space:pre;height:1.18em;max-width:100%;font-weight:400}
+.rf-white{color:#f9f9f9}.rf-yellow{color:#ffff00}.rf-cyan{color:#00ffff}.rf-green{color:#00ff00}.rf-red{color:#ff3838}.rf-blue{color:#4a66ff}.rf-banner{background:#0000ff;color:#fff}.rf-fastext{background:#101010;color:#00ff00}
+.rf-controls{display:flex;flex-direction:column;gap:8px;max-width:630px;margin:0 auto;width:100%}
+.rf-controls button{cursor:pointer;border:1px solid #4a5164;border-radius:3px;background:#1c2536;color:#fff;font:700 12px/1.25 ui-monospace,monospace;padding:8px 10px;min-height:36px}
+.rf-controls button:focus-visible{outline:3px solid #f9d95b;outline-offset:2px}
+.rf-controls>.rf-fast{flex:1}
+.rf-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.rf-fast-0{background:#ba1e29!important}.rf-fast-1{background:#087638!important}.rf-fast-2{background:#a18200!important}.rf-fast-3{background:#007d97!important}
+.rf-remote{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.rf-remote button{min-width:37px}
+.rf-help{font-size:12px;line-height:1.5;max-width:630px;margin:0 auto;color:var(--muted,#667)}
+.rf-access,.rf-records{max-width:630px;margin:0 auto;width:100%}
+.rf-records{display:flex;flex-wrap:wrap;gap:6px}
+.rf-access summary{cursor:pointer;font-weight:bold}
+.rf-access pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;border:1px solid currentColor;font:12px/1.45 ui-monospace,monospace}
+@media(max-width:720px){
+ .rf-screen{--rf-cell:clamp(9px,2.6vw,14px);padding:5px;border-width:6px;box-shadow:none}
+ .rf-wrap{padding:8px}
+ .rf-heading h2{font-size:19px}
+ .rf-heading p{font-size:11px}
+ .rf-controls button{padding:8px 5px;font-size:11px}
+ .rf-remote button{flex:1 0 14%}
+}
+@media(max-width:370px){.rf-screen{--rf-cell:9px;letter-spacing:-.08px}}
+@media(prefers-reduced-motion:reduce){.rf-screen{animation:none;transition:none}}
