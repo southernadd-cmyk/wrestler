@@ -1035,11 +1035,12 @@
   }
   const palette=['','#ff0','#fff','#00f','#f00'];
   return '<svg class="rf-bz-face" viewBox="0 0 48 60" '+
-   'preserveAspectRatio="xMidYMax meet" data-facing="left" '+
+   'preserveAspectRatio="xMidYMax meet" data-facing="right" '+
    'role="img" aria-label="Chunky yellow crowned wrestling quiz host in Teletext mosaic blocks" '+
    'shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
+   '<g transform="translate(48 0) scale(-1 1)">'+
    [1,2,3,4].map(i=>'<path fill="'+palette[i]+'" d="'+paths[i]+'"/>').join('')+
-   '</svg>';
+   '</g></svg>';
  }
  function quizPresentation(){
   const stage=quizState.stage,links=quizFooter(),q=QUIZ_QUESTIONS[quizState.index],n=quizState.index+1;
