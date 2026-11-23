@@ -44,7 +44,7 @@ jobs:
           echo "mode=targeted" >> "$GITHUB_OUTPUT"
           if [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
             mapfile -d '' files < <(git diff --name-only -z "$BASE_SHA" "$HEAD_SHA")
-            for file in "\${files[@]}"; do
+            for file in "${files[@]}"; do
               echo "Changed: $file"
               case "$file" in
                 *.md|*.mdx|docs/readme/*.svg|docs/readme/*.png|.github/workflows/*)
