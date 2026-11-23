@@ -10,7 +10,7 @@ if(!Number.isSafeInteger(count)||count<1||count>5000)
  throw Error('count must be a positive integer <= 5000');
 const directory=path.resolve(__dirname,'../../assets/js');
 const files=['data.js','roster-registry.js','technique-registry.js',
- 'technique-backgrounds.js','match-engine.js'];
+ 'technique-backgrounds.js','match-graph.js','match-engine.js'];
 const code=files.map(name=>fs.readFileSync(path.join(directory,name),'utf8'));
 const anchor='  const weights=new Map();\n  for(const [id,w] of selected)';
 const injection=String.raw`  // Diagnostic only; injected into a temporary in-memory copy of the engine.

@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.join(__dirname,'..');
 const game={};
-for(const file of ['data.js','roster-registry.js','match-engine.js'])
+for(const file of ['data.js','roster-registry.js','match-graph.js','match-engine.js'])
  vm.runInNewContext(fs.readFileSync(path.join(root,'assets/js',file),'utf8'),{window:game,console,Date,Math,JSON},{filename:file});
 game.OfficeRosterV4.enableProfiles();
 const G=game.OfficeMatch.GRAPH,R=require('../assets/js/technique-registry.js');

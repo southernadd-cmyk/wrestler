@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const core = require('../tools/graph-lab/core.js');
 
 const root = {};
-for (const name of ['data.js', 'roster-registry.js', 'match-engine.js']) {
+for (const name of ['data.js', 'roster-registry.js', 'match-graph.js','match-engine.js']) {
   const source = fs.readFileSync(path.join(__dirname, '..', 'assets', 'js', name), 'utf8');
   vm.runInNewContext(source, { window: root, console, Date, Math, JSON }, { filename: name });
 }
