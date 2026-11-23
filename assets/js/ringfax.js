@@ -105,7 +105,7 @@
    paragraphs(l,q.q,'white');
    l.push(item(''));
    q.a.forEach((choice,i)=>{
-    l.push({...item(' '+['A','B','C','D'][i]+'. '+choice,QUIZ_COLOURS[i]),answerIndex:i});
+    l.push({...item(' '+QUIZ_COLOURS[i].toUpperCase()+': '+choice,QUIZ_COLOURS[i]),answerIndex:i});
     l.push(item(''));
    });
    l.push(item(' PRESS A COLOUR TO ANSWER','yellow'));
@@ -544,7 +544,7 @@
    if(C.page===777&&r.answerIndex!==undefined){
     return '<button type="button" class="rf-row rf-quiz-answer rf-'+r.colour+
      '" data-rf-action="quiz-answer" data-rf-value="'+r.answerIndex+
-     '" aria-label="Answer '+['A','B','C','D'][r.answerIndex]+': '+escape(r.text.trim())+
+     '" aria-label="'+QUIZ_COLOURS[r.answerIndex]+' answer: '+escape(r.text.trim())+
      '">'+escape(r.text)+'</button>';
    }
    // Index rows have two independently navigable 20-cell columns.

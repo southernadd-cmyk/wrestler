@@ -138,6 +138,16 @@ assert.equal(R.quizInfo().stage,'question');
 assert.equal(R.view(s).split('class="rf-row rf-quiz-answer').length-1,4,'question rows are clickable');
 assert.equal(R.screen(s).rows[23].segments.length,4);
 assert.ok(R.screen(s).rows[23].segments.every(f=>f.action==='quiz-answer'));
+const colouredAnswers=R.build(s)[777].lines.filter(row=>Number.isInteger(row.answerIndex));
+assert.equal(colouredAnswers.length,4,'each question has four coloured answer lines');
+for(const [i,colour] of ['red','green','yellow','cyan'].entries()){
+ assert.equal(colouredAnswers[i].colour,colour,'answer '+(i+1)+' colour matches the Fastext button');
+ assert.ok(colouredAnswers[i].text.startsWith(colour.toUpperCase()+': '),
+  'answer line spells out its matching Fastext colour');
+ assert.ok(R.view(s).includes('class="rf-row rf-quiz-answer rf-'+colour+'"'),
+  'interactive answer is styled with matching colour class');
+}
+
 
 // Wrong-answer detour, optional reveal and comeback.
 assert.ok(R.press('quiz-answer',(quizBank[0].correct+1)%4,s));

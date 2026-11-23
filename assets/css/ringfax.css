@@ -102,10 +102,16 @@ button.rf-index-half:hover,button.rf-index-half:focus-visible{background:#00f;co
 .rf-disclaimer{margin:10px 0 0;color:#0f0;font:14px/1.1 'VT323',monospace}
 /* Hidden quiz page 777: large touchable Fastext choices, still within
    the original black/blue teletext presentation. */
-.rf-quiz-answer{cursor:pointer;color:inherit;background:#000;appearance:none;
+/* Each on-screen answer uses exactly the same teletext colour as its
+   corresponding Fastext / touch key. Never inherit the default button white. */
+.rf-quiz-answer{cursor:pointer;background:#000;appearance:none;
  text-align:left;display:block;width:100%;min-width:0;font:inherit;letter-spacing:inherit}
+.rf-row.rf-quiz-answer.rf-red,.rf-quiz-key.rf-quiz-key-red{color:#f00}
+.rf-row.rf-quiz-answer.rf-green,.rf-quiz-key.rf-quiz-key-green{color:#0f0}
+.rf-row.rf-quiz-answer.rf-yellow,.rf-quiz-key.rf-quiz-key-yellow{color:#ff0}
+.rf-row.rf-quiz-answer.rf-cyan,.rf-quiz-key.rf-quiz-key-cyan{color:#0ff}
 .rf-quiz-answer:hover,.rf-quiz-answer:focus-visible{background:#0000a8;
- color:#fff!important;outline:2px solid #fff;outline-offset:-2px}
+ outline:2px solid #fff;outline-offset:-2px}
 .rf-quiz-remote{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
  gap:5px;margin:0 0 10px}
 .rf-quiz-key{display:flex;flex-direction:column;align-items:flex-start;
@@ -115,10 +121,10 @@ button.rf-index-half:hover,button.rf-index-half:focus-visible{background:#00f;co
  font:17px/1.1 'VT323','Lucida Console',monospace;
  overflow-wrap:anywhere}
 .rf-quiz-key-colour{display:block;font-weight:700;letter-spacing:.05em}
-.rf-quiz-key-red{border-color:#f00}.rf-quiz-key-red .rf-quiz-key-colour{color:#f44}
-.rf-quiz-key-green{border-color:#0f0}.rf-quiz-key-green .rf-quiz-key-colour{color:#0f0}
-.rf-quiz-key-yellow{border-color:#ff0}.rf-quiz-key-yellow .rf-quiz-key-colour{color:#ff0}
-.rf-quiz-key-cyan{border-color:#0ff}.rf-quiz-key-cyan .rf-quiz-key-colour{color:#0ff}
+.rf-quiz-key-red{border-color:#f00}.rf-quiz-key-red .rf-quiz-key-colour{color:inherit}
+.rf-quiz-key-green{border-color:#0f0}.rf-quiz-key-green .rf-quiz-key-colour{color:inherit}
+.rf-quiz-key-yellow{border-color:#ff0}.rf-quiz-key-yellow .rf-quiz-key-colour{color:inherit}
+.rf-quiz-key-cyan{border-color:#0ff}.rf-quiz-key-cyan .rf-quiz-key-colour{color:inherit}
 .rf-quiz-key:hover,.rf-quiz-key:focus-visible{background:#0026a8;outline:2px solid #fff;outline-offset:1px}
 @media(max-width:1100px){
  #view:has(> .s-ringfax){overflow:hidden}

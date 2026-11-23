@@ -122,6 +122,33 @@ async function run(browser,name,viewport){
    name+': each answer is accessible by tapping the teletext choice');
   assert.equal(await page.locator('.rf-quiz-remote .rf-quiz-key').count(),4,
    name+': four large colour buttons sit outside the text grid');
+  // Check what Chromium actually paints, not just a CSS class. The four
+  // on-page answers must match the touch keys AND their Fastext counterparts.
+  const answerColours=await page.evaluate(()=>{
+   const codes=['red','green','yellow','cyan'],out=[];
+   for(let i=0;i<4;i++){
+    const row=document.querySelector('#rf-screen .rf-quiz-answer[data-rf-value="'+i+'"]');
+    const key=document.querySelector('.rf-quiz-remote .rf-quiz-key[data-rf-value="'+i+'"]');
+    const fast=document.querySelector('#rf-screen .rf-fast-seg[data-rf-value="'+i+'"]');
+    out.push({name:codes[i],row:getComputedStyle(row).color,
+     key:getComputedStyle(key).color,fast:getComputedStyle(fast).color,
+     text:row.textContent.trim()});
+   }
+   return out;
+  });
+  const rgb=['rgb(255, 0, 0)','rgb(0, 255, 0)','rgb(255, 255, 0)','rgb(0, 255, 255)'];
+  for(const [i,answer] of answerColours.entries()){
+   assert.equal(answer.row,rgb[i],name+': on-screen answer has the correct teletext colour');
+   assert.equal(answer.row,answer.key,name+': answer matches its touch button');
+   assert.equal(answer.row,answer.fast,name+': answer matches its Fastext key');
+   assert.ok(answer.text.startsWith(answer.name.toUpperCase()+': '),
+    name+': answer is labelled by colour');
+  }
+  await page.locator('#rf-screen .rf-quiz-answer[data-rf-value="0"]').hover();
+  assert.equal(await page.locator('#rf-screen .rf-quiz-answer[data-rf-value="0"]')
+   .evaluate(el=>getComputedStyle(el).color),rgb[0],
+   name+': hovering an answer must not erase its red colour');
+
   if(viewport.width<=720){
    const gq=await page.evaluate(()=>{
     const r=el=>{const v=el.getBoundingClientRect();return {top:v.top,bottom:v.bottom,height:v.height}};
