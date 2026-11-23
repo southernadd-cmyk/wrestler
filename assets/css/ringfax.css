@@ -176,7 +176,7 @@ button.rf-index-half:hover,button.rf-index-half:focus-visible{background:#00f;co
  .rf-page-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}
  /* F1-F4 and direct entry still reach every page. Prioritise the 4 most
     useful touch shortcuts rather than burying all 8 under the viewport. */
- .rf-page-link:nth-child(2),.rf-page-link:nth-child(4),
+ .rf-page-link:nth-child(2),.rf-page-link:nth-child(3),
  .rf-page-link:nth-child(5),.rf-page-link:nth-child(6){display:none}
  .rf-page-link{min-height:32px;height:32px;gap:0;padding:2px 4px;border-left-width:2px;
   display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px}
