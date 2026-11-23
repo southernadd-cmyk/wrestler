@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.6.0" width="100%">
+  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage pro wrestling management newsletter, issue v0.65" width="100%">
 </p>
 
-<p align="center"><strong>ISSUE v0.6.0</strong> &nbsp; • &nbsp; 21 NOVEMBER 2026 &nbsp; • &nbsp; EARN THE FINISH EDITION</p>
+<p align="center"><strong>ISSUE v0.65</strong> &nbsp; • &nbsp; 23 NOVEMBER 2026 &nbsp; • &nbsp; THE TERRITORY TALKS BACK EDITION</p>
 
 <p align="center">
   <strong><a href="https://southernadd-cmyk.github.io/wrestler/">ENTER THE OFFICE — PLAY THE GAME</a></strong>
@@ -13,7 +13,7 @@
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
 <p align="center">
-  <a href="#how-to-play">How to play</a> &nbsp; · &nbsp; <a href="#the-living-roster">Living roster</a> &nbsp; · &nbsp; <a href="#the-territory">Territory</a> &nbsp; · &nbsp; <a href="#match-night">Match night</a> &nbsp; · &nbsp; <a href="#the-latest-issue">Latest issue</a> &nbsp; · &nbsp; <a href="#back-issues">Archive</a>
+  <a href="#how-to-play">How to play</a> &nbsp; · &nbsp; <a href="#the-living-roster">Living roster</a> &nbsp; · &nbsp; <a href="#the-territory">Territory</a> &nbsp; · &nbsp; <a href="#match-night">Match night</a> &nbsp; · &nbsp; <a href="#ringfax">Ringfax</a> &nbsp; · &nbsp; <a href="#the-latest-issue">Latest issue</a> &nbsp; · &nbsp; <a href="#back-issues">Archive</a>
 </p>
 
 <p align="center"><img src="docs/readme/04-first-week.svg" alt="FIRST WEEK GUIDE — HOW TO PLAY" width="100%"></p>
@@ -401,13 +401,43 @@ The office keeps its own records now, and draws them. **Desk → This week** sho
 
 The browser saves your career automatically, including backstage meetings, promos and live bouts in progress. Use **Game → Export save** for a portable career copy and **Game → Import save** to pick up elsewhere. In-progress match night is stored in the browser you played it in. A local copy and the hosted game use separate browser storage, as do different browsers or devices.
 
-Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.6.0. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). Every wrestler’s ambition is worked out the first time an older career is opened, and the bookers, rival managers and promotions’ books start from the next week played. Older signed programmes begin recording their creative chapters from the match you are up to; the game does not invent earlier chapters. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
+Earlier supported v0.2-era careers can still be loaded. Career progress carries into v0.65. Older careers pick up the eight belts on their first load, start with an empty locker room that fills as they play, and build each rivalry’s record from the results already in their history (how those matches ended in detail was never saved, so the record starts from the result). Every wrestler’s ambition is worked out the first time an older career is opened, and the bookers, rival managers and promotions’ books start from the next week played. Older signed programmes begin recording their creative chapters from the match you are up to; the game does not invent earlier chapters. If you upgrade halfway through a v0.3.5 backstage meeting or promo, or a v0.3.6 backstage meeting, that segment starts again in the new format.
 
 To play locally, download the **whole repository** and open `index.html` in a modern browser. Keep the `assets/` directory alongside it: the page loads the JavaScript, CSS and portrait atlas as separate files. The simulation still runs in the browser, with no installer or build step. Google Fonts load when available, with system fallbacks.
 
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
+## RINGFAX
+
+*The wrestling pages, straight from the terrace.*
+
+Open **Ringfax** for a 40-column teletext companion to the career. Page **100** is the index; **101–104** cover the headline, the season outlook or news, rumours and life on the road; **200–201** give the view after the bell; **300–302** cover wrestlers, rivalries and title pressure; **500–501** carry fictional fan views and letters. It is meant to offer opinion and context, not duplicate the rankings, champion lists or booking sheets elsewhere in The Office.
+
+Four coloured **Fastext** shortcuts and a three-digit page number let you move around. Previous/next and Hold are only useful for genuine multi-page articles. The articles respond to results and the current game week, and speculative items are not treated as agreed bookings.
+
+**Page 777** contains the hidden Ringfax wrestling quiz: 12 four-choice questions, two checkpoints and a season-long bank of 192 questions drawn across personalities, tag teams, wrestling terminology and moves, women's wrestling and notable careers. Every in-game week gets a different set, with no question repeated in the same 16-week season. In later seasons the questions are reshuffled. The quiz and its answers are separate from career progression and saved results.
+
 ## THE LATEST ISSUE
+
+*v0.65 · 23 November 2026 · A new kind of match, a livelier territory and a voice for the fans.*
+
+### THE TERRITORY TALKS BACK
+
+*The booker still owns the result. How the wrestlers get there — and what the crowd makes of it — has become the story.*
+
+**Five plans, more than one dramatic shape.** The match plan is still Story, Technical, Brawl, Spot-fest or Safe, but a player can now choose an additional **signed match structure**: Classic American, King's Road, Chickenshit Heel or Dominant Ace. Choose the dramatic lead independently of the booked winner, talk through a named move with Dennis and the wrestlers, and sign the objectives you actually agree. An opening, a control shift, a rally and a finish need real grappling evidence on the match tape, not a label on the running order. The traditional layout remains the default for existing careers.
+
+**Nobody gets a free comeback.** The latest match-psychology work pays attention to persistent selling, genuine rest, repeated motifs, counters, near falls and believable closing sequences. Covers have to follow a real knockdown; follow-throughs happen only where the position and the graph permit them. Commentary increasingly reports actions that actually happened rather than the same stock call several times. At ringside, **Hit the big spot** can now queue a legal opportunity instead of wasting the call on an instant, impossible stunt; the report says what really happened, or refunds an unfulfilled request.
+
+**Talking money matters.** Booking negotiations are proper promoter conversations with differing personalities, evidence and trade-offs. Asking for better billing, more money or protection can cost trust and management time; rejecting an offer or pushing too far has consequences. The Office's dense, old-school management screens are more consistent and usable on phones, while the training desk now offers Dennis's assessment, read-only forecasts and a record of completed weeks.
+
+**The circuit grows older.** Wrestlers age at the end of a season. Young talent can develop, veterans may decline, and retirement rumours can become real departures. When an injury occurs, the inbox now lets you choose full rest, a risky early return or wrestling through it; repeated damage to the same body part can lengthen recovery. These are career decisions, not guaranteed boosts or automatic injury cures.
+
+**And now the territory has a newspaper.** [Ringfax](#ringfax) is a 40-column, Ceefax-inspired service with editorial headlines, wrestling gossip, critics, fan letters and a hidden four-colour quiz. The quiz offers **192 individually written wrestling questions**, dealt as **12 each game week for 16 weeks without repeats within a season**. It has a retro pixel-art host, checkpoints after questions 4 and 8 and the familiar red, green, yellow and cyan buttons. Ringfax reads the career; it does not decide matches, spend money or use the career random-number generator.
+
+[**Match structures and signed planning**](https://github.com/southernadd-cmyk/wrestler/pull/194) · [**Ringside call improvements**](https://github.com/southernadd-cmyk/wrestler/pull/242) · [**Training desk**](https://github.com/southernadd-cmyk/wrestler/pull/225) · [**Ringfax**](https://github.com/southernadd-cmyk/wrestler/pull/243) · [**16-week quiz**](https://github.com/southernadd-cmyk/wrestler/pull/257)
+
+### PREVIOUS ISSUE — v0.6.0
 
 *v0.6.0 · 21 November 2026 · From the agents’ room to the final bell.*
 
@@ -425,7 +455,7 @@ The release follows a full **five-plan audit** and a further **2,880-bout matche
 
 [**v0.6 release guide**](docs/v0.6-release.md) · [**Inside the legal late-match fix**](docs/long-match-endurance-and-late-offence.md) · [**Run the Graph Lab**](https://southernadd-cmyk.github.io/wrestler/tools/graph-lab/) · [**Previous release**](docs/v0.5-release.md)
 
-### PREVIOUS ISSUE — v0.5.0
+### FROM THE ARCHIVE — v0.5.0
 
 *v0.5.0 · 20 November 2026 · A ringside investigation from The Office.*
 
@@ -482,7 +512,7 @@ Dennis has also rearranged the agents’ room. On wide desktop screens, his conv
 
 *Engine desk*
 
-| What’s in the match layout | Current count (v0.6) |
+| What’s in the match layout | Match graph baseline (v0.6) |
 | --- | ---: |
 | In-ring actions and events (nodes) | 980 |
 | Links between actions and events (transitions) | 6,413 |
@@ -505,6 +535,8 @@ Dennis has also rearranged the agents’ room. On wide desktop screens, his conv
 | Kinds of ambition | 8 |
 | Kinds of storyline, for the circuit and for your wrestlers | 3 |
 | Bookers with a style of their own, and rival managers | 4 / 6 |
+| Optional signed dramatic structures | 4 (plus traditional default) |
+| Ringfax quiz questions / different weeks in a season | 192 / 16 |
 
 The match graph and career simulation use seeded logic so a saved sequence can be resumed deterministically. The bookers, managers and promotions decide without dice: the same career always books the same circuit card, which is how the start screen can bill next week’s show before it happens. Reversals and applicable blocks sit alongside the authored moves. Narration and wrestler dialogue are original, informed by match structure, performer interviews and wrestling history. [Match graph and research](docs/match-graph.md) · [Promo research](docs/promo-graph.md)
 
@@ -588,6 +620,7 @@ The software implementation (HTML/CSS/JavaScript source and test code) is availa
 
 | Edition | What was reported |
 | --- | --- |
+| **v0.65** | The territory talks back edition. Optional match structures and signed dramatic objectives; earned near-fall and finishing psychology; more useful ringside calls; conversational booking negotiations; a smarter training desk, wrestler ageing, retirement and injury decisions; Ringfax editorial pages and 192 weekly rotating UK wrestling quiz questions. [Ringfax](#ringfax) · [Latest issue](#the-latest-issue). |
 | **v0.6.0** | Earn the finish edition. Five distinct match plans; real move-backed near falls; conservative scripted Safe high spots; earned long-match Brawl recovery and affordable late named offence for trained flyers. All five plans audited, with source legality and booked finishes preserved. [Release guide](docs/v0.6-release.md) · [Long-match evidence](docs/long-match-endurance-and-late-offence.md). |
 | **v0.5.0** | Deeper grappling, counters, ground work and match-phase legality; all 325 identifiable wrestling techniques now documented, with 15 performance beats classified separately. Six seeded Graph Lab match-review fixtures. [Release guide](docs/v0.5-release.md) · [Final technique audit](docs/reports/v04-final-106-technique-audit.md). |
 | **v0.4.0** | The wrestling knows its way around edition. Every wrestler has an independent technical background; curated, physically legal chains and twelve named scripted spots join the live match graph. Match construction, narration and the match clock now agree about the action. [Release guide](docs/v0.4-release.md) · [What's left to review](docs/technique-and-realism-review.md). |
