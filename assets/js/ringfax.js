@@ -563,20 +563,20 @@
    // Long quotations can span a subpage, but their author is repeated; never
    // begin a page with unlabelled trailing text.
    if(letterRows.length+block.length>17){
-    const prefix=block.slice(0,1);
+    const name=people[letterBlocks.indexOf(block)].name;
     let remaining=block.slice(1);
+    let label=block[0];
+    if(letterRows.length>letterIntro().length){
+     letterPages.push(letterRows);
+     letterRows=letterIntro();
+    }
     while(remaining.length){
-     const available=17-letterRows.length-prefix.length;
-     if(available<1){
-      letterPages.push(letterRows);
-      letterRows=letterIntro().concat(prefix);
-      continue;
-     }
-     const body=remaining.splice(0,available);
-     letterRows.push(...body);
+     const available=17-letterRows.length-1;
+     letterRows.push(label,...remaining.splice(0,available));
      if(remaining.length){
       letterPages.push(letterRows);
-      letterRows=letterIntro().concat(item('FROM: '+people[letterBlocks.indexOf(block)].name+' (CONT)','green'));
+      letterRows=letterIntro();
+      label=item('FROM: '+name+' (CONT)','green');
      }
     }
    }else letterRows.push(...block);
@@ -661,11 +661,12 @@
   const digits=x=>String(x).padStart(2,'0');
   return digits(now.getHours())+':'+digits(now.getMinutes())+'/'+digits(now.getSeconds());
  }
+ function pageCount(p){return p?.subpages?.length||Math.max(1,Math.ceil((p?.lines?.length||0)/17));}
  function screen(s){
   const pages=build(s),p=pages[C.page]||null;
   const full=p?.lines||[item('PAGE NOT FOUND','red'),item(''),item('ENTER A VALID PAGE NUMBER','yellow')];
-  const chunks=[];
-  for(let i=0;i<full.length;i+=17)chunks.push(full.slice(i,i+17));
+  const chunks=p?.subpages?p.subpages.map(rows=>rows.slice()):[];
+  if(!p?.subpages)for(let i=0;i<full.length;i+=17)chunks.push(full.slice(i,i+17));
   if(!chunks.length)chunks.push([]);
   const sub=Math.min(C.sub,chunks.length-1),body=chunks[sub],rows=[];
   const num=String(C.page).padStart(3,'0');
@@ -680,7 +681,9 @@
   for(let i=0;i<17;i++)rows.push(body[i]||item(''));
   const links=C.page===777?quizFooter():fastext;
   rows.push({...item(links.map(f=>f.text).join('')) ,segments:links});
-  rows.push(item('PAGE '+(C.entry||num).padEnd(3,' ')+'   '+(C.hold?'HOLD  ':'AUTO  ')+'  < > SUBPAGES','yellow'));
+  rows.push(item(chunks.length>1?
+   'PAGE '+(C.entry||num).padEnd(3,' ')+' '+(C.hold?'HOLD':'AUTO')+'  < > SUBPAGES':
+   'PAGE '+(C.entry||num).padEnd(3,' ')+'    TYPE 3 DIGITS TO CHANGE PAGE','yellow'));
   if(rows.length!==25||rows.some(row=>row.text.length!==40))
    throw Error('Ringfax grid must be 25 rows of 40 cells');
   return {page:C.page,title,rows,sub,subpages:chunks.length,exists:!!p};
@@ -705,9 +708,13 @@
   }else if(action==='clear')C.entry='';
   else if(action==='backspace')C.entry=C.entry.slice(0,-1);
   else if(action==='left'||action==='right'){
-   const len=Math.max(1,Math.ceil((pages[C.page]?.lines.length||1)/17));
+   const len=pageCount(pages[C.page]);
+   if(len<2)return false;
    C.sub=(C.sub+(action==='left'?-1:1)+len)%len;C.hold=true;
-  }else if(action==='hold')C.hold=!C.hold;
+  }else if(action==='hold'){
+   if(pageCount(pages[C.page])<2||C.page===777)return false;
+   C.hold=!C.hold;
+  }
   else return false;
   return true;
  }
@@ -809,15 +816,18 @@
    '<div class="rf-jump"><input id="rf-page-entry" type="text" inputmode="numeric" autocomplete="off"'+
    ' maxlength="3" pattern="[0-9]{3}" placeholder="e.g. 501" aria-label="Ringfax three-digit page number">'+
    '<button type="button" data-rf-action="jump" aria-label="Open entered Ringfax page">GO</button></div></div>'+
-   '<div class="rf-sub-nav" role="group" aria-label="Reader subpages">'+
-   '<button type="button" data-rf-action="left" aria-label="Previous Ringfax subpage"'+(v.subpages<2?' disabled':'')+'>◀ PREV</button>'+
-   '<span aria-label="Subpage '+(v.sub+1)+' of '+v.subpages+'">'+(v.sub+1)+' / '+v.subpages+'</span>'+
-   '<button type="button" data-rf-action="right" aria-label="Next Ringfax subpage"'+(v.subpages<2?' disabled':'')+'>NEXT ▶</button></div>'+
-   '<button type="button" class="rf-hold" data-rf-action="hold" aria-pressed="'+C.hold+'">'+(C.hold?'▶ RESUME AUTOMATIC PAGES':'Ⅱ HOLD THIS SUBPAGE')+'</button>'+
+   (v.subpages>1?
+    '<div class="rf-sub-nav" role="group" aria-label="Reader subpages">'+
+    '<button type="button" data-rf-action="left" aria-label="Previous Ringfax subpage">◀ PREV</button>'+
+    '<span aria-label="Subpage '+(v.sub+1)+' of '+v.subpages+'">'+(v.sub+1)+' / '+v.subpages+'</span>'+
+    '<button type="button" data-rf-action="right" aria-label="Next Ringfax subpage">NEXT ▶</button></div>'+
+    '<button type="button" class="rf-hold" data-rf-action="hold" aria-pressed="'+C.hold+'">'+
+      (C.hold?'▶ RESUME AUTOMATIC PAGES':'Ⅱ HOLD THIS SUBPAGE')+'</button>':'')+
    '<details class="rf-keypad"><summary>TELETEXT NUMBER PAD <span aria-hidden="true">▾</span></summary>'+
    '<div class="rf-pad-grid">'+pads+'<button type="button" data-rf-action="clear">CLEAR</button></div></details>'+
    (refs?'<div class="rf-records">'+refs+'</div>':'')+
-   '<p class="rf-help">Choose a page above, enter its number, or click a numbered line on page 100. Arrow keys change subpages; F1–F4 open the coloured sections.</p>'+
+   '<p class="rf-help">Choose a page or enter three digits. F1–F4 open the coloured sections.'+
+   (v.subpages>1?' Arrow keys change subpages.':'')+'</p>'+
    '<details class="rf-access"><summary>Read this page as plain text</summary><pre>'+escape(v.rows.map(r=>r.text.trimEnd()).join('\n'))+'</pre></details>'+
    '<p class="rf-disclaimer">Fan comments are fictional; match results come from your career.</p>'+
    '</aside>'+
@@ -867,7 +877,7 @@
   },1000);
   root.setInterval(()=>{
    if(C.page===777||C.hold||root.document.hidden||!root.document.querySelector('#rf-screen'))return;
-   const p=build(root.OfficeGame?.S)[C.page],n=Math.ceil((p?.lines.length||0)/17);
+   const p=build(root.OfficeGame?.S)[C.page],n=pageCount(p);
    if(n>1){C.sub=(C.sub+1)%n;root.document.dispatchEvent(new root.Event('ringfax-page-rotated'));}
   },8000);
  }
