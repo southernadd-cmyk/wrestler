@@ -28,13 +28,58 @@ assert.ok(edition[101].lines.some(r=>r.text.includes('CHAMPIONSHIP')),
  'opening news contains real title information');
 assert.ok(edition[102].lines.some(r=>r.text.includes('TITLES:')),
  'season preview has the title picture');
+
+assert.equal(edition[102].title,'SEASON PREVIEW','page 102 is preview only in week one');
+assert.ok(grid(100).rows.some(r=>r.text.includes('102 SEASON')),
+ 'week-one index labels page 102 as season preview');
+// Project an isolated second-week circuit ledger without altering the fixture.
+const weekTwo=JSON.parse(JSON.stringify(s));
+weekTwo.week=2;
+const oldHolder=weekTwo.territory.titles.dock.men.holder;
+const challenger=Object.keys(weekTwo.territory.cards.dock).find(id=>
+ id!==oldHolder&&root.OfficeData.divisionOf(id)==='men');
+assert.ok(challenger,'the test fixture provides a second male wrestler');
+weekTwo.territory.titles.dock.men.holder=challenger;
+weekTwo.territory.lastResults={
+ week:2,matches:[{pid:'dock',div:'men',a:oldHolder,b:challenger,
+  winner:challenger,title:true,stars:3.5}]
+};
+weekTwo.territory.titleLog??=[];
+weekTwo.territory.titleLog.unshift({
+ week:2,how:'match',pid:'dock',div:'men',from:oldHolder,to:challenger
+});
+weekTwo.territory.business??={};
+weekTwo.territory.business.dock={buzz:49};
+const weekTwoBefore=JSON.stringify(weekTwo);
+const weekTwoNews=R.build(weekTwo);
+assert.equal(weekTwoNews[102].title,'CIRCUIT NEWS','after week one page 102 changes to news');
+assert.ok(weekTwoNews[102].lines.some(r=>r.text.includes('TITLE CHANGES')),
+ 'verified belt changes become follow-up news');
+assert.ok(weekTwoNews[102].lines.some(r=>r.text.includes('THIS WEEK IN THE RING')),
+ 'actual weekly circuit results are included');
+assert.ok(weekTwoNews[102].lines.some(r=>r.text.includes('PROMOTION BUZZ')),
+ 'live public-interest data appears when available');
+assert.ok(weekTwoNews[102].lines.some(r=>r.text.includes(root.OfficeData.findWrestler(challenger).name)),
+ 'news uses the verified winning wrestler');
+assert.ok(!weekTwoNews[102].lines.some(r=>r.text.includes('SEASON PREVIEW')),
+ 'week two cannot keep the stale season preview');
+assert.ok(weekTwoNews[102].lines.length<=17,'weekly news fits one teletext page');
+assert.equal(JSON.stringify(weekTwo),weekTwoBefore,'news must not mutate the world');
+const noReport=JSON.parse(JSON.stringify(weekTwo));
+delete noReport.territory.lastResults;
+noReport.territory.titleLog=[];
+assert.equal(R.build(noReport)[102].title,'CIRCUIT NEWS',
+ 'weeks without reports must not regress to preview');
+assert.ok(R.build(noReport)[102].lines.some(r=>r.text.includes('No new verified circuit results')),
+ 'empty weeks must not invent matches');
+
 for(const p of s.promoters){
  assert.ok(edition[104].lines.some(r=>r.text.includes(p.name.toUpperCase())),
   'promoter guide includes real promoter '+p.name);
  assert.ok(edition[301].lines.some(r=>r.text.includes(p.name.toUpperCase())),
   'all-promotion rank view includes '+p.name);
 }
-assert.equal(edition[103].lines.filter(r=>r.text.includes(' OFFER ')).length,
+assert.equal(edition[103].lines.filter(r=>r.text.startsWith('OFFER ')).length,
  Math.min(5,s.offers.filter(o=>o.pid&&o.rid).length),
  'booking desk previews actual available offers, not made-up fixtures');
 assert.ok(edition[103].lines.some(r=>r.text.includes('NOT SIGNED')),
