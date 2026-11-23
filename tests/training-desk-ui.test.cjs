@@ -21,6 +21,8 @@
   sessionOptions:()=>[{value:'rehearse',label:'Rehearse for the next match',hint:'Rehearsal improves match preparation.'}]};
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const sandbox={D,G,S:()=>state,trainingSelected:null,trainingPane:'development',trainingReportWeek:null,esc,
+  STAT_HELP:{ring:'Technical wrestling and execution',psych:'Match psychology',safe:'Safety',mic:'Promo ability'},
+  statLegend:'<p class="stat-legend">Ratings: under 35 developing · 35–49 basic · 50–64 solid · 65–79 strong · 80+ exceptional.</p>',
   money:n=>'£'+n,plural:(n,s)=>n===1?s:s+'s',att:n=>String(n),bar:()=>'<span class="bar"></span>',fatKind:()=>'',face:()=>'',
   status:()=>'Booked',weekLabel:()=>'S1 W1',trainNote:()=>'Training continues',sessionNote:()=>'',
   sessionSelect:w=>'<select data-session="'+w.id+'"></select>',
@@ -42,7 +44,9 @@
  assert.match(html,/data-train="mara"/);
  assert.match(html,/data-intensity="mara"/);
  assert.match(html,/data-session="mara"/);
- assert.match(html,/Base injury chance: 0\.9%/);
+ assert.match(html,/starting injury risk is 0\.9% a week/);
+ assert.match(html,/stat-legend/,'rating thresholds are explained in writing');
+ assert.match(html,/title="Technical wrestling and execution"/,'rating glossary is included');
  assert.match(html,/3-week camp · £185\/wk/);
  assert.equal(JSON.stringify(state),before,'render does not change career state');
  sandbox.trainingSelected='rex';
