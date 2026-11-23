@@ -441,7 +441,7 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .btn.two.later{margin-right:auto}
 .talk-outcome{margin-top:12px;padding:10px 12px;background:var(--paper);border:2px solid var(--ink);border-left:8px solid var(--blood)}
 .talk-outcome b{font:24px/1 var(--jersey);font-weight:400;color:var(--blood)}
-#toast{position:fixed;right:16px;bottom:calc(46px + env(safe-area-inset-bottom,0px));z-index:80;max-width:min(420px,90vw);background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.5);padding:8px 12px 8px 14px;border-left:8px solid var(--gold);font-weight:600;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .15s,transform .15s}
+#toast{position:fixed;left:16px;right:auto;bottom:calc(46px + env(safe-area-inset-bottom,0px));z-index:80;max-width:min(420px,90vw);background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.5);padding:8px 12px 8px 14px;border-left:8px solid var(--gold);font-weight:600;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .15s,transform .15s}
 #toast.show{opacity:1;transform:none}
 
 /* ---------- title screen ---------- */
@@ -900,3 +900,8 @@ dialog.negotiation-dialog[open]{
 @media(max-width:390px){
  .train-review-totals{grid-template-columns:1fr 1fr}
 }
+
+/* Explain stat colours in words, without relying on hue alone. */
+.stat-legend{margin:7px 0 10px;font-size:13px;line-height:1.4;color:var(--ink-2)}
+.stat-legend b{color:var(--ink);font-weight:700}
+.mf-no-moments{margin:8px 0;padding:12px;background:var(--stone-2);border:1px solid var(--stone-lo)}

@@ -35,6 +35,8 @@ function openRecord(key){
 function band(v){return v>=80?5:v>=65?4:v>=50?3:v>=35?2:1}
 function bandBar(v){return ['','danger','warn','gold','',''][band(v)]}
 function att(v){return `<span class="att a${band(v)}">${Math.round(v)}</span>`}
+const STAT_HELP={ring:'Technical wrestling and execution in the ring',psych:'Psychology: pacing, selling and telling a match story',safe:'Safety: controlling risk and protecting opponents',mic:'Speaking and performing promos',heat:'Audience interest and intensity around a wrestler'};
+const statLegend='<p class="stat-legend">Ratings: <b>under 35</b> developing · <b>35–49</b> basic · <b>50–64</b> solid · <b>65–79</b> strong · <b>80+</b> exceptional. Colours are a quick guide; the numbers are the rating.</p>';
 /* ---------- charts (v3.8) ----------
    Plain line and bar charts in the office's own colours. The plot is an SVG stretched to fit;
    dots, marks and labels are HTML laid over it, so text stays crisp at any width. */
@@ -172,14 +174,15 @@ function flowReport(fin,w,f){
  const rows=ph.map(g=>`<tr class="t-${g.tone}"><th scope="row">${esc(g.name)}<small>${esc(Mx.fmt(g.from))}–${esc(Mx.fmt(g.to))}</small></th><td><span class="mf-bar w-${g.work}" role="img" aria-label="Work ${Math.round(g.q)} out of 100"><i style="width:${Math.max(4,Math.min(100,(g.q-30)/45*100))}%"></i></span> <small>${Math.round(g.q)}</small></td><td class="n">${g.cIn}→${g.cOut} <b class="chip ${g.tone}">${g.d>0?'+':''}${g.d}</b></td><td class="n">${g.mine===g.theirs?'Even':`${esc(g.mine>g.theirs?w.short:f.short)} ${Math.round(Math.max(g.mine,g.theirs)/g.n*100)}%`}</td><td class="v">${esc(g.verdict)}</td></tr>`).join('');
  const table=`<div class="well mf-table-wrap"><table class="grid mf-table"><thead><tr><th>Phase</th><th>Work</th><th class="n">Crowd</th><th class="n">On top</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>`;
  const mom=flowMoments(fin);
- const moments=mom.length?`<ol class="mf-moments well">${mom.map(m=>`<li class="${m.d>0?'up':'down'}"><span class="t">${esc(Mx.fmt(m.t1))}</span><b class="chip ${m.d>0?'up':'down'}">${m.d>0?'+':''}${m.d}</b><span>${esc(m.text)}</span></li>`).join('')}</ol>`:'<p class="dim">The crowd never swung hard either way.</p>';
+ const moments=mom.length?`<ol class="mf-moments well">${mom.map(m=>`<li class="${m.d>0?'up':'down'}"><span class="t">${esc(Mx.fmt(m.t1))}</span><b class="chip ${m.d>0?'up':'down'}">${m.d>0?'+':''}${m.d}</b><span>${esc(m.text)}</span></li>`).join('')}</ol>`:'<p class="dim mf-no-moments">No sudden crowd swings in this bout. The phase-by-phase report still shows how the match built.</p>';
  const parts=(fin.starParts||[]).filter(p=>Math.abs(p[2])>=.01),maxAbs=Math.max(.5,...parts.map(p=>Math.abs(p[2])));
  const breakdown=parts.length?`<div class="mf-parts well">${parts.map(([k,label,v])=>`<div class="mf-part ${v>=0?'pos':'neg'}"><span>${esc(label)}</span><span class="mf-pbar"><i style="${v>=0?'left':'right'}:50%;width:${Math.abs(v)/maxAbs*50}%"></i></span><b>${v>=0?'+':'−'}${Math.abs(v).toFixed(2)}</b></div>`).join('')}<div class="mf-part total"><span>Rating</span><span></span><b>${starsText(fin.stars)||'DUD'}</b></div></div>`:'';
  return `${head}${flowGraphic(fin,w,f,ph)}<div class="mf-cols"><div class="mf-phase-section"><h3 class="section-h">Phase by phase</h3>${table}</div><div class="mf-moments-section"><h3 class="section-h">Moments that moved the room</h3>${moments}</div>${breakdown?`<div class="mf-breakdown-section"><h3 class="section-h">Where the stars came from</h3>${breakdown}</div>`:''}</div>`;
 }
 function bar(v,kind=''){return `<span class="bar ${kind}" role="img" aria-label="${Math.round(v)} out of 100"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></span>`}
 function fatKind(f){return f>=60?'danger':f>=40?'warn':'cool'}
-function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3600)}
+function clearToast(){clearTimeout(toastT);$('#toast')?.classList.remove('show')}
+function toast(t){const el=$('#toast');if(!el)return;el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3000)}
 function finishTag(k){const f=D.FINISHES[k];return `<span class="tag ${f.win?'tw':'tl'}">${esc(f.name)}</span>`}
 function recordedFinishTag(h){
  const planned=D.FINISHES[h.bookedFinish||h.finish]?.name||'not recorded';
@@ -249,11 +252,13 @@ function refreshList(screen){
  render();
 }
 function go(s,id=null){
+ clearToast();
  if(route.s===s&&route.id===id){render(innerWidth<=900);return}
  past.push(route);if(past.length>40)past.shift();ahead=[];
  route={s,id};render(true);
 }
 function histMove(dir){
+ clearToast();
  const from=dir<0?past:ahead,to=dir<0?ahead:past;
  if(!from.length)return;to.push(route);route=from.pop();render(true);
 }
@@ -502,7 +507,7 @@ function renderRecord(){
  if(!w){route={s:'pyramid',id:null};return renderPyramid()}
  const stable=OfficeTerritory.stableFor(id),free=s.free.some(x=>x.id===id),division=D.divisionOf(id);
  const statusText=stable?'Contracted to '+stable.name:free?'Free agent':'Independent / other circuit';
- const stat=(label,key)=>`<div class="attr"><span>${label}</span><span>${Number.isFinite(w[key])?att(w[key]):'–'}</span>${Number.isFinite(w[key])?bar(w[key],bandBar(w[key])):'<span></span>'}</div>`;
+ const stat=(label,key)=>`<div class="attr"><span title="${esc(STAT_HELP[key]||'')}">${esc(label)}</span><span>${Number.isFinite(w[key])?att(w[key]):'–'}</span>${Number.isFinite(w[key])?bar(w[key],bandBar(w[key])):'<span></span>'}</div>`;
  const head=`<div class="record-head">${face('wrestler',w.id,w.name,'portrait x2')}<div><h2 class="record-name">${esc(w.name)}</h2><p>${w.handle?'“'+esc(w.handle)+'” · ':''}${esc(w.style||'Wrestler')} · ${esc(w.tier||'Circuit wrestler')}</p><p class="dim">${esc(statusText)} · ${esc(D.DIVISIONS[division]?.name||'Circuit')} division</p></div></div>`;
  const titles=OfficeTerritory.titlesOf(id),ranks=s.promoters.flatMap(p=>{
   const list=OfficeTerritory.promotionRank(p.id,division),n=list.findIndex(x=>x.id===id);
@@ -522,7 +527,7 @@ function renderRecord(){
  const next=stable?`<button class="btn sm" data-go="stables" data-id="w:${esc(id)}">View rival stable</button>`:free?'<button class="btn sm" data-go="scouting" data-id="'+esc(id)+'">View free-agent listing</button>':'<button class="btn sm" data-go="pyramid">Card ladder</button>';
  const belts=titles.length?'<p>'+titles.map(t=>'<span class="tag hot">'+esc(t.name)+'</span>').join(' ')+'</p>':'';
  paint('s-split even',
-  win('Wrestler record',head+belts+`<p>${esc(w.bio||'No biography is on file.')}</p><h3 class="section-h">Attributes</h3><div class="well pad attrs">`+stat('Ring','ring')+stat('Psychology','psych')+stat('Safety','safe')+stat('Mic','mic')+stat('Heat','heat')+'</div><p class="dim">Finisher: '+esc(w.finisher||'Not recorded')+'</p><div class="record-actions">'+next+'</div>',{actions:recordBack(),keep:'record-w'})+
+  win('Wrestler record',head+belts+`<p>${esc(w.bio||'No biography is on file.')}</p><h3 class="section-h">Attributes</h3><div class="well pad attrs">`+stat('Ring','ring')+stat('Psychology','psych')+stat('Safety','safe')+stat('Mic','mic')+stat('Heat','heat')+'</div>'+statLegend+'<p class="dim">Finisher: '+esc(w.finisher||'Not recorded')+'</p><div class="record-actions">'+next+'</div>',{actions:recordBack(),keep:'record-w'})+
   win('Career and connections','<h3 class="section-h">Promotion rankings</h3>'+rankings+'<h3 class="section-h">Against your stable</h3>'+results+'<h3 class="section-h">Rivalries</h3>'+feuds,{h:'h3',keep:'record-w-history'})
  );
 }
@@ -656,14 +661,14 @@ function renderTraining(){
   const canProgramme=!paused&&w.training!=='rest'&&w.training!=='promo';
   const statRow=(label,key)=>{
    const val=w[key],since=val-(w.startSkills?.[key]??val);
-   return `<div class="train-attribute"><span>${esc(label)}</span><b>${att(val)}${since>0?` <small class="good">+${since}</small>`:''}</b><small>${Math.round((w.progress?.[key]||0)*100)}% to next</small></div>`;
+   return `<div class="train-attribute"><span title="${esc(STAT_HELP[key]||'')}">${esc(label)}</span><b>${att(val)}${since>0?` <small class="good">+${since}</small>`:''}</b><small>${Math.round((w.progress?.[key]||0)*100)}% to next</small></div>`;
   };
-  const attributes=`<div class="train-attributes well">${statRow('Ring','ring')}${statRow('Psych','psych')}${statRow('Safety','safe')}${statRow('Mic','mic')}</div>`;
+  const attributes=`<div class="train-attributes well">${statRow('Ring','ring')}${statRow('Psych','psych')}${statRow('Safety','safe')}${statRow('Mic','mic')}</div>${statLegend}`;
   let expectation='';
   if(w.injury)expectation='Injured: weekly skill training is unavailable; recovery takes priority.';
   else if(w.training==='rest')expectation='Rest reduces fatigue. Recovery is greater in weeks without a match.';
   else if(w.training==='promo')expectation='Producing a promo costs £40 a week and builds heat, not a training attribute.';
-  else expectation=`Base progress: ${camp?'1.9':mode.gain} skill points/week before skill, fatigue, rookie and coach modifiers. Base injury chance: ${baseRisk.toFixed(1)}% per week; fatigue and matches can increase it.${coached?' Your specialist coach helps this focus.':''}`;
+  else expectation=`Dennis says: This work starts at roughly ${camp?'1.9':mode.gain} skill points a week, but the wrestler's ability, experience, fatigue and coaching change the actual gain. The starting injury risk is ${baseRisk.toFixed(1)}% a week, and tired wrestlers or match nights can raise it.${coached?' Your specialist coach should help.':''}`;
   const programme=w.program?`<div class="train-programme-active">
    <b>${w.program.type==='camp'?'Residential camp':`${w.program.total}-week development block`}</b>
    <p>${w.program.left} ${plural(w.program.left,'week')} remaining · ${w.program.gains} ${plural(w.program.gains,'skill point')} gained · ${money(G.trainingCost(w))}/week.</p>
@@ -1165,7 +1170,7 @@ function persistNight(){
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
 let tvPreviousFocus=null;
-function openTV(){tvPreviousFocus=document.activeElement;$('#toast').classList.remove('show');$('#tv').hidden=false;$('#app').inert=true;$('#tv').setAttribute('tabindex','-1');$('#tv').focus();document.body.style.overflow='hidden'}
+function openTV(){tvPreviousFocus=document.activeElement;clearToast();$('#tv').hidden=false;$('#app').inert=true;$('#tv').setAttribute('tabindex','-1');$('#tv').focus();document.body.style.overflow='hidden'}
 function closeTVFocus(){$('#app').inert=false;$('#tv').removeAttribute('tabindex');if(tvPreviousFocus?.isConnected)tvPreviousFocus.focus();tvPreviousFocus=null}
 function resumeNight(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(NIGHT_STORE)||'null')}catch(e){}
