@@ -22,7 +22,7 @@
 .rf-white{color:#fff}.rf-yellow{color:#ff0}.rf-cyan{color:#0ff}.rf-green{color:#0f0}
 .rf-red{color:#f00}.rf-blue{color:#00f}.rf-magenta{color:#f0f}
 .rf-bg-blue{background:#00f}
-.rf-mosaic{background:#00f;line-height:1.0;font-weight:400}
+.rf-mosaic{background:#00f;line-height:1.0;font-weight:600;text-shadow:none}
 .rf-section{background:#00f;color:#fff;line-height:1.08}
 .rf-header{color:#fff;line-height:1.05}
 .rf-index-row{display:flex;align-items:stretch;justify-content:stretch;gap:0}
@@ -102,24 +102,55 @@ button.rf-index-half:hover,button.rf-index-half:focus-visible{background:#00f;co
  .rf-page-link{min-height:44px}
 }
 @media(max-width:720px){
- #view:has(> .s-ringfax){padding:3px}
- .rf-wrap{gap:3px}
- .rf-display{height:clamp(320px,calc(100dvh - 295px),500px)}
- .rf-screen{aspect-ratio:auto;width:100%;height:100%;padding:4px 6px}
- .rf-console{padding:6px}
- .rf-console-title>span{font-size:21px}
- .rf-console-title strong{font-size:21px}
- .rf-page-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}
- .rf-page-link{min-height:38px;padding:4px 2px;border-left-width:2px}
- .rf-link-number{font-size:18px}
- .rf-link-name{font-size:15px}
- .rf-console-title{padding-bottom:3px}
- .rf-help{font-size:14px}
+ /* The Office already has fixed top and bottom chrome. Share the remaining
+    height between the complete teletext grid and a small, ALWAYS-visible
+    remote; do not make players scroll down to change page. */
+ #view:has(> .s-ringfax){padding:3px;overflow:hidden}
+ #view>.s-ringfax{height:100%;min-height:0}
+ .rf-wrap{display:grid;grid-template-columns:minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr) auto;gap:2px;overflow:hidden}
+ .rf-display{height:auto;min-height:0;max-height:100%;width:100%;
+  flex:none;overflow:hidden}
+ .rf-screen{aspect-ratio:auto;width:100%;height:100%;max-height:100%;
+  min-height:0;padding:3px 4px;letter-spacing:0}
+ .rf-row{letter-spacing:0}
+ .rf-mosaic{font-weight:700}
+ .rf-console{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:3px 4px;align-items:center;min-width:0;min-height:0;
+  flex:none;height:auto;overflow:visible;border-left:0;border-top:2px solid #00f;
+  padding:3px 2px 1px}
+ .rf-console-title,.rf-keypad,.rf-help,.rf-records,.rf-disclaimer{display:none}
+ .rf-page-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}
+ /* F1-F4 and direct entry still reach every page. Prioritise the 4 most
+    useful touch shortcuts rather than burying all 8 under the viewport. */
+ .rf-page-link:nth-child(2),.rf-page-link:nth-child(4),
+ .rf-page-link:nth-child(5),.rf-page-link:nth-child(6){display:none}
+ .rf-page-link{min-height:32px;height:32px;gap:0;padding:2px 4px;border-left-width:2px;
+  display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px}
+ .rf-link-number{font-size:17px;line-height:1}
+ .rf-link-name{font-size:15px;line-height:1}
+ .rf-operator{grid-column:1;margin:0;padding:0;border:0;min-width:0}
+ .rf-operator-label{display:none}
+ .rf-jump{margin:0;gap:3px}
+ .rf-jump input{min-height:33px;height:33px;font-size:19px;padding:2px 5px}
+ .rf-jump button{flex-basis:32px;min-height:33px;font-size:18px}
+ .rf-sub-nav{grid-column:2;min-width:0;gap:2px}
+ .rf-sub-nav button{min-height:33px;font-size:15px;padding:2px}
+ .rf-sub-nav>span{min-width:25px;font-size:16px}
+ .rf-hold{grid-column:1;margin:0;min-height:27px;padding:2px;font-size:15px}
+ .rf-access{grid-column:2;margin:0;padding:0;border:0;min-width:0}
+ .rf-access summary{display:flex;min-height:27px;align-items:center;justify-content:center;
+  font-size:16px;line-height:1.1}
+ .rf-access[open] pre{position:relative;z-index:2;max-height:25dvh;
+  background:#000;color:#fff}
+ .rf-wrap:has(.rf-access[open]){overflow-y:auto;display:flex;flex-direction:column}
+ .rf-wrap:has(.rf-access[open]) .rf-display{height: min(55dvh,390px);min-height:290px}
+ .rf-wrap:has(.rf-access[open]) .rf-console{display:block}
 }
 @media(max-width:390px){
- .rf-display{height:clamp(315px,calc(100dvh - 315px),445px)}
- .rf-page-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
- .rf-link-number{font-size:17px}
+ .rf-page-link{padding:2px;gap:2px}
+ .rf-link-number{font-size:16px}
  .rf-link-name{font-size:14px}
+ .rf-sub-nav button{font-size:13px}
 }
 @media(prefers-reduced-motion:reduce){.rf-screen,.rf-row,.rf-console{animation:none;transition:none}}
