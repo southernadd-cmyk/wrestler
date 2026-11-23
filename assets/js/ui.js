@@ -1185,7 +1185,7 @@ function dialog(title,html,buttons=[['Close','close']]){
 // career random seeds, bookings, wrestling outcomes or rival managers.
 function identitySetup(mode='new'){
  identityMode=mode;
- const p=G.normaliseIdentity(mode==='edit'?S()?.identity:null);
+ const p=mode==='edit'?G.normaliseIdentity(S()?.identity):G.suggestIdentity();
  identityPortrait=p.portrait;
  const picker=Pt.PLAYER_PORTRAITS.map((o,i)=>
   '<button type="button" class="player-portrait-choice'+(i===identityPortrait?' selected':'')+
@@ -1196,11 +1196,12 @@ function identitySetup(mode='new'){
  const html='<div class="player-identity-editor">'+
   '<div class="player-identity-intro"><div id="identity-preview">'+
    Pt.playerPortrait(identityPortrait,p.manager,'portrait x3')+'</div>'+
-   '<div class="player-identity-fields"><p class="dim">Your name and stable will be recognised around the office. Portraits are cosmetic.</p>'+
+   '<div class="player-identity-fields"><p class="dim">Suggested from British wrestling history and hall-circuit homages. Edit either name or try another. Portraits are cosmetic.</p>'+
    '<label for="identity-manager">Manager name</label>'+
    '<input id="identity-manager" type="text" maxlength="42" autocomplete="name" required value="'+esc(p.manager)+'">'+
    '<label for="identity-stable">Stable / operation name</label>'+
    '<input id="identity-stable" type="text" maxlength="42" required value="'+esc(p.stable)+'">'+
+   '<button class="btn sm" type="button" data-identity-random="1">Another from the archives</button>'+
    '<p id="identity-error" class="bad" role="alert" hidden>Enter both a manager name and a stable name.</p>'+
    '</div></div>'+
   '<fieldset class="player-portrait-picker"><legend>Choose your portrait <small>16 styles</small></legend>'+
@@ -1793,6 +1794,16 @@ document.addEventListener('click',e=>{
    field?.setAttribute('aria-invalid','true');field?.focus();return;
   }
   if(OfficeRingfax.press(d.rfAction==='jump'?'go':d.rfAction,value,S()))render();
+  return;
+ }
+ if(d.identityRandom!==undefined){
+  if(!$('#modal')?.classList.contains('identity-dialog'))return;
+  const suggestion=G.suggestIdentity();
+  const name=$('#identity-manager'),stable=$('#identity-stable');
+  if(name)name.value=suggestion.manager;
+  if(stable)stable.value=suggestion.stable;
+  const preview=$('#identity-preview');
+  if(preview)preview.innerHTML=Pt.playerPortrait(identityPortrait,suggestion.manager,'portrait x3');
   return;
  }
  if(d.identityPick!==undefined){

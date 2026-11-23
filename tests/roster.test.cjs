@@ -53,8 +53,16 @@ for (const [column, promoter] of data.PROMOS.entries()) {
 assert.equal(positions.size, all.length + data.PROMOS.length);
 
 game.fresh();
-assert.deepEqual(JSON.parse(JSON.stringify(game.S.identity)),
- {manager:'Alex Morgan',stable:'The New Guard',portrait:0});
+const archive=game.IDENTITY_ARCHIVE;
+assert.ok(archive.people.includes(game.S.identity.manager),
+ 'new careers choose a historic British wrestling name');
+assert.ok(archive.stables.includes(game.S.identity.stable),
+ 'new careers choose a historic or homage stable');
+assert.ok(game.S.identity.portrait>=0&&game.S.identity.portrait<16);
+assert.deepEqual(game.suggestIdentity(442),game.suggestIdentity(442),
+ 'old-career suggestions are deterministic');
+assert.ok(archive.people.includes('Mitzi Mueller')&&archive.people.includes('Klondyke Kate'));
+assert.ok(archive.groups.includes('The Royal Family')&&archive.groups.includes('The Bovver Birds'));
 const untouchedSeed=game.S.seed;
 assert.equal(game.setIdentity({manager:'  Ada   Lovelace ',stable:'  Royal   Mat ',portrait:8}),true);
 assert.equal(game.S.identity.manager,'Ada Lovelace');
@@ -88,9 +96,10 @@ delete oldSave.territory.stablesReady;
 delete oldSave.territory.cards;
 storage.set('the-office-v22', JSON.stringify(oldSave));
 game.load();
-assert.equal(game.S.identity.manager,'Alex Morgan','legacy saves receive a compatible default manager');
-assert.equal(game.S.identity.stable,'The New Guard','legacy saves receive a compatible default stable');
-assert.equal(game.S.identity.portrait,0,'legacy saves receive the default portrait');
+const inherited=game.suggestIdentity(oldSave.careerSeed??oldSave.seed);
+assert.equal(game.S.identity.manager,inherited.manager,'legacy save has a stable historic manager name');
+assert.equal(game.S.identity.stable,inherited.stable,'legacy save has a stable archive group name');
+assert.equal(game.S.identity.portrait,inherited.portrait,'legacy save gets a fixed seeded portrait');
 assert.equal(game.S.free.length, 18);
 assert.equal(game.S.free[0].fee, 1234);
 assert.equal(game.S.roster[0].id, 'mara');
@@ -101,6 +110,8 @@ assert.ok(!game.S.free.some(w => w.id === 'sol'));
 assert.equal(new Set(game.S.territory.teams.flatMap(team => team.roster)).size, 44);
 assert.equal(game.S.territory.teams.length,6);
 game.load();
+assert.equal(game.S.identity.manager,inherited.manager,'identity survives a second load');
+assert.equal(game.S.identity.stable,inherited.stable,'stable survives a second load');
 assert.equal(game.S.free.length, 18);
 
 const contract = {id:'pyramid-test',wid:'mara',rid:'red',pid:'dock',slot:'mid',minutes:12,
@@ -129,6 +140,19 @@ const weekFive = JSON.stringify(game.S.territory);
 territory.evolve();
 assert.equal(JSON.stringify(game.S.territory), weekFive);
 
+const placeholder=JSON.parse(JSON.stringify(game.S));
+placeholder.identity={manager:'Alex Morgan',stable:'The New Guard',portrait:9};
+game.S=placeholder;
+assert.equal(game.S.identity.manager,game.suggestIdentity(placeholder.careerSeed).manager,
+ 'legacy placeholder migrates once');
+assert.equal(game.S.identity.stable,game.suggestIdentity(placeholder.careerSeed).stable);
+assert.equal(game.S.identity.portrait,9,'portrait choice is preserved');
+const custom=JSON.parse(JSON.stringify(game.S));
+custom.identity={manager:'A Custom Booker',stable:'A Custom Stable',portrait:12};
+game.S=custom;
+assert.equal(game.S.identity.manager,'A Custom Booker','custom name is not overwritten');
+assert.equal(game.S.identity.stable,'A Custom Stable','custom stable is not overwritten');
+assert.equal(game.S.identity.portrait,12,'custom portrait is not overwritten');
 game.fresh({manager:'  Jane  Smith  ',stable:' Smiths & Co ',portrait:15});
 assert.equal(game.S.identity.manager,'Jane Smith');
 assert.equal(game.S.identity.stable,'Smiths & Co');
