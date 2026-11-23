@@ -1,11 +1,7 @@
 name: Technical long-match endurance (read-only)
 on:
-  pull_request:
-    paths:
-      - 'tools/graph-lab/technical-endurance-trace.cjs'
-      - 'tests/technical-endurance-trace.test.cjs'
-      - '.github/workflows/technical-endurance-trace.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:

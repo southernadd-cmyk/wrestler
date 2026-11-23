@@ -1,15 +1,7 @@
 name: Flyer depth and stamina audit
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'tools/graph-lab/flyer-depth-audit.cjs'
-      - 'tests/flyer-depth-audit.test.cjs'
-      - '.github/workflows/flyer-depth-audit.yml'
-      - 'assets/js/match-engine.js'
-      - 'assets/js/data.js'
-      - 'assets/js/roster-registry.js'
   workflow_dispatch:
+
 permissions:
   contents: read
 

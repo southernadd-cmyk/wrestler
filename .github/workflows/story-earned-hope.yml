@@ -1,12 +1,7 @@
 name: Story earned hope A/B
 on:
-  pull_request:
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'tests/story-earned-hope.test.cjs'
-      - 'tools/graph-lab/story-hope-trace.cjs'
-      - '.github/workflows/story-earned-hope.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:

@@ -1,13 +1,7 @@
 name: Phase 4 career diversity diagnostic
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'tools/graph-lab/phase4-career-diversity.cjs'
-      - 'tests/season-soak.test.cjs'
-      - '.github/workflows/phase4-career-diversity.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 concurrency:

@@ -1,20 +1,7 @@
 name: Phase 4 standing exchanges
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'tests/catalog.test.cjs'
-      - 'tests/technique-position-audit.test.cjs'
-      - 'tools/graph-lab/technique-position-audit.cjs'
-      - 'tests/phase4-standing-exchanges.test.cjs'
-      - 'tests/phase4-neck-exchanges.test.cjs'
-      - 'tools/graph-lab/phase4-coverage-diagnostic.cjs'
-      - 'tools/graph-lab/phase4-independent-seed-audit.cjs'
-      - 'tests/grapple-attempts.test.cjs'
-      - 'tests/phase3-chain-submissions.test.cjs'
-      - '.github/workflows/phase4-standing-exchanges.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 concurrency:

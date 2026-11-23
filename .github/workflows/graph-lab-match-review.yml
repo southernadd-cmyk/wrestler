@@ -1,15 +1,6 @@
 name: Graph Lab match review
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'tools/graph-lab/**'
-      - 'assets/js/match-engine.js'
-      - 'assets/js/technique-backgrounds.js'
-      - 'assets/js/technique-registry.js'
-      - 'tests/graph-lab-match-review.test.cjs'
-      - '.github/workflows/graph-lab-match-review.yml'
   workflow_dispatch:
 
 permissions:

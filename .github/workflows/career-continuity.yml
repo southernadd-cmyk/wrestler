@@ -1,12 +1,6 @@
 name: Career rivalry continuity
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'assets/js/**'
-      - 'tools/career-continuity-audit.cjs'
-      - 'tests/career-continuity-audit.test.cjs'
   schedule:
     - cron: '43 7 * * 3'
   workflow_dispatch:

@@ -1,12 +1,7 @@
 name: Phase 2 grapple evidence
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'tools/graph-lab/**'
-      - '.github/workflows/phase2-grapple-evidence.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 concurrency:

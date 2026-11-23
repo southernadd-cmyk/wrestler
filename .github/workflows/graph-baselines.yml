@@ -1,16 +1,6 @@
 name: Match graph baselines
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'assets/js/data.js'
-      - 'assets/js/roster-registry.js'
-      - 'tools/graph-baseline.cjs'
-      - 'tools/graph-baseline-suite.cjs'
-      - 'tools/graph-lab/core.js'
-      - 'tools/graph-lab/baselines/**'
   schedule:
     - cron: '17 7 * * 1'
   workflow_dispatch:

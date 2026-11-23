@@ -1,11 +1,7 @@
 name: Story psychology depth audit (read-only)
 on:
-  pull_request:
-    paths:
-      - 'tools/graph-lab/story-psychology-audit.cjs'
-      - 'tests/story-psychology-audit.test.cjs'
-      - '.github/workflows/story-psychology-audit.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:

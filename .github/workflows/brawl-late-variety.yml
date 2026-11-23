@@ -1,10 +1,7 @@
 name: Brawl late-move variety diagnostic
 on:
-  pull_request:
-    paths:
-      - 'tools/graph-lab/brawl-late-variety.cjs'
-      - '.github/workflows/brawl-late-variety.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:

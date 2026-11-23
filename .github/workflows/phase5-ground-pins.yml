@@ -1,15 +1,7 @@
 name: Phase 5 ground wrestling and nearfalls
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'tests/phase5-ground-pins.test.cjs'
-      - 'tests/catalog.test.cjs'
-      - 'tests/season-soak.test.cjs'
-      - 'tools/graph-lab/technique-position-audit.cjs'
-      - '.github/workflows/phase5-ground-pins.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 concurrency:

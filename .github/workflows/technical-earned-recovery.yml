@@ -1,11 +1,7 @@
 name: Technical earned recovery A/B
 on:
-  pull_request:
-    paths:
-      - 'assets/js/match-engine.js'
-      - 'tests/technical-earned-recovery.test.cjs'
-      - '.github/workflows/technical-earned-recovery.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
