@@ -237,7 +237,7 @@
   const chars=word.split('').map(c=>LETTERS[c]||LETTERS[' ']);
   return [0,1,2,3].map(i=>{
    const rendered=chars.map(c=>c[i]).join(' ');
-   return line(' '.repeat(Math.max(0,Math.floor((40-rendered.length)/2)))+rendered);
+   return (' '.repeat(Math.max(0,Math.floor((40-rendered.length)/2)))+rendered).slice(0,40).padEnd(40,' ');
   });
  }
  const fastext=[
@@ -262,7 +262,7 @@
   const header='P'+num+' RINGFAX '+num+'  S'+(s?.season||1)+' W'+(s?.week||1);
   rows.push(item(header.padEnd(31,' ')+clock(),'white'));
   const [heading,colour]=BANNERS[C.page]||['SEARCH','red'];
-  for(const value of mosaic(heading))rows.push(item(value,colour,'blue'));
+  for(const value of mosaic(heading))rows.push({text:value,colour,background:'blue'});
   const title=p?.title||'PAGE NOT FOUND';
   const pageInfo=chunks.length>1?'  '+(sub+1)+'/'+chunks.length:'';
   rows.push(item(' '+title.slice(0,35-pageInfo.length).padEnd(35-pageInfo.length,' ')+pageInfo,'white','blue'));
@@ -401,6 +401,11 @@
  if(root.document&&root.document.fonts?.ready)root.document.fonts.ready.then(fit);
  if(root.addEventListener)root.addEventListener('resize',fit);
  if(typeof root.setInterval==='function'&&root.document){
+  // Broadcast clock is real wall-clock time, never an invented in-game day.
+  root.setInterval(()=>{
+   const h=root.document.querySelector('#rf-screen .rf-header');
+   if(h&&root.OfficeGame?.S)h.textContent=screen(root.OfficeGame.S).rows[0].text;
+  },1000);
   root.setInterval(()=>{
    if(C.hold||root.document.hidden||!root.document.querySelector('#rf-screen'))return;
    const p=build(root.OfficeGame?.S)[C.page],n=Math.ceil((p?.lines.length||0)/17);
