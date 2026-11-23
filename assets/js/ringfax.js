@@ -505,8 +505,14 @@
  function build(s){
   syncQuizWeek(s);
   const h=latest(s),recent=recents(s),P={};
-  const add=(number,title,lines,subpages=null)=>{P[number]={number,title,lines:lines.slice(),...(subpages?{subpages:subpages.map(rows=>rows.slice())}:{})};};
-  // A proper two-column teletext index, not a conventional app menu.
+  // The blue header already shows an article title, so don't repeat it
+  // as the first editorial line. This applies consistently to every page.
+  const add=(number,title,lines,subpages=null)=>{
+   const body=lines.slice();
+   if(!subpages&&body[0]?.text.trim()===title)body.shift();
+   P[number]={number,title,lines:body,...(subpages?{subpages:subpages.map(rows=>rows.slice())}:{})};
+  };
+    // A proper two-column teletext index, not a conventional app menu.
   // Each 20-character half remains individually clickable in the renderer.
   const pair=(left,right,colour='white')=>({text:line(left,20)+line(right,20),colour,background:'black'});
   const promos=s?.promoters?.length?s.promoters:(D?.PROMOS||[]);
@@ -1063,9 +1069,9 @@
    // The row is still exactly 40 cells. A scalable 5×7 pixel logo overlays
    // rows 1–4; this does not alter the teletext model or its navigation.
    if(i===1){
-    const title=BANNERS[v.page]?.[0]||'SEARCH';
+    // A consistent Ringfax channel masthead; the page title is row six.
     return '<div class="rf-row rf-mosaic rf-bg-blue rf-logo-row">'+escape(r.text)+
-     '<div class="rf-logo-art" aria-hidden="true">'+pixelLogo(title)+'</div></div>';
+     '<div class="rf-logo-art" aria-hidden="true">'+pixelLogo('RINGFAX')+'</div></div>';
    }
 
    if(C.page===777&&r.answerIndex!==undefined){
@@ -1181,15 +1187,23 @@
   probe.remove();
   let size=Math.min(36,height/(25*1.12),width/(40*ratio))*.965;
   size=Math.max(7.5,Math.floor(size*100)/100);
-  el.style.setProperty('--rf-font-size',size+'px');
+  // Fit the HEIGHT first, then widen the 40 text cells uniformly to occupy
+  // the entire page. Otherwise the small glyphs leave a blank right side.
+  const applySize=()=>{
+   el.style.setProperty('--rf-font-size',size+'px');
+   const naturalWidth=40*ratio*size;
+   const stretch=Math.min(2.6,Math.max(1,width/Math.max(naturalWidth,1)));
+   el.style.setProperty('--rf-stretch',stretch.toFixed(4));
+   el.style.setProperty('--rf-row-width',(100/stretch).toFixed(4)+'%');
+  };
+  applySize();
   el.style.setProperty('--rf-tracking','0px');
-  // Measure again after layout; padding, browser font fallback and zoom can
-  // differ from an offscreen width probe. Don't accept clipped characters.
-  for(let attempt=0;attempt<5;attempt++){
+  // Check untransformed cell widths for clipping after fitting.
+  for(let attempt=0;attempt<6;attempt++){
    const rows=el.querySelectorAll('.rf-row');
    if(!Array.from(rows).some(row=>row.scrollWidth>row.clientWidth+1))break;
    size=Math.max(7.5,Math.floor(size*95)/100);
-   el.style.setProperty('--rf-font-size',size+'px');
+   applySize();
   }
  }
  if(root.document&&root.document.fonts?.ready)root.document.fonts.ready.then(fit);
