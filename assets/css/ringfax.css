@@ -333,3 +333,33 @@ button.rf-bz-fast:hover,button.rf-bz-fast:focus-visible{background:#00f;
 .rf-bz-stage-won .rf-bz-choice{
  align-items:center;
 }
+
+
+/* Hidden three-digit ASCII galleries. Keep the full 40x25 Ringfax page model,
+   blue channel header and coloured Fastext footer; only the body changes.
+   The original (sometimes 100-column) text is fitted as a complete poster,
+   not sliced into meaningless 40-character fragments or stretched into an image. */
+.rf-ascii-screen{position:relative;container-type:size;display:block;
+ aspect-ratio:4/3;width:auto;height:100%;max-height:100%;max-width:100%;
+ padding:0;overflow:hidden}
+.rf-ascii-screen>.rf-teletext-grid{position:absolute;inset:0;visibility:hidden;
+ pointer-events:none;display:grid;grid-template-rows:repeat(25,minmax(0,1fr))}
+.rf-ascii-header{position:absolute;inset:0 0 auto;height:24%;z-index:2;
+ display:grid;grid-template-rows:repeat(6,minmax(0,1fr));min-width:0;
+ overflow:hidden;background:#000}
+.rf-ascii-header>.rf-row,.rf-ascii-footer>.rf-row{min-height:0;min-width:0}
+.rf-ascii-header .rf-logo-art{height:400%}
+.rf-ascii-body{position:absolute;inset:24% 0 8%;z-index:1;
+ display:flex;justify-content:center;align-items:center;min-width:0;
+ overflow:hidden;background:#000}
+.rf-ascii-art{display:block;width:max-content;max-width:100%;max-height:100%;
+ padding:0;margin:0;overflow:hidden;white-space:pre;line-height:1;
+ letter-spacing:0;text-align:left;color:#ff0;
+ font-family:'Courier New',monospace;font-weight:700;
+ font-variant-ligatures:none;text-shadow:none;-webkit-font-smoothing:none}
+.rf-ascii-art.rf-ascii-cyan{color:#0ff}
+.rf-ascii-art.rf-ascii-green{color:#0f0}
+.rf-ascii-art.rf-ascii-yellow{color:#ff0}
+.rf-ascii-footer{position:absolute;inset:auto 0 0;height:8%;z-index:2;
+ display:grid;grid-template-rows:repeat(2,minmax(0,1fr));
+ background:#000}

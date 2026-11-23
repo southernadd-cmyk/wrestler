@@ -39,4 +39,29 @@ assert.match(dennis,/alt="Pixel-art portrait of Dennis"/);
 const dennisPng=fs.readFileSync(path.join(__dirname,'..','assets','portraits','dennis.png'));
 assert.equal(dennisPng.subarray(1,4).toString(),'PNG');assert.equal(dennisPng.readUInt32BE(16),144);assert.equal(dennisPng.readUInt32BE(20),180);
 assert.equal(dennisPng[25],6,'with an alpha channel');
-console.log('PASS portraits: 80 wrestlers and 4 promoters use painted atlas cells; Dennis has his own painted portrait; overrides still render');
+assert.equal(P.PLAYER_PORTRAITS.length,16,'16 selectable manager looks');
+assert.equal(new Set(P.PLAYER_PORTRAITS.map(p=>p.label)).size,16,'each manager has a distinct label');
+assert.equal(new Set(P.PLAYER_PORTRAITS.map(p=>p.inspiration)).size,16,'British-wrestling callbacks are individual');
+const art=fs.readFileSync(path.join(__dirname,'../assets/portraits/player-managers.webp'));
+assert.equal(art.subarray(0,4).toString(),'RIFF','bundled manager atlas');
+assert.equal(art.subarray(8,12).toString(),'WEBP','manager art format');
+assert.equal(art.subarray(12,16).toString(),'VP8X','extended WEBP stores alpha and dimensions');
+assert.equal(art.readUIntLE(24,3)+1,192,'four 48px manager columns');
+assert.equal(art.readUIntLE(27,3)+1,240,'four 60px manager rows');
+const css=fs.readFileSync(path.join(__dirname,'../assets/css/core.css'),'utf8');
+assert.ok(css.includes('background-image:url(\'../portraits/player-managers.webp\')'),
+ 'manager cells are from the bundled asset, not the procedural renderer');
+assert.ok(css.includes('background-size:400% 400%'),'manager atlas is an exact 4x4 grid');
+const managerPositions=new Set();
+for(let i=0;i<16;i++){
+ const image=P.playerPortrait(i,'Jane Smith','portrait x2');
+ assert.match(image,/^<span class="portrait x2 player-manager-portrait" role="img"/,
+  'player option '+i+' uses the illustrated atlas');
+ assert.match(image,/Pixel-art portrait of Jane Smith/);
+ managerPositions.add(image.match(/background-position:([^"]+)/)[1]);
+}
+assert.equal(managerPositions.size,16,'all 16 choices have different artwork cells');
+assert.match(P.playerPortrait(0,'A&B <script>'),/A&amp;B &lt;script>/,'manager name safely escaped');
+assert.equal(P.playerPortrait(999,'Fallback'),P.playerPortrait(0,'Fallback'),
+ 'invalid portrait indexes still fall back safely');
+console.log('PASS portraits: 80 wrestlers, 4 promoters, Dennis and 16 illustrated manager portraits');

@@ -225,6 +225,34 @@ function avatar(actor,appearance=null,cssClass='portrait'){
  if(position)return `<span class="${cssClass} roster-portrait" role="img" aria-label="${label}" style="background-position:${position}"></span>`;
  return `<img class="${cssClass}" src="${asData(actor,appearance)}" alt="${label}" width="48" height="60" loading="lazy">`;
 }
+// Sixteen individually illustrated, pixel-grid manager cutouts. The bundled
+// 192x240 atlas contains 4 columns x 4 rows of native 48x60 characters.
+// Portrait indexes are unchanged for existing saves; no game RNG is touched.
+const PLAYER_PORTRAITS=Object.freeze([
+ {label:"The Joint Booker",inspiration:"World of Sport and Joint Promotions"},
+ {label:"The Northern Boss",inspiration:"The modern British northern scene"},
+ {label:"The Modern Agent",inspiration:"Contemporary UK independent wrestling"},
+ {label:"The Matriarch",inspiration:"Old-school wrestling management"},
+ {label:"The Punk Second",inspiration:"The punk-era British wrestling underground"},
+ {label:"The Club Promoter",inspiration:"The working men's club circuit"},
+ {label:"The Wigan Tactician",inspiration:"Wigan catch-wrestling tradition"},
+ {label:"The TV Producer",inspiration:"The ITV Saturday afternoon era"},
+ {label:"The Iron Veteran",inspiration:"The no-nonsense territory veteran"},
+ {label:"The Cabaret Manager",inspiration:"Classic British entertainment halls"},
+ {label:"The Mat Specialist",inspiration:"British technical wrestling"},
+ {label:"The Grand Dame",inspiration:"The great British matriarch tradition"},
+ {label:"The Seaside Showman",inspiration:"The Welsh and seaside touring promotions"},
+ {label:"The Outsider",inspiration:"Modern UK alternative wrestling"},
+ {label:"The New Wave",inspiration:"The new independent scene"},
+ {label:"The All-Star",inspiration:"All Star's touring legacy"}
+].map(option=>Object.freeze(option)));
+function playerPortrait(index=0,name='Manager',cssClass='portrait'){
+ const n=Number.isInteger(index)&&index>=0&&index<PLAYER_PORTRAITS.length?index:0;
+ const safe=String(name).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+ const position=(n%4)*(100/3)+'% '+Math.floor(n/4)*(100/3)+'%';
+ return '<span class="'+cssClass+' player-manager-portrait" role="img" aria-label="Pixel-art portrait of '+
+  safe+'" style="background-position:'+position+'"></span>';
+}
 function png(actor,appearance=null){const canvas=renderCanvas(actor,appearance||getLook(actor),8);const link=document.createElement('a');link.download='the-office-'+(actor.name||actor.key).replace(/[^a-z0-9-]+/gi,'-').toLowerCase()+'-portrait.png';link.href=canvas.toDataURL('image/png');link.click()}
-root.OfficePortraits={OPTIONS,items,generated,getLook,renderCanvas,asData,avatar,png,hash,curatedLooks,portraitDetails};
+root.OfficePortraits={OPTIONS,items,generated,getLook,renderCanvas,asData,avatar,png,hash,curatedLooks,portraitDetails,PLAYER_PORTRAITS,playerPortrait};
 })(typeof window!=='undefined'?window:globalThis);
