@@ -1,10 +1,7 @@
 name: Technical earned-cover chain diagnostic
 on:
-  pull_request:
-    paths:
-      - 'tools/graph-lab/technical-cover-chain-trace.cjs'
-      - '.github/workflows/technical-cover-chain-trace.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
