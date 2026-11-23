@@ -371,7 +371,7 @@
    if(verified.length){
     // The game already settled these matches; report the winner, not a guess.
     const shown=verified.slice().sort((x,y)=>Number(!!y.title)-Number(!!x.title)||
-     String(x.pid).localeCompare(String(y.pid))).slice(0,3);
+     String(x.pid).localeCompare(String(y.pid))).slice(0,Math.max(1,3-moved.length));
     for(const match of shown){
      const loser=match.winner===match.a?match.b:match.a;
      a.push(item(' '+promotionName(match.pid)+(match.title?' / TITLE':''),'yellow'));
@@ -392,7 +392,7 @@
      a.push(item(' '+p.name+': '+Math.round(territory.business[p.id].buzz),'green'));
    }
    a.push(item(' 200 RESULTS / 302 CHAMPIONS','yellow'));
-   add(102,'CIRCUIT NEWS',a.slice(0,17));
+   add(102,'CIRCUIT NEWS',a);
   }
 
   a=[item('BOOKINGS AND OPPORTUNITIES','yellow'),
