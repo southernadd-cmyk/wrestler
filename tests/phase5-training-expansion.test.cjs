@@ -5,7 +5,7 @@ const {EXPECTED}=require('./_phase10-inventory.cjs');
 // Requires no save migration and keeps original Phase 3 baseline separately intact.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const lab=require('../tools/graph-lab/core.js'),game={},names=[
- 'data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-engine.js'
+ 'data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'
 ];
 for(const name of names){
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'..','assets/js',name),'utf8'),

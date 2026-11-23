@@ -7,7 +7,7 @@
  */
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const lab=require('./graph-lab/core.js');
-const SCRIPTS=Object.freeze(['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-engine.js']);
+const SCRIPTS=Object.freeze(['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js']);
 const SCHEMA='office-five-meeting-audit-v1';
 const FIXTURES=Object.freeze([
  {id:'catch-v-general',label:'Catch vs general',wid:'juno',rid:'rex',plan:'technical',slot:'feature',seed:47101},

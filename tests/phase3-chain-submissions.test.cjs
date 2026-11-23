@@ -7,7 +7,7 @@ const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const lab=require('../tools/graph-lab/core.js');
 const root={};
 for(const filename of ['data.js','roster-registry.js','technique-registry.js',
- 'technique-backgrounds.js','match-graph.js','match-engine.js'])
+ 'technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'])
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../assets/js',filename),'utf8'),
  {window:root,Math,Date,JSON,console},{filename});
 root.OfficeRosterV4.enableProfiles();

@@ -9,7 +9,7 @@ const at=args.indexOf('--count');
 const count=at>=0?Number(args[at+1]):120;
 if(!Number.isInteger(count)||count<1||count>1500)throw Error('count must be 1 to 1500');
 const root={};
-for(const name of ['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-engine.js'])
+for(const name of ['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'])
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../assets/js',name),'utf8'),
  {window:root,Math,Date,JSON,console},{filename:name});
 root.OfficeRosterV4.enableProfiles();

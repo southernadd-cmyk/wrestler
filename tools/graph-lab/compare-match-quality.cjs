@@ -6,7 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const revision='bfc9af6306657e59cf400cb3cbb7cb59c3579666';
 const prev=path.resolve(process.argv[2]||'quality-reference');
 const current=path.resolve(__dirname,'../..');
-const names=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-engine.js'];
+const names=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'];
 function load(dir){
  const root={};
  for(const file of names)vm.runInNewContext(
