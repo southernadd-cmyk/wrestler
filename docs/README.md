@@ -1,6 +1,6 @@
 # The Office — documentation guide (v0.65)
 
-**Current edition:** [v0.65 — The territory talks back](../readme.md#the-latest-issue) · [Ringfax](../readme.md#ringfax) · [previous v0.6.0 release guide](v0.6-release.md) · [v0.5.0](v0.5-release.md) · [v0.4.0 archive](v0.4-release.md)  
+**Current edition:** [v0.65 — The territory talks back](../readme.md#the-main-event) · [Ringfax](../readme.md#ringfax) · [previous v0.6.0 release guide](v0.6-release.md) · [v0.5.0](v0.5-release.md) · [v0.4.0 archive](v0.4-release.md)  
 **Latest match-engine changes:** [Long-match earned recovery and late offence](long-match-endurance-and-late-offence.md) · [Five-plan audit PR #157](https://github.com/southernadd-cmyk/wrestler/pull/157)
 **Next development review:** [Technique coverage and physical realism](technique-and-realism-review.md)  
 **Completed 500-bout audit:** [Findings](reports/v04-technique-position-500.md) · [Machine-readable data](reports/v04-technique-position-500.json) · [Reproduction script](../tools/graph-lab/technique-position-audit.cjs)  
@@ -15,7 +15,7 @@ This index separates **v0.65's newer career, match-structure and editorial featu
 
 | Need | Read |
 | --- | --- |
-| What's new in v0.65 | [Current README issue](../readme.md#the-latest-issue), [Ringfax](../readme.md#ringfax) |
+| What's new in v0.65 | [Current README issue](../readme.md#the-main-event), [Ringfax](../readme.md#ringfax) |
 | What's new in v0.6 and its regression evidence | [v0.6 release guide](v0.6-release.md), [long-match balance and limits](long-match-endurance-and-late-offence.md) |
 | What's in v0.5's technique and graph expansion | [v0.5 release guide](v0.5-release.md), [final technique audit](reports/v04-final-106-technique-audit.md) |
 | Further match-quality and physical-realism review | [Earlier roadmap](technique-and-realism-review.md), [Graph Lab](graph-lab.md) |
