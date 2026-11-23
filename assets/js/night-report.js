@@ -141,7 +141,7 @@
   const lede=n(best.stars)>=4?'A standout bout in the books. Here is what the week actually changed.':
    n(best.stars)>=3?'A solid night in the ring. Here is how the results affected the office.':
    'The card is in the books. There are consequences to account for before the next show.';
-  return {from:'Your road agent',subject:'Match night report — S'+season+' W'+week,season,week,kind:'info',body:[lede],sections,reportVersion:1};
+  return {from:'Your road agent',subject:'Match night report — S'+season+' W'+week,season,week,kind:'info',body:[((s.identity?.manager||'Manager')+', here is the report for '+(s.identity?.stable||'your stable')+'.'),lede],sections,reportVersion:1};
  }
  root.OfficeNightReport={capture,build};
 })(typeof window!=='undefined'?window:globalThis);
