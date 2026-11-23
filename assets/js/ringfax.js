@@ -571,11 +571,21 @@
    '<span class="rf-link-name">'+escape(label)+'</span><span class="rf-link-detail">'+escape(desc)+'</span></button>').join('');
   const pads=[1,2,3,4,5,6,7,8,9,0].map(n=>
    '<button type="button" data-rf-action="digit" data-rf-value="'+n+'" aria-label="Ringfax digit '+n+'">'+n+'</button>').join('');
+  const quizControls=C.page===777?'<div class="rf-quiz-remote" role="group" aria-label="Quiz colour buttons">'+
+   quizFooter().map((link,i)=>{
+    const a=quizState.stage==='question'?QUIZ_QUESTIONS[quizState.index].a[i]:
+     (link.action==='go'?'EXIT TO INDEX':link.text.trim().replace(/^(RED|GRN|YEL|CYN)\s+/,''));
+    return '<button type="button" class="rf-quiz-key rf-quiz-key-'+link.colour+
+     '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
+     '" aria-label="'+escape((quizState.stage==='question'?['Red','Green','Yellow','Cyan'][i]+' answer: ':'')+a)+
+     '"><span class="rf-quiz-key-colour">'+['RED','GREEN','YELLOW','CYAN'][i]+
+     '</span><span>'+escape(a)+'</span></button>';
+   }).join('')+'</div>':'';
   const refs=(s?.history||[]).filter(h=>h?.cid&&h?.wid).slice(0,2).map(h=>
    '<button class="btn sm" type="button" data-record="w:'+escape(h.wid)+'">Open '+escape(h.name||'wrestler')+' record</button>').join('');
   const srText=escape('Page '+v.page+', '+v.title+', subpage '+(v.sub+1)+' of '+v.subpages+'. '+
    v.rows.slice(6,23).map(r=>r.text.trim()).filter(Boolean).join(' '));
-  return '<section class="rf-wrap" aria-label="Ringfax wrestling teletext">'+
+  return '<section class="rf-wrap'+(C.page===777?' rf-quiz-active':'')+'" aria-label="Ringfax wrestling teletext">'+
    '<div class="rf-display">'+
    '<header class="rf-display-header"><div class="rf-brand"><span class="rf-signal" aria-hidden="true">■</span>'+
    '<strong>RINGFAX</strong><span class="rf-brand-tag">WRESTLING INFORMATION SERVICE</span></div>'+
@@ -588,6 +598,7 @@
    '<p class="rf-display-caption">LIVE FROM THE CIRCUIT <span>●</span> READ-ONLY EDITION <span>●</span> '+escape(v.title)+'</p>'+
    '</div>'+
    '<aside class="rf-console" aria-label="Ringfax controls">'+
+   quizControls+
    '<div class="rf-console-title"><span>RINGFAX DIRECTORY</span><strong>PAGE '+v.page+'</strong></div>'+
    '<div class="rf-page-grid" role="group" aria-label="Go to a Ringfax page">'+quick+'</div>'+
    '<div class="rf-operator"><div class="rf-operator-label"><span>GO TO PAGE</span><span>3 DIGITS</span></div>'+
