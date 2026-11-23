@@ -78,6 +78,35 @@ async function run(browser,name,viewport){
    }
   }
 
+  // A new career already has titleholders, card ladders, promoters and
+  // actual offers. The opening edition must expose them before match one.
+  const untouchedCareer=await page.evaluate(()=>JSON.stringify(window.OfficeGame.S));
+  for(const [number,heading] of [
+   [102,'SEASON PREVIEW'],[103,'BOOKING DESK'],[104,'PROMOTER DIRECTORY'],
+   [301,'CIRCUIT LEADERS']
+  ]){
+   await page.locator('#rf-screen .rf-index-half[data-rf-value="'+number+'"]').click();
+   const edition=await page.evaluate(()=>{
+    const R=window.OfficeRingfax,s=window.OfficeGame.S;
+    return {screen:R.screen(s),data:R.build(s)};
+   });
+   assert.equal(edition.screen.subpages,1,name+': page '+number+' must fit one screen');
+   assert.ok(edition.screen.rows.every(row=>row.text.length===40),
+    name+': page '+number+' must remain 40 columns');
+   assert.match(await page.locator('#rf-screen').innerText(),new RegExp(heading),
+    name+': labelled opening page '+number);
+   await page.locator('.rf-page-link[data-rf-value="100"]').click();
+  }
+  const initialNews=await page.evaluate(()=>window.OfficeRingfax.build(window.OfficeGame.S));
+  assert.ok(initialNews[101].lines.some(row=>row.text.includes('CHAMPIONSHIP')),
+   name+': news should report real opening-week titleholders');
+  assert.ok(initialNews[200].lines.some(row=>row.text.includes('NOT RESULTS')),
+   name+': proposed matches cannot be mistaken for results');
+  assert.ok(initialNews[201].lines.some(row=>row.text.includes('NOT MATCH RATINGS')),
+   name+': card scores are not invented star grades');
+  assert.equal(await page.evaluate(()=>JSON.stringify(window.OfficeGame.S)),untouchedCareer,
+   name+': opening week editorial coverage is read-only');
+
   // Click a line in the teletext itself (not just the separate directory).
   await page.locator('#rf-screen .rf-index-half[data-rf-value="500"]').click();
   assert.match(await page.locator('#rf-screen').innerText(),/THE FANZONE/);

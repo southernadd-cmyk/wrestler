@@ -231,35 +231,82 @@
   }
   return out;
  }
+ const wrestlerName=id=>id?(D?.findWrestler?.(id)?.name||String(id)):'VACANT';
+ const promotionName=id=>D?.PROMOS?.find(p=>p.id===id)?.name||String(id||'Unknown');
+ function leader(s,pid,div,exclude=null){
+  const cards=s?.territory?.cards?.[pid]||{};
+  return Object.entries(cards).filter(([id,v])=>id!==exclude&&v&&
+   Number.isFinite(v.score)&&D?.divisionOf?.(id)===div)
+   .sort((a,b)=>b[1].score-a[1].score||
+    wrestlerName(a[0]).localeCompare(wrestlerName(b[0])))[0]||null;
+ }
+ function scheduled(s){
+  const confirmed=[...(s?.card||[]),...(s?.futureBookings||[])].map(o=>({...o,rfKind:'BOOKED'}));
+  const known=new Set(confirmed.map(o=>o.id).filter(Boolean));
+  const offered=(s?.offers||[]).filter(o=>!known.has(o.id)).map(o=>({...o,rfKind:'OFFER'}));
+  return [...confirmed,...offered].filter(o=>o.pid&&o.rid).sort((a,b)=>
+   (a.eventAbs??0)-(b.eventAbs??0)||String(a.pid).localeCompare(String(b.pid))||
+   String(a.rid).localeCompare(String(b.rid)));
+ }
+ const eventWeek=o=>o.eventAbs?
+  'S'+(Math.floor((o.eventAbs-1)/16)+1)+'W'+(((o.eventAbs-1)%16)+1):'DATE TBD';
+ function openingFans(s){
+  const p=D?.PROMOS||[],first=p[0],last=p[p.length-1];
+  const champ=s?.territory?.titles?.[first?.id]?.[D?.DIVISION_ORDER?.[0]]?.holder;
+  const top=leader(s,first?.id,D?.DIVISION_ORDER?.[0],champ);
+  return [
+   {name:'GRAPPLEGRAN',quote:champ?
+    wrestlerName(champ)+' has the '+first.name+' belt. Now show us a proper defence.':
+    'I want a proper championship contest.'},
+   {name:'HEELTURN78',quote:last?
+    last.name+' have the big stage. Give me a noisy small hall instead.':
+    'Big names are fine. I still want a proper villain.'},
+   {name:'MATWORKMICK',quote:top?
+    wrestlerName(top[0])+' sits high on the '+first.name+' card. Who can outwrestle them?':
+    'I am waiting for a technical contest.'},
+   {name:'TICKETSTUB',quote:first?
+    first.venue+' is one venue I would visit. Earn our ticket money.':
+    'Promoters have to earn our ticket money.'}
+  ];
+ }
  function build(s){
   const h=latest(s),recent=recents(s),P={};
   const add=(number,title,lines)=>{P[number]={number,title,lines:lines.slice()};};
   // A proper two-column teletext index, not a conventional app menu.
   // Each 20-character half remains individually clickable in the renderer.
   const pair=(left,right,colour='white')=>({text:line(left,20)+line(right,20),colour,background:'black'});
+  const promos=s?.promoters?.length?s.promoters:(D?.PROMOS||[]);
+  const circuitTitles=s?.territory?.titles||{};
+  const bookings=scheduled(s);
+  const openingWeek=(s?.week||1)===1;
+  const mainPromo=promos[0]||null;
+  const champ=mainPromo&&circuitTitles[mainPromo.id]?.[D?.DIVISION_ORDER?.[0]]?.holder;
   let a=[
-   item('  NEWS AND RESULTS    SPORT & FANS','yellow'),
-   item('  --------------------------------','blue'),
-   pair('101 HEADLINES','300 RANKINGS','white'),
-   pair('200 RESULTS','302 TITLES','cyan'),
-   pair('201 RATINGS','500 FANZONE','white'),
-   pair('100 INDEX','501 LETTERS','cyan'),
-   item('  --------------------------------','blue'),
-   item(''),
-   item('  LATEST FROM THE WRESTLING WORLD','yellow')
+   item(' NEWS, RESULTS AND THE CIRCUIT','yellow'),
+   item(' --------------------------------','blue'),
+   pair('101 NEWS',openingWeek?'102 SEASON':'102 NEWS','white'),
+   pair('103 BOOKINGS','104 PROMOTERS','cyan'),
+   pair('200 RESULTS','201 RATINGS','white'),
+   pair('300 LADDER','301 LEADERS','cyan'),
+   pair('302 TITLES','500 FANZONE','white'),
+   pair('501 LETTERS','100 INDEX','cyan'),
+   item(' --------------------------------','blue'),
+   item(' LATEST FROM THE CIRCUIT','yellow')
   ];
   if(h){
-   paragraphs(a,h.name+' versus '+h.foe,'cyan');
-   paragraphs(a,'Season '+h.season+' week '+h.week+' / '+score(h));
+   a.push(item(' '+h.name+' v '+h.foe,'cyan'),
+    item(' S'+h.season+' W'+h.week+' / '+score(h)));
   }else{
-   paragraphs(a,'A new season on the circuit.','cyan');
-   paragraphs(a,'Match reports follow the first bell.');
+   a.push(item(' SEASON '+(s?.season||1)+((s?.week||1)===1?' OPENS':' / WEEK '+s.week),'cyan'),
+    item(' '+promos.length+' PROMOTIONS / '+(D?.DIVISION_ORDER?.length||0)*promos.length+' TITLES'));
   }
-  a.push(item(''),item('  FAN OPINION: THE FANZONE 500','green'),
-   item('  READERS LETTERS .......... 501','yellow'));
+  if(champ)a.push(item(' '+mainPromo.name+': '+wrestlerName(champ),'yellow'));
+  a.push(item(' '+bookings.length+' BOOKING DESK ITEMS / P103','green'),
+   item(' FAN REACTION AND LETTERS: 500-501','cyan'));
+
   add(100,'RINGFAX INDEX',a);
 
-  a=[item('THE LATEST FROM THE RING','yellow'),item('')];
+  a=[item(h?'LATEST FROM THE RING':((s?.week||1)===1?'OPENING WEEK: CIRCUIT NEWS':'CIRCUIT NEWS / THIS WEEK'),'yellow'),item('')];
   if(h){
    paragraphs(a,h.name+' versus '+h.foe,'cyan');
    paragraphs(a,'Reported from '+text(h.promoter||h.pid||'the circuit')+'.');
@@ -269,11 +316,116 @@
    else if(h.outcome==='nc')paragraphs(a,'Match ended with no contest.');
    else if(h.outcome==='double')paragraphs(a,'The agreed finish was broken.');
    else paragraphs(a,'The result has been entered in the official record.');
-  }else paragraphs(a,'No match reports are available. The newsroom will update after a completed bout.');
+   a.push(item(''),item(' MORE CIRCUIT NEWS: 102','cyan'));
+  }else{
+   a.push(item(' THE CHAMPIONSHIP PICTURE','cyan'));
+   for(const p of promos.slice(0,2)){
+    const holder=circuitTitles[p.id]?.[D?.DIVISION_ORDER?.[0]]?.holder;
+    if(holder)a.push(item(' '+p.name+': '+wrestlerName(holder),'white'));
+   }
+   a.push(item(''),item(' THE PROMOTERS OPEN FOR BUSINESS','cyan'));
+   for(const p of promos.slice(0,2))
+    a.push(item(' '+p.name+' / '+(p.venue||'VENUE TBD')));
+   a.push(item(''),item(' '+bookings.length+' BOOKING DESK ITEMS','green'));
+   const next=bookings[0];
+   if(next)a.push(item(' '+promotionName(next.pid)+' / '+wrestlerName(next.rid)));
+   a.push(item(''),item(openingWeek?' 102 SEASON PREVIEW / 103 BOOKINGS':' 102 CIRCUIT NEWS / 103 BOOKINGS','yellow'),
+    item(' 302 CHAMPIONS / 500 FANS','green'));
+  }
+
   add(101,'LATEST HEADLINE',a);
 
+  // Page 102 is a one-off season preview, then a fresh weekly news bulletin.
+  // Never leave a stale season-preview page in a career after opening week.
+  if(openingWeek){
+   a=[item('SEASON PREVIEW / THE CIRCUIT','yellow'),
+      item(' FOUR PROMOTERS, TWO DIVISIONS','cyan'),item('')];
+   for(const p of promos){
+    a.push(item(' '+p.name.toUpperCase(),'yellow'));
+    a.push(item(' '+(p.desc||'WRESTLING')+' / '+(p.tv?'ON TV':'LIVE SHOWS')));
+    const m=circuitTitles[p.id]?.[D?.DIVISION_ORDER?.[0]]?.holder;
+    const w=circuitTitles[p.id]?.[D?.DIVISION_ORDER?.[1]]?.holder;
+    a.push(item(' TITLES: '+(m?rankName(m):'VACANT')+' / '+(w?rankName(w):'VACANT'),'green'));
+   }
+   a.push(item(''),item(' 302: ALL CHAMPIONS','cyan'));
+   add(102,'SEASON PREVIEW',a);
+  }else{
+   const absolute=(s.season-1)*16+s.week;
+   const territory=s?.territory||{};
+   const bulletin=territory.lastResults?.week===absolute?territory.lastResults.matches||[]:[];
+   const verified=bulletin.filter(m=>m?.pid&&m?.a&&m?.b&&
+    (m.winner===m.a||m.winner===m.b));
+   const moved=(territory.titleLog||[]).filter(m=>m?.week===absolute&&
+    m?.how==='match'&&m?.to&&m?.pid).slice(0,2);
+   a=[item('CIRCUIT NEWS / S'+s.season+' W'+s.week,'yellow'),item('')];
+   if(moved.length){
+    a.push(item(' TITLE CHANGES','cyan'));
+    for(const change of moved){
+     const belt=D?.belt?.(change.pid,change.div)?.short||change.div+' title';
+     a.push(item(' '+promotionName(change.pid)+' / '+change.div.toUpperCase(),'yellow'));
+     a.push(item(' '+wrestlerName(change.to)+' WINS '+belt,'white'));
+    }
+    a.push(item(''));
+   }
+   a.push(item(' THIS WEEK IN THE RING','cyan'));
+   if(verified.length){
+    // The game already settled these matches; report the winner, not a guess.
+    const shown=verified.slice().sort((x,y)=>Number(!!y.title)-Number(!!x.title)||
+     String(x.pid).localeCompare(String(y.pid))).slice(0,Math.max(1,3-moved.length));
+    for(const match of shown){
+     const loser=match.winner===match.a?match.b:match.a;
+     a.push(item(' '+promotionName(match.pid)+(match.title?' / TITLE':''),'yellow'));
+     a.push(item(' '+wrestlerName(match.winner)+' bt '+wrestlerName(loser),'white'));
+    }
+   }else{
+    a.push(item(' No new verified circuit results.','white'));
+   }
+   a.push(item(''));
+   // Public-facing promotion interest: use the actual live buzz score, not
+   // confidential finances, guessed audience numbers or invented ratings.
+   const buzz=promos.filter(p=>Number.isFinite(territory.business?.[p.id]?.buzz))
+    .sort((x,y)=>territory.business[y.id].buzz-territory.business[x.id].buzz||
+     x.id.localeCompare(y.id)).slice(0,2);
+   if(buzz.length){
+    a.push(item(' PROMOTION BUZZ','cyan'));
+    for(const p of buzz)
+     a.push(item(' '+p.name+': '+Math.round(territory.business[p.id].buzz),'green'));
+   }
+   a.push(item(' 200 RESULTS / 302 CHAMPIONS','yellow'));
+   add(102,'CIRCUIT NEWS',a);
+  }
+
+  a=[item('BOOKINGS AND OPPORTUNITIES','yellow'),
+     item(' OFFERS ARE NOT SIGNED FIXTURES','cyan'),item('')];
+  if(!bookings.length)paragraphs(a,'No current offers or signed cards. Check back after the next update.');
+  for(const o of bookings.slice(0,5)){
+   a.push(item(' '+o.rfKind+' '+eventWeek(o)+' / '+promotionName(o.pid),'yellow'));
+   a.push(item(' '+(o.wid?wrestlerName(o.wid)+' v ':'Opponent: ')+wrestlerName(o.rid)));
+  }
+  a.push(item(''),item(' FINISHED MATCHES GO ON P200','green'));
+  add(103,'BOOKING DESK',a);
+
+  a=[item('THE FOUR PROMOTIONS','yellow'),item('')];
+  for(const p of promos){
+   a.push(item(' '+p.name.toUpperCase(),'cyan'));
+   a.push(item(' '+(p.desc||'WRESTLING')));
+   a.push(item(' '+p.venue+' / REACH '+p.reach+(p.tv?' / TV':' / LIVE'),'yellow'));
+  }
+  a.push(item(''),item(' P102: TITLES / P103: BOOKINGS','green'));
+  add(104,'PROMOTER DIRECTORY',a);
+
   a=[item('RECENT COMPLETED MATCHES','yellow'),item('')];
-  if(!recent.length)paragraphs(a,'No match results recorded yet.');
+  if(!recent.length){
+   paragraphs(a,'No completed results on record.','cyan');
+   a.push(item(''),item(' UPCOMING / NOT RESULTS','yellow'));
+   if(bookings.length){
+    for(const o of bookings.slice(0,3)){
+     a.push(item(' '+o.rfKind+' '+eventWeek(o),'green'));
+     a.push(item(' '+promotionName(o.pid)+' - '+wrestlerName(o.rid)));
+    }
+   }else paragraphs(a,'No current bookings.');
+   a.push(item(''),item(' 103: THE BOOKING DESK','yellow'));
+  }
   recent.slice(0,8).forEach((r,i)=>{
    a.push(item('S'+r.season+' W'+r.week+' '+(i+1)+'. '+text(r.name),'cyan'));
    paragraphs(a,'v '+text(r.foe)+' / '+score(r),'white');
@@ -284,7 +436,16 @@
 
   a=[item('RECORDED MATCH RATINGS','yellow'),item('')];
   const ratings=recent.filter(r=>Number.isFinite(r.stars));
-  if(!ratings.length)paragraphs(a,'No rated matches recorded yet.');
+  if(!ratings.length){
+   paragraphs(a,'No matches rated yet. Star scores appear only after completed bouts.','cyan');
+   a.push(item(''),item(' CURRENT CARD WATCH','yellow'),
+    item(' CARD SCORES ARE NOT MATCH RATINGS','green'));
+   for(const promo of promos.slice(0,4)){
+    const top=leader(s,promo.id,D?.DIVISION_ORDER?.[0]);
+    if(top)a.push(item(' '+promo.name+': '+rankName(top[0])+' ['+Math.round(top[1].score)+']'));
+   }
+   a.push(item(''),item(' 300/301: CURRENT RANKINGS','cyan'));
+  }
   ratings.slice(0,8).forEach(r=>{
    paragraphs(a,'S'+r.season+' W'+r.week+' '+r.name+' v '+r.foe,'cyan');
    a.push(item(' '+r.stars.toFixed(2)+' stars','yellow'));
@@ -295,16 +456,35 @@
   }
   add(201,'MATCH GRADES',a);
 
-  const p=s?.promoters?.[0]||D?.PROMOS?.[0]||null;
-  const div=D?.DIVISION_ORDER?.[0]||null;
-  const cards=s?.territory?.cards?.[p?.id]||{};
-  const ranked=Object.entries(cards).filter(([id,row])=>row&&Number.isFinite(row.score)&&(!div||D?.divisionOf?.(id)===div))
-    .sort((x,y)=>y[1].score-x[1].score).slice(0,10);
-  a=[item('PROMOTION: '+(p?.name||'Unknown'),'yellow'),item('DIVISION: '+(div||'unavailable'),'cyan'),item('')];
-  if(!ranked.length)paragraphs(a,'Card rankings are not available for this promotion.');
-  ranked.forEach(([id,v],i)=>a.push(item(' '+String(i+1).padStart(2,' ')+' '+rankName(id).slice(0,27)+' '+Math.round(v.score),'white')));
-  a.push(item(''),item('A SINGLE PROMOTION / DIVISION','cyan'));
+  const p=promos[0]||null;
+  const divs=D?.DIVISION_ORDER||[];
+  const col=v=>text(v).replace(/\s+/g,' ').trim().slice(0,20).padEnd(20,' ');
+  const ranking=(pid,div)=>Object.entries(s?.territory?.cards?.[pid]||{})
+   .filter(([id,v])=>v&&Number.isFinite(v.score)&&D?.divisionOf?.(id)===div)
+   .sort((x,y)=>y[1].score-x[1].score||wrestlerName(x[0]).localeCompare(wrestlerName(y[0])));
+  a=[item('CARD LADDER / '+(p?.name||'CIRCUIT').toUpperCase(),'yellow'),
+     {text:col('MEN / POINTS')+col('WOMEN / POINTS'),colour:'cyan'}];
+  const rankedDivs=divs.slice(0,2).map(div=>ranking(p?.id,div).slice(0,6));
+  for(let i=0;i<6;i++){
+   const labels=rankedDivs.map(rows=>rows[i]?
+    (i+1)+'. '+rankName(rows[i][0])+' '+Math.round(rows[i][1].score):'');
+   a.push({text:col(labels[0])+col(labels[1]),colour:i===0?'yellow':'white'});
+  }
+  a.push(item(''),item(' CARD RANKS, NOT MATCH RATINGS','green'),
+   item(' 301: LEADERS IN ALL PROMOTIONS','cyan'));
   add(300,'CARD RANKINGS',a);
+
+  a=[item('THE CIRCUIT CARD LEADERS','yellow'),
+    {text:col('MEN - TOP RANK')+col('WOMEN - TOP RANK'),colour:'cyan'}];
+  for(const promo of promos){
+   a.push(item(' '+promo.name.toUpperCase(),'yellow'));
+   const leaders=divs.slice(0,2).map(div=>leader(s,promo.id,div));
+   a.push({text:col(leaders[0]?rankName(leaders[0][0]):'NOT RANKED')+
+    col(leaders[1]?rankName(leaders[1][0]):'NOT RANKED'),colour:'white'});
+   a.push(item(''));
+  }
+  a.push(item(''),item(' CURRENT CARD ORDER','green'));
+  add(301,'CIRCUIT LEADERS',a);
 
   // Four promotions × two divisions fit on one 17-line teletext page.
   // Every promotion uses a full-width header and one pair of 20-cell columns.
@@ -336,12 +516,7 @@
   add(302,'TITLE PICTURE',a);
 
   // Opening-week letters are explicitly opinions about the season, not invented match results.
-  const opening=[
-   {name:'GRAPPLEGRAN',quote:'A new season. Give me a clean finish and a wrestler I can get behind.'},
-   {name:'HEELTURN78',quote:'Everyone wants a hero. I want a villain worth booing.'},
-   {name:'MATWORKMICK',quote:'All I ask is one proper technical contest. The bells will tell the story.'},
-   {name:'TICKETSTUB',quote:'Tickets are not free. The promoters need to earn our money.'}
-  ];
+  const opening=openingFans(s);
   const fans=h?voices(h,3):opening.slice(0,3);
   a=[item('WHAT THE FANS ARE SAYING','yellow'),item('')];
   if(h){
@@ -353,7 +528,7 @@
     a.push(item(''));
    });
   }else{
-   paragraphs(a,'OPENING WEEK / FIRST IMPRESSIONS','cyan');
+   paragraphs(a,(s?.week||1)===1?'OPENING WEEK / FIRST IMPRESSIONS':'CIRCUIT OPINIONS','cyan');
    a.push(item(''));
    for(const f of fans){
     a.push(item(' '+f.name,'green'));
@@ -373,7 +548,7 @@
     a.push(item(''));
    });
   }else{
-   paragraphs(a,'OPENING WEEK / READERS MAIL','cyan');
+   paragraphs(a,(s?.week||1)===1?'OPENING WEEK / READERS MAIL':'READERS MAIL / THE CIRCUIT','cyan');
    a.push(item(''));
    for(const f of opening){
     a.push(item('FROM: '+f.name,'green'));
@@ -435,8 +610,9 @@
  }
 
  const BANNERS={
-  100:['RINGFAX','yellow'],101:['LATEST','cyan'],200:['RESULTS','green'],
-  201:['RATINGS','yellow'],300:['RANKINGS','green'],302:['TITLES','cyan'],
+  100:['RINGFAX','yellow'],101:['LATEST','cyan'],102:['SEASON','yellow'],
+  103:['BOOKINGS','green'],104:['PROMOS','cyan'],200:['RESULTS','green'],
+  201:['RATINGS','yellow'],300:['RANKINGS','green'],301:['LEADERS','yellow'],302:['TITLES','cyan'],
   500:['FANZONE','magenta'],501:['LETTERS','yellow'],777:['QUIZ','yellow']
  };
  function mosaic(word){
@@ -468,7 +644,8 @@
   const num=String(C.page).padStart(3,'0');
   const header='P'+num+' RINGFAX '+num+'  S'+(s?.season||1)+' W'+(s?.week||1);
   rows.push(item(header.padEnd(31,' ')+clock(),'white'));
-  const [heading,colour]=BANNERS[C.page]||['SEARCH','red'];
+  const [heading,colour]=C.page===102&&(s?.week||1)>1?['CIRCUIT','yellow']:
+   (BANNERS[C.page]||['SEARCH','red']);
   mosaic(heading).forEach((value,i)=>rows.push({text:value,colour:i===1?colour:'white',background:'blue'}));
   const title=p?.title||'PAGE NOT FOUND';
   const pageInfo=chunks.length>1?'  '+(sub+1)+'/'+chunks.length:'';
