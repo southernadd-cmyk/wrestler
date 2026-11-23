@@ -231,7 +231,9 @@
   }
   return out;
  }
- const wrestlerName=id=>id?(D?.findWrestler?.(id)?.name||String(id)):'VACANT';
+ const person=id=>D?.findWrestler?.(id)||D?.TALENT?.find(w=>w.id===id)||
+  D?.FOES?.find(w=>w.id===id)||null;
+ const wrestlerName=id=>id?(person(id)?.name||String(id)):'VACANT';
  const promotionName=id=>D?.PROMOS?.find(p=>p.id===id)?.name||String(id||'Unknown');
  function leader(s,pid,div,exclude=null){
   const cards=s?.territory?.cards?.[pid]||{};
@@ -269,9 +271,25 @@
     'Promoters have to earn our ticket money.'}
   ];
  }
+ function openingForum(s){
+  const p=D?.PROMOS||[];
+  const first=p[0],last=p.at(-1);
+  const top=first&&leader(s,first.id,D?.DIVISION_ORDER?.[0]);
+  return [
+   {name:'BALCONYSEAT',quote:first?
+    'A room like '+first.venue+' can turn one good comeback into a local legend.':
+    'A loud little hall can make a star.'},
+   {name:'KAYFABEKEV',quote:last?
+    'Big television stages are fine, but who will actually earn the boos at '+last.name+'?':
+    'Give me somebody worth booing.'},
+   {name:'BIGSPOTBOB',quote:top?
+    'I would buy a ticket for '+wrestlerName(top[0])+'. I am not promising a classic.':
+    'Give us one moment we will talk about tomorrow.'}
+  ];
+ }
  function build(s){
   const h=latest(s),recent=recents(s),P={};
-  const add=(number,title,lines)=>{P[number]={number,title,lines:lines.slice()};};
+  const add=(number,title,lines,subpages=null)=>{P[number]={number,title,lines:lines.slice(),...(subpages?{subpages:subpages.map(rows=>rows.slice())}:{})};};
   // A proper two-column teletext index, not a conventional app menu.
   // Each 20-character half remains individually clickable in the renderer.
   const pair=(left,right,colour='white')=>({text:line(left,20)+line(right,20),colour,background:'black'});
@@ -282,242 +300,223 @@
   const mainPromo=promos[0]||null;
   const champ=mainPromo&&circuitTitles[mainPromo.id]?.[D?.DIVISION_ORDER?.[0]]?.holder;
   let a=[
-   item(' NEWS, RESULTS AND THE CIRCUIT','yellow'),
+   item(' EDITORIAL / NEWS / READER OPINION','yellow'),
    item(' --------------------------------','blue'),
-   pair('101 NEWS',openingWeek?'102 SEASON':'102 NEWS','white'),
-   pair('103 BOOKINGS','104 PROMOTERS','cyan'),
-   pair('200 RESULTS','201 RATINGS','white'),
-   pair('300 LADDER','301 LEADERS','cyan'),
-   pair('302 TITLES','500 FANZONE','white'),
+   pair('101 HEADLINE',openingWeek?'102 OUTLOOK':'102 NEWS','white'),
+   pair('103 GRAPEVINE','104 THE ROAD','cyan'),
+   pair('200 AFTER BELL','201 THE CRITIC','white'),
+   pair('300 WATCHLIST','301 STORYLINES','cyan'),
+   pair('302 TITLE TALK','500 FANZONE','white'),
    pair('501 LETTERS','100 INDEX','cyan'),
    item(' --------------------------------','blue'),
-   item(' LATEST FROM THE CIRCUIT','yellow')
+   item(' THE OFFICE, THROUGH FANS EYES','yellow'),
+   item(' SEASON '+(s?.season||1)+' / WEEK '+(s?.week||1),'cyan'),
+   item(' NOT ANOTHER RESULTS TABLE','green'),
+   item(' READ THE STORY BEHIND THE STATS','white'),
+   item(' FAN ARGUMENTS: P500 AND P501','yellow')
   ];
-  if(h){
-   a.push(item(' '+h.name+' v '+h.foe,'cyan'),
-    item(' S'+h.season+' W'+h.week+' / '+score(h)));
-  }else{
-   a.push(item(' SEASON '+(s?.season||1)+((s?.week||1)===1?' OPENS':' / WEEK '+s.week),'cyan'),
-    item(' '+promos.length+' PROMOTIONS / '+(D?.DIVISION_ORDER?.length||0)*promos.length+' TITLES'));
-  }
-  if(champ)a.push(item(' '+mainPromo.name+': '+wrestlerName(champ),'yellow'));
-  a.push(item(' '+bookings.length+' BOOKING DESK ITEMS / P103','green'),
-   item(' FAN REACTION AND LETTERS: 500-501','cyan'));
-
   add(100,'RINGFAX INDEX',a);
 
-  a=[item(h?'LATEST FROM THE RING':((s?.week||1)===1?'OPENING WEEK: CIRCUIT NEWS':'CIRCUIT NEWS / THIS WEEK'),'yellow'),item('')];
+  a=[item(h?'THE EDITORIAL LEAD':'WELCOME TO THE CIRCUIT','yellow'),item('')];
   if(h){
-   paragraphs(a,h.name+' versus '+h.foe,'cyan');
-   paragraphs(a,'Reported from '+text(h.promoter||h.pid||'the circuit')+'.');
-   paragraphs(a,'S'+h.season+' W'+h.week+' / '+score(h),'yellow');
-   paragraphs(a,resultLine(h),'green');
-   if(h.outcome==='dq')paragraphs(a,'Match ended by disqualification.');
-   else if(h.outcome==='nc')paragraphs(a,'Match ended with no contest.');
-   else if(h.outcome==='double')paragraphs(a,'The agreed finish was broken.');
-   else paragraphs(a,'The result has been entered in the official record.');
-   a.push(item(''),item(' MORE CIRCUIT NEWS: 102','cyan'));
+   paragraphs(a,'THE BELL HAS RUNG','cyan');
+   paragraphs(a,h.name+' met '+h.foe+' at '+(h.promoter||promotionName(h.pid)||'the circuit')+'.');
+   a.push(item(''));
+   if(h.outcome==='dq'||h.outcome==='nc')
+    paragraphs(a,'A controversial ending has given the fans something to argue about.','yellow');
+   else if(Number.isFinite(h.stars)&&h.stars>=3.5)
+    paragraphs(a,'This contest has people talking. The next booking will carry new expectations.','green');
+   else
+    paragraphs(a,'The contest is over, but opinion on what it means has only begun.','green');
+   a.push(item(''),item(' MORE COMMENT: 200 AND 201','cyan'));
   }else{
-   a.push(item(' THE CHAMPIONSHIP PICTURE','cyan'));
-   for(const p of promos.slice(0,2)){
-    const holder=circuitTitles[p.id]?.[D?.DIVISION_ORDER?.[0]]?.holder;
-    if(holder)a.push(item(' '+p.name+': '+wrestlerName(holder),'white'));
-   }
-   a.push(item(''),item(' THE PROMOTERS OPEN FOR BUSINESS','cyan'));
-   for(const p of promos.slice(0,2))
-    a.push(item(' '+p.name+' / '+(p.venue||'VENUE TBD')));
-   a.push(item(''),item(' '+bookings.length+' BOOKING DESK ITEMS','green'));
-   const next=bookings[0];
-   if(next)a.push(item(' '+promotionName(next.pid)+' / '+wrestlerName(next.rid)));
-   a.push(item(''),item(openingWeek?' 102 SEASON PREVIEW / 103 BOOKINGS':' 102 CIRCUIT NEWS / 103 BOOKINGS','yellow'),
-    item(' 302 CHAMPIONS / 500 FANS','green'));
+   paragraphs(a,'FOUR PROMOTIONS. DIFFERENT TASTES.','cyan');
+   paragraphs(a,'On one circuit, brawls and technical wrestling are chasing the same fans.');
+   a.push(item(''));
+   const first=promos[0],last=promos.at(-1);
+   if(first&&last)
+    paragraphs(a,first.name+' has a very different stage from '+last.name+'.','yellow');
+   a.push(item(''));
+   paragraphs(a,'Who gets talked about first? The opening bell will tell us.','green');
+   a.push(item(''),item(' 102 SEASON OUTLOOK / 500 FANS','cyan'));
   }
-
   add(101,'LATEST HEADLINE',a);
 
-  // Page 102 is a one-off season preview, then a fresh weekly news bulletin.
-  // Never leave a stale season-preview page in a career after opening week.
+  // Page 102 begins as a season editorial, then becomes the latest news.
   if(openingWeek){
-   a=[item('SEASON PREVIEW / THE CIRCUIT','yellow'),
-      item(' FOUR PROMOTERS, TWO DIVISIONS','cyan'),item('')];
-   for(const p of promos){
-    a.push(item(' '+p.name.toUpperCase(),'yellow'));
-    a.push(item(' '+(p.desc||'WRESTLING')+' / '+(p.tv?'ON TV':'LIVE SHOWS')));
-    const m=circuitTitles[p.id]?.[D?.DIVISION_ORDER?.[0]]?.holder;
-    const w=circuitTitles[p.id]?.[D?.DIVISION_ORDER?.[1]]?.holder;
-    a.push(item(' TITLES: '+(m?rankName(m):'VACANT')+' / '+(w?rankName(w):'VACANT'),'green'));
-   }
-   a.push(item(''),item(' 302: ALL CHAMPIONS','cyan'));
-   add(102,'SEASON PREVIEW',a);
+   a=[item('THE SEASON AHEAD','yellow'),item('')];
+   paragraphs(a,'THE BIG QUESTION','cyan');
+   paragraphs(a,'Can the smaller halls make as much noise as the televised shows?');
+   a.push(item(''));
+   paragraphs(a,'THE DIFFERENT SCHOOLS','cyan');
+   const first=promos[0],last=promos.at(-1);
+   if(first&&last)
+    paragraphs(a,first.name+' brings '+first.desc.toLowerCase()+
+     '. '+last.name+' offers '+last.desc.toLowerCase()+'.');
+   a.push(item(''));
+   paragraphs(a,'WATCH THE NEW NAMES','green');
+   paragraphs(a,'No winner is decided by a card ladder. Someone still has to earn the reaction.');
+   a.push(item(''),item(' EDITORS WATCHLIST: PAGE 300','yellow'));
+   add(102,'SEASON OUTLOOK',a);
   }else{
-   const absolute=(s.season-1)*16+s.week;
-   const territory=s?.territory||{};
+   const absolute=(s.season-1)*16+s.week,territory=s?.territory||{};
    const bulletin=territory.lastResults?.week===absolute?territory.lastResults.matches||[]:[];
-   const verified=bulletin.filter(m=>m?.pid&&m?.a&&m?.b&&
-    (m.winner===m.a||m.winner===m.b));
-   const moved=(territory.titleLog||[]).filter(m=>m?.week===absolute&&
-    m?.how==='match'&&m?.to&&m?.pid).slice(0,2);
+   const verified=bulletin.filter(m=>m?.pid&&m?.a&&m?.b&&(m.winner===m.a||m.winner===m.b));
+   const moved=(territory.titleLog||[]).filter(m=>m?.week===absolute&&m?.how==='match'&&m?.to&&m?.pid);
    a=[item('CIRCUIT NEWS / S'+s.season+' W'+s.week,'yellow'),item('')];
    if(moved.length){
     a.push(item(' TITLE CHANGES','cyan'));
-    for(const change of moved){
-     const belt=D?.belt?.(change.pid,change.div)?.short||change.div+' title';
-     a.push(item(' '+promotionName(change.pid)+' / '+change.div.toUpperCase(),'yellow'));
-     a.push(item(' '+wrestlerName(change.to)+' WINS '+belt,'white'));
-    }
+    const c=moved[0];
+    paragraphs(a,wrestlerName(c.to)+' has claimed '+promotionName(c.pid)+' gold.','white');
     a.push(item(''));
+    paragraphs(a,'One reign ends. The chase starts again.','yellow');
    }
    a.push(item(' THIS WEEK IN THE RING','cyan'));
    if(verified.length){
-    // The game already settled these matches; report the winner, not a guess.
-    const shown=verified.slice().sort((x,y)=>Number(!!y.title)-Number(!!x.title)||
-     String(x.pid).localeCompare(String(y.pid))).slice(0,Math.max(1,3-moved.length));
-    for(const match of shown){
-     const loser=match.winner===match.a?match.b:match.a;
-     a.push(item(' '+promotionName(match.pid)+(match.title?' / TITLE':''),'yellow'));
-     a.push(item(' '+wrestlerName(match.winner)+' bt '+wrestlerName(loser),'white'));
-    }
-   }else{
-    a.push(item(' No new verified circuit results.','white'));
-   }
+    const match=verified[0],loser=match.winner===match.a?match.b:match.a;
+    paragraphs(a,wrestlerName(match.winner)+' got past '+wrestlerName(loser)+'. What happens next?');
+   }else paragraphs(a,'No new verified circuit results. The next stories remain unwritten.');
    a.push(item(''));
-   // Public-facing promotion interest: use the actual live buzz score, not
-   // confidential finances, guessed audience numbers or invented ratings.
    const buzz=promos.filter(p=>Number.isFinite(territory.business?.[p.id]?.buzz))
     .sort((x,y)=>territory.business[y.id].buzz-territory.business[x.id].buzz||
-     x.id.localeCompare(y.id)).slice(0,2);
+     x.id.localeCompare(y.id));
    if(buzz.length){
     a.push(item(' PROMOTION BUZZ','cyan'));
-    for(const p of buzz)
-     a.push(item(' '+p.name+': '+Math.round(territory.business[p.id].buzz),'green'));
+    paragraphs(a,buzz[0].name+' is attracting attention, but the next show still has to deliver.','white');
    }
-   a.push(item(' 200 RESULTS / 302 CHAMPIONS','yellow'));
+   a.push(item(''),item(' THE ARGUMENT CONTINUES ON P500','yellow'));
    add(102,'CIRCUIT NEWS',a);
   }
-
-  a=[item('BOOKINGS AND OPPORTUNITIES','yellow'),
-     item(' OFFERS ARE NOT SIGNED FIXTURES','cyan'),item('')];
-  if(!bookings.length)paragraphs(a,'No current offers or signed cards. Check back after the next update.');
-  for(const o of bookings.slice(0,5)){
-   a.push(item(' '+o.rfKind+' '+eventWeek(o)+' / '+promotionName(o.pid),'yellow'));
-   a.push(item(' '+(o.wid?wrestlerName(o.wid)+' v ':'Opponent: ')+wrestlerName(o.rid)));
-  }
-  a.push(item(''),item(' FINISHED MATCHES GO ON P200','green'));
-  add(103,'BOOKING DESK',a);
-
-  a=[item('THE FOUR PROMOTIONS','yellow'),item('')];
-  for(const p of promos){
-   a.push(item(' '+p.name.toUpperCase(),'cyan'));
-   a.push(item(' '+(p.desc||'WRESTLING')));
-   a.push(item(' '+p.venue+' / REACH '+p.reach+(p.tv?' / TV':' / LIVE'),'yellow'));
-  }
-  a.push(item(''),item(' P102: TITLES / P103: BOOKINGS','green'));
-  add(104,'PROMOTER DIRECTORY',a);
-
-  a=[item('RECENT COMPLETED MATCHES','yellow'),item('')];
-  if(!recent.length){
-   paragraphs(a,'No completed results on record.','cyan');
-   a.push(item(''),item(' UPCOMING / NOT RESULTS','yellow'));
-   if(bookings.length){
-    for(const o of bookings.slice(0,3)){
-     a.push(item(' '+o.rfKind+' '+eventWeek(o),'green'));
-     a.push(item(' '+promotionName(o.pid)+' - '+wrestlerName(o.rid)));
-    }
-   }else paragraphs(a,'No current bookings.');
-   a.push(item(''),item(' 103: THE BOOKING DESK','yellow'));
-  }
-  recent.slice(0,8).forEach((r,i)=>{
-   a.push(item('S'+r.season+' W'+r.week+' '+(i+1)+'. '+text(r.name),'cyan'));
-   paragraphs(a,'v '+text(r.foe)+' / '+score(r),'white');
-   paragraphs(a,resultLine(r),'green');
+  // The Offers screen owns contracts. Ringfax covers opinion, not transactions.
+  a=[item('THE GRAPEVINE','yellow'),item(' NOT A CONFIRMED FIXTURE LIST','cyan'),item('')];
+  if(bookings.length){
+   const lead=bookings[0];
+   paragraphs(a,'WORD AROUND THE HALLS','green');
+   paragraphs(a,promotionName(lead.pid)+' has an active booking conversation this week.');
    a.push(item(''));
-  });
-  add(200,'RESULTS',a);
-
-  a=[item('RECORDED MATCH RATINGS','yellow'),item('')];
-  const ratings=recent.filter(r=>Number.isFinite(r.stars));
-  if(!ratings.length){
-   paragraphs(a,'No matches rated yet. Star scores appear only after completed bouts.','cyan');
-   a.push(item(''),item(' CURRENT CARD WATCH','yellow'),
-    item(' CARD SCORES ARE NOT MATCH RATINGS','green'));
-   for(const promo of promos.slice(0,4)){
-    const top=leader(s,promo.id,D?.DIVISION_ORDER?.[0]);
-    if(top)a.push(item(' '+promo.name+': '+rankName(top[0])+' ['+Math.round(top[1].score)+']'));
-   }
-   a.push(item(''),item(' 300/301: CURRENT RANKINGS','cyan'));
-  }
-  ratings.slice(0,8).forEach(r=>{
-   paragraphs(a,'S'+r.season+' W'+r.week+' '+r.name+' v '+r.foe,'cyan');
-   a.push(item(' '+r.stars.toFixed(2)+' stars','yellow'));
-  });
-  if(ratings.length){
-   const sample=ratings.slice(0,8),avg=sample.reduce((sum,x)=>sum+x.stars,0)/sample.length;
-   a.push(item(''),item('MEAN OF '+sample.length+' SHOWN MATCHES: '+avg.toFixed(2),'green'));
-  }
-  add(201,'MATCH GRADES',a);
-
-  const p=promos[0]||null;
-  const divs=D?.DIVISION_ORDER||[];
-  const col=v=>text(v).replace(/\s+/g,' ').trim().slice(0,20).padEnd(20,' ');
-  const ranking=(pid,div)=>Object.entries(s?.territory?.cards?.[pid]||{})
-   .filter(([id,v])=>v&&Number.isFinite(v.score)&&D?.divisionOf?.(id)===div)
-   .sort((x,y)=>y[1].score-x[1].score||wrestlerName(x[0]).localeCompare(wrestlerName(y[0])));
-  a=[item('CARD LADDER / '+(p?.name||'CIRCUIT').toUpperCase(),'yellow'),
-     {text:col('MEN / POINTS')+col('WOMEN / POINTS'),colour:'cyan'}];
-  const rankedDivs=divs.slice(0,2).map(div=>ranking(p?.id,div).slice(0,6));
-  for(let i=0;i<6;i++){
-   const labels=rankedDivs.map(rows=>rows[i]?
-    (i+1)+'. '+rankName(rows[i][0])+' '+Math.round(rows[i][1].score):'');
-   a.push({text:col(labels[0])+col(labels[1]),colour:i===0?'yellow':'white'});
-  }
-  a.push(item(''),item(' CARD RANKS, NOT MATCH RATINGS','green'),
-   item(' 301: LEADERS IN ALL PROMOTIONS','cyan'));
-  add(300,'CARD RANKINGS',a);
-
-  a=[item('THE CIRCUIT CARD LEADERS','yellow'),
-    {text:col('MEN - TOP RANK')+col('WOMEN - TOP RANK'),colour:'cyan'}];
-  for(const promo of promos){
-   a.push(item(' '+promo.name.toUpperCase(),'yellow'));
-   const leaders=divs.slice(0,2).map(div=>leader(s,promo.id,div));
-   a.push({text:col(leaders[0]?rankName(leaders[0][0]):'NOT RANKED')+
-    col(leaders[1]?rankName(leaders[1][0]):'NOT RANKED'),colour:'white'});
-   a.push(item(''));
-  }
-  a.push(item(''),item(' CURRENT CARD ORDER','green'));
-  add(301,'CIRCUIT LEADERS',a);
-
-  // Four promotions × two divisions fit on one 17-line teletext page.
-  // Every promotion uses a full-width header and one pair of 20-cell columns.
-  // Build the cells without item()/line(), which deliberately collapse spaces.
-  const cell20=value=>text(value).replace(/\s+/g,' ').trim().slice(0,20).padEnd(20,' ');
-  const holderName=belt=>{
-   if(!belt)return 'NOT RECORDED';
-   if(!belt.holder)return 'VACANT';
-   return D?.findWrestler?.(belt.holder)?.name||rankName(belt.holder);
-  };
-  const titles=s?.territory?.titles||{};
-  const divisions=D?.DIVISION_ORDER||[];
-  const promoters=s?.promoters?.length?s.promoters:(D?.PROMOS||[]);
-  a=[item('CHAMPIONS - THE ENTIRE CIRCUIT','yellow'),
-     {text:cell20((divisions[0]||'MEN').toUpperCase())+
-       cell20((divisions[1]||'WOMEN').toUpperCase()),colour:'cyan'}];
-  const have=promoters.some(p=>divisions.some(div=>!!titles[p.id]?.[div]));
-  if(have){
-   for(const promo of promoters){
-    a.push(item(promo.name.toUpperCase(),'yellow'));
-    a.push({text:cell20(holderName(titles[promo.id]?.[divisions[0]]))+
-       cell20(holderName(titles[promo.id]?.[divisions[1]])),colour:'white'});
-    a.push(item(''));
-   }
-   a.push(item('CURRENT HOLDERS / S'+(s?.season||1)+' W'+(s?.week||1),'green'));
+   if(lead.rfKind==='OFFER')
+    paragraphs(a,'An approach is being discussed. It is not a signed match.');
+   else paragraphs(a,'A booking is in place. Can the performers meet expectations?');
   }else{
-   paragraphs(a,'Title information not available.');
+   paragraphs(a,'THE RUMOUR MILL IS QUIET','green');
+   paragraphs(a,'The opening slate is taking shape. Nobody can call the results yet.');
   }
-  add(302,'TITLE PICTURE',a);
-
+  a.push(item(''));
+  paragraphs(a,'THE REAL QUESTION','cyan');
+  paragraphs(a,'Whose style will work in a room that does not already love them?');
+  a.push(item(''),item(' OPINION, NOT A CONTRACT','yellow'));
+  add(103,'THE GRAPEVINE',a);
+  a=[item('FROM THE ROAD','yellow'),item(' THE CIRCUIT HAS MANY FACES','cyan'),item('')];
+  const roadShows=[promos[0],promos.at(-1)].filter(Boolean);
+  for(const p of roadShows){
+   a.push(item(' '+p.venue.toUpperCase(),'green'));
+   paragraphs(a,'At '+p.name+', expect '+p.desc.toLowerCase()+'.');
+   a.push(item(''));
+  }
+  paragraphs(a,'A good bout in a warehouse may feel very different on a national broadcast.','yellow');
+  a.push(item(''),item(' WHAT DO THE FANS THINK? P500','cyan'));
+  add(104,'FROM THE ROAD',a);
+  a=[item('AFTER THE BELL','yellow'),item(' A VIEW FROM THE CHEAP SEATS','cyan'),item('')];
+  if(h){
+   paragraphs(a,h.name+' and '+h.foe+' have left the ring.');
+   a.push(item(''));
+   const fan=voices(h,1)[0];
+   a.push(item(' '+fan.name+' SAYS:','green'));
+   paragraphs(a,'"'+fan.quote+'"');
+   a.push(item(''));
+   paragraphs(a,'The record tells you who won. It cannot say what the audience remembers.','yellow');
+  }else{
+   paragraphs(a,'NO BELL HAS RUNG YET','green');
+   paragraphs(a,'Will the crowd remember the winner, the underdog or one moment that changes everything?');
+   a.push(item(''));
+   paragraphs(a,'The match record will keep the result. This page will report the reaction.','yellow');
+  }
+  a.push(item(''),item(' MORE FAN VIEWS: PAGE 500','cyan'));
+  add(200,'AFTER THE BELL',a);
+  a=[item('THE CRITICS CORNER','yellow'),item(' OPINION, NOT A SCOREBOARD','cyan'),item('')];
+  if(h){
+   paragraphs(a,'REVIEW: '+h.name+' v '+h.foe,'yellow');
+   a.push(item(''));
+   const tone=Number.isFinite(h.stars)&&h.stars>=3.5?
+    'The performance gave fans a reason to ask about a return match.':
+    Number.isFinite(h.stars)&&h.stars<2.5?
+    'Not every night clicks. The next booking is where a wrestler answers critics.':
+    'Plenty to discuss, even if the verdict is unlikely to be unanimous.';
+   paragraphs(a,tone);
+   a.push(item(''));
+   const f=voices(h,2)[1];
+   a.push(item(' THE COUNTER-ARGUMENT','green'));
+   paragraphs(a,'"'+f.quote+'"');
+  }else{
+   paragraphs(a,'WHAT MAKES A GREAT MATCH?','green');
+   paragraphs(a,'One spectacular move? A quiet technical contest? Or a finish the crowd will remember?');
+   a.push(item(''));
+   paragraphs(a,'We will argue about the work once the season gets under way.','yellow');
+  }
+  a.push(item(''),item(' WRITE BACK ON PAGE 501','cyan'));
+  add(201,'THE CRITIC',a);
+  // Card ladder selects editorial subjects; Ringfax does not display ranking
+  // positions or numeric scores that are already available in The Office.
+  const one=promos[0],two=promos[1]||promos[0];
+  const picks=[one&&leader(s,one.id,D?.DIVISION_ORDER?.[0],
+    s?.territory?.titles?.[one.id]?.[D?.DIVISION_ORDER?.[0]]?.holder),
+   two&&leader(s,two.id,D?.DIVISION_ORDER?.[1],
+    s?.territory?.titles?.[two.id]?.[D?.DIVISION_ORDER?.[1]]?.holder)].filter(Boolean);
+  const makeSpotlight=id=>{
+   const w=person(id)||{},style=w.style||'General';
+   const angle=style==='Technical'?'Can ring craft win a noisy crowd over?':
+    style==='Brawl'?'Hard contact gets attention. Can it carry a story?':
+    style==='Spectacle'?'Big moments travel. Timing makes them matter.':
+    'The best story makes a crowd care before the finish.';
+   return {name:wrestlerName(id),style,angle};
+  };
+  a=[item('ONES TO WATCH','yellow'),item(' EDITORS PICKS / NOT RANKINGS','cyan'),item('')];
+  for(const [i,entry] of picks.slice(0,2).entries()){
+   const subject=makeSpotlight(entry[0]);
+   a.push(item(' '+subject.name.toUpperCase(),'yellow'));
+   paragraphs(a,subject.style+': '+subject.angle);
+   if(i===0)a.push(item(''));
+  }
+  if(!picks.length)paragraphs(a,'The first names to break through must show us something in the ring.');
+  a.push(item(''),item(' WHO WOULD YOU PICK? PAGE 501','green'));
+  add(300,'ONES TO WATCH',a);
+  a=[item('THE LONG VIEW','yellow'),item(' STORYLINES / READER THEORIES','cyan'),item('')];
+  const ongoing=Object.values(s?.feuds||{}).filter(f=>f&&f.heat>0&&!f.closed)
+   .sort((x,y)=>y.heat-x.heat);
+  if(ongoing.length){
+   const f=ongoing[0];
+   paragraphs(a,wrestlerName(f.wid)+' and '+wrestlerName(f.rid)+' have unfinished business.','yellow');
+   a.push(item(''));
+   paragraphs(a,'Fans can argue about whose side they are on. The ending still has to happen in the ring.');
+  }else{
+   paragraphs(a,'WHAT WILL THE FIRST FEUD BE?','green');
+   paragraphs(a,'The opening cards will put different styles in the same ring.');
+   a.push(item(''));
+   paragraphs(a,'A rivalry is earned one encounter at a time. You cannot read it from the rankings.');
+  }
+  a.push(item(''),item(' READER ARGUMENTS ON PAGE 500','cyan'));
+  add(301,'THE LONG VIEW',a);
+  // Card Ladder already owns champion tables. This editorial only examines
+  // the pressure around a genuine title, without reproducing the rankings.
+  const division=D?.DIVISION_ORDER?.[0]||'men',titlePromo=promos[0];
+  const holder=titlePromo&&circuitTitles[titlePromo.id]?.[division]?.holder;
+  const contender=titlePromo&&leader(s,titlePromo.id,division,holder);
+  a=[item('TITLE TALK','yellow'),item(' PRESSURE, NOT A BELT DIRECTORY','cyan'),item('')];
+  if(holder){
+   paragraphs(a,wrestlerName(holder)+' has the gold at '+titlePromo.name+'.','yellow');
+   a.push(item(''));
+   if(contender)
+    paragraphs(a,'Could '+wrestlerName(contender[0])+' make that reign uncomfortable? A question, not a booking.');
+   else paragraphs(a,'Who is ready to ask the champion the difficult questions?');
+  }else paragraphs(a,'An open belt creates opportunity. The next result could change the story.','yellow');
+  a.push(item(''));
+  paragraphs(a,'A title only matters when somebody makes fans believe it is worth fighting for.','green');
+  a.push(item(''),item(' THE OFFICIAL TITLE LIST IS IN','cyan'),
+   item(' THE CARD LADDER SCREEN','yellow'));
+  add(302,'TITLE TALK',a);
   // Opening-week letters are explicitly opinions about the season, not invented match results.
   const opening=openingFans(s);
-  const fans=h?voices(h,3):opening.slice(0,3);
+  const fans=h?voices(h,8).slice(0,3):openingForum(s);
   a=[item('WHAT THE FANS ARE SAYING','yellow'),item('')];
   if(h){
    paragraphs(a,'TOPIC: '+h.name+' v '+h.foe,'cyan');
@@ -538,29 +537,56 @@
   }
   add(500,'THE FANZONE',a);
 
-  a=[item('LETTERS TO RINGFAX','yellow'),item('')];
-  if(h){
-   const expanded=voices(h,5);
-   expanded.forEach(f=>{
-    a.push(item('FROM: '+f.name,'green'));
-    paragraphs(a,'RE: '+h.name+' v '+h.foe,'cyan');
-    paragraphs(a,f.quote);
-    a.push(item(''));
-   });
-  }else{
-   paragraphs(a,(s?.week||1)===1?'OPENING WEEK / READERS MAIL':'READERS MAIL / THE CIRCUIT','cyan');
-   a.push(item(''));
-   for(const f of opening){
-    a.push(item('FROM: '+f.name,'green'));
-    paragraphs(a,f.quote);
-    a.push(item(''));
+  // Keep every letter together. Ordinary 17-line slicing orphaned the final
+  // two lines of TICKETSTUB's letter on an almost empty second subpage.
+  // Repeat a small title only when a real additional page is required.
+  const letterTopic=(s?.week||1)===1?'OPENING WEEK / READERS MAIL':'READERS MAIL / THE CIRCUIT';
+  const letterIntro=()=>[item('LETTERS TO RINGFAX','yellow'),item(letterTopic,'cyan')];
+  const people=h?voices(h,8).slice(3,8):opening;
+  const letterBlocks=people.map(f=>{
+   const lines=[item('FROM: '+f.name,'green')];
+   if(h)paragraphs(lines,'RE: '+h.name+' v '+h.foe,'cyan');
+   paragraphs(lines,f.quote);
+   return lines;
+  });
+  const letterPages=[];
+  let letterRows=letterIntro();
+  for(const block of letterBlocks){
+   // Add a gap only between complete letters, not before the first entry.
+   const spacer=letterRows.length>letterIntro().length?1:0;
+   if(letterRows.length+spacer+block.length>17&&letterRows.length>letterIntro().length){
+    letterPages.push(letterRows);
+    letterRows=letterIntro();
    }
+   if(letterRows.length>letterIntro().length)letterRows.push(item(''));
+   // Long quotations can span a subpage, but their author is repeated; never
+   // begin a page with unlabelled trailing text.
+   if(letterRows.length+block.length>17){
+    const name=people[letterBlocks.indexOf(block)].name;
+    let remaining=block.slice(1);
+    let label=block[0];
+    if(letterRows.length>letterIntro().length){
+     letterPages.push(letterRows);
+     letterRows=letterIntro();
+    }
+    while(remaining.length){
+     const available=17-letterRows.length-1;
+     letterRows.push(label,...remaining.splice(0,available));
+     if(remaining.length){
+      letterPages.push(letterRows);
+      letterRows=letterIntro();
+      label=item('FROM: '+name+' (CONT)','green');
+     }
+    }
+   }else letterRows.push(...block);
   }
-  add(501,'READERS LETTERS',a);
+  letterPages.push(letterRows);
+  const allLetters=letterPages.flat();
+  add(501,'READERS LETTERS',allLetters,letterPages);
   add(777,'THE QUIZ REF',quizPage());
   return P;
  }
- const fast=[100,200,300,500];
+ const fast=[101,200,300,500];
  // 4 x 4 pixel-cell letters, sized like a real teletext mosaic masthead.
  // Every row remains exactly forty character cells (no SVG or raster image).
  // A 5×7 ORIGINAL bitmap alphabet used for the Ringfax channel ident.
@@ -610,9 +636,9 @@
  }
 
  const BANNERS={
-  100:['RINGFAX','yellow'],101:['LATEST','cyan'],102:['SEASON','yellow'],
-  103:['BOOKINGS','green'],104:['PROMOS','cyan'],200:['RESULTS','green'],
-  201:['RATINGS','yellow'],300:['RANKINGS','green'],301:['LEADERS','yellow'],302:['TITLES','cyan'],
+  100:['RINGFAX','yellow'],101:['HEADLINE','cyan'],102:['SEASON','yellow'],
+  103:['GRAPEVINE','green'],104:['THE ROAD','cyan'],200:['AFTER','green'],
+  201:['CRITIC','yellow'],300:['WATCH','green'],301:['STORIES','yellow'],302:['TALK','cyan'],
   500:['FANZONE','magenta'],501:['LETTERS','yellow'],777:['QUIZ','yellow']
  };
  function mosaic(word){
@@ -625,8 +651,8 @@
 
  const fastext=[
   {text:'101 NEWS  ',page:101,colour:'red'},
-  {text:'200 RESULT',page:200,colour:'green'},
-  {text:'300 RANKS ',page:300,colour:'yellow'},
+  {text:'200 AFTER ',page:200,colour:'green'},
+  {text:'300 WATCH ',page:300,colour:'yellow'},
   {text:'500 FANS  ',page:500,colour:'cyan'}
  ];
  function clock(){
@@ -634,11 +660,12 @@
   const digits=x=>String(x).padStart(2,'0');
   return digits(now.getHours())+':'+digits(now.getMinutes())+'/'+digits(now.getSeconds());
  }
+ function pageCount(p){return p?.subpages?.length||Math.max(1,Math.ceil((p?.lines?.length||0)/17));}
  function screen(s){
   const pages=build(s),p=pages[C.page]||null;
   const full=p?.lines||[item('PAGE NOT FOUND','red'),item(''),item('ENTER A VALID PAGE NUMBER','yellow')];
-  const chunks=[];
-  for(let i=0;i<full.length;i+=17)chunks.push(full.slice(i,i+17));
+  const chunks=p?.subpages?p.subpages.map(rows=>rows.slice()):[];
+  if(!p?.subpages)for(let i=0;i<full.length;i+=17)chunks.push(full.slice(i,i+17));
   if(!chunks.length)chunks.push([]);
   const sub=Math.min(C.sub,chunks.length-1),body=chunks[sub],rows=[];
   const num=String(C.page).padStart(3,'0');
@@ -653,7 +680,9 @@
   for(let i=0;i<17;i++)rows.push(body[i]||item(''));
   const links=C.page===777?quizFooter():fastext;
   rows.push({...item(links.map(f=>f.text).join('')) ,segments:links});
-  rows.push(item('PAGE '+(C.entry||num).padEnd(3,' ')+'   '+(C.hold?'HOLD  ':'AUTO  ')+'  < > SUBPAGES','yellow'));
+  rows.push(item(chunks.length>1?
+   'PAGE '+(C.entry||num).padEnd(3,' ')+' '+(C.hold?'HOLD':'AUTO')+'  < > SUBPAGES':
+   'PAGE '+(C.entry||num).padEnd(3,' ')+'    TYPE 3 DIGITS TO CHANGE PAGE','yellow'));
   if(rows.length!==25||rows.some(row=>row.text.length!==40))
    throw Error('Ringfax grid must be 25 rows of 40 cells');
   return {page:C.page,title,rows,sub,subpages:chunks.length,exists:!!p};
@@ -678,9 +707,13 @@
   }else if(action==='clear')C.entry='';
   else if(action==='backspace')C.entry=C.entry.slice(0,-1);
   else if(action==='left'||action==='right'){
-   const len=Math.max(1,Math.ceil((pages[C.page]?.lines.length||1)/17));
+   const len=pageCount(pages[C.page]);
+   if(len<2)return false;
    C.sub=(C.sub+(action==='left'?-1:1)+len)%len;C.hold=true;
-  }else if(action==='hold')C.hold=!C.hold;
+  }else if(action==='hold'){
+   if(pageCount(pages[C.page])<2||C.page===777)return false;
+   C.hold=!C.hold;
+  }
   else return false;
   return true;
  }
@@ -698,8 +731,8 @@
  }
  function view(s){
   const v=screen(s),pages=build(s),favourites=[
-   [100,'Index','Home'],[101,'Latest','Headlines'],[200,'Results','Match records'],
-   [201,'Ratings','Match grades'],[300,'Rankings','Card ladder'],[302,'Champions','Title holders'],
+   [100,'Index','Home'],[101,'Headline','Editorial'],[102,(s?.week||1)===1?'Outlook':'News','Scene reports'],
+   [200,'After Bell','Reaction'],[300,'Watchlist','Editors picks'],[302,'Title Talk','Opinion'],
    [500,'Fanzone','Fan discussion'],[501,'Letters','Reader mail']
   ];
   const rows=v.rows.map((r,i)=>{
@@ -782,15 +815,18 @@
    '<div class="rf-jump"><input id="rf-page-entry" type="text" inputmode="numeric" autocomplete="off"'+
    ' maxlength="3" pattern="[0-9]{3}" placeholder="e.g. 501" aria-label="Ringfax three-digit page number">'+
    '<button type="button" data-rf-action="jump" aria-label="Open entered Ringfax page">GO</button></div></div>'+
-   '<div class="rf-sub-nav" role="group" aria-label="Reader subpages">'+
-   '<button type="button" data-rf-action="left" aria-label="Previous Ringfax subpage"'+(v.subpages<2?' disabled':'')+'>◀ PREV</button>'+
-   '<span aria-label="Subpage '+(v.sub+1)+' of '+v.subpages+'">'+(v.sub+1)+' / '+v.subpages+'</span>'+
-   '<button type="button" data-rf-action="right" aria-label="Next Ringfax subpage"'+(v.subpages<2?' disabled':'')+'>NEXT ▶</button></div>'+
-   '<button type="button" class="rf-hold" data-rf-action="hold" aria-pressed="'+C.hold+'">'+(C.hold?'▶ RESUME AUTOMATIC PAGES':'Ⅱ HOLD THIS SUBPAGE')+'</button>'+
+   (v.subpages>1?
+    '<div class="rf-sub-nav" role="group" aria-label="Reader subpages">'+
+    '<button type="button" data-rf-action="left" aria-label="Previous Ringfax subpage">◀ PREV</button>'+
+    '<span aria-label="Subpage '+(v.sub+1)+' of '+v.subpages+'">'+(v.sub+1)+' / '+v.subpages+'</span>'+
+    '<button type="button" data-rf-action="right" aria-label="Next Ringfax subpage">NEXT ▶</button></div>'+
+    '<button type="button" class="rf-hold" data-rf-action="hold" aria-pressed="'+C.hold+'">'+
+      (C.hold?'▶ RESUME AUTOMATIC PAGES':'Ⅱ HOLD THIS SUBPAGE')+'</button>':'')+
    '<details class="rf-keypad"><summary>TELETEXT NUMBER PAD <span aria-hidden="true">▾</span></summary>'+
    '<div class="rf-pad-grid">'+pads+'<button type="button" data-rf-action="clear">CLEAR</button></div></details>'+
    (refs?'<div class="rf-records">'+refs+'</div>':'')+
-   '<p class="rf-help">Choose a page above, enter its number, or click a numbered line on page 100. Arrow keys change subpages; F1–F4 open the coloured sections.</p>'+
+   '<p class="rf-help">Choose a page or enter three digits. F1–F4 open the coloured sections.'+
+   (v.subpages>1?' Arrow keys change subpages.':'')+'</p>'+
    '<details class="rf-access"><summary>Read this page as plain text</summary><pre>'+escape(v.rows.map(r=>r.text.trimEnd()).join('\n'))+'</pre></details>'+
    '<p class="rf-disclaimer">Fan comments are fictional; match results come from your career.</p>'+
    '</aside>'+
@@ -840,7 +876,7 @@
   },1000);
   root.setInterval(()=>{
    if(C.page===777||C.hold||root.document.hidden||!root.document.querySelector('#rf-screen'))return;
-   const p=build(root.OfficeGame?.S)[C.page],n=Math.ceil((p?.lines.length||0)/17);
+   const p=build(root.OfficeGame?.S)[C.page],n=pageCount(p);
    if(n>1){C.sub=(C.sub+1)%n;root.document.dispatchEvent(new root.Event('ringfax-page-rotated'));}
   },8000);
  }
