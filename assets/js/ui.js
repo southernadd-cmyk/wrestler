@@ -235,7 +235,7 @@ const NAV=[
  ['Office',[['desk','Desk'],['inbox','Inbox'],['objectives','Objectives']]],
  ['Roster',[['squad','Your stable'],['training','Training'],['scouting','Free agents'],['stables','Rival stables']]],
  ['Bookings',[['offers','Offers'],['fixtures','Fixtures']]],
- ['Territory',[['pyramid','Card ladder'],['sheets','Booking sheets'],['promoters','Promoters'],['rivalries','Rivalries'],['results','Results']]],
+ ['Territory',[['pyramid','Card ladder'],['sheets','Booking sheets'],['promoters','Promoters'],['rivalries','Rivalries'],['results','Results'],['ringfax','Ringfax']]],
  ['Game',[['game','Save and load']]]
 ];
 const SECTION_OF={profile:'squad',record:'promoters'};
@@ -279,7 +279,8 @@ function renderChrome(){
  $('#tick').innerHTML=lead?`<b>${G.pending().length?'Action':'News'}</b><button data-tickmsg="${lead.id}">${esc(lead.subject)}. ${esc(lead.from)}.</button><span class="keys">${s.history.length} ${plural(s.history.length,'match','matches')} worked this career</span>`:'';
 }
 
-const SCREENS={desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,record:renderRecord,training:renderTraining,scouting:renderScouting,stables:renderStables,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
+function renderRingfax(){paint('s-ringfax',OfficeRingfax.view(S()))}
+const SCREENS={ringfax:renderRingfax,desk:renderDesk,inbox:renderInbox,objectives:renderObjectives,squad:renderSquad,profile:renderProfile,record:renderRecord,training:renderTraining,scouting:renderScouting,stables:renderStables,offers:renderOffers,fixtures:renderFixtures,pyramid:renderPyramid,sheets:renderSheets,promoters:renderPromoters,rivalries:renderRivalries,results:renderResults,game:renderGame};
 function render(reset=false){
  if(!S())return;
  const keep={};if(!reset)document.querySelectorAll('#view [data-keep]').forEach(el=>keep[el.dataset.keep]=el.scrollTop);
@@ -1701,6 +1702,7 @@ document.addEventListener('click',e=>{
  if(t.id==='continue')return proceed();
  if(d.hist)return histMove(d.hist==='back'?-1:1);
  if(d.record)return openRecord(d.record);
+ if(d.rfAction){if(OfficeRingfax.press(d.rfAction,d.rfValue,S()))render();return;}
  if(d.commentaryView){commentaryView=d.commentaryView==='key'?'key':'all';renderPastCommentary();return}
  if(d.trainpick){trainingSelected=d.trainpick;trainingPane='development';render();return;}
  if(d.trainpane){trainingPane=d.trainpane;render();return;}
@@ -1855,7 +1857,9 @@ document.addEventListener('mouseover',e=>{const b=e.target.closest('[data-hint]'
 document.addEventListener('focusin',e=>{const b=e.target.closest('[data-hint]');if(b&&$('#lHint'))$('#lHint').textContent=b.dataset.hint});
 // Remember whether the phone filter disclosure was opened, so re-renders keep it open.
 document.addEventListener('toggle',e=>{if(e.target.classList?.contains('free-filters'))scoutFiltersOpen=e.target.open},true);
+document.addEventListener('ringfax-page-rotated',()=>{if(route.s==='ringfax'&&S())render()});
 document.addEventListener('keydown',e=>{
+ if(route.s==='ringfax'&&!e.target.closest('input,textarea,select,[contenteditable]')&&OfficeRingfax.key(e.key,S())){e.preventDefault();render();return;}
  if(night?.M&&!$('#tv').hidden){
   const box=$('#decision');if(box&&!box.hidden)return;
   if(e.key===' '){e.preventDefault();night.paused=!night.paused;updateLive();if(!night.paused)schedule(100);return}
