@@ -135,6 +135,9 @@ jobs:
           node tests/match-flow.test.cjs
           node tests/stipulations.test.cjs
           node tests/ui-accessibility.test.cjs
+          # Training management: actionable advice, forecast parity and real weekly reviews.
+          node tests/training-desk-ui.test.cjs
+          node tests/training-intelligence.test.cjs
           # Short booking-negotiation tests cover real bargaining costs, proposal
           # acceptance, distinct promoter priorities and safe contract signing.
           # Keep these in this existing PR gate, not a separate workflow.
