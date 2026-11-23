@@ -44,7 +44,7 @@ const uid=p=>p+'-'+S.week+'-'+Math.floor(rand()*1e9).toString(36);
 function fresh(){
  S={v:22,seed:(Date.now()%100000)+7,careerSeed:null,season:1,week:1,cash:2250,rep:22,focus:2,monthReview:null,coach:null,futureBookings:[],circuitReviews:[],business:{training:0,negotiated:0,meetings:0,kept:0,broken:0},roster:[],free:D.TALENT.map(t=>({...t})),
   promoters:D.PROMOS.map(p=>({...p,blacklist:0,matches:0,best:0})),offers:[],card:[],feuds:{},inbox:[],history:[],resultIds:[],systemErrors:[],
-  goals:{},recentTypes:{},books:[],seasonResults:[],over:null};
+  goals:{},recentTypes:{},books:[],trainingReviews:[],seasonResults:[],over:null};
  // Never change this as the weekly PRNG advances. It identifies this career's
  // underlying circuit outcomes without touching legacy career random sequences.
  S.careerSeed=S.seed;
@@ -72,7 +72,7 @@ function goalList(){const n=S.season;return [
 function hydrate(x){
  if(!x || ![20,21,22].includes(x.v) || !Array.isArray(x.roster)||!Array.isArray(x.offers))return null;
  if(!Array.isArray(x.free))x.free=[];
- x.v=22;x.careerSeed??=x.seed;x.systemErrors??=[];x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));x.resultIds??=[...x.seasonResults,...(x.history||[])].map(h=>h.cid).filter(Boolean).slice(-2048);
+ x.v=22;x.careerSeed??=x.seed;x.systemErrors??=[];x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.trainingReviews=Array.isArray(x.trainingReviews)?x.trainingReviews.slice(-12):[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));x.resultIds??=[...x.seasonResults,...(x.history||[])].map(h=>h.cid).filter(Boolean).slice(-2048);
  for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
  root.OfficeTerritory?.prepare(x);
  root.OfficeWorldV4?.activate(x);
@@ -209,7 +209,7 @@ function sessionTip(w){
  const last=S.history.find(h=>h.wid===w.id),room=root.OfficeRoom;
  const soon=booked(w.id)||S.futureBookings.some(c=>c.wid===w.id&&c.eventAbs<=abs()+1);
  if(last?.sheet&&last.sheet.missed+last.sheet.adapted>=2&&!rehearsed(w))return {value:'rehearse',why:'The last match drifted from the match layout.'};
- if(last?.promo&&(last.promo.quality||60)<50){
+ if(last?.promo&&(last.promo.quality??60)<50){
   const v=room?.VOICE[w.id]||'stoic',style={grand:'imagery',sermon:'imagery',precise:'proof',stoic:'proof',eager:'people',earnest:'people',gruff:'accusation',slippery:'swagger'}[v];
   if(micLevel(w,style)<2)return {value:'mic:'+style,why:'Lost the room at the microphone last time.'};
  }
@@ -218,6 +218,58 @@ function sessionTip(w){
  if(learn&&!(w.learned||[]).length&&w.ring>=55)return {value:'learn:'+learn.id,why:'No big spot of '+w.short+'’s own yet.'};
  return null;
 }
+
+/* Dennis's training desk: read-only evidence and options. Training mechanics,
+   committed sessions, and the game's random sequence remain authoritative. */
+function trainingForecast(w){
+ if(!w)return null;
+ const worked=S.history.some(h=>h.wid===w.id&&h.season===S.season&&h.week===S.week);
+ const cost=trainingCost(w);
+ if(w.injury||w.training==='rest'){
+  return {kind:'rest',cost,worked,fatigue:clamp(w.fatigue-(worked?6:24)),detail:w.injury?'Injured: no skill training until recovered.':'Resting reduces fatigue.'};
+ }
+ if(w.training==='promo'){
+  return {kind:'promo',cost,worked,fatigue:clamp(w.fatigue+2),heat:Math.round(1+w.mic/35),detail:'A recorded promo raises heat, not a training skill.'};
+ }
+ const stat=D.TRAINING[w.training]?.stat,intensity=INTENSITY[w.intensity||'light']||INTENSITY.light;
+ if(!stat)return {kind:'other',cost,worked};
+ const cur=w[stat],camp=w.program?.type==='camp',specialist=S.coach&&COACHES[S.coach].stat===stat?COACHES[S.coach].boost:0;
+ const rookie=w.tier==='Rookie'&&cur<68?1.4:1;
+ const growth=(camp?1.9:intensity.gain)*(1+specialist)*rookie*(cur>=88?.24:cur>=80?.5:1)*(w.fatigue>=70?.6:1);
+ const bank=(w.progress?.[stat]||0)+growth;
+ const next=Math.min(99,cur+Math.floor(bank)),risk=(camp?.015:intensity.risk)*(w.fatigue>=65?2.5:1)*(worked?1.5:1);
+ return {kind:'skill',stat,cost,worked,growth,skillAfter:next,gain:next-cur,progress:next>=99?0:Math.round((bank%1)*100),
+   fatigue:clamp(w.fatigue+(camp?13:intensity.fat)+(worked?5:0)),riskPct:risk*100,coached:!!specialist,
+   detail:'Projection if the week ended now; an additional match or Dennis session can change fatigue and risk.'};
+}
+function trainingAdvice(w){
+ if(!w)return [];
+ const out=[],locked=!!w.program,injured=!!w.injury;
+ const add=(priority,kind,value,title,why)=>out.push({priority,kind,value,title,why});
+ if(injured)add('urgent','info',null,'Recovery first',w.short+' is injured for '+w.injury+' more week(s). Skill work is unavailable.');
+ else if(w.fatigue>=70&&!locked&&w.training!=='rest')add('urgent','focus','rest','Give them a rest',w.short+' has '+w.fatigue+' fatigue. Another training week is likely to be less productive.');
+ else if(w.fatigue>=55&&!locked&&w.intensity==='hard'&&w.training!=='rest'&&w.training!=='promo')add('urgent','intensity','light','Reduce the workload',w.short+' has '+w.fatigue+' fatigue. Intensive training raises exhaustion and injury risk.');
+ else if(w.fatigue>=55&&locked)add('urgent','info',null,'Watch their fatigue',w.short+' has '+w.fatigue+' fatigue, but the current development programme locks the weekly settings.');
+ const tip=sessionTip(w),slotOpen=!!w.session||sessionsTaken(w.id)<SESSION_CAP;
+ if(w.session){
+  const option=sessionOptions(w).find(o=>o.value===w.session);
+  add('note','info',null,'Dennis is booked',option?.label||'A session is already assigned');
+ }else if(tip){
+  const option=sessionOptions(w).find(o=>o.value===tip.value);
+  if(option&&!option.disabled&&slotOpen)add('normal','session',tip.value,option.label,tip.why+' '+option.hint);
+  else if(!slotOpen&&!option?.disabled)add('normal','info',null,'Dennis is fully booked',tip.why+' Free one of the two sessions to make room.');
+ }
+ if(!injured&&!locked){
+  const target=w.style==='Spectacle'&&w.safe<55?'safe':w.style==='Story'&&w.psych<55?'psych':w.mic<40?'mic':w.ring<55?'ring':null;
+  if(target&&w.training!==target)add('normal','focus',target,'Develop '+D.TRAINING[target].name.toLowerCase(),
+   'At '+w[target]+', this is a weak attribute for '+w.short+'. It will improve through the normal weekly training schedule.');
+ }
+ if(!out.length)add('note','info',null,'Stay with the plan','No pressing change indicated by condition, booking preparation or the last match.');
+ const order={urgent:0,normal:1,note:2};
+ return out.sort((a,b)=>order[a.priority]-order[b.priority]).slice(0,3);
+}
+function trainingReview(){return S.trainingReviews?.at(-1)||null;}
+
 function setSession(id,value){
  const w=W(id);if(!w)return 'Unknown wrestler.';
  if(!value||value==='none'){w.session=null;save();return null;}
@@ -603,8 +655,11 @@ function snapshot(w){
 }
 function endWeek(){
  const trainingBefore=S.business.training;
- const lines=[];const pay=wages(),oh=overhead(),cw=coachWage();S.cash-=pay+oh+cw;lines.push(`Wages ${money(pay)}, overheads ${money(oh)}${cw?`, coach ${money(cw)}`:''}.`);if(S.rep>30){S.rep--;}
+ const lines=[];const pay=wages(),oh=overhead(),cw=coachWage();
+ const review={a:abs(),coachCost:cw,entries:[]};S.cash-=pay+oh+cw;lines.push(`Wages ${money(pay)}, overheads ${money(oh)}${cw?`, coach ${money(cw)}`:''}.`);if(S.rep>30){S.rep--;}
  for(const w of S.roster){
+  const before={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe,fatigue:w.fatigue,heat:w.heat,injury:w.injury||0};
+  const focus=w.training,intensityName=w.intensity,session=w.session||null,weeklyCost=trainingCost(w),lineStart=lines.length;
   const worked=S.history.some(h=>h.wid===w.id&&h.week===S.week&&h.season===S.season);
   const isInjured=!!w.injury,t=D.TRAINING[isInjured?'rest':w.training]||D.TRAINING.rest;
   const intensity=INTENSITY[w.intensity||'light']||INTENSITY.light;
@@ -632,6 +687,9 @@ function endWeek(){
   if(w.program&&!isInjured){w.program.left--;if(w.program.left<=0){const old=w.program;w.prepHistory??=[];w.prepHistory.unshift({week:abs(),focus:old.focus,type:old.type,gains:old.gains});w.prepHistory=w.prepHistory.slice(0,8);w.program=null;w.intensity='light';w.training='rest';lines.push(`${w.short} completes ${old.total}-week development (${old.gains} skill points gained). Rest scheduled next week.`);}}
   if(isInjured&&w.injury && (w.injurySince??abs()-1)<abs()){w.injury--;if(!w.injury)lines.push(`${w.short} is fit again.`)}
   w.morale=clamp(w.morale+(w.morale<60?2:w.morale>75?-1:0)+(w.fatigue>70?-2:0));
+  const delta={};for(const k of ['ring','mic','psych','safe','fatigue','heat'])if(w[k]!==before[k])delta[k]=w[k]-before[k];
+  review.entries.push({id:w.id,name:w.name,focus,intensity:intensityName,session,cost:weeklyCost,worked,delta,
+   injuryBefore:before.injury,injuryAfter:w.injury||0,notes:lines.slice(lineStart)});
  }
  resolvePromises();
  for(const fd of Object.values(S.feuds)){if(!fd.closed&&fd.last!==abs())fd.heat=clamp(fd.heat-7)}
@@ -648,6 +706,8 @@ function endWeek(){
  reviewCircuit();
  // v3.8 records for the graphs: kept short so saves stay small.
  const trained=S.business.training-trainingBefore;
+ review.trainingCost=trained;
+ S.trainingReviews=[...(S.trainingReviews||[]),review].slice(-12);
  S.books=[...(S.books||[]),{a:abs(),cash:S.cash,wages:pay,other:oh+cw+trained}].slice(-48);
  for(const w of S.roster)snapshot(w);
  S.focus=2;
@@ -669,5 +729,5 @@ function seasonEnd(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp};
 })(typeof window!=='undefined'?window:globalThis);
