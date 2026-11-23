@@ -107,6 +107,45 @@ async function run(browser,name,viewport){
   // Preserve keyboard access to the teletext service.
   await page.keyboard.press('F4');
   assert.match(await page.locator('#rf-screen').innerText(),/THE FANZONE/);
+
+  // Easter egg: only a manually entered page 777 opens the quiz.
+  const originalCareer=await page.evaluate(()=>JSON.stringify(window.OfficeGame.S));
+  await page.locator('#rf-page-entry').fill('777');
+  await page.locator('[data-rf-action="jump"]').click();
+  assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'intro',
+   name+': secret 777 should begin on the intro page');
+  assert.equal(await page.locator('#rf-screen .rf-row').count(),25);
+  await page.locator('.rf-quiz-remote .rf-quiz-key-red').click();
+  const introInfo=await page.evaluate(()=>window.OfficeRingfax.quizInfo());
+  assert.equal(introInfo.stage,'question');
+  assert.equal(await page.locator('#rf-screen .rf-quiz-answer').count(),4,
+   name+': each answer is accessible by tapping the teletext choice');
+  assert.equal(await page.locator('.rf-quiz-remote .rf-quiz-key').count(),4,
+   name+': four large colour buttons sit outside the text grid');
+  if(viewport.width<=720){
+   const gq=await page.evaluate(()=>{
+    const r=el=>{const v=el.getBoundingClientRect();return {top:v.top,bottom:v.bottom,height:v.height}};
+    const view=document.querySelector('#view'),keys=[...document.querySelectorAll('.rf-quiz-remote .rf-quiz-key')];
+    return {view:r(view),keys:keys.map(r)};
+   });
+   assert.ok(gq.keys.every(k=>k.height>=42&&k.bottom<=gq.view.bottom+2),
+    name+': phone quiz buttons must remain visible and finger-sized '+JSON.stringify(gq));
+  }
+  const correct=await page.evaluate(()=>window.OfficeRingfax.quizQuestions[0].correct);
+  await page.locator('.rf-quiz-remote [data-rf-action="quiz-answer"][data-rf-value="'+((correct+1)%4)+'"]').click();
+  assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'wrong',
+   name+': wrong colour should enter the penalty page');
+  await page.locator('.rf-quiz-remote .rf-quiz-key-green').click();
+  assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().reveal),true,
+   name+': green button reveals the trivia fact');
+  await page.locator('.rf-quiz-remote .rf-quiz-key-red').click();
+  assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().index),0,
+   name+': retry restores the checkpoint');
+  await page.locator('.rf-quiz-remote [data-rf-action="quiz-answer"][data-rf-value="'+correct+'"]').click();
+  assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().index),1,
+   name+': correct answer advances a round');
+  assert.equal(await page.evaluate(()=>JSON.stringify(window.OfficeGame.S)),originalCareer,
+   name+': the hidden quiz must leave career state untouched');
   assert.deepEqual(errors,[],name+': unexpected browser errors');
   console.log('PASS Ringfax '+name+': fitted 40x25 display, visible controls, clickable index, direct page and keyboard');
  }finally{await ctx.close()}
