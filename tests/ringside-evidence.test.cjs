@@ -54,4 +54,34 @@ assert.equal(E.call(saved,'big'),true);
 const restored=E.restore(JSON.parse(JSON.stringify({...saved,rState:saved.r.getState()})));
 assert.equal(restored.bigSpotRequest?.index,0);
 assert.equal(restored.ringsideEvidence?.[0]?.status,'pending');
-console.log('PASS ringside evidence: witnessed-only layout, deferred/refunded big spot, save safety');
+// All four pacing/finish interventions retain their mechanics and report
+// observed effects, rather than treating the accepted request as evidence.
+function until(m,test){
+ for(let i=0;i<1200&&!test();i++){
+  if(m.decision&&!m.queue.length)E.resolve(m,m.decision.options[0].id);
+  E.next(m);
+ }
+ assert.ok(test(),'timed ringside instruction must settle');
+}
+for(const [index,id,allowed] of [
+ [24005,'slow',['applied']],[24006,'pickup',['witnessed','no-offence']],
+ [24007,'crowd',['responded','flat']]
+]){
+ const m=setup(index);m.stage='live';m.t=100;m.listen=101;
+ assert.equal(E.call(m,id),true);
+ assert.equal(m.ringsideEvidence[0].status,'pending');
+ until(m,()=>m.ringsideEvidence[0].status!=='pending');
+ assert.ok(allowed.includes(m.ringsideEvidence[0].status),id+' must report observed result');
+ assert.ok(Number.isFinite(m.ringsideEvidence[0].staminaDelta));
+ assert.ok(Number.isFinite(m.ringsideEvidence[0].crowdDelta));
+}
+const home=setup(24008);home.stage='live';home.t=Math.floor(home.len*.5);home.listen=101;
+const contracted=home.o.finish,fullLength=home.len;
+assert.equal(E.call(home,'home'),true);
+assert.ok(home.len<fullLength,'take it home actually shortens the match');
+assert.equal(home.ringsideEvidence[0].oldLength,fullLength);
+assert.equal(home.ringsideEvidence[0].newLength,home.len);
+until(home,()=>home.done);
+assert.equal(home.graph.outcome.id,contracted,'accepted go-home instruction does not change booked finish');
+assert.ok(Array.isArray(home.final.ringsideEvidence[0].missedObjectives));
+console.log('PASS ringside evidence: deferred big spot and four other evidence-based calls');
