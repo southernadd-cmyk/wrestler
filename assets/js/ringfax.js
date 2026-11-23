@@ -147,17 +147,33 @@
   a.push(item(''),item('A SINGLE PROMOTION / DIVISION','cyan'));
   add(300,'CARD RANKINGS',a);
 
-  a=[item('CHAMPIONS BY PROMOTION','yellow'),item('')];
+  // Four promotions × two divisions fit on one 17-line teletext page.
+  // Every promotion uses a full-width header and one pair of 20-cell columns.
+  // Build the cells without item()/line(), which deliberately collapse spaces.
+  const cell20=value=>text(value).replace(/\s+/g,' ').trim().slice(0,20).padEnd(20,' ');
+  const holderName=belt=>{
+   if(!belt)return 'NOT RECORDED';
+   if(!belt.holder)return 'VACANT';
+   return D?.findWrestler?.(belt.holder)?.name||rankName(belt.holder);
+  };
   const titles=s?.territory?.titles||{};
-  let have=false;
-  for(const promo of s?.promoters||[]){
-   for(const division of D?.DIVISION_ORDER||[]){
-    const t=titles[promo.id]?.[division];if(!t)continue;have=true;
-    a.push(item(' '+promo.name+' / '+division,'cyan'));
-    paragraphs(a,rankName(t.holder||'Vacant'),'white');
+  const divisions=D?.DIVISION_ORDER||[];
+  const promoters=s?.promoters?.length?s.promoters:(D?.PROMOS||[]);
+  a=[item('CHAMPIONS - THE ENTIRE CIRCUIT','yellow'),
+     {text:cell20((divisions[0]||'MEN').toUpperCase())+
+       cell20((divisions[1]||'WOMEN').toUpperCase()),colour:'cyan'}];
+  const have=promoters.some(p=>divisions.some(div=>!!titles[p.id]?.[div]));
+  if(have){
+   for(const promo of promoters){
+    a.push(item(promo.name.toUpperCase(),'yellow'));
+    a.push({text:cell20(holderName(titles[promo.id]?.[divisions[0]]))+
+       cell20(holderName(titles[promo.id]?.[divisions[1]])),colour:'white'});
+    a.push(item(''));
    }
+   a.push(item('CURRENT HOLDERS / S'+(s?.season||1)+' W'+(s?.week||1),'green'));
+  }else{
+   paragraphs(a,'Title information not available.');
   }
-  if(!have)paragraphs(a,'Title information not available.');
   add(302,'TITLE PICTURE',a);
 
   // Opening-week letters are explicitly opinions about the season, not invented match results.
