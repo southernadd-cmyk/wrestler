@@ -231,9 +231,13 @@ assert.ok(ui.includes("['ringfax','Ringfax']"),'Ringfax appears in ordinary navi
 assert.ok(ui.includes("ringfax:renderRingfax"),'Ringfax route has a real screen');
 assert.ok(ui.includes('ringfax-page-rotated'),'subpage auto-rotation integrates with the route');
 
-// Secret page 777 is not linked from the directory: it must be entered manually.
+// Page 777 is explicitly discoverable from the 100 index, and P777 has a
+// permanent return control alongside the familiar Ringfax page masthead.
 R.press('go',100,s);
-assert.ok(!R.view(s).includes('data-rf-value="777"'),'secret quiz is not openly listed');
+assert.ok(R.view(s).includes('class="rf-index-half" data-rf-action="go" data-rf-value="777"'),
+ 'page 100 contains a working quiz link');
+assert.ok(R.screen(s).rows.some(row=>row.text.includes('777 QUIZ REF')),
+ 'the quiz is listed on the index teletext grid');
 const quizBank=R.quizQuestions;
 assert.equal(quizBank.length,12,'Bamboozle-style run has twelve questions');
 for(const [i,q] of quizBank.entries()){
@@ -247,7 +251,17 @@ for(const d of ['7','7','7'])assert.ok(R.press('digit',d,s));
 assert.equal(R.screen(s).page,777);
 assert.equal(R.quizInfo().stage,'intro');
 assert.equal(R.screen(s).subpages,1,'quiz intro fits one teletext page');
-assert.ok(R.view(s).includes('rf-quiz-active'),'secret page exposes answer controls');
+assert.ok(R.view(s).includes('rf-quiz-active'),'quiz page exposes answer controls');
+assert.ok(R.view(s).includes('class="rf-bz-shared-header"'),
+ 'quiz has the same Ringfax header bands as the other pages');
+assert.ok(R.view(s).includes('data-rf-value="100" aria-label="Return to Ringfax index page 100"'),
+ 'quiz has a persistent P100 return control');
+assert.equal(R.view(s).split('class="rf-bz-choice rf-bz-').length-1,2,
+ 'intro offers Start and How to play without duplicate buttons');
+assert.equal(R.key('Escape',s),true,'Escape returns to the Ringfax index');
+assert.equal(R.screen(s).page,100);
+assert.equal(R.press('go',777,s),true);
+assert.equal(R.quizInfo().stage,'intro','returning to the quiz restarts the intro');
 assert.equal(R.key('F2',s),true,'green button opens the rules');
 assert.equal(R.quizInfo().stage,'rules');
 assert.equal(R.key('F1',s),true,'red starts quiz from rules');
