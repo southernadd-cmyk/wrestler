@@ -44,7 +44,7 @@ const uid=p=>p+'-'+S.week+'-'+Math.floor(rand()*1e9).toString(36);
 const DEFAULT_IDENTITY=Object.freeze({manager:'Alex Morgan',stable:'The New Guard',portrait:0});
 function normaliseIdentity(raw){
  const clean=(value,fallback,max)=>typeof value==='string'?
-  (value.replace(/[\\u0000-\\u001f\\u007f<>]/g,'').replace(/\\s+/g,' ').trim().slice(0,max)||fallback):fallback;
+  (value.replace(/[\u0000-\u001f\u007f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,max)||fallback):fallback;
  return {
   manager:clean(raw?.manager,DEFAULT_IDENTITY.manager,42),
   stable:clean(raw?.stable,DEFAULT_IDENTITY.stable,42),
