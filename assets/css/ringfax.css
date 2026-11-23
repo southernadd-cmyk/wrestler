@@ -100,6 +100,26 @@ button.rf-index-half:hover,button.rf-index-half:focus-visible{background:#00f;co
 .rf-access pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;
  background:#000;color:#fff;border:1px solid #00f;padding:8px;font:15px/1.1 'VT323',monospace}
 .rf-disclaimer{margin:10px 0 0;color:#0f0;font:14px/1.1 'VT323',monospace}
+/* Hidden quiz page 777: large touchable Fastext choices, still within
+   the original black/blue teletext presentation. */
+.rf-quiz-answer{cursor:pointer;color:inherit;background:#000;appearance:none;
+ text-align:left;display:block;width:100%;min-width:0;font:inherit;letter-spacing:inherit}
+.rf-quiz-answer:hover,.rf-quiz-answer:focus-visible{background:#0000a8;
+ color:#fff!important;outline:2px solid #fff;outline-offset:-2px}
+.rf-quiz-remote{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:5px;margin:0 0 10px}
+.rf-quiz-key{display:flex;flex-direction:column;align-items:flex-start;
+ justify-content:center;gap:3px;min-width:0;min-height:56px;
+ padding:6px;border:2px solid currentColor;border-radius:0;
+ background:#000;color:#fff;cursor:pointer;text-align:left;
+ font:17px/1.1 'VT323','Lucida Console',monospace;
+ overflow-wrap:anywhere}
+.rf-quiz-key-colour{display:block;font-weight:700;letter-spacing:.05em}
+.rf-quiz-key-red{border-color:#f00}.rf-quiz-key-red .rf-quiz-key-colour{color:#f44}
+.rf-quiz-key-green{border-color:#0f0}.rf-quiz-key-green .rf-quiz-key-colour{color:#0f0}
+.rf-quiz-key-yellow{border-color:#ff0}.rf-quiz-key-yellow .rf-quiz-key-colour{color:#ff0}
+.rf-quiz-key-cyan{border-color:#0ff}.rf-quiz-key-cyan .rf-quiz-key-colour{color:#0ff}
+.rf-quiz-key:hover,.rf-quiz-key:focus-visible{background:#0026a8;outline:2px solid #fff;outline-offset:1px}
 @media(max-width:1100px){
  #view:has(> .s-ringfax){overflow:hidden}
  .rf-wrap{display:flex;flex-direction:column;overflow-y:auto;gap:4px}
@@ -111,6 +131,24 @@ button.rf-index-half:hover,button.rf-index-half:focus-visible{background:#00f;co
  .rf-page-link{min-height:44px}
 }
 @media(max-width:720px){
+ .rf-wrap.rf-quiz-active .rf-console{display:block;overflow:visible;min-height:0;
+  padding:2px 3px 1px;border-top:2px solid #00f}
+ .rf-wrap.rf-quiz-active .rf-console-title,
+ .rf-wrap.rf-quiz-active .rf-page-grid,
+ .rf-wrap.rf-quiz-active .rf-operator,
+ .rf-wrap.rf-quiz-active .rf-sub-nav,
+ .rf-wrap.rf-quiz-active .rf-hold,
+ .rf-wrap.rf-quiz-active .rf-keypad,
+ .rf-wrap.rf-quiz-active .rf-help,
+ .rf-wrap.rf-quiz-active .rf-access,
+ .rf-wrap.rf-quiz-active .rf-records,
+ .rf-wrap.rf-quiz-active .rf-disclaimer{display:none}
+ .rf-wrap.rf-quiz-active .rf-quiz-remote{display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:0}
+ .rf-wrap.rf-quiz-active .rf-quiz-key{min-height:43px;height:43px;gap:2px;
+  font-size:14px;line-height:1.05;padding:3px 5px}
+ .rf-wrap.rf-quiz-active .rf-quiz-key-colour{font-size:13px}
+
  /* The Office already has fixed top and bottom chrome. Share the remaining
     height between the complete teletext grid and a small, ALWAYS-visible
     remote; do not make players scroll down to change page. */
