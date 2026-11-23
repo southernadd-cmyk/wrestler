@@ -5889,6 +5889,13 @@ function tick(M){
  const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*
   (M.offScript==='showboat'?1.5:1)*recoveryWeight*optionalSpotFactor;
  let spoke=aerialResolved||grappleResolved;
+ // A requested spectacular spot waits for a physically legal setup. The
+ // script never awards one merely because the manager pressed a button.
+ if(M.bigSpotRequest&&!spoke){
+  spoke=tryPendingBigSpot(M);
+  if(M.bigSpotRequest&&M.t>=M.bigSpotRequest.expires)
+   closePendingBigSpot(M);
+ }
  // Once both workers contest the turnbuckles for a legal named move,
  // resolve that organic exchange before an unrelated scheduled spectacle.
  // Deferred nearfalls are still available on a later tick.
@@ -6122,6 +6129,37 @@ function nearfall(M){
 }
 
 /* ---- ringside calls ---- */
+// Preflight mirrors the *existing* forced-spot legal candidate pool.
+ // No RNG, no physical relocation, and no new moves are introduced here.
+function availableBigSpot(M){
+ if(M.wSt<28)return false;
+ const safe=M.planId==='safe';
+ return (D.SPOTS[M.w.style]||D.SPOTS.Story).some(move=>{
+  const id=Graph.SCRIPTED_SPOT_IDS[move];
+  return (!safe||(id==='ar_elbow_point'&&M.w.ring>=78&&
+   M.w.safe>=75&&M.wSt>=38))&&Graph.canScriptedSpot(M,id,'w');
+ });
+}
+function closePendingBigSpot(M){
+ const pending=M.bigSpotRequest;if(!pending)return;
+ const evidence=M.ringsideEvidence?.[pending.index];
+ if(evidence){evidence.status='unavailable';evidence.reason='No physically legal opening before the finish';}
+ M.calls=Math.min(3,M.calls+1); // Reserve only: no attempt means no spent call.
+ const idx=M.callsUsed.lastIndexOf('big');if(idx>=0)M.callsUsed.splice(idx,1);
+ M.bigSpotRequest=null;
+ if(M.stage==='live')say(M,'Road agent: The high-spot opening never arrived. Your ringside call is returned.','agent',{who:'runner'});
+}
+function tryPendingBigSpot(M){
+ const pending=M.bigSpotRequest;
+ if(!pending||M.stage!=='live'||!availableBigSpot(M))return false;
+ const before=Graph.get(M).events.length;
+ if(!spot(M,true,true))return false; // setup must still pass actual graph legality
+ const landed=Graph.get(M).events.slice(before).some(e=>e.scriptedSpot===true);
+ const evidence=M.ringsideEvidence?.[pending.index];
+ if(evidence){evidence.status=landed?'witnessed':'botched';evidence.atAction=M.t;}
+ M.bigSpotRequest=null;
+ return true;
+}
 const CALLS={
  slow:{name:'Slow it down',hint:'Rest hold. Recover stamina; the crowd may cool.'},
  pickup:{name:'Pick it up',hint:'Faster pace. Crowd up if they have the legs.'},
@@ -6133,6 +6171,7 @@ const CALLS={
 function canCall(M,id){
  if(M.done||M.stage!=='live'||M.decision||M.calls<=0)return false;
  if(id==='sheet')return !!M.offScript;
+ if(id==='big')return !M.bigSpotRequest&&M.len-M.t>45;
  if(id==='home')return M.len-M.t>45;
  return true;
 }
@@ -6147,11 +6186,14 @@ function call(M,id){
  if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`,'play',{who:'runner'})}
  if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
  if(id==='big'){
-  const before=Graph.get(M).events.length;
-  const attempted=spot(M,true,true);
-  const landed=Graph.get(M).events.slice(before).some(e=>e.scriptedSpot===true);
-  if(!attempted)say(M,'Road agent: No physically legal big spot was available. The match continues without forcing one.','agent',{who:'runner'});
-  (M.ringsideEvidence??=[]).push({id,at:M.t,status:!attempted?'unavailable':landed?'witnessed':'botched'});
+  const evidence={id,at:M.t,status:'pending'};
+  const list=M.ringsideEvidence??(M.ringsideEvidence=[]);
+  const index=list.push(evidence)-1;
+  M.bigSpotRequest={index,at:M.t,expires:Math.max(M.t,M.len-40)};
+  if(!tryPendingBigSpot(M)){
+   if(M.wSt<28)M.mode={type:'slow',ticks:3};
+   say(M,`${w.short} accepts the call and looks for a physically legal opening. The big move is queued, not guaranteed.`,'agent',{who:'runner'});
+  }
  }
  if(id==='sheet'){
   const request={id,at:M.t,from:Graph.get(M).events.length,status:'pending'};
@@ -6466,6 +6508,8 @@ function finish(M){
   route.run(M,w,f,step);
  }
  M.t=at;M.stage='over';
+ // The bell can interrupt a still-pending request (DQ, injury or cut).
+ if(M.bigSpotRequest)closePendingBigSpot(M);
  M.final=summary(M);
  if(M.final.structureAssessment){
   const a=M.final.structureAssessment,b=a.structuralCoherence,c=a.planAdherence;
