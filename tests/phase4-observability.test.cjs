@@ -42,7 +42,7 @@ const stakes=vm.runInNewContext(helpers+'\nboutStakes('+JSON.stringify(c)+')',co
 assert.match(stakes,/Title bout:/);
 assert.match(stakes,/No disqualification|No DQ/i);
 assert.match(stakes,/Programme chapter 2/);
-assert.match(ui,/data-go="pyramid">Territory and rankings<\/button>/,
+assert.match(ui,/data-go="pyramid">Card ladder<\/button>/,
  'the inbox report must link to an existing route');
 assert.doesNotMatch(ui,/data-go="territory"/);
 assert.match(ui,/<button class="btn link" data-replay="\$\{i\}"/,

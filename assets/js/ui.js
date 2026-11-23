@@ -1282,6 +1282,12 @@ function prep(){
  return showMeeting();
 }
 
+/* ---------- their corner (rival stables) ---------- */
+function rivalNote(c){
+ const t=window.OfficeRivalCorner?.telegraph(c);if(!t)return '';
+ return `<h3 class="section-h after-h">Their corner</h3><p class="${t.warn?'bad':'dim'}">${esc(t.line)}</p>`;
+}
+
 /* ---------- ringside plans (v0.3.21) ---------- */
 function cornerPicker(c,w,f){
  const R=window.OfficeRingside;if(!R)return '';
@@ -1464,7 +1470,7 @@ function showMeeting(){
    <div class="review-actions"><button class="btn" data-room="review_edit">${st.structurePlanning?'Revise the objectives':'Revise the called spots'}</button>
     <button class="btn go" data-room="review_ok">Approve this layout</button></div>
   </div>`:'';
- const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${structurePanel}${arcPicker(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
+ const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${structurePanel}${arcPicker(c)}${rivalNote(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
  const descriptions={traditional:'Start strong, take the pressure, fight back and reach the finish.',
   classic_american:'Guided opening, pressure, comeback and payoff.',
@@ -1551,6 +1557,7 @@ function bell(){
  try{structureExecution=OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.structureChoice);}
  catch(err){console.warn('Match structure refused',err);toast('Signed structure mismatch. Review the backstage layout.');return showMeeting();}
  night.M=Mx.create({w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p,ladder:ladderFor(p.id,w.id,f.id),slot:c.slot,minutes:P.sheet?.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:P.game,leash:P.leash,talk:P.talk},preparation,flags:{...w.flags,...(P.sheet?.flags||{})},memory:OfficeMemory.context(w.id,f.id),sheet:matchSheet,structureExecution,identity:G.normaliseIdentity(S().identity),seed:Math.floor(Math.random()*2**31)});
+ if(window.OfficeRivalCorner)OfficeRivalCorner.attach(night.M,c);
  night.past=[];night.paused=false;commentaryView='all';
  const callBtns=Object.entries(Mx.CALLS).map(([k,o],i)=>`<button class="btn call" data-call="${k}" data-hint="${esc(o.hint)}"><kbd>${i+1}</kbd>${esc(o.name)}</button>`).join('');
  const livePlan=`<section class="ringside-plan" aria-label="Match instructions">
@@ -1683,6 +1690,7 @@ function result(){
  c.afterPlan=night.plan?.after||'none';
  const cons=G.applyResult(c,fin);
  if(window.OfficeRingside)cons.push(...OfficeRingside.settle(c,M));
+ if(window.OfficeRivalCorner)cons.push(...OfficeRivalCorner.settle(c,M));
  const structureReport=Mx.structureReport(M),structurePlan=structureReport?M.sheet?.structurePlan?.objectives:null;
  const sheetReport=OfficeSheets.report(M),finalStrip=structureReport?structureStrip(M,{final:true}):OfficeSheets.strip(M,{final:true});
  if(sheetReport){

@@ -16,7 +16,7 @@ const D=root.OfficeData,G=root.OfficeGame,P=root.OfficeSheets,Promo=root.OfficeS
 assert.ok(
  script.includes('const matchSheet=P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null;') &&
  script.includes('OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.structureChoice)') &&
- script.includes('sheet:matchSheet,structureExecution,seed:'),
+ script.includes('sheet:matchSheet,structureExecution,identity:G.normaliseIdentity(S().identity),seed:'),
  'the final signed sheet, including microphone vow and ringside plan, must be validated and passed to the match engine at the bell'
 );
 assert.ok(script.includes("pickCards(v.options,'mic',true)")&&script.includes('${claim}'),'promo choices and claim appear on screen');

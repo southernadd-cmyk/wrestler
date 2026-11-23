@@ -3,7 +3,7 @@
 (function testTrainingDesk(){
  'use strict';
  const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
- const src=fs.readFileSync(path.join(__dirname,'..','assets/js/ui.js'),'utf8');
+ const src=fs.readFileSync(path.join(__dirname,'..','assets/js/ui.js'),'utf8').replace(/\r\n/g,'\n');
  const a=src.indexOf('function trainingReportsPanel(){'),b=src.indexOf('\n\n\nfunction scoutingComparison(',a);
  assert.ok(a>=0&&b>a,'training renderer is present');
  const state={cash:2000,coach:null,roster:[

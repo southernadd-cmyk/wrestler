@@ -34,6 +34,7 @@ assets/js/
   approaches.js             The rival stables' rosters on view, approaching their wrestlers, and managers' grudges
   after-bell.js             What happens after the bell: the planned angle, the post-match microphone, callouts
   ringside.js               A stablemate at ringside: in the corner, a distraction, a referee bump or a run-in
+  rival-corner.js           The opposing stable's manager and stablemates at ringside: a telegraph before the bell, an interference in the match, and its aftermath
   disqualify.js             Disqualifications nobody booked, carried through the results; promoters booking DQ finishes
   stipulations.js           No DQ, submission only, falls count anywhere, two out of three falls: negotiated and played
   signing.js                The contract signing before title matches, blow-offs and programme payoffs
