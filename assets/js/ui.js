@@ -581,7 +581,7 @@ function trainingReportsPanel(){
   <p class="train-footnote">Real completed-week changes, not forecasts. Training spend excludes the separate coach wage.</p></div>`;
 }
 function trainingAdvicePanel(w){
- const advice=G.trainingAdvice(w),forecast=G.trainingForecast(w);
+ const advice=G.trainingAdvice?.(w)||[],forecast=G.trainingForecast?.(w);
  const items=advice.map(a=>{
   const action=['focus','intensity','session'].includes(a.kind);
   return `<div class="train-recommendation ${a.priority==='urgent'?'urgent':''}"><div><b>${esc(a.title)}</b><p>${esc(a.why)}</p></div>
@@ -618,7 +618,7 @@ function renderTraining(){
  }).join(''):`<div class="empty">Sign a wrestler to begin training.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`;
  const overview=`${figures}<p class="train-context">Select a wrestler to manage their weekly training. Plans continue until you change them.</p>
  <div class="train-roster well" role="group" aria-label="Stable training roster">${people}</div>
- <p class="train-footnote">Condition alerts identify injuries or fatigue of 60+. Sessions with Dennis are shared across the whole stable.</p>`;
+ <p class="train-footnote">Condition alerts identify injuries or fatigue of 60+. Sessions with Dennis are shared across the whole stable.</p>${s.trainingReviews?.length?`<div class="train-review-teaser"><b>Last completed week: ${weekLabel(s.trainingReviews.at(-1).a)}</b><p>${money(s.trainingReviews.at(-1).trainingCost||0)} spent on training and promos</p><button class="btn sm" data-trainpane="reports">Read review</button></div>`:''}`;
  const tabs=`<div class="train-tabs" role="group" aria-label="Training view">
   <button type="button" class="btn sm ${trainingPane==='development'?'go':''}" data-trainpane="development" aria-pressed="${trainingPane==='development'}">Wrestler development</button>
   <button type="button" class="btn sm ${trainingPane==='coaches'?'go':''}" data-trainpane="coaches" aria-pressed="${trainingPane==='coaches'}">Coaching staff</button>
@@ -675,7 +675,7 @@ function renderTraining(){
   const suggested=tip?G.sessionOptions(w).find(o=>o.value===tip.value):null;
   const why=suggested?`<p class="train-advice"><b>Dennis recommends:</b> ${esc(suggested.label)}. ${esc(tip.why)} ${esc(suggested.hint||'')}</p>`:'';
   const sessions=`<div class="train-session"><div class="train-section-heading"><h3 class="section-h">A session with Dennis</h3><small>${bookedSessions} of ${G.SESSION_CAP} booked</small></div>
-   ${why}<label class="field">This week's session${sessionSelect(w)}</label>
+   <label class="field">This week's session${sessionSelect(w)}</label>
    <p class="train-context">${esc(sessionNote(w)||'Choose a rehearsal, a big-spot move or mic practice. Sessions are on top of the weekly training focus.')}</p></div>`;
   details=`${tabs}<div class="train-wrestler-head">${face('wrestler',w.id,w.name,'portrait x2')}
    <div><h3>${esc(w.name)}</h3><p>${esc(w.style||'Wrestler')} · ${status(w)}</p><p>Fatigue ${Math.round(w.fatigue)} ${bar(w.fatigue,fatKind(w.fatigue))}</p></div>
@@ -686,7 +686,7 @@ function renderTraining(){
    <div class="train-effect"><b>${money(G.trainingCost(w))} this week</b><p>${esc(expectation)}</p>${paused?`<p>${esc(trainNote(w))}</p>`:''}</div>
    <h3 class="section-h">Development programme</h3>${programme}
    ${w.prepHistory?.length?`<p class="train-footnote">Last completed: ${esc(D.TRAINING[w.prepHistory[0].focus]?.name||w.prepHistory[0].focus)} · +${w.prepHistory[0].gains} points (${weekLabel(w.prepHistory[0].week)}).</p>`:''}
-   ${sessions}${trainingAdvicePanel(w)}`;
+   ${trainingAdvicePanel(w)}${sessions}`;
  }
  paint('s-split s-train',
   win('Stable training',overview,{keep:'train-roster'})+
