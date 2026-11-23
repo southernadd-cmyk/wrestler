@@ -6163,7 +6163,7 @@ function tryPendingBigSpot(M){
 const CALLS={
  slow:{name:'Slow it down',hint:'Rest hold. Recover stamina; the crowd may cool.'},
  pickup:{name:'Pick it up',hint:'Faster pace. Crowd up if they have the legs.'},
- big:{name:'Hit the big spot',hint:'One big move now. Huge pop or a nasty botch.'},
+ big:{name:'Hit the big spot',hint:'Queue a big move for the next legal opening. Refunded if none appears.'},
  crowd:{name:'Work the crowd',hint:'Play to the seats. Builds noise, stalls the match.'},
  home:{name:'Take it home',hint:'Go to the finish now. Early means a shorter, weaker match.'},
  sheet:{name:'Back to the layout',hint:'Pull an improvising worker back to the plan.'}
@@ -6192,7 +6192,9 @@ function call(M,id){
   M.bigSpotRequest={index,at:M.t,expires:Math.max(M.t,M.len-40)};
   if(!tryPendingBigSpot(M)){
    if(M.wSt<28)M.mode={type:'slow',ticks:3};
-   say(M,`${w.short} accepts the call and looks for a physically legal opening. The big move is queued, not guaranteed.`,'agent',{who:'runner'});
+   say(M,M.planId==='safe'?
+    `Safe layout: ${w.short} will seek a permitted high spot, not a dangerous stunt. The call will be returned if no opening appears.`:
+    `${w.short} accepts the call and looks for a physically legal opening. The big move is queued, not guaranteed.`,'agent',{who:'runner'});
   }
  }
  if(id==='sheet'){
