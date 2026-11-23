@@ -11,14 +11,14 @@
  #app .nav,#app .tick{display:none}
  #app .top{
   grid-template-columns:auto minmax(0,1fr) auto;
-  gap:6px 8px;padding:7px 12px;background:#121a40;box-shadow:none;
+  gap:6px 8px;padding:7px 12px;background:var(--phone-chrome);box-shadow:none;
  }
  .top .histnav{grid-column:1;grid-row:1}
  .top .histnav [data-hist="fwd"]{display:none}
  .top .histnav .btn{min-width:40px;min-height:40px;font-size:18px}
  .top .logo{grid-column:2;grid-row:1;font-size:clamp(22px,6.8vw,32px);letter-spacing:0}
  .top #continue{grid-column:3;grid-row:1;padding:3px 8px;min-width:106px;min-height:40px;font-size:22px}
- .top #continue small{font:12px/1.15 'Atkinson Hyperlegible Next',system-ui,sans-serif}
+ .top #continue small{font:13px/1.15 'Atkinson Hyperlegible Next',system-ui,sans-serif}
  .top .readouts{
   grid-row:2;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
   background:none;border:none;
@@ -29,10 +29,10 @@
     section and content areas keep most of a 740px-tall screen. */
  .top .readouts{gap:4px;grid-template-columns:repeat(4,minmax(0,1fr))}
  .top .ro{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:0;background:#1a2855;padding:3px 6px}
- .top .ro small{font-size:12px;line-height:1.2}
+ .top .ro small{font-size:13px;line-height:1.2}
  .top .ro small::after{content:none}
  .top .ro b{font:700 14px/1.2 'Atkinson Hyperlegible Next',system-ui,sans-serif;letter-spacing:0;overflow-wrap:anywhere;text-align:right;min-width:0}
- .phone-tabs,.phone-sections{display:grid;gap:3px;background:#121a40}
+ .phone-tabs,.phone-sections{display:grid;gap:3px;background:var(--phone-chrome)}
  .phone-sections{
   grid-area:sections;grid-auto-flow:column;grid-auto-columns:minmax(max-content,1fr);
   overflow-x:auto;padding:5px 10px;border-bottom:1px solid #384673;
@@ -46,7 +46,7 @@
  .phone-tab[aria-current="true"]{background:var(--gold);color:var(--ink);border-color:var(--ink);box-shadow:var(--bevel)}
  .phone-sections .phone-tab{min-height:44px;white-space:nowrap;background:#202d59}
  .phone-sections .phone-tab[aria-current="page"]{background:#3b4b79;border-color:var(--gold);color:#ffe08a}
- .phone-badge{display:inline-block;margin-left:3px;padding:0 4px;background:var(--blood);color:#fff;font-size:11px}
+ .phone-badge{display:inline-block;margin-left:3px;padding:0 4px;background:var(--blood);color:#fff;font-size:13px}
  #view{padding:12px;scroll-padding:10px;overscroll-behavior:contain}
  #view .screen{gap:12px}
  #view .win,#tv .win{box-shadow:2px 3px 0 rgba(0,0,0,.35)}
@@ -72,9 +72,9 @@
  #view .phone-card{
   width:100%;min-height:51px;display:grid;gap:4px;text-align:left;
   padding:9px 11px;background:var(--well);color:var(--white);
-  border:2px solid var(--ink);border-left:4px solid #536596;
+  border:2px solid var(--ink);border-left:4px solid var(--phone-edge);
  }
- #view .phone-card.unbookable{color:var(--dim);border-left-color:#2A3A82;border-style:dashed solid dashed dashed}
+ #view .phone-card.unbookable{color:var(--dim);border-left-color:var(--well-line);border-style:dashed solid dashed dashed}
  #view .phone-card:hover,#view .phone-card:focus-visible{border-left-color:var(--gold);background:var(--well-hover)}
  #view .phone-card b{font-weight:700;color:var(--gold)}
  #view .phone-card small,#view .phone-card-meta{font-size:13px;color:var(--dim)}
@@ -88,16 +88,16 @@
  #view .free-filters[open]>summary::after{content:"▴"}
  #view .free-filters>summary:focus-visible{outline:3px dashed var(--ink);outline-offset:2px}
  #view .free-cards{display:grid;gap:7px}
- #view .free-cards .free-card{border-left:4px solid #536596}
+ #view .free-cards .free-card{border-left:4px solid var(--phone-edge)}
  #view .free-cards .free-card:hover,#view .free-cards .free-card:focus-visible{border-left-color:var(--gold)}
- #view .free-stats small,#view .free-costs small{font-size:11px}
+ #view .free-stats small,#view .free-costs small{font-size:13px}
  #view .free-costs{gap:20px}
  #view .free-sort .field{flex:1;min-width:130px}
  .phone-progress{
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;margin-bottom:12px;background:var(--well-line);
  }
  .phone-progress div{background:var(--well);padding:8px 10px;color:var(--white)}
- .phone-progress small{display:block;color:var(--dim);font-size:12px}
+ .phone-progress small{display:block;color:var(--dim);font-size:13px}
  .phone-progress b{font-weight:700;color:var(--gold)}
  #view .s-desk .desk-actions{order:-1}
  #view .s-desk .desk-actions .wbody{padding:8px}
@@ -131,7 +131,7 @@
  #tv .s-back .picks.five{grid-template-columns:minmax(0,1fr)}
  #tv .s-back .decision-option{min-height:48px}
  #tv .s-back .decision-option>span{font-size:14px}
- #tv .s-back .tags i{font-size:12px}
+ #tv .s-back .tags i{font-size:13px}
  #tv .s-back .section-h{font-size:24px}
  #tv .tv-foot{padding:8px 10px}
  #tv:has(.s-back) .tv-foot:not(:has(button)){display:none}
