@@ -5934,6 +5934,22 @@ function tick(M){
   M.len-M.t<=60&&M.len-M.t>=0;
  if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||
     preparedHope||closingStory||M.r()<.64))Graph.step(M);
+ // An accepted request to get back on the layout is not proof of compliance.
+ // Wait for a real, legal, landed graph action by our wrestler.
+ if(M.layoutReturn){
+  const request=M.layoutReturn;
+  const action=Graph.get(M).events?.slice(request.from).find(e=>
+   e.preControl==='w'&&e.id&&Graph.A[e.id]&&!e.blocked&&!e.botched);
+  if(action){
+   M.offScript=null;M.comply=clamp(M.comply+15);
+   say(M,`${w.short} follows through with ${Graph.A[action.id].name||'a legal exchange'}. The layout is back on track.`,'agent',{who:'runner'});
+   request.status='witnessed';request.action=action.id;request.atAction=action.t;
+   M.layoutReturn=null;
+  }else if(M.t-request.at>=90){
+   say(M,'Road agent: The instruction was heard, but there is still no in-ring evidence of a return to the layout.','agent',{who:'runner'});
+   request.status='unfulfilled';M.layoutReturn=null;
+  }
+ }
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
@@ -6130,8 +6146,19 @@ function call(M,id){
  if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`,'play',{who:'runner'})}
  if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`,'play',{who:'runner'})}
  if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
- if(id==='big')spot(M,true,true);
- if(id==='sheet'){M.offScript=null;M.comply=clamp(M.comply+15);say(M,`${w.short} nods. Back to the match layout.`,'play',{who:'runner'})}
+ if(id==='big'){
+  const before=Graph.get(M).events.length;
+  const attempted=spot(M,true,true);
+  const landed=Graph.get(M).events.slice(before).some(e=>e.scriptedSpot===true);
+  if(!attempted)say(M,'Road agent: No physically legal big spot was available. The match continues without forcing one.','agent',{who:'runner'});
+  (M.ringsideEvidence??=[]).push({id,at:M.t,status:!attempted?'unavailable':landed?'witnessed':'botched'});
+ }
+ if(id==='sheet'){
+  const request={id,at:M.t,from:Graph.get(M).events.length,status:'pending'};
+  (M.ringsideEvidence??=[]).push(request);
+  M.layoutReturn=request;
+  say(M,`${w.short} acknowledges the call. We will see whether the next exchanges follow the layout.`,'agent',{who:'runner'});
+ }
  if(id==='home'){const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
   M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
   say(M,`${w.short} relays it to ${M.f.short}: take it home.`,'play',{who:'runner'})}
@@ -6452,7 +6479,7 @@ function summary(M){
  root.OfficeSheets?.DIRECTOR?.finalize(M);
  const s=stars(M,true);
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
-  script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,injury:M.injury,injuryPart:M.injuryPart,
+  script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,...(M.ringsideEvidence?.length?{ringsideEvidence:M.ringsideEvidence.map(e=>({...e}))}:{}),injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,finishRoute:M.finishRoute||null,crowdTrace:[...(M.crowdTrace||[]),[M.t,Math.round(M.crowd)]],flow:(M.flow||[]).slice(),marks:(M.marks||[]).slice(),starParts:starParts(M).map(([k,label,v])=>[k,label,Math.round(v*100)/100]),len:M.len,rehearsed:!!M.o.sheet?.rehearsed,roomNote:root.OfficeRoom?.verify(M)||null,roomBonus:M.o.sheet?.bonus||0,roomFx:M.o.sheet?.fx||null,roomThreads:M.o.sheet?.threads||null,roomThreadUsed:M.o.sheet?.threadUsed||null,roomRepStake:M.o.sheet?.repStake||0,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
   resent:M.resent,promo:M.o.promo||null,
   promoSignals:{
