@@ -11,12 +11,20 @@ let route={s:'desk',id:null},past=[],ahead=[];
 let openMsg=null,pick={},selOffer=null,selFree=null,night=null,toastT=0;
 // Presentation preferences only; no changes to career state or match simulation.
 let inboxFilter='all',stableFilter='all',stableQuery='',scoutQuery='',scoutStyle='all',scoutBudget='all',shortlist=[],scoutFiltersOpen=false;
+let identityMode='new',identityPortrait=0,newCareerApproved=false;
 let commentaryView='all'; // local view only: never changes match or commentary generation
 let trainingSelected=null,trainingPane='development',trainingReportWeek=null; // training-screen presentation only
 const sorts={};
 
 /* ---------- small helpers ---------- */
 function face(type,id,name,cls='portrait'){return Pt.avatar({key:type+':'+id,name,type},null,cls)}
+function identityCard(includeEdit=false){
+ const p=G.normaliseIdentity(S()?.identity);
+ return '<div class="player-identity-card">'+Pt.playerPortrait(p.portrait,p.manager,'portrait')+
+  '<div class="player-identity-text"><b>'+esc(p.manager)+'</b><span>'+esc(p.stable)+'</span>'+
+  (includeEdit?'<button class="btn sm" type="button" data-act="profile">Edit identity</button>':'')+
+  '</div></div>';
+}
 // Contextual records use IDs, not names, so a renamed character still opens correctly.
 function recordLink(kind,id,name){
  if(!id)return esc(name);
@@ -291,7 +299,7 @@ function renderChrome(){
  const group=NAV.find(([,items])=>items.some(([id])=>id===cur))||NAV[0];
  $('#phoneTabs').innerHTML=NAV.map(([label,[[id]]])=>`<button class="phone-tab" data-go="${id}" ${group[0]===label?'aria-current="true"':''}>${label}${id==='desk'&&need?`<span class="phone-badge" aria-label="${need} awaiting reply">${need}</span>`:''}</button>`).join('');
  $('#phoneSections').innerHTML=group[1].length>1?group[1].map(([id,label])=>`<button class="phone-tab" data-go="${id}" ${cur===id?'aria-current="page"':''}>${PHONE_LABELS[id]||label}${id==='inbox'&&need?`<span class="phone-badge">${need}</span>`:''}</button>`).join(''):'';
- $('#nav').innerHTML=NAV.map(([g,items])=>`<h4>${g}</h4>`+items.map(([id,l])=>`<button class="item" data-go="${id}" ${cur===id?'aria-current="page"':''}><span>${l}</span>${badge[id]||''}</button>`).join('')).join('');
+ $('#nav').innerHTML='<div class="player-nav-head">'+identityCard(true)+'</div>'+NAV.map(([g,items])=>`<h4>${g}</h4>`+items.map(([id,l])=>`<button class="item" data-go="${id}" ${cur===id?'aria-current="page"':''}><span>${l}</span>${badge[id]||''}</button>`).join('')).join('');
  $('#nav [aria-current]')?.scrollIntoView({block:'nearest',inline:'nearest'});
  $('[data-hist="back"]').disabled=!past.length;$('[data-hist="fwd"]').disabled=!ahead.length;
  const lead=G.pending()[0]||s.inbox.find(m=>!m.read)||s.inbox[0];
@@ -362,7 +370,7 @@ function renderDesk(){
   s.offers.length?
   {heading:s.offers.length+' '+plural(s.offers.length,'offer')+' available',why:'Consider the terms before advancing the week.',go:'offers',cta:'Review offers'}:
   {heading:'Ready to advance',why:'Use Continue to reach next week and receive new offers.',go:null,cta:null};
- const briefing=`<div class="desk-brief"><div><small>NEXT ACTION</small><b>${esc(brief.heading)}</b><span>${esc(brief.why)}</span></div>${brief.go?`<button class="btn sm" data-go="${brief.go}">${esc(brief.cta)}</button>`:''}</div>`;
+ const briefing=identityCard(true)+`<div class="desk-brief"><div><small>NEXT ACTION</small><b>${esc(brief.heading)}</b><span>${esc(brief.why)}</span></div>${brief.go?`<button class="btn sm" data-go="${brief.go}">${esc(brief.cta)}</button>`:''}</div>`;
  let mission='';
  if(stakes)mission=win('Sponsor trial',trialBlock(),{area:'mission',note:'Weeks 1 to 4'});
  else if(s.monthReview&&s.season===1)mission=win(s.monthReview.passed?'Backer invested £450':'Backer declined funding',`<p>Best match in the trial: ${s.monthReview.best}★. Training and promos: ${money(s.monthReview.business?.training||0)}. Contract improvements: ${money(s.monthReview.business?.negotiated||0)}. Promises kept ${s.monthReview.business?.kept||0}, broken ${s.monthReview.business?.broken||0}.</p><p class="dim">The regional circuit runs to week 16. Checkpoints are under Objectives.</p><button class="btn sm" data-go="objectives">Objectives</button>`,{area:'mission',note:'Trial review'});
@@ -1067,7 +1075,7 @@ function renderGame(){
   <ul class="cons">${diagnostics.map(e=>`<li><b>${esc(e.source)}</b> · S${e.season} W${e.week}${e.count>1?' (repeated '+e.count+' times)':''}<small class="feud-last">${esc(e.message)}</small></li>`).join('')}</ul></section>`:'';
  paint('s-split even',
   win('Save and load',`<p class="lede">Your career saves automatically in this browser after every action. Export a save file to move it to another device or browser.</p><p class="${saved.ok===false?'bad':'dim'}" role="status">${esc(status)}</p><div class="row"><button class="btn" data-act="export">Export save</button><button class="btn" data-act="import">Import save</button></div>${diagnostic}<h3 class="section-h" style="margin-top:20px">Start over</h3><p class="dim">Overwrites the current career.</p><button class="btn red" data-act="newgame">Start a new career</button>`)+
-  win('How a week works',`<ol style="margin:0;padding-left:1.3em;display:grid;gap:8px"><li>Read the inbox. Some messages need a decision before you can continue.</li><li>Set training for each wrestler. Rest anyone who is tired.</li><li>Book wrestlers onto offers. Promoters set the finish; negotiate the fee, billing or a protected loss using a management meeting.</li><li>Press Continue. Choose the match plan and your wrestler’s promo approach, hear both wrestlers speak, then work the match with up to three calls from ringside.</li><li>Wages and costs are paid, and the next week’s offers arrive.</li></ol><p class="dim" style="margin-top:12px">At ringside, Space pauses and keys 1 to 6 make calls.</p>`,{h:'h3'})
+  win('Manager profile',identityCard(true)+`<h3 class="section-h" style="margin-top:14px">How a week works</h3><ol style="margin:0;padding-left:1.3em;display:grid;gap:8px"><li>Read the inbox. Some messages need a decision before you can continue.</li><li>Set training for each wrestler. Rest anyone who is tired.</li><li>Book wrestlers onto offers. Promoters set the finish; negotiate the fee, billing or a protected loss using a management meeting.</li><li>Press Continue. Choose the match plan and your wrestler’s promo approach, hear both wrestlers speak, then work the match with up to three calls from ringside.</li><li>Wages and costs are paid, and the next week’s offers arrive.</li></ol><p class="dim" style="margin-top:12px">At ringside, Space pauses and keys 1 to 6 make calls.</p>`,{h:'h3'})
  );
 }
 
@@ -1171,6 +1179,36 @@ function dialog(title,html,buttons=[['Close','close']]){
  const d=$('#modal');d.classList.remove('negotiation-dialog');delete d.dataset.talkoid;
  d.innerHTML=`<header class="tbar"><h2 id="office-dialog-title">${esc(title)}</h2></header><div class="dlg">${html}</div><div class="foot">${buttons.map(([l,a,c])=>`<button class="btn ${c||''}" data-dlg="${a}">${l}</button>`).join('')}</div>`;
  d.showModal();return d;
+}
+// Create and edit the player's identity without mutating a live save before
+// confirmation. Portraits are locally generated pixel art and never affect
+// career random seeds, bookings, wrestling outcomes or rival managers.
+function identitySetup(mode='new'){
+ identityMode=mode;
+ const p=G.normaliseIdentity(mode==='edit'?S()?.identity:null);
+ identityPortrait=p.portrait;
+ const picker=Pt.PLAYER_PORTRAITS.map((o,i)=>
+  '<button type="button" class="player-portrait-choice'+(i===identityPortrait?' selected':'')+
+  '" data-identity-pick="'+i+'" aria-pressed="'+(i===identityPortrait)+
+  '" aria-label="Choose portrait '+(i+1)+': '+esc(o.label)+'">'+
+  Pt.playerPortrait(i,p.manager,'portrait')+
+  '<small>'+esc(o.label)+'</small></button>').join('');
+ const html='<div class="player-identity-editor">'+
+  '<div class="player-identity-intro"><div id="identity-preview">'+
+   Pt.playerPortrait(identityPortrait,p.manager,'portrait x3')+'</div>'+
+   '<div class="player-identity-fields"><p class="dim">Your name and stable will be recognised around the office. Portraits are cosmetic.</p>'+
+   '<label for="identity-manager">Manager name</label>'+
+   '<input id="identity-manager" type="text" maxlength="42" autocomplete="name" required value="'+esc(p.manager)+'">'+
+   '<label for="identity-stable">Stable / operation name</label>'+
+   '<input id="identity-stable" type="text" maxlength="42" required value="'+esc(p.stable)+'">'+
+   '<p id="identity-error" class="bad" role="alert" hidden>Enter both a manager name and a stable name.</p>'+
+   '</div></div>'+
+  '<fieldset class="player-portrait-picker"><legend>Choose your portrait <small>16 styles</small></legend>'+
+   '<div class="player-portrait-grid">'+picker+'</div></fieldset></div>';
+ const d=dialog(mode==='edit'?'Your manager profile':'Meet the New Boss',html,
+  [['Cancel','close'],[mode==='new'?'Start career':'Save identity','identity-save','go']]);
+ d.classList.add('identity-dialog');
+ d.querySelector('#identity-manager')?.focus();
 }
 // The commentary booth: whoever is speaking gets a name tag, and the live line gets their portrait.
 function booth(l){return l&&l.who?D.BOOTH?.[l.who]||null:null}
@@ -1757,6 +1795,18 @@ document.addEventListener('click',e=>{
   if(OfficeRingfax.press(d.rfAction==='jump'?'go':d.rfAction,value,S()))render();
   return;
  }
+ if(d.identityPick!==undefined){
+  if(!$('#modal')?.classList.contains('identity-dialog'))return;
+  const i=Number(d.identityPick);if(!Number.isInteger(i)||i<0||i>=Pt.PLAYER_PORTRAITS.length)return;
+  identityPortrait=i;
+  const preview=$('#identity-preview');
+  if(preview)preview.innerHTML=Pt.playerPortrait(i,$('#identity-manager')?.value||'Manager','portrait x3');
+  document.querySelectorAll('[data-identity-pick]').forEach(b=>{
+   const selected=Number(b.dataset.identityPick)===i;
+   b.classList.toggle('selected',selected);b.setAttribute('aria-pressed',String(selected));
+  });
+  return;
+ }
  if(d.commentaryView){commentaryView=d.commentaryView==='key'?'key':'all';renderPastCommentary();return}
  if(d.trainpick){trainingSelected=d.trainpick;trainingPane='development';render();return;}
  if(d.trainpane){trainingPane=d.trainpane;render();return;}
@@ -1824,7 +1874,24 @@ document.addEventListener('click',e=>{
  if(d.replay){const x=S().history[+d.replay];dialog(`${x.name} v ${x.foe}`,`${x.promo?`<p><b>Microphone time — ${esc(x.promo.style)}</b></p>${x.promo.dialogue?.length?x.promo.dialogue.map(z=>`<p><b>${esc(z.speaker)}:</b> ${esc(z.line)}</p>`).join(''):`<p>${x.promo.speech.map(z=>'“'+esc(z)+'”').join(' ')}</p><p><b>${esc(x.promo.opponent)}:</b> “${esc(x.promo.reply)}”</p>`}${x.promo.promise?.kept===true?'<p><b>Promise kept in the match.</b></p>':x.promo.promise?.kept===false?'<p><b>Promise broken in the match.</b></p>':''}`:''}<p class="dim">${esc(x.promoter)}, season ${x.season} week ${x.week}. <span class="stars">${starsText(x.stars)||'DUD'}</span></p>${historyDetails(x)}${(x.notes||[]).map(n=>`<p>${esc(n)}</p>`).join('')}<div class="well">${logList(x.log||[])}</div>`);return}
  if(d.act==='export'){const blob=new Blob([JSON.stringify(S())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`the-office-s${S().season}w${S().week}.json`;a.click();return}
  if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(![20,21,22].includes(x.v))throw 0;G.S=x;if(!G.S)throw 0;G.save();startApp('desk');toast('Save loaded.')}catch(err){toast('That file isn’t a valid save from v2 to v2.3.')}})};i.click();return}
+ if(d.act==='profile'){identitySetup('edit');return}
  if(d.act==='newgame'){dialog('Start a new career?','<p>Your current career will be overwritten.</p>',[['Cancel','close'],['Start again','newgame','red']]);return}
+ if(d.dlg==='identity-save'){
+  const manager=$('#identity-manager')?.value.trim(),stable=$('#identity-stable')?.value.trim();
+  if(!manager||!stable){
+   const error=$('#identity-error');if(error)error.hidden=false;
+   (!manager?$('#identity-manager'):$('#identity-stable'))?.focus();return;
+  }
+  const profile=G.normaliseIdentity({manager,stable,portrait:identityPortrait});
+  if(identityMode==='edit'){
+   G.setIdentity(profile);$('#modal').close();render();toast('Manager profile updated.');return;
+  }
+  if(G.hasSave()&&!newCareerApproved&&!confirm('Overwrite your saved career with a new one?'))return;
+  $('#modal').close();clearNight();G.wipe();G.fresh(profile);openMsg=null;night=null;
+  $('#tv').hidden=true;document.body.style.overflow='';closeTVFocus();
+  newCareerApproved=false;startApp('scouting');toast('Sign your first wrestler.');return;
+ }
+ if(d.dlg==='newgame'){$('#modal').close();newCareerApproved=true;identitySetup('new');return}
  if(d.dlg==='review-week-offers'){$('#modal').close();return go('offers')}
  if(d.dlg==='confirm-empty-week'){
   $('#modal').close();
@@ -1835,8 +1902,8 @@ document.addEventListener('click',e=>{
   toast(`Week ${S().week}. ${S().offers.length} ${plural(S().offers.length,'offer')} on the table.`);
   return;
  }
- if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('sign:')){const id=d.dlg.slice(5),err=G.sign(id);if(err){render();return toast(err)}const w=G.W(id);selFree=null;refreshList('scouting');return toast(`${w.name} signed. Wages ${money(w.wage)} a week.`)}if(d.dlg.startsWith('raise:')){const r=window.OfficeAmbitions?.giveRaise?.(d.dlg.slice(6));render();toast(r?.error||r?.text||'Wage review unavailable.');return}if(d.dlg.startsWith('withdraw:')){const said=G.unbook(d.dlg.slice(9));render();toast(said||'Programme withdrawn.');return}if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}if(d.dlg==='newgame'){clearNight();G.wipe();G.fresh();openMsg=null;night=null;$('#tv').hidden=true;document.body.style.overflow='';closeTVFocus();startApp('scouting')}return}
- if(d.title==='new'){if(G.hasSave()&&!confirm('Overwrite your saved career?'))return;clearNight();G.fresh();startApp('scouting');toast('Sign your first wrestler.');return}
+ if(d.dlg){const m=$('#modal');m.close();if(d.dlg.startsWith('sign:')){const id=d.dlg.slice(5),err=G.sign(id);if(err){render();return toast(err)}const w=G.W(id);selFree=null;refreshList('scouting');return toast(`${w.name} signed. Wages ${money(w.wage)} a week.`)}if(d.dlg.startsWith('raise:')){const r=window.OfficeAmbitions?.giveRaise?.(d.dlg.slice(6));render();toast(r?.error||r?.text||'Wage review unavailable.');return}if(d.dlg.startsWith('withdraw:')){const said=G.unbook(d.dlg.slice(9));render();toast(said||'Programme withdrawn.');return}if(d.dlg.startsWith('release:')){const w=G.W(d.dlg.slice(8));G.release(w.id);past=past.filter(r=>r.id!==w.id);ahead=[];route={s:'squad',id:null};render(true);toast(`${w.name} released.`)}return}
+ if(d.title==='new'){newCareerApproved=false;identitySetup('new');return}
  if(d.title==='load'){if(!G.load())return toast('No saved career found.');startApp('desk');if(resumeNight())toast('Match restored, paused at your last decision.');return}
  if(d.plan){night.plan[d.plan]=d.val;if(d.plan==='game'){night.plan.sheet=null;night.plan.focus=null;night.plan.confirmed=false;}t.parentElement.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b===t));persistNight();return}
  if(d.structure||d.structurelead){
