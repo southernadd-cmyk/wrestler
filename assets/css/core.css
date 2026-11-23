@@ -116,6 +116,15 @@ h1,h2,h3{margin:0;font-weight:400}
 .ro b.neg{color:var(--bad)}
 #continue{min-width:190px;min-height:52px;flex-direction:column;gap:0;font:28px/1 var(--jersey);letter-spacing:.03em}
 #continue small{font:400 16px/1.1 var(--px);letter-spacing:0}
+#continue:focus-visible{outline:3px dashed var(--cyan);outline-offset:2px}
+.grid tbody tr[data-selected="true"] .row-pick:focus-visible{outline-color:var(--ink)}
+/* WCAG: headings on stone surfaces need darker crimson than title bars. */
+.nav h4,.section-h,.record-name,.letter h2{color:#7E141C}
+/* The deep match-layout well must use vivid status colours, not light-paper inks. */
+.tv .well .good,.tv .win .well .good{color:var(--good)}
+.tv .well .bad,.tv .win .well .bad{color:var(--bad)}
+/* Secondary ink on the darker stone panel. */
+label.field,.letter .meta,.kv dt{color:var(--ink-2)}
 
 .nav{grid-area:nav;display:flex;flex-direction:column;gap:2px;margin:10px 0 10px 10px;padding:8px 6px 10px;overflow:auto;background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.45)}
 .nav h4{margin:10px 4px 4px;font:22px/1 var(--jersey);font-weight:400;color:var(--blood);letter-spacing:.02em}
@@ -145,7 +154,7 @@ h1,h2,h3{margin:0;font-weight:400}
 .grid tbody tr[data-selected="true"] td{background:var(--gold);color:var(--ink)}
 /* Offers nobody in the stable can take: still readable, clearly secondary. */
 .grid tbody tr.unbookable:not([data-selected="true"]) td{color:var(--dim);background:var(--well)}
-.grid tbody tr.unbookable:not([data-selected="true"]) td>*{opacity:.6}
+.grid tbody tr.unbookable:not([data-selected="true"]) td>*{opacity:1}
 .grid tbody tr[data-selected="true"] .att,.grid tbody tr[data-selected="true"] .dim,.grid tbody tr[data-selected="true"] .stars{color:var(--ink)}
 .grid tbody tr[data-selected="true"] .tag.tw{color:var(--good-ink)}.grid tbody tr[data-selected="true"] .tag.tl{color:var(--bad-ink)}
 .grid td.wrap,.who small{white-space:normal}
@@ -204,7 +213,7 @@ h1,h2,h3{margin:0;font-weight:400}
   grid-template-rows:minmax(0,1.85fr) minmax(150px,1fr) minmax(150px,1fr);
  }
  .s-desk>.win{min-width:0;min-height:0}
- .s-desk .wbody{overscroll-behavior:contain}
+ /* Allow wheel events to reach the desk when inner windows cannot scroll. */
  .s-desk .wbody.tight>.well{min-height:0}
  .s-desk .facts>div{padding:5px 8px}
  .s-desk .facts small{font-size:14px}
