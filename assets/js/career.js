@@ -65,15 +65,16 @@ function fresh(identity){
  // underlying circuit outcomes without touching legacy career random sequences.
  S.careerSeed=S.seed;
  msg({from:'The office',subject:'The keys are yours',kind:'info',body:[
+  `${S.identity.manager}, you are now managing ${S.identity.stable}.`,
   'You have £2,250, an empty locker room and four promoters who might return your calls.',
   'Sign talent from Roster. Book them on Bookings. Press Continue and you go to the ring with them.',
   'Promoters decide who wins. You decide how it gets there, and what happens when it goes wrong.',
   'You have TWO management meetings each week. Spend them wisely; training has a real cost and tired wrestlers make costly mistakes.'
  ]});
- msg({from:'Your backer',subject:'Four weeks to prove yourselves',kind:'info',body:['I will review the stable at the end of week four.',
+ msg({from:'Your backer',subject:'Four weeks to prove yourselves',kind:'info',body:[`I will review ${S.identity.stable} at the end of week four.`,
   'Put on at least one three-star match AND meet two of these three conditions: keep £750 in the bank, reach reputation 30, and develop one wrestler by at least two skill points.',
   'Make it, and I will invest £450. Miss it, and the money goes elsewhere. We will still be here to discuss season objectives.']});
- msg({from:'The office',subject:'Season 1 objectives',kind:'info',body:['This season, the business wants you to:',...goalList().map(g=>'• '+g.text)]});
+ msg({from:'The office',subject:'Season 1 objectives',kind:'info',body:[`This season, ${S.identity.stable} is expected to:`,...goalList().map(g=>'• '+g.text)]});
  root.OfficeTerritory?.prepare(S,true);
  root.OfficeWorldV4?.activate(S);
  makeOffers();save();return S;
@@ -707,7 +708,7 @@ function reviewCircuit(){if(S.season!==1||!CIRCUIT_TARGETS[S.week]||S.circuitRev
  msg({from:'Your regional backer',subject:`${r.title} review — ${r.met?'bonus earned':'target missed'}`,kind:'info',body:[
   `Required: ${r.required} matches from week 5 onward, at least one ${r.quality}-star performance${r.feature?', plus a featured/main-event booking':''}.`,
   `Delivered: ${r.played} matches. Match quality: ${r.qualityMet?'YES':'NO'}. Featured appearance: ${r.hasFeature?'YES':'NO'}.`,
-  r.met?`${money(r.reward)} earned. The territory has noticed your stable.`:'No milestone bonus. The next show is still an opportunity to recover.'
+  r.met?`${money(r.reward)} earned. The territory has noticed ${S.identity.stable}.`:'No milestone bonus. The next show is still an opportunity to recover.'
  ]});
 }
 /* ---------- the week turns ---------- */
@@ -791,7 +792,7 @@ function seasonEnd(){
  msg({from:'The office',subject:`Season ${S.season} review`,kind:'info',body:[`${done} of 4 objectives met.`,...g.map(x=>(x.done?'✓ ':'✗ ')+x.text),`Sponsorship and bonuses: ${money(grant)}.`]});
  const aged=ageRoster();
  S.season++;S.week=1;S.goals={};
- msg({from:'The office',subject:`Season ${S.season} objectives`,kind:'info',body:['This season, the business wants you to:',...goalList().map(x=>'• '+x.text)]});
+ msg({from:'The office',subject:`Season ${S.season} objectives`,kind:'info',body:[`This season, ${S.identity.stable} is expected to:`,...goalList().map(x=>'• '+x.text)]});
  return aged;
 }
 // Season-end ageing. Rumours come one season before a retirement, so the player gets warning.
