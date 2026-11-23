@@ -359,8 +359,6 @@ function renderInbox(){
   ['action','Action',all.filter(m=>m.kind==='decision'&&!m.answer).length],
   ['unread','Unread',all.filter(m=>!m.read).length],
   ['reports','Reports',all.filter(m=>Array.isArray(m.sections)&&m.sections.length).length]];
- const list=all.filter(m=>inboxFilter==='all'||(inboxFilter==='action'&&m.kind==='decision'&&!m.answer)||
-  (inboxFilter==='unread'&&!m.read)||(inboxFilter==='reports'&&Array.isArray(m.sections)&&m.sections.length));
  const controls=`<div class="office-filter-tabs" role="group" aria-label="Filter messages">${filters.map(([key,label,n])=>
   `<button class="btn sm ${inboxFilter===key?'go':''}" data-inbox-filter="${key}" aria-pressed="${inboxFilter===key}">${label} <span class="filter-count">${n}</span></button>`).join('')}</div>`;
 
