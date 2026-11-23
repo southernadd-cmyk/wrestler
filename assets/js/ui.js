@@ -131,13 +131,32 @@ function flowPhases(fin){
 function flowMoments(fin){
  const fl=fin.flow,span=3,sw=[];
  for(let i=0;i+span<fl.length;i++)sw.push({t0:fl[i][0],t1:fl[i+span][0],d:fl[i+span][1]-fl[i][1]});
- const pick=(list,n)=>{const out=[];for(const s of list){if(out.length>=n)break;if(out.every(o=>Math.abs(o.t1-s.t1)>60))out.push(s)}return out};
- const rises=pick(sw.filter(s=>s.d>=5).sort((a,b)=>b.d-a.d),3),drops=pick(sw.filter(s=>s.d<=-4).sort((a,b)=>a.d-b.d),2);
- const log=(fin.log||[]).filter(l=>l.kind!=='count'&&l.kind!=='rating'&&l.text.length>12).map(l=>({...l,s:secs(l.t)}));
- const why=s=>{const near=log.filter(l=>l.s>=s.t0-10&&l.s<=s.t1+5);
-  const best=(s.d>0&&near.find(l=>l.big&&l.kind!=='bad'))||near.find(l=>l.kind===(s.d>0?'crowd':'bad'))||near.find(l=>l.kind==='play'||l.kind==='crowd'||l.kind==='bad')||near.at(-1);
-  return best?.text||''};
- return [...rises,...drops].sort((a,b)=>a.t1-b.t1).map(s=>({...s,text:why(s)}));
+ const pick=(list,n)=>{const out=[];for(const s of list){if(out.length>=n)break;if(out.every(o=>Math.abs(o.t1-s.t1)>60&&o.eventIndex!==s.eventIndex))out.push(s)}return out};
+ const log=(fin.log||[]).filter(l=>l&&typeof l.text==='string'&&l.text.length>12)
+  .map((l,i)=>({...l,s:secs(l.t),index:i}));
+ // Crowd announcements describe the reaction, not what produced it.
+ // A report highlight must contain witnessed in-ring action from the match
+ // tape. For older tapes without actionId, allow a concrete play-by-play move
+ // but never substitute an unsupported generic crowd or colour line.
+ const physical=/\b(?:hits?|lands?|connects?|catches?|counters?|reverses?|reversal|slams?|throws?|tosses?|drops?|drives?|plants?|strikes?|kicks?|punches?|elbows?|grabs?|traps?|locks? in|hooks?|rolls? up|dives?|flies|misses?|botches?|stumbles?|collapses?|escapes?|breaks? (?:free|the hold)|kicks? out|powers? out|takes? (?:down|over)|goes? (?:down|low)|puts? .* (?:down|through))\b/i;
+ const isAction=l=>(l.kind==='play'||l.kind==='bad')&&
+  (Boolean(l.actionId)||physical.test(l.text))&&l.who!=='runner';
+ const explain=s=>{
+  const near=log.filter(l=>l.s>=s.t0-20&&l.s<=s.t1+5);
+  const actions=near.filter(isAction);
+  if(!actions.length)return null;
+  // Prefer a real named graph action or decisive spot over a filler play call.
+  const event=actions.sort((a,b)=>
+   (Number(Boolean(b.big))-Number(Boolean(a.big)))||
+   (Number(Boolean(b.actionId))-Number(Boolean(a.actionId)))||
+   b.s-a.s||b.index-a.index)[0];
+  const reaction=near.find(l=>l.kind==='crowd'&&l.index>event.index&&
+   l.s>=event.s&&l.s<=s.t1+5);
+  return {...s,at:event.t,action:event.text,reaction:reaction?.text||'',eventIndex:event.index};
+ };
+ const rises=pick(sw.filter(s=>s.d>=5).map(explain).filter(Boolean).sort((a,b)=>b.d-a.d),3);
+ const drops=pick(sw.filter(s=>s.d<=-4).map(explain).filter(Boolean).sort((a,b)=>a.d-b.d),2);
+ return [...rises,...drops].sort((a,b)=>a.t1-b.t1);
 }
 function flowGraphic(fin,w,f,ph){
  const fl=fin.flow,len=fin.len||fl.at(-1)[0],X=t=>Math.round(Math.min(1,t/len)*10000)/100,start=fin.crowdStart??fl[0][1];
@@ -174,7 +193,7 @@ function flowReport(fin,w,f){
  const rows=ph.map(g=>`<tr class="t-${g.tone}"><th scope="row">${esc(g.name)}<small>${esc(Mx.fmt(g.from))}–${esc(Mx.fmt(g.to))}</small></th><td><span class="mf-bar w-${g.work}" role="img" aria-label="Work ${Math.round(g.q)} out of 100"><i style="width:${Math.max(4,Math.min(100,(g.q-30)/45*100))}%"></i></span> <small>${Math.round(g.q)}</small></td><td class="n">${g.cIn}→${g.cOut} <b class="chip ${g.tone}">${g.d>0?'+':''}${g.d}</b></td><td class="n">${g.mine===g.theirs?'Even':`${esc(g.mine>g.theirs?w.short:f.short)} ${Math.round(Math.max(g.mine,g.theirs)/g.n*100)}%`}</td><td class="v">${esc(g.verdict)}</td></tr>`).join('');
  const table=`<div class="well mf-table-wrap"><table class="grid mf-table"><thead><tr><th>Phase</th><th>Work</th><th class="n">Crowd</th><th class="n">On top</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>`;
  const mom=flowMoments(fin);
- const moments=mom.length?`<ol class="mf-moments well">${mom.map(m=>`<li class="${m.d>0?'up':'down'}"><span class="t">${esc(Mx.fmt(m.t1))}</span><b class="chip ${m.d>0?'up':'down'}">${m.d>0?'+':''}${m.d}</b><span>${esc(m.text)}</span></li>`).join('')}</ol>`:'<p class="dim mf-no-moments">No sudden crowd swings in this bout. The phase-by-phase report still shows how the match built.</p>';
+ const moments=mom.length?`<ol class="mf-moments well">${mom.map(m=>`<li class="${m.d>0?'up':'down'}"><span class="t">${esc(m.at)}</span><b class="chip ${m.d>0?'up':'down'}">${m.d>0?'+':''}${m.d}</b><span class="mf-highlight-event"><strong>${esc(m.action)}</strong>${m.reaction?'<small class="mf-highlight-reaction">'+esc(m.reaction)+'</small>':''}</span></li>`).join('')}</ol>`:'<p class="dim mf-no-moments">No crowd swing had a clear wrestling turning point in the commentary. The phase-by-phase report still shows how the match built.</p>';
  const parts=(fin.starParts||[]).filter(p=>Math.abs(p[2])>=.01),maxAbs=Math.max(.5,...parts.map(p=>Math.abs(p[2])));
  const breakdown=parts.length?`<div class="mf-parts well">${parts.map(([k,label,v])=>`<div class="mf-part ${v>=0?'pos':'neg'}"><span>${esc(label)}</span><span class="mf-pbar"><i style="${v>=0?'left':'right'}:50%;width:${Math.abs(v)/maxAbs*50}%"></i></span><b>${v>=0?'+':'−'}${Math.abs(v).toFixed(2)}</b></div>`).join('')}<div class="mf-part total"><span>Rating</span><span></span><b>${starsText(fin.stars)||'DUD'}</b></div></div>`:'';
  return `${head}${flowGraphic(fin,w,f,ph)}<div class="mf-cols"><div class="mf-phase-section"><h3 class="section-h">Phase by phase</h3>${table}</div><div class="mf-moments-section"><h3 class="section-h">Moments that moved the room</h3>${moments}</div>${breakdown?`<div class="mf-breakdown-section"><h3 class="section-h">Where the stars came from</h3>${breakdown}</div>`:''}</div>`;
@@ -1620,7 +1639,7 @@ function decideNow(id){const M=night.M;Mx.resolve(M,id);persistNight();$('#decis
 function doCall(id){const M=night.M;if(!Mx.canCall(M,id))return;Mx.call(M,id);persistNight();updateLive();if(!night.paused)schedule(250);else{const l=Mx.next(M);if(l)showLine(l)}}
 function result(){
  clearTimeout(night.timer);const M=night.M,c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
- const fin={...M.final,log:M.log.map(({t,text,kind,big,who})=>({t,text,kind,big,who}))};
+ const fin={...M.final,log:M.log.map(({t,text,kind,big,who,actionId})=>({t,text,kind,big,who,...(actionId?{actionId}:{})}))};
  // A planned post-bell segment replaces spontaneous, contradictory improvisations.
  c.afterPlan=night.plan?.after||'none';
  const cons=G.applyResult(c,fin);
