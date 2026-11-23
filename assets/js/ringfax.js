@@ -734,28 +734,96 @@
  // The quiz shares Ringfax's standard masthead, with a Bamboozle-style game below.
  // Game state, 40x25 text data, keyboard controls and checkpoint logic are unchanged.
  function quizMascot(){
-  // Brian Dixon tribute: an original stylised mosaic portrait, not a
-  // reproduction of the historical Bamboozle mascot. Pure 8-colour Teletext.
-  // Distinctive silver swept-back hair, dark glasses and warm smile.
-  const blocks=[
-   [11,4,18,3,'w'],[8,7,22,3,'w'],[7,10,6,5,'w'],
-   [28,9,5,5,'w'],[10,11,21,4,'w'],
-   [12,14,17,14,'y'],[10,17,21,10,'y'],
-   [8,19,3,5,'y'],[30,19,3,5,'y'],[13,28,16,2,'y'],
-   [12,17,8,1,'k'],[12,18,1,5,'k'],[19,18,1,5,'k'],[12,22,8,1,'k'],
-   [22,17,8,1,'k'],[22,18,1,5,'k'],[29,18,1,5,'k'],[22,22,8,1,'k'],
-   [20,19,2,1,'k'],[14,19,4,2,'c'],[24,19,4,2,'c'],
-   [16,19,1,2,'k'],[26,19,1,2,'k'],
-   [20,23,2,3,'k'],[15,26,3,1,'k'],[24,26,3,1,'k'],[17,28,8,1,'k'],
-   [9,32,24,7,'b'],[11,30,7,4,'b'],[24,30,7,4,'b'],
-   [17,31,8,4,'w'],[19,34,4,5,'r'],
-   [12,35,5,2,'c'],[25,35,5,2,'c']
+  // Brian Dixon-inspired tribute host, drawn as an original 56 x 47 pixel
+  // teletext mosaic: swept hair, expressive uncovered eyes, grin, blue jacket.
+  // No photo, external asset, image download, or antialiased image is required.
+  const grid=[
+   '........................................................',
+   '............................WWWWWWWWW...................',
+   '..........................WWWWWWWWWWWWW.................',
+   '......................WWWWWW......WWWWWWW...............',
+   '....................WWWWWWWW.......WWW.WW...............',
+   '....................WWWW..WWWWWWWWW..WW..WW.............',
+   '..................WW..WWWWWWWWWWWWWW.WWW.WW.............',
+   '................WWWWWWWWWW.......CWWW.WW..W.............',
+   '................WWWWWWWWW.........WWW.WW.WW.............',
+   '................WWWW.......YYYY....WW.W......WWW........',
+   '................WWW.......YYYYYYY....YY.YYY..WWWW.......',
+   '...............WWWCWWW..YYYYYYYYYYYYYYYYYYYY...WWW......',
+   '...............WWWWW..YYYYYYYYYYYYYYYYYYYYYYY...WWWW....',
+   '...............WWWWW..YYYYYYYY...........YYYY...WWWW....',
+   '................WWWW..YYYYYYYYYYYYYYYYYYYYYYY...WWWW....',
+   '................WWWW..YYYYYY....YYYYYYY....YY...WWWW....',
+   '...............WWW....YYYYY.....YYYYYY......Y...WWWW....',
+   '.............WWWW.....YYYY..YYYYYYYYYYYYYYYYY...WWWW....',
+   '..............WW...W..YY..........YYY...........WWW.....',
+   '............WW....WW..YY..........YYY...........WWW.....',
+   '............WWWWWWW.......YYYCCYY.....YYCCCYY...WW......',
+   '............WWWWWW........YYC..CY..YY.YC..CYY...W....W..',
+   '............WW.......YYY..YYW..CY.YYY.YCC.CYY..WWW..WW..',
+   '............WWW......YYY..YYYYYYY.YYY.YYYYYYY..WWWWWWW..',
+   '.........W...WWW.YYY.YYY........R.YYY..........WWWWWW...',
+   '.........WW..WWW.Y.Y.YYYY........YYYYYY.........WWWWW...',
+   '.........WWWWWWW.Y.YYYYYYYYYYYYYY.YYYYY.YYYYY.....WW.W..',
+   '.........WWWWWWW.YYYYYYYYYYYYYYY.Y.YY..YYYYYY.....WW.W..',
+   '..........WWWWWW..YYYYYYYYYYY.YYY.....YY..YYY...WWWWWW..',
+   '...........WWWW.....YYYYYYYY..YYYYYYYYYYY..YY.....WWW...',
+   '.........WWW........YYYYYYYY.Y..YYYYYYY..Y.YY....WWW....',
+   '.........WWWW.......YYYYYYYYYYY.........YYYYY..WWWW.....',
+   '..........WWWW......YYYYYYYYYYYYYYYYYYYYYYYYY..WWW......',
+   '...........WWWWW....YYYY.YYYYYYYYYYYYYYYYYYY............',
+   '............WWWW....YYYY.YYYYYYYY.....YYYYYY............',
+   '......................YY..YYYYYYYYYYYYYYYYY.............',
+   '......................YYY.RYYYYYYYYYYYYYYYY.............',
+   '..................BB.W..YY.YY.YYYYYYYYY.Y...............',
+   '...............BBBBB.WWW..YYY.YYYYYYYYY.....BBB.........',
+   '...............BBBBB.WWW...YYY..YYYYYY...W..BBBB........',
+   '.............BBBBBBB..WWWW.............WWW..BBBBBB......',
+   '...........BBBBBBBBB..WWWWWWWW.......WWWWW..BBBBBBBB....',
+   '.........BBBBBBB....CC..WWWWWWRRRRRRWWWWW..C....BBBBBB..',
+   '.........BBBBBBB..CCCC..WWWWWWRRRRRRWWWWW..CCB..BBBBBBBB',
+   '.....BBBBBBBBB..CCCCCCCC..WWW.RRRRR..WW..CCCCCCCB.BBBBBB',
+   '.....BBBBBBBBB..CCCCCCCC..WWW.RRRRR..WW..CCCCCCC..BBBBBB',
+   '.....BBBBBBBBB..CCCCCCCC..WWW.RRRRR..WW..CCCCCCC..BBBBBB'
   ];
-  const colours={w:'#fff',y:'#ff0',k:'#000',c:'#0ff',b:'#00f',r:'#f00'};
-  return '<svg class="rf-bz-face" viewBox="0 0 42 40" preserveAspectRatio="xMidYMid meet" '+
+  // The reference photograph has NO glasses. Repaint the centre of the
+  // original bitmap as a continuous face, then carve natural unframed eyes,
+  // brows, a nose and smile. Never introduce a spectacles outline.
+  const pixels=grid.map(row=>row.split(''));
+  const stroke=(y,x,length,c)=>{for(let col=x;col<x+length;col++)pixels[y][col]=c;};
+  for(let y=17;y<=31;y++){
+   const left=y<20?23:y<28?21:23,right=y<20?44:y<28?45:43;
+   stroke(y,left,right-left+1,'Y');
+  }
+  // Distinct arched eyebrows above the two separate eyes.
+  stroke(19,26,6,'.');stroke(19,37,6,'.');
+  stroke(20,27,4,'.');stroke(20,38,4,'.');
+  stroke(22,27,5,'W');stroke(22,38,5,'W');
+  stroke(23,27,5,'W');stroke(23,38,5,'W');
+  stroke(22,29,2,'.');stroke(22,40,2,'.');
+  stroke(23,29,2,'.');stroke(23,40,2,'.');
+  // Full nose and a curved grin (not the straight line of a glasses frame).
+  stroke(24,35,1,'.');stroke(25,35,1,'.');
+  stroke(26,33,2,'.');stroke(26,37,2,'.');
+  stroke(28,29,2,'.');stroke(28,40,2,'.');
+  stroke(29,30,11,'.');stroke(30,32,7,'.');
+  // Two tiny cheek creases give the presenter an expressive smile.
+  stroke(27,27,2,'.');stroke(27,42,2,'.');
+  const finished=pixels.map(row=>row.join(''));
+  const colours={W:'#fff',Y:'#ff0',B:'#00f',C:'#0ff',R:'#f00'};
+  const shapes={W:'',Y:'',B:'',C:'',R:''};
+  for(let y=0;y<finished.length;y++){
+   const row=finished[y];
+   for(let x=0;x<row.length;){
+    const c=row[x],start=x;
+    while(x<row.length&&row[x]===c)x++;
+    if(colours[c])shapes[c]+='M'+start+' '+y+'h'+(x-start)+'v1h-'+(x-start)+'z';
+   }
+  }
+  return '<svg class="rf-bz-face" viewBox="0 0 56 47" preserveAspectRatio="xMidYMid meet" '+
    'aria-hidden="true" focusable="false" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
-   blocks.map(([x,y,w,h,c])=>'<rect x="'+x+'" y="'+y+'" width="'+w+
-    '" height="'+h+'" fill="'+colours[c]+'"/>').join('')+'</svg>';
+   Object.entries(shapes).map(([colour,d])=>'<path fill="'+colours[colour]+'" d="'+d+'"/>').join('')+
+   '</svg>';
  }
  function quizPresentation(){
   const stage=quizState.stage,links=quizFooter(),q=QUIZ_QUESTIONS[quizState.index],n=quizState.index+1;
