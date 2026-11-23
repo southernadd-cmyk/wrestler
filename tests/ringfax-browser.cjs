@@ -34,7 +34,8 @@ async function run(browser,name,viewport){
     bannerBackground:getComputedStyle(rows[1]).backgroundColor,
     hasModernBevel:getComputedStyle(consoleEl).boxShadow!=='none',
     jump:box(consoleEl.querySelector('#rf-page-entry')),
-    pager:box(consoleEl.querySelector('.rf-sub-nav'))};
+    pager:consoleEl.querySelector('.rf-sub-nav')?box(consoleEl.querySelector('.rf-sub-nav')):null,
+    hold:!!consoleEl.querySelector('.rf-hold')};
   });
   assert.equal(g.rows.length,25,name+': full 25-line teletext must render');
   assert.ok(g.rows.every(x=>x.length===40),name+': every line must have 40 characters');
@@ -46,6 +47,8 @@ async function run(browser,name,viewport){
    name+': teletext overruns game viewport '+JSON.stringify(g));
   assert.ok(g.overflowX<=2,name+': horizontal overflow '+JSON.stringify(g));
   assert.equal(g.directoryButtons,8,name+': all page shortcuts must be discoverable');
+  assert.equal(g.pager,null,name+': a single-page index has no subpage controls');
+  assert.equal(g.hold,false,name+': a single-page index has no Hold button');
   assert.equal(g.mosaicRows,4,name+': four row block heading');
   assert.ok(g.mastheadText.includes('RINGFAX'),name+': text alternative identifies Ringfax');
   assert.ok(g.logoPixelPath.length>400,name+': wordmark is composed of explicit pixel paths');
@@ -62,7 +65,7 @@ async function run(browser,name,viewport){
   if(viewport.width>1100){
    assert.ok(g.display.right<=g.console.left+1,name+': desktop columns overlap');
    assert.ok(g.screen.bottom<=g.view.bottom+1,name+': teletext is clipped behind footer');
-   assert.ok(g.jump.bottom<=g.view.bottom+1&&g.pager.bottom<=g.view.bottom+1,
+   assert.ok(g.jump.bottom<=g.view.bottom+1&&(!g.pager||g.pager.bottom<=g.view.bottom+1),
     name+': core navigation is below fold');
    assert.ok(g.screen.width>viewport.width*.4,name+': desktop screen wastes horizontal space');
   }else{
@@ -70,7 +73,7 @@ async function run(browser,name,viewport){
    assert.ok(g.console.top>=g.display.bottom-1,name+': stacked controls overlap the teletext');
    if(viewport.width<=720){
     assert.ok(g.console.bottom<=g.view.bottom+2,name+': page controls must not be below the fold '+JSON.stringify(g));
-    assert.ok(g.jump.bottom<=g.view.bottom+2&&g.pager.bottom<=g.view.bottom+2,
+    assert.ok(g.jump.bottom<=g.view.bottom+2&&(!g.pager||g.pager.bottom<=g.view.bottom+2),
      name+': mobile page input and subpage arrows must remain visible');
     const required=['100','200','500','501'];
     assert.ok(required.every(p=>g.visibleDirectoryButtons.some(x=>x.page===p&&x.bottom<=g.view.bottom+2)),
@@ -113,6 +116,47 @@ async function run(browser,name,viewport){
   assert.equal(await page.locator('#rf-screen .rf-row').count(),25,'Fanzone uses a full 25-row grid');
   await page.locator('.rf-page-link[data-rf-value="501"]').click();
   assert.match(await page.locator('#rf-screen').innerText(),/READERS LETTERS/);
+  const firstLetters=await page.evaluate(()=>{
+   const R=window.OfficeRingfax,S=window.OfficeGame.S;
+   const p=R.build(S)[501],v=R.screen(S);
+   return {subpages:v.subpages,lines:p.lines.length,last:v.rows.some(x=>x.text.includes('Earn our ticket money')),
+    authors:['GRAPPLEGRAN','HEELTURN78','MATWORKMICK','TICKETSTUB'].map(name=>
+     v.rows.filter(row=>row.text.includes('FROM: '+name)).length),
+    footer:v.rows[24].text};
+  });
+  assert.equal(firstLetters.subpages,1,name+': four opening-week letters fit one page');
+  assert.ok(firstLetters.lines<=17,name+': all letters fit within the content budget');
+  assert.deepEqual(firstLetters.authors,[1,1,1,1],
+   name+': all four readers appear without a trailing orphan page');
+  assert.equal(firstLetters.last,true,name+': ticket buyer letter ends on the same page');
+  assert.equal(await page.locator('.rf-sub-nav').count(),0,name+': no unnecessary single-page arrows');
+  assert.equal(await page.locator('.rf-hold').count(),0,name+': no unnecessary single-page Hold');
+  assert.ok(!firstLetters.footer.includes('HOLD')&&!firstLetters.footer.includes('SUBPAGES'),
+   name+': teletext single-page footer is not misleading');
+  const multiLetterCheck=await page.evaluate(()=>{
+   const R=window.OfficeRingfax,S=window.OfficeGame.S;
+   const sample={...S,history:[{cid:'rf-pagination-fixture',name:'Rex',foe:'Silas',
+    season:1,week:1,stars:3}]};
+   R.press('go',501,sample);
+   const first=R.screen(sample),p=R.build(sample)[501],html=R.view(sample);
+   R.press('right',null,sample);
+   const next=R.screen(sample);
+   R.press('go',501,S);
+   return {pages:first.subpages,showArrows:html.includes('class="rf-sub-nav"'),
+    showHold:html.includes('class="rf-hold"'),nextSub:next.sub,
+    firstAuthors:first.rows.slice(6,23).filter(x=>x.text.includes('FROM:')).length,
+    secondAuthors:next.rows.slice(6,23).filter(x=>x.text.includes('FROM:')).length,
+    secondPageStartsWithTitle:next.rows[6].text.trim()==='LETTERS TO RINGFAX',
+    oneAuthorPerPage:p.subpages.every(rows=>rows.some(x=>x.text.startsWith('FROM: ')))};
+  });
+  assert.ok(multiLetterCheck.pages>=2,name+': post-match letters use purposeful subpages');
+  assert.ok(multiLetterCheck.showArrows&&multiLetterCheck.showHold,
+   name+': multi-page letters reveal genuine subpage controls');
+  assert.equal(multiLetterCheck.nextSub,1,name+': next arrow goes to a real subpage');
+  assert.ok(multiLetterCheck.firstAuthors>0&&multiLetterCheck.secondAuthors>0&&
+   multiLetterCheck.secondPageStartsWithTitle&&multiLetterCheck.oneAuthorPerPage,
+   name+': second page starts with a labelled letter, not orphaned trailing text');
+
   // Direct page entry should work without forcing users to find a numeric pad.
   await page.locator('#rf-page-entry').fill('302');
   await page.locator('[data-rf-action="jump"]').click();
