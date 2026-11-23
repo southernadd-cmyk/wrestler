@@ -41,16 +41,64 @@ const one=a=>a[Math.floor(rand()*a.length)];
 const uid=p=>p+'-'+S.week+'-'+Math.floor(rand()*1e9).toString(36);
 
 /* ---------- player manager identity (cosmetic; never uses simulation RNG) ---------- */
-const DEFAULT_IDENTITY=Object.freeze({manager:'Alex Morgan',stable:'The New Guard',portrait:0});
-function normaliseIdentity(raw){
- const clean=(value,fallback,max)=>typeof value==='string'?
-  (value.replace(/[\u0000-\u001f\u007f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,max)||fallback):fallback;
+// Historical UK wrestlers, managers and promoters. Name suggestions are
+// tributes, not claims that the real people participate in the game.
+const BRITISH_PEOPLE=Object.freeze([
+ 'Mick McManus','Jackie Pallo','Les Kellett','Johnny Saint','Billy Robinson',
+ 'Adrian Street','Mark Rocco','Jim Breaks','Bert Royal','Vic Faulkner',
+ 'George Kidd','Big Daddy','Giant Haystacks','Kendo Nagasaki',
+ 'Davey Boy Smith','Dynamite Kid','Marty Jones','Tony St Clair','Pat Roach',
+ 'Johnny Kwango','Max Crabtree','Brian Dixon','Orig Williams',
+ 'Gorgeous George Gillette','Lloyd Ryan','Paul Lincoln','Ricky Knight',
+ 'Mitzi Mueller','Klondyke Kate','Rusty Blair','Nicky Monroe','Sue Brittain',
+ 'Sweet Saraya'
+]);
+// Distinguish documented tag teams/factions from original British-circuit
+// homages; the UK did not have a US-style tradition of named stables.
+const BRITISH_HISTORIC_GROUPS=Object.freeze([
+ 'The Royal Family','The British Bulldogs','The Bovver Birds',
+ 'British Strong Style','The Origin'
+]);
+const BRITISH_HOMAGE_STABLES=Object.freeze([
+ 'The Saturday Matmen','The Lancashire Hookers','The Wigan Catch Club',
+ 'The Seaside Grapplers','The Town Hall Heels','The Northern Circuit',
+ 'The Matinee Men','The Blackpool Grapplers','The Working Mens Club',
+ 'The Iron Mat','The All-Star Matmen','The Royal Albert Crew'
+]);
+const BRITISH_STABLES=Object.freeze([...BRITISH_HISTORIC_GROUPS,...BRITISH_HOMAGE_STABLES]);
+const LEGACY_PLACEHOLDER=Object.freeze({manager:'Alex Morgan',stable:'The New Guard'});
+function identityHash(value){
+ let h=2166136261;for(const char of String(value))h=Math.imul(h^char.charCodeAt(0),16777619);
+ return h>>>0;
+}
+function identityPick(list,seed,salt){
+ const i=seed===null||seed===undefined?Math.floor(Math.random()*list.length):
+  identityHash(String(seed)+'|'+salt)%list.length;
+ return list[i];
+}
+function suggestIdentity(seed=null){
+ // Uses presentation-only randomness, never the career simulator's PRNG.
+ // Imported legacy saves derive the same identity from their original seed.
  return {
-  manager:clean(raw?.manager,DEFAULT_IDENTITY.manager,42),
-  stable:clean(raw?.stable,DEFAULT_IDENTITY.stable,42),
-  portrait:Number.isInteger(raw?.portrait)&&raw.portrait>=0&&raw.portrait<16?raw.portrait:0
+  manager:identityPick(BRITISH_PEOPLE,seed,'manager'),
+  stable:identityPick(BRITISH_STABLES,seed,'stable'),
+  portrait:seed===null||seed===undefined?Math.floor(Math.random()*16):
+   identityHash(String(seed)+'|portrait')%16
  };
 }
+function normaliseIdentity(raw){
+ const fallback=raw?.manager&&raw?.stable?null:suggestIdentity();
+ const clean=(value,otherwise,max)=>typeof value==='string'?
+  (value.replace(/[\u0000-\u001f\u007f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,max)||otherwise):otherwise;
+ return {
+  manager:clean(raw?.manager,fallback?.manager||BRITISH_PEOPLE[0],42),
+  stable:clean(raw?.stable,fallback?.stable||BRITISH_STABLES[0],42),
+  portrait:Number.isInteger(raw?.portrait)&&raw.portrait>=0&&raw.portrait<16?
+   raw.portrait:(fallback?.portrait??0)
+ };
+}
+const IDENTITY_ARCHIVE=Object.freeze({people:BRITISH_PEOPLE,groups:BRITISH_HISTORIC_GROUPS,
+ homages:BRITISH_HOMAGE_STABLES,stables:BRITISH_STABLES});
 function setIdentity(value){
  if(!S)return false;
  S.identity=normaliseIdentity(value);save();return true;
@@ -89,7 +137,15 @@ function goalList(){const n=S.season;return [
 function hydrate(x){
  if(!x || ![20,21,22].includes(x.v) || !Array.isArray(x.roster)||!Array.isArray(x.offers))return null;
  if(!Array.isArray(x.free))x.free=[];
- x.v=22;x.identity=normaliseIdentity(x.identity);x.careerSeed??=x.seed;x.systemErrors??=[];x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.trainingReviews=Array.isArray(x.trainingReviews)?x.trainingReviews.slice(-12):[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));x.resultIds??=[...x.seasonResults,...(x.history||[])].map(h=>h.cid).filter(Boolean).slice(-2048);
+ // The old release silently set this exact placeholder pair on legacy saves.
+ // Migrate it once, while preserving a portrait the player selected.
+ const legacy=!x.identity||(x.identity.manager===LEGACY_PLACEHOLDER.manager&&
+  x.identity.stable===LEGACY_PLACEHOLDER.stable);
+ const selectedPortrait=x.identity?.portrait;
+ const identity=legacy?suggestIdentity(x.careerSeed??x.seed):x.identity;
+ if(legacy&&Number.isInteger(selectedPortrait)&&selectedPortrait>=0&&selectedPortrait<16)
+  identity.portrait=selectedPortrait;
+ x.v=22;x.identity=normaliseIdentity(identity);x.careerSeed??=x.seed;x.systemErrors??=[];x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.trainingReviews=Array.isArray(x.trainingReviews)?x.trainingReviews.slice(-12):[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));x.resultIds??=[...x.seasonResults,...(x.history||[])].map(h=>h.cid).filter(Boolean).slice(-2048);
  for(const w of x.roster){w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;w.wear??={};w.niggle??=0;w.nigglePart??=null;w.relapse??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
  root.OfficeTerritory?.prepare(x);
  root.OfficeWorldV4?.activate(x);
@@ -836,5 +892,5 @@ function ageRoster(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch};
 })(typeof window!=='undefined'?window:globalThis);
