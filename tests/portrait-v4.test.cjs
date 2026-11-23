@@ -39,4 +39,13 @@ assert.match(dennis,/alt="Pixel-art portrait of Dennis"/);
 const dennisPng=fs.readFileSync(path.join(__dirname,'..','assets','portraits','dennis.png'));
 assert.equal(dennisPng.subarray(1,4).toString(),'PNG');assert.equal(dennisPng.readUInt32BE(16),144);assert.equal(dennisPng.readUInt32BE(20),180);
 assert.equal(dennisPng[25],6,'with an alpha channel');
-console.log('PASS portraits: 80 wrestlers and 4 promoters use painted atlas cells; Dennis has his own painted portrait; overrides still render');
+assert.equal(P.PLAYER_PORTRAITS.length,16,'16 selectable manager looks');
+assert.equal(new Set(P.PLAYER_PORTRAITS.map(p=>p.label)).size,16,'each manager has a distinct label');
+assert.equal(new Set(P.PLAYER_PORTRAITS.map(p=>JSON.stringify(p.look))).size,16,'each manager portrait is art-directed');
+for(let i=0;i<16;i++){
+ const image=P.playerPortrait(i,'Jane Smith','portrait x2');
+ assert.match(image,/^<img class="portrait x2" src="data:image\/png;base64,portrait"/,
+  'player option '+i+' is generated as native pixel art');
+ assert.match(image,/Pixel-art portrait of Jane Smith/);
+}
+console.log('PASS portraits: 80 wrestlers, 4 promoters, Dennis and 16 generated manager portraits');
