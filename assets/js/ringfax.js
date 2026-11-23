@@ -4,7 +4,7 @@
  const D=root.OfficeData;
  const C={page:100,sub:0,entry:'',hold:false};
 
- // RINGFAX SECRET PAGE 777 — THE QUIZ REF (inspired by teletext quizzes,
+ // RINGFAX PAGE 777 — THE WRESTLING QUIZ CHALLENGE (inspired by teletext quizzes,
  // not copying Bamboozle's name, presenter or question copy).
  // Each factual answer is traceable to the source in the question bank.
  const QUIZ_QUESTIONS=[
@@ -77,9 +77,9 @@
   ];
  }
  function quizPage(){
-  const l=[item(' THE QUIZ REF: UK WRESTLING','yellow'),item('')];
+  const l=[item(' RINGFAX QUIZ: UK WRESTLING','yellow'),item('')];
   if(quizState.stage==='intro'){
-   paragraphs(l,'WELCOME TO THE QUIZ REF!','green');
+   paragraphs(l,'THE WRESTLING QUIZ CHALLENGE!','green');
    l.push(item(''));
    paragraphs(l,'12 QUESTIONS. FOUR COLOUR BUTTONS.');
    paragraphs(l,'ONE CHANCE TO BE THE CHAMPION.');
@@ -307,7 +307,7 @@
    pair('200 AFTER BELL','201 THE CRITIC','white'),
    pair('300 WATCHLIST','301 STORYLINES','cyan'),
    pair('302 TITLE TALK','500 FANZONE','white'),
-   pair('501 LETTERS','777 QUIZ REF','cyan'),
+   pair('501 LETTERS','777 RINGFAX QUIZ','cyan'),
    item(' --------------------------------','blue'),
    item(' THE OFFICE, THROUGH FANS EYES','yellow'),
    item(' SEASON '+(s?.season||1)+' / WEEK '+(s?.week||1),'cyan'),
@@ -583,7 +583,7 @@
   letterPages.push(letterRows);
   const allLetters=letterPages.flat();
   add(501,'READERS LETTERS',allLetters,letterPages);
-  add(777,'THE QUIZ REF',quizPage());
+  add(777,'RINGFAX QUIZ',quizPage());
   return P;
  }
  const fast=[101,200,300,500];
@@ -831,7 +831,7 @@
   if(stage==='question'){
    title='Question '+n+'. Wrestling.'; message=q.q; choices=q.a;
   }else if(stage==='intro'){
-   title='Welcome to The Quiz Ref!';
+   title='RINGFAX QUIZ';
    message='12 questions. Four colours. One wrestling champion. Are you ready?';
    choices=['Start quiz','How to play'];
   }else if(stage==='rules'){
