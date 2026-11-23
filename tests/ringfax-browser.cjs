@@ -22,6 +22,10 @@ async function run(browser,name,viewport){
     wrap:box(wrap),rows:rows.map(r=>({...box(r),length:r.textContent.length,scroll:r.scrollWidth,client:r.clientWidth})),
     font:getComputedStyle(screen).fontSize, overflowX:document.documentElement.scrollWidth-window.innerWidth,
     directoryButtons:consoleEl.querySelectorAll('.rf-page-link').length,
+    visibleDirectoryButtons:[...consoleEl.querySelectorAll('.rf-page-link')].filter(x=>{
+     const st=getComputedStyle(x),r=x.getBoundingClientRect();return st.display!=='none'&&r.width>0&&r.height>0
+    }).map(x=>({page:x.dataset.rfValue,bottom:x.getBoundingClientRect().bottom})),
+    mastheadText:rows.slice(1,5).map(x=>x.textContent).join(' '),
     mosaicRows:screen.querySelectorAll('.rf-mosaic').length,
     fastext:screen.querySelectorAll('.rf-fast-seg').length,
     screenBackground:getComputedStyle(screen).backgroundColor,
@@ -41,6 +45,9 @@ async function run(browser,name,viewport){
   assert.ok(g.overflowX<=2,name+': horizontal overflow '+JSON.stringify(g));
   assert.equal(g.directoryButtons,8,name+': all page shortcuts must be discoverable');
   assert.equal(g.mosaicRows,4,name+': four row block heading');
+  assert.ok(g.mastheadText.includes('R I N G F A X'),name+': masthead must say Ringfax legibly');
+  assert.ok(!g.mastheadText.includes('█'),name+': fallback block glyphs are unreadable on phone');
+  assert.ok(g.rows.every(x=>x.scroll<=x.client+2),name+': text cells clip horizontally '+JSON.stringify(g.rows.filter(x=>x.scroll>x.client+2)));
   assert.equal(g.fastext,4,name+': four Fastext choices must be in screen');
   assert.equal(g.screenBackground,'rgb(0, 0, 0)',name+': black screen');
   assert.equal(g.bannerBackground,'rgb(0, 0, 255)',name+': blue masthead');
@@ -54,6 +61,14 @@ async function run(browser,name,viewport){
   }else{
    assert.ok(g.display.bottom<=g.view.bottom+3,name+': phone/tablet screen should fit before internal scroll');
    assert.ok(g.console.top>=g.display.bottom-1,name+': stacked controls overlap the teletext');
+   if(viewport.width<=720){
+    assert.ok(g.console.bottom<=g.view.bottom+2,name+': page controls must not be below the fold '+JSON.stringify(g));
+    assert.ok(g.jump.bottom<=g.view.bottom+2&&g.pager.bottom<=g.view.bottom+2,
+     name+': mobile page input and subpage arrows must remain visible');
+    const required=['100','200','500','501'];
+    assert.ok(required.every(p=>g.visibleDirectoryButtons.some(x=>x.page===p&&x.bottom<=g.view.bottom+2)),
+     name+': mobile shortcuts for Index/Results/Fanzone/Letters must be visible');
+   }
   }
 
   // Click a line in the teletext itself (not just the separate directory).
@@ -81,5 +96,6 @@ async function run(browser,name,viewport){
   await run(browser,'tablet-900',{width:900,height:780});
   await run(browser,'phone-390',{width:390,height:844});
   await run(browser,'phone-360',{width:360,height:740});
+  await run(browser,'phone-343',{width:343,height:740});
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1;});
