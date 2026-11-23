@@ -868,7 +868,7 @@
    [200,'After Bell','Reaction'],[300,'Watchlist','Editors picks'],[302,'Title Talk','Opinion'],
    [500,'Fanzone','Fan discussion'],[501,'Letters','Reader mail']
   ];
-  const rows=v.rows.map((r,i)=>{
+  const renderedRows=v.rows.map((r,i)=>{
    // Four genuine teletext Fastext fields: click the colour to turn the page.
    if(r.segments){
     return '<div class="rf-row rf-fastext">'+r.segments.map(f=>
@@ -908,15 +908,15 @@
    const bg=r.background&&r.background!=='black'?' rf-bg-'+r.background:'';
    return '<div class="rf-row rf-'+r.colour+bg+(i>=1&&i<=4?' rf-mosaic':'')+
     (i===0?' rf-header':i===5?' rf-section':'')+'">'+escape(r.text)+'</div>';
-  }).join('');
-  // Reuse the same actual 40-column header text and four-row mosaic ident used
-  // on every other Ringfax page; only the body becomes the quiz composition.
+  });
+  const rows=renderedRows.join('');
+  // Page 777 uses the EXACT same rendered six header rows as every other
+  // Ringfax page, including the identical pixel logo, size and grid treatment.
+  // Only the body after row six is bespoke. The index link overlays row six.
   const quizHeader='<div class="rf-bz-shared-header">'+
-   '<div class="rf-bz-header-line">'+escape(v.rows[0].text)+'</div>'+
-   '<div class="rf-bz-channel">'+pixelLogo('RINGFAX')+'</div>'+
-   '<div class="rf-bz-page-title"><span>'+escape(v.title)+'</span>'+
+   renderedRows.slice(0,6).join('')+
    '<button type="button" class="rf-bz-home" data-rf-action="go" data-rf-value="100" '+
-   'aria-label="Return to Ringfax index page 100">100 INDEX</button></div></div>';
+   'aria-label="Return to Ringfax index page 100">100 INDEX</button></div>';
   const quick=favourites.map(([number,label,desc])=>
    '<button type="button" class="rf-page-link'+(v.page===number?' is-current':'')+'" data-rf-action="go" data-rf-value="'+number+'"'+
    (v.page===number?' aria-current="page"':'')+'><span class="rf-link-number">'+number+'</span>'+

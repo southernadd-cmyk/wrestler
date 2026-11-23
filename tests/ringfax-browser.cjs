@@ -207,10 +207,16 @@ async function run(browser,name,viewport){
    name+': page 777 has one full-screen quiz composition');
   assert.equal(await page.locator('.rf-bz-face').count(),1,
    name+': original yellow pixel mascot is rendered');
-  assert.equal(await page.locator('.rf-bz-channel .rf-logo-svg').count(),1,
-   name+': regular Ringfax blue pixel masthead is reused on page 777');
-  assert.equal(await page.locator('.rf-bz-shared-header').count(),1,
-   name+': quiz uses the same 1+4+1 teletext header structure as other pages');
+  assert.equal(await page.locator('.rf-bz-shared-header .rf-logo-row .rf-logo-svg').count(),1,
+   name+': quiz reuses normal Ringfax pixel masthead row exactly');
+  assert.equal(await page.locator('.rf-bz-shared-header>.rf-row').count(),6,
+   name+': quiz uses the same six teletext header rows as ordinary pages');
+  const sourceHeader=await page.locator('#rf-screen>.rf-teletext-grid>.rf-row').evaluateAll(
+   nodes=>nodes.slice(0,6).map(n=>n.outerHTML));
+  const sharedHeader=await page.locator('.rf-bz-shared-header>.rf-row').evaluateAll(
+   nodes=>nodes.map(n=>n.outerHTML));
+  assert.deepEqual(sharedHeader,sourceHeader,
+   name+': page 777 header HTML is byte-identical to the ordinary teletext renderer');
   assert.equal(await page.locator('.rf-bz-home[data-rf-value="100"]').count(),1,
    name+': a permanent index return button is visible');
   assert.equal(await page.locator('.rf-bz-bubble').count(),1,
@@ -232,9 +238,9 @@ async function run(browser,name,viewport){
    name+': mascot is limited to the authentic teletext colour palette');
   assert.equal(await page.locator('.rf-bz-face').getAttribute('data-facing'),'left',
    name+': the tribute looks towards the question, not away from it');
-  assert.ok(await page.locator('.rf-bz-shared-header').evaluate(el=>el.getBoundingClientRect().height) <
-   await page.locator('#rf-screen').evaluate(el=>el.getBoundingClientRect().height)*.19,
-   name+': masthead no longer consumes a quarter of the quiz screen');
+  assert.ok(await page.locator('.rf-bz-shared-header').evaluate(el=>Math.abs(
+   el.getBoundingClientRect().height / document.querySelector('#rf-screen').getBoundingClientRect().height - .24))<.02,
+   name+': standard teletext six-row header occupies six of 25 rows');
   assert.ok(mascot.pixelRuns>=180,name+': characteristic face remains legible without noisy micro-detail');
   await page.locator('.rf-bz-choice.rf-bz-red').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'question');
@@ -249,8 +255,8 @@ async function run(browser,name,viewport){
     return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
    const screen=document.querySelector('#rf-screen'),page=document.querySelector('.rf-bz-page');
    const header=document.querySelector('.rf-bz-shared-header'),
-    channel=document.querySelector('.rf-bz-channel'),
-    logo=document.querySelector('.rf-bz-channel svg'),
+    channel=document.querySelector('.rf-bz-shared-header .rf-logo-art'),
+    logo=document.querySelector('.rf-bz-shared-header .rf-logo-svg'),
     home=document.querySelector('.rf-bz-home');
    const bubble=document.querySelector('.rf-bz-bubble'),mascot=document.querySelector('.rf-bz-mascot');
    const choices=[...document.querySelectorAll('.rf-bz-choice')];
