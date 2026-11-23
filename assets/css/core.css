@@ -849,3 +849,43 @@ dialog.negotiation-dialog[open]{
  .train-settings{grid-template-columns:minmax(0,1fr)}
  .train-attributes{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Phase 2: training advice and the completed-week ledger. */
+.train-intelligence{border-top:1px solid var(--stone-lo);margin-top:10px;padding-top:5px}
+.train-advice-list{display:grid;gap:5px;margin:6px 0}
+.train-recommendation{display:flex;gap:9px;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--paper);border-left:4px solid var(--stone-lo)}
+.train-recommendation.urgent{border-left-color:var(--blood)}
+.train-recommendation>div{min-width:0;flex:1}
+.train-recommendation b{display:block;font-size:16px;color:var(--blood)}
+.train-recommendation p{font-size:14px;color:var(--ink-2);line-height:1.3;margin:2px 0 0}
+.train-recommendation .btn{flex:none}
+.train-projection{background:var(--well);color:var(--white);padding:8px 10px;font-size:14px;line-height:1.3}
+.train-projection b{color:var(--gold)}
+.train-review-teaser{background:var(--paper);border-left:4px solid var(--gold-lo);padding:7px 10px;margin-top:9px;font-size:14px}
+.train-review-teaser b{display:block;color:var(--blood)}
+.train-review-teaser p{margin:4px 0}
+.train-report-panel{min-width:0}
+.train-report-panel>label{margin:8px 0}
+.train-review-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:8px 0}
+.train-review-totals>div{background:var(--well);color:var(--white);padding:8px;min-width:0}
+.train-review-totals small{display:block;color:var(--dim);font-size:13px;line-height:1.2}
+.train-review-totals b{display:block;color:var(--gold);font:26px/1.1 var(--jersey);margin-top:4px}
+.train-report-list{display:grid;gap:5px}
+.train-report-entry{padding:8px 10px;background:var(--paper);border-left:3px solid var(--stone-lo)}
+.train-report-entry-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.train-report-entry-top .btn.link{font-weight:700;font-size:17px;text-align:left}
+.train-report-entry-top b{flex:none}
+.train-report-entry p{font-size:15px;line-height:1.3;margin:4px 0}
+.train-report-entry small{display:block;font-size:13px;color:var(--ink-2);line-height:1.3}
+@media(max-width:720px){
+ .train-review-totals>div{padding:6px 5px}
+ .train-review-totals small{font-size:11px}
+ .train-review-totals b{font-size:22px}
+ .train-recommendation{padding:7px;align-items:flex-start}
+ .train-recommendation .btn{min-height:42px}
+ .train-tabs .btn{flex:1 1 30%;font-size:14px}
+}
+@media(max-width:390px){
+ .train-review-totals{grid-template-columns:1fr 1fr}
+}
