@@ -5957,6 +5957,11 @@ function tick(M){
    request.status='unfulfilled';M.layoutReturn=null;
   }
  }
+ // Record the result of completed calls from actual stamina, crowd and graph
+ // history. This observer is read-only and does not award a move or rating.
+ const activePace=M.ringsideEvidence?.findLast(e=>e.status==='pending'&&
+  ['slow','pickup','crowd'].includes(e.id));
+ if(activePace&&M.mode?.type!==activePace.id)settlePaceEvidence(M);
  if(!spoke&&M.t-(M.vicAt??-200)>=100&&vicRoll(M,'chat')<.3)vicChat(M);
  M.crowdSum+=M.crowd;M.crowdPeak=Math.max(M.crowdPeak,M.crowd);
  // v0.3.13 The match as the office reads it afterwards: every ten seconds, the crowd, who had the
@@ -6140,6 +6145,38 @@ function availableBigSpot(M){
    M.w.safe>=75&&M.wSt>=38))&&Graph.canScriptedSpot(M,id,'w');
  });
 }
+function settlePaceEvidence(M){
+ const e=M.ringsideEvidence?.findLast(e=>e.status==='pending'&&
+  ['slow','pickup','crowd'].includes(e.id));
+ if(!e)return;
+ const events=(M.graph?.events||[]).filter(x=>x.t>e.at&&Graph.A[x.id]);
+ const offence=events.find(x=>x.preControl==='w'&&
+  !Graph.A[x.id].reverse&&!Graph.A[x.id].blockOf&&
+  Graph.A[x.id].family!=='rest'&&(Graph.A[x.id].cost||0)>0);
+ const realRest=events.find(x=>x.preControl==='w'&&
+  (x.id==='catch_breath'||Graph.A[x.id].family==='rest'));
+ e.staminaDelta=Math.round(M.wSt-e.staminaStart);
+ e.crowdDelta=Math.round(M.crowd-e.crowdStart);
+ e.atEnd=M.t;
+ if(e.id==='slow'){
+  e.status='applied';if(realRest)e.action=realRest.id;
+  if(M.stage==='live')say(M,realRest?
+   `Road agent: A genuine breather helped ${M.w.short} manage the slower stretch.`:
+   e.staminaDelta>0?`Road agent: The reduced tempo recovered ${M.w.short}'s stamina; no rest hold was performed.`:
+   'Road agent: The tempo dropped, but there was no recorded rest hold or net stamina gain.','agent',{who:'runner'});
+ }else if(e.id==='pickup'){
+  e.status=offence?'witnessed':'no-offence';
+  if(offence){e.action=offence.id;e.atAction=offence.t;}
+  if(M.stage==='live')say(M,offence?
+   `Road agent: ${M.w.short} answered the faster-pace call with performed offence.`:
+   'Road agent: The pace was called, but no qualifying attack was performed during that stretch.','agent',{who:'runner'});
+ }else{
+  e.status=e.crowdDelta>0?'responded':'flat';
+  if(M.stage==='live')say(M,e.crowdDelta>0?
+   'The crowd is louder after that appeal, though the wrestling slowed.':
+   'The crowd has not grown any louder after the appeal.','crowd');
+ }
+}
 function closePendingBigSpot(M){
  const pending=M.bigSpotRequest;if(!pending)return;
  const evidence=M.ringsideEvidence?.[pending.index];
@@ -6161,11 +6198,11 @@ function tryPendingBigSpot(M){
  return true;
 }
 const CALLS={
- slow:{name:'Slow it down',hint:'Rest hold. Recover stamina; the crowd may cool.'},
- pickup:{name:'Pick it up',hint:'Faster pace. Crowd up if they have the legs.'},
+ slow:{name:'Slow it down',hint:'Ease the pace to recover energy; a rest hold is not guaranteed.'},
+ pickup:{name:'Pick it up',hint:'Demand a faster spell; whether they find offence is tracked.'},
  big:{name:'Hit the big spot',hint:'Queue a big move for the next legal opening. Refunded if none appears.'},
- crowd:{name:'Work the crowd',hint:'Play to the seats. Builds noise, stalls the match.'},
- home:{name:'Take it home',hint:'Go to the finish now. Early means a shorter, weaker match.'},
+ crowd:{name:'Work the crowd',hint:'Appeal to the crowd; their actual response is tracked.'},
+ home:{name:'Take it home',hint:'Request a shortened finish. Missed structure objectives are reported.'},
  sheet:{name:'Back to the layout',hint:'Pull an improvising worker back to the plan.'}
 };
 function canCall(M,id){
@@ -6182,9 +6219,25 @@ function call(M,id){
  const listen=M.listen+(id==='home'?20:0)+(id==='sheet'&&M.leash==='script'?10:0);
  if(M.r()*100>listen){M.ignored++;say(M,rnd(M,[`${w.short} waves you away.`,`${w.short} doesn’t even look over.`,`${w.short} hears you. Does the opposite.`]),'bad');if(w.ego>=70)M.adj.morale-=1;return true}
  root.OfficeSheets?.intervention(M,id);
- if(id==='slow'){M.mode={type:'slow',ticks:6};say(M,`${w.short} takes the call and slows it down with a rest hold.`,'play',{who:'runner'})}
- if(id==='pickup'){M.mode={type:'pickup',ticks:6};say(M,`${w.short} hears you. The pace picks up.`,'play',{who:'runner'})}
- if(id==='crowd'){M.mode={type:'crowd',ticks:5};say(M,`${w.short} turns to the crowd, arms out wide.`,'crowd')}
+ if(['slow','pickup','crowd','home'].includes(id))settlePaceEvidence(M);
+ if(id==='slow'){
+  M.mode={type:'slow',ticks:6};
+  (M.ringsideEvidence??=[]).push({id,at:M.t,status:'pending',
+   staminaStart:M.wSt,crowdStart:M.crowd});
+  say(M,`${w.short} agrees to ease the tempo. Whether a real rest hold occurs is up to the wrestling.`,'play',{who:'runner'});
+ }
+ if(id==='pickup'){
+  M.mode={type:'pickup',ticks:6};
+  (M.ringsideEvidence??=[]).push({id,at:M.t,status:'pending',
+   staminaStart:M.wSt,crowdStart:M.crowd});
+  say(M,`${w.short} hears the call to speed up. The next exchanges will show whether it pays off.`,'play',{who:'runner'});
+ }
+ if(id==='crowd'){
+  M.mode={type:'crowd',ticks:5};
+  (M.ringsideEvidence??=[]).push({id,at:M.t,status:'pending',
+   staminaStart:M.wSt,crowdStart:M.crowd});
+  say(M,`${w.short} turns to the crowd, arms out wide. Will they respond?`,'crowd');
+ }
  if(id==='big'){
   const evidence={id,at:M.t,status:'pending'};
   const list=M.ringsideEvidence??(M.ringsideEvidence=[]);
@@ -6203,7 +6256,8 @@ function call(M,id){
   M.layoutReturn=request;
   say(M,`${w.short} acknowledges the call. We will see whether the next exchanges follow the layout.`,'agent',{who:'runner'});
  }
- if(id==='home'){const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
+ if(id==='home'){const originalLen=M.len;const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
+  (M.ringsideEvidence??=[]).push({id,at:M.t,status:'applied',oldLength:originalLen,newLength:M.len});
   M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
   say(M,`${w.short} relays it to ${M.f.short}: take it home.`,'play',{who:'runner'})}
  return true;
@@ -6510,8 +6564,10 @@ function finish(M){
   route.run(M,w,f,step);
  }
  M.t=at;M.stage='over';
- // The bell can interrupt a still-pending request (DQ, injury or cut).
+ // The bell can interrupt an accepted order. Do not turn an unperformed
+ // request into a successful call or invent a move at the result.
  if(M.bigSpotRequest)closePendingBigSpot(M);
+ settlePaceEvidence(M);
  M.final=summary(M);
  if(M.final.structureAssessment){
   const a=M.final.structureAssessment,b=a.structuralCoherence,c=a.planAdherence;
@@ -6524,8 +6580,12 @@ function summary(M){
  root.OfficeSheets?.closeVows?.(M);
  root.OfficeSheets?.DIRECTOR?.finalize(M);
  const s=stars(M,true);
+ // Final structure evidence is already settled above; a shortened match may
+ // legitimately miss an agreed objective. Report its identity without credit.
+ const ringsideEvidence=(M.ringsideEvidence||[]).map(e=>e.id==='home'?
+  {...e,missedObjectives:(M.structureDirector?.objectives||[]).filter(o=>o.status==='missed').map(o=>o.id)}:{...e});
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
-  script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,...(M.ringsideEvidence?.length?{ringsideEvidence:M.ringsideEvidence.map(e=>({...e}))}:{}),injury:M.injury,injuryPart:M.injuryPart,
+  script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,...(ringsideEvidence.length?{ringsideEvidence}:{}),injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,finishRoute:M.finishRoute||null,crowdTrace:[...(M.crowdTrace||[]),[M.t,Math.round(M.crowd)]],flow:(M.flow||[]).slice(),marks:(M.marks||[]).slice(),starParts:starParts(M).map(([k,label,v])=>[k,label,Math.round(v*100)/100]),len:M.len,rehearsed:!!M.o.sheet?.rehearsed,roomNote:root.OfficeRoom?.verify(M)||null,roomBonus:M.o.sheet?.bonus||0,roomFx:M.o.sheet?.fx||null,roomThreads:M.o.sheet?.threads||null,roomThreadUsed:M.o.sheet?.threadUsed||null,roomRepStake:M.o.sheet?.repStake||0,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
   resent:M.resent,promo:M.o.promo||null,
   promoSignals:{
