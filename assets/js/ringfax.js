@@ -142,7 +142,14 @@
   if(!have)paragraphs(a,'Title information not available.');
   add(302,'TITLE PICTURE',a);
 
-  const fans=voices(h,3);
+  // Opening-week letters are explicitly opinions about the season, not invented match results.
+  const opening=[
+   {name:'GRAPPLEGRAN',quote:'A new season. Give me a clean finish and a wrestler I can get behind.'},
+   {name:'HEELTURN78',quote:'Everyone wants a hero. I want a villain worth booing.'},
+   {name:'MATWORKMICK',quote:'All I ask is one proper technical contest. The bells will tell the story.'},
+   {name:'TICKETSTUB',quote:'Tickets are not free. The promoters need to earn our money.'}
+  ];
+  const fans=h?voices(h,3):opening.slice(0,3);
   a=[item('WHAT THE FANS ARE SAYING','yellow'),item('')];
   if(h){
    paragraphs(a,'TOPIC: '+h.name+' v '+h.foe,'cyan');
@@ -152,7 +159,15 @@
     paragraphs(a,'"'+f.quote+'"');
     a.push(item(''));
    });
-  }else paragraphs(a,'The phones are quiet. The letters page will open after the first completed match.');
+  }else{
+   paragraphs(a,'OPENING WEEK / FIRST IMPRESSIONS','cyan');
+   a.push(item(''));
+   for(const f of fans){
+    a.push(item(' '+f.name,'green'));
+    paragraphs(a,'"'+f.quote+'"');
+    a.push(item(''));
+   }
+  }
   add(500,'THE FANZONE',a);
 
   a=[item('LETTERS TO RINGFAX','yellow'),item('')];
@@ -164,7 +179,15 @@
     paragraphs(a,f.quote);
     a.push(item(''));
    });
-  }else paragraphs(a,'No readers letters yet. A result is needed before the fictional readers have something to debate.');
+  }else{
+   paragraphs(a,'OPENING WEEK / READERS MAIL','cyan');
+   a.push(item(''));
+   for(const f of opening){
+    a.push(item('FROM: '+f.name,'green'));
+    paragraphs(a,f.quote);
+    a.push(item(''));
+   }
+  }
   add(501,'READERS LETTERS',a);
   return P;
  }
