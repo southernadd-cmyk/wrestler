@@ -222,7 +222,7 @@ async function run(browser,name,viewport){
    return {viewBox:svg.getAttribute('viewBox'),crisp:svg.getAttribute('shape-rendering'),
     fills:paths.map(x=>x.getAttribute('fill')),
     count:paths.length,pixelRuns:paths.reduce((n,path)=>n+
-     ((path.getAttribute('d')||'').match(/M\\d+ \\d+h/g)||[]).length,0)};
+     ((path.getAttribute('d')||'').match(/M\d+ \d+h/g)||[]).length,0)};
   });
   assert.equal(mascot.viewBox,'0 0 56 47',name+': higher detail teletext mosaic viewBox');
   assert.equal(mascot.crisp,'crispEdges',name+': rectangular pixels have sharp edges');
