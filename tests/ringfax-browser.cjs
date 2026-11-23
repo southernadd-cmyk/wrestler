@@ -85,8 +85,8 @@ async function run(browser,name,viewport){
   // actual offers. The opening edition must expose them before match one.
   const untouchedCareer=await page.evaluate(()=>JSON.stringify(window.OfficeGame.S));
   for(const [number,heading] of [
-   [102,'SEASON PREVIEW'],[103,'BOOKING DESK'],[104,'PROMOTER DIRECTORY'],
-   [301,'CIRCUIT LEADERS']
+   [102,'SEASON OUTLOOK'],[103,'THE GRAPEVINE'],[104,'FROM THE ROAD'],
+   [301,'THE LONG VIEW']
   ]){
    await page.locator('#rf-screen .rf-index-half[data-rf-value="'+number+'"]').click();
    const edition=await page.evaluate(()=>{
@@ -101,12 +101,22 @@ async function run(browser,name,viewport){
    await page.locator('.rf-page-link[data-rf-value="100"]').click();
   }
   const initialNews=await page.evaluate(()=>window.OfficeRingfax.build(window.OfficeGame.S));
-  assert.ok(initialNews[101].lines.some(row=>row.text.includes('CHAMPIONSHIP')),
-   name+': news should report real opening-week titleholders');
-  assert.ok(initialNews[200].lines.some(row=>row.text.includes('NOT RESULTS')),
-   name+': proposed matches cannot be mistaken for results');
-  assert.ok(initialNews[201].lines.some(row=>row.text.includes('NOT MATCH RATINGS')),
-   name+': card scores are not invented star grades');
+  assert.ok(initialNews[101].lines.some(row=>row.text.includes('FOUR PROMOTIONS')),
+   name+': opening news is editorial rather than a champions table');
+  assert.ok(initialNews[200].lines.some(row=>row.text.includes('CHEAP SEATS')),
+   name+': After the Bell is a fan reaction column, not a results list');
+  assert.ok(initialNews[201].lines.some(row=>row.text.includes('NOT A SCOREBOARD')),
+   name+': Critic page is a point of view, not duplicate ratings');
+  assert.ok(initialNews[300].lines.some(row=>row.text.includes('EDITORS PICKS')),
+   name+': Watchlist offers talking points, not ranks');
+  assert.ok(initialNews[302].lines.some(row=>row.text.includes('PRESSURE')),
+   name+': Title Talk is opinion, not a championship table');
+  const forbidden=['CHAMPIONS - THE ENTIRE CIRCUIT','RECENT COMPLETED MATCHES',
+   'RECORDED MATCH RATINGS','CARD LADDER /','BOOKINGS AND OPPORTUNITIES'];
+  const wholeIssue=Object.values(initialNews).filter(p=>p.number!==777)
+   .flatMap(p=>p.lines).map(x=>x.text).join('\n');
+  assert.ok(forbidden.every(text=>!wholeIssue.includes(text)),
+   name+': editorial cannot duplicate Office tables');
   assert.equal(await page.evaluate(()=>JSON.stringify(window.OfficeGame.S)),untouchedCareer,
    name+': opening week editorial coverage is read-only');
 
@@ -160,22 +170,21 @@ async function run(browser,name,viewport){
   // Direct page entry should work without forcing users to find a numeric pad.
   await page.locator('#rf-page-entry').fill('302');
   await page.locator('[data-rf-action="jump"]').click();
-  assert.match(await page.locator('#rf-screen').innerText(),/TITLE PICTURE/);
+  assert.match(await page.locator('#rf-screen').innerText(),/TITLE TALK/);
   const titles=await page.evaluate(()=>{
-   const G=window.OfficeGame, R=window.OfficeRingfax, D=window.OfficeData;
-   const page=R.screen(G.S), data=R.build(G.S)[302];
-   const holders=G.S.promoters.flatMap(p=>D.DIVISION_ORDER.map(div=>({
-    pid:p.id,holder:G.S.territory.titles[p.id]?.[div]?.holder,
-    name:p.name,division:div
-   })));
-   return {subpages:page.subpages,contentLines:data.lines.length,holders,
-    rendered:page.rows.slice(6,23).map(r=>r.text).join(' ')};
+   const S=window.OfficeGame.S,R=window.OfficeRingfax,D=window.OfficeData;
+   const data=R.build(S)[302],v=R.screen(S);
+   const champ=S.territory.titles.dock.men.holder;
+   const p=D.TALENT.find(w=>w.id===champ)||D.FOES.find(w=>w.id===champ);
+   return {subpages:v.subpages,lines:data.lines.length,text:data.lines.map(r=>r.text).join(' '),
+    championName:p?.name||champ};
   });
-  assert.equal(titles.subpages,1,name+': all champions fit one 302 subpage');
-  assert.ok(titles.contentLines<=17,name+': full title data exceeds a teletext page');
-  assert.equal(titles.holders.length,8,name+': four promotions by two divisions');
-  assert.ok(titles.holders.every(t=>titles.rendered.includes(t.name.toUpperCase())),
-   name+': all four promotions must be displayed together');
+  assert.equal(titles.subpages,1,name+': title opinion fits one screen');
+  assert.ok(titles.lines<=17,name+': opinion fits 17 editorial rows');
+  assert.ok(titles.text.includes(titles.championName),
+   name+': title opinion is based on an actual current titleholder');
+  assert.ok(!titles.text.includes('MEN                 WOMEN'),
+   name+': no duplicated champions table in Ringfax');
 
   // Preserve keyboard access to the teletext service.
   await page.keyboard.press('F4');
