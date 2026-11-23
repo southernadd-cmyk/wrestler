@@ -735,7 +735,7 @@
  // Game state, 40x25 text data, keyboard controls and checkpoint logic are unchanged.
  function quizMascot(){
   // Brian Dixon-inspired tribute host, drawn as an original 56 x 47 pixel
-  // teletext mosaic: swept white hair, glasses, cyan eyes, grin, blue jacket.
+  // teletext mosaic: swept hair, expressive uncovered eyes, grin, blue jacket.
   // No photo, external asset, image download, or antialiased image is required.
   const grid=[
    '........................................................',
@@ -786,10 +786,34 @@
    '.....BBBBBBBBB..CCCCCCCC..WWW.RRRRR..WW..CCCCCCC..BBBBBB',
    '.....BBBBBBBBB..CCCCCCCC..WWW.RRRRR..WW..CCCCCCC..BBBBBB'
   ];
+  // The reference photograph has NO glasses. Repaint the centre of the
+  // original bitmap as a continuous face, then carve natural unframed eyes,
+  // brows, a nose and smile. Never introduce a spectacles outline.
+  const pixels=grid.map(row=>row.split(''));
+  const stroke=(y,x,length,c)=>{for(let col=x;col<x+length;col++)pixels[y][col]=c;};
+  for(let y=17;y<=31;y++){
+   const left=y<20?23:y<28?21:23,right=y<20?44:y<28?45:43;
+   stroke(y,left,right-left+1,'Y');
+  }
+  // Distinct arched eyebrows above the two separate eyes.
+  stroke(19,26,6,'.');stroke(19,37,6,'.');
+  stroke(20,27,4,'.');stroke(20,38,4,'.');
+  stroke(22,27,5,'W');stroke(22,38,5,'W');
+  stroke(23,27,5,'W');stroke(23,38,5,'W');
+  stroke(22,29,2,'.');stroke(22,40,2,'.');
+  stroke(23,29,2,'.');stroke(23,40,2,'.');
+  // Full nose and a curved grin (not the straight line of a glasses frame).
+  stroke(24,35,1,'.');stroke(25,35,1,'.');
+  stroke(26,33,2,'.');stroke(26,37,2,'.');
+  stroke(28,29,2,'.');stroke(28,40,2,'.');
+  stroke(29,30,11,'.');stroke(30,32,7,'.');
+  // Two tiny cheek creases give the presenter an expressive smile.
+  stroke(27,27,2,'.');stroke(27,42,2,'.');
+  const finished=pixels.map(row=>row.join(''));
   const colours={W:'#fff',Y:'#ff0',B:'#00f',C:'#0ff',R:'#f00'};
   const shapes={W:'',Y:'',B:'',C:'',R:''};
-  for(let y=0;y<grid.length;y++){
-   const row=grid[y];
+  for(let y=0;y<finished.length;y++){
+   const row=finished[y];
    for(let x=0;x<row.length;){
     const c=row[x],start=x;
     while(x<row.length&&row[x]===c)x++;
