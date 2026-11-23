@@ -224,15 +224,18 @@ async function run(browser,name,viewport){
     count:paths.length,pixelRuns:paths.reduce((n,path)=>n+
      ((path.getAttribute('d')||'').match(/M\d+ \d+h/g)||[]).length,0)};
   });
-  assert.equal(mascot.viewBox,'10 4 56 54',name+': large, face-focused teletext mosaic viewBox');
+  assert.equal(mascot.viewBox,'0 0 56 52',name+': bold, simplified teletext mascot fits the full frame');
   assert.equal(mascot.crisp,'crispEdges',name+': rectangular pixels have sharp edges');
-  assert.equal(mascot.count,5,name+': five-colour original character SVG');
+  assert.equal(mascot.count,3,name+': restrained three-colour original character SVG');
   assert.ok(mascot.pixelRuns>=200,name+': portrait has at least 200 separate pixel runs');
-  assert.deepEqual(mascot.fills,['#fff','#ff0','#00f','#0ff','#f00'],
+  assert.deepEqual(mascot.fills,['#ff0','#fff','#00f'],
    name+': mascot is limited to the authentic teletext colour palette');
   assert.equal(await page.locator('.rf-bz-face').getAttribute('data-facing'),'left',
    name+': the tribute looks towards the question, not away from it');
-  assert.ok(mascot.pixelRuns>=250,name+': distinctive facial details survive rasterisation');
+  assert.ok(await page.locator('.rf-bz-shared-header').evaluate(el=>el.getBoundingClientRect().height) <
+   await page.locator('#rf-screen').evaluate(el=>el.getBoundingClientRect().height)*.19,
+   name+': masthead no longer consumes a quarter of the quiz screen');
+  assert.ok(mascot.pixelRuns>=180,name+': characteristic face remains legible without noisy micro-detail');
   await page.locator('.rf-bz-choice.rf-bz-red').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'question');
   assert.equal(await page.locator('.rf-bz-choice').count(),4,
