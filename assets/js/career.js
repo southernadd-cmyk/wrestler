@@ -159,7 +159,7 @@ function sign(id){
  if(S.cash<w.fee)return `You need ${money(w.fee)} to sign ${w.name}.`;
  reconcileOwnership(id,{reason:'The booked opponent joined your stable'});
  S.cash-=w.fee;S.free=S.free.filter(x=>x.id!==id);
- S.roster.push({...w,trend:[],program:null,prep:{},prepHistory:[],session:null,learned:[],learning:null,micWork:{},rehearsedAt:null,training:'ring',intensity:'light',progress:{},startSkills:{ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe},promise:null,injury:0,matches:0,wins:0,starSum:0,best:0,lastRaise:0,flags:{},joined:abs(),wear:{},niggle:0,nigglePart:null,relapse:null});
+ S.roster.push({...w,trend:[],program:null,prep:{},prepHistory:[],session:null,learned:[],learning:null,micWork:{},rehearsedAt:null,training:'ring',intensity:'light',progress:{},startSkills:{ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe},promise:null,injury:0,matches:0,wins:0,starSum:0,best:0,lastRaise:0,flags:{},joined:abs(),wear:{},niggle:0,nigglePart:null,relapse:null,ceiling:w.ceiling??clamp(Math.max(w.ring,w.mic,w.psych)+12,0,95)});
  snapshot(S.roster.at(-1));
  if(S.worldV4)root.OfficeWorldV4?.markPlayer(S,id);
  // Keep the original invitations but guarantee a suitable current-week offer after the first signing.
@@ -169,12 +169,27 @@ function sign(id){
  }
  save();return null;
 }
+// Free agents are scouted, not measured. Ring, Mic, Psych and Safe show as a range that narrows as you
+// watch the wrestler. Draw stays exact. Knowledge is counted once per week, when you look at them.
+const SCOUT_STATS=['ring','mic','psych','safe'];
+function scoutWidth(k){return k>=5?1:k>=3?5:k>=1?10:20}
+function scoutBand(w,key){
+ const v=Math.round(clamp(w[key]??0,0,99));
+ if(!SCOUT_STATS.includes(key))return {lo:v,hi:v,exact:true};
+ const width=scoutWidth(w.knowledge||0);
+ if(width===1)return {lo:v,hi:v,exact:true};
+ const lo=Math.floor(v/width)*width;
+ return {lo,hi:Math.min(99,lo+width-1),exact:false};
+}
+function scoutWatch(w){if(!w||w.scoutedAt===abs())return;w.scoutedAt=abs();w.knowledge=(w.knowledge||0)+1;save()}
+// The hidden ceiling (set at signing or at the first season end) slows training as a wrestler nears it.
+function ceilingRoom(w,cur){if(w.ceiling==null)return 1;return cur>=w.ceiling?.1:cur>=w.ceiling-8?.5:1}
 function release(id){
  const w=W(id);if(!w)return;
  reconcileOwnership(id,{outgoing:true,reason:'The wrestler was released from your stable'});
  S.roster=S.roster.filter(x=>x.id!==id);
  const base=D.findWrestler?.(id)||D.TALENT.find(t=>t.id===id);
- S.free.push({...base,heat:w.heat,ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe,fee:Math.round(base.fee*.9)});
+ S.free.push({...base,heat:w.heat,ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe,fee:Math.round(base.fee*.9),knowledge:5});
  if(S.worldV4)root.OfficeWorldV4?.markMarket(S,id);
  msg({from:'The office',subject:`${w.name} released`,kind:'info',body:[`${w.name} cleared out the locker today. No hard feelings, on paper.`]});
  save();
@@ -241,7 +256,7 @@ function trainingForecast(w){
  if(!stat)return {kind:'other',cost,worked};
  const cur=w[stat],camp=w.program?.type==='camp',specialist=S.coach&&COACHES[S.coach].stat===stat?COACHES[S.coach].boost:0;
  const rookie=w.tier==='Rookie'&&cur<68?1.4:1;
- const growth=(camp?1.9:intensity.gain)*(1+specialist)*rookie*(cur>=88?.24:cur>=80?.5:1)*(w.fatigue>=70?.6:1);
+ const growth=(camp?1.9:intensity.gain)*(1+specialist)*rookie*(cur>=88?.24:cur>=80?.5:1)*ceilingRoom(w,cur)*(w.fatigue>=70?.6:1);
  const bank=(w.progress?.[stat]||0)+growth;
  const next=Math.min(99,cur+Math.floor(bank)),risk=(camp?.015:intensity.risk)*(w.fatigue>=65?2.5:1)*(worked?1.5:1);
  return {kind:'skill',stat,cost,worked,growth,skillAfter:next,gain:next-cur,progress:next>=99?0:Math.round((bank%1)*100),
@@ -804,5 +819,5 @@ function ageRoster(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch};
 })(typeof window!=='undefined'?window:globalThis);

@@ -417,6 +417,14 @@ const FREE_STATS=[['heat','Draw'],['ring','Ring'],['mic','Mic'],['psych','Psych'
 const FREE_SORTS=[['name','Wrestler'],['style','Style'],...FREE_STATS,['wage','Wage'],['fee','Fee']];
 // Secondary stats that drop out of the desk table below 1280px so Fee stays visible.
 const FREE_OPTIONAL=['mic','psych','safe'];
+// Free-agent ratings are shown as scouting ranges. Sorting uses the range's low end, so the sort reveals no more than the table does.
+const FREE_WCOLS={...WCOLS,...Object.fromEntries(['ring','mic','psych','safe'].map(k=>[k,w=>G.scoutBand(w,k).lo]))};
+function freeCell(w,key){
+ const b=G.scoutBand(w,key);
+ if(b.exact)return att(b.lo);
+ const mid=(b.lo+b.hi)/2;
+ return `<span class="att a${band(mid)}">${b.lo}–${b.hi}</span>`;
+}
 function renderSquad(){
  const s=S();
  const ranked=sortRows('squad',s.roster,WCOLS,{k:'heat',d:-1});
@@ -717,14 +725,14 @@ function scoutingComparison(free){
  const fields=[['Ring','ring'],['Psychology','psych'],['Safety','safe'],['Mic','mic'],['Draw','heat'],['Signing fee','fee'],['Weekly wage','wage']];
  return `<section class="scout-comparison" aria-label="Compare free agents"><h3 class="section-h">Compare two wrestlers</h3>
   <div class="well"><table class="grid scout-compare-table"><thead><tr><th>Attribute</th>${pair.map(w=>`<th>${esc(w.short||w.name)}</th>`).join('')}</tr></thead><tbody>
-  ${fields.map(([label,key])=>`<tr><th scope="row">${label}</th>${pair.map(w=>`<td class="n">${key==='fee'||key==='wage'?money(w[key]):att(w[key])}</td>`).join('')}</tr>`).join('')}
+  ${fields.map(([label,key])=>`<tr><th scope="row">${label}</th>${pair.map(w=>`<td class="n">${key==='fee'||key==='wage'?money(w[key]):freeCell(w,key)}</td>`).join('')}</tr>`).join('')}
   </tbody></table></div><p class="dim">Comparison only: performance and costs do not predict booking success.</p></section>`;
 }
 
 function renderScouting(){
  const s=S(),full=s.roster.length>=5;
  shortlist=shortlist.filter(id=>s.free.some(w=>w.id===id));
- const sorted=sortRows('free',s.free,WCOLS,{k:'fee',d:-1});
+ const sorted=sortRows('free',s.free,FREE_WCOLS,{k:'fee',d:-1});
  const styles=[...new Set(s.free.map(w=>w.style).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
  if(scoutStyle!=='all'&&!styles.includes(scoutStyle))scoutStyle='all';
  const q=scoutQuery.trim().toLocaleLowerCase();
@@ -734,6 +742,7 @@ function renderScouting(){
  if(s.free.some(w=>w.id===route.id))selFree=route.id;
  if(!selFree||!rows.some(w=>w.id===selFree))selFree=rows[0]?.id||null;
  const w=s.free.find(x=>x.id===selFree);
+ if(w)G.scoutWatch(w);
  const activeFilters=(q?1:0)+(scoutStyle!=='all'?1:0)+(scoutBudget!=='all'?1:0);
  // Phones start with the filters folded away so the candidates come first; desktop always shows them.
  const phoneLayout=window.matchMedia&&window.matchMedia('(max-width:720px)').matches;
@@ -746,11 +755,11 @@ function renderScouting(){
   <span class="filter-results" role="status">${rows.length} of ${s.free.length} available</span>
   <button class="btn sm" data-clear-scout="1" ${!q&&scoutStyle==='all'&&scoutBudget==='all'?'disabled':''}>Clear filters</button>
  </div></details>`;
- const list=rows.length?`<div class="well free-table"><table class="grid"><thead><tr>${FREE_SORTS.map(([key,label],i)=>th('free',key,label,(i>=2?'n':'')+(FREE_OPTIONAL.includes(key)?' free-opt':''))).join('')}</tr></thead><tbody>${rows.map(x=>`<tr class="pick" data-self="${x.id}" data-selected="${x.id===selFree}"><td><button class="row-pick" data-self="${x.id}" aria-pressed="${x.id===selFree}" aria-label="Review ${esc(x.name)}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span></span></button></td><td>${esc(x.style)}</td>${FREE_STATS.map(([key])=>`<td class="n${FREE_OPTIONAL.includes(key)?' free-opt':''}">${att(x[key])}</td>`).join('')}<td class="n">${money(x.wage)}</td><td class="n"><b>${money(x.fee)}</b></td></tr>`).join('')}</tbody></table></div>` :`<div class="empty">${s.free.length?'No free agents match these filters.':'Nobody left on the market.'}</div>`;
+ const list=rows.length?`<div class="well free-table"><table class="grid"><thead><tr>${FREE_SORTS.map(([key,label],i)=>th('free',key,label,(i>=2?'n':'')+(FREE_OPTIONAL.includes(key)?' free-opt':''))).join('')}</tr></thead><tbody>${rows.map(x=>`<tr class="pick" data-self="${x.id}" data-selected="${x.id===selFree}"><td><button class="row-pick" data-self="${x.id}" aria-pressed="${x.id===selFree}" aria-label="Review ${esc(x.name)}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span></span></button></td><td>${esc(x.style)}</td>${FREE_STATS.map(([key])=>`<td class="n${FREE_OPTIONAL.includes(key)?' free-opt':''}">${freeCell(x,key)}</td>`).join('')}<td class="n">${money(x.wage)}</td><td class="n"><b>${money(x.fee)}</b></td></tr>`).join('')}</tbody></table></div>` :`<div class="empty">${s.free.length?'No free agents match these filters.':'Nobody left on the market.'}</div>`;
  const sort=sorts.free;
  const cards=rows.length?`<div class="free-cards"><div class="free-sort"><label class="field">Sort by<select data-free-sort>${FREE_SORTS.map(([key,label])=>`<option value="${key}" ${key===sort.k?'selected':''}>${label}</option>`).join('')}</select></label><button class="btn sm" data-sort="free:${sort.k}" aria-label="Reverse sort order">${sort.d>0?'Ascending ▲':'Descending ▼'}</button></div>
   ${rows.map(x=>`<button class="free-card" data-self="${x.id}" aria-pressed="${x.id===selFree}"><span class="who">${face('wrestler',x.id,x.name)}<span><b>${esc(x.name)}</b><small>${esc(x.tier)} · ${esc(x.style)} · ${esc(D.DIVISIONS[D.divisionOf(x)].name)}</small></span></span>
-   <span class="free-stats">${FREE_STATS.map(([key,label])=>`<span><small>${label}</small>${att(x[key])}</span>`).join('')}</span><span class="free-costs"><span><small>Weekly wage</small>${money(x.wage)}</span><span><small>Signing fee</small>${money(x.fee)}</span></span></button>`).join('')}</div>`:'';
+   <span class="free-stats">${FREE_STATS.map(([key,label])=>`<span><small>${label}</small>${freeCell(x,key)}</span>`).join('')}</span><span class="free-costs"><span><small>Weekly wage</small>${money(x.wage)}</span><span><small>Signing fee</small>${money(x.fee)}</span></span></button>`).join('')}</div>`:'';
  let detail='<div class="empty">Select a wrestler.</div>';
  if(w){
   const can=s.cash>=w.fee&&!full;
@@ -759,7 +768,7 @@ function renderScouting(){
   <button class="btn go" style="width:100%;min-height:44px" data-sign="${w.id}" ${can?'':'disabled'}>Sign ${esc(w.short)}</button>
   <p class="dim" style="margin-top:6px">${full?'Your locker room is full. Release someone first.':s.cash<w.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'Wages are paid every week, booked or not.'}</p>
   <p style="margin-top:10px">${esc(w.bio)}</p>
-  <div class="well pad attrs">${[['Ring',w.ring],['Psychology',w.psych],['Safety',w.safe],['Mic',w.mic],['Heat',w.heat]].map(([l,v])=>`<div class="attr"><span>${l}</span>${att(v)}${bar(v,bandBar(v))}</div>`).join('')}</div>
+  <p class="dim">Ratings are scouting estimates. They tighten the more you watch this wrestler.</p><div class="well pad attrs">${[['Ring','ring'],['Psychology','psych'],['Safety','safe'],['Mic','mic'],['Heat','heat']].map(([l,k])=>{const b=G.scoutBand(w,k),v=(b.lo+b.hi)/2;return `<div class="attr"><span>${l}</span>${freeCell(w,k)}${bar(v,bandBar(v))}</div>`}).join('')}</div>
   <p class="dim" style="margin-top:8px">${esc(temperament(w))} Finisher: ${esc(w.finisher)}.${esc(signatureText(w))}</p>
   ${ambitionLine(w)}${(()=>{const team=window.OfficeManagers?.wantedBy(w.id);return team?`<p class="bad" style="margin:6px 0 0">${esc(team.manager)} (${esc(team.name)}) means to sign ${esc(w.short)} next week.</p>`:''})()}`;
  }
