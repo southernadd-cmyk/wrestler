@@ -736,84 +736,50 @@
 
 
  function quizMascot(){
-  // Hand-drawn, Bamboozle-era Teletext pixel portrait. This original character
-  // is a loose Brian Dixon tribute: bald crown, silver sides, strong nose and
-  // warm smile. Deliberately limit the palette and detail so it reads at 1x.
-  const w=56,h=52,p=Array.from({length:h},()=>Array(w).fill('.'));
-  const pixel=(x,y,c)=>{if(x>=0&&x<w&&y>=0&&y<h)p[y][x]=c;};
-  const polygon=(pts,c)=>{
-   const minX=Math.max(0,Math.floor(Math.min(...pts.map(a=>a[0]))));
-   const maxX=Math.min(w-1,Math.ceil(Math.max(...pts.map(a=>a[0]))));
-   const minY=Math.max(0,Math.floor(Math.min(...pts.map(a=>a[1]))));
-   const maxY=Math.min(h-1,Math.ceil(Math.max(...pts.map(a=>a[1]))));
-   for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
-    let inside=false;
-    for(let i=0,k=pts.length-1;i<pts.length;k=i++){
-     const a=pts[i],b=pts[k];
-     if((a[1]>y+.5)!==(b[1]>y+.5)&&
-        x+.5<(b[0]-a[0])*(y+.5-a[1])/(b[1]-a[1])+a[0])inside=!inside;
-    }
-    if(inside)pixel(x,y,c);
-   }
-  };
-  const line=(points,c,thickness=1)=>{
-   for(let k=1;k<points.length;k++){
-    const [x0,y0]=points[k-1],[x1,y1]=points[k];
-    const steps=Math.max(1,Math.abs(x1-x0),Math.abs(y1-y0));
-    for(let i=0;i<=steps;i++){
-     const x=Math.round(x0+(x1-x0)*i/steps),y=Math.round(y0+(y1-y0)*i/steps);
-     for(let dy=0;dy<thickness;dy++)for(let dx=0;dx<thickness;dx++)pixel(x+dx,y+dy,c);
-    }
-   }
-  };
-  // Just a hint of blue suit and white lapels: the face owns the picture.
-  polygon([[8,52],[9,45],[17,41],[24,40],[42,40],[52,46],[56,52]],'B');
-  polygon([[17,42],[28,47],[23,52],[13,46]],'W');
-  polygon([[40,42],[34,47],[38,52],[47,45]],'W');
-  // White side hair wraps a deliberately bald crown.
-  polygon([[40,7],[45,10],[49,14],[50,21],[51,29],[49,38],[44,42],[41,37]],'W');
-  polygon([[17,9],[13,12],[10,17],[10,25],[13,30],[17,23]],'W');
-  // Three-quarter face looking towards the question bubble at left.
-  polygon([[26,4],[35,4],[42,7],[45,12],[46,17],[46,24],
-   [45,30],[42,36],[38,41],[31,44],[23,43],[19,40],
-   [15,36],[14,31],[11,29],[11,26],[16,24],[17,19],
-   [17,12],[21,7]],'Y');
-  polygon([[24,8],[29,6],[37,7],[39,9],[30,9],[24,12]],'W');
-  polygon([[42,9],[45,12],[47,17],[45,21],[44,16]],'W');
-  polygon([[16,12],[13,16],[12,22],[15,21],[18,15]],'W');
-  // A distinct right ear, outlined with negative-space black.
-  polygon([[45,24],[51,22],[52,25],[52,31],[48,35],[45,32]],'Y');
-  line([[49,24],[47,26],[48,30]],'.',2);
-  // Heavy eyebrows, uncovered eyes and pupils.
-  line([[18,18],[23,17],[27,18]],'.',2);
-  line([[31,17],[36,16],[40,17]],'.',2);
-  polygon([[19,21],[24,20],[27,21],[26,24],[20,24]],'W');
-  polygon([[32,20],[37,19],[40,21],[39,24],[33,24]],'W');
-  polygon([[22,21],[24,21],[24,24],[22,24]],'.');
-  polygon([[34,21],[36,21],[36,24],[34,24]],'.');
-  // Chunky left-projecting nose, not red blotches or spectacle frames.
-  line([[28,25],[27,30],[20,32],[19,34],[23,35]],'.',2);
-  line([[27,35],[30,34]],'.');
-  // A single expressive smiling mouth with small white teeth.
-  polygon([[20,35],[25,37],[32,38],[38,37],[41,34],
-   [39,39],[35,41],[28,41],[23,39]],'.');
-  polygon([[24,37],[31,39],[38,37],[37,39],[30,40],[26,39]],'W');
-  line([[16,33],[18,36],[20,37]],'.',2);
-  line([[41,31],[43,33],[42,35]],'.',2);
-  line([[28,43],[34,43]],'.');
-  line([[24,45],[30,48]],'.');
-  line([[37,45],[33,49]],'.');
-  const colours={Y:'#ff0',W:'#fff',B:'#00f'},shapes={Y:'',W:'',B:''};
-  for(let y=0;y<h;y++)for(let x=0;x<w;){
-   const c=p[y][x],start=x;
-   while(x<w&&p[y][x]===c)x++;
-   if(shapes[c]!==undefined)shapes[c]+='M'+start+' '+y+'h'+(x-start)+'v1h-'+(x-start)+'z';
+  // Portrait generated from the supplied crowned wrestler photograph, then
+  // reduced to a 72x72 pixel raster with four Teletext colours.
+  // Packed 2-bit pixels: 0 black, 1 yellow, 2 white, 3 blue.
+  const bitmap=[
+   'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACpAAAAAAAAAAAAAAAAAAAAAAqVAAAAAAAAAAAAAAAAAAAAAAqVAAAAAAAAAAAAA',
+   'AAAAAAAAAAFAAAAAAAAAAAAAAAAABVVAAFAAAAAAAAAAAAAAAAAAKkAVVVAAAAAAAAAAAAAAAAAAqgAVVVAAAAAAAAAAAAAAAAAC',
+   'oABVqlUVVVAAAAAAAAAAAAABQAFqlVUAAKoAAAAAAAAAAAABQAVqlVAAAKoAAAAAAAAAAAABQAVqlVAAAAqAAAAAAAAAAAAAEAVV',
+   'VVAAAAVAAAAAAAAAAAAAEAAAAAAAAAVAAAAAAAAAAAAABVVVVVVAAAUAAAAAAAAAAAAAFVVVVVVQAFUAAAAAAAAAAAAAQVBVQVVV',
+   'QBAAAAAAAAAAAAAAVVVVVVVBVQAAAAAAAAAAAAAAVVVVVVVBVVAAAAAAAAAAAAAAAAAAAAFVUFAAAAAAAAAAAAAUAAAAAAABVVAA',
+   'AAAAAAAAAAFAAABQAVAAFVAAAAAAAAAAAAUAEAFABVAUAAAAAAAAAAAAAAQAFAVAFVQUAAAAAAAAAAAAAAUAVVVVVVUFQFAAAAAA',
+   'AAAAAAVAQAVVAFVVQBQAAAAAAAAAABQAQAVUAAVUABQAAAAAAAAAAFQBVVVVVUBUABQAAAAAAAAAAFABQAVVVVRUABQAAAAAAAAA',
+   'AUABQoVUABVUAAVQAAAAAAAAAQABQqRUCgVVAABQAAAAAAAAAQABQaFUClVVAABUAAAAAAAAAQABVVFVVVVUAAAEAAAAAAAAAVAB',
+   'VQFVVVVQAAAEAAAAAAAAAFAFVRVVVVVQAFQEAAAAAAAAABQVVRVVVVVQBQAUAAAAAAAAFVAVVRVQVVVQAABQAAAAAAAAFUAVVUAB',
+   'VVVQAAFQAAAAAAAAFAAVVVVVVVVQFQAQAAAAAAAAFAAVUVVVVVVUFQAVAAAAAAAAFQAVRVVVFVVVVAAFAAAAAAAABQAVVQAABVVV',
+   'UAAFAAAAAAAAAFQVVVVVVVVUAAAFAAAAAAAAAEAFVVAFVVVUAAAVAAAAAAAAAUABVVQFVVVUABVQAAAAAAAAAUABVVVVVVUUAAVQ',
+   'AAAAAAAAAFAAVVVVVVQUAAUAAAAAAAAAABVAVVVVVVQUAAUAAAAAAAAAABUAVRVVFVBUABUAAAAAAAAAAAAAFUAAVVVUBVQAAAAA',
+   'AAAAAAAABVVVVVVUAAAAAAAAAAAAAAAAAVVVVVVUAAAAAAAAAAAAAAA/EBVVUVVQMAAAAAAAAAAAAAD/FQVVQVVT/AAAAAAAAAAA',
+   'Cqj/BUAAFVVT//AAAAAAAAAqqqv/AVVVVVUP//qgAAAAAACqq///MFVVVVUP//qoAAAAAAKv////zwFVVVA8P//8AAAAACv///8D',
+   '//wVVVDw/////wAAACv////A//wBVQDz/////8AAA///////AAAAVAA//wAA//AAD////////wJUAKU/8AqrA/wAP////////wFU',
+   'AFU/wCqqA/wAP////8AAAKAAKgD/AquqoD/AP////8KqqqgAKgD8Kv/vqj/w///wAAKqqqoFKo/wKv//ugP8//wAqqqqqoAFKqDy',
+   'r///+oP8//wqqqqqqgAVCqACr+qr/4D//ACqqqqqAAVVAqAKv6qr/6j/AKqqqgAAFVVVQqgK/6qqv6j/KqqqqgABVVVVQqoK/q/+',
+   'v+g/KqqgAA8FVVVVQKoD+g/8q+g/'
+  ].join('');
+  const base64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const pixels=[];
+  for(const char of bitmap){
+   const n=base64.indexOf(char);
+   pixels.push((n>>4)&3,(n>>2)&3,n&3);
   }
-  return '<svg class="rf-bz-face" viewBox="0 0 56 52" data-facing="left" '+
-   'preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false" '+
-   'shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
-   Object.entries(shapes).map(([c,d])=>'<path fill="'+colours[c]+'" d="'+d+'"/>').join('')+
-   '</svg>';
+  const paths=['','','',''];
+  for(let y=0;y<72;y++){
+   for(let x=0;x<72;){
+    const colour=pixels[y*72+x],from=x;
+    while(x<72&&pixels[y*72+x]===colour)x++;
+    if(colour)paths[colour]+='M'+from+' '+y+'h'+(x-from)+'v1h-'+(x-from)+'z';
+   }
+  }
+  const palette=['','#ff0','#fff','#00f'];
+  return '<svg class="rf-bz-face" viewBox="0 0 56 52" '+
+   'data-facing="left" preserveAspectRatio="xMidYMax meet" '+
+   'aria-hidden="true" focusable="false" shape-rendering="crispEdges" '+
+   'xmlns="http://www.w3.org/2000/svg"><g transform="scale(0.77777778 0.72222222)">'+
+   [1,2,3].map(i=>'<path fill="'+palette[i]+'" d="'+paths[i]+'"/>').join('')+
+   '</g></svg>';
  }
  function quizPresentation(){
   const stage=quizState.stage,links=quizFooter(),q=QUIZ_QUESTIONS[quizState.index],n=quizState.index+1;
