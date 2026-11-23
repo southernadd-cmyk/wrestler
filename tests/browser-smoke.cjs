@@ -355,8 +355,10 @@ async function journey(browser,name,viewport){
   assert.match(await brief.innerText(),/Promoter.s booking/);
   assert.match(await brief.innerText(),/Finish route/);
   assert.match(await brief.innerText(),/Running order/);
-  assert.match(await brief.innerText(),/Finish readiness/);
+  assert.match(await brief.innerText(),/Finish\s*\n\s*Nothing extra needed/);
   // Phase 4: exercise actual user controls on desktop and mobile.
+  const structureDisclosure=page.locator('#tv .structure-chooser');
+  await structureDisclosure.locator('summary').click();
   assert.equal(await page.locator('#tv .structure-option').count(),5);
   await page.locator('#tv [data-structure="kings_road"]').click();
   assert.equal(await page.evaluate(()=>window.OfficeUI.night.plan.room.structurePlanning),true);
