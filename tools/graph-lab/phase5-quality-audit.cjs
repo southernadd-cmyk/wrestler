@@ -3,7 +3,7 @@
 // node tools/graph-lab/phase5-quality-audit.cjs /path/to/phase4 > /tmp/phase5-tapes.json
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const lab=require('./core.js');
-const names=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-engine.js'];
+const names=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-engine.js'];
 function load(dir){
  const root={};
  for(const file of names)vm.runInNewContext(fs.readFileSync(path.join(dir,'assets/js',file),'utf8'),

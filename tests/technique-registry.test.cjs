@@ -7,7 +7,7 @@ const vm = require('node:vm');
 
 const root = path.join(__dirname, '..');
 const game = {};
-for (const name of ['data.js','roster-registry.js','match-engine.js']) {
+for (const name of ['data.js','roster-registry.js','match-graph.js','match-engine.js']) {
   vm.runInNewContext(fs.readFileSync(path.join(root,'assets/js',name),'utf8'),
     { window: game, console, Date, Math, JSON }, { filename: name });
 }

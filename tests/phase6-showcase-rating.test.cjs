@@ -4,7 +4,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const lab=require('../tools/graph-lab/core.js'),root={};
 for(const file of ['data.js','roster-registry.js','technique-registry.js',
- 'technique-backgrounds.js','match-engine.js'])
+ 'technique-backgrounds.js','match-graph.js','match-engine.js'])
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../assets/js',file),'utf8'),
   {window:root,console,Math,Date,JSON},{filename:file});
 root.OfficeRosterV4.enableProfiles();
