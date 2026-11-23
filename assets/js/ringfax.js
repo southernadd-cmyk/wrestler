@@ -227,26 +227,38 @@
   {"q":"Which former UK titleholder was also known in WWE as Butch?","a":["Tyler Bate","Pete Dunne","William Regal","Wade Barrett"],"correct":1,"fact":"Pete Dunne used the name Butch on WWE television.","source":"https://en.wikipedia.org/wiki/Pete_Dunne"}
  ];
 
- // Rotate without affecting career RNG or persistent saves. Each block of
- // sixteen weeks draw disjoint 12-question sets from the 192-question pool.
- const QUIZ_SIZE=12;
+ // Rotate without affecting career RNG or saved state. The question bank
+ // has four 48-question subject groups, yielding 3 from each every week.
+ // Across a 16-week season every factual question is used exactly once.
+ const QUIZ_SIZE=12,QUIZ_WEEKS=16,QUIZ_GROUPS=4,QUESTIONS_PER_GROUP=48;
  let QUIZ_QUESTIONS=QUIZ_POOL.slice(0,QUIZ_SIZE);
  let quizWeekKey='';
+ function shuffleQuiz(values,seed){
+  seed=(seed||0x1ab3aef1)>>>0;
+  for(let i=values.length-1;i>0;i--){
+   seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;
+   const j=(seed>>>0)%(i+1);
+   [values[i],values[j]]=[values[j],values[i]];
+  }
+  return values;
+ }
  function syncQuizWeek(s){
   const season=Math.max(1,Math.trunc(Number(s?.season)||1));
   const week=Math.max(1,Math.trunc(Number(s?.week)||1));
   const key=season+':'+week;
   if(key===quizWeekKey)return;
   quizWeekKey=key;
-  const cycle=Math.floor((week-1)/16),slot=(week-1)%16;
-  let seed=(Math.imul(season,0x9e3779b1)^Math.imul(cycle+1,0x85ebca6b)^0x51ed270b)>>>0;
-  const order=QUIZ_POOL.slice();
-  for(let i=order.length-1;i>0;i--){
-   seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;
-   const j=(seed>>>0)%(i+1);
-   [order[i],order[j]]=[order[j],order[i]];
+  const cycle=Math.floor((week-1)/QUIZ_WEEKS),slot=(week-1)%QUIZ_WEEKS;
+  const selected=[];
+  for(let group=0;group<QUIZ_GROUPS;group++){
+   const seed=(Math.imul(season,0x9e3779b1)^
+    Math.imul(cycle+1,0x85ebca6b)^Math.imul(group+1,0x27d4eb2d))>>>0;
+   const deck=QUIZ_POOL.slice(group*QUESTIONS_PER_GROUP,(group+1)*QUESTIONS_PER_GROUP);
+   shuffleQuiz(deck,seed);
+   selected.push(...deck.slice(slot*3,(slot+1)*3));
   }
-  QUIZ_QUESTIONS=order.slice(slot*QUIZ_SIZE,(slot+1)*QUIZ_SIZE);
+  QUIZ_QUESTIONS=shuffleQuiz(selected,(Math.imul(season,0x51ed270b)^
+   Math.imul(week,0x7feb352d))>>>0);
   quizReset();
  }
  const quizState={stage:'intro',index:0,checkpoint:0,misses:0,reveal:false};
