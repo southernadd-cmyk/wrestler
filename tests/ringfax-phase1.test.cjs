@@ -252,7 +252,10 @@ assert.equal(R.key('F2',s),true,'green button opens the rules');
 assert.equal(R.quizInfo().stage,'rules');
 assert.equal(R.key('F1',s),true,'red starts quiz from rules');
 assert.equal(R.quizInfo().stage,'question');
-assert.equal(R.view(s).split('class="rf-row rf-quiz-answer').length-1,4,'question rows are clickable');
+assert.equal(R.view(s).split('class="rf-bz-choice rf-bz-').length-1,4,'four classic answer buttons are clickable');
+assert.ok(R.view(s).includes('class="rf-bz-bubble"'),'question appears in a white speech bubble');
+assert.ok(R.view(s).includes('class="rf-bz-mascot"'),'original yellow quiz mascot is rendered');
+assert.ok(R.view(s).includes('PRESS THE COLOUR OF YOUR CHOICE'),'blue instruction strip is rendered');
 assert.equal(R.screen(s).rows[23].segments.length,4);
 assert.ok(R.screen(s).rows[23].segments.every(f=>f.action==='quiz-answer'));
 const colouredAnswers=R.build(s)[777].lines.filter(row=>Number.isInteger(row.answerIndex));
@@ -261,8 +264,8 @@ for(const [i,colour] of ['red','green','yellow','cyan'].entries()){
  assert.equal(colouredAnswers[i].colour,colour,'answer '+(i+1)+' colour matches the Fastext button');
  assert.ok(colouredAnswers[i].text.startsWith(colour.toUpperCase()+': '),
   'answer line spells out its matching Fastext colour');
- assert.ok(R.view(s).includes('class="rf-row rf-quiz-answer rf-'+colour+'"'),
-  'interactive answer is styled with matching colour class');
+ assert.ok(R.view(s).includes('class="rf-bz-choice rf-bz-'+colour+'"'),
+  'interactive answer is styled with a coloured teletext square');
 }
 
 
