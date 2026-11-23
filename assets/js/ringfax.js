@@ -734,29 +734,28 @@
  // The quiz shares Ringfax's standard masthead, with a Bamboozle-style game below.
  // Game state, 40x25 text data, keyboard controls and checkpoint logic are unchanged.
  function quizMascot(){
-  // An original wrestling quiz host assembled from rectangular teletext pixels.
-  // The limited palette and crisp edges echo 2x3 teletext mosaics, not a copied sprite.
-  const rects=[
-   [14,1,11,2,'w'],[12,3,2,2,'w'],[25,3,2,2,'w'],
-   [11,4,16,2,'y'],[9,6,20,3,'y'],[7,9,24,14,'y'],
-   [9,23,20,4,'y'],[12,27,15,2,'y'],
-   [30,13,4,3,'y'],[33,11,2,3,'y'],[35,13,3,2,'y'],
-   [35,16,2,4,'y'],[31,19,5,2,'y'],
-   [10,10,5,2,'k'],[22,10,5,2,'k'],
-   [12,12,2,5,'k'],[23,12,2,5,'k'],
-   [14,12,1,2,'w'],[25,12,1,2,'w'],
-   [9,19,5,2,'k'],[25,19,4,2,'k'],
-   [11,21,3,2,'k'],[25,21,3,2,'k'],
-   [13,23,13,2,'k'],[16,26,6,2,'k'],
-   [8,29,11,4,'b'],[22,29,11,4,'b'],
-   [10,33,9,2,'w'],[23,33,9,2,'w'],
-   [8,7,2,2,'w'],[27,7,2,2,'w']
+  // Brian Dixon tribute: an original stylised mosaic portrait, not a
+  // reproduction of the historical Bamboozle mascot. Pure 8-colour Teletext.
+  // Distinctive silver swept-back hair, dark glasses and warm smile.
+  const blocks=[
+   [11,4,18,3,'w'],[8,7,22,3,'w'],[7,10,6,5,'w'],
+   [28,9,5,5,'w'],[10,11,21,4,'w'],
+   [12,14,17,14,'y'],[10,17,21,10,'y'],
+   [8,19,3,5,'y'],[30,19,3,5,'y'],[13,28,16,2,'y'],
+   [12,17,8,1,'k'],[12,18,1,5,'k'],[19,18,1,5,'k'],[12,22,8,1,'k'],
+   [22,17,8,1,'k'],[22,18,1,5,'k'],[29,18,1,5,'k'],[22,22,8,1,'k'],
+   [20,19,2,1,'k'],[14,19,4,2,'c'],[24,19,4,2,'c'],
+   [16,19,1,2,'k'],[26,19,1,2,'k'],
+   [20,23,2,3,'k'],[15,26,3,1,'k'],[24,26,3,1,'k'],[17,28,8,1,'k'],
+   [9,32,24,7,'b'],[11,30,7,4,'b'],[24,30,7,4,'b'],
+   [17,31,8,4,'w'],[19,34,4,5,'r'],
+   [12,35,5,2,'c'],[25,35,5,2,'c']
   ];
-  const colours={y:'#ff0',w:'#fff',b:'#00f',k:'#000'};
-  return '<svg class="rf-bz-face" viewBox="0 0 40 36" preserveAspectRatio="xMidYMid meet" '+
+  const colours={w:'#fff',y:'#ff0',k:'#000',c:'#0ff',b:'#00f',r:'#f00'};
+  return '<svg class="rf-bz-face" viewBox="0 0 42 40" preserveAspectRatio="xMidYMid meet" '+
    'aria-hidden="true" focusable="false" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
-   rects.map(([x,y,width,height,c])=>'<rect x="'+x+'" y="'+y+'" width="'+width+
-    '" height="'+height+'" fill="'+colours[c]+'"/>').join('')+'</svg>';
+   blocks.map(([x,y,w,h,c])=>'<rect x="'+x+'" y="'+y+'" width="'+w+
+    '" height="'+h+'" fill="'+colours[c]+'"/>').join('')+'</svg>';
  }
  function quizPresentation(){
   const stage=quizState.stage,links=quizFooter(),q=QUIZ_QUESTIONS[quizState.index],n=quizState.index+1;
@@ -788,9 +787,11 @@
     '<span class="rf-bz-square" aria-hidden="true"></span>'+
     '<span class="rf-bz-answer">'+escape(label)+'</span></button>';
   }).join('');
-  const footer=links.map((link,i)=>'<button type="button" class="rf-bz-fast rf-bz-'+QUIZ_COLOURS[i]+
-   '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
-   '" aria-label="'+escape(QUIZ_COLOURS[i]+' Fastext: '+choices[i])+'">?????</button>').join('');
+  const footer=links.map((link,i)=>i<choices.length?
+   '<button type="button" class="rf-bz-fast rf-bz-'+QUIZ_COLOURS[i]+
+    '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
+    '" aria-label="'+escape(QUIZ_COLOURS[i]+' Fastext: '+choices[i])+'">?????</button>':
+   '<span class="rf-bz-fast rf-bz-'+QUIZ_COLOURS[i]+'" aria-hidden="true">?????</span>').join('');
   return '<div class="rf-bz-page rf-bz-stage-'+stage+'">'+
    '<div class="rf-bz-hero"><div class="rf-bz-bubble"><strong>'+escape(title)+
    '</strong><span>'+escape(message)+'</span></div>'+
