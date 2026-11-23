@@ -77,7 +77,7 @@
   const add=(number,title,lines)=>{P[number]={number,title,lines:lines.slice()};};
   // A proper two-column teletext index, not a conventional app menu.
   // Each 20-character half remains individually clickable in the renderer.
-  const pair=(left,right,colour='white')=>item(line(left,20)+line(right,20),colour);
+  const pair=(left,right,colour='white')=>({text:line(left,20)+line(right,20),colour,background:'black'});
   let a=[
    item('  NEWS AND RESULTS    SPORT & FANS','yellow'),
    item('  --------------------------------','blue'),
