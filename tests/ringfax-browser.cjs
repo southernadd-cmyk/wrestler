@@ -190,11 +190,15 @@ async function run(browser,name,viewport){
   await page.keyboard.press('F4');
   assert.match(await page.locator('#rf-screen').innerText(),/THE FANZONE/);
 
-  // Easter egg: a manually entered page 777 opens a complete classic
-  // Bamboozle-style page, with an original quiz host and square colour keys.
+  // The quiz is a real index entry, not a hidden page-number guessing game.
+  // It uses the same channel header as P100, and always offers 100 INDEX.
   const originalCareer=await page.evaluate(()=>JSON.stringify(window.OfficeGame.S));
-  await page.locator('#rf-page-entry').fill('777');
-  await page.locator('[data-rf-action="jump"]').click();
+  await page.locator('.rf-page-link[data-rf-value="100"]').click();
+  assert.equal(await page.locator('#rf-screen .rf-index-half[data-rf-value="777"]').count(),1,
+   name+': page 100 has a clickable quiz directory entry');
+  await page.locator('#rf-screen .rf-index-half[data-rf-value="777"]').click();
+  assert.equal(await page.evaluate(()=>window.OfficeRingfax.screen(window.OfficeGame.S).page),777,
+   name+': index link navigates to the quiz');
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'intro',
    name+': secret 777 starts at intro');
   assert.equal(await page.locator('#rf-screen .rf-row').count(),25,
@@ -203,12 +207,18 @@ async function run(browser,name,viewport){
    name+': page 777 has one full-screen quiz composition');
   assert.equal(await page.locator('.rf-bz-face').count(),1,
    name+': original yellow pixel mascot is rendered');
-  assert.equal(await page.locator('.rf-bz-brand .rf-logo-svg').count(),1,
-   name+': legible yellow Ringfax pixel ident in blue masthead');
+  assert.equal(await page.locator('.rf-bz-channel .rf-logo-svg').count(),1,
+   name+': regular Ringfax blue pixel masthead is reused on page 777');
+  assert.equal(await page.locator('.rf-bz-shared-header').count(),1,
+   name+': quiz uses the same 1+4+1 teletext header structure as other pages');
+  assert.equal(await page.locator('.rf-bz-home[data-rf-value="100"]').count(),1,
+   name+': a permanent index return button is visible');
   assert.equal(await page.locator('.rf-bz-bubble').count(),1,
    name+': question lives in a white speech bubble');
-  assert.equal(await page.locator('.rf-bz-choice').count(),4,
-   name+': four choices are available on the intro page');
+  assert.equal(await page.locator('.rf-bz-choice').count(),2,
+   name+': intro has exactly two meaningful controls, without duplicate Start quiz');
+  assert.equal(await page.locator('.rf-bz-face rect').count(),34,
+   name+': Brian Dixon tribute uses a crisp multi-block Teletext portrait');
   await page.locator('.rf-bz-choice.rf-bz-red').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'question');
   assert.equal(await page.locator('.rf-bz-choice').count(),4,
@@ -221,15 +231,31 @@ async function run(browser,name,viewport){
    const box=el=>{const r=el.getBoundingClientRect();
     return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
    const screen=document.querySelector('#rf-screen'),page=document.querySelector('.rf-bz-page');
+   const header=document.querySelector('.rf-bz-shared-header'),
+    channel=document.querySelector('.rf-bz-channel'),
+    logo=document.querySelector('.rf-bz-channel svg'),
+    home=document.querySelector('.rf-bz-home');
    const bubble=document.querySelector('.rf-bz-bubble'),mascot=document.querySelector('.rf-bz-mascot');
    const choices=[...document.querySelectorAll('.rf-bz-choice')];
    const footer=document.querySelector('.rf-bz-footer');
-   return {screen:box(screen),page:box(page),bubble:box(bubble),mascot:box(mascot),
+   return {screen:box(screen),page:box(page),header:box(header),
+    channel:box(channel),logo:box(logo),home:box(home),
+    bubble:box(bubble),mascot:box(mascot),
     choices:choices.map(box),footer:box(footer),scroll:document.documentElement.scrollWidth-innerWidth};
   });
   assert.ok(quizLayout.page.left>=quizLayout.screen.left-2&&
    quizLayout.page.right<=quizLayout.screen.right+2,
    name+': quiz composition fits inside teletext display');
+  assert.ok(quizLayout.header.top>=quizLayout.screen.top-2 &&
+   quizLayout.header.bottom<=quizLayout.page.top+2,
+   name+': complete header fits above the quiz body '+JSON.stringify(quizLayout));
+  assert.ok(quizLayout.logo.top>=quizLayout.channel.top-2 &&
+   quizLayout.logo.bottom<=quizLayout.channel.bottom+2,
+   name+': Ringfax ident is contained within the blue banner');
+  assert.ok(quizLayout.home.right<=quizLayout.screen.right+2 &&
+   quizLayout.home.top>=quizLayout.header.top &&
+   quizLayout.home.bottom<=quizLayout.header.bottom+2,
+   name+': 100 INDEX return control is not clipped');
   assert.ok(quizLayout.bubble.right<=quizLayout.mascot.right+2,
    name+': speech bubble does not cover the entire quiz mascot');
   assert.ok(quizLayout.choices.every(x=>x.height>20&&
@@ -259,6 +285,14 @@ async function run(browser,name,viewport){
     name+': bottom Fastext question marks match the square');
    assert.ok(answer.text.length>0,name+': answer '+i+' has a label');
   }
+  // Return works at any stage; restarting from P100 resets the quiz intro.
+  await page.locator('.rf-bz-home').click();
+  assert.equal(await page.evaluate(()=>window.OfficeRingfax.screen(window.OfficeGame.S).page),100,
+   name+': permanent 100 INDEX button returns from a question');
+  await page.locator('#rf-screen .rf-index-half[data-rf-value="777"]').click();
+  assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'intro',
+   name+': returning via index restarts the quiz at its intro');
+  await page.locator('.rf-bz-choice.rf-bz-red').click();
   await page.locator('.rf-bz-choice.rf-bz-red').hover();
   assert.equal(await page.locator('.rf-bz-choice.rf-bz-red')
    .evaluate(el=>getComputedStyle(el).color),'rgb(255, 255, 255)',

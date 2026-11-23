@@ -79,7 +79,7 @@
  function quizPage(){
   const l=[item(' THE QUIZ REF: UK WRESTLING','yellow'),item('')];
   if(quizState.stage==='intro'){
-   paragraphs(l,'YOU HAVE FOUND SECRET PAGE 777!','green');
+   paragraphs(l,'WELCOME TO THE QUIZ REF!','green');
    l.push(item(''));
    paragraphs(l,'12 QUESTIONS. FOUR COLOUR BUTTONS.');
    paragraphs(l,'ONE CHANCE TO BE THE CHAMPION.');
@@ -307,13 +307,13 @@
    pair('200 AFTER BELL','201 THE CRITIC','white'),
    pair('300 WATCHLIST','301 STORYLINES','cyan'),
    pair('302 TITLE TALK','500 FANZONE','white'),
-   pair('501 LETTERS','100 INDEX','cyan'),
+   pair('501 LETTERS','777 QUIZ REF','cyan'),
    item(' --------------------------------','blue'),
    item(' THE OFFICE, THROUGH FANS EYES','yellow'),
    item(' SEASON '+(s?.season||1)+' / WEEK '+(s?.week||1),'cyan'),
    item(' NOT ANOTHER RESULTS TABLE','green'),
    item(' READ THE STORY BEHIND THE STATS','white'),
-   item(' FAN ARGUMENTS: P500 AND P501','yellow')
+   item(' TEST YOUR KNOWLEDGE: PAGE 777','yellow')
   ];
   add(100,'RINGFAX INDEX',a);
 
@@ -639,7 +639,7 @@
   100:['RINGFAX','yellow'],101:['HEADLINE','cyan'],102:['SEASON','yellow'],
   103:['GRAPEVINE','green'],104:['THE ROAD','cyan'],200:['AFTER','green'],
   201:['CRITIC','yellow'],300:['WATCH','green'],301:['STORIES','yellow'],302:['TALK','cyan'],
-  500:['FANZONE','magenta'],501:['LETTERS','yellow'],777:['QUIZ','yellow']
+  500:['FANZONE','magenta'],501:['LETTERS','yellow'],777:['RINGFAX','yellow']
  };
  function mosaic(word){
   // Leave a text equivalent inside the 40×25 model; the graphic is painted
@@ -723,6 +723,7 @@
   if(k==='ArrowRight')return press('right',null,s);
   if(k===' '||k==='Spacebar')return press('hold',null,s);
   if(k==='Backspace')return press('backspace',null,s);
+  if(k==='Escape'&&C.page===777)return press('go',100,s);
   const i=['F1','F2','F3','F4'].indexOf(k);
   if(i>=0){const link=C.page===777?quizFooter()[i]:null;
    return link?press(link.action,link.value,s):press('go',fast[i],s);
@@ -730,14 +731,31 @@
   return false;
  }
 
- // The secret quiz is displayed as a complete Bamboozle-era TV page.
+ // The quiz shares Ringfax's standard masthead, with a Bamboozle-style game below.
  // Game state, 40x25 text data, keyboard controls and checkpoint logic are unchanged.
  function quizMascot(){
-  return '<svg class="rf-bz-face" viewBox="0 0 36 36" aria-hidden="true" focusable="false" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
-   '<path fill="#ff0" d="M11 3h11v2h3v2h3v3h2v14h-2v3h-3v2H9v-2H6v-3H4V11h3V8h2V5h2z M29 16h3v-3h2v2h2v6h-2v3h-4z"/>'+
-   '<path fill="#000" d="M11 11h2v5h-2z M22 11h2v5h-2z M9 9h5v2H9z M21 9h5v2h-5z M8 19h3v2H8z M25 19h3v2h-3z M11 22h2v2h-2z M13 24h12v2H13z M25 22h2v2h-2z M16 28h5v2h-5z"/>'+
-   '<path fill="#fff" d="M10 32h5v2h-5z M23 32h5v2h-5z M5 4h3v1H6v3H5z M29 4h3v4h-1V5h-2z M5 29h1v3h3v1H5z M31 29h1v4h-4v-1h3z"/>'+
-   '<path fill="#00f" d="M7 30h9v3H7z M22 30h9v3h-9z"/></svg>';
+  // Brian Dixon tribute: an original stylised mosaic portrait, not a
+  // reproduction of the historical Bamboozle mascot. Pure 8-colour Teletext.
+  // Distinctive silver swept-back hair, dark glasses and warm smile.
+  const blocks=[
+   [11,4,18,3,'w'],[8,7,22,3,'w'],[7,10,6,5,'w'],
+   [28,9,5,5,'w'],[10,11,21,4,'w'],
+   [12,14,17,14,'y'],[10,17,21,10,'y'],
+   [8,19,3,5,'y'],[30,19,3,5,'y'],[13,28,16,2,'y'],
+   [12,17,8,1,'k'],[12,18,1,5,'k'],[19,18,1,5,'k'],[12,22,8,1,'k'],
+   [22,17,8,1,'k'],[22,18,1,5,'k'],[29,18,1,5,'k'],[22,22,8,1,'k'],
+   [20,19,2,1,'k'],[14,19,4,2,'c'],[24,19,4,2,'c'],
+   [16,19,1,2,'k'],[26,19,1,2,'k'],
+   [20,23,2,3,'k'],[15,26,3,1,'k'],[24,26,3,1,'k'],[17,28,8,1,'k'],
+   [9,32,24,7,'b'],[11,30,7,4,'b'],[24,30,7,4,'b'],
+   [17,31,8,4,'w'],[19,34,4,5,'r'],
+   [12,35,5,2,'c'],[25,35,5,2,'c']
+  ];
+  const colours={w:'#fff',y:'#ff0',k:'#000',c:'#0ff',b:'#00f',r:'#f00'};
+  return '<svg class="rf-bz-face" viewBox="0 0 42 40" preserveAspectRatio="xMidYMid meet" '+
+   'aria-hidden="true" focusable="false" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
+   blocks.map(([x,y,w,h,c])=>'<rect x="'+x+'" y="'+y+'" width="'+w+
+    '" height="'+h+'" fill="'+colours[c]+'"/>').join('')+'</svg>';
  }
  function quizPresentation(){
   const stage=quizState.stage,links=quizFooter(),q=QUIZ_QUESTIONS[quizState.index],n=quizState.index+1;
@@ -747,21 +765,21 @@
   }else if(stage==='intro'){
    title='Welcome to The Quiz Ref!';
    message='12 questions. Four colours. One wrestling champion. Are you ready?';
-   choices=['Start quiz','How to play','Back to index','Start quiz'];
+   choices=['Start quiz','How to play'];
   }else if(stage==='rules'){
    title='How to play';
    message='Choose red, green, yellow or cyan. Wrong answers return you to the last checkpoint.';
-   choices=['Start quiz','Go back','Back to index','Start quiz'];
+   choices=['Start quiz','Go back'];
   }else if(stage==='wrong'){
    title='You have been bodyslammed!';
    message='Correct: '+q.a[q.correct]+'. '+(quizState.reveal?q.fact:'Retry from question '+(quizState.checkpoint+1)+'.');
-   choices=['Try again','Reveal trivia','Back to index','Try again'];
+   choices=['Try again','Reveal trivia'];
   }else{
    title='You are the Quiz Champion!';
    message='Twelve questions answered! Wrong turns: '+quizState.misses+'. A main-event performance.';
-   choices=['Play again','Rules','Back to index','Play again'];
+   choices=['Play again','Rules'];
   }
-  const choicesHtml=links.map((link,i)=>{
+  const choicesHtml=links.slice(0,choices.length).map((link,i)=>{
    const colour=QUIZ_COLOURS[i],label=choices[i];
    return '<button type="button" class="rf-bz-choice rf-bz-'+colour+
     '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
@@ -769,16 +787,12 @@
     '<span class="rf-bz-square" aria-hidden="true"></span>'+
     '<span class="rf-bz-answer">'+escape(label)+'</span></button>';
   }).join('');
-  const footer=links.map((link,i)=>'<button type="button" class="rf-bz-fast rf-bz-'+QUIZ_COLOURS[i]+
-   '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
-   '" aria-label="'+escape(QUIZ_COLOURS[i]+' Fastext: '+choices[i])+'">?????</button>').join('');
-  const now=new Date(),day=String(now.getDate()).padStart(2,'0'),
-   month=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()];
+  const footer=links.map((link,i)=>i<choices.length?
+   '<button type="button" class="rf-bz-fast rf-bz-'+QUIZ_COLOURS[i]+
+    '" data-rf-action="'+link.action+'" data-rf-value="'+(link.value??'')+
+    '" aria-label="'+escape(QUIZ_COLOURS[i]+' Fastext: '+choices[i])+'">?????</button>':
+   '<span class="rf-bz-fast rf-bz-'+QUIZ_COLOURS[i]+'" aria-hidden="true">?????</span>').join('');
   return '<div class="rf-bz-page rf-bz-stage-'+stage+'">'+
-   '<div class="rf-bz-top"><span class="rf-bz-code">P777</span>'+
-   '<div class="rf-bz-brand">'+pixelLogo('RINGFAX')+'</div>'+
-   '<span class="rf-bz-number">777</span>'+
-   '<span class="rf-bz-clock">'+month+day+' '+clock().replace("/",":")+'</span></div>'+
    '<div class="rf-bz-hero"><div class="rf-bz-bubble"><strong>'+escape(title)+
    '</strong><span>'+escape(message)+'</span></div>'+
    '<div class="rf-bz-mascot">'+quizMascot()+'</div></div>'+
@@ -812,6 +826,7 @@
     return '<div class="rf-row rf-mosaic rf-bg-blue rf-logo-row">'+escape(r.text)+
      '<div class="rf-logo-art" aria-hidden="true">'+pixelLogo(title)+'</div></div>';
    }
+
    if(C.page===777&&r.answerIndex!==undefined){
     return '<button type="button" class="rf-row rf-quiz-answer rf-'+r.colour+
      '" data-rf-action="quiz-answer" data-rf-value="'+r.answerIndex+
@@ -836,6 +851,14 @@
    return '<div class="rf-row rf-'+r.colour+bg+(i>=1&&i<=4?' rf-mosaic':'')+
     (i===0?' rf-header':i===5?' rf-section':'')+'">'+escape(r.text)+'</div>';
   }).join('');
+  // Reuse the same actual 40-column header text and four-row mosaic ident used
+  // on every other Ringfax page; only the body becomes the quiz composition.
+  const quizHeader='<div class="rf-bz-shared-header">'+
+   '<div class="rf-bz-header-line">'+escape(v.rows[0].text)+'</div>'+
+   '<div class="rf-bz-channel">'+pixelLogo('RINGFAX')+'</div>'+
+   '<div class="rf-bz-page-title"><span>'+escape(v.title)+'</span>'+
+   '<button type="button" class="rf-bz-home" data-rf-action="go" data-rf-value="100" '+
+   'aria-label="Return to Ringfax index page 100">100 INDEX</button></div></div>';
   const quick=favourites.map(([number,label,desc])=>
    '<button type="button" class="rf-page-link'+(v.page===number?' is-current':'')+'" data-rf-action="go" data-rf-value="'+number+'"'+
    (v.page===number?' aria-current="page"':'')+'><span class="rf-link-number">'+number+'</span>'+
@@ -866,7 +889,7 @@
    '<button data-rf-action="go" data-rf-value="200" type="button">200 RESULTS</button>'+
    '<button data-rf-action="go" data-rf-value="500" type="button">500 FANS</button></div>'+
    '<div id="rf-screen" class="rf-screen'+(C.page===777?' rf-quiz-screen':'')+'" role="region" aria-label="Ringfax teletext page">'+
-    (C.page===777?'<div class="rf-teletext-grid" aria-hidden="true">'+rows+'</div>'+quizPresentation():rows)+'</div>'+
+    (C.page===777?'<div class="rf-teletext-grid" aria-hidden="true">'+rows+'</div>'+quizHeader+quizPresentation():rows)+'</div>'+
    '<p class="rf-display-caption">LIVE FROM THE CIRCUIT <span>●</span> READ-ONLY EDITION <span>●</span> '+escape(v.title)+'</p>'+
    '</div>'+
    '<aside class="rf-console" aria-label="Ringfax controls">'+
