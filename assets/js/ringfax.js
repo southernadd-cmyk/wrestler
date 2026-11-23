@@ -733,94 +733,98 @@
 
  // The quiz shares Ringfax's standard masthead, with a Bamboozle-style game below.
  // Game state, 40x25 text data, keyboard controls and checkpoint logic are unchanged.
+
  function quizMascot(){
-  // Brian Dixon-inspired tribute host, drawn as an original 56 x 47 pixel
-  // teletext mosaic: swept hair, expressive uncovered eyes, grin, blue jacket.
-  // No photo, external asset, image download, or antialiased image is required.
-  const grid=[
-   '........................................................',
-   '............................WWWWWWWWW...................',
-   '..........................WWWWWWWWWWWWW.................',
-   '......................WWWWWW......WWWWWWW...............',
-   '....................WWWWWWWW.......WWW.WW...............',
-   '....................WWWW..WWWWWWWWW..WW..WW.............',
-   '..................WW..WWWWWWWWWWWWWW.WWW.WW.............',
-   '................WWWWWWWWWW.......CWWW.WW..W.............',
-   '................WWWWWWWWW.........WWW.WW.WW.............',
-   '................WWWW.......YYYY....WW.W......WWW........',
-   '................WWW.......YYYYYYY....YY.YYY..WWWW.......',
-   '...............WWWCWWW..YYYYYYYYYYYYYYYYYYYY...WWW......',
-   '...............WWWWW..YYYYYYYYYYYYYYYYYYYYYYY...WWWW....',
-   '...............WWWWW..YYYYYYYY...........YYYY...WWWW....',
-   '................WWWW..YYYYYYYYYYYYYYYYYYYYYYY...WWWW....',
-   '................WWWW..YYYYYY....YYYYYYY....YY...WWWW....',
-   '...............WWW....YYYYY.....YYYYYY......Y...WWWW....',
-   '.............WWWW.....YYYY..YYYYYYYYYYYYYYYYY...WWWW....',
-   '..............WW...W..YY..........YYY...........WWW.....',
-   '............WW....WW..YY..........YYY...........WWW.....',
-   '............WWWWWWW.......YYYCCYY.....YYCCCYY...WW......',
-   '............WWWWWW........YYC..CY..YY.YC..CYY...W....W..',
-   '............WW.......YYY..YYW..CY.YYY.YCC.CYY..WWW..WW..',
-   '............WWW......YYY..YYYYYYY.YYY.YYYYYYY..WWWWWWW..',
-   '.........W...WWW.YYY.YYY........R.YYY..........WWWWWW...',
-   '.........WW..WWW.Y.Y.YYYY........YYYYYY.........WWWWW...',
-   '.........WWWWWWW.Y.YYYYYYYYYYYYYY.YYYYY.YYYYY.....WW.W..',
-   '.........WWWWWWW.YYYYYYYYYYYYYYY.Y.YY..YYYYYY.....WW.W..',
-   '..........WWWWWW..YYYYYYYYYYY.YYY.....YY..YYY...WWWWWW..',
-   '...........WWWW.....YYYYYYYY..YYYYYYYYYYY..YY.....WWW...',
-   '.........WWW........YYYYYYYY.Y..YYYYYYY..Y.YY....WWW....',
-   '.........WWWW.......YYYYYYYYYYY.........YYYYY..WWWW.....',
-   '..........WWWW......YYYYYYYYYYYYYYYYYYYYYYYYY..WWW......',
-   '...........WWWWW....YYYY.YYYYYYYYYYYYYYYYYYY............',
-   '............WWWW....YYYY.YYYYYYYY.....YYYYYY............',
-   '......................YY..YYYYYYYYYYYYYYYYY.............',
-   '......................YYY.RYYYYYYYYYYYYYYYY.............',
-   '..................BB.W..YY.YY.YYYYYYYYY.Y...............',
-   '...............BBBBB.WWW..YYY.YYYYYYYYY.....BBB.........',
-   '...............BBBBB.WWW...YYY..YYYYYY...W..BBBB........',
-   '.............BBBBBBB..WWWW.............WWW..BBBBBB......',
-   '...........BBBBBBBBB..WWWWWWWW.......WWWWW..BBBBBBBB....',
-   '.........BBBBBBB....CC..WWWWWWRRRRRRWWWWW..C....BBBBBB..',
-   '.........BBBBBBB..CCCC..WWWWWWRRRRRRWWWWW..CCB..BBBBBBBB',
-   '.....BBBBBBBBB..CCCCCCCC..WWW.RRRRR..WW..CCCCCCCB.BBBBBB',
-   '.....BBBBBBBBB..CCCCCCCC..WWW.RRRRR..WW..CCCCCCC..BBBBBB',
-   '.....BBBBBBBBB..CCCCCCCC..WWW.RRRRR..WW..CCCCCCC..BBBBBB'
-  ];
-  // The reference photograph has NO glasses. Repaint the centre of the
-  // original bitmap as a continuous face, then carve natural unframed eyes,
-  // brows, a nose and smile. Never introduce a spectacles outline.
-  const pixels=grid.map(row=>row.split(''));
-  const stroke=(y,x,length,c)=>{for(let col=x;col<x+length;col++)pixels[y][col]=c;};
-  for(let y=17;y<=31;y++){
-   const left=y<20?23:y<28?21:23,right=y<20?44:y<28?45:43;
-   stroke(y,left,right-left+1,'Y');
-  }
-  // Distinct arched eyebrows above the two separate eyes.
-  stroke(19,26,6,'.');stroke(19,37,6,'.');
-  stroke(20,27,4,'.');stroke(20,38,4,'.');
-  stroke(22,27,5,'W');stroke(22,38,5,'W');
-  stroke(23,27,5,'W');stroke(23,38,5,'W');
-  stroke(22,29,2,'.');stroke(22,40,2,'.');
-  stroke(23,29,2,'.');stroke(23,40,2,'.');
-  // Full nose and a curved grin (not the straight line of a glasses frame).
-  stroke(24,35,1,'.');stroke(25,35,1,'.');
-  stroke(26,33,2,'.');stroke(26,37,2,'.');
-  stroke(28,29,2,'.');stroke(28,40,2,'.');
-  stroke(29,30,11,'.');stroke(30,32,7,'.');
-  // Two tiny cheek creases give the presenter an expressive smile.
-  stroke(27,27,2,'.');stroke(27,42,2,'.');
-  const finished=pixels.map(row=>row.join(''));
+  // Original pixel-art tribute to All Star Wrestling promoter Brian Dixon:
+  // bald crown, grey side hair, open eyes, pronounced nose, broad grin and
+  // checked shirt. The three-quarter face turns left into the question bubble.
+  // Integer-cell rasterisation, five genuine Teletext colours, no image asset.
+  const w=68,h=65,p=Array.from({length:h},()=>Array(w).fill('.'));
+  const dot=(x,y,c)=>{x|=0;y|=0;if(x>=0&&x<w&&y>=0&&y<h)p[y][x]=c;};
+  const oval=(cx,cy,rx,ry,c)=>{
+   for(let y=Math.max(0,Math.floor(cy-ry));y<=Math.min(h-1,Math.ceil(cy+ry));y++)
+    for(let x=Math.max(0,Math.floor(cx-rx));x<=Math.min(w-1,Math.ceil(cx+rx));x++)
+     if(((x+.5-cx)/rx)**2+((y+.5-cy)/ry)**2<=1)dot(x,y,c);
+  };
+  const polygon=(points,c)=>{
+   const lowY=Math.max(0,Math.floor(Math.min(...points.map(v=>v[1]))));
+   const highY=Math.min(h-1,Math.ceil(Math.max(...points.map(v=>v[1]))));
+   const lowX=Math.max(0,Math.floor(Math.min(...points.map(v=>v[0]))));
+   const highX=Math.min(w-1,Math.ceil(Math.max(...points.map(v=>v[0]))));
+   for(let y=lowY;y<=highY;y++)for(let x=lowX;x<=highX;x++){
+    let inside=false;
+    for(let i=0,j=points.length-1;i<points.length;j=i++){
+     const a=points[i],b=points[j];
+     if((a[1]>y+.5)!==(b[1]>y+.5)&&
+        x+.5<(b[0]-a[0])*(y+.5-a[1])/(b[1]-a[1])+a[0])inside=!inside;
+    }
+    if(inside)dot(x,y,c);
+   }
+  };
+  const stroke=(x0,y0,x1,y1,c,r=0)=>{
+   const steps=Math.max(Math.abs(x1-x0),Math.abs(y1-y0),1)*2;
+   for(let i=0;i<=steps;i++){
+    const x=Math.round(x0+(x1-x0)*i/steps),y=Math.round(y0+(y1-y0)*i/steps);
+    for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)dot(x+dx,y+dy,c);
+   }
+  };
+  // Broad red-and-white checked shirt and open collar.
+  polygon([[2,65],[3,58],[8,53],[20,49],[49,48],[60,51],[68,58],[68,65]],'R');
+  polygon([[8,53],[19,50],[23,55],[21,65],[5,65]],'W');
+  polygon([[53,51],[62,53],[68,60],[68,65],[55,65]],'W');
+  for(const x of [5,15,25,39,52,63])stroke(x,54,x+1,64,'W',1);
+  for(const y of [57,62])stroke(4,y,67,y,'W');
+  polygon([[22,49],[31,50],[48,47],[53,52],[47,63],[27,61]],'B');
+  polygon([[25,47],[47,46],[49,57],[42,61],[30,57]],'Y');
+  polygon([[25,48],[33,53],[37,56],[28,60],[18,51]],'W');
+  polygon([[47,47],[43,54],[41,57],[50,61],[57,51]],'W');
+  stroke(36,57,43,60,'R',1);
+  // White hair remains at the sides: the crown is entirely bald.
+  polygon([[21,16],[17,19],[14,25],[12,32],[15,39],[23,38],[25,27],[26,19]],'W');
+  polygon([[46,15],[51,17],[57,23],[59,35],[56,40],[51,35],[48,27]],'W');
+  polygon([[17,21],[14,29],[14,35],[18,37],[21,27]],'C');
+  polygon([[55,22],[58,30],[58,35],[54,31]],'C');
+  // Asymmetrical head, turned towards the left-hand question bubble.
+  polygon([[29,5],[40,5],[48,9],[54,16],[55,27],[54,34],[56,39],[53,47],
+           [47,54],[37,58],[27,55],[20,50],[16,42],[15,32],[17,21],[22,11]],'Y');
+  oval(56,35,6,9,'Y');oval(58,36,3,6,'R');oval(59,36,2,4,'Y');
+  oval(17,34,3,7,'Y');
+  polygon([[51,17],[54,20],[56,26],[56,31],[53,33],[52,27]],'W');
+  polygon([[18,17],[21,16],[22,24],[18,30],[16,28]],'W');
+  stroke(53,21,54,27,'C',1);
+  // High forehead, smile creases, wrinkles and cheek shadows.
+  oval(35,17,9,5,'W');oval(37,18,9,4,'Y');
+  oval(24,37,7,10,'W');oval(27,36,8,9,'Y');
+  polygon([[46,34],[52,36],[53,45],[48,50],[42,51]],'R');
+  polygon([[44,34],[50,35],[50,43],[46,47],[41,47]],'Y');
+  stroke(26,21,37,20,'R');stroke(38,20,46,21,'R');
+  stroke(25,24,34,23,'R');stroke(39,23,47,24,'R');
+  // Two uncovered eyes, not the spectacles mistakenly drawn earlier.
+  stroke(23,29,32,28,'B',1);stroke(38,28,47,29,'B',1);
+  stroke(24,32,32,32,'W',1);stroke(39,32,47,32,'W',1);
+  stroke(28,32,29,34,'.',1);stroke(42,32,43,34,'.',1);
+  dot(28,32,'B');dot(42,32,'B');
+  // Nose projects left of centre; facial expression directs towards quiz.
+  stroke(34,34,29,40,'R');stroke(28,40,22,42,'R',1);
+  polygon([[29,36],[31,37],[28,42],[22,43],[24,46],[32,45],[35,42]],'W');
+  stroke(24,45,27,45,'B');stroke(32,45,34,44,'R');
+  stroke(19,39,22,43,'R');stroke(48,37,51,41,'R');
+  stroke(49,40,52,42,'R');stroke(24,47,28,51,'R');
+  stroke(49,46,47,51,'R');
+  polygon([[29,48],[34,49],[42,49],[49,47],[48,51],[43,54],[36,55],[31,52]],'B');
+  polygon([[31,49],[38,50],[46,49],[45,52],[36,53],[32,51]],'W');
+  stroke(30,48,35,49,'R');stroke(45,49,49,47,'R');
+  stroke(33,54,39,56,'R');
+  stroke(8,56,9,64,'R');stroke(57,55,58,64,'R');
   const colours={W:'#fff',Y:'#ff0',B:'#00f',C:'#0ff',R:'#f00'};
   const shapes={W:'',Y:'',B:'',C:'',R:''};
-  for(let y=0;y<finished.length;y++){
-   const row=finished[y];
-   for(let x=0;x<row.length;){
-    const c=row[x],start=x;
-    while(x<row.length&&row[x]===c)x++;
-    if(colours[c])shapes[c]+='M'+start+' '+y+'h'+(x-start)+'v1h-'+(x-start)+'z';
-   }
+  for(let y=0;y<h;y++)for(let x=0;x<w;){
+   const colour=p[y][x],start=x;
+   while(x<w&&p[y][x]===colour)x++;
+   if(shapes[colour]!==undefined)shapes[colour]+='M'+start+' '+y+'h'+(x-start)+'v1h-'+(x-start)+'z';
   }
-  return '<svg class="rf-bz-face" viewBox="0 0 56 47" preserveAspectRatio="xMidYMid meet" '+
+  // Crop away empty backdrop and lower clothing, prioritising the large face.
+  return '<svg class="rf-bz-face" viewBox="10 4 56 54" data-facing="left" preserveAspectRatio="xMidYMid meet" '+
    'aria-hidden="true" focusable="false" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
    Object.entries(shapes).map(([colour,d])=>'<path fill="'+colours[colour]+'" d="'+d+'"/>').join('')+
    '</svg>';

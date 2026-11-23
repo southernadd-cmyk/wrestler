@@ -224,12 +224,15 @@ async function run(browser,name,viewport){
     count:paths.length,pixelRuns:paths.reduce((n,path)=>n+
      ((path.getAttribute('d')||'').match(/M\d+ \d+h/g)||[]).length,0)};
   });
-  assert.equal(mascot.viewBox,'0 0 56 47',name+': higher detail teletext mosaic viewBox');
+  assert.equal(mascot.viewBox,'10 4 56 54',name+': large, face-focused teletext mosaic viewBox');
   assert.equal(mascot.crisp,'crispEdges',name+': rectangular pixels have sharp edges');
   assert.equal(mascot.count,5,name+': five-colour original character SVG');
   assert.ok(mascot.pixelRuns>=200,name+': portrait has at least 200 separate pixel runs');
   assert.deepEqual(mascot.fills,['#fff','#ff0','#00f','#0ff','#f00'],
    name+': mascot is limited to the authentic teletext colour palette');
+  assert.equal(await page.locator('.rf-bz-face').getAttribute('data-facing'),'left',
+   name+': the tribute looks towards the question, not away from it');
+  assert.ok(mascot.pixelRuns>=250,name+': distinctive facial details survive rasterisation');
   await page.locator('.rf-bz-choice.rf-bz-red').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'question');
   assert.equal(await page.locator('.rf-bz-choice').count(),4,
@@ -267,6 +270,8 @@ async function run(browser,name,viewport){
    quizLayout.home.top>=quizLayout.header.top &&
    quizLayout.home.bottom<=quizLayout.header.bottom+2,
    name+': 100 INDEX return control is not clipped');
+  assert.ok(quizLayout.mascot.width>=quizLayout.screen.width*.34,
+   name+': portrait owns enough width to be clearly readable on every viewport');
   assert.ok(quizLayout.bubble.right<=quizLayout.mascot.right+2,
    name+': speech bubble does not cover the entire quiz mascot');
   assert.ok(quizLayout.choices.every(x=>x.height>20&&
