@@ -44,12 +44,13 @@ const attempts=m.spots;
 assert.equal(M.call(m,'big'),true);
 assert.equal(m.spots,attempts,'producer cannot force an unsafe high spot with zero stamina');
 assert.equal(m.mode.type,'slow','forced exhausted attempt changes pacing towards recovery');
-const start=m.log.filter(x=>/cannot get their footing/.test(x.text)).length;
-assert.equal(start,1);
+const start=m.log.filter(x=>/looks for a big moment from the legal match repertoire/.test(x.text)).length;
+assert.equal(start,1,'exhausted requests queue instead of inventing a legal attack');
+assert.equal(m.bigSpotRequest?.index,0,'the first call is still pending');
 m.t+=20;m.listen=101;
-M.call(m,'big');
-assert.equal(m.log.filter(x=>/cannot get their footing/.test(x.text)).length,1,
- 'forced requests do not repeat identical fatigue commentary immediately');
+assert.equal(M.call(m,'big'),false,'a pending high spot cannot be stacked');
+assert.equal(m.log.filter(x=>/looks for a big moment from the legal match repertoire/.test(x.text)).length,1,
+ 'the pending call cannot repeat identical narration');
 assert.equal(G.isValid(m,'finish_tease'),false,'opening-stage finishing teaser must be unavailable');
 m.t=Math.ceil(m.len*.7);m.story.position='standing';m.story.control='w';
 assert.equal(G.isValid(m,'finish_tease'),true,'later finishing threat must remain possible');
