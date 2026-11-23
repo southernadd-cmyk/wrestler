@@ -44,7 +44,7 @@ assert.equal(new Set(P.PLAYER_PORTRAITS.map(p=>p.label)).size,16,'each manager h
 assert.equal(new Set(P.PLAYER_PORTRAITS.map(p=>JSON.stringify(p.look))).size,16,'each manager portrait is art-directed');
 for(let i=0;i<16;i++){
  const image=P.playerPortrait(i,'Jane Smith','portrait x2');
- assert.match(image,/^<img class="portrait x2" src="data:image\\/png;base64,portrait"/,
+ assert.match(image,/^<img class="portrait x2" src="data:image\/png;base64,portrait"/,
   'player option '+i+' is generated as native pixel art');
  assert.match(image,/Pixel-art portrait of Jane Smith/);
 }
