@@ -152,6 +152,7 @@ function reconcileOwnership(id,{outgoing=false,reason='Roster change'}={}){
 }
 /* ---------- signing ---------- */
 function sign(id){
+ const firstSigning=S.roster.length===0;
  const w=S.free.find(x=>x.id===id);
  if(!w)return 'Not available.';
  if(S.roster.length>=5)return 'Your locker room is full (five contracts).';
@@ -161,6 +162,11 @@ function sign(id){
  S.roster.push({...w,trend:[],program:null,prep:{},prepHistory:[],session:null,learned:[],learning:null,micWork:{},rehearsedAt:null,training:'ring',intensity:'light',progress:{},startSkills:{ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe},promise:null,injury:0,matches:0,wins:0,starSum:0,best:0,lastRaise:0,flags:{},joined:abs()});
  snapshot(S.roster.at(-1));
  if(S.worldV4)root.OfficeWorldV4?.markPlayer(S,id);
+ // Keep the original invitations but guarantee a suitable current-week offer after the first signing.
+ if(firstSigning&&S.week===1&&!S.offers.some(o=>o.eventAbs===abs()&&D.divisionOf(o.rid)===D.divisionOf(w))){
+  const promoter=S.promoters.find(eligible);
+  if(promoter)S.offers.push(genOffer(promoter,0));
+ }
  save();return null;
 }
 function release(id){
