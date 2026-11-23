@@ -20,7 +20,7 @@
   sessionTip:w=>w.id==='mara'?{value:'rehearse',why:'Booked soon.'}:null,
   sessionOptions:()=>[{value:'rehearse',label:'Rehearse for the next match',hint:'Rehearsal improves match preparation.'}]};
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const sandbox={D,G,S:()=>state,trainingSelected:null,trainingPane:'development',esc,
+ const sandbox={D,G,S:()=>state,trainingSelected:null,trainingPane:'development',trainingReportWeek:null,esc,
   money:n=>'£'+n,plural:(n,s)=>n===1?s:s+'s',att:n=>String(n),bar:()=>'<span class="bar"></span>',fatKind:()=>'',face:()=>'',
   status:()=>'Booked',weekLabel:()=>'S1 W1',trainNote:()=>'Training continues',sessionNote:()=>'',
   sessionSelect:w=>'<select data-session="'+w.id+'"></select>',
