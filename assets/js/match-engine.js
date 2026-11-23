@@ -4513,6 +4513,11 @@ const Graph=(function makeGraph(){
    if(A[id].reverse&&M.sheet?.v>=4&&root.OfficeRoom)n*=root.OfficeRoom.feed(M,p.control==='f'?'f':'w');
    if(root.OfficeSheets?.boost){const sb=root.OfficeSheets.boost(M,id,p.control==='f'?'f':'w');n*=sb>1?sb*SHEET_PULL:sb;}
    n*=root.OfficeSheets?.DIRECTOR?.bias(M,id,p.control==='f'?'f':'w')||1;
+   // A queued ringside highlight favours already-legal authored attacks,
+   // not a new move, synthetic setup or forced landing. Agreed calls still
+   // receive their existing priority below.
+   if(M.bigSpotRequest&&p.control==='w'&&regularBigMoment(M,id))
+    n*=10;
    // The public promo is a tactical declaration. Counter promises favour
    // genuine worker reversals of opponent control, not arbitrary bonuses.
    const publicTactic=M.o.promo?.tactic;
@@ -5893,8 +5898,6 @@ function tick(M){
  // script never awards one merely because the manager pressed a button.
  if(M.bigSpotRequest&&!spoke){
   spoke=tryPendingBigSpot(M);
-  if(M.bigSpotRequest&&M.t>=M.bigSpotRequest.expires)
-   closePendingBigSpot(M);
  }
  // Once both workers contest the turnbuckles for a legal named move,
  // resolve that organic exchange before an unrelated scheduled spectacle.
@@ -5941,6 +5944,9 @@ function tick(M){
   M.len-M.t<=60&&M.len-M.t>=0;
  if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||
     preparedHope||closingStory||M.r()<.64))Graph.step(M);
+ // Count the *performed* big moment, not the request or a failed setup.
+ if(M.bigSpotRequest)witnessOrdinaryBigSpot(M);
+ if(M.bigSpotRequest&&M.t>=M.bigSpotRequest.expires)closePendingBigSpot(M);
  // An accepted request to get back on the layout is not proof of compliance.
  // Wait for a real, legal, landed graph action by our wrestler.
  if(M.layoutReturn){
@@ -6136,6 +6142,32 @@ function nearfall(M){
 /* ---- ringside calls ---- */
 // Preflight mirrors the *existing* forced-spot legal candidate pool.
  // No RNG, no physical relocation, and no new moves are introduced here.
+// Technical and conservative workers have a valid big moment too: a real,
+ // suitably impactful move from the ordinary, connected graph. A safe match
+ // cannot use risky stunts merely because the manager demands excitement.
+function regularBigMoment(M,id){
+ const n=Graph.A[id];if(!n||n.reverse||n.counterOf||n.blockOf||
+  n.nearfall||n.risk||M.t/Math.max(1,M.len)<.35)return false;
+ const families=['suplex','power','neck','running','strike','ground','submission','chain'];
+ if(!families.includes(n.family))return false;
+ if(n.family==='submission')return (n.cost||0)>=1.8&&(n.crowd||0)>=3;
+ if(n.family==='chain')return (n.cost||0)>=1.8&&(n.crowd||0)>=3;
+ return (n.cost||0)>=2.2&&(n.crowd||0)>=2;
+}
+function witnessOrdinaryBigSpot(M){
+ const pending=M.bigSpotRequest;if(!pending)return;
+ const event=(M.graph?.events||[]).findLast(e=>
+  e.t>pending.at&&e.preControl==='w'&&regularBigMoment(M,e.id)&&
+  !e.botched&&!e.blocked);
+ if(!event)return;
+ const evidence=M.ringsideEvidence?.[pending.index];
+ if(evidence){
+  evidence.status='witnessed';evidence.atAction=event.t;
+  evidence.action=event.id;evidence.kind='ordinary-graph';
+ }
+ M.bigSpotRequest=null;
+ say(M,`Road agent: ${M.w.short} found a genuine big moment with ${Graph.A[event.id].name||'a legal attack'}.`,'agent',{who:'runner'});
+}
 function availableBigSpot(M){
  if(M.wSt<28)return false;
  const safe=M.planId==='safe';
@@ -6200,7 +6232,7 @@ function tryPendingBigSpot(M){
 const CALLS={
  slow:{name:'Slow it down',hint:'Ease the pace to recover energy; a rest hold is not guaranteed.'},
  pickup:{name:'Pick it up',hint:'Demand a faster spell; whether they find offence is tracked.'},
- big:{name:'Hit the big spot',hint:'Queue a big move for the next legal opening. Refunded if none appears.'},
+ big:{name:'Hit the big spot',hint:'Queue a major move from their own repertoire. A real attempt can still fail; unfulfilled calls are returned.'},
  crowd:{name:'Work the crowd',hint:'Appeal to the crowd; their actual response is tracked.'},
  home:{name:'Take it home',hint:'Request a shortened finish. Missed structure objectives are reported.'},
  sheet:{name:'Back to the layout',hint:'Pull an improvising worker back to the plan.'}
@@ -6246,8 +6278,8 @@ function call(M,id){
   if(!tryPendingBigSpot(M)){
    if(M.wSt<28)M.mode={type:'slow',ticks:3};
    say(M,M.planId==='safe'?
-    `Safe layout: ${w.short} will seek a permitted high spot, not a dangerous stunt. The call will be returned if no opening appears.`:
-    `${w.short} accepts the call and looks for a physically legal opening. The big move is queued, not guaranteed.`,'agent',{who:'runner'});
+    `Safe layout: ${w.short} will look for a legal high-impact move, not a dangerous stunt. The call returns if no opening appears.`:
+    `${w.short} accepts the call and looks for a big moment from the legal match repertoire. It is queued, not guaranteed.`,'agent',{who:'runner'});
   }
  }
  if(id==='sheet'){
