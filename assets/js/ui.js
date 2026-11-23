@@ -841,11 +841,13 @@ function renderSheets(){
    <p><b>${esc(x.aName)}</b> ${x.type==='title'?'chasing':x.type==='rise'?'climbing towards':'v'} <b>${esc(x.bName)}</b></p>
    <p>Heat ${bar(x.heat,x.heat>=70?'gold':'')} ${x.heat}</p><p class="dim">${esc(step)}</p>${rec}</article>`;
  };
- const live=v.live.length?`<div class="story-grid">${v.live.map(card).join('')}</div>`:`<div class="empty">Nothing on the board this week. ${esc(p.voice)} is planning.</div>`;
+ const live=v.live.length?`<div class="story-grid">${v.live.map(card).join('')}</div>`:`<div class="empty">No multi-match storyline is active. The booker still puts together a weekly card.</div>`;
+ const early=v.firstLook?`<p class="dim">Opening plans for ${weekLabel(v.upcomingWeek)}. These are provisional: no circuit matches have been played yet.</p>`:'';
+ const upcoming=v.upcoming.length?`<ul class="cons">${v.upcoming.map(m=>`<li><b>${esc(D.DIVISIONS[m.div]?.name||m.div)}</b> · ${recordLink('w',m.a,m.aName)} v ${recordLink('w',m.b,m.bName)}${m.title?' · <span class="tag hot">Title</span>':m.storyline?' · '+esc(m.storyline):''}</li>`).join('')}</ul>`:'<p class="dim">No circuit matches pencilled in for this promoter next week.</p>';
  const done=v.done.length?`<ul class="cons">${v.done.map(x=>`<li class="${x.status==='dropped'?'':'up'}"><b>${esc(x.typeName)}</b> · ${esc(x.text||'')} <span class="dim">${x.ended?weekLabel(x.ended):''}</span></li>`).join('')}</ul>`:'<p class="dim">No storyline has finished here yet.</p>';
  const M=window.OfficeManagers,pushing=M?.lobbyAt(p.id)||[];
  const lobby=pushing.length?`<ul class="cons">${pushing.map(l=>`<li><b>${esc(l.manager)}</b> (${esc(l.team)}) is pushing <b>${esc(l.name)}</b>${l.want?` · wants ${esc(l.want.toLowerCase())}`:''}</li>`).join('')}</ul>`:'<p class="dim">No manager is working this booker this week.</p>';
- paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">On the board</h3>${live}${yourProgrammes(p)}<h3 class="section-h">Managers in the booker’s ear</h3>${lobby}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">Bookers plan the circuit’s matches around these storylines and choose who wins to serve them. They do not always stick to the plan.</p>`,{keep:'sheets',note:esc(p.name)}));
+ paint('s-full',win('Booking sheets',`${tabs}${head}<h3 class="section-h">Next circuit card · ${weekLabel(v.upcomingWeek)} (provisional)</h3>${upcoming}<h3 class="section-h">On the board</h3>${early}${live}${yourProgrammes(p)}<h3 class="section-h">Managers in the booker’s ear</h3>${lobby}<h3 class="section-h">How the last ones ended</h3>${done}<p class="dim" style="margin-top:8px">The card is a forecast, not a signed result. Bookers plan matches around their storylines and may change their minds before the bell.</p>`,{keep:'sheets',note:esc(p.name)}));
 }
 
 function rivalrySnapshot(f){
