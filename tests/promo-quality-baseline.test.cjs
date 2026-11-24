@@ -40,13 +40,13 @@ for(const [i,w] of roster.entries()){
   const c={id:'promo-audit-'+w.id+'-'+j,wid:w.id,rid:f.id,pid:p.id,eventAbs:100+j,slot:['opener','mid','feature','main'][j%4],minutes:12,finish:finishes[j%4],feudHeat:j%2?55:0};
   // Synthetic rivalry heat only: not a substitute for a persisted played career.
   const rival=j%2?{heat:55,matches:2,closed:false}:null;
-  const st=Mic.begin(c,w,f,rival,null,p);
+  const st=Mic.begin(c,w,f,rival,null,p,{directed:process.env.PROMO_AUDIT_LEGACY!=='1'});
   const rounds=[],choices=[],spoken=[];
   for(let step=0;st.stage!=='done';step++){
    assert.ok(step<12,'duel must terminate');
    const options=Mic.choices(st);assert.ok(options.length,'live duel must offer a choice');
    const round=Mic.ROUNDS[st.round]?.id||String(st.round);
-   const wanted=round==='push'?['leave','bit','quiet','pop'][j%4]:null;
+   const wanted=round==='push'?(st.director?['leave','press','hold','acknowledge']:['leave','bit','quiet','pop'])[j%4]:null;
    const o=options.find(x=>x.id===wanted)||options[(i+j+step*3)%options.length];
    const before=st.log.length;
    if(j===0&&step===1){
@@ -81,7 +81,7 @@ function stats(map){
  return {utterances:n,distinctNormalized:v.length,repeatedOccurrences:n-v.length,repeatedPct:pct(n-v.length,n),crossSpeakerOccurrences:shared.reduce((a,[,x])=>a+x.n,0),crossSpeakerPct:pct(shared.reduce((a,[,x])=>a+x.n,0),n),topRepeated:v.sort((a,b)=>b[1].n-a[1].n||a[0].localeCompare(b[0])).slice(0,5).map(([line,x])=>({line,count:x.n,speakers:x.owners.size}))};
 }
 const voices=new Map();for(const p of profiles.values())inc(voices,p.voice);
-const summary={scenes:scenes.length,roster:roster.length,opponents:opponents.length,samplesPerWorker,resumeChecks,
+const summary={mode:process.env.PROMO_AUDIT_LEGACY==='1'?'legacy':'directed',scenes:scenes.length,roster:roster.length,opponents:opponents.length,samplesPerWorker,resumeChecks,
  voiceCoverage:{explicit:[...profiles.values()].filter(p=>p.explicitVoice).length,fallback:[...profiles.values()].filter(p=>!p.explicitVoice).length,withOwnPromo:[...profiles.values()].filter(p=>p.ownPromoSlots.length).length,archetypes:Object.fromEntries(voices)},
  roundPatterns:Object.fromEntries(formats),promiseTypes:Object.fromEntries(promises),lineKinds:Object.fromEntries(kinds),unresolvedMarkers:unresolved,
  samePair:{coreUtterances:samePairCore,repeated:repeatedPairCore,repeatedPct:pct(repeatedPairCore,samePairCore)},
