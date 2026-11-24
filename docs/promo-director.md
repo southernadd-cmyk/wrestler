@@ -1,0 +1,11 @@
+# Conversation director — phase 3
+
+New browser promos explicitly activate the stateful director. Saved v5 duels without the director continue unchanged; the underlying graph and match payoff contract are retained. Headless legacy callers remain compatible. The current live audit opts in by default; run PROMO_AUDIT_LEGACY=1 node tests/promo-quality-baseline.test.cjs to reproduce the original scene shape.
+
+The director snapshots both speaking identities (including a mouthpiece when present) and tracks the opening subject, active claim, latest actual spoken lines, turn history, bounded composure and irritation. Authored pressure/delivery wording maps to provisional reserved, combative, analytical or adaptive stances. This is a deterministic first-pass heuristic, not a complete emotional model; individual trigger matching and character-specific substantive writing are later work.
+
+After the opening and answer, a settled, lopsided or uncomfortable exchange may go directly to the final word. A heated or unresolved exchange can take one extra beat. Recorded disputed evidence retains the existing firm/revise/leave options, and a recorded commitment retains a follow-up opportunity. Other follow-ups can press the subject, acknowledge the reply, hold silence, or leave it there. Acknowledgement and silence do not receive the same automatic heat bonus as pressing. Every scene still reaches the graph's closing decision and its existing promise/tactic semantics.
+
+The browser removes fixed round numbering for directed scenes and shows subject and concise speaker moods in the existing panel. No save migration, new CI workflow, external model or arbitrary finish change. Three or four decisions are deliberately bounded for this phase; genuinely different formats and extended multi-turn dialogue follow in phases 4–6. The new test exercises both paths, all new follow-ups, exact save/resume, promise preservation, mouthpiece identity and a disputed-case routing guard. Persistent semantic memory beyond the active scene is deferred to phase 7.
+
+The audit distinguishes the current directed path from the historical four-round baseline. Exact text overlap remains a proxy; new structure is not proof of improved writing.
