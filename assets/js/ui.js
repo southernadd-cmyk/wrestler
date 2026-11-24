@@ -1525,11 +1525,11 @@ function showPromos(){
  if(!night.promo||night.promo.cid!==c.id||night.promo.v!==5){
   const mouth=night.mouth?.cid===c.id&&night.mouth.id!=='none'?MP?.pick(c,w,night.mouth.id):null;
   const arc=window.OfficeProgrammeArcs?.intro(c,night.plan?.arcChoice);
-  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth,arc,directed:true});
+  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth,arc,directed:true,formats:true});
   // v0.3.12 The interviewer asks about what the crowd saw: the rivalry's public record. A backstage
   // memory (recalled.promoPrompt) stays backstage; it is no longer read out on air.
   const intro=window.OfficeRivalry?.introFor(night.promo.core);
-  if(intro)night.promo.log[0].line=arc?arc.prompt+' '+intro:intro;
+  if(intro)night.promo.log[0].line=night.promo.director?.format?night.promo.log[0].line+' '+intro:arc?arc.prompt+' '+intro:intro;
  }
  const st=night.promo,v=OfficeMic.view(st);night.stage='promo';
  const quote=t=>/^[“"]/.test(t)?t:'“'+t+'”';
@@ -1547,7 +1547,7 @@ function showPromos(){
   `<div class="decide2"><h3 class="section-h">${esc(v.name)} ${v.conversation?'':`<small>${v.round+1} of ${v.total}</small>`}</h3><p class="lede">${esc(v.help)}</p>${read}${cue}${open}${conversation}${claim}${pickCards(v.options,'mic',true)}</div>`;
  const sp=st.speaker?G.W(st.speaker.id)||w:w;
  const body=matchupBar(c,w,f,meter)+(st.speaker?`<p class="dim mouth-note">${esc(st.speaker.short)} is doing the talking for ${esc(w.short)}.</p>`:'')+sceneLog(entries,'micTalk',sp,f,p.id)+decide;
- $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win('The promo: '+w.short+' against '+f.short+' for the room',body,{h:'h3',body:'tight'})+'</div>'+
+ $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win((v.conversation?.formatName||'The promo')+': '+w.short+' against '+f.short,body,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'It is said.':'Once it is out of your mouth, it stays said.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('micTalk');
  persistNight();
