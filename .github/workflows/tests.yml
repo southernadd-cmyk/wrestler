@@ -126,6 +126,11 @@ jobs:
               echo "::endgroup::"
             fi
           done < "$RUNNER_TEMP/fast-suites.txt"
+      - name: Exact before-after graph refactor parity
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'graph-refactor/')
+        env:
+          GRAPH_REFACTOR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node tests/graph-refactor-parity.cjs
       - name: Full simulation suite (scheduled, tagged, manual or graph refactor)
         if: steps.select.outputs.mode == 'full'
         shell: bash
