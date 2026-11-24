@@ -687,7 +687,15 @@
  "bank:cleo.c8.13:1a6deded": "shared_effort",
  "bank:cleo.c8.14:ebf2e149": "status",
  "bank:cleo.c8.24:d7239cc9": "respect",
- "bank:cleo.c8.27:bb584a27": "agreement"
+ "bank:cleo.c8.27:bb584a27": "agreement",
+ "bank:rev.c8.09:a29c0618": "effort",
+ "bank:rev.c8.10:5e51ae96": "strike",
+ "bank:rev.c8.11:7766a1cc": "effort",
+ "bank:rev.c8.12:cb7b5f75": "pace",
+ "bank:rev.c8.13:a46cec9c": "shared_effort",
+ "bank:rev.c8.14:9922f110": "legitimacy",
+ "bank:rev.c8.24:53f30831": "respect",
+ "bank:rev.c8.27:8e1396a6": "agreement"
 });
  const topics=Object.freeze({
  "legitimacy": [
