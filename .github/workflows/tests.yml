@@ -39,14 +39,18 @@ jobs:
           add() { [[ -f "$1" ]] && ! grep -Fxq "$1" "$suites" && echo "$1" >> "$suites" || :; }
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             echo "mode=full" >> "$GITHUB_OUTPUT"
+            echo "run_portrait=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "mode=targeted" >> "$GITHUB_OUTPUT"
+          portrait=false
           if [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
             mapfile -d '' files < <(git diff --name-only -z "$BASE_SHA" "$HEAD_SHA")
             for file in "${files[@]}"; do
               echo "Changed: $file"
               case "$file" in
+                tools/portrait-audit/*|assets/academy/*|assets/portraits/*)
+                  portrait=true; continue ;;
                 *.md|*.mdx|docs/readme/*.svg|docs/readme/*.png|.github/workflows/*)
                   continue ;;
                 assets/js/ringfax.js|assets/css/ringfax.css|tests/ringfax-*.cjs)
@@ -79,7 +83,9 @@ jobs:
             echo "Unclassifiable diff: conservative fast smoke"
             add tests/match-flow.test.cjs
             add tests/ui-accessibility.test.cjs
+            portrait=true
           fi
+          echo "run_portrait=$portrait" >> "$GITHUB_OUTPUT"
           if [[ -s "$suites" || -s "$syntax" ]]; then
             echo "run_node=true" >> "$GITHUB_OUTPUT"
           else
@@ -117,6 +123,28 @@ jobs:
             node "$suite"
             echo "::endgroup::"
           done
+
+      - uses: actions/setup-python@v5
+        if: steps.select.outputs.run_portrait == 'true'
+        with:
+          python-version: '3.12'
+      - name: Install artwork screening dependencies
+        if: steps.select.outputs.run_portrait == 'true'
+        run: python -m pip install -r tools/portrait-audit/requirements.txt
+      - name: Academy portrait screening
+        id: portrait
+        if: steps.select.outputs.run_portrait == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          python tools/portrait-audit/audit.py self-test
+          python tools/portrait-audit/audit.py gate --base "$BASE_SHA" --out "$RUNNER_TEMP/portrait-audit"
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.portrait.outcome != 'skipped' && steps.select.outputs.run_portrait == 'true'
+        with:
+          name: portrait-screening
+          path: ${{ runner.temp }}/portrait-audit
+          if-no-files-found: ignore
 
   browser:
     name: Browser journeys (Chromium)
