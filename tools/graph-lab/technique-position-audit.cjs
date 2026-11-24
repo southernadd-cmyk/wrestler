@@ -6,7 +6,7 @@
  *   node tools/graph-lab/technique-position-audit.cjs --count 500 > technique-audit.json
  *
  * Runs the *actual* shipped JS match engine and 80-worker registry. It adds
- * observation fields to an IN-MEMORY copy of match-engine.js at the moment
+ * observation fields to an IN-MEMORY copy of match-graph.js at the moment
  * each action applies; it never changes game files or consumes RNG draws.
  * The first 25 bouts are compared with the untouched engine to prove parity.
  * Every logged 'prePosition' is observed BEFORE the action moves wrestlers.
@@ -28,6 +28,7 @@ const directory=path.resolve(__dirname,'../../assets/js');
 const names=['data.js','roster-registry.js','technique-registry.js',
  'technique-backgrounds.js','match-catalog.js','match-graph.js','match-commentary.js','match-engine.js'];
 const source=names.map(name=>fs.readFileSync(path.join(directory,name),'utf8').replace(/\r\n/g,'\n'));
+const graphIndex=names.indexOf('match-graph.js');
 const before="  const n=A[id],p=$d.Psy.get(M),g=get(M);\n"+
  "  const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';";
 const after="  const n=A[id],p=$d.Psy.get(M),g=get(M);\n"+
@@ -35,17 +36,17 @@ const after="  const n=A[id],p=$d.Psy.get(M),g=get(M);\n"+
  "  const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';";
 const record="  g.events.push({id,t:M.t,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective,";
 const auditedRecord="  g.events.push({id,t:M.t,auditPrePosition:__audit.position,auditPreDown:__audit.down,auditPreControl:__audit.control,auditLegal:__audit.valid,preControl:side,control:p.control,position:p.position,down:p.down,arc:g.arc,reverse:n.reverse,victim,part,exertion:effective,";
-if(source[4].split(before).length!==2||source[4].split(record).length!==2)
+if(source[graphIndex].split(before).length!==2||source[graphIndex].split(record).length!==2)
  throw Error('Match engine instrumentation anchor has changed; review before re-running');
-const instrumented=source[4].replace(before,after).replace(record,auditedRecord);
+const instrumented=source[graphIndex].replace(before,after).replace(record,auditedRecord);
 function load(engine){
  const root={};
- names.forEach((name,i)=>vm.runInNewContext(i===4?engine:source[i],
+ names.forEach((name,i)=>vm.runInNewContext(i===graphIndex?engine:source[i],
   {window:root,Math,Date,JSON,console},{filename:name}));
  root.OfficeRosterV4.enableProfiles();
  return root;
 }
-const audited=load(instrumented),unaltered=load(source[4]);
+const audited=load(instrumented),unaltered=load(source[graphIndex]);
 const D=audited.OfficeData,G=audited.OfficeMatch.GRAPH,R=audited.OfficeTechniqueRegistry;
 const people=[...new Map([...(D.ALL||[]),...(D.TALENT||[]),...(D.FOES||[])]
  .filter(Boolean).map(w=>[w.id,w])).values()].sort((a,b)=>a.name.localeCompare(b.name));
