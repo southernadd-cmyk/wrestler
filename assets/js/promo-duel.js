@@ -5,6 +5,7 @@
    ring. Every option states its risk and what it is for. Seeded and replayable. */
 (function installPromoDuel(root){'use strict';
  const D=root.OfficeData,Core=root.OfficeStory.Graph,Room=root.OfficeRoom,Director=root.OfficePromoDirector,Dialogue=root.OfficePromoDialogue;
+ const authored=Dialogue?.catalogue(root.OfficePromoPilot||[]);
  const hash=s=>{let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;};
  const rng=(seed,k)=>hash(seed+'|'+k)/4294967296;
  const pick=(arr,seed,k)=>arr[Math.floor(rng(seed,k)*arr.length)];
@@ -195,6 +196,7 @@
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
+  if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[])};
   if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
@@ -282,6 +284,13 @@
   return (st.director?Director.angles(st.director,stage,offered,st.core):offered).map(o=>({id:o.id,label:o.label,hint:o.hint,tags:stakes(st,stage,o.id,o),evidence:o.evidence||null,caseResponse:!!o.caseResponse,followsCase:!!o.followsCase}));
  }
  function fitOf(st,stage,id){return stage==='open'?openFit(st,id):stage==='answer'?answerFit(st,id):arcFit(st,'close',id);}
+ function pickAuthored(st,ctx){
+  if(!st.authoredDialogue||!ctx||!authored)return null;
+  const selection=Dialogue.select(authored,ctx,st.seed+'|'+st.steps.length+'|'+ctx.side,st.authoredDialogue);
+  if(selection)st.authoredDialogue.used.push(selection.id);
+  return selection;
+ }
+ function annotate(st,index,ctx,line){if(ctx&&st.log[index]){st.log[index].dialogueSlot=Dialogue.tag(ctx);if(line)st.log[index].authoredId=line.id;}}
  function coreRound(st,stage,id,key){
   const core=st.core,before=core.dialogue.length,m0={...core.metrics},fit=fitOf(st,stage,id);
   // Composure feeds the core's chance of landing a line; a line that suits the night is easier to land.
@@ -297,15 +306,15 @@
   let said=false,replied=false,stumbled=false;
   const slot=(side,d)=>st.dialogueFacts&&Dialogue.context(st,stage,id,side,{landed:step.landed,variant:step.variant,recorded:!!d.case});
   for(const d of fresh){
-   if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);const ctx=slot('w',d);push(st,'w',d.line,step.landed?'strong':'uneven',got,true);
-    if(ctx)st.log.at(-1).dialogueSlot=Dialogue.tag(ctx);
+   if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);const ctx=slot('w',d),line=pickAuthored(st,ctx);push(st,'w',line?.text||d.line,step.landed?'strong':'uneven',got,!line);
+    annotate(st,st.log.length-1,ctx,line);
     if(!step.landed)push(st,'stage',fluff(st),'fluff');crowdSays(st,got,key);continue;}
    if(d.speaker==='Crowd'&&d.kind==='reaction'&&!step.landed&&!stumbled){stumbled=true;continue;} // replaced by the fluff above
    if(d.speaker===st.f.name){replied=true;
     if(stage==='open'&&st.director?.format==='callout')push(st,'stage',fmt('{F} comes down from the entrance and takes the second microphone.',st),'stage');
-    const ctx=slot('f',d),at=st.log.length;
-    theirTurn(st,d.line,key,step.landed,fit);
-    if(ctx&&st.log[at]?.side==='f')st.log[at].dialogueSlot=Dialogue.tag(ctx);
+    const ctx=slot('f',d),at=st.log.length,line=pickAuthored(st,ctx);
+    theirTurn(st,line?.text||d.line,key,step.landed,fit);
+    if(st.log[at]?.side==='f')annotate(st,at,ctx,line);
     if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',fmt(ANGLE_CUE[st.angle],st),'cue');}
     continue;}
    if(d.speaker==='Crowd')push(st,'stage',d.line.replace(/^The opponent/,st.f.short).replace(/the opponent/g,st.f.short),'stage');
@@ -343,9 +352,9 @@
    if(id==='leave')push(st,'stage',fmt('{W} lowers the microphone and lets the argument rest.',spoke(st)),'stage',0);
    else{
     const beat=Director.followup(st.director,id),ok=roll(st,beat.risk,'directed|'+id,(st.director.player.composure-50)/250),d=swing(st,ok?beat.base:-Math.max(2,beat.base-2));
-    if(beat.line)push(st,'w',beat.line,ok?'strong':'uneven',d);
+    if(beat.line){const ctx=st.dialogueFacts&&Dialogue.context(st,r,id,'w',{landed:ok}),line=pickAuthored(st,ctx);push(st,'w',line?.text||beat.line,ok?'strong':'uneven',d);annotate(st,st.log.length-1,ctx,line);}
     else push(st,'stage',fmt('{W} says nothing, watching {F}.',spoke(st)),ok?'strong':'uneven',d);
-    if(beat.reply)theirTurn(st,beat.reply,'directed|'+id,ok,0);
+    if(beat.reply){const ctx=st.dialogueFacts&&Dialogue.context(st,r,id,'f',{landed:ok}),line=pickAuthored(st,ctx),at=st.log.length;theirTurn(st,line?.text||beat.reply,'directed|'+id,ok,0);annotate(st,at,ctx,line);}
     crowdSays(st,d,'directed|'+id);rec.landed=ok;
    }
   }
@@ -367,7 +376,7 @@
     if(!ok||rng(st.seed,'pushback?')<.5)theirTurn(st,fmt(pick(['You done, {W}? Only some of us have a match to win.','Keep talking, {W}. It is the only thing you are winning tonight.','Lovely speech. Shall I hold your coat while you finish?','That is a lot of words for somebody about to lose.'],st.seed,'pushback'),st),'push',ok,fit);
    }
   }else rec={round:r,...coreRound(st,'close',id,'close')};
-  if(r==='push'&&st.dialogueFacts)for(const e of st.log.slice(beforeLog))if(e.side==='w'||e.side==='f')e.dialogueSlot=Dialogue.tag(Dialogue.context(st,r,id,e.side,{landed:rec.landed,recorded:!!st.core.case}));
+  if(r==='push'&&st.dialogueFacts)for(const e of st.log.slice(beforeLog))if((e.side==='w'||e.side==='f')&&!e.dialogueSlot)e.dialogueSlot=Dialogue.tag(Dialogue.context(st,r,id,e.side,{landed:rec.landed,recorded:!!st.core.case}));
   st.steps.push(rec);st.round++;
   if(st.director){
    Director.observe(st.director,st,rec,st.log.slice(beforeLog));
@@ -388,13 +397,14 @@
    quality:clamp(Math.round(base.quality+m*.35),10,97),
    ...(st.director?{conversation:Director.summary(st.director)}:{}),
    ...(st.director?.format?{format:st.director.format}:{}),
+   ...(st.authoredDialogue?{dialogueIds:st.authoredDialogue.used.slice(),...(st.authoredDialogue.used.length?{reply:st.log.filter(e=>e.side==='f').at(-1)?.line||base.reply}:{})}:{}),
    arcDirection:st.arc?.id||null,
    crowdShift:clamp(Math.round(base.crowdShift+m/7),-8,13),
    heatDelta:clamp(Math.round(base.heatDelta+(st.director&&!st.core.case?.exposed?(st.pushed==='press'?2:0):(pushed?2:0))+(Math.abs(m)>=25?1:0)),-3,16),
    moraleDelta:clamp(base.moraleDelta+(m>=15?1:m<=-15?-1:0),-3,4),
    temperature:50+m,temperatureWord:meterWord(m),timeOver:0,
    beats:st.steps.map(s=>({...s})),reaction,
-   dialogue:st.log.map(e=>({speaker:e.speaker||'Stage',line:e.line,kind:e.kind,swing:e.swing,...(e.dialogueSlot?{dialogueSlot:e.dialogueSlot}:{})})),speech:st.log.filter(e=>e.side==='w').map(e=>e.line),
+   dialogue:st.log.map(e=>({speaker:e.speaker||'Stage',line:e.line,kind:e.kind,swing:e.swing,...(e.dialogueSlot?{dialogueSlot:e.dialogueSlot}:{}),...(e.authoredId?{authoredId:e.authoredId}:{})})),speech:st.log.filter(e=>e.side==='w').map(e=>e.line),
    angle:st.w.short+': '+st.steps.map(s=>String(s.label).toLowerCase()).join('; ')+'.'};
  }
  function view(st){
