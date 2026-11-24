@@ -194,7 +194,7 @@
    venue:p?.venue||'this hall',promoterVoice:p?.voice||'the promoter',promoterName:p?.name||'the promotion',finish:c.finish||null,
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
-  if(opts.directed&&Director)st.director=Director.begin(w,f,m);
+  if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
   if(m)st.read.voice=voice(m); // the room knows the wrestler; the voice is the mouthpiece's
@@ -208,7 +208,9 @@
    ...(drilled?[fmt(PRACTICE[drilled[0]],m?{...st,w:st.speaker}:st)]:[]),
    ...(m?['{S} is doing the talking for {W} tonight. {S} is the better talker. {W} gets the credit, and the blame.']:[]),
    ...(opts.arc?[opts.arc.read]:[])].map(t=>fmt(t,st).replace(/\{S\}/g,m?.short||''));
-  push(st,'host',opts.arc?.prompt||core.dialogue[0].line,'interviewer');
+  const scene=st.director&&Director.setup(st.director);
+  push(st,'host',opts.arc?.prompt||scene?.prompt||core.dialogue[0].line,'interviewer');
+  if(scene)push(st,'stage',scene.setting,'stage');
   return st;
  }
  const own=(st,slot)=>{if(st.speaker)return null;const line=D.VOICE_PACKS?.[st.w.id]?.promo?.[slot];return line&&rng(st.seed,'own|'+slot+'|'+(st.ownUsed?.[slot]||0))<2/3?line:null;};
@@ -275,7 +277,8 @@
   if(r==='push')return [{id:'leave',label:'Leave it there',hint:st.meter>0?'Quit while you are ahead.':'Cut your losses.',tags:['Safe','Shorter promo']},
    ...Object.entries(PUSH).map(([id,o])=>({id,label:fmt(o.label,st),hint:o.hint,tags:[riskWord(o.risk),o.gain>=9?'Big swing either way':'Small gain']}))];
   const stage=r==='open'?'open':r==='answer'?'answer':'close';
-  return Core.choices(stage,st.core).map(o=>({id:o.id,label:o.label,hint:o.hint,tags:stakes(st,stage,o.id,o),evidence:o.evidence||null,caseResponse:!!o.caseResponse,followsCase:!!o.followsCase}));
+  const offered=Core.choices(stage,st.core);
+  return (st.director?Director.angles(st.director,stage,offered,st.core):offered).map(o=>({id:o.id,label:o.label,hint:o.hint,tags:stakes(st,stage,o.id,o),evidence:o.evidence||null,caseResponse:!!o.caseResponse,followsCase:!!o.followsCase}));
  }
  function fitOf(st,stage,id){return stage==='open'?openFit(st,id):stage==='answer'?answerFit(st,id):arcFit(st,'close',id);}
  function coreRound(st,stage,id,key){
@@ -295,7 +298,9 @@
    if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);push(st,'w',d.line,step.landed?'strong':'uneven',got,true);
     if(!step.landed)push(st,'stage',fluff(st),'fluff');crowdSays(st,got,key);continue;}
    if(d.speaker==='Crowd'&&d.kind==='reaction'&&!step.landed&&!stumbled){stumbled=true;continue;} // replaced by the fluff above
-   if(d.speaker===st.f.name){replied=true;theirTurn(st,d.line,key,step.landed,fit);
+   if(d.speaker===st.f.name){replied=true;
+    if(stage==='open'&&st.director?.format==='callout')push(st,'stage',fmt('{F} comes down from the entrance and takes the second microphone.',st),'stage');
+    theirTurn(st,d.line,key,step.landed,fit);
     if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',fmt(ANGLE_CUE[st.angle],st),'cue');}
     continue;}
    if(d.speaker==='Crowd')push(st,'stage',d.line.replace(/^The opponent/,st.f.short).replace(/the opponent/g,st.f.short),'stage');
@@ -376,6 +381,7 @@
   return {...base,live:true,mouth:st.speaker?{id:st.speaker.id,short:st.speaker.short,name:st.speaker.name}:null,duel:{meter:m,won:m>0,pushed:!!pushed,read:{...st.read},angle:st.angle,fits:(st.fits||[]).slice()},
    quality:clamp(Math.round(base.quality+m*.35),10,97),
    ...(st.director?{conversation:Director.summary(st.director)}:{}),
+   ...(st.director?.format?{format:st.director.format}:{}),
    arcDirection:st.arc?.id||null,
    crowdShift:clamp(Math.round(base.crowdShift+m/7),-8,13),
    heatDelta:clamp(Math.round(base.heatDelta+(st.director&&!st.core.case?.exposed?(st.pushed==='press'?2:0):(pushed?2:0))+(Math.abs(m)>=25?1:0)),-3,16),
@@ -388,7 +394,7 @@
  function view(st){
   const r=ROUNDS[Math.min(st.round,ROUNDS.length-1)];
   const directed=st.director&&Director.summary(st.director);
-  const name=st.stage==='done'?'The final word':directed&&r.id==='push'&&!st.core.case?.exposed?'The argument continues':r.name;
+  const name=st.stage==='done'?'The final word':st.core.case?.exposed&&r.id==='push'?r.name:(directed&&Director.heading(st.director,st.round))||(directed&&r.id==='push'?'The argument continues':r.name);
   const help=directed&&r.id==='push'&&!st.core.case?.exposed?'Decide whether the point needs another exchange, or let it rest.':r.help;
   return {stage:st.stage,round:st.round,total:ROUNDS.length,name,help:fmt(st.stage==='done'?'It is said. The match decides whether any of it was true.':help,st),...(directed?{conversation:directed}:{}),
    meter:st.meter,meterWord:meterWord(st.meter),options:choices(st),log:st.log.slice(),claim:st.core.claim||null,result:st.result,
