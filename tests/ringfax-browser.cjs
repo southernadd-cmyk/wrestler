@@ -10,6 +10,7 @@ async function run(browser,name,viewport){
  try{
   await page.goto(URL,{waitUntil:'domcontentloaded'});
   await page.locator('[data-title="new"]').click();
+  await page.locator('#modal [data-dlg="identity-save"]').click();
   await page.locator('#app').waitFor({state:'visible'});
   await page.evaluate(()=>window.OfficeUI.go('ringfax'));
   await page.evaluate(async()=>{await document.fonts.ready;window.OfficeRingfax.fit()});
