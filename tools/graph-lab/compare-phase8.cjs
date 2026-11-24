@@ -9,10 +9,10 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const referenceRoot=path.resolve(process.argv[2]||'phase8-reference');
 const latestRoot=path.resolve(process.argv[3]||path.join(__dirname,'../..'));
 // Historical Phase 9 comparisons must use its pinned source, not Phase 10.
-const names=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'];
+const names=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-catalog.js','match-graph.js','match-commentary.js','match-engine.js'];
 function load(dir){
  const root={};
- for(const name of names){
+ for(const name of names.filter(name=>name!=='match-catalog.js'||fs.existsSync(path.join(dir,'assets/js',name)))){
   const src=fs.readFileSync(path.join(dir,'assets/js',name),'utf8');
   vm.runInNewContext(src,{window:root,Math,Date,JSON,console},{filename:path.join(dir,name)});
  }
