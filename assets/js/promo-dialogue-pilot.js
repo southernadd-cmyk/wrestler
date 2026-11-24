@@ -25,12 +25,12 @@
   ],
   brick:[
    ['open','proof','w','pr_brawl','opening','You hit hard. So what? A hard shot does not finish a match by itself.'],
-   ['open','proof','w','pr_tech','challenge','You want me on the mat. Fair enough. You will have to put me there.'],
+   ['open','proof','w','pr_tech','challenge','You want me on the mat. Fair, and short. You will have to put me there.'],
    ['open','proof','w','pr_risk','challenge','Go up if you like. I will be waiting when you come down.'],
    ['open','proof','w','pr_stall','opening','I came to wrestle. If you want to slow things down, you will have to stop me first.'],
    ['open','people','w','p_working','opening','They paid for a match. I do not intend to send anybody home feeling short-changed.'],
    ['open','people','w','p_short','opening','Not much to say. You paid to see me wrestle. Watch.'],
-   ['open','proof','f','pr_brawl','challenge','All right. Take the first one and tell me the same thing.'],
+   ['open','proof','f','pr_brawl','challenge','Right, then. Take the first one and tell me the same thing.'],
    ['open','people','f','p_working','rebuttal','I can do the whole match. Can you?'],
    ['open','swagger','f','sw_main','disrespect','Fine. Main event. Still got to wrestle me.'],
    ['answer','turn','w','tu_strength','rebuttal','You have got your {strength}. I have got to find an answer. That is the job.'],
@@ -41,7 +41,7 @@
    ['answer','calm','f','ca_pro','respect','Same here. Let us get on with it.'],
    ['push','press','w',null,'pressure','That is not an answer. Have another go.'],
    ['push','press','w',null,'challenge','Hold on. Finish what you were saying.'],
-   ['push','acknowledge','w',null,'respect','Fair enough. I will give you that.'],
+   ['push','acknowledge','w',null,'respect','Fair, and short. I will give you that.'],
    ['push','acknowledge','f',null,'respect','Right. See you out there.']
   ],
   nova:[
