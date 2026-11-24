@@ -141,7 +141,7 @@
   const lede=n(best.stars)>=4?'A standout bout in the books. Here is what the week actually changed.':
    n(best.stars)>=3?'A solid night in the ring. Here is how the results affected the office.':
    'The card is in the books. There are consequences to account for before the next show.';
-  const identity=root.OfficeGame?.normaliseIdentity?.(s.identity)||{manager:'Alex Morgan',stable:'The New Guard'};
+  const identity=root.OfficeGame?.normaliseIdentity?.(s.identity)||{manager:'The manager',stable:'Your stable'};
   return {from:'Your road agent',subject:'Match night report: '+identity.stable+' — S'+season+' W'+week,season,week,kind:'info',body:[`For ${identity.manager}, managing ${identity.stable}.`,lede],sections,reportVersion:1};
  }
  root.OfficeNightReport={capture,build};
