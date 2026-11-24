@@ -13,7 +13,7 @@
  const conditions=['variants','formats','minAge','maxAge','minMeetings','titleMatch','hasMouthpiece','speakerStyle','opponentStyle','landed','minComposure','maxComposure','minIrritation','maxIrritation','subject'];
  const placeholders=['speaker','client','opponent','venue','finisher','strength'];
  // Only these narrowly reviewed variants may be rephrased. Exact variant ID is required.
- const approved=Object.freeze({open:{proof:['pr_tech','pr_brawl','pr_risk','pr_stall'],people:['p_working','p_short'],swagger:['sw_main','sw_pose']},answer:{calm:['ca_simple','ca_pro','ca_restraint'],turn:['tu_strength']}});
+ const approved=Object.freeze({open:{proof:['pr_tech','pr_brawl','pr_risk','pr_stall'],people:['p_working','p_short'],swagger:['sw_main','sw_pose']},answer:{calm:['ca_simple','ca_pro','ca_restraint'],turn:['tu_strength'],challenge:['ch_one_fall','ch_mat','ch_ground','ch_stay']},close:{vow:['vo_plain','vo_hard','vo_fans','vo_guarantee'],clean:['cl_middle','cl_hand'],uncertainty:['un_done','un_plan','un_see'],legacy:['le_plain']}});
  const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
  const string=v=>typeof v==='string'&&v.trim().length>0;
  const idPattern=/^[a-z0-9][a-z0-9_.-]*$/;
@@ -59,6 +59,13 @@
    coverage:()=>Array.from(owners,([owner,p])=>({owner,total:p.lines.length,byCategory:Object.fromEntries(categories.map(k=>[k,p.lines.filter(l=>l.category===k).length]))}))
   });
  }
+ // Compose independently authored batches without changing stable line IDs.
+ function combine(...batches){
+  const owners=new Map();for(const pack of batches.flat()){
+   const key=pack.role+':'+pack.owner;if(!owners.has(key))owners.set(key,{owner:pack.owner,role:pack.role,lines:[]});
+   owners.get(key).lines.push(...pack.lines);
+  }return [...owners.values()];
+ }
  function actor(w){
   return {id:w.id,role:'wrestler',short:w.short||w.name||null,age:Number.isFinite(w.age)?w.age:null,style:w.style||null,finisher:w.finisher||null};
  }
@@ -73,7 +80,7 @@
   // Retain core text for factual cases, variants with their own promises/motifs,
   // and all closing commitments until the selector can prove semantic equivalence.
   const protectedReason=recorded||st.core.case?'recorded-argument':st.core.claim?.hasEvidence?'recorded-evidence':
-    stage==='close'?'closing-contract':stage==='open'&&action==='proof'&&st.core.claim?.planFocus==='counter'?'specific-match-plan':variant?'contextual-variant':stage==='open'&&action==='imagery'?'motif':null;
+    stage==='close'&&!(approved.close[action]||[]).includes(variant)?'closing-contract':stage==='open'&&action==='proof'&&st.core.claim?.planFocus==='counter'?'specific-match-plan':variant?'contextual-variant':stage==='open'&&action==='imagery'?'motif':null;
   return {stage,action,side,speaker,opponent,client:s.client,venue:s.venue,titleMatch:s.titleMatch,
    hasMouthpiece:s.hasMouthpiece,meetings:s.meetings,format:st.director?.format||null,
    subject:st.director?.subject||st.core.claim?.opening||null,landed,variant,
@@ -114,5 +121,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,snapshot,context,render,tag,select,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,recentIds});
 })(typeof window!=='undefined'?window:globalThis);
