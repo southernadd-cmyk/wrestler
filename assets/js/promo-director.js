@@ -50,7 +50,8 @@
   if(record.id==='personal'||a.stance==='combative'||b.irritation>=38)return {follow:true,reason:'the exchange has become personal or heated'};
   if(Math.abs(st.meter)>=26)return {follow:false,reason:'the room has already made up its mind'};
   if(d.lastOpponent&&(!record.landed||a.stance==='analytical'))return {follow:true,reason:'the opponent has left a point to answer'};
-  return {follow:hash(st.seed+'|scene-shape')%3===0,reason:'the immediate argument has reached a natural pause'};
+  const follow=hash(st.seed+'|scene-shape')%3===0;
+  return {follow,reason:follow?'there is room for a final exchange':'the immediate argument has reached a natural pause'};
  }
  function options(d){
   const subject=d.subject||'the match';
