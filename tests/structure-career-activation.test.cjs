@@ -1,6 +1,6 @@
 'use strict';
 // Phase 4 career choice can activate only a matching signed editorial plan.
-const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+const assert=require('node:assert/strict'),vm=require('node:vm');
 const {script}=require('./_source.cjs');
 const cut=script.indexOf('/* THE OFFICE — interface v3');
 assert.ok(cut>0);
@@ -49,9 +49,9 @@ for(const info of catalogue)for(const lead of ['w','f'])for(const game of ['stor
  assert.throws(()=>gate(unsigned,choice),/does not match/);
  const missing=copy(pair.sheet);delete missing.structurePlan;
  assert.throws(()=>gate(missing,choice),/does not match/);
- const legacy=make(pair,290000+simulated,false);
+ const legacy=make(pair,290000+simulated,gate(pair.sheet,null));
  assert.equal(E.structureReport(legacy),null,'metadata alone never executes');
- const live=make(pair,290000+simulated,true);
+ const live=make(pair,290000+simulated,gate(pair.sheet,choice));
  assert.equal(E.structureReport(live)?.objectives.length,4);
  drive(live);
  assert.equal(live.graph.outcome.id,pair.contract.finish,'booked result retained');
@@ -69,9 +69,4 @@ assert.equal(S.STRUCTURES.readPlan(old.sheet).mode,'absent');
 const unchanged=E.create({w,f,p,slot:'main',minutes:12,finish:'win_clean',
  plan:{game:'story',leash:'script',talk:'none'},seed:88,sheet:copy(old.sheet)});
 assert.equal(E.structureReport(unchanged),null,'old career match stays legacy');
-const ui=fs.readFileSync(path.join(__dirname,'../assets/js/ui.js'),'utf8');
-for(const term of ['data-structure','data-structurelead','opts.structurePlanning=true',
- 'STRUCTURES.executionChoice(matchSheet,P.structureChoice)','structureExecution,seed:',
- 'structureStrip(M)','h.structure=JSON.parse','structure-result-list'])
- assert.ok(ui.includes(term),'missing player UI linkage '+term);
 console.log('PASS Phase 4 career integration: '+simulated+' variants, both leads, two plans, booked finishes, opt-in, legacy default, performed reports, '+earned+' witnessed objectives.');

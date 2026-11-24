@@ -163,6 +163,7 @@ async function journey(browser,name,viewport){
   }
   await page.locator('[data-title="new"]').waitFor();
   await page.locator('[data-title="new"]').click();
+  await page.locator('#modal [data-dlg="identity-save"]').click();
   await page.locator('#app').waitFor({state:'visible'});
   await commentaryHeightAudit(page,name,viewport);
   assert.ok(await page.locator('#view').innerText(),'career screen rendered');
@@ -423,6 +424,36 @@ async function journey(browser,name,viewport){
   assert.equal(signedStructure.structure,'kings_road');
   assert.equal(signedStructure.valid,'editorial');
   assert.equal(signedStructure.finish,signedStructure.booked);
+  // Exercise the real UI hand-off, not property ordering in a source string.
+  for(let i=0;i<20;i++){
+   if(await page.locator('#tv [data-pause]').count())break;
+   const action=page.locator('#tv [data-tv="bell"]:visible, #tv [data-tv="promos"]:visible, #tv [data-tv="signing"]:visible, #tv [data-mouth]:visible, #tv [data-mic]:visible, #tv [data-contract]:visible').first();
+   await action.click();
+  }
+  const live=await page.evaluate(()=>{
+   const n=window.OfficeUI.night,M=n.M,r=window.OfficeMatch.structureReport(M);
+   return {active:M.o.structureExecution===true,id:r?.id,objectives:r?.objectives.length,
+    lead:M.structureDirector?.roles.lead,selected:n.plan.structureChoice.lead,finish:M.o.finish};
+  });
+  assert.equal(live.active,true,name+': signed UI plan activates the actual match');
+  assert.equal(live.id,'kings_road');
+  assert.equal(live.objectives,4);
+  assert.equal(live.lead,live.selected);
+  assert.equal(live.finish,signedStructure.booked);
+  await page.locator('#tv [data-pause]').click();
+  await page.evaluate(()=>{
+   const M=window.OfficeUI.night.M,E=window.OfficeMatch;
+   for(let i=0;i<9000&&!M.done;i++){
+    if(M.decision&&!M.queue.length)E.resolve(M,M.decision.options[0].id);
+    E.next(M);
+   }
+   if(!M.done||!M.final)throw new Error('Structured bout did not finish');
+  });
+  await page.locator('#tv [data-pause]').click();
+  assert.equal(await page.locator('#tv .structure-result-list li').count(),4);
+  const recorded=await page.evaluate(()=>window.OfficeGame.S.history.find(h=>h.cid==='browser-phase3-1')?.structure);
+  assert.equal(recorded?.id,'kings_road',name+': actual UI settlement persists performed structure');
+  assert.equal(recorded.objectives.length,4);
   assert.deepEqual(errors,[],name+': no uncaught browser exceptions');
   console.log('PASS browser '+name+': career, keyboard replay, no overflow, reload, unique report');
  }finally{await context.close();}
@@ -437,6 +468,7 @@ async function responsiveAudit(browser,name,viewport){
  try{
   await page.goto(URL,{waitUntil:'domcontentloaded'});
   await page.locator('[data-title="new"]').click();
+  await page.locator('#modal [data-dlg="identity-save"]').click();
   await page.locator('#app').waitFor({state:'visible'});
   await commentaryHeightAudit(page,name,viewport);
   const screens=['desk','inbox','squad','scouting','offers','fixtures','pyramid','promoters','rivalries','results','sheets'];
@@ -517,6 +549,7 @@ async function negotiationPrototypeAudit(browser,name,viewport){
  try{
   await page.goto(URL,{waitUntil:'domcontentloaded'});
   await page.locator('[data-title="new"]').click();
+  await page.locator('#modal [data-dlg="identity-save"]').click();
   await page.locator('#app').waitFor({state:'visible'});
   await page.evaluate(()=>{
    const G=window.OfficeGame,s=G.S;
