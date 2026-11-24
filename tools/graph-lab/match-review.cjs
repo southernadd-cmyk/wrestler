@@ -4,7 +4,7 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const lab=require('./core.js'),validation=require('./validation.js');
 const presets=require('./review-scenarios.js');
-const files=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-catalog.js','match-graph.js','match-commentary.js','match-engine.js'];
+const files=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-catalog.js','graph-narration.js','match-graph.js','match-commentary.js','match-engine.js'];
 function load(){
   const root={};
   for(const file of files)vm.runInNewContext(

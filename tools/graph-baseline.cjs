@@ -27,7 +27,7 @@ try {
   };
   if (!['fixed', 'roster'].includes(config.rotation)) throw Error('--rotation must be fixed or roster');
   const root = {};
-  const names = ['data.js', 'roster-registry.js', 'technique-registry.js', 'technique-backgrounds.js', 'match-catalog.js','match-graph.js','match-commentary.js','match-engine.js'];
+  const names = ['data.js', 'roster-registry.js', 'technique-registry.js', 'technique-backgrounds.js', 'match-catalog.js','graph-narration.js','match-graph.js','match-commentary.js','match-engine.js'];
   for (const name of names) {
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'assets', 'js', name), 'utf8'),
       { window: root, console, Date, Math, JSON }, { filename: name });
