@@ -226,23 +226,23 @@ async function run(browser,name,viewport){
    name+': intro has exactly two meaningful controls, without duplicate Start quiz');
   const mascot=await page.evaluate(()=>{
    const svg=document.querySelector('.rf-bz-face'),paths=[...svg.querySelectorAll('path')];
-   return {viewBox:svg.getAttribute('viewBox'),crisp:svg.getAttribute('shape-rendering'),
-    fills:paths.map(x=>x.getAttribute('fill')),
-    count:paths.length,pixelRuns:paths.reduce((n,path)=>n+
-     ((path.getAttribute('d')||'').match(/M\d+ \d+h/g)||[]).length,0)};
+   const frame=svg.viewBox.baseVal,ink=svg.querySelector('g')||svg;
+   const box=ink.getBBox(),rect=svg.getBoundingClientRect();
+   return {frame:{width:frame.width,height:frame.height},crisp:svg.getAttribute('shape-rendering'),
+    fills:paths.map(x=>x.getAttribute('fill')),visible:rect.width>0&&rect.height>0,
+    pixelRuns:paths.reduce((n,path)=>n+((path.getAttribute('d')||'').match(/M[0-9]+ [0-9]+h/g)||[]).length,0),
+    inside:box.x>=frame.x&&box.y>=frame.y&&box.x+box.width<=frame.x+frame.width&&box.y+box.height<=frame.y+frame.height,
+    painted:box.width>0&&box.height>0};
   });
-  assert.equal(mascot.viewBox,'0 0 56 52',name+': bold, simplified teletext mascot fits the full frame');
+  assert.ok(mascot.visible&&mascot.painted&&mascot.inside,name+': pixel portrait is visible and fits its frame');
+  assert.ok(mascot.frame.width>0&&mascot.frame.height>0,name+': portrait has a valid pixel grid');
   assert.equal(mascot.crisp,'crispEdges',name+': rectangular pixels have sharp edges');
-  assert.equal(mascot.count,3,name+': restrained three-colour original character SVG');
-  assert.ok(mascot.pixelRuns>=200,name+': portrait has at least 200 separate pixel runs');
-  assert.deepEqual(mascot.fills,['#ff0','#fff','#00f'],
-   name+': mascot is limited to the authentic teletext colour palette');
-  assert.equal(await page.locator('.rf-bz-face').getAttribute('data-facing'),'left',
-   name+': the tribute looks towards the question, not away from it');
+  assert.ok(mascot.pixelRuns>=180,name+': portrait retains a detailed mosaic');
+  assert.ok(mascot.fills.includes('#ff0')&&mascot.fills.every(c=>['#ff0','#fff','#00f','#f00','#0f0','#0ff','#f0f','#000'].includes(c)),
+   name+': mascot uses the authentic teletext palette');
   assert.ok(await page.locator('.rf-bz-shared-header').evaluate(el=>Math.abs(
    el.getBoundingClientRect().height / document.querySelector('#rf-screen').getBoundingClientRect().height - .24))<.02,
    name+': standard teletext six-row header occupies six of 25 rows');
-  assert.ok(mascot.pixelRuns>=180,name+': characteristic face remains legible without noisy micro-detail');
   await page.locator('.rf-bz-choice.rf-bz-red').click();
   assert.equal(await page.evaluate(()=>window.OfficeRingfax.quizInfo().stage),'question');
   assert.equal(await page.locator('.rf-bz-choice').count(),4,

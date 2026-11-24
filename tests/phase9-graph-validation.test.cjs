@@ -4,7 +4,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const lab=require('../tools/graph-lab/core.js');
 const validator=require('../tools/graph-lab/validation.js');
 const root={};
-for(const file of ['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'])
+for(const file of ['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-catalog.js','match-graph.js','match-commentary.js','match-engine.js'])
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../assets/js',file),'utf8'),
  {window:root,Math,Date,JSON,console},{filename:file});
 root.OfficeRosterV4.enableProfiles();

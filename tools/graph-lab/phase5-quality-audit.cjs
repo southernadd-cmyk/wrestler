@@ -3,10 +3,10 @@
 // node tools/graph-lab/phase5-quality-audit.cjs /path/to/phase4 > /tmp/phase5-tapes.json
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const lab=require('./core.js');
-const names=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-graph.js','match-commentary.js','match-engine.js'];
+const names=['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-catalog.js','match-graph.js','match-commentary.js','match-engine.js'];
 function load(dir){
  const root={};
- for(const file of names)vm.runInNewContext(fs.readFileSync(path.join(dir,'assets/js',file),'utf8'),
+ for(const file of names.filter(file=>file!=='match-catalog.js'||fs.existsSync(path.join(dir,'assets/js',file))))vm.runInNewContext(fs.readFileSync(path.join(dir,'assets/js',file),'utf8'),
   {window:root,Math,Date,JSON,console},{filename:file});
  root.OfficeRosterV4.enableProfiles();
  return root;
