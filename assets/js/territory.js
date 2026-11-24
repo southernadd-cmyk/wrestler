@@ -112,7 +112,7 @@ function promotionRank(pid,div,t=ensure(),s=G.S){
  const holder=t.titles?.[pid]?.[div]?.holder;
  return ladder(Object.entries(card).flatMap(([id,line])=>{
   if(D.divisionOf(id)!==div)return [];
-  const owned=s?.roster.find(x=>x.id===id),w=owned||G.F(id);if(!w)return [];
+  const owned=s?.roster.find(x=>x.id===id),w=owned||G.personnel(s,id);if(!w)return [];
   const stable=t.teams.find(team=>team.roster.includes(id));
   return [{...w,...line,division:div,owned:!!owned,stable:stable?.name??null,champion:id===holder}];
  }).sort((a,b)=>b.score-a.score||b.wins-a.wins||a.name.localeCompare(b.name)));
@@ -130,7 +130,7 @@ function opponents(pid,slot,div){
 function rank(){const s=G.S,t=ensure();if(!s)return [];
  const rivals=D.TALENT.filter(w=>stableFor(w.id));
  const all=s.worldV4?.version===4
-  ? D.ALL.filter(w=>s.worldV4.contracts[w.id]?.owner!=='market').map(w=>({...w,...(G.W(w.id)||{}),owned:s.worldV4.contracts[w.id]?.owner==='player'}))
+  ? D.ALL.filter(w=>s.worldV4.contracts[w.id]?.owner!=='market').map(w=>({...G.personnel(s,w.id),...(G.W(w.id)||{}),owned:s.worldV4.contracts[w.id]?.owner==='player'}))
   : [...[...D.FOES,...rivals].map(w=>({...w,owned:false})),...s.roster.map(w=>({...w,owned:true}))];
  return all.map(w=>{const recent=s.history.filter(h=>h.wid===w.id).slice(0,8);
  const form=recent.reduce((n,h)=>n+(h.outcome==='nc'?0:(h.finish||'').startsWith('win')?8:-5)+(h.stars>=3?Math.round(h.stars*2):0),0);
