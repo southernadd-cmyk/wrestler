@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong><a href="https://southernadd-cmyk.github.io/wrestler/">PLAY THE OFFICE</a></strong>
-  &nbsp; · &nbsp; <a href="docs/architecture.md">Inside the engine</a>
+  &nbsp; · &nbsp; <a href="docs/README.md">Inside the engine &amp; contributor guide</a>
   &nbsp; · &nbsp; <a href="#back-issues">Back issues</a>
 </p>
 
