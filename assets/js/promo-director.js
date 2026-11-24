@@ -6,6 +6,44 @@
  const clamp=(n)=>Math.max(0,Math.min(100,n));
  const topics={people:'the crowd and what they deserve',proof:'competitive credibility',imagery:'the picture painted of the match',accusation:'the accusation',swagger:'status and confidence',hometown:'the local crowd',numbers:'the competitive record'};
  const hash=s=>{let h=2166136261;for(const ch of String(s)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
+ // Each format has its own public setting, opening question, available angles
+ // and pacing. All retain the underlying graph's answer/closing contract.
+ const FORMATS={
+  interview:{name:'Backstage interview',setting:'A live interview from backstage, relayed to the hall. Both booked wrestlers are with the interviewer.',
+   prompt:'Before you go out there, what does this match mean to you?',open:['proof','people','imagery','accusation'],answer:['calm','turn','confession','challenge'],
+   headings:['The interview question','Answer the objection','One last question','Before you leave'],pace:'brief'},
+  callout:{name:'In-ring call-out',setting:'The microphone is in the ring. The booked opponent is waiting at the entrance.',
+   prompt:'Your opponent is booked for tonight. What do you want to say to them?',open:['accusation','swagger','proof','people'],answer:['challenge','personal','turn','calm'],
+   headings:['Call them out','They answer the call','Keep them talking','Settle it in the ring'],pace:'confrontation'},
+  faceoff:{name:'Face-to-face confrontation',setting:'Both wrestlers stand across from one another in the ring, with a microphone between them.',
+   prompt:'You are face to face. What is the issue between you?',open:['accusation','proof','swagger','imagery'],answer:['turn','personal','calm','challenge'],
+   headings:['State the issue','The rebuttal','An unsettled point','Final word'],pace:'confrontation'},
+  address:{name:'Address to the crowd',setting:'The wrestler has the ring microphone and faces the audience. The booked opponent is present at ringside.',
+   prompt:'The audience is listening. What do you want them to take into tonight’s match?',open:['people','hometown','imagery','swagger','proof'],answer:['callback','turn','calm','challenge','fakeout'],
+   headings:['Address the audience','React to the interruption','Stay with the crowd','Leave them with something'],pace:'audience'},
+  mouthpiece:{name:'Mouthpiece address',setting:'The client stands with their chosen mouthpiece. The booked opponent has a microphone too.',
+   prompt:'You are speaking for your client tonight. What case do you want to make?',open:['proof','people','accusation','numbers'],answer:['turn','calm','challenge','personal'],
+   headings:['Make the case','Defend your client','Clarify the position','Commit your client'],pace:'brief'}
+ };
+ function selectFormat(c,w,f,m,p,core,seed){
+  if(m)return 'mouthpiece';
+  const heat=core.feudHeat||0,record=core.cases?.length||0;
+  const pool=record||heat>=45?['faceoff','faceoff','callout','interview']:
+    p?.tv?['interview','interview','address','callout','faceoff']:
+    ['address','address','callout','faceoff','interview'];
+  return pool[hash(seed+'|format')%pool.length];
+ }
+ function formatFor(d){return FORMATS[d?.format]||null;}
+ function angles(d,stage,all,core){
+  const f=formatFor(d);
+  // Never hide an evidence-based argument or a recorded commitment.
+  if(!f||stage==='close'||(stage==='open'&&core.cases?.length)||(stage==='answer'&&core.case))return all;
+  const ids=f[stage];if(!ids)return all;
+  const selected=ids.map(id=>all.find(o=>o.id===id)).filter(Boolean);
+  return selected.length>=3?selected:all;
+ }
+ function heading(d,round){return formatFor(d)?.headings?.[round]||null;}
+ function setup(d){const f=formatFor(d);return f?{name:f.name,setting:f.setting,prompt:f.prompt}:null;}
  function participant(w){
   const identity=I.wrestler(w),delivery=identity?.delivery||'',pressure=identity?.underPressure||'';
   // Authored delivery is a starting disposition, not a fixed personality class.
@@ -15,8 +53,8 @@
   return {id:w.id,identity,stance,composure:clamp(50+((w.psych??50)-50)*.35),
    irritation:clamp((w.ego??50)*.25),ego:w.ego??50,pro:w.pro??60};
  }
- function begin(w,f,m){
-  return {v:1,phase:'opening',subject:null,claim:null,lastPlayer:null,lastOpponent:null,
+ function begin(w,f,m,format=null){
+  return {v:1,format,phase:'opening',subject:null,claim:null,lastPlayer:null,lastOpponent:null,
    player:participant(m||w),opponent:participant(f),client:w.id,turns:[],followup:null,ending:null};
  }
  function observe(d,st,record,fresh){
@@ -45,6 +83,9 @@
   // Acknowledging an argument or reaching a firm impasse can lead straight to
   // the final word. A volatile exchange can earn one additional beat, never a loop.
   const a=d.player,b=d.opponent;
+  const format=formatFor(d);
+  if(format?.pace==='brief'&&record.landed&&b.irritation<38)return {follow:false,reason:'the interviewer has enough for the segment'};
+  if(format?.pace==='confrontation'&&b.irritation>=30&&Math.abs(st.meter)<35)return {follow:true,reason:'the face-to-face exchange remains heated'};
   if(record.id==='calm'&&record.landed&&b.irritation<36)return {follow:false,reason:'the reply settled the immediate argument'};
   if(a.stance==='reserved'&&a.composure<45)return {follow:false,reason:'the speaker has little appetite for another exchange'};
   if(record.id==='personal'||a.stance==='combative'||b.irritation>=38)return {follow:true,reason:'the exchange has become personal or heated'};
@@ -68,7 +109,7 @@
   if(id==='acknowledge')return {line:s==='analytical'?'Fair. That is a point worth making.':s==='combative'?'All right. I will give you that much.':s==='reserved'?'Fair point.':'I hear what you are saying. We still have a match to wrestle.',reply:'Then we understand each other.',risk:1,base:4};
   return {line:null,reply:null,risk:2,base:6};
  }
- function summary(d){return {subject:d.subject,phase:d.phase,player:d.player.composure<40?'Unsettled':d.player.irritation>=42?'Frustrated':'Composed',
+ function summary(d){return {subject:d.subject,phase:d.phase,...(formatFor(d)?{format:d.format,formatName:formatFor(d).name}:{}),player:d.player.composure<40?'Unsettled':d.player.irritation>=42?'Frustrated':'Composed',
   opponent:d.opponent.irritation>=42?'Heated':d.opponent.composure<40?'Unsettled':'Measured',followup:d.followup,ending:d.ending};}
- root.OfficePromoDirector=Object.freeze({begin,observe,route,options,followup,summary});
+ root.OfficePromoDirector=Object.freeze({begin,observe,route,options,followup,summary,selectFormat,angles,heading,setup});
 })(typeof window!=='undefined'?window:globalThis);
