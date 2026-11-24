@@ -4,7 +4,7 @@
    public promise still come from the promo graph underneath, so what is said is still tested in the
    ring. Every option states its risk and what it is for. Seeded and replayable. */
 (function installPromoDuel(root){'use strict';
- const D=root.OfficeData,Core=root.OfficeStory.Graph,Room=root.OfficeRoom;
+ const D=root.OfficeData,Core=root.OfficeStory.Graph,Room=root.OfficeRoom,Director=root.OfficePromoDirector;
  const hash=s=>{let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;};
  const rng=(seed,k)=>hash(seed+'|'+k)/4294967296;
  const pick=(arr,seed,k)=>arr[Math.floor(rng(seed,k)*arr.length)];
@@ -194,6 +194,7 @@
    venue:p?.venue||'this hall',promoterVoice:p?.voice||'the promoter',promoterName:p?.name||'the promotion',finish:c.finish||null,
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
+  if(opts.directed&&Director)st.director=Director.begin(w,f,m);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
   if(m)st.read.voice=voice(m); // the room knows the wrestler; the voice is the mouthpiece's
@@ -270,6 +271,7 @@
     {id:'revise',label:P.revise?.label||'Revise your position',hint:P.revise?.hint||'Change what you are asking for.',tags:['Steady','Changes the question','Builds credibility']},
     {id:'leave',label:'Let it stand',hint:'Say nothing more. The argument stays open, and it will come back.',tags:['Safe','Leaves it unresolved']}];
   }
+  if(r==='push'&&st.director)return Director.options(st.director);
   if(r==='push')return [{id:'leave',label:'Leave it there',hint:st.meter>0?'Quit while you are ahead.':'Cut your losses.',tags:['Safe','Shorter promo']},
    ...Object.entries(PUSH).map(([id,o])=>({id,label:fmt(o.label,st),hint:o.hint,tags:[riskWord(o.risk),o.gain>=9?'Big swing either way':'Small gain']}))];
   const stage=r==='open'?'open':r==='answer'?'answer':'close';
@@ -306,7 +308,7 @@
   if(!st||st.stage==='done')throw Error('The promo is over');
   const o=choices(st).find(x=>x.id===id);
   if(!o)throw Error('Not an option at the microphone: '+id);
-  const r=ROUNDS[st.round].id,v=voice(talker(st));
+  const r=ROUNDS[st.round].id,v=voice(talker(st)),beforeLog=st.log.length;
   let rec={round:r,id,label:o.label,landed:true};
   if(r==='open')rec={round:r,...coreRound(st,'open',id,'open')};
   else if(r==='answer')rec={round:r,...coreRound(st,'answer',id,'answer')};
@@ -325,6 +327,17 @@
     cs.followup='Revised the charge: neither of them cheats tonight.';
     push(st,'f',P.revise?.reply||'I will hold you to that.','opponent',0);
    }else{push(st,'stage',fmt('{W} lets it hang there. Nobody concedes anything.',spoke(st)),'stage',0);cs.followup='Left it hanging.';}
+  }
+  else if(r==='push'&&st.director){
+   st.pushed=id;
+   if(id==='leave')push(st,'stage',fmt('{W} lowers the microphone and lets the argument rest.',spoke(st)),'stage',0);
+   else{
+    const beat=Director.followup(st.director,id),ok=roll(st,beat.risk,'directed|'+id,(st.director.player.composure-50)/250),d=swing(st,ok?beat.base:-Math.max(2,beat.base-2));
+    if(beat.line)push(st,'w',beat.line,ok?'strong':'uneven',d);
+    else push(st,'stage',fmt('{W} says nothing, watching {F}.',spoke(st)),ok?'strong':'uneven',d);
+    if(beat.reply)theirTurn(st,beat.reply,'directed|'+id,ok,0);
+    crowdSays(st,d,'directed|'+id);rec.landed=ok;
+   }
   }
   else if(r==='push'){
    st.pushed=id;
@@ -345,6 +358,14 @@
    }
   }else rec={round:r,...coreRound(st,'close',id,'close')};
   st.steps.push(rec);st.round++;
+  if(st.director){
+   Director.observe(st.director,st,rec,st.log.slice(beforeLog));
+   if(r==='answer'){
+    const route=Director.route(st.director,st,rec);st.director.followup=route;
+    if(!route.follow){st.round=3;st.director.phase='closing';}
+   }
+   if(r==='close')st.director.ending={reason:'final word',promise:Core.result(st.core)?.promise?.type||'none'};
+  }
   if(st.round>=ROUNDS.length){st.stage='done';st.result=finish(st);}
   return st;
  }
@@ -354,6 +375,7 @@
    m>-25?'{F} got the better of that.':'{F} took the room off {W} and kept it.',st);
   return {...base,live:true,mouth:st.speaker?{id:st.speaker.id,short:st.speaker.short,name:st.speaker.name}:null,duel:{meter:m,won:m>0,pushed:!!pushed,read:{...st.read},angle:st.angle,fits:(st.fits||[]).slice()},
    quality:clamp(Math.round(base.quality+m*.35),10,97),
+   ...(st.director?{conversation:Director.summary(st.director)}:{}),
    arcDirection:st.arc?.id||null,
    crowdShift:clamp(Math.round(base.crowdShift+m/7),-8,13),
    heatDelta:clamp(Math.round(base.heatDelta+(pushed?2:0)+(Math.abs(m)>=25?1:0)),-3,16),
@@ -365,7 +387,10 @@
  }
  function view(st){
   const r=ROUNDS[Math.min(st.round,ROUNDS.length-1)];
-  return {stage:st.stage,round:st.round,total:ROUNDS.length,name:st.stage==='done'?'The final word':r.name,help:fmt(st.stage==='done'?'It is said. The match decides whether any of it was true.':r.help,st),
+  const directed=st.director&&Director.summary(st.director);
+  const name=st.stage==='done'?'The final word':directed&&r.id==='push'&&!st.core.case?.exposed?'The argument continues':r.name;
+  const help=directed&&r.id==='push'&&!st.core.case?.exposed?'Decide whether the point needs another exchange, or let it rest.':r.help;
+  return {stage:st.stage,round:st.round,total:ROUNDS.length,name,help:fmt(st.stage==='done'?'It is said. The match decides whether any of it was true.':help,st),...(directed?{conversation:directed}:{}),
    meter:st.meter,meterWord:meterWord(st.meter),options:choices(st),log:st.log.slice(),claim:st.core.claim||null,result:st.result,
    read:st.round===0&&st.stage!=='done'?st.readLines:null,cue:st.round===1&&st.angle?fmt(ANGLE_CUE[st.angle],st):null,
    // v0.3.12 What the rivalry has on record before the first line, and any argument still open.
