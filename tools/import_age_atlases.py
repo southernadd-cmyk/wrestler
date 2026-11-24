@@ -5,6 +5,7 @@ The manifest provides three consecutive 144×180 cells (young, middle, old)
 per character. Asset names and coordinates stay stable for later art swaps.
 """
 import json
+import hashlib
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -24,9 +25,26 @@ def main(pack: Path) -> None:
         records[item["id"]][item["age"]] = item
     atlases = sorted((pack / "atlases").glob("portrait-atlas-*.png"))
     assert len(atlases) == 10
+    overrides = {}
+    override_dir = root / "art" / "source" / "age-portrait-overrides"
+    for item in manifest["records"]:
+        replacement = override_dir / f"{item['id'].replace(':', '-')}__{item['age']}.png"
+        if replacement.is_file():
+            with Image.open(replacement) as portrait:
+                assert portrait.mode == "RGBA" and portrait.size == (144, 180), replacement
+            item["file"] = replacement.relative_to(root).as_posix()
+            item["sha256"] = hashlib.sha256(replacement.read_bytes()).hexdigest()
+            overrides[(item["atlas"], item["x"], item["y"])] = replacement
     for i, atlas in enumerate(atlases, 1):
         with Image.open(atlas) as image:
             assert image.size == (1296, 1440)
+            image = image.convert("RGBA")
+            for (sheet, x, y), replacement in overrides.items():
+                if sheet != f"atlases/portrait-atlas-{i:02d}.png":
+                    continue
+                image.paste((0, 0, 0, 0), (x, y, x + 144, y + 180))
+                with Image.open(replacement) as portrait:
+                    image.alpha_composite(portrait, (x, y))
             image.save(target / f"atlas-{i:02d}.webp", "WEBP", lossless=True, method=6)
     cells = {}
     for key, ages in records.items():
