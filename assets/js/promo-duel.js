@@ -223,6 +223,7 @@
    ...(opts.arc?[opts.arc.read]:[])].map(t=>fmt(t,st).replace(/\{S\}/g,m?.short||''));
   const scene=st.director&&Director.setup(st.director);
   push(st,'host',opts.arc?.prompt||scene?.prompt||core.dialogue[0].line,'interviewer');
+  if(st.semantic&&scene)st.openingQuestion=Director.openingQuestion(st.director,opts.arc,st.log[0].line);
   if(scene)push(st,'stage',scene.setting,'stage');
   return st;
  }
@@ -338,7 +339,10 @@
   let said=false,replied=false,stumbled=false;
   const slot=(side,d)=>st.dialogueFacts&&Dialogue.context(st,stage,id,side,{landed:step.landed,variant:step.variant,recorded:!!d.case});
   for(const d of fresh){
-   if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);const ctx=slot('w',d),line=pickAuthored(st,ctx);push(st,'w',line?.text||d.line,step.landed?'strong':'uneven',got,!line);
+   if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);const ctx=slot('w',d),line=pickAuthored(st,ctx);
+    const lead=stage==='open'?Director?.answerOpening(st.openingQuestion,id):null;
+    if(lead){const answer=line?.text||clientClaim(st,d.line);push(st,'w',lead+' '+answer,step.landed?'strong':'uneven',got);st.log.at(-1).answersQuestion={v:1,prompt:st.openingQuestion.prompt,lead};}
+    else push(st,'w',line?.text||d.line,step.landed?'strong':'uneven',got,!line);
     annotate(st,st.log.length-1,ctx,line);
     if(!step.landed)push(st,'stage',fluff(st),'fluff');crowdSays(st,got,key);continue;}
    if(d.speaker==='Crowd'&&d.kind==='reaction'&&!step.landed&&!stumbled){stumbled=true;continue;} // replaced by the fluff above
@@ -437,7 +441,7 @@
    moraleDelta:clamp(base.moraleDelta+(m>=15?1:m<=-15?-1:0),-3,4),
    temperature:50+m,temperatureWord:meterWord(m),timeOver:0,
    beats:st.steps.map(s=>({...s})),reaction,
-   dialogue:st.log.map(e=>({speaker:e.speaker||'Stage',line:e.line,kind:e.kind,swing:e.swing,...(e.dialogueSlot?{dialogueSlot:e.dialogueSlot}:{}),...(e.authoredId?{authoredId:e.authoredId}:{}),...(e.composedId?{composedId:e.composedId}:{}),...(e.semantic?{semantic:{...e.semantic}}:{})})),speech:st.log.filter(e=>e.side==='w').map(e=>e.line),
+   dialogue:st.log.map(e=>({speaker:e.speaker||'Stage',line:e.line,kind:e.kind,swing:e.swing,...(e.dialogueSlot?{dialogueSlot:e.dialogueSlot}:{}),...(e.authoredId?{authoredId:e.authoredId}:{}),...(e.composedId?{composedId:e.composedId}:{}),...(e.semantic?{semantic:{...e.semantic}}:{}),...(e.answersQuestion?{answersQuestion:{...e.answersQuestion}}:{})})),speech:st.log.filter(e=>e.side==='w').map(e=>e.line),
    angle:st.w.short+': '+st.steps.map(s=>String(s.label).toLowerCase()).join('; ')+'.'};
  }
  function view(st){
