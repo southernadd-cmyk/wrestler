@@ -397,7 +397,7 @@
    quality:clamp(Math.round(base.quality+m*.35),10,97),
    ...(st.director?{conversation:Director.summary(st.director)}:{}),
    ...(st.director?.format?{format:st.director.format}:{}),
-   ...(st.authoredDialogue?{dialogueIds:st.authoredDialogue.used.slice(),reply:st.log.filter(e=>e.side==='f').at(-1)?.line||base.reply}:{}),
+   ...(st.authoredDialogue?{dialogueIds:st.authoredDialogue.used.slice(),...(st.authoredDialogue.used.length?{reply:st.log.filter(e=>e.side==='f').at(-1)?.line||base.reply}:{})}:{}),
    arcDirection:st.arc?.id||null,
    crowdShift:clamp(Math.round(base.crowdShift+m/7),-8,13),
    heatDelta:clamp(Math.round(base.heatDelta+(st.director&&!st.core.case?.exposed?(st.pushed==='press'?2:0):(pushed?2:0))+(Math.abs(m)>=25?1:0)),-3,16),
