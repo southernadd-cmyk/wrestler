@@ -313,9 +313,9 @@ function sessionTip(w){
  return null;
 }
 
-/* Dennis's training desk: read-only evidence and options. Training mechanics,
-   committed sessions, and the game's random sequence remain authoritative. */
-function trainingForecast(w){
+/* Pure weekly training plan shared by the forecast and settlement.
+   No mutations or RNG draws here; only endWeek rolls injury risk. */
+function trainingWeekPlan(w){
  if(!w)return null;
  const worked=S.history.some(h=>h.wid===w.id&&h.season===S.season&&h.week===S.week);
  const cost=trainingCost(w);
@@ -331,10 +331,17 @@ function trainingForecast(w){
  const rookie=w.tier==='Rookie'&&cur<68?1.4:1;
  const growth=(camp?1.9:intensity.gain)*(1+specialist)*rookie*(cur>=88?.24:cur>=80?.5:1)*ceilingRoom(w,cur)*(w.fatigue>=70?.6:1);
  const bank=(w.progress?.[stat]||0)+growth;
- const next=Math.min(99,cur+Math.floor(bank)),risk=(camp?.015:intensity.risk)*(w.fatigue>=65?2.5:1)*(worked?1.5:1);
+ const fatigue=clamp(w.fatigue+(camp?13:intensity.fat)+(worked?5:0));
+ const next=Math.min(99,cur+Math.floor(bank)),risk=(camp?.015:intensity.risk)*(fatigue>=65?2.5:1)*(worked?1.5:1);
  return {kind:'skill',stat,cost,worked,growth,skillAfter:next,gain:next-cur,progress:next>=99?0:Math.round((bank%1)*100),
-   fatigue:clamp(w.fatigue+(camp?13:intensity.fat)+(worked?5:0)),riskPct:risk*100,coached:!!specialist,
-   detail:'Projection if the week ended now; an additional match or Dennis session can change fatigue and risk.'};
+   progressBank:bank-Math.floor(bank),fatigue,risk,riskPct:risk*100,coached:!!specialist,camp,
+   detail:'Projection of weekly training before any Dennis session or other end-of-week events.'};
+}
+function trainingForecast(w){
+ const plan=trainingWeekPlan(w);
+ if(!plan||plan.kind!=='skill')return plan;
+ const {progressBank,risk,camp,...forecast}=plan;
+ return forecast;
 }
 function trainingAdvice(w){
  if(!w)return [];
@@ -777,29 +784,23 @@ function endWeek(){
  const review={a:abs(),coachCost:cw,entries:[]};S.cash-=pay+oh+cw;lines.push(`Wages ${money(pay)}, overheads ${money(oh)}${cw?`, coach ${money(cw)}`:''}.`);if(S.rep>30){S.rep--;}
  for(const w of S.roster){
   const before={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe,fatigue:w.fatigue,heat:w.heat,injury:w.injury||0};
-  const focus=w.training,intensityName=w.intensity,session=w.session||null,weeklyCost=trainingCost(w),lineStart=lines.length;
-  const worked=S.history.some(h=>h.wid===w.id&&h.week===S.week&&h.season===S.season);
-  const isInjured=!!w.injury,t=D.TRAINING[isInjured?'rest':w.training]||D.TRAINING.rest;
-  const intensity=INTENSITY[w.intensity||'light']||INTENSITY.light;
-  if(isInjured||w.training==='rest'){
-   w.fatigue=clamp(w.fatigue-(worked?6:24));if(!worked)w.morale=clamp(w.morale+2);
-  }else if(w.training==='promo'){
-   S.cash-=40;S.business.training+=40;const g=Math.round(1+w.mic/35);w.heat=clamp(w.heat+g);w.fatigue=clamp(w.fatigue+2);
+  const plan=trainingWeekPlan(w);
+  const focus=w.training,intensityName=w.intensity,session=w.session||null,weeklyCost=plan.cost,lineStart=lines.length;
+  const worked=plan.worked,isInjured=!!w.injury;
+  if(plan.kind==='rest'){
+   w.fatigue=plan.fatigue;if(!worked)w.morale=clamp(w.morale+2);
+  }else if(plan.kind==='promo'){
+   S.cash-=plan.cost;S.business.training+=plan.cost;const g=plan.heat;w.heat=clamp(w.heat+g);w.fatigue=plan.fatigue;
    const hot=Object.values(S.feuds).filter(f=>f.wid===w.id&&!f.closed).sort((a,b)=>b.heat-a.heat)[0];if(hot)hot.heat=clamp(hot.heat+6);
    lines.push(`${w.short} recorded a promo: −£40, heat +${g}${hot?', rivalry +6':''}.`);
-  }else if(t.stat){
-   const spend=w.program?.type==='camp'?185:intensity.cost;S.cash-=spend;S.business.training+=spend;w.progress??={};const cur=w[t.stat];const camp=w.program?.type==='camp',specialist=S.coach&&COACHES[S.coach].stat===t.stat?COACHES[S.coach].boost:0;// A rookie who is still learning the fundamentals should progress measurably
-   // across a season, without making upper-tier workers sprint to 99.
-   const rookieCatchup=w.tier==='Rookie'&&cur<68?1.4:1;
-   const growth=(camp?1.9:intensity.gain)*(1+specialist)*rookieCatchup*(cur>=88?.24:cur>=80?.5:1)*(w.fatigue>=70?.6:1);
-   w.progress[t.stat]=(w.progress[t.stat]||0)+growth;
-   const levels=Math.floor(w.progress[t.stat]);w.progress[t.stat]-=levels;
-   const gained=Math.min(99-cur,levels);w[t.stat]=clamp(cur+gained,0,99);
-   w.fatigue=clamp(w.fatigue+(camp?13:intensity.fat)+(worked?5:0));
-   w.prep??={};w.prep[t.stat]=Math.min(4,(w.prep[t.stat]||0)+1+(camp?1:0));
-   const risk=(camp?.015:intensity.risk)*(w.fatigue>=65?2.5:1)*(worked?1.5:1);
+  }else if(plan.kind==='skill'){
+   const {stat,camp,risk,gain:gained,cost:spent}=plan;
+   const intensity=INTENSITY[w.intensity||'light']||INTENSITY.light;
+   S.cash-=spent;S.business.training+=spent;w.progress??={};w.progress[stat]=plan.progressBank;
+   w[stat]=plan.skillAfter;w.fatigue=plan.fatigue;
+   w.prep??={};w.prep[stat]=Math.min(4,(w.prep[stat]||0)+1+(camp?1:0));
    if(risk>0&&rand()<risk){w.injury=Math.max(w.injury||0,ri(1,3));w.injurySince=abs();lines.push(`${w.short} strained something in training. Out ${w.injury} week(s).`)}
-   const spent=camp?185:intensity.cost;if(spent||gained)lines.push(`${w.short}: ${camp?'residential camp':intensity.name.toLowerCase()} in ${t.name.toLowerCase()}, ${money(spent)}; ${gained?`${t.stat} +${gained}`:'progress banked'}, fatigue ${w.fatigue}.`);if(w.program)w.program.gains+=gained;
+   if(spent||gained)lines.push(`${w.short}: ${camp?'residential camp':intensity.name.toLowerCase()} in ${D.TRAINING[focus].name.toLowerCase()}, ${money(spent)}; ${gained?`${stat} +${gained}`:'progress banked'}, fatigue ${w.fatigue}.`);if(w.program)w.program.gains+=gained;
   }
   runSession(w,worked,lines);
   if(w.program&&!isInjured){w.program.left--;if(w.program.left<=0){const old=w.program;w.prepHistory??=[];w.prepHistory.unshift({week:abs(),focus:old.focus,type:old.type,gains:old.gains});w.prepHistory=w.prepHistory.slice(0,8);w.program=null;w.intensity='light';w.training='rest';lines.push(`${w.short} completes ${old.total}-week development (${old.gains} skill points gained). Rest scheduled next week.`);}}
