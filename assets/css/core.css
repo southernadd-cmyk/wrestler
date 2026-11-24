@@ -997,3 +997,11 @@ dialog.negotiation-dialog[open]{
  .identity-dialog .dlg{padding:9px;max-height:70dvh}
  .player-identity-fields input{font-size:18px;height:40px}
 }
+
+/* Pre-contract accounts: dense, readable on the scouting pane and confirmation. */
+.signing-budget{margin:8px 0 12px;padding:9px 10px;background:var(--stone-2);border:1px solid var(--stone-lo);border-left:4px solid var(--ink)}
+.signing-budget h4{font-size:16px;margin:0 0 6px;color:var(--ink)}
+.signing-budget .kv{grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;font-size:15px}
+.signing-budget .kv dd{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.signing-budget p{font-size:14px;margin:6px 0 0}
+.signing-budget .warn{color:var(--bad-ink)}
