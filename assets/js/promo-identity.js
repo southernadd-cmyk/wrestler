@@ -108,6 +108,12 @@ player|Neutral configurable managerial direction|Represent the player's stable a
  const personnel=Object.freeze(Object.fromEntries(personnelRows.map(row=>{const id=row.split('|')[0],role=['dock','pulse','crown','union'].includes(id)?'promoter':'manager';return [id,unpack(row,role)];})));
  const hash=s=>{let h=2166136261;for(const ch of String(s)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
  const choose=(id,key,values)=>values[hash(id+'|'+key)%values.length];
+ // Each style has three tactics; a rookie's tactic is chosen by their id, so same-style rookies differ.
+ const rookieTactics={
+  Technical:['Ask one tactical question','Test the rival with one precise question','Ask for the sequence before the first move'],
+  Brawl:['Ask for a direct sporting test','Challenge the rival to meet force with control','Ask for a clean finish with no shortcuts'],
+  Story:['Find a reason the crowd should care','Ask the rival what they want from the match','Give the crowd one moment to remember'],
+  Spectacle:['Build anticipation of a credible athletic moment','Promise a memorable moment built with care','Ask for the crowd to lean in before the big move']};
  const rookieStyle={
   Technical:['Ask one tactical question','Being rushed past preparation','A rival mocks technique','No invented technical achievements','Returns to one practiced hold','I know the grip. Now I need to know what you do when it is there.'],
   Brawl:['Ask for a direct sporting test','Being treated as reckless muscle','A rival questions courage','No deliberate injury threats','Cuts the challenge to one clear demand','Give me a fair chance to stand my ground.'],
@@ -120,7 +126,7 @@ player|Neutral configurable managerial direction|Represent the player's stable a
   const motivation=w.ambition||choose(id,'goal',['Earn a first regular booking','Become a reliable partner','Get a chance to lead a match','Build a reputation on merit']);
   const vulnerability=choose(id,'vulnerability',[style[1],'Being dismissed before earning a chance','Being compared to a veteran','A mistake becoming their whole reputation']);
   const trigger=choose(id,'trigger',[style[2],'A rival doubts their readiness','Being spoken for without permission','A rival dismisses their progress']);
-  return Object.freeze({id,role:'wrestler',source:'generated',delivery,motivation,vulnerability,trigger,tactic:style[0],boundary:style[3],underPressure:style[4],sample:style[5]});
+  return Object.freeze({id,role:'wrestler',source:'generated',delivery,motivation,vulnerability,trigger,tactic:choose(id,'tactic',rookieTactics[w.style]||[style[0]]),boundary:style[3],underPressure:style[4],sample:style[5]});
  }
  // Resolve live academy objects lazily; do not create or mutate saved state.
  function wrestler(w){
