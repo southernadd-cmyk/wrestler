@@ -53,6 +53,19 @@ const legacy=clone(probe);delete legacy.semantic;delete legacy.core.semanticSpee
 const unknown=clone(probe),last=S.latest(unknown.log,'f');delete last.entry.semantic;
 const neutral=S.select(unknown,{...ctx,strength:'hard strikes'});
 assert.equal(neutral.semantic.claim,'unclassified');assert.doesNotMatch(neutral.text,/hard strikes/);
+// Opening interviewer questions now have an explicit answer before the argument.
+const Dir=root.OfficePromoDirector;
+for(const format of ['interview','faceoff','callout','address','mouthpiece']){
+ const q=Dir.openingQuestion({format},null,Dir.setup({format}).prompt);
+ for(const action of ['proof','people','swagger','accusation','imagery','hometown','numbers'])assert.ok(Dir.answerOpening(q,action),format+': '+action);
+}
+assert.equal(Dir.answerOpening(Dir.openingQuestion({format:'interview'},null,'Before you go out there, what does this match mean to you?'),'proof'),'It is a chance to show that my preparation counts.');
+const titlePrompt='The champion is not in this match. Why should they be listening?';
+assert.match(Dir.answerOpening(Dir.openingQuestion({format:'interview'},{prompt:titlePrompt},titlePrompt),'proof'),/case.*belt/);
+const hostScene=M.begin(contract(w,f,17),w,f,null,null,p,{...options,formats:true,banks:promoBanks(w.id,f.id),arc:{id:'needle',step:0,prompt:titlePrompt,read:'Title chase'}});
+M.choose(hostScene,M.choices(hostScene)[0].id);
+const spoken=hostScene.log.find(e=>e.side==='w');assert.equal(spoken.answersQuestion.prompt,titlePrompt);
+assert.match(spoken.line,/case.*belt/);assert.equal(spoken.answersQuestion.lead,Dir.answerOpening(hostScene.openingQuestion,hostScene.steps[0].id));
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0;
 const reached=new Set();
