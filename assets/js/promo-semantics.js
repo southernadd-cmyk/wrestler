@@ -1198,7 +1198,9 @@
  const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(16).padStart(8,'0');};
  function source(id,template){return 'graph:'+id+':'+hash(template);}
  function classify(key,detail){
-  const claim=Object.prototype.hasOwnProperty.call(reviewed,key)?reviewed[key]:null;if(!claim||claim==='strength'&&!detail)return null;
+  // Generated rookie lines carry claims from the build (read at call time).
+  const table=Object.prototype.hasOwnProperty.call(reviewed,key)?reviewed:(root.OfficePromoRookieClaims||{});
+  const claim=Object.prototype.hasOwnProperty.call(table,key)?table[key]:null;if(!claim||claim==='strength'&&!detail)return null;
   return {v:1,kind:'claim',claim,source:key,...(claim==='strength'?{detail}:{})};
  }
  function fromBank(id,line){return classify('bank:'+id+':'+hash(line));}
