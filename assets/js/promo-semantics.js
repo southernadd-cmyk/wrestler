@@ -624,14 +624,6 @@
  "bank:sasha.c7.14:5f9e4cb9": "audience",
  "bank:sasha.c7.24:d008bac4": "respect",
  "bank:sasha.c7.27:a9ace0aa": "agreement",
- "bank:morgan.c7.09:87e03ad1": "effort",
- "bank:morgan.c7.10:3ddb4d45": "strike",
- "bank:morgan.c7.11:21681767": "effort",
- "bank:morgan.c7.12:5e018925": "pace",
- "bank:morgan.c7.13:5c49bc79": "shared_effort",
- "bank:morgan.c7.14:db4ed0d6": "legitimacy",
- "bank:morgan.c7.24:6928e709": "respect",
- "bank:morgan.c7.27:d0cf66d7": "agreement",
  "bank:tomasash.c8.09:b0ec7de8": "effort",
  "bank:tomasash.c8.10:136355e2": "strike",
  "bank:tomasash.c8.11:43f324f1": "effort",
@@ -695,7 +687,15 @@
  "bank:rev.c8.13:a46cec9c": "shared_effort",
  "bank:rev.c8.14:9922f110": "legitimacy",
  "bank:rev.c8.24:53f30831": "respect",
- "bank:rev.c8.27:8e1396a6": "agreement"
+ "bank:rev.c8.27:8e1396a6": "agreement",
+ "bank:morgan.c7.09:3463710e": "effort",
+ "bank:morgan.c7.10:73212499": "strike",
+ "bank:morgan.c7.11:c362061e": "effort",
+ "bank:morgan.c7.12:888f497f": "pace",
+ "bank:morgan.c7.13:90b33a9f": "shared_effort",
+ "bank:morgan.c7.14:58fcd861": "legitimacy",
+ "bank:morgan.c7.24:7f555ee3": "respect",
+ "bank:morgan.c7.27:b9f09ecb": "agreement"
 });
  const topics=Object.freeze({
  "legitimacy": [
