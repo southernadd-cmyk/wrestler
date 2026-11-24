@@ -90,6 +90,13 @@ function checkTitles(s,t,reports){
   if(top)reports.unshift(top.name+' was awarded the vacant '+D.belt(p.id,div).name+'.');
  }
 }
+function settleRetiredTitles(s){
+ const t=s.territory;if(!t?.titles)return;
+ for(const p of D.PROMOS)for(const div of D.DIVISION_ORDER){
+  const holder=t.titles[p.id]?.[div]?.holder;
+  if(s.worldV4?.contracts[holder]?.owner==='retired')crown(s,t,p.id,div,'retirement');
+ }
+}
 function stableFor(id){return ensure()?.teams.find(team=>team.roster.includes(id));}
 // `scale` lets the circuit, which now books more matches a week, move the rankings no faster than before.
 function record(t,pid,a,b,slot,won,stars,scale=1){
@@ -111,7 +118,7 @@ function promotionRank(pid,div,t=ensure(),s=G.S){
  if(!div)return D.DIVISION_ORDER.flatMap(d=>promotionRank(pid,d,t,s));
  const holder=t.titles?.[pid]?.[div]?.holder;
  return ladder(Object.entries(card).flatMap(([id,line])=>{
-  if(D.divisionOf(id)!==div)return [];
+  if(D.divisionOf(id)!==div||s?.worldV4?.contracts[id]?.owner==='retired')return [];
   const owned=s?.roster.find(x=>x.id===id),w=owned||G.personnel(s,id);if(!w)return [];
   const stable=t.teams.find(team=>team.roster.includes(id));
   return [{...w,...line,division:div,owned:!!owned,stable:stable?.name??null,champion:id===holder}];
@@ -120,17 +127,17 @@ function promotionRank(pid,div,t=ensure(),s=G.S){
 function opponents(pid,slot,div){
  const s=G.S,liveV4=s?.worldV4?.version===4;
  const fits=w=>!div||D.divisionOf(w)===div;
- const pool=promotionRank(pid,div).filter(w=>!w.owned&&contracted(s,w.id));
+ const pool=promotionRank(pid,div).filter(w=>!w.owned&&contracted(s,w.id)&&G.opponentReady(s,w.id));
  const exact=pool.filter(w=>w.slot===slot);
  if(exact.length)return exact;
  if(pool.length)return pool;
- const spare=(liveV4?D.ALL.filter(w=>contracted(s,w.id)):D.FOES).filter(fits);
- return spare.length?spare:D.FOES;
+ const spare=(liveV4?D.ALL.filter(w=>contracted(s,w.id)&&G.opponentReady(s,w.id)):D.FOES).filter(fits);
+ return liveV4?spare:(spare.length?spare:D.FOES);
 }
 function rank(){const s=G.S,t=ensure();if(!s)return [];
  const rivals=D.TALENT.filter(w=>stableFor(w.id));
  const all=s.worldV4?.version===4
-  ? D.ALL.filter(w=>s.worldV4.contracts[w.id]?.owner!=='market').map(w=>({...G.personnel(s,w.id),...(G.W(w.id)||{}),owned:s.worldV4.contracts[w.id]?.owner==='player'}))
+  ? D.ALL.filter(w=>['player','ai','independent'].includes(s.worldV4.contracts[w.id]?.owner)).map(w=>({...G.personnel(s,w.id),...(G.W(w.id)||{}),owned:s.worldV4.contracts[w.id]?.owner==='player'}))
   : [...[...D.FOES,...rivals].map(w=>({...w,owned:false})),...s.roster.map(w=>({...w,owned:true}))];
  return all.map(w=>{const recent=s.history.filter(h=>h.wid===w.id).slice(0,8);
  const form=recent.reduce((n,h)=>n+(h.outcome==='nc'?0:(h.finish||'').startsWith('win')?8:-5)+(h.stars>=3?Math.round(h.stars*2):0),0);
@@ -168,6 +175,8 @@ function settledTitles(s,t){
  return out;
 }
 function circuitBill(s,t,week,busy=new Set((s.card||[]).map(c=>c.rid))){
+ const projected=root.OfficeWorldV4?.previewLifecycle(t===s.territory?s:{...s,territory:t},week)||s;
+ if(projected!==s){s=projected;t=s.territory;}
  // Predict with the belts settled, exactly as evolve() books after checkTitles(); otherwise a vacant belt
  // makes the start screen's bill differ from the real one.
  if(t?.titles)t={...t,titles:settledTitles(s,t)};
@@ -305,5 +314,5 @@ function startBill(saved,rand=Math.random){
  const head=pick(show.filter(m=>m.title).length?show.filter(m=>m.title):show);
  return {head,under:show.filter(m=>m!==head&&m.pid===head.pid).concat(show.filter(m=>m!==head&&m.pid!==head.pid)).slice(0,2),saved:false};
 }
-root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve,title,titlesOf,titleMatch,contracted,circuitBill,absWeek,startBill,newCareerWorld};
+root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve,title,titlesOf,titleMatch,contracted,circuitBill,absWeek,startBill,newCareerWorld,settleRetiredTitles};
 })(typeof window!=='undefined'?window:globalThis);

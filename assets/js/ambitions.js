@@ -11,7 +11,7 @@
  const now=()=>G.abs();
  // A stable number in [0,1) from a string: the tie-breaker that stands in for chance.
  function hash(text){let h=2166136261;for(const ch of String(text)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return ((h>>>0)%10007)/10007;}
- const who=id=>G.W(id)||D.findWrestler(id);
+ const who=id=>G.W(id)||G.F(id);
  const nameOf=id=>who(id)?.name||id;
  const shortOf=id=>who(id)?.short||id;
  const rankOf=slot=>D.SLOTS[slot]?.rank??0;
@@ -226,7 +226,8 @@
   a.log=a.log.filter(m=>m.a>=wk);
   const map=ladders(s),met=[],broken=[];
   for(const w of D.ALL){
-   const id=w.id,e=a.w[id]??=start(id,map);
+   const id=w.id;if(s.worldV4?.contracts[id]?.owner==='retired')continue;
+   const e=a.w[id]??=start(id,map);
    const ms=weekMatches(id,wk,s);
    const {d,met:why}=progress(id,e,ms,map);
    // The circuit's bookers do not plan around anyone's ambitions yet, so its wrestlers are a little more patient.

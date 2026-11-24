@@ -6,7 +6,7 @@
    Pure where it matters: decide() reads the career and returns the week's plan and card without
    changing anything, so the start screen can show next week's real bill; territory.evolve() commits it. */
 (function installBookingOffice(root){'use strict';
- const D=root.OfficeData,T=root.OfficeTerritory;
+ const D=root.OfficeData,T=root.OfficeTerritory,G=root.OfficeGame;
  function hash(text){let h=2166136261;for(const ch of String(text)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return ((h>>>0)%10007)/10007;}
  const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,n));
  const quarter=n=>Math.round(n*4)/4;
@@ -41,7 +41,7 @@
   busy=new Set(busy);
   const notes=[],bill=[];
   const amb=id=>s.ambitions?.w?.[id]||null;
-  const info=id=>D.findWrestler(id)||{};
+  const info=id=>G.personnel(s,id)||{};
   // Same saved career => same planned world; distinct careers are no longer
   // locked into identical booking upsets, feuds and tie-breaks.
   // Week 2 is also previewed on the unsaved welcome poster, where no career seed
@@ -54,7 +54,7 @@
   // Who each promotion can book in each division: its ranked circuit wrestlers, not yours.
   const pools={};
   for(const p of D.PROMOS){pools[p.id]={};for(const div of D.DIVISION_ORDER)
-   pools[p.id][div]=T.promotionRank(p.id,div,t,s).filter(w=>!w.owned&&T.contracted(s,w.id));}
+   pools[p.id][div]=T.promotionRank(p.id,div,t,s).filter(w=>!w.owned&&T.contracted(s,w.id)&&!w.injury);}
   const row=(pid,div,id)=>pools[pid][div].find(w=>w.id===id)||null;
   // A promotion in trouble books desperately: shorter chases, more surprises, belts that move (v0.3.17).
   const desperate=pid=>!!t.business?.[pid]?.desperate;

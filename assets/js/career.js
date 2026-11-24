@@ -205,6 +205,11 @@ function bookingConflict(wid,rid,when){
  return (F(rid)?.name||rid)+' is already booked on '+label+' against '+(W(clash.wid)?.name||F(clash.wid)?.name||clash.wid)+'.';
 }
 function available(w){return availableAt(w)}
+function opponentReady(s,id,when=(s.season-1)*16+s.week){
+ if(!id||s.worldV4?.contracts[id]?.owner==='retired')return false;
+ const w=personnel(s,id);
+ return !!w&&(!w.injury||w.injury<=Math.max(0,when-((s.season-1)*16+s.week)));
+}
 function wages(){return S.roster.reduce((t,w)=>t+w.wage,0)}
 const OVERHEAD=100;function overhead(){return 60+S.roster.length*25}
 
@@ -254,7 +259,7 @@ function sign(id){
  // Keep the original invitations but guarantee a suitable current-week offer after the first signing.
  if(firstSigning&&S.week===1&&!S.offers.some(o=>o.eventAbs===abs()&&D.divisionOf(o.rid)===D.divisionOf(w))){
   const promoter=S.promoters.find(eligible);
-  if(promoter)S.offers.push(genOffer(promoter,0));
+  if(promoter){const offer=genOffer(promoter,0);if(offer.rid)S.offers.push(offer);}
  }
  save();return null;
 }
@@ -507,7 +512,7 @@ function makeOffers(){
   if(rand()<.52){const delay=2+Math.floor(rand()*2);S.offers.push(genOffer(p,delay));}
  }
  for(const fd of Object.values(S.feuds)){
-  if(fd.closed||W(fd.rid))continue;const w=W(fd.wid);if(!w||w.injury||D.divisionOf(w)!==D.divisionOf(fd.rid))continue;
+  if(fd.closed||W(fd.rid)||S.worldV4?.contracts[fd.rid]?.owner==='retired')continue;const w=W(fd.wid);if(!w||w.injury||D.divisionOf(w)!==D.divisionOf(fd.rid))continue;
   if(fd.heat>=70&&fd.matches>=2&&ps.length){const p=ps.slice().sort((a,b)=>b.reach-a.reach)[0];S.offers.unshift({...genOffer(p,2),rid:fd.rid,wid:fd.wid,slot:'main',tag:'Blow-off',finish:rand()<.55?'win_clean':'lose_clean',boost:1.4});}
   else if(fd.heat>=40&&rand()<.6&&ps.length){const p=one(ps),base=genOffer(p,1);S.offers.unshift({...base,rid:fd.rid,wid:fd.wid,slot:D.SLOT_ORDER[Math.min(3,D.SLOT_ORDER.indexOf(base.slot)+1)],tag:'Rematch',boost:1.15});}
  }
@@ -522,7 +527,7 @@ function makeOffers(){
  // Keep a reliable route to weekly income, but offer future trade-offs too.
  const today=S.offers.filter(o=>o.eventAbs===now).length;
  for(let i=today;i<Math.min(3,ps.length);i++)S.offers.push(genOffer(one(ps),0));
- S.offers=S.offers.sort((a,b)=>a.expiresAbs-b.expiresAbs||a.eventAbs-b.eventAbs).slice(0,11);
+ S.offers=S.offers.filter(o=>o.rid&&opponentReady(S,o.rid,o.eventAbs)).sort((a,b)=>a.expiresAbs-b.expiresAbs||a.eventAbs-b.eventAbs).slice(0,11);
 }
 
 function genOffer(p,delay=0,requestedSlot){
@@ -534,7 +539,7 @@ function genOffer(p,delay=0,requestedSlot){
  const finish=rand()<pw?(rand()<.55?'win_clean':'win_dirty'):(rand()<.5?'lose_protected':'lose_clean');
  const div=S.roster.length?D.divisionOf(one(S.roster)):one(D.DIVISION_ORDER);
  const opponents=root.OfficeTerritory?.opponents(p.id,slot,div)||D.FOES;
- return {id:uid('o'),pid:p.id,rid:one(opponents).id,slot,finish,wid:null,tag:null,boost:1,haggled:false,eventAbs:abs()+delay,expiresAbs:abs()+(delay?1:0)};
+ return {id:uid('o'),pid:p.id,rid:one(opponents)?.id??null,slot,finish,wid:null,tag:null,boost:1,haggled:false,eventAbs:abs()+delay,expiresAbs:abs()+(delay?1:0)};
 }
 function purse(o,w){
  const p=P(o.pid),s=D.SLOTS[o.slot],fin=D.FINISHES[o.finish];
@@ -608,7 +613,7 @@ function talkMove(oid,wid,move){
 }
 function book(oid,wid){
  const o=S.offers.find(x=>x.id===oid),w=W(wid);
- if(!o||!w)return 'Choose a wrestler.';if(!availableAt(w,o.eventAbs))return `${w.name} isn’t available on the offered date.`;if(o.expiresAbs<abs())return 'That offer has expired.';
+ if(!o||!w)return 'Choose a wrestler.';if(!opponentReady(S,o.rid,o.eventAbs))return 'The opponent is unavailable.';if(!availableAt(w,o.eventAbs))return `${w.name} isn’t available on the offered date.`;if(o.expiresAbs<abs())return 'That offer has expired.';
  if(o.wid&&o.wid!==wid)return 'This offer is for a specific wrestler.';const conflict=bookingConflict(wid,o.rid,o.eventAbs);if(conflict)return conflict;if(D.divisionOf(w)!==D.divisionOf(o.rid))return `This is a ${D.DIVISIONS[D.divisionOf(o.rid)].name.toLowerCase()} match.`;if(o.talk&&o.talk.wid!==wid)return 'These terms were negotiated for a different wrestler.';
  const fd=feud(wid,o.rid);
  if(o.talk?.step==='done')S.business.negotiated+=purse(o,w)-(o.talk.original?.fee||purse(o,w));
@@ -858,11 +863,12 @@ function endWeek(){
  S.books=[...(S.books||[]),{a:abs(),cash:S.cash,wages:pay,other:oh+cw+trained}].slice(-48);
  for(const w of S.roster)snapshot(w);
  S.focus=2;
+ root.OfficeWorldV4?.recoverPersonnel(S,abs());
  S.week++;
  if(S.week>16){seasonEnd();}
  // Pre-signed bookings move onto the live card when their date arrives.
  const due=S.futureBookings.filter(c=>c.eventAbs===abs());S.futureBookings=S.futureBookings.filter(c=>c.eventAbs>abs());
- for(const c of due){const w=W(c.wid);if(!w||w.injury||inCamp(w)){const p=P(c.pid);if(p)p.trust=clamp(p.trust-4);msg({from:'Your road agent',subject:'Booking lost to unavailability',kind:'info',body:[`${w?.name||'A wrestler'} cannot fulfil the ${P(c.pid)?.name||'promoter'} booking this week. Trust −4. Plan around injuries and training commitments.`]});}else S.card.push(c)}
+ for(const c of due){const w=W(c.wid);if(!opponentReady(S,c.rid)){msg({from:'Your road agent',subject:'Opponent unavailable',kind:'info',body:[`${F(c.rid)?.name||'The opponent'} cannot work the scheduled match. The booking has been cancelled without a trust penalty.`]});continue;}if(!w||w.injury||inCamp(w)){const p=P(c.pid);if(p)p.trust=clamp(p.trust-4);msg({from:'Your road agent',subject:'Booking lost to unavailability',kind:'info',body:[`${w?.name||'A wrestler'} cannot fulfil the ${P(c.pid)?.name||'promoter'} booking this week. Trust −4. Plan around injuries and training commitments.`]});}else S.card.push(c)}
  if(S.cash<-500){S.over={reason:'bankrupt'};save();return}
  msg({from:'The accountant',subject:`Week ${S.week===1?16:S.week-1} accounts`,kind:'info',body:[...lines,`Balance: ${money(S.cash)}.`]});
  makeDilemmas();makeOffers();save();
@@ -872,13 +878,28 @@ function seasonEnd(){
  S.cash+=grant;
  msg({from:'The office',subject:`Season ${S.season} review`,kind:'info',body:[`${done} of 4 objectives met.`,...g.map(x=>(x.done?'✓ ':'✗ ')+x.text),`Sponsorship and bonuses: ${money(grant)}.`]});
  const aged=ageRoster();
+ root.OfficeWorldV4?.agePersonnel(S,S.season);
+ root.OfficeTerritory?.settleRetiredTitles(S);
  S.season++;S.week=1;S.goals={};
  msg({from:'The office',subject:`Season ${S.season} objectives`,kind:'info',body:[`This season, ${S.identity.stable} is expected to:`,...goalList().map(x=>'• '+x.text)]});
  return aged;
 }
 // Season-end ageing. Rumours come one season before a retirement, so the player gets warning.
-// Roster-only: free agents keep their data-file age. Retirement chance is rolled with the career RNG.
+// Player retirement uses the career RNG; the wider circuit uses independent seeded decisions.
 function retireChance(age){return age>=38?Math.min(.6,(age-37)*.12):0}
+function ageWorker(w){
+ w.age=(w.age??30)+1;
+ w.ceiling??=clamp(Math.max(w.ring,w.mic,w.psych)+12,0,95);
+ if(w.age<=25){
+  const gain=Math.max(0,Math.ceil((w.ceiling-w.ring)*.3));
+  w.ring=clamp(w.ring+gain);
+  w.mic=clamp(Math.min(w.mic+1,Math.max(w.mic,w.ceiling)));
+  w.psych=clamp(Math.min(w.psych+1,Math.max(w.psych,w.ceiling)));
+ }
+ if(w.age>=34)w.psych=clamp(w.psych+1);
+ if(w.age>=35)w.ring=clamp(w.ring-(w.age>=37?2:1));
+ return w;
+}
 function ageRoster(){
  const retired=[];
  // 1. Wrestlers rumoured last season retire now, 70% of the time. Otherwise they stay another year.
@@ -891,21 +912,11 @@ function ageRoster(){
  for(const w of retired){
   reconcileOwnership(w.id,{outgoing:true,reason:`${w.name} retired`});
   S.roster=S.roster.filter(x=>x.id!==w.id);
+  root.OfficeWorldV4?.markRetired(S,w,abs());
   msg({from:'The office',subject:`${w.name} has retired`,kind:'info',body:[`${w.name} (${w.age}) has left the roster. Any bookings for them were cancelled.`]});
  }
  // 2. Everyone left gets a year older: rookies grow towards a hidden ceiling, mid-30s trade ring for psychology, veterans decline.
- for(const w of S.roster){
-  w.age=(w.age??30)+1;
-  w.ceiling??=clamp(Math.max(w.ring,w.mic,w.psych)+12,0,95);
-  if(w.age<=25){
-   const gain=Math.max(0,Math.ceil((w.ceiling-w.ring)*.3));
-   w.ring=clamp(w.ring+gain);
-   w.mic=clamp(Math.min(w.mic+1,Math.max(w.mic,w.ceiling)));
-   w.psych=clamp(Math.min(w.psych+1,Math.max(w.psych,w.ceiling)));
-  }
-  if(w.age>=34)w.psych=clamp(w.psych+1);
-  if(w.age>=35)w.ring=clamp(w.ring-(w.age>=37?2:1));
- }
+ for(const w of S.roster)ageWorker(w);
  // 3. Veterans over 38 may be rumoured to retire next season. The rumour is the advance signal.
  for(const w of S.roster){
   const p=retireChance(w.age);
@@ -917,5 +928,5 @@ function ageRoster(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,ageWorker,opponentReady};
 })(typeof window!=='undefined'?window:globalThis);
