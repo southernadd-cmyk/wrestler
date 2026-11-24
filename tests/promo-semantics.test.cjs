@@ -30,7 +30,7 @@ for(let i=0;i<300&&!contrasting;i++){
  if(Graph.variantFor(a.core,'open','swagger')?.id!=='sw_main'||!M.choices(a).some(o=>o.id==='swagger'))continue;
  M.choose(a,'swagger');M.choose(b,'swagger');
  const x=S.latest(a.log,'f')?.entry,y=S.latest(b.log,'f')?.entry;
- if(x?.semantic?.claim==='audience'&&y?.semantic?.claim==='legitimacy')contrasting=[a,b];
+ if(x?.semantic?.claim==='audience'&&y?.semantic?.claim==='legitimacy'&&M.choices(a).some(o=>o.id==='turn')&&M.choices(b).some(o=>o.id==='turn'))contrasting=[a,b];
 }
 assert.ok(contrasting,'same exact variant should expose differently tagged authored and graph replies');
 const [a,b]=contrasting;assert.equal(a.f.id,b.f.id);assert.equal(a.seed,b.seed);
