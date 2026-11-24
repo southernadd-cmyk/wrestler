@@ -25,6 +25,18 @@ This index separates **v0.65's newer career, match-structure and editorial featu
 | Fictional character design, starting world and identities | [Living-roster cast bible](living-roster-v4.md) |
 | Creative systems and evidence-backed rivalries | [Rivalries](rivalries-v3-12.md), [Promo graph](promo-graph.md) |
 
+## Current contributor map — recent development and verification
+
+| Area | Start here |
+| --- | --- |
+| Match structures (signed planning, Director, live execution) | [Baseline](match-structure-phase0-audit.md), [Director](match-structure-phase3-director.md), [career integration](match-structure-phase4-career.md), [called spots](match-structure-phase8-called-spots.md) |
+| Late-match psychology and finishing | [Finish timing](match-psychology-phase9d-finish-timing.md), [nearfall response](match-psychology-phase9l-nearfall-response.md) |
+| Career economy and persistence | [Long-career audit](v07-long-career-audit.md), [career continuity](career-continuity-audit.md) |
+| Interface and accessibility | [UI/UX audit](ui-ux-phase4-audit.md) |
+| What runs in CI, and when | [CI policy](ci-policy.md) |
+
+The phase-by-phase documents remain historical evidence, not competing current specifications. Start with these entry points rather than reading every phase in chronological order. Existing paths are retained to preserve links from tests, reports, and pull requests.
+
 ## Historical graph development — completed and now represented in v0.4
 
 | Stage | Historical record |
