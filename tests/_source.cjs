@@ -6,7 +6,7 @@ const allFiles=[...engineFiles,'ui.js'];
 const read=name=>fs.readFileSync(path.join(__dirname,'..','assets','js',name),'utf8');
 const core=engineFiles.map(read).join('\n');
 const script=allFiles.map(read).join('\n');
-const editorialFiles=['promo-dialogue-pilot.js','promo-dialogue-bank-c1.js','promo-dialogue-bank-c2.js'];
+const editorialFiles=['promo-dialogue-pilot.js','promo-dialogue-bank-c1.js','promo-dialogue-bank-c2.js','promo-dialogue-bank-c3.js'];
 const editorialCore=core+'\n'+editorialFiles.map(read).join('\n');
 const manifest=JSON.parse(read('promo-bank-manifest.js').match(/Object\.freeze\((\{[^}]*\})\)/)[1]);
 const bankCache=new Map();
