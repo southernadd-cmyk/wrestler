@@ -341,7 +341,7 @@
   for(const d of fresh){
    if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);const ctx=slot('w',d),line=pickAuthored(st,ctx);
     const lead=stage==='open'?Director?.answerOpening(st.openingQuestion,id):null;
-    if(lead){const answer=line?.text||clientClaim(st,d.line);push(st,'w',lead+' '+answer,step.landed?'strong':'uneven',got);st.log.at(-1).answersQuestion={v:1,prompt:st.openingQuestion.prompt,lead};}
+    if(lead){const answer=line?.text||clientClaim(st,d.line),spokenLead=st.speaker&&st.openingQuestion.kind!=='format'?clientClaim(st,lead):lead;push(st,'w',spokenLead+' '+answer,step.landed?'strong':'uneven',got);st.log.at(-1).answersQuestion={v:1,prompt:st.openingQuestion.prompt,lead:spokenLead};}
     else push(st,'w',line?.text||d.line,step.landed?'strong':'uneven',got,!line);
     annotate(st,st.log.length-1,ctx,line);
     if(!step.landed)push(st,'stage',fluff(st),'fluff');crowdSays(st,got,key);continue;}
