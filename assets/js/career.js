@@ -544,7 +544,11 @@ function genOffer(p,delay=0,requestedSlot){
 function purse(o,w){
  const p=P(o.pid),s=D.SLOTS[o.slot],fin=D.FINISHES[o.finish];
  const tier={Star:1.5,Veteran:1.1,Prospect:1,Rookie:.8}[w?.tier]||1;
- const base=100+p.reach*3.5+S.rep*1.5;
+ // Reputation improves terms quickly in the early career, but national
+ // exposure is already priced into promoter reach and the card position.
+ // Diminishing returns prevent those three premiums from compounding unchecked.
+ const reputationPremium=Math.min(40,S.rep)*1.5+Math.max(0,S.rep-40)*.5;
+ const base=100+p.reach*3.5+reputationPremium;
  const appearances=S.territory?.cards[p.id]?.[w?.id]?.matches||0;
  const localDraw=1+Math.min(.25,appearances*.05);
  return r10(base*s.mult*fin.purse*tier*(1+((w?.heat||40)-40)/200)*localDraw*(o.boost||1)*(o.bump||1));

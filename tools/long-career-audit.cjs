@@ -13,6 +13,7 @@ function run(seed,{seasons=5,policy='lean'}={}){
  const initial=G.S.cash;
  const errors=[],findings=[],yearly=[],seenRetired=new Set(),limits={minCash:initial,maxCash:initial,minActive:80,minAvailableMen:80,minAvailableWomen:80,maxSaveBytes:0};
  let weeks=0,matches=0,reloads=0,emptyOfferWeeks=0,emptyCircuitWeeks=0,fixtureCount=0,signings=0,releases=0;
+ const ledger={matchReceipts:0,weeklyWages:0,weeklyOverhead:0,trainingAndCoaching:0,otherNet:0,signingCosts:0};
  let lastSeason=G.S.season;
  const error=(wk,m)=>{if(errors.length<25)errors.push({week:wk,message:m});};
  const finding=(wk,m)=>{if(findings.length<30) findings.push({week:wk,message:m});};
@@ -70,7 +71,7 @@ function run(seed,{seasons=5,policy='lean'}={}){
   if(s.roster.length<cap){
    const sorted=s.free.filter(w=>!w.injury).sort((a,b)=>(a.fee+4*a.wage)-(b.fee+4*b.wage)||a.id.localeCompare(b.id));
    const target=sorted.find(w=>s.cash-w.fee>=reserve+G.wages()+w.wage);
-   if(target&&!G.sign(target.id))signings++;
+   if(target){const cash=s.cash;if(!G.sign(target.id)){signings++;ledger.signingCosts+=cash-s.cash;}}
   }
   for(let i=0;i<30;i++){
    const m=G.pending()[0];if(!m)break;
@@ -95,13 +96,16 @@ function run(seed,{seasons=5,policy='lean'}={}){
    if(w&&!G.book(o.id,w.id))fixtureCount++;
   }
   for(const c of s.card.slice())if(G.W(c.wid)&&G.F(c.rid)){
-   G.applyResult(c,result());matches++;
+   const before=s.cash;G.applyResult(c,result());matches++;ledger.matchReceipts+=s.cash-before;
   }
  }
  yearly.push(snapshot());
  for(let i=0;i<seasons*16&&!G.S.over;i++){
   if(!worldOnly)manage();
+  const wages=G.wages(),overhead=G.overhead(),training=G.S.business.training;
   try{G.endWeek();}catch(e){error(T.absWeek(G.S),'endWeek: '+e.stack);break;}
+  ledger.weeklyWages+=wages;ledger.weeklyOverhead+=overhead;
+  ledger.trainingAndCoaching+=Math.max(0,G.S.business.training-training)+(G.S.trainingReviews?.at(-1)?.coachCost||0);
   weeks++;
   const s=G.S;
   if(!s.offers.length)emptyOfferWeeks++;
@@ -124,11 +128,12 @@ function run(seed,{seasons=5,policy='lean'}={}){
   if(final.div.men<12||final.div.women<12)finding(weeks,'division depth below 12 active wrestlers');
   if(final.counts.market<4)finding(weeks,'free-agent market below four wrestlers');
  }
- return {seed,policy,requestedWeeks:seasons*16,weeks,initialCash:initial,finalCash:final.cash,
+ ledger.otherNet=final.cash-initial-ledger.matchReceipts+ledger.signingCosts+ledger.weeklyWages+ledger.weeklyOverhead+ledger.trainingAndCoaching;
+ return {seed,policy,requestedWeeks:seasons*16,weeks,initialCash:initial,finalCash:final.cash,ledger,
   outcome:G.S.over?.reason||'active',matches,fixtureCount,signings,releases,reloads,emptyOfferWeeks,emptyCircuitWeeks,limits,yearly,errors,findings};
 }
 function summary(r){return {seed:r.seed,policy:r.policy,weeks:r.weeks,requestedWeeks:r.requestedWeeks,outcome:r.outcome,initialCash:r.initialCash,finalCash:r.finalCash,
- matches:r.matches,signings:r.signings,releases:r.releases,reloads:r.reloads,emptyOfferWeeks:r.emptyOfferWeeks,emptyCircuitWeeks:r.emptyCircuitWeeks,
+ ledger:r.ledger,matches:r.matches,signings:r.signings,releases:r.releases,reloads:r.reloads,emptyOfferWeeks:r.emptyOfferWeeks,emptyCircuitWeeks:r.emptyCircuitWeeks,
  limits:r.limits,final:r.yearly.at(-1),errors:r.errors,findings:r.findings};}
 if(require.main===module){
  const seasons=Number(process.argv[2]||10),seeds=Number(process.argv[3]||4);
