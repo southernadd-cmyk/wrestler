@@ -13,7 +13,7 @@
  const conditions=['variants','formats','minAge','maxAge','minMeetings','titleMatch','hasMouthpiece','speakerStyle','opponentStyle','landed','minComposure','maxComposure','minIrritation','maxIrritation','subject'];
  const placeholders=['speaker','client','opponent','venue','finisher','strength'];
  // Only these narrowly reviewed variants may be rephrased. Exact variant ID is required.
- const approved=Object.freeze({open:{proof:['pr_tech','pr_brawl','pr_risk','pr_stall'],people:['p_working','p_short'],swagger:['sw_main','sw_pose']},answer:{calm:['ca_simple','ca_pro','ca_restraint'],turn:['tu_strength'],challenge:['ch_one_fall','ch_mat','ch_ground','ch_stay']},close:{vow:['vo_plain','vo_hard','vo_fans','vo_guarantee'],clean:['cl_middle','cl_hand'],uncertainty:['un_done','un_plan','un_see'],legacy:['le_plain']}});
+ const approved=Object.freeze({open:{proof:['pr_tech','pr_brawl','pr_risk','pr_stall'],people:['p_working','p_short','p_hometown','p_show'],swagger:['sw_main','sw_pose','sw_belt']},answer:{calm:['ca_simple','ca_pro','ca_restraint'],turn:['tu_strength'],challenge:['ch_one_fall','ch_mat','ch_ground','ch_stay'],confession:['co_home','co_plain','co_fear','co_turn']},close:{vow:['vo_plain','vo_hard','vo_fans','vo_guarantee'],clean:['cl_middle','cl_hand'],uncertainty:['un_done','un_plan','un_see'],legacy:['le_plain'],grateful:['gr_plain'],question:['qu_strikes','qu_holds','qu_air','qu_tricks','qu_simple'],finisher:['fi_name','fi_air','fi_outlast','fi_no_counter']}});
  const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
  const string=v=>typeof v==='string'&&v.trim().length>0;
  const idPattern=/^[a-z0-9][a-z0-9_.-]*$/;
