@@ -163,6 +163,7 @@ async function journey(browser,name,viewport){
   }
   await page.locator('[data-title="new"]').waitFor();
   await page.locator('[data-title="new"]').click();
+  await page.locator('#modal [data-dlg="identity-save"]').click();
   await page.locator('#app').waitFor({state:'visible'});
   await commentaryHeightAudit(page,name,viewport);
   assert.ok(await page.locator('#view').innerText(),'career screen rendered');
@@ -437,6 +438,7 @@ async function responsiveAudit(browser,name,viewport){
  try{
   await page.goto(URL,{waitUntil:'domcontentloaded'});
   await page.locator('[data-title="new"]').click();
+  await page.locator('#modal [data-dlg="identity-save"]').click();
   await page.locator('#app').waitFor({state:'visible'});
   await commentaryHeightAudit(page,name,viewport);
   const screens=['desk','inbox','squad','scouting','offers','fixtures','pyramid','promoters','rivalries','results','sheets'];
@@ -517,6 +519,7 @@ async function negotiationPrototypeAudit(browser,name,viewport){
  try{
   await page.goto(URL,{waitUntil:'domcontentloaded'});
   await page.locator('[data-title="new"]').click();
+  await page.locator('#modal [data-dlg="identity-save"]').click();
   await page.locator('#app').waitFor({state:'visible'});
   await page.evaluate(()=>{
    const G=window.OfficeGame,s=G.S;
