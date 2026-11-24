@@ -356,9 +356,9 @@
   "I know what I have to deal with: {detail}. I intend to find an answer.",
   "You put {detail} at the centre of this contest. That is the test.",
   "Right. {detail}. That is the challenge you set me.",
-  "Knowing about my {detail} is not the same as stopping them.",
+  "Knowing about my {detail} and stopping them are two different things.",
   "How do you adapt if I find an answer to your {detail}?",
-  "Your {detail} are a genuine challenge."
+  "Meeting your {detail} head on is a genuine challenge."
  ],
  "study": [
   "whether preparation translates into action",

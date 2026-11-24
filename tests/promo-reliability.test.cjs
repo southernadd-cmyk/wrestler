@@ -98,5 +98,11 @@ const good=url=>({ok:true,text:async()=>built.assets.get(url.split('/').at(-1))}
   assert.equal(M.result(explicit).quality,M.result(missing).quality);
  }
  assert.ok(authored>0);
+ // Composed and semantic frames fill {strength}/{detail} with plural or mass noun phrases: no singular or plural verb right after them.
+ const agreement=/\{(?:strength|detail)\}\s+(?:is|was|has|does|are|were|have)\b/;
+ for(const file of ['assets/js/promo-dialogue.js','assets/js/promo-semantics.js']){
+  const text=read.call(fs,path.join(base,file),'utf8');
+  for(const line of text.split('\n'))assert.ok(!agreement.test(line),file+' placeholder agreement: '+line.trim().slice(0,120));
+ }
  console.log('PASS promo reliability: production source parity, Windows EOL, targeted CI routing, transient retry, deadline, scene token lifecycle, plural strength and explicit bank loading.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
