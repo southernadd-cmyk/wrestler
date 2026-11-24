@@ -199,7 +199,7 @@
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
   if(m)st.read.voice=voice(m); // the room knows the wrestler; the voice is the mouthpiece's
   // Rehearsal and voice fit belong to the person actually speaking, not the client.
-  const practised=m?root.OfficeGame?.W?.(m.id)||m:w;
+  const practised=m?(root.OfficeGame?.S?.roster?root.OfficeGame.W?.(m.id):null)||m:w;
   st.practice={};for(const [k,v] of Object.entries(practised.micWork||{}))if(Math.floor(v)>0)st.practice[k]=Math.min(2,Math.floor(v));
   const drilled=Object.entries(st.practice).sort((a,b)=>b[1]-a[1])[0];
   st.readLines=[READ.room[st.read.room],READ.feud[st.read.feud?'yes':st.read.record?'record':'no'],READ.opp[st.read.opp],
