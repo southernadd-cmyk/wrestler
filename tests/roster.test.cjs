@@ -55,14 +55,29 @@ assert.equal(positions.size, all.length + data.PROMOS.length);
 game.fresh();
 const archive=game.IDENTITY_ARCHIVE;
 assert.ok(archive.people.includes(game.S.identity.manager),
- 'new careers choose a historic British wrestling name');
+ 'new careers choose a fictional British wrestling homage');
 assert.ok(archive.stables.includes(game.S.identity.stable),
- 'new careers choose a historic or homage stable');
+ 'new careers choose a fictional stable');
 assert.ok(game.S.identity.portrait>=0&&game.S.identity.portrait<16);
 assert.deepEqual(game.suggestIdentity(442),game.suggestIdentity(442),
  'old-career suggestions are deterministic');
-assert.ok(archive.people.includes('Mitzi Mueller')&&archive.people.includes('Klondyke Kate'));
-assert.ok(archive.groups.includes('The Royal Family')&&archive.groups.includes('The Bovver Birds'));
+assert.ok(archive.people.includes('Mitzi Millward')&&archive.people.includes('Klondyke Kay'));
+assert.ok(archive.groups.includes('The Crown Cousins')&&archive.groups.includes('The Bootlace Belles'));
+const formerRealPeople=['Mick McManus','Jackie Pallo','Les Kellett','Johnny Saint','Billy Robinson','Adrian Street','Mark Rocco','Jim Breaks','Bert Royal','Vic Faulkner','George Kidd','Big Daddy','Giant Haystacks','Kendo Nagasaki','Davey Boy Smith','Dynamite Kid','Marty Jones','Tony St Clair','Pat Roach','Johnny Kwango','Max Crabtree','Brian Dixon','Orig Williams','Gorgeous George Gillette','Lloyd Ryan','Paul Lincoln','Ricky Knight','Mitzi Mueller','Klondyke Kate','Rusty Blair','Nicky Monroe','Sue Brittain','Sweet Saraya'];
+const formerRealGroups=['The Royal Family','The British Bulldogs','The Bovver Birds','British Strong Style','The Origin'];
+assert.ok(formerRealPeople.every(name=>!archive.people.includes(name)));
+assert.ok(formerRealGroups.every(name=>!archive.stables.includes(name)));
+assert.equal(new Set(archive.people).size,archive.people.length);
+assert.equal(new Set(archive.stables).size,archive.stables.length);
+for(let seed=0;seed<256;seed++){
+ const suggestion=game.suggestIdentity(seed);
+ assert.ok(archive.people.includes(suggestion.manager));
+ assert.ok(archive.stables.includes(suggestion.stable));
+}
+const savedIdentity=JSON.parse(JSON.stringify(game.S));
+savedIdentity.identity={manager:'Mick McManus',stable:'The British Bulldogs',portrait:3};
+game.S=savedIdentity;
+assert.deepEqual(game.S.identity,savedIdentity.identity,'previously saved names are preserved, even if they were old defaults');
 const untouchedSeed=game.S.seed;
 assert.equal(game.setIdentity({manager:'  Ada   Lovelace ',stable:'  Royal   Mat ',portrait:8}),true);
 assert.equal(game.S.identity.manager,'Ada Lovelace');
@@ -97,8 +112,8 @@ delete oldSave.territory.cards;
 storage.set('the-office-v22', JSON.stringify(oldSave));
 game.load();
 const inherited=game.suggestIdentity(oldSave.careerSeed??oldSave.seed);
-assert.equal(game.S.identity.manager,inherited.manager,'legacy save has a stable historic manager name');
-assert.equal(game.S.identity.stable,inherited.stable,'legacy save has a stable archive group name');
+assert.equal(game.S.identity.manager,inherited.manager,'legacy save has a stable fictional manager name');
+assert.equal(game.S.identity.stable,inherited.stable,'legacy save has a stable fictional group name');
 assert.equal(game.S.identity.portrait,inherited.portrait,'legacy save gets a fixed seeded portrait');
 assert.equal(game.S.free.length, 18);
 assert.equal(game.S.free[0].fee, 1234);
