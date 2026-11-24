@@ -437,9 +437,25 @@ async function responsiveAudit(browser,name,viewport){
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto(URL,{waitUntil:'domcontentloaded'});
+  await page.evaluate(async()=>{await document.fonts.ready;await Promise.allSettled(document.querySelector('#startHeading').getAnimations().map(a=>a.finished));});
+  const titleGeometry=await page.evaluate(()=>{
+   const heading=document.querySelector('#startHeading'),ticket=document.querySelector('[data-title="new"]');
+   const range=document.createRange();range.selectNodeContents(heading);
+   const r=range.getBoundingClientRect(),t=ticket.getBoundingClientRect();
+   return {overlap:r.right>t.left+1&&r.left<t.right-1&&r.bottom>t.top+1&&r.top<t.bottom-1};
+  });
+  assert.equal(titleGeometry.overlap,false,name+': title text overlaps New career ticket');
   await page.locator('[data-title="new"]').click();
   await page.locator('#modal [data-dlg="identity-save"]').click();
   await page.locator('#app').waitFor({state:'visible'});
+  if(viewport.width>=901){
+   const overlap=await page.evaluate(()=>{
+    const toast=document.querySelector('#toast'),nav=document.querySelector('#app .nav');
+    const t=toast.getBoundingClientRect(),n=nav.getBoundingClientRect();
+    return toast.classList.contains('show')&&t.left<n.right&&t.right>n.left&&t.top<n.bottom&&t.bottom>n.top;
+   });
+   assert.equal(overlap,false,name+': first-signing notice covers sidebar');
+  }
   await commentaryHeightAudit(page,name,viewport);
   const screens=['desk','inbox','squad','scouting','offers','fixtures','pyramid','promoters','rivalries','results','sheets'];
   for(const screen of screens){
@@ -480,6 +496,15 @@ async function responsiveAudit(browser,name,viewport){
   assert.ok(await page.locator('#view .msglist button').count()>0,
     name+': reports list should contain report');
   await page.evaluate(()=>window.OfficeUI.go('scouting'));
+  if(viewport.width>=901){
+   const widths=await page.evaluate(()=>{
+    const host=document.querySelector('#view .free-table'),fee=host.querySelector('thead th:last-child');
+    const h=host.getBoundingClientRect(),f=fee.getBoundingClientRect();
+    return {scroll:host.scrollWidth,client:host.clientWidth,feeRight:f.right,hostRight:h.right};
+   });
+   assert.ok(widths.scroll<=widths.client+2&&widths.feeRight<=widths.hostRight+2,
+    name+': Fee column clipped or requires sideways scrolling '+JSON.stringify(widths));
+  }
   // All styles in the active market must be filterable, not just four
   // historically hard-coded labels.
   const style=await page.evaluate(()=>{
@@ -625,6 +650,7 @@ async function negotiationPrototypeAudit(browser,name,viewport){
   await responsiveAudit(browser,'laptop',{width:1024,height:768});
   await responsiveAudit(browser,'tablet',{width:768,height:820});
   await responsiveAudit(browser,'small-phone',{width:360,height:740});
+  await responsiveAudit(browser,'desktop-1366',{width:1366,height:768});
   await responsiveAudit(browser,'desktop-wide',{width:1440,height:900});
   await negotiationPrototypeAudit(browser,'booking-desktop',{width:1280,height:720});
   await negotiationPrototypeAudit(browser,'booking-phone',{width:390,height:844});
