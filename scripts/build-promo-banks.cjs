@@ -36,7 +36,7 @@ function build(){
  return {assets,script,packs,names,claimsScript};
 }
 // Only generated, revisioned bank files are ours to delete; anything else in the folder is left alone.
-const generated=/^[a-z0-9]+\.[0-9a-f]{8}\.json$/;
+const generated=/^[a-z0-9-]+\.[0-9a-f]{8}\.json$/;
 function staleFiles(built){
  if(!fs.existsSync(dir))return [];
  return fs.readdirSync(dir).filter(n=>generated.test(n)&&!built.assets.has(n));
