@@ -647,9 +647,69 @@ async function negotiationPrototypeAudit(browser,name,viewport){
  }finally{await context.close()}
 }
 
+// Focused visual regression: use the actual title, scouting table and first
+// career toast, rather than a synthetic DOM or viewport-only overflow check.
+async function laptopLayoutAudit(browser,name,viewport){
+ const context=await browser.newContext({viewport,reducedMotion:'reduce'});
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ try{
+  await page.goto(URL,{waitUntil:'domcontentloaded'});
+  await page.locator('[data-title="new"]').waitFor();
+  await page.evaluate(()=>document.fonts.ready);
+  const title=await page.evaluate(()=>{
+   const box=r=>({left:r.left,right:r.right,top:r.top,bottom:r.bottom});
+   const h=document.querySelector('.poster-title'),range=document.createRange();
+   range.selectNodeContents(h);
+   return {text:box(range.getBoundingClientRect()),poster:box(document.querySelector('.poster').getBoundingClientRect()),
+    ticket:box(document.querySelector('[data-title="new"]').getBoundingClientRect())};
+  });
+  assert.ok(title.text.left>=title.poster.left-1&&title.text.right<=title.poster.right+1,
+   name+': masthead text escapes its own poster '+JSON.stringify(title));
+  const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+  assert.ok(!overlaps(title.text,title.ticket),name+': masthead covers the ticket '+JSON.stringify(title));
+  await page.locator('[data-title="new"]').click();
+  await page.locator('#modal [data-dlg="identity-save"]').click();
+  await page.locator('#app').waitFor({state:'visible'});
+  await page.locator('#continue').click();
+  const toast=page.locator('#toast.show');
+  await toast.waitFor();
+  assert.match(await toast.innerText(),/sign a wrestler first/i);
+  if(viewport.width>720){
+   const nav=await page.locator('#nav').boundingBox(),notice=await toast.boundingBox();
+   assert.ok(nav&&notice&&notice.x>=nav.x+nav.width+4,
+    name+': toast obscures sidebar '+JSON.stringify({nav,notice}));
+   await page.evaluate(()=>window.OfficeUI.go('scouting'));
+   const geom=await page.locator('#view .free-table').evaluate(el=>{
+    const r=el.getBoundingClientRect(),last=el.querySelector('thead th:last-child').getBoundingClientRect();
+    const fees=[...el.querySelectorAll('tbody tr td:last-child')].map(td=>({right:td.getBoundingClientRect().right,text:td.textContent}));
+    return {left:r.left,right:r.right,innerRight:r.left+el.clientLeft+el.clientWidth,
+     scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,feeRight:last.right,
+     feeLabel:el.querySelector('thead th:last-child').textContent,fees};
+   });
+   assert.match(geom.feeLabel,/Fee/);
+   assert.ok(geom.fees.length>0&&geom.fees.every(f=>f.text.includes('£')&&f.right<=geom.innerRight+2),
+    name+': fee cells clipped '+JSON.stringify(geom));
+   assert.ok(geom.scrollWidth<=geom.clientWidth+2&&geom.feeRight<=geom.innerRight+2,
+    name+': free agents require horizontal scrolling '+JSON.stringify(geom));
+  }else{
+   assert.equal(await page.locator('#view .free-table').isVisible(),false);
+   assert.ok(await page.locator('#view .free-card .free-costs').first().isVisible(),
+    name+': phone cards still display costs');
+  }
+  assert.deepEqual(errors,[],name+': no uncaught errors');
+  console.log('PASS focused layout '+name+': poster, first signing toast, visible fee');
+ }finally{await context.close()}
+}
+
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
+  await laptopLayoutAudit(browser,'laptop-1366',{width:1366,height:768});
+  await laptopLayoutAudit(browser,'laptop-1024',{width:1024,height:768});
+  await laptopLayoutAudit(browser,'desktop-wide',{width:1920,height:1080});
+  await laptopLayoutAudit(browser,'phone',{width:390,height:844});
+  if(process.env.OFFICE_LAYOUT_ONLY==='1')return;
   await journey(browser,'desktop',{width:1280,height:720});
   await journey(browser,'phone',{width:390,height:844});
   await responsiveAudit(browser,'laptop',{width:1024,height:768});
