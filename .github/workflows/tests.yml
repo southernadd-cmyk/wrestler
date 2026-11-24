@@ -57,7 +57,11 @@ jobs:
                   add tests/structure-career-activation.test.cjs ;;
                 .github/workflows/*)
                   continue ;;
-                assets/js/ui.js|assets/js/sheets.js|assets/js/agents-room.js)
+                assets/js/ui.js)
+                  add tests/early-career-finances.test.cjs
+                  add tests/ui-accessibility.test.cjs
+                  add tests/structure-career-activation.test.cjs ;;
+                assets/js/sheets.js|assets/js/agents-room.js)
                   add tests/ui-accessibility.test.cjs
                   add tests/structure-career-activation.test.cjs ;;
                 assets/js/ringfax.js|assets/css/ringfax.css|tests/ringfax-*.cjs)
@@ -75,7 +79,8 @@ jobs:
                   add tests/training-intelligence.test.cjs ;;
                 assets/js/*career*.js|assets/js/*save*.js|assets/js/*injur*.js)
                   add tests/save-integrity.test.cjs
-                  add tests/roster.test.cjs ;;
+                  add tests/roster.test.cjs
+                  add tests/early-career-finances.test.cjs ;;
                 assets/js/*.js|assets/*.js|assets/css/*.css|assets/*.css|index.html)
                   add tests/ui-accessibility.test.cjs ;;
                 tests/*.test.cjs)
