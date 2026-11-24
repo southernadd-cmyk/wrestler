@@ -1514,6 +1514,7 @@ function showMeeting(){
  night.stage='meeting';persistNight();
 }
 
+function spokenMood(st,c){return (st.speaker?.short||st.w.short)+': '+c.player+' · '+st.f.short+': '+c.opponent;}
 function showPromos(){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
@@ -1524,7 +1525,7 @@ function showPromos(){
  if(!night.promo||night.promo.cid!==c.id||night.promo.v!==5){
   const mouth=night.mouth?.cid===c.id&&night.mouth.id!=='none'?MP?.pick(c,w,night.mouth.id):null;
   const arc=window.OfficeProgrammeArcs?.intro(c,night.plan?.arcChoice);
-  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth,arc});
+  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth,arc,directed:true});
   // v0.3.12 The interviewer asks about what the crowd saw: the rivalry's public record. A backstage
   // memory (recalled.promoPrompt) stays backstage; it is no longer read out on air.
   const intro=window.OfficeRivalry?.introFor(night.promo.core);
@@ -1541,8 +1542,9 @@ function showPromos(){
  // Dennis's read of the night before the first line, and the opponent's angle before the answer.
  const read=v.read?`<div class="mic-read"><b>${esc(OfficeRoom.AGENT)}’s read</b>${v.read.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:'';
  const cue=v.cue?`<p class="mic-cue">${esc(v.cue)}</p>`:'';
+ const conversation=v.conversation&&v.stage!=='done'&&v.conversation.subject?`<p class="dim claim"><b>Subject:</b> ${esc(v.conversation.subject)} · ${esc(spokenMood(st,v.conversation))}</p>`:'';
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">The final word</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.tactic?.stake||'')}</p></div>`:
-  `<div class="decide2"><h3 class="section-h">${esc(v.name)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${read}${cue}${open}${claim}${pickCards(v.options,'mic',true)}</div>`;
+  `<div class="decide2"><h3 class="section-h">${esc(v.name)} ${v.conversation?'':`<small>${v.round+1} of ${v.total}</small>`}</h3><p class="lede">${esc(v.help)}</p>${read}${cue}${open}${conversation}${claim}${pickCards(v.options,'mic',true)}</div>`;
  const sp=st.speaker?G.W(st.speaker.id)||w:w;
  const body=matchupBar(c,w,f,meter)+(st.speaker?`<p class="dim mouth-note">${esc(st.speaker.short)} is doing the talking for ${esc(w.short)}.</p>`:'')+sceneLog(entries,'micTalk',sp,f,p.id)+decide;
  $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win('The promo: '+w.short+' against '+f.short+' for the room',body,{h:'h3',body:'tight'})+'</div>'+
