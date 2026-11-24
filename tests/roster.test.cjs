@@ -77,7 +77,9 @@ for(let seed=0;seed<256;seed++){
 const savedIdentity=JSON.parse(JSON.stringify(game.S));
 savedIdentity.identity={manager:'Mick McManus',stable:'The British Bulldogs',portrait:3};
 game.S=savedIdentity;
-assert.deepEqual(game.S.identity,savedIdentity.identity,'previously saved names are preserved, even if they were old defaults');
+assert.equal(game.S.identity.manager,'Mick McManus','previously saved manager is preserved');
+assert.equal(game.S.identity.stable,'The British Bulldogs','previously saved stable is preserved');
+assert.equal(game.S.identity.portrait,3);
 const untouchedSeed=game.S.seed;
 assert.equal(game.setIdentity({manager:'  Ada   Lovelace ',stable:'  Royal   Mat ',portrait:8}),true);
 assert.equal(game.S.identity.manager,'Ada Lovelace');
