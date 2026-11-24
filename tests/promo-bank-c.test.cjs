@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),vm=require('node:vm');
-const {core}=require('./_source.cjs');
+const {editorialCore:core,promoBanks}=require('./_source.cjs');
 const root={addEventListener(){}},store=new Map();
 const localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)};
 vm.runInNewContext(core,{window:root,localStorage,Date,Math,JSON,console});
@@ -30,7 +30,7 @@ const roster=banks.map(p=>D.ALL.find(w=>w.id===p.owner)),p=D.PROMOS[0];
 for(let k=0;k<roster.length;k++)for(let i=0;i<40;i++){
  const w=roster[k],f=roster[(k+1+i%(roster.length-1))%roster.length];
  const c={id:'bank-c-'+w.id+'-'+i,wid:w.id,rid:f.id,pid:p.id,eventAbs:i,finish:'win_clean',minutes:12,feudHeat:i%3?0:55};
- const opts={directed:true,formats:true,dialogue:true,authored:true};
+ const opts={directed:true,formats:true,dialogue:true,authored:true,banks:promoBanks(w.id,f.id)};
  const a=M.begin(c,w,f,null,null,p,opts),b=M.begin(c,w,f,null,null,p,{...opts,authored:false});
  while(a.stage!=='done'){
   const stage=M.ROUNDS[a.round].id,choices=M.choices(a);

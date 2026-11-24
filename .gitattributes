@@ -1,0 +1,3 @@
+# Generated promo revisions are byte-sensitive; keep line endings portable.
+assets/js/promo-bank-manifest.js text eol=lf
+assets/promo-banks/*.json text eol=lf

@@ -34,7 +34,7 @@
    ['open','people','f','p_working','rebuttal','I can do the whole match. Can you?'],
    ['open','swagger','f','sw_main','disrespect','Fine. Main event. Still got to wrestle me.'],
    ['answer','turn','w','tu_strength','rebuttal','You have got your {strength}. I have got to find an answer. That is the job.'],
-   ['answer','turn','w','tu_strength','rebuttal','I heard you. {strength} is what I have to deal with. I am not pretending otherwise.'],
+   ['answer','turn','w','tu_strength','rebuttal','I heard you. I know what I have to deal with: {strength}. I am not pretending otherwise.'],
    ['answer','calm','w','ca_simple','respect','No shouting from me. Meet me when the bell goes.'],
    ['answer','calm','w','ca_pro','respect','Nothing against you. I need the win as much as you do.'],
    ['answer','calm','w','ca_restraint','pressure','I could stand here and have a row. Would not get us anywhere.'],

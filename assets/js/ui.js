@@ -1527,13 +1527,12 @@ function showPromos(loadedBanks){
  const existing=night.promo?.authoredDialogue,needsBanks=newPromo||existing&&!Array.isArray(existing.banks)&&night.promo.stage!=='done';
  if(needsBanks&&loadedBanks===undefined){
   const n=night,cid=c.id;
-  if(n.promoLoading===cid)return;
-  n.promoLoading=cid;n.stage='promo';persistNight();
+  const loader=window.OfficePromoBanks,token=loader.beginSceneLoad(n,cid);if(!token)return;
+  persistNight();
   $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back"><p role="status">Preparing the microphone…</p></div>';
   const ids=newPromo?[mouth?.id||w.id,f.id]:[night.promo.speaker?.id||w.id,f.id];
   Promise.resolve(window.OfficePromoBanks?.load(ids)||[]).catch(()=>[]).then(banks=>{
-   if(night!==n||n.stage!=='promo'||n.promoLoading!==cid||current()?.id!==cid)return;
-   delete n.promoLoading;showPromos(banks);
+   if(loader.completeSceneLoad(n,token,()=>night===n&&current()?.id===cid))showPromos(banks);
   });return;
  }
  if(!newPromo&&needsBanks&&existing)existing.banks=loadedBanks||[];
@@ -1993,7 +1992,7 @@ document.addEventListener('click',e=>{
  if(d.mouth){if(night?.stage!=='mouth')return;const c=current();if(!c)return;night.mouth={cid:c.id,id:d.mouth};return showPromos()}
  if(d.contract){const st=night?.signing;if(night?.stage!=='signing'||!st||st.stage!=='live')return;OfficeSigning.choose(st,d.contract);return showSigning()}
  if(d.tv==='signing'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showSigning();}
- if(d.mic){const st=night?.promo;if(night?.stage!=='promo'||st?.v!==5||st.stage==='done')return;
+ if(d.mic){const st=night?.promo;if(night?.stage!=='promo'||night.promoLoading||st?.v!==5||st.stage==='done'||current()?.id!==st.cid)return;
   if(!OfficeMic.choices(st).some(o=>o.id===d.mic))return;OfficeMic.choose(st,d.mic);return showPromos()}
  if(d.tv==='meeting')return showMeeting();
  if(d.tv==='promos'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showPromos();}

@@ -5,13 +5,15 @@
    ring. Every option states its risk and what it is for. Seeded and replayable. */
 (function installPromoDuel(root){'use strict';
  const D=root.OfficeData,Core=root.OfficeStory.Graph,Room=root.OfficeRoom,Director=root.OfficePromoDirector,Dialogue=root.OfficePromoDialogue;
- const Banks=root.OfficePromoBanks,sceneCatalogues=new WeakMap();let legacyCatalogue;
+ const Banks=root.OfficePromoBanks,sceneCatalogues=new WeakMap();
+ const emptyCatalogue=Dialogue.catalogue([]);
  function catalogueFor(st){
   if(Array.isArray(st.authoredDialogue?.banks)){
    if(!sceneCatalogues.has(st)){let cat;try{cat=Banks.catalogue(st.authoredDialogue.banks);}catch(_){cat=Dialogue.catalogue([]);}sceneCatalogues.set(st,cat);}
    return sceneCatalogues.get(st);
   }
-  return legacyCatalogue??=Dialogue.catalogue(Dialogue.combine(root.OfficePromoPilot||[],root.OfficePromoBankC1||[],root.OfficePromoBankC2||[]));
+  // No implicit editorial catalogue: browser and simulation use explicit payloads.
+  return emptyCatalogue;
  }
  const hash=s=>{let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;};
  const rng=(seed,k)=>hash(seed+'|'+k)/4294967296;

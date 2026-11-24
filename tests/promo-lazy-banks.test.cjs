@@ -1,12 +1,12 @@
 'use strict';
 const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
-const {core}=require('./_source.cjs'),{check}=require('../scripts/build-promo-banks.cjs');
+const {core,promoBanks}=require('./_source.cjs'),{check}=require('../scripts/build-promo-banks.cjs');
 const built=check(),storage=new Map();
 const localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)};
 const plain=x=>JSON.parse(JSON.stringify(x));
 let calls=[],offline=false,corrupt=false;
 function create(){
- const root={addEventListener(){},localStorage,fetch:async url=>{
+ const root={addEventListener(){},localStorage,navigator:{get onLine(){return !offline;}},fetch:async url=>{
   calls.push(url);if(offline)throw Error('offline');
   const raw=built.assets.get(url.split('/').at(-1));
   return {ok:!!raw,text:async()=>corrupt?'{}':raw};
@@ -19,6 +19,7 @@ function create(){
  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
  assert.ok(!html.includes('src="assets/js/promo-dialogue-pilot.js"')&&!html.includes('src="assets/js/promo-dialogue-bank-'));
  assert.equal(calls.length,0,'startup must not fetch any character');
+ assert.equal(root.OfficePromoPilot,undefined,'production engine must not expose editorial sources');
  assert.equal(built.assets.size,22);assert.equal(built.packs.reduce((n,p)=>n+p.lines.length,0),713);
  const [a,b]=await Promise.all([B.load(['mara','brick','mara','unknown']),B.load(['mara'])]);
  assert.equal(calls.length,2);assert.equal(a.length,2);assert.equal(b.length,1);
@@ -36,13 +37,13 @@ function create(){
  for(let i=0;i<80;i++){
   const c={id:'lazy-'+i,wid:w.id,rid:f.id,pid:p.id,eventAbs:i,finish:'win_clean',minutes:12,feudHeat:i%3?0:60};
   const opt={directed:true,formats:true,dialogue:true,authored:true};
-  const lazy=M.begin(c,w,f,null,null,p,{...opt,banks:a}),eager=M.begin(c,w,f,null,null,p,opt),fallback=M.begin(c,w,f,null,null,p,{...opt,banks:[],composition:true});
+  const lazy=M.begin(c,w,f,null,null,p,{...opt,banks:a}),eager=M.begin(c,w,f,null,null,p,{...opt,banks:promoBanks(w.id,f.id)}),fallback=M.begin(c,w,f,null,null,p,{...opt,banks:[],composition:true});
   while(lazy.stage!=='done'){
    const stage=M.ROUNDS[lazy.round].id,choices=M.choices(lazy),want=stage==='open'?'proof':stage==='answer'?'turn':stage==='push'?'press':'vow';
    const id=(choices.find(x=>x.id===want)||choices[0]).id,copy=plain(lazy);
    M.choose(lazy,id);M.choose(copy,id);M.choose(eager,id);M.choose(fallback,id);
    assert.equal(JSON.stringify(lazy),JSON.stringify(copy),'serialized banks pin resume');
-   assert.equal(JSON.stringify(lazy.log),JSON.stringify(eager.log),'lazy must preserve exact eager dialogue');
+   assert.equal(JSON.stringify(lazy.log),JSON.stringify(eager.log),'network payload must preserve exact on-disk production dialogue');
   }
   const lr=M.result(lazy),fr=M.result(fallback);
   for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta'])assert.deepEqual(plain(lr[k]),plain(fr[k]),k);

@@ -42,6 +42,20 @@ jobs:
           syntax="$RUNNER_TEMP/changed-js.txt"
           : > "$suites"; : > "$syntax"
           add() { [[ -f "$1" ]] && ! grep -Fxq "$1" "$suites" && echo "$1" >> "$suites" || :; }
+          add_promo() {
+            add tests/promo-dialogue.test.cjs
+            add tests/promo-director.test.cjs
+            add tests/promo-formats.test.cjs
+            add tests/promo-selection.test.cjs
+            add tests/promo-bank-c.test.cjs
+            add tests/promo-lazy-banks.test.cjs
+            add tests/promo-quality-baseline.test.cjs
+            add tests/promo-flow.test.cjs
+            add tests/promo-variants.test.cjs
+            add tests/promo-read.test.cjs
+            add tests/promo-identity.test.cjs
+            add tests/promo-reliability.test.cjs
+          }
           if [[ "$EVENT_NAME" == "workflow_dispatch" || "$EVENT_NAME" == "schedule" || "$REF_TYPE" == "tag" || "$FULL_REFACTOR" == "true" ]]; then
             echo "mode=full" >> "$GITHUB_OUTPUT"
             exit 0
@@ -55,16 +69,22 @@ jobs:
                 *.md|*.mdx|docs/readme/*.svg|docs/readme/*.png)
                   continue ;;
                 .github/workflows/tests.yml)
-                  add tests/structure-career-activation.test.cjs ;;
+                  add tests/structure-career-activation.test.cjs
+                  add_promo ;;
                 .github/workflows/*)
                   continue ;;
                 assets/js/ui.js)
                   add tests/early-career-finances.test.cjs
                   add tests/ui-accessibility.test.cjs
-                  add tests/structure-career-activation.test.cjs ;;
+                  add tests/structure-career-activation.test.cjs
+                  add_promo ;;
                 assets/js/sheets.js|assets/js/agents-room.js)
                   add tests/ui-accessibility.test.cjs
-                  add tests/structure-career-activation.test.cjs ;;
+                  add tests/structure-career-activation.test.cjs
+                  add_promo ;;
+                assets/js/promo-*.js|assets/promo-banks/*|scripts/build-promo-banks.cjs|assets/js/story.js|assets/js/rivalry.js|assets/js/mouthpiece.js|tests/_source.cjs|.gitattributes|index.html)
+                  add_promo
+                  add tests/ui-accessibility.test.cjs ;;
                 assets/js/ringfax.js|assets/css/ringfax.css|tests/ringfax-*.cjs)
                   add tests/ringfax-phase0-baseline.test.cjs
                   add tests/ringfax-phase1.test.cjs ;;

@@ -3,7 +3,7 @@
 (function(root){'use strict';
  const D=root.OfficePromoDialogue,manifest=root.OfficePromoBankManifest||{};
  const pending=new Map(),memory=new Map(),prefix='office-promo-bank-v1:';
- const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0');};
+ const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0');};
  function decode(payload){
   if(!payload||payload.v!==1||typeof payload.owner!=='string'||!Array.isArray(payload.rows)||payload.rows.length>128)throw Error('Invalid promo bank');
   return {owner:payload.owner,role:'wrestler',lines:payload.rows.map(row=>{
@@ -24,13 +24,21 @@
  async function fetchBank(id,rev){
   const hit=cached(id,rev);if(hit)return hit;
   if(typeof root.fetch!=='function')return null;
-  let timer,controller=typeof root.AbortController==='function'?new root.AbortController():null;
+  let timer,timedOut=false,controller=typeof root.AbortController==='function'?new root.AbortController():null;
   try{
-   const request=Promise.resolve().then(()=>root.fetch('assets/promo-banks/'+id+'.'+rev+'.json',{cache:'force-cache',...(controller?{signal:controller.signal}:{})})).then(async r=>{
-    if(!r.ok)throw Error('Promo bank unavailable');
-    return validate(await r.text(),id,rev);
-   });
-   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{controller?.abort();reject(Error('Promo bank timeout'));},2500);});
+   // Retry one transient failure inside the original total deadline.
+   const request=(async()=>{
+    for(let attempt=0;attempt<2;attempt++){
+     let r;
+     try{r=await root.fetch('assets/promo-banks/'+id+'.'+rev+'.json',{cache:attempt?'reload':'force-cache',...(controller?{signal:controller.signal}:{})});}
+     catch(err){if(attempt||timedOut||root.navigator?.onLine===false)throw err;continue;}
+     if(timedOut)throw Error('Promo bank timeout');
+     if(!r.ok){if(!attempt&&r.status>=500&&r.status<600)continue;throw Error('Promo bank unavailable');}
+     return validate(await r.text(),id,rev);
+    }
+    throw Error('Promo bank unavailable');
+   })();
+   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{timedOut=true;controller?.abort();reject(Error('Promo bank timeout'));},2500);});
    const payload=await Promise.race([request,timeout]);
    try{root.localStorage?.setItem(prefix+id,JSON.stringify(payload));}catch(_){}
    return payload;
@@ -46,7 +54,17 @@
  async function load(ids){
   return (await Promise.all([...new Set(ids.filter(Boolean))].map(loadOne))).filter(Boolean);
  }
+ // Token ownership prevents an old request from clearing/reopening a later scene.
+ function beginSceneLoad(n,cid){
+  if(n.promoLoading?.cid===cid&&n.stage==='promo')return null;
+  const token={cid};n.promoLoading=token;n.stage='promo';return token;
+ }
+ function completeSceneLoad(n,token,isCurrent){
+  if(n.promoLoading!==token)return false;
+  delete n.promoLoading;
+  return n.stage==='promo'&&isCurrent();
+ }
  // Scene snapshots are deliberately compact and self-contained; no network at choose().
  function catalogue(banks){return D.catalogue(banks.map(decode));}
- root.OfficePromoBanks=Object.freeze({load,decode,catalogue,hash});
+ root.OfficePromoBanks=Object.freeze({load,decode,catalogue,hash,beginSceneLoad,completeSceneLoad});
 })(typeof window!=='undefined'?window:globalThis);

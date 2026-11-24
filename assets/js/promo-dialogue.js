@@ -100,8 +100,10 @@
   for(const [k,v,fn] of [['minAge',c.speaker.age,min],['maxAge',c.speaker.age,max],['minMeetings',c.meetings,min],['minComposure',c.composure,min],['maxComposure',c.composure,max],['minIrritation',c.irritation,min],['maxIrritation',c.irritation,max]])if(has(w,k)&&!fn(v,w[k]))return false;
   return render(row,c)!==null;
  }
+ // Plural noun phrase contract, including legacy saved claims.
+ const strengthPhrase=value=>value==='wrestling'?'wrestling techniques':value;
  function render(row,c){
-  const values={strength:c.strength,speaker:c.speaker.short,client:c.client.short,opponent:c.opponent.short,venue:c.venue,finisher:c.side==='f'?c.speaker.finisher:c.client.finisher};
+  const values={strength:strengthPhrase(c.strength),speaker:c.speaker.short,client:c.client.short,opponent:c.opponent.short,venue:c.venue,finisher:c.side==='f'?c.speaker.finisher:c.client.finisher};
   let missing=false;const line=row.text.replace(/\{([a-z]+)\}/g,(_,k)=>{const v=values[k];if(!string(v)){missing=true;return '';}return v;});
   return missing?null:line;
  }
@@ -139,7 +141,7 @@
   const kind=exactTurn?'turn':ctx.action;
   const frames=exactTurn?replyFrames[family]:ctx.action==='press'&&ctx.side==='w'?pressFrames[family]:ctx.action==='acknowledge'?agreeFrames[family]:null;
   if(!frames||(exactTurn&&!ctx.strength)||(kind==='press'&&!topics[ctx.opening]))return null;
-  const pool=frames.map((frame,i)=>({id:'composition.'+ctx.speaker.id+'.'+kind+'.'+(kind==='press'?ctx.opening+'.':'')+i,text:frame.replace('{strength}',ctx.strength||'').replace('{topic}',topics[ctx.opening]||'')})).filter(x=>!used.includes(x.id)&&!recent.includes(x.id));
+  const pool=frames.map((frame,i)=>({id:'composition.'+ctx.speaker.id+'.'+kind+'.'+(kind==='press'?ctx.opening+'.':'')+i,text:frame.replace('{strength}',strengthPhrase(ctx.strength)||'').replace('{topic}',topics[ctx.opening]||'')})).filter(x=>!used.includes(x.id)&&!recent.includes(x.id));
   if(!pool.length)return null;
   return {...pool[hash(seed+'|composition')%pool.length],composed:true};
  }
