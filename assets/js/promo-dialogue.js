@@ -73,7 +73,7 @@
   // Retain core text for factual cases, variants with their own promises/motifs,
   // and all closing commitments until the selector can prove semantic equivalence.
   const protectedReason=recorded||st.core.case?'recorded-argument':st.core.claim?.hasEvidence?'recorded-evidence':
-    stage==='close'?'closing-contract':variant?'contextual-variant':stage==='open'&&action==='imagery'?'motif':null;
+    stage==='close'?'closing-contract':stage==='open'&&action==='proof'&&st.core.claim?.planFocus==='counter'?'specific-match-plan':variant?'contextual-variant':stage==='open'&&action==='imagery'?'motif':null;
   return {stage,action,side,speaker,opponent,client:s.client,venue:s.venue,titleMatch:s.titleMatch,
    hasMouthpiece:s.hasMouthpiece,meetings:s.meetings,format:st.director?.format||null,
    subject:st.director?.subject||st.core.claim?.opening||null,landed,variant,
