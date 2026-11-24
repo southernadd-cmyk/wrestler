@@ -54,7 +54,7 @@
    ['open','proof','f','pr_tech','challenge','Staying on your feet sounds simple. Try it when I change level and get underneath your hips.'],
    ['open','proof','f','pr_risk','rebuttal','Then you have to be in the right position at exactly the right time. That is easier to say than to do.'],
    ['open','swagger','f','sw_main','disrespect','A place on the bill does not tell me how you are getting out of a hold.'],
-   ['answer','turn','w','tu_strength','rebuttal','Your {strength} are the part of this match I cannot afford to ignore. Knowing that is a useful starting point.'],
+   ['answer','turn','w','tu_strength','rebuttal','I cannot afford to ignore your {strength} in this match. Knowing that is a useful starting point.'],
    ['answer','turn','w','tu_strength','rebuttal','You have told me to prepare for {strength}. Good. I would rather work on an actual problem than trade insults.'],
    ['answer','calm','w','ca_pro','respect','I respect your wrestling. I also intend to beat you. There is no contradiction there.'],
    ['answer','calm','w','ca_simple','respect','I am not interested in volume. We can resolve this on the mat.'],

@@ -120,10 +120,10 @@
  }
  // A bounded compositional fallback: preserve the actual claim, vary the delivery.
  const replyFrames={
-  precise:['Your {strength} are the problem I need to solve. I am not disputing them.','Then the question is how I deal with your {strength}. I intend to answer it in the ring.'],
-  grand:['You have made quite a case for your {strength}. The interesting part is what happens when I answer them.','Very well. Your {strength} are the opposition; they are not the conclusion.'],
-  gruff:['Your {strength}. I heard you. Now let me get through them.','I know what your {strength} can do. I still have a match to win.'],
-  stoic:['I understand. Your {strength} are what I have to get past.','No point denying your {strength}. I will deal with them.'],
+  precise:['I am not disputing your {strength}. Solving that problem is my job.','Then the question is how I deal with your {strength}. I intend to answer it in the ring.'],
+  grand:['You have made quite a case for your {strength}. The interesting part is what happens when I answer them.','Very well. I have your {strength} as the opposition, not the conclusion.'],
+  gruff:['Your {strength}. I heard you. Now let me get through that.','I know what your {strength} can do. I still have a match to win.'],
+  stoic:['I understand. I have to get past your {strength}.','No point denying your {strength}. I will deal with them.'],
   eager:['Right, your {strength}. That is the bit I want to get around. Watch how.','I know you have {strength}. That is what makes this a match worth having.'],
   earnest:['I respect your {strength}. I want to show these people that I have an answer to them.','I am not asking anybody to ignore your {strength}. I am asking for the chance to answer them.'],
   sermon:['A person can be proud of their {strength} and still find they are not enough. I have to show you why.','I will not deny you your {strength}. Let the contest reveal what they are worth.'],
