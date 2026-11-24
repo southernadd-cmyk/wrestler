@@ -44,6 +44,54 @@
  }
  function heading(d,round){return formatFor(d)?.headings?.[round]||null;}
  function setup(d){const f=formatFor(d);return f?{name:f.name,setting:f.setting,prompt:f.prompt}:null;}
+ // Host question is a real conversational beat. The selected graph opening
+ // supplies the argument; this short answer connects it to the question.
+ // No additional promise or mechanical effect is introduced.
+ const openingLead={
+  interview:{proof:'It is a chance to show that my preparation counts.',people:'It means giving the people who came here a match worth their time.',imagery:'It is a chance to make tonight something people will remember.',accusation:'It means getting an answer to something that has been bothering me.',swagger:'It is a chance to show where I belong on this card.',hometown:'It is an opportunity to show this crowd what I can do.',numbers:'It is a chance to put the talk about the result to a real test.'},
+  callout:{proof:'I want to talk about what happens when we actually wrestle.',people:'I want to know whether we can both deliver for this crowd.',imagery:'I want them to understand what this match means to me.',accusation:'I want an answer from them.',swagger:'I want them to know exactly how I see this contest.',hometown:'I want them to hear what I have to say in front of this crowd.',numbers:'I want them to deal with the argument in front of us.'},
+  faceoff:{proof:'The issue is whether I can answer what they do best.',people:'The issue is what we owe the people watching.',imagery:'The issue is what happens when we finally get into that ring.',accusation:'There is a point I want them to answer.',swagger:'We disagree about who deserves the attention.',hometown:'We have a point to settle in front of this crowd.',numbers:'We disagree about what the evidence tells us.'},
+  address:{proof:'I want them to watch the wrestling, not just listen to the words.',people:'I want them to know their support matters.',imagery:'I want them to remember more than just the final count.',accusation:'I want them to hear the point before they judge it.',swagger:'I want them to see why this match deserves their attention.',hometown:'I want this room to know where I stand.',numbers:'I want them to see what the numbers actually mean in the ring.'},
+  mouthpiece:{proof:'My client has come to demonstrate their ability in the ring.',people:'My client intends to give this audience a proper match.',imagery:'My client wants this to be a contest people remember.',accusation:'My client has a point they want answered.',swagger:'My client wants to establish where they belong on this card.',hometown:'My client wants this crowd to hear their position.',numbers:'My client intends to let the contest test the argument.'}
+ };
+ const programmeAnswers={
+  'You said this chase had to be earned. What can you show us tonight?':'I can show you what I do against the opponent in front of me.',
+  'The champion is not in this match. Why should they be listening?':'Because the work I do tonight is part of the case I am making for a chance at the belt.',
+  'Are you promising that belt is coming home with you?':'I want that belt. I still have to earn the right to take it.',
+  'You have been climbing the card. What does tonight add to your case?':'Another chance to demonstrate that I belong at this level.',
+  'The champion still has not answered. What are you going to do about it?':'Make a case through my wrestling that is harder to ignore.',
+  'If you cannot deliver tonight, what was all this talk for?':'Then the talk will not have been enough. The work has to justify it.',
+  'The title match is finally here. How should people remember this?':'As a contest in which the belt mattered enough for both of us to give everything.',
+  'The champion has heard you for weeks. What is the last thing you want them to hear?':'That I am here to compete for the belt, not just to talk about it.',
+  'Your whole chase comes down to tonight. What are you putting on the line?':'My credibility. I have to make the wrestling live up to the talk.',
+  'There is history between you two. What needs answering tonight?':'What happens when we have to settle our differences in the ring.',
+  'What did they do that you have not forgotten?':'I want to deal with the point that is actually between us tonight, not invent another grievance.',
+  'Is this still about winning a wrestling match?':'Winning matters. So does how I handle the argument between us.',
+  'Last time did not settle it. What would tonight prove?':'Whether I can make a better case in the ring than I have made with words.',
+  'You both had your say last time. What did they get wrong?':'They do not get to decide what I am capable of before we wrestle.',
+  'You seem determined to make this bigger. How far will you go?':'As far as I can justify in the ring. The match is still the test.',
+  'One last meeting. Is that enough to end it?':'It can be, if the wrestling gives us an answer we can live with.',
+  'Even if they win, what do you need to hear them admit?':'That they have to judge me by what I actually do in the ring.',
+  'You have both spent weeks on this. What if tonight does not go your way?':'Then I will have to live with the result. I am not asking for an excuse.',
+  'Why does the booker think you belong higher up the card?':'That is something I have to demonstrate. I cannot speak for the booker.',
+  'Who on this card are you ready to make uncomfortable?':'The opponent I have tonight. I do not need to look past this match.',
+  'You have barely started climbing. Are you calling yourself the future already?':'I am asking for the chance to prove what I can do now.',
+  'Last time put you on people’s radar. Can you do it again?':'That is the test tonight. I have to give them another reason to watch.',
+  'Who is afraid of losing their place to you?':'I cannot speak for anybody else. I can make them take my wrestling seriously.',
+  'What happens if the main event is too big for you?':'Then I have to learn from it. I am not planning to back away from the test.',
+  'This is the biggest night of your push. What is enough for you?':'A performance that earns respect, whatever the result.',
+  'Does your opponent still deserve that place at the top?':'They can defend their place in the ring. I have to make a case for mine.',
+  'You have been asking for the spotlight. What if it burns?':'Then I have to deal with the pressure I asked for.'
+ };
+ function openingQuestion(d,arc,host){
+  return {v:1,format:d?.format||'interview',kind:arc?.prompt?'programme':'format',prompt:host};
+ }
+ function answerOpening(q,action){
+  if(q?.v!==1)return null;
+  if(q.kind==='record')return 'I have heard what is on the record. This is where I stand.';
+  if(q.kind==='programme'&&Object.prototype.hasOwnProperty.call(programmeAnswers,q.prompt))return programmeAnswers[q.prompt];
+  return openingLead[q.format]?.[action]||openingLead.interview[action]||null;
+ }
  function participant(w){
   const identity=I.wrestler(w),delivery=identity?.delivery||'',pressure=identity?.underPressure||'';
   // Authored delivery is a starting disposition, not a fixed personality class.
@@ -111,5 +159,5 @@
  }
  function summary(d){return {subject:d.subject,phase:d.phase,...(d.latestPoint?{latestPoint:d.latestPoint}:{}),...(formatFor(d)?{format:d.format,formatName:formatFor(d).name}:{}),player:d.player.composure<40?'Unsettled':d.player.irritation>=42?'Frustrated':'Composed',
   opponent:d.opponent.irritation>=42?'Heated':d.opponent.composure<40?'Unsettled':'Measured',followup:d.followup,ending:d.ending};}
- root.OfficePromoDirector=Object.freeze({begin,observe,route,options,followup,summary,selectFormat,angles,heading,setup});
+ root.OfficePromoDirector=Object.freeze({begin,observe,route,options,followup,summary,selectFormat,angles,heading,setup,openingQuestion,answerOpening});
 })(typeof window!=='undefined'?window:globalThis);
