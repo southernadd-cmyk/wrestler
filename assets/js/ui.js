@@ -1542,7 +1542,10 @@ function showPromos(loadedBanks){
   // v0.3.12 The interviewer asks about what the crowd saw: the rivalry's public record. A backstage
   // memory (recalled.promoPrompt) stays backstage; it is no longer read out on air.
   const intro=window.OfficeRivalry?.introFor(night.promo.core);
-  if(intro)night.promo.log[0].line=night.promo.director?.format?night.promo.log[0].line+' '+intro:arc?arc.prompt+' '+intro:intro;
+  if(intro&&night.promo.openingQuestion){
+   // Ask one question, not two unrelated ones. The recorded dispute takes priority.
+   night.promo.log[0].line=intro;night.promo.openingQuestion={...night.promo.openingQuestion,kind:'record',prompt:intro};
+  }else if(intro)night.promo.log[0].line=night.promo.director?.format?night.promo.log[0].line+' '+intro:arc?arc.prompt+' '+intro:intro;
  }
  const st=night.promo,v=OfficeMic.view(st);night.stage='promo';
  const quote=t=>/^[“"]/.test(t)?t:'“'+t+'”';
