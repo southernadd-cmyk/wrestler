@@ -40,7 +40,7 @@ for(const [i,w] of roster.entries()){
   const c={id:'promo-audit-'+w.id+'-'+j,wid:w.id,rid:f.id,pid:p.id,eventAbs:100+j,slot:['opener','mid','feature','main'][j%4],minutes:12,finish:finishes[j%4],feudHeat:j%2?55:0};
   // Synthetic rivalry heat only: not a substitute for a persisted played career.
   const rival=j%2?{heat:55,matches:2,closed:false}:null;
-  const st=Mic.begin(c,w,f,rival,null,p,{directed:process.env.PROMO_AUDIT_LEGACY!=='1'});
+  const st=Mic.begin(c,w,f,rival,null,p,{directed:process.env.PROMO_AUDIT_LEGACY!=='1',formats:process.env.PROMO_AUDIT_LEGACY!=='1'});
   const rounds=[],choices=[],spoken=[];
   for(let step=0;st.stage!=='done';step++){
    assert.ok(step<12,'duel must terminate');
@@ -73,7 +73,7 @@ for(const [i,w] of roster.entries()){
   }
   const result=Mic.result(st);assert.ok(result&&Number.isFinite(result.quality)&&result.promise,'completed promo contract');
   inc(formats,rounds.join(' > '));inc(promises,result.promise.type);
-  scenes.push({worker:w.id,opponent:f.id,venue:p.venue,syntheticRivalry:!!rival,finish:c.finish,choices,quality:result.quality,spoken,dialogue:result.dialogue});
+  scenes.push({format:st.director?.format||'legacy',worker:w.id,opponent:f.id,venue:p.venue,syntheticRivalry:!!rival,finish:c.finish,choices,quality:result.quality,spoken,dialogue:result.dialogue});
  }
 }
 function stats(map){
@@ -83,7 +83,7 @@ function stats(map){
 const voices=new Map();for(const p of profiles.values())inc(voices,p.voice);
 const summary={mode:process.env.PROMO_AUDIT_LEGACY==='1'?'legacy':'directed',scenes:scenes.length,roster:roster.length,opponents:opponents.length,samplesPerWorker,resumeChecks,
  voiceCoverage:{explicit:[...profiles.values()].filter(p=>p.explicitVoice).length,fallback:[...profiles.values()].filter(p=>!p.explicitVoice).length,withOwnPromo:[...profiles.values()].filter(p=>p.ownPromoSlots.length).length,archetypes:Object.fromEntries(voices)},
- roundPatterns:Object.fromEntries(formats),promiseTypes:Object.fromEntries(promises),lineKinds:Object.fromEntries(kinds),unresolvedMarkers:unresolved,
+ sceneFormats:scenes.reduce((a,s)=>(a[s.format]=(a[s.format]||0)+1,a),{}),roundPatterns:Object.fromEntries(formats),promiseTypes:Object.fromEntries(promises),lineKinds:Object.fromEntries(kinds),unresolvedMarkers:unresolved,
  samePair:{coreUtterances:samePairCore,repeated:repeatedPairCore,repeatedPct:pct(repeatedPairCore,samePairCore)},
  lines:Object.fromEntries(Object.entries(lines).map(([k,v])=>[k,stats(v)]))};
 console.log('PROMO QUALITY BASELINE\n'+JSON.stringify(summary,null,2));
