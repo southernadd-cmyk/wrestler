@@ -121,3 +121,18 @@ console.log('PASS external ageing, recovery, retirement ownership, belts, previe
  assert.equal(V.ownership(s,id).owner,V.ownership(predicted,id).owner);
 }
 console.log('PASS deterministic external retirement and fixture reconciliation');
+
+{
+ G.fresh();const s=G.S;
+ assert.ok(D.ALL.every(w=>Number.isInteger(w.age)&&w.age>=18&&w.age<=60),'every template has an authored age');
+ assert.equal(D.findWrestler('dee').age,21);
+ assert.ok(D.findWrestler('brick').age>D.findWrestler('dee').age);
+ const id=s.free.find(w=>w.id==='dee').id;
+ assert.equal(G.sign(id),null);const w=G.W(id);delete w.age;
+ const market=s.free[0];delete market.age;
+ const legacy=JSON.parse(JSON.stringify(s));G.S=legacy;
+ assert.equal(G.W(id).age,D.findWrestler(id).age);
+ assert.equal(G.S.free.find(x=>x.id===market.id).age,D.findWrestler(market.id).age);
+ G.W(id).age=35;G.save();G.load();assert.equal(G.W(id).age,35,'explicit career age always wins');
+}
+console.log('PASS complete template ages and legacy save age repair');
