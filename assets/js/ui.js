@@ -1530,7 +1530,8 @@ function showPromos(loadedBanks){
   const loader=window.OfficePromoBanks,token=loader.beginSceneLoad(n,cid);if(!token)return;
   persistNight();
   $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back"><p role="status">Preparing the microphone…</p></div>';
-  const ids=newPromo?[mouth?.id||w.id,f.id]:[night.promo.speaker?.id||w.id,f.id];
+  const bid=x=>window.OfficePromoIdentity?.bankId?.(x)||x?.id;
+  const ids=newPromo?[bid(mouth||w),bid(f)]:[bid(night.promo.speaker||w),bid(f)];
   Promise.resolve(window.OfficePromoBanks?.load(ids)||[]).catch(()=>[]).then(banks=>{
    if(loader.completeSceneLoad(n,token,()=>night===n&&current()?.id===cid))showPromos(banks);
   });return;

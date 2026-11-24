@@ -132,5 +132,16 @@ player|Neutral configurable managerial direction|Represent the player's stable a
   return generated(info);
  }
  function person(id){return personnel[id]||null;}
- root.OfficePromoIdentity=Object.freeze({wrestler,person,authored,personnel});
+ // Academy rookies speak with one of three voices for their style. The choice is stable (hash of the id)
+ // and is the bank owner used for their lines; established wrestlers keep their own bank.
+ const voiceStyles=['technical','brawl','story','spectacle'];
+ function bankId(w){
+  const id=typeof w==='string'?w:w?.id;
+  if(!id)return null;
+  if(!String(id).startsWith('academy-'))return id;
+  const style=String(typeof w==='object'?w.style||'':'').toLowerCase();
+  if(!voiceStyles.includes(style))return null;
+  return 'rookie-'+style+'-'+(hash(id)%3+1);
+ }
+ root.OfficePromoIdentity=Object.freeze({wrestler,person,authored,personnel,bankId});
 })(typeof window!=='undefined'?window:globalThis);

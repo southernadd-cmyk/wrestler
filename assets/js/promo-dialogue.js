@@ -67,7 +67,8 @@
   }return [...owners.values()];
  }
  function actor(w){
-  return {id:w.id,role:'wrestler',short:w.short||w.name||null,age:Number.isFinite(w.age)?w.age:null,style:w.style||null,finisher:w.finisher||null};
+  const voice=root.OfficePromoIdentity?.bankId?.(w)||w.id;
+  return {id:voice,role:'wrestler',short:w.short||w.name||null,age:Number.isFinite(w.age)?w.age:null,style:w.style||null,finisher:w.finisher||null};
  }
  function snapshot(c,w,f,m,p,core){
   return {v:1,client:actor(w),player:actor(m||w),opponent:actor(f),venue:p?.venue||null,titleMatch:!!c.title,
