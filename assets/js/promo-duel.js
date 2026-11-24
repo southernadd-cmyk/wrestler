@@ -5,7 +5,14 @@
    ring. Every option states its risk and what it is for. Seeded and replayable. */
 (function installPromoDuel(root){'use strict';
  const D=root.OfficeData,Core=root.OfficeStory.Graph,Room=root.OfficeRoom,Director=root.OfficePromoDirector,Dialogue=root.OfficePromoDialogue;
- const authored=Dialogue?.catalogue(Dialogue.combine(root.OfficePromoPilot||[],root.OfficePromoBankC1||[],root.OfficePromoBankC2||[]));
+ const Banks=root.OfficePromoBanks,sceneCatalogues=new WeakMap();let legacyCatalogue;
+ function catalogueFor(st){
+  if(Array.isArray(st.authoredDialogue?.banks)){
+   if(!sceneCatalogues.has(st)){let cat;try{cat=Banks.catalogue(st.authoredDialogue.banks);}catch(_){cat=Dialogue.catalogue([]);}sceneCatalogues.set(st,cat);}
+   return sceneCatalogues.get(st);
+  }
+  return legacyCatalogue??=Dialogue.catalogue(Dialogue.combine(root.OfficePromoPilot||[],root.OfficePromoBankC1||[],root.OfficePromoBankC2||[]));
+ }
  const hash=s=>{let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;};
  const rng=(seed,k)=>hash(seed+'|'+k)/4294967296;
  const pick=(arr,seed,k)=>arr[Math.floor(rng(seed,k)*arr.length)];
@@ -196,7 +203,7 @@
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
-  if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[])};
+  if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
   if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
@@ -285,12 +292,14 @@
  }
  function fitOf(st,stage,id){return stage==='open'?openFit(st,id):stage==='answer'?answerFit(st,id):arcFit(st,'close',id);}
  function pickAuthored(st,ctx){
-  if(!st.authoredDialogue||!ctx||!authored)return null;
-  const selection=Dialogue.select(authored,ctx,st.seed+'|'+st.steps.length+'|'+ctx.side,st.authoredDialogue);
-  if(selection)st.authoredDialogue.used.push(selection.id);
-  return selection;
+  if(!st.authoredDialogue||!ctx)return null;
+  const seed=st.seed+'|'+st.steps.length+'|'+ctx.side,mem=st.authoredDialogue;
+  const selection=Dialogue.select(catalogueFor(st),ctx,seed,mem);
+  if(selection){mem.used.push(selection.id);return selection;}
+  if(mem.composition){const line=Dialogue.compose(ctx,seed,{used:mem.composedUsed||[],recent:mem.recent});if(line){(mem.composedUsed??=[]).push(line.id);return line;}}
+  return null;
  }
- function annotate(st,index,ctx,line){if(ctx&&st.log[index]){st.log[index].dialogueSlot=Dialogue.tag(ctx);if(line)st.log[index].authoredId=line.id;}}
+ function annotate(st,index,ctx,line){if(ctx&&st.log[index]){st.log[index].dialogueSlot=Dialogue.tag(ctx);if(line){if(line.composed)st.log[index].composedId=line.id;else st.log[index].authoredId=line.id;}}}
  function coreRound(st,stage,id,key){
   const core=st.core,before=core.dialogue.length,m0={...core.metrics},fit=fitOf(st,stage,id);
   // Composure feeds the core's chance of landing a line; a line that suits the night is easier to land.
@@ -397,14 +406,14 @@
    quality:clamp(Math.round(base.quality+m*.35),10,97),
    ...(st.director?{conversation:Director.summary(st.director)}:{}),
    ...(st.director?.format?{format:st.director.format}:{}),
-   ...(st.authoredDialogue?{dialogueIds:st.authoredDialogue.used.slice(),...(st.authoredDialogue.used.length?{reply:st.log.filter(e=>e.side==='f').at(-1)?.line||base.reply}:{})}:{}),
+   ...(st.authoredDialogue?{dialogueIds:st.authoredDialogue.used.slice(),...((st.authoredDialogue.used.length||st.authoredDialogue.composedUsed?.length)?{reply:st.log.filter(e=>e.side==='f').at(-1)?.line||base.reply}:{})}:{}),
    arcDirection:st.arc?.id||null,
    crowdShift:clamp(Math.round(base.crowdShift+m/7),-8,13),
    heatDelta:clamp(Math.round(base.heatDelta+(st.director&&!st.core.case?.exposed?(st.pushed==='press'?2:0):(pushed?2:0))+(Math.abs(m)>=25?1:0)),-3,16),
    moraleDelta:clamp(base.moraleDelta+(m>=15?1:m<=-15?-1:0),-3,4),
    temperature:50+m,temperatureWord:meterWord(m),timeOver:0,
    beats:st.steps.map(s=>({...s})),reaction,
-   dialogue:st.log.map(e=>({speaker:e.speaker||'Stage',line:e.line,kind:e.kind,swing:e.swing,...(e.dialogueSlot?{dialogueSlot:e.dialogueSlot}:{}),...(e.authoredId?{authoredId:e.authoredId}:{})})),speech:st.log.filter(e=>e.side==='w').map(e=>e.line),
+   dialogue:st.log.map(e=>({speaker:e.speaker||'Stage',line:e.line,kind:e.kind,swing:e.swing,...(e.dialogueSlot?{dialogueSlot:e.dialogueSlot}:{}),...(e.authoredId?{authoredId:e.authoredId}:{}),...(e.composedId?{composedId:e.composedId}:{})})),speech:st.log.filter(e=>e.side==='w').map(e=>e.line),
    angle:st.w.short+': '+st.steps.map(s=>String(s.label).toLowerCase()).join('; ')+'.'};
  }
  function view(st){
