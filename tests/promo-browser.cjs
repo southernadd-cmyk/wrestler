@@ -15,7 +15,7 @@ async function fixture(page){
  return page.evaluate(store=>{
   const G=window.OfficeGame,s=G.S;
   s.cash=99999;s.rep=65;
-  if(!G.W('rex')){const err=G.sign('rex');if(err)throw Error('Fixture sign failed: '+err);}
+  const err=G.sign('rex');if(err)throw Error('Fixture sign failed: '+err);
   const w=G.W('rex'),f=G.F('silas'),p=G.P('crown');
   if(!w||!f||!p)throw Error('Missing promo fixture wrestler or promoter');
   const c={id:'browser-promo-fixture',wid:w.id,rid:f.id,pid:p.id,slot:'mid',minutes:12,purse:420,finish:'win_clean',eventAbs:G.abs()};
@@ -84,6 +84,10 @@ async function coldWarm(browser,viewport){
   // An actual click and production save, then restore a new document with both cache entries intact.
   await pick(page,'proof');const after=await state(page);
   assert.equal(after.steps.length,1);
+  const first=after.log.find(e=>e.side==='w');assert.ok(first.answersQuestion,'first spoken line must explicitly answer the host');
+  assert.equal(first.answersQuestion.prompt,after.log[0].line);
+  assert.ok(first.line.startsWith(first.answersQuestion.lead+' '));
+  assert.ok((await page.locator('#tv #micTalk').innerText()).includes(first.answersQuestion.lead),'answer must appear on screen');
   const persisted=await page.evaluate(store=>JSON.parse(localStorage.getItem(store)),STORE);
   assert.equal(persisted.promo.steps.length,1);assert.equal(persisted.promoLoading,undefined);
   assert.deepEqual(persisted.promo,after);
