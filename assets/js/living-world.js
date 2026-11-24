@@ -44,7 +44,11 @@ function reconcile(s){
  }
  const preserved=new Map(s.free.map(w=>[w.id,w]));
  s.free=all.filter(w=>world.contracts[w.id]?.owner==='market')
-   .map(w=>preserved.get(w.id)||{...basic(w),...G.personalRecord(world.personnel?.[w.id]||{})});
+   .map(w=>{
+    const saved=preserved.get(w.id);
+    if(saved){saved.age??=world.personnel?.[w.id]?.age??w.age;return saved;}
+    return {...basic(w),...G.personalRecord(world.personnel?.[w.id]||{})};
+   });
  // Do not reset individual talent progression on load; contracts only hold ownership.
  world.migratedIds=all.length;
  return world;
