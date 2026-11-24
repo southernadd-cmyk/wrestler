@@ -13,6 +13,8 @@ The normal release path is deliberately small. **Target: two to three minutes fo
 
 ## Deeper verification, separate from the release gate
 
+- For a behaviour-preserving engine extraction, opt in with a `graph-refactor/...` branch. This executes the exact before/after comparison against the PR base, all Node suites and all Chromium journeys. Ordinary branches are unaffected. The parity check is intentionally not a permanent frozen gameplay baseline; it is for changes that promise no mechanical changes.
+
 - For a layout change that needs pre-merge Chromium verification, explicitly use a branch named `browser-audit/...`. The existing browser job then runs only the focused title, scouting and notification checks at four screen sizes. Ordinary branches retain the fast Node-only gate; nightly and tag runs still execute all browser journeys.
 
 - The existing Simulation tests workflow runs the complete Node suite and Chromium journeys nightly at 03:23 UTC, and on version tags matching `v*`. It does not add a new workflow or a required browser status on PRs.
