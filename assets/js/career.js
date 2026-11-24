@@ -215,7 +215,7 @@ function opponentReady(s,id,when=(s.season-1)*16+s.week){
  return !!w&&(!w.injury||w.injury<=Math.max(0,when-((s.season-1)*16+s.week)));
 }
 function wages(){return S.roster.reduce((t,w)=>t+w.wage,0)}
-const OVERHEAD=100;function overhead(){return 60+S.roster.length*25}
+const OVERHEAD=100;function overhead(count=S.roster.length){return 60+count*25}
 
 /* ---------- inbox ---------- */
 function msg(m){S.inbox.unshift({id:'m'+Math.floor(Math.random()*1e9).toString(36),week:S.week,season:S.season,read:false,answer:null,...m});S.inbox=S.inbox.slice(0,60)}
@@ -246,6 +246,19 @@ function reconcileOwnership(id,{outgoing=false,reason='Roster change'}={}){
  }
  return {cancelled:before.length-[...S.card,...S.futureBookings].length,offers:removed.length};
 }
+/* Read-only, no-income estimate for a proposed free-agent contract.
+   New signings start on free light drills; current training and coach costs
+   are included. Do not assume unsigned offers or match purses will pay out. */
+function signingForecast(id){
+ const w=S?.free.find(x=>x.id===id);if(!w)return null;
+ const afterFee=S.cash-w.fee,weeklyWages=wages()+w.wage,weeklyOverhead=overhead(S.roster.length+1);
+ const weeklyTraining=trainingBill()+INTENSITY.light.cost,weeklyCost=weeklyWages+weeklyOverhead+weeklyTraining;
+ const runway=Math.max(0,Math.floor(afterFee/weeklyCost));
+ return {fee:w.fee,afterFee,weeklyWages,weeklyOverhead,weeklyTraining,weeklyCost,
+  afterWeek:afterFee-weeklyCost,runway,affordable:afterFee>=0&&S.roster.length<5,
+  risk:runway<1?'critical':runway<2?'tight':runway<4?'limited':'buffer'};
+}
+
 /* ---------- signing ---------- */
 function sign(id){
  const firstSigning=S.roster.length===0;
@@ -936,5 +949,5 @@ function ageRoster(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,ageWorker,opponentReady};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,ageWorker,opponentReady};
 })(typeof window!=='undefined'?window:globalThis);

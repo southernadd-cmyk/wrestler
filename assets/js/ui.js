@@ -756,6 +756,22 @@ function scoutingComparison(free){
   </tbody></table></div><p class="dim">Comparison only: performance and costs do not predict booking success.</p></section>`;
 }
 
+function signingBudget(w,expanded=false){
+ const f=G.signingForecast(w.id);if(!f)return '';
+ const riskText={critical:'High risk: not enough cash for one week without income.',tight:'Tight budget: fewer than two weeks of running costs.',limited:'Limited reserve: fewer than four weeks of running costs.',buffer:'Four or more weeks of running costs covered.'};
+ const note=!f.affordable?'This signing is not currently affordable or the stable is full.':riskText[f.risk];
+ const tone=!f.affordable||f.risk==='critical'?'bad':f.risk==='tight'?'warn':'dim';
+ return `<section class="signing-budget" aria-label="Signing budget forecast">
+  <h4>Budget after signing</h4>
+  <dl class="kv"><dt>Bank after fee</dt><dd class="${f.afterFee<0?'bad':''}">${money(f.afterFee)}</dd>
+   ${expanded?`<dt>Total weekly wages</dt><dd>${money(f.weeklyWages)}</dd><dt>Weekly overheads</dt><dd>${money(f.weeklyOverhead)}</dd><dt>Training and coach</dt><dd>${money(f.weeklyTraining)}</dd>`:''}
+   <dt>Total weekly costs</dt><dd>${money(f.weeklyCost)}</dd><dt>After one week, no income</dt><dd class="${f.afterWeek<0?'bad':''}">${money(f.afterWeek)}</dd>
+   <dt>Full weeks covered</dt><dd>${f.runway}</dd></dl>
+  <p class="${tone}"><b>${esc(note)}</b></p>
+  <p class="dim">Estimate at current spending, with no match income. New signings start on free light drills.${f.affordable&&f.runway<2?' Consider a cheaper signing or secure a booking before advancing.':''}</p>
+ </section>`;
+}
+
 function renderScouting(){
  const s=S(),full=s.roster.length>=5;
  shortlist=shortlist.filter(id=>s.free.some(w=>w.id===id));
@@ -765,7 +781,7 @@ function renderScouting(){
  const q=scoutQuery.trim().toLocaleLowerCase();
  const rows=sorted.filter(w=>(!q||(w.name+' '+(w.handle||'')+' '+(w.style||'')).toLocaleLowerCase().includes(q))&&
    (scoutStyle==='all'||w.style===scoutStyle)&&
-   (scoutBudget==='all'||w.fee<=s.cash));
+   (scoutBudget==='all'||(scoutBudget==='affordable'&&w.fee<=s.cash)||(scoutBudget==='reserve'&&G.signingForecast(w.id)?.affordable&&G.signingForecast(w.id).runway>=2)));
  if(s.free.some(w=>w.id===route.id))selFree=route.id;
  if(!selFree||!rows.some(w=>w.id===selFree))selFree=rows[0]?.id||null;
  const w=s.free.find(x=>x.id===selFree);
@@ -778,7 +794,7 @@ function renderScouting(){
   <label>Search <input type="search" data-scout-query="1" autocomplete="off" placeholder="Name or style" value="${esc(scoutQuery)}"></label>
   <label>Style <select data-scout-style="1">${[['all','All styles'],...styles.map(v=>[v,v])].map(([key,label])=>
    `<option value="${key}" ${scoutStyle===key?'selected':''}>${label}</option>`).join('')}</select></label>
-  <label>Affordability <select data-scout-budget="1"><option value="all" ${scoutBudget==='all'?'selected':''}>All fees</option><option value="affordable" ${scoutBudget==='affordable'?'selected':''}>Can afford fee</option></select></label>
+  <label>Affordability <select data-scout-budget="1"><option value="all" ${scoutBudget==='all'?'selected':''}>All fees</option><option value="affordable" ${scoutBudget==='affordable'?'selected':''}>Can afford fee</option><option value="reserve" ${scoutBudget==='reserve'?'selected':''}>Fee + 2 weeks reserve</option></select></label>
   <span class="filter-results" role="status">${rows.length} of ${s.free.length} available</span>
   <button class="btn sm" data-clear-scout="1" ${!q&&scoutStyle==='all'&&scoutBudget==='all'?'disabled':''}>Clear filters</button>
  </div></details>`;
@@ -792,6 +808,7 @@ function renderScouting(){
   const can=s.cash>=w.fee&&!full;
   detail=`<div class="row" style="align-items:flex-start;gap:14px;flex-wrap:nowrap">${face('wrestler',w.id,w.name,'portrait x2')}<div><div style="font:36px/.9 var(--jersey);color:var(--blood)">${esc(w.name)}</div><div style="font-weight:600;margin:4px 0">“${esc(w.handle)}”</div><div class="chips"><span class="chip">${esc(w.tier)}</span><span class="chip">${esc(w.style)}</span><span class="chip">${esc(D.DIVISIONS[D.divisionOf(w)].name)}</span></div></div></div>
   <div class="facts" style="margin:10px 0"><div><small>Signing fee</small><b class="${s.cash<w.fee?'neg':''}">${money(w.fee)}</b></div><div><small>Weekly wage</small><b>${money(w.wage)}</b></div></div>
+  ${signingBudget(w)}
   <button class="btn go" style="width:100%;min-height:44px" data-sign="${w.id}" ${can?'':'disabled'}>Sign ${esc(w.short)}</button>
   <p class="dim" style="margin-top:6px">${full?'Your locker room is full. Release someone first.':s.cash<w.fee?`You have ${money(s.cash)}. Not enough for the fee.`:'Wages are paid every week, booked or not.'}</p>
   <p style="margin-top:10px">${esc(w.bio)}</p>
@@ -1864,7 +1881,7 @@ document.addEventListener('click',e=>{
  if(d.sign){
   // Signing spends most of a starting bank in one go: confirm the fee and the weekly wage first.
   const s=S(),w=s.free.find(x=>x.id===d.sign);if(!w){render();return toast('Not available.')}
-  dialog('Sign '+w.name+'?',`<p>Signing fee <b>${money(w.fee)}</b>, paid now. Your bank goes from ${money(s.cash)} to ${money(s.cash-w.fee)}.</p><p>Wage <b>${money(w.wage)} a week</b>, paid every week whether or not they are booked.</p><p class="dim">Releasing them later does not refund the fee.</p>`,[['Not yet','close'],['Sign for '+money(w.fee),'sign:'+w.id,'go']]);return;
+  dialog('Sign '+w.name+'?',`<p>Signing fee <b>${money(w.fee)}</b>, paid now. Wage <b>${money(w.wage)} a week</b>, booked or not.</p>${signingBudget(w,true)}<p class="dim">Releasing them later does not refund the fee.</p>`,[['Not yet','close'],['Sign for '+money(w.fee),'sign:'+w.id,'go']]);return;
  }
  if(d.release){const w=G.W(d.release);dialog(`Release ${w.name}?`,`<p>${esc(w.short)} leaves today and you get nothing back. Any booking for them is cancelled.</p>`,[['Keep them','close'],['Release','release:'+w.id,'red']]);return}
  if(d.book){
