@@ -230,7 +230,7 @@ async function run(browser,name,viewport){
    const box=ink.getBBox(),rect=svg.getBoundingClientRect();
    return {frame:{width:frame.width,height:frame.height},crisp:svg.getAttribute('shape-rendering'),
     fills:paths.map(x=>x.getAttribute('fill')),visible:rect.width>0&&rect.height>0,
-    pixelRuns:paths.reduce((n,path)=>n+((path.getAttribute('d')||'').match(/M\\d+ \\d+h/g)||[]).length,0),
+    pixelRuns:paths.reduce((n,path)=>n+((path.getAttribute('d')||'').match(/M[0-9]+ [0-9]+h/g)||[]).length,0),
     inside:box.x>=frame.x&&box.y>=frame.y&&box.x+box.width<=frame.x+frame.width&&box.y+box.height<=frame.y+frame.height,
     painted:box.width>0&&box.height>0};
   });
