@@ -41,29 +41,33 @@ const one=a=>a[Math.floor(rand()*a.length)];
 const uid=p=>p+'-'+S.week+'-'+Math.floor(rand()*1e9).toString(36);
 
 /* ---------- player manager identity (cosmetic; never uses simulation RNG) ---------- */
-// Historical UK wrestlers, managers and promoters. Name suggestions are
-// tributes, not claims that the real people participate in the game.
+// Fictional names inspired by British wrestling history. No real ring names
+// or team names are offered as player defaults.
 const BRITISH_PEOPLE=Object.freeze([
- 'Mick McManus','Jackie Pallo','Les Kellett','Johnny Saint','Billy Robinson',
- 'Adrian Street','Mark Rocco','Jim Breaks','Bert Royal','Vic Faulkner',
- 'George Kidd','Big Daddy','Giant Haystacks','Kendo Nagasaki',
- 'Davey Boy Smith','Dynamite Kid','Marty Jones','Tony St Clair','Pat Roach',
- 'Johnny Kwango','Max Crabtree','Brian Dixon','Orig Williams',
- 'Gorgeous George Gillette','Lloyd Ryan','Paul Lincoln','Ricky Knight',
- 'Mitzi Mueller','Klondyke Kate','Rusty Blair','Nicky Monroe','Sue Brittain',
- 'Sweet Saraya'
+ 'Mickey McVale','Jackie Palfrey','Les Kellaway','Johnny Sainthill','Billy Robden',
+ 'Adrian Lanehart','Mark Rocford','Jimmy Brakesley','Bert Regent','Vic Falconhurst',
+ 'Geordie Kittow','Bert Biggs','Gordon Hayrick','Ken Nakasen',
+ 'Davy Boy Steele','Tommy Dynamite','Marty Jowett','Tony St. Carr','Pat Rookwood',
+ 'Johnny Quayle','Max Crabbett','Brian Dixley','Owen Wyllan',
+ 'Georgie Gilt','Lloyd Ryeland','Paul Lincombe','Ricky Squire',
+ 'Mitzi Millward','Klondyke Kay','Rusty Braithwaite','Nicky Montrose','Sue Britton',
+ 'Sweet Saskia','Jackie Brindle','Maggie Mounthaven','Rani Catchpole'
 ]);
-// Distinguish documented tag teams/factions from original British-circuit
-// homages; the UK did not have a US-style tradition of named stables.
+// Fictional nods to classic tag teams and modern British factions.
 const BRITISH_HISTORIC_GROUPS=Object.freeze([
- 'The Royal Family','The British Bulldogs','The Bovver Birds',
- 'British Strong Style','The Origin'
+ 'The Crown Cousins','The Wigan Mastiffs','The Bootlace Belles',
+ 'The Albion Stronghold','The First Bell','The Pennine Powerhouse',
+ 'The Handlebar Heights','The Black Country Bruisers'
 ]);
+// Original names evoking the British halls, camps and catch circuit.
 const BRITISH_HOMAGE_STABLES=Object.freeze([
  'The Saturday Matmen','The Lancashire Hookers','The Wigan Catch Club',
  'The Seaside Grapplers','The Town Hall Heels','The Northern Circuit',
- 'The Matinee Men','The Blackpool Grapplers','The Working Mens Club',
- 'The Iron Mat','The All-Star Matmen','The Royal Albert Crew'
+ 'The Matinee Men','The Blackpool Grapplers','The Working Men’s Club',
+ 'The Iron Mat','The All-Star Matmen','The Royal Albert Crew',
+ 'The Six-Round Society','The Holiday Camp Heroes','The Half-Nelson Club',
+ 'The Four O’Clock Club','The Pier Pavilion Crew','The Public Warning Club',
+ 'The Civic Hall Collective','The Catchweight Company'
 ]);
 const BRITISH_STABLES=Object.freeze([...BRITISH_HISTORIC_GROUPS,...BRITISH_HOMAGE_STABLES]);
 const LEGACY_PLACEHOLDER=Object.freeze({manager:'Alex Morgan',stable:'The New Guard'});
