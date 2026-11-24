@@ -68,7 +68,7 @@ jobs:
                 assets/js/ringfax.js|assets/css/ringfax.css|tests/ringfax-*.cjs)
                   add tests/ringfax-phase0-baseline.test.cjs
                   add tests/ringfax-phase1.test.cjs ;;
-                assets/js/*match*.js|assets/js/*structure*.js|assets/js/*commentary*.js|assets/js/technique-*.js|assets/js/data.js|assets/js/roster-registry.js)
+                assets/js/*match*.js|assets/js/graph-*.js|assets/js/*structure*.js|assets/js/*commentary*.js|assets/js/technique-*.js|assets/js/data.js|assets/js/roster-registry.js)
                   add tests/match-flow.test.cjs
                   add tests/earned-nearfall.test.cjs
                   add tests/structure-contracts.test.cjs

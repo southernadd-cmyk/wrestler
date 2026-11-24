@@ -8,7 +8,7 @@ const validation=require('./validation.js');
 const count=Number(process.argv[2]||1000);
 if(!Number.isSafeInteger(count)||count<1||count>5000)throw Error('Expected 1..5000 bouts.');
 const root={};
-for(const file of ['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-catalog.js','match-graph.js','match-commentary.js','match-engine.js']){
+for(const file of ['data.js','roster-registry.js','technique-registry.js','technique-backgrounds.js','match-catalog.js','graph-narration.js','match-graph.js','match-commentary.js','match-engine.js']){
  const src=fs.readFileSync(path.join(__dirname,'../../assets/js',file),'utf8');
  vm.runInNewContext(src,{window:root,console,Date,Math,JSON},{filename:file});
 }
