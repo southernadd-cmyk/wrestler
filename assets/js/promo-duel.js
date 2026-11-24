@@ -5,7 +5,7 @@
    ring. Every option states its risk and what it is for. Seeded and replayable. */
 (function installPromoDuel(root){'use strict';
  const D=root.OfficeData,Core=root.OfficeStory.Graph,Room=root.OfficeRoom,Director=root.OfficePromoDirector,Dialogue=root.OfficePromoDialogue;
- const authored=Dialogue?.catalogue(root.OfficePromoPilot||[]);
+ const authored=Dialogue?.catalogue(Dialogue.combine(root.OfficePromoPilot||[],root.OfficePromoBankC1||[],root.OfficePromoBankC2||[]));
  const hash=s=>{let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;};
  const rng=(seed,k)=>hash(seed+'|'+k)/4294967296;
  const pick=(arr,seed,k)=>arr[Math.floor(rng(seed,k)*arr.length)];
