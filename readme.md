@@ -53,9 +53,9 @@ You manage the wrestlers, not the entire promotion. The six rival managers compe
 
 ### PEOPLE BEFORE NUMBERS
 
-Every one of the **80 fictional wrestlers** has their own attributes, moves, relationships, ambitions and way of speaking. Wrestling style, technical background and weekly training are different things: a fearless flyer can still be poor on the microphone; a safe pair of hands may have no taste for a big spot.
+The starting circuit has **80 fictional wrestlers**, each with attributes, moves, relationships, ambitions and a way of speaking. A reserve of **120 named and illustrated rookies** feeds the circuit as seasons pass; they begin in the free-agent market and can be signed by you or a rival manager. Wrestling style, technical background and weekly training are different things: a fearless flyer can still be poor on the microphone; a safe pair of hands may have no taste for a big spot.
 
-Wrestlers develop, get tired, carry injuries and remember slights. You can train them, rehearse with Dennis and read his assessment of likely gains and risks. As seasons pass, youngsters mature, veterans lose a step and some leave the business. A wrestler is a person on your payroll, not a stat you can endlessly grind.
+Wrestlers develop, get tired, carry injuries and remember slights. You can train them, rehearse with Dennis and read his assessment of likely gains and risks. As seasons pass, youngsters mature, veterans lose a step and some leave the business. Portraits change with their age; the academy intake brings new faces through without letting the active circuit grow without limit. A wrestler is a person on your payroll, not a stat you can endlessly grind.
 
 ### THE AGENTS' ROOM AND THE MIC
 

@@ -2037,11 +2037,18 @@ function savedCareer(){
  for(const k of ['the-office-v22','the-office-v21']){try{const raw=localStorage.getItem(k);if(raw)return JSON.parse(raw)}catch(e){}}
  return null;
 }
-function showRealBill(bill){
+function posterFace(img,caption,w,saved){
+ const el=$(img),cell=Pt.portraitCell({key:'wrestler:'+w.id,name:w.name},saved);
+ el.style.backgroundImage=`url("${cell?.url||'assets/portraits/'+w.id+'.png'}")`;
+ el.style.backgroundPosition=cell?.position||'center';
+ el.classList.toggle('age-portrait',!!cell);
+ el.setAttribute('aria-label','Pixel-art portrait of '+w.name);
+ $(caption).textContent=w.name;
+}
+function showRealBill(bill,saved){
  const h=bill.head,p=D.PROMOS.find(x=>x.id===h.pid);if(!p)return false;
- const side=(img,cap,w)=>{const i=$(img);i.src='assets/portraits/'+w.id+'.png';i.alt='Pixel-art portrait of '+w.name;$(cap).textContent=w.name;};
  $('#posterPromo').textContent=p.name;$('#posterVenue').textContent=p.venue.replace(/^the /,'The ');
- side('#posterW','#posterWName',h.a);side('#posterF','#posterFName',h.b);
+ posterFace('#posterW','#posterWName',h.a,saved);posterFace('#posterF','#posterFName',h.b,saved);
  const belt=h.title?D.belt(h.pid,h.div):null,img=$('#posterBelt');
  if(belt){img.src=belt.img;img.alt=belt.name+' belt';img.hidden=false;}else{img.hidden=true;img.alt='';}
  const when=h.yours?(h.tonight?'Tonight':'Week '+(((h.week-1)%16)+1)):'Week '+(((h.week-1)%16)+1);
@@ -2063,12 +2070,11 @@ function posterBill(){
   b=holder&&holder!==a.id?D.findWrestler(holder):pick(stars(div).filter(w=>w.id!==a.id));
  }else{const pool=stars(div);a=pick(pool);b=pick(pool.filter(w=>w.id!==a.id));}
  let real=null;try{real=OfficeTerritory.startBill?.(saved)||null;}catch(e){real=null;}
- if(real&&showRealBill(real)){summary(saved,top);return;}
+ if(real&&showRealBill(real,saved)){summary(saved,top);return;}
  // Fallback if the career cannot be read: two real names from one division meet for a belt.
  const belt=D.belt(p.id,div),used=new Set([a.id,b.id]);$('#posterBelt').hidden=false;
- const side=(img,cap,w)=>{const i=$(img);i.src='assets/portraits/'+w.id+'.png';i.alt='Pixel-art portrait of '+w.name;$(cap).textContent=w.name;};
  $('#posterPromo').textContent=p.name;$('#posterVenue').textContent=p.venue.replace(/^the /,'The ');
- side('#posterW','#posterWName',a);side('#posterF','#posterFName',b);
+ posterFace('#posterW','#posterWName',a,saved);posterFace('#posterF','#posterFName',b,saved);
  $('#posterBelt').src=belt.img;$('#posterBelt').alt=belt.name+' belt';
  $('#posterStakes').textContent='for the '+belt.name;
  const under=[];
@@ -2084,7 +2090,7 @@ function summary(saved,top){
  if(saved&&G.hasSave()){
   const parts=[`Season ${saved.season||1}, week ${saved.week||1}`];
   if(Number.isFinite(saved.cash))parts.push(money(saved.cash));
-  $('#loadSummary').innerHTML=`<span class="stub-save">${top?`<img src="assets/portraits/${esc(top.id)}.png" alt="">`:''}${esc(parts.join(' · '))}${top?' · '+esc(top.name):''}</span>`;
+  $('#loadSummary').innerHTML=`<span class="stub-save">${top?Pt.avatar({key:'wrestler:'+top.id,name:top.name},null,'portrait',saved):''}${esc(parts.join(' · '))}${top?' · '+esc(top.name):''}</span>`;
  }
 }
 
