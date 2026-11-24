@@ -4,7 +4,7 @@
    public promise still come from the promo graph underneath, so what is said is still tested in the
    ring. Every option states its risk and what it is for. Seeded and replayable. */
 (function installPromoDuel(root){'use strict';
- const D=root.OfficeData,Core=root.OfficeStory.Graph,Room=root.OfficeRoom,Director=root.OfficePromoDirector;
+ const D=root.OfficeData,Core=root.OfficeStory.Graph,Room=root.OfficeRoom,Director=root.OfficePromoDirector,Dialogue=root.OfficePromoDialogue;
  const hash=s=>{let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;};
  const rng=(seed,k)=>hash(seed+'|'+k)/4294967296;
  const pick=(arr,seed,k)=>arr[Math.floor(rng(seed,k)*arr.length)];
@@ -194,6 +194,7 @@
    venue:p?.venue||'this hall',promoterVoice:p?.voice||'the promoter',promoterName:p?.name||'the promotion',finish:c.finish||null,
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
+  if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
   if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
@@ -294,13 +295,17 @@
   const mine=Math.round(step.landed?base*(1+.25*fit)*(1+.14*riskOf(st,stage,id)):base*(1-.2*fit));
   (st.fits??=[]).push({stage,id,fit});
   let said=false,replied=false,stumbled=false;
+  const slot=(side,d)=>st.dialogueFacts&&Dialogue.context(st,stage,id,side,{landed:step.landed,variant:step.variant,recorded:!!d.case});
   for(const d of fresh){
-   if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);push(st,'w',d.line,step.landed?'strong':'uneven',got,true);
+   if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);const ctx=slot('w',d);push(st,'w',d.line,step.landed?'strong':'uneven',got,true);
+    if(ctx)st.log.at(-1).dialogueSlot=Dialogue.tag(ctx);
     if(!step.landed)push(st,'stage',fluff(st),'fluff');crowdSays(st,got,key);continue;}
    if(d.speaker==='Crowd'&&d.kind==='reaction'&&!step.landed&&!stumbled){stumbled=true;continue;} // replaced by the fluff above
    if(d.speaker===st.f.name){replied=true;
     if(stage==='open'&&st.director?.format==='callout')push(st,'stage',fmt('{F} comes down from the entrance and takes the second microphone.',st),'stage');
+    const ctx=slot('f',d),at=st.log.length;
     theirTurn(st,d.line,key,step.landed,fit);
+    if(ctx&&st.log[at]?.side==='f')st.log[at].dialogueSlot=Dialogue.tag(ctx);
     if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',fmt(ANGLE_CUE[st.angle],st),'cue');}
     continue;}
    if(d.speaker==='Crowd')push(st,'stage',d.line.replace(/^The opponent/,st.f.short).replace(/the opponent/g,st.f.short),'stage');
@@ -362,6 +367,7 @@
     if(!ok||rng(st.seed,'pushback?')<.5)theirTurn(st,fmt(pick(['You done, {W}? Only some of us have a match to win.','Keep talking, {W}. It is the only thing you are winning tonight.','Lovely speech. Shall I hold your coat while you finish?','That is a lot of words for somebody about to lose.'],st.seed,'pushback'),st),'push',ok,fit);
    }
   }else rec={round:r,...coreRound(st,'close',id,'close')};
+  if(r==='push'&&st.dialogueFacts)for(const e of st.log.slice(beforeLog))if(e.side==='w'||e.side==='f')e.dialogueSlot=Dialogue.tag(Dialogue.context(st,r,id,e.side,{landed:rec.landed,recorded:!!st.core.case}));
   st.steps.push(rec);st.round++;
   if(st.director){
    Director.observe(st.director,st,rec,st.log.slice(beforeLog));
@@ -388,7 +394,7 @@
    moraleDelta:clamp(base.moraleDelta+(m>=15?1:m<=-15?-1:0),-3,4),
    temperature:50+m,temperatureWord:meterWord(m),timeOver:0,
    beats:st.steps.map(s=>({...s})),reaction,
-   dialogue:st.log.map(e=>({speaker:e.speaker||'Stage',line:e.line,kind:e.kind,swing:e.swing})),speech:st.log.filter(e=>e.side==='w').map(e=>e.line),
+   dialogue:st.log.map(e=>({speaker:e.speaker||'Stage',line:e.line,kind:e.kind,swing:e.swing,...(e.dialogueSlot?{dialogueSlot:e.dialogueSlot}:{})})),speech:st.log.filter(e=>e.side==='w').map(e=>e.line),
    angle:st.w.short+': '+st.steps.map(s=>String(s.label).toLowerCase()).join('; ')+'.'};
  }
  function view(st){
