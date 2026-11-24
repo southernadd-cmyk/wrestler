@@ -47,7 +47,7 @@ const BRITISH_PEOPLE=Object.freeze([
  'Mickey McVale','Jackie Palfrey','Les Kellaway','Johnny Sainthill','Billy Robden',
  'Adrian Lanehart','Mark Rocford','Jimmy Brakesley','Bert Regent','Vic Falconhurst',
  'Geordie Kittow','Bert Biggs','Gordon Hayrick','Ken Nakasen',
- 'Davy Boy Steele','Tommy Dynamite','Marty Jowett','Tony St. Carr','Pat Rookwood',
+ 'Davy Boy Steele','Colin Wriston','Marty Jowett','Tony St. Carr','Pat Rookwood',
  'Johnny Quayle','Max Crabbett','Brian Dixley','Owen Wyllan',
  'Georgie Gilt','Lloyd Ryeland','Paul Lincombe','Ricky Squire',
  'Mitzi Millward','Klondyke Kay','Rusty Braithwaite','Nicky Montrose','Sue Britton',
@@ -55,7 +55,7 @@ const BRITISH_PEOPLE=Object.freeze([
 ]);
 // Fictional nods to classic tag teams and modern British factions.
 const BRITISH_HISTORIC_GROUPS=Object.freeze([
- 'The Crown Cousins','The Wigan Mastiffs','The Bootlace Belles',
+ 'The Crown Cousins','The Pavilion Aces','The Bootlace Belles',
  'The Albion Stronghold','The First Bell','The Pennine Powerhouse',
  'The Handlebar Heights','The Black Country Bruisers'
 ]);

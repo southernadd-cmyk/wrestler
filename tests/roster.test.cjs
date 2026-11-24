@@ -67,6 +67,8 @@ const formerRealPeople=['Mick McManus','Jackie Pallo','Les Kellett','Johnny Sain
 const formerRealGroups=['The Royal Family','The British Bulldogs','The Bovver Birds','British Strong Style','The Origin'];
 assert.ok(formerRealPeople.every(name=>!archive.people.includes(name)));
 assert.ok(formerRealGroups.every(name=>!archive.stables.includes(name)));
+assert.ok(!archive.people.includes('Tommy Dynamite'),'retired manager homage is not suggested');
+assert.ok(!archive.stables.includes('The Wigan Mastiffs'),'retired team homage is not suggested');
 assert.equal(new Set(archive.people).size,archive.people.length);
 assert.equal(new Set(archive.stables).size,archive.stables.length);
 for(let seed=0;seed<256;seed++){
