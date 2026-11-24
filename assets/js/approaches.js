@@ -8,7 +8,7 @@
  const G=root.OfficeGame,D=root.OfficeData,T=root.OfficeTerritory,V4=root.OfficeWorldV4,M=root.OfficeManagers;
  function hash(text){let h=2166136261;for(const ch of String(text)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return ((h>>>0)%10007)/10007;}
  const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,n));
- const info=id=>D.findWrestler(id)||{};
+ const info=id=>G.personnel(G.S,id)||{};
  const COOLDOWN=4,ROSTER_CAP=5;
 
  function state(t=G.S?.territory){

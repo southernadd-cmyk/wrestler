@@ -174,7 +174,21 @@ function wipe(){try{localStorage.removeItem(STORE)}catch(e){}}
 
 /* ---------- lookups ---------- */
 const W=id=>S.roster.find(w=>w.id===id);
-const F=id=>D.findWrestler?.(id)||D.FOES.find(f=>f.id===id)||D.TALENT.find(f=>f.id===id);
+// Personal state survives a contract; market price and contract obligations do not.
+const PERSONAL_FIELDS=['age','ceiling','ring','mic','psych','safe','heat','morale','loyal','fatigue',
+ 'injury','injurySince','wear','niggle','nigglePart','relapse','retireWarned',
+ 'learned','learning','micWork','progress','trend','prepHistory','matches','wins','starSum','best','startSkills'];
+function personalRecord(w){
+ const record={};
+ for(const k of PERSONAL_FIELDS)if(w[k]!==undefined)record[k]=w[k];
+ return JSON.parse(JSON.stringify(record));
+}
+function personnel(s,id){
+ const base=D.findWrestler?.(id)||D.FOES.find(f=>f.id===id)||D.TALENT.find(f=>f.id===id);
+ if(!base)return undefined;
+ return {...base,...(s?.worldV4?.personnel?.[id]||{}),...(s?.free?.find(w=>w.id===id)||{})};
+}
+const F=id=>personnel(S,id);
 const P=id=>S.promoters.find(p=>p.id===id);
 const feudKey=(wid,rid)=>wid+':'+rid;
 const feud=(wid,rid)=>S.feuds[feudKey(wid,rid)];
@@ -232,7 +246,9 @@ function sign(id){
  if(S.cash<w.fee)return `You need ${money(w.fee)} to sign ${w.name}.`;
  reconcileOwnership(id,{reason:'The booked opponent joined your stable'});
  S.cash-=w.fee;S.free=S.free.filter(x=>x.id!==id);
- S.roster.push({...w,trend:[],program:null,prep:{},prepHistory:[],session:null,learned:[],learning:null,micWork:{},rehearsedAt:null,training:'ring',intensity:'light',progress:{},startSkills:{ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe},promise:null,injury:0,matches:0,wins:0,starSum:0,best:0,lastRaise:0,flags:{},joined:abs(),wear:{},niggle:0,nigglePart:null,relapse:null,ceiling:w.ceiling??clamp(Math.max(w.ring,w.mic,w.psych)+12,0,95)});
+ S.roster.push({...w,trend:[],prepHistory:[],learned:[],learning:null,micWork:{},progress:{},startSkills:{ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe},injury:0,matches:0,wins:0,starSum:0,best:0,wear:{},niggle:0,nigglePart:null,relapse:null,ceiling:w.ceiling??clamp(Math.max(w.ring,w.mic,w.psych)+12,0,95),
+  ...personalRecord(w),
+  program:null,prep:{},session:null,rehearsedAt:null,training:'ring',intensity:'light',promise:null,lastRaise:0,flags:{},joined:abs()});
  snapshot(S.roster.at(-1));
  if(S.worldV4)root.OfficeWorldV4?.markPlayer(S,id);
  // Keep the original invitations but guarantee a suitable current-week offer after the first signing.
@@ -257,13 +273,21 @@ function scoutBand(w,key){
 function scoutWatch(w){if(!w||w.scoutedAt===abs())return;w.scoutedAt=abs();w.knowledge=(w.knowledge||0)+1;save()}
 // The hidden ceiling (set at signing or at the first season end) slows training as a wrestler nears it.
 function ceilingRoom(w,cur){if(w.ceiling==null)return 1;return cur>=w.ceiling?.1:cur>=w.ceiling-8?.5:1}
+function returnToMarket(w,discount=false){
+ const base=D.findWrestler?.(w.id)||D.TALENT.find(t=>t.id===w.id)||w;
+ const record=personalRecord(w);
+ if(S.worldV4){
+  S.worldV4.personnel??={};S.worldV4.personnel[w.id]=record;
+ }
+ S.free=S.free.filter(x=>x.id!==w.id);
+ S.free.push({...base,...personalRecord(w),fee:discount?Math.round(base.fee*.9):base.fee,knowledge:5});
+ if(S.worldV4)root.OfficeWorldV4?.markMarket(S,w.id);
+}
 function release(id){
  const w=W(id);if(!w)return;
  reconcileOwnership(id,{outgoing:true,reason:'The wrestler was released from your stable'});
  S.roster=S.roster.filter(x=>x.id!==id);
- const base=D.findWrestler?.(id)||D.TALENT.find(t=>t.id===id);
- S.free.push({...base,heat:w.heat,ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe,fee:Math.round(base.fee*.9),knowledge:5});
- if(S.worldV4)root.OfficeWorldV4?.markMarket(S,id);
+ returnToMarket(w,true);
  msg({from:'The office',subject:`${w.name} released`,kind:'info',body:[`${w.name} cleared out the locker today. No hard feelings, on paper.`]});
  save();
 }
@@ -730,7 +754,7 @@ const DILEMMAS={
    S.card.push({id:uid('c'),pid:p.id,rid,wid:w.id,slot:'opener',minutes:8,finish:'lose_clean',purse:purse(o2,w),tag:'Favour',feudHeat:0,blowoff:false,eventAbs:abs()});
    return `${w.short} is on the card: opener, losing clean to ${F(rid).name}.`}}
 };
-function leave(w,fee){if(!w||!W(w.id))return;reconcileOwnership(w.id,{outgoing:true,reason:'The wrestler left your stable'});S.cash+=fee;S.roster=S.roster.filter(x=>x!==w);if(S.worldV4)root.OfficeWorldV4?.markMarket(S,w.id);else if(!S.free.some(x=>x.id===w.id))S.free.push({...w});}
+function leave(w,fee){if(!w||!W(w.id))return;w=W(w.id);reconcileOwnership(w.id,{outgoing:true,reason:'The wrestler left your stable'});S.cash+=fee;S.roster=S.roster.filter(x=>x.id!==w.id);returnToMarket(w);}
 function makeDilemmas(){
  let made=0;const recent=S.recentTypes;
  const ok=t=>!recent[t]||abs()-recent[t]>=4;
@@ -893,5 +917,5 @@ function ageRoster(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel};
 })(typeof window!=='undefined'?window:globalThis);

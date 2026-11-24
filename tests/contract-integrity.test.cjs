@@ -126,3 +126,38 @@ function pendingProgramme(s,id){return P.state(s.territory).live.some(p=>p.id===
  }else assert.match(outcome,/could not secure|Nobody was free/);
 }
 console.log('PASS promoter favours never create undated or own-stable contracts');
+
+/* A worker's physical state, development and past performance survive every
+   contract boundary. Contract terms and temporary commitments start afresh. */
+{
+ let s=fresh(),w=G.W('rex');
+ const state={age:37,ceiling:83,ring:78,mic:71,psych:75,safe:68,heat:62,morale:41,loyal:38,fatigue:79,
+  injury:3,injurySince:now(),wear:{shoulder:4},niggle:2,nigglePart:'knee',relapse:{part:'shoulder'},
+  retireWarned:true,learned:['test-move'],learning:{move:'other-move',done:2,need:3},
+  micWork:{proof:1.5},progress:{ring:.75},prepHistory:[{week:1,focus:'ring',gains:2}],
+  matches:9,wins:3,starSum:27,best:4};
+ Object.assign(w,state,{program:{type:'camp',left:2},prep:{ring:3},session:'rehearse',rehearsedAt:now(),
+  promise:{status:'open'},flags:{dive:true},training:'safe',intensity:'hard',lastRaise:9,wage:999});
+ const expect=JSON.stringify(state);
+ function personal(p){assert.equal(JSON.stringify(Object.fromEntries(Object.keys(state).map(k=>[k,p[k]]))),expect);}
+ function cleanContract(p){assert.equal(p.program,null);assert.equal(p.session,null);assert.equal(p.promise,null);
+  assert.equal(p.rehearsedAt,null);assert.equal(Object.keys(p.flags).length,0);assert.equal(p.lastRaise,0);
+  assert.notEqual(p.wage,999);}
+ G.release('rex');personal(s.free.find(p=>p.id==='rex'));
+ assert.equal(G.sign('rex'),null);w=G.W('rex');personal(w);cleanContract(w);
+ assert.equal(G.available(w),false,'release/re-sign cannot clear an injury');
+ G.leave(w,0);personal(s.free.find(p=>p.id==='rex'));
+ const team=s.territory.teams.find(t=>V4.canAfford(s,t.id,'rex'));
+ assert.ok(team&&V4.hire(s,team.id,'rex'));assert.ok(!s.free.some(p=>p.id==='rex'));
+ personal(G.F('rex'));
+ G.save();assert.ok(G.load());s=G.S;personal(G.F('rex'));
+ assert.ok(V4.releaseAI(s,'rex'));personal(s.free.find(p=>p.id==='rex'));
+ const other=s.territory.teams.find(t=>t.id!==team.id&&V4.canAfford(s,t.id,'rex'));
+ assert.ok(other&&V4.hire(s,other.id,'rex'));assert.ok(V4.releaseAI(s,'rex'));
+ assert.equal(G.sign('rex'),null);personal(G.W('rex'));cleanContract(G.W('rex'));
+ assert.deepEqual(check(root,s,'persistent worker round trip'),[]);
+ // Save and reload after re-signing; nested snapshots must not alias the live record.
+ G.save();assert.ok(G.load());personal(G.W('rex'));
+ assert.equal(G.S.worldV4.personnel?.rex,undefined);
+}
+console.log('PASS personal state through release, re-sign, sale, rival transfers and save/reload');

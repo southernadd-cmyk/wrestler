@@ -40,7 +40,7 @@ function reconcile(s){
  }
  const preserved=new Map(s.free.map(w=>[w.id,w]));
  s.free=all.filter(w=>world.contracts[w.id]?.owner==='market')
-   .map(w=>preserved.get(w.id)||basic(w));
+   .map(w=>preserved.get(w.id)||{...basic(w),...G.personalRecord(world.personnel?.[w.id]||{})});
  // Do not reset individual talent progression on load; contracts only hold ownership.
  world.migratedIds=all.length;
  return world;
@@ -84,6 +84,8 @@ function markPlayer(s,id){
  const w=activeWorld(s);if(!w)return;
  if(!D.findWrestler(id))throw Error('Unknown wrestler '+id);
  w.contracts[id]=createContract('player',id,null,baseWeek(s));
+ // The live player record is now authoritative; discard the inactive snapshot.
+ if(w.personnel)delete w.personnel[id];
  reconcile(s);
 }
 function markMarket(s,id){
@@ -106,6 +108,9 @@ function hire(s,teamId,id,week=baseWeek(s)){
  const agency=w.agencies[teamId];
  if(!canAfford(s,teamId,id))return false;
  agency.cash-=worker.fee||1000;
+ // Preserve any developed market record before reconcile removes it.
+ const market=s.free.find(p=>p.id===id);
+ if(market){w.personnel??={};w.personnel[id]=G.personalRecord(market);}
  w.contracts[id]=createContract('ai',id,teamId,week);
  agency.hires++;
  // A transfer must put the worker onto at least one promotion's actual card.
