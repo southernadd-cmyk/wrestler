@@ -23,13 +23,13 @@
  "graph:sw_jacket:14ae5de1": "appearance",
  "graph:sw_future:9333028c": "present",
  "graph:sw_belt:a3449d71": "progress",
- "graph:sw_pose:62c72f7d": "legitimacy",
+ "graph:sw_pose:62c72f7d": "appearance",
  "graph:ht_song:d20b8f9e": "crowd",
  "graph:ht_fake:b65dd31b": "home",
  "graph:ht_carpark:ae2b566a": "home",
  "graph:ht_backing:2ce46c40": "crowd",
  "graph:nu_flight:2f358dbe": "air",
- "graph:nu_minutes:696b3371": "endurance",
+ "graph:nu_minutes:696b3371": "endurance_self",
  "graph:nu_poll:583cfa49": "count",
  "graph:nu_plain:76beaa6b": "count",
  "graph:ac_politics:5eb82c5c": "evidence",
@@ -38,7 +38,6 @@
  "graph:ca_pro:622f3f1c": "agreement",
  "graph:ca_smile:3a5edbe5": "count",
  "graph:ca_fans:7e97ff32": "crowd",
- "graph:ca_respect:538269da": "endurance",
  "graph:ca_restraint:e9e22c7a": "end",
  "graph:ca_long:d8a3e2e5": "early",
  "graph:ch_one_fall:3a24f10b": "terms",
@@ -48,7 +47,6 @@
  "graph:ch_witness:75deab52": "end",
  "graph:ch_now:7080731b": "end",
  "graph:tu_anger:333f501e": "strike",
- "graph:tu_flash:3a5d7be5": "air",
  "graph:tu_crowd:948939bf": "crowd",
  "graph:tu_stall:281974d3": "end",
  "graph:pe_respect:281d977d": "respect",
@@ -577,18 +575,69 @@
   "The crowd will make its own mind up.",
   "What will you give this crowd to remember?",
   "Their support is their choice."
+ ],
+ "endurance_self": [
+  "the opponent's confidence in their stamina",
+  "You expect to outlast me. Make me work long enough to find out.",
+  "Staying power is a claim you have to demonstrate under pressure.",
+  "All right. Let us find out who lasts.",
+  "I intend to be there when the pace starts to tell.",
+  "How will you keep going if I make you work at my pace?",
+  "You have confidence in your stamina. I am ready to test it."
  ]
+});
+ const pressReplies=Object.freeze({
+ "legitimacy": "Beat me when the bell goes. That is the test I am putting in front of you.",
+ "status": "Exactly. The wrestling matters more than the running order.",
+ "audience": "I intend to give them a match they cannot look away from.",
+ "crowd": "I expect their reaction to follow what happens in the ring.",
+ "cheers": "I have to put you in a position where the referee can count.",
+ "endurance": "I intend to keep making you work until you cannot maintain that pace.",
+ "endurance_self": "By choosing when I spend my energy. You will have to change that.",
+ "effort": "I want to see how you respond when the match stops going your way.",
+ "shared_effort": "The decisions we make when the match gets difficult.",
+ "takedown": "I change the entry rather than give up on it. Watch for that.",
+ "strike": "Another exchange. I am not planning to stop after one hit.",
+ "air": "I can change when I take off. You still have to judge the timing.",
+ "pace": "Then I have to find a way to control the next exchange.",
+ "opportunity": "Then I have to adapt. I expect you to do the same.",
+ "strength": "I will have to adjust my use of those {detail}. That is wrestling.",
+ "study": "Then I will have to adapt. I do not expect the match to go exactly to plan.",
+ "experience": "A different pace, a different problem. See how you deal with it.",
+ "name": "Because I intend to give them the performance they remember.",
+ "talking": "Wrestle. There is no reason to keep competing over the microphone.",
+ "finisher": "By making you fight for the position you need.",
+ "appearance": "I want to know what you can do once the bell goes.",
+ "present": "That is the question the match is there to answer.",
+ "progress": "A match you still have to win. There is no shortcut past it.",
+ "count": "By getting you into a position where the referee can count the fall.",
+ "agreement": "Nothing we need to manufacture here. We can wrestle.",
+ "terms": "Those are the terms we have just agreed. The referee can hold us to them.",
+ "end": "Nothing more. Let us get to the match.",
+ "proof": "Show me that you can do the work when the bell goes.",
+ "early": "Then I have to find another opening. I am not relying on a clock.",
+ "past": "We will find out in the next match, not in another speech about the last one.",
+ "strategy": "I have to respond to the position you give me.",
+ "charge": "I have to adjust my approach. You still have to get away.",
+ "evidence": "What the referee and the audience actually see. That is something we can both answer for.",
+ "rules": "The method is there for everyone to see. Judge it when we wrestle.",
+ "ground": "By finding space to change position. You will have to keep it closed.",
+ "outside": "I know there is a count. You will have to wrestle me inside those rules.",
+ "handshake": "I would rather see how the contest goes first.",
+ "respect": "Good work under pressure. That is what I will be judging.",
+ "home": "A match worth staying to watch. The crowd can decide the rest."
 });
  const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(16).padStart(8,'0');};
  function source(id,template){return 'graph:'+id+':'+hash(template);}
  function classify(key,detail){
-  const claim=reviewed[key];if(!claim||claim==='strength'&&!detail)return null;
+  const claim=Object.prototype.hasOwnProperty.call(reviewed,key)?reviewed[key]:null;if(!claim||claim==='strength'&&!detail)return null;
   return {v:1,kind:'claim',claim,source:key,...(claim==='strength'?{detail}:{})};
  }
  function fromBank(id,line){return classify('bank:'+id+':'+hash(line));}
  function latest(log,side){for(let i=log.length-1;i>=0;i--)if(log[i].side==='w'||log[i].side==='f')return log[i].side===side?{index:i,entry:log[i]}:null;return null;}
  function allowed(st){return st.semantic?.v===1&&!st.speaker&&!st.core.case&&!st.core.claim?.hasEvidence&&!(st.core.claim?.opening==='proof'&&st.core.claim?.planFocus==='counter');}
- const label=claim=>topics[claim]?.[0]||null;
+ const topicFor=claim=>Object.prototype.hasOwnProperty.call(topics,claim)?topics[claim]:null;
+ const label=claim=>topicFor(claim)?.[0]||null;
  function option(st,stage,action){
   if(!allowed(st))return null;
   const topic=label(latest(st.log,'f')?.entry.semantic?.claim);
@@ -600,14 +649,14 @@
   if(!allowed(st)||!ctx||ctx.hasMouthpiece||ctx.stage==='answer'&&ctx.action!=='turn'||ctx.stage==='push'&&!['press','acknowledge'].includes(ctx.action)||!['answer','push'].includes(ctx.stage))return null;
   const side=ctx.side,prev=latest(st.log,side==='w'?'f':'w');if(!prev)return null;
   const tag=prev.entry.semantic;if(side==='f'&&tag?.kind!=='response')return null;
-  const claim=tag?.claim||'unclassified',topic=topics[claim],detail=tag?.detail||null;
-  const move=side==='f'?(ctx.action==='acknowledge'?'settle':'counter'):ctx.action==='turn'?'rebut':ctx.action;
+  const claim=tag?.claim||'unclassified',topic=topicFor(claim),detail=tag?.detail||null;
+  const move=side==='f'?(ctx.action==='acknowledge'?'settle':ctx.stage==='push'?'press_counter':'counter'):ctx.action==='turn'?'rebut':ctx.action;
   let frames,outClaim=claim;
   if(side==='f'){
    if(move==='settle'){frames=['Then we understand where we stand. The match is next.','All right. We can leave that there.'];outClaim='end';}
-   else if(topic)frames=[topic[4]];
+   else if(topic)frames=[move==='press_counter'?pressReplies[claim]:topic[4]];
    else{frames=['Then show me in the ring.','We will see what you can do at the bell.'];outClaim='proof';}
-  }else if(move==='rebut')frames=topic?topic.slice(1,4):['I have heard your objection. The wrestling will have to settle it.','I am not going to put words in your mouth. Let us settle this in the ring.','We disagree. I intend to give you my answer at the bell.'];
+  }else if(move==='rebut')frames=topic?topic.slice(1,4):['I have heard your objection. The wrestling will have to settle it.','I am not going to put words in your mouth. Let us settle this in the ring.','I intend to give you my answer at the bell.'];
   else if(move==='press')frames=topic?[topic[5]]:['Have you got anything else to add before the bell?','Is there anything about the match itself you still want to say?'];
   else frames=topic?[topic[6]]:['I hear you. We still have a match to wrestle.','All right. I heard what you said.'];
   const voice=ctx.voice||ctx.stance,preferred=ctx.irritation>=42||['gruff','stoic','reserved','combative'].includes(voice)?2:['precise','analytical'].includes(voice)?1:0;
