@@ -791,7 +791,15 @@
  "bank:rookie-spectacle-3.r.13:11553e80": "audience",
  "bank:rookie-spectacle-3.r.14:6fcfd1cf": "status",
  "bank:rookie-spectacle-3.r.24:b3a2a9bf": "respect",
- "bank:rookie-spectacle-3.r.27:e0ddd4b5": "agreement"
+ "bank:rookie-spectacle-3.r.27:e0ddd4b5": "agreement",
+ "bank:academy-001.g.09:ef5e919b": "effort",
+ "bank:academy-001.g.10:5e087679": "strike",
+ "bank:academy-001.g.11:2a180e94": "strategy",
+ "bank:academy-001.g.12:6faa2ba8": "pace",
+ "bank:academy-001.g.13:e15367ba": "shared_effort",
+ "bank:academy-001.g.14:73e238f6": "status",
+ "bank:academy-001.g.24:413355f5": "respect",
+ "bank:academy-001.g.27:528fa5c4": "agreement"
 });
  const topics=Object.freeze({
  "legitimacy": [
