@@ -815,7 +815,7 @@
     s.rep=clamp(s.rep+(pr.repDelta||0));
    }
    if(fd){
-    fd.segments=(fd.segments||0)+1;fd.lastPromo={style:pr.styleName,quality:pr.quality,week:G.abs(),path:pr.path||[],promise:pr.promise||null,angle:pr.angle||null};
+    fd.segments=(fd.segments||0)+1;fd.lastPromo={style:pr.styleName,quality:pr.quality,week:G.abs(),path:pr.path||[],promise:pr.promise||null,angle:pr.angle||null,...(pr.dialogueIds?{dialogueIds:pr.dialogueIds.slice(0,32)}:{})};
     fd.angle=pr.angle||pr.speaker+' called out '+pr.opponent+' ('+pr.styleName.toLowerCase()+'). '+(pr.quality>=70?'The crowd bought every word.':pr.quality<38?'The exchange did not land.':'The confrontation added another chapter.');
     if(!fd.closed){fd.heat=clamp(fd.heat+pr.heatDelta);fd.last=G.abs()}
    }
