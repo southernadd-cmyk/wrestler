@@ -1527,13 +1527,16 @@ function showPromos(loadedBanks){
  const existing=night.promo?.authoredDialogue,needsBanks=newPromo||existing&&!Array.isArray(existing.banks)&&night.promo.stage!=='done';
  if(needsBanks&&loadedBanks===undefined){
   const n=night,cid=c.id;
-  if(n.promoLoading===cid)return;
-  n.promoLoading=cid;n.stage='promo';persistNight();
+  if(n.promoLoading?.cid===cid&&n.stage==='promo')return;
+  const token={cid};n.promoLoading=token;n.stage='promo';persistNight();
   $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back"><p role="status">Preparing the microphone…</p></div>';
   const ids=newPromo?[mouth?.id||w.id,f.id]:[night.promo.speaker?.id||w.id,f.id];
   Promise.resolve(window.OfficePromoBanks?.load(ids)||[]).catch(()=>[]).then(banks=>{
-   if(night!==n||n.stage!=='promo'||n.promoLoading!==cid||current()?.id!==cid)return;
-   delete n.promoLoading;showPromos(banks);
+   // Release only our own request, even when the screen or match has changed.
+   if(n.promoLoading!==token)return;
+   delete n.promoLoading;
+   if(night!==n||n.stage!=='promo'||current()?.id!==cid)return;
+   showPromos(banks);
   });return;
  }
  if(!newPromo&&needsBanks&&existing)existing.banks=loadedBanks||[];

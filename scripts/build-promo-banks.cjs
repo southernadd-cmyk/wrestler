@@ -2,7 +2,7 @@
 // Offline development tool. Source banks stay editable; browser receives compact immutable JSON.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const repo=path.resolve(__dirname,'..'),js=path.join(repo,'assets/js'),dir=path.join(repo,'assets/promo-banks');
-const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0');};
+const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0');};
 function build(){
  const root={};
  const names=['promo-dialogue-pilot.js',...fs.readdirSync(js).filter(n=>/^promo-dialogue-bank-.*\.js$/.test(n)).sort()];
@@ -14,6 +14,8 @@ function build(){
   if(pack.role!=='wrestler')throw Error('Extend asset schema before packing non-wrestler roles');
   const rows=pack.lines.map(({id,stage,action,side,category,text,when={}})=>{
    if(!id.startsWith(pack.owner+'.'))throw Error('Invalid owner prefix: '+id);
+   // Strength is a plural noun phrase, even for unknown wrestling styles.
+   if(/\{strength\}\s+(?:is|was|has|does)\b/i.test(text)||/\b(?:a|an|this|that)\s+\{strength\}/i.test(text))throw Error('Strength placeholder agreement: '+id);
    const {variants,hasMouthpiece,...extra}=when;
    if(hasMouthpiece!==false)extra.hasMouthpiece=hasMouthpiece??false;
    const row=[id.slice(pack.owner.length+1),stage,action,side,category,text,variants||null];
@@ -28,7 +30,7 @@ function build(){
 }
 function check(){
  const built=build(),m=path.join(js,'promo-bank-manifest.js');
- if(fs.readFileSync(m,'utf8')!==built.script)throw Error('Stale promo bank manifest; run node scripts/build-promo-banks.cjs');
+ if(fs.readFileSync(m,'utf8').replace(/\r\n/g,'\n')!==built.script)throw Error('Stale promo bank manifest; run node scripts/build-promo-banks.cjs');
  for(const [name,raw] of built.assets)if(fs.readFileSync(path.join(dir,name),'utf8')!==raw)throw Error('Stale bank: '+name);
  return built;
 }

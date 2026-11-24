@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),vm=require('node:vm');
-const {core}=require('./_source.cjs');
+const {editorialCore:core,promoBanks}=require('./_source.cjs');
 const root={addEventListener(){}},store=new Map();
 const localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)};
 vm.runInNewContext(core,{window:root,localStorage,Date,Math,JSON,console});
@@ -30,9 +30,9 @@ const owners=new Set(),selected=new Set();let spoken=0,scenes=0,protectedN=0,opp
 for(const w of rows)for(const f of rows.filter(x=>x.id!==w.id))for(let i=0;i<30;i++){
  const c={id:'pilot-'+w.id+'-'+f.id+'-'+i,wid:w.id,rid:f.id,pid:p.id,eventAbs:i,finish:i%2?'win_clean':'lose_clean',minutes:12,feudHeat:i%3?0:65};
  const opts={directed:true,formats:true,dialogue:true};
- const a=M.begin(c,w,f,null,null,p,{...opts,authored:true}),b=M.begin(c,w,f,null,null,p,opts);
+ const a=M.begin(c,w,f,null,null,p,{...opts,authored:true,banks:promoBanks(w.id,f.id)}),b=M.begin(c,w,f,null,null,p,opts);
  const all=Object.keys(Object.fromEntries(authored));
- const avoid=M.begin(c,w,f,{lastPromo:{dialogueIds:all}},null,p,{...opts,authored:true});
+ const avoid=M.begin(c,w,f,{lastPromo:{dialogueIds:all}},null,p,{...opts,authored:true,banks:promoBanks(w.id,f.id)});
  assert.equal(avoid.authoredDialogue.recent.length,authored.size);
  while(a.stage!=='done'){
   const round=M.ROUNDS[a.round].id,choices=M.choices(a),preferred=round==='open'?['proof','people','swagger'][i%3]:round==='answer'?['turn','calm'][i%2]:round==='push'?['press','acknowledge'][i%2]:'vow';

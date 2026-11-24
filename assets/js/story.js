@@ -269,7 +269,7 @@
   const outcome=historic?.finish||'';
   const lost=outcome.startsWith('lose');
   const event=st.memory?.kind;
-  const strength={Technical:'holds and counters',Brawl:'hard strikes',Spectacle:'speed and aerial attacks',Story:'patience and ring psychology'}[st.f.style]||'wrestling';
+  const strength={Technical:'holds and counters',Brawl:'hard strikes',Spectacle:'speed and aerial attacks',Story:'patience and ring psychology'}[st.f.style]||'wrestling techniques';
   // v0.3.12 Only public facts are said at the microphone. A backstage memory ("X remembers being asked
   // to lose") is never read out; the rivalry ledger supplies what the crowd actually saw.
   const top=st.cases?.[0]||null;
@@ -331,7 +331,7 @@
  const format=(text,st)=>String(text).replace(/\{W\}/g,st.w.short).replace(/\{F\}/g,st.f.short)
   .replace(/\{VENUE\}/g,st.venue||'this hall').replace(/\{FINISHER\}/g,st.w.finisher||'my finishing hold').replace(/\{THEME\}/g,st.thread==='imagery'?st.motif.prop:(thematic[st.thread]||'tonight'))
   .replace(/\{PROP\}/g,st.motif.prop).replace(/\{MOTIF1\}/g,st.motif.first).replace(/\{MOTIF2\}/g,st.motif.second)
-   .replace(/\{EVIDENCE\}/g,st.claim?.said||st.claim?.evidence||'').replace(/\{RECN\}/g,String(st.record?.n??(st.history?.length||0))).replace(/\{RECW\}/g,String(st.record?.w??(st.history||[]).filter(x=>String(x.finish||'').startsWith('win')).length)).replace(/\{STRENGTH\}/g,st.claim?.strength||({Technical:'holds and counters',Brawl:'hard strikes',Spectacle:'speed and aerial attacks',Story:'patience and ring psychology'}[st.f?.style]||'wrestling')).trim();
+   .replace(/\{EVIDENCE\}/g,st.claim?.said||st.claim?.evidence||'').replace(/\{RECN\}/g,String(st.record?.n??(st.history?.length||0))).replace(/\{RECW\}/g,String(st.record?.w??(st.history||[]).filter(x=>String(x.finish||'').startsWith('win')).length)).replace(/\{STRENGTH\}/g,st.claim?.strength||({Technical:'holds and counters',Brawl:'hard strikes',Spectacle:'speed and aerial attacks',Story:'patience and ring psychology'}[st.f?.style]||'wrestling techniques')).trim();
  const limit=(x,a,b)=>Math.max(a,Math.min(b,x));
  /* v3.3 PROMO VARIANTS — each of the fifteen angles has concrete, situation-specific versions.
     A variant is offered only when its condition is true for this pairing (history, memories,
