@@ -6,7 +6,7 @@
    Pure where it matters: decide() reads the career and returns the week's plan and card without
    changing anything, so the start screen can show next week's real bill; territory.evolve() commits it. */
 (function installBookingOffice(root){'use strict';
- const D=root.OfficeData,T=root.OfficeTerritory;
+ const D=root.OfficeData,T=root.OfficeTerritory,G=root.OfficeGame;
  function hash(text){let h=2166136261;for(const ch of String(text)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return ((h>>>0)%10007)/10007;}
  const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,n));
  const quarter=n=>Math.round(n*4)/4;

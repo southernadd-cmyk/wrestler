@@ -100,3 +100,24 @@ const D=root.OfficeData,V=root.OfficeWorldV4,T=root.OfficeTerritory;
  assert.ok(!T.circuitBill(s,s.territory,2).some(m=>m.a.id===id||m.b.id===id));
 }
 console.log('PASS external ageing, recovery, retirement ownership, belts, previews and save compatibility');
+
+{
+ G.fresh();const s=G.S;const id=s.territory.teams[0].roster[0];
+ s.worldV4.personnel={[id]:{age:42,retireWarned:true}};
+ s.week=16;
+ let predicted;
+ for(let seed=1;seed<1000;seed++){
+  s.careerSeed=seed;predicted=V.previewLifecycle(s,17);
+  if(V.ownership(predicted,id).owner==='retired')break;
+ }
+ assert.equal(V.ownership(predicted,id).owner,'retired','seeded retirement preview');
+ assert.equal(V.ownership(s,id).owner,'ai','preview is not settlement');
+ s.futureBookings.push({id:'retiring-opponent',pid:'dock',wid:'rex',rid:id,eventAbs:18});
+ const retired=V.agePersonnel(s,1);
+ assert.ok(retired.includes(id));assert.equal(V.ownership(s,id).owner,'retired');
+ assert.ok(!s.futureBookings.some(c=>c.rid===id));
+ assert.ok(s.worldV4.events.some(e=>e.text.includes(G.F(id).name+' has retired')));
+ assert.equal(G.F(id).age,42);
+ assert.equal(V.ownership(s,id).owner,V.ownership(predicted,id).owner);
+}
+console.log('PASS deterministic external retirement and fixture reconciliation');

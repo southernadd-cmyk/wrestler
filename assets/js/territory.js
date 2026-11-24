@@ -175,7 +175,7 @@ function settledTitles(s,t){
  return out;
 }
 function circuitBill(s,t,week,busy=new Set((s.card||[]).map(c=>c.rid))){
- const projected=root.OfficeWorldV4?.previewLifecycle(s,week)||s;
+ const projected=root.OfficeWorldV4?.previewLifecycle(t===s.territory?s:{...s,territory:t},week)||s;
  if(projected!==s){s=projected;t=s.territory;}
  // Predict with the belts settled, exactly as evolve() books after checkTitles(); otherwise a vacant belt
  // makes the start screen's bill differ from the real one.

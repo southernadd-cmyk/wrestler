@@ -211,7 +211,7 @@ function recoverPersonnel(s,week){
   if(worker.niggle>0&&!--worker.niggle)worker.nigglePart=null;
   if(worker.relapse&&!worker.injury){
    const part=worker.relapse.part;worker.relapse=null;
-   if(lifecycleRoll(s,id,week,'relapse')<.25){
+   if(lifecycleRoll(s,id,week,'relapse')<.3){
     worker.injury=2;worker.injurySince=week;worker.wear={...(worker.wear||{}),[part]:(worker.wear?.[part]||0)+1};
    }
   }
