@@ -87,7 +87,7 @@
   return render(row,c)!==null;
  }
  function render(row,c){
-  const values={speaker:c.speaker.short,client:c.client.short,opponent:c.opponent.short,venue:c.venue,finisher:c.client.finisher};
+  const values={speaker:c.speaker.short,client:c.client.short,opponent:c.opponent.short,venue:c.venue,finisher:c.side==='f'?c.speaker.finisher:c.client.finisher};
   let missing=false;const line=row.text.replace(/\{([a-z]+)\}/g,(_,k)=>{const v=values[k];if(!string(v)){missing=true;return '';}return v;});
   return missing?null:line;
  }
