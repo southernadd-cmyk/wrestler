@@ -4,7 +4,7 @@
    public promise still come from the promo graph underneath, so what is said is still tested in the
    ring. Every option states its risk and what it is for. Seeded and replayable. */
 (function installPromoDuel(root){'use strict';
- const D=root.OfficeData,Core=root.OfficeStory.Graph,Room=root.OfficeRoom,Director=root.OfficePromoDirector,Dialogue=root.OfficePromoDialogue;
+ const D=root.OfficeData,Core=root.OfficeStory.Graph,Room=root.OfficeRoom,Director=root.OfficePromoDirector,Dialogue=root.OfficePromoDialogue,Semantic=root.OfficePromoSemantics;
  const Banks=root.OfficePromoBanks,sceneCatalogues=new WeakMap();
  const emptyCatalogue=Dialogue.catalogue([]);
  function catalogueFor(st){
@@ -206,6 +206,7 @@
   st.start=st.meter;
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
   if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
+  if(opts.semantic&&Semantic&&st.authoredDialogue&&opts.directed){st.semantic={v:1};core.semanticSpeech=true;}
   if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
@@ -285,23 +286,43 @@
     {id:'revise',label:P.revise?.label||'Revise your position',hint:P.revise?.hint||'Change what you are asking for.',tags:['Steady','Changes the question','Builds credibility']},
     {id:'leave',label:'Let it stand',hint:'Say nothing more. The argument stays open, and it will come back.',tags:['Safe','Leaves it unresolved']}];
   }
-  if(r==='push'&&st.director)return Director.options(st.director);
+  if(r==='push'&&st.director)return Director.options(st.director).map(o=>({...o,...(Semantic?.option(st,r,o.id)||{})}));
   if(r==='push')return [{id:'leave',label:'Leave it there',hint:st.meter>0?'Quit while you are ahead.':'Cut your losses.',tags:['Safe','Shorter promo']},
    ...Object.entries(PUSH).map(([id,o])=>({id,label:fmt(o.label,st),hint:o.hint,tags:[riskWord(o.risk),o.gain>=9?'Big swing either way':'Small gain']}))];
   const stage=r==='open'?'open':r==='answer'?'answer':'close';
   const offered=Core.choices(stage,st.core);
-  return (st.director?Director.angles(st.director,stage,offered,st.core):offered).map(o=>({id:o.id,label:o.label,hint:o.hint,tags:stakes(st,stage,o.id,o),evidence:o.evidence||null,caseResponse:!!o.caseResponse,followsCase:!!o.followsCase}));
+  return (st.director?Director.angles(st.director,stage,offered,st.core):offered).map(o=>({id:o.id,label:o.label,hint:o.hint,tags:stakes(st,stage,o.id,o),evidence:o.evidence||null,caseResponse:!!o.caseResponse,followsCase:!!o.followsCase,...(Semantic?.option(st,stage,o.id)||{})}));
  }
  function fitOf(st,stage,id){return stage==='open'?openFit(st,id):stage==='answer'?answerFit(st,id):arcFit(st,'close',id);}
  function pickAuthored(st,ctx){
   if(!st.authoredDialogue||!ctx)return null;
   const seed=st.seed+'|'+st.steps.length+'|'+ctx.side,mem=st.authoredDialogue;
+  // For new semantic scenes, never fall through to a style-only turn or generic press.
+  if(st.semantic&&((ctx.stage==='answer'&&ctx.action==='turn')||(ctx.stage==='push'&&['press','acknowledge'].includes(ctx.action)))){
+   const line=Semantic.select(st,ctx);if(line)(mem.composedUsed??=[]).push(line.id);
+   return line;
+  }
   const selection=Dialogue.select(catalogueFor(st),ctx,seed,mem);
   if(selection){mem.used.push(selection.id);return selection;}
   if(mem.composition){const line=Dialogue.compose(ctx,seed,{used:mem.composedUsed||[],recent:mem.recent});if(line){(mem.composedUsed??=[]).push(line.id);return line;}}
   return null;
  }
- function annotate(st,index,ctx,line){if(ctx&&st.log[index]){st.log[index].dialogueSlot=Dialogue.tag(ctx);if(line){if(line.composed)st.log[index].composedId=line.id;else st.log[index].authoredId=line.id;}}}
+ function annotate(st,index,ctx,line,source){
+  const e=st.log[index];if(!ctx||!e)return;
+  e.dialogueSlot=Dialogue.tag(ctx);
+  if(line){if(line.composed)e.composedId=line.id;else e.authoredId=line.id;}
+  if(st.semantic&&Semantic.allowed(st)){
+   const tag=line?.semantic||(e.side==='f'?(line&&!line.composed?Semantic.fromBank(line.id,line.text):!line?Semantic.classify(source?.speechSource,source?.speechDetail):null):null);
+   if(tag)e.semantic=tag;
+  }
+ }
+ function spokenCue(st){
+  if(st.semantic&&Semantic.allowed(st)){
+   const point=Semantic.label(Semantic.latest(st.log,'f')?.entry.semantic?.claim);
+   return point?'Their point concerns '+point+'.':st.f.short+' has replied.';
+  }
+  return fmt(ANGLE_CUE[st.angle],st);
+ }
  function coreRound(st,stage,id,key){
   const core=st.core,before=core.dialogue.length,m0={...core.metrics},fit=fitOf(st,stage,id);
   // Composure feeds the core's chance of landing a line; a line that suits the night is easier to land.
@@ -325,13 +346,13 @@
     if(stage==='open'&&st.director?.format==='callout')push(st,'stage',fmt('{F} comes down from the entrance and takes the second microphone.',st),'stage');
     const ctx=slot('f',d),at=st.log.length,line=pickAuthored(st,ctx);
     theirTurn(st,line?.text||d.line,key,step.landed,fit);
-    if(st.log[at]?.side==='f')annotate(st,at,ctx,line);
-    if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',fmt(ANGLE_CUE[st.angle],st),'cue');}
+    if(st.log[at]?.side==='f')annotate(st,at,ctx,line,d);
+    if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',spokenCue(st),'cue');}
     continue;}
    if(d.speaker==='Crowd')push(st,'stage',d.line.replace(/^The opponent/,st.f.short).replace(/the opponent/g,st.f.short),'stage');
   }
   if(!replied&&stage!=='close')theirTurn(st,null,key,step.landed,fit);
-  if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',fmt(ANGLE_CUE[st.angle],st),'cue');}
+  if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',spokenCue(st),'cue');}
   return {id,label:step.label,landed:step.landed};
  }
  function choose(st,id){
@@ -388,6 +409,7 @@
    }
   }else rec={round:r,...coreRound(st,'close',id,'close')};
   if(r==='push'&&st.dialogueFacts)for(const e of st.log.slice(beforeLog))if((e.side==='w'||e.side==='f')&&!e.dialogueSlot)e.dialogueSlot=Dialogue.tag(Dialogue.context(st,r,id,e.side,{landed:rec.landed,recorded:!!st.core.case}));
+  if(st.semantic&&Semantic.option(st,r,id))rec.label=o.label;
   st.steps.push(rec);st.round++;
   if(st.director){
    Director.observe(st.director,st,rec,st.log.slice(beforeLog));
@@ -415,7 +437,7 @@
    moraleDelta:clamp(base.moraleDelta+(m>=15?1:m<=-15?-1:0),-3,4),
    temperature:50+m,temperatureWord:meterWord(m),timeOver:0,
    beats:st.steps.map(s=>({...s})),reaction,
-   dialogue:st.log.map(e=>({speaker:e.speaker||'Stage',line:e.line,kind:e.kind,swing:e.swing,...(e.dialogueSlot?{dialogueSlot:e.dialogueSlot}:{}),...(e.authoredId?{authoredId:e.authoredId}:{}),...(e.composedId?{composedId:e.composedId}:{})})),speech:st.log.filter(e=>e.side==='w').map(e=>e.line),
+   dialogue:st.log.map(e=>({speaker:e.speaker||'Stage',line:e.line,kind:e.kind,swing:e.swing,...(e.dialogueSlot?{dialogueSlot:e.dialogueSlot}:{}),...(e.authoredId?{authoredId:e.authoredId}:{}),...(e.composedId?{composedId:e.composedId}:{}),...(e.semantic?{semantic:{...e.semantic}}:{})})),speech:st.log.filter(e=>e.side==='w').map(e=>e.line),
    angle:st.w.short+': '+st.steps.map(s=>String(s.label).toLowerCase()).join('; ')+'.'};
  }
  function view(st){
@@ -425,7 +447,7 @@
   const help=directed&&r.id==='push'&&!st.core.case?.exposed?'Decide whether the point needs another exchange, or let it rest.':r.help;
   return {stage:st.stage,round:st.round,total:ROUNDS.length,name,help:fmt(st.stage==='done'?'It is said. The match decides whether any of it was true.':help,st),...(directed?{conversation:directed}:{}),
    meter:st.meter,meterWord:meterWord(st.meter),options:choices(st),log:st.log.slice(),claim:st.core.claim||null,result:st.result,
-   read:st.round===0&&st.stage!=='done'?st.readLines:null,cue:st.round===1&&st.angle?fmt(ANGLE_CUE[st.angle],st):null,
+   read:st.round===0&&st.stage!=='done'?st.readLines:null,cue:st.round===1&&st.angle?spokenCue(st):null,
    // v0.3.12 What the rivalry has on record before the first line, and any argument still open.
    record:st.round===0?(st.core.cases||[]).map(c=>c.evidence):null,
    unresolved:st.round===0?((st.core.cases||[]).find(c=>c.continuation)?.reminder||null):st.core.case?.continuation?st.core.case.reminder:null};

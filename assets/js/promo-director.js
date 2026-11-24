@@ -60,7 +60,7 @@
  function observe(d,st,record,fresh){
   const mine=fresh.filter(e=>e.side==='w'),theirs=fresh.filter(e=>e.side==='f');
   if(mine.length)d.lastPlayer=mine.at(-1).line;
-  if(theirs.length)d.lastOpponent=theirs.at(-1).line;
+  if(theirs.length){d.lastOpponent=theirs.at(-1).line;if(st.semantic){const claim=theirs.at(-1).semantic?.claim;d.latestPoint=root.OfficePromoSemantics.label(claim);}}
   if(record.round==='open'){
    d.subject=st.core.case?.issue?String(st.core.case.label||st.core.case.issue):topics[record.id]||'the match';
    d.claim=st.core.claim?.thesis||d.lastPlayer;
@@ -109,7 +109,7 @@
   if(id==='acknowledge')return {line:s==='analytical'?'Fair. That is a point worth making.':s==='combative'?'All right. I will give you that much.':s==='reserved'?'Fair point.':'I hear what you are saying. We still have a match to wrestle.',reply:'Then we understand each other.',risk:1,base:4};
   return {line:null,reply:null,risk:2,base:6};
  }
- function summary(d){return {subject:d.subject,phase:d.phase,...(formatFor(d)?{format:d.format,formatName:formatFor(d).name}:{}),player:d.player.composure<40?'Unsettled':d.player.irritation>=42?'Frustrated':'Composed',
+ function summary(d){return {subject:d.subject,phase:d.phase,...(d.latestPoint?{latestPoint:d.latestPoint}:{}),...(formatFor(d)?{format:d.format,formatName:formatFor(d).name}:{}),player:d.player.composure<40?'Unsettled':d.player.irritation>=42?'Frustrated':'Composed',
   opponent:d.opponent.irritation>=42?'Heated':d.opponent.composure<40?'Unsettled':'Measured',followup:d.followup,ending:d.ending};}
  root.OfficePromoDirector=Object.freeze({begin,observe,route,options,followup,summary,selectFormat,angles,heading,setup});
 })(typeof window!=='undefined'?window:globalThis);

@@ -55,6 +55,7 @@ jobs:
             add tests/promo-read.test.cjs
             add tests/promo-identity.test.cjs
             add tests/promo-reliability.test.cjs
+            add tests/promo-semantics.test.cjs
           }
           if [[ "$EVENT_NAME" == "workflow_dispatch" || "$EVENT_NAME" == "schedule" || "$REF_TYPE" == "tag" || "$FULL_REFACTOR" == "true" ]]; then
             echo "mode=full" >> "$GITHUB_OUTPUT"
