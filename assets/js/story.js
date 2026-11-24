@@ -717,7 +717,11 @@
    // An opponent answers real history with real history; otherwise they answer the specific line.
   const exposed=(id==='accusation'&&!st.claim.hasEvidence)||(['proof','accusation'].includes(id)&&st.claim.hasEvidence)||(id==='proof'&&st.claim.planFocus==='counter');
    if(st.case)st.dialogue.push({speaker:st.f.name,line:st.case.raisedBy==='f'?(st.case.lead?st.case.lead+' ':'')+st.case.counter:st.case.counter,kind:'opponent',answerTo:st.claim.opening,case:st.case.issue});
-   else st.dialogue.push({speaker:st.f.name,line:v&&!exposed?format(pick(v.reply,st.seed,'reply-'+v.id),st):reactionToClaim(st,id),kind:'opponent',answerTo:st.claim.opening});
+   else {
+    const template=v&&!exposed?pick(v.reply,st.seed,'reply-'+v.id):null;
+    const speechSource=st.semanticSpeech&&template?root.OfficePromoSemantics.source(v.id,template):null;
+    st.dialogue.push({speaker:st.f.name,line:template?format(template,st):reactionToClaim(st,id),kind:'opponent',answerTo:st.claim.opening,...(speechSource?{speechSource,...(template.includes('{STRENGTH}')?{speechDetail:st.claim.strength}:{})}:{})});
+   }
    st.stage='answer';
   }else if(stage==='answer'){
    const lines=OPP_AFTER[id];
@@ -729,12 +733,14 @@
     st.stage='close';
     return st;
    }
+   const template=v&&!(id==='personal'&&!st.claim?.hasEvidence)?pick(v.reply,st.seed,'reply-'+v.id):null;
+   const speechSource=st.semanticSpeech&&template?root.OfficePromoSemantics.source(v.id,template):null;
    const response=id==='personal'&&!st.claim?.hasEvidence?'You still have no evidence, '+st.w.short+'. Now you are trying to make the insult louder.':
-    v?format(pick(v.reply,st.seed,'reply-'+v.id),st):
+    template?format(template,st):
     id==='turn'?'You have finally listened to what I actually said. Let us see if you can answer it.':
     id==='calm'?'At least we know what we disagree about now. I will see you at the bell.':
     format(pick(lines,st.seed,'rebuttal-'+id),st);
-   st.dialogue.push({speaker:st.f.name,line:response,kind:'opponent',answerTo:id});
+   st.dialogue.push({speaker:st.f.name,line:response,kind:'opponent',answerTo:id,...(speechSource?{speechSource,...(template.includes('{STRENGTH}')?{speechDetail:st.claim?.strength}:{})}:{})});
    st.stage='close';
   }else{
    if(kClose){
