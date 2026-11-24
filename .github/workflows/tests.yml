@@ -68,6 +68,12 @@ jobs:
                 assets/js/ringfax.js|assets/css/ringfax.css|tests/ringfax-*.cjs)
                   add tests/ringfax-phase0-baseline.test.cjs
                   add tests/ringfax-phase1.test.cjs ;;
+                assets/js/portrait-age-map.js|assets/js/portraits.js|assets/portrait-ages/*)
+                  add tests/portrait-ageing.test.cjs
+                  add tests/portrait-v4.test.cjs ;;
+                assets/js/academy*.js|tests/academy-intake.test.cjs)
+                  add tests/academy-intake.test.cjs
+                  add tests/portrait-ageing.test.cjs ;;
                 assets/js/*match*.js|assets/js/graph-*.js|assets/js/*structure*.js|assets/js/*commentary*.js|assets/js/technique-*.js|assets/js/data.js|assets/js/roster-registry.js)
                   add tests/match-flow.test.cjs
                   add tests/earned-nearfall.test.cjs
@@ -81,6 +87,8 @@ jobs:
                 assets/js/*career*.js|assets/js/*save*.js|assets/js/*injur*.js)
                   add tests/save-integrity.test.cjs
                   add tests/roster.test.cjs
+                  add tests/academy-intake.test.cjs
+                  add tests/portrait-ageing.test.cjs
                   add tests/early-career-finances.test.cjs ;;
                 assets/js/*.js|assets/*.js|assets/css/*.css|assets/*.css|index.html)
                   add tests/ui-accessibility.test.cjs ;;

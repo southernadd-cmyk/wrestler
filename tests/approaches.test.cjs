@@ -126,7 +126,8 @@ const ready=s=>{s.focus=2;};
  for(const t of all){
   const html=Pt.avatar({key:'manager:'+t.id,name:t.manager,type:'manager'},null);
   const file=path.join(__dirname,'..','assets','portraits','manager-'+t.id+'.png');
-  assert.ok(html.includes('assets/portraits/manager-'+t.id+'.png'),t.manager+' uses their portrait');
+  assert.match(html,/age-portrait/,'age-relevant manager portrait for '+t.manager);
+  assert.match(html,/assets\/portrait-ages\/atlas-\d+\.webp/);
   const png=fs.readFileSync(file);assert.equal(png.readUInt32BE(16),144);assert.equal(png.readUInt32BE(20),180);
  }
  console.log('PASS wants and moods show on an older career; champions show their belt; six manager portraits');

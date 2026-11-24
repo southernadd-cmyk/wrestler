@@ -110,12 +110,14 @@ function setIdentity(value){
 
 /* ---------- lifecycle ---------- */
 function fresh(identity){
+ root.OfficeAcademy?.reset();
  S={v:22,identity:normaliseIdentity(identity),seed:(Date.now()%100000)+7,careerSeed:null,season:1,week:1,cash:2250,rep:22,focus:2,monthReview:null,coach:null,futureBookings:[],circuitReviews:[],business:{training:0,negotiated:0,meetings:0,kept:0,broken:0},roster:[],free:D.TALENT.map(t=>({...t})),
   promoters:D.PROMOS.map(p=>({...p,blacklist:0,matches:0,best:0})),offers:[],card:[],feuds:{},inbox:[],history:[],resultIds:[],systemErrors:[],
   goals:{},recentTypes:{},books:[],trainingReviews:[],seasonResults:[],over:null};
  // Never change this as the weekly PRNG advances. It identifies this career's
  // underlying circuit outcomes without touching legacy career random sequences.
  S.careerSeed=S.seed;
+ root.OfficeAcademy?.restore(S);
  msg({from:'The office',subject:'The keys are yours',kind:'info',body:[
   `${S.identity.manager}, you are now managing ${S.identity.stable}.`,
   'You have £2,250, an empty locker room and four promoters who might return your calls.',
@@ -150,6 +152,7 @@ function hydrate(x){
  if(legacy&&Number.isInteger(selectedPortrait)&&selectedPortrait>=0&&selectedPortrait<16)
   identity.portrait=selectedPortrait;
  x.v=22;x.identity=normaliseIdentity(identity);x.careerSeed??=x.seed;x.systemErrors??=[];x.coach??=null;x.futureBookings??=[];x.circuitReviews??=[];for(const o of x.offers){o.eventAbs??=(x.season-1)*16+x.week;o.expiresAbs??=(x.season-1)*16+x.week;}x.focus=Number.isInteger(x.focus)?x.focus:2;x.monthReview??=null;x.business??={training:0,negotiated:0,meetings:0,kept:0,broken:0};x.books??=[];x.trainingReviews=Array.isArray(x.trainingReviews)?x.trainingReviews.slice(-12):[];x.goals??={};x.seasonResults??=(x.history||[]).slice().reverse().map(h=>({cid:h.cid||null,season:h.season,week:h.week,wid:h.wid,name:h.name,foe:h.foe,stars:h.stars}));x.resultIds??=[...x.seasonResults,...(x.history||[])].map(h=>h.cid).filter(Boolean).slice(-2048);
+ root.OfficeAcademy?.restore(x);
  for(const w of x.roster){w.age??=D.findWrestler?.(w.id)?.age??30;w.training??='ring';w.intensity??='light';w.progress??={};w.flags??={};w.promise??=null;w.startSkills??={ring:w.ring,mic:w.mic,psych:w.psych,safe:w.safe};w.program??=null;w.prep??={};w.prepHistory??=[];w.trend??=[];w.session??=null;w.learned??=[];w.learning??=null;w.micWork??={};w.rehearsedAt??=null;w.wear??={};w.niggle??=0;w.nigglePart??=null;w.relapse??=null;if(w.injury && !Number.isInteger(w.injurySince))w.injurySince=(x.season-1)*16+x.week-1;}
  root.OfficeTerritory?.prepare(x);
  root.OfficeWorldV4?.activate(x);
@@ -902,6 +905,7 @@ function seasonEnd(){
  root.OfficeWorldV4?.agePersonnel(S,S.season);
  root.OfficeTerritory?.settleRetiredTitles(S);
  S.season++;S.week=1;S.goals={};
+ root.OfficeAcademy?.intake(S,S.season);
  msg({from:'The office',subject:`Season ${S.season} objectives`,kind:'info',body:[`This season, ${S.identity.stable} is expected to:`,...goalList().map(x=>'• '+x.text)]});
  return aged;
 }

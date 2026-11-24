@@ -494,7 +494,8 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .poster-strap{margin:4px 0 12px;font:clamp(16px,3vw,20px)/1 var(--px);letter-spacing:.3em;text-transform:uppercase;color:var(--poster-ink)}
 .poster-bout{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:clamp(6px,2vw,16px)}
 .poster-side{margin:0;display:grid;justify-items:center;gap:6px}
-.poster-side img{width:clamp(84px,min(26vw,20vh),160px);height:auto;aspect-ratio:4/5;image-rendering:pixelated;background:var(--deep);border:3px solid var(--poster-ink);box-shadow:4px 4px 0 var(--blood)}
+.poster-side .poster-portrait{display:block;width:clamp(84px,min(26vw,20vh),160px);aspect-ratio:4/5;image-rendering:pixelated;background-color:var(--deep);background-position:center;background-size:cover;background-repeat:no-repeat;border:3px solid var(--poster-ink);box-shadow:4px 4px 0 var(--blood)}
+.poster-side .poster-portrait.age-portrait{background-size:900% 800%;background-origin:content-box;background-clip:content-box}
 .poster-side figcaption{font:clamp(22px,4.6vw,34px)/.9 var(--jersey);text-transform:uppercase;letter-spacing:.02em;text-wrap:balance}
 .poster-vs{display:grid;justify-items:center;gap:4px;align-self:center}
 .poster-vs span{font:clamp(36px,min(9vw,8vh),68px)/.8 var(--jersey);color:var(--blood);text-shadow:2px 2px 0 var(--poster-ink)}
@@ -518,6 +519,7 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .title .stub:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
 .stub-save{display:flex;align-items:center;gap:8px}
 .stub-save img{width:30px;height:auto;aspect-ratio:4/5;image-rendering:pixelated;border:1px solid var(--poster-ink)}
+.stub-save .portrait{width:30px;height:38px;border-color:var(--poster-ink)}
 /* Laptops: wide but short. The ticket stubs move beside the poster and the spacing tightens,
    so the whole bill fits without scrolling. */
 @media (max-height:820px){
@@ -940,6 +942,13 @@ dialog.negotiation-dialog[open]{
  image-rendering:pixelated;
  background-image:url('../portraits/player-managers.webp');
  background-size:400% 400%;
+ background-origin:content-box;
+ background-clip:content-box;
+ background-repeat:no-repeat;
+}
+/* Nine columns by eight rows; three adjacent cells per person. */
+.roster-portrait.age-portrait,.player-manager-portrait.age-portrait{
+ background-size:900% 800%;
  background-origin:content-box;
  background-clip:content-box;
  background-repeat:no-repeat;

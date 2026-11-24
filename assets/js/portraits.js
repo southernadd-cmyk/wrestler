@@ -1,8 +1,7 @@
 /* THE OFFICE / PIXEL PORTRAIT STUDIO v1.0
-   assets/portrait-atlas.png supplies the default portrait for all 80 wrestlers
-   and the 4 promoters (built by tools/build_portraits.py).
-   The layered renderer below only draws explicit appearance overrides and any
-   character that has no atlas cell.
+   Three age variants for every existing wrestler, promoter and manager are
+   indexed by portrait-age-map.js. The original atlas and illustrated portraits
+   remain as fallbacks, and explicit appearance overrides still use the canvas.
 */
 (function(root){'use strict';
 const hash=s=>{let h=2166136261>>>0;for(const c of String(s)){h=Math.imul(h^c.charCodeAt(0),16777619)>>>0}return h>>>0};
@@ -216,9 +215,42 @@ const imagePortraits={'booker:dennis':'assets/portraits/dennis.png',
  // The six rival managers (v0.3.19).
  'manager:iron':'assets/portraits/manager-iron.png','manager:coastal':'assets/portraits/manager-coastal.png','manager:northern':'assets/portraits/manager-northern.png',
  'manager:eastbank':'assets/portraits/manager-eastbank.png','manager:meridian':'assets/portraits/manager-meridian.png','manager:redwood':'assets/portraits/manager-redwood.png'};
-function avatar(actor,appearance=null,cssClass='portrait'){
+// Staff have no gameplay age yet. These starting ages reflect their established
+// portraits and advance once per completed season without changing save data.
+const staffStartingAges=Object.freeze({
+ 'manager:iron':39,'manager:coastal':45,'manager:northern':57,
+ 'manager:eastbank':34,'manager:meridian':43,'manager:redwood':40,
+ 'booker:dock':46,'booker:pulse':35,'booker:crown':60,'booker:union':56,'booker:dennis':57,
+ 'player-manager-01':59,'player-manager-02':36,'player-manager-03':39,'player-manager-04':61,
+ 'player-manager-05':32,'player-manager-06':45,'player-manager-07':38,'player-manager-08':47,
+ 'player-manager-09':63,'player-manager-10':41,'player-manager-11':37,'player-manager-12':62,
+ 'player-manager-13':60,'player-manager-14':35,'player-manager-15':34,'player-manager-16':58
+});
+function ageBand(actor,state=root.OfficeGame?.S){
+ const key=actor?.key||'',id=key.slice(9);
+ if(key.startsWith('wrestler:')){
+  // An owned, free, rival or retired wrestler's recorded age wins over the
+  // immutable cast template. Older saves are hydrated by the career engine.
+  const live=state?.roster?.find(w=>w.id===id)||state?.free?.find(w=>w.id===id)||state?.worldV4?.personnel?.[id];
+  const age=Number(live?.age??actor?.age??root.OfficeData?.findWrestler?.(id)?.age);
+  return age>=42?'old':age>=30?'middle':'young';
+ }
+ const age=(staffStartingAges[key]??45)+Math.max(0,(Number(state?.season)||1)-1);
+ return age>=55?'old':age>=38?'middle':'young';
+}
+function portraitCell(actor,state=root.OfficeGame?.S){
+ const key=actor?.key||'';
+ const cell=root.OfficeAgePortraitCells?.[key.startsWith('wrestler:')?key.slice(9):key];
+ if(!cell)return null;
+ const band=ageBand(actor,state),column=cell[1]+({young:0,middle:1,old:2})[band];
+ return {url:'assets/portrait-ages/atlas-'+String(cell[0]).padStart(2,'0')+'.webp',
+  position:(column*100/8)+'% '+(cell[2]*100/7)+'%',band};
+}
+function avatar(actor,appearance=null,cssClass='portrait',state=root.OfficeGame?.S){
  const safe=String(actor?.name||'Wrestler').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
  const label='Pixel-art portrait of '+safe;
+ const aged=appearance===null&&portraitCell(actor,state);
+ if(aged)return `<span class="${cssClass} roster-portrait age-portrait" role="img" aria-label="${label}" style="background-image:url('${aged.url}');background-position:${aged.position}"></span>`;
  const painted=appearance===null&&imagePortraits[actor?.key];
  if(painted)return `<img class="${cssClass}" src="${painted}" alt="${label}" width="48" height="60" decoding="async">`;
  const position=appearance===null&&portraitCells.get(actor?.key);
@@ -249,10 +281,13 @@ const PLAYER_PORTRAITS=Object.freeze([
 function playerPortrait(index=0,name='Manager',cssClass='portrait'){
  const n=Number.isInteger(index)&&index>=0&&index<PLAYER_PORTRAITS.length?index:0;
  const safe=String(name).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+ const aged=portraitCell({key:'player-manager-'+String(n+1).padStart(2,'0')});
+ if(aged)return '<span class="'+cssClass+' player-manager-portrait age-portrait" role="img" aria-label="Pixel-art portrait of '+
+  safe+'" style="background-image:url(\''+aged.url+'\');background-position:'+aged.position+'"></span>';
  const position=(n%4)*(100/3)+'% '+Math.floor(n/4)*(100/3)+'%';
  return '<span class="'+cssClass+' player-manager-portrait" role="img" aria-label="Pixel-art portrait of '+
   safe+'" style="background-position:'+position+'"></span>';
 }
 function png(actor,appearance=null){const canvas=renderCanvas(actor,appearance||getLook(actor),8);const link=document.createElement('a');link.download='the-office-'+(actor.name||actor.key).replace(/[^a-z0-9-]+/gi,'-').toLowerCase()+'-portrait.png';link.href=canvas.toDataURL('image/png');link.click()}
-root.OfficePortraits={OPTIONS,items,generated,getLook,renderCanvas,asData,avatar,png,hash,curatedLooks,portraitDetails,PLAYER_PORTRAITS,playerPortrait};
+root.OfficePortraits={OPTIONS,items,generated,getLook,renderCanvas,asData,avatar,png,hash,curatedLooks,portraitDetails,PLAYER_PORTRAITS,playerPortrait,ageBand,portraitCell};
 })(typeof window!=='undefined'?window:globalThis);

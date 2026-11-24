@@ -35,7 +35,7 @@ function checkPortrait(key, name) {
   const markup = portraits.avatar({ key, name });
   assert.match(markup, /roster-portrait/);
   assert.ok(markup.includes(`aria-label="Pixel-art portrait of ${name}"`));
-  const position = markup.match(/background-position:([^"]+)/)[1];
+  const position = markup.match(/background-image:url\('([^']+)'\);background-position:([^"]+)/).slice(1).join('@');
   positions.add(position);
   return position;
 }
@@ -47,9 +47,7 @@ for (const wrestler of all) {
   }
   checkPortrait('wrestler:' + wrestler.id, wrestler.name);
 }
-for (const [column, promoter] of data.PROMOS.entries()) {
-  assert.equal(checkPortrait('booker:' + promoter.id, promoter.voice), `${100*column/3}% 35%`);
-}
+for (const promoter of data.PROMOS)checkPortrait('booker:' + promoter.id, promoter.voice);
 assert.equal(positions.size, all.length + data.PROMOS.length);
 
 game.fresh();
