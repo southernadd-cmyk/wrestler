@@ -124,7 +124,7 @@ console.log('PASS different careers play different seeded worlds, and a save kee
  for(const [i,r] of results.entries()){
   assert.deepEqual(r.problems,[],'world seed '+[13,27][i]+': '+r.problems.join('\n'));
   assert.ok(r.stats.weeks>=40,'multiple seasons completed');
-  assert.ok(r.stats.programmes>0&&r.stats.matches>0&&r.stats.predicted>=r.stats.weeks*.75);
+  assert.ok(r.stats.programmes>0&&r.stats.matches>0&&r.stats.predicted>=(r.stats.weeks-r.stats.breaks)*.75,'circuit prediction checked on most non-break weeks: '+r.stats.predicted+' of '+(r.stats.weeks-r.stats.breaks));
  }
 }
 console.log('PASS two additional 48-week complete-world careers with consistent finances and bookings');

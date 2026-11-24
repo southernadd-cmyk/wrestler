@@ -82,7 +82,7 @@ function play(seed,weeks=48,hook=null){
  if(hook)hook(root);
  const {OfficeData:D,OfficeGame:G,OfficeTerritory:T,OfficeApproaches:X,OfficeAfter:A,OfficeRingside:R}=root;
  const pick=n=>Math.floor(random()*n);
- const problems=[],stats={weeks:0,matches:0,programmes:0,approaches:0,joined:0,bids:0,sold:0,released:0,predicted:0,skipped:0,decisions:0,titleChanges:0,raids:0,struggling:0,afters:0,callouts:0,arcs:0,corners:0,stipAsks:0,stips:0,signings:0,mouths:0};
+ const problems=[],stats={weeks:0,matches:0,programmes:0,approaches:0,joined:0,bids:0,sold:0,released:0,predicted:0,skipped:0,breaks:0,decisions:0,titleChanges:0,raids:0,struggling:0,afters:0,callouts:0,arcs:0,corners:0,stipAsks:0,stips:0,signings:0,mouths:0};
  G.fresh();const s=G.S;s.cash+=6000;
  const fin=()=>{const roll=random();return {stars:Math.round((1.5+random()*3)*4)/4,crowd:45+pick(40),crowdPeak:60+pick(35),outcome:roll<.02?'double':roll<.05?'nc':roll<.07?'dq':'booked',finishRoute:roll>=.05&&roll<.07?'dq_cheap':null,botches:pick(3),script:.6+random()*.4,
   adj:{purseMul:1,rep:0,trust:0,heat:0,morale:0},minutes:8+pick(14),plan:['brawl','story','technical','spots','safe'][pick(5)],stamina:20+pick(60),injury:random()<.05?1+pick(3):0,injuryPart:'shoulder',ignored:0,callsUsed:[],log:[]};};
@@ -150,6 +150,7 @@ function play(seed,weeks=48,hook=null){
   try{predicted=T.circuitBill(copy,T.prepare(copy),next,busy);}catch(e){problems.push(label+': prediction threw '+e.message);}
   try{G.endWeek();}catch(e){problems.push(label+': endWeek threw '+e.message);break;}
   stats.weeks++;
+  if(copy.week===16)stats.breaks++;
   // A booking the week dropped (an injury in training, say) can't be predicted; skip those weeks.
   const actualBusy=new Set(s.card.map(c=>c.rid));
   if(predicted&&copy.week!==16&&[...busy].sort().join()===[...actualBusy].sort().join()){
