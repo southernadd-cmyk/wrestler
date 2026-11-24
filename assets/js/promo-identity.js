@@ -139,6 +139,8 @@ player|Neutral configurable managerial direction|Represent the player's stable a
   const id=typeof w==='string'?w:w?.id;
   if(!id)return null;
   if(!String(id).startsWith('academy-'))return id;
+  // A rookie with their own bank (promoted to a regular) keeps it; everyone else uses a voice pack.
+  if(Object.prototype.hasOwnProperty.call(root.OfficePromoBankManifest||{},id))return id;
   const style=String(typeof w==='object'?w.style||'':'').toLowerCase();
   if(!voiceStyles.includes(style))return null;
   return 'rookie-'+style+'-'+(hash(id)%3+1);
