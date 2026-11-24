@@ -12,6 +12,7 @@ const directory=path.resolve(__dirname,'../../assets/js');
 const files=['data.js','roster-registry.js','technique-registry.js',
  'technique-backgrounds.js','match-catalog.js','graph-narration.js','match-graph.js','match-commentary.js','match-engine.js'];
 const code=files.map(name=>fs.readFileSync(path.join(directory,name),'utf8'));
+const graphIndex=files.indexOf('match-graph.js');
 const anchor='  const weights=new Map();\n  for(const [id,w] of selected)';
 const injection=String.raw`  // Diagnostic only; injected into a temporary in-memory copy of the engine.
   // Collect opportunities before weighting, with no RNG or match-state writes.
@@ -43,10 +44,10 @@ const injection=String.raw`  // Diagnostic only; injected into a temporary in-me
    }
   }
 `;
-if(code[4].split(anchor).length!==2)throw Error('Diagnostic anchor changed. Review before use.');
+if(code[graphIndex].split(anchor).length!==2)throw Error('Diagnostic anchor changed. Review before use.');
 const selectAnchor='  const candidates=validPool(M),id=pick(M,candidates);';
-if(code[4].split(selectAnchor).length!==2)throw Error('Selection diagnostic anchor changed.');
-const edited=code[4].replace(anchor,injection+anchor).replace(selectAnchor,
+if(code[graphIndex].split(selectAnchor).length!==2)throw Error('Selection diagnostic anchor changed.');
+const edited=code[graphIndex].replace(anchor,injection+anchor).replace(selectAnchor,
  selectAnchor+'\n  if(root.__grappleSelection)root.__grappleSelection(candidates,id);');
 const results=new Map(),selectionStats=new Map();
 const recordChoice=(pool,picked)=>{
@@ -83,12 +84,12 @@ function probe(row){
 function load(engine,monitor){
  const root={__grappleDiagnostics:monitor?probe:undefined,
   __grappleSelection:monitor?recordChoice:undefined};
- files.forEach((name,i)=>vm.runInNewContext(i===4?engine:code[i],{
+ files.forEach((name,i)=>vm.runInNewContext(i===graphIndex?engine:code[i],{
   window:root,Math,Date,JSON,console},{filename:name}));
  root.OfficeRosterV4.enableProfiles();
  return root;
 }
-const instrumented=load(edited,true),baseline=load(code[4],false);
+const instrumented=load(edited,true),baseline=load(code[graphIndex],false);
 const D=instrumented.OfficeData,people=lab.roster(D),G=instrumented.OfficeMatch.GRAPH;
 function options(i){
  const w=people[i%people.length],f=people[(i*7+19)%people.length];
