@@ -23,9 +23,11 @@ async function fixture(page){
   const room=window.OfficeRoom.begin(c,w,f,p,{recent:[],threads:[],heat:0,rehearsed:G.rehearsed(w)});
   for(let n=0;room.stage!=='done'&&n<30;n++){
    const choices=window.OfficeRoom.options(room);if(!choices.length)throw Error('Fixture meeting has no choice');
-   window.OfficeRoom.act(room,choices[0].id);
+   const preferred={board:'board_ok',review:'review_ok',curtain:'talk_none'}[room.stage];
+   const choice=choices.find(o=>o.id===preferred)||choices[0];
+   window.OfficeRoom.act(room,choice.id);
   }
-  if(room.stage!=='done'||!room.sheet)throw Error('Fixture meeting did not complete');
+  if(room.stage!=='done'||!room.sheet)throw Error('Fixture meeting did not complete: '+room.stage);
   room.sheet.skipPromo=false;
   const plan={cid:c.id,room,sheet:room.sheet,confirmed:true,game:room.sheet.game,leash:room.sheet.leash||'script',talk:room.sheet.talk};
   const saved={queue:[c.id],i:0,speed:'normal',results:[],before:window.OfficeNightReport.capture(s),stage:'meeting',plan,promo:null,mouth:{cid:c.id,id:'none'},past:[]};
