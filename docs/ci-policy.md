@@ -13,6 +13,8 @@ The normal release path is deliberately small. **Target: two to three minutes fo
 
 ## Deeper verification, separate from the release gate
 
+- For a layout change that needs pre-merge Chromium verification, explicitly use a branch named `browser-audit/...`. The existing browser job then runs only the focused title, scouting and notification checks at four screen sizes. Ordinary branches retain the fast Node-only gate; nightly and tag runs still execute all browser journeys.
+
 - The existing Simulation tests workflow runs the complete Node suite and Chromium journeys nightly at 03:23 UTC, and on version tags matching `v*`. It does not add a new workflow or a required browser status on PRs.
 - Changes to the simulation workflow itself run the structure activation suite. UI, sheets, agents-room and match-engine changes select the behavioural structure integration suite; career changes also select roster coverage.
 
