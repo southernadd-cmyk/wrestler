@@ -511,7 +511,7 @@
  function build(s){
   syncQuizWeek(s);
   const h=latest(s),recent=recents(s),P={};
-  const identity=root.OfficeGame?.normaliseIdentity?.(s?.identity)||{manager:'Alex Morgan',stable:'The New Guard'};
+  const identity=root.OfficeGame?.normaliseIdentity?.(s?.identity)||{manager:'The manager',stable:'Your stable'};
   // The blue header already shows an article title, so don't repeat it
   // as the first editorial line. This applies consistently to every page.
   const add=(number,title,lines,subpages=null)=>{
