@@ -60,3 +60,43 @@ for(const w of G.S.roster){
  for(const k of ['ring','mic','psych','safe'])assert.ok(w[k]>=0&&w[k]<=100,`${w.name} ${k} out of range`);
 }
 console.log('ageing tests passed');
+
+const D=root.OfficeData,V=root.OfficeWorldV4,T=root.OfficeTerritory;
+{
+ G.fresh();const s=G.S;
+ const free=s.free[0],rival=s.territory.teams[0].roster[0],ind=Object.keys(s.worldV4.contracts).find(id=>s.worldV4.contracts[id].owner==='independent');
+ s.worldV4.personnel={[rival]:{age:41,ring:70,psych:60,injury:2,injurySince:0,fatigue:55,wear:{knee:3}},[ind]:{age:22,ring:60,psych:50,mic:55,ceiling:75}};
+ Object.assign(free,{age:24,ring:60,ceiling:75,injury:2,injurySince:0,fatigue:60});
+ const seed=s.seed;
+ V.recoverPersonnel(s,1);V.recoverPersonnel(s,1);
+ assert.equal(free.injury,1);assert.equal(G.F(rival).injury,1);assert.equal(G.F(rival).wear.knee,3);
+ V.recoverPersonnel(s,2);assert.equal(free.injury,0);assert.equal(G.F(rival).injury,0);
+ V.agePersonnel(s,1);V.agePersonnel(s,1);
+ assert.equal(free.age,25);assert.equal(G.F(rival).age,42);assert.equal(G.F(rival).ring,68);
+ assert.equal(G.F(ind).age,23);assert.ok(G.F(ind).ring>60);
+ assert.equal(s.seed,seed,'external lifecycle never consumes player RNG');
+ G.save();assert.ok(G.load());assert.equal(G.F(rival).age,42);assert.equal(G.F(ind).age,23);
+}
+{
+ const s=freshWithRoster(),w=s.roster[0],id=w.id;
+ w.retireWarned=true;s.seed=1;
+ const out=G.ageRoster();assert.ok(out.retired.includes(id));
+ assert.equal(V.ownership(s,id).owner,'retired');assert.equal(G.sign(id),'Not available.');
+ assert.ok(!T.rank().some(x=>x.id===id));assert.ok(!T.promotionRank('dock').some(x=>x.id===id));
+ assert.ok(!V.hire(s,s.territory.teams[0].id,id));assert.ok(G.F(id),'retired identity remains readable');
+ G.save();assert.ok(G.load());assert.equal(V.ownership(G.S,id).owner,'retired');
+}
+{
+ G.fresh();const s=G.S;const team=s.territory.teams[0];
+ const id=team.roster[0],worker=G.F(id);
+ const div=D.divisionOf(id);s.territory.cards.dock[id]??={score:60,matches:0,wins:0};
+ s.territory.titles.dock[div]={holder:id,since:1,defences:2};
+ const old=JSON.stringify(s);const preview=V.previewLifecycle(s,2);
+ assert.equal(JSON.stringify(s),old,'preview never mutates the input career');
+ assert.notEqual(preview,s);
+ V.markRetired(s,worker,17);T.settleRetiredTitles(s);
+ assert.notEqual(s.territory.titles.dock[div].holder,id);
+ assert.ok(!team.roster.includes(id));assert.ok(!s.free.some(w=>w.id===id));
+ assert.ok(!T.circuitBill(s,s.territory,2).some(m=>m.a.id===id||m.b.id===id));
+}
+console.log('PASS external ageing, recovery, retirement ownership, belts, previews and save compatibility');

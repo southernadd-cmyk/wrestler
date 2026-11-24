@@ -41,7 +41,7 @@
   busy=new Set(busy);
   const notes=[],bill=[];
   const amb=id=>s.ambitions?.w?.[id]||null;
-  const info=id=>D.findWrestler(id)||{};
+  const info=id=>G.personnel(s,id)||{};
   // Same saved career => same planned world; distinct careers are no longer
   // locked into identical booking upsets, feuds and tie-breaks.
   // Week 2 is also previewed on the unsaved welcome poster, where no career seed
@@ -54,7 +54,7 @@
   // Who each promotion can book in each division: its ranked circuit wrestlers, not yours.
   const pools={};
   for(const p of D.PROMOS){pools[p.id]={};for(const div of D.DIVISION_ORDER)
-   pools[p.id][div]=T.promotionRank(p.id,div,t,s).filter(w=>!w.owned&&T.contracted(s,w.id));}
+   pools[p.id][div]=T.promotionRank(p.id,div,t,s).filter(w=>!w.owned&&T.contracted(s,w.id)&&!w.injury);}
   const row=(pid,div,id)=>pools[pid][div].find(w=>w.id===id)||null;
   // A promotion in trouble books desperately: shorter chases, more surprises, belts that move (v0.3.17).
   const desperate=pid=>!!t.business?.[pid]?.desperate;

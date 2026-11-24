@@ -28,6 +28,10 @@ function reconcile(s){
   if(!D.findWrestler(id))continue;
   world.contracts[id]={...world.contracts[id],...createContract('player',id,null,world.contracts[id]?.signedWeek||baseWeek(s))};
  }
+ // Older builds could leave an orphan player contract after retirement.
+ for(const [id,c] of Object.entries(world.contracts))if(c.owner==='player'&&!player.has(id)){
+  world.contracts[id]={...c,owner:'retired',agencyId:null,expiresWeek:null,retiredWeek:baseWeek(s)};
+ }
  const stableIds=new Map();
  for(const [id,c] of Object.entries(world.contracts)){
   if(c.owner==='ai'){
@@ -174,6 +178,82 @@ function evolve(s,t,week,reports){
  }
  if(w.events.length>80)w.events.length=80;
 }
+
+ // Stable hashing, independent of the player's career RNG and iteration order.
+function lifecycleRoll(s,id,season,purpose){
+ let h=2166136261;
+ for(const ch of String(s.careerSeed??s.seed??0)+':'+id+':'+season+':'+purpose){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}
+ return (h>>>0)/4294967296;
+}
+function putPersonnel(s,worker){
+ const world=activeWorld(s);world.personnel??={};
+ world.personnel[worker.id]=G.personalRecord(worker);
+ const free=s.free.find(w=>w.id===worker.id);
+ if(free)Object.assign(free,G.personalRecord(worker));
+}
+function markRetired(s,worker,week=baseWeek(s)){
+ const world=activeWorld(s);if(!world)return;
+ putPersonnel(s,worker);
+ world.contracts[worker.id]={...createContract('retired',worker.id,null,week),retiredWeek:week};
+ s.free=s.free.filter(w=>w.id!==worker.id);
+ for(const team of s.territory.teams)team.roster=team.roster.filter(id=>id!==worker.id);
+}
+function recoverPersonnel(s,week){
+ const world=activeWorld(s);if(!world||world.lastRecoveryWeek>=week)return;
+ world.lastRecoveryWeek=week;
+ for(const [id,c] of Object.entries(world.contracts)){
+  if(!['market','ai','independent'].includes(c.owner))continue;
+  const worker=G.personnel(s,id);if(!worker)continue;
+  // Only off-roster injuries already present in the persistent record are settled.
+  // AI match results currently do not simulate new physical injuries.
+  if(!worker.injury&&!worker.niggle&&!worker.relapse&&!(worker.fatigue>0))continue;
+  if(worker.injury&&(worker.injurySince??week-1)<week)worker.injury=Math.max(0,worker.injury-1);
+  if(worker.niggle>0&&!--worker.niggle)worker.nigglePart=null;
+  if(worker.relapse&&!worker.injury){
+   const part=worker.relapse.part;worker.relapse=null;
+   if(lifecycleRoll(s,id,week,'relapse')<.25){
+    worker.injury=2;worker.injurySince=week;worker.wear={...(worker.wear||{}),[part]:(worker.wear?.[part]||0)+1};
+   }
+  }
+  worker.fatigue=Math.max(0,(worker.fatigue||0)-12);
+  putPersonnel(s,worker);
+ }
+}
+function agePersonnel(s,season,{preview=false}={}){
+ const world=activeWorld(s);if(!world||world.lastAgedSeason>=season)return [];
+ world.lastAgedSeason=season;
+ const retired=[],week=season*16+1;
+ for(const [id,c] of Object.entries(world.contracts)){
+  if(!['market','ai','independent'].includes(c.owner))continue;
+  const worker=G.personnel(s,id);if(!worker)continue;
+  if(worker.retireWarned){
+   worker.retireWarned=false;
+   if(lifecycleRoll(s,id,season,'retire')<.7){
+    if(!preview)G.reconcileOwnership(id,{outgoing:true,reason:worker.name+' retired'});
+    markRetired(s,worker,week);retired.push(id);
+    if(!preview)event(world,week,worker.name+' has retired from wrestling.');
+    continue;
+   }
+  }
+  G.ageWorker(worker);
+  if(lifecycleRoll(s,id,season,'warning')<G.retireChance(worker.age)){
+   worker.retireWarned=true;
+   if(!preview)event(world,week,'Retirement whispers: '+worker.name+' is considering hanging up the boots.');
+  }
+  putPersonnel(s,worker);
+ }
+ return retired;
+}
+// The start-screen prediction projects the same off-roster changes onto a copy.
+// It cannot predict a player's random training injury or retirement decision.
+function previewLifecycle(s,week){
+ const current=baseWeek(s);
+ if(!activeWorld(s)||week!==current+1)return s;
+ const copy=JSON.parse(JSON.stringify(s));
+ recoverPersonnel(copy,current);
+ if(s.week===16)agePersonnel(copy,s.season,{preview:true});
+ return copy;
+}
 function ownership(s,id){return activeWorld(s)?.contracts[id]||null}
-root.OfficeWorldV4={activate,reconcile,markPlayer,markMarket,canAfford,hire,releaseAI,evolve,ownership,activeWorld,marketTarget};
+root.OfficeWorldV4={activate,reconcile,markPlayer,markMarket,canAfford,hire,releaseAI,evolve,ownership,activeWorld,marketTarget,markRetired,recoverPersonnel,agePersonnel,previewLifecycle};
 })(typeof window!=='undefined'?window:globalThis);

@@ -127,7 +127,7 @@
   const w=G.W(wid),prog=o.programme;
   if(!w||w.id!==prog.wid)return `This programme is for ${name(prog.wid)}.`;
   if(o.expiresAbs<G.abs())return 'That offer has expired.';
-  const clash=prog.beats.find(b=>!G.availableAt(w,b.at)||G.bookingConflict(w.id,b.rid,b.at));
+  const clash=prog.beats.find(b=>!G.availableAt(w,b.at)||!G.opponentReady(s,b.rid,b.at)||G.bookingConflict(w.id,b.rid,b.at));
   if(clash)return G.bookingConflict(w.id,clash.rid,clash.at)||`${w.short} isn’t free on ${weekLabel(clash.at)}. Every date in a programme has to be clear.`;
   for(const [k,b] of prog.beats.entries()){
    const fd=G.feud?.(w.id,b.rid);
