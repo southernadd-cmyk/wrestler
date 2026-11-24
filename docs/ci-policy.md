@@ -13,13 +13,13 @@ The normal release path is deliberately small. **Target: two to three minutes fo
 
 ## Deeper verification, separate from the release gate
 
-- Use **Actions → Simulation tests → Run workflow** for the full `tests/*.test.cjs` matrix and desktop/mobile Chromium journeys when a risky engine or integration change warrants it.
+- Full Node regression suites and desktop/mobile Chromium journeys run nightly at 03:17 UTC, on `v*` release tags, and via **Actions → Simulation tests → Run workflow**. Regular PRs and main pushes retain the fast targeted gate; documentation-only changes still skip Node installs. UI and match/structure source changes also select the structure career activation regression.
 - The 25 existing specialist graph, wrestling-style, career and A/B workflows remain accessible through `workflow_dispatch`; any pre-existing weekly schedules are preserved. They no longer launch automatically on normal PRs or `main` pushes.
 - For significant match-engine changes, run the relevant full comparison *on demand*, preferably once on a final candidate. Evaluate the result before merging a risky mechanical change; don't attach it automatically to every commit.
 - A separate GitHub Pages publication may run independently; this policy governs the **simulation/testing** workflows, not Pages hosting itself.
 
 ## Guardrails
 
-The short gate is **not** proof that all gameplay is regression-free. It protects common contracts rapidly, while deeper audits provide optional evidence before risky changes. Keep all original tests and historical baselines in the repository. If the required branch-protection check name changes, update GitHub rules at the same time; avoid requiring checks that no longer run for each PR.
+The short gate is **not** proof that all gameplay is regression-free. It protects common contracts rapidly, while deeper audits provide additional evidence before risky changes. Keep all original tests and historical baselines in the repository. If the required branch-protection check name changes, update GitHub rules at the same time; avoid requiring checks that no longer run for each PR.
 
 After changing these triggers, compare actual CI durations on a documentation PR and a gameplay PR and review whether the selected tests meet the two-to-three-minute goal.

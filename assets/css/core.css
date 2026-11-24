@@ -286,7 +286,25 @@ label.field,.letter .meta,.kv dt{color:var(--ink-2)}
 .management-filters .btn{margin-left:auto}
 /* Desktop shows the filters inline; the disclosure summary is a phone-only control. */
 .free-filters>summary{display:none}
-@media (min-width:901px) and (max-width:1280px){.free-table .free-opt{display:none}.free-table .grid th,.free-table .grid td{padding-left:6px;padding-right:6px}.free-table .who{min-width:150px}}
+/* Fit the table to its actual split-pane width, not the full viewport.
+   Secondary scouting stats stay available in the inspector and comparison. */
+.free-table:has(.free-opt){container-type:inline-size}
+@media (min-width:901px){
+ @container (max-width:850px){
+  .free-table .free-opt{display:none}
+  .free-table .grid th,.free-table .grid td{padding-left:5px;padding-right:5px}
+  .free-table .who{min-width:0;gap:6px}
+  .free-table .grid td:first-child,.free-table .grid td:nth-child(2){white-space:normal;overflow-wrap:anywhere}
+  .free-table .grid .row-pick{min-width:0}
+ }
+ @container (max-width:520px){
+  .free-table .grid{font-size:15px}
+  .free-table .grid th{font-size:14px}
+  .free-table .grid th,.free-table .grid td{padding-left:3px;padding-right:3px}
+  .free-table .who{gap:4px}
+  .free-table .who .portrait{width:26px;height:33px;flex:none}
+ }
+}
 .office-filter-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:6px;background:var(--stone-2);border-bottom:2px solid var(--ink)}
 .office-filter-tabs .btn{padding:3px 10px}
 .filter-count{margin-left:4px;font:16px/1 var(--tt)}
@@ -443,6 +461,8 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .talk-outcome b{font:24px/1 var(--jersey);font-weight:400;color:var(--blood)}
 #toast{position:fixed;left:16px;right:auto;bottom:calc(46px + env(safe-area-inset-bottom,0px));z-index:80;max-width:min(420px,90vw);background:var(--stone);border:2px solid var(--ink);box-shadow:var(--bevel),4px 4px 0 rgba(0,0,0,.5);padding:8px 12px 8px 14px;border-left:8px solid var(--gold);font-weight:600;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .15s,transform .15s}
 #toast.show{opacity:1;transform:none}
+/* Desktop notices belong to the content pane, not over sidebar navigation. */
+@media(min-width:901px){body:has(#app:not([hidden])) #toast{left:230px}}
 
 /* ---------- title screen ---------- */
 /* v0.3.10 START SCREEN: tonight's show poster, pasted on the wall outside the hall. */
@@ -455,7 +475,7 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
   repeating-linear-gradient(90deg,transparent 0 46px,rgba(0,0,0,.35) 46px 48px)}
 .title[hidden]{display:none}
 .poster-wall{position:relative;width:min(640px,100%);display:grid;gap:14px;justify-items:center}
-.poster{--torn:12px;position:relative;width:100%;margin:var(--torn) 0;padding:18px clamp(14px,4vw,30px) 16px;text-align:center;color:var(--poster-ink);
+.poster{--torn:12px;position:relative;width:100%;min-width:0;container-type:inline-size;margin:var(--torn) 0;padding:18px clamp(14px,4vw,30px) 16px;text-align:center;color:var(--poster-ink);
  background:radial-gradient(rgba(0,0,0,.09) 1px,transparent 1.3px) 0 0/6px 6px,linear-gradient(170deg,#f6efd9,#e9dcb7);
  box-shadow:0 18px 40px rgba(0,0,0,.6);transform:rotate(-1deg)}
 .poster::before,.poster::after{content:"";position:absolute;left:0;right:0;height:var(--torn);
@@ -463,8 +483,9 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
 .poster::before{top:calc(-1 * var(--torn))}
 .poster::after{bottom:calc(-1 * var(--torn));transform:scaleY(-1)}
 .poster-kicker{margin:0;font:clamp(18px,3.6vw,24px)/1 var(--px);letter-spacing:.08em;text-transform:uppercase;color:var(--blood)}
-.poster-title{margin:6px 0 0;font:clamp(52px,min(15vw,12vh),112px)/.8 var(--jersey);white-space:nowrap;letter-spacing:.02em;text-transform:uppercase;color:var(--gold);
+.poster-title{margin:6px 0 0;font:clamp(52px,min(15vw,12vh),112px)/.8 var(--jersey);white-space:normal;letter-spacing:.02em;text-transform:uppercase;color:var(--gold);
  text-shadow:3px 3px 0 var(--blood),6px 6px 0 var(--poster-ink);-webkit-text-stroke:1px var(--poster-ink)}
+@supports (font-size:1cqi){.poster-title{font-size:clamp(36px,14cqi,112px)}}
 .poster-strap{margin:4px 0 12px;font:clamp(16px,3vw,20px)/1 var(--px);letter-spacing:.3em;text-transform:uppercase;color:var(--poster-ink)}
 .poster-bout{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:clamp(6px,2vw,16px)}
 .poster-side{margin:0;display:grid;justify-items:center;gap:6px}
@@ -519,7 +540,7 @@ dialog .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;paddin
   animation:spot-sweep 9s ease-in-out infinite alternate}
 }
 @keyframes poster-in{from{opacity:0;transform:translateY(-40px) rotate(-4deg)}to{opacity:1;transform:rotate(-1deg)}}
-@keyframes title-slam{0%{opacity:0;transform:scale(1.9)}70%{opacity:1;transform:scale(.96)}85%{transform:scale(1.02) translateX(-2px)}100%{transform:none}}
+@keyframes title-slam{0%{opacity:0;transform:scale(1.05)}70%{opacity:1;transform:scale(.96)}85%{transform:scale(1.02) translateX(-2px)}100%{transform:none}}
 @keyframes side-in-l{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:none}}
 @keyframes side-in-r{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:none}}
 @keyframes vs-pop{from{opacity:0;transform:scale(.3) rotate(-12deg)}to{opacity:1;transform:none}}

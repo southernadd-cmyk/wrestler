@@ -442,7 +442,7 @@ function renderObjectives(){
 const WCOLS={name:w=>w.name,style:w=>w.style,heat:w=>w.heat,ring:w=>w.ring,mic:w=>w.mic,psych:w=>w.psych,safe:w=>w.safe,fat:w=>w.fatigue,mor:w=>w.morale,wage:w=>w.wage,fee:w=>w.fee,tier:w=>w.tier};
 const FREE_STATS=[['heat','Draw'],['ring','Ring'],['mic','Mic'],['psych','Psych'],['safe','Safe']];
 const FREE_SORTS=[['name','Wrestler'],['style','Style'],...FREE_STATS,['wage','Wage'],['fee','Fee']];
-// Secondary stats that drop out of the desk table below 1280px so Fee stays visible.
+// Secondary stats that drop out of the table when the scouting pane is narrow so Fee stays visible.
 const FREE_OPTIONAL=['mic','psych','safe'];
 // Free-agent ratings are shown as scouting ranges. Sorting uses the range's low end, so the sort reveals no more than the table does.
 const FREE_WCOLS={...WCOLS,...Object.fromEntries(['ring','mic','psych','safe'].map(k=>[k,w=>G.scoutBand(w,k).lo]))};
@@ -1864,7 +1864,11 @@ document.addEventListener('click',e=>{
  if(d.sign){
   // Signing spends most of a starting bank in one go: confirm the fee and the weekly wage first.
   const s=S(),w=s.free.find(x=>x.id===d.sign);if(!w){render();return toast('Not available.')}
-  dialog('Sign '+w.name+'?',`<p>Signing fee <b>${money(w.fee)}</b>, paid now. Your bank goes from ${money(s.cash)} to ${money(s.cash-w.fee)}.</p><p>Wage <b>${money(w.wage)} a week</b>, paid every week whether or not they are booked.</p><p class="dim">Releasing them later does not refund the fee.</p>`,[['Not yet','close'],['Sign for '+money(w.fee),'sign:'+w.id,'go']]);return;
+  // The new contract adds one wrestler to the overhead calculation; their
+  // default light drills cost nothing. Existing training/coach costs still apply.
+  const remaining=s.cash-w.fee,weekly=G.wages()+w.wage+G.overhead()+25+G.trainingBill();
+  const risk=remaining<2*weekly?`<p class="bad" role="note"><b>Cash is tight.</b> Without match income, you would have less than two weeks of running costs left. Consider a cheaper first signing or secure paid work immediately.</p>`:'';
+  dialog('Sign '+w.name+'?',`<p>Signing fee <b>${money(w.fee)}</b>, paid now. Your bank goes from ${money(s.cash)} to ${money(remaining)}.</p><p>Wage <b>${money(w.wage)} a week</b>, paid every week whether or not they are booked.</p><p>Estimated total weekly running costs: <b>${money(weekly)}</b>. Bank after those costs, without match income or further spending: <b>${money(remaining-weekly)}</b>.</p>${risk}<p class="dim">Releasing them later does not refund the fee.</p>`,[['Not yet','close'],['Sign for '+money(w.fee),'sign:'+w.id,'go']]);return;
  }
  if(d.release){const w=G.W(d.release);dialog(`Release ${w.name}?`,`<p>${esc(w.short)} leaves today and you get nothing back. Any booking for them is cancelled.</p>`,[['Keep them','close'],['Release','release:'+w.id,'red']]);return}
  if(d.book){
