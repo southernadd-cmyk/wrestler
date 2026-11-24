@@ -1538,7 +1538,7 @@ function showPromos(loadedBanks){
  if(!newPromo&&needsBanks&&existing)existing.banks=loadedBanks||[];
  if(newPromo){
   const arc=window.OfficeProgrammeArcs?.intro(c,night.plan?.arcChoice);
-  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth,arc,directed:true,formats:true,dialogue:true,authored:true,banks:loadedBanks||[],composition:true});
+  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth,arc,directed:true,formats:true,dialogue:true,authored:true,banks:loadedBanks||[],composition:true,semantic:true});
   // v0.3.12 The interviewer asks about what the crowd saw: the rivalry's public record. A backstage
   // memory (recalled.promoPrompt) stays backstage; it is no longer read out on air.
   const intro=window.OfficeRivalry?.introFor(night.promo.core);
@@ -1555,7 +1555,7 @@ function showPromos(loadedBanks){
  // Dennis's read of the night before the first line, and the opponent's angle before the answer.
  const read=v.read?`<div class="mic-read"><b>${esc(OfficeRoom.AGENT)}’s read</b>${v.read.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:'';
  const cue=v.cue?`<p class="mic-cue">${esc(v.cue)}</p>`:'';
- const conversation=v.conversation&&v.stage!=='done'&&v.conversation.subject?`<p class="dim claim"><b>Subject:</b> ${esc(v.conversation.subject)} · ${esc(spokenMood(st,v.conversation))}</p>`:'';
+ const conversation=v.conversation&&v.stage!=='done'&&v.conversation.subject?`<p class="dim claim"><b>Subject:</b> ${esc(v.conversation.subject)} · ${esc(spokenMood(st,v.conversation))}${v.conversation.latestPoint?`<span>Latest point: ${esc(v.conversation.latestPoint)}</span>`:''}</p>`:'';
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">The final word</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.tactic?.stake||'')}</p></div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.name)} ${v.conversation?'':`<small>${v.round+1} of ${v.total}</small>`}</h3><p class="lede">${esc(v.help)}</p>${read}${cue}${open}${conversation}${claim}${pickCards(v.options,'mic',true)}</div>`;
  const sp=st.speaker?G.W(st.speaker.id)||w:w;
