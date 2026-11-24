@@ -5,13 +5,16 @@ The normal release path is deliberately small. **Target: two to three minutes fo
 ## Normal pull requests and `main` pushes
 
 - **One required status check:** `Regression suite (Node 22)` in `.github/workflows/tests.yml`. This keeps the existing branch-protection check name.
-- **Documentation / newsletter artwork / workflow-only updates:** classify the diff and succeed. Do **not** install Python or Chromium, rebuild portraits, or run gameplay tests.
+- **Documentation / newsletter artwork / other workflow-only updates:** classify the diff and succeed. Do **not** install Python or Chromium, rebuild portraits, or run gameplay tests.
 - **JavaScript changes:** syntax-check changed JS and run only a small, relevant set of existing Node tests. Ringfax, match mechanics, negotiations, training, save/career and UI have separate selections.
 - **Changes that cannot be classified:** use a conservative, small smoke set rather than silently skipping all checks.
-- **No automatic full matrix or browser download.** Browser checks are expensive and should not hold up routine text, layout or editorial work.
+- **No automatic full matrix or browser download on ordinary PRs or main pushes.** Browser checks are expensive and should not hold up routine text, layout or editorial work.
 - Do not add a regression suite or GitHub workflow for every tiny fix. Prefer updating existing focused coverage only when it protects an important shared contract.
 
 ## Deeper verification, separate from the release gate
+
+- The existing Simulation tests workflow runs the complete Node suite and Chromium journeys nightly at 03:23 UTC, and on version tags matching `v*`. It does not add a new workflow or a required browser status on PRs.
+- Changes to the simulation workflow itself run the structure activation suite. UI, sheets, agents-room and match-engine changes select the behavioural structure integration suite; career changes also select roster coverage.
 
 - Use **Actions → Simulation tests → Run workflow** for the full `tests/*.test.cjs` matrix and desktop/mobile Chromium journeys when a risky engine or integration change warrants it.
 - The 25 existing specialist graph, wrestling-style, career and A/B workflows remain accessible through `workflow_dispatch`; any pre-existing weekly schedules are preserved. They no longer launch automatically on normal PRs or `main` pushes.
@@ -20,6 +23,6 @@ The normal release path is deliberately small. **Target: two to three minutes fo
 
 ## Guardrails
 
-The short gate is **not** proof that all gameplay is regression-free. It protects common contracts rapidly, while deeper audits provide optional evidence before risky changes. Keep all original tests and historical baselines in the repository. If the required branch-protection check name changes, update GitHub rules at the same time; avoid requiring checks that no longer run for each PR.
+The short gate is **not** proof that all gameplay is regression-free. It protects common contracts rapidly, while nightly and tag audits provide broader evidence before risky changes. Keep all original tests and historical baselines in the repository. If the required branch-protection check name changes, update GitHub rules at the same time; avoid requiring checks that no longer run for each PR.
 
 After changing these triggers, compare actual CI durations on a documentation PR and a gameplay PR and review whether the selected tests meet the two-to-three-minute goal.
