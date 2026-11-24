@@ -697,6 +697,27 @@ async function laptopLayoutAudit(browser,name,viewport){
    assert.ok(await page.locator('#view .free-card .free-costs').first().isVisible(),
     name+': phone cards still display costs');
   }
+  // Real signing controls: the budget must appear before the player commits.
+  await page.evaluate(()=>window.OfficeUI.go('scouting','val'));
+  const budget=page.locator('#view .signing-budget');
+  await budget.waitFor();
+  assert.match(await budget.innerText(),/£540/);
+  assert.match(await budget.innerText(),/£380/);
+  assert.match(await budget.innerText(),/£160/);
+  assert.match(await budget.innerText(),/Tight budget/);
+  await page.locator('#view [data-sign="val"]').click();
+  const confirm=page.locator('#modal .signing-budget');
+  await confirm.waitFor();
+  assert.match(await confirm.innerText(),/£295/);
+  assert.match(await confirm.innerText(),/£85/);
+  assert.match(await confirm.innerText(),/Tight budget/);
+  await page.locator('#modal [data-dlg="close"]').click();
+  assert.equal(await page.evaluate(()=>window.OfficeGame.S.cash),2250,'viewing or declining a contract spends nothing');
+  await page.evaluate(()=>window.OfficeUI.go('scouting'));
+  await openScoutFilters(page);
+  await page.locator('#view [data-scout-budget]').selectOption('reserve');
+  assert.equal(await page.locator('#view .free-table [data-self="val"],#view .free-card[data-self="val"]').count(),0);
+  assert.ok(await page.locator('#view .free-card').count()>0,'lower-risk choices are still available');
   assert.deepEqual(errors,[],name+': no uncaught errors');
   console.log('PASS focused layout '+name+': poster, first signing toast, visible fee');
  }finally{await context.close()}
