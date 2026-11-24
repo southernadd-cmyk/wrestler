@@ -241,3 +241,11 @@ Older technical notes, frozen match simulations and archived audits are in the [
 ### THE SMALL PRINT
 
 The game plays directly in the browser, without a build step or runtime service. Code is available under the [MIT License](LICENSE); original writing, characters, portraits, artwork and branding have separate rights. See [Content and copyright](CONTENT-LICENSE.md).
+
+### THE NEXT ADDRESS
+
+The Office is applying for `theoffice.repos.one`. This address will work after the OpenRepos claim is approved and GitHub Pages is configured.
+
+Careers save in this browser. Before you switch addresses, open **Game → Save and load → Export save** on the current site. On the new address, use **Import save** to continue the career. Browser saves do not move between addresses automatically.
+
+[![OpenRepos](https://img.shields.io/endpoint?url=https://openrepos.org/status/theoffice.repos.one.json&style=flat-square)](https://southernadd-cmyk.github.io/wrestler/)
