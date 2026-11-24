@@ -95,3 +95,28 @@ verifyOwnership(G.S);
 V.activate(G.S);G.save();const migrated=snapshot(G.S);G.load();
 assert.equal(snapshot(G.S),migrated);
 console.log('PASS v4 living world: 80 identities, 6 agencies, budgets, transfers, idempotent save migration and preserved legacy careers');
+
+{
+ G.fresh();const s=G.S,team=s.territory.teams.find(t=>t.roster.length<V.ROUTINE_CAP);
+ const p=s.free.find(x=>D.divisionOf(x)==='men'),div=D.divisionOf(p);
+ const others=s.free.filter(x=>D.divisionOf(x)===div&&x.id!==p.id);
+ assert.ok(V.recruitmentAllowed(s,team,p));
+ // Leave exactly the reserve in this division. Routine hiring cannot take it.
+ for(const worker of others.slice(0,Math.max(0,others.length+1-V.MARKET_RESERVE))){
+  s.worldV4.contracts[worker.id].owner='independent';
+ }
+ V.reconcile(s);
+ assert.equal(s.free.filter(x=>D.divisionOf(x)===div).length,V.MARKET_RESERVE);
+ assert.equal(V.recruitmentAllowed(s,team,p),false);
+ assert.notEqual(V.marketTarget(s,team)?.id,p.id);
+ assert.equal(G.sign(p.id),null,'player can still recruit from the reserve');
+}
+{
+ G.fresh();const s=G.S,worker=s.free[0];
+ const offer={pid:'dock',slot:'mid',finish:'win_clean',boost:1};
+ s.rep=22;const early=G.purse(offer,worker);s.rep=40;const mid=G.purse(offer,worker);
+ s.rep=100;const late=G.purse(offer,worker);
+ assert.ok(mid>=early&&late>=mid,'reputation still rewards the player');
+ assert.ok(late-mid<(mid-early)*4,'late reputation premium tapers');
+}
+console.log('PASS recruitment reserves, player access and diminishing reputation premium');

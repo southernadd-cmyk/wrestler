@@ -141,10 +141,20 @@ function releaseAI(s,id,week=baseWeek(s)){
  return true;
 }
 // Who an agency would sign from the market and the independents next, leaving out anyone in `taken`.
+// Routine agency recruitment must leave room for competing managers and new players.
+// Direct transfers, negotiated poaches and contract restorations still use hire().
+const MARKET_RESERVE=4,INDEPENDENT_RESERVE=3,ROUTINE_CAP=9;
+function recruitmentAllowed(s,team,p){
+ const w=activeWorld(s),owner=w?.contracts[p.id]?.owner,division=D.divisionOf(p);
+ if(team.roster.length>=ROUTINE_CAP)return false;
+ if(owner==='market')return s.free.filter(x=>D.divisionOf(x)===division).length>MARKET_RESERVE;
+ if(owner==='independent')return all.filter(x=>w.contracts[x.id]?.owner==='independent'&&D.divisionOf(x)===division).length>INDEPENDENT_RESERVE;
+ return false;
+}
 function marketTarget(s,team,taken=new Set()){
  const w=activeWorld(s);if(!w)return null;
  const offers=[...s.free,...all.filter(p=>w.contracts[p.id]?.owner==='independent')];
- return offers.filter(p=>!taken.has(p.id)&&['market','independent'].includes(w.contracts[p.id]?.owner))
+ return offers.filter(p=>!taken.has(p.id)&&recruitmentAllowed(s,team,p)&&canAfford(s,team.id,p.id))
   .map(p=>({p,fit:(p.style===team.style?30:0)+p.pro*.35+p.ring*.22-p.fee/180-(p.ego>85?5:0)}))
   .sort((a,b)=>b.fit-a.fit||a.p.id.localeCompare(b.p.id))[0]?.p||null;
 }
@@ -259,5 +269,5 @@ function previewLifecycle(s,week){
  return copy;
 }
 function ownership(s,id){return activeWorld(s)?.contracts[id]||null}
-root.OfficeWorldV4={activate,reconcile,markPlayer,markMarket,canAfford,hire,releaseAI,evolve,ownership,activeWorld,marketTarget,markRetired,recoverPersonnel,agePersonnel,previewLifecycle};
+root.OfficeWorldV4={activate,reconcile,markPlayer,markMarket,canAfford,hire,releaseAI,evolve,ownership,activeWorld,marketTarget,recruitmentAllowed,MARKET_RESERVE,INDEPENDENT_RESERVE,ROUTINE_CAP,markRetired,recoverPersonnel,agePersonnel,previewLifecycle};
 })(typeof window!=='undefined'?window:globalThis);

@@ -8,6 +8,8 @@ for(const r of results){
  assert.deepEqual(r.errors,[],r.policy+' '+r.seed+': '+JSON.stringify(r.errors));
  assert.ok(r.weeks>0&&r.reloads>0,'the audit exercised week progression and reload');
  if(r.policy==='world')assert.equal(r.weeks,r.requestedWeeks,'the isolated circuit completed ten seasons');
+ assert.ok(r.yearly.at(-1).counts.market>=4,'recruitment remains possible at the end of the measured career');
+ assert.equal(r.finalCash-r.initialCash,r.ledger.matchReceipts-r.ledger.signingCosts-r.ledger.weeklyWages-r.ledger.weeklyOverhead-r.ledger.trainingAndCoaching+r.ledger.otherNet,'cash flow reconciles');
  // Bankruptcies and talent depletion are measured outcomes, not hidden by a subsidy.
 }
 const a=run(91,{seasons:1,policy:'lean'}),b=run(91,{seasons:1,policy:'lean'});
