@@ -505,6 +505,17 @@ async function responsiveAudit(browser,name,viewport){
    assert.ok(widths.scroll<=widths.client+2&&widths.feeRight<=widths.hostRight+2,
     name+': Fee column clipped or requires sideways scrolling '+JSON.stringify(widths));
   }
+  if(viewport.width===1366){
+   await page.evaluate(()=>window.OfficeUI.go('scouting','val'));
+   await page.locator('#view [data-sign="val"]').click();
+   const confirmation=await page.locator('#modal').innerText();
+   assert.match(confirmation,/£540/);
+   assert.match(confirmation,/£380/);
+   assert.match(confirmation,/£160/);
+   assert.match(confirmation,/Cash is tight/);
+   await page.locator('#modal [data-dlg="close"]').click();
+   assert.equal(await page.evaluate(()=>window.OfficeGame.S.roster.length),0,'checking affordability must not sign the wrestler');
+  }
   // All styles in the active market must be filterable, not just four
   // historically hard-coded labels.
   const style=await page.evaluate(()=>{
