@@ -10,6 +10,7 @@ const ids=['mara','brick','nova','magnus'];
 assert.deepEqual(Array.from(cat.coverage(),p=>p.owner).sort(),ids.map(x=>'wrestler:'+x).sort());
 const authored=new Map(root.OfficePromoPilot.flatMap(p=>p.lines.map(r=>[r.id,r])));
 assert.equal(authored.size,73);
+const liveAuthored=new Map(L.combine(root.OfficePromoPilot,root.OfficePromoBankC1,root.OfficePromoBankC2).flatMap(p=>p.lines.map(r=>[r.id,r])));
 assert.equal(new Set(Array.from(authored.values(),r=>r.text)).size,authored.size);
 const actor={id:'mara',role:'wrestler',age:32,style:'Story',short:'Vale'},other={id:'nova',role:'wrestler',short:'Bell',style:'Technical'};
 const ctx={speaker:actor,client:actor,opponent:other,stage:'answer',action:'turn',side:'w',variant:'tu_strength',strength:'holds and counters',protected:'contextual-variant',hasMouthpiece:false};
@@ -41,7 +42,7 @@ for(const w of rows)for(const f of rows.filter(x=>x.id!==w.id))for(let i=0;i<30;
   for(const e of a.log.slice(start)){
    if(e.dialogueSlot?.protected&&e.dialogueSlot.protected!=='contextual-variant'){assert.ok(!e.authoredId);protectedN++;}
    if(!e.authoredId)continue;
-   const r=authored.get(e.authoredId);assert.ok(r);
+   const r=liveAuthored.get(e.authoredId);assert.ok(r);
    assert.equal(e.dialogueSlot.owner,e.side==='w'?w.id:f.id);
    assert.equal(r.side,e.side);assert.equal(r.stage,round);assert.equal(r.action,id);
    assert.ok(e.line&&!/[{}]/.test(e.line));
