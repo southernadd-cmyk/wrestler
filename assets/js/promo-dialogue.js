@@ -84,7 +84,8 @@
   return {stage,action,side,speaker,opponent,client:s.client,venue:s.venue,titleMatch:s.titleMatch,
    hasMouthpiece:s.hasMouthpiece,meetings:s.meetings,format:st.director?.format||null,
    subject:st.director?.subject||st.core.claim?.opening||null,landed,variant,
-   strength:st.core.claim?.strength||null,
+   strength:st.core.claim?.strength||null,opening:st.core.claim?.opening||null,
+   voice:root.OfficeRoom?.VOICE?.[speaker.id]||null,stance:(player?st.director?.player:st.director?.opponent)?.stance||null,
    composure:emotion?.composure??null,irritation:emotion?.irritation??null,
    protected:protectedReason,previous:st.log.filter(e=>e.side==='w'||e.side==='f').at(-1)?.line||null};
  }
@@ -115,11 +116,38 @@
   const ranked=fresh.map(r=>({r,score:Object.keys(r.when).filter(k=>k!=='variants'&&k!=='hasMouthpiece').length,tie:hash(seed+'|'+r.id)})).sort((a,b)=>b.score-a.score||a.tie-b.tie||a.r.id.localeCompare(b.r.id));
   const row=ranked[0].r;return {id:row.id,text:render(row,ctx)};
  }
+ // A bounded compositional fallback: preserve the actual claim, vary the delivery.
+ const replyFrames={
+  precise:['Your {strength} are the problem I need to solve. I am not disputing them.','Then the question is how I deal with your {strength}. I intend to answer it in the ring.'],
+  grand:['You have made quite a case for your {strength}. The interesting part is what happens when I answer them.','Very well. Your {strength} are the opposition; they are not the conclusion.'],
+  gruff:['Your {strength}. I heard you. Now let me get through them.','I know what your {strength} can do. I still have a match to win.'],
+  stoic:['I understand. Your {strength} are what I have to get past.','No point denying your {strength}. I will deal with them.'],
+  eager:['Right, your {strength}. That is the bit I want to get around. Watch how.','I know you have {strength}. That is what makes this a match worth having.'],
+  earnest:['I respect your {strength}. I want to show these people that I have an answer to them.','I am not asking anybody to ignore your {strength}. I am asking for the chance to answer them.'],
+  sermon:['A person can be proud of their {strength} and still find they are not enough. I have to show you why.','I will not deny you your {strength}. Let the contest reveal what they are worth.'],
+  slippery:['So your argument is your {strength}. Fine. Now consider what happens when they are not enough.','I am happy to grant you your {strength}. I am less happy to grant you the result.']
+ };
+ const topics={proof:'what you can actually do in the ring',people:'what we owe the people watching',swagger:'who earns the attention',accusation:'the charge itself',hometown:'the people in this hall',numbers:'the point behind those numbers',imagery:'the point behind that image'};
+ const pressFrames={precise:['Can we deal with {topic} before we move on?','That is a different question. Come back to {topic}.'],grand:['The matter at issue is {topic}. Let us not lose sight of it.','Very entertaining. I would prefer an answer about {topic}.'],gruff:['No. We were talking about {topic}. Finish that.','Stick to {topic}. Give me an answer.'],stoic:['We are still talking about {topic}.','Answer the point about {topic}.'],eager:['Hang on. I want to hear the rest about {topic}.','Wait a second. We have not finished with {topic}.'],earnest:['I want us both to be clear about {topic}.','Before we finish, can we come back to {topic}?'],sermon:['Let us not avoid the question of {topic}.','We should settle what we mean by {topic}.'],slippery:['Interesting. But I was asking about {topic}.','Let us keep this to {topic}, shall we?']};
+ const agreeFrames={precise:['That is a fair point. The contest remains unresolved.','I can accept that observation without conceding the result.'],grand:['I shall grant you that much. The evening is still ours to contest.','A fair concession. Now the wrestling can decide the rest.'],gruff:['Fair. We will settle the rest in there.','All right. I heard you.'],stoic:['Fair enough. See you at the bell.','I can accept that.'],eager:['Right! We agree on that much. Now let us wrestle.','Fair. That gives us something to work with.'],earnest:['I hear you. We still have to give them a match.','That is fair. I can respect that and still want the win.'],sermon:['There is no shame in acknowledging a fair point.','Then we can settle the rest by wrestling.'],slippery:['I will grant you that particular point.','Fair enough. The result is another matter.']};
+ function compose(ctx,seed,{used=[],recent=[]}={}){
+  if(!ctx||ctx.hasMouthpiece||!ctx.previous)return null;
+  const exactTurn=ctx.stage==='answer'&&ctx.action==='turn'&&ctx.side==='w'&&ctx.variant==='tu_strength'&&ctx.protected==='contextual-variant';
+  const push=ctx.stage==='push'&&!ctx.protected&&['press','acknowledge'].includes(ctx.action);
+  if(!exactTurn&&!push)return null;
+  const family=replyFrames[ctx.voice]?ctx.voice:({analytical:'precise',reserved:'stoic',combative:'gruff',adaptive:'earnest'}[ctx.stance]||'earnest');
+  const kind=exactTurn?'turn':ctx.action;
+  const frames=exactTurn?replyFrames[family]:ctx.action==='press'&&ctx.side==='w'?pressFrames[family]:ctx.action==='acknowledge'?agreeFrames[family]:null;
+  if(!frames||(exactTurn&&!ctx.strength)||(kind==='press'&&!topics[ctx.opening]))return null;
+  const pool=frames.map((frame,i)=>({id:'composition.'+ctx.speaker.id+'.'+kind+'.'+(kind==='press'?ctx.opening+'.':'')+i,text:frame.replace('{strength}',ctx.strength||'').replace('{topic}',topics[ctx.opening]||'')})).filter(x=>!used.includes(x.id)&&!recent.includes(x.id));
+  if(!pool.length)return null;
+  return {...pool[hash(seed+'|composition')%pool.length],composed:true};
+ }
  function recentIds(rival,history=[]){
   const ids=[...(rival?.lastPromo?.dialogueIds||[])];
-  for(const h of history.slice(0,12))for(const e of h.promo?.dialogue||[])if(typeof e.authoredId==='string')ids.push(e.authoredId);
+  for(const h of history.slice(0,12))for(const e of h.promo?.dialogue||[]){if(typeof e.authoredId==='string')ids.push(e.authoredId);if(typeof e.composedId==='string')ids.push(e.composedId);}
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);
