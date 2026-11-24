@@ -54,7 +54,17 @@
  async function load(ids){
   return (await Promise.all([...new Set(ids.filter(Boolean))].map(loadOne))).filter(Boolean);
  }
+ // Token ownership prevents an old request from clearing/reopening a later scene.
+ function beginSceneLoad(n,cid){
+  if(n.promoLoading?.cid===cid&&n.stage==='promo')return null;
+  const token={cid};n.promoLoading=token;n.stage='promo';return token;
+ }
+ function completeSceneLoad(n,token,isCurrent){
+  if(n.promoLoading!==token)return false;
+  delete n.promoLoading;
+  return n.stage==='promo'&&isCurrent();
+ }
  // Scene snapshots are deliberately compact and self-contained; no network at choose().
  function catalogue(banks){return D.catalogue(banks.map(decode));}
- root.OfficePromoBanks=Object.freeze({load,decode,catalogue,hash});
+ root.OfficePromoBanks=Object.freeze({load,decode,catalogue,hash,beginSceneLoad,completeSceneLoad});
 })(typeof window!=='undefined'?window:globalThis);
