@@ -63,6 +63,12 @@
   "I can make a scene, darling. I cannot make an accusation true by delivering it beautifully.",
   "Wonderful. We can dispense with that scene and give them the main attraction.",
   "A fair correction. No unsupported scandal required; we have a match to perform."
+ ],
+ "kira": [
+  "The allegation does not meet the standard of proof I demand. I withdraw it.",
+  "You are correct to demand particulars. I cannot provide sufficient evidence.",
+  "Correction accepted. The allegation is removed; the sporting contest remains.",
+  "Good. That point is settled. Maintain the same discipline in the ring."
  ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
