@@ -71,6 +71,105 @@
   sermon:['{W} begins a parable, loses the moral, and ends with “and so forth”.','{W} quotes scripture that turns out to be from a greetings card.','{W} asks the crowd to turn to page forty. Nobody has a book.'],
   slippery:['{W} winks at the end of the sentence, and it sounds like a lie even though it was not one.','{W} loses the crowd somewhere around “to be fair”.','{W} says “trust me” and visibly loses the room.']
  };
+ // Live delivery notes describe the words already spoken, not an invented
+ // forgotten sentence, accident or factual error. Preserve legacy FLUFF.
+ const LIVE_DELIVERY={
+ "grand": [
+  "{W} puts more ceremony into the line than the moment needs.",
+  "{W} stretches the final syllable, looking for a response that has already passed.",
+  "{W} raises a hand for emphasis a little too late.",
+  "{W} sweeps a look across the hall; the timing of the line is off.",
+  "{W} lets the grand gesture do more work than the words.",
+  "{W} speaks with theatrical conviction, but the cadence feels forced."
+ ],
+ "gruff": [
+  "{W} grips the microphone tighter; the words come out strained.",
+  "{W} clips the ends of the words in frustration.",
+  "{W} delivers the point with a little too much force.",
+  "{W} rushes the last few words through clenched teeth.",
+  "{W} gives the line a hard edge that does not help it land.",
+  "{W} takes a sharp breath before the emphasis, breaking the rhythm."
+ ],
+ "eager": [
+  "{W} rushes through the point without leaving room for emphasis.",
+  "{W} gestures faster than the words can carry.",
+  "{W} takes a quick breath and pushes the pace again.",
+  "{W} puts the emphasis on the wrong part of the sentence.",
+  "{W} barely leaves a gap between phrases.",
+  "{W} gets ahead of the rhythm of the speech."
+ ],
+ "stoic": [
+  "{W} keeps the delivery so flat that the emphasis is lost.",
+  "{W} speaks quietly, with little projection.",
+  "{W} holds a beat longer than the moment needs.",
+  "{W} delivers the point with almost no change of tone.",
+  "{W} looks down briefly as the words come out.",
+  "{W} gives the line too little lift at the end."
+ ],
+ "precise": [
+  "{W} gives each phrase equal weight; the central point loses its emphasis.",
+  "{W} delivers the argument in a stiff, measured cadence.",
+  "{W} sounds more rehearsed than convinced.",
+  "{W} takes a fraction too long to place the emphasis.",
+  "{W} concentrates so hard on the wording that the delivery feels mechanical.",
+  "{W} keeps the phrasing neat, but the rhythm is awkward."
+ ],
+ "earnest": [
+  "{W} begins confidently but the voice softens towards the end.",
+  "{W} looks between the crowd and the opponent, losing a little focus.",
+  "{W} puts more feeling into the line than the delivery can carry.",
+  "{W} sounds tentative where the point needs conviction.",
+  "{W} takes an audible breath and finishes less firmly.",
+  "{W} searches the room for reassurance while speaking."
+ ],
+ "sermon": [
+  "{W} lingers over the cadence until the point loses momentum.",
+  "{W} puts a solemn emphasis on almost every phrase.",
+  "{W} raises the microphone with a flourish that feels out of place.",
+  "{W} allows too much space between phrases.",
+  "{W} delivers the point like a lesson rather than a conversation.",
+  "{W} gives the line a ceremonial rhythm that slows the exchange."
+ ],
+ "slippery": [
+  "{W} lets a smile creep into the delivery at the wrong moment.",
+  "{W} sounds a shade too rehearsed.",
+  "{W} keeps the smooth tone even where the point needs weight.",
+  "{W} gives a small shrug that weakens the emphasis.",
+  "{W} glances aside and the delivery loses focus.",
+  "{W} tries to sell the point harder than the moment requires."
+ ]
+};
+ const DELIVERY_CONTEXT={
+ "unsettled": [
+  "{W} takes a shallow breath; the delivery loses its steadiness.",
+  "{W} shifts their grip on the microphone, visibly tense.",
+  "{W} tightens their shoulders as the words come out.",
+  "{W} sounds less certain than the words suggest.",
+  "{W} struggles to keep the delivery even."
+ ],
+ "irritated": [
+  "{W} puts too much bite into the delivery.",
+  "{W} lets frustration dictate the pace of the words.",
+  "{W} speaks over their own breath, making the rhythm awkward.",
+  "{W} pushes the volume higher than the point needs.",
+  "{W} forces the emphasis, visibly impatient."
+ ],
+ "controlled": [
+  "{W} keeps their composure, but the delivery lacks conviction.",
+  "{W} delivers the point cleanly enough, with little force behind it.",
+  "{W} stays measured; the timing is not quite there.",
+  "{W} remains composed, though the words lack emphasis.",
+  "{W} keeps the microphone steady but the line feels rehearsed."
+ ],
+ "closing": [
+  "{W} delivers the final words with less conviction than the moment demands.",
+  "{W} lowers the microphone after an awkwardly timed final phrase.",
+  "{W} gives the closing statement little emphasis.",
+  "{W} finishes the statement, but the cadence is uneven.",
+  "{W} makes the final point in a strained voice.",
+  "{W} ends the speech with a hesitant delivery."
+ ]
+};
  const CROWD={
   roar:['A proper roar. Somewhere, a pint goes over.','They are standing on the chairs they were asked not to stand on.','The noise sets off a car alarm outside.','A man in row two is hitting his own programme against his knee with joy.'],
   good:['A solid murmur of approval.','Applause, most of it sincere.','Someone shouts “Go on!” and several people agree.','Heads are nodding. A flask is passed along in celebration.'],
@@ -224,6 +323,7 @@
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
   if(opts.directed&&opts.formats){st.fallbackVariety=1;st.closingVariety=1;}
+  if(opts.directed&&opts.formats)st.deliveryStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='fluff').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
   if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,...(opts.formats&&opts.semantic?{reviewedAck:1,reviewedContext:1}:{}),used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
@@ -249,7 +349,18 @@
   return st;
  }
  const own=(st,slot)=>{if(st.speaker)return null;const line=D.VOICE_PACKS?.[st.w.id]?.promo?.[slot];return line&&rng(st.seed,'own|'+slot+'|'+(st.ownUsed?.[slot]||0))<2/3?line:null;};
- function fluff(st){
+ function fluff(st,stage){
+  if(st.deliveryStyle?.v===1){
+   const speaker=spoke(st),emotion=st.director?.player,skill=talker(st).mic;
+   const family=voice(talker(st)),voicePool=LIVE_DELIVERY[family]||LIVE_DELIVERY.stoic;
+   const pressure=emotion?.irritation>=55?'irritated':(emotion?.composure??50)<40||skill<45?'unsettled':skill>=75?'controlled':null;
+   // Keep closing delivery specific to the final statement. At other moments
+   // combine the speaker's own voice with the current pressure when relevant.
+   const pool=stage==='close'?DELIVERY_CONTEXT.closing:pressure?[...voicePool,...DELIVERY_CONTEXT[pressure]]:voicePool;
+   const options=pool.map(line=>fmt(line,speaker)),seen=new Set(st.log.filter(e=>e.kind==='fluff').map(e=>e.line)),recent=new Set(st.deliveryStyle.recent||[]);
+   const fresh=options.filter(line=>!seen.has(line)),unheard=fresh.filter(line=>!recent.has(line));
+   return pick(unheard.length?unheard:fresh.length?fresh:options,st.seed,'live-delivery|'+stage+'|'+st.steps.length);
+  }
   const mine=!st.ownUsed?.fluff&&own(st,'fluff');if(mine){(st.ownUsed??={}).fluff=1;return fmt(mine,st);}
   const arr=FLUFF[voice(talker(st))];st.fluffs=(st.fluffs??hash(st.seed+'|fluff')%arr.length)+1;return fmt(arr[st.fluffs%arr.length],spoke(st));}
  function roll(st,risk,key,edge=0){
@@ -592,7 +703,7 @@
     if(lead){const answer=line?.text||clientClaim(st,d.line),spokenLead=st.speaker&&st.openingQuestion.kind!=='format'?clientClaim(st,lead):lead;push(st,'w',spokenLead+' '+answer,step.landed?'strong':'uneven',got);st.log.at(-1).answersQuestion={v:1,prompt:st.openingQuestion.prompt,lead:spokenLead};}
     else push(st,'w',line?.text||d.line,step.landed?'strong':'uneven',got,!line);
     annotate(st,st.log.length-1,ctx,line);
-    if(!step.landed)push(st,'stage',fluff(st),'fluff');crowdSays(st,got,key);continue;}
+    if(!step.landed)push(st,'stage',fluff(st,stage),'fluff');crowdSays(st,got,key);continue;}
    if(d.speaker==='Crowd'&&d.kind==='reaction'&&!step.landed&&!stumbled){stumbled=true;continue;} // replaced by the fluff above
    if(d.speaker===st.f.name){replied=true;
     if(stage==='open'&&st.director?.format==='callout')push(st,'stage',fmt('{F} comes down from the entrance and takes the second microphone.',st),'stage');
