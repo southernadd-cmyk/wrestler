@@ -53,6 +53,16 @@ const legacy=clone(probe);delete legacy.semantic;delete legacy.core.semanticSpee
 const unknown=clone(probe),last=S.latest(unknown.log,'f');delete last.entry.semantic;
 const neutral=S.select(unknown,{...ctx,strength:'hard strikes'});
 assert.equal(neutral.semantic.claim,'unclassified');assert.doesNotMatch(neutral.text,/hard strikes/);
+// Explicitly named strength, not ctx's style-derived estimate, is required.
+const ownCat=root.OfficePromoBanks.catalogue(promoBanks(w.id,f.id));
+const actual={kind:'response',claim:'strength',detail:'speed and aerial attacks',move:'rebut'};
+const ownCtx={...ctx,side:'w',stage:'answer',action:'turn',variant:'tu_strength',protected:'contextual-variant',hasMouthpiece:false,strength:'hard strikes'};
+const named=L.selectSemanticResponse(ownCat,ownCtx,'strength-test',{},actual);
+assert.ok(named);assert.match(named.text,/speed and aerial attacks/);assert.doesNotMatch(named.text,/hard strikes/);
+for(const bad of [{...actual,claim:'unclassified'},{...actual,claim:'pace'},{...actual,detail:null}])assert.equal(L.selectSemanticResponse(ownCat,ownCtx,'strength-test',{},bad),null);
+for(const patch of [{protected:'recorded-argument'},{protected:'recorded-evidence'},{hasMouthpiece:true},{variant:'tu_record'}])assert.equal(L.selectSemanticResponse(ownCat,{...ownCtx,...patch},'strength-test',{},actual),null);
+const recent=L.selectSemanticResponse(ownCat,ownCtx,'strength-test',{recent:[named.id]},actual);
+if(recent)assert.notEqual(recent.id,named.id);
 // Opening interviewer questions now have an explicit answer before the argument.
 const Dir=root.OfficePromoDirector;
 for(const format of ['interview','faceoff','callout','address','mouthpiece']){
@@ -121,13 +131,13 @@ assert.ok(fallbackLines.open.size>=6&&fallbackLines.answer.size>=6,'both excepti
 console.log('PASS graph fallback variety: '+JSON.stringify(fallbackCounts)+' replacements; '+fallbackLines.open.size+'/'+fallbackLines.answer.size+' distinct opening/answer replies; graph and outcome parity.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
-const ackIds=new Set();
+const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;
 const reached=new Set();
 for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
  const foe=opponents.filter(x=>x.id!==worker.id)[(i+j)% (opponents.filter(x=>x.id!==worker.id).length)];
  const c=contract(worker,foe,i*12+j),promo=D.PROMOS[(i+j)%D.PROMOS.length];
  const opts={...options,formats:true,banks:promoBanks(worker.id,foe.id)};
- const x=M.begin(c,worker,foe,null,null,promo,opts),y=M.begin(c,worker,foe,null,null,promo,{...opts,semantic:false}),old=clone(x);delete old.semantic.variety;
+ const x=M.begin(c,worker,foe,null,null,promo,opts),y=M.begin(c,worker,foe,null,null,promo,{...opts,semantic:false}),old=clone(x);delete old.semantic.variety;delete old.authoredDialogue.reviewedContext;
  while(x.stage!=='done'){
   const round=M.ROUNDS[x.round].id,choices=M.choices(x);
   assert.deepEqual(Array.from(choices,o=>o.id),Array.from(M.choices(y),o=>o.id));
@@ -154,9 +164,17 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
     assert.equal(sem.replyTo,previous,'reply must address immediately preceding spoken line');
     const prior=x.log[sem.replyTo];assert.notEqual(prior.side,e.side);if(sem.source.startsWith('authored-response:')){
      assert.equal(sem.source,'authored-response:'+e.authoredId);assert.ok(!e.composedId);
-     assert.equal(e.dialogueSlot.stage,'push');assert.equal(e.dialogueSlot.action,'acknowledge');
-     assert.ok(!e.dialogueSlot.protected);assert.ok(e.side==='f'||['unclassified','agreement','end'].includes(sem.claim));
-     authoredResponses++;ackIds.add(e.authoredId);
+     if(e.dialogueSlot.action==='acknowledge'){
+      assert.equal(e.dialogueSlot.stage,'push');assert.ok(!e.dialogueSlot.protected);assert.ok(e.side==='f'||['unclassified','agreement','end'].includes(sem.claim));
+      authoredResponses++;ackIds.add(e.authoredId);
+     }else if(e.dialogueSlot.action==='press'){
+      assert.equal(e.dialogueSlot.stage,'push');assert.equal(e.side,'w');assert.ok(!e.dialogueSlot.protected);
+      assert.ok(sem.questionSource?.startsWith('semantic.'));assert.ok(x.authoredDialogue.composedUsed.includes(sem.questionSource));
+      assert.ok(e.line.endsWith('?'));authoredPress++;pressIds.add(e.authoredId);
+     }else{
+      assert.equal(e.dialogueSlot.action,'turn');assert.equal(e.side,'w');assert.equal(sem.claim,'strength');
+      assert.equal(sem.detail,prior.semantic?.detail);assert.ok(e.line.includes(sem.detail));authoredRebut++;
+     }
     }else assert.equal(e.composedId,sem.source);
     if(e.side==='w'){
      assert.equal(sem.claim,prior.semantic?.claim||'unclassified');
@@ -171,5 +189,7 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
 }
 assert.ok(responded>100&&counters>100&&press>0&&authoredSources>0&&graphSources>0&&unclassified>0&&reached.size>=8);
 assert.ok(authoredResponses>0&&ackIds.size>3,'reviewed authored acknowledgements are reachable');
+assert.ok(authoredPress>0&&pressIds.size>1,'reviewed character press lines reached');
+console.log('PASS reviewed contextual responses: '+authoredPress+' authored press lead-ins ('+pressIds.size+' distinct), '+authoredRebut+' explicitly named strength rebuttals in live sample; direct strength fixture passed.');
 console.log('PASS reviewed authored acknowledgements: '+authoredResponses+' utterances, '+ackIds.size+' distinct IDs; semantic provenance preserved.');
 console.log('PASS semantic promos: '+scenes+' paired scenes; '+responded+' classified responses across '+reached.size+' reached topics, '+unclassified+' unclassified responses, '+counters+' counters, '+press+' presses, '+authoredSources+' authored and '+graphSources+' graph claim sources; '+protectedN+' protected slots; save/resume and numerical/contract parity.');
