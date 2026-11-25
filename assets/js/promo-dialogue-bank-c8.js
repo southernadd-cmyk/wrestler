@@ -380,4 +380,47 @@
   }
 };
  for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI7={
+  "ash": {
+    "w": [
+      "Watched my matches? Good. Watch this one from the inside.",
+      "You've done the reading. Now do the wrestling."
+    ],
+    "f": [
+      "Watch the mistakes. Drill the corrections. That's my preparation.",
+      "I study the point where the hold goes wrong. Work starts there."
+    ]
+  },
+  "elodie": {
+    "w": [
+      "What did you learn from studying me: how I think, or merely what I did once?",
+      "You've prepared an answer to my previous question. What if I ask a different one tonight?"
+    ],
+    "f": [
+      "I study the moment an opponent makes an assumption about me. That is often where the interesting choices begin.",
+      "My preparation is to test why a response works, so I can recognise when the same answer is no longer useful."
+    ]
+  },
+  "bashir": {
+    "w": [
+      "You've watched the demonstration. Now show me you can do the exercise with somebody resisting.",
+      "Good homework. But don't mistake learning my habits for learning how to wrestle me."
+    ],
+    "f": [
+      "I watch the point where a pupil loses the position. That tells me what we need to practise.",
+      "I prepare by drilling a sound escape before asking anyone to attempt the difficult entry."
+    ]
+  },
+  "cleo": {
+    "w": [
+      "Your preparation identifies a pattern. Demonstrate that the pattern persists when I resist your plan.",
+      "Previous observations support a prediction, not a guaranteed result. Test it."
+    ],
+    "f": [
+      "I study which decisions led to a loss of control, then test alternatives against the same conditions.",
+      "Preparation requires identifying the assumptions behind a move and practising a response when they fail."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
