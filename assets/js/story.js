@@ -587,6 +587,130 @@
    V('gr_turn',c=>c.grudge,'Thank them, then turn on the opponent','Warmth for them, ice for {F}.',['Thank you, all of you. Not you, {F}. You I will deal with in a minute.'],['Any time you are ready, {W}.'],{crowd:2,heat:2})
   ]
  });
+ // G3C: reviewed imagery is grounded in the contest and in the actual
+ // opening variant. Keep original IDs, conditions, effects and source
+ // fingerprints; only the presentation changes for opted-in scenes.
+ const groundedImagery={
+  "im_storm": {
+    "label": "Make the rivalry feel immediate",
+    "hint": "Give the tension a concrete setting.",
+    "lines": [
+      "Look at the gap between us, {F}. Two people with plenty left to settle, and a referee who's going to have to stand between them.",
+      "Listen to this room, {F}. We've got a lot left to settle. Let's stop giving them speeches and get on with it.",
+      "There's a reason we're both standing here, {F}. This hasn't gone away. We can deal with it in front of everybody tonight."
+    ],
+    "reply": [
+      "I'm standing right here, {W}. You haven't settled anything yet.",
+      "I'm not going anywhere, {W}. We'll see what you've got."
+    ]
+  },
+  "im_chess": {
+    "label": "Challenge their ability to think ahead",
+    "hint": "Make their technical planning the subject of the exchange.",
+    "lines": [
+      "You like to know what comes next, {F}. Get hold of my wrist and see whether I give you the next position you wanted.",
+      "You've got a plan for the first hold, {F}. What about the second when I'm not where you expect me to be?",
+      "You can think two holds ahead, {F}. I'm not obliged to give you either of them."
+    ],
+    "reply": [
+      "I plan for the position I'm actually in, {W}. Try me.",
+      "I'll have another answer ready when you change the position, {W}."
+    ]
+  },
+  "im_bull": {
+    "label": "Expose the space their charge leaves",
+    "hint": "Turn aggression into a question of timing.",
+    "lines": [
+      "Come straight at me, {F}. Watch where your feet end up when I take half a step to the side.",
+      "You want to close that distance in a hurry, {F}. I'm going to make you miss the space you thought I'd be in.",
+      "You can rush me all you like, {F}. I'm looking for the moment I can move out of your way."
+    ],
+    "reply": [
+      "You'll have to get out of my way first, {W}.",
+      "You're assuming I'll give you that space, {W}. Come and find out."
+    ]
+  },
+  "im_ladder": {
+    "label": "Show why this match matters to your career",
+    "hint": "Make advancement depend on the opponent in front of you.",
+    "lines": [
+      "I want a better place on this card, {F}. I'm not asking the promoter to give it to me. I've got you in front of me.",
+      "I want my name further up that running order, {F}. This is the match I've got to get through first.",
+      "I'm not looking at the top of the bill tonight, {F}. I'm looking at the person between me and my next opportunity."
+    ],
+    "reply": [
+      "You're going to have to get past me before anybody moves your name, {W}.",
+      "Your next opportunity can wait, {W}. You've got a match with me first."
+    ]
+  }
+};
+ const groundedCallbacks={
+  "im_storm": {
+    "label": "Return to the unresolved rivalry",
+    "hint": "Return to the tension you raised at the start.",
+    "lines": [
+      "That's what I meant at the start, {F}. There's a lot left to settle between us.",
+      "We've both had our say now, {F}. The argument between us is still there."
+    ],
+    "reply": [
+      "I'm still here, {W}. Let's wrestle."
+    ]
+  },
+  "im_chess": {
+    "label": "Return to their technical planning",
+    "hint": "Recall your point about the next position.",
+    "lines": [
+      "That was my point, {F}. You don't get to choose every position we end up in.",
+      "Remember what I said about the next hold, {F}? You'll have to find it while I'm moving."
+    ],
+    "reply": [
+      "I'll adapt to the position you give me, {W}."
+    ]
+  },
+  "im_bull": {
+    "label": "Return to the space left by their charge",
+    "hint": "Recall your point about movement and timing.",
+    "lines": [
+      "That's what I meant about closing the distance, {F}. You still have to get me where you want me.",
+      "I'm still looking for that moment to move, {F}. You'll have to take it away from me."
+    ],
+    "reply": [
+      "You'll have to find that space first, {W}."
+    ]
+  },
+  "im_ladder": {
+    "label": "Return to the next career opportunity",
+    "hint": "Recall why this particular match matters.",
+    "lines": [
+      "That's why I'm looking at you, {F}, not the rest of the card. This is the match in front of me.",
+      "I'm not asking for another place on the bill, {F}. I'm here to wrestle you for the chance to move up."
+    ],
+    "reply": [
+      "Then get past me first, {W}."
+    ]
+  },
+  "fallback": {
+    "label": "Return to your opening argument",
+    "hint": "Bring the exchange back to your actual opening point.",
+    "lines": [
+      "That's the point I started with, {F}. It hasn't gone away just because we've been talking.",
+      "Let's come back to what I said at the start, {F}. That's still the point between us."
+    ],
+    "reply": [
+      "I heard you, {W}. We'll settle it in the ring."
+    ]
+  }
+};
+ function imageryPresentation(st,stage,id,v){
+  if(st.imageryStyle!==1||st.case||st.cases?.length||st.history?.length||st.memory?.recall||st.claim?.hasEvidence)return v;
+  let revised=null;
+  if(stage==='open'&&id==='imagery'&&Object.prototype.hasOwnProperty.call(groundedImagery,v.id))revised=groundedImagery[v.id];
+  if(stage==='answer'&&id==='callback'&&['cb_storm','cb_image'].includes(v.id)){
+   const opening=st.steps[0]?.variant;
+   revised=Object.prototype.hasOwnProperty.call(groundedCallbacks,opening)?groundedCallbacks[opening]:groundedCallbacks.fallback;
+  }
+  return revised?{...v,...revised,originalReply:v.reply}:v;
+ }
  function variantFor(st,stage,id){
   if(!st?.w||!VARIANTS[stage]?.[id])return null;
   const c=context(st),list=VARIANTS[stage][id].filter(v=>{try{return !!v.when(c)}catch(e){return false}});
@@ -595,7 +719,7 @@
   // when they have something else that fits; a deliberate repeat comes through the rivalry case.
   const fresh=list.filter(v=>!(st.avoid||[]).includes(v.id));
   const pool=fresh.length?fresh:list;
-  return pool[Math.floor(rng(st.seed,stage+'|'+id+'|variant|'+st.steps.map(s=>s.id).join('>'))*pool.length)];
+  return imageryPresentation(st,stage,id,pool[Math.floor(rng(st.seed,stage+'|'+id+'|variant|'+st.steps.map(s=>s.id).join('>'))*pool.length)]);
  }
  const offered=(stage,st)=>Object.keys(NODES[stage]||{}).filter(id=>{const w=NODES[stage][id].when;if(!w||!st)return true;try{return !!w(context(st))}catch(e){return false}});
  // v0.3.12 THE ARGUMENT UNDERNEATH. A rivalry case rides on one of the existing nodes, so the flow and
@@ -719,7 +843,7 @@
    if(st.case)st.dialogue.push({speaker:st.f.name,line:st.case.raisedBy==='f'?(st.case.lead?st.case.lead+' ':'')+st.case.counter:st.case.counter,kind:'opponent',answerTo:st.claim.opening,case:st.case.issue});
    else {
     const template=v&&!exposed?pick(v.reply,st.seed,'reply-'+v.id):null;
-    const speechSource=st.semanticSpeech&&template?root.OfficePromoSemantics.source(v.id,template):null;
+    const speechSource=st.semanticSpeech&&template?root.OfficePromoSemantics.source(v.id,v.originalReply?pick(v.originalReply,st.seed,'reply-'+v.id):template):null;
     st.dialogue.push({speaker:st.f.name,line:template?format(template,st):reactionToClaim(st,id),kind:'opponent',answerTo:st.claim.opening,...(speechSource?{speechSource,...(template.includes('{STRENGTH}')?{speechDetail:st.claim.strength}:{})}:{})});
    }
    st.stage='answer';
@@ -734,7 +858,7 @@
     return st;
    }
    const template=v&&!(id==='personal'&&!st.claim?.hasEvidence)?pick(v.reply,st.seed,'reply-'+v.id):null;
-   const speechSource=st.semanticSpeech&&template?root.OfficePromoSemantics.source(v.id,template):null;
+   const speechSource=st.semanticSpeech&&template?root.OfficePromoSemantics.source(v.id,v.originalReply?pick(v.originalReply,st.seed,'reply-'+v.id):template):null;
    const response=id==='personal'&&!st.claim?.hasEvidence?'You still have no evidence, '+st.w.short+'. Now you are trying to make the insult louder.':
     template?format(template,st):
     id==='turn'?'You have finally listened to what I actually said. Let us see if you can answer it.':

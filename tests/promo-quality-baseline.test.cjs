@@ -42,6 +42,9 @@ const opponentOld=new Set(),opponentNew=new Set(),opponentActors=new Set(),oppon
 function withoutOpponentWords(entries){return entries.map(e=>e.side==='f'?{...e,line:null}:e);}
 let flowPairs=0,directCount=0,removedCues=0,flowWordsSaved=0,flowFullPairs=0;const directFormats=new Map(),directVariants=new Set();
 let followupPairs=0,followupChanges=0;const followupActors=new Set(),followupClaims=new Set();
+let imageryPairs=0,imageryChanges=0,imageryCallbacks=0;const imageryVariants=new Set(),imageryActors=new Set();
+const graphWithoutWords=s=>{const {imageryStyle,...rest}=s;return {...rest,dialogue:s.dialogue.map(e=>({...e,line:null})),steps:s.steps.map(e=>({...e,label:null})),result:null};};
+const stepsWithoutLabels=s=>s.steps.map(e=>({...e,label:null}));
 function flowOther(entries){return entries.filter(e=>e.side!=='w'&&e.kind!=='cue');}
 function slot(k){if(!slotCoverage.has(k))slotCoverage.set(k,{available:new Set(),selected:new Set(),spoken:0,authored:0,composed:0,graph:0,protected:0,semanticBypass:0});return slotCoverage.get(k);}
 for(const [i,w] of roster.entries()){
@@ -71,6 +74,8 @@ for(const [i,w] of roster.entries()){
    if(oldOpening){delete oldOpening.openingFlow;Mic.choose(oldOpening,o.id);}
    if(oldFlow){assert.ok(Mic.choices(oldFlow).some(x=>x.id===o.id),'G3A full-scene choice parity');Mic.choose(oldFlow,o.id);}
    const variant=round!=='push'&&root.OfficeStory.Graph.variantFor(st.core,round,o.id)?.id;
+   const oldImagery=st.core.imageryStyle===1&&(round==='open'&&o.id==='imagery'||round==='answer'&&o.id==='callback')?JSON.parse(JSON.stringify(st)):null;
+   if(oldImagery){delete oldImagery.core.imageryStyle;Mic.choose(oldImagery,o.id);}
    const oldVoice=st.coreVoiceStyle?.v===1&&voiceVariants.has(variant)?JSON.parse(JSON.stringify(st)):null;
    if(oldVoice){delete oldVoice.coreVoiceStyle;Mic.choose(oldVoice,o.id);}
    const oldExtended=st.coreVoiceExtension===1&&(extendedVariants.has(variant)||variant==='pe_respect')?JSON.parse(JSON.stringify(st)):null;
@@ -99,6 +104,25 @@ for(const [i,w] of roster.entries()){
      assert.match(a.composedId||a.semantic?.questionSource||'',/\.g3b\./);
      assert.ok(!/[{}]/.test(a.line));
     }
+   }
+   if(oldImagery){
+    imageryPairs++;
+    assert.equal(JSON.stringify(graphWithoutWords(st.core)),JSON.stringify(graphWithoutWords(oldImagery.core)),'G3C graph/effects parity');
+    assert.equal(JSON.stringify(stepsWithoutLabels(st)),JSON.stringify(stepsWithoutLabels(oldImagery)),'G3C step parity');
+    for(const k of ['meter','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(oldImagery[k]),'G3C '+k);
+    const now=st.log.slice(before),old=oldImagery.log.slice(before);
+    assert.equal(JSON.stringify(now.filter(e=>!['w','f'].includes(e.side))),JSON.stringify(old.filter(e=>!['w','f'].includes(e.side))),'G3C crowd and stage parity');
+    const x=now.find(e=>e.side==='w'),y=old.find(e=>e.side==='w');
+    if(x&&y&&x.line!==y.line){
+     imageryChanges++;imageryActors.add(w.id);imageryVariants.add(variant);
+     assert.ok(!x.authoredId&&!x.composedId&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.speaker&&!st.arc);
+     assert.ok(!/[{}]/.test(x.line));
+     if(round==='open')assert.doesNotMatch(x.line,/\bstorm\b|\bchess\b|\bbull\b|\bladder\b/i);
+     else {imageryCallbacks++;assert.doesNotMatch(x.line,/storm was coming|Remember what I said about (that old clock|the brass bell|the lights|that curtain|this microphone)/i);}
+     const xf=now.find(e=>e.side==='f'),yf=old.find(e=>e.side==='f');
+     assert.equal(JSON.stringify(xf?.semantic),JSON.stringify(yf?.semantic),'G3C preserves semantic claim and source');
+    }
+    assert.equal(JSON.stringify(Mic.choices(st).map(o=>o.id)),JSON.stringify(Mic.choices(oldImagery).map(o=>o.id)),'G3C available decisions unchanged');
    }
    if(oldOpening){
     flowPairs++;
@@ -237,6 +261,8 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  console.log('PASS G3A opening flow: '+directCount+'/'+flowPairs+' direct answers across '+directFormats.size+' formats and '+directVariants.size+' variants; '+flowWordsSaved+' stock lead words and '+removedCues+' redundant transcript cues removed; '+flowFullPairs+' full scenes retain graph and result parity.');
  console.log('G3B benchmark: '+followupChanges+' changed turns in '+followupPairs+' press exchanges; '+followupActors.size+' speakers; claims '+[...followupClaims].join(', '));
  assert.ok(followupPairs>0&&followupChanges>10&&followupActors.size>5&&followupClaims.size>=2,'G3B benchmark live reach');
+ console.log('G3C imagery: '+imageryChanges+'/'+imageryPairs+' changed turns, '+imageryActors.size+' speakers, '+imageryCallbacks+' grounded callbacks, variants '+[...imageryVariants].join(', '));
+ assert.ok(imageryChanges>10&&imageryActors.size>5&&imageryVariants.size>=3,'G3C live reach');
  assert.ok(extendedChanges>70&&extendedActors.size>20&&extendedChangedVariants.size===extendedVariants.size&&extendedNew.size>extendedOld.size,'G2D extended player voice coverage');
  console.log('PASS G2D player voice: '+extendedChanges+'/'+extendedPairs+' reviewed/protected target turns; '+extendedActors.size+' speakers; '+extendedOld.size+' -> '+extendedNew.size+' distinct normalized lines; variants '+JSON.stringify(Object.fromEntries(extendedChangedVariants))+'; unchanged graph, options and consequences.');
  assert.ok(opponentChanges>100&&opponentActors.size>=10&&opponentChangedVariants.size===opponentVariants.size&&opponentNew.size>opponentOld.size,'G2C opponent voice coverage');
