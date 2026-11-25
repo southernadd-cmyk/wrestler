@@ -78,4 +78,15 @@
  ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD2={
+  "bao": [
+    "Watch the hands. When a grip is broken, everyone can see who had to give it up.",
+    "Where the weight goes when we lock up. The contest will answer that without another accusation."
+  ],
+  "cass": [
+    "Well, there'll be a referee and a ring full of witnesses. Even I can't talk my way round that.",
+    "They can see whether my brilliant ideas survive contact with you. That's a much better experiment."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidencePressRepliesD2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -89,4 +89,15 @@
  ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD2={
+  "alina": [
+    "They can see whether we keep our word once the match gets difficult. That's what matters to me.",
+    "We owe them an honest contest. Let them judge us by how we wrestle it."
+  ],
+  "eira": [
+    "A legal hold, a legal escape, a legal finish. All three can be observed.",
+    "The referee can enforce the rules and record the result. That is a fair test; an accusation is not."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidencePressRepliesD2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
