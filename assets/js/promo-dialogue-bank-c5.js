@@ -78,4 +78,11 @@
  ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressReplies={
+ "bronte": [
+  "Watch where we put our weight and how we get free. The proof's in the work, not the talk.",
+  "We'll see what holds together when the pressure comes on. That's something nobody needs to take on trust."
+ ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

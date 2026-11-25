@@ -78,4 +78,11 @@
  ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressReplies={
+ "dax": [
+  "Whether you can solve the problem I put in front of you. They'll see every move we make.",
+  "They'll see if you can get out of the positions I put you in. That's something we can actually test."
+ ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
