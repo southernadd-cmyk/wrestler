@@ -6,6 +6,7 @@ const localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,Str
 vm.runInNewContext(core,{window:root,localStorage,Date,Math,JSON,console});
 const {OfficeMic:M,OfficeData:D,OfficePromoDirector:Dir,OfficeStory:{Graph},OfficeSigning:Signing}=root;
 const clone=x=>JSON.parse(JSON.stringify(x)),stats={},angles={},counts={};
+const closeOld=new Set(),closeNew=new Set();let changedClose=0,comparedClose=0;
 const crowdOld=new Set(),crowdNew=new Set();let oldRepeats=0,newRepeats=0,oldTotal=0,newTotal=0;
 const norm=line=>line.replace(/Nova|Bell|Magnus|Graves|Mara|Vale/g,'<name>');
 const w=D.ALL.find(x=>x.id==='nova'),f=D.ALL.find(x=>x.id==='magnus'),mouth=D.ALL.find(x=>x.id==='mara');
@@ -30,7 +31,15 @@ for(let i=0;i<240;i++){
   const round=M.ROUNDS[s.round].id,choices=M.choices(s);
   if(round==='close')assert.equal(choices.length,Graph.choices('close',s.core).length,'all valid promises still offered');
   const chosen=choices[(i+pattern.length)%choices.length].id,copy=clone(s);
+  const oldClose=round==='close'?clone(s):null,at=s.log.length;
+  if(oldClose){delete oldClose.closingVariety;M.choose(oldClose,chosen);}
   M.choose(s,chosen);M.choose(copy,chosen);M.choose(previous,chosen);
+  if(oldClose){
+   assert.equal(JSON.stringify(s.core),JSON.stringify(oldClose.core),'closing presentation cannot alter graph');
+   for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature'])assert.equal(JSON.stringify(M.result(s)[k]),JSON.stringify(M.result(oldClose)[k]),'closing parity '+k);
+   const a=s.log.slice(at).find(e=>e.side==='f'),b=oldClose.log.slice(at).find(e=>e.side==='f');
+   if(a&&b){comparedClose++;closeNew.add(norm(a.line));closeOld.add(norm(b.line));if(a.line!==b.line){changedClose++;assert.ok(!s.speaker&&!s.core.case&&!s.core.claim?.hasEvidence);assert.ok(!/[{}]/.test(a.line));}}
+  }
   assert.equal(JSON.stringify(s),JSON.stringify(copy),'serialized mid-promo resume exact');
   pattern.push(round);
  }
@@ -69,5 +78,7 @@ assert.ok(Signing.eligible({...c,blowoff:true}));
 assert.equal(oldTotal,newTotal,'no hidden reaction or scoring changes');
 assert.equal(newRepeats,0,'new scenes never repeat a crowd line');
 assert.ok(oldRepeats>newRepeats&&crowdNew.size>crowdOld.size*2,'substantial diversity improvement');
+assert.ok(changedClose>20&&closeNew.size>closeOld.size,'closing responses must vary');
+console.log('PASS closing variety: '+changedClose+'/'+comparedClose+' changed replies; '+closeOld.size+' -> '+closeNew.size+' distinct; graph and promise parity.');
 console.log('PASS crowd variety: '+oldRepeats+'/'+oldTotal+' -> '+newRepeats+'/'+newTotal+' within-scene repeats; '+crowdOld.size+' -> '+crowdNew.size+' distinct lines; gameplay parity.');
 console.log('PASS five promo formats: '+JSON.stringify(stats)+'; decisions by format '+JSON.stringify(counts)+'; evidence, vows, signing eligibility and exact resume preserved.');
