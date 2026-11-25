@@ -129,4 +129,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressRepliesD7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD8={
+  "rocco": [
+    "Let them see what happens when you meet resistance. A speech won't do that.",
+    "I can show you what my wrestling is worth. The result will speak for itself."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressRepliesD8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

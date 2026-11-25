@@ -132,4 +132,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressRepliesD7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD8={
+  "sasha": [
+    "The punchline comes after the setup. Watch what happens when one of us stops the other getting there.",
+    "The crowd can decide who delivered the better act. I'd rather give them a finish than another bit of gossip."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressRepliesD8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

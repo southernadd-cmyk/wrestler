@@ -125,4 +125,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD8={
+  "soraya": [
+    "Under the same rules, with the same opportunity to earn a fall, we can establish a result. Those are my terms.",
+    "Let the contest test what we have each promised to deliver. I accept that condition."
+  ],
+  "theo": [
+    "Define the test as successful execution against resistance. We can observe that without relying on the allegation.",
+    "The official result establishes a winner. The wrestling establishes how the result was achieved. Neither proves a separate charge."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressRepliesD8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
