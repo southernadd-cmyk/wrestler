@@ -7,7 +7,23 @@ const fs=require('node:fs'),vm=require('node:vm');
 const {core,promoBanks}=require('./_source.cjs');
 const store=new Map(),root={addEventListener(){}};
 const localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)};
-vm.runInNewContext(core,{window:root,localStorage,Date,Math,JSON,console});
+// Test-only observation at the actual bank selection boundary. The shipped
+// engine is unchanged. Compare the balanced audit against the original
+// uninstrumented source before trusting the observations.
+const selectionAnchor=' function pickAuthored(st,ctx){';
+assert.equal(core.split(selectionAnchor).length,2,'audit selection boundary changed; update instrumentation');
+const observedCore=core.replace(selectionAnchor,` function pickAuthored(st,ctx){
+  if(!root.__promoDemandObserver||!ctx||!st.authoredDialogue)return pickAuthoredOriginal(st,ctx);
+  const interested=ctx.stage==='answer'&&ctx.action==='turn'||ctx.stage==='push'&&['press','acknowledge'].includes(ctx.action);
+  if(!interested)return pickAuthoredOriginal(st,ctx);
+  const mem=st.authoredDialogue;
+  const before={...mem,used:[...(mem.used||[])],recent:[...(mem.recent||[])],composedUsed:[...(mem.composedUsed||[])]};
+  const line=pickAuthoredOriginal(st,ctx);
+  root.__promoDemandObserver(st,ctx,before,line,catalogueFor(st),st.seed+'|'+st.steps.length+'|'+ctx.side);
+  return line;
+ }
+ function pickAuthoredOriginal(st,ctx){`);
+vm.runInNewContext(observedCore,{window:root,localStorage,Date,Math,JSON,console});
 const {OfficeData:D,OfficeMic:Mic,OfficeRoom:Room}=root;
 const roster=[...new Map((D.ALL||[...D.TALENT,...D.FOES]).map(w=>[w.id,w])).values()].sort((a,b)=>a.id.localeCompare(b.id));
 const opponents=[...D.FOES].sort((a,b)=>a.id.localeCompare(b.id));
@@ -330,3 +346,132 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  console.log('PASS G1 closing recovery: '+JSON.stringify(closingComparison)+' across '+closingPairs+' paired closings; unchanged graph and consequences.');
 }
 console.log('PASS promo baseline: completed deterministic scenes; descriptive metrics are not quality thresholds.');
+
+// G4A — a separate, balanced, directed workload. Keep the historical
+// 1,280-scene benchmark unchanged so its comparisons remain meaningful.
+// All roster members face and speak against other roster members, rather
+// than limiting the opposition to D.FOES.
+if(process.env.PROMO_AUDIT_LEGACY!=='1'){
+ const L=root.OfficePromoDialogue,S=root.OfficePromoSemantics;
+ const demand=new Map(),actorStats=new Map(),topicStats=new Map(),skipped=new Map();
+ const observedIds=new Set(),loadedIds=new Set(),actualAuthoredIds=new Set();
+ const reasons=['authored','no_bank','no_authored_slot','no_reviewed_topic','reviewed_but_ineligible','history_exhausted','unsupported_move','semantic_guard','no_preceding_response','policy_disabled','unexpected_fallback'];
+ const zero=()=>Object.fromEntries(reasons.map(r=>[r,0]));
+ const addDemand=(map,key,reason)=>{if(!map.has(key))map.set(key,zero());map.get(key)[reason]++;};
+ const count=x=>Object.values(x).reduce((a,b)=>a+b,0);
+ const isEligible=r=>!['semantic_guard','no_preceding_response','policy_disabled'].includes(r);
+ const describe=x=>{const eligible=Object.entries(x).filter(([r])=>isEligible(r)).reduce((a,[,n])=>a+n,0);return {attempts:count(x),eligible,authored:x.authored,authoredPct:pct(x.authored,eligible),reasons:Object.fromEntries(Object.entries(x).filter(([,n])=>n))};};
+ const bankReview=(row,sem)=>L.reviewedBankReuseV2[row.id]?.slice(1).includes(sem.claim);
+ const selectRoutes=(cat,ctx,seed,mem,sem)=>{
+  if(mem.reviewedAck===1&&ctx.stage==='push'&&ctx.action==='acknowledge'&&(ctx.side==='f'||['unclassified','agreement','end'].includes(sem.claim))){
+   const own=L.selectAcknowledgement(cat,ctx,seed,mem);if(own)return own;
+  }
+  if(mem.reviewedContext===1){const own=L.selectSemanticResponse(cat,ctx,seed,mem,sem);if(own)return own;}
+  if([1,2].includes(mem.semanticBankReuse))return L.selectReviewedBankResponse(cat,ctx,seed,mem,sem,mem.semanticBankReuse);
+  return null;
+ };
+ let activeScene=null,observations=0,emittedChecks=0,sceneCount=0;
+ root.__promoDemandObserver=(st,ctx,mem,line,cat,seed)=>{
+  assert.ok(activeScene,'observer must only run on the balanced workload');
+  const prev=S.latest(st.log,ctx.side==='w'?'f':'w')?.entry;
+  const incoming=prev?.semantic?.claim||'unclassified';
+  const move=ctx.side==='w'?(ctx.action==='turn'?'rebut':ctx.action):ctx.action==='turn'?'counter':ctx.action==='press'?'press_counter':'settle';
+  const sem=line?.semantic;
+  const outgoing=sem?.claim||null;
+  const owner=ctx.speaker.id,ownRows=cat.lines(ctx.speaker.role,owner);
+  let reason;
+  if(!st.semantic)reason='policy_disabled';
+  else if(!S.allowed(st)||ctx.hasMouthpiece)reason='semantic_guard';
+  else if(!prev||ctx.side==='f'&&prev.semantic?.kind!=='response')reason='no_preceding_response';
+  else if(line&&!line.composed&&sem){reason='authored';observedIds.add(line.id);}
+  else if(!sem)reason='unexpected_fallback';
+  else if(!ownRows.length)reason='no_bank';
+  else if(move==='press_counter')reason='unsupported_move';
+  else {
+   const now=selectRoutes(cat,ctx,seed,mem,sem);
+   const fresh=selectRoutes(cat,ctx,seed,{...mem,used:[],recent:[]},sem);
+   if(now)reason='unexpected_fallback';
+   else if(fresh)reason='history_exhausted';
+   else if(move==='acknowledge'&&!['unclassified','agreement','end'].includes(sem.claim))reason='unsupported_move';
+   else{
+    const exact=ownRows.filter(r=>r.stage===ctx.stage&&r.action===ctx.action&&r.side===ctx.side);
+    const reviewed=ctx.action==='turn'?ownRows.filter(r=>r.side===ctx.side&&bankReview(r,sem)):[];
+    if(reviewed.length)reason='reviewed_but_ineligible';
+    else if(!exact.length)reason='no_authored_slot';
+    else reason='no_reviewed_topic';
+   }
+  }
+  const role=ctx.side==='w'?'player':'opponent';
+  const key=[role,move,incoming,outgoing||'-'].join('|');
+  addDemand(topicStats,key,reason);addDemand(demand,[owner,key].join('|'),reason);
+  addDemand(actorStats,owner+'|'+role,reason);
+  if(!isEligible(reason))inc(skipped,reason);
+  activeScene.push({side:ctx.side,stage:ctx.stage,action:ctx.action,owner,authoredId:line&&!line.composed&&sem?line.id:null,semantic:sem?{claim:sem.claim,move:sem.move,replyTo:sem.replyTo}:null,reason});
+  observations++;
+ };
+ // Equal numbers of assigned player/opponent scenes per roster identity.
+ // Choice policy stresses rebuttals and follow-ups deliberately, so this is
+ // a demand-discovery workload, not an estimate of ordinary player behaviour.
+ const playerAssignments=new Map(),opponentAssignments=new Map(),formatsSeen=new Map();
+ const samples=8;
+ const openingChoices=['proof','people','swagger','imagery','accusation','hometown','numbers','proof'];
+ const plainRoot={addEventListener(){}},plainStore=new Map();
+ const plainStorage={getItem:k=>plainStore.get(k)||null,setItem:(k,v)=>plainStore.set(k,String(v)),removeItem:k=>plainStore.delete(k)};
+ vm.runInNewContext(core,{window:plainRoot,localStorage:plainStorage,Date,Math,JSON,console});
+ for(const [i,w] of roster.entries())for(let j=0;j<samples;j++){
+  const f=roster[(i+1+j*9)%roster.length],p=D.PROMOS[(i+j)%D.PROMOS.length];
+  assert.notEqual(w.id,f.id,'balanced opponent cannot be self');
+  inc(playerAssignments,w.id);inc(opponentAssignments,f.id);
+  const c={id:'promo-demand-'+w.id+'-'+j,wid:w.id,rid:f.id,pid:p.id,eventAbs:300+j,slot:['opener','mid','feature','main'][j%4],minutes:12,finish:finishes[j%4],feudHeat:j%2?55:0};
+  const rival=j%2?{heat:55,matches:2,closed:false}:null;
+  const banks=promoBanks(w.id,f.id);
+  for(const bank of banks)for(const row of bank.rows)loadedIds.add(bank.owner+'.'+row[0]);
+  const opts={directed:true,formats:true,dialogue:true,authored:true,banks,composition:true,semantic:true};
+  const st=Mic.begin(c,w,f,rival,null,p,opts);
+  // One scene per identity verifies the observation hook cannot affect
+  // transcript, state, or result compared with the uninstrumented engine.
+  const plain=j===0?plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts):null;
+  inc(formatsSeen,st.director?.format||'legacy');
+  activeScene=[];
+  for(let step=0;st.stage!=='done';step++){
+   assert.ok(step<12,'balanced demand scene must terminate');
+   const round=Mic.ROUNDS[st.round]?.id,choices=Mic.choices(st);
+   const desired=round==='open'?openingChoices[j]:round==='answer'?'turn':round==='push'?(j%3===0?'acknowledge':'press'):['vow','clean','question','finisher'][j%4];
+   const id=(choices.find(o=>o.id===desired)||choices[0]).id;
+   const before=st.log.length,observedBefore=activeScene.length;
+   Mic.choose(st,id);
+   if(plain){plainRoot.OfficeMic.choose(plain,id);assert.equal(JSON.stringify(st),JSON.stringify(plain),'G4A observation changes live state');}
+   const spoken=st.log.slice(before);
+   for(const row of activeScene.slice(observedBefore)){
+    const e=spoken.find(e=>e.side===row.side&&e.dialogueSlot?.stage===row.stage&&e.dialogueSlot?.action===row.action);
+    assert.ok(e,'observed selection must be emitted');
+    if(row.semantic){assert.equal(e.semantic?.claim,row.semantic.claim);assert.equal(e.semantic?.move,row.semantic.move);assert.equal(e.semantic?.replyTo,row.semantic.replyTo);}
+    if(row.authoredId)assert.equal(e.authoredId,row.authoredId,'observed authored line must be spoken');
+    emittedChecks++;
+   }
+   for(const e of spoken)if(e.authoredId)actualAuthoredIds.add(e.authoredId);
+  }
+  assert.ok(Mic.result(st),'completed demand scene');
+  if(plain)assert.equal(JSON.stringify(Mic.result(st)),JSON.stringify(plainRoot.OfficeMic.result(plain)),'G4A result parity');
+  activeScene=null;sceneCount++;
+ }
+ delete root.__promoDemandObserver;
+ assert.equal(sceneCount,roster.length*samples);
+ assert.equal(emittedChecks,observations);
+ for(const w of roster){assert.equal(playerAssignments.get(w.id),samples);assert.equal(opponentAssignments.get(w.id),samples);assert.ok(actorStats.has(w.id+'|player'),'missing player demand '+w.id);assert.ok(actorStats.has(w.id+'|opponent'),'missing opponent demand '+w.id);}
+ assert.equal([...topicStats.values()].reduce((n,x)=>n+x.unexpected_fallback,0),0,'audit must explain all observed fallbacks');
+ const totals=zero();for(const x of topicStats.values())for(const r of reasons)totals[r]+=x[r];
+ const rank=(a,b)=>b.eligible-b.authored-(a.eligible-a.authored)||a.key.localeCompare(b.key);
+ const topics=[...topicStats].map(([key,x])=>({key,...describe(x)})).sort(rank);
+ const actors=[...actorStats].map(([key,x])=>({key,...describe(x)})).sort(rank);
+ const detail=[...demand].map(([key,x])=>({key,...describe(x)})).sort(rank);
+ const report={scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
+ console.log('G4A DEMAND SUMMARY '+JSON.stringify({...report,topics:undefined,actors:undefined,detail:undefined}));
+ for(const x of topics)console.log('G4A TOPIC '+JSON.stringify(x));
+ for(const x of actors)console.log('G4A ACTOR '+JSON.stringify(x));
+ // Compact per-character topic-level rows in CI logs, and full detail in
+ // optional JSON; no new workflow or artifact upload is needed.
+ for(const w of roster)console.log('G4A GAPS '+w.id+' '+JSON.stringify(detail.filter(x=>x.key.startsWith(w.id+'|')&&x.eligible>x.authored).map(x=>[x.key.slice(w.id.length+1),x.eligible,x.authored,x.reasons])));
+ if(process.env.PROMO_DEMAND_JSON)fs.writeFileSync(process.env.PROMO_DEMAND_JSON,JSON.stringify(report,null,2));
+ console.log('PASS G4A demand audit: '+sceneCount+' balanced scenes; '+observations+' observed and emitted decisions; all '+roster.length+' characters in both roles; '+roster.length+' uninstrumented parity scenes.');
+}
