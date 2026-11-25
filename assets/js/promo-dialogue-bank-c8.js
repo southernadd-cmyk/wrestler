@@ -234,4 +234,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceAcknowledgementsG5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG6={
+  "ash": [
+    "Fair. Didn't see it. Can't say it.",
+    "Correct. Leave that out."
+  ],
+  "bashir": [
+    "Good correction. I wouldn't let a pupil pass off a guess as a lesson learned.",
+    "Fair point, that. We teach from what we've seen, not from what we'd like to have seen."
+  ],
+  "cleo": [
+    "Accepted. The claim has not survived verification.",
+    "Correct. An anticipated result is not admissible as an observed one."
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

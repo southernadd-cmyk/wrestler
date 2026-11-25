@@ -154,4 +154,15 @@
   ]
 };
  for(const pack of root.OfficePromoPilot)for(const [j,text] of (strengthCountersF8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const evidenceAcknowledgementsG6={
+  "nova": [
+    "That's a fair correction. I can analyse a likely outcome, but I cannot record it as an actual one.",
+    "I accept that distinction. Let's test what we know in the ring rather than extrapolate beyond it."
+  ],
+  "magnus": [
+    "Very well. I shall not dress a supposition in the ceremonial robes of a fact.",
+    "A fair objection. Even I cannot award myself the luxury of an unearned verdict."
+  ]
+};
+ for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
