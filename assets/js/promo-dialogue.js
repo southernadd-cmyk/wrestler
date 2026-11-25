@@ -110,14 +110,21 @@
  }
  // Relevance precedes a stable seeded tie-break, but a fresh eligible line always beats a repeated one.
  function hash(s){let h=2166136261;for(const ch of String(s)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
- function select(cat,ctx,seed,{used=[],recent=[]}={}){
-  const options=cat.candidates(ctx).filter(r=>!used.includes(r.id));
+ // Reviewed generic acknowledgement lines. Exact text matching prevents a
+ // future bank edit from inheriting approval. Selection remains owner/slot scoped.
+ const neutralAcknowledgements={w:new Set(["I accept that particular point; nothing further.","Fair. Fair credit to you.","All right, I see what you mean. Fair.","I'll take that point.","Yes. That's a fair point.","I can accept that. I still believe in what I'm doing.","That's fair. I'll take that on board.","All right, that's a good point. That point is yours.","That will do, then. I'll give you that one.","That's a fair point. I won't argue with it.","Reasonable enough. I can work with that.","Fair, I suppose.","I can see the merit in that. My position hasn't changed.","I'll give you that one. No point pretending otherwise.","I accept that correction.","That point is valid. I accept it.","Fair point.","I'll grant you that. Don't get carried away.","That observation is correct. I'll concede it.","Credit where it is due. The rest is still to come.","Fair point. Let us turn it into something useful.","Noted, in your own words.","Yeah, fair point. Let's keep going.","Noted. Next.","Fair, my call. Move on.","Point taken. That term stands.","Noted. That is a point I will keep.","Agreed, for the moment. We will keep it straight.","Very fair, then. I respect that.","Your point is taken. I will take that on board.","Got it, point taken! I hear you. Let us get on.","Yep, fair, yep! Got it. Right.","A fair observation. I shall concede it without conceding the evening.","I will grant you that point. You may find the rest of my argument considerably less accommodating.","Fair, and short. I will give you that.","That is a fair correction. It does not change what I have to do at the bell."]),f:new Set(["Concession noted. We can proceed.","Right. That's settled.","Good. Now we can get on with the exciting bit.","Good. That's enough.","Okay. We understand each other.","Good. Let's give them a match.","Alright, let's see. I'll see you at the bell.","Good enough for me.","Good. That's a useful place to leave it.","Good. Now we have a contest.","Good. Now let's get moving.","Right. That's done.","Good. We can move on from that.","Good. We've got that sorted.","Agreed. We can proceed.","Then we have resolved that matter.","Good. On with it.","Wonderful. Let's leave it there.","Then the question is resolved.","Let us call that agreed. We can settle the rest at the bell, sensibly.","I will grant you that, with a bow. The bell is calling.","Noted. The bell, then.","Fair, done. Bell, then.","Understood. We will test it at the bell.","Understood. We sort the rest out at the bell.","Fair point, that. I will take it. We will sort the rest out at the bell.","I will let that stand. We will settle it at the bell.","Noted, got it! Bell time, see you!","Understood. Bell.","Accepted. We can dispense with the rest of the speeches.","Right. See you out there.","Then we have something we can test in the ring.","At last, a point of agreement. Let us not spoil it."])};
+ function select(cat,ctx,seed,{used=[],recent=[],candidateFilter=null}={}){
+  const options=cat.candidates(ctx).filter(r=>!used.includes(r.id)&&(!candidateFilter||candidateFilter(r)));
   if(!options.length)return null;
   const fresh=options.filter(r=>!recent.includes(r.id));
   // Do not repeat an authored line on consecutive appearances just to meet coverage. Fall back.
   if(!fresh.length)return null;
   const ranked=fresh.map(r=>({r,score:Object.keys(r.when).filter(k=>k!=='variants'&&k!=='hasMouthpiece').length,tie:hash(seed+'|'+r.id)})).sort((a,b)=>b.score-a.score||a.tie-b.tie||a.r.id.localeCompare(b.r.id));
   const row=ranked[0].r;return {id:row.id,text:render(row,ctx)};
+ }
+ function selectAcknowledgement(cat,ctx,seed,mem){
+  if(!ctx||ctx.stage!=='push'||ctx.action!=='acknowledge'||ctx.protected||ctx.hasMouthpiece)return null;
+  return select(cat,ctx,seed,{...mem,candidateFilter:r=>neutralAcknowledgements[ctx.side]?.has(r.text)});
  }
  // A bounded compositional fallback: preserve the actual claim, vary the delivery.
  const replyFrames={
@@ -152,5 +159,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);
