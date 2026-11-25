@@ -272,4 +272,27 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceAcknowledgementsG4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG6={
+  "malik": [
+    "Fine. If it hasn't been shown, I won't sell it as something that has.",
+    "You have a point. I came to do the work, not manufacture a record."
+  ],
+  "rocco": [
+    "Sure. No sense calling a thing proven when it's still got to be done.",
+    "I'll give you that much. Put the rest to the test in the ring."
+  ],
+  "ace": [
+    "Very well! Even a master of ceremonies cannot announce a result before it exists.",
+    "I grant the correction. Let the audience witness the spectacle rather than take my account on faith."
+  ],
+  "zara": [
+    "Yeah, you're right. I got a bit ahead of myself there, didn't I? Can't prove that bit.",
+    "Fair enough! We'll give them something they can actually see instead."
+  ],
+  "aisha": [
+    "Correct. Unsupported. Drop it.",
+    "Accepted. Show the result; don't invent one."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
