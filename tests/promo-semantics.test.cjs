@@ -173,27 +173,34 @@ for(const claim of ['unclassified','proof','pace','legitimacy']){
 // All reviewed reuse entries refer to an existing bank row, not copied
 // wording. Exercise the actual owner/side and reject stale text and recent IDs.
 const bankRows=new Map(built.packs.flatMap(p=>p.lines.map(row=>[row.id,{row,pack:p}])));
-let reuseFixtures=0;
-for(const [id,rule] of Object.entries(L.reviewedBankReuse)){
+let reuseFixtures=0;const reuseCoverage=new Map();
+for(const [id,rule] of Object.entries(L.reviewedBankReuseV2)){
  const found=bankRows.get(id);assert.ok(found,'stale bank reuse ID '+id);
  const {row,pack}=found;
  const cat=L.catalogue([{...pack,lines:[row]}]);
  for(const claim of rule.slice(1)){
   const context={...ctx,stage:'answer',action:'turn',side:row.side,speaker:{...ctx.speaker,id:pack.owner,role:'wrestler'},protected:'contextual-variant',variant:'tu_strength',hasMouthpiece:false};
   const sem={move:row.side==='w'?'rebut':'counter',claim};
-  const own=L.selectReviewedBankResponse(cat,context,'reuse-fixture',{},sem);
+  const own=L.selectReviewedBankResponse(cat,context,'reuse-fixture',{},sem,2);
   assert.equal(own?.id,id,'reviewed source reachable '+id+' '+claim);
   assert.equal(own.text,row.text);assert.equal(own.bankReuse.variant,row.when.variants[0]);
-  assert.equal(L.selectReviewedBankResponse(cat,context,'reuse-fixture',{recent:[id]},sem),null);
-  assert.equal(L.selectReviewedBankResponse(cat,context,'reuse-fixture',{used:[id]},sem),null);
-  for(const patch of [{protected:'recorded-evidence'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}}])assert.equal(L.selectReviewedBankResponse(cat,{...context,...patch},'reuse-fixture',{},sem),null);
-  assert.equal(L.selectReviewedBankResponse(cat,context,'reuse-fixture',{}, {...sem,claim:'unreviewed'}),null);
+  assert.equal(L.selectReviewedBankResponse(cat,context,'reuse-fixture',{recent:[id]},sem,2),null);
+  assert.equal(L.selectReviewedBankResponse(cat,context,'reuse-fixture',{used:[id]},sem,2),null);
+  for(const patch of [{protected:'recorded-evidence'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}}])assert.equal(L.selectReviewedBankResponse(cat,{...context,...patch},'reuse-fixture',{},sem,2),null);
+  assert.equal(L.selectReviewedBankResponse(cat,context,'reuse-fixture',{}, {...sem,claim:'unreviewed'},2),null);
   const stale=L.catalogue([{...pack,lines:[{...row,text:row.text+'!'}]}]);
-  assert.equal(L.selectReviewedBankResponse(stale,context,'reuse-fixture',{},sem),null);
+  assert.equal(L.selectReviewedBankResponse(stale,context,'reuse-fixture',{},sem,2),null);
+  const previous=L.selectReviewedBankResponse(cat,context,'reuse-fixture',{},sem,1);
+  if(L.reviewedBankReuse[id]?.slice(1).includes(claim))assert.equal(previous?.id,id,'previous snapshot retains approved line');
+  else assert.equal(previous,null,'previous snapshot does not acquire new approvals');
+  if(!reuseCoverage.has(pack.owner))reuseCoverage.set(pack.owner,new Set());
+  reuseCoverage.get(pack.owner).add(row.side);
   reuseFixtures++;
  }
 }
-assert.ok(reuseFixtures>100);
+assert.ok(reuseFixtures>300);
+for(const w of D.ALL){assert.ok(reuseCoverage.get(w.id)?.has('w'),'missing player bank reuse '+w.id);assert.ok(reuseCoverage.get(w.id)?.has('f'),'missing opponent bank reuse '+w.id);}
+console.log('PASS full-roster bank reuse: '+D.ALL.length+' characters with both player and opponent coverage.');
 console.log('PASS reviewed bank reuse: '+reuseFixtures+' exact existing bank/claim fixtures, owner, evidence, history and changed-text guards.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
@@ -268,7 +275,7 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
      assert.equal(sem.source,'authored-response:'+e.authoredId);assert.ok(!e.composedId);
      if(sem.bankReuse){
       assert.equal(e.dialogueSlot.action,'turn');assert.equal(e.dialogueSlot.stage,'answer');
-      const found=bankRows.get(e.authoredId);assert.ok(found&&L.reviewedBankReuse[e.authoredId]?.slice(1).includes(sem.claim));
+      const found=bankRows.get(e.authoredId);assert.ok(found&&L.reviewedBankReuseV2[e.authoredId]?.slice(1).includes(sem.claim));
       assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(found.row.side,e.side);
       assert.equal(e.line,found.row.text);assert.equal(sem.bankReuse.stage,found.row.stage);assert.equal(sem.bankReuse.action,found.row.action);
       assert.ok(found.row.when.variants.includes(sem.bankReuse.variant));
