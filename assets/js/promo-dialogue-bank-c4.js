@@ -63,6 +63,18 @@
   "Fairness requires me to back up my words. I can't do that for this charge.",
   "That's the standard I expect. Leave the accusation out and meet me fairly.",
   "Good. We'll judge each other by the work we do in the ring."
+ ],
+ "miro": [
+  "Honestly, I've got no example that proves what I said. I'm sorry. I'd rather be fair to you.",
+  "I think I've made a mistake there. I can't establish the charge and I shouldn't keep pressing it.",
+  "Thanks. I think that's a much fairer way to start the match.",
+  "That's all right. Let's put that behind us and give it everything."
+ ],
+ "cass": [
+  "Well, that's me caught with a very empty notebook. No example I can stand behind, I'm afraid.",
+  "Lovely speech from me, wasn't it? Shame I can't substantiate the accusation. Scratch that bit.",
+  "Quick, somebody write that down: we've actually cleared something up. Now let's wrestle.",
+  "Fair enough, you lucky thing. No need for that allegation to spoil a perfectly good scrap."
  ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

@@ -69,6 +69,12 @@
   "I've listened to your question. There isn't enough behind my accusation for me to stand by it.",
   "Noted. We can leave the allegation out of the discussion from now on.",
   "That's the answer I was asking for. Let's find out what the wrestling tells us."
+ ],
+ "faye": [
+  "You're entitled to hold me to my exact words. I can't cite an incident that establishes them, so I withdraw that charge.",
+  "The distinction is important: I made an allegation, not a finding. I have not proved it.",
+  "Then the record is clear. The allegation is withdrawn, and I won't hold you to it.",
+  "Noted, precisely. We can settle the sporting question without that claim."
  ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

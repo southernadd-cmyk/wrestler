@@ -57,6 +57,12 @@
   "The correction is mine to make. I haven't established the charge, so I won't carry it into the match.",
   "Well judged. You corrected it before it became the whole argument.",
   "Good. Save your timing for the contest now."
+ ],
+ "alina": [
+  "I can feel that I've put something unfair on you. I can't give you an example that proves it, and I shouldn't have said it.",
+  "I mean what I say about wanting this match. That doesn't mean I can establish the accusation. I'll take that part back.",
+  "Thank you. I would rather we went into this match with an honest understanding of each other.",
+  "That matters to me. We can put the accusation aside and see what this contest means."
  ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

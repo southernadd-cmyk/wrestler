@@ -69,6 +69,12 @@
   "Right. I can't establish that. It's my wrestling I need to demonstrate, not an accusation.",
   "Yes. That's a better way to put it. We can leave that claim alone.",
   "Okay. We understand that part now. I'd like to wrestle."
+ ],
+ "rex": [
+  "Can't stand that up with facts. I'll take it back.",
+  "You've asked for an example. Haven't got one. That's that.",
+  "Fair enough. No charge between us now. Just the match.",
+  "Right. Leave the talk here. Let's get on the canvas."
  ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
