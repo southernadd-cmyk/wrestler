@@ -39,6 +39,18 @@
   "I have no particular incident I can cite with confidence. Equal terms mean leaving that allegation out.",
   "Good. No unproved allegation between us. Meet the standard in the ring.",
   "That's a fair correction. We'll settle the sporting question on equal terms."
+ ],
+ "dax": [
+  "You want something I can actually demonstrate. I haven't got that for this accusation, so I'm not using it.",
+  "That isn't a point I can back up. I'd rather put a proper problem in front of you when we wrestle.",
+  "Fine. The accusation goes. The challenge stays.",
+  "Right, that's one thing settled. Now let's find out what you've got in the ring."
+ ],
+ "dee": [
+  "Sorry, that's fair. I can't give you a real example of it. I shouldn't have made it sound like a fact.",
+  "I don't want to win an argument by putting something on you that I can't prove. Let's talk about the wrestling.",
+  "Thanks for saying that. I'd rather we both had a fair chance to show what we can do.",
+  "All right. We don't need to keep that accusation going just to make the match interesting."
  ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

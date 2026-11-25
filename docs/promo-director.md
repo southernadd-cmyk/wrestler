@@ -115,3 +115,7 @@ G4C.1 increased authored utilisation to 251/1,972 (12.7%), recovering 79 turns a
 ## G4C.3 — third evidence-specific tranche
 
 G4C.2 raised authored utilisation to 315/1,972 (16.0%), recovering 143 turns cumulatively with no lost authored turns. Extend the next ten demand-ranked characters (Kofi, Mae, Marisol, Nolan, Nova, Rev, Silas, Sol, Tomas and Val), including Nova's original pilot bank. Two distinct player rebuttals and two opponent counters per owner, preserving existing topic gates and stable original IDs. Regenerate ten affected bank payloads and manifest. Validate 120 topic rows across 30 owners, independently count this tranche's recovered turns, and assert the first two batches retain their combined 143. No engine, workflow or save schema changes. Fifty original characters remain.
+
+## G4C.4 — fourth evidence-specific tranche
+
+G4C.3 raised authored utilisation to 375/1,972 (19.0%), recovering 203 turns cumulatively without losing an existing authored turn. Add two distinct player rebuttals and two opponent counters to Ace, Bao, Cal, Dax, Dee, Dev, Ezra, Imani, Iris and Kellan, the next ten demand-ranked owners. Keep the original topic gate and stable prior IDs. Regenerate ten affected bank payloads and manifest. Validate 160 evidence rows across 40 owners, independently measure the fourth batch and assert that the previous three batches retain their combined 203 recovered turns. No engine, workflow or save schema changes. Half the original roster now has dedicated evidence responses; forty owners remain.

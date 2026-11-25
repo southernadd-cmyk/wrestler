@@ -21,6 +21,24 @@
   "Point one: I owe you an example. Point two: I haven't got one. Strike that item from the discussion.",
   "Item removed. Now we can discuss the work that actually needs doing.",
   "That's a better account. Keep the speculation off the list and the match on it."
+ ],
+ "dev": [
+  "I'm supposed to keep people safe, including from a charge I can't establish. I shouldn't have made that one.",
+  "I can ask you to take care in the ring. I cannot claim you did something without a proper example.",
+  "Then leave the accusation there. We'll keep our minds on looking after each other when we wrestle.",
+  "That's fair. We don't need an unsupported charge to make this a serious contest."
+ ],
+ "iris": [
+  "That's a fair question. I haven't got an example that establishes the danger I implied.",
+  "I won't make a judgement about your conduct without something solid behind it. I can still ask for a safe contest.",
+  "Good. Leave the accusation behind us. We'll pay attention to what happens in the ring.",
+  "Then we can concentrate on the match. That's a better place to judge how we handle ourselves."
+ ],
+ "kellan": [
+  "Okay, hang on. I haven't actually got an example, have I? Right. Forget that bit.",
+  "No, you're right. I can't prove that. I've got something I can try at the bell, though.",
+  "Good! Sorted. Now we can get on with the bit we came here for.",
+  "Right, leave that there. Let's see what happens when we actually wrestle!"
  ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
