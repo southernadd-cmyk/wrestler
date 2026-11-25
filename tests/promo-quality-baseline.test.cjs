@@ -76,6 +76,7 @@ for(const [i,w] of roster.entries()){
   // Synthetic rivalry heat only: not a substitute for a persisted played career.
   const rival=j%2?{heat:55,matches:2,closed:false}:null;
   const st=Mic.begin(c,w,f,rival,null,p,{directed:process.env.PROMO_AUDIT_LEGACY!=='1',formats:process.env.PROMO_AUDIT_LEGACY!=='1',dialogue:process.env.PROMO_AUDIT_LEGACY!=='1',authored:process.env.PROMO_AUDIT_LEGACY!=='1',banks:promoBanks(w.id,f.id),composition:process.env.PROMO_AUDIT_LEGACY!=='1',semantic:process.env.PROMO_AUDIT_LEGACY!=='1'});
+  if(st.semantic)delete st.semantic.claimClassification; // frozen historical policy for paired G1–G3 comparisons
   for(const bank of st.authoredDialogue?.banks||[])for(const row of bank.rows){const id=bank.owner+'.'+row[0];availableIds.add(id);slot([row[1],row[2],row[3]].join('|')).available.add(id);}
   const oldFlow=st.openingFlow===1&&j===0?JSON.parse(JSON.stringify(st)):null;if(oldFlow)delete oldFlow.openingFlow;
   const rounds=[],choices=[],spoken=[];
@@ -370,7 +371,8 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
   if([1,2].includes(mem.semanticBankReuse))return L.selectReviewedBankResponse(cat,ctx,seed,mem,sem,mem.semanticBankReuse);
   return null;
  };
- let activeScene=null,observations=0,emittedChecks=0,sceneCount=0;
+ let activeScene=null,observations=0,emittedChecks=0,sceneCount=0,oldUnknown=0,newUnknown=0,classifiedOpenings=0;
+ const recoveredSources=new Map(),remainingUnknown=new Map();
  root.__promoDemandObserver=(st,ctx,mem,line,cat,seed)=>{
   assert.ok(activeScene,'observer must only run on the balanced workload');
   const prev=S.latest(st.log,ctx.side==='w'?'f':'w')?.entry;
@@ -431,6 +433,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
   // One scene per identity verifies the observation hook cannot affect
   // transcript, state, or result compared with the uninstrumented engine.
   const plain=j===0?plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts):null;
+  const previous=JSON.parse(JSON.stringify(st));delete previous.semantic.claimClassification;
   inc(formatsSeen,st.director?.format||'legacy');
   activeScene=[];
   for(let step=0;st.stage!=='done';step++){
@@ -439,7 +442,22 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
    const desired=round==='open'?openingChoices[j]:round==='answer'?'turn':round==='push'?(j%3===0?'acknowledge':'press'):['vow','clean','question','finisher'][j%4];
    const id=(choices.find(o=>o.id===desired)||choices[0]).id;
    const before=st.log.length,observedBefore=activeScene.length;
+   if(round==='open'){
+    // Observation is only for response moves, so this does not contaminate
+    // the demand counts. Compare the same opening against the prior policy.
+    Mic.choose(previous,id);
+   }
    Mic.choose(st,id);
+   if(round==='open'){
+    const before=S.latest(previous.log,'f')?.entry,after=S.latest(st.log,'f')?.entry;
+    assert.ok(before&&after,'opening has opponent reply');
+    assert.equal(after.line,before.line,'classification must not change opening speech');
+    assert.equal(JSON.stringify(st.core),JSON.stringify(previous.core),'classification leaves opening graph unchanged');
+    if(!before.semantic?.claim)oldUnknown++;
+    if(!after.semantic?.claim){newUnknown++;inc(remainingUnknown,id+'|'+(st.core.steps.at(-1)?.variant||'-')+'|'+after.line);}
+    if(!before.semantic?.claim&&after.semantic?.claim){classifiedOpenings++;inc(recoveredSources,after.semantic.source+'|'+after.semantic.claim);}
+    if(before.semantic?.claim)assert.equal(after.semantic?.claim,before.semantic.claim,'previous reviewed claims remain stable');
+   }
    if(plain){plainRoot.OfficeMic.choose(plain,id);assert.equal(JSON.stringify(st),JSON.stringify(plain),'G4A observation changes live state');}
    const spoken=st.log.slice(before);
    for(const row of activeScene.slice(observedBefore)){
@@ -465,7 +483,10 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  const topics=[...topicStats].map(([key,x])=>({key,...describe(x)})).sort(rank);
  const actors=[...actorStats].map(([key,x])=>({key,...describe(x)})).sort(rank);
  const detail=[...demand].map(([key,x])=>({key,...describe(x)})).sort(rank);
- const report={scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
+ assert.ok(classifiedOpenings>0&&newUnknown<oldUnknown,'G4B.1 must recover previously unknown openings');
+ const classification={oldUnknown,newUnknown,recovered:classifiedOpenings,scenes:sceneCount,sources:Object.fromEntries(recoveredSources),remaining:Object.fromEntries(remainingUnknown)};
+ console.log('G4B1 CLASSIFICATION '+JSON.stringify(classification));
+ const report={classification,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
  console.log('G4A DEMAND SUMMARY '+JSON.stringify({...report,topics:undefined,actors:undefined,detail:undefined}));
  for(const x of topics)console.log('G4A TOPIC '+JSON.stringify(x));
  for(const x of actors)console.log('G4A ACTOR '+JSON.stringify(x));
