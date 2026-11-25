@@ -18,6 +18,12 @@ for(const pack of built.packs)for(const row of pack.lines){
 for(const [key,tag] of Object.entries(S.reviewed)){assert.ok(graphKeys.has(key)||bankKeys.has(key),'stale reviewed source '+key);assert.ok(S.label(tag),'unknown claim '+tag);}
 assert.equal(S.classify('graph:unknown:12345678'),null);
 assert.equal(S.classify('__proto__'),null);
+for(const [key,claim] of Object.entries(S.reviewedExtension)){
+ assert.ok(graphKeys.has(key),'new graph review must match a real source '+key);
+ assert.equal(S.classify(key,null,false),null,'old scene keeps original policy');
+ assert.equal(S.classify(key,null,true)?.claim,claim);
+ assert.equal(S.classify(key.slice(0,-8)+'00000000',null,true),null,'unknown text stays unknown');
+}
 // Same opponent, same seed, same chosen swagger variant, different actual line:
 // the graph questions the wrestler's legitimacy while Magnus's authored line
 // invites the audience to decide. The response must follow the emitted source.
@@ -253,6 +259,16 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
    assert.ok(!/[{}]/.test(e.line),'unresolved semantic placeholder');
    assert.equal(JSON.stringify(xr.dialogue[idx].semantic),JSON.stringify(sem));
    if(sem.source.startsWith('bank:')){assert.ok(e.authoredId);assert.equal(S.fromBank(e.authoredId,e.line)?.claim,sem.claim);authoredSources++;}
+   if(sem.source.startsWith('fallback:')){
+    assert.ok(!e.authoredId&&!e.composedId);
+    const slot=e.dialogueSlot,ctx={...slot,hasMouthpiece:false};
+    const original=x.core.dialogue.find(d=>M.reviewedFallbackClaim(x,ctx,e,d)?.source===sem.source);
+    assert.ok(original,'fallback claim must trace to exact existing graph/display source');
+    assert.equal(JSON.stringify(M.reviewedFallbackClaim(x,ctx,e,original)),JSON.stringify(sem));
+    assert.equal(M.reviewedFallbackClaim(x,ctx,{...e,line:'Unreviewed substitution.'},original),null);
+    assert.equal(M.reviewedFallbackClaim(x,ctx,e,{...original,line:'Different original.'}),null);
+    const old=clone(x);delete old.semantic.claimClassification;assert.equal(M.reviewedFallbackClaim(old,ctx,e,original),null);
+   }
    if(sem.source.startsWith('graph:')){
     assert.ok(!e.authoredId&&!e.composedId);
     const originals=x.core.dialogue.filter(d=>d.speechSource===sem.source);
