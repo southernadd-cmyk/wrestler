@@ -126,4 +126,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidencePressRepliesD4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD6={
+  "kira": [
+    "The contest will demonstrate whether our technique remains controlled under resistance. Judge that.",
+    "Observe the execution and the legal result. Neither requires an unsupported accusation."
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

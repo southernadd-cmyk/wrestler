@@ -107,4 +107,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD6={
+  "felix": [
+    "I'd like them to see whether I can keep my balance when things go wrong. I've been working on that.",
+    "We can find out if my preparation holds up against you. I don't need to pretend I've proved it already."
+  ],
+  "gideon": [
+    "Watch which of us recognises the opening before the other moves. That is something the match can establish.",
+    "Look at the preparation for each hold, not merely the speed of its execution. You will see the difference."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

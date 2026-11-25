@@ -106,4 +106,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressRepliesD5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD6={
+  "iris": [
+    "Watch what we do when the first plan fails. The next decision will tell them something useful.",
+    "They can judge whether we keep control of the match when things change. That's the part I want to test."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
