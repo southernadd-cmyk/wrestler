@@ -317,4 +317,37 @@
   }
 };
  for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH3={
+  "eira": {
+    "w": [
+      "Experience deserves respect, not an exemption from the rules. We still start level at the bell.",
+      "Your years may help you find a legal answer. They do not entitle you to a fall."
+    ],
+    "f": [
+      "Experience teaches me where the legal options are when a hold is blocked.",
+      "The rules have not changed because you have a new approach. Experience helps me work within them."
+    ]
+  },
+  "felix": {
+    "w": [
+      "I know I've got plenty left to learn. I don't think that means I have to wait for permission to beat you.",
+      "You've got the experience, fair enough. I want to show you what I've managed to learn from getting things wrong."
+    ],
+    "f": [
+      "Experience isn't never making a mistake. It's knowing how to get out of one without making another.",
+      "I've learned to keep my head when a move goes wrong. I'd like to show you that part."
+    ]
+  },
+  "gideon": {
+    "w": [
+      "Experience tells you what usually happens. I want to move before the exchange you expect has begun.",
+      "The number of years is less important than recognising the instant when a position changes."
+    ],
+    "f": [
+      "Experience is recognising the shift of weight a moment before the grip arrives.",
+      "A familiar position does not require a familiar answer. That is one of the things practice teaches you."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
