@@ -413,4 +413,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const studyRepliesI2={
+  "jett": {
+    "w": [
+      "Okay, you've watched the grip. Yeah. What if I change hands before you get there?",
+      "You've done the homework. Good! Now try it when I'm moving about."
+    ],
+    "f": [
+      "I watch the awkward bits on the tape, yeah? The bit where the grip slips and they have to fix it.",
+      "I practise what to do when the first idea goes wrong. Not just the nice-looking version."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

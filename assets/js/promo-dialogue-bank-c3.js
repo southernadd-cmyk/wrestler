@@ -427,4 +427,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI2={
+  "faye": {
+    "w": [
+      "Your research establishes a possibility. It does not establish that I will oblige you.",
+      "What did your preparation account for when the exchange departs from your notes?"
+    ],
+    "f": [
+      "I review the circumstances of each exchange before drawing a conclusion about the technique.",
+      "My preparation is a working hypothesis. I revise it when the contest supplies contrary evidence."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

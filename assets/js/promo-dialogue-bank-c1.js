@@ -406,4 +406,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const studyRepliesI2={
+  "brick": {
+    "w": [
+      "Aye, you've watched me. Doesn't tell you what it feels like when you've got to move me.",
+      "All them notes won't help if you can't get your feet set."
+    ],
+    "f": [
+      "I watch where a wrestler plants their feet. That's a fair bit more use than counting their moves.",
+      "I study how people try to shift me. Then I practise making them work for every inch."
+    ]
+  },
+  "dax": {
+    "w": [
+      "You've prepared for the hold. What have you prepared for when I deny you the grip?",
+      "Studying the finish is easy. Tell me how you plan to get through the positions before it."
+    ],
+    "f": [
+      "I study the transitions, not just the holds. The opportunity usually comes between the two.",
+      "My preparation starts with the first grip and branches from there. I don't need the exchange to follow a script."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

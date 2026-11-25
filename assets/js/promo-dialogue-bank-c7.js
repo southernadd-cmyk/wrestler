@@ -426,4 +426,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI2={
+  "iris": {
+    "w": [
+      "You've studied the sequence. What's your alternative when I cut out the middle step?",
+      "Show me the part of your plan that survives me choosing a different exit."
+    ],
+    "f": [
+      "I study the options available after each position, especially the ones that are easy to overlook.",
+      "I prepare a second route before committing to the first. The match needn't go exactly to plan."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

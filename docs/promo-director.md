@@ -289,3 +289,7 @@ G4H.7 CI repair: historical G4B2/G4B3/G4C controls previously retained the G4H e
 ## G4I.1 — study and preparation rebuttals and counters
 
 G4H.7 audit identifies 70 missing study answer/turn exchanges (32 player rebuttals, 38 opponent counters). Highest demand owners Cedric, Liya, Priya and Ace receive two authored replies per side (16 total), targeting 11 recoveries (5 player, 6 opponent). The selector uses existing exact-owner, exact-claim, history and protected-context guards, after reviewed reuse and specialist routes. Enable only for newly created semantic scenes through the additive authoredStudy flag; no save migration. Historical G4B/G4C controls disable G4I, and the G4H comparison disables G4I on both sides. A dedicated paired G4I comparison verifies exact prior authored replies, semantic/graph parity, and zero losses. All 73 earlier experience recoveries targeted for retention. Four compact assets regenerated. CI pending.
+
+## G4I.2 — second study and preparation batch
+
+G4I.1 recovered 11 sampled exchanges (5 player, 6 opponent), zero losses, in run 45710437792. Add two rebuttals and two counters each for Ari, Brick, Dax, Faye, Iris and Jett (two gaps each; alphabetical tie-break). Twenty-four new rows, forty across ten owners. Target twelve incremental recoveries (4 player, 8 opponent), 23 cumulative, preserving all eleven prior hits and earlier policy parity. Selection engine, save schema and CI unchanged. Regenerate six compact banks and remove superseded revisions. CI pending.
