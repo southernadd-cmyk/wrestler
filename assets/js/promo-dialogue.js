@@ -2358,52 +2358,12 @@
   if(!ctx||!sem||ctx.hasMouthpiece||ctx.protected||ctx.stage!=='push'||ctx.action!=='acknowledge'||ctx.side!=='w'||sem.claim!=='evidence'||sem.move!=='acknowledge')return null;
   return select(cat,{...ctx,variant:null,semanticClaim:sem.claim},seed,{...mem,candidateFilter:r=>r.when.semanticClaim==='evidence'});
  }
- function selectSpecialistResponse(cat,ctx,seed,mem,sem){
-  if(!ctx||!sem||ctx.hasMouthpiece||(ctx.protected&&ctx.protected!=='contextual-variant'))return null;
-  const strength=ctx.side==='w'&&ctx.stage==='answer'&&ctx.action==='turn'&&sem.move==='rebut'&&sem.claim==='strength'&&string(sem.detail);
-  const press=ctx.side==='w'&&ctx.stage==='push'&&ctx.action==='press'&&sem.move==='press'&&!ctx.protected;
-  const acknowledge=ctx.side==='w'&&ctx.stage==='push'&&ctx.action==='acknowledge'&&sem.move==='acknowledge'&&!ctx.protected&&['unclassified','agreement','end'].includes(sem.claim);
-  const settle=ctx.side==='f'&&ctx.stage==='push'&&ctx.action==='acknowledge'&&sem.move==='settle'&&sem.claim==='end'&&!ctx.protected;
-  const kind=strength?'strength':press?'press':acknowledge?'acknowledge':settle?'settle':null;
-  if(!kind)return null;
-  const eligible=[];
-  const reviewed=row=>row.side===ctx.side&&(
-   kind==='strength'&&row.stage==='answer'&&row.action==='turn'&&row.when.variants?.includes('tu_strength')&&reviewedStrength.has(row.text)||
-   specialistReview[row.id]?.[0]===hash(row.text)&&specialistReview[row.id][1]===kind
-  );
-  for(const row of cat.lines(ctx.speaker.role,ctx.speaker.id).filter(reviewed)){
-   for(const variant of row.when.variants||[null]){
-    const sourceCtx={...ctx,stage:row.stage,action:row.action,variant,protected:variant?'contextual-variant':null,...(strength?{strength:sem.detail}:{})};
-    const own=select(cat,sourceCtx,seed,{...mem,candidateFilter:r=>r.id===row.id&&reviewed(r)});
-    if(own){eligible.push({...own,specialist:kind});break;}
-   }
-  }
-  // G4I: study rebuttals and counters remain exact-topic and owner scoped.
+ // G4I: study rebuttals and counters remain exact-topic and owner scoped.
  function selectAuthoredStudy(cat,ctx,seed,mem,sem){
   if(!ctx||!sem||ctx.hasMouthpiece||ctx.stage!=='answer'||ctx.action!=='turn'||
      (ctx.protected&&ctx.protected!=='contextual-variant')||sem.claim!=='study'||
      (ctx.side==='w'?sem.move!=='rebut':sem.move!=='counter'))return null;
   return select(cat,{...ctx,variant:null,protected:null,semanticClaim:sem.claim},seed,{...mem,candidateFilter:r=>r.when.semanticClaim===sem.claim});
- }
- // G4D: only a reply to an actual evidence-topic follow-up question.
- function selectAuthoredFollowup(cat,ctx,seed,mem,sem){
-  if(!ctx||!sem||ctx.hasMouthpiece||ctx.protected||ctx.stage!=='push'||ctx.action!=='press'||ctx.side!=='f'||sem.claim!=='evidence'||sem.move!=='press_counter')return null;
-  return select(cat,{...ctx,variant:null,semanticClaim:sem.claim},seed,{...mem,candidateFilter:r=>r.when.semanticClaim===sem.claim});
- }
- // G4E: a complete authored question about what the match can establish.
- function selectAuthoredQuestion(cat,ctx,seed,mem,sem){
-  if(!ctx||!sem||ctx.hasMouthpiece||ctx.protected||ctx.stage!=='push'||ctx.action!=='press'||ctx.side!=='w'||sem.claim!=='evidence'||sem.move!=='press')return null;
-  return select(cat,{...ctx,variant:null,semanticClaim:sem.claim},seed,{...mem,candidateFilter:r=>r.when.semanticClaim===sem.claim});
- }
- // G4F: opponent replies to the strength actually named in the preceding rebuttal.
- function selectAuthoredStrengthCounter(cat,ctx,seed,mem,sem){
-  if(!ctx||!sem||ctx.hasMouthpiece||ctx.stage!=='answer'||ctx.action!=='turn'||ctx.side!=='f'||(ctx.protected&&ctx.protected!=='contextual-variant')||sem.claim!=='strength'||sem.move!=='counter'||!string(sem.detail))return null;
-  return select(cat,{...ctx,variant:null,protected:null,semanticClaim:sem.claim,strength:sem.detail},seed,{...mem,candidateFilter:r=>r.when.semanticClaim==='strength'});
- }
- // G4G: acknowledge the demand for evidence without endorsing an unsupported allegation.
- function selectAuthoredEvidenceAcknowledgement(cat,ctx,seed,mem,sem){
-  if(!ctx||!sem||ctx.hasMouthpiece||ctx.protected||ctx.stage!=='push'||ctx.action!=='acknowledge'||ctx.side!=='w'||sem.claim!=='evidence'||sem.move!=='acknowledge')return null;
-  return select(cat,{...ctx,variant:null,semanticClaim:sem.claim},seed,{...mem,candidateFilter:r=>r.when.semanticClaim==='evidence'});
  }
  function selectSpecialistResponse(cat,ctx,seed,mem,sem){
   if(!ctx||!sem||ctx.hasMouthpiece||(ctx.protected&&ctx.protected!=='contextual-variant'))return null;
