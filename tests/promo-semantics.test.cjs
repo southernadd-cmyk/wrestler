@@ -88,6 +88,37 @@ for(const claim of claims)for(const action of ['turn','press']){
 }
 assert.ok(varied>=70);
 console.log('PASS semantic variety: '+varied+' topic/move pools now have two reachable, claim-preserving wordings.');
+// The two most common unclassified graph exceptions vary without changing
+// the actual graph, its effects, or the provenance of reviewed claims.
+const fallbackLines={open:new Set(),answer:new Set()},fallbackCounts={open:0,answer:0};
+for(let i=0;i<240;i++){
+ const c=contract(w,f,1000+i),scene=M.begin(c,w,f,null,null,p,{...options,formats:true,banks:[]}),old=clone(scene);
+ delete old.fallbackVariety;
+ if(!M.choices(scene).some(o=>o.id==='accusation'))continue;
+ for(const stage of ['open','answer']){
+  const id=stage==='open'?'accusation':'personal';
+  if(!M.choices(scene).some(o=>o.id===id))break;
+  const saved=clone(scene),at=scene.log.length;
+  M.choose(scene,id);M.choose(old,id);M.choose(saved,id);
+  assert.equal(JSON.stringify(scene),JSON.stringify(saved),'fallback resume');
+  assert.equal(JSON.stringify(scene.core),JSON.stringify(old.core),'fallback cannot change underlying graph');
+  const current=scene.log.slice(at).find(e=>e.side==='f'),previous=old.log.slice(at).find(e=>e.side==='f');
+  if(!current||!previous||current.line===previous.line)continue;
+  if(stage==='open')assert.match(previous.line,/never even worked a match/);
+  else assert.match(previous.line,/still have no evidence/);
+  assert.ok(!current.semantic&&!current.authoredId&&!current.composedId);
+  assert.doesNotMatch(current.line,/never even worked|[{}]/);
+  fallbackLines[stage].add(current.line);fallbackCounts[stage]++;
+ }
+ if(scene.stage==='done')continue;
+ while(scene.stage!=='done'){
+  const id=M.choices(scene)[0].id;
+  M.choose(scene,id);M.choose(old,id);
+ }
+ for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature'])assert.equal(JSON.stringify(M.result(scene)[k]),JSON.stringify(M.result(old)[k]),'fallback parity '+k);
+}
+assert.ok(fallbackLines.open.size>=6&&fallbackLines.answer.size>=6,'both exception pools exercised');
+console.log('PASS graph fallback variety: '+JSON.stringify(fallbackCounts)+' replacements; '+fallbackLines.open.size+'/'+fallbackLines.answer.size+' distinct opening/answer replies; graph and outcome parity.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0;
 const reached=new Set();

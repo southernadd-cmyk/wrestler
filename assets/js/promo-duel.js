@@ -223,6 +223,7 @@
    venue:p?.venue||'this hall',promoterVoice:p?.voice||'the promoter',promoterName:p?.name||'the promotion',finish:c.finish||null,
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
+  if(opts.directed&&opts.formats)st.fallbackVariety=1;
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
   if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
@@ -344,6 +345,44 @@
   }
   return fmt(ANGLE_CUE[st.angle],st);
  }
+ // These two literal graph exceptions have no reviewed speech fingerprint.
+ // Vary only their delivery, not the selected action, facts or evidence.
+ const accusationReplies=[
+  "What exactly are you accusing me of, {W}?",
+  "Give us an example. An actual example, not another insult.",
+  "You have made a charge. Where is the evidence?",
+  "Tell these people what I am supposed to have done.",
+  "What are you basing that on?",
+  "Do not ask them to take your word for it. Give them something concrete.",
+  "If you have a specific complaint, let us hear it.",
+  "A claim like that needs more than a microphone.",
+  "You have got their attention. Now substantiate what you just said.",
+  "What incident are you talking about?",
+  "Before you go any further, explain what I am meant to have done.",
+  "There is a difference between disliking me and having a case against me."
+ ];
+ const personalReplies=[
+  "That is another insult, {W}. It is not evidence.",
+  "You have made it personal. You still have not backed it up.",
+  "Saying it more forcefully does not make it any better supported.",
+  "You are attacking me, not answering the question.",
+  "I am still waiting for something more substantial than that.",
+  "More of the same. Where is the example?",
+  "I heard the insult. I have yet to hear the evidence.",
+  "You have not given these people a reason to believe the charge.",
+  "Leave the personal remarks aside until you have something to substantiate them.",
+  "You can question me all you like. That does not establish a fact.",
+  "There is plenty of anger in that reply. Not much to verify.",
+  "You have not answered my objection, {W}. You have just made it personal."
+ ];
+ function graphFallback(st,stage,id,d){
+  if(st.fallbackVariety!==1||st.speaker||st.core.case||st.core.claim?.hasEvidence||d.case||d.speechSource)return d.line;
+  const w=st.w.short;
+  const pool=stage==='open'&&id==='accusation'&&d.line==='You have never even worked a match with me, '+w+'. Name one thing I have done to deserve that accusation.'?accusationReplies:
+    stage==='answer'&&id==='personal'&&d.line==='You still have no evidence, '+w+'. Now you are trying to make the insult louder.'?personalReplies:null;
+  if(!pool)return d.line;
+  return fmt(pick(pool,st.seed,'graph-fallback|'+stage+'|'+id),st);
+ }
  function coreRound(st,stage,id,key){
   const core=st.core,before=core.dialogue.length,m0={...core.metrics},fit=fitOf(st,stage,id);
   // Composure feeds the core's chance of landing a line; a line that suits the night is easier to land.
@@ -369,7 +408,7 @@
    if(d.speaker===st.f.name){replied=true;
     if(stage==='open'&&st.director?.format==='callout')push(st,'stage',fmt('{F} comes down from the entrance and takes the second microphone.',st),'stage');
     const ctx=slot('f',d),at=st.log.length,line=pickAuthored(st,ctx);
-    theirTurn(st,line?.text||d.line,key,step.landed,fit);
+    theirTurn(st,line?.text||graphFallback(st,stage,id,d),key,step.landed,fit);
     if(st.log[at]?.side==='f')annotate(st,at,ctx,line,d);
     if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',spokenCue(st),'cue');}
     continue;}
