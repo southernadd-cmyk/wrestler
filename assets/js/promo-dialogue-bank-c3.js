@@ -111,4 +111,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressRepliesD5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD6={
+  "faye": [
+    "Put the claim on the record, then watch whether the wrestling supports it. Anything else is conjecture.",
+    "We can check who earns the fall and how. I won't put a conclusion in the record before the evidence."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

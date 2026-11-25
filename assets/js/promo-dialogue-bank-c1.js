@@ -111,4 +111,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidencePressRepliesD5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD6={
+  "juno": [
+    "Watch the first entry and the grip that follows. We'll see who can keep the position.",
+    "They can see whether I find an escape when you have my weight underneath you. That's something we can test."
+  ],
+  "kit": [
+    "Well, they'll see whether I can get out of the mess you're about to put me in. That's worth the admission money.",
+    "Never mind the trailer, mate. Watch the whole match and see who actually earns the finish."
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

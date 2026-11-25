@@ -114,4 +114,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressRepliesD5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD6={
+  "gus": [
+    "They'll see whether we do the job properly when the going gets hard. That's enough for me.",
+    "Give them a decent contest and a result they can see. No need to invent anything."
+  ],
+  "jett": [
+    "Right, let's try it! One grip, one escape, then see who's ready for the next one.",
+    "They can watch whether I keep it together when you catch me. That's a proper test, yeah?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
