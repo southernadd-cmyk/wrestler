@@ -187,3 +187,7 @@ G4E.3 CI recovered 20 additional player evidence questions (55 cumulative, zero 
 ## G4E.5 — fifth authored evidence question tranche
 
 G4E.4 CI recovered 20 additional player evidence questions (75 cumulative, zero losses); 96/127 authored, 31 remaining. Add two full questions each for Theo, Zane and Zara (two misses per owner), then Ace, Alina, Ash, Bronte, Cass, Faye and Gideon (one miss per owner; ties ordered by ID). Project 13 additional recovered turns. Preserve selection and snapshot policy, semantic provenance, opposing reply, history and presentation. Verify 90 scoped questions across 45 original owners, 75 prior G4E recoveries and positive incremental gain, retain G4C/D recovery counts. No engine, save, UI or workflow changes. CI pending.
+
+## G4E.6 — sixth authored evidence question tranche
+
+G4E.5 CI recovered 13 additional player evidence questions (88 cumulative, zero losses); 109/127 authored, 18 remaining. Add two full questions each for Gus, Jett, Kellan, Kira, Leandro, Lyra, Milo, Miro, Morgan and Nova (one miss per owner; ties ordered by ID). Extend Nova's original pilot bank. Project 10 additional recovered turns. Verify 110 scoped questions across 55 original owners, 88 prior G4E recoveries and positive incremental gain, retain G4C/D recovery counts and semantic provenance. No engine, save, UI or workflow changes. CI pending.

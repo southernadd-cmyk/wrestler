@@ -158,4 +158,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceQuestionsE3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE6={
+  "lyra": [
+    "Forget what people are saying outside the ring. What can we show them from the first second of the match?",
+    "I want them to see it, not just hear about it. What can we demonstrate when we're both moving?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceQuestionsE6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

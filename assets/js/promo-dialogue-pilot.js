@@ -133,4 +133,11 @@
   ]
 };
  for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidenceQuestionsE3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE6={
+  "nova": [
+    "Let us separate the accusation from what can be observed on the mat. What can the match establish?",
+    "A result in the ring can tell us how we wrestled. What specific part of our ability can we demonstrate?"
+  ]
+};
+ for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidenceQuestionsE6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
