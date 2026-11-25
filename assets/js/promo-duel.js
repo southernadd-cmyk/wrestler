@@ -1237,14 +1237,26 @@
     }
   }
 };
- function opponentVoice(st,stage,id,d,step){
-  if(st.opponentVoiceStyle?.v!==1||!Semantic?.allowed(st)||d.case)return null;
-  const v=step.variant,e=Object.prototype.hasOwnProperty.call(OPPONENT_VOICE,v)?OPPONENT_VOICE[v]:null;
-  if(!e||e.stage!==stage||e.action!==id||d.line!==fmt(e.original,st))return null;
-  if(d.speechSource!==Semantic.source(v,e.original)||Semantic.classify(d.speechSource,d.speechDetail)?.claim!==e.claim)return null;
+ function opponentVoiceCandidates(st,stage,id,d,variant){
+  if(st.opponentVoiceStyle?.v!==1||!Semantic?.allowed(st)||d.case||d.speaker!==st.f.name)return [];
+  const e=Object.prototype.hasOwnProperty.call(OPPONENT_VOICE,variant)?OPPONENT_VOICE[variant]:null;
+  if(!e||e.stage!==stage||e.action!==id||d.line!==fmt(e.original,st))return [];
+  if(d.speechSource!==Semantic.source(variant,e.original)||Semantic.classify(d.speechSource,d.speechDetail)?.claim!==e.claim)return [];
   const own=Object.prototype.hasOwnProperty.call(e.individual,st.f.id)?e.individual[st.f.id]:null;
   const family=e.voices[voice(st.f)]||e.voices.stoic;
-  const pool=[...new Set([own,family].filter(Boolean).map(s=>fmt(s,st)))];
+  return [...new Set([own,family].filter(Boolean).map(s=>fmt(s,st)))];
+ }
+ // Audit only the exact reviewed display alternatives for the recorded
+ // graph source, speaker and stage; a matching claim alone is insufficient.
+ function reviewedOpponentVoice(st,d,entry){
+  if(!entry||entry.side!=='f'||entry.authoredId||entry.composedId||!entry.semantic?.source||entry.semantic.source!==d.speechSource)return false;
+  const slot=entry.dialogueSlot;if(!slot||slot.side!=='f'||slot.owner!==st.f.id)return false;
+  const variant=d.speechSource.split(':')[1];
+  return opponentVoiceCandidates(st,slot.stage,slot.action,d,variant).includes(entry.line);
+ }
+ function opponentVoice(st,stage,id,d,step){
+  const v=step.variant,pool=opponentVoiceCandidates(st,stage,id,d,v);
+  if(!pool.length)return null;
   const recent=st.opponentVoiceStyle.recent||[],seen=st.log.filter(x=>x.side==='f').map(x=>x.line);
   const fresh=pool.filter(s=>!recent.includes(s)&&!seen.includes(s));
   return fresh[0]||pick(pool,st.seed,'opponent-voice|'+v);
@@ -1388,5 +1400,5 @@
    unresolved:st.round===0?((st.core.cases||[]).find(c=>c.continuation)?.reminder||null):st.core.case?.continuation?st.core.case.reminder:null};
  }
  const result=st=>st?.stage==='done'?st.result:null;
- root.OfficeMic={ROUNDS,PUSH,HOOK,FLUFF,CROWD,begin,choose,choices,view,result,clientClaim,meterWord,riskWord,openFit,answerFit,pushFit,arcFit,READ,ANSWER_FIT};
+ root.OfficeMic={ROUNDS,PUSH,HOOK,FLUFF,CROWD,begin,choose,choices,view,result,clientClaim,meterWord,riskWord,openFit,answerFit,pushFit,arcFit,READ,ANSWER_FIT,reviewedOpponentVoice};
 })(typeof window!=='undefined'?window:globalThis);
