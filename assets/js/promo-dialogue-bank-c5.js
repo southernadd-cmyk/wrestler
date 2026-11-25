@@ -230,4 +230,23 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF7={
+  "mae": [
+    "You've learnt the first lesson about my {strength}. The next is what happens when I see you trying to take them away.",
+    "You may find an answer to my {strength} in the opening exchanges. What you learn from it in the second half will be more interesting."
+  ],
+  "soraya": [
+    "You may attempt your proposed defence against my {strength}. I have not agreed to surrender the initiative.",
+    "You have stated how you intend to meet my {strength}. Within the agreed rules, I reserve the right to change the terms of the exchange."
+  ],
+  "milo": [
+    "You've got a plan for my {strength}. I've wrestled enough on tired legs to know the value of having another one ready.",
+    "I hope your answer to my {strength} travels well. It has to get you through the whole match, not just the first mile."
+  ],
+  "jett": [
+    "Right, right! You've got something for my {strength}. I've been practising another way in if you stop me.",
+    "You've worked on my {strength}? Nice. Can we try your answer and see what I can do next? One exchange at a time."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (strengthCountersF7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
