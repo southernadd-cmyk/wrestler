@@ -246,4 +246,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceAcknowledgementsG2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG3={
+  "kit": [
+    "Fair enough, mate. Saying it louder doesn't magically turn it into evidence.",
+    "All right, I'll drop the detective routine. Give the crowd some wrestling they can actually judge."
+  ],
+  "lyra": [
+    "Wait, yes, I see what you mean. Let's stick to what they can see us do.",
+    "Fair. I don't want to get ahead of what has actually happened."
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceAcknowledgementsG3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

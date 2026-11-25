@@ -258,4 +258,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceAcknowledgementsG2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG3={
+  "faye": [
+    "Noted for the record. An unsupported allegation establishes nothing.",
+    "I accept that distinction. Let the record reflect only what can be verified."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceAcknowledgementsG3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

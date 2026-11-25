@@ -258,4 +258,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (strengthCountersF7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const evidenceAcknowledgementsG3={
+  "ellis": [
+    "Agreed. First establish the facts, then draw a conclusion.",
+    "I will put that in the right order: observation before judgment."
+  ],
+  "kofi": [
+    "Yes, fair! Let's give them something they can see instead of asking them to take our word for it.",
+    "Okay, I hear you. We can make the wrestling real without making the rumour real."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceAcknowledgementsG3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
