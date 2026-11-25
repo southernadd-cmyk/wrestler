@@ -205,4 +205,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (strengthCountersF8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const evidenceAcknowledgementsG1={
+  "elodie": [
+    "Agreed. An assertion is not an observation. We can leave the unsupported part aside.",
+    "That is a valid distinction. I would rather examine what the contest actually establishes."
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceAcknowledgementsG1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

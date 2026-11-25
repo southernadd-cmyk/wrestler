@@ -33,7 +33,7 @@
    if(k==='variants'){if(!Array.isArray(v)||!v.length||v.some(x=>!(approved[row.stage]?.[row.action]||[]).includes(x)))fail('unapproved variant condition '+row.id);}
    else if(k==='formats'){if(!Array.isArray(v)||!v.length||v.some(x=>!formats.includes(x)))fail('invalid format condition');}
    else if(k==='titleMatch'||k==='hasMouthpiece'||k==='landed'){if(typeof v!=='boolean')fail('invalid boolean '+k);}
-   else if(k==='semanticClaim'){if(!((v==='evidence'&&((row.stage==='answer'&&row.action==='turn')||(row.stage==='push'&&row.action==='press'&&(row.side==='f'||row.side==='w'&&row.text.endsWith('?')))))||(v==='strength'&&row.stage==='answer'&&row.action==='turn'&&row.side==='f'&&row.text.includes('{strength}')))||when.hasMouthpiece!==false||when.variants)fail('invalid semantic topic row '+row.id);}
+   else if(k==='semanticClaim'){if(!((v==='evidence'&&((row.stage==='answer'&&row.action==='turn')||(row.stage==='push'&&((row.action==='press'&&(row.side==='f'||row.side==='w'&&row.text.endsWith('?')))||(row.action==='acknowledge'&&row.side==='w'&&row.category==='respect')))))||(v==='strength'&&row.stage==='answer'&&row.action==='turn'&&row.side==='f'&&row.text.includes('{strength}')))||when.hasMouthpiece!==false||when.variants)fail('invalid semantic topic row '+row.id);}
    else if(k==='speakerStyle'||k==='opponentStyle'||k==='subject'){if(!string(v))fail('invalid string '+k);}
    else if(!Number.isFinite(v)||v<0||(k==='minMeetings'&&!Number.isInteger(v))||(/Composure|Irritation/.test(k)&&v>100))fail('invalid number '+k);
   }
@@ -2346,6 +2346,11 @@
   if(!ctx||!sem||ctx.hasMouthpiece||ctx.stage!=='answer'||ctx.action!=='turn'||ctx.side!=='f'||(ctx.protected&&ctx.protected!=='contextual-variant')||sem.claim!=='strength'||sem.move!=='counter'||!string(sem.detail))return null;
   return select(cat,{...ctx,variant:null,protected:null,semanticClaim:sem.claim,strength:sem.detail},seed,{...mem,candidateFilter:r=>r.when.semanticClaim==='strength'});
  }
+ // G4G: acknowledge the demand for evidence without endorsing an unsupported allegation.
+ function selectAuthoredEvidenceAcknowledgement(cat,ctx,seed,mem,sem){
+  if(!ctx||!sem||ctx.hasMouthpiece||ctx.protected||ctx.stage!=='push'||ctx.action!=='acknowledge'||ctx.side!=='w'||sem.claim!=='evidence'||sem.move!=='acknowledge')return null;
+  return select(cat,{...ctx,variant:null,semanticClaim:sem.claim},seed,{...mem,candidateFilter:r=>r.when.semanticClaim==='evidence'});
+ }
  function selectSpecialistResponse(cat,ctx,seed,mem,sem){
   if(!ctx||!sem||ctx.hasMouthpiece||(ctx.protected&&ctx.protected!=='contextual-variant'))return null;
   const strength=ctx.side==='w'&&ctx.stage==='answer'&&ctx.action==='turn'&&sem.move==='rebut'&&sem.claim==='strength'&&string(sem.detail);
@@ -2699,5 +2704,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectSpecialistResponse,specialistReview,selectAuthoredTopic,selectAuthoredFollowup,selectAuthoredQuestion,selectAuthoredStrengthCounter,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectSpecialistResponse,specialistReview,selectAuthoredTopic,selectAuthoredFollowup,selectAuthoredQuestion,selectAuthoredStrengthCounter,selectAuthoredEvidenceAcknowledgement,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);

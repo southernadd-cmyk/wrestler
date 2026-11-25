@@ -252,4 +252,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (strengthCountersF8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const evidenceAcknowledgementsG1={
+  "felix": [
+    "That's fair. I know better than to pretend I can prove something I haven't seen.",
+    "You're right to ask for something concrete. I'd rather show you what I can do than keep repeating a claim."
+  ],
+  "kezia": [
+    "I take that point. I should be able to show what I mean rather than just say it.",
+    "That's a fair standard. I'd like us to let the wrestling speak for what we can actually demonstrate."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceAcknowledgementsG1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
