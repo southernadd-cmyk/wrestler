@@ -223,4 +223,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF5={
+  "winnie": [
+    "You've got a plan for my {strength}. Rather like having the right spanner: it still needs to fit when the bolt sticks.",
+    "You've done your homework on my {strength}. Make sure you've packed a spare when that first answer doesn't get you home."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

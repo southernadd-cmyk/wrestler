@@ -206,4 +206,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (strengthCountersF2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF5={
+  "tori": [
+    "You've built a circuit around my {strength}. Let's see where the current goes when you try to cut it off.",
+    "Knowing how to contain my {strength} on paper won't tell you what happens when the pressure rises."
+  ],
+  "zara": [
+    "Right, you've got a plan for my {strength}. Fair play. Let's see how much of it you remember when we're moving.",
+    "Mate, you can talk about stopping my {strength} all you like. I'd rather find out whether you actually can."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

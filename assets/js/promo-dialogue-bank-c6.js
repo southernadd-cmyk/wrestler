@@ -226,4 +226,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF5={
+  "vera": [
+    "Your measurements of my {strength} give you a starting value. Allow for the angle I change when you engage.",
+    "You have accounted for my {strength}. Now measure how much time your proposed defence actually leaves you."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
