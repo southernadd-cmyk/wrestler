@@ -30,6 +30,8 @@ function add(bucket,line,owner){
 const finishes=['win_clean','lose_clean','win_dirty','lose_protected'];
 const samplesPerWorker=16;
 let unresolved=0,resumeChecks=0,samePairCore=0,repeatedPairCore=0;
+const availableIds=new Set(),selectedIds=new Set(),slotCoverage=new Map();
+function slot(k){if(!slotCoverage.has(k))slotCoverage.set(k,{available:new Set(),selected:new Set(),spoken:0,authored:0,composed:0,graph:0,protected:0,semanticBypass:0});return slotCoverage.get(k);}
 for(const [i,w] of roster.entries()){
  const pool=opponents.filter(f=>f.id!==w.id);
  const pair=pool[i%pool.length],pairSeen=new Set();
@@ -41,6 +43,7 @@ for(const [i,w] of roster.entries()){
   // Synthetic rivalry heat only: not a substitute for a persisted played career.
   const rival=j%2?{heat:55,matches:2,closed:false}:null;
   const st=Mic.begin(c,w,f,rival,null,p,{directed:process.env.PROMO_AUDIT_LEGACY!=='1',formats:process.env.PROMO_AUDIT_LEGACY!=='1',dialogue:process.env.PROMO_AUDIT_LEGACY!=='1',authored:process.env.PROMO_AUDIT_LEGACY!=='1',banks:promoBanks(w.id,f.id),composition:process.env.PROMO_AUDIT_LEGACY!=='1',semantic:process.env.PROMO_AUDIT_LEGACY!=='1'});
+  for(const bank of st.authoredDialogue?.banks||[])for(const row of bank.rows){const id=bank.owner+'.'+row[0];availableIds.add(id);slot([row[1],row[2],row[3]].join('|')).available.add(id);}
   const rounds=[],choices=[],spoken=[];
   for(let step=0;st.stage!=='done';step++){
    assert.ok(step<12,'duel must terminate');
@@ -57,6 +60,7 @@ for(const [i,w] of roster.entries()){
    for(const d of st.log.slice(before)){
     inc(kinds,d.kind||'unknown');
     if(/\b(?:undefined|NaN)\b|\{[A-Z][A-Z0-9_]*\}/.test(d.line))unresolved++;
+    if(d.dialogueSlot){const q=d.dialogueSlot,k=slot([q.stage,q.action,q.side].join('|'));k.spoken++;if(q.protected)k.protected++;if(d.authoredId){k.authored++;k.selected.add(d.authoredId);selectedIds.add(d.authoredId);}else if(d.composedId)k.composed++;else k.graph++;if(d.composedId?.startsWith('semantic.'))k.semanticBypass++;}
     const line=normal(d.line,[w,f],p);
     if(!line)continue;
     if(d.side==='w'){
@@ -85,6 +89,7 @@ const summary={mode:process.env.PROMO_AUDIT_LEGACY==='1'?'legacy':'directed',sce
  voiceCoverage:{explicit:[...profiles.values()].filter(p=>p.explicitVoice).length,fallback:[...profiles.values()].filter(p=>!p.explicitVoice).length,withOwnPromo:[...profiles.values()].filter(p=>p.ownPromoSlots.length).length,archetypes:Object.fromEntries(voices)},
  authoredUtterances:scenes.reduce((n,s)=>n+s.authoredIds.length,0),authoredUniqueIds:new Set(scenes.flatMap(s=>s.authoredIds)).size,sceneFormats:scenes.reduce((a,s)=>(a[s.format]=(a[s.format]||0)+1,a),{}),roundPatterns:Object.fromEntries(formats),promiseTypes:Object.fromEntries(promises),lineKinds:Object.fromEntries(kinds),unresolvedMarkers:unresolved,
  samePair:{coreUtterances:samePairCore,repeated:repeatedPairCore,repeatedPct:pct(repeatedPairCore,samePairCore)},
+ bankReach:{available:availableIds.size,selected:selectedIds.size,notSelected:[...availableIds].filter(id=>!selectedIds.has(id)).length,slots:Object.fromEntries([...slotCoverage].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,{...v,available:v.available.size,selected:v.selected.size}]))},
  lines:Object.fromEntries(Object.entries(lines).map(([k,v])=>[k,stats(v)]))};
 console.log('PROMO QUALITY BASELINE\n'+JSON.stringify(summary,null,2));
 const sampleIds=[...new Set(['nova','mara',...roster.filter(w=>!Room.VOICE[w.id]).slice(0,2).map(w=>w.id),...roster.slice(0,2).map(w=>w.id)])];
