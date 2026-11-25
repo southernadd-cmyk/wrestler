@@ -89,4 +89,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidencePressRepliesD4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD5={
+  "bashir": [
+    "Watch whether we can still wrestle properly when we're tired. That's a test I'd give any of the young ones.",
+    "The result and the way we earn it are there for everyone to see. Do the job properly and let them judge."
+  ],
+  "cleo": [
+    "The result is measurable. So is whether our methods work against resistance. Neither requires that allegation.",
+    "We can test the wrestling claims directly against each other. That's the experiment I propose."
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidencePressRepliesD5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

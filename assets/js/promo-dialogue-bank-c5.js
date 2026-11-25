@@ -107,4 +107,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressRepliesD4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD5={
+  "winnie": [
+    "It's like checking whether a chair holds your weight. Sit on it. We'll know whether our wrestling holds up when we wrestle.",
+    "Never mind the label on the tin. They can see what we've actually brought once the bell goes."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressRepliesD5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -99,4 +99,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD5={
+  "ayla": [
+    "They can watch how the contest unfolds and judge the ending for themselves. We haven't written it yet.",
+    "Let the match tell its own story. What we do in the difficult moments will mean more than an accusation."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressRepliesD5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
