@@ -89,4 +89,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidencePressRepliesD2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD3={
+  "jun": [
+    "Watch the transition after the first counter. Which of us is ready for the next move?",
+    "What happens when the plan stops working? That is the question the match can answer."
+  ],
+  "kofi": [
+    "Keep your eyes on the landing! If I can make it count, everyone will see it.",
+    "They'll see if I can turn all that energy into a result. That's what I'm excited to find out."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

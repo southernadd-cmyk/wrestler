@@ -105,4 +105,11 @@
  ]
 };
  for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD3={
+  "magnus": [
+    "The audience may observe which of us can sustain the standard we have promised. I shall submit to that test.",
+    "We have a referee to establish the result and spectators to judge the performance. A perfectly adequate arrangement."
+  ]
+};
+ for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

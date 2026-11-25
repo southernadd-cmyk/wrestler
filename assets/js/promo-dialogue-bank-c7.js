@@ -92,4 +92,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressRepliesD2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD3={
+  "kellan": [
+    "Okay, test it! First bell to last bell. They'll see if my ideas actually work.",
+    "Who gets caught out? Who gets back up? There, two things we can find out!"
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

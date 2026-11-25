@@ -89,4 +89,11 @@
  ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD3={
+  "lyra": [
+    "Watch the instant you think you've got me stopped. Can I find another way out? We'll know soon enough.",
+    "They can see whether I keep moving when you take my space away. That's something a match can show."
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
