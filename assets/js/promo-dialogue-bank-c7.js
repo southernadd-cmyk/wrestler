@@ -113,4 +113,23 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD7={
+  "leandro": [
+    "Can we find out in the ring? I want to see which of us gets to the next move first.",
+    "Come on, the crowd can watch whether I keep that pace when you actually stop me. That's the bit I want."
+  ],
+  "liya": [
+    "They can see if I land the things I've been practising when you're trying to stop me. I'm excited to find out.",
+    "Let's give them something surprising that we can both stand behind. The match can show whether it works."
+  ],
+  "morgan": [
+    "The result is on the table. Let us see who can deliver what they have offered.",
+    "The audience paid for a contest, not an unverified claim. We can settle the wrestling on those terms."
+  ],
+  "nadia": [
+    "Watch who keeps the room alive once the opening spark has gone. The match will tell them.",
+    "The crowd can see whether I turn that first flash into a performance that lasts until the bell."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressRepliesD7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

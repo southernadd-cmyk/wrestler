@@ -118,4 +118,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD7={
+  "marisol": [
+    "Watch the moment before the grip changes. The small adjustment will tell them more than this argument.",
+    "They can see which of us notices the opening the other leaves. That is a detail worth judging."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidencePressRepliesD7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

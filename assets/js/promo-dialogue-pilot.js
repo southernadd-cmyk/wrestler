@@ -119,4 +119,11 @@
   ]
 };
  for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidencePressRepliesD4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD7={
+  "nova": [
+    "We can observe how each of us responds when the other changes position. That would be a useful test of our wrestling.",
+    "The audience can judge the execution and the result for themselves. We don't need an allegation to make that contest meaningful."
+  ]
+};
+ for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidencePressRepliesD7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
