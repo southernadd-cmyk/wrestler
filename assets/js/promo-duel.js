@@ -418,6 +418,11 @@
   if(st.director){
    Director.observe(st.director,st,rec,st.log.slice(beforeLog));
    if(r==='answer'){
+    const event=Director.spontaneous(st.director,st,rec);
+    if(event){
+     st.director.event={...event,line:fmt(event.line,st)};
+     push(st,'stage',st.director.event.line,'event',0);
+    }
     const route=Director.route(st.director,st,rec);st.director.followup=route;
     if(!route.follow){st.round=3;st.director.phase='closing';}
    }
