@@ -283,4 +283,31 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceAcknowledgementsG5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG6={
+  "bao": [
+    "Fair. A hold you have not felt is still a hold you have to test.",
+    "I accept the correction. Let the hands show us what is true."
+  ],
+  "miro": [
+    "Oh, right. Sorry, I made that sound more certain than it is.",
+    "Fair point. I'd rather admit that now than keep repeating something I don't know."
+  ],
+  "ivo": [
+    "Agreed. That step has not been established; I cannot build the next step on it.",
+    "Correct. Remove that assumption from the sequence and start where the evidence begins."
+  ],
+  "rina": [
+    "Fair note. I heard the melody in my head, not in the room.",
+    "I'll take that correction. Let's leave the unwritten bars unwritten until we play them."
+  ],
+  "cass": [
+    "Fair. My evidence appears to have missed its train and isn't coming.",
+    "You've got me. I'll retire that particular tall story before it gets a booking of its own."
+  ],
+  "jun": [
+    "That is a useful correction. I will not treat a possible counter as one that has already landed.",
+    "Agreed. We can judge the opening when it happens, not before."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

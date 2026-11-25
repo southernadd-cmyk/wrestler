@@ -278,4 +278,27 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceAcknowledgementsG5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG6={
+  "milo": [
+    "Fair enough. Been on enough roads to know my memory isn't a match record.",
+    "You're right. I'm too knackered to be defending something I can't establish."
+  ],
+  "bronte": [
+    "Agreed. No anchor for that claim. We let it go.",
+    "Point taken. Mark the position we actually know, not the one we hoped to reach."
+  ],
+  "gus": [
+    "Right, that's fair. We don't sign off a job that hasn't been done.",
+    "Agreed. Keep the paperwork straight and leave that claim off it."
+  ],
+  "nikita": [
+    "Correct. That has not been demonstrated. I withdraw it.",
+    "Accepted. We know what we can verify. Nothing else belongs in the answer."
+  ],
+  "jett": [
+    "Okay, yep, I jumped a step. That isn't proof, is it?",
+    "Right, right. We can try it, but I can't say it's worked until it has."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

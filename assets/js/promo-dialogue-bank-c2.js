@@ -258,4 +258,35 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceAcknowledgementsG4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG6={
+  "nico": [
+    "Fair! A highlight in my head isn't a highlight on the tape.",
+    "You've got me on that one. Let's give them something worth replaying instead."
+  ],
+  "cal": [
+    "Right. No proof, no claim.",
+    "Fair. Leave it there. We'll wrestle."
+  ],
+  "otis": [
+    "That's fair, mate. You can't put an extra hour on the timesheet because it felt like one.",
+    "I'll strike that off. What we've actually done is enough to be getting on with."
+  ],
+  "ezra": [
+    "Your distinction is valid. A proposition is not substantiated by repetition.",
+    "I accept the amendment. Only an observable result should enter the assessment."
+  ],
+  "roxy": [
+    "All right, darling. A fabulous story is still a story if nobody can back it up.",
+    "I'll give you the correction. The performance is quite capable of speaking for itself."
+  ],
+  "silas": [
+    "Agreed. That observation does not isolate the cause, so I'll withdraw the inference.",
+    "Point taken. We can test the proposition without assuming its outcome."
+  ],
+  "night": [
+    "Fair. A rumour travels quicker than I do, but it doesn't get a pinfall.",
+    "Credit for that correction. Keep your eyes on the ring, not the shadows."
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

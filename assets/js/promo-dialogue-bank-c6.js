@@ -289,4 +289,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceAcknowledgementsG5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG6={
+  "alina": [
+    "You're right. How strongly I feel about something does not tell me whether it happened.",
+    "I'll take that correction. I want the honest version of this contest, not a more convenient story."
+  ],
+  "gideon": [
+    "Correct. Anticipation is not observation.",
+    "Agreed. The move must actually take place before I can assess it."
+  ],
+  "tomas": [
+    "Quite fair. I ought not to suggest certainty where there is none.",
+    "Thank you for the correction. I shall reserve judgement until we have something definite to discuss."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

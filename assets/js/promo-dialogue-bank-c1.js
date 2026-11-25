@@ -264,4 +264,31 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceAcknowledgementsG4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG6={
+  "mara": [
+    "I concede the correction. An inference cannot be admitted as a fact merely because it suits my case.",
+    "Very well. I shall confine my argument to what can be established."
+  ],
+  "rex": [
+    "Fair enough. Can't call it a result till it's happened.",
+    "I'll give you that. Let's do the shift instead of talking up the last one."
+  ],
+  "brick": [
+    "Aye. If I can't show you it happened, I've no business saying it did.",
+    "That's fair. I'll keep my mouth shut on that bit and do my work."
+  ],
+  "juno": [
+    "You're right about the distinction. I can prepare for a possibility without pretending it's certain.",
+    "I'll accept that. We should be judging the actual exchanges, not filling in the blanks."
+  ],
+  "dax": [
+    "All right. I won't ask you to take my word for something neither of us can establish.",
+    "Fair correction. Let's give the people a contest they can judge with their own eyes."
+  ],
+  "val": [
+    "I accept that point. Being confident in my assessment doesn't make it a fact.",
+    "That's reasonable. I will stand by what can be demonstrated, and no more."
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

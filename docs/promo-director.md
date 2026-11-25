@@ -251,3 +251,7 @@ Twenty additional owner-specific lines for Mae, Morgan, Nadia, Nate, Noelle, Pri
 ## G4G.5 — final sampled acknowledgement gaps
 
 Ten additional owner-specific lines for Sylvia, Theo, Tomas Ash, Vera and Zane. Target the final five sampled recoveries, preserving all 42 previous recoveries with zero losses; 39 original owners and 78 rows total. Sampled recovery and full roster coverage remain distinct: 41 original owners still need authored acknowledgements. Selection engine unchanged; compact assets and manifest rebuilt. CI pending.
+
+## G4G.6 — original roster acknowledgement completion
+
+Eighty-two individually authored evidence acknowledgements for the remaining 41 original owners, including the pilot-only Nova and Magnus. All 80 original characters now have two dedicated scoped acknowledgements (160 rows). Retain the fixed sample's 47 recoveries across 39 owners with zero losses; roster-wide fixture coverage is distinct from sampled runtime recovery. Regenerate compact assets and manifest, remove superseded revisions, and check selection scope and history guards. Selection engine, UI and workflows unchanged. CI pending.
