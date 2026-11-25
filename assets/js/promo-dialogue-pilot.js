@@ -96,6 +96,12 @@
   "I can explain my approach to this match in detail, but I cannot prove that allegation. Let's keep those two things separate.",
   "Then we have cleared up that point. I would rather test the wrestling itself than an unproven accusation.",
   "That's a fair distinction. We can leave the allegation aside and see which approach works on the mat."
+ ],
+ "magnus": [
+  "A perfectly proper demand. I regret that I cannot offer you particulars sufficient to sustain the allegation.",
+  "I shall not insult this audience by substituting an elegant turn of phrase for evidence. Consider that charge withdrawn.",
+  "Very good. We can dispense with the allegation and attend to the actual occasion.",
+  "A sensible correction. There is quite enough at stake in this contest without embellishing it with unsupported charges."
  ]
 };
  for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

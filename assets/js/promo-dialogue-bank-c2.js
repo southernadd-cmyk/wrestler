@@ -45,6 +45,18 @@
   "I can stand behind my own work. I can't give you a particular example that proves what I've said about yours.",
   "That's fair. Let our work speak for us, rather than an allegation neither of us has established.",
   "Good. We've got a match to lead, not an unsupported accusation to carry."
+ ],
+ "nico": [
+  "I've got the crowd in my head and I've got ahead of myself. I can't give you an example that proves it.",
+  "That was a bit of noise from me, wasn't it? There's no specific incident I can establish. Let's give them a match.",
+  "Right, that's cleared up. Let's get these people watching something worth their time.",
+  "Fair enough. Save the energy for the match. We don't need that accusation."
+ ],
+ "otis": [
+  "I can't give you the facts for that one. No sense carrying it around when we've got a match to wrestle.",
+  "Fair question. I wouldn't want you saying it about me without something to back it up, either.",
+  "Reasonable. Put that aside, then. We've got enough work in front of us.",
+  "Right. No point wearing ourselves out over something we can't establish."
  ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
