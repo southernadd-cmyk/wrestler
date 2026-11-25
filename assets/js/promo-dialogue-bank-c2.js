@@ -21,6 +21,12 @@
   "There isn't an incident I can point to. I'm not keeping that accusation in the spotlight.",
   "Then cut that scene. The action belongs in the ring.",
   "Good. Leave the shadows alone. They'll see enough when the lights come on."
+ ],
+ "silas": [
+  "Your objection is valid. My assertion lacks supporting evidence, so I cannot use it as a premise.",
+  "I have not established the fact I would need to establish. The correct response is to remove the charge.",
+  "Then the unsupported premise is discarded. We have a wrestling contest to resolve.",
+  "Agreed on that distinction. The result of the match is the remaining question."
  ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

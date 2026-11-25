@@ -89,4 +89,14 @@
   id:owner+'.pilot.'+String(i+1).padStart(2,'0'),stage,action,side,category,text,
   when:{hasMouthpiece:false,...(variant?{variants:[variant]}:{})}
  }))})));
+ // Topic-gated, independently authored replies to unsupported charges.
+ const evidenceReplies={
+ "nova": [
+  "You've asked me for a specific example. That's fair. I can't establish the charge, so it shouldn't be part of my argument.",
+  "I can explain my approach to this match in detail, but I cannot prove that allegation. Let's keep those two things separate.",
+  "Then we have cleared up that point. I would rather test the wrestling itself than an unproven accusation.",
+  "That's a fair distinction. We can leave the allegation aside and see which approach works on the mat."
+ ]
+};
+ for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

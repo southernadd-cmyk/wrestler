@@ -33,6 +33,12 @@
   "I shouldn't turn a detail I can't verify into a conclusion about you. I'll take that part back.",
   "Good. Take away that unsupported detail and we can concentrate on the things that actually matter.",
   "That's a fair correction. I'll be looking at the details of your wrestling, not that accusation."
+ ],
+ "tomas": [
+  "How very fair of you to ask. I haven't a particular instance I can cite, and it would be rather ungracious to invent one.",
+  "I owe you the courtesy of an honest answer. I can't substantiate the allegation, so please disregard it.",
+  "Quite right. We can dispense with that little unpleasantness and have a proper match.",
+  "Thank you for making the distinction. Let us proceed without the unsupported charge."
  ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
