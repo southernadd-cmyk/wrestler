@@ -332,7 +332,7 @@
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
   if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,...(opts.formats&&opts.semantic?{reviewedAck:1,reviewedContext:1,semanticBankReuse:2}:{}),used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
-  if(opts.semantic&&Semantic&&st.authoredDialogue&&opts.directed){st.semantic={v:1,...(opts.formats?{variety:1,followupFlow:1,characterRebuttal:1}:{})};core.semanticSpeech=true;}
+  if(opts.semantic&&Semantic&&st.authoredDialogue&&opts.directed){st.semantic={v:1,...(opts.formats?{variety:1,followupFlow:1,characterRebuttal:1,claimClassification:1}:{})};core.semanticSpeech=true;}
   if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
@@ -474,7 +474,7 @@
   e.dialogueSlot=Dialogue.tag(ctx);
   if(line){if(line.composed)e.composedId=line.id;else e.authoredId=line.id;}
   if(st.semantic&&Semantic.allowed(st)){
-   const tag=line?.semantic||(e.side==='f'?(line&&!line.composed?Semantic.fromBank(line.id,line.text):!line?Semantic.classify(source?.speechSource,source?.speechDetail):null):null);
+   const tag=line?.semantic||(e.side==='f'?(line&&!line.composed?Semantic.fromBank(line.id,line.text):!line?(Semantic.classify(source?.speechSource,source?.speechDetail,st.semantic.claimClassification===1)||reviewedFallbackClaim(st,ctx,e,source)):null):null);
    if(tag)e.semantic=tag;
   }
  }
@@ -699,6 +699,59 @@
   "We'll see what they make of the match."
  ]
 });
+ // G4B.1: the graph sometimes speaks a contextual sentence instead of
+ // a variant reply. Review the complete original and the actual emitted
+ // wording, not the opening angle, style estimate, or a keyword.
+ const fallbackClaimSources=Object.freeze({
+ "accusation": [
+  "You have never even worked a match with me, {W}. Name one thing I have done to deserve that accusation.",
+  "evidence"
+ ],
+ "proof": [
+  "You are claiming you have me worked out before we have ever faced each other. How will you stop my {STRENGTH}?",
+  "strength"
+ ],
+ "people": [
+  "These people will still be here after the match, {W}. Can you give them a reason to remember the result, not just your speech?",
+  "effort"
+ ],
+ "hometown": [
+  "Insult the town all you like, {W}. They paid to watch somebody shut you up, and that somebody is me.",
+  "home"
+ ],
+ "numbers": [
+  "Your maths is wrong, {W}. My {STRENGTH} do not care about percentages.",
+  "strength"
+ ],
+ "imagery": [
+  "That is an interesting picture, {W}. My {STRENGTH} will be real when the bell rings. Where is your answer?",
+  "strength"
+ ],
+ "swagger": [
+  "You want all of the attention, {W}. The difficult part is doing something worth watching when I start using my {STRENGTH}.",
+  "strength"
+ ]
+});
+ const personalClaimSource='You still have no evidence, {W}. Now you are trying to make the insult louder.';
+ function reviewedFallbackClaim(st,ctx,e,d){
+  if(st.semantic?.claimClassification!==1||!Semantic.allowed(st)||!ctx||ctx.side!=='f'||ctx.hasMouthpiece||!d||d.case||d.speechSource||e.side!=='f'||e.authoredId||e.composedId)return null;
+  const detail=st.core.claim?.strength;
+  const render=template=>fmt(template,st).replace(/\{STRENGTH\}/g,detail||'');
+  const review=ctx.stage==='open'&&Object.prototype.hasOwnProperty.call(fallbackClaimSources,ctx.action)?fallbackClaimSources[ctx.action]:ctx.stage==='answer'&&ctx.action==='personal'?[personalClaimSource,'evidence']:null;
+  if(!review)return null;
+  const [original,claim]=review;
+  if(d.line!==render(original)||claim==='strength'&&(!detail||!e.line.includes(detail)))return null;
+  // Compare with the literal original or the exact selected existing
+  // fallback alternative. Never allow arbitrary rewritten text.
+  let template=original;
+  if(e.line!==render(original)){
+   const pool=ctx.stage==='open'&&ctx.action==='accusation'?accusationReplies:ctx.stage==='answer'&&ctx.action==='personal'?personalReplies:null;
+   if(!pool||st.fallbackVariety!==1)return null;
+   template=pick(pool,st.seed,'graph-fallback|'+ctx.stage+'|'+ctx.action);
+   if(e.line!==render(template))return null;
+  }
+  return {v:1,kind:'claim',claim,source:Semantic.source('fallback-'+ctx.stage+'-'+ctx.action,template).replace(/^graph:/,'fallback:'),...(claim==='strength'?{detail}:{})};
+ }
  function graphFallback(st,stage,id,d){
   if(stage==='close'){
    if(st.closingVariety!==1||st.speaker||st.core.case||st.core.claim?.hasEvidence||d.case||d.speechSource)return d.line;
@@ -1654,5 +1707,5 @@
    unresolved:st.round===0?((st.core.cases||[]).find(c=>c.continuation)?.reminder||null):st.core.case?.continuation?st.core.case.reminder:null};
  }
  const result=st=>st?.stage==='done'?st.result:null;
- root.OfficeMic={ROUNDS,PUSH,HOOK,FLUFF,CROWD,begin,choose,choices,view,result,clientClaim,meterWord,riskWord,openFit,answerFit,pushFit,arcFit,READ,ANSWER_FIT,reviewedOpponentVoice};
+ root.OfficeMic={ROUNDS,PUSH,HOOK,FLUFF,CROWD,begin,choose,choices,view,result,clientClaim,meterWord,riskWord,openFit,answerFit,pushFit,arcFit,READ,ANSWER_FIT,reviewedOpponentVoice,reviewedFallbackClaim};
 })(typeof window!=='undefined'?window:globalThis);
