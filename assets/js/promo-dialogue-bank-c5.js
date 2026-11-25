@@ -314,4 +314,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH6={
+  "milo": {
+    "w": [
+      "I've done enough travelling to know the reputation on the poster isn't the person you meet in the ring.",
+      "You may have taken the longer road to get here. We still have the same distance to cover tonight."
+    ],
+    "f": [
+      "Experience is knowing how to wrestle a decent match when the journey has taken everything out of you.",
+      "Been through enough awkward exchanges to know not to force a move that's gone missing."
+    ]
+  },
+  "nolan": {
+    "w": [
+      "Your years are worth respecting, but let's see what the lesson looks like when I ask a different question.",
+      "A good hand never stops learning. I intend to make this a useful lesson for both of us."
+    ],
+    "f": [
+      "Experience teaches you to keep both wrestlers safe while finding a way out of trouble.",
+      "The best lessons are the ones that still work when the match takes an unexpected turn."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -325,4 +325,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH6B={
+  "nico": {
+    "w": [
+      "You've got a longer highlights reel, but nobody's edited tonight's footage yet.",
+      "Experience gives you a feel for the next beat. I'm going to change the timing of it."
+    ],
+    "f": [
+      "I've learned that the best moment to go isn't always the moment that looks most spectacular.",
+      "Experience is knowing how to turn a missed beat into another chance."
+    ]
+  },
+  "red": {
+    "w": [
+      "You've been around. Good. You'll still have to wrestle me.",
+      "Years on the job don't mean you get the easy shift tonight."
+    ],
+    "f": [
+      "Experience tells me when a bloke's trying to draw me in. I don't have to bite.",
+      "Learned to keep my feet and save my breath. Come on, then."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6B[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
