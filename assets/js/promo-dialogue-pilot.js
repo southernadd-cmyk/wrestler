@@ -204,4 +204,17 @@
   }
 };
  for(const pack of root.OfficePromoPilot)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI6={
+  "nova": {
+    "w": [
+      "You've observed my previous matches. Your conclusions still depend on the forces present in this particular position.",
+      "A recording shows how I solved one mechanical problem. It doesn't establish that I'll be presented with the same problem tonight."
+    ],
+    "f": [
+      "I study the point at which the centre of mass moves beyond the base of support. Then I practise recognising it under resistance.",
+      "My preparation involves testing the same hold against different angles of force, rather than memorising the appearance of the movement."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoPilot)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

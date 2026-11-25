@@ -9,7 +9,8 @@ const cat=L.catalogue(root.OfficePromoPilot),plain=x=>JSON.parse(JSON.stringify(
 const ids=['mara','brick','nova','magnus'];
 assert.deepEqual(Array.from(cat.coverage(),p=>p.owner).sort(),ids.map(x=>'wrestler:'+x).sort());
 const authored=new Map(root.OfficePromoPilot.flatMap(p=>p.lines.map(r=>[r.id,r])));
-assert.equal(authored.size,111);
+assert.equal(authored.size,115);
+for(const side of ['w','f'])assert.equal([...authored.values()].filter(r=>r.id.startsWith('nova.pilot.st.')&&r.when.semanticClaim==='study'&&r.stage==='answer'&&r.action==='turn'&&r.side===side).length,2,'Nova study expansion '+side);
 for(const side of ['w','f'])assert.equal([...authored.values()].filter(r=>r.id.startsWith('magnus.pilot.st.')&&r.when.semanticClaim==='study'&&r.stage==='answer'&&r.action==='turn'&&r.side===side).length,2,'Magnus study expansion '+side);
 for(const side of ['w','f'])assert.equal([...authored.values()].filter(r=>r.id.startsWith('magnus.pilot.ex.')&&r.when.semanticClaim==='experience'&&r.stage==='answer'&&r.action==='turn'&&r.side===side).length,2,'Magnus experience expansion '+side);
 for(const side of ['w','f'])assert.equal([...authored.values()].filter(r=>r.id.startsWith('nova.pilot.ex.')&&r.when.semanticClaim==='experience'&&r.stage==='answer'&&r.action==='turn'&&r.side===side).length,2,'Nova experience expansion '+side);

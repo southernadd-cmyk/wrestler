@@ -305,3 +305,7 @@ G4I.3 recovered 37 sampled exchanges (17 player, 20 opponent), zero losses, in r
 ## G4I.5 — fifth study and preparation batch
 
 G4I.4 recovered 47 sampled exchanges (23 player, 24 opponent), zero losses, in run 45713330729. Add two rebuttals and two counters each for Gideon, Kellan, Kira, Kit, Kofi, Lyra, Mae, Mara, Marisol and Morgan (one sampled gap each; alphabetical tie-break). Forty new rows, 148 across 37 owners. Target ten incremental recoveries (4 player, 6 opponent), 57 cumulative, preserving all 47 prior hits and earlier policy parity. Selection engine, save schema and CI unchanged. Regenerate ten compact banks and remove superseded revisions. CI pending.
+
+## G4I.6 — final sampled study and preparation batch
+
+G4I.5 recovered 57 sampled exchanges (27 player, 30 opponent), zero losses, in run 45714089553. Add two rebuttals and two counters each for Nate, Night, Noelle, Nova, Rev, Rina, Rocco, Silas, Sol, Theo, Tomas, Tori and Zane: all remaining sampled study-gap owners. Fifty-two new rows, 200 across 50 owners. Target thirteen incremental recoveries (5 player, 8 opponent), 70 cumulative, preserving all 57 prior hits and earlier policy parity. Extend Nova's pilot inventory. Selection engine, save schema and CI unchanged. Regenerate thirteen compact banks and remove superseded revisions. Full CI pending; 100% refers to this sampled study-gap audit only, not all possible study prompts or all roster members.

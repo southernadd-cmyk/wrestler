@@ -427,4 +427,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI6={
+  "silas": {
+    "w": [
+      "Your observations describe an earlier set of conditions. The current encounter is not a controlled replication.",
+      "The sample you studied may be adequate. Your prediction remains conditional on my repeating the observed behaviour."
+    ],
+    "f": [
+      "I isolate the variables governing a transition and test each under resistance.",
+      "My preparation includes identifying the earliest observable sign that an anticipated response is no longer viable."
+    ]
+  },
+  "night": {
+    "w": [
+      "You've watched the route I took. What about the opening you never saw me use?",
+      "Your notes tell you where I've been. They don't tell you where I'm waiting tonight."
+    ],
+    "f": [
+      "I study the moment an opponent stops looking for the second threat. That's usually where the useful opening is.",
+      "I practise leaving an exchange without giving away where I'm going next."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

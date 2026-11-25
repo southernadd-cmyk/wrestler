@@ -497,4 +497,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI6={
+  "tomas": {
+    "w": [
+      "How flattering that you've devoted your evenings to my work. I do hope you have allowed for a little improvisation.",
+      "I admire your diligence. It would be rather dull of me to give you precisely the same encounter."
+    ],
+    "f": [
+      "I study the transitions that appear effortless. There is generally a rather considerable amount of work concealed in them.",
+      "I rehearse the less elegant alternatives too. One must be able to recover when the preferred movement proves impossible."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

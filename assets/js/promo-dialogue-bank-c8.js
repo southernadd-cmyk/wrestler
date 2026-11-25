@@ -347,4 +347,37 @@
   }
 };
  for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const studyRepliesI6={
+  "noelle": {
+    "w": [
+      "Your research establishes a premise. It does not demonstrate that your proposed response will succeed.",
+      "You have studied my previous decisions. What grounds do you have for assuming that the circumstances will be identical?"
+    ],
+    "f": [
+      "I study the evidence for and against each likely response, then test the distinction in practice.",
+      "I prepare by identifying the assumptions a technique depends on and rehearsing what to do when one fails."
+    ]
+  },
+  "zane": {
+    "w": [
+      "You've watched me wrestle before. I've learned a couple of things since then, though.",
+      "I know you've done your homework. I want to see if the stuff I've been practising catches you out."
+    ],
+    "f": [
+      "I've been watching the parts where I get caught, then asking what I should have done differently.",
+      "I'm trying to practise the way out of a move as well as the way in. It's starting to make more sense."
+    ]
+  },
+  "rev": {
+    "w": [
+      "You have studied the old lesson. The trial before us may reveal another one.",
+      "You know the words of yesterday's sermon. Tonight's deeds are not written in that book."
+    ],
+    "f": [
+      "I study the moments in which a wrestler's certainty fails. There is wisdom in learning how they recover.",
+      "My preparation is to practise patience when the expected path is closed, rather than force my way through it."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
