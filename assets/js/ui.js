@@ -21,9 +21,9 @@ function face(type,id,name,cls='portrait'){return Pt.avatar({key:type+':'+id,nam
 function identityCard(includeEdit=false){
  const p=G.normaliseIdentity(S()?.identity);
  return '<div class="player-identity-card">'+Pt.playerPortrait(p.portrait,p.manager,'portrait')+
-  '<div class="player-identity-text"><b>'+esc(p.manager)+'</b><span>'+esc(p.stable)+'</span>'+
+  '<div class="player-identity-text"><b>'+esc(p.manager)+'</b><span>'+esc(p.stable)+'</span></div>'+
   (includeEdit?'<button class="btn sm" type="button" data-act="profile">Edit identity</button>':'')+
-  '</div></div>';
+  '</div>';
 }
 // Contextual records use IDs, not names, so a renamed character still opens correctly.
 function recordLink(kind,id,name){
@@ -292,6 +292,8 @@ function histMove(dir){
 
 function renderChrome(){
  const s=S(),need=G.pending().length,cards=s.card.length,unread=s.inbox.filter(m=>!m.read).length;
+ const headerIdentity=$('#headerIdentity'),identityKey=JSON.stringify(G.normaliseIdentity(s.identity));
+ if(headerIdentity.dataset.identity!==identityKey){headerIdentity.innerHTML=identityCard(true);headerIdentity.dataset.identity=identityKey;}
  $('#readouts').innerHTML=`<div class="ro"><small>Season ${s.season}</small><b>Week ${s.week} of 16</b></div><div class="ro"><small>Bank</small><b class="${s.cash<0?'neg':''}">${money(s.cash)}</b></div><div class="ro"><small>Reputation</small><b>${s.rep}</b></div><div class="ro"><small>Meetings left</small><b>${s.focus} of 2</b></div>`;
  $('#continue').innerHTML=need?`Reply to inbox<small>${need} ${plural(need,'reply','replies')} required</small>`:cards?`Start match night<small>${cards} on the card</small>`:!s.roster.length&&s.week===1?`Sign a wrestler<small>Build your stable first</small>`:`Advance week<small>To week ${s.week===16?1:s.week+1}</small>`;
  const badge={inbox:need?`<span class="badge">${need}</span>`:unread?`<span class="badge soft">${unread}</span>`:'',squad:`<span class="badge soft">${s.roster.length}/5</span>`,offers:s.offers.length?`<span class="badge soft">${s.offers.length}</span>`:'',fixtures:cards?`<span class="badge soft">${cards}</span>`:'',game:s.systemErrors?.length?`<span class="badge">${s.systemErrors.length}</span>`:''};
@@ -299,7 +301,7 @@ function renderChrome(){
  const group=NAV.find(([,items])=>items.some(([id])=>id===cur))||NAV[0];
  $('#phoneTabs').innerHTML=NAV.map(([label,[[id]]])=>`<button class="phone-tab" data-go="${id}" ${group[0]===label?'aria-current="true"':''}>${label}${id==='desk'&&need?`<span class="phone-badge" aria-label="${need} awaiting reply">${need}</span>`:''}</button>`).join('');
  $('#phoneSections').innerHTML=group[1].length>1?group[1].map(([id,label])=>`<button class="phone-tab" data-go="${id}" ${cur===id?'aria-current="page"':''}>${PHONE_LABELS[id]||label}${id==='inbox'&&need?`<span class="phone-badge">${need}</span>`:''}</button>`).join(''):'';
- $('#nav').innerHTML='<div class="player-nav-head">'+identityCard(true)+'</div>'+NAV.map(([g,items])=>`<h4>${g}</h4>`+items.map(([id,l])=>`<button class="item" data-go="${id}" ${cur===id?'aria-current="page"':''}><span>${l}</span>${badge[id]||''}</button>`).join('')).join('');
+ $('#nav').innerHTML=NAV.map(([g,items])=>`<h4>${g}</h4>`+items.map(([id,l])=>`<button class="item" data-go="${id}" ${cur===id?'aria-current="page"':''}><span>${l}</span>${badge[id]||''}</button>`).join('')).join('');
  $('#nav [aria-current]')?.scrollIntoView({block:'nearest',inline:'nearest'});
  $('[data-hist="back"]').disabled=!past.length;$('[data-hist="fwd"]').disabled=!ahead.length;
  const lead=G.pending()[0]||s.inbox.find(m=>!m.read)||s.inbox[0];
@@ -370,7 +372,7 @@ function renderDesk(){
   s.offers.length?
   {heading:s.offers.length+' '+plural(s.offers.length,'offer')+' available',why:'Consider the terms before advancing the week.',go:'offers',cta:'Review offers'}:
   {heading:'Ready to advance',why:'Use Continue to reach next week and receive new offers.',go:null,cta:null};
- const briefing=identityCard()+`<div class="desk-brief"><div><small>NEXT ACTION</small><b>${esc(brief.heading)}</b><span>${esc(brief.why)}</span></div>${brief.go?`<button class="btn sm" data-go="${brief.go}">${esc(brief.cta)}</button>`:''}</div>`;
+ const briefing=`<div class="desk-brief"><div><small>NEXT ACTION</small><b>${esc(brief.heading)}</b><span>${esc(brief.why)}</span></div>${brief.go?`<button class="btn sm" data-go="${brief.go}">${esc(brief.cta)}</button>`:''}</div>`;
  let mission='';
  if(stakes)mission=win('Sponsor trial',trialBlock(),{area:'mission',note:'Weeks 1 to 4'});
  else if(s.monthReview&&s.season===1)mission=win(s.monthReview.passed?'Backer invested £450':'Backer declined funding',`<p>Best match in the trial: ${s.monthReview.best}★. Training and promos: ${money(s.monthReview.business?.training||0)}. Contract improvements: ${money(s.monthReview.business?.negotiated||0)}. Promises kept ${s.monthReview.business?.kept||0}, broken ${s.monthReview.business?.broken||0}.</p><p class="dim">The regional circuit runs to week 16. Checkpoints are under Objectives.</p><button class="btn sm" data-go="objectives">Objectives</button>`,{area:'mission',note:'Trial review'});
@@ -1939,7 +1941,7 @@ document.addEventListener('click',e=>{
   }
   const profile=G.normaliseIdentity({manager,stable,portrait:identityPortrait});
   if(identityMode==='edit'){
-   G.setIdentity(profile);$('#modal').close();render();toast('Manager profile updated.');return;
+   G.setIdentity(profile);$('#modal').close();render();$('#headerIdentity [data-act="profile"]')?.focus({preventScroll:true});toast('Manager profile updated.');return;
   }
   if(G.hasSave()&&!newCareerApproved&&!confirm('Overwrite your saved career with a new one?'))return;
   $('#modal').close();clearNight();G.wipe();G.fresh(profile);openMsg=null;night=null;

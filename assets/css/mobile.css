@@ -10,7 +10,7 @@
  #app,#tv{font:16px/1.42 'Atkinson Hyperlegible Next',system-ui,sans-serif}
  #app .nav,#app .tick{display:none}
  #app .top{
-  grid-template-columns:auto minmax(0,1fr) auto;
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;
   gap:6px 8px;padding:7px 12px;background:var(--phone-chrome);box-shadow:none;
  }
  .top .histnav{grid-column:1;grid-row:1}
@@ -19,8 +19,15 @@
  .top .logo{grid-column:2;grid-row:1;font-size:clamp(22px,6.8vw,32px);letter-spacing:0}
  .top #continue{grid-column:3;grid-row:1;padding:3px 8px;min-width:106px;min-height:40px;font-size:22px}
  .top #continue small{font:13px/1.15 'Atkinson Hyperlegible Next',system-ui,sans-serif}
+ /* One compact full-width identity row; the career readouts stay together. */
+ #headerIdentity{grid-row:2;grid-column:1/-1;max-width:none}
+ #headerIdentity .player-identity-card{gap:7px;padding:2px 5px}
+ #headerIdentity .player-identity-card>.portrait{width:32px;height:40px;flex-basis:32px}
+ #headerIdentity .player-identity-text>b{font:700 15px/1.15 'Atkinson Hyperlegible Next',system-ui,sans-serif}
+ #headerIdentity .player-identity-text>span{font-size:13px}
+ #headerIdentity .btn{min-height:44px;padding:3px 7px;font-size:13px}
  .top .readouts{
-  grid-row:2;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  grid-row:3;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
   background:none;border:none;
  }
  /* Keep all four career readouts present: week, bank, reputation and meetings.
