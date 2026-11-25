@@ -78,7 +78,7 @@ for(const [i,w] of roster.entries()){
   const st=Mic.begin(c,w,f,rival,null,p,{directed:process.env.PROMO_AUDIT_LEGACY!=='1',formats:process.env.PROMO_AUDIT_LEGACY!=='1',dialogue:process.env.PROMO_AUDIT_LEGACY!=='1',authored:process.env.PROMO_AUDIT_LEGACY!=='1',banks:promoBanks(w.id,f.id),composition:process.env.PROMO_AUDIT_LEGACY!=='1',semantic:process.env.PROMO_AUDIT_LEGACY!=='1'});
   if(st.semantic)delete st.semantic.claimClassification; // frozen historical policy for paired G1–G3 comparisons
   if(st.authoredDialogue?.semanticBankReuse===3)st.authoredDialogue.semanticBankReuse=2;
-  if(st.authoredDialogue){delete st.authoredDialogue.reviewedSpecialist;delete st.authoredDialogue.authoredTopics;delete st.authoredDialogue.authoredFollowups;}
+  if(st.authoredDialogue){delete st.authoredDialogue.reviewedSpecialist;delete st.authoredDialogue.authoredTopics;delete st.authoredDialogue.authoredFollowups;delete st.authoredDialogue.authoredStrengthCounters;}
   for(const bank of st.authoredDialogue?.banks||[])for(const row of bank.rows){const id=bank.owner+'.'+row[0];availableIds.add(id);slot([row[1],row[2],row[3]].join('|')).available.add(id);}
   const oldFlow=st.openingFlow===1&&j===0?JSON.parse(JSON.stringify(st)):null;if(oldFlow)delete oldFlow.openingFlow;
   const rounds=[],choices=[],spoken=[];
@@ -374,13 +374,15 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
   if(mem.reviewedSpecialist===1){const own=L.selectSpecialistResponse(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredTopics===1){const own=L.selectAuthoredTopic(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredFollowups===1){const own=L.selectAuthoredFollowup(cat,ctx,seed,mem,sem);if(own)return own;}
-  if(mem.authoredQuestions===1)return L.selectAuthoredQuestion(cat,ctx,seed,mem,sem);
+  if(mem.authoredQuestions===1){const own=L.selectAuthoredQuestion(cat,ctx,seed,mem,sem);if(own)return own;}
+  if(mem.authoredStrengthCounters===1)return L.selectAuthoredStrengthCounter(cat,ctx,seed,mem,sem);
   return null;
  };
  let activeScene=null,observations=0,emittedChecks=0,sceneCount=0,oldUnknown=0,newUnknown=0,classifiedOpenings=0;
  const recoveredSources=new Map(),remainingUnknown=new Map();
  const followupD2Owners=new Set(["ace","aisha","alina","ash","bao","cal","cass","dean","dev","eira"]);let followupD2Hits=0;const followupD3Owners=new Set(["elodie","ezra","imani","jun","kellan","kezia","kofi","lyra","mae","magnus"]);let followupD3Hits=0;const followupD4Owners=new Set(["mara","milo","miro","nico","noelle","nolan","otis","red","rev","roxy"]);let followupD4Hits=0;const followupD5Owners=new Set(["tori","val","winnie","anya","ayla","bashir","brick","cleo","dee","ellis"]);let followupD5Hits=0;const followupD6Owners=new Set(["faye","felix","gideon","gus","iris","ivo","jett","juno","kira","kit"]);let followupD6Hits=0;const followupD7Owners=new Set(["leandro","liya","malik","marisol","morgan","nadia","nate","nova","priya","rina"]);let followupD7Hits=0;const followupD8Owners=new Set(["cedric","rex","rocco","sasha","soraya","sylvia","theo","tomasash","vera","zane"]);let followupD8Hits=0;
  const questionE2Owners=new Set(["aisha","anya","ayla","cleo","dax","dean","dee","dev","eira","ellis"]);let questionE2Hits=0;const questionE3Owners=new Set(["ezra","imani","iris","ivo","jun","juno","kit","liya","mae","magnus"]);let questionE3Hits=0;const questionE4Owners=new Set(["malik","marisol","nadia","night","noelle","otis","rina","sasha","silas","soraya"]);let questionE4Hits=0;const questionE5Owners=new Set(["theo","zane","zara","ace","alina","ash","bronte","cass","faye","gideon"]);let questionE5Hits=0;const questionE6Owners=new Set(["gus","jett","kellan","kira","leandro","lyra","milo","miro","morgan","nova"]);let questionE6Hits=0;const questionE7Owners=new Set(["priya","rev","rocco","roxy","tori","val","vera","winnie"]);let questionE7Hits=0;const questionE8Owners=new Set(["bao","brick","cal","cedric","elodie","felix","kezia","nate","nico","nikita","nolan","red","rex","sol","sylvia","tomas","tomasash"]);let questionE8Hits=0;
+ let strengthHits=0,strengthLosses=0,strengthPairs=0;const strengthIds=new Set(),strengthOwners=new Set();
  let questionHits=0,questionLosses=0,questionPairs=0;const questionIds=new Set(),questionOwners=new Set();
  let followupHits=0,followupLosses=0,followupPairsD=0;const followupIdsD=new Set(),followupOwnersD=new Set();
  let topicHits=0,topicLosses=0,topicPairs=0;const topicIds=new Set(),topicOwners=new Set(),topicSides=new Map();
@@ -448,9 +450,9 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
   // One scene per identity verifies the observation hook cannot affect
   // transcript, state, or result compared with the uninstrumented engine.
   const plain=j===0?plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts):null;
-  const oldBankPolicy=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);oldBankPolicy.authoredDialogue.semanticBankReuse=2;delete oldBankPolicy.authoredDialogue.reviewedSpecialist;delete oldBankPolicy.authoredDialogue.authoredTopics;delete oldBankPolicy.authoredDialogue.authoredFollowups;delete oldBankPolicy.authoredDialogue.authoredQuestions;
-  const priorSpecialist=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorSpecialist.authoredDialogue.reviewedSpecialist;delete priorSpecialist.authoredDialogue.authoredTopics;delete priorSpecialist.authoredDialogue.authoredFollowups;delete priorSpecialist.authoredDialogue.authoredQuestions;
-  const priorTopics=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorTopics.authoredDialogue.authoredTopics;delete priorTopics.authoredDialogue.authoredFollowups;delete priorTopics.authoredDialogue.authoredQuestions;
+  const oldBankPolicy=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);oldBankPolicy.authoredDialogue.semanticBankReuse=2;delete oldBankPolicy.authoredDialogue.reviewedSpecialist;delete oldBankPolicy.authoredDialogue.authoredTopics;delete oldBankPolicy.authoredDialogue.authoredFollowups;delete oldBankPolicy.authoredDialogue.authoredQuestions;delete oldBankPolicy.authoredDialogue.authoredStrengthCounters;
+  const priorSpecialist=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorSpecialist.authoredDialogue.reviewedSpecialist;delete priorSpecialist.authoredDialogue.authoredTopics;delete priorSpecialist.authoredDialogue.authoredFollowups;delete priorSpecialist.authoredDialogue.authoredQuestions;delete priorSpecialist.authoredDialogue.authoredStrengthCounters;
+  const priorTopics=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorTopics.authoredDialogue.authoredTopics;delete priorTopics.authoredDialogue.authoredFollowups;delete priorTopics.authoredDialogue.authoredQuestions;delete priorTopics.authoredDialogue.authoredStrengthCounters;
   const previous=JSON.parse(JSON.stringify(st));delete previous.semantic.claimClassification;
   inc(formatsSeen,st.director?.format||'legacy');
   activeScene=[];
@@ -473,7 +475,20 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
    if(priorFollowup){delete priorFollowup.authoredDialogue.authoredFollowups;plainRoot.OfficeMic.choose(priorFollowup,id);}
    const priorQuestion=round==='push'&&id==='press'?JSON.parse(JSON.stringify(st)):null;
    if(priorQuestion){delete priorQuestion.authoredDialogue.authoredQuestions;plainRoot.OfficeMic.choose(priorQuestion,id);}
+   const priorStrength=round==='answer'&&id==='turn'?JSON.parse(JSON.stringify(st)):null;
+   if(priorStrength){delete priorStrength.authoredDialogue.authoredStrengthCounters;plainRoot.OfficeMic.choose(priorStrength,id);}
    Mic.choose(st,id);
+   if(priorStrength){
+    strengthPairs++;for(const k of ['core','meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(priorStrength[k]),'G4F1 '+k+' parity');
+    assert.equal(JSON.stringify(Mic.choices(st)),JSON.stringify(plainRoot.OfficeMic.choices(priorStrength)),'G4F1 choices parity');
+    const current=st.log.slice(before),previous=priorStrength.log.slice(before);
+    assert.equal(JSON.stringify(current.filter(e=>e.side!=='f')),JSON.stringify(previous.filter(e=>e.side!=='f')),'G4F1 player and presentation unchanged');
+    const a=current.find(e=>e.side==='f'),b=previous.find(e=>e.side==='f');assert.ok(a&&b);
+    for(const k of ['claim','move','replyTo','kind','detail'])assert.equal(a.semantic?.[k],b.semantic?.[k],'G4F1 '+k+' parity');
+    if(b.authoredId&&!a.authoredId)strengthLosses++;
+    if(a.authoredId&&!b.authoredId){assert.equal(a.semantic?.strengthCounterBank,1);assert.equal(a.semantic.claim,'strength');assert.equal(a.semantic.move,'counter');assert.ok(a.semantic.detail);strengthHits++;strengthIds.add(a.authoredId);strengthOwners.add(a.dialogueSlot.owner);}
+    else assert.equal(JSON.stringify(a),JSON.stringify(b),'G4F1 existing counter unchanged');
+   }
    if(priorQuestion){
     questionPairs++;for(const k of ['core','meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(priorQuestion[k]),'G4E1 '+k+' parity');
     assert.equal(JSON.stringify(Mic.choices(st)),JSON.stringify(plainRoot.OfficeMic.choices(priorQuestion)),'G4E1 choices parity');
@@ -504,7 +519,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
      const a=st.log.slice(before).find(e=>e.side===side),b=priorTopics.log.slice(topicAt).find(e=>e.side===side);
      assert.ok(a&&b);assert.equal(a.semantic?.claim,b.semantic?.claim);assert.equal(a.semantic?.move,b.semantic?.move);
      if(b.authoredId&&!a.authoredId)topicLosses++;
-     if(a.authoredId&&!b.authoredId){assert.equal(a.semantic?.topicBank,1);assert.equal(a.semantic.claim,'evidence');topicHits++;topicIds.add(a.authoredId);topicOwners.add(a.dialogueSlot.owner);inc(topicSides,side);if(eighthEvidenceBatch.has(a.dialogueSlot.owner)){batchHits++;batchIds.add(a.authoredId);batchOwners.add(a.dialogueSlot.owner);inc(batchSides,side);}}
+     if(a.authoredId&&!b.authoredId&&a.semantic?.strengthCounterBank!==1){assert.equal(a.semantic?.topicBank,1);assert.equal(a.semantic.claim,'evidence');topicHits++;topicIds.add(a.authoredId);topicOwners.add(a.dialogueSlot.owner);inc(topicSides,side);if(eighthEvidenceBatch.has(a.dialogueSlot.owner)){batchHits++;batchIds.add(a.authoredId);batchOwners.add(a.dialogueSlot.owner);inc(batchSides,side);}}
      if(b.authoredId)assert.equal(a.authoredId,b.authoredId,'topic bank must not displace existing authored reply');
     }
    }
@@ -598,7 +613,8 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  assert.ok(followupD2Hits>0,'G4D2 additional live recovery');assert.equal(followupD2Hits,20,'G4D2 recovery preserved');assert.equal(followupHits-followupD2Hits-followupD3Hits-followupD4Hits-followupD5Hits-followupD6Hits-followupD7Hits-followupD8Hits,28,'G4D1 recovery preserved');assert.equal(followupD3Hits,20,'G4D3 recovery preserved');assert.equal(followupD4Hits,20,'G4D4 recovery preserved');assert.equal(followupD5Hits,13,'G4D5 recovery preserved');assert.equal(followupD6Hits,10,'G4D6 recovery preserved');assert.equal(followupD7Hits,10,'G4D7 recovery preserved');assert.equal(followupD8Hits,6,'G4D8 closes six remaining sampled gaps');assert.equal(followupHits,127,'all sampled evidence press counters recovered');assert.equal(followupLosses,0);
  console.log('G4D8 FOLLOWUP '+JSON.stringify({...followup,priorBatchTurns:followupHits-followupD8Hits,newBatchTurns:followupD8Hits}));
  assert.equal(questionHits-questionE2Hits-questionE3Hits-questionE4Hits-questionE5Hits-questionE6Hits-questionE7Hits-questionE8Hits,15,'G4E1 recovery preserved');assert.equal(questionE2Hits,20,'G4E2 recovery preserved');assert.equal(questionE3Hits,20,'G4E3 recovery preserved');assert.equal(questionE4Hits,20,'G4E4 recovery preserved');assert.equal(questionE5Hits,13,'G4E5 recovery preserved');assert.equal(questionE6Hits,10,'G4E6 recovery preserved');assert.equal(questionE7Hits,8,'G4E7 closes the remaining eight sampled gaps');assert.equal(questionE8Hits,0,'G4E8 extends roster coverage outside the already-complete fixed sample');assert.equal(questionHits,106,'All 106 missing sampled player evidence questions recovered');assert.equal(questionLosses,0);const questionBank={pairedExchanges:questionPairs,recoveredTurns:questionHits,lostTurns:questionLosses,distinctIds:questionIds.size,characters:questionOwners.size};console.log('G4E8 QUESTIONS '+JSON.stringify({...questionBank,priorBatchTurns:questionHits-questionE8Hits,newBatchTurns:questionE8Hits,rosterCompletionOwners:questionE8Owners.size}));
- const report={classification,recovery,specialist,topicBank,batch,followup,questionBank,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
+ assert.ok(strengthHits>0&&strengthHits<=10,'G4F1 incremental recovery');assert.equal(strengthLosses,0);const strengthBank={pairedExchanges:strengthPairs,recoveredTurns:strengthHits,lostTurns:strengthLosses,distinctIds:strengthIds.size,characters:strengthOwners.size};console.log('G4F1 STRENGTH '+JSON.stringify(strengthBank));
+ const report={classification,recovery,specialist,topicBank,batch,followup,questionBank,strengthBank,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
  console.log('G4A DEMAND SUMMARY '+JSON.stringify({...report,topics:undefined,actors:undefined,detail:undefined}));
  for(const x of topics)console.log('G4A TOPIC '+JSON.stringify(x));
  for(const x of actors)console.log('G4A ACTOR '+JSON.stringify(x));
