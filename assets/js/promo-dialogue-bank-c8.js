@@ -262,4 +262,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH3={
+  "elodie": {
+    "w": [
+      "How much of your experience applies to the situation we are about to test? That is what interests me.",
+      "I accept that experience is useful. I do not accept that it answers the question of who wrestles better today."
+    ],
+    "f": [
+      "The point of experience is learning which assumptions to discard when a new problem presents itself.",
+      "You can change the conditions. Experience helps me notice what has changed rather than answer the wrong question."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

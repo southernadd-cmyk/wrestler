@@ -263,3 +263,7 @@ G4G.6 successful audit (run 45697755023): 35/38 player experience rebuttals and 
 ## G4H.2 — second experience batch
 
 G4H.1 recovered 13 sampled experience exchanges with zero lost authored turns (run 45698486324). Miro, Morgan, Nate and Rex are the next highest-demand owners, three missing turns each. Add two character-specific player rebuttals and two opponent counters per owner (16 new rows; 32 across eight owners). Target twelve more sampled recoveries (seven player, five opponent), 25 cumulatively, preserving the thirteen prior hits. Existing selection policy, stable prior IDs, save schema and CI configuration unchanged. Regenerate four bank assets and manifest. CI pending.
+
+## G4H.3 — third experience batch
+
+G4H.2 recovered 25 sampled experience exchanges with zero lost authored turns (run 45703913125). Eira, Ellis, Elodie, Felix, Gideon and Juno are the next six demand-ranked owners, two missing turns each, alphabetical tie-break. Add two character-specific player rebuttals and two opponent counters per owner (24 new rows; 56 across fourteen owners). Target twelve more sampled recoveries (five player, seven opponent), 37 cumulatively, preserving G4H.1's thirteen and G4H.2's twelve hits. Existing selection policy, stable prior IDs, save schema and CI configuration unchanged. Regenerate six bank assets and manifest. CI pending.
