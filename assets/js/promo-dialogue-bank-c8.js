@@ -100,4 +100,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidencePressRepliesD5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD8={
+  "tomasash": [
+    "Watch which of us keeps control when the first move fails. That is the lesson the contest can demonstrate.",
+    "The people can judge how we use our strength, not just how much of it we have. Let the wrestling show them."
+  ],
+  "zane": [
+    "I'd like them to see if I can stay calm when you catch me in a hold. I've been trying to learn that.",
+    "We can find out how much I've improved by wrestling each other. I don't want to pretend I know the answer already."
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidencePressRepliesD8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

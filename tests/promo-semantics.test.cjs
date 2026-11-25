@@ -283,7 +283,7 @@ assert.deepEqual([...topicOwners.keys()].sort(),Array.from(D.ALL,w=>w.id).sort()
 for(const counts of topicOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
 console.log('PASS G4C8 topic banks: '+topicRows.length+' distinct original-owner evidence replies; '+topicOwners.size+' characters, two lines per side, scope and history guards.');
 const followupRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='evidence'&&row.stage==='push');
-assert.equal(followupRows.length,140);
+assert.equal(followupRows.length,160);
 const followupOwners=new Map();
 for(const {row,pack} of followupRows){
  assert.ok(!topicText.has(row.text));topicText.add(row.text);
@@ -298,8 +298,8 @@ for(const {row,pack} of followupRows){
  for(const patch of [{protected:'recorded-evidence'},{protected:'contextual-variant'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:'w'},{stage:'answer'},{action:'acknowledge'}])assert.equal(L.selectAuthoredFollowup(cat,{...context,...patch},'followup',{},sem),null);
  for(const patch of [{claim:'proof'},{move:'counter'},{move:'press'}])assert.equal(L.selectAuthoredFollowup(cat,context,'followup',{}, {...sem,...patch}),null);
 }
-assert.equal(followupOwners.size,70);assert.deepEqual([...followupOwners.keys()].sort(),["ace","aisha","alina","anya","ari","ash","ayla","bao","bashir","brick","bronte","cal","cass","cleo","dax","dean","dee","dev","eira","ellis","elodie","emmett","ezra","faye","felix","gideon","gus","imani","iris","ivo","jett","jun","juno","kellan","kezia","kira","kit","kofi","leandro","liya","lyra","mae","magnus","malik","mara","marisol","milo","miro","morgan","nadia","nate","nico","night","nikita","noelle","nolan","nova","otis","priya","red","rev","rina","roxy","silas","sol","tomas","tori","val","winnie","zara"]);for(const n of followupOwners.values())assert.equal(n,2);
-console.log('PASS G4D7 authored follow-up fixtures: 140 evidence press counters across seventy owners; scope, history and ordinary-slot guards.');
+assert.equal(followupOwners.size,80);assert.deepEqual([...followupOwners.keys()].sort(),["ace","aisha","alina","anya","ari","ash","ayla","bao","bashir","brick","bronte","cal","cass","cedric","cleo","dax","dean","dee","dev","eira","ellis","elodie","emmett","ezra","faye","felix","gideon","gus","imani","iris","ivo","jett","jun","juno","kellan","kezia","kira","kit","kofi","leandro","liya","lyra","mae","magnus","malik","mara","marisol","milo","miro","morgan","nadia","nate","nico","night","nikita","noelle","nolan","nova","otis","priya","red","rev","rex","rina","rocco","roxy","sasha","silas","sol","soraya","sylvia","theo","tomas","tomasash","tori","val","vera","winnie","zane","zara"]);for(const n of followupOwners.values())assert.equal(n,2);
+console.log('PASS G4D8 authored follow-up fixtures: 160 evidence press counters across eighty owners; scope, history and ordinary-slot guards.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
 const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;

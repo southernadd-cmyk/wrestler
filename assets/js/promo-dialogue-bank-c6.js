@@ -125,4 +125,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidencePressRepliesD7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD8={
+  "cedric": [
+    "Why not give both of us a fair chance to demonstrate what we can do? The people can judge the result.",
+    "Who earns the fall when we are both given the same opportunity? That is the question worth answering."
+  ],
+  "vera": [
+    "Watch the change in balance before each successful hold. That is an observable difference between us.",
+    "The result is measurable, and so is the work that produces it. We need not count anything we cannot observe."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidencePressRepliesD8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
