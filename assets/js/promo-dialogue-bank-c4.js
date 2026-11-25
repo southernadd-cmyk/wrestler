@@ -51,6 +51,12 @@
   "I cannot keep a grip on an accusation with no example behind it. Let's start again from a sound position.",
   "Then let go of that claim. We'll find a proper grip when we meet.",
   "That's fair. Keep your feet under you and leave the unsupported words behind."
+ ],
+ "rina": [
+  "I can hear how that sounded, and you're right. I haven't got an example that establishes it.",
+  "I got carried away with the rhythm of the argument. It doesn't make an unsupported charge true.",
+  "Good. We can drop that note and find the rhythm of the match instead.",
+  "That's fair. Let the next phrase be something we can actually wrestle about."
  ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

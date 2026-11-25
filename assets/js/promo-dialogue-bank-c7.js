@@ -39,6 +39,12 @@
   "No, you're right. I can't prove that. I've got something I can try at the bell, though.",
   "Good! Sorted. Now we can get on with the bit we came here for.",
   "Right, leave that there. Let's see what happens when we actually wrestle!"
+ ],
+ "morgan": [
+  "You want something that would stand up to scrutiny. Fair. I haven't got it, and I won't put a price on a claim I can't support.",
+  "A charge without evidence is a bad investment. I withdraw it. There's still a match worth having.",
+  "Good. Take that off the table. We can negotiate nothing about the result once the bell goes.",
+  "That's a fair correction. The wrestling will be the only thing that settles our contest."
  ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

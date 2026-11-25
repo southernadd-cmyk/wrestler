@@ -37,6 +37,12 @@
   "A suspicion is not a judgement. I have no evidence to put before you, and I will not condemn you on that alone.",
   "Then let the accusation rest. Neither of us needs a false judgement before the bell.",
   "A fair distinction. We shall be judged by what we do in the contest, not by an unsupported word."
+ ],
+ "noelle": [
+  "Your objection is sound. I have offered a conclusion without establishing its premise. I withdraw it.",
+  "There is no specific evidence I can offer to support the charge. The argument cannot proceed on that basis.",
+  "Then we can discard that premise and retain the sporting question.",
+  "Accepted. We have established the limit of that argument. The match remains to be decided."
  ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
