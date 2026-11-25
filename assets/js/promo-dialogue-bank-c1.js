@@ -194,4 +194,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (strengthCountersF3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF4={
+  "lyra": [
+    "You've worked out how to meet my {strength}. Let's see if you can catch the moment when I actually use them.",
+    "You know about my {strength}, but you've still got to find me at exactly the right instant."
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

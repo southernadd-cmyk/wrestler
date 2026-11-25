@@ -140,4 +140,11 @@
   ]
 };
  for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidenceQuestionsE6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const strengthCountersF4={
+  "magnus": [
+    "How gratifying that you have devoted such attention to my {strength}. I shall endeavour to make the practical examination rather more demanding.",
+    "I congratulate you on your preparations for my {strength}. I would not mistake the rehearsal for the performance, however."
+  ]
+};
+ for(const pack of root.OfficePromoPilot)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

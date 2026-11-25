@@ -168,4 +168,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (strengthCountersF3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF4={
+  "rev": [
+    "You have heard the words about my {strength}. The lesson will come when you put your answer into practice.",
+    "Do not mistake knowledge of my {strength} for victory over them. That would be a rather premature judgement."
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

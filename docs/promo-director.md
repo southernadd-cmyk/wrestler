@@ -211,3 +211,7 @@ G4F.1 verified 10/51 authored strength counters, zero losses. Add two each for M
 ## G4F.3 — third named-strength counter tranche
 
 G4F.2 verified 23/51 authored strength counters, zero losses. Add two each for Elodie, Ezra, Gus, Imani, Iris, Kellan, Kezia, Kit, Kofi and Leandro (one remaining sampled gap each; ties by owner ID). Require 50 dedicated counters across 25 original owners and ten new recoveries with all 23 prior recoveries intact. Preserve G4C/D/E counts, actual spoken detail, owner and history guards, and paired graph/presentation parity. No engine, save, UI or workflow changes. CI pending.
+
+## G4F.4 — fourth named-strength counter tranche
+
+G4F.3 verified 33/51 authored strength counters, zero losses. Add two each for Liya, Lyra, Magnus, Marisol, Nate, Nico, Nikita, Nolan, Red and Rev (one remaining sampled gap each; ties by owner ID). Extend Magnus's original pilot bank. Require 70 dedicated counters across 35 original owners and ten new recoveries with all 33 prior recoveries intact. Preserve G4C/D/E counts, actual spoken detail, owner and history guards, and paired graph/presentation parity. No engine, save, UI or workflow changes. CI pending.

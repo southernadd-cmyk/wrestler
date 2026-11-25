@@ -206,4 +206,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (strengthCountersF3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF4={
+  "nico": [
+    "You've got a rhythm in mind for answering my {strength}. I'm going to make you find the next beat while we're moving.",
+    "You may stop my {strength} in one exchange. There's another beat coming, and I intend to be on it."
+  ],
+  "red": [
+    "You've got a way round my {strength}, have you? Right. Try it when the bell goes.",
+    "You've talked enough about my {strength}. I'll use them, you try stopping them. Simple."
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

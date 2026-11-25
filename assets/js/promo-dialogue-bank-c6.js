@@ -219,4 +219,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (strengthCountersF3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF4={
+  "marisol": [
+    "You've studied my {strength}. I wonder whether you've noticed the tiny adjustment I can make when your answer begins.",
+    "Everyone sees my {strength}. Very few notice the detail that lets me change direction when someone tries to stop them."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
