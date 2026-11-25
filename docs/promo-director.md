@@ -127,3 +127,7 @@ G4C.4 raised authored utilisation to 425/1,972 (21.6%), recovering 253 turns cum
 ## G4C.6 — sixth evidence-specific tranche
 
 G4C.5 raised authored utilisation to 475/1,972 (24.1%), recovering 303 turns cumulatively with zero lost authored turns. Extend the next ten demand-ranked owners: Soraya, Theo, Zane, Aisha, Anya, Ayla, Bashir, Brick, Cedric and Felix. Two player rebuttals and two opponent counters per owner, preserving existing gates and IDs. Brick's C1 pack extends his combined pilot/C1 bank without changing the pilot. Regenerate ten bank payloads and manifest. Validate 240 distinct evidence rows across 60 original wrestlers and measure this tranche separately, requiring the preceding five to retain 303 recovered turns. No engine, workflow or save schema changes. Twenty original owners remain.
+
+## G4C.7 — seventh evidence-specific tranche
+
+G4C.6 raised authored utilisation to 518/1,972 (26.3%), recovering 346 turns cumulatively with zero lost authored turns. Extend the next ten demand-ranked owners: Gideon, Jett, Juno, Kira, Nadia, Nikita, Priya, Red, Sasha and Sylvia. Two player rebuttals and two opponent counters per owner; existing topic gates and original IDs preserved. Regenerate ten bank payloads and manifest. Validate 280 distinct evidence rows across 70 original wrestlers and measure this tranche separately, requiring the preceding six to retain 346 recovered turns. No engine, workflow or save schema changes. Ten original owners remain.
