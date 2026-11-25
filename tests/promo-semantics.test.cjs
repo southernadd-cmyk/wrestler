@@ -524,3 +524,128 @@ assert.ok(authoredPress>0&&pressIds.size>1,'reviewed character press lines reach
 console.log('PASS reviewed contextual responses: '+authoredPress+' authored press lead-ins ('+pressIds.size+' distinct), '+authoredRebut+' explicitly named strength rebuttals in live sample; direct strength fixture passed.');
 console.log('PASS reviewed authored acknowledgements: '+authoredResponses+' utterances, '+ackIds.size+' distinct IDs; semantic provenance preserved.');
 console.log('PASS semantic promos: '+scenes+' paired scenes; '+responded+' classified responses across '+reached.size+' reached topics, '+unclassified+' unclassified responses, '+counters+' counters, '+press+' presses, '+authoredSources+' authored and '+graphSources+' graph claim sources; '+protectedN+' protected slots; save/resume and numerical/contract parity.');
+
+
+// G4 end-to-end reach: target every authored semantic row through the real
+// Mic.begin/choices/choose/result path, with the shipped compact pair of banks.
+// A controlled prior utterance supplies the claim at the normal speech boundary;
+// history forces an alternative only AFTER observing unmodified route priority.
+// This is a conditional reachability test, not a claim about organic frequency.
+{
+ const roster=Array.from(D.ALL),keyOf=r=>[r.when.semanticClaim,r.stage,r.action,r.side].join('|');
+ const targetGroups=new Map(),targetRows=new Map(),naturalIds=new Set(),targetIds=new Set(),naturalGroups=new Set();
+ const routes={'evidence|answer|turn|w':'topicBank','evidence|answer|turn|f':'topicBank','experience|answer|turn|w':'experienceBank','experience|answer|turn|f':'experienceBank','study|answer|turn|w':'studyBank','study|answer|turn|f':'studyBank','strength|answer|turn|f':'strengthCounterBank','evidence|push|press|w':'questionBank','evidence|push|press|f':'followupBank','evidence|push|acknowledge|w':'evidenceAcknowledgementBank'};
+ for(const wrestler of roster){
+  const pack=built.packs.find(x=>x.owner===wrestler.id);
+  for(const row of pack.lines.filter(r=>r.when.semanticClaim)){
+   const key=keyOf(row);assert.ok(routes[key],'unknown completed route '+key);
+   const group=wrestler.id+'|'+key;
+   if(!targetGroups.has(group))targetGroups.set(group,[]);
+   targetGroups.get(group).push(row);targetRows.set(row.id,row);
+  }
+ }
+ assert.equal(roster.length,80);assert.equal(targetGroups.size,800);assert.equal(targetRows.size,1600);
+ const incomingText={evidence:'What evidence can you give for that claim?',experience:'I have years of experience wrestling matches like this.',study:'I have studied your previous matches and prepared for your approach.',strength:'My hard strikes are the advantage I bring to this match.'};
+ const stateCache=new Map(),outcomes=['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta'];
+ const option=(st,id)=>M.choices(st).some(x=>x.id===id);
+ function baseFor(owner,side,stage){
+  const cacheKey=[owner,side,stage].join('|');if(stateCache.has(cacheKey))return clone(stateCache.get(cacheKey));
+  const i=roster.findIndex(w=>w.id===owner),other=roster[(i+1)%roster.length],w=side==='w'?roster[i]:other,f=side==='f'?roster[i]:other;
+  for(let seed=0;seed<48;seed++){
+   const c={id:'targeted-'+owner+'-'+side+'-'+seed,wid:w.id,rid:f.id,pid:p.id,eventAbs:seed+100,finish:'win_clean',minutes:12,feudHeat:0};
+   const st=M.begin(c,w,f,null,null,p,{directed:true,formats:true,dialogue:true,authored:true,composition:true,semantic:true,banks:promoBanks(w.id,f.id)});
+   const openings=['people','swagger','proof','imagery'].filter(id=>option(st,id));
+   if(!openings.length)continue;
+   M.choose(st,openings[seed%openings.length]);
+   if(M.ROUNDS[st.round]?.id!=='answer'||!S.allowed(st)||!option(st,'turn')||!S.latest(st.log,'f'))continue;
+   if(stage==='push'){
+    M.choose(st,'turn');
+    if(M.ROUNDS[st.round]?.id!=='push'||!S.allowed(st)||!S.latest(st.log,'f')||!option(st,'press')||!option(st,'acknowledge'))continue;
+   }
+   stateCache.set(cacheKey,clone(st));return st;
+  }
+  assert.fail('could not stage a legal '+stage+' exchange for '+owner+' '+side);
+ }
+ function fixture(st,claim){
+  const prior=S.latest(st.log,'f');
+  assert.ok(prior&&S.allowed(st),'targeted prior speech must be legal');
+  // Inject only the preceding spoken statement and its semantic claim.
+  // Do not alter graph choices, selector flags, bank payloads or numeric state.
+  prior.entry.line=incomingText[claim];
+  delete prior.entry.authoredId;delete prior.entry.composedId;
+  prior.entry.semantic={v:1,kind:'claim',claim,source:'targeted-fixture:'+claim,...(claim==='strength'?{detail:'hard strikes'}:{})};
+  return st;
+ }
+ function checkEmission(st,before,group,row,route){
+  const e=st.log.slice(before).find(e=>e.side===row.side&&e.dialogueSlot?.stage===row.stage&&e.dialogueSlot?.action===row.action);
+  assert.ok(e,'actual speaker did not emit a turn '+group);
+  if(!targetRows.has(e.authoredId))return null;
+  const emitted=targetRows.get(e.authoredId);
+  assert.equal(keyOf(emitted),keyOf(row),'target route '+group);
+  assert.equal(e.dialogueSlot.owner,group.split('|')[0]);
+  assert.ok(e.authoredId.startsWith(e.dialogueSlot.owner+'.'));
+  assert.equal(e.semantic?.[route],1);assert.equal(e.semantic.claim,row.when.semanticClaim);
+  const move=row.side==='w'?(row.action==='turn'?'rebut':row.action):(row.action==='turn'?'counter':'press_counter');
+  assert.equal(e.semantic.move,move);assert.equal(e.semantic.source,'authored-response:'+e.authoredId);
+  const prior=st.log[e.semantic.replyTo];assert.ok(prior);assert.equal(prior.side,row.side==='w'?'f':'w');assert.equal(prior.semantic.claim,e.semantic.claim);
+  assert.equal(e.line,emitted.text.replace(/\{strength\}/g,'hard strikes'));
+  assert.ok(st.authoredDialogue.used.includes(e.authoredId));
+  return e.authoredId;
+ }
+ let resumeChecks=0,parityChecks=0,historyChecks=0;
+ for(const [group,rows] of targetGroups){
+  assert.equal(rows.length,2,group);
+  const [owner]=group.split('|'),row=rows[0],claim=row.when.semanticClaim,route=routes[keyOf(row)];
+  const base=fixture(baseFor(owner,row.side,row.stage),claim);
+  const start=base.log.length,action=row.action;
+  assert.ok(option(base,action),group+' action must be offered');
+  // First preserve ordinary route priority and observe whether the new bank
+  // wins without forced history. A legacy/reviewed route may legitimately win.
+  const natural=clone(base);M.choose(natural,action);
+  const first=checkEmission(natural,start,group,row,route);
+  if(first){naturalIds.add(first);naturalGroups.add(group);}
+  // Compare against a scene with the same prior dialogue and no authored
+  // payload, to ensure the controlled speech does not alter graph outcomes.
+  const control=clone(base);control.authoredDialogue.banks=[];M.choose(control,action);
+  for(const target of rows){
+   const scene=clone(base);
+   const pack=built.packs.find(x=>x.owner===owner);
+   // Saturate the normal recent-ID history for this owner only, leaving
+   // the target eligible. No selector is disabled and all banks stay loaded.
+   const blocked=pack.lines.filter(r=>r.id!==target.id).map(r=>r.id);
+   assert.ok(blocked.length<=128,'history exceeds live cap '+owner);
+   scene.authoredDialogue.recent=Array.from(L.recentIds({lastPromo:{dialogueIds:blocked}}));
+   assert.ok(!scene.authoredDialogue.recent.includes(target.id));
+   const restored=clone(scene);
+   M.choose(scene,action);M.choose(restored,action);
+   assert.equal(JSON.stringify(scene),JSON.stringify(restored),'targeted resume '+target.id);resumeChecks++;
+   assert.equal(checkEmission(scene,start,group,target,route),target.id,'targeted live reach '+target.id);
+   targetIds.add(target.id);
+   for(const k of ['core','meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(scene[k]),JSON.stringify(control[k]),'targeted mechanics '+target.id+' '+k);
+   // An exhausted history must not emit this owner/route's blocked rows.
+   const exhausted=clone(base);
+   exhausted.authoredDialogue.recent=Array.from(L.recentIds({lastPromo:{dialogueIds:[...blocked,target.id]}}));
+   M.choose(exhausted,action);
+   assert.ok(!exhausted.log.slice(start).some(e=>rows.some(r=>e.authoredId===r.id)),'recent history leaked '+target.id);historyChecks++;
+   // Finish via actual offered choices; compare match commitments and all
+   // exported numerical effects against the no-bank control.
+   const finish=clone(control);
+   while(scene.stage!=='done'){
+    const ids=M.choices(scene).map(x=>x.id);assert.deepEqual(ids,Array.from(M.choices(finish),x=>x.id),'targeted choices '+target.id);
+    const next=ids.includes('leave')?'leave':ids.includes('uncertainty')?'uncertainty':ids[0];
+    assert.ok(next,'cannot finish '+target.id);M.choose(scene,next);M.choose(finish,next);
+   }
+   const actualResult=M.result(scene),controlResult=M.result(finish);
+   for(const k of outcomes)assert.equal(JSON.stringify(actualResult[k]),JSON.stringify(controlResult[k]),'targeted result '+target.id+' '+k);
+   assert.ok(actualResult.dialogueIds.includes(target.id),'result lost authored ID '+target.id);
+   assert.equal(new Set(actualResult.dialogueIds).size,actualResult.dialogueIds.length);
+   parityChecks++;
+  }
+ }
+ assert.equal(targetIds.size,targetRows.size);assert.equal(resumeChecks,1600);assert.equal(parityChecks,1600);assert.equal(historyChecks,1600);
+ const coverage=Object.fromEntries(Object.keys(routes).map(key=>[key,{owners:0,naturalOwners:0,rows:0}]));
+ for(const [group,rows] of targetGroups){const key=keyOf(rows[0]);coverage[key].owners++;coverage[key].naturalOwners+=Number(naturalGroups.has(group));coverage[key].rows+=rows.filter(r=>targetIds.has(r.id)).length;}
+ for(const value of Object.values(coverage)){assert.equal(value.owners,80);assert.equal(value.rows,160);}
+ console.log('G4 TARGETED GAMEPLAY '+JSON.stringify({owners:roster.length,routes:800,targetRows:targetIds.size,naturalPriorityGroups:naturalGroups.size,naturalPriorityIds:naturalIds.size,resumeChecks,parityChecks,historyChecks,coverage}));
+ console.log('PASS G4 targeted gameplay: all 1,600 dedicated semantic rows emitted through real promo choices with controlled claims and bounded history; no selectors bypassed.');
+}
