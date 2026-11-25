@@ -63,6 +63,18 @@
   "I mean what I say about wanting this match. That doesn't mean I can establish the accusation. I'll take that part back.",
   "Thank you. I would rather we went into this match with an honest understanding of each other.",
   "That matters to me. We can put the accusation aside and see what this contest means."
+ ],
+ "eira": [
+  "I cannot demonstrate a breach of the rules. It would be wrong to maintain that charge against you.",
+  "The rules apply to my conduct as well. I haven't established the allegation, and I withdraw it.",
+  "Good. We can leave that allegation behind and keep the contest within the rules.",
+  "Accepted. No charge to answer there. Now give me a clean match."
+ ],
+ "vera": [
+  "I have no observation that establishes that claim. It fails my own test.",
+  "There is a difference between a measurement and an estimate. I have nothing reliable to support that accusation.",
+  "Agreed. Remove the unsupported claim. We can measure our wrestling against each other.",
+  "That correction is precise enough. The result at the bell is still open."
  ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
