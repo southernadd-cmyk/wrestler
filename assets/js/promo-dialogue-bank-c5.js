@@ -150,4 +150,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceQuestionsE4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE5={
+  "theo": [
+    "Define the result we can observe in the match. What would it actually establish?",
+    "There is a difference between a claim and a test. What can this contest test?"
+  ],
+  "bronte": [
+    "Leave the rumour ashore. What can we show the people when the pressure comes on in that ring?",
+    "What part of our wrestling can we put to the test when neither of us gives ground?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceQuestionsE5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

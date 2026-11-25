@@ -132,4 +132,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceQuestionsE4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE5={
+  "zane": [
+    "I don't know enough to judge that accusation. What can we show everyone by wrestling each other?",
+    "I'm still learning what a good match looks like. What can we demonstrate out there that the crowd can judge?"
+  ],
+  "ash": [
+    "Not the accusation. The match. What can we show them?",
+    "They can watch us. What can they judge for themselves?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceQuestionsE5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

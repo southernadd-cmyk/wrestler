@@ -158,4 +158,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceQuestionsE4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE5={
+  "zara": [
+    "Right, leave the rumour there for a second. What can we actually show them when we wrestle?",
+    "Mate, they're here to watch us work. What can they see for themselves once the bell goes?"
+  ],
+  "ace": [
+    "Ladies and gentlemen, you have heard the accusation. What can we actually demonstrate before this audience?",
+    "Forget the gossip column. What can we put on tonight's show that the people can judge for themselves?"
+  ],
+  "faye": [
+    "Leave the allegation off the record until it is supported. What can we establish from the match itself?",
+    "What observable result can we give the people that they can check for themselves?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceQuestionsE5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
