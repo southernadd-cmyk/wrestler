@@ -378,6 +378,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  };
  let activeScene=null,observations=0,emittedChecks=0,sceneCount=0,oldUnknown=0,newUnknown=0,classifiedOpenings=0;
  const recoveredSources=new Map(),remainingUnknown=new Map();
+ const followupD2Owners=new Set(["ace","aisha","alina","ash","bao","cal","cass","dean","dev","eira"]);let followupD2Hits=0;
  let followupHits=0,followupLosses=0,followupPairsD=0;const followupIdsD=new Set(),followupOwnersD=new Set();
  let topicHits=0,topicLosses=0,topicPairs=0;const topicIds=new Set(),topicOwners=new Set(),topicSides=new Map();
  const eighthEvidenceBatch=new Set(['rex','faye','miro','cass','alina','eira','vera','liya','leandro','tomasash']);
@@ -478,7 +479,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
     assert.ok(a&&b);
     for(const k of ['claim','move','replyTo','kind','detail'])assert.equal(a.semantic?.[k],b.semantic?.[k],'G4D1 '+k+' parity');
     if(b.authoredId&&!a.authoredId)followupLosses++;
-    if(a.authoredId&&!b.authoredId){assert.equal(a.semantic?.followupBank,1);assert.equal(a.semantic.claim,'evidence');assert.equal(a.semantic.move,'press_counter');followupHits++;followupIdsD.add(a.authoredId);followupOwnersD.add(a.dialogueSlot.owner);}
+    if(a.authoredId&&!b.authoredId){assert.equal(a.semantic?.followupBank,1);assert.equal(a.semantic.claim,'evidence');assert.equal(a.semantic.move,'press_counter');followupHits++;if(followupD2Owners.has(a.dialogueSlot.owner))followupD2Hits++;followupIdsD.add(a.authoredId);followupOwnersD.add(a.dialogueSlot.owner);}
     else assert.equal(JSON.stringify(a),JSON.stringify(b),'G4D1 unchanged existing reply');
    }
    if(round==='answer'&&id==='turn'){
@@ -578,8 +579,8 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  console.log('G4C8 EVIDENCE '+JSON.stringify({...topicBank,batch}));
  assert.equal(topicHits,413,'G4C final recovery preserved');
  const followup={pairedExchanges:followupPairsD,recoveredTurns:followupHits,lostTurns:followupLosses,distinctIds:followupIdsD.size,characters:followupOwnersD.size};
- assert.ok(followupHits>0);assert.equal(followupLosses,0);
- console.log('G4D1 FOLLOWUP '+JSON.stringify(followup));
+ assert.ok(followupD2Hits>0,'G4D2 additional live recovery');assert.equal(followupHits-followupD2Hits,28,'G4D1 recovery preserved');assert.equal(followupLosses,0);
+ console.log('G4D2 FOLLOWUP '+JSON.stringify({...followup,priorBatchTurns:followupHits-followupD2Hits,newBatchTurns:followupD2Hits}));
  const report={classification,recovery,specialist,topicBank,batch,followup,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
  console.log('G4A DEMAND SUMMARY '+JSON.stringify({...report,topics:undefined,actors:undefined,detail:undefined}));
  for(const x of topics)console.log('G4A TOPIC '+JSON.stringify(x));

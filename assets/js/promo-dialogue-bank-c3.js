@@ -85,4 +85,19 @@
  ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD2={
+  "ace": [
+    "The paying public will see who can turn the spotlight into a winning performance. That is the only billing I need.",
+    "Watch the main attraction when the bell goes. A good pose is one thing; holding the other wrestler down is another."
+  ],
+  "aisha": [
+    "Watch the strikes. Watch the count. No need for anything else.",
+    "Who controls the bout? We can establish that in the ring. Enough talk."
+  ],
+  "dean": [
+    "The result is the one item on the bill we can actually verify. Let us concentrate on earning it.",
+    "I would suggest a rather simple test: who can turn control into a legal fall? The audience can check the figures."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressRepliesD2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

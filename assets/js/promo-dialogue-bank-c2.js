@@ -89,4 +89,11 @@
  ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD2={
+  "cal": [
+    "Watch my feet. See who loses their base first. That's a fair test.",
+    "We'll find out who can hold a position under pressure. No need to guess."
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidencePressRepliesD2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
