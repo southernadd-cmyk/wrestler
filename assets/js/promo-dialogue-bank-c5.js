@@ -249,4 +249,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (strengthCountersF7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const evidenceAcknowledgementsG2={
+  "nolan": [
+    "Quite right. A good lesson begins with something you can demonstrate.",
+    "I'll concede that. We should measure the work, not the noise about it."
+  ],
+  "winnie": [
+    "Fair enough, love. A blank receipt won't tell you what you've paid for.",
+    "I'll grant you that. The paying customer deserves something more solid than hearsay."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceAcknowledgementsG2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -247,4 +247,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceAcknowledgementsG1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG2={
+  "tori": [
+    "Point taken. A theory needs a result before we call it a fact.",
+    "Fair. Let's keep the speculation out of the circuit and see what happens under pressure."
+  ],
+  "anya": [
+    "Fair. Cut away what we cannot establish.",
+    "I accept the distinction. Keep the facts; leave the rest."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceAcknowledgementsG2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
