@@ -631,7 +631,7 @@ console.log('PASS semantic promos: '+scenes+' paired scenes; '+responded+' class
    // exported numerical effects against the no-bank control.
    const finish=clone(control);
    while(scene.stage!=='done'){
-    const ids=M.choices(scene).map(x=>x.id);assert.deepEqual(ids,Array.from(M.choices(finish),x=>x.id),'targeted choices '+target.id);
+    const ids=Array.from(M.choices(scene),x=>x.id);assert.deepEqual(ids,Array.from(M.choices(finish),x=>x.id),'targeted choices '+target.id);
     const next=ids.includes('leave')?'leave':ids.includes('uncertainty')?'uncertainty':ids[0];
     assert.ok(next,'cannot finish '+target.id);M.choose(scene,next);M.choose(finish,next);
    }
