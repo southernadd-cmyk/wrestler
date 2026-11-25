@@ -14,4 +14,20 @@
  "priya": "Technique, you call it. Again. Interesting. Which version of it did you practise?\nBrawling, is it? That is a prettier word than the version I saw.\nRisk, you told me. A gamble worth taking is one you can describe twice the same way.\nSlow pace. Lovely. Which pace do you mean, the one you announced or the one you use?\nThe people deserve a straight answer. I think I owe them one.\nI know what I said, and I can repeat it exactly.\nI am not the one who needs a crowd to tell me my value.\nLook at this pose. It says one thing, and I mean exactly that.\nYou claim technique. Repeat the claim, then show the evidence.\nStrikes, you said. Which strike, and when?\nYou called it a risk. I would call it a gamble with the wrong tone.\nSlowing down is a choice. You keep telling people you made it.\nThe crowd are owed the true version of this, not the flattering one.\nYou want to be among the best. Repeat that, and then tell me why.\nYou are proud of your {strength}. I have heard you say it before. I have heard you say it before, and it reads differently now.\nI have listened to your {strength} twice. The second time was more interesting.\nYou stayed level, the second time I noticed. Good, because calm is where I like to ask questions.\nRight, that is fair, I noted it. We agree on that, which is rare enough to note.\nI could ask you to explain that. I think you would rather not.\nOne fall, then, the way you said it. Repeat the terms once more, so there is no confusion about them later.\nOn the mat I will ask one question at a time. Answer each one.\nGrounded or standing, I will still be asking the same question.\nStay where you are and answer it properly.\nDecent answer. Now say it again, in the ring.\nDid you answer? I heard something close to one.\nRight, that is fair, I noted it. I shall note that for later.\nI take that on board. I will remember you said it.\nI will say the same thing at the finish as I have said here.\nMy approach is careful. I do not repeat myself unless I mean it.\nWhatever happens, the record will be correct.\nThe question is not closed. Only the bell will close it.\nI have one more question, and you will answer it when the bell goes."
 };
  root.OfficePromoBankC3=Object.freeze(Object.entries(rows).map(([owner,body])=>{const texts=body.split('\n');if(texts.length!==slots.length)throw Error('Dialogue bank length: '+owner);return {owner,role:'wrestler',lines:slots.map(([stage,action,side,variant,category],i)=>({id:owner+'.c3.'+String(i+1).padStart(2,'0'),stage,action,side,category,text:texts[i],when:{hasMouthpiece:false,...(variant?{variants:[variant]}:{})}}))};}));
+ // G4C.1: topic-gated, independently authored replies to unsupported charges.
+ const evidenceReplies={
+ "zara": [
+  "Fair play. I can't give you an example, so I'm not going to make one up on the spot.",
+  "Yeah, all right, that was a bit much from me. Let's talk about the match instead.",
+  "There we go. That's all I wanted you to say. Now let's have a match.",
+  "Right, leave that bit out, then. We've got enough to settle between the ropes."
+ ],
+ "dean": [
+  "That's a fair objection. I haven't got a specific incident to put on the table, so I'll take it off the table.",
+  "I'm not going to sell an allegation I can't substantiate. The better deal is to settle the sporting question.",
+  "Good. Then we're discussing the contest, not an allegation. Much better terms.",
+  "A reasonable distinction. Leave the unsupported part out of the agreement and let's wrestle."
+ ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
