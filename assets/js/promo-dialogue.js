@@ -2176,6 +2176,174 @@
   }
   return eligible.sort((a,b)=>hash(seed+'|'+a.id)-hash(seed+'|'+b.id)||a.id.localeCompare(b.id))[0]||null;
  }
+ // G4B.3: exact source review for specialist moves. Reuse the spoken
+ // strength, never the style-derived estimate; retain complete semantic
+ // questions after character lead-ins, and never turn a substantive
+ // acknowledgement into agreement. Previous selectors retain priority.
+ const specialistReview=freeze({
+ "lyra.c1.16": [
+  2358247472,
+  "strength"
+ ],
+ "dee.c1.15": [
+  1301714308,
+  "strength"
+ ],
+ "dee.c1.16": [
+  3566473689,
+  "strength"
+ ],
+ "kit.c1.15": [
+  206291516,
+  "strength"
+ ],
+ "val.c1.15": [
+  1052825932,
+  "strength"
+ ],
+ "imani.c2.16": [
+  2753087506,
+  "strength"
+ ],
+ "kira.c2.15": [
+  1503098701,
+  "strength"
+ ],
+ "ezra.c2.16": [
+  1163768393,
+  "strength"
+ ],
+ "anya.c3.15": [
+  1447090144,
+  "strength"
+ ],
+ "zara.c3.16": [
+  3257205149,
+  "strength"
+ ],
+ "tori.c3.16": [
+  2965265615,
+  "strength"
+ ],
+ "cedric.c6.16": [
+  3250908669,
+  "strength"
+ ],
+ "felix.c6.16": [
+  1178735172,
+  "strength"
+ ],
+ "kezia.c6.15": [
+  3700669306,
+  "strength"
+ ],
+ "kezia.c6.16": [
+  1417164637,
+  "strength"
+ ],
+ "alina.c6.16": [
+  2712849266,
+  "strength"
+ ],
+ "ayla.c7.15": [
+  2082310711,
+  "strength"
+ ],
+ "leandro.c7.16": [
+  414731105,
+  "strength"
+ ],
+ "bao.c4.25": [
+  1829301933,
+  "press"
+ ],
+ "sylvia.c4.25": [
+  2335368816,
+  "press"
+ ],
+ "nolan.c5.25": [
+  2139207170,
+  "press"
+ ],
+ "cedric.c6.19": [
+  2209500082,
+  "press"
+ ],
+ "jett.c5.26": [
+  196681276,
+  "acknowledge"
+ ],
+ "milo.c5.26": [
+  1340173021,
+  "acknowledge"
+ ],
+ "tomasash.c8.26": [
+  4183174660,
+  "acknowledge"
+ ],
+ "bashir.c8.26": [
+  1287873154,
+  "acknowledge"
+ ],
+ "night.c2.27": [
+  1242556147,
+  "settle"
+ ],
+ "rocco.c3.27": [
+  1550148090,
+  "settle"
+ ],
+ "zara.c3.27": [
+  26279062,
+  "settle"
+ ],
+ "ellis.c4.27": [
+  1594059114,
+  "settle"
+ ],
+ "alina.c6.27": [
+  1049265419,
+  "settle"
+ ],
+ "milo.c5.27": [
+  3173388867,
+  "settle"
+ ],
+ "liya.c7.27": [
+  2475666053,
+  "settle"
+ ],
+ "jett.c5.27": [
+  490445968,
+  "settle"
+ ],
+ "leandro.c7.27": [
+  2037878574,
+  "settle"
+ ]
+});
+ function selectSpecialistResponse(cat,ctx,seed,mem,sem){
+  if(!ctx||!sem||ctx.hasMouthpiece||(ctx.protected&&ctx.protected!=='contextual-variant'))return null;
+  const strength=ctx.side==='w'&&ctx.stage==='answer'&&ctx.action==='turn'&&sem.move==='rebut'&&sem.claim==='strength'&&string(sem.detail);
+  const press=ctx.side==='w'&&ctx.stage==='push'&&ctx.action==='press'&&sem.move==='press'&&!ctx.protected;
+  const acknowledge=ctx.side==='w'&&ctx.stage==='push'&&ctx.action==='acknowledge'&&sem.move==='acknowledge'&&!ctx.protected&&['unclassified','agreement','end'].includes(sem.claim);
+  const settle=ctx.side==='f'&&ctx.stage==='push'&&ctx.action==='acknowledge'&&sem.move==='settle'&&sem.claim==='end'&&!ctx.protected;
+  const kind=strength?'strength':press?'press':acknowledge?'acknowledge':settle?'settle':null;
+  if(!kind)return null;
+  const eligible=[];
+  const reviewed=row=>row.side===ctx.side&&(
+   kind==='strength'&&row.stage==='answer'&&row.action==='turn'&&row.when.variants?.includes('tu_strength')&&reviewedStrength.has(row.text)||
+   specialistReview[row.id]?.[0]===hash(row.text)&&specialistReview[row.id][1]===kind
+  );
+  for(const row of cat.lines(ctx.speaker.role,ctx.speaker.id).filter(reviewed)){
+   for(const variant of row.when.variants||[null]){
+    const sourceCtx={...ctx,stage:row.stage,action:row.action,variant,protected:variant?'contextual-variant':null,...(strength?{strength:sem.detail}:{})};
+    const own=select(cat,sourceCtx,seed,{...mem,candidateFilter:r=>r.id===row.id&&reviewed(r)});
+    if(own){eligible.push({...own,specialist:kind});break;}
+   }
+  }
+  return eligible.sort((a,b)=>hash(seed+'|'+a.id)-hash(seed+'|'+b.id)||a.id.localeCompare(b.id))[0]||null;
+ }
  function selectSemanticResponse(cat,ctx,seed,mem,sem){
   if(!ctx||!sem||ctx.side!=='w'||ctx.hasMouthpiece)return null;
   if(ctx.stage==='answer'&&ctx.action==='turn'&&ctx.variant==='tu_strength'&&
@@ -2507,5 +2675,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectSpecialistResponse,specialistReview,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);
