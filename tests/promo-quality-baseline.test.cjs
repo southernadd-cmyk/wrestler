@@ -78,6 +78,7 @@ for(const [i,w] of roster.entries()){
   const st=Mic.begin(c,w,f,rival,null,p,{directed:process.env.PROMO_AUDIT_LEGACY!=='1',formats:process.env.PROMO_AUDIT_LEGACY!=='1',dialogue:process.env.PROMO_AUDIT_LEGACY!=='1',authored:process.env.PROMO_AUDIT_LEGACY!=='1',banks:promoBanks(w.id,f.id),composition:process.env.PROMO_AUDIT_LEGACY!=='1',semantic:process.env.PROMO_AUDIT_LEGACY!=='1'});
   if(st.semantic)delete st.semantic.claimClassification; // frozen historical policy for paired G1–G3 comparisons
   if(st.authoredDialogue?.semanticBankReuse===3)st.authoredDialogue.semanticBankReuse=2;
+  if(st.authoredDialogue)delete st.authoredDialogue.reviewedSpecialist;
   for(const bank of st.authoredDialogue?.banks||[])for(const row of bank.rows){const id=bank.owner+'.'+row[0];availableIds.add(id);slot([row[1],row[2],row[3]].join('|')).available.add(id);}
   const oldFlow=st.openingFlow===1&&j===0?JSON.parse(JSON.stringify(st)):null;if(oldFlow)delete oldFlow.openingFlow;
   const rounds=[],choices=[],spoken=[];
@@ -369,11 +370,13 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
    const own=L.selectAcknowledgement(cat,ctx,seed,mem);if(own)return own;
   }
   if(mem.reviewedContext===1){const own=L.selectSemanticResponse(cat,ctx,seed,mem,sem);if(own)return own;}
-  if([1,2,3].includes(mem.semanticBankReuse))return L.selectReviewedBankResponse(cat,ctx,seed,mem,sem,mem.semanticBankReuse);
+  if([1,2,3].includes(mem.semanticBankReuse)){const own=L.selectReviewedBankResponse(cat,ctx,seed,mem,sem,mem.semanticBankReuse);if(own)return own;}
+  if(mem.reviewedSpecialist===1)return L.selectSpecialistResponse(cat,ctx,seed,mem,sem);
   return null;
  };
  let activeScene=null,observations=0,emittedChecks=0,sceneCount=0,oldUnknown=0,newUnknown=0,classifiedOpenings=0;
  const recoveredSources=new Map(),remainingUnknown=new Map();
+ let specialistHits=0,specialistLosses=0,specialistPairs=0;const specialistIds=new Set(),specialistOwners=new Set(),specialistMoves=new Map();
  let recoveryPairs=0,recoveryHits=0;const recoveryIds=new Set(),recoveryOwners=new Set(),recoveryTopics=new Map();
  root.__promoDemandObserver=(st,ctx,mem,line,cat,seed)=>{
   assert.ok(activeScene,'observer must only run on the balanced workload');
@@ -435,7 +438,8 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
   // One scene per identity verifies the observation hook cannot affect
   // transcript, state, or result compared with the uninstrumented engine.
   const plain=j===0?plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts):null;
-  const oldBankPolicy=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);oldBankPolicy.authoredDialogue.semanticBankReuse=2;
+  const oldBankPolicy=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);oldBankPolicy.authoredDialogue.semanticBankReuse=2;delete oldBankPolicy.authoredDialogue.reviewedSpecialist;
+  const priorSpecialist=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorSpecialist.authoredDialogue.reviewedSpecialist;
   const previous=JSON.parse(JSON.stringify(st));delete previous.semantic.claimClassification;
   inc(formatsSeen,st.director?.format||'legacy');
   activeScene=[];
@@ -450,12 +454,31 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
     // the demand counts. Compare the same opening against the prior policy.
     Mic.choose(previous,id);
    }
-   const oldAt=oldBankPolicy.log.length;
+   const oldAt=oldBankPolicy.log.length,priorAt=priorSpecialist.log.length;
    plainRoot.OfficeMic.choose(oldBankPolicy,id);
+   plainRoot.OfficeMic.choose(priorSpecialist,id);
    Mic.choose(st,id);
+   if((round==='answer'&&id==='turn')||(round==='push'&&['press','acknowledge'].includes(id))){
+    specialistPairs++;
+    const beforeSpecialist=priorSpecialist.log.slice(priorAt),afterSpecialist=st.log.slice(before);
+    for(const side of ['w','f']){
+     const a=afterSpecialist.find(e=>e.side===side),b=beforeSpecialist.find(e=>e.side===side);
+     if(!a||!b)continue;
+     assert.equal(a.semantic?.claim,b.semantic?.claim);assert.equal(a.semantic?.move,b.semantic?.move);
+     if(b.authoredId&&!a.authoredId)specialistLosses++;
+     if(a.authoredId&&!b.authoredId){
+      assert.ok(a.semantic?.specialist,'new authored hit must be specialist recovery');
+      specialistHits++;specialistIds.add(a.authoredId);specialistOwners.add(a.dialogueSlot.owner);inc(specialistMoves,a.semantic.specialist);
+      if(a.semantic.specialist==='press'){assert.ok(a.line.endsWith('?'));assert.ok(a.line.endsWith(b.line),'specialist lead preserves the complete topic question');}
+      if(a.semantic.specialist==='strength'){assert.ok(a.line.includes(a.semantic.detail));}
+     }
+    }
+   }
+   assert.equal(JSON.stringify(st.core),JSON.stringify(priorSpecialist.core),'G4B3 graph parity');
+   for(const k of ['meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(priorSpecialist[k]),'G4B3 '+k+' parity');
    if(round==='answer'&&id==='turn'){
     recoveryPairs++;
-    const old=oldBankPolicy.log.slice(oldAt),now=st.log.slice(before);
+    const old=oldBankPolicy.log.slice(oldAt),now=priorSpecialist.log.slice(priorAt);
     for(const side of ['w','f']){
      const a=now.find(e=>e.side===side),b=old.find(e=>e.side===side);
      assert.ok(a&&b);assert.equal(a.semantic?.claim,b.semantic?.claim);assert.equal(a.semantic?.move,b.semantic?.move);
@@ -509,7 +532,10 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  const recovery={pairedExchanges:recoveryPairs,recoveredTurns:recoveryHits,distinctIds:recoveryIds.size,characters:recoveryOwners.size,topics:Object.fromEntries(recoveryTopics)};
  assert.ok(recoveryHits>0&&recoveryOwners.size>0,'G4B2 live recovery');
  console.log('G4B2 RECOVERY '+JSON.stringify(recovery));
- const report={classification,recovery,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
+ const specialist={pairedExchanges:specialistPairs,recoveredTurns:specialistHits,lostTurns:specialistLosses,distinctIds:specialistIds.size,characters:specialistOwners.size,moves:Object.fromEntries(specialistMoves)};
+ assert.ok(specialistHits>specialistLosses,'G4B3 net authored recovery');
+ console.log('G4B3 SPECIALIST '+JSON.stringify(specialist));
+ const report={classification,recovery,specialist,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
  console.log('G4A DEMAND SUMMARY '+JSON.stringify({...report,topics:undefined,actors:undefined,detail:undefined}));
  for(const x of topics)console.log('G4A TOPIC '+JSON.stringify(x));
  for(const x of actors)console.log('G4A ACTOR '+JSON.stringify(x));
