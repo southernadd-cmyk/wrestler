@@ -96,4 +96,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD5={
+  "val": [
+    "They can see whether I keep my form when you make me work for every inch.",
+    "Let them judge the effort and the result. I intend to meet the standard without making claims I cannot support."
+  ],
+  "brick": [
+    "Watch who gets the hold and who gets out. There's your answer.",
+    "They'll see whether either of us can finish the job. Nothing to make up there."
+  ],
+  "dee": [
+    "I'd like to find out if I can use what I've been practising when you really make it difficult. They'll see that.",
+    "Can we let them watch how I respond when you catch me out? I think that would be a fair way to judge me."
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidencePressRepliesD5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

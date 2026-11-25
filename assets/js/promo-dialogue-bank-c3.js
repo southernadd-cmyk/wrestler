@@ -100,4 +100,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressRepliesD2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD5={
+  "tori": [
+    "Watch what happens when the pressure builds and neither of us can back away. That's the test.",
+    "The crowd can see which of us turns all that energy into something that actually wins a fall."
+  ],
+  "anya": [
+    "Cut away the talk. Look at the feet, the grip and the finish. Those are the things we can establish.",
+    "The contest will show which of us has the sharper edge. It need not settle anything beyond that."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressRepliesD5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
