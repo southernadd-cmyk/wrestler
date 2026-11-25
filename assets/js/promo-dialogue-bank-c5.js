@@ -205,4 +205,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (strengthCountersF2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF3={
+  "gus": [
+    "Right. You've done your homework on my {strength}. Now do the job properly when I put them to work.",
+    "You know about my {strength}. Keep your head and give me a clean answer when the time comes."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (strengthCountersF3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -212,4 +212,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (strengthCountersF2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF3={
+  "iris": [
+    "You've planned for my {strength}. Good. Have a second answer ready when the first one doesn't work.",
+    "Knowing about my {strength} gets you to the first exchange. Make sure your plan gets you through the next one as well."
+  ],
+  "kellan": [
+    "Nice! You've got an answer to my {strength}. Right, I've got another idea for when you try it.",
+    "You know my {strength}, brilliant! Now try keeping up when I change things halfway through."
+  ],
+  "leandro": [
+    "Good, you've planned for my {strength}. Can we get to the bit where you try stopping them now?",
+    "You've got an answer to my {strength}, fine. I've already got another thing in mind. Come on, let's go."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (strengthCountersF3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
