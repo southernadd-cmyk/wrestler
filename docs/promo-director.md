@@ -183,3 +183,7 @@ G4E.2 CI recovered 20 additional player evidence questions (35 cumulative, zero 
 ## G4E.4 — fourth authored evidence question tranche
 
 G4E.3 CI recovered 20 additional player evidence questions (55 cumulative, zero losses); 76/127 authored, 51 remaining. Add two full questions each for Malik, Marisol, Nadia, Night, Noelle, Otis, Rina, Sasha, Silas and Soraya (two misses per owner, ties ordered by ID). Preserve selection and snapshot policy, semantic provenance, opposing reply, history and presentation. Verify 70 scoped questions across 35 original owners, 55 prior G4E recoveries and positive incremental gain, retain G4C/D recovery counts. Based on main including the merged header identity fix. No engine, save, UI or workflow changes. CI pending.
+
+## G4E.5 — fifth authored evidence question tranche
+
+G4E.4 CI recovered 20 additional player evidence questions (75 cumulative, zero losses); 96/127 authored, 31 remaining. Add two full questions each for Theo, Zane and Zara (two misses per owner), then Ace, Alina, Ash, Bronte, Cass, Faye and Gideon (one miss per owner; ties ordered by ID). Project 13 additional recovered turns. Preserve selection and snapshot policy, semantic provenance, opposing reply, history and presentation. Verify 90 scoped questions across 45 original owners, 75 prior G4E recoveries and positive incremental gain, retain G4C/D recovery counts. No engine, save, UI or workflow changes. CI pending.

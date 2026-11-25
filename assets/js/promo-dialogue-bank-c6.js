@@ -157,4 +157,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceQuestionsE4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE5={
+  "alina": [
+    "I want to be fair to you and to the people who came. What can they actually learn about us from this match?",
+    "Leave the accusation alone for now. What can we show them that is true about the way we wrestle?"
+  ],
+  "gideon": [
+    "Set the accusation aside. What can the people see about our craft from the first exchange?",
+    "The proof of a hold begins before the grip. What can we demonstrate through the wrestling itself?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceQuestionsE5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
