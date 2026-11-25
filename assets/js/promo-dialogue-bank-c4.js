@@ -392,4 +392,37 @@
   }
 };
  for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH7={
+  "cass": {
+    "w": [
+      "Years of experience, eh? Lovely. Shall I get you a commemorative mug or actually wrestle you?",
+      "You've learned all the proper answers. I make a habit of asking the daft question."
+    ],
+    "f": [
+      "Experience means knowing when the joke's on me and getting out of the hold anyway.",
+      "I've learned to improvise when the clever plan turns out to be less clever than advertised."
+    ]
+  },
+  "rina": {
+    "w": [
+      "You've played this tune for years. Listen carefully when I change the rhythm.",
+      "Your experience gives you a repertoire, not ownership of the next note."
+    ],
+    "f": [
+      "Experience tells me when a phrase needs to resolve and when I can change its direction.",
+      "I've learned to keep the rhythm even when the expected next move disappears."
+    ]
+  },
+  "sylvia": {
+    "w": [
+      "I respect your years of practice. Meet the standard in this match, not the matches behind you.",
+      "Experience is earned. The result must still be earned separately."
+    ],
+    "f": [
+      "Experience helps me judge when a safe position has become unsafe.",
+      "I've learned to change my approach without lowering the standard of the work."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
