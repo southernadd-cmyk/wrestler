@@ -340,4 +340,77 @@
   }
 };
  for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6C[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH7={
+  "dev": {
+    "w": [
+      "Your experience deserves respect. It does not make the person across from you any less entitled to a fair contest.",
+      "Years of work ought to teach us how to face a new opponent, not give us a reason to dismiss them."
+    ],
+    "f": [
+      "Experience helps me recognise the moment a contest stops being useful to either wrestler.",
+      "I've learned to adjust the work when the original plan puts somebody in an unnecessary predicament."
+    ]
+  },
+  "emmett": {
+    "w": [
+      "Three things: your experience, my preparation, and the match we haven't wrestled. Don't confuse the first with the third.",
+      "One, you've put the years in. Two, I respect that. Three, you still need to answer my next move."
+    ],
+    "f": [
+      "Experience gives me a checklist: the position, the pressure, and the cost of changing either.",
+      "I've learned to check which part of a plan failed before I decide which part to replace."
+    ]
+  },
+  "iris": {
+    "w": [
+      "You've got experience. Good. What's your plan when it leads you somewhere I don't intend to go?",
+      "You know what normally happens next. What have you planned for when it doesn't?"
+    ],
+    "f": [
+      "Experience is knowing how much of the original plan can survive an unexpected move.",
+      "I've learned to keep a second exit available before I commit to the first."
+    ]
+  },
+  "kellan": {
+    "w": [
+      "Years! Lots of them. But wait, what about this thing I've been practising?",
+      "Okay, so you've done more of this. That doesn't mean you've done this exact bit with me."
+    ],
+    "f": [
+      "Experience. Right. I've learned to stop and pick the useful idea instead of the exciting one. Usually.",
+      "I've learned that when plan A goes wrong, I need a plan B, not three more versions of plan A."
+    ]
+  },
+  "leandro": {
+    "w": [
+      "You've been doing this for ages. Brilliant. Can we see what all that experience does at my speed?",
+      "Experience is lovely, but I'm not going to stand still while you remember all of it."
+    ],
+    "f": [
+      "I've learned to wait just long enough for a real opening instead of going at the first hint of one.",
+      "Experience helps me switch gears when the quick route isn't there."
+    ]
+  },
+  "liya": {
+    "w": [
+      "You've rehearsed a lot of landings. I still get to choose when the surprise comes.",
+      "Experience is great! I'm not asking you to forget yours; I'm asking you to keep up with what I've learned."
+    ],
+    "f": [
+      "I've learned to check that the landing is there before I go looking for the applause.",
+      "Experience means knowing when to change a clever idea into a safe, useful one."
+    ]
+  },
+  "nadia": {
+    "w": [
+      "Your years have kept a fire going. I want to see what happens when the wind changes.",
+      "Experience gives you a flame to work with. It doesn't tell you where I'll strike the next spark."
+    ],
+    "f": [
+      "I've learned when to feed a little pressure into a hold and when to let it cool.",
+      "Experience helps me keep a match alive when the first spark fails to catch."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
