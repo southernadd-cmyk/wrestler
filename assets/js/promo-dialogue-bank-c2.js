@@ -473,4 +473,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI8={
+  "imani": {
+    "w": [
+      "You've studied the pace I set last time. Let's see what happens when I make you follow a different one.",
+      "Watching me take the initiative isn't the same as taking it away from me."
+    ],
+    "f": [
+      "I study the moments when control of the tempo passes from one wrestler to the other.",
+      "I practise changing the pace from a secure position, rather than chasing the opening after it has gone."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI8[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -510,4 +510,37 @@
   }
 };
  for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI8={
+  "miro": {
+    "w": [
+      "Right, you've watched me get that wrong before. I've actually been working on it, so I'd like another chance.",
+      "I know you've done your homework. Honestly, I've got a couple of new answers I'd quite like to try."
+    ],
+    "f": [
+      "I study the moment I start to panic in a hold. Then I practise getting my feet back under me.",
+      "I've been rehearsing what to do after a failed entry. It feels a bit less like improvising in a crisis now."
+    ]
+  },
+  "ivo": {
+    "w": [
+      "You've studied the sequence. What is your next step if I interrupt it at the entry?",
+      "Your notes describe an order of moves. Show me the alternative order when the first one fails."
+    ],
+    "f": [
+      "I study the point at which one hold gives way to the next. That is where I practise changing the sequence.",
+      "I prepare a second route through each position, so a blocked step doesn't end the whole exchange."
+    ]
+  },
+  "jun": {
+    "w": [
+      "You know my first move from the recording. What is your counter when I start with the second?",
+      "You've prepared for the position you saw. I want to know how you'll answer the one I give you."
+    ],
+    "f": [
+      "I study the counter that forces a wrestler to abandon their preferred entry.",
+      "My preparation is to practise the response and its counter together, rather than learn either in isolation."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI8[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
