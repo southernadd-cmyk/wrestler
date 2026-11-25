@@ -1357,9 +1357,28 @@
 });
  const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(16).padStart(8,'0');};
  function source(id,template){return 'graph:'+id+':'+hash(template);}
- function classify(key,detail){
+ // G4B.1: only newly reviewed literal graph sources. Old scene
+ // snapshots keep their original classification policy.
+ const reviewedExtension=Object.freeze({
+ "graph:p_loyal:d28c00b2": "cheers",
+ "graph:p_second_chance:c0154bfe": "past",
+ "graph:pr_lesson:a37b72a8": "study",
+ "graph:im_cage:1930e94b": "agreement",
+ "graph:ac_survived:62951c19": "count",
+ "graph:ac_fake:8a6247fd": "handshake",
+ "graph:sw_easy:5cb646c9": "past",
+ "graph:tu_record:18e23a79": "past",
+ "graph:tu_learned:d6a932a9": "study",
+ "graph:tu_strength:6e042332": "study",
+ "graph:cb_charge:c9dfe349": "evidence",
+ "graph:ch_mat:fd9a942a": "ground",
+ "graph:ch_trade:9bd96437": "agreement",
+ "graph:ca_humble:164c9d1b": "past",
+ "graph:ch_twice:09a1d8f8": "past"
+});
+ function classify(key,detail,extended=false){
   // Generated rookie lines carry claims from the build (read at call time).
-  const table=Object.prototype.hasOwnProperty.call(reviewed,key)?reviewed:(root.OfficePromoRookieClaims||{});
+  const table=Object.prototype.hasOwnProperty.call(reviewed,key)?reviewed:extended&&Object.prototype.hasOwnProperty.call(reviewedExtension,key)?reviewedExtension:(root.OfficePromoRookieClaims||{});
   const claim=Object.prototype.hasOwnProperty.call(table,key)?table[key]:null;if(!claim||claim==='strength'&&!detail)return null;
   return {v:1,kind:'claim',claim,source:key,...(claim==='strength'?{detail}:{})};
  }
@@ -1542,5 +1561,5 @@
   const line=eligible.sort((a,b)=>personalRebuttal?priority(b)-priority(a)||rank(a,b):rank(a,b))[0];
   return {id:line.id,text:line.text,composed:true,semantic:{v:1,kind:side==='f'?'claim':'response',claim:side==='f'?outClaim:claim,source:line.id,replyTo:prev.index,move,...(detail&&outClaim==='strength'?{detail}:{})}};
  }
- root.OfficePromoSemantics=Object.freeze({source,classify,fromBank,latest,allowed,label,option,select,reviewed});
+ root.OfficePromoSemantics=Object.freeze({source,classify,fromBank,latest,allowed,label,option,select,reviewed,reviewedExtension});
 })(typeof window!=='undefined'?window:globalThis);
