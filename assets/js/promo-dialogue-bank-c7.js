@@ -256,4 +256,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceAcknowledgementsG2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG3={
+  "emmett": [
+    "Item one accepted: an accusation needs evidence. Until then it stays open.",
+    "Agreed. We have a claim and a contest; only the contest is in front of us."
+  ],
+  "iris": [
+    "That's sensible. I won't count an assumption as a result before we've even landed.",
+    "Point taken. Let's judge what actually happens, not what the plan says should happen."
+  ],
+  "leandro": [
+    "Got it. No proof, no verdict. Come on, let's give them something to watch.",
+    "Fair, fair. Leave the rumour here; the wrestling is what we can show them."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceAcknowledgementsG3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -239,3 +239,7 @@ G4F.8 demand audit found 47/47 player evidence acknowledgements without an autho
 ## G4G.2 — acknowledgement expansion
 
 Twenty new owner-specific lines for Marisol, Nolan, Tori, Winnie, Anya, Ari, Ayla, Cedric, Dee and Eira. Target fourteen further sampled recoveries, preserving the pilot's eight, zero losses, and all earlier graph and semantic parity checks. Fourteen original owners, 28 rows total. Selection engine unchanged; compact assets and manifest rebuilt. CI pending.
+
+## G4G.3 — acknowledgement expansion
+
+Twenty additional owner-specific lines for Ellis, Emmett, Faye, Imani, Iris, Kira, Kit, Kofi, Leandro and Lyra. Target ten new sampled recoveries, preserving all 22 previous recoveries with zero losses; 24 original owners and 48 rows total. Selection engine unchanged; compact assets and manifest rebuilt. CI pending.

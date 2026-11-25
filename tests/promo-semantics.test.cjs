@@ -314,7 +314,7 @@ for(const {row,pack} of questionRows){
 assert.deepEqual([...questionOwners.keys()].sort(),[...followupOwners.keys()].sort());assert.equal(questionOwners.size,80);for(const n of questionOwners.values())assert.equal(n,2);
 console.log('PASS G4E8 authored evidence question fixtures: 160 scoped questions across all 80 original owners.');
 const evidenceAckRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='evidence'&&row.stage==='push'&&row.action==='acknowledge');
-assert.equal(evidenceAckRows.length,28);const evidenceAckOwners=new Map();
+assert.equal(evidenceAckRows.length,48);const evidenceAckOwners=new Map();
 for(const {row,pack} of evidenceAckRows){
  assert.ok(!topicText.has(row.text));topicText.add(row.text);assert.equal(row.side,'w');assert.equal(row.category,'respect');
  evidenceAckOwners.set(pack.owner,(evidenceAckOwners.get(pack.owner)||0)+1);
@@ -326,8 +326,8 @@ for(const {row,pack} of evidenceAckRows){
  for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{protected:'contextual-variant'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:'f'},{stage:'answer'},{action:'press'}])assert.equal(L.selectAuthoredEvidenceAcknowledgement(cat,{...context,...patch},'evidence-ack',{},sem),null);
  for(const patch of [{claim:'proof'},{move:'rebut'},{move:'settle'}])assert.equal(L.selectAuthoredEvidenceAcknowledgement(cat,context,'evidence-ack',{}, {...sem,...patch}),null);
 }
-assert.deepEqual([...evidenceAckOwners.keys()].sort(),['anya','ari','ayla','cedric','dean','dee','eira','elodie','felix','kezia','marisol','nolan','tori','winnie']);for(const n of evidenceAckOwners.values())assert.equal(n,2);
-console.log('PASS G4G2 evidence acknowledgement fixtures: 28 authored replies across 14 owners, scope, owner, history and ordinary-slot guards.');
+assert.deepEqual([...evidenceAckOwners.keys()].sort(),['anya','ari','ayla','cedric','dean','dee','eira','ellis','elodie','emmett','faye','felix','imani','iris','kezia','kira','kit','kofi','leandro','lyra','marisol','nolan','tori','winnie']);for(const n of evidenceAckOwners.values())assert.equal(n,2);
+console.log('PASS G4G3 evidence acknowledgement fixtures: 48 authored replies across 24 owners, scope, owner, history and ordinary-slot guards.');
 const strengthRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='strength');
 assert.equal(strengthRows.length,160);const strengthOwners=new Map();
 for(const {row,pack} of strengthRows){
