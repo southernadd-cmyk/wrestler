@@ -85,4 +85,11 @@
  ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressReplies={
+ "sol": [
+  "The people will see whether we give them a fair contest. They can judge the work for themselves.",
+  "We can show them what we do under pressure. Neither of us needs to ask them to believe an accusation."
+ ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

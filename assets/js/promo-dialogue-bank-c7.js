@@ -78,4 +78,11 @@
  ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressReplies={
+ "emmett": [
+  "They'll see how we handle ourselves when there's nowhere to hide. That's the evidence I want.",
+  "We can show them who keeps working when the match gets difficult. The rest is talk."
+ ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

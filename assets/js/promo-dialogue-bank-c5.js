@@ -85,4 +85,11 @@
  ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressReplies={
+ "nikita": [
+  "Which of us can keep control when the other takes it away? That's a question the match can actually answer.",
+  "Watch what we do, not what we claim. Can you give me a better test than that?"
+ ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
