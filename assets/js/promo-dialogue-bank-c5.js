@@ -96,4 +96,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD4={
+  "milo": [
+    "When we're both knackered and there's still work to do, watch how we get through it. That's a fair test.",
+    "The crowd can judge whether we give them a match worth the miles they travelled. No need to make up a story."
+  ],
+  "nolan": [
+    "Watch the control when a hold goes wrong. You'll see whether we've learnt to look after each other properly.",
+    "A clean escape followed by a sound counter. That's something I can demonstrate instead of lecture about."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressRepliesD4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

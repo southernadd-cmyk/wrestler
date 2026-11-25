@@ -78,4 +78,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD4={
+  "noelle": [
+    "The test is observable conduct within the agreed rules, followed by an official result. That is the limit of the conclusion.",
+    "We can examine the method as well as the result. Neither establishes a separate allegation without separate evidence."
+  ],
+  "rev": [
+    "Let the contest bear witness to our deeds, not to an allegation neither of us can establish.",
+    "Pride is easily proclaimed. Watch how each of us conducts ourselves when the advantage passes to the other."
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidencePressRepliesD4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

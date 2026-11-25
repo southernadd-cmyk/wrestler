@@ -100,4 +100,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD4={
+  "miro": [
+    "I'd like them to see how I get on when something I've practised doesn't go to plan. Honestly, that's enough.",
+    "We can find out whether I can hold my own against you. I'm happy to let the match answer that."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidencePressRepliesD4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -112,4 +112,11 @@
   ]
 };
  for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD4={
+  "mara": [
+    "The issue is whether either of us can substantiate our wrestling claims under opposition. The match is the appropriate forum.",
+    "We can establish who earns the fall and by what means. Anything beyond that requires evidence we do not yet have."
+  ]
+};
+ for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidencePressRepliesD4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

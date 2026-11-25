@@ -147,3 +147,7 @@ G4D.1 CI recovered 28 turns across ten owners with no losses; 99 of 127 opponent
 ## G4D.3 — third opponent evidence follow-up tranche
 
 G4D.2 CI recovered 20 additional turns (48 cumulative, zero losses), leaving 79 of 127 eligible counters unauthored. Add two individually written replies each for Elodie, Ezra, Imani, Jun, Kellan, Kezia, Kofi, Lyra, Mae and Magnus; two gaps per owner, ties ordered by owner ID. Maintain existing selection and snapshot policy, regenerate ten payloads and manifest, verify 60 scoped lines across 30 owners, preserve 28 G4D.1, 20 G4D.2 and 413 G4C recoveries. No engine, workflow or save migration. Additional measured recovery pending CI.
+
+## G4D.4 — fourth opponent evidence follow-up tranche
+
+G4D.3 CI recovered 20 additional turns (68 cumulative, zero losses), leaving 59 of 127 eligible counters unauthored. Add two individually written replies each for Mara, Milo, Miro, Nico, Noelle, Nolan, Otis, Red, Rev and Roxy; two gaps per owner, ties ordered by owner ID. Retain existing selection and snapshot policy. Verify 80 scoped lines across 40 owners, preserve all 68 previous G4D recoveries and 413 G4C recoveries, require positive incremental recovery; update pilot count and Mara-specific assertions. No engine, workflow or save migration. Measured recovery pending CI.
