@@ -472,4 +472,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI5={
+  "kellan": {
+    "w": [
+      "Wait, you've watched that bit? Good! I've got a different way of doing it now.",
+      "Okay, you've done your research. I had another idea in training. No, a proper one this time."
+    ],
+    "f": [
+      "I watched the tape twice. First for the clever bit, then for the bit where I nearly ruined it.",
+      "I've been practising the backup plan. Actually practising it, not just thinking of another exciting move."
+    ]
+  },
+  "morgan": {
+    "w": [
+      "You've invested time in studying me. That does not entitle you to the return you anticipated.",
+      "Your research assumes I will offer the same terms. I reserve the right to renegotiate them."
+    ],
+    "f": [
+      "I study where control changes hands. That's where the worthwhile leverage usually lies.",
+      "My preparation is to compare the cost of each option before the pressure forces a decision."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

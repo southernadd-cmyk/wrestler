@@ -451,4 +451,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI5={
+  "kofi": {
+    "w": [
+      "Okay, you saw that jump! Did you work out what happens if I change direction before I even leave the mat?",
+      "You've studied my rhythm, sure. Tonight I might give you a different beat!"
+    ],
+    "f": [
+      "I watch how the space opens before a jump, then practise finding it without rushing.",
+      "I've been working on the landing and the next step. The takeoff is only one part of it!"
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

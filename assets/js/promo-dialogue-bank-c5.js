@@ -462,4 +462,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI5={
+  "mae": {
+    "w": [
+      "You have studied the demonstration. Now we will see how well you understand the exercise.",
+      "You know how I taught that lesson last time. I have a different question for you tonight."
+    ],
+    "f": [
+      "I study the errors in a movement before I teach myself the correction.",
+      "I practise the difficult transition slowly, then repeat it under resistance until the lesson holds."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
