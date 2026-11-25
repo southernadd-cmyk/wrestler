@@ -239,4 +239,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (strengthCountersF6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const evidenceAcknowledgementsG2={
+  "dee": [
+    "Okay, I can see that. I shouldn't ask people to believe something I can't show them.",
+    "That's a fair way to look at it. We can both do our best to give them something real to judge."
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceAcknowledgementsG2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

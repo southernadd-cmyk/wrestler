@@ -235,3 +235,7 @@ Add two distinct counters each for the 13 remaining original owners in C6–C8 a
 ## G4G.1 — evidence acknowledgement pilot
 
 G4F.8 demand audit found 47/47 player evidence acknowledgements without an authored response. Add two individually authored lines each for Dean, Elodie, Felix and Kezia (two sampled gaps each). New `authoredEvidenceAcknowledgements:1` policy for newly authored semantic scenes only. Last-priority route: push/acknowledge/w, actual evidence claim, no protected context or mouthpiece, strict owner and history guards. Acknowledge the need for evidence, not the truth of an allegation. Require eight sampled recoveries with zero losses and paired graph, options, semantic and opponent/presentation parity; preserve G4B–F recoveries. No UI, graph or workflow changes. CI pending.
+
+## G4G.2 — acknowledgement expansion
+
+Twenty new owner-specific lines for Marisol, Nolan, Tori, Winnie, Anya, Ari, Ayla, Cedric, Dee and Eira. Target fourteen further sampled recoveries, preserving the pilot's eight, zero losses, and all earlier graph and semantic parity checks. Fourteen original owners, 28 rows total. Selection engine unchanged; compact assets and manifest rebuilt. CI pending.

@@ -263,4 +263,23 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceAcknowledgementsG1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG2={
+  "marisol": [
+    "That small distinction matters. I will not turn an impression into a fact.",
+    "I accept that. Let the details we can see carry more weight than the things we imagine."
+  ],
+  "ari": [
+    "The room deserves that much from us. Give them something they can actually witness.",
+    "Fair. Everyone here can judge the wrestling; I won't ask them to take a rumour on trust."
+  ],
+  "cedric": [
+    "Yes, that is fair to both of us. Let the people judge what we can actually demonstrate.",
+    "I accept that standard. Nobody should have to defend an allegation without something behind it."
+  ],
+  "eira": [
+    "Agreed. No unsupported charges. A clean contest is something we can establish.",
+    "Correct. What we can prove within the rules is what counts."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceAcknowledgementsG2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
