@@ -188,4 +188,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceQuestionsE8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const strengthCountersF2={
+  "silas": [
+    "Identifying my {strength} reduces uncertainty. It does not give you control of the exchange.",
+    "Your proposed answer to my {strength} remains a hypothesis until you can execute it against resistance."
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (strengthCountersF2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

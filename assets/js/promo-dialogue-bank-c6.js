@@ -201,4 +201,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (strengthCountersF1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF2={
+  "ari": [
+    "The whole room knows about my {strength} now. They will see whether your answer works when we are face to face.",
+    "You can rehearse an answer to my {strength}. The people in the front row will see what happens when the scene changes."
+  ],
+  "cedric": [
+    "You have told everyone how you intend to answer my {strength}. Will you give me a fair chance to test that answer?",
+    "Who decides that your answer to my {strength} works? Let us give the people a contest and find out."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (strengthCountersF2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

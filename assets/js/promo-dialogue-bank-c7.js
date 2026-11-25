@@ -201,4 +201,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (strengthCountersF1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF2={
+  "ayla": [
+    "You have read the opening chapter on my {strength}. You have not written the ending.",
+    "My {strength} give you a problem at the beginning of the story. Your answer may change the plot, but so may mine."
+  ],
+  "dev": [
+    "You've thought about my {strength}, which is good preparation. Now show me you can answer them without losing control of the contest.",
+    "I will use my {strength} responsibly. You still have to do your own work to meet them."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (strengthCountersF2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

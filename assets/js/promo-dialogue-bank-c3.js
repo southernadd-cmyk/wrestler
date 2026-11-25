@@ -199,4 +199,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (strengthCountersF1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF2={
+  "ace": [
+    "Ladies and gentlemen, you've heard the plan for stopping my {strength}. Now watch what happens when I actually use them.",
+    "You have studied my {strength} from your seat in the stalls. Try dealing with them when you're sharing the spotlight."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (strengthCountersF2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
