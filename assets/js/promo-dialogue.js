@@ -989,12 +989,973 @@
   "strike"
  ]
 });
- function selectReviewedBankResponse(cat,ctx,seed,mem,sem){
+ // Full-roster editorial extension. The same bank IDs remain the source;
+ // v1 snapshots retain the original approved set and selection ordering.
+ const bankReuseExtension=freeze({
+ "mara.c1.05": [
+  3593518431,
+  "shared_effort"
+ ],
+ "mara.c1.13": [
+  1561536097,
+  "shared_effort"
+ ],
+ "rex.c1.05": [
+  1734767211,
+  "shared_effort"
+ ],
+ "rex.c1.13": [
+  3857395091,
+  "shared_effort"
+ ],
+ "rex.c1.07": [
+  1650129344,
+  "status"
+ ],
+ "rex.c1.06": [
+  3618180879,
+  "effort",
+  "talking"
+ ],
+ "lyra.c1.05": [
+  4092803269,
+  "shared_effort"
+ ],
+ "lyra.c1.13": [
+  956022457,
+  "shared_effort"
+ ],
+ "lyra.c1.06": [
+  1321059184,
+  "effort",
+  "talking"
+ ],
+ "brick.c1.05": [
+  3746931275,
+  "shared_effort"
+ ],
+ "brick.c1.13": [
+  1299375786,
+  "shared_effort"
+ ],
+ "brick.c1.07": [
+  2232711256,
+  "status"
+ ],
+ "brick.c1.06": [
+  3708845199,
+  "effort",
+  "talking"
+ ],
+ "juno.c1.05": [
+  4047335445,
+  "shared_effort"
+ ],
+ "juno.c1.13": [
+  4212448296,
+  "shared_effort"
+ ],
+ "juno.c1.07": [
+  45946575,
+  "status"
+ ],
+ "juno.c1.06": [
+  207794897,
+  "effort",
+  "talking"
+ ],
+ "sol.c1.05": [
+  748423233,
+  "shared_effort"
+ ],
+ "sol.c1.13": [
+  3512099307,
+  "shared_effort"
+ ],
+ "sol.c1.07": [
+  2469911262,
+  "status"
+ ],
+ "sol.c1.06": [
+  3204191442,
+  "effort",
+  "talking"
+ ],
+ "dee.c1.05": [
+  813997581,
+  "shared_effort"
+ ],
+ "dee.c1.13": [
+  703836363,
+  "shared_effort"
+ ],
+ "dee.c1.07": [
+  772282711,
+  "status"
+ ],
+ "dee.c1.06": [
+  1399094145,
+  "effort",
+  "talking"
+ ],
+ "kit.c1.05": [
+  1794278516,
+  "shared_effort"
+ ],
+ "kit.c1.13": [
+  3020443233,
+  "shared_effort"
+ ],
+ "kit.c1.06": [
+  1636805805,
+  "effort",
+  "talking"
+ ],
+ "dax.c1.05": [
+  1337913915,
+  "shared_effort"
+ ],
+ "dax.c1.13": [
+  1848776938,
+  "shared_effort",
+  "effort"
+ ],
+ "dax.c1.06": [
+  3893685910,
+  "effort",
+  "talking"
+ ],
+ "val.c1.05": [
+  2596806422,
+  "shared_effort"
+ ],
+ "val.c1.13": [
+  971487611,
+  "shared_effort"
+ ],
+ "val.c1.07": [
+  3688229333,
+  "status"
+ ],
+ "val.c1.06": [
+  597970885,
+  "effort",
+  "talking"
+ ],
+ "nico.c2.05": [
+  3083709403,
+  "shared_effort"
+ ],
+ "nico.c2.13": [
+  3242439838,
+  "shared_effort"
+ ],
+ "nico.c2.07": [
+  2146125994,
+  "status"
+ ],
+ "nico.c2.06": [
+  450966178,
+  "effort",
+  "talking"
+ ],
+ "cal.c2.05": [
+  4175171477,
+  "shared_effort"
+ ],
+ "cal.c2.13": [
+  1669957574,
+  "shared_effort"
+ ],
+ "cal.c2.07": [
+  4074704899,
+  "status"
+ ],
+ "cal.c2.06": [
+  3431083264,
+  "effort",
+  "talking"
+ ],
+ "imani.c2.05": [
+  2804395638,
+  "shared_effort"
+ ],
+ "imani.c2.13": [
+  2724424492,
+  "shared_effort"
+ ],
+ "imani.c2.07": [
+  14541578,
+  "status"
+ ],
+ "imani.c2.06": [
+  803463426,
+  "effort",
+  "talking"
+ ],
+ "otis.c2.05": [
+  887514514,
+  "shared_effort"
+ ],
+ "otis.c2.13": [
+  1895258094,
+  "shared_effort"
+ ],
+ "otis.c2.07": [
+  3043456620,
+  "status"
+ ],
+ "otis.c2.06": [
+  3922265053,
+  "effort",
+  "talking"
+ ],
+ "kira.c2.05": [
+  1771147621,
+  "shared_effort"
+ ],
+ "kira.c2.13": [
+  2502026131,
+  "shared_effort"
+ ],
+ "kira.c2.07": [
+  731623143,
+  "status"
+ ],
+ "kira.c2.06": [
+  2934028654,
+  "effort",
+  "talking"
+ ],
+ "ezra.c2.05": [
+  2649297140,
+  "shared_effort"
+ ],
+ "ezra.c2.13": [
+  3282909840,
+  "shared_effort"
+ ],
+ "ezra.c2.07": [
+  3882220036,
+  "status"
+ ],
+ "ezra.c2.06": [
+  3425149549,
+  "effort",
+  "talking"
+ ],
+ "red.c2.05": [
+  2111244408,
+  "shared_effort"
+ ],
+ "red.c2.13": [
+  987215409,
+  "shared_effort"
+ ],
+ "red.c2.07": [
+  4283397029,
+  "status"
+ ],
+ "red.c2.06": [
+  2537594110,
+  "effort",
+  "talking"
+ ],
+ "roxy.c2.05": [
+  1640393766,
+  "shared_effort"
+ ],
+ "roxy.c2.13": [
+  90932344,
+  "shared_effort",
+  "endurance"
+ ],
+ "roxy.c2.06": [
+  3110873044,
+  "effort",
+  "talking"
+ ],
+ "silas.c2.05": [
+  3587951495,
+  "shared_effort"
+ ],
+ "silas.c2.13": [
+  2782947676,
+  "shared_effort"
+ ],
+ "silas.c2.07": [
+  866117427,
+  "status"
+ ],
+ "silas.c2.06": [
+  1421966466,
+  "effort",
+  "talking"
+ ],
+ "night.c2.05": [
+  3863032941,
+  "shared_effort"
+ ],
+ "night.c2.13": [
+  3583923942,
+  "shared_effort"
+ ],
+ "night.c2.06": [
+  4078274093,
+  "effort",
+  "talking"
+ ],
+ "malik.c3.05": [
+  1901826559,
+  "shared_effort"
+ ],
+ "malik.c3.13": [
+  531813055,
+  "shared_effort"
+ ],
+ "dean.c3.05": [
+  4122941782,
+  "shared_effort"
+ ],
+ "dean.c3.13": [
+  76554127,
+  "shared_effort"
+ ],
+ "dean.c3.10": [
+  1465018454,
+  "strike"
+ ],
+ "dean.c3.12": [
+  423760082,
+  "pace"
+ ],
+ "rocco.c3.05": [
+  181473611,
+  "shared_effort"
+ ],
+ "rocco.c3.13": [
+  403816714,
+  "shared_effort"
+ ],
+ "rocco.c3.24": [
+  2619353359,
+  "proof"
+ ],
+ "rocco.c3.10": [
+  3123307920,
+  "strike"
+ ],
+ "ace.c3.05": [
+  3019272107,
+  "shared_effort"
+ ],
+ "ace.c3.13": [
+  196718571,
+  "shared_effort"
+ ],
+ "tori.c3.05": [
+  2918503578,
+  "shared_effort"
+ ],
+ "tori.c3.13": [
+  40809757,
+  "shared_effort"
+ ],
+ "tori.c3.12": [
+  2522114006,
+  "pace"
+ ],
+ "faye.c3.01": [
+  2167243783,
+  "evidence"
+ ],
+ "faye.c3.18": [
+  1957423469,
+  "unclassified"
+ ],
+ "faye.c3.13": [
+  48308002,
+  "shared_effort",
+  "effort"
+ ],
+ "zara.c3.05": [
+  1483192752,
+  "shared_effort"
+ ],
+ "zara.c3.13": [
+  4246594688,
+  "shared_effort"
+ ],
+ "zara.c3.06": [
+  2564666776,
+  "effort",
+  "talking"
+ ],
+ "aisha.c3.05": [
+  787323581,
+  "shared_effort"
+ ],
+ "aisha.c3.13": [
+  1331881053,
+  "shared_effort"
+ ],
+ "aisha.c3.12": [
+  3749561983,
+  "pace"
+ ],
+ "anya.c3.05": [
+  1000709358,
+  "shared_effort"
+ ],
+ "anya.c3.13": [
+  2511875508,
+  "shared_effort"
+ ],
+ "anya.c3.10": [
+  2328162489,
+  "strike"
+ ],
+ "priya.c3.21": [
+  3627301443,
+  "ground"
+ ],
+ "priya.c3.24": [
+  321994896,
+  "proof",
+  "effort"
+ ],
+ "priya.c3.10": [
+  280473453,
+  "strike"
+ ],
+ "bao.c4.05": [
+  2080003237,
+  "shared_effort"
+ ],
+ "bao.c4.13": [
+  3166971236,
+  "shared_effort"
+ ],
+ "bao.c4.10": [
+  3559064916,
+  "strike"
+ ],
+ "bao.c4.12": [
+  2891075088,
+  "pace"
+ ],
+ "miro.c4.05": [
+  3516356087,
+  "shared_effort"
+ ],
+ "miro.c4.13": [
+  2373267514,
+  "shared_effort"
+ ],
+ "miro.c4.12": [
+  4163194152,
+  "pace"
+ ],
+ "ellis.c4.05": [
+  1071046177,
+  "shared_effort"
+ ],
+ "ellis.c4.13": [
+  2176737885,
+  "shared_effort"
+ ],
+ "ivo.c4.05": [
+  2361365012,
+  "shared_effort"
+ ],
+ "ivo.c4.13": [
+  87977979,
+  "shared_effort"
+ ],
+ "rina.c4.05": [
+  1900701235,
+  "shared_effort"
+ ],
+ "rina.c4.13": [
+  988366583,
+  "shared_effort"
+ ],
+ "rina.c4.10": [
+  2924351830,
+  "strike"
+ ],
+ "nate.c4.05": [
+  3413041327,
+  "shared_effort"
+ ],
+ "nate.c4.13": [
+  160713952,
+  "shared_effort"
+ ],
+ "cass.c4.31": [
+  906446084,
+  "unclassified"
+ ],
+ "cass.c4.13": [
+  2288334348,
+  "audience"
+ ],
+ "jun.c4.05": [
+  2626652905,
+  "shared_effort"
+ ],
+ "jun.c4.13": [
+  1789361034,
+  "shared_effort"
+ ],
+ "sylvia.c4.05": [
+  2718251008,
+  "shared_effort"
+ ],
+ "sylvia.c4.13": [
+  2578954013,
+  "shared_effort"
+ ],
+ "sylvia.c4.10": [
+  636940836,
+  "strike"
+ ],
+ "kofi.c4.05": [
+  509412132,
+  "shared_effort"
+ ],
+ "kofi.c4.13": [
+  2423022973,
+  "shared_effort"
+ ],
+ "kofi.c4.06": [
+  2824784845,
+  "effort",
+  "talking"
+ ],
+ "nolan.c5.05": [
+  2965176547,
+  "shared_effort"
+ ],
+ "nolan.c5.13": [
+  1325624349,
+  "shared_effort"
+ ],
+ "nolan.c5.10": [
+  4253212460,
+  "strike"
+ ],
+ "mae.c5.05": [
+  613435265,
+  "shared_effort"
+ ],
+ "mae.c5.13": [
+  3259513867,
+  "shared_effort"
+ ],
+ "theo.c5.05": [
+  3164912775,
+  "shared_effort"
+ ],
+ "theo.c5.13": [
+  901033639,
+  "shared_effort"
+ ],
+ "theo.c5.06": [
+  3986748623,
+  "effort",
+  "talking"
+ ],
+ "soraya.c5.05": [
+  1298292479,
+  "shared_effort"
+ ],
+ "soraya.c5.13": [
+  1675674845,
+  "shared_effort"
+ ],
+ "milo.c5.05": [
+  3141093512,
+  "shared_effort"
+ ],
+ "milo.c5.13": [
+  995534520,
+  "shared_effort"
+ ],
+ "winnie.c5.05": [
+  3630415216,
+  "shared_effort"
+ ],
+ "winnie.c5.13": [
+  2666892400,
+  "shared_effort"
+ ],
+ "bronte.c5.05": [
+  3654903916,
+  "shared_effort"
+ ],
+ "bronte.c5.13": [
+  2824371441,
+  "shared_effort"
+ ],
+ "gus.c5.05": [
+  1097510146,
+  "shared_effort"
+ ],
+ "gus.c5.13": [
+  2082609667,
+  "shared_effort"
+ ],
+ "gus.c5.10": [
+  1631869806,
+  "strike"
+ ],
+ "nikita.c5.05": [
+  1226715060,
+  "shared_effort"
+ ],
+ "nikita.c5.13": [
+  601612880,
+  "shared_effort"
+ ],
+ "jett.c5.05": [
+  3010413735,
+  "shared_effort"
+ ],
+ "jett.c5.13": [
+  3394142560,
+  "shared_effort"
+ ],
+ "alina.c6.05": [
+  3633540743,
+  "shared_effort"
+ ],
+ "alina.c6.13": [
+  1445710428,
+  "shared_effort"
+ ],
+ "cedric.c6.05": [
+  2370547977,
+  "shared_effort"
+ ],
+ "cedric.c6.13": [
+  1258262994,
+  "shared_effort"
+ ],
+ "marisol.c6.05": [
+  2663732495,
+  "audience"
+ ],
+ "marisol.c6.13": [
+  600857490,
+  "shared_effort"
+ ],
+ "felix.c6.06": [
+  2025219950,
+  "effort",
+  "talking"
+ ],
+ "felix.c6.13": [
+  4211128265,
+  "shared_effort"
+ ],
+ "eira.c6.05": [
+  2623958106,
+  "shared_effort"
+ ],
+ "eira.c6.13": [
+  2921298890,
+  "shared_effort"
+ ],
+ "gideon.c6.05": [
+  1028165128,
+  "shared_effort"
+ ],
+ "gideon.c6.13": [
+  1642122047,
+  "shared_effort"
+ ],
+ "gideon.c6.12": [
+  1171129784,
+  "pace"
+ ],
+ "vera.c6.07": [
+  3806768541,
+  "legitimacy"
+ ],
+ "vera.c6.13": [
+  1572611740,
+  "shared_effort"
+ ],
+ "tomas.c6.05": [
+  354950538,
+  "shared_effort"
+ ],
+ "tomas.c6.13": [
+  2092619777,
+  "shared_effort"
+ ],
+ "ari.c6.05": [
+  623184469,
+  "shared_effort"
+ ],
+ "ari.c6.13": [
+  697798480,
+  "shared_effort"
+ ],
+ "kezia.c6.05": [
+  1714970596,
+  "shared_effort"
+ ],
+ "kezia.c6.13": [
+  1689966357,
+  "shared_effort"
+ ],
+ "kezia.c6.06": [
+  3521115974,
+  "effort",
+  "talking"
+ ],
+ "dev.c7.05": [
+  1107539052,
+  "shared_effort"
+ ],
+ "dev.c7.13": [
+  3309994952,
+  "shared_effort"
+ ],
+ "liya.c7.05": [
+  1459112488,
+  "shared_effort"
+ ],
+ "liya.c7.13": [
+  2005057169,
+  "shared_effort"
+ ],
+ "emmett.c7.05": [
+  1178571778,
+  "shared_effort"
+ ],
+ "emmett.c7.13": [
+  1896020027,
+  "shared_effort"
+ ],
+ "nadia.c7.05": [
+  4028858288,
+  "shared_effort"
+ ],
+ "nadia.c7.13": [
+  4138002265,
+  "shared_effort"
+ ],
+ "nadia.c7.10": [
+  2134284523,
+  "strike"
+ ],
+ "leandro.c7.05": [
+  891909857,
+  "shared_effort"
+ ],
+ "leandro.c7.13": [
+  609111361,
+  "shared_effort"
+ ],
+ "iris.c7.05": [
+  1425866380,
+  "shared_effort"
+ ],
+ "iris.c7.13": [
+  966434096,
+  "shared_effort"
+ ],
+ "iris.c7.10": [
+  2029631356,
+  "strike"
+ ],
+ "kellan.c7.05": [
+  4025885001,
+  "shared_effort"
+ ],
+ "kellan.c7.13": [
+  620050322,
+  "shared_effort"
+ ],
+ "ayla.c7.05": [
+  1882961795,
+  "shared_effort"
+ ],
+ "ayla.c7.13": [
+  2462165255,
+  "shared_effort"
+ ],
+ "ayla.c7.10": [
+  998541561,
+  "strike"
+ ],
+ "sasha.c7.21": [
+  1295751232,
+  "audience"
+ ],
+ "sasha.c7.13": [
+  3046528449,
+  "audience"
+ ],
+ "morgan.c7.04": [
+  2225945090,
+  "pace"
+ ],
+ "morgan.c7.12": [
+  2291091839,
+  "pace"
+ ],
+ "tomasash.c8.05": [
+  3951660427,
+  "shared_effort"
+ ],
+ "tomasash.c8.13": [
+  2881094027,
+  "shared_effort"
+ ],
+ "tomasash.c8.12": [
+  3281187977,
+  "pace"
+ ],
+ "noelle.c8.05": [
+  1876842110,
+  "shared_effort"
+ ],
+ "noelle.c8.13": [
+  346185637,
+  "shared_effort"
+ ],
+ "noelle.c8.06": [
+  4070809946,
+  "effort",
+  "talking"
+ ],
+ "ash.c8.24": [
+  1064993958,
+  "proof",
+  "effort"
+ ],
+ "zane.c8.05": [
+  1977811756,
+  "shared_effort"
+ ],
+ "zane.c8.13": [
+  857675246,
+  "shared_effort"
+ ],
+ "zane.c8.06": [
+  1218327600,
+  "effort",
+  "talking"
+ ],
+ "elodie.c8.05": [
+  4253236843,
+  "shared_effort"
+ ],
+ "elodie.c8.13": [
+  92327493,
+  "legitimacy"
+ ],
+ "elodie.c8.06": [
+  2208428046,
+  "effort",
+  "talking"
+ ],
+ "bashir.c8.05": [
+  528932793,
+  "shared_effort"
+ ],
+ "bashir.c8.13": [
+  427470367,
+  "shared_effort"
+ ],
+ "cleo.c8.05": [
+  2424216027,
+  "shared_effort"
+ ],
+ "cleo.c8.13": [
+  443411949,
+  "shared_effort"
+ ],
+ "cleo.c8.06": [
+  229890791,
+  "effort",
+  "talking"
+ ],
+ "rev.c8.22": [
+  3619319495,
+  "ground",
+  "shared_effort"
+ ],
+ "rev.c8.13": [
+  2758601884,
+  "shared_effort"
+ ],
+ "nova.pilot.05": [
+  2811271759,
+  "shared_effort"
+ ],
+ "nova.pilot.06": [
+  4203833353,
+  "status"
+ ],
+ "nova.pilot.07": [
+  1957263445,
+  "takedown"
+ ],
+ "nova.pilot.08": [
+  2727129916,
+  "air"
+ ],
+ "nova.pilot.09": [
+  62441251,
+  "status"
+ ],
+ "nova.pilot.14": [
+  3249430601,
+  "shared_effort",
+  "agreement"
+ ],
+ "magnus.pilot.09": [
+  1434762077,
+  "strike"
+ ],
+ "magnus.pilot.08": [
+  853821948,
+  "audience"
+ ],
+ "magnus.pilot.10": [
+  211744978,
+  "shared_effort",
+  "effort"
+ ],
+ "magnus.pilot.05": [
+  2223803434,
+  "status"
+ ],
+ "magnus.pilot.14": [
+  549438588,
+  "proof",
+  "effort"
+ ]
+});
+ const reviewedBankReuseV2=freeze(Object.fromEntries([...new Set([...Object.keys(reviewedBankReuse),...Object.keys(bankReuseExtension)])].map(id=>{
+  const before=reviewedBankReuse[id],extra=bankReuseExtension[id];
+  return [id,[(before||extra)[0],...new Set([...(before?.slice(1)||[]),...(extra?.slice(1)||[])])]];
+ })));
+ function selectReviewedBankResponse(cat,ctx,seed,mem,sem,version=1){
   if(!ctx||!sem||ctx.hasMouthpiece||ctx.stage!=='answer'||ctx.action!=='turn'||
      (ctx.protected&&ctx.protected!=='contextual-variant')||
      (ctx.side==='w'?sem.move!=='rebut':sem.move!=='counter'))return null;
+  // First honour the old reviewed pool, so adding more topics does not
+  // reshuffle an already supported exchange or its history IDs.
+  if(version===2){const prior=selectReviewedBankResponse(cat,ctx,seed,mem,sem,1);if(prior)return prior;}
+  const reviewed=version===2?reviewedBankReuseV2:reviewedBankReuse;
   const matchesClaim=row=>{
-   const r=reviewedBankReuse[row.id];
+   const r=reviewed[row.id];
    return !!r&&r[0]===hash(row.text)&&r.slice(1).includes(sem.claim)&&row.side===ctx.side;
   };
   const sources=cat.lines(ctx.speaker.role,ctx.speaker.id).filter(matchesClaim);
@@ -1343,5 +2304,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectReviewedBankResponse,reviewedBankReuse,closingCommitment,selectClosing,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,closingCommitment,selectClosing,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);

@@ -46,7 +46,7 @@ let imageryPairs=0,imageryChanges=0,imageryCallbacks=0;const imageryVariants=new
 const graphWithoutWords=s=>{const {imageryStyle,...rest}=s;return {...rest,dialogue:s.dialogue.map(e=>({...e,line:null})),steps:s.steps.map(e=>({...e,label:null})),result:null};};
 const stepsWithoutLabels=s=>s.steps.map(e=>({...e,label:null}));
 let characterPairs=0,characterChanges=0;const characterActors=new Set(),characterClaims=new Set(),characterIds=new Set();
-let bankReusePairs=0,bankReuseHits=0,bankReuseOld=0;const reusedBankIds=new Set(),reusedBankActors=new Set(),reusedBankClaims=new Set();
+let bankReusePairs=0,bankReuseHits=0,bankReuseOld=0,expandedReuseHits=0,expandedReusePairs=0;const expandedActors=new Set(),expandedTopics=new Set();const reusedBankIds=new Set(),reusedBankActors=new Set(),reusedBankClaims=new Set();
 function flowOther(entries){return entries.filter(e=>e.side!=='w'&&e.kind!=='cue');}
 function slot(k){if(!slotCoverage.has(k))slotCoverage.set(k,{available:new Set(),selected:new Set(),spoken:0,authored:0,composed:0,graph:0,protected:0,semanticBypass:0});return slotCoverage.get(k);}
 for(const [i,w] of roster.entries()){
@@ -74,8 +74,10 @@ for(const [i,w] of roster.entries()){
    if(oldFollowup){delete oldFollowup.semantic.followupFlow;Mic.choose(oldFollowup,o.id);}
    const oldCharacter=round==='answer'&&o.id==='turn'&&st.semantic?.characterRebuttal===1?JSON.parse(JSON.stringify(st)):null;
    if(oldCharacter){delete oldCharacter.semantic.characterRebuttal;Mic.choose(oldCharacter,o.id);}
-   const oldBankReuse=round==='answer'&&o.id==='turn'&&st.authoredDialogue?.semanticBankReuse===1?JSON.parse(JSON.stringify(st)):null;
+   const oldBankReuse=round==='answer'&&o.id==='turn'&&[1,2].includes(st.authoredDialogue?.semanticBankReuse)?JSON.parse(JSON.stringify(st)):null;
    if(oldBankReuse){delete oldBankReuse.authoredDialogue.semanticBankReuse;Mic.choose(oldBankReuse,o.id);}
+   const priorBankReuse=round==='answer'&&o.id==='turn'&&st.authoredDialogue?.semanticBankReuse===2?JSON.parse(JSON.stringify(st)):null;
+   if(priorBankReuse){priorBankReuse.authoredDialogue.semanticBankReuse=1;Mic.choose(priorBankReuse,o.id);}
    const oldOpening=round==='open'&&st.openingFlow===1?JSON.parse(JSON.stringify(st)):null;
    if(oldOpening){delete oldOpening.openingFlow;Mic.choose(oldOpening,o.id);}
    if(oldFlow){assert.ok(Mic.choices(oldFlow).some(x=>x.id===o.id),'G3A full-scene choice parity');Mic.choose(oldFlow,o.id);}
@@ -142,6 +144,20 @@ for(const [i,w] of roster.entries()){
      assert.match(x.composedId,/\.g3d\./);assert.ok(!x.authoredId&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.speaker);
      for(const k of ['claim','move','replyTo','kind','detail'])assert.equal(x.semantic?.[k],y.semantic?.[k],'G3D semantic '+k);
      assert.ok(!/[{}]/.test(x.line));
+    }
+   }
+   if(priorBankReuse){
+    expandedReusePairs++;
+    assert.equal(JSON.stringify(st.core),JSON.stringify(priorBankReuse.core),'full-roster reuse graph parity');
+    for(const k of ['meter','stage','round','steps','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(priorBankReuse[k]),'full-roster reuse '+k);
+    const now=st.log.slice(before),old=priorBankReuse.log.slice(before);
+    assert.equal(JSON.stringify(now.filter(e=>!['w','f'].includes(e.side))),JSON.stringify(old.filter(e=>!['w','f'].includes(e.side))),'full-roster reuse crowd parity');
+    for(const side of ['w','f']){
+     const x=now.find(e=>e.side===side),y=old.find(e=>e.side===side);
+     if(y?.authoredId)assert.equal(x?.authoredId,y.authoredId,'previous reviewed selections remain first priority');
+     if(!x?.semantic?.bankReuse||y?.authoredId)continue;
+     expandedReuseHits++;expandedActors.add(x.dialogueSlot.owner);expandedTopics.add(x.semantic.claim);
+     for(const k of ['claim','move','replyTo','kind','detail'])assert.equal(x.semantic[k],y.semantic?.[k],'expanded bank reuse semantic '+k);
     }
    }
    if(oldBankReuse){
@@ -302,6 +318,8 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  console.log('G3D character rebuttals: '+characterChanges+'/'+characterPairs+' changed turns across '+characterActors.size+' speakers; '+characterIds.size+' distinct IDs; claims '+[...characterClaims].join(', '));
  assert.ok(characterChanges>10&&characterActors.size>5&&characterClaims.size>=2,'G3D live coverage');
  console.log('Semantic bank integration: '+bankReuseHits+' newly recovered authored turns across '+bankReusePairs+' paired exchanges; '+reusedBankIds.size+' IDs, '+reusedBankActors.size+' speakers, claims '+[...reusedBankClaims].join(', ')+'; prior authored turns '+bankReuseOld);
+ console.log('Full-roster bank expansion: '+expandedReuseHits+' additional authored turns across '+expandedReusePairs+' paired exchanges, '+expandedActors.size+' speakers, claims '+[...expandedTopics].join(', '));
+ assert.ok(expandedReuseHits>0&&expandedActors.size>0,'full-roster extension live reach');
  assert.ok(bankReuseHits>20&&reusedBankActors.size>10&&reusedBankClaims.size>=2,'live bank reuse coverage');
  assert.ok(extendedChanges>70&&extendedActors.size>20&&extendedChangedVariants.size===extendedVariants.size&&extendedNew.size>extendedOld.size,'G2D extended player voice coverage');
  console.log('PASS G2D player voice: '+extendedChanges+'/'+extendedPairs+' reviewed/protected target turns; '+extendedActors.size+' speakers; '+extendedOld.size+' -> '+extendedNew.size+' distinct normalized lines; variants '+JSON.stringify(Object.fromEntries(extendedChangedVariants))+'; unchanged graph, options and consequences.');
