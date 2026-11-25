@@ -647,6 +647,55 @@ async function negotiationPrototypeAudit(browser,name,viewport){
  }finally{await context.close()}
 }
 
+// Real identity editor and responsive header geometry, including long custom names.
+async function headerIdentityAudit(page,name,viewport){
+ const header=page.locator('#headerIdentity'),edit=header.getByRole('button',{name:'Edit identity'});
+ const original=await page.evaluate(()=>({...window.OfficeGame.S.identity}));
+ const check=async (label,expected)=>{
+  assert.equal(await page.locator('#nav .player-identity-card,#view .player-identity-card').count(),0,label+': identity must not be duplicated');
+  assert.equal(await header.locator('.portrait').count(),1);
+  assert.equal(await header.locator('.player-identity-text>b').textContent(),expected.manager);
+  assert.equal(await header.locator('.player-identity-text>span').textContent(),expected.stable);
+  const g=await page.evaluate(()=>{
+   const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+   const t=document.querySelector('#app .top'),id=document.querySelector('#headerIdentity');
+   const names=[...id.querySelectorAll('.player-identity-text>b,.player-identity-text>span')].map(e=>({box:rect(e),scroll:e.scrollWidth,client:e.clientWidth}));
+   const kids=[...t.children].map(rect);
+   return {viewport:innerWidth,top:rect(t),id:rect(id),portrait:rect(id.querySelector('.portrait')),edit:rect(id.querySelector('button')),names,kids,readouts:[...t.querySelectorAll('.ro')].map(rect)};
+  });
+  assert.ok(g.kids.every(r=>r.left>=g.top.left-1&&r.right<=g.top.right+1&&r.bottom<=g.top.bottom+1&&r.width>0),label+': header child clipped '+JSON.stringify(g));
+  for(let i=0;i<g.kids.length;i++)for(let j=i+1;j<g.kids.length;j++){const a=g.kids[i],b=g.kids[j];assert.ok(!(a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1),label+': header controls overlap '+JSON.stringify(g));}
+  assert.ok(g.names.every(x=>x.scroll<=x.client+1&&x.box.left>=g.portrait.right-1&&x.box.right<=g.edit.left+1),label+': name clipped or overlaps controls '+JSON.stringify(g));
+  assert.ok(g.readouts.length===4&&g.readouts.every(r=>r.width>0&&r.right<=g.viewport+1),label+': career readout clipped');
+  if(g.viewport<=720){assert.ok(g.edit.height>=44,label+': edit touch target');assert.ok(g.readouts.every(r=>r.top>=g.id.bottom-1),label+': phone readouts must be below identity');}
+ };
+ await check(name,original);
+ const long={manager:'Jimmy Brakesley the Championship Manager',stable:'TheWiganCatchClubInternationalWrestlers'};
+ await edit.click();
+ await page.locator('#identity-manager').fill(long.manager);
+ await page.locator('#identity-stable').fill(long.stable);
+ const before=await page.evaluate(()=>window.OfficeGame.S.seed);
+ await page.locator('#modal [data-dlg="identity-save"]').click();
+ assert.equal(await page.evaluate(()=>window.OfficeGame.S.seed),before,name+': editing identity must preserve career seed');
+ assert.equal(await edit.evaluate(e=>e===document.activeElement),true,name+': focus returns to Edit identity');
+ await check(name+' long names',long);
+ if(viewport.width===390){
+  for(const size of [{width:320,height:640},{width:360,height:740},{width:720,height:800},{width:721,height:800},{width:768,height:820},{width:1261,height:768}]){
+   await page.setViewportSize(size);await check(name+' '+size.width,long);
+  }
+  await page.setViewportSize(viewport);
+ }
+ await page.evaluate(()=>window.OfficeUI.go('desk'));
+ await check(name+' desk',long);
+ await edit.click();
+ await page.locator('#identity-manager').fill(original.manager);
+ await page.locator('#identity-stable').fill(original.stable);
+ await page.locator('#modal [data-dlg="identity-save"]').click();
+ await page.evaluate(()=>window.OfficeUI.go('scouting'));
+ await check(name+' restored',original);
+ console.log('PASS header identity '+name+': persistent, editable, no overlap, long names and responsive readouts.');
+}
+
 // Focused visual regression: use the actual title, scouting table and first
 // career toast, rather than a synthetic DOM or viewport-only overflow check.
 async function laptopLayoutAudit(browser,name,viewport){
@@ -671,6 +720,7 @@ async function laptopLayoutAudit(browser,name,viewport){
   await page.locator('[data-title="new"]').click();
   await page.locator('#modal [data-dlg="identity-save"]').click();
   await page.locator('#app').waitFor({state:'visible'});
+  await headerIdentityAudit(page,name,viewport);
   await page.locator('#continue').click();
   const toast=page.locator('#toast.show');
   await toast.waitFor();

@@ -73,4 +73,13 @@ assert.match(ui,/o\.talk&&o\.talk\.step!=='start'\?'Resume the discussion'/);
 assert.match(ui,/\(!o\.talk\|\|o\.talk\.step==='start'\)&&s\.focus<1/);
 assert.ok(css.includes('dialog.negotiation-dialog[open]'));
 assert.ok(css.includes('.neg-transcript{'));
+// Persistent header identity uses the existing editor, without sidebar/desk duplicates.
+assert.match(html,/<header class="top">[\s\S]*?id="headerIdentity"[\s\S]*?<\/header>/);
+assert.ok(ui.includes('headerIdentity.innerHTML=identityCard(true)'));
+assert.ok(!ui.includes('player-nav-head'));
+assert.ok(!ui.includes('const briefing=identityCard()'));
+assert.ok(css.includes('#headerIdentity .player-identity-text>b'));
+assert.ok(css.includes('overflow-wrap:anywhere'));
+const mobile=fs.readFileSync(path.join(root,'assets/css/mobile.css'),'utf8');
+assert.ok(mobile.includes('#headerIdentity{grid-row:2;grid-column:1/-1'));
 console.log('PASS Office UI keyboard, status indicators, action labels and modal accessibility');
