@@ -147,4 +147,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceQuestionsE2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE3={
+  "juno": [
+    "The position matters more than the talk. What can we demonstrate when we're both fighting for it?",
+    "What will the people be able to judge from the wrestling itself?"
+  ],
+  "kit": [
+    "Save the detective act, mate. What can we actually show them once the bell goes?",
+    "They've bought tickets for wrestling, not a courtroom drama. What can we settle out there?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceQuestionsE3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

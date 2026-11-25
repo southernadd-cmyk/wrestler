@@ -175,3 +175,7 @@ G4D.8 reached 127/127 opponent evidence press replies, zero losses; total 712/19
 ## G4E.2 — second authored evidence question tranche
 
 G4E.1 CI recovered 15 player evidence questions with zero losses; 36/127 authored, 91 remaining. Add two full questions each for Aisha, Anya, Ayla, Cleo, Dax, Dean, Dee, Dev, Eira and Ellis (two misses per owner, ties ordered by ID). Preserve existing selection and snapshot policy, semantic provenance, opposing reply, history and presentation. Verify 30 scoped questions across 15 original owners, 15 prior G4E recoveries and positive incremental gain, retain G4C/D recovery counts. No engine, save or workflow changes. CI pending.
+
+## G4E.3 — third authored evidence question tranche
+
+G4E.2 CI recovered 20 additional player evidence questions (35 cumulative, zero losses); 56/127 authored, 71 remaining. Add two full questions each for Ezra, Imani, Iris, Ivo, Jun, Juno, Kit, Liya, Mae and Magnus (two misses per owner, ties ordered by ID). Extend Magnus's pilot bank with its exact scope/count fixture. Preserve selection and snapshot policy, semantic provenance, opposing reply, history and presentation. Verify 50 scoped questions across 25 original owners, 35 prior G4E recoveries and positive incremental gain, retain G4C/D recovery counts. No engine, save or workflow changes. CI pending.

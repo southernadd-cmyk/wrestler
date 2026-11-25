@@ -157,4 +157,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceQuestionsE2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE3={
+  "iris": [
+    "Leave the allegation here. What can we demonstrate when the first plan has to change in the ring?",
+    "What can the people judge about the way we handle the match once it actually starts?"
+  ],
+  "liya": [
+    "I'd rather give the people something they can see for themselves. What can we show them in the ring?",
+    "Okay, leave that bit alone. What can we actually find out when we wrestle each other?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceQuestionsE3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
