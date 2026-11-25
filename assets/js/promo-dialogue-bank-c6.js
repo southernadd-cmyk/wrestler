@@ -78,4 +78,15 @@
  ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressReplies={
+ "tomas": [
+  "We may establish who wrestles the better match, which is quite sufficient for this evening.",
+  "Let the referee judge the result and the audience judge how we earn it. That seems reasonable to me."
+ ],
+ "ari": [
+  "The audience can see how we respond when the other person gains control. That is the part worth testing.",
+  "What we actually do when the pressure is on, rather than what either of us says about the other."
+ ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

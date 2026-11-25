@@ -78,4 +78,11 @@
  ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressReplies={
+ "zara": [
+  "They can judge what we actually deliver, not what either of us says beforehand.",
+  "Let them see how we handle the pressure. That will tell them more than the accusation."
+ ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

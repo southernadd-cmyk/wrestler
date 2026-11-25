@@ -78,4 +78,15 @@
  ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressReplies={
+ "night": [
+  "Watch the ring, not the story around it. They'll see which of us can impose our wrestling.",
+  "What happens between the ropes. No rumour can change what the referee sees."
+ ],
+ "silas": [
+  "We can observe the holds, the escapes and the finish. None requires an assumption about your character.",
+  "The result and the method by which it is achieved. Those are observable facts."
+ ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
