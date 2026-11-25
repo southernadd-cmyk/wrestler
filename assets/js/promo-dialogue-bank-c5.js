@@ -136,4 +136,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressRepliesD8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE3={
+  "mae": [
+    "Leave the rumour behind. What can the match teach the people watching us?",
+    "What can we demonstrate through the wrestling that will still mean something after the final bell?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceQuestionsE3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

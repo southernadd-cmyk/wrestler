@@ -126,4 +126,11 @@
   ]
 };
  for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidencePressRepliesD7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE3={
+  "magnus": [
+    "I should prefer a demonstration to a recital of unsupported allegations. What can the contest establish?",
+    "The audience are perfectly capable of judging a performance. What evidence can we offer them in the ring?"
+  ]
+};
+ for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidenceQuestionsE3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

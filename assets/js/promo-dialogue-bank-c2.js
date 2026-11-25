@@ -133,4 +133,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE3={
+  "ezra": [
+    "Let us distinguish the allegation from the contest. What can a properly officiated match establish?",
+    "What observation in the ring would justify the conclusion you wish us to draw?"
+  ],
+  "imani": [
+    "We've both got work to do out there. What can the people actually judge by watching us wrestle?",
+    "Forget the accusation for a minute. What can we show them when we each have to earn our position?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceQuestionsE3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

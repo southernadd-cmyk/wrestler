@@ -153,4 +153,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceQuestionsE2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE3={
+  "ivo": [
+    "Start with the observable action, then its consequence. What can the match establish from that sequence?",
+    "Set the unsupported claim aside. What outcome can we actually test by wrestling?"
+  ],
+  "jun": [
+    "What can the crowd establish when one of us has to answer the other's first counter?",
+    "Forget the charge. What can we show them in the moment the match turns?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceQuestionsE3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
