@@ -341,4 +341,67 @@
   }
 };
  for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH7={
+  "ace": {
+    "w": [
+      "Ladies and gentlemen, give those years a round of applause. Now watch what happens when the spotlight moves.",
+      "You've got a career worth introducing. That doesn't mean you get to write my introduction for me."
+    ],
+    "f": [
+      "Experience teaches you when the crowd is ready for the next big moment.",
+      "I've learned how to keep the attention when a match goes off the script."
+    ]
+  },
+  "malik": {
+    "w": [
+      "You've had years to get good. You've still got to be good enough to stop me.",
+      "I'm not standing aside because you've been doing this longer."
+    ],
+    "f": [
+      "Experience taught me not to waste a shot on a man who's waiting for it.",
+      "I know when to keep the pressure on and when to make you come to me."
+    ]
+  },
+  "priya": {
+    "w": [
+      "Experience, you say. Which part of it prepared you for the position I intend to give you?",
+      "Those years are impressive. I am curious whether you've learned to revise your favourite answer."
+    ],
+    "f": [
+      "Experience helps me notice when a familiar defence is being offered as bait.",
+      "I've learned to check the grip twice rather than accept the first convincing explanation."
+    ]
+  },
+  "rocco": {
+    "w": [
+      "You've wrestled longer. Fine. Show me what that gets you when I won't cooperate.",
+      "Years don't get the job done. Do the job."
+    ],
+    "f": [
+      "Experience is knowing when to stop pushing against something that won't move.",
+      "I've learned to keep a grip I can use instead of reaching for one I can't."
+    ]
+  },
+  "tori": {
+    "w": [
+      "Time builds pressure. It doesn't tell you where the next release is coming from.",
+      "Your years are a force in this contest. So am I."
+    ],
+    "f": [
+      "Experience teaches me to feel the pressure building before a position breaks.",
+      "I've learned to redirect the force instead of meeting every impact head-on."
+    ]
+  },
+  "zara": {
+    "w": [
+      "Yeah, you've been doing it ages. I still reckon I've got something you won't see coming.",
+      "I respect your experience, really. I'm not giving you an easy night for it, though."
+    ],
+    "f": [
+      "I've learned the hard bit is spotting when a good idea has become a rubbish one.",
+      "Experience helps me find another way through when the flashy bit doesn't come off."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
