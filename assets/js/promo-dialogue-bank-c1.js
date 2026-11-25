@@ -442,4 +442,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI4={
+  "dee": {
+    "w": [
+      "Can I ask you something? Did you watch what I did when the first move didn't work?",
+      "You've been studying me? Good. I've been practising a few things I'd like to try against you."
+    ],
+    "f": [
+      "I watch the bits where somebody gets stuck. Then I ask how they found a way out.",
+      "I've been practising what to do when the grip changes, because it never feels quite like it did on the video."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

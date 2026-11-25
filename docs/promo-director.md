@@ -297,3 +297,7 @@ G4I.1 recovered 11 sampled exchanges (5 player, 6 opponent), zero losses, in run
 ## G4I.3 — third study and preparation batch
 
 G4I.2 recovered 23 sampled exchanges (9 player, 14 opponent), zero losses, in run 45711306807. Add two rebuttals and two counters each for Magnus, Nolan, Rex, Roxy, Sylvia, Winnie and Zara (two gaps each; alphabetical tie-break). Twenty-eight new rows, 68 across 17 owners. Target 14 incremental recoveries (8 player, 6 opponent), 37 cumulative, preserving the 11 and 12 prior hits and earlier policy parity. Extend Magnus's pilot inventory. Selection engine, save schema and CI unchanged. Regenerate seven compact banks and remove superseded revisions. CI pending.
+
+## G4I.4 — fourth study and preparation batch
+
+G4I.3 recovered 37 sampled exchanges (17 player, 20 opponent), zero losses, in run 45712280247. Add two rebuttals and two counters each for Alina, Anya, Ayla, Bronte, Dean, Dee, Dev, Ellis, Emmett and Felix (one sampled gap each; alphabetical tie-break). Forty new rows, 108 across 27 owners. Target ten incremental recoveries (6 player, 4 opponent), 47 cumulative, preserving all 37 prior hits and earlier policy parity. Selection engine, save schema and CI unchanged. Regenerate ten compact banks and remove superseded revisions. CI pending.

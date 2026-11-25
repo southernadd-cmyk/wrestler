@@ -451,4 +451,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI4={
+  "alina": {
+    "w": [
+      "I appreciate that you've taken the time to watch me. But a recording can't tell you how I'll respond to you.",
+      "You've studied my matches. I hope you've left room in your plan for what we discover together tonight."
+    ],
+    "f": [
+      "I watch the moment a wrestler starts to doubt their plan. It tells me what I ought to practise.",
+      "My preparation is about listening to what happens in the ring, not making the ring obey my notes."
+    ]
+  },
+  "felix": {
+    "w": [
+      "You've seen me get it wrong on tape. Fair enough. I have been working rather hard on that bit.",
+      "I hope your notes have room for an improvement or two. I'd quite like to show you some."
+    ],
+    "f": [
+      "I study the moves I mess up, honestly. Watching the ones that work is much nicer, but less useful.",
+      "I've practised a way out of the position as well as a way in. I'd rather not get stranded in it again."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

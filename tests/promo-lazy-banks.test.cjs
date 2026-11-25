@@ -20,7 +20,7 @@ function create(){
  assert.ok(!html.includes('src="assets/js/promo-dialogue-pilot.js"')&&!html.includes('src="assets/js/promo-dialogue-bank-'));
  assert.equal(calls.length,0,'startup must not fetch any character');
  assert.equal(root.OfficePromoPilot,undefined,'production engine must not expose editorial sources');
- assert.equal(built.assets.size,212);assert.equal(built.packs.reduce((n,p)=>n+p.lines.length,0),8141);
+ assert.equal(built.assets.size,212);assert.equal(built.packs.reduce((n,p)=>n+p.lines.length,0),8181);
  const [a,b]=await Promise.all([B.load(['mara','brick','mara','unknown']),B.load(['mara'])]);
  assert.equal(calls.length,2);assert.equal(a.length,2);assert.equal(b.length,1);
  for(const asset of a){

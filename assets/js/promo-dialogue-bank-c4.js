@@ -438,4 +438,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI4={
+  "ellis": {
+    "w": [
+      "Let's put this in order. You've identified a pattern. What is your response when I break it?",
+      "Your plan has a starting point. Show me the second step if I take that starting point away."
+    ],
+    "f": [
+      "I study the decision points in a match, then practise a response for each of the useful alternatives.",
+      "My preparation begins with the position, then the available grips, then the options if those grips fail."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
