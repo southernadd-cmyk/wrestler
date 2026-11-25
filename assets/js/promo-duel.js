@@ -223,7 +223,7 @@
    venue:p?.venue||'this hall',promoterVoice:p?.voice||'the promoter',promoterName:p?.name||'the promotion',finish:c.finish||null,
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
-  if(opts.directed&&opts.formats)st.fallbackVariety=1;
+  if(opts.directed&&opts.formats){st.fallbackVariety=1;st.closingVariety=1;}
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
   if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,...(opts.formats&&opts.semantic?{reviewedAck:1,reviewedContext:1}:{}),used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
@@ -343,7 +343,7 @@
    if(line)(mem.composedUsed??=[]).push(line.id);
    return line;
   }
-  const selection=Dialogue.select(catalogueFor(st),ctx,seed,mem);
+  const selection=Dialogue.select(catalogueFor(st),ctx,seed,st.closingVariety===1?{...mem,candidateFilter:r=>Dialogue.closingCommitment(r,ctx)}:mem);
   if(selection){mem.used.push(selection.id);return selection;}
   if(mem.composition){const line=Dialogue.compose(ctx,seed,{used:mem.composedUsed||[],recent:mem.recent});if(line){(mem.composedUsed??=[]).push(line.id);return line;}}
   return null;
@@ -394,7 +394,177 @@
   "There is plenty of anger in that reply. Not much to verify.",
   "You have not answered my objection, {W}. You have just made it personal."
  ];
+ // Reviewed opponent closing variants. Each pool preserves the actual
+ // graph angle and contains no additional match promise or historical fact.
+ const closingReplies=Object.freeze({
+ "vo_guarantee": [
+  "That is quite a guarantee. Let's see you honour it.",
+  "You've put your word on the line now.",
+  "Everybody heard that prediction."
+ ],
+ "vo_fans": [
+  "Don't give them a result you haven't earned.",
+  "You can dedicate the win when you've actually got it.",
+  "They've paid for a match, not a guarantee."
+ ],
+ "vo_plain": [
+  "We'll find out shortly.",
+  "That's your prediction. I disagree.",
+  "All right. Try."
+ ],
+ "vo_hard": [
+  "You have understood one thing: it won't be easy.",
+  "At least we agree that it'll be a contest.",
+  "Hard work doesn't guarantee you the result."
+ ],
+ "vo_quick": [
+  "Don't start counting the minutes just yet.",
+  "You might want to allow a little longer.",
+  "You still have to get the fall."
+ ],
+ "fi_count": [
+  "You're counting moves you haven't hit yet.",
+  "Try getting to the first one.",
+  "Let's see how far you get with that countdown."
+ ],
+ "fi_intro": [
+  "I'll be watching for the set-up.",
+  "Naming it hasn't made it any easier to land.",
+  "You have to put me in position for it first."
+ ],
+ "fi_air": [
+  "First you've got to get hold of me.",
+  "I'll choose when I leave the ropes.",
+  "Try judging the landing while I'm moving."
+ ],
+ "fi_no_counter": [
+  "Every move has an opening somewhere.",
+  "I'll be looking for a way out of the set-up.",
+  "There's no such thing as an unavoidable hold."
+ ],
+ "fi_outlast": [
+  "You're going to have to work to tire me out.",
+  "Don't rely on me running out of energy.",
+  "Let's see who has anything left for the finish."
+ ],
+ "fi_count_along": [
+  "They can call it. You've still got to hit it.",
+  "Listen for them if you miss.",
+  "The crowd can't put me in position for you."
+ ],
+ "fi_name": [
+  "We'll see if you can land it.",
+  "Try getting me into it.",
+  "I'll be watching for it."
+ ],
+ "cl_hand": [
+  "I'll decide about that handshake for myself.",
+  "We'll see about the hand when we're in there.",
+  "I'm not taking your hand just because you ask."
+ ],
+ "cl_ref": [
+  "The referee can watch both of us.",
+  "Mind your own work. The official can mind mine.",
+  "You concentrate on wrestling."
+ ],
+ "cl_watch": [
+  "They can watch every exchange for all I care.",
+  "Keep your eyes on me, then.",
+  "Let the people judge what they see."
+ ],
+ "cl_middle": [
+  "One clean fall. All right.",
+  "That's a contest I can agree to.",
+  "Fine. Let's wrestle it that way."
+ ],
+ "cl_dare": [
+  "I don't need a shortcut to beat you.",
+  "You might find I don't have to.",
+  "I'll find my own way to a fall."
+ ],
+ "un_plan": [
+  "Then I'll have to work it out in the ring.",
+  "I won't assume I know what's coming.",
+  "I'll have a plan of my own."
+ ],
+ "un_done": [
+  "All right. Enough said.",
+  "Then we're finished here.",
+  "Fine. Put the microphone down."
+ ],
+ "un_see": [
+  "They'll see the result for themselves.",
+  "They'll have to watch the match to find out.",
+  "Let's see what they make of the wrestling."
+ ],
+ "un_tape": [
+  "You still have habits to give away.",
+  "I'll read what happens in front of me.",
+  "I'll adjust when you do something different."
+ ],
+ "un_ready": [
+  "Being ready is only the beginning.",
+  "You'll have to deal with me when I close the distance.",
+  "Let's see how you respond to the first charge."
+ ],
+ "un_look": [
+  "I'll be watching the whole ring.",
+  "I'll decide where to look.",
+  "I'll keep you in sight."
+ ],
+ "un_bigger": [
+  "Get through this match first.",
+  "You're looking further ahead than I'd advise.",
+  "There's a contest in front of you yet."
+ ],
+ "qu_strikes": [
+  "You've still got to read the strike.",
+  "Try timing it when I'm moving.",
+  "I'll vary when I throw it."
+ ],
+ "qu_holds": [
+  "First you've got to find the escape.",
+  "I'll make you work for the reversal.",
+  "Let's see what you do once the hold is on."
+ ],
+ "qu_air": [
+  "I'll decide when to take off.",
+  "You have to read the timing first.",
+  "Let's see whether you're in the right position."
+ ],
+ "qu_tricks": [
+  "You'll have to recognise the opening first.",
+  "You won't get much warning.",
+  "Try reading what I do rather than what I say."
+ ],
+ "qu_watch": [
+  "They'll see whether you can stop it.",
+  "You'll have to earn that counter.",
+  "I'll make you work for that moment."
+ ],
+ "qu_simple": [
+  "Try it when the bell goes.",
+  "Let's see if your timing holds.",
+  "All right. Find that counter."
+ ],
+ "le_plain": [
+  "Then give it everything. I'll do the same.",
+  "Effort is one thing. The contest is still there to win.",
+  "I'll judge the work when we wrestle."
+ ],
+ "gr_plain": [
+  "All right. The wrestling is next.",
+  "They've heard you. Now show them.",
+  "We'll see what they make of the match."
+ ]
+});
  function graphFallback(st,stage,id,d){
+  if(stage==='close'){
+   if(st.closingVariety!==1||st.speaker||st.core.case||st.core.claim?.hasEvidence||d.case||d.speechSource)return d.line;
+   const variant=st.core.steps.at(-1)?.variant,pool=Object.prototype.hasOwnProperty.call(closingReplies,variant)?closingReplies[variant]:null;
+   if(pool)return fmt(pick(pool,st.seed,'closing-reply|'+variant),st);
+   return d.line;
+  }
   if(st.fallbackVariety!==1||st.speaker||st.core.case||st.core.claim?.hasEvidence||d.case||d.speechSource)return d.line;
   const w=st.w.short;
   const pool=stage==='open'&&id==='accusation'&&d.line==='You have never even worked a match with me, '+w+'. Name one thing I have done to deserve that accusation.'?accusationReplies:
