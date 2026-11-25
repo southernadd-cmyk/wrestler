@@ -369,4 +369,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH6={
+  "ivo": {
+    "w": [
+      "Experience gives you a set of sequences. I intend to interrupt the one you expect.",
+      "The years are background. Which step will you take when your first choice is blocked?"
+    ],
+    "f": [
+      "Experience lets me recognise the point at which a sequence needs to change.",
+      "If the first step fails, I know how to find a second without losing the position."
+    ]
+  },
+  "kofi": {
+    "w": [
+      "Okay, you've got the years! But you haven't seen every way I can change the rhythm.",
+      "I want to learn from your experience, sure, but I want to surprise you as well."
+    ],
+    "f": [
+      "Experience is learning when to leave the ground and when to keep your feet on it.",
+      "I've learned to look for the landing before I get excited about the takeoff."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

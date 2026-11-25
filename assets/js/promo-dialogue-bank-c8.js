@@ -321,4 +321,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH6={
+  "rev": {
+    "w": [
+      "The years may have taught you many lessons, but no scripture awards you the victory before the trial.",
+      "I respect the wisdom you have gathered. Let your deeds tonight show whether it holds."
+    ],
+    "f": [
+      "Experience has taught me patience when the path I expected closes before me.",
+      "A familiar trial can teach a fresh lesson. I have learned not to mistake knowledge for certainty."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
