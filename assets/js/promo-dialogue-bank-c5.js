@@ -260,4 +260,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceAcknowledgementsG2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG4={
+  "mae": [
+    "Lesson taken. We cannot teach a conclusion before we establish the facts.",
+    "That is worth remembering. What happens between the bells matters more than our assumptions."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceAcknowledgementsG4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
