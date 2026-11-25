@@ -7,7 +7,7 @@
 <p align="center"><strong>THE MATCHES ARE SCRIPTED. THE PEOPLE AREN'T.</strong></p>
 
 <p align="center">
-  <strong><a href="https://southernadd-cmyk.github.io/wrestler/">PLAY THE OFFICE</a></strong>
+  <strong><a href="https://theoffice.repos.one/">PLAY THE OFFICE</a></strong>
   &nbsp; · &nbsp; <a href="docs/README.md">Inside the engine &amp; contributor guide</a>
   &nbsp; · &nbsp; <a href="#back-issues">Back issues</a>
 </p>
@@ -73,7 +73,7 @@ The text commentary reports the action as it unfolds. You can call for more pace
 
 Results, promos, backstage rows, debts of trust and rivalries feed into later weeks. One match can start a programme; five meetings between the same pair needn't tell the same story. The match engine, career bookers and character memories use deterministic simulation so saves can be resumed and investigated, rather than invented history being filled in behind your back.
 
-[**Engine architecture**](docs/architecture.md) · [**Graph Lab**](https://southernadd-cmyk.github.io/wrestler/tools/graph-lab/) · [**Match-structure development**](https://github.com/southernadd-cmyk/wrestler/pull/194)
+[**Engine architecture**](docs/architecture.md) · [**Graph Lab**](https://theoffice.repos.one/tools/graph-lab/) · [**Match-structure development**](https://github.com/southernadd-cmyk/wrestler/pull/194)
 
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 
@@ -242,10 +242,10 @@ Older technical notes, frozen match simulations and archived audits are in the [
 
 The game plays directly in the browser, without a build step or runtime service. Code is available under the [MIT License](LICENSE); original writing, characters, portraits, artwork and branding have separate rights. See [Content and copyright](CONTENT-LICENSE.md).
 
-### THE NEXT ADDRESS
+### THE OFFICE ONLINE
 
-The Office is applying for `theoffice.repos.one`. This address will work after the OpenRepos claim is approved and GitHub Pages is configured.
+**Play:** [theoffice.repos.one](https://theoffice.repos.one/).
 
-Careers save in this browser. Before you switch addresses, open **Game → Save and load → Export save** on the current site. On the new address, use **Import save** to continue the career. Browser saves do not move between addresses automatically.
+Careers save in the browser. If you played at the previous GitHub Pages address, export your career there from **Game → Save and load → Export save** before moving, then use **Import save** here. Browser saves do not move between addresses automatically.
 
-[![OpenRepos](https://img.shields.io/endpoint?url=https://openrepos.org/status/theoffice.repos.one.json&style=flat-square)](https://southernadd-cmyk.github.io/wrestler/)
+[![OpenRepos](https://img.shields.io/endpoint?url=https://openrepos.org/status/theoffice.repos.one.json&style=flat-square)](https://theoffice.repos.one/)

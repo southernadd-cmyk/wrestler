@@ -22,7 +22,7 @@ Navigation changes visibility only; it does not re-run matches or re-initialise 
 Serve the repository root with a simple static server, then open:
 
 - `http://localhost:8765/tools/graph-lab/` (local server rooted at the repository)
-- Once merged into `main`: `https://southernadd-cmyk.github.io/wrestler/tools/graph-lab/`
+- Once merged into `main`: `https://theoffice.repos.one/tools/graph-lab/`
 
 Do not open directly from `file://`. The lab uses the repository's real `data.js`, `roster-registry.js`, `match-engine.js`, and its own small `core.js`. It does not load `career.js`, `ui.js`, local storage, or any external runtime dependency. It does not appear in normal career navigation.
 

@@ -1,6 +1,6 @@
 # The Office — contributor documentation
 
-**Current edition: v0.65 — The territory talks back.** [Play](https://southernadd-cmyk.github.io/wrestler/) · [Player guide and release notes](../readme.md) · [Graph Lab](https://southernadd-cmyk.github.io/wrestler/tools/graph-lab/)
+**Current edition: v0.65 — The territory talks back.** [Play](https://theoffice.repos.one/) · [Player guide and release notes](../readme.md) · [Graph Lab](https://theoffice.repos.one/tools/graph-lab/)
 
 Start here to find the relevant system, its design history and the evidence used to test it. The shipped code and current tests take precedence over historical proposals and measurements.
 
