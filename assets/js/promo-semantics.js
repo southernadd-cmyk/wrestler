@@ -1409,6 +1409,81 @@
    press_counter:["By making you fight for every chance to get those shoulders up.","I'll have to get you in the right position first."]
   }
  });
+ // G3D: character-written alternatives for the player's rebuttal, scoped
+ // to the actual latest claim. Identity-specific lines are not transferred
+ // to other speakers. Family lines are reviewed fallbacks, not rewrites.
+ const rebuttalIdentity={
+  "unclassified": {
+    "mara": "Enough submissions. Let's hear what you've got between those ropes.",
+    "rex": "Right. Get in the ring. Show me.",
+    "juno": "Right. I mean... let's wrestle. That's where I can answer you.",
+    "kit": "Lovely. Shall we actually have a wrestling match now?",
+    "ezra": "The rest of this argument requires a bell and a referee.",
+    "red": "All right. We'll find out in there.",
+    "roxy": "You've had the microphone, darling. Now try the wrestling.",
+    "silas": "We are not going to establish the result by talking. Wrestle me.",
+    "nova": "There's a better way to test this. On the mat.",
+    "ace": "We've done the talking. It's time for the main attraction.",
+    "faye": "I've heard you. The result is still to be determined.",
+    "tori": "Right, enough theory! Time for the practical."
+  },
+  "proof": {
+    "mara": "You want a demonstration? Very well. Let the wrestling be the evidence.",
+    "rex": "You want proof? Get your boots on.",
+    "juno": "Watch what I do with the hold. That's where I'll answer you.",
+    "kit": "Go on, then. Let's see if I can back it up when the bell goes.",
+    "ezra": "Test it in the contest. Not by the volume of my voice.",
+    "red": "Make me prove it. That's your job.",
+    "roxy": "Of course you want proof. Keep your eyes on the ring.",
+    "silas": "An assertion proves nothing. Test mine on the mat.",
+    "nova": "The test is what I can execute under pressure. Let's have it.",
+    "ace": "You want a performance? Fine. Watch the ring.",
+    "faye": "That's a fair test. My words have to stand up to the wrestling.",
+    "tori": "Right! A test, not a prediction. Let's actually do it."
+  }
+};
+ const rebuttalFamily={
+  "unclassified": {
+    "grand": "The rest of this argument takes place in the ring.",
+    "gruff": "Enough. Wrestle me.",
+    "eager": "Come on, let's find out what happens in there!",
+    "stoic": "We'll settle it on the mat.",
+    "precise": "We need a contest to resolve this, not another assertion.",
+    "earnest": "I'd rather give you an answer with my wrestling.",
+    "sermon": "Let our actions answer for us when the bell goes.",
+    "slippery": "We could go round in circles all night. Let's wrestle."
+  },
+  "proof": {
+    "grand": "Then watch the performance, not the speech.",
+    "gruff": "Make me back it up, then.",
+    "eager": "That's fair! Watch what I can do when we get going.",
+    "stoic": "Test it on the mat.",
+    "precise": "The execution is the test. I accept that.",
+    "earnest": "I know I've got to earn that belief with my wrestling.",
+    "sermon": "Words have to be followed by deeds. Judge me in the ring.",
+    "slippery": "Fair enough. You'll have your demonstration soon enough."
+  },
+  "pace": {
+    "grand": "You may set the opening tempo. You won't dictate the whole performance.",
+    "gruff": "You want it slow? Make me slow down.",
+    "eager": "Come on! See if you can keep me at your speed!",
+    "stoic": "I'll make you wrestle at a different pace.",
+    "precise": "Control of tempo depends on the next exchange. I intend to contest it.",
+    "earnest": "I've got to find my own rhythm, not just follow yours.",
+    "sermon": "Patience has its place. You cannot make the whole contest wait for you.",
+    "slippery": "By all means take your time. Don't expect me to take mine."
+  },
+  "legitimacy": {
+    "grand": "My place on this bill is for me to justify, not for you to award.",
+    "gruff": "Think I don't belong? Wrestle me.",
+    "eager": "Give me the match! Let me show you why I'm here.",
+    "stoic": "I belong if I can do the work. Test me.",
+    "precise": "My ability is the relevant question. We can test it on the mat.",
+    "earnest": "I'm here to earn my place. Give me the chance to do it.",
+    "sermon": "A place is earned through the work, not bestowed by your opinion.",
+    "slippery": "That's an interesting verdict before we've even wrestled."
+  }
+};
  function select(st,ctx){
   if(!allowed(st)||!ctx||ctx.hasMouthpiece||ctx.stage==='answer'&&ctx.action!=='turn'||ctx.stage==='push'&&!['press','acknowledge'].includes(ctx.action)||!['answer','push'].includes(ctx.stage))return null;
   const side=ctx.side,prev=latest(st.log,side==='w'?'f':'w');if(!prev)return null;
@@ -1437,6 +1512,9 @@
    frames=reviewed[move].slice();
    if(move==='press'&&reviewed.voices&&Object.prototype.hasOwnProperty.call(reviewed.voices,voice))frames=[reviewed.voices[voice],...frames];
   }
+  const personalRebuttal=st.semantic.characterRebuttal===1&&move==='rebut'&&(!ctx.protected||ctx.protected==='contextual-variant')&&Object.prototype.hasOwnProperty.call(rebuttalFamily,claim);
+  const identity=personalRebuttal&&Object.prototype.hasOwnProperty.call(rebuttalIdentity,claim)&&Object.prototype.hasOwnProperty.call(rebuttalIdentity[claim],ctx.speaker.id)?rebuttalIdentity[claim][ctx.speaker.id]:null;
+  const family=personalRebuttal?(Object.prototype.hasOwnProperty.call(rebuttalFamily[claim],voice)?rebuttalFamily[claim][voice]:rebuttalFamily[claim].stoic):null;
   const preferred=ctx.irritation>=42||['gruff','stoic','reserved','combative'].includes(voice)?2:['precise','analytical'].includes(voice)?1:0;
   const mem=st.authoredDialogue,used=mem?.composedUsed||[],recent=mem?.recent||[];
   const candidates=frames.map((frame,i)=>({id:'semantic.'+ctx.speaker.id+'.'+move+'.'+claim+'.'+(rewritten?'g3b.'+(move==='press'&&reviewed.voices&&Object.prototype.hasOwnProperty.call(reviewed.voices,voice)?voice+'.':''):'')+i,text:frame.replace(/\{detail\}/g,detail||''),i}));
@@ -1451,8 +1529,17 @@
    }
    return Number(b.i===preferred)-Number(a.i===preferred)||tie;
   };
+  if(personalRebuttal){
+   const add=(text,key)=>{if(text)candidates.push({id:'semantic.'+ctx.speaker.id+'.'+move+'.'+claim+'.g3d.'+key,text,i:-1});};
+   add(identity,'identity');add(family,'family');
+   // Prefer the speaker's actual identity when available; then their
+   // reviewed delivery family. Used and recent IDs remain ineligible
+   // while other candidates are fresh, exactly as in the original policy.
+  }
   const fresh=candidates.filter(x=>!used.includes(x.id)&&!recent.includes(x.id)),unused=candidates.filter(x=>!used.includes(x.id));
-  const line=(fresh.length?fresh:unused.length?unused:candidates).sort(rank)[0];
+  const eligible=fresh.length?fresh:unused.length?unused:candidates;
+  const priority=x=>x.id.endsWith('.g3d.identity')?2:x.id.endsWith('.g3d.family')?1:0;
+  const line=eligible.sort((a,b)=>personalRebuttal?priority(b)-priority(a)||rank(a,b):rank(a,b))[0];
   return {id:line.id,text:line.text,composed:true,semantic:{v:1,kind:side==='f'?'claim':'response',claim:side==='f'?outClaim:claim,source:line.id,replyTo:prev.index,move,...(detail&&outClaim==='strength'?{detail}:{})}};
  }
  root.OfficePromoSemantics=Object.freeze({source,classify,fromBank,latest,allowed,label,option,select,reviewed});
