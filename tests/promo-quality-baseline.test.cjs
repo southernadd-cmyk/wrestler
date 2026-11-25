@@ -378,7 +378,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  let activeScene=null,observations=0,emittedChecks=0,sceneCount=0,oldUnknown=0,newUnknown=0,classifiedOpenings=0;
  const recoveredSources=new Map(),remainingUnknown=new Map();
  let topicHits=0,topicLosses=0,topicPairs=0;const topicIds=new Set(),topicOwners=new Set(),topicSides=new Map();
- const fourthEvidenceBatch=new Set(['ace','bao','cal','dax','dee','dev','ezra','imani','iris','kellan']);
+ const fifthEvidenceBatch=new Set(['lyra','magnus','milo','morgan','nico','noelle','otis','rina','rocco','roxy']);
  let batchHits=0;const batchIds=new Set(),batchOwners=new Set(),batchSides=new Map();
  let specialistHits=0,specialistLosses=0,specialistPairs=0;const specialistIds=new Set(),specialistOwners=new Set(),specialistMoves=new Map();
  let recoveryPairs=0,recoveryHits=0;const recoveryIds=new Set(),recoveryOwners=new Set(),recoveryTopics=new Map();
@@ -470,7 +470,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
      const a=st.log.slice(before).find(e=>e.side===side),b=priorTopics.log.slice(topicAt).find(e=>e.side===side);
      assert.ok(a&&b);assert.equal(a.semantic?.claim,b.semantic?.claim);assert.equal(a.semantic?.move,b.semantic?.move);
      if(b.authoredId&&!a.authoredId)topicLosses++;
-     if(a.authoredId&&!b.authoredId){assert.equal(a.semantic?.topicBank,1);assert.equal(a.semantic.claim,'evidence');topicHits++;topicIds.add(a.authoredId);topicOwners.add(a.dialogueSlot.owner);inc(topicSides,side);if(fourthEvidenceBatch.has(a.dialogueSlot.owner)){batchHits++;batchIds.add(a.authoredId);batchOwners.add(a.dialogueSlot.owner);inc(batchSides,side);}}
+     if(a.authoredId&&!b.authoredId){assert.equal(a.semantic?.topicBank,1);assert.equal(a.semantic.claim,'evidence');topicHits++;topicIds.add(a.authoredId);topicOwners.add(a.dialogueSlot.owner);inc(topicSides,side);if(fifthEvidenceBatch.has(a.dialogueSlot.owner)){batchHits++;batchIds.add(a.authoredId);batchOwners.add(a.dialogueSlot.owner);inc(batchSides,side);}}
      if(b.authoredId)assert.equal(a.authoredId,b.authoredId,'topic bank must not displace existing authored reply');
     }
    }
@@ -556,9 +556,9 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  const topicBank={pairedExchanges:topicPairs,recoveredTurns:topicHits,lostTurns:topicLosses,distinctIds:topicIds.size,characters:topicOwners.size,sides:Object.fromEntries(topicSides)};
  assert.ok(topicHits>topicLosses&&topicSides.get('w')>0&&topicSides.get('f')>0,'G4C1 live recovery in both roles');
  const batch={recoveredTurns:batchHits,distinctIds:batchIds.size,characters:batchOwners.size,sides:Object.fromEntries(batchSides),priorBatchTurns:topicHits-batchHits};
- assert.ok(batchHits>0&&batchSides.get('w')>0&&batchSides.get('f')>0,'G4C4 additional live recovery in both roles');
- assert.equal(batch.priorBatchTurns,203,'first three batches recovery unchanged');
- console.log('G4C4 EVIDENCE '+JSON.stringify({...topicBank,batch}));
+ assert.ok(batchHits>0&&batchSides.get('w')>0&&batchSides.get('f')>0,'G4C5 additional live recovery in both roles');
+ assert.equal(batch.priorBatchTurns,253,'first four batches recovery unchanged');
+ console.log('G4C5 EVIDENCE '+JSON.stringify({...topicBank,batch}));
  const report={classification,recovery,specialist,topicBank,batch,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
  console.log('G4A DEMAND SUMMARY '+JSON.stringify({...report,topics:undefined,actors:undefined,detail:undefined}));
  for(const x of topics)console.log('G4A TOPIC '+JSON.stringify(x));

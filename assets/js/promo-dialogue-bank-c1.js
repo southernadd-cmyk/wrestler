@@ -51,6 +51,12 @@
   "I don't want to win an argument by putting something on you that I can't prove. Let's talk about the wrestling.",
   "Thanks for saying that. I'd rather we both had a fair chance to show what we can do.",
   "All right. We don't need to keep that accusation going just to make the match interesting."
+ ],
+ "lyra": [
+  "Hang on, you're right. I haven't got an example I can actually point to. Let's leave that bit out.",
+  "I've got carried away with the moment. That doesn't make it true. I want to show you what I can do instead.",
+  "All right, that's fair. Let's get back to the interesting part, shall we?",
+  "Good. We can leave that behind us and keep moving when the bell goes."
  ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

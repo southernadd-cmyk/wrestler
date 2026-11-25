@@ -45,6 +45,12 @@
   "Discipline applies to what I say as well as what I do. I haven't established that charge.",
   "That's a sound correction. Now demonstrate the discipline you bring to the match.",
   "Good. The next lesson is a practical one. Meet me at the bell."
+ ],
+ "milo": [
+  "Look, I'm knackered, but that's no excuse for making a claim I can't back up. Forget that bit.",
+  "I haven't got a specific example. I'm not staying here all night making one up, either.",
+  "Good. One less thing to argue about. Let's wrestle and get home.",
+  "That's fair. Save the rest of your energy for the bell."
  ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

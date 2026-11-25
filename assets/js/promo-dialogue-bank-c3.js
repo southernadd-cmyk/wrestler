@@ -45,6 +45,12 @@
   "A flourish is not an explanation. You've asked for particulars, and I haven't any that stand up.",
   "Very well. Remove that from the bill. We still have a performance to give.",
   "Good. No need for a villain in that particular story. The audience came to see us wrestle."
+ ],
+ "rocco": [
+  "No. I cannot prove that. I can fight you in the ring, not prove a guess.",
+  "You want an example. I do not have one. Fine. Forget the charge.",
+  "Fine. Leave it. Bring your fight.",
+  "Good. No more heat from that. Bell."
  ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
