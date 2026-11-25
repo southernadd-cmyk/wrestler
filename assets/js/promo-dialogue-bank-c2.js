@@ -107,4 +107,23 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD4={
+  "nico": [
+    "Watch what happens after you stop my first move. Have I got another beat in me? That's the bit they'll see.",
+    "We can find out who keeps moving when the other takes away their rhythm. The bell will give us a chance."
+  ],
+  "otis": [
+    "They'll see who keeps putting the work in when it gets tough. That's a full shift, not a speech.",
+    "Let's give them a proper match and a result they can see. That's what we're here to do."
+  ],
+  "red": [
+    "Who stays on their feet, who gets the fall. They'll see it.",
+    "Get in there and make me work for it. No need for a story around it."
+  ],
+  "roxy": [
+    "Darling, the audience can judge whether either of us delivers a performance worthy of the billing. No invented scandal required.",
+    "Let them watch the final act and see who has earned the curtain call. That's a verdict I can live with."
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidencePressRepliesD4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
