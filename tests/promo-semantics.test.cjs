@@ -240,6 +240,30 @@ for(const [id,rule] of Object.entries(L.bankReuseRecovery)){
  }
 }
 console.log('PASS G4B2 reviewed recovery: '+recoveryFixtures+' exact owner/side/topic approvals, history, evidence and altered-text guards.');
+let specialistFixtures=0;
+for(const [id,[fingerprint,kind]] of Object.entries(L.specialistReview)){
+ const found=bankRows.get(id);assert.ok(found,'missing specialist source '+id);
+ const {row,pack}=found,cat=L.catalogue([{...pack,lines:[row]}]);
+ const strength=kind==='strength',press=kind==='press',settle=kind==='settle';
+ const context={...ctx,stage:strength?'answer':'push',action:strength?'turn':press?'press':'acknowledge',side:row.side,speaker:{...ctx.speaker,id:pack.owner,role:'wrestler'},protected:strength?'contextual-variant':null,variant:strength?'tu_record':null,hasMouthpiece:false,strength:'hard strikes'};
+ const sem={move:strength?'rebut':press?'press':settle?'settle':'acknowledge',claim:strength?'strength':press?'evidence':settle?'end':'agreement',...(strength?{detail:'speed and aerial attacks'}:{})};
+ const own=L.selectSpecialistResponse(cat,context,'specialist-fixture',{},sem);
+ assert.equal(own?.id,id,'specialist fixture '+id);assert.equal(own.specialist,kind);
+ assert.equal(own.text,strength?row.text.replace(/\{strength\}/g,sem.detail):row.text);
+ for(const mem of [{used:[id]},{recent:[id]}])assert.equal(L.selectSpecialistResponse(cat,context,'specialist-fixture',mem,sem),null);
+ for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:row.side==='w'?'f':'w'}])assert.equal(L.selectSpecialistResponse(cat,{...context,...patch},'specialist-fixture',{},sem),null);
+ const stale=L.catalogue([{...pack,lines:[{...row,text:row.text+'!'}]}]);
+ assert.equal(L.selectSpecialistResponse(stale,context,'specialist-fixture',{},sem),null);
+ if(strength){
+  assert.equal(L.selectSpecialistResponse(cat,context,'specialist-fixture',{}, {...sem,detail:null}),null);
+  assert.equal(L.selectSpecialistResponse(cat,context,'specialist-fixture',{}, {...sem,claim:'unclassified'}),null);
+  assert.doesNotMatch(own.text,/hard strikes/);
+ }else if(kind==='acknowledge')assert.equal(L.selectSpecialistResponse(cat,context,'specialist-fixture',{}, {...sem,claim:'evidence'}),null);
+ specialistFixtures++;
+}
+const crossVariant=L.selectSpecialistResponse(ownCat,{...ownCtx,variant:'tu_record'},'strength-cross-variant',{},actual);
+assert.ok(crossVariant);assert.match(crossVariant.text,/speed and aerial attacks/);assert.doesNotMatch(crossVariant.text,/hard strikes/);
+console.log('PASS G4B3 specialist fixtures: '+specialistFixtures+' original source approvals and named-strength cross-variant, history, context and source guards.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
 const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;
