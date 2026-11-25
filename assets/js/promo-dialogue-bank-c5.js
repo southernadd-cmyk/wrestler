@@ -183,4 +183,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceQuestionsE7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE8={
+  "nikita": [
+    "Stop. What specifically can the crowd observe in the ring, rather than take your word for?",
+    "Not the allegation. The contest. Which part of our wrestling can we actually test?"
+  ],
+  "nolan": [
+    "Leave the accusation for another discussion. What can we demonstrate through good, disciplined wrestling?",
+    "The lesson is in the work. What can the people judge when they watch us apply it?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceQuestionsE8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

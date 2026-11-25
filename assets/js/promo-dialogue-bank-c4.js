@@ -185,4 +185,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceQuestionsE6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE8={
+  "bao": [
+    "Leave the allegation where it is. What can we show them through the grips we choose and the control we keep?",
+    "What can the people learn from watching us wrestle, without having to take either of us at our word?"
+  ],
+  "nate": [
+    "Drop the claim. What can you show me when we wrestle?",
+    "The people can watch. What can we give them to judge?"
+  ],
+  "sylvia": [
+    "It would not be fair to treat an unsupported accusation as fact. What can a clean contest demonstrate?",
+    "Let us agree to the same standard. What can the people judge from our work in the ring?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceQuestionsE8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
