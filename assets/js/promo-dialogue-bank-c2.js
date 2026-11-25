@@ -195,4 +195,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (strengthCountersF2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF3={
+  "ezra": [
+    "Your proposed response to my {strength} requires successful application under resistance. That remains to be demonstrated.",
+    "By identifying my {strength}, you have completed the first stage of the examination. The second begins at the bell."
+  ],
+  "imani": [
+    "You've worked out how you want to deal with my {strength}. I'm going to make you do it at my pace.",
+    "You won't get to dictate the whole exchange just because you've prepared for my {strength}. I'll be making decisions too."
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (strengthCountersF3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

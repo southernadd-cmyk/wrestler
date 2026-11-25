@@ -207,3 +207,7 @@ G4E.8 verified all 80 original evidence question banks and preserved 106 recover
 ## G4F.2 — second named-strength counter tranche
 
 G4F.1 verified 10/51 authored strength counters, zero losses. Add two each for Miro, Silas and Theo (two remaining sampled gaps each), Ace, Ari, Ayla, Bronte, Cedric, Dev and Ellis (one each; ties by owner ID). Require 30 dedicated counters across 15 original owners and 13 new recoveries with all ten prior recoveries intact. Preserve G4C/D/E counts, actual spoken detail, owner and history guards, and paired graph/presentation parity. No engine, save, UI or workflow changes. CI pending.
+
+## G4F.3 — third named-strength counter tranche
+
+G4F.2 verified 23/51 authored strength counters, zero losses. Add two each for Elodie, Ezra, Gus, Imani, Iris, Kellan, Kezia, Kit, Kofi and Leandro (one remaining sampled gap each; ties by owner ID). Require 50 dedicated counters across 25 original owners and ten new recoveries with all 23 prior recoveries intact. Preserve G4C/D/E counts, actual spoken detail, owner and history guards, and paired graph/presentation parity. No engine, save, UI or workflow changes. CI pending.
