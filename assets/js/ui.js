@@ -1996,7 +1996,9 @@ document.addEventListener('click',e=>{
  if(d.mouth){if(night?.stage!=='mouth')return;const c=current();if(!c)return;night.mouth={cid:c.id,id:d.mouth};return showPromos()}
  if(d.contract){const st=night?.signing;if(night?.stage!=='signing'||!st||st.stage!=='live')return;OfficeSigning.choose(st,d.contract);return showSigning()}
  if(d.tv==='signing'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showSigning();}
- if(d.mic){const st=night?.promo;if(night?.stage!=='promo'||night.promoLoading||st?.v!==5||st.stage==='done'||current()?.id!==st.cid)return;
+ // A double-click sends a second click (detail 2) at the same spot, after the first pick has
+ // re-rendered the options. That second click is a second decision, so it is ignored.
+ if(d.mic){if(e.detail>1)return;const st=night?.promo;if(night?.stage!=='promo'||night.promoLoading||st?.v!==5||st.stage==='done'||current()?.id!==st.cid)return;
   if(!OfficeMic.choices(st).some(o=>o.id===d.mic))return;OfficeMic.choose(st,d.mic);return showPromos()}
  if(d.tv==='meeting')return showMeeting();
  if(d.tv==='promos'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showPromos();}
