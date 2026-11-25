@@ -165,4 +165,17 @@
   ]
 };
  for(const pack of root.OfficePromoPilot)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const experienceRepliesH4={
+  "nova": {
+    "w": [
+      "Time spent wrestling is one variable. The leverage available in the next position is another, and rather more immediate.",
+      "Your experience may improve your predictions. It cannot change the mechanics of a hold once I have secured it."
+    ],
+    "f": [
+      "Experience helps me distinguish a genuine shift in balance from a feint. I still have to respond to the actual movement.",
+      "A new entry does not necessarily create a new mechanical problem. Practice helps me identify the forces that matter."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoPilot)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
