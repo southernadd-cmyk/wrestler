@@ -208,4 +208,35 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF6={
+  "mara": [
+    "Let the record show how you intend to defend against my {strength}. I shall be interested in the evidence you produce in support of it.",
+    "You have established that my {strength} exist. The burden of proving you can overcome them remains yours."
+  ],
+  "rex": [
+    "You've got a plan for my {strength}. Right. Clock in and see if it holds up.",
+    "My {strength} are part of the job you've got tonight. Get on with it."
+  ],
+  "brick": [
+    "You know what my {strength} are. Good. You'll have to do the graft of stopping them yourself.",
+    "You've allowed for my {strength}. Let's see how much work you're willing to put in when I use them."
+  ],
+  "juno": [
+    "If you shut down my {strength} at the first grip, watch what I do with the position you leave me.",
+    "You've prepared for my {strength}. I want to see where your weight goes when you try that defence."
+  ],
+  "sol": [
+    "I'm glad you've taken my {strength} seriously. These people deserve to see both of us give everything against the other's best.",
+    "You think you can get past my {strength}. Come on, let's give the crowd a chance to find out together."
+  ],
+  "dee": [
+    "Okay, you've been practising how to stop my {strength}. I've been practising what to do if you manage it.",
+    "Can I ask you something about my {strength}? What will you do if the first way you've learnt to stop them doesn't work?"
+  ],
+  "dax": [
+    "You've budgeted for my {strength}. Don't expect me to stick to your timetable when you try to contain them.",
+    "You've announced how you'll deal with my {strength}. That gives the room something to watch for when we get in there."
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (strengthCountersF6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

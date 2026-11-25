@@ -219,3 +219,7 @@ G4F.3 verified 33/51 authored strength counters, zero losses. Add two each for L
 ## G4F.5 — close sampled named-strength counter gaps
 
 G4F.4 verified 43/51 authored strength counters, zero losses. Add two each for Rina, Sylvia, Tori, Val, Vera, Winnie, Zane and Zara, the final eight owners with sampled gaps. Require 86 dedicated counters across 43 original owners and all 51 sampled recoveries with zero losses. The remaining 37 original owners still require completion for roster-wide coverage. Preserve G4C/D/E counts, actual spoken detail, owner and history guards, and paired graph/presentation parity. No engine, save, UI or workflow changes. CI pending.
+
+## G4F.6 — extend named-strength counters beyond the sampled owners
+
+G4F.5 verified all 51 sampled recoveries with zero losses. Add two distinct counters for each of the 12 previously uncovered original owners in C1 and C2: Mara, Rex, Brick, Juno, Sol, Dee, Dax, Cal, Otis, Kira, Roxy and Night. Require 110 dedicated counters across 55 original owners, preserve all 51 sampled recoveries and zero losses, and retain the existing semantic scope, actual spoken detail, owner and history guards and graph/presentation parity. The 25 remaining original owners are not yet covered. No engine, UI, save or workflow changes. CI pending.
