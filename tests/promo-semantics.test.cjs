@@ -283,7 +283,7 @@ assert.deepEqual([...topicOwners.keys()].sort(),Array.from(D.ALL,w=>w.id).sort()
 for(const counts of topicOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
 console.log('PASS G4C8 topic banks: '+topicRows.length+' distinct original-owner evidence replies; '+topicOwners.size+' characters, two lines per side, scope and history guards.');
 const experienceRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='experience');
-assert.equal(experienceRows.length,16);const experienceOwners=new Map();
+assert.equal(experienceRows.length,32);const experienceOwners=new Map();
 for(const {row,pack} of experienceRows){
  assert.ok(!topicText.has(row.text));topicText.add(row.text);assert.equal(row.stage,'answer');assert.equal(row.action,'turn');assert.equal(row.category,'rebuttal');
  if(!experienceOwners.has(pack.owner))experienceOwners.set(pack.owner,{w:0,f:0});experienceOwners.get(pack.owner)[row.side]++;
@@ -295,8 +295,8 @@ for(const {row,pack} of experienceRows){
  for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:row.side==='w'?'f':'w'},{stage:'open'},{action:'calm'}])assert.equal(L.selectAuthoredExperience(cat,{...context,...patch},'experience',{},sem),null);
  for(const patch of [{claim:'evidence'},{claim:'study'},{move:'press'},{move:row.side==='w'?'counter':'rebut'}])assert.equal(L.selectAuthoredExperience(cat,context,'experience',{}, {...sem,...patch}),null);
 }
-assert.deepEqual([...experienceOwners.keys()].sort(),['alina','bao','cleo','jun']);for(const counts of experienceOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
-console.log('PASS G4H1 experience fixtures: 16 authored replies across four owners; topic, scope and history guards.');
+assert.deepEqual([...experienceOwners.keys()].sort(),['alina','bao','cleo','jun','miro','morgan','nate','rex']);for(const counts of experienceOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
+console.log('PASS G4H2 experience fixtures: 32 authored replies across eight owners; topic, scope and history guards.');
 const followupRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='evidence'&&row.stage==='push'&&row.side==='f');
 assert.equal(followupRows.length,160);
 const followupOwners=new Map();
