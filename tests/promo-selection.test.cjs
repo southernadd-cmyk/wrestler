@@ -9,7 +9,16 @@ const cat=L.catalogue(root.OfficePromoPilot),plain=x=>JSON.parse(JSON.stringify(
 const ids=['mara','brick','nova','magnus'];
 assert.deepEqual(Array.from(cat.coverage(),p=>p.owner).sort(),ids.map(x=>'wrestler:'+x).sort());
 const authored=new Map(root.OfficePromoPilot.flatMap(p=>p.lines.map(r=>[r.id,r])));
-assert.equal(authored.size,95);
+assert.equal(authored.size,99);
+for(const owner of ['nova','magnus']){
+ const rows=[...authored.values()].filter(r=>r.id.startsWith(owner+'.pilot.ea.'));
+ assert.equal(rows.length,2,owner+' evidence acknowledgement expansion');
+ for(const r of rows){
+  assert.equal(r.when.semanticClaim,'evidence');
+  assert.equal(r.stage,'push');assert.equal(r.action,'acknowledge');assert.equal(r.side,'w');assert.equal(r.category,'respect');
+  assert.equal(r.when.hasMouthpiece,false);
+ }
+}
 assert.equal([...authored.values()].filter(r=>!r.when.semanticClaim).length,73,'original pilot rows preserved');
 assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='evidence'&&r.id.startsWith('nova.pilot.ev.')).length,4,'Nova evidence expansion');
 assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='evidence'&&r.id.startsWith('magnus.pilot.ev.')).length,4,'Magnus evidence expansion');
