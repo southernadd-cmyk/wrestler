@@ -275,4 +275,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH4={
+  "noelle": {
+    "w": [
+      "The premise that experience is valuable is sound. The conclusion that it decides this match does not follow.",
+      "Your years in wrestling are relevant to your preparation. The standard of the contest remains the same for both of us."
+    ],
+    "f": [
+      "Repeated practice helps distinguish a familiar position from one that merely resembles it.",
+      "Experience is useful because it gives me grounds to revise a decision when the original premise fails."
+    ]
+  },
+  "zane": {
+    "w": [
+      "I haven't got all those years behind me, I know. But I can use what I've learned so far.",
+      "I'm still figuring things out. That doesn't mean you know every answer I'm going to try."
+    ],
+    "f": [
+      "I'm finding that experience isn't just knowing a move. It's noticing when it isn't going to work.",
+      "Every time I get in there I learn a little more about what to do when my first idea doesn't go to plan."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -295,4 +295,27 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const experienceRepliesH4={
+  "aisha": {
+    "w": [
+      "Years earned. Fine. No head start at the bell.",
+      "Your experience is yours. The next exchange is ours."
+    ],
+    "f": [
+      "Experience tells me when not to commit. Make me change my mind.",
+      "I've learned to recognise an opening. You still have to close it."
+    ]
+  },
+  "anya": {
+    "w": [
+      "Years can sharpen a blade. They can also wear it down. Let's see which edge you bring.",
+      "Experience is a useful instrument. I will judge the cut it makes, not its age."
+    ],
+    "f": [
+      "Practice teaches you the feel of a clean edge before the cut begins.",
+      "A new angle is no reason to lose the edge. Experience teaches you to adjust the pressure."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

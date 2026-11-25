@@ -350,4 +350,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH4={
+  "kezia": {
+    "w": [
+      "I would like to learn from those years, but I'd also like you to give me a proper contest, not decide it in advance.",
+      "I can respect your experience and still believe I have something worth showing you."
+    ],
+    "f": [
+      "The thing I've learned from wrestling is to pay attention when a position stops feeling right.",
+      "Experience gives me a chance to recognise what I need to change. I'm not expecting it to do the work for me."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
