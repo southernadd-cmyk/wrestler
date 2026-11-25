@@ -168,4 +168,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceQuestionsE3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE4={
+  "nadia": [
+    "Leave the rumour in the dark. What can we show the room when the lights are on us?",
+    "The accusation is a spark, not a result. What can the people actually see us accomplish in the ring?"
+  ],
+  "sasha": [
+    "That's enough material for the comedy club. What can we actually show the crowd when we wrestle?",
+    "Let's save the punchline for the finish. What can the people judge for themselves before we get there?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceQuestionsE4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
