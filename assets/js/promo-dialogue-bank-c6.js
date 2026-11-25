@@ -363,4 +363,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH5={
+  "cedric": {
+    "w": [
+      "Who decided how many years a wrestler needs before they deserve an equal chance? Let's settle it here.",
+      "Your experience deserves respect. Why should it decide the contest before either of us gets to wrestle?"
+    ],
+    "f": [
+      "What have the years taught me? To ask what happens next before I give away the position.",
+      "Experience is useful when it gives you another answer, not when it stops you listening to the question."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

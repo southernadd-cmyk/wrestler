@@ -318,4 +318,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH5={
+  "dean": {
+    "w": [
+      "Experience is a relevant consideration. It does not establish that your proposed approach will work against mine.",
+      "Your record of learning is not in dispute. The application of it is what we have to examine."
+    ],
+    "f": [
+      "Experience lets me assess the likely cost of a decision before I commit to it.",
+      "A different problem does not invalidate the principles I've learned. It means I have to apply them carefully."
+    ]
+  },
+  "faye": {
+    "w": [
+      "Let the record show your experience. It does not establish the outcome of this match.",
+      "Years of practice are admissible as preparation, not as a verdict in your favour."
+    ],
+    "f": [
+      "Experience has taught me to distinguish an opening from an invitation to make a mistake.",
+      "I can revise my approach when the facts of the exchange change. That is what the years have bought me."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

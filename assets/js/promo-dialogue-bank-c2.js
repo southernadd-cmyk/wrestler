@@ -289,4 +289,17 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const experienceRepliesH5={
+  "ezra": {
+    "w": [
+      "Your accumulated experience is relevant to the examination, but cannot determine the result before it commences.",
+      "I acknowledge your years of practice. I propose to assess their application in a lawful contest."
+    ],
+    "f": [
+      "Experience assists in recognising the transition between a secure position and a vulnerable one.",
+      "The advantage of practice is the ability to select an appropriate response when the expected sequence is interrupted."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

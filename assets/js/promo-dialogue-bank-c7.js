@@ -314,4 +314,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH5={
+  "ayla": {
+    "w": [
+      "Your years are chapters already written. Neither of us has written the ending to this one.",
+      "Experience may teach you how a story usually unfolds. I intend to give you a different turn."
+    ],
+    "f": [
+      "Experience is knowing when a match needs room to breathe and when the next beat has arrived.",
+      "A new chapter can surprise me. It needn't make me forget how to tell the story."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
