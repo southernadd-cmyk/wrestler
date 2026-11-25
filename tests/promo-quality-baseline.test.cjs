@@ -43,7 +43,7 @@ function withoutOpponentWords(entries){return entries.map(e=>e.side==='f'?{...e,
 let flowPairs=0,directCount=0,removedCues=0,flowWordsSaved=0,flowFullPairs=0;const directFormats=new Map(),directVariants=new Set();
 let followupPairs=0,followupChanges=0;const followupActors=new Set(),followupClaims=new Set();
 let imageryPairs=0,imageryChanges=0,imageryCallbacks=0;const imageryVariants=new Set(),imageryActors=new Set();
-const graphWithoutWords=s=>({...s,imageryStyle:null,dialogue:s.dialogue.map(e=>({...e,line:null})),steps:s.steps.map(e=>({...e,label:null})),result:null});
+const graphWithoutWords=s=>{const {imageryStyle,...rest}=s;return {...rest,dialogue:s.dialogue.map(e=>({...e,line:null})),steps:s.steps.map(e=>({...e,label:null})),result:null};};
 const stepsWithoutLabels=s=>s.steps.map(e=>({...e,label:null}));
 function flowOther(entries){return entries.filter(e=>e.side!=='w'&&e.kind!=='cue');}
 function slot(k){if(!slotCoverage.has(k))slotCoverage.set(k,{available:new Set(),selected:new Set(),spoken:0,authored:0,composed:0,graph:0,protected:0,semanticBypass:0});return slotCoverage.get(k);}
