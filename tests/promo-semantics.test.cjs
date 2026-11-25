@@ -159,7 +159,22 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
    assert.ok(!/[{}]/.test(e.line),'unresolved semantic placeholder');
    assert.equal(JSON.stringify(xr.dialogue[idx].semantic),JSON.stringify(sem));
    if(sem.source.startsWith('bank:')){assert.ok(e.authoredId);assert.equal(S.fromBank(e.authoredId,e.line)?.claim,sem.claim);authoredSources++;}
-   if(sem.source.startsWith('graph:')){assert.ok(!e.authoredId&&!e.composedId);assert.ok(x.core.dialogue.some(d=>d.speechSource===sem.source&&d.line===e.line));graphSources++;}
+   if(sem.source.startsWith('graph:')){
+    assert.ok(!e.authoredId&&!e.composedId);
+    const originals=x.core.dialogue.filter(d=>d.speechSource===sem.source);
+    const exact=originals.some(d=>d.line===e.line);
+    assert.ok(exact||originals.some(d=>M.reviewedOpponentVoice(x,d,e)),'graph speech must match its original or an exact reviewed speaker alternative');
+    if(!exact){
+     for(const d of originals){
+      assert.equal(M.reviewedOpponentVoice(x,d,{...e,line:'An arbitrary unreviewed replacement.'}),false);
+      assert.equal(M.reviewedOpponentVoice(x,d,{...e,semantic:{...sem,source:'graph:wrong:00000000'}}),false);
+      assert.equal(M.reviewedOpponentVoice(x,d,{...e,authoredId:'unrelated'}),false);
+      const legacy={...x};delete legacy.opponentVoiceStyle;
+      assert.equal(M.reviewedOpponentVoice(legacy,d,e),false);
+     }
+    }
+    graphSources++;
+   }
    if(sem.replyTo!==undefined){
     assert.equal(sem.replyTo,previous,'reply must address immediately preceding spoken line');
     const prior=x.log[sem.replyTo];assert.notEqual(prior.side,e.side);if(sem.source.startsWith('authored-response:')){
