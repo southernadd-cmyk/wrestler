@@ -39,6 +39,12 @@
   "You're asking for an observation, not a reaction. I can't give you one that proves it.",
   "Then let that particular spark go out. We've still got a match to light up.",
   "That's clearer. Let the heat come from the wrestling, not from a guess about you or me."
+ ],
+ "ace": [
+  "I can give them a splendid performance, but I cannot produce an incident that proves the charge. That part of the act comes out.",
+  "A flourish is not an explanation. You've asked for particulars, and I haven't any that stand up.",
+  "Very well. Remove that from the bill. We still have a performance to give.",
+  "Good. No need for a villain in that particular story. The audience came to see us wrestle."
  ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

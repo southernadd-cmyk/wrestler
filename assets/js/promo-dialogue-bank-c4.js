@@ -45,6 +45,12 @@
   "I got a bit ahead of myself there. I haven't got an example, so let's leave that out and have a match!",
   "Good! That's clearer. Now we've got something we can do, rather than something to argue about.",
   "Right, no need to keep pulling at that. Come on, let's see what we can actually do."
+ ],
+ "bao": [
+  "You've asked me for something solid to hold on to. I haven't got it. I should release that claim.",
+  "I cannot keep a grip on an accusation with no example behind it. Let's start again from a sound position.",
+  "Then let go of that claim. We'll find a proper grip when we meet.",
+  "That's fair. Keep your feet under you and leave the unsupported words behind."
  ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

@@ -27,6 +27,12 @@
   "I have not established the fact I would need to establish. The correct response is to remove the charge.",
   "Then the unsupported premise is discarded. We have a wrestling contest to resolve.",
   "Agreed on that distinction. The result of the match is the remaining question."
+ ],
+ "cal": [
+  "Fair question. Can't give you a particular example. Leave that bit out.",
+  "No point making something up. I've got enough to deal with when the bell goes.",
+  "Right. Drop the charge and get on with it.",
+  "Good. We can sort the wrestling out without that."
  ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
