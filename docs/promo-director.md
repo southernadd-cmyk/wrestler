@@ -131,3 +131,7 @@ G4C.5 raised authored utilisation to 475/1,972 (24.1%), recovering 303 turns cum
 ## G4C.7 — seventh evidence-specific tranche
 
 G4C.6 raised authored utilisation to 518/1,972 (26.3%), recovering 346 turns cumulatively with zero lost authored turns. Extend the next ten demand-ranked owners: Gideon, Jett, Juno, Kira, Nadia, Nikita, Priya, Red, Sasha and Sylvia. Two player rebuttals and two opponent counters per owner; existing topic gates and original IDs preserved. Regenerate ten bank payloads and manifest. Validate 280 distinct evidence rows across 70 original wrestlers and measure this tranche separately, requiring the preceding six to retain 346 recovered turns. No engine, workflow or save schema changes. Ten original owners remain.
+
+## G4C.8 — final evidence-specific tranche
+
+G4C.7 raised authored utilisation to 558/1,972 (28.3%), recovering 386 turns cumulatively with zero lost authored turns. Complete the remaining ten original owners: Rex, Faye, Miro, Cass, Alina, Eira, Vera, Liya, Leandro and Tomas Ash. Two player rebuttals and two opponent counters per owner; existing gates and original IDs preserved. Regenerate ten bank payloads and manifest. Validate 320 distinct evidence rows and exact coverage of the 80 original wrestlers, measuring the final tranche separately and requiring the preceding seven to retain 386 recovered turns. No engine, workflow or save schema changes. Evidence-topic bank coverage is now complete; actual utilisation and final recovery remain subject to CI. Other semantic topics still require separate editorial work.
