@@ -122,7 +122,19 @@ for(let i=0;i<240;i++){
   if(!current||!previous||current.line===previous.line)continue;
   if(stage==='open')assert.match(previous.line,/never even worked a match/);
   else assert.match(previous.line,/still have no evidence/);
-  assert.ok(!current.semantic&&!current.authoredId&&!current.composedId);
+  assert.ok(!current.authoredId&&!current.composedId,'fallback remains graph dialogue');
+  // Both literal and varied replies explicitly demand evidence. Verify the
+  // new classification rather than requiring these replies to be unknown.
+  assert.equal(current.semantic?.claim,'evidence');
+  assert.equal(previous.semantic?.claim,'evidence');
+  assert.equal(current.semantic?.kind,'claim');
+  assert.equal(previous.semantic?.kind,'claim');
+  const reviewCtx={...current.dialogueSlot,hasMouthpiece:false};
+  const original=scene.core.dialogue.find(d=>M.reviewedFallbackClaim(scene,reviewCtx,current,d)?.source===current.semantic.source);
+  assert.ok(original,'reviewed fallback must match the actual graph source');
+  assert.equal(M.reviewedFallbackClaim(scene,reviewCtx,{...current,line:'Unreviewed substitution.'},original),null);
+  const legacy=clone(scene);delete legacy.semantic.claimClassification;
+  assert.equal(M.reviewedFallbackClaim(legacy,reviewCtx,current,original),null);
   assert.doesNotMatch(current.line,/never even worked|[{}]/);
   fallbackLines[stage].add(current.line);fallbackCounts[stage]++;
  }
