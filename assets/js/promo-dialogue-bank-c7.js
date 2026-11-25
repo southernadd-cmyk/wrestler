@@ -271,4 +271,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceAcknowledgementsG3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG4={
+  "morgan": [
+    "Fair assessment. An allegation without backing has no value on the balance sheet.",
+    "I accept the distinction. Let us deal in what we can actually deliver to the paying audience."
+  ],
+  "nadia": [
+    "Fair. A spark is not evidence of what started the fire.",
+    "I can leave that rumour in the dark. Let the lights show what we actually do."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceAcknowledgementsG4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

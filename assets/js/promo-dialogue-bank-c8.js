@@ -212,4 +212,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceAcknowledgementsG1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG4={
+  "noelle": [
+    "That is a sound premise. The allegation requires evidence before it supports a conclusion.",
+    "I accept that distinction. The contest can establish a result, not the truth of every assertion."
+  ],
+  "rev": [
+    "A fair correction. We must not pass judgement before the witnesses have spoken.",
+    "I concede the point. Let our deeds bear witness, and leave the unsupported charge behind."
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceAcknowledgementsG4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
