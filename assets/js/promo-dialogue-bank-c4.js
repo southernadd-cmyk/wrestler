@@ -207,4 +207,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (strengthCountersF1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF2={
+  "miro": [
+    "Honestly, I am glad you've taken my {strength} seriously. I still get a chance to use them, don't I?",
+    "Right, you know about my {strength}. I am hoping I can make your answer a little harder to put into practice."
+  ],
+  "ellis": [
+    "First you've identified my {strength}. Next comes your response, and after that I get to make another decision.",
+    "Your plan for my {strength} begins with a first step. I want to see whether the second survives contact with mine."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (strengthCountersF2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

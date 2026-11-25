@@ -203,3 +203,7 @@ Add two full player evidence press questions each for Bao, Brick, Cal, Cedric, E
 ## G4F.1 — opponent named-strength counter pilot
 
 G4E.8 verified all 80 original evidence question banks and preserved 106 recovered sample turns. Largest remaining gap: opponent/counter/strength/strength, 0/51 authored. Pilot two full counters each for Anya, Eira, Emmett, Faye and Jun (two sampled gaps each, ties by ID). New policy `authoredStrengthCounters:1` only for newly authored semantic scenes; answer/turn/f, actual strength counter with nonempty semantic detail, unprotected or contextual variant only, no mouthpieces. Render the named strength from semantic detail, never the style-derived context. Existing routes retain priority. Strict history and owner guards, paired exchange parity and no displacement; preserve G4C/D/E recoveries. Project up to ten recovered turns. No changes to graph, save format, UI or workflows. CI pending.
+
+## G4F.2 — second named-strength counter tranche
+
+G4F.1 verified 10/51 authored strength counters, zero losses. Add two each for Miro, Silas and Theo (two remaining sampled gaps each), Ace, Ari, Ayla, Bronte, Cedric, Dev and Ellis (one each; ties by owner ID). Require 30 dedicated counters across 15 original owners and 13 new recoveries with all ten prior recoveries intact. Preserve G4C/D/E counts, actual spoken detail, owner and history guards, and paired graph/presentation parity. No engine, save, UI or workflow changes. CI pending.

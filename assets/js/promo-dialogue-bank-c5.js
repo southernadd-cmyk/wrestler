@@ -194,4 +194,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceQuestionsE8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const strengthCountersF2={
+  "theo": [
+    "Recognition of my {strength} establishes the terms of the test. It does not establish the result.",
+    "You have distinguished my {strength} from everything else I do. Now define a successful defence and demonstrate it."
+  ],
+  "bronte": [
+    "You have a course plotted around my {strength}. Keep your footing when the water gets rough.",
+    "Knowing about my {strength} gives you something to steer by. It won't keep you steady when I put them to work."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (strengthCountersF2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
