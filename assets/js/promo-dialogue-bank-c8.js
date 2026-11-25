@@ -175,4 +175,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF5={
+  "zane": [
+    "I know you've prepared for my {strength}. I'm still learning what I can do when somebody tries to stop them, and I want to try it.",
+    "You've thought about my {strength}, which is fair. Give me the chance to show what I've been practising in response."
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

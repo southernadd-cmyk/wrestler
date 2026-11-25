@@ -232,4 +232,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF5={
+  "rina": [
+    "You've learnt the tune of my {strength}. Listen for the change in tempo when you try to play over them.",
+    "You can rehearse your answer to my {strength} all night. I'll be listening for the beat you leave open."
+  ],
+  "sylvia": [
+    "You've prepared a response to my {strength}. I respect that. Now we both have to meet the standard in the ring.",
+    "I won't ask you to make allowances for my {strength}. I'll expect a fair defence, and I'll work just as hard against it."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

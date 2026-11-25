@@ -314,7 +314,7 @@ for(const {row,pack} of questionRows){
 assert.deepEqual([...questionOwners.keys()].sort(),[...followupOwners.keys()].sort());assert.equal(questionOwners.size,80);for(const n of questionOwners.values())assert.equal(n,2);
 console.log('PASS G4E8 authored evidence question fixtures: 160 scoped questions across all 80 original owners.');
 const strengthRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='strength');
-assert.equal(strengthRows.length,70);const strengthOwners=new Map();
+assert.equal(strengthRows.length,86);const strengthOwners=new Map();
 for(const {row,pack} of strengthRows){
  assert.ok(!topicText.has(row.text));topicText.add(row.text);assert.equal(row.side,'f');assert.equal(row.stage,'answer');assert.equal(row.action,'turn');
  strengthOwners.set(pack.owner,(strengthOwners.get(pack.owner)||0)+1);
@@ -326,8 +326,8 @@ for(const {row,pack} of strengthRows){
  for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:'w'},{stage:'push'},{action:'calm'}])assert.equal(L.selectAuthoredStrengthCounter(cat,{...context,...patch},'strength-counter',{},sem),null);
  for(const patch of [{claim:'proof'},{move:'rebut'},{move:'press_counter'},{detail:null}])assert.equal(L.selectAuthoredStrengthCounter(cat,context,'strength-counter',{}, {...sem,...patch}),null);
 }
-assert.deepEqual([...strengthOwners.keys()].sort(),["ace","anya","ari","ayla","bronte","cedric","dev","eira","ellis","elodie","emmett","ezra","faye","gus","imani","iris","jun","kellan","kezia","kit","kofi","leandro","liya","lyra","magnus","marisol","miro","nate","nico","nikita","nolan","red","rev","silas","theo"]);for(const n of strengthOwners.values())assert.equal(n,2);
-console.log('PASS G4F4 strength counter fixtures: 70 dedicated replies across 35 owners, actual spoken strength, owner, slot and history guards.');
+assert.deepEqual([...strengthOwners.keys()].sort(),["ace","anya","ari","ayla","bronte","cedric","dev","eira","ellis","elodie","emmett","ezra","faye","gus","imani","iris","jun","kellan","kezia","kit","kofi","leandro","liya","lyra","magnus","marisol","miro","nate","nico","nikita","nolan","red","rev","rina","silas","sylvia","theo","tori","val","vera","winnie","zane","zara"]);for(const n of strengthOwners.values())assert.equal(n,2);
+console.log('PASS G4F5 strength counter fixtures: 86 dedicated replies across 43 owners, actual spoken strength, owner, slot and history guards.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
 const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;

@@ -201,4 +201,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF5={
+  "val": [
+    "You've prepared to meet my {strength} head on. Good. I intend to make you earn every inch of that defence.",
+    "I respect the work you've put into answering my {strength}. You still have to match the effort when I apply them."
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
