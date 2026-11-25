@@ -401,4 +401,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const studyRepliesI3={
+  "roxy": {
+    "w": [
+      "Darling, you have watched the rehearsals. I reserve the right to change the choreography on opening night.",
+      "Studied my every entrance and exit, have you? How charming. Do try not to miss the performance itself."
+    ],
+    "f": [
+      "I study the timing of an exchange, particularly the instant my opponent thinks the scene belongs entirely to them.",
+      "Preparation is knowing the act well enough to change the next scene without announcing the change to the audience."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

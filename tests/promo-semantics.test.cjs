@@ -298,7 +298,7 @@ for(const {row,pack} of experienceRows){
 assert.deepEqual([...experienceOwners.keys()].sort(),["ace","aisha","alina","anya","ari","ash","ayla","bao","bashir","brick","bronte","cal","cass","cedric","cleo","dax","dean","dee","dev","eira","ellis","elodie","emmett","ezra","faye","felix","gideon","gus","imani","iris","ivo","jett","jun","juno","kellan","kezia","kira","kit","kofi","leandro","liya","lyra","mae","magnus","malik","mara","marisol","milo","miro","morgan","nadia","nate","nico","night","nikita","noelle","nolan","nova","otis","priya","red","rev","rex","rina","rocco","roxy","sasha","silas","sol","soraya","sylvia","theo","tomas","tomasash","tori","val","vera","winnie","zane","zara"]);for(const counts of experienceOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
 console.log('PASS G4H7 experience fixtures: 320 authored replies across all eighty original owners; topic, scope and history guards.');
 const studyRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='study');
-assert.equal(studyRows.length,40);const studyOwners=new Map();
+assert.equal(studyRows.length,68);const studyOwners=new Map();
 for(const {row,pack} of studyRows){
  assert.ok(!topicText.has(row.text));topicText.add(row.text);assert.equal(row.stage,'answer');assert.equal(row.action,'turn');assert.equal(row.category,'rebuttal');
  if(!studyOwners.has(pack.owner))studyOwners.set(pack.owner,{w:0,f:0});studyOwners.get(pack.owner)[row.side]++;
@@ -310,8 +310,8 @@ for(const {row,pack} of studyRows){
  for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:row.side==='w'?'f':'w'},{stage:'open'},{action:'calm'}])assert.equal(L.selectAuthoredStudy(cat,{...context,...patch},'study',{},sem),null);
  for(const patch of [{claim:'evidence'},{claim:'experience'},{move:'press'},{move:row.side==='w'?'counter':'rebut'}])assert.equal(L.selectAuthoredStudy(cat,context,'study',{}, {...sem,...patch}),null);
 }
-assert.deepEqual([...studyOwners.keys()].sort(),["ace","ari","brick","cedric","dax","faye","iris","jett","liya","priya"]);for(const counts of studyOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
-console.log('PASS G4I2 study fixtures: 40 authored replies across ten owners; topic, scope and history guards.');
+assert.deepEqual([...studyOwners.keys()].sort(),["ace","ari","brick","cedric","dax","faye","iris","jett","liya","magnus","nolan","priya","rex","roxy","sylvia","winnie","zara"]);for(const counts of studyOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
+console.log('PASS G4I3 study fixtures: 68 authored replies across seventeen owners; topic, scope and history guards.');
 const followupRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='evidence'&&row.stage==='push'&&row.side==='f');
 assert.equal(followupRows.length,160);
 const followupOwners=new Map();

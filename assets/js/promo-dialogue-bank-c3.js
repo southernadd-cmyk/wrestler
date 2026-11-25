@@ -440,4 +440,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI3={
+  "zara": {
+    "w": [
+      "Right, you've watched the clips. Did you work out what you'll do if I don't take that opening?",
+      "Yeah, you've done your research. I'm still allowed to try something you haven't got written down."
+    ],
+    "f": [
+      "I go back over the bits where the timing goes wrong, honestly. That's where I find something worth practising.",
+      "I prepare a few ways into the same move. If one of them is rubbish tonight, I've got another."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

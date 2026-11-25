@@ -191,4 +191,17 @@
   }
 };
  for(const pack of root.OfficePromoPilot)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const studyRepliesI3={
+  "magnus": {
+    "w": [
+      "How industrious of you to study my performances. I trust you have allowed for a little initiative on my part.",
+      "A thorough education, no doubt. I rather suspect the examination will contain a question you haven't revised."
+    ],
+    "f": [
+      "I prefer to study the circumstances in which a technique succeeds, rather than memorise its appearances.",
+      "One prepares for several possibilities. It would be terribly presumptuous to expect one's opponent to follow the preferred one."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoPilot)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
