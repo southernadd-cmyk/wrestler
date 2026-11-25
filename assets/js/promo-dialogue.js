@@ -141,6 +141,24 @@
   }
   return null;
  }
+ // A closing bank line must make the recorded commitment audible. Only
+ // conservative affirmative wording qualifies; the exact graph speech is
+ // retained when a bank line is ambiguous, rather than inventing a vow.
+ function closingCommitment(row,ctx){
+  const text=row.text;
+  if(ctx.stage!=='close'||ctx.side!=='w')return true;
+  if(ctx.action==='vow'){
+   if(ctx.variant==='vo_guarantee')return /\bI guarantee (?:a win|victory|that I will win)\b/i.test(text);
+   if(ctx.variant==='vo_fans')return /\b(?:this win is for|I will win for|I'll win for)\b/i.test(text);
+   const explicit=/(?:^|[.!?]\s+)(?:I will win|I intend to win|I'll win|I am going to win)(?: it| this match| tonight)?[.!]$/i.test(text);
+   return explicit&&(ctx.variant!=='vo_hard'||/\b(?:hard|difficult|demanding|tough|not be easy)\b/i.test(text));
+  }
+  if(ctx.action==='clean'){
+   if(ctx.variant==='cl_hand')return /\b(?:shake my hand|handshake)\b/i.test(text)&&/\b(?:no shortcuts|clean fight|fair fight)\b/i.test(text);
+   if(ctx.variant==='cl_middle')return /\bclean\b/i.test(text)&&/\b(?:fall|pin)\b/i.test(text)&&/\b(?:centre|middle)\b/i.test(text);
+  }
+  return true;
+ }
  // A bounded compositional fallback: preserve the actual claim, vary the delivery.
  const replyFrames={
   precise:['I am not disputing your {strength}. Solving that problem is my job.','Then the question is how I deal with your {strength}. I intend to answer it in the ring.'],
@@ -174,5 +192,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,closingCommitment,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);
