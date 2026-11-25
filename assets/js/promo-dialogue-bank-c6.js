@@ -21,6 +21,12 @@
   "I shouldn't say something about you that I can't explain. Can we start with the wrestling instead?",
   "Thank you for being clear about that. I'd rather learn what you can do than argue about something we can't establish.",
   "Then I won't ask you to prove a negative. Let's find out what happens when we wrestle."
+ ],
+ "ari": [
+  "I can make a picture for this room, but I can't pretend that picture is proof. Fair enough.",
+  "You asked for something real. I can't give you a particular example, and I'm not going to dress it up for the crowd.",
+  "Then leave the picture out of it. Let the people watch the contest for themselves.",
+  "Good. There's a difference between an image and an event. The event is our match."
  ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

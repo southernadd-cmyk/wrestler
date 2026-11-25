@@ -14,4 +14,20 @@
  "jett": "Okay, okay. Here is the thing. Grip, move, hold. Let us start with the grip.\nI can brawl, yeah. Not the flashy bit, though. The careful bit.\nRisk! Yeah, but a small one. The big ones are rubbish.\nSlow? Sure. I am alright going slow. Just one step at a time.\nThe people, the people. They should get a proper match. Honest.\nYes, that is the answer. I am here. Let us go.\nI want to be noticed. Properly, not just for the flips.\nLook at this. Ready stance. Nearly bouncing already.\nTechnique, technique, always technique. Right. Show me one. Just one.\nStrikes, yeah. Keep them clean, that is all I am saying.\nRisk is good if it is safe. Make it safe. Please.\nStalling? Not my thing. I want to move.\nThe people want to see something good. Let us give them the first good thing.\nYou doubt my readiness? Watch me get ready. Then tell me.\nProud of your {strength}? Nice! Nice. Let us see it. One thing at a time.\nI have been watching your {strength}. Going to try something with it. Just one thing.\nSteady! Nice. Right, go! I am bouncing a bit, so you do the calm for both of us.\nAgreed, yeah, for now. That is one thing we agree on. Right, go!\nI could go off about that. I will not. One thing at a time.\nOne fall, that's all. Keep me down and I will say well done. Properly.\nOn the mat, we go one step at a time. First step: grip.\nGrounded or standing, first step is the grip. Always.\nEyes on me, go on! Next step, your move.\nGood answer, nice. One thing we agree on again.\nNo reply yet, come on. First step is answering. Go on then!\nAgreed, yeah, for now. One point. Got it.\nFair point, got it. One thing, though. We settle it at the bell.\nI will give this match everything I have got. Just one thing at a time.\nMy plan is one thing at a time. Get the first thing right, then the next.\nWhatever happens, I will have learned something. One thing.\nNot finished. One more thing to try.\nI have got one more thing to show you. You'll see it when the bell goes, honest."
 };
  root.OfficePromoBankC5=Object.freeze(Object.entries(rows).map(([owner,body])=>{const texts=body.split('\n');if(texts.length!==slots.length)throw Error('Dialogue bank length: '+owner);return {owner,role:'wrestler',lines:slots.map(([stage,action,side,variant,category],i)=>({id:owner+'.c5.'+String(i+1).padStart(2,'0'),stage,action,side,category,text:texts[i],when:{hasMouthpiece:false,...(variant?{variants:[variant]}:{})}}))};}));
+ // G4C.1: topic-gated, independently authored replies to unsupported charges.
+ const evidenceReplies={
+ "winnie": [
+  "Fair enough, love. I wouldn't put someone's name on the rota without knowing what they'd done, so I shouldn't do it here either.",
+  "I can't give you a particular time or place. That's a loose thread I shouldn't have pulled.",
+  "Good, then. We can put that away and get on with the work we've actually got.",
+  "That's a sensible way to leave it. No need to sew a rumour into the rest of the evening."
+ ],
+ "bronte": [
+  "I don't tie a knot to nothing. If I can't back the charge up, I won't hold you to it.",
+  "You've asked for something solid. I haven't got it. Let that line go.",
+  "Good. We don't need that loose end dragging behind us in the match.",
+  "That'll hold. Leave the unsupported bit ashore and meet me in the ring."
+ ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

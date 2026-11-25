@@ -19,6 +19,12 @@
   "I would rather leave that question unanswered than give you an answer I know I cannot justify.",
   "Then leave the claim where it belongs: unproven. The contest is still worth having.",
   "All right. Take a moment, and then let us speak about what we can actually test."
+ ],
+ "ash": [
+  "No example. I won't pretend there is one.",
+  "Fair. I said it. I can't back it up. Leave it.",
+  "Leave it out. Wrestle.",
+  "Good. Nothing else on that."
  ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
