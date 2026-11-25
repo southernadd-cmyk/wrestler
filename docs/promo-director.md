@@ -179,3 +179,7 @@ G4E.1 CI recovered 15 player evidence questions with zero losses; 36/127 authore
 ## G4E.3 — third authored evidence question tranche
 
 G4E.2 CI recovered 20 additional player evidence questions (35 cumulative, zero losses); 56/127 authored, 71 remaining. Add two full questions each for Ezra, Imani, Iris, Ivo, Jun, Juno, Kit, Liya, Mae and Magnus (two misses per owner, ties ordered by ID). Extend Magnus's pilot bank with its exact scope/count fixture. Preserve selection and snapshot policy, semantic provenance, opposing reply, history and presentation. Verify 50 scoped questions across 25 original owners, 35 prior G4E recoveries and positive incremental gain, retain G4C/D recovery counts. No engine, save or workflow changes. CI pending.
+
+## G4E.4 — fourth authored evidence question tranche
+
+G4E.3 CI recovered 20 additional player evidence questions (55 cumulative, zero losses); 76/127 authored, 51 remaining. Add two full questions each for Malik, Marisol, Nadia, Night, Noelle, Otis, Rina, Sasha, Silas and Soraya (two misses per owner, ties ordered by ID). Preserve selection and snapshot policy, semantic provenance, opposing reply, history and presentation. Verify 70 scoped questions across 35 original owners, 55 prior G4E recoveries and positive incremental gain, retain G4C/D recovery counts. Based on main including the merged header identity fix. No engine, save, UI or workflow changes. CI pending.

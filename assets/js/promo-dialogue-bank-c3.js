@@ -151,4 +151,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceQuestionsE2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE4={
+  "malik": [
+    "Leave the accusation out of it. What can you show me when you're taking my best work?",
+    "No more talk about proof. What can you demonstrate against me in the ring?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceQuestionsE4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

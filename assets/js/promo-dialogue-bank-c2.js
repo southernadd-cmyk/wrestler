@@ -144,4 +144,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceQuestionsE3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE4={
+  "night": [
+    "When the lights go down and it's just us wrestling, what can we actually prove?",
+    "Forget the talk before the entrance. What can the crowd judge from the match itself?"
+  ],
+  "otis": [
+    "Never mind the accusation. What can we show them by doing a proper shift in that ring?",
+    "We've got a job to do out there. What can the people actually judge once it's done?"
+  ],
+  "silas": [
+    "Exclude the unsupported proposition. What result under resistance would constitute useful evidence?",
+    "What can we establish empirically through the contest, rather than by repeating the claim?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceQuestionsE4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
