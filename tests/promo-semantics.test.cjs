@@ -190,6 +190,22 @@ for(const claim of ['unclassified','proof','pace','legitimacy']){
 }
 // All reviewed reuse entries refer to an existing bank row, not copied
 // wording. Exercise the actual owner/side and reject stale text and recent IDs.
+
+// Full original-roster ordinary-bank floor. Existing pilot extras remain
+// intact: count exact variant slots, not just the number of stored rows.
+const ordinaryFloor=new Map();
+const ordinaryTemplate=built.packs.find(pack=>pack.owner==='rex').lines.filter(r=>!r.when.semanticClaim);
+const ordinarySlot=r=>[r.stage,r.action,r.side,(r.when.variants||[]).join(',')].join('|');
+for(const row of ordinaryTemplate){const key=ordinarySlot(row);ordinaryFloor.set(key,(ordinaryFloor.get(key)||0)+1);}
+assert.equal(ordinaryTemplate.length,32);
+for(const wrestler of D.ALL){
+ const pack=built.packs.find(p=>p.owner===wrestler.id);assert.ok(pack,'missing original bank '+wrestler.id);
+ const counts=new Map();
+ for(const row of pack.lines.filter(r=>!r.when.semanticClaim)){const key=ordinarySlot(row);counts.set(key,(counts.get(key)||0)+1);}
+ for(const [key,n] of ordinaryFloor)assert.ok((counts.get(key)||0)>=n,'ordinary slot deficit '+wrestler.id+' '+key);
+}
+console.log('PASS ordinary bank floor: all 80 original wrestlers have every baseline slot and variant.');
+
 const bankRows=new Map(built.packs.flatMap(p=>p.lines.map(row=>[row.id,{row,pack:p}])));
 let reuseFixtures=0;const reuseCoverage=new Map();
 for(const [id,rule] of Object.entries(L.reviewedBankReuseV2)){

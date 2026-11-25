@@ -1,6 +1,12 @@
 /* Reviewed literal-source fingerprints: unknown/edited sources stay unclassified. */
 (function(root){'use strict';
  const reviewed=Object.freeze({
+ "bank:magnus.pilot.repair.03:81393f10": "takedown",
+ "bank:magnus.pilot.repair.04:59a4156e": "air",
+ "bank:magnus.pilot.repair.05:9bfe772e": "pace",
+ "bank:nova.pilot.repair.03:901c44dc": "strike",
+ "bank:nova.pilot.repair.04:704d8127": "pace",
+ "bank:nova.pilot.repair.05:2cfc4b93": "shared_effort",
  "graph:p_hometown:3caf1746": "name",
  "graph:p_chant:fb4e2acb": "cheers",
  "graph:p_rally:d1112dc7": "crowd",
