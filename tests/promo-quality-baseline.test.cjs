@@ -46,6 +46,7 @@ let imageryPairs=0,imageryChanges=0,imageryCallbacks=0;const imageryVariants=new
 const graphWithoutWords=s=>{const {imageryStyle,...rest}=s;return {...rest,dialogue:s.dialogue.map(e=>({...e,line:null})),steps:s.steps.map(e=>({...e,label:null})),result:null};};
 const stepsWithoutLabels=s=>s.steps.map(e=>({...e,label:null}));
 let characterPairs=0,characterChanges=0;const characterActors=new Set(),characterClaims=new Set(),characterIds=new Set();
+let bankReusePairs=0,bankReuseHits=0,bankReuseOld=0;const reusedBankIds=new Set(),reusedBankActors=new Set(),reusedBankClaims=new Set();
 function flowOther(entries){return entries.filter(e=>e.side!=='w'&&e.kind!=='cue');}
 function slot(k){if(!slotCoverage.has(k))slotCoverage.set(k,{available:new Set(),selected:new Set(),spoken:0,authored:0,composed:0,graph:0,protected:0,semanticBypass:0});return slotCoverage.get(k);}
 for(const [i,w] of roster.entries()){
@@ -73,6 +74,8 @@ for(const [i,w] of roster.entries()){
    if(oldFollowup){delete oldFollowup.semantic.followupFlow;Mic.choose(oldFollowup,o.id);}
    const oldCharacter=round==='answer'&&o.id==='turn'&&st.semantic?.characterRebuttal===1?JSON.parse(JSON.stringify(st)):null;
    if(oldCharacter){delete oldCharacter.semantic.characterRebuttal;Mic.choose(oldCharacter,o.id);}
+   const oldBankReuse=round==='answer'&&o.id==='turn'&&st.authoredDialogue?.semanticBankReuse===1?JSON.parse(JSON.stringify(st)):null;
+   if(oldBankReuse){delete oldBankReuse.authoredDialogue.semanticBankReuse;Mic.choose(oldBankReuse,o.id);}
    const oldOpening=round==='open'&&st.openingFlow===1?JSON.parse(JSON.stringify(st)):null;
    if(oldOpening){delete oldOpening.openingFlow;Mic.choose(oldOpening,o.id);}
    if(oldFlow){assert.ok(Mic.choices(oldFlow).some(x=>x.id===o.id),'G3A full-scene choice parity');Mic.choose(oldFlow,o.id);}
@@ -139,6 +142,22 @@ for(const [i,w] of roster.entries()){
      assert.match(x.composedId,/\.g3d\./);assert.ok(!x.authoredId&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.speaker);
      for(const k of ['claim','move','replyTo','kind','detail'])assert.equal(x.semantic?.[k],y.semantic?.[k],'G3D semantic '+k);
      assert.ok(!/[{}]/.test(x.line));
+    }
+   }
+   if(oldBankReuse){
+    bankReusePairs++;
+    assert.equal(JSON.stringify(st.core),JSON.stringify(oldBankReuse.core),'bank reuse graph parity');
+    for(const k of ['meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(oldBankReuse[k]),'bank reuse '+k);
+    assert.equal(JSON.stringify(Mic.choices(st)),JSON.stringify(Mic.choices(oldBankReuse)),'bank reuse options parity');
+    const now=st.log.slice(before),old=oldBankReuse.log.slice(before);
+    assert.equal(JSON.stringify(now.filter(e=>!['w','f'].includes(e.side))),JSON.stringify(old.filter(e=>!['w','f'].includes(e.side))),'bank reuse stage/crowd parity');
+    for(const side of ['w','f']){
+     const a=now.find(e=>e.side===side),b=old.find(e=>e.side===side);
+     if(b?.authoredId)bankReuseOld++;
+     if(!a?.semantic?.bankReuse)continue;
+     bankReuseHits++;reusedBankIds.add(a.authoredId);reusedBankActors.add(a.dialogueSlot.owner);reusedBankClaims.add(a.semantic.claim);
+     assert.ok(a.authoredId&&!a.composedId&&!b.authoredId&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.speaker);
+     for(const k of ['claim','move','replyTo','kind','detail'])assert.equal(a.semantic[k],b.semantic?.[k],'bank reuse semantic '+k);
     }
    }
    if(oldOpening){
@@ -282,6 +301,8 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  assert.ok(imageryChanges>10&&imageryActors.size>5&&imageryVariants.size>=3,'G3C live reach');
  console.log('G3D character rebuttals: '+characterChanges+'/'+characterPairs+' changed turns across '+characterActors.size+' speakers; '+characterIds.size+' distinct IDs; claims '+[...characterClaims].join(', '));
  assert.ok(characterChanges>10&&characterActors.size>5&&characterClaims.size>=2,'G3D live coverage');
+ console.log('Semantic bank integration: '+bankReuseHits+' newly recovered authored turns across '+bankReusePairs+' paired exchanges; '+reusedBankIds.size+' IDs, '+reusedBankActors.size+' speakers, claims '+[...reusedBankClaims].join(', ')+'; prior authored turns '+bankReuseOld);
+ assert.ok(bankReuseHits>20&&reusedBankActors.size>10&&reusedBankClaims.size>=2,'live bank reuse coverage');
  assert.ok(extendedChanges>70&&extendedActors.size>20&&extendedChangedVariants.size===extendedVariants.size&&extendedNew.size>extendedOld.size,'G2D extended player voice coverage');
  console.log('PASS G2D player voice: '+extendedChanges+'/'+extendedPairs+' reviewed/protected target turns; '+extendedActors.size+' speakers; '+extendedOld.size+' -> '+extendedNew.size+' distinct normalized lines; variants '+JSON.stringify(Object.fromEntries(extendedChangedVariants))+'; unchanged graph, options and consequences.');
  assert.ok(opponentChanges>100&&opponentActors.size>=10&&opponentChangedVariants.size===opponentVariants.size&&opponentNew.size>opponentOld.size,'G2C opponent voice coverage');
