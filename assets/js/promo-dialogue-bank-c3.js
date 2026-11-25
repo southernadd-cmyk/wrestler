@@ -118,4 +118,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD7={
+  "malik": [
+    "Watch who can keep the pressure on when the other one fights back. That's your proof.",
+    "I'll show you what my strength is worth against yours. The result will be there for everybody."
+  ],
+  "priya": [
+    "Repeat what you intend to prove, then let the crowd compare it with what you actually do.",
+    "Which version shall we judge? I suggest the one that happens in the ring, where everybody can see it."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressRepliesD7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

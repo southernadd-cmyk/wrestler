@@ -159,3 +159,7 @@ G4D.4 CI recovered 20 additional turns (88 cumulative, zero losses), leaving 39 
 ## G4D.6 — sixth opponent evidence follow-up tranche
 
 G4D.5 CI recovered 13 additional turns (101 cumulative, zero losses), leaving 26 of 127 eligible counters unauthored. Add two individually written replies each for Faye, Felix, Gideon, Gus, Iris, Ivo, Jett, Juno, Kira and Kit; remaining single-gap owners ordered by ID. Retain selection and snapshot policy. Verify 120 scoped lines across 60 owners, preserve all 101 previous G4D recoveries and 413 G4C recoveries, require positive incremental recovery. No engine, workflow or save migration. Measured recovery pending CI.
+
+## G4D.7 — seventh opponent evidence follow-up tranche
+
+G4D.6 CI recovered 10 additional turns (111 cumulative, zero losses), leaving 16 of 127 eligible counters unauthored. Add two individually written replies each for Leandro, Liya, Malik, Marisol, Morgan, Nadia, Nate, Nova, Priya and Rina; remaining single-gap owners ordered by ID. Retain selection and snapshot policy. Verify 140 scoped lines across 70 owners, preserve all 111 previous G4D recoveries and 413 G4C recoveries, require positive incremental recovery; update pilot count and Nova-specific assertions. No engine, workflow or save migration. Measured recovery pending CI.

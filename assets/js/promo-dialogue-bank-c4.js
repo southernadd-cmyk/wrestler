@@ -121,4 +121,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidencePressRepliesD6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD7={
+  "nate": [
+    "Watch us wrestle. See who gets the fall. Done.",
+    "Show me what you've got when I take the first hold away. That's a test."
+  ],
+  "rina": [
+    "Listen to how the rhythm changes when one of us takes away the other's first move. The match can answer that.",
+    "Let the crowd follow the whole phrase, from the first grip to the finish. They can judge whether it holds together."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidencePressRepliesD7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
