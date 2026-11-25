@@ -495,4 +495,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI8={
+  "leandro": {
+    "w": [
+      "You've watched the footage? Brilliant. Did you practise keeping up when I change gears halfway through?",
+      "Your notes are ready, then? Good! Let's see how quickly you can use them."
+    ],
+    "f": [
+      "I study the second before the gap opens. I want to arrive as it happens, not after it.",
+      "I've been practising the quick route and the slower alternative. Yes, the slower one too!"
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI8[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

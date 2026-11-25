@@ -488,4 +488,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI8={
+  "milo": {
+    "w": [
+      "You've seen a few stops on my journey. This one's a different town and a different match.",
+      "All those nights watching footage, and here we are with a ring neither of us has wrestled this match in."
+    ],
+    "f": [
+      "I study the exchanges where tired wrestlers lose their footing, then work on keeping mine through a long night.",
+      "I prepare a simpler route out of the hold. After enough miles on the road, you learn to make the useful things count."
+    ]
+  },
+  "gus": {
+    "w": [
+      "You've watched me do the job. Now let's see if you can adapt when the shift doesn't go to plan.",
+      "Good, you've done your homework. Make sure you've practised a safe way out of that hold as well."
+    ],
+    "f": [
+      "I study where a move becomes unsafe, then drill the adjustment that keeps the work steady.",
+      "I prepare for the awkward exchanges. Anyone can rehearse the bit where everything goes right."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI8[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
