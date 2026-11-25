@@ -55,6 +55,12 @@
   "I won't teach anyone to make accusations without backing them up. I should take my own advice.",
   "Good. Knowing when to take a word back is worth learning. Now we wrestle.",
   "Fair enough. Let the lesson be in the ring, not in a claim you cannot establish."
+ ],
+ "tomasash": [
+  "I should have shown more restraint. I cannot give you evidence sufficient to establish the charge.",
+  "Control starts with knowing what not to say. I cannot substantiate that accusation, so it goes no further.",
+  "That is a controlled answer. Leave the accusation there and bring the same restraint to the ring.",
+  "Understood. The words need go no further. We can test our wrestling properly."
  ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

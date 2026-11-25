@@ -63,6 +63,18 @@
   "I'd rather get a laugh at my own expense than make a false charge about you. Scrap that bit.",
   "Good. We can retire that particular joke before the bell.",
   "Fair play. Now give these people something worth cheering for."
+ ],
+ "liya": [
+  "Well, that was a leap I shouldn't have made. I haven't got a proper example to back it up.",
+  "I like a surprise, not an invented story about you. Fair question; I can't establish that charge.",
+  "Fair enough! Let's leave that bit behind and find out what surprises the match brings.",
+  "Thank you for clearing that up. Now we can have some fun without that hanging over us."
+ ],
+ "leandro": [
+  "Right, you caught me rushing again. No example that proves it. Take that bit out.",
+  "I can't back it up, okay? I want to wrestle you, not spend the evening inventing an argument.",
+  "Got it. Charge dropped. Next thing, the bell.",
+  "Fine, we're past that. Come on, let's get to the wrestling."
  ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
