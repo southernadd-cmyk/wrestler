@@ -488,4 +488,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI6={
+  "sol": {
+    "w": [
+      "You've put the hours in watching me. These people have come to see something we haven't done before.",
+      "I respect your preparation. I'll give you and this crowd a match that isn't just a replay of the last one."
+    ],
+    "f": [
+      "I study how wrestlers find their way back into a match when they've lost control. Then I put the hours in practising it.",
+      "I've been working on the moments when the crowd is loud and the right decision is still the simple one."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -476,4 +476,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI6={
+  "rocco": {
+    "w": [
+      "Watched the tape. Fine. Now get hold of me.",
+      "You've studied me doing the job. Let's see you do yours."
+    ],
+    "f": [
+      "I watch where a grip fails. Then I practise keeping it.",
+      "I train the escape as hard as the hold. No point getting stuck."
+    ]
+  },
+  "tori": {
+    "w": [
+      "You studied the last storm. The pressure is building differently this time.",
+      "Your notes show where the force went last time. Let's see where you direct yours when I change mine."
+    ],
+    "f": [
+      "I study how pressure travels through a hold, then practise redirecting it before it peaks.",
+      "My preparation is finding the point at which resistance becomes useful movement instead of wasted force."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

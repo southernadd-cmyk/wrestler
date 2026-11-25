@@ -464,4 +464,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI6={
+  "rina": {
+    "w": [
+      "You've learned the melody from the recording. Tonight I choose the tempo.",
+      "Your notes tell you how that phrase ended. Listen for the variation when we meet."
+    ],
+    "f": [
+      "I study the pause between movements, where the rhythm can change without warning.",
+      "I practise several ways to resolve the same sequence, so I don't have to force the next note."
+    ]
+  },
+  "nate": {
+    "w": [
+      "Studied me. Good. Now wrestle me.",
+      "Your notes won't stop me changing the grip."
+    ],
+    "f": [
+      "I study the openings I missed. Then I drill them.",
+      "I watch where the plan fails. That's what I work on."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

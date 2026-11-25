@@ -475,4 +475,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI6={
+  "theo": {
+    "w": [
+      "You have observations. State the prediction, and tell me what would invalidate it.",
+      "Studying my previous matches establishes a pattern, not a rule I am required to follow."
+    ],
+    "f": [
+      "I compare the conditions under which a technique succeeds with those under which it fails.",
+      "My preparation includes testing the assumptions behind a response before committing to it."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
