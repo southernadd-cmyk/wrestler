@@ -323,6 +323,7 @@
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
   if(opts.directed&&opts.formats){st.fallbackVariety=1;st.closingVariety=1;st.closingCommitmentStyle=1;}
+  if(opts.directed&&opts.formats)st.coreVoiceStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='strong'||e.kind==='uneven').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.deliveryStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='fluff').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
@@ -684,6 +685,402 @@
   if(!pool)return d.line;
   return fmt(pick(pool,st.seed,'graph-fallback|'+stage+'|'+id),st);
  }
+ // G2: reviewed core-graph wording, only when the literal original
+ // and chosen variant match. Preserve authored/semantic lines and every
+ // recorded argument, promise and graph event. Voice pools are fallback
+ // coverage; named character lines take priority when fresh.
+ const CORE_VOICE={
+ "ca_long": {
+  "stage": "answer",
+  "action": "calm",
+  "original": "I have been doing this a long time, {F}. Matches are won in the last minute, not the first.",
+  "voices": {
+   "grand": [
+    "I've been doing this for years, {F}. The opening act is not the finale.",
+    "A veteran knows when to save the grand gesture. I will still be wrestling at the end."
+   ],
+   "gruff": [
+    "Long time in this game. Save your breath for the last minute, {F}.",
+    "Years of this, {F}. It is the last bit of the match that counts."
+   ],
+   "eager": [
+    "I've been at this years! The first minute's exciting, {F}, but we've got to get to the last one.",
+    "I've learned that the hard way: don't spend it all in the first minute."
+   ],
+   "stoic": [
+    "I've done this long enough, {F}. The first minute settles nothing.",
+    "I've been around a while. It's the last minute I work for."
+   ],
+   "precise": [
+    "Experience teaches you to reserve something for the closing exchange, {F}.",
+    "I've spent years learning this: the first minute is preparation, not the result."
+   ],
+   "earnest": [
+    "I've been wrestling a long time, {F}. I know how much work there is after the first minute.",
+    "Years in the ring have taught me not to mistake a good start for a win."
+   ],
+   "sermon": [
+    "Years in this ring have taught me patience, {F}. The contest is settled at the end.",
+    "I've learned over the years that you must have something left when the final minute arrives."
+   ],
+   "slippery": [
+    "I've done enough of these to know the opening minute isn't the one that pays off, {F}.",
+    "I've been around long enough to save the best of it for the finish."
+   ]
+  },
+  "individual": {
+   "mara": "I've argued enough cases in that ring, {F}, to know the opening submission isn't the verdict. Save something for the last minute.",
+   "rex": "Years of hard graft, {F}. You don't knock off after the first minute.",
+   "juno": "I've been at this a long time. The first entry is only the first entry, {F}. The finish is what matters.",
+   "kit": "Years on shift, mate. It isn't the first minute that gets you through; it's the last.",
+   "ezra": "Experience has taught me that the opening exchange is not the conclusion, {F}. Reserve your effort for the decisive fall.",
+   "silas": "After years of this, I can tell you the first minute is only the first variable. The decisive one is at the end.",
+   "tori": "Years of wrestling have taught me to conserve energy. You still need some in the last minute, {F}.",
+   "faye": "I've done this for years, {F}. Don't quote the first minute as the result. Wait for the last."
+  }
+ },
+ "ca_smile": {
+  "stage": "answer",
+  "action": "calm",
+  "original": "Go ahead and have the last word, {F}. I will have the last count.",
+  "voices": {
+   "grand": [
+    "Keep the microphone, {F}. I'll take the applause after the three-count.",
+    "Take your final bow on the microphone. I'll take the final count."
+   ],
+   "gruff": [
+    "Talk all you like, {F}. I'll take the three.",
+    "Have your say. I'm getting the count."
+   ],
+   "eager": [
+    "Go on, finish your speech! I'll be the one celebrating the count.",
+    "Your last word, my last three-count. Sounds good, {F}."
+   ],
+   "stoic": [
+    "You can finish talking. I'll finish the match.",
+    "Last word's yours, {F}. The count will be mine."
+   ],
+   "precise": [
+    "You can conclude the argument, {F}. I intend to secure the deciding fall.",
+    "Have the final statement. The only count I want is the deciding one."
+   ],
+   "earnest": [
+    "I'll let you finish what you're saying, {F}. I intend to earn that last count.",
+    "You can have this exchange. I want the referee's count at the end."
+   ],
+   "sermon": [
+    "Say your final word, {F}. Let my answer be the deciding count.",
+    "Keep the words. I intend to have the last three."
+   ],
+   "slippery": [
+    "You take the microphone, I'll take the pin. Fair exchange, {F}.",
+    "I'll leave you the last word for free. I'm claiming the last count."
+   ]
+  },
+  "individual": {
+   "mara": "Counsel may have the last word, {F}. I'll take the verdict at the count.",
+   "ace": "Have the microphone, darling. I'll take the spotlight at three.",
+   "aisha": "Talk. I'm taking the count, {F}.",
+   "dean": "Have your final statement, {F}. I'll take the deciding three in the right column.",
+   "roxy": "Do enjoy your closing monologue, darling. I'll be taking the final count.",
+   "faye": "I'll let that be your final quote, {F}. My answer will be the last count."
+  }
+ },
+ "ch_hand": {
+  "stage": "answer",
+  "action": "challenge",
+  "original": "Shake my hand, {F}, and then try to beat me.",
+  "voices": {
+   "grand": [
+    "A handshake, {F}. Then let's see which of us deserves the curtain call.",
+    "Before the spectacle begins, shake my hand. Then try to win."
+   ],
+   "gruff": [
+    "Hand first, {F}. Then try and beat me.",
+    "Shake. Then wrestle me for the win."
+   ],
+   "eager": [
+    "Come on, shake my hand! Then let's see if you can beat me, {F}.",
+    "Hand out. Let's start properly, and then you can try to win."
+   ],
+   "stoic": [
+    "Shake my hand. After that, try to beat me.",
+    "A handshake, {F}. Then we wrestle for the fall."
+   ],
+   "precise": [
+    "Shake my hand, {F}. Then demonstrate that you can beat me.",
+    "A sporting handshake first. Then establish your superiority on the mat."
+   ],
+   "earnest": [
+    "I'd like to shake your hand, {F}. Then give me your best shot at beating me.",
+    "Let's shake on it. I want you to try your hardest to win."
+   ],
+   "sermon": [
+    "Give me your hand before we contend, {F}. Then try to defeat me.",
+    "Shake hands first. After that, let the contest decide."
+   ],
+   "slippery": [
+    "Shake my hand, {F}. Then you've got the whole match to prove me wrong.",
+    "Hand first. Then see whether you can actually beat me."
+   ]
+  },
+  "individual": {
+   "mara": "Shake my hand, {F}. Then submit your evidence that you can beat me on the canvas.",
+   "brick": "Hand. Then show me you can beat me, {F}.",
+   "juno": "Shake first, {F}. Then try to earn the grips and the fall.",
+   "dee": "Can we shake hands first? Then I want to see you try to beat me.",
+   "imani": "Shake my hand, {F}. Then we both do the work, and you can try to win.",
+   "ezra": "A handshake before the examination, {F}. Then demonstrate that you can defeat me."
+  }
+ },
+ "ch_now": {
+  "stage": "answer",
+  "action": "challenge",
+  "original": "Why wait for the bell, {F}? I am right here.",
+  "voices": {
+   "grand": [
+    "Why delay the main attraction, {F}? I'm standing right in front of you.",
+    "The curtain's already up, {F}. Why wait for the bell?"
+   ],
+   "gruff": [
+    "Bell? I'm here now, {F}.",
+    "No need to wait. Come on, then."
+   ],
+   "eager": [
+    "I'm right here! Why are we waiting for a bell, {F}?",
+    "Come on, let's get to it now. I'm ready."
+   ],
+   "stoic": [
+    "I'm here, {F}. Why wait?",
+    "We're both here. We don't need to wait for the bell."
+   ],
+   "precise": [
+    "There is no need to defer this, {F}. We are both here.",
+    "Why postpone the confrontation until the bell? I'm ready now."
+   ],
+   "earnest": [
+    "I'm standing right here, {F}. Why do we need to wait any longer?",
+    "I don't see the point in waiting. Let's get to it now."
+   ],
+   "sermon": [
+    "Why delay what is before us, {F}? I'm here now.",
+    "The bell is still to come, but I stand ready before you."
+   ],
+   "slippery": [
+    "Why hang about until the bell, {F}? You've already found me.",
+    "No need to book another minute of this. I'm right here."
+   ]
+  },
+  "individual": {
+   "rex": "Don't stand there waiting to clock on. I'm here now, {F}.",
+   "aisha": "I'm here. Now, {F}.",
+   "zara": "I'm right here, mate! Why are we waiting?",
+   "tori": "We're in the same place at the same time, {F}. Why wait for the bell?",
+   "rocco": "Bell? Come on. I'm here.",
+   "ash": "I'm here. No need to wait."
+  }
+ },
+ "vo_end": {
+  "stage": "close",
+  "action": "vow",
+  "original": "When this is over, {F}, this feud is over too, and I will be the one standing.",
+  "voices": {
+   "grand": [
+    "This is the last act of our feud, {F}. I'll be the one standing when the curtain falls.",
+    "Tonight I bring this rivalry to its finale. I'll win, and it ends there."
+   ],
+   "gruff": [
+    "It ends tonight, {F}. I win. No more of this.",
+    "Last one, {F}. I'm winning it and putting this feud to bed."
+   ],
+   "eager": [
+    "Tonight's the end of all this, {F}! I'm going to win it, and then we're done.",
+    "I want this rivalry finished tonight. I'm going to be the one who wins."
+   ],
+   "stoic": [
+    "This finishes tonight. I'll win, {F}, and that will be the end of it.",
+    "One more match, {F}. I take the win. The feud ends."
+   ],
+   "precise": [
+    "Tonight I intend to settle this rivalry conclusively, {F}. I will win.",
+    "The outcome I intend is a victory and an end to this feud."
+   ],
+   "earnest": [
+    "I want this feud behind us, {F}. Tonight I will win and put it to rest.",
+    "Tonight I will earn the win, and I want that to be the end of our rivalry."
+   ],
+   "sermon": [
+    "Let this be the final chapter of our feud, {F}. I will be victorious.",
+    "Tonight the feud ends. I will take the victory and leave it there."
+   ],
+   "slippery": [
+    "I'm closing the book on this feud tonight, {F}. With a win.",
+    "Last business between us, {F}. I'll take the win and call it finished."
+   ]
+  },
+  "individual": {
+   "mara": "Final submission, {F}: tonight I win, and I close this case for good.",
+   "ace": "One last scene, {F}. I win tonight, and that's the end of our story.",
+   "dean": "One final entry in the record, {F}: a win for me and the end of this feud.",
+   "tori": "Tonight we bring this to a stop, {F}. I'll win and end the rivalry.",
+   "aisha": "Tonight I win. Then we're done, {F}.",
+   "faye": "Let the record show it: tonight I win and this feud ends."
+  }
+ },
+ "sw_ignore": {
+  "stage": "open",
+  "action": "swagger",
+  "original": "Sorry, who am I wrestling tonight? Oh. {F}. Right.",
+  "voices": {
+   "grand": [
+    "Who's been cast opposite me tonight? Ah, {F}. How ordinary.",
+    "I was looking at the headline. Apparently {F} is on the other side of it."
+   ],
+   "gruff": [
+    "Who's it again? {F}. Fine.",
+    "Oh. {F}. That's the opponent, then."
+   ],
+   "eager": [
+    "Wait, who's my match with? Oh, {F}! Right, of course.",
+    "I nearly forgot who was on the other side of this. {F}, isn't it?"
+   ],
+   "stoic": [
+    "It's {F} tonight, is it? Right.",
+    "Oh, {F}. I'd almost forgotten."
+   ],
+   "precise": [
+    "I had rather overlooked the name opposite mine. {F}, apparently.",
+    "The opponent's name had slipped my mind. {F}. Of course."
+   ],
+   "earnest": [
+    "Oh, it's you, {F}. I was thinking more about the match than the name.",
+    "Sorry, {F}. I hadn't given the name much thought."
+   ],
+   "sermon": [
+    "Who stands opposite me tonight? Ah, {F}. So it is.",
+    "The name had escaped me. {F}. Very well."
+   ],
+   "slippery": [
+    "Who have they put across from me? {F}? Lovely.",
+    "I'd almost forgotten the name on the other side of the card. {F}. Right."
+   ]
+  },
+  "individual": {
+   "mara": "The opposing party's name? Oh, {F}. Of course.",
+   "ace": "Who did they cast opposite me? Oh, {F}. Right.",
+   "roxy": "Darling, remind me who's on the other side of the programme. {F}? How nice.",
+   "dean": "The other name on the sheet? {F}. Yes, that's it.",
+   "faye": "I haven't got the name in my notes. {F}, is it?",
+   "kit": "Who am I on with again? {F}. All right, mate."
+  }
+ },
+ "ch_one_fall": {
+  "stage": "answer",
+  "action": "challenge",
+  "original": "One fall, {F}. Nobody else involved. Just you and me.",
+  "voices": {
+   "grand": [
+    "One fall, {F}. No supporting cast. Just the two of us.",
+    "No extras for this performance. One fall, you and me."
+   ],
+   "gruff": [
+    "One fall. Just us. Nobody else.",
+    "You, me, one fall. That's it."
+   ],
+   "eager": [
+    "One fall, just the two of us! Nobody else gets involved.",
+    "Come on, {F}. One fall. No one else, just us."
+   ],
+   "stoic": [
+    "One fall between us, {F}. No interference.",
+    "No one else. One fall. Just us."
+   ],
+   "precise": [
+    "The terms are simple: one fall, {F}, with neither of us involving anyone else.",
+    "One fall, no outside involvement. Just the two competitors."
+   ],
+   "earnest": [
+    "One fall, {F}. Let's do it between us, without anybody else getting involved.",
+    "I want it to be just you and me. One fall, no one else."
+   ],
+   "sermon": [
+    "Let it be one fall between us alone, {F}.",
+    "One fall. No one else shall have a part in it."
+   ],
+   "slippery": [
+    "Let's keep the terms simple, {F}. One fall, no third parties.",
+    "One fall, no outside assistance. You and me, nothing else."
+   ]
+  },
+  "individual": {
+   "ezra": "One fall, {F}. No third participant. Those are the terms of the examination.",
+   "silas": "One fall, {F}. Eliminate outside interference. Just our techniques.",
+   "mara": "One fall, {F}. Two parties to the dispute. Nobody else.",
+   "dean": "One fall between us, {F}. No outside variables.",
+   "brick": "One fall. No mates. Just us.",
+   "imani": "Just our work in there, {F}. One fall, nobody else."
+  }
+ },
+ "pe_grudge": {
+  "stage": "answer",
+  "action": "personal",
+  "original": "This stopped being about wrestling a long time ago, {F}.",
+  "voices": {
+   "grand": [
+    "The wrestling stopped being the whole story long ago, {F}.",
+    "This rivalry left sporting competition behind a long time ago."
+   ],
+   "gruff": [
+    "This ain't just wrestling anymore, {F}. Hasn't been for ages.",
+    "It's personal, {F}. Has been a while."
+   ],
+   "eager": [
+    "This isn't just a wrestling match to me anymore, {F}. It hasn't been for a long time.",
+    "We've been past the wrestling part of this for ages, {F}."
+   ],
+   "stoic": [
+    "This has been personal for a long time, {F}.",
+    "Stopped being just wrestling long ago."
+   ],
+   "precise": [
+    "This dispute ceased to be purely sporting a long time ago, {F}.",
+    "For some time, this has been a personal dispute rather than merely a contest."
+   ],
+   "earnest": [
+    "I wish this were just about wrestling, {F}. It hasn't been for a long time.",
+    "It became personal a long time ago. You know that, {F}."
+   ],
+   "sermon": [
+    "This has gone beyond a contest of skill, {F}. It has for some time.",
+    "The sporting dispute became a personal one long ago."
+   ],
+   "slippery": [
+    "Let's not pretend this is just another match, {F}. It hasn't been for ages.",
+    "We're long past the point where this was only about wrestling."
+   ]
+  },
+  "individual": {
+   "mara": "This stopped being a sporting case a long time ago, {F}. It's personal now.",
+   "faye": "We've been past the sporting question for a long time, {F}.",
+   "aisha": "This has been personal a long time, {F}. Not just wrestling.",
+   "dean": "This stopped being a matter of results a long time ago, {F}.",
+   "anya": "This went beyond the wrestling long ago, {F}. It's personal.",
+   "rocco": "It's personal. Has been for ages, {F}."
+  }
+ }
+};
+ function coreVoice(st,stage,id,d,step){
+  if(st.coreVoiceStyle?.v!==1||st.speaker||st.core.case||st.core.claim?.hasEvidence||d.case||d.speechSource)return d.line;
+  const v=step.variant,e=Object.prototype.hasOwnProperty.call(CORE_VOICE,v)?CORE_VOICE[v]:null;
+  if(!e||e.stage!==stage||e.action!==id||d.line!==fmt(e.original,st))return d.line;
+  const named=Object.prototype.hasOwnProperty.call(e.individual,st.w.id)?fmt(e.individual[st.w.id],st):null;
+  const pool=(e.voices[voice(st.w)]||e.voices.stoic).map(s=>fmt(s,st));
+  const recent=st.coreVoiceStyle.recent||[],seen=st.log.filter(x=>x.side==='w').map(x=>x.line);
+  const fresh=s=>![...recent,...seen].some(x=>x===s||x.endsWith(' '+s));
+  if(named&&fresh(named)&&rng(st.seed,'core-voice-own|'+v)<.75)return named;
+  const all=named?[named,...pool]:pool,options=all.filter(fresh);
+  return pick(options.length?options:all,st.seed,'core-voice|'+v);
+ }
  function coreRound(st,stage,id,key){
   const core=st.core,before=core.dialogue.length,m0={...core.metrics},fit=fitOf(st,stage,id);
   // Composure feeds the core's chance of landing a line; a line that suits the night is easier to land.
@@ -700,9 +1097,10 @@
   const slot=(side,d)=>st.dialogueFacts&&Dialogue.context(st,stage,id,side,{landed:step.landed,variant:step.variant,recorded:!!d.case});
   for(const d of fresh){
    if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);const ctx=slot('w',d),line=pickAuthored(st,ctx);
+    const graphLine=line?d.line:coreVoice(st,stage,id,d,step);
     const lead=stage==='open'?Director?.answerOpening(st.openingQuestion,id):null;
-    if(lead){const answer=line?.text||clientClaim(st,d.line),spokenLead=st.speaker&&st.openingQuestion.kind!=='format'?clientClaim(st,lead):lead;push(st,'w',spokenLead+' '+answer,step.landed?'strong':'uneven',got);st.log.at(-1).answersQuestion={v:1,prompt:st.openingQuestion.prompt,lead:spokenLead};}
-    else push(st,'w',line?.text||d.line,step.landed?'strong':'uneven',got,!line);
+    if(lead){const answer=line?.text||clientClaim(st,graphLine),spokenLead=st.speaker&&st.openingQuestion.kind!=='format'?clientClaim(st,lead):lead;push(st,'w',spokenLead+' '+answer,step.landed?'strong':'uneven',got);st.log.at(-1).answersQuestion={v:1,prompt:st.openingQuestion.prompt,lead:spokenLead};}
+    else push(st,'w',line?.text||graphLine,step.landed?'strong':'uneven',got,!line);
     annotate(st,st.log.length-1,ctx,line);
     if(!step.landed)push(st,'stage',fluff(st,stage),'fluff');crowdSays(st,got,key);continue;}
    if(d.speaker==='Crowd'&&d.kind==='reaction'&&!step.landed&&!stumbled){stumbled=true;continue;} // replaced by the fluff above
