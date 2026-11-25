@@ -27,6 +27,18 @@
   "I'm not going to sell an allegation I can't substantiate. The better deal is to settle the sporting question.",
   "Good. Then we're discussing the contest, not an allegation. Much better terms.",
   "A reasonable distinction. Leave the unsupported part out of the agreement and let's wrestle."
+ ],
+ "malik": [
+  "I can't point to anything that proves it. I can put you under pressure in the ring, but that is a different matter.",
+  "You want specifics. I haven't got any that stand up. I won't hide behind an accusation when I've got a match to win.",
+  "Good. You can leave that charge behind and bring your wrestling instead.",
+  "I'll take that distinction. I want to test your ability, not your reputation for something you might not have done."
+ ],
+ "tori": [
+  "I can feel the temperature rising in this room. That tells me nothing about whether the charge is true.",
+  "You're asking for an observation, not a reaction. I can't give you one that proves it.",
+  "Then let that particular spark go out. We've still got a match to light up.",
+  "That's clearer. Let the heat come from the wrestling, not from a guess about you or me."
  ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
