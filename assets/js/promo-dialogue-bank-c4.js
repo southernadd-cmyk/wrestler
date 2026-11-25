@@ -39,6 +39,12 @@
   "Fair. I cannot show the step that establishes the charge. Let's move to something we can test.",
   "That's enough on that point. The next transition is into the match.",
   "Don't build another argument on that assumption. Let's see what the actual wrestling gives us."
+ ],
+ "kofi": [
+  "Wait, you're right to ask! I can't point to anything that proves it. Let's get to the part we can actually show them.",
+  "I got a bit ahead of myself there. I haven't got an example, so let's leave that out and have a match!",
+  "Good! That's clearer. Now we've got something we can do, rather than something to argue about.",
+  "Right, no need to keep pulling at that. Come on, let's see what we can actually do."
  ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

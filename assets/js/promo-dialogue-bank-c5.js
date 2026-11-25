@@ -33,6 +33,18 @@
   "I haven't got the facts to back that up, and I'm not going to put it on you anyway.",
   "Good. Leave that rubbish out of it and let's do the job properly.",
   "That's settled. We've both got work to do when the bell goes."
+ ],
+ "mae": [
+  "That's a fair correction. I shouldn't teach a lesson on a charge I can't demonstrate.",
+  "I have to hold myself to the same standard I expect of you. I can't substantiate that, so I won't repeat it.",
+  "Good. That's a lesson for both of us. Leave the unsupported claim out and wrestle properly.",
+  "Then let that be the end of that lesson. The next one takes place on the mat."
+ ],
+ "nolan": [
+  "An accusation without an example is a poor lesson. I can't supply one, so I'll leave it out.",
+  "Discipline applies to what I say as well as what I do. I haven't established that charge.",
+  "That's a sound correction. Now demonstrate the discipline you bring to the match.",
+  "Good. The next lesson is a practical one. Meet me at the bell."
  ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

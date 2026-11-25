@@ -27,6 +27,18 @@
   "You've caught me there. No specific incident I can point to. Let's keep the show about the wrestling.",
   "Lovely. We can bin that bit of the script, then. On with the actual match.",
   "That's the end of that little detour. Come on, let's give them something worth the ticket."
+ ],
+ "sol": [
+  "They deserve a fair contest, and that starts with me being fair about you. I can't support that accusation.",
+  "I won't ask these people to take my word for something I can't establish. Let's give them a match instead.",
+  "That's fair. We can leave the accusation there and give these people what they paid for.",
+  "Then we're clear on that point. Let's give them a contest they can judge for themselves."
+ ],
+ "val": [
+  "I hold my wrestling to a standard. I must hold my words to it too. I cannot establish that charge.",
+  "I have no particular incident I can cite with confidence. Equal terms mean leaving that allegation out.",
+  "Good. No unproved allegation between us. Meet the standard in the ring.",
+  "That's a fair correction. We'll settle the sporting question on equal terms."
  ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

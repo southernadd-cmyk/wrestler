@@ -31,6 +31,12 @@
   "I have no reliable example to offer. Reject that premise; the wrestling question is still testable.",
   "Correct. No supporting observation, no finding. Let's test the wrestling separately.",
   "That's a valid distinction. The unsupported conclusion can go; the contest remains."
+ ],
+ "rev": [
+  "I ought not bear false witness. I cannot give you particulars that establish the charge.",
+  "A suspicion is not a judgement. I have no evidence to put before you, and I will not condemn you on that alone.",
+  "Then let the accusation rest. Neither of us needs a false judgement before the bell.",
+  "A fair distinction. We shall be judged by what we do in the contest, not by an unsupported word."
  ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
