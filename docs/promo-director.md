@@ -191,3 +191,7 @@ G4E.4 CI recovered 20 additional player evidence questions (75 cumulative, zero 
 ## G4E.6 — sixth authored evidence question tranche
 
 G4E.5 CI recovered 13 additional player evidence questions (88 cumulative, zero losses); 109/127 authored, 18 remaining. Add two full questions each for Gus, Jett, Kellan, Kira, Leandro, Lyra, Milo, Miro, Morgan and Nova (one miss per owner; ties ordered by ID). Extend Nova's original pilot bank. Project 10 additional recovered turns. Verify 110 scoped questions across 55 original owners, 88 prior G4E recoveries and positive incremental gain, retain G4C/D recovery counts and semantic provenance. No engine, save, UI or workflow changes. CI pending.
+
+## G4E.7 — close remaining sampled evidence question gaps
+
+G4E.6 CI recovered 10 additional player evidence questions (98 cumulative, zero losses); 119/127 authored, 8 remaining. Add two full questions each for Priya, Rev, Rocco, Roxy, Tori, Val, Vera and Winnie (one miss per owner). Require exactly eight new recoveries and all 106 previously missing sampled turns recovered, preserving prior G4C/D gains and semantic provenance. Verify 126 scoped questions across 63 original owners. The projected 127/127 concerns the fixed sample, not all possible scenes or all 80 original wrestlers. No engine, save, UI or workflow changes. CI pending.
