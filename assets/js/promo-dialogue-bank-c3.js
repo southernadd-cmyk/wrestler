@@ -188,4 +188,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceQuestionsE7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const strengthCountersF1={
+  "anya": [
+    "You've seen the edge of my {strength}. Seeing the cut coming is not the same as turning it aside.",
+    "Knowing where my {strength} are sharp doesn't make them blunt. You still have to deal with the contact."
+  ],
+  "faye": [
+    "You have accurately quoted my {strength}. That establishes what you have to answer, not that you have answered it.",
+    "Let the record be clear: you can name my {strength} without proving you can neutralise them."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (strengthCountersF1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

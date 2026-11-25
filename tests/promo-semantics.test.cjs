@@ -313,6 +313,21 @@ for(const {row,pack} of questionRows){
 }
 assert.deepEqual([...questionOwners.keys()].sort(),[...followupOwners.keys()].sort());assert.equal(questionOwners.size,80);for(const n of questionOwners.values())assert.equal(n,2);
 console.log('PASS G4E8 authored evidence question fixtures: 160 scoped questions across all 80 original owners.');
+const strengthRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='strength');
+assert.equal(strengthRows.length,10);const strengthOwners=new Map();
+for(const {row,pack} of strengthRows){
+ assert.ok(!topicText.has(row.text));topicText.add(row.text);assert.equal(row.side,'f');assert.equal(row.stage,'answer');assert.equal(row.action,'turn');
+ strengthOwners.set(pack.owner,(strengthOwners.get(pack.owner)||0)+1);
+ const cat=L.catalogue([{...pack,lines:[row]}]),context={...ctx,stage:'answer',action:'turn',side:'f',speaker:{...ctx.speaker,id:pack.owner,role:'wrestler'},protected:'contextual-variant',variant:'tu_strength',hasMouthpiece:false,strength:'hard strikes'};
+ const sem={claim:'strength',move:'counter',detail:'speed and aerial attacks'};
+ const own=L.selectAuthoredStrengthCounter(cat,context,'strength-counter',{},sem);assert.equal(own?.id,row.id);assert.equal(own.text,row.text.replace(/\{strength\}/g,sem.detail));assert.doesNotMatch(own.text,/hard strikes/);
+ assert.equal(L.select(cat,{...context,protected:null,variant:null},'ordinary',{}),null);assert.equal(L.selectAuthoredTopic(cat,context,'evidence',{},sem),null);
+ for(const mem of [{used:[row.id]},{recent:[row.id]}])assert.equal(L.selectAuthoredStrengthCounter(cat,context,'strength-counter',mem,sem),null);
+ for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:'w'},{stage:'push'},{action:'calm'}])assert.equal(L.selectAuthoredStrengthCounter(cat,{...context,...patch},'strength-counter',{},sem),null);
+ for(const patch of [{claim:'proof'},{move:'rebut'},{move:'press_counter'},{detail:null}])assert.equal(L.selectAuthoredStrengthCounter(cat,context,'strength-counter',{}, {...sem,...patch}),null);
+}
+assert.deepEqual([...strengthOwners.keys()].sort(),["anya","eira","emmett","faye","jun"]);for(const n of strengthOwners.values())assert.equal(n,2);
+console.log('PASS G4F1 strength counter fixtures: ten dedicated replies, actual spoken strength, owner, slot and history guards.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
 const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;
@@ -394,7 +409,9 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
     assert.equal(sem.replyTo,previous,'reply must address immediately preceding spoken line');
     const prior=x.log[sem.replyTo];assert.notEqual(prior.side,e.side);if(sem.source.startsWith('authored-response:')){
      assert.equal(sem.source,'authored-response:'+e.authoredId);assert.ok(!e.composedId);
-     if(sem.questionBank===1){
+     if(sem.strengthCounterBank===1){
+      const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim==='strength');assert.equal(sem.claim,'strength');assert.equal(sem.move,'counter');assert.equal(e.side,'f');assert.equal(e.dialogueSlot.stage,'answer');assert.equal(e.dialogueSlot.action,'turn');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(sem.detail,prior.semantic?.detail);assert.equal(e.line,found.row.text.replace(/\{strength\}/g,sem.detail==='wrestling'?'wrestling techniques':sem.detail));
+     }else if(sem.questionBank===1){
       const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim==='evidence');assert.equal(sem.claim,'evidence');assert.equal(sem.move,'press');assert.equal(e.side,'w');assert.equal(e.dialogueSlot.stage,'push');assert.equal(e.dialogueSlot.action,'press');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(e.line,found.row.text);assert.ok(e.line.endsWith('?'));assert.ok(x.authoredDialogue.composedUsed.includes(sem.questionSource));authoredPress++;pressIds.add(e.authoredId);
      }else if(sem.followupBank===1){
       const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim==='evidence');assert.equal(sem.claim,'evidence');assert.equal(sem.move,'press_counter');assert.equal(prior.semantic?.move,'press');assert.equal(e.dialogueSlot.stage,'push');assert.equal(e.dialogueSlot.action,'press');assert.equal(e.side,'f');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(e.line,found.row.text);
