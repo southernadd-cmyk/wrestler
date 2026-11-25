@@ -450,4 +450,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI7={
+  "cal": {
+    "w": [
+      "Seen the tape. Still need to get the grip.",
+      "That's the old position. Work with the one I give you."
+    ],
+    "f": [
+      "Study the entry. Drill it from both sides.",
+      "Watch where the balance goes. Practise getting it back."
+    ]
+  },
+  "ezra": {
+    "w": [
+      "Your preparation is noted. The examination concerns your application of that knowledge under the conditions of this contest.",
+      "Prior observations may inform your approach. They do not establish that your proposed technique will be legally effective."
+    ],
+    "f": [
+      "I examine the transitions in previous contests and rehearse the lawful responses available at each stage.",
+      "My preparation involves testing whether a technique remains valid when the anticipated position is altered."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

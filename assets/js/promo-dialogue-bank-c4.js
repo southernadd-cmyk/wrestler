@@ -487,4 +487,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI7={
+  "bao": {
+    "w": [
+      "You've watched my hands before. Tonight you have to feel what they are doing.",
+      "Knowing the grip I used last time is not the same as knowing the grip I will need now."
+    ],
+    "f": [
+      "I study how the fingers and the weight settle into a hold. Small changes matter.",
+      "I practise the release as carefully as the grip. There is no need to force a position that has changed."
+    ]
+  },
+  "cass": {
+    "w": [
+      "You've watched my matches? Blimey, somebody owes you an evening back. Did you bring a plan for the bits I make up?",
+      "Lovely homework. Unfortunately, I appear to have misplaced the script you're revising from."
+    ],
+    "f": [
+      "I watch myself getting into a daft position, then work out how to get out without looking quite so daft.",
+      "I rehearse a second exit. The first one has a habit of turning into a rather expensive joke."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
