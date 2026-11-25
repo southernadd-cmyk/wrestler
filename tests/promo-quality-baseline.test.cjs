@@ -31,6 +31,7 @@ const finishes=['win_clean','lose_clean','win_dirty','lose_protected'];
 const samplesPerWorker=16;
 let unresolved=0,resumeChecks=0,samePairCore=0,repeatedPairCore=0;
 const availableIds=new Set(),selectedIds=new Set(),slotCoverage=new Map();
+const closingComparison={vow:{before:0,after:0},clean:{before:0,after:0}};let closingPairs=0;
 function slot(k){if(!slotCoverage.has(k))slotCoverage.set(k,{available:new Set(),selected:new Set(),spoken:0,authored:0,composed:0,graph:0,protected:0,semanticBypass:0});return slotCoverage.get(k);}
 for(const [i,w] of roster.entries()){
  const pool=opponents.filter(f=>f.id!==w.id);
@@ -52,10 +53,22 @@ for(const [i,w] of roster.entries()){
    const wanted=round==='push'?(st.director?['leave','press','hold','acknowledge']:['leave','bit','quiet','pop'])[j%4]:null;
    const o=options.find(x=>x.id===wanted)||options[(i+j+step*3)%options.length];
    const before=st.log.length;
+   const strict=round==='close'&&st.closingCommitmentStyle===1?JSON.parse(JSON.stringify(st)):null;
+   if(strict){delete strict.closingCommitmentStyle;Mic.choose(strict,o.id);}
    if(j===0&&step===1){
     const copy=JSON.parse(JSON.stringify(st));Mic.choose(copy,o.id);Mic.choose(st,o.id);
     assert.equal(JSON.stringify(st),JSON.stringify(copy),'mid-scene save/resume diverged');resumeChecks++;
    }else Mic.choose(st,o.id);
+   if(strict){
+    assert.equal(JSON.stringify(st.core),JSON.stringify(strict.core),'closing commitment graph parity');
+    const x=Mic.result(st),y=Mic.result(strict);
+    for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature'])assert.equal(JSON.stringify(x[k]),JSON.stringify(y[k]),'closing commitment parity '+k);
+    closingPairs++;
+    if(closingComparison[o.id]){
+     const authored=s=>s.log.slice(before).filter(e=>e.side==='w'&&e.authoredId).length;
+     closingComparison[o.id].before+=authored(strict);closingComparison[o.id].after+=authored(st);
+    }
+   }
    rounds.push(round);choices.push(o.id);
    for(const d of st.log.slice(before)){
     inc(kinds,d.kind||'unknown');
@@ -100,4 +113,9 @@ for(const id of sampleIds){
 if(process.env.PROMO_AUDIT_JSON)fs.writeFileSync(process.env.PROMO_AUDIT_JSON,JSON.stringify({summary,profiles:[...profiles.values()].map(p=>({...p,core:[...p.core]})),scenes},null,2));
 assert.equal(scenes.length,roster.length*samplesPerWorker);
 assert.equal(resumeChecks,roster.length);
+if(process.env.PROMO_AUDIT_LEGACY!=='1'){
+ assert.equal(closingPairs,scenes.length);
+ for(const [k,v] of Object.entries(closingComparison))assert.ok(v.after>v.before+10,'G1 must restore meaningful '+k+' bank use');
+ console.log('PASS G1 closing recovery: '+JSON.stringify(closingComparison)+' across '+closingPairs+' paired closings; unchanged graph and consequences.');
+}
 console.log('PASS promo baseline: completed deterministic scenes; descriptive metrics are not quality thresholds.');

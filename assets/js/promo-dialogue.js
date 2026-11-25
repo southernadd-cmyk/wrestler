@@ -159,6 +159,275 @@
   }
   return true;
  }
+ // G1 editorial review: exact text and exact variant, never a broad
+ // permission to attach a promise to arbitrary speech. Completed variants
+ // express the whole commitment in their own wording; approved leads
+ // retain their voice and are completed with a short explicit commitment.
+ const completeClosings={
+ "vo_hard": [
+  "I anticipate a difficult case. I intend to win it.",
+  "It'll be hard graft. I'll be the one standing.",
+  "It won't be easy. I'm going to win anyway.",
+  "It'll be a proper hard match. I'm still going to win it.",
+  "It'll be difficult. I still intend to win.",
+  "I know it'll be hard. I promise I'll win.",
+  "I know how hard this is going to be. I intend to win it.",
+  "This is going to be a long shift. I'll win it, though.",
+  "I'm expecting a hard night's work. I'm going to win it.",
+  "I expect to have to work for every inch. I will prevail.",
+  "It'll take everything I've got. I'm going to win.",
+  "Hard match. I'll win it.",
+  "I know the quality of the opposition. I intend to earn the win.",
+  "I expect it to be a hard night's work. I'm still going to win.",
+  "I expect a demanding contest. I will win it.",
+  "The examination will be demanding. I intend to pass it by winning.",
+  "It'll be hard. I'm still winning.",
+  "I anticipate a demanding performance. I'll be the one who wins it.",
+  "It will be difficult. I intend to win on the mat.",
+  "It'll be a hard night. I'm going to win it."
+ ],
+ "vo_plain": [
+  "My conclusion is simple: I will win.",
+  "I'm winning tonight.",
+  "I'm going to win tonight.",
+  "I aim to win.",
+  "I'm going to win.",
+  "I mean it. I'm going to win tonight.",
+  "I'm winning this one.",
+  "Let me be clear. I'm winning this match.",
+  "I will be the winner. That is my standard.",
+  "I'm winning this match.",
+  "I'm here to win. And I will.",
+  "I'll win this match.",
+  "I'll win this one.",
+  "My prediction is a victory.",
+  "I will come out on top.",
+  "I will win this evening.",
+  "I will win this contest.",
+  "Tonight ends with my hand raised. I'm going to take it.",
+  "I am coming for the win, and I will take it honestly."
+ ],
+ "cl_middle": [
+  "One clean fall in the centre. No qualifications.",
+  "Clean fall in the middle. That's the job.",
+  "One clean fall, right in the middle. No quick shortcuts for us.",
+  "Clean fall in the centre. Both of us do it properly.",
+  "One clean fall. In the centre of the mat.",
+  "One clean fall, in the middle. Give them something honest.",
+  "One clean fall, right in the middle. No funny business.",
+  "One clean fall, in the centre. I want both of us accountable for it.",
+  "A clean fall in the centre. No shortcut for me.",
+  "One clean fall, in the centre of the ring. No qualification.",
+  "Clean fall in the middle. No messing about.",
+  "One clean fall, centre stage. No cheap tricks.",
+  "One clean fall in the centre. No confounding factors.",
+  "One clean fall right in the centre. Let the lights catch it."
+ ]
+};
+ const closingLeads={
+ "vo_hard": [
+  "I came here to win, and I am going to fight for it.",
+  "I have made my position clear, and I intend to keep to it all the way to the finish.",
+  "I will be in there giving everything I have. The rest is physics.",
+  "I will wrestle this match and hold you to every word you have given.",
+  "I'm going to give it everything. Honestly, that's the plan.",
+  "I will be fully committed until the bell. After that the stakes speak for themselves.",
+  "I will say the same thing at the finish as I have said here.",
+  "I will hold this match with patience, and I will not let go early.",
+  "I am going to give this everything I have until the bell goes.",
+  "I intend to stay with my plan until the finish.",
+  "I will carry this sequence through to the finish, and I will not change it halfway.",
+  "I will give this match everything, until the last bar ends.",
+  "I am going to fight my hardest until the bell. Then it is done.",
+  "I'm going to give it everything, and then I'm going to make a joke about it.",
+  "I will hold my counter until the moment it matters, and then I will use it.",
+  "I will give this match a hard, fair finish, and I will not cut corners.",
+  "I am going to give everything I have until the bell, and I will enjoy every second.",
+  "I will wrestle this match with care and finish with control.",
+  "I will teach this match from start to finish, and I will not rush the ending.",
+  "I will test this match honestly and finish it on its terms.",
+  "I will wrestle this match within the terms, and I will finish it on those terms.",
+  "I will give this match everything I have left, and that is a lot.",
+  "I will run this match at a steady pace and finish it properly.",
+  "I will hold this match to the finish, and I will not let go early.",
+  "I will do this match properly, and I will look after you while I do it.",
+  "I will give this match everything I have got. Just one thing at a time.",
+  "I will give this match my whole heart, and I will not hold anything back.",
+  "I will wrestle this match, and I will ask my questions in the ring.",
+  "I will watch every small thing in this match, and I will use what I see.",
+  "I will give this match everything, and I will try to get it right this time.",
+  "I will fight this match cleanly, and I will not look for an edge outside the rules.",
+  "I will move early in this match, and I will not wait to be asked.",
+  "I will measure every step of this match, and I will finish it exactly.",
+  "I will wrestle this match politely, and I will see who really holds the advantage.",
+  "I will fill this room properly, and I will make the stakes plain.",
+  "I will wrestle this match and I will listen to every correction you give me.",
+  "I will wrestle this match with care, and I will make sure we both leave in good order.",
+  "I will give this match everything I have, and I will be careful while I do it.",
+  "I will wrestle this match to the standard. One, I will be careful. Two, I will be honest. Three, I will finish.",
+  "I will give this match everything I have, and I will keep the room lit to the end.",
+  "I will give this match everything I have, and I will try to slow down for the important bits.",
+  "I will wrestle this match with a clear plan, and I will not leave the landing to chance.",
+  "I will give this match everything, and I will keep my head on while I do it.",
+  "I will wrestle this match for the crowd, and I will make sure they enjoy it.",
+  "I will wrestle this match with control, and I will finish it cleanly.",
+  "I will wrestle this match within the stated framework, and I will reach the conclusion honestly.",
+  "I will fight this match on my own terms, and I will not say much about it.",
+  "I will give this match everything I have, and I will learn as I go.",
+  "I will wrestle this match with careful questions, and I will let the result answer them.",
+  "I will wrestle this match carefully, and I will show the young ones how it is done.",
+  "I will wrestle this match on the evidence, and the result will tell its own story.",
+  "I will wrestle this match with a clear conscience, and I will leave the judgement to the people."
+ ],
+ "vo_plain": [
+  "I'll finish it. Simple as that.",
+  "My objective is clear. I aim to take it.",
+  "My approach is measured. I plan to finish this properly.",
+  "Plain and straight: I am here to wrestle this one, and I am going all out.",
+  "I am here to put on a show, and I intend to do it properly.",
+  "I am ready to give the crowd something they cannot explain, and I mean that.",
+  "My approach is precise. I say a thing once, and I mean it.",
+  "I'm here to wrestle, and I'm going to enjoy it. Is that allowed?",
+  "My plan is simple: wrestle hard, and do not give anyone a second chance.",
+  "My approach is measured and cold. The result will cut clean on the night.",
+  "My approach is careful. I do not repeat myself unless I mean it.",
+  "I am going to wrestle carefully and finish with control.",
+  "My plan is simple: be honest and do the work properly.",
+  "My approach is careful and clear. I will show you on the night.",
+  "My approach is methodical. I will finish what I start.",
+  "My approach is precise, and I will play the detail on the night.",
+  "Plain: I wrestle my own match, and I do it my way.",
+  "My plan: be funny and fast. Be funny, be fast, and don't stand still.",
+  "My approach is patient. I am looking for the exact moment to act.",
+  "My approach is clean and direct. I will show you the work.",
+  "My plan is big air, simple! Bring the energy and keep the risk calculated.",
+  "My approach is patient and safe. You will see it on the night.",
+  "My approach is simple: say it clearly and then show it properly.",
+  "My approach is exact. I say what I will do, and I do it.",
+  "My approach is direct. I state what I accept, and I stand by it.",
+  "My approach is steady. I will keep turning up and keep going.",
+  "My approach is patient and steady. I will show you the timetable.",
+  "My approach is plain. I say the plan, then I stick to it.",
+  "My approach is steady and safe. Nothing clever.",
+  "My approach is straightforward. Give me the reason and I give you the match.",
+  "My plan is one thing at a time. Get the first thing right, then the next.",
+  "My approach is honest. You will feel it on the night.",
+  "Will you let me be patient? I want a fair start, and I will make sure I get one.",
+  "My approach is quiet. You will see it when the details start to matter.",
+  "My approach is honest and careful. You will see it on the night.",
+  "My approach is clean. You can see it in the hold.",
+  "My approach is patient but early. You will see it when the timing matters.",
+  "My approach is exact. You will see the numbers on the night.",
+  "My approach is courteous. You will see what that means on the night.",
+  "I work the room steadily. You will see the scene come together on the night.",
+  "I hope my approach is careful enough. I hope you will see me try my best on the night.",
+  "My approach is steady and fair. You will see it on the night, in the right way.",
+  "My approach is playful and prepared. You will see both on the night.",
+  "My approach is methodical. You will see it on the night, in order.",
+  "My approach is bold. You will see the fire on the night.",
+  "My approach is keen. You will see it on the night, and I will try to be patient in the middle.",
+  "My approach is careful about the landing. You will see the plan on the night.",
+  "My plan is one good idea. Be exciting, be safe, and remember to breathe.",
+  "I tell this patiently. You will see the story on the night.",
+  "My approach is playful and sharp. You will see the crowd respond on the night.",
+  "My approach is precise. I say what I will take, and I stand by it.",
+  "My approach is measured. You will see control on the night.",
+  "My approach is structured. You will see the framework on the night.",
+  "Simple plan. Nothing else. Nobody speaks for me in the ring.",
+  "My approach is careful. I am still learning, and I will do my best.",
+  "My approach is patient. You will see the pause on the night.",
+  "My approach is steady, the way I teach. You will see the lesson on the night.",
+  "My approach is analytic. You will see the test on the night.",
+  "My approach is plain and honest. You will see the judgement on the night."
+ ],
+ "cl_middle": [
+  "Whatever happens, you will know exactly where you stood with me.",
+  "Whatever the result, both sides will know where things stand.",
+  "Whatever happens, you will know where I stood.",
+  "Whatever happens, the people will remember where I stood.",
+  "Whatever happens, something will change in that ring.",
+  "Whatever happens, the words will be on the table in the order you said them.",
+  "Whatever happens, you'll see the real me in there.",
+  "Whatever happens, you will know my position.",
+  "Whatever happens, the cut will be honest.",
+  "Whatever happens, the record will be correct.",
+  "Whatever happens, you will know exactly where you were when it finished.",
+  "Whatever happens, I hope you know I meant every word.",
+  "Whatever the result, both of us will know exactly what happened.",
+  "Whatever happens, the result will follow from what we did.",
+  "Whatever happens, the song will be honest.",
+  "Whatever happens, you will know where I stood.",
+  "Whatever happens, the transition will tell the story.",
+  "Whatever happens, both of us will know we met the standard.",
+  "Whatever happens, I want you to know I gave it everything.",
+  "Whatever happens, I want you to leave knowing what you did right.",
+  "Whatever happens, you will remember what this taught you.",
+  "Whatever happens, the result will match what was claimed.",
+  "Whatever happens, the conditions will be on record.",
+  "Whatever happens, you will know exactly what the timetable said.",
+  "Whatever happens, you will know where I stood, and it will be the same place tomorrow.",
+  "Whatever happens, you will know exactly why I did it.",
+  "Whatever happens, I will have learned something. One thing.",
+  "Whatever happens, I want you to know this was real for me.",
+  "Whatever happens, will the people see what happened?",
+  "Whatever happens, the small things will be the story.",
+  "Whatever happens, I will not pretend it did not matter.",
+  "Whatever happens, the result will be clean.",
+  "Whatever happens, the early move will decide it.",
+  "Whatever happens, the result will be measured.",
+  "Whatever happens, I hope you will remember I was gracious about it.",
+  "Whatever happens, the room will remember how it looked.",
+  "Whatever happens, I hope you will tell me what I learned.",
+  "Whatever happens, I want everybody who looked up to me to be proud of how I acted.",
+  "Whatever happens, I want you to know I took it seriously.",
+  "Whatever happens, there will be a clear record of what happened.",
+  "Whatever happens, the room will remember how it looked.",
+  "Whatever happens, I want to know what happens next.",
+  "Whatever happens, I want to be sure you are all right afterwards.",
+  "Whatever happens, I want you to know I had a good time.",
+  "Whatever happens, the story will mean something.",
+  "Whatever happens, I want the crowd to remember the moment.",
+  "Whatever happens, I want you to leave knowing when to stop.",
+  "Whatever happens, the record will show the argument as it was made.",
+  "Whatever happens, you will know exactly where I stood.",
+  "Whatever happens, I want to learn from it.",
+  "Whatever happens, the observable record will speak for itself.",
+  "Whatever happens, I want the young ones watching to learn something.",
+  "Whatever happens, the evidence will speak for itself.",
+  "Whatever happens, I want the people to leave knowing what they saw was true."
+ ]
+};
+ const closingSuffix={
+ "vo_hard": [
+  "It will be hard, but I will win.",
+  "It won't be easy. I'll win anyway.",
+  "However hard it gets, I will win.",
+  "I expect a tough match, and I will win."
+ ],
+ "vo_plain": [
+  "I will win tonight.",
+  "I'm going to win this match.",
+  "I'll be the winner.",
+  "I will take the win."
+ ],
+ "cl_middle": [
+  "One clean fall in the centre of the ring.",
+  "No shortcuts. One clean fall in the middle of the ring.",
+  "Let's settle it with one clean fall in the centre."
+ ]
+};
+ function selectClosing(cat,ctx,seed,mem){
+  if(!ctx||ctx.stage!=='close'||ctx.side!=='w'||ctx.hasMouthpiece||ctx.protected!=='contextual-variant')return null;
+  const variant=ctx.variant,complete=completeClosings[variant]||[],leads=closingLeads[variant]||[];
+  const selection=select(cat,ctx,seed,{...mem,candidateFilter:r=>closingCommitment(r,ctx)||complete.includes(r.text)||leads.includes(r.text)});
+  if(!selection)return null;
+  const row=cat.lines(ctx.speaker.role,ctx.speaker.id).find(r=>r.id===selection.id);
+  if(!row)return null;
+  if(closingCommitment(row,ctx)||complete.includes(row.text))return selection;
+  const pool=closingSuffix[variant];
+  if(!pool||!leads.includes(row.text))return null;
+  return {...selection,text:selection.text+' '+pool[hash(seed+'|'+selection.id+'|commitment')%pool.length]};
+ }
  // A bounded compositional fallback: preserve the actual claim, vary the delivery.
  const replyFrames={
   precise:['I am not disputing your {strength}. Solving that problem is my job.','Then the question is how I deal with your {strength}. I intend to answer it in the ring.'],
@@ -192,5 +461,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,closingCommitment,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,closingCommitment,selectClosing,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);
