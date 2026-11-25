@@ -69,6 +69,12 @@
   "Right, one thing at a time. I can't prove that bit, so forget it. Let's wrestle.",
   "Nice, got it. That's cleared up. Next thing: the match!",
   "Okay! Leave that out and show me what you've got."
+ ],
+ "nikita": [
+  "Why did I say that? Good question. I haven't got one example that proves it. I withdraw it.",
+  "Ask me for specifics and I should have them ready. I don't. That accusation goes.",
+  "Right. You've answered the question. Don't bring that claim back without evidence.",
+  "That's clearer. Now the question is what you can do in the ring."
  ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

@@ -69,6 +69,12 @@
   "You are correct to demand particulars. I cannot provide sufficient evidence.",
   "Correction accepted. The allegation is removed; the sporting contest remains.",
   "Good. That point is settled. Maintain the same discipline in the ring."
+ ],
+ "red": [
+  "Fair. Can't prove that one. Forget it.",
+  "No example to give you. I'm here to wrestle, not make one up.",
+  "Right. That's done. Get in the ring.",
+  "Good. Leave it there and fight me."
  ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
