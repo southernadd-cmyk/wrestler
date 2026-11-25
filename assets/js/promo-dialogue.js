@@ -1946,14 +1946,217 @@
   const before=reviewedBankReuse[id],extra=bankReuseExtension[id];
   return [id,[(before||extra)[0],...new Set([...(before?.slice(1)||[]),...(extra?.slice(1)||[])])]];
  })));
+ // G4B.2: additional exact-text approvals from the original banks, not
+ // new prose. Preserve V1/V2 choices; only previously uncovered exchanges
+ // can reach the reviewed V3 pool.
+ const bankReuseRecovery=freeze({
+ "eira.c6.19": [
+  3503174020,
+  "evidence"
+ ],
+ "alina.c6.19": [
+  1969052019,
+  "evidence"
+ ],
+ "felix.c6.24": [
+  4260084300,
+  "evidence"
+ ],
+ "ezra.c2.32": [
+  1738791053,
+  "study"
+ ],
+ "brick.c1.32": [
+  1348510521,
+  "study"
+ ],
+ "juno.c1.32": [
+  88521126,
+  "study"
+ ],
+ "dee.c1.32": [
+  1283727235,
+  "study"
+ ],
+ "val.c1.32": [
+  2291783937,
+  "study"
+ ],
+ "otis.c2.32": [
+  4200002419,
+  "study"
+ ],
+ "kira.c2.32": [
+  478785513,
+  "study"
+ ],
+ "silas.c2.32": [
+  945932923,
+  "study"
+ ],
+ "tori.c3.32": [
+  3982778112,
+  "study"
+ ],
+ "iris.c7.07": [
+  3096654167,
+  "experience"
+ ],
+ "gus.c5.07": [
+  3307784962,
+  "experience"
+ ],
+ "tomasash.c8.07": [
+  1808654183,
+  "experience"
+ ],
+ "mae.c5.07": [
+  444813930,
+  "experience"
+ ],
+ "rex.c1.07": [
+  1650129344,
+  "name"
+ ],
+ "sol.c1.07": [
+  2469911262,
+  "name"
+ ],
+ "dee.c1.07": [
+  772282711,
+  "name"
+ ],
+ "nico.c2.07": [
+  2146125994,
+  "name"
+ ],
+ "red.c2.07": [
+  4283397029,
+  "name"
+ ],
+ "imani.c2.06": [
+  803463426,
+  "name"
+ ],
+ "kit.c1.14": [
+  2470924840,
+  "audience"
+ ],
+ "sol.c1.14": [
+  3022552077,
+  "audience"
+ ],
+ "dee.c1.14": [
+  2699973405,
+  "audience"
+ ],
+ "nico.c2.14": [
+  3416069276,
+  "audience"
+ ],
+ "imani.c2.14": [
+  945872802,
+  "audience"
+ ],
+ "kezia.c6.19": [
+  1563355487,
+  "proof"
+ ],
+ "vera.c6.07": [
+  3806768541,
+  "effort",
+  "proof"
+ ],
+ "rocco.c3.07": [
+  3321781979,
+  "respect"
+ ],
+ "cleo.c8.19": [
+  320072425,
+  "proof"
+ ],
+ "ezra.c2.21": [
+  3792890441,
+  "proof"
+ ],
+ "malik.c3.19": [
+  4275477554,
+  "effort",
+  "proof"
+ ],
+ "tori.c3.19": [
+  3643742584,
+  "effort",
+  "proof"
+ ],
+ "sol.c1.24": [
+  3506592496,
+  "proof",
+  "effort"
+ ],
+ "mara.c1.14": [
+  2276375344,
+  "proof"
+ ],
+ "otis.c2.14": [
+  3570035402,
+  "effort",
+  "proof"
+ ],
+ "rocco.c3.13": [
+  403816714,
+  "talking"
+ ],
+ "juno.c1.14": [
+  668627380,
+  "status"
+ ],
+ "cal.c2.14": [
+  85495408,
+  "status"
+ ],
+ "silas.c2.14": [
+  3587285000,
+  "status"
+ ],
+ "rocco.c3.22": [
+  2773378326,
+  "ground"
+ ],
+ "val.c1.23": [
+  2961074336,
+  "outside"
+ ],
+ "night.c2.23": [
+  2456556867,
+  "outside"
+ ],
+ "dee.c1.23": [
+  3143448021,
+  "outside"
+ ],
+ "silas.c2.23": [
+  3272792330,
+  "outside"
+ ],
+ "mara.c1.23": [
+  2896652790,
+  "outside"
+ ]
+});
+ const reviewedBankReuseV3=freeze(Object.fromEntries([...new Set([...Object.keys(reviewedBankReuseV2),...Object.keys(bankReuseRecovery)])].map(id=>{
+  const before=reviewedBankReuseV2[id],extra=bankReuseRecovery[id];
+  return [id,[(before||extra)[0],...new Set([...(before?.slice(1)||[]),...(extra?.slice(1)||[])])]];
+ })));
  function selectReviewedBankResponse(cat,ctx,seed,mem,sem,version=1){
   if(!ctx||!sem||ctx.hasMouthpiece||ctx.stage!=='answer'||ctx.action!=='turn'||
      (ctx.protected&&ctx.protected!=='contextual-variant')||
      (ctx.side==='w'?sem.move!=='rebut':sem.move!=='counter'))return null;
   // First honour the old reviewed pool, so adding more topics does not
   // reshuffle an already supported exchange or its history IDs.
+  if(version===3){const prior=selectReviewedBankResponse(cat,ctx,seed,mem,sem,2);if(prior)return prior;}
   if(version===2){const prior=selectReviewedBankResponse(cat,ctx,seed,mem,sem,1);if(prior)return prior;}
-  const reviewed=version===2?reviewedBankReuseV2:reviewedBankReuse;
+  const reviewed=version===3?reviewedBankReuseV3:version===2?reviewedBankReuseV2:reviewedBankReuse;
   const matchesClaim=row=>{
    const r=reviewed[row.id];
    return !!r&&r[0]===hash(row.text)&&r.slice(1).includes(sem.claim)&&row.side===ctx.side;
@@ -2304,5 +2507,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,closingCommitment,selectClosing,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);

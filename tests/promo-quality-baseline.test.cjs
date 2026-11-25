@@ -77,6 +77,7 @@ for(const [i,w] of roster.entries()){
   const rival=j%2?{heat:55,matches:2,closed:false}:null;
   const st=Mic.begin(c,w,f,rival,null,p,{directed:process.env.PROMO_AUDIT_LEGACY!=='1',formats:process.env.PROMO_AUDIT_LEGACY!=='1',dialogue:process.env.PROMO_AUDIT_LEGACY!=='1',authored:process.env.PROMO_AUDIT_LEGACY!=='1',banks:promoBanks(w.id,f.id),composition:process.env.PROMO_AUDIT_LEGACY!=='1',semantic:process.env.PROMO_AUDIT_LEGACY!=='1'});
   if(st.semantic)delete st.semantic.claimClassification; // frozen historical policy for paired G1–G3 comparisons
+  if(st.authoredDialogue?.semanticBankReuse===3)st.authoredDialogue.semanticBankReuse=2;
   for(const bank of st.authoredDialogue?.banks||[])for(const row of bank.rows){const id=bank.owner+'.'+row[0];availableIds.add(id);slot([row[1],row[2],row[3]].join('|')).available.add(id);}
   const oldFlow=st.openingFlow===1&&j===0?JSON.parse(JSON.stringify(st)):null;if(oldFlow)delete oldFlow.openingFlow;
   const rounds=[],choices=[],spoken=[];
@@ -362,17 +363,18 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  const count=x=>Object.values(x).reduce((a,b)=>a+b,0);
  const isEligible=r=>!['semantic_guard','no_preceding_response','policy_disabled'].includes(r);
  const describe=x=>{const eligible=Object.entries(x).filter(([r])=>isEligible(r)).reduce((a,[,n])=>a+n,0);return {attempts:count(x),eligible,authored:x.authored,authoredPct:pct(x.authored,eligible),reasons:Object.fromEntries(Object.entries(x).filter(([,n])=>n))};};
- const bankReview=(row,sem)=>L.reviewedBankReuseV2[row.id]?.slice(1).includes(sem.claim);
+ const bankReview=(row,sem)=>L.reviewedBankReuseV3[row.id]?.slice(1).includes(sem.claim);
  const selectRoutes=(cat,ctx,seed,mem,sem)=>{
   if(mem.reviewedAck===1&&ctx.stage==='push'&&ctx.action==='acknowledge'&&(ctx.side==='f'||['unclassified','agreement','end'].includes(sem.claim))){
    const own=L.selectAcknowledgement(cat,ctx,seed,mem);if(own)return own;
   }
   if(mem.reviewedContext===1){const own=L.selectSemanticResponse(cat,ctx,seed,mem,sem);if(own)return own;}
-  if([1,2].includes(mem.semanticBankReuse))return L.selectReviewedBankResponse(cat,ctx,seed,mem,sem,mem.semanticBankReuse);
+  if([1,2,3].includes(mem.semanticBankReuse))return L.selectReviewedBankResponse(cat,ctx,seed,mem,sem,mem.semanticBankReuse);
   return null;
  };
  let activeScene=null,observations=0,emittedChecks=0,sceneCount=0,oldUnknown=0,newUnknown=0,classifiedOpenings=0;
  const recoveredSources=new Map(),remainingUnknown=new Map();
+ let recoveryPairs=0,recoveryHits=0;const recoveryIds=new Set(),recoveryOwners=new Set(),recoveryTopics=new Map();
  root.__promoDemandObserver=(st,ctx,mem,line,cat,seed)=>{
   assert.ok(activeScene,'observer must only run on the balanced workload');
   const prev=S.latest(st.log,ctx.side==='w'?'f':'w')?.entry;
@@ -433,6 +435,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
   // One scene per identity verifies the observation hook cannot affect
   // transcript, state, or result compared with the uninstrumented engine.
   const plain=j===0?plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts):null;
+  const oldBankPolicy=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);oldBankPolicy.authoredDialogue.semanticBankReuse=2;
   const previous=JSON.parse(JSON.stringify(st));delete previous.semantic.claimClassification;
   inc(formatsSeen,st.director?.format||'legacy');
   activeScene=[];
@@ -447,7 +450,24 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
     // the demand counts. Compare the same opening against the prior policy.
     Mic.choose(previous,id);
    }
+   const oldAt=oldBankPolicy.log.length;
+   plainRoot.OfficeMic.choose(oldBankPolicy,id);
    Mic.choose(st,id);
+   if(round==='answer'&&id==='turn'){
+    recoveryPairs++;
+    const old=oldBankPolicy.log.slice(oldAt),now=st.log.slice(before);
+    for(const side of ['w','f']){
+     const a=now.find(e=>e.side===side),b=old.find(e=>e.side===side);
+     assert.ok(a&&b);assert.equal(a.semantic?.claim,b.semantic?.claim);assert.equal(a.semantic?.move,b.semantic?.move);
+     if(b.authoredId)assert.equal(a.authoredId,b.authoredId,'existing V2 authored answer must not be displaced');
+     if(a.authoredId&&!b.authoredId){
+      assert.ok(L.bankReuseRecovery[a.authoredId]?.slice(1).includes(a.semantic.claim),'new hit must be exact recovery approval');
+      recoveryHits++;recoveryIds.add(a.authoredId);recoveryOwners.add(a.dialogueSlot.owner);inc(recoveryTopics,side+'|'+a.semantic.claim);
+     }
+    }
+   }
+   assert.equal(JSON.stringify(st.core),JSON.stringify(oldBankPolicy.core),'G4B2 graph parity');
+   for(const k of ['meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(oldBankPolicy[k]),'G4B2 '+k+' parity');
    if(round==='open'){
     const before=S.latest(previous.log,'f')?.entry,after=S.latest(st.log,'f')?.entry;
     assert.ok(before&&after,'opening has opponent reply');
@@ -486,7 +506,10 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  assert.ok(classifiedOpenings>0&&newUnknown<oldUnknown,'G4B.1 must recover previously unknown openings');
  const classification={oldUnknown,newUnknown,recovered:classifiedOpenings,scenes:sceneCount,sources:Object.fromEntries(recoveredSources),remaining:Object.fromEntries(remainingUnknown)};
  console.log('G4B1 CLASSIFICATION '+JSON.stringify(classification));
- const report={classification,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
+ const recovery={pairedExchanges:recoveryPairs,recoveredTurns:recoveryHits,distinctIds:recoveryIds.size,characters:recoveryOwners.size,topics:Object.fromEntries(recoveryTopics)};
+ assert.ok(recoveryHits>0&&recoveryOwners.size>0,'G4B2 live recovery');
+ console.log('G4B2 RECOVERY '+JSON.stringify(recovery));
+ const report={classification,recovery,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
  console.log('G4A DEMAND SUMMARY '+JSON.stringify({...report,topics:undefined,actors:undefined,detail:undefined}));
  for(const x of topics)console.log('G4A TOPIC '+JSON.stringify(x));
  for(const x of actors)console.log('G4A ACTOR '+JSON.stringify(x));
