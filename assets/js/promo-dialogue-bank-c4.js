@@ -333,4 +333,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH2={
+  "miro": {
+    "w": [
+      "I know you've had more time to learn things. I'm hoping to show you something you haven't had to answer yet.",
+      "Right, I won't argue with your experience. I would just like the chance to find out what mine is worth against it."
+    ],
+    "f": [
+      "Honestly, having been through a few difficult exchanges helps me keep thinking when the first idea goes wrong.",
+      "I still get things wrong, but experience has taught me not to give up on a move the moment it gets awkward."
+    ]
+  },
+  "nate": {
+    "w": [
+      "Years. Fine. They don't wrestle the match for you.",
+      "Keep your experience. I'll make you use it."
+    ],
+    "f": [
+      "Experience means I know when not to bite. Try another opening.",
+      "I learned to make my own decisions. That's what those years are worth."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

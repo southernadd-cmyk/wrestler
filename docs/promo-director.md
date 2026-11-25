@@ -259,3 +259,7 @@ Eighty-two individually authored evidence acknowledgements for the remaining 41 
 ## G4H.1 — experience rebuttal and counter pilot
 
 G4G.6 successful audit (run 45697755023): 35/38 player experience rebuttals and 38/38 opponent experience counters lacked authored dialogue. Four highest-demand owners (Cleo, Alina, Bao, Jun; alphabetical tie-break) receive two distinct replies per side, 16 rows targeting 13 sampled recoveries (10 player, 3 opponent). Their ordinary bank rows have no direct experience language suitable for reuse. Reuse existing semantic catalogue, guards and priority; new per-scene policy marker keeps old snapshots unchanged. Pair answer turns with the prior marker absent; require all previous replies and gameplay state unchanged, no lost authored turns. Other experience moves remain outside this pilot. CI pending.
+
+## G4H.2 — second experience batch
+
+G4H.1 recovered 13 sampled experience exchanges with zero lost authored turns (run 45698486324). Miro, Morgan, Nate and Rex are the next highest-demand owners, three missing turns each. Add two character-specific player rebuttals and two opponent counters per owner (16 new rows; 32 across eight owners). Target twelve more sampled recoveries (seven player, five opponent), 25 cumulatively, preserving the thirteen prior hits. Existing selection policy, stable prior IDs, save schema and CI configuration unchanged. Regenerate four bank assets and manifest. CI pending.

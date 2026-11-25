@@ -291,4 +291,17 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const experienceRepliesH2={
+  "rex": {
+    "w": [
+      "You've put the years in. Fair enough. Still got to do tonight's shift.",
+      "I respect a veteran who can do the job. Let's see what the years have left you with."
+    ],
+    "f": [
+      "Years teach you when to plant your feet and when to let a bloke go past.",
+      "Experience doesn't do the work for me. It tells me where to put the effort."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -301,4 +301,17 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const experienceRepliesH2={
+  "morgan": {
+    "w": [
+      "Experience is an asset, not a guarantee of the return. This match has its own terms.",
+      "Your years have a value. I won't agree to pay a premium until I see how you use them."
+    ],
+    "f": [
+      "The return on experience is knowing which position is worth taking before you commit to it.",
+      "You may present a different proposition. Experience helps me recognise where the leverage lies."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
