@@ -225,4 +225,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (strengthCountersF3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF4={
+  "nate": [
+    "My {strength}. You have a plan. Fine. I decide when to use them.",
+    "You've talked about stopping my {strength}. Show me the result. Nobody else is doing it for you."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

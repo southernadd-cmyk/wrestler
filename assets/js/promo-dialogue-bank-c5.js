@@ -212,4 +212,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (strengthCountersF3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF4={
+  "nikita": [
+    "You've named my {strength}. Good. Which part of your answer still works when I change the timing?",
+    "Stop talking around my {strength}. Show me exactly how you intend to deal with them under pressure."
+  ],
+  "nolan": [
+    "You've done your homework on my {strength}. Now comes the practical lesson: keeping your discipline when I use them.",
+    "A good answer to my {strength} takes more than preparation. Show me you can apply it cleanly, then do it again."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

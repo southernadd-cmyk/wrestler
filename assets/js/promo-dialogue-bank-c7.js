@@ -227,4 +227,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (strengthCountersF3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF4={
+  "liya": [
+    "You've got an answer to my {strength}? Lovely. I've practised a few ways to surprise you without making a mess of the match.",
+    "I know you've been preparing for my {strength}. That's the fun bit: finding out whether I can still surprise you."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
