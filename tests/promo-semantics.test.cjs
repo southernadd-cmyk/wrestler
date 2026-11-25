@@ -129,9 +129,31 @@ for(let i=0;i<240;i++){
 }
 assert.ok(fallbackLines.open.size>=6&&fallbackLines.answer.size>=6,'both exception pools exercised');
 console.log('PASS graph fallback variety: '+JSON.stringify(fallbackCounts)+' replacements; '+fallbackLines.open.size+'/'+fallbackLines.answer.size+' distinct opening/answer replies; graph and outcome parity.');
+// G3B: reviewed questions and replies remain attached to the same topic.
+const followupTopics=['unclassified','end','proof','agreement','terms','outside','count'];
+for(const claim of followupTopics)for(const side of ['w','f']){
+ const reached=new Set();
+ for(let i=0;i<32;i++){
+  const s=clone(probe);s.seed='g3b-fixture-'+i;s.semantic.variety=1;s.semantic.followupFlow=1;
+  s.log=[{side:side==='w'?'f':'w',line:'Previous spoken point.',...(side==='w'&&claim==='unclassified'?{}:{semantic:{kind:side==='w'?'claim':'response',claim}})}];
+  const c={...ctx,stage:'push',action:'press',side,speaker:{...ctx.speaker,id:side==='w'?w.id:f.id},voice:'gruff',protected:null};
+  const current=S.select(s,c),old=clone(s);delete old.semantic.followupFlow;
+  const previous=S.select(old,c);
+  assert.ok(current&&previous);assert.notEqual(current.text,previous.text);
+  assert.equal(current.semantic.claim,previous.semantic.claim);assert.equal(current.semantic.move,previous.semantic.move);assert.equal(current.semantic.replyTo,0);
+  assert.match(current.id,/\.g3b\./);assert.ok(!/[{}]/.test(current.text));
+  if(side==='w')assert.ok(current.text.endsWith('?'));
+  assert.equal(JSON.stringify(S.select(clone(s),c)),JSON.stringify(current),'G3B deterministic selection');
+  const protectedContext={...c,protected:'recorded-evidence'};
+  assert.equal(JSON.stringify(S.select(s,protectedContext)),JSON.stringify(S.select(old,protectedContext)),'G3B must not vary protected wording');
+  reached.add(current.text);
+ }
+ assert.ok(reached.size>=2,'G3B reach '+claim+' '+side);
+}
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
 const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;
+let followupPairs=0,followupChanges=0;const followupSpeakers=new Set(),followupClaims=new Set();
 const reached=new Set();
 for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
  const foe=opponents.filter(x=>x.id!==worker.id)[(i+j)% (opponents.filter(x=>x.id!==worker.id).length)];
@@ -143,7 +165,26 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
   assert.deepEqual(Array.from(choices,o=>o.id),Array.from(M.choices(y),o=>o.id));
   const desired=round==='open'?['proof','people','swagger','imagery','accusation','hometown','numbers'][j%7]:round==='answer'?j%4===0?'calm':'turn':round==='push'?j%2?'press':'acknowledge':['vow','clean','question','finisher','uncertainty'][j%5];
   const id=(choices.find(o=>o.id===desired)||choices[0]).id;
+  const previousFollowup=round==='push'&&id==='press'?clone(x):null,at=x.log.length;
+  if(previousFollowup){delete previousFollowup.semantic.followupFlow;M.choose(previousFollowup,id);}
   const saved=clone(x);M.choose(x,id);M.choose(y,id);M.choose(saved,id);M.choose(old,id);
+  if(previousFollowup){
+   followupPairs++;
+   assert.equal(JSON.stringify(x.core),JSON.stringify(previousFollowup.core),'G3B graph parity');
+   for(const k of ['meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(x[k]),JSON.stringify(previousFollowup[k]),'G3B '+k);
+   assert.equal(JSON.stringify(M.choices(x)),JSON.stringify(M.choices(previousFollowup)),'G3B next choices parity');
+   const now=x.log.slice(at),before=previousFollowup.log.slice(at);
+   assert.equal(JSON.stringify(now.filter(e=>!['w','f'].includes(e.side))),JSON.stringify(before.filter(e=>!['w','f'].includes(e.side))),'G3B crowd and stage parity');
+   for(const side of ['w','f']){
+    const a=now.find(e=>e.side===side),b=before.find(e=>e.side===side);
+    if(!a||!b||a.line===b.line)continue;
+    followupChanges++;followupSpeakers.add(side==='w'?worker.id:foe.id);followupClaims.add(a.semantic?.claim);
+    for(const k of ['claim','move','replyTo','kind','detail'])assert.equal(a.semantic?.[k],b.semantic?.[k],'G3B unchanged semantic '+k);
+    assert.equal(a.authoredId,b.authoredId,'G3B retains authored lead');
+    assert.match(a.composedId||a.semantic?.questionSource||'',/\.g3b\./);
+    assert.ok(!/[{}]/.test(a.line));
+   }
+  }
   assert.equal(JSON.stringify(x),JSON.stringify(saved),'semantic save/resume '+c.id);
  }
  const xr=M.result(x),yr=M.result(y),or=M.result(old);
@@ -202,6 +243,8 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
  }
  scenes++;
 }
+assert.ok(followupPairs>0&&followupChanges>10&&followupSpeakers.size>5&&followupClaims.size>=2,'G3B live dialogue reach');
+console.log('PASS G3B rival follow-up: '+followupChanges+' changed turns in '+followupPairs+' paired press exchanges; '+followupSpeakers.size+' speakers; claims '+[...followupClaims].join(', ')+'; graph, effects, options and semantic provenance retained.');
 assert.ok(responded>100&&counters>100&&press>0&&authoredSources>0&&graphSources>0&&unclassified>0&&reached.size>=8);
 assert.ok(authoredResponses>0&&ackIds.size>3,'reviewed authored acknowledgements are reachable');
 assert.ok(authoredPress>0&&pressIds.size>1,'reviewed character press lines reached');
