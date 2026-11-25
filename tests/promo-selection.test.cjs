@@ -9,7 +9,7 @@ const cat=L.catalogue(root.OfficePromoPilot),plain=x=>JSON.parse(JSON.stringify(
 const ids=['mara','brick','nova','magnus'];
 assert.deepEqual(Array.from(cat.coverage(),p=>p.owner).sort(),ids.map(x=>'wrestler:'+x).sort());
 const authored=new Map(root.OfficePromoPilot.flatMap(p=>p.lines.map(r=>[r.id,r])));
-assert.equal(authored.size,115);
+assert.equal(authored.size,146);
 for(const side of ['w','f'])assert.equal([...authored.values()].filter(r=>r.id.startsWith('nova.pilot.st.')&&r.when.semanticClaim==='study'&&r.stage==='answer'&&r.action==='turn'&&r.side===side).length,2,'Nova study expansion '+side);
 for(const side of ['w','f'])assert.equal([...authored.values()].filter(r=>r.id.startsWith('magnus.pilot.st.')&&r.when.semanticClaim==='study'&&r.stage==='answer'&&r.action==='turn'&&r.side===side).length,2,'Magnus study expansion '+side);
 for(const side of ['w','f'])assert.equal([...authored.values()].filter(r=>r.id.startsWith('magnus.pilot.ex.')&&r.when.semanticClaim==='experience'&&r.stage==='answer'&&r.action==='turn'&&r.side===side).length,2,'Magnus experience expansion '+side);
@@ -23,7 +23,7 @@ for(const owner of ['nova','magnus']){
   assert.equal(r.when.hasMouthpiece,false);
  }
 }
-assert.equal([...authored.values()].filter(r=>!r.when.semanticClaim).length,73,'original pilot rows preserved');
+assert.equal([...authored.values()].filter(r=>!r.when.semanticClaim&&!r.id.includes('.pilot.repair.')).length,73,'original pilot rows preserved');
 assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='evidence'&&r.id.startsWith('nova.pilot.ev.')).length,4,'Nova evidence expansion');
 assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='evidence'&&r.id.startsWith('magnus.pilot.ev.')).length,4,'Magnus evidence expansion');
 assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='evidence'&&r.id.startsWith('magnus.pilot.ep.')&&r.stage==='push'&&r.action==='press'&&r.side==='f').length,2,'Magnus evidence follow-up expansion');
@@ -33,6 +33,29 @@ assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='evidence'&
 assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='evidence'&&r.id.startsWith('nova.pilot.eq.')&&r.stage==='push'&&r.action==='press'&&r.side==='w').length,2,'Nova evidence question expansion');
 assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='strength'&&r.id.startsWith('magnus.pilot.sc.')&&r.stage==='answer'&&r.action==='turn'&&r.side==='f').length,2,'Magnus strength counter expansion');
 assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='strength'&&r.id.startsWith('nova.pilot.sc.')&&r.stage==='answer'&&r.action==='turn'&&r.side==='f').length,2,'Nova strength counter expansion');
+
+// Ordinary pilot completion: verify each added row against the real
+// selector, including closing commitments, literal claim tags and history.
+const repaired=[...authored.values()].filter(r=>r.id.includes('.pilot.repair.'));
+assert.equal(repaired.length,31);
+const repairedCounts={magnus:16,nova:15};
+for(const [owner,count] of Object.entries(repairedCounts)){
+ assert.equal(repaired.filter(r=>r.id.startsWith(owner+'.')).length,count);
+ for(const row of repaired.filter(r=>r.id.startsWith(owner+'.'))){
+  const speaker={id:owner,role:'wrestler',short:owner,style:'Technical',age:32};
+  const context={speaker,client:speaker,opponent:{id:'other',short:'Other',style:'Brawl'},stage:row.stage,action:row.action,side:row.side,variant:row.when.variants[0],protected:'contextual-variant',hasMouthpiece:false,strength:'hard strikes'};
+  const solo=L.catalogue([{owner,role:'wrestler',lines:[row]}]);
+  const selector=row.stage==='close'&&['vow','clean'].includes(row.action)?L.selectClosing:L.select;
+  const selected=selector(solo,context,'repair',{});
+  assert.equal(selected?.id,row.id,'reachable repaired row '+row.id);
+  assert.ok(cat.candidates(context).some(r=>r.id===row.id));
+  assert.equal(selector(solo,context,'repair',{recent:[row.id]}),null);
+  for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{protected:'closing-contract'},{hasMouthpiece:true}])assert.equal(selector(solo,{...context,...patch},'repair',{}),null);
+  if(row.side==='f'){const S=root.OfficePromoSemantics;assert.ok(S.fromBank(row.id,row.text)?.claim,'new opponent line must have a reviewed literal claim');assert.equal(S.fromBank(row.id,row.text+'!'),null);}
+  if(row.when.variants.includes('tu_strength'))assert.equal(L.selectSemanticResponse(solo,context,'repair',{}, {claim:'strength',move:'rebut',detail:'hard strikes'})?.id,row.id);
+ }
+}
+
 const liveAuthored=new Map(L.combine(root.OfficePromoPilot,root.OfficePromoBankC1,root.OfficePromoBankC2).flatMap(p=>p.lines.map(r=>[r.id,r])));
 assert.equal(new Set(Array.from(authored.values(),r=>r.text)).size,authored.size);
 const actor={id:'mara',role:'wrestler',age:32,style:'Story',short:'Vale'},other={id:'nova',role:'wrestler',short:'Bell',style:'Technical'};

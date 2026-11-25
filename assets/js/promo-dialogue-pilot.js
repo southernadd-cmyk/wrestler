@@ -217,4 +217,259 @@
   }
 };
  for(const pack of root.OfficePromoPilot)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const ordinaryPilotCompletion={
+  "magnus": [
+    [
+      "open",
+      "people",
+      "w",
+      "opening",
+      "p_working",
+      "Ladies and gentlemen, you have paid for an occasion. I shall ensure it consists of wrestling rather than an extended intermission."
+    ],
+    [
+      "open",
+      "people",
+      "w",
+      "opening",
+      "p_short",
+      "I shall spare you a lengthy address. The performance itself is the important part."
+    ],
+    [
+      "open",
+      "proof",
+      "f",
+      "challenge",
+      "pr_tech",
+      "A splendid theory. Let us see whether your feet remain beneath you when I attempt the takedown."
+    ],
+    [
+      "open",
+      "proof",
+      "f",
+      "rebuttal",
+      "pr_risk",
+      "You have overlooked one rather important detail: I choose when I leave the canvas."
+    ],
+    [
+      "open",
+      "proof",
+      "f",
+      "rebuttal",
+      "pr_stall",
+      "There is a distinction between wasting time and choosing the pace. I intend to demonstrate it."
+    ],
+    [
+      "answer",
+      "turn",
+      "w",
+      "rebuttal",
+      "tu_strength",
+      "I acknowledge your {strength}. The task before me is to overcome them, not admire them."
+    ],
+    [
+      "answer",
+      "calm",
+      "w",
+      "respect",
+      "ca_simple",
+      "Enough discussion. The canvas is quite capable of settling this matter."
+    ],
+    [
+      "answer",
+      "challenge",
+      "w",
+      "challenge",
+      "ch_one_fall",
+      "One fall, if you please, with no assistance from the wings."
+    ],
+    [
+      "answer",
+      "challenge",
+      "w",
+      "challenge",
+      "ch_mat",
+      "If the mat is your preferred stage, I shall be delighted to meet you upon it."
+    ],
+    [
+      "answer",
+      "challenge",
+      "w",
+      "challenge",
+      "ch_ground",
+      "Keep both feet on the canvas for a moment. Let us see how you fare there."
+    ],
+    [
+      "answer",
+      "challenge",
+      "w",
+      "challenge",
+      "ch_stay",
+      "I insist that the performance remain inside the ropes. No excursions into the auditorium."
+    ],
+    [
+      "close",
+      "vow",
+      "w",
+      "closing",
+      "vo_hard",
+      "I anticipate a demanding contest. I will win it."
+    ],
+    [
+      "close",
+      "vow",
+      "w",
+      "closing",
+      "vo_plain",
+      "There is little more to announce. I intend to win."
+    ],
+    [
+      "close",
+      "clean",
+      "w",
+      "closing",
+      "cl_middle",
+      "A clean fall in the centre, with neither interference nor excuses."
+    ],
+    [
+      "close",
+      "uncertainty",
+      "w",
+      "closing",
+      "un_done",
+      "I have said all that the occasion requires. The rest belongs to the ring."
+    ],
+    [
+      "close",
+      "uncertainty",
+      "w",
+      "closing",
+      "un_plan",
+      "I have made my preparations. You may discover their particulars when the bell sounds."
+    ]
+  ],
+  "nova": [
+    [
+      "open",
+      "people",
+      "w",
+      "opening",
+      "p_short",
+      "There is no advantage in explaining every movement in advance. Watch the match and judge what works."
+    ],
+    [
+      "open",
+      "swagger",
+      "w",
+      "opening",
+      "sw_pose",
+      "Look at the position of my feet. Balance is a better advertisement than a pose."
+    ],
+    [
+      "open",
+      "proof",
+      "f",
+      "challenge",
+      "pr_brawl",
+      "You can explain the mechanics of a strike after you have absorbed one. First show me how you keep your balance."
+    ],
+    [
+      "open",
+      "proof",
+      "f",
+      "rebuttal",
+      "pr_stall",
+      "I am not obliged to move at your preferred rate. Control of the pace is part of the contest."
+    ],
+    [
+      "open",
+      "people",
+      "f",
+      "respect",
+      "p_working",
+      "Agreed. They deserve a match in which both wrestlers put in the work from the bell."
+    ],
+    [
+      "answer",
+      "calm",
+      "w",
+      "pressure",
+      "ca_restraint",
+      "Raising the volume will not change the position we are arguing about."
+    ],
+    [
+      "answer",
+      "challenge",
+      "w",
+      "challenge",
+      "ch_one_fall",
+      "One fall. No outside assistance. We have enough variables to deal with already."
+    ],
+    [
+      "answer",
+      "challenge",
+      "w",
+      "challenge",
+      "ch_mat",
+      "Let's work on the canvas. I want to test your technique where both of us can establish a base."
+    ],
+    [
+      "answer",
+      "challenge",
+      "w",
+      "challenge",
+      "ch_ground",
+      "Keep your feet on the mat. I want to see who controls the next shift of weight."
+    ],
+    [
+      "answer",
+      "challenge",
+      "w",
+      "challenge",
+      "ch_stay",
+      "Stay inside the ropes. We can resolve the question without changing the boundaries of the contest."
+    ],
+    [
+      "close",
+      "vow",
+      "w",
+      "closing",
+      "vo_hard",
+      "It will be a difficult match. I intend to win it."
+    ],
+    [
+      "close",
+      "vow",
+      "w",
+      "closing",
+      "vo_plain",
+      "My objective is uncomplicated. I will win this match."
+    ],
+    [
+      "close",
+      "clean",
+      "w",
+      "closing",
+      "cl_middle",
+      "A clean fall in the centre of the ring. That is the result I am working towards."
+    ],
+    [
+      "close",
+      "uncertainty",
+      "w",
+      "closing",
+      "un_done",
+      "I have nothing further to add before we establish the first grip."
+    ],
+    [
+      "close",
+      "uncertainty",
+      "w",
+      "closing",
+      "un_plan",
+      "I have a plan for the initial exchange. What follows depends on the position we actually reach."
+    ]
+  ]
+};
+ for(const pack of root.OfficePromoPilot)for(const [i,[stage,action,side,category,variant,text]] of (ordinaryPilotCompletion[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.repair.'+String(i+1).padStart(2,'0'),stage,action,side,category,text,when:{hasMouthpiece:false,variants:[variant]}});
 })(typeof window!=='undefined'?window:globalThis);
