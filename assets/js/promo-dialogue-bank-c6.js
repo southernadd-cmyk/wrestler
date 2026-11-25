@@ -304,4 +304,17 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const experienceRepliesH1={
+  "alina": {
+    "w": [
+      "I respect the years it takes to learn this. I won't pretend those years decide what happens between us.",
+      "Experience matters to me, but so does what we do with this particular chance."
+    ],
+    "f": [
+      "The point of experience is that you learn to listen when a match changes, not that you stop learning.",
+      "Years in wrestling only matter if the lessons make you better when the pressure comes."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -255,3 +255,7 @@ Ten additional owner-specific lines for Sylvia, Theo, Tomas Ash, Vera and Zane. 
 ## G4G.6 — original roster acknowledgement completion
 
 Eighty-two individually authored evidence acknowledgements for the remaining 41 original owners, including the pilot-only Nova and Magnus. All 80 original characters now have two dedicated scoped acknowledgements (160 rows). Retain the fixed sample's 47 recoveries across 39 owners with zero losses; roster-wide fixture coverage is distinct from sampled runtime recovery. Regenerate compact assets and manifest, remove superseded revisions, and check selection scope and history guards. Selection engine, UI and workflows unchanged. CI pending.
+
+## G4H.1 — experience rebuttal and counter pilot
+
+G4G.6 successful audit (run 45697755023): 35/38 player experience rebuttals and 38/38 opponent experience counters lacked authored dialogue. Four highest-demand owners (Cleo, Alina, Bao, Jun; alphabetical tie-break) receive two distinct replies per side, 16 rows targeting 13 sampled recoveries (10 player, 3 opponent). Their ordinary bank rows have no direct experience language suitable for reuse. Reuse existing semantic catalogue, guards and priority; new per-scene policy marker keeps old snapshots unchanged. Pair answer turns with the prior marker absent; require all previous replies and gameplay state unchanged, no lost authored turns. Other experience moves remain outside this pilot. CI pending.

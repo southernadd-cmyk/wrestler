@@ -78,7 +78,7 @@ for(const [i,w] of roster.entries()){
   const st=Mic.begin(c,w,f,rival,null,p,{directed:process.env.PROMO_AUDIT_LEGACY!=='1',formats:process.env.PROMO_AUDIT_LEGACY!=='1',dialogue:process.env.PROMO_AUDIT_LEGACY!=='1',authored:process.env.PROMO_AUDIT_LEGACY!=='1',banks:promoBanks(w.id,f.id),composition:process.env.PROMO_AUDIT_LEGACY!=='1',semantic:process.env.PROMO_AUDIT_LEGACY!=='1'});
   if(st.semantic)delete st.semantic.claimClassification; // frozen historical policy for paired G1–G3 comparisons
   if(st.authoredDialogue?.semanticBankReuse===3)st.authoredDialogue.semanticBankReuse=2;
-  if(st.authoredDialogue){delete st.authoredDialogue.reviewedSpecialist;delete st.authoredDialogue.authoredTopics;delete st.authoredDialogue.authoredFollowups;delete st.authoredDialogue.authoredStrengthCounters;delete st.authoredDialogue.authoredEvidenceAcknowledgements;}
+  if(st.authoredDialogue){delete st.authoredDialogue.reviewedSpecialist;delete st.authoredDialogue.authoredTopics;delete st.authoredDialogue.authoredFollowups;delete st.authoredDialogue.authoredStrengthCounters;delete st.authoredDialogue.authoredEvidenceAcknowledgements;delete st.authoredDialogue.authoredExperience;}
   for(const bank of st.authoredDialogue?.banks||[])for(const row of bank.rows){const id=bank.owner+'.'+row[0];availableIds.add(id);slot([row[1],row[2],row[3]].join('|')).available.add(id);}
   const oldFlow=st.openingFlow===1&&j===0?JSON.parse(JSON.stringify(st)):null;if(oldFlow)delete oldFlow.openingFlow;
   const rounds=[],choices=[],spoken=[];
@@ -373,6 +373,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
   if([1,2,3].includes(mem.semanticBankReuse)){const own=L.selectReviewedBankResponse(cat,ctx,seed,mem,sem,mem.semanticBankReuse);if(own)return own;}
   if(mem.reviewedSpecialist===1){const own=L.selectSpecialistResponse(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredTopics===1){const own=L.selectAuthoredTopic(cat,ctx,seed,mem,sem);if(own)return own;}
+  if(mem.authoredExperience===1){const own=L.selectAuthoredExperience(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredFollowups===1){const own=L.selectAuthoredFollowup(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredQuestions===1){const own=L.selectAuthoredQuestion(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredStrengthCounters===1){const own=L.selectAuthoredStrengthCounter(cat,ctx,seed,mem,sem);if(own)return own;}
@@ -393,6 +394,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  let strengthHits=0,strengthLosses=0,strengthPairs=0;const strengthIds=new Set(),strengthOwners=new Set();
  let questionHits=0,questionLosses=0,questionPairs=0;const questionIds=new Set(),questionOwners=new Set();
  let followupHits=0,followupLosses=0,followupPairsD=0;const followupIdsD=new Set(),followupOwnersD=new Set();
+ let experiencePairs=0,experienceHits=0,experienceLosses=0;const experienceOwners=new Set(),experienceIds=new Set(),experienceSides=new Map();
  let topicHits=0,topicLosses=0,topicPairs=0;const topicIds=new Set(),topicOwners=new Set(),topicSides=new Map();
  const eighthEvidenceBatch=new Set(['rex','faye','miro','cass','alina','eira','vera','liya','leandro','tomasash']);
  let batchHits=0;const batchIds=new Set(),batchOwners=new Set(),batchSides=new Map();
@@ -487,7 +489,22 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
    if(priorStrength){delete priorStrength.authoredDialogue.authoredStrengthCounters;plainRoot.OfficeMic.choose(priorStrength,id);}
    const priorEvidenceAck=round==='push'&&id==='acknowledge'?JSON.parse(JSON.stringify(st)):null;
    if(priorEvidenceAck){delete priorEvidenceAck.authoredDialogue.authoredEvidenceAcknowledgements;plainRoot.OfficeMic.choose(priorEvidenceAck,id);}
+   const priorExperience=round==='answer'&&id==='turn'?JSON.parse(JSON.stringify(st)):null;
+   if(priorExperience){delete priorExperience.authoredDialogue.authoredExperience;plainRoot.OfficeMic.choose(priorExperience,id);}
    Mic.choose(st,id);
+   if(priorExperience){
+    experiencePairs++;for(const k of ['core','meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(priorExperience[k]),'G4H1 '+k+' parity');
+    assert.equal(JSON.stringify(Mic.choices(st)),JSON.stringify(plainRoot.OfficeMic.choices(priorExperience)),'G4H1 choices parity');
+    const current=st.log.slice(before),previous=priorExperience.log.slice(before);
+    assert.equal(current.length,previous.length);
+    for(let n=0;n<current.length;n++){
+     const a=current[n],b=previous[n];
+     for(const k of ['claim','move','replyTo','kind','detail'])assert.equal(a.semantic?.[k],b.semantic?.[k],'G4H1 '+k+' parity');
+     if(b.authoredId&&!a.authoredId)experienceLosses++;
+     if(a.authoredId&&!b.authoredId){assert.equal(a.semantic?.experienceBank,1);assert.equal(a.semantic.claim,'experience');assert.equal(a.semantic.move,a.side==='w'?'rebut':'counter');experienceHits++;experienceOwners.add(a.dialogueSlot.owner);experienceIds.add(a.authoredId);inc(experienceSides,a.side);}
+     else assert.equal(JSON.stringify(a),JSON.stringify(b),'G4H1 previous reply unchanged');
+    }
+   }
    if(priorEvidenceAck){
     evidenceAckPairs++;for(const k of ['core','meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(priorEvidenceAck[k]),'G4G1 '+k+' parity');
     assert.equal(JSON.stringify(Mic.choices(st)),JSON.stringify(plainRoot.OfficeMic.choices(priorEvidenceAck)),'G4G1 options parity');
@@ -636,7 +653,8 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  assert.equal(questionHits-questionE2Hits-questionE3Hits-questionE4Hits-questionE5Hits-questionE6Hits-questionE7Hits-questionE8Hits,15,'G4E1 recovery preserved');assert.equal(questionE2Hits,20,'G4E2 recovery preserved');assert.equal(questionE3Hits,20,'G4E3 recovery preserved');assert.equal(questionE4Hits,20,'G4E4 recovery preserved');assert.equal(questionE5Hits,13,'G4E5 recovery preserved');assert.equal(questionE6Hits,10,'G4E6 recovery preserved');assert.equal(questionE7Hits,8,'G4E7 closes the remaining eight sampled gaps');assert.equal(questionE8Hits,0,'G4E8 extends roster coverage outside the already-complete fixed sample');assert.equal(questionHits,106,'All 106 missing sampled player evidence questions recovered');assert.equal(questionLosses,0);const questionBank={pairedExchanges:questionPairs,recoveredTurns:questionHits,lostTurns:questionLosses,distinctIds:questionIds.size,characters:questionOwners.size};console.log('G4E8 QUESTIONS '+JSON.stringify({...questionBank,priorBatchTurns:questionHits-questionE8Hits,newBatchTurns:questionE8Hits,rosterCompletionOwners:questionE8Owners.size}));
  assert.equal(strengthHits-strengthF2Hits-strengthF3Hits-strengthF4Hits-strengthF5Hits,10,'G4F1 recovery preserved');assert.equal(strengthF2Hits,13,'G4F2 recovery preserved');assert.equal(strengthF3Hits,10,'G4F3 recovery preserved');assert.equal(strengthF4Hits,10,'G4F4 recovery preserved');assert.equal(strengthF5Hits,8,'G4F5 recovers final eight sampled counters');assert.equal(strengthHits,51,'all sampled strength counters recovered');assert.equal(strengthLosses,0);const strengthBank={pairedExchanges:strengthPairs,recoveredTurns:strengthHits,lostTurns:strengthLosses,distinctIds:strengthIds.size,characters:strengthOwners.size};console.log('G4F5 STRENGTH '+JSON.stringify({...strengthBank,priorBatchTurns:strengthHits-strengthF5Hits,newBatchTurns:strengthF5Hits}));
  assert.equal(evidenceAckHits-evidenceAckG2Hits-evidenceAckG3Hits-evidenceAckG4Hits-evidenceAckG5Hits,8,'G4G1 pilot recovery preserved');assert.equal(evidenceAckG2Hits,14,'G4G2 recovery preserved');assert.equal(evidenceAckG3Hits,10,'G4G3 recovery preserved');assert.equal(evidenceAckG4Hits,10,'G4G4 recovery preserved');assert.equal(evidenceAckG5Hits,5,'G4G5 recovers final five sampled acknowledgements');assert.equal(evidenceAckG6Hits,0,'G4G6 extends roster coverage beyond the already-complete fixed sample');assert.equal(evidenceAckHits,47);assert.equal(evidenceAckLosses,0);assert.equal(evidenceAckOwners.size,39);const evidenceAcknowledgementBank={pairedExchanges:evidenceAckPairs,recoveredTurns:evidenceAckHits,lostTurns:evidenceAckLosses,distinctIds:evidenceAckIds.size,characters:evidenceAckOwners.size};console.log('G4G6 ACKNOWLEDGEMENTS '+JSON.stringify({...evidenceAcknowledgementBank,priorBatchTurns:evidenceAckHits-evidenceAckG6Hits,newBatchTurns:evidenceAckG6Hits,rosterCompletionOwners:evidenceAckG6Owners.size}));
- const report={classification,recovery,specialist,topicBank,batch,followup,questionBank,strengthBank,evidenceAcknowledgementBank,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
+ assert.equal(experienceHits,13,'G4H1 recovers the thirteen sampled gaps for four owners');assert.equal(experienceLosses,0);assert.equal(experienceOwners.size,4);assert.equal(experienceSides.get('w'),10);assert.equal(experienceSides.get('f'),3);const experienceBank={pairedExchanges:experiencePairs,recoveredTurns:experienceHits,lostTurns:experienceLosses,distinctIds:experienceIds.size,characters:experienceOwners.size,sides:Object.fromEntries(experienceSides)};console.log('G4H1 EXPERIENCE '+JSON.stringify(experienceBank));
+ const report={classification,recovery,specialist,topicBank,batch,followup,questionBank,strengthBank,evidenceAcknowledgementBank,experienceBank,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
  console.log('G4A DEMAND SUMMARY '+JSON.stringify({...report,topics:undefined,actors:undefined,detail:undefined}));
  for(const x of topics)console.log('G4A TOPIC '+JSON.stringify(x));
  for(const x of actors)console.log('G4A ACTOR '+JSON.stringify(x));

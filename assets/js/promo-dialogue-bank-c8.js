@@ -249,4 +249,17 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const experienceRepliesH1={
+  "cleo": {
+    "w": [
+      "Length of service is not a result. Demonstrate what those years have taught you.",
+      "Experience is relevant evidence of preparation, not proof of superiority in this contest."
+    ],
+    "f": [
+      "Experience is useful precisely when the available information changes under pressure.",
+      "The value of repeated practice is in the decisions it improves, not the number of years on a record."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
