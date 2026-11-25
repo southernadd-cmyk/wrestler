@@ -130,6 +130,888 @@
  // answer a genuinely spoken strength, never a style-derived estimate.
  const reviewedStrength=new Set(["You have identified {strength}. I will not dispute the existence of the problem; I will dispute its outcome.","Let the record show that your advantage is {strength}. It is the point on which I intend to cross-examine you.","Your {strength}. That's what I've got to get through.","I know what you've got: {strength}. Let's see if it's enough.","I heard you: {strength}. I've got to work out the moment when I can get past that.","Your {strength}. I'll have to get round that.","No use pretending those {strength} aren't there. I'll deal with them.","Right. Your {strength}. I know what I need to work against.","I don't need to dismiss your {strength}. I need an answer to them.","You've told me about your {strength}. I have to respect that and find a way through it.","I'm not going to pretend those {strength} don't matter. I'm asking for the chance to answer them.","I heard the bit about your {strength}. That's the bit I'll have to work around.","You've named your {strength}. Fine. That's what I've prepared to deal with.","You've got {strength}. I know what I've got to get past, and I'm looking forward to it.","I have to deal with your {strength} in this match. I need to find a rhythm that gets around that.","Your {strength}. Right. That's what I'll work against.","Can't ignore your {strength}. Need a way through.","You named {strength}. That gives me a specific problem to solve, which is what I wanted.","Your {strength}. I'll have to find a way to keep working around that.","I won't pretend I can just shrug off your {strength}.","I acknowledge your {strength}. I will not let them dictate my decisions.","You have identified {strength}. My task is to formulate and demonstrate the correct response.","Your {strength}. Fine. That's what I've got to get through.","I know what you can do with those {strength}. I'll have to answer them.","Your {strength}. Yes, I was listening. I'll arrange my performance around the obstacle.","I don't intend to pretend your {strength} aren't impressive. I intend to make something more memorable happen.","You have identified {strength}. That is the variable I will have to control.","I don't dispute your {strength}. I dispute the assumption that they are sufficient.","Those {strength}. That's the bit I've got to find a way through.","I heard the warning about your {strength}. I intend to be ready for it.","Your {strength} will be tested tonight, and I will be the one doing the testing.","I have noted your {strength}. Now prove it.","I cannot afford to ignore your {strength} in this match. Knowing that is a useful starting point.","You have told me to prepare for {strength}. Good. I would rather work on an actual problem than trade insults.","You have identified your own advantage: {strength}. That saves me the trouble of establishing what I need to take away.","Very good. We have established your preferred method: {strength}. Now we can test whether it is sufficient.","I have been thinking about your {strength}. I want to find a way round it, honestly.","I have been thinking about your {strength}, and I want to find a way to meet it that keeps everybody safe.","I have been trying to understand your {strength}. I'll be honest, it's a lot to learn.","I have noted your {strength}. Now do something with it."]);
  const reviewedPress=new Set(["Answer me. Once will do.","Hold on. I want to hear your answer to that.","Wait! I want to hear the rest of that answer.","Answer that first, please.","Answer. Answer.","Could you answer, please? I am trying. I will wait, and I will keep trying too.","Answer, please. I am sure you have a good reason. Give it.","I wonder if the question is still open. I would really like your answer, if you have one.","Answer, when you are ready. I will wait a little longer.","Hold on. Finish what you were saying."]);
+ // Editorial semantic eligibility for EXISTING bank rows. IDs and exact
+ // fingerprints are reviewed together: changing the bank text requires
+ // re-review. No copied speech, no new bank or parallel character corpus.
+ const reviewedBankReuse=freeze({
+ "mara.c1.01": [
+  781101067,
+  "takedown"
+ ],
+ "mara.c1.02": [
+  2556439235,
+  "strike"
+ ],
+ "mara.c1.03": [
+  4256410600,
+  "air"
+ ],
+ "mara.c1.06": [
+  1183737087,
+  "unclassified",
+  "proof"
+ ],
+ "mara.c1.09": [
+  1571843814,
+  "takedown"
+ ],
+ "mara.c1.10": [
+  495515028,
+  "strike"
+ ],
+ "rex.c1.01": [
+  3067784965,
+  "takedown"
+ ],
+ "rex.c1.02": [
+  1582369817,
+  "strike"
+ ],
+ "rex.c1.03": [
+  2752109435,
+  "air"
+ ],
+ "rex.c1.06": [
+  3618180879,
+  "unclassified",
+  "proof"
+ ],
+ "rex.c1.09": [
+  2526948939,
+  "takedown"
+ ],
+ "rex.c1.10": [
+  4246727228,
+  "strike"
+ ],
+ "rex.c1.11": [
+  3847079226,
+  "air"
+ ],
+ "rex.c1.12": [
+  3024207060,
+  "pace"
+ ],
+ "lyra.c1.01": [
+  1245238294,
+  "takedown"
+ ],
+ "lyra.c1.02": [
+  2916131965,
+  "strike"
+ ],
+ "lyra.c1.03": [
+  1891247984,
+  "air"
+ ],
+ "lyra.c1.06": [
+  1321059184,
+  "unclassified",
+  "proof"
+ ],
+ "lyra.c1.09": [
+  4128462228,
+  "takedown"
+ ],
+ "lyra.c1.10": [
+  4031701264,
+  "strike"
+ ],
+ "lyra.c1.11": [
+  3792426287,
+  "air"
+ ],
+ "lyra.c1.12": [
+  3603644462,
+  "pace"
+ ],
+ "brick.c1.01": [
+  2047071922,
+  "takedown"
+ ],
+ "brick.c1.02": [
+  3477574630,
+  "strike"
+ ],
+ "brick.c1.03": [
+  3371257530,
+  "air"
+ ],
+ "brick.c1.06": [
+  3708845199,
+  "unclassified",
+  "proof"
+ ],
+ "brick.c1.09": [
+  836816876,
+  "takedown"
+ ],
+ "brick.c1.10": [
+  2587665649,
+  "strike"
+ ],
+ "brick.c1.11": [
+  3572036076,
+  "air"
+ ],
+ "brick.c1.12": [
+  3940819181,
+  "pace"
+ ],
+ "juno.c1.01": [
+  289604034,
+  "takedown"
+ ],
+ "juno.c1.02": [
+  1283269952,
+  "strike"
+ ],
+ "juno.c1.03": [
+  2903600869,
+  "air"
+ ],
+ "juno.c1.04": [
+  2170445148,
+  "pace"
+ ],
+ "juno.c1.06": [
+  207794897,
+  "unclassified",
+  "proof"
+ ],
+ "juno.c1.09": [
+  1402457515,
+  "takedown"
+ ],
+ "juno.c1.10": [
+  1094933285,
+  "strike"
+ ],
+ "juno.c1.11": [
+  373730793,
+  "air"
+ ],
+ "juno.c1.12": [
+  1271543055,
+  "pace"
+ ],
+ "sol.c1.01": [
+  3573059156,
+  "takedown"
+ ],
+ "sol.c1.02": [
+  3816225581,
+  "strike"
+ ],
+ "sol.c1.03": [
+  3709928053,
+  "air"
+ ],
+ "sol.c1.06": [
+  3204191442,
+  "unclassified",
+  "proof"
+ ],
+ "sol.c1.09": [
+  3483098161,
+  "takedown"
+ ],
+ "sol.c1.10": [
+  2046815255,
+  "strike"
+ ],
+ "sol.c1.11": [
+  131136945,
+  "air"
+ ],
+ "sol.c1.12": [
+  1239550691,
+  "pace"
+ ],
+ "dee.c1.01": [
+  1866821093,
+  "takedown"
+ ],
+ "dee.c1.02": [
+  2333233161,
+  "strike"
+ ],
+ "dee.c1.03": [
+  2191547946,
+  "air"
+ ],
+ "dee.c1.06": [
+  1399094145,
+  "unclassified",
+  "proof"
+ ],
+ "dee.c1.09": [
+  3682813492,
+  "takedown"
+ ],
+ "dee.c1.10": [
+  2472216265,
+  "strike"
+ ],
+ "dee.c1.11": [
+  3842049285,
+  "air"
+ ],
+ "dee.c1.12": [
+  1923028337,
+  "pace"
+ ],
+ "kit.c1.01": [
+  4247490488,
+  "takedown"
+ ],
+ "kit.c1.02": [
+  3866797646,
+  "strike"
+ ],
+ "kit.c1.03": [
+  1347078699,
+  "air"
+ ],
+ "kit.c1.06": [
+  1636805805,
+  "unclassified",
+  "proof"
+ ],
+ "kit.c1.09": [
+  2667314880,
+  "takedown"
+ ],
+ "kit.c1.10": [
+  1528911639,
+  "strike"
+ ],
+ "kit.c1.11": [
+  459468110,
+  "air"
+ ],
+ "kit.c1.12": [
+  2424258969,
+  "pace"
+ ],
+ "dax.c1.01": [
+  3932370986,
+  "takedown"
+ ],
+ "dax.c1.02": [
+  4157859047,
+  "strike"
+ ],
+ "dax.c1.03": [
+  952573254,
+  "air"
+ ],
+ "dax.c1.04": [
+  3694372730,
+  "pace"
+ ],
+ "dax.c1.06": [
+  3893685910,
+  "unclassified",
+  "proof"
+ ],
+ "dax.c1.09": [
+  3830134973,
+  "takedown"
+ ],
+ "dax.c1.10": [
+  2554070090,
+  "strike"
+ ],
+ "dax.c1.11": [
+  1391590573,
+  "air"
+ ],
+ "dax.c1.12": [
+  30028805,
+  "pace"
+ ],
+ "val.c1.01": [
+  4017852299,
+  "takedown"
+ ],
+ "val.c1.02": [
+  3196848695,
+  "strike"
+ ],
+ "val.c1.03": [
+  2064477149,
+  "air"
+ ],
+ "val.c1.04": [
+  2564090540,
+  "pace"
+ ],
+ "val.c1.06": [
+  597970885,
+  "unclassified",
+  "proof"
+ ],
+ "val.c1.09": [
+  2711532990,
+  "takedown"
+ ],
+ "val.c1.10": [
+  148068954,
+  "strike"
+ ],
+ "val.c1.11": [
+  3917676114,
+  "air"
+ ],
+ "val.c1.12": [
+  2187384620,
+  "pace"
+ ],
+ "nico.c2.02": [
+  2590627584,
+  "strike"
+ ],
+ "nico.c2.03": [
+  3013405886,
+  "air"
+ ],
+ "nico.c2.06": [
+  450966178,
+  "unclassified",
+  "proof"
+ ],
+ "nico.c2.09": [
+  3255969444,
+  "takedown"
+ ],
+ "nico.c2.10": [
+  1594769193,
+  "strike"
+ ],
+ "nico.c2.11": [
+  391121842,
+  "air"
+ ],
+ "nico.c2.12": [
+  4071269889,
+  "pace"
+ ],
+ "cal.c2.01": [
+  1307768872,
+  "takedown"
+ ],
+ "cal.c2.02": [
+  2840443887,
+  "strike"
+ ],
+ "cal.c2.03": [
+  355090316,
+  "air"
+ ],
+ "cal.c2.04": [
+  507510745,
+  "pace"
+ ],
+ "cal.c2.06": [
+  3431083264,
+  "unclassified",
+  "proof"
+ ],
+ "cal.c2.09": [
+  1406014473,
+  "takedown"
+ ],
+ "cal.c2.10": [
+  2221951913,
+  "strike"
+ ],
+ "cal.c2.11": [
+  2517031984,
+  "air"
+ ],
+ "cal.c2.12": [
+  607775119,
+  "pace"
+ ],
+ "imani.c2.01": [
+  3335959937,
+  "takedown"
+ ],
+ "imani.c2.02": [
+  3912702430,
+  "strike"
+ ],
+ "imani.c2.03": [
+  2610844532,
+  "air"
+ ],
+ "imani.c2.04": [
+  3994358733,
+  "pace"
+ ],
+ "imani.c2.06": [
+  803463426,
+  "unclassified",
+  "proof"
+ ],
+ "imani.c2.09": [
+  1176859680,
+  "takedown"
+ ],
+ "imani.c2.10": [
+  3441415024,
+  "strike"
+ ],
+ "imani.c2.11": [
+  2283801370,
+  "air"
+ ],
+ "imani.c2.12": [
+  3416833430,
+  "pace"
+ ],
+ "otis.c2.01": [
+  3166036033,
+  "takedown"
+ ],
+ "otis.c2.02": [
+  1082668547,
+  "strike"
+ ],
+ "otis.c2.03": [
+  773189455,
+  "air"
+ ],
+ "otis.c2.06": [
+  3922265053,
+  "unclassified",
+  "proof"
+ ],
+ "otis.c2.09": [
+  2906819687,
+  "takedown"
+ ],
+ "otis.c2.10": [
+  1475284722,
+  "strike"
+ ],
+ "otis.c2.11": [
+  1534566665,
+  "air"
+ ],
+ "otis.c2.12": [
+  3372300536,
+  "pace"
+ ],
+ "kira.c2.01": [
+  2460206368,
+  "takedown"
+ ],
+ "kira.c2.02": [
+  1854933910,
+  "strike"
+ ],
+ "kira.c2.03": [
+  1658725488,
+  "air"
+ ],
+ "kira.c2.06": [
+  2934028654,
+  "unclassified",
+  "proof"
+ ],
+ "kira.c2.09": [
+  1900404605,
+  "takedown"
+ ],
+ "kira.c2.10": [
+  145378666,
+  "strike"
+ ],
+ "kira.c2.11": [
+  44660624,
+  "air"
+ ],
+ "kira.c2.12": [
+  402268280,
+  "pace"
+ ],
+ "ezra.c2.01": [
+  51253724,
+  "takedown"
+ ],
+ "ezra.c2.02": [
+  2111136177,
+  "strike"
+ ],
+ "ezra.c2.03": [
+  995703843,
+  "air"
+ ],
+ "ezra.c2.04": [
+  3305832571,
+  "pace"
+ ],
+ "ezra.c2.06": [
+  3425149549,
+  "unclassified",
+  "proof"
+ ],
+ "ezra.c2.09": [
+  2809790739,
+  "takedown"
+ ],
+ "ezra.c2.10": [
+  2984756534,
+  "strike"
+ ],
+ "ezra.c2.11": [
+  2897633008,
+  "air"
+ ],
+ "ezra.c2.12": [
+  3175849101,
+  "pace"
+ ],
+ "red.c2.01": [
+  2503235826,
+  "takedown"
+ ],
+ "red.c2.02": [
+  896918336,
+  "strike"
+ ],
+ "red.c2.03": [
+  3872959444,
+  "air"
+ ],
+ "red.c2.04": [
+  64133976,
+  "pace"
+ ],
+ "red.c2.06": [
+  2537594110,
+  "unclassified",
+  "proof"
+ ],
+ "red.c2.09": [
+  2832011552,
+  "takedown"
+ ],
+ "red.c2.10": [
+  3899712226,
+  "strike"
+ ],
+ "red.c2.11": [
+  2868064101,
+  "air"
+ ],
+ "red.c2.12": [
+  1296677792,
+  "pace"
+ ],
+ "roxy.c2.01": [
+  149982654,
+  "takedown"
+ ],
+ "roxy.c2.02": [
+  2304544158,
+  "strike"
+ ],
+ "roxy.c2.03": [
+  57814866,
+  "air"
+ ],
+ "roxy.c2.04": [
+  1937137608,
+  "pace"
+ ],
+ "roxy.c2.06": [
+  3110873044,
+  "unclassified",
+  "proof"
+ ],
+ "roxy.c2.09": [
+  894351280,
+  "takedown"
+ ],
+ "roxy.c2.10": [
+  911301869,
+  "strike"
+ ],
+ "roxy.c2.11": [
+  195650404,
+  "air"
+ ],
+ "roxy.c2.12": [
+  2742080597,
+  "pace"
+ ],
+ "silas.c2.01": [
+  1412450707,
+  "takedown"
+ ],
+ "silas.c2.02": [
+  1987881124,
+  "strike"
+ ],
+ "silas.c2.03": [
+  1088127336,
+  "air"
+ ],
+ "silas.c2.04": [
+  82844572,
+  "pace"
+ ],
+ "silas.c2.06": [
+  1421966466,
+  "unclassified",
+  "proof"
+ ],
+ "silas.c2.09": [
+  3728898652,
+  "takedown"
+ ],
+ "silas.c2.10": [
+  92318990,
+  "strike"
+ ],
+ "silas.c2.11": [
+  1990103776,
+  "air"
+ ],
+ "silas.c2.12": [
+  2134980690,
+  "pace"
+ ],
+ "night.c2.01": [
+  1879859967,
+  "takedown"
+ ],
+ "night.c2.02": [
+  3856354336,
+  "strike"
+ ],
+ "night.c2.03": [
+  1043151961,
+  "air"
+ ],
+ "night.c2.04": [
+  3569176919,
+  "pace"
+ ],
+ "night.c2.06": [
+  4078274093,
+  "unclassified",
+  "proof"
+ ],
+ "night.c2.09": [
+  713431032,
+  "takedown"
+ ],
+ "night.c2.10": [
+  1473923943,
+  "strike"
+ ],
+ "night.c2.11": [
+  3121484897,
+  "air"
+ ],
+ "night.c2.12": [
+  1125408618,
+  "pace"
+ ],
+ "malik.c3.04": [
+  1374369785,
+  "pace"
+ ],
+ "zara.c3.06": [
+  2564666776,
+  "unclassified",
+  "proof"
+ ],
+ "aisha.c3.04": [
+  1015362430,
+  "pace"
+ ],
+ "ellis.c4.02": [
+  1988332508,
+  "strike"
+ ],
+ "ivo.c4.02": [
+  345002588,
+  "strike"
+ ],
+ "ivo.c4.04": [
+  1674643766,
+  "pace"
+ ],
+ "nate.c4.04": [
+  835085793,
+  "pace"
+ ],
+ "jun.c4.02": [
+  1386162908,
+  "strike"
+ ],
+ "jun.c4.04": [
+  2775633654,
+  "pace"
+ ],
+ "kofi.c4.06": [
+  2824784845,
+  "unclassified",
+  "proof"
+ ],
+ "theo.c5.06": [
+  3986748623,
+  "unclassified",
+  "proof"
+ ],
+ "soraya.c5.04": [
+  3595324762,
+  "pace"
+ ],
+ "cedric.c6.04": [
+  1301219191,
+  "pace"
+ ],
+ "felix.c6.06": [
+  2025219950,
+  "unclassified",
+  "proof"
+ ],
+ "vera.c6.04": [
+  555974476,
+  "pace"
+ ],
+ "kezia.c6.06": [
+  3521115974,
+  "unclassified",
+  "proof"
+ ],
+ "dev.c7.04": [
+  373342714,
+  "pace"
+ ],
+ "liya.c7.04": [
+  4077651197,
+  "pace"
+ ],
+ "leandro.c7.04": [
+  3034997730,
+  "pace"
+ ],
+ "noelle.c8.06": [
+  4070809946,
+  "unclassified",
+  "proof"
+ ],
+ "ash.c8.04": [
+  2437734421,
+  "pace"
+ ],
+ "zane.c8.06": [
+  1218327600,
+  "unclassified",
+  "proof"
+ ],
+ "elodie.c8.06": [
+  2208428046,
+  "unclassified",
+  "proof"
+ ],
+ "cleo.c8.04": [
+  492825037,
+  "pace"
+ ],
+ "cleo.c8.06": [
+  229890791,
+  "unclassified",
+  "proof"
+ ],
+ "mara.pilot.01": [
+  1230296177,
+  "takedown"
+ ],
+ "mara.pilot.02": [
+  24709935,
+  "strike"
+ ],
+ "mara.pilot.03": [
+  394736871,
+  "air"
+ ],
+ "brick.pilot.01": [
+  2341733886,
+  "strike"
+ ],
+ "brick.pilot.02": [
+  954520680,
+  "takedown"
+ ],
+ "brick.pilot.03": [
+  655985937,
+  "air"
+ ],
+ "brick.pilot.04": [
+  2397606256,
+  "pace"
+ ],
+ "brick.pilot.06": [
+  4027282271,
+  "proof",
+  "unclassified"
+ ],
+ "nova.pilot.01": [
+  3518262105,
+  "takedown"
+ ],
+ "nova.pilot.02": [
+  4090698935,
+  "strike"
+ ],
+ "nova.pilot.03": [
+  1544720334,
+  "air"
+ ],
+ "nova.pilot.04": [
+  3184571248,
+  "pace"
+ ],
+ "magnus.pilot.01": [
+  2459425831,
+  "takedown"
+ ],
+ "magnus.pilot.02": [
+  1248500426,
+  "strike"
+ ]
+});
+ function selectReviewedBankResponse(cat,ctx,seed,mem,sem){
+  if(!ctx||!sem||ctx.hasMouthpiece||ctx.stage!=='answer'||ctx.action!=='turn'||
+     (ctx.protected&&ctx.protected!=='contextual-variant')||
+     (ctx.side==='w'?sem.move!=='rebut':sem.move!=='counter'))return null;
+  const matchesClaim=row=>{
+   const r=reviewedBankReuse[row.id];
+   return !!r&&r[0]===hash(row.text)&&r.slice(1).includes(sem.claim)&&row.side===ctx.side;
+  };
+  const sources=cat.lines(ctx.speaker.role,ctx.speaker.id).filter(matchesClaim);
+  const eligible=[];
+  for(const row of sources){
+   const variants=row.when.variants||[null];
+   for(const variant of variants){
+    // Only the explicitly reviewed stage/action/variant is reinterpreted.
+    // Owner, original conditions, rendered placeholders and recent history
+    // remain subject to the ordinary character-bank selector.
+    const sourceCtx={...ctx,stage:row.stage,action:row.action,variant,protected:'contextual-variant'};
+    const pick=select(cat,sourceCtx,seed,{...mem,candidateFilter:r=>r.id===row.id&&matchesClaim(r)});
+    if(pick){eligible.push({...pick,bankReuse:{stage:row.stage,action:row.action,variant}});break;}
+   }
+  }
+  return eligible.sort((a,b)=>hash(seed+'|'+a.id)-hash(seed+'|'+b.id)||a.id.localeCompare(b.id))[0]||null;
+ }
  function selectSemanticResponse(cat,ctx,seed,mem,sem){
   if(!ctx||!sem||ctx.side!=='w'||ctx.hasMouthpiece)return null;
   if(ctx.stage==='answer'&&ctx.action==='turn'&&ctx.variant==='tu_strength'&&
@@ -461,5 +1343,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,closingCommitment,selectClosing,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectReviewedBankResponse,reviewedBankReuse,closingCommitment,selectClosing,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);
