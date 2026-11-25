@@ -271,3 +271,7 @@ G4H.2 recovered 25 sampled experience exchanges with zero lost authored turns (r
 ## G4H.4 — fourth experience batch
 
 G4H.3 recovered 37 sampled experience exchanges with zero lost authored turns (run 45704503790). Kezia, Noelle, Nova, Zane, Aisha and Anya are the next six demand-ranked owners, alphabetical tie-break. Add two character-specific player rebuttals and two opponent counters per owner (24 new rows; 80 across twenty owners). Target ten more sampled recoveries (two player, eight opponent), 47 cumulatively, preserving all 37 prior hits. Existing selection policy, stable prior IDs, save schema and CI configuration unchanged. Regenerate six bank assets and manifest; extend the pilot inventory assertion for Nova's four new rows. CI pending.
+
+## G4H.5 — fifth experience batch
+
+G4H.4 recovered 47 sampled experience exchanges with zero lost authored turns (run 45705059426). Ash, Ayla, Bashir, Brick, Bronte, Cedric, Dax, Dean, Ezra and Faye are the next ten demand-ranked owners, alphabetical tie-break. Add two character-specific player rebuttals and two opponent counters per owner (40 new rows; 120 across thirty owners). Brick uses C1, leaving the pilot unchanged. Target ten more sampled recoveries (five player, five opponent), 57 cumulatively, preserving all 47 prior hits. Existing selection policy, stable prior IDs, save schema and CI configuration unchanged. Regenerate ten bank assets and manifest. CI pending.

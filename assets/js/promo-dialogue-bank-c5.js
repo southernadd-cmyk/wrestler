@@ -301,4 +301,17 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const experienceRepliesH5={
+  "bronte": {
+    "w": [
+      "You've sailed these waters before. That doesn't tell you where I'll turn next.",
+      "Years at sea count for something, but you've still got to steer through this particular contest."
+    ],
+    "f": [
+      "Experience is knowing which way to shift your weight when the water gets rough.",
+      "A change of current doesn't mean I forget how to steer. That's what the years have taught me."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
