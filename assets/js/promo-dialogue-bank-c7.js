@@ -413,4 +413,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const studyRepliesI1={
+  "liya": {
+    "w": [
+      "You've watched the rehearsals, have you? Lovely! I've been working on the bit that isn't on the tape.",
+      "I'm glad you did your homework. Just don't mistake the surprise for the setup."
+    ],
+    "f": [
+      "When I study a landing I look at where both of us will be, not just where the crowd will look.",
+      "I like having a plan for the surprise and another for when the surprise doesn't work. That's why I practise."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

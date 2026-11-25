@@ -425,4 +425,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const studyRepliesI1={
+  "cedric": {
+    "w": [
+      "You have studied me. Have you asked what happens when I refuse the position you prepared for?",
+      "Who decided the notes you took on me are more important than the choices I make tonight?"
+    ],
+    "f": [
+      "Studying a match means asking why a position worked, not just remembering the move that followed.",
+      "I prepare for what you might do, then ask what the actual contest requires. Isn't that the point?"
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
