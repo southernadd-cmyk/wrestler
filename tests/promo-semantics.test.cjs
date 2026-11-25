@@ -170,9 +170,35 @@ for(const claim of ['unclassified','proof','pace','legitimacy']){
  if(['unclassified','proof'].includes(claim))assert.equal(wording.size,namedRebutters.length,'distinct named identities '+claim);
  else assert.ok(wording.size>=3,'family differentiation '+claim);
 }
+// All reviewed reuse entries refer to an existing bank row, not copied
+// wording. Exercise the actual owner/side and reject stale text and recent IDs.
+const bankRows=new Map(built.packs.flatMap(p=>p.lines.map(row=>[row.id,{row,pack:p}])));
+let reuseFixtures=0;
+for(const [id,rule] of Object.entries(L.reviewedBankReuse)){
+ const found=bankRows.get(id);assert.ok(found,'stale bank reuse ID '+id);
+ const {row,pack}=found;
+ const cat=L.catalogue([{...pack,lines:[row]}]);
+ for(const claim of rule.slice(1)){
+  const context={...ctx,stage:'answer',action:'turn',side:row.side,speaker:{...ctx.speaker,id:pack.owner,role:'wrestler'},protected:'contextual-variant',variant:'tu_strength',hasMouthpiece:false};
+  const sem={move:row.side==='w'?'rebut':'counter',claim};
+  const own=L.selectReviewedBankResponse(cat,context,'reuse-fixture',{},sem);
+  assert.equal(own?.id,id,'reviewed source reachable '+id+' '+claim);
+  assert.equal(own.text,row.text);assert.equal(own.bankReuse.variant,row.when.variants[0]);
+  assert.equal(L.selectReviewedBankResponse(cat,context,'reuse-fixture',{recent:[id]},sem),null);
+  assert.equal(L.selectReviewedBankResponse(cat,context,'reuse-fixture',{used:[id]},sem),null);
+  for(const patch of [{protected:'recorded-evidence'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}}])assert.equal(L.selectReviewedBankResponse(cat,{...context,...patch},'reuse-fixture',{},sem),null);
+  assert.equal(L.selectReviewedBankResponse(cat,context,'reuse-fixture',{}, {...sem,claim:'unreviewed'}),null);
+  const stale=L.catalogue([{...pack,lines:[{...row,text:row.text+'!'}]}]);
+  assert.equal(L.selectReviewedBankResponse(stale,context,'reuse-fixture',{},sem),null);
+  reuseFixtures++;
+ }
+}
+assert.ok(reuseFixtures>100);
+console.log('PASS reviewed bank reuse: '+reuseFixtures+' exact existing bank/claim fixtures, owner, evidence, history and changed-text guards.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
 const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;
+let liveReuse=0;const liveReuseIds=new Set();
 let followupPairs=0,followupChanges=0;const followupSpeakers=new Set(),followupClaims=new Set();
 const reached=new Set();
 for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
@@ -240,7 +266,14 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
     assert.equal(sem.replyTo,previous,'reply must address immediately preceding spoken line');
     const prior=x.log[sem.replyTo];assert.notEqual(prior.side,e.side);if(sem.source.startsWith('authored-response:')){
      assert.equal(sem.source,'authored-response:'+e.authoredId);assert.ok(!e.composedId);
-     if(e.dialogueSlot.action==='acknowledge'){
+     if(sem.bankReuse){
+      assert.equal(e.dialogueSlot.action,'turn');assert.equal(e.dialogueSlot.stage,'answer');
+      const found=bankRows.get(e.authoredId);assert.ok(found&&L.reviewedBankReuse[e.authoredId]?.slice(1).includes(sem.claim));
+      assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(found.row.side,e.side);
+      assert.equal(e.line,found.row.text);assert.equal(sem.bankReuse.stage,found.row.stage);assert.equal(sem.bankReuse.action,found.row.action);
+      assert.ok(found.row.when.variants.includes(sem.bankReuse.variant));
+      liveReuse++;liveReuseIds.add(e.authoredId);
+     }else if(e.dialogueSlot.action==='acknowledge'){
       assert.equal(e.dialogueSlot.stage,'push');assert.ok(!e.dialogueSlot.protected);assert.ok(e.side==='f'||['unclassified','agreement','end'].includes(sem.claim));
       authoredResponses++;ackIds.add(e.authoredId);
      }else if(e.dialogueSlot.action==='press'){
@@ -266,6 +299,7 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
 // Live reach is gated on the broader 1,280-scene quality benchmark; this independent semantic sample still verifies parity for every press exchange.
 assert.ok(followupPairs>0,'G3B semantic sample must exercise press');
 console.log('PASS G3B rival follow-up: '+followupChanges+' changed turns in '+followupPairs+' paired press exchanges; '+followupSpeakers.size+' speakers; claims '+[...followupClaims].join(', ')+'; graph, effects, options and semantic provenance retained.');
+console.log('Bank reuse semantic sample: '+liveReuse+' existing authored utterances, '+liveReuseIds.size+' distinct IDs.');
 assert.ok(responded>100&&counters>100&&press>0&&authoredSources>0&&graphSources>0&&unclassified>0&&reached.size>=8);
 assert.ok(authoredResponses>0&&ackIds.size>3,'reviewed authored acknowledgements are reachable');
 assert.ok(authoredPress>0&&pressIds.size>1,'reviewed character press lines reached');
