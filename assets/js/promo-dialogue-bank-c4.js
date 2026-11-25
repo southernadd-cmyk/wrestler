@@ -21,6 +21,24 @@
   "I'm not going to invent something. You've asked, I've answered. Get in the ring.",
   "Good. Drop it, then. Now do the job.",
   "That's sorted. I want a match, not a hearing."
+ ],
+ "ellis": [
+  "Let me put that in order. You've asked for an example; I haven't got one that establishes the charge. Cross it off.",
+  "I can write down what I intend to do at the bell. I can't write down a guess and call it evidence.",
+  "Good. That item comes off the list. We can proceed with the contest.",
+  "That's the right order: establish something first, then draw a conclusion. We'll start with the wrestling."
+ ],
+ "ivo": [
+  "You want a sequence of events that establishes the claim. I cannot give you one, so the conclusion does not follow.",
+  "Cause first, then effect. I haven't established the cause, and I shouldn't assert the result.",
+  "Then that chain stops there. The match is a separate sequence we can observe.",
+  "Remove the unsupported conclusion. Let's see what follows from the wrestling."
+ ],
+ "jun": [
+  "I need a specific example before I can build an argument around it. I don't have one, so I won't use it.",
+  "Fair. I cannot show the step that establishes the charge. Let's move to something we can test.",
+  "That's enough on that point. The next transition is into the match.",
+  "Don't build another argument on that assumption. Let's see what the actual wrestling gives us."
  ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
