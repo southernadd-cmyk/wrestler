@@ -168,4 +168,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceQuestionsE5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE7={
+  "vera": [
+    "An allegation is not a measurement. What observable result can this match provide?",
+    "What can we measure from the contest itself, rather than from the unsupported claim?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceQuestionsE7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

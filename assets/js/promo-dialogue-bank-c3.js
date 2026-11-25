@@ -173,4 +173,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceQuestionsE5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE7={
+  "priya": [
+    "Repeat only what you can substantiate. What can the people actually establish by watching this match?",
+    "There is a difference between your version and the evidence. What can we demonstrate in the ring?"
+  ],
+  "rocco": [
+    "Enough about the accusation. What can you show me in the ring?",
+    "Talk is cheap. What can the crowd actually judge when we wrestle?"
+  ],
+  "tori": [
+    "An accusation is static, not a result. What can we demonstrate when the pressure builds in the ring?",
+    "Treat the match as the experiment, not a verdict on the rumour. What can the people observe?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceQuestionsE7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
