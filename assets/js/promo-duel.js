@@ -324,6 +324,7 @@
   st.start=st.meter;
   if(opts.directed&&opts.formats){st.fallbackVariety=1;st.closingVariety=1;st.closingCommitmentStyle=1;}
   if(opts.directed&&opts.formats)st.coreVoiceStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='strong'||e.kind==='uneven').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
+  if(opts.directed&&opts.formats)st.coreVoiceExtension=1;
   if(opts.directed&&opts.formats)st.opponentVoiceStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.side==='f'||e.kind==='opponent').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.deliveryStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='fluff').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
@@ -1070,9 +1071,226 @@
   }
  }
 };
+ // G2D: separate snapshot marker so existing in-progress promos retain their wording.
+ // The evidence-sensitive pe_respect accusation is deliberately excluded.
+ // Each counter variant explicitly promises the same observable counter.
+ const CORE_VOICE_EXTENSION={
+  "ch_trade": {
+    "stage": "answer",
+    "action": "challenge",
+    "original": "No holds, no tricks. Stand in the middle and trade with me, {F}.",
+    "individual": {
+      "mara": "Terms of the contest, {F}: no holds, no tricks. Stand in the middle and trade blows with me.",
+      "rex": "Middle of the ring, {F}. No holds, no mucking about. Trade with me.",
+      "juno": "No holds this time, {F}. Just stand in the middle and trade strikes. No tricks.",
+      "kit": "Come on, mate. Middle of the ring, no holds, no tricks. Let's trade.",
+      "ezra": "Set aside the holds and trickery, {F}. Meet me in the centre and trade strikes.",
+      "red": "Stand in the middle, {F}. No holds. No tricks. Trade with me.",
+      "roxy": "Centre stage, darling. No holds or clever tricks, just the two of us trading blows.",
+      "silas": "Remove holds and deception from the equation, {F}. Trade strikes with me in the centre.",
+      "nova": "Let's make this a direct test, {F}. No holds, no tricks. Trade strikes in the centre.",
+      "ace": "Centre of the ring, {F}! No holds, no tricks. Let's trade blows under the lights.",
+      "faye": "Clear terms, {F}: no holds or tricks. Meet me in the centre and trade strikes.",
+      "tori": "Forget the clever variables, {F}. No holds or tricks. Just trade strikes with me in the centre."
+    },
+    "voices": {
+      "grand": [
+        "Centre stage, {F}. No holds or tricks, just an exchange of blows.",
+        "Let's have a direct contest in the middle, {F}: trade strikes, without holds or tricks."
+      ],
+      "gruff": [
+        "No holds, no tricks, {F}. Trade blows in the middle.",
+        "Come to the middle and trade with me. Leave the holds and tricks out of it."
+      ],
+      "eager": [
+        "Come on, {F}! No holds or tricks. Let's trade blows right in the middle.",
+        "Meet me in the centre, {F}. Just strikes, no holds and no messing about!"
+      ],
+      "stoic": [
+        "Centre of the ring. No holds or tricks. Trade strikes with me, {F}.",
+        "We stand in the middle and trade, {F}. Nothing clever, no holds."
+      ],
+      "precise": [
+        "Meet me in the centre, {F}. A direct exchange of strikes without holds or deception.",
+        "The test is simple: trade strikes in the centre, with neither holds nor tricks."
+      ],
+      "earnest": [
+        "Let's stand in the middle and trade blows, {F}. No holds, no tricks.",
+        "I want a direct test between us, {F}: strikes in the centre, no holds or tricks."
+      ],
+      "sermon": [
+        "Let us meet in the centre, {F}, and trade blows without holds or deceit.",
+        "No holds or tricks between us, {F}. Come to the middle and trade strikes."
+      ],
+      "slippery": [
+        "Here's the arrangement, {F}: no holds, no tricks, trade blows in the middle.",
+        "Let's keep it simple. Centre of the ring, trade strikes, no holds or funny business."
+      ]
+    }
+  },
+  "qu_strikes": {
+    "stage": "close",
+    "action": "question",
+    "original": "Throw your best punch, {F}. I will catch it and turn it around.",
+    "individual": {
+      "mara": "Put your best punch before me, {F}. I'll counter it; that's my answer.",
+      "rex": "Best punch you've got, {F}. I'll counter it.",
+      "juno": "Throw your best punch, {F}. I'll catch it and counter.",
+      "kit": "Give me your best punch, mate. I'll counter it; watch.",
+      "ezra": "Your best punch is the test, {F}. I will counter it.",
+      "red": "Throw your best, {F}. I'll counter that punch.",
+      "roxy": "Let's see your best punch, darling. I shall counter it.",
+      "silas": "Use your strongest punch, {F}. I will counter it.",
+      "nova": "Give me your best punch, {F}. I will counter it, not simply evade it.",
+      "ace": "Your best punch, {F}! I'll counter it and make that the moment they remember.",
+      "faye": "Your best punch, {F}. I will counter it. That is the commitment.",
+      "tori": "Send your best punch my way, {F}. I'll counter it and change the direction."
+    },
+    "voices": {
+      "grand": [
+        "Deliver your best punch, {F}. I will counter it in front of this audience.",
+        "Your strongest punch is welcome, {F}. I'll counter it."
+      ],
+      "gruff": [
+        "Best punch, {F}. I'll counter it.",
+        "Throw your best punch. I'll counter you, {F}."
+      ],
+      "eager": [
+        "Go on, {F}, throw your best punch! I'll counter it.",
+        "Give me the best punch you've got. I'm going to counter it!"
+      ],
+      "stoic": [
+        "Throw your best punch, {F}. I'll counter it.",
+        "Your best punch. My counter. That's what I promise."
+      ],
+      "precise": [
+        "Use your strongest punch, {F}. I will counter it.",
+        "I intend to counter your best punch, {F}. That is the test."
+      ],
+      "earnest": [
+        "Give me your best punch, {F}. I'll counter it.",
+        "I want you to throw your best punch. I will counter it."
+      ],
+      "sermon": [
+        "Bring your best punch, {F}. I will counter it.",
+        "Let your best punch be the test. I will meet it with a counter."
+      ],
+      "slippery": [
+        "Throw the best punch you've got, {F}. I'll counter it.",
+        "You bring your best punch; I'll supply the counter, {F}."
+      ]
+    }
+  },
+  "qu_studied": {
+    "stage": "close",
+    "action": "question",
+    "original": "I know your offence by heart now, {F}. Every move has a counter.",
+    "individual": {
+      "mara": "I know your offence well by now, {F}. I will counter it; that is my final submission.",
+      "rex": "I know how you attack now, {F}. I'll counter you.",
+      "juno": "I've learned your offence, {F}. I'll counter it when you try it.",
+      "kit": "I know your moves now, mate. Watch me counter them.",
+      "ezra": "Your offensive technique is familiar to me, {F}. I will counter it.",
+      "red": "I know your offence now, {F}. I'll counter it.",
+      "roxy": "I know your routine by heart now, darling. I will counter your offence.",
+      "silas": "I recognise your attacking patterns now, {F}. I will counter your offence.",
+      "nova": "Your offence is familiar to me now, {F}. I will counter it in the ring.",
+      "ace": "I know your whole attacking routine now, {F}. I'll counter it when the spotlight's on us.",
+      "faye": "Your offence is familiar by now, {F}. My commitment is to counter it.",
+      "tori": "I know the pattern of your attacks now, {F}. I'll counter your offence."
+    },
+    "voices": {
+      "grand": [
+        "I know your offence well now, {F}. I'll counter it when the curtain rises.",
+        "Your attacking routine is familiar to me now. I'll counter it, {F}."
+      ],
+      "gruff": [
+        "Know your attacks now, {F}. I'll counter you.",
+        "I've got your offence worked out. I'll counter it."
+      ],
+      "eager": [
+        "I know your attacks now, {F}! Watch me counter them.",
+        "Your offence is familiar now. I'm going to counter it!"
+      ],
+      "stoic": [
+        "I know your offence by now. I'll counter it, {F}.",
+        "I've learned your attacks. I will counter them."
+      ],
+      "precise": [
+        "I recognise your offence now, {F}. I will counter it.",
+        "Your offensive patterns are familiar. I intend to counter them."
+      ],
+      "earnest": [
+        "I know your offence better now, {F}. I will counter it.",
+        "I've learned how you attack. I'll counter your offence tonight."
+      ],
+      "sermon": [
+        "Your offence is familiar by now, {F}. I will counter it.",
+        "I know the attacks you bring, {F}. Let my answer be a counter."
+      ],
+      "slippery": [
+        "I know how your offence works now, {F}. I'll counter it.",
+        "I've learned your attacks by now. I'll counter them, {F}."
+      ]
+    }
+  },
+  "pe_reputation": {
+    "stage": "answer",
+    "action": "personal",
+    "original": "I do not know you, {F}, but I know your reputation. It is not a good one.",
+    "individual": {
+      "mara": "We haven't met in the ring, {F}. Your reputation precedes you, and it hardly recommends you.",
+      "rex": "Don't know you personally, {F}. Your reputation isn't good.",
+      "juno": "I don't know you yet, {F}. I've heard of you, though. Nothing good.",
+      "kit": "Don't know you, mate. What I've heard of your reputation isn't exactly flattering.",
+      "ezra": "I have no personal knowledge of you, {F}. Your reputation is not encouraging.",
+      "red": "I don't know you, {F}. Your reputation's poor.",
+      "roxy": "I haven't had the pleasure, darling. Your reputation isn't much of an introduction.",
+      "silas": "I don't know you personally, {F}. Your reputation gives me little reason to be impressed.",
+      "nova": "I haven't met you, {F}. Your reputation is unfavourable.",
+      "ace": "Never met you, {F}, but that reputation of yours isn't much of a billing.",
+      "faye": "I don't know you personally, {F}. Your reputation is not favourable.",
+      "tori": "I haven't met you, {F}. Your reputation isn't exactly a positive signal."
+    },
+    "voices": {
+      "grand": [
+        "I haven't met you, {F}, but your reputation is hardly a ringing endorsement.",
+        "We've not met, {F}. Your reputation arrives ahead of you, and it isn't flattering."
+      ],
+      "gruff": [
+        "Don't know you, {F}. Know your reputation. Not good.",
+        "Never met you, {F}. Your reputation isn't much."
+      ],
+      "eager": [
+        "I don't know you yet, {F}, but your reputation isn't good!",
+        "We haven't met, {F}. I've heard of you, though, and it doesn't sound good."
+      ],
+      "stoic": [
+        "I don't know you personally. Your reputation is poor, {F}.",
+        "I've not met you, {F}. Your reputation isn't favourable."
+      ],
+      "precise": [
+        "I have no personal knowledge of you, {F}, but your reputation is unfavourable.",
+        "We have not met, {F}. The reputation that precedes you is a poor one."
+      ],
+      "earnest": [
+        "I don't know you, {F}. I can't say your reputation gives me a good impression.",
+        "We've not met before, {F}. Your reputation concerns me."
+      ],
+      "sermon": [
+        "I do not know you, {F}, but your reputation does not speak well of you.",
+        "We have not met, {F}. Your reputation is hardly a good introduction."
+      ],
+      "slippery": [
+        "We haven't met, {F}. Your reputation isn't doing you any favours.",
+        "I don't know you personally, {F}. Your reputation isn't exactly a selling point."
+      ]
+    }
+  }
+};
  function coreVoice(st,stage,id,d,step){
   if(st.coreVoiceStyle?.v!==1||st.speaker||st.core.case||st.core.claim?.hasEvidence||d.case||d.speechSource)return d.line;
-  const v=step.variant,e=Object.prototype.hasOwnProperty.call(CORE_VOICE,v)?CORE_VOICE[v]:null;
+  const v=step.variant,e=Object.prototype.hasOwnProperty.call(CORE_VOICE,v)?CORE_VOICE[v]:st.coreVoiceExtension===1&&Object.prototype.hasOwnProperty.call(CORE_VOICE_EXTENSION,v)?CORE_VOICE_EXTENSION[v]:null;
   if(!e||e.stage!==stage||e.action!==id||d.line!==fmt(e.original,st))return d.line;
   const named=Object.prototype.hasOwnProperty.call(e.individual,st.w.id)?fmt(e.individual[st.w.id],st):null;
   const pool=(e.voices[voice(st.w)]||e.voices.stoic).map(s=>fmt(s,st));
