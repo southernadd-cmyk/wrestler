@@ -474,4 +474,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI5={
+  "marisol": {
+    "w": [
+      "You've studied the whole match. Did you notice the tiny change of grip that decided that exchange?",
+      "Your research may show you the big movement. I wonder what you missed just underneath it."
+    ],
+    "f": [
+      "I watch the smallest adjustments in pressure. They tell me which part of a movement deserves practice.",
+      "I prepare by isolating the detail that makes a hold work, then testing it from several positions."
+    ]
+  },
+  "gideon": {
+    "w": [
+      "You've studied the movement. Did you see the decision that came just before it?",
+      "Your notes tell you when I moved last time. I intend to make that moment different."
+    ],
+    "f": [
+      "I study the shift before the obvious movement. That's the part I want to recognise sooner.",
+      "I practise responding to the first change in balance, not waiting for the whole technique to announce itself."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

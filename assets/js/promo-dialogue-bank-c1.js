@@ -455,4 +455,37 @@
   }
 };
  for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI5={
+  "mara": {
+    "w": [
+      "Your evidence establishes what I did on a previous occasion. It does not bind me to repeat it.",
+      "I grant that you have examined the record. Your conclusion about the next exchange remains unproven."
+    ],
+    "f": [
+      "I study the position that made a technique possible. Without that foundation, the technique proves very little.",
+      "My preparation is to examine the alternatives before I commit to an argument on the mat."
+    ]
+  },
+  "lyra": {
+    "w": [
+      "You've watched me find my rhythm. I wonder if you'll notice when I decide to change it.",
+      "I know you've studied those exchanges. I want to find a moment in this one that neither of us has seen."
+    ],
+    "f": [
+      "I watch the little pause before an exchange changes direction. I've been practising how to use it.",
+      "My preparation is finding a way to keep moving when the rhythm I expected is interrupted."
+    ]
+  },
+  "kit": {
+    "w": [
+      "You've watched the tapes, mate. Lovely. Did you bring anything that works when I skip your favourite bit?",
+      "You've done the reading. Let's see how you get on with the practical exam."
+    ],
+    "f": [
+      "I watch the bit where somebody ties themselves in knots. Then I practise the short way out.",
+      "My homework's simple: find the awkward position and have a decent escape ready before I need it."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

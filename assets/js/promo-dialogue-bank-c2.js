@@ -414,4 +414,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI5={
+  "kira": {
+    "w": [
+      "Your analysis is useful. I will test whether you can maintain your position when the expected entry is denied.",
+      "Study my technique carefully. You will still have to establish control against resistance."
+    ],
+    "f": [
+      "I review the transitions between holds and practise maintaining balance through each one.",
+      "I prepare both the entry and the release. Control is required at either end of a technique."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
