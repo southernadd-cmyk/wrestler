@@ -173,4 +173,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceQuestionsE7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE8={
+  "cal": [
+    "Leave the claim. What can we show them on the mat?",
+    "Watch the feet and the grips. What can they establish from that?"
+  ],
+  "nico": [
+    "Forget the talk before the music starts. What can the people judge once we find our rhythm in the ring?",
+    "There's a whole match ahead of us. What can we actually demonstrate from one exchange to the next?"
+  ],
+  "red": [
+    "Leave the rumour alone. What can we show them when the bell goes?",
+    "We've talked enough. What can the crowd see for themselves in the ring?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceQuestionsE8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

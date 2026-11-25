@@ -195,3 +195,7 @@ G4E.5 CI recovered 13 additional player evidence questions (88 cumulative, zero 
 ## G4E.7 — close remaining sampled evidence question gaps
 
 G4E.6 CI recovered 10 additional player evidence questions (98 cumulative, zero losses); 119/127 authored, 8 remaining. Add two full questions each for Priya, Rev, Rocco, Roxy, Tori, Val, Vera and Winnie (one miss per owner). Require exactly eight new recoveries and all 106 previously missing sampled turns recovered, preserving prior G4C/D gains and semantic provenance. Verify 126 scoped questions across 63 original owners. The projected 127/127 concerns the fixed sample, not all possible scenes or all 80 original wrestlers. No engine, save, UI or workflow changes. CI pending.
+
+## G4E.8 — complete the original roster's evidence question banks
+
+Add two full player evidence press questions each for Bao, Brick, Cal, Cedric, Elodie, Felix, Kezia, Nate, Nico, Nikita, Nolan, Red, Rex, Sol, Sylvia, Tomas and Tomas Ash. These are the 17 original owners not yet present in the dedicated question fixture. Require exact equality with the original 80-owner follow-up fixture, two scoped questions per owner (160 total), and preserve the 106 fixed-sample recoveries with zero losses. No further sample recovery is expected because G4E.7 already closes the sampled gaps. Generated owner assets and manifest must match source banks. No engine, UI, save or workflow changes. CI pending.

@@ -172,4 +172,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceQuestionsE7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE8={
+  "brick": [
+    "Never mind what someone's said. What can we show them by putting the work in?",
+    "We've got a match to do. What can they judge from that?"
+  ],
+  "rex": [
+    "No more about the claim. What can you show me on the canvas?",
+    "People bought a ticket for the match. What can they judge from it?"
+  ],
+  "sol": [
+    "These people deserve more than an accusation. What can we show them through an honest effort in the ring?",
+    "Let's give them something they can see for themselves. What can we demonstrate by wrestling each other?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceQuestionsE8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

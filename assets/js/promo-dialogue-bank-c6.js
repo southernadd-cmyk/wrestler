@@ -175,4 +175,23 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceQuestionsE7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE8={
+  "cedric": [
+    "Who gets to judge what happens in the ring, if not the people watching?",
+    "Set the accusation aside. What can we both demonstrate if we are given a fair contest?"
+  ],
+  "felix": [
+    "I know people have opinions about us. What can we actually show them by getting the wrestling right tonight?",
+    "I'd rather demonstrate something than make another claim. What can we give the people to judge for themselves?"
+  ],
+  "kezia": [
+    "Would you leave that allegation aside and tell me what we could demonstrate together in the ring?",
+    "What do you think the people can learn by watching us put our wrestling to the test?"
+  ],
+  "tomas": [
+    "How interesting that the allegation has taken over the discussion. What can we actually demonstrate without relying on it?",
+    "Let us give the audience a fair opportunity to judge us. What can the contest show them that our words cannot?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceQuestionsE8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

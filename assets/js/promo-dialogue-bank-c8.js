@@ -150,4 +150,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceQuestionsE7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE8={
+  "elodie": [
+    "The accusation is one thing. The observable result is another. What can the match actually establish?",
+    "Take your time with this answer. What could the audience learn from the wrestling itself?"
+  ],
+  "tomasash": [
+    "An accusation does not tell you whether someone has control. What can we demonstrate when we wrestle?",
+    "Save the judgement about the claim. What can the crowd learn from how we handle ourselves in the ring?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceQuestionsE8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
