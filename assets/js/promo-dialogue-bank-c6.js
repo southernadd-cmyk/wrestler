@@ -412,4 +412,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6C[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH7={
+  "ari": {
+    "w": [
+      "The crowd can hear you talk about the years. I want them to see what happens when I get close.",
+      "You've had longer to learn the room. I can still make it lean forward for something unexpected."
+    ],
+    "f": [
+      "Experience is hearing the room change before the noise actually rises.",
+      "I've learned how to stay present when the moment I was waiting for slips away."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

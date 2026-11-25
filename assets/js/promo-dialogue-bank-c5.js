@@ -350,4 +350,67 @@
   }
 };
  for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6C[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH7={
+  "gus": {
+    "w": [
+      "You've done plenty of shifts. Good. We still have a job to do tonight.",
+      "Respect the years you've put in, but experience isn't permission to take liberties with the next person."
+    ],
+    "f": [
+      "Experience is spotting when a move isn't safe to finish and finding a better one.",
+      "I've learned how to keep the work steady when a match goes sideways."
+    ]
+  },
+  "jett": {
+    "w": [
+      "Okay, you've got the years. Yeah. I still think I can make you rethink the first grip.",
+      "You've done this more than me, sure, but I want to see what happens when I try something different."
+    ],
+    "f": [
+      "Experience is learning not to panic when the grip goes wrong. Get another grip.",
+      "I've learned the careful bit matters more than the impressive bit when things change."
+    ]
+  },
+  "mae": {
+    "w": [
+      "You've learned your lessons. I intend to offer you one you haven't had yet.",
+      "Experience is a good teacher, but the lesson isn't finished until we've wrestled."
+    ],
+    "f": [
+      "I've learned when to correct a mistake and when to start the movement again.",
+      "Experience tells me what to preserve when an unfamiliar problem interrupts a familiar move."
+    ]
+  },
+  "nikita": {
+    "w": [
+      "Years. Fine. Which part of them stops my next move?",
+      "You've done it before. Have you done it against this approach?"
+    ],
+    "f": [
+      "Experience tells me when the grip's wrong. Change it.",
+      "I've learned to stop a sequence before it becomes a mistake. Next question."
+    ]
+  },
+  "soraya": {
+    "w": [
+      "Experience is one condition of this contest. It does not exempt you from the others.",
+      "Your experience is acknowledged. The terms at the bell remain equal."
+    ],
+    "f": [
+      "I've learned to identify the conditions that make a hold effective.",
+      "Experience helps me change my response when the original conditions no longer apply."
+    ]
+  },
+  "theo": {
+    "w": [
+      "Define the advantage your experience provides. Don't confuse it with the outcome.",
+      "The number of years is a measure of time. It is not a measure of control in this exchange."
+    ],
+    "f": [
+      "Experience gives me a better basis for choosing between competing responses.",
+      "I've learned to revise a prediction when the observable position changes."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
