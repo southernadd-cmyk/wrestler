@@ -146,4 +146,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceQuestionsE1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE2={
+  "ayla": [
+    "Let the allegation end here. What can the next chapter, the match itself, actually tell us?",
+    "The ending has not been written. What can we show these people before it arrives?"
+  ],
+  "dev": [
+    "Let us give these people something they can judge for themselves. What can we demonstrate together in the ring?",
+    "What can we show the young ones about doing this properly, without relying on an allegation?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceQuestionsE2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
