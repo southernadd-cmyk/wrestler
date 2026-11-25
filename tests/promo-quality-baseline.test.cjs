@@ -460,10 +460,12 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
   // One scene per identity verifies the observation hook cannot affect
   // transcript, state, or result compared with the uninstrumented engine.
   const plain=j===0?plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts):null;
-  const oldBankPolicy=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);oldBankPolicy.authoredDialogue.semanticBankReuse=2;delete oldBankPolicy.authoredDialogue.reviewedSpecialist;delete oldBankPolicy.authoredDialogue.authoredTopics;delete oldBankPolicy.authoredDialogue.authoredFollowups;delete oldBankPolicy.authoredDialogue.authoredQuestions;delete oldBankPolicy.authoredDialogue.authoredStrengthCounters;delete oldBankPolicy.authoredDialogue.authoredEvidenceAcknowledgements;
-  const priorSpecialist=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorSpecialist.authoredDialogue.reviewedSpecialist;delete priorSpecialist.authoredDialogue.authoredTopics;delete priorSpecialist.authoredDialogue.authoredFollowups;delete priorSpecialist.authoredDialogue.authoredQuestions;delete priorSpecialist.authoredDialogue.authoredStrengthCounters;delete priorSpecialist.authoredDialogue.authoredEvidenceAcknowledgements;
-  const priorTopics=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorTopics.authoredDialogue.authoredTopics;delete priorTopics.authoredDialogue.authoredFollowups;delete priorTopics.authoredDialogue.authoredQuestions;delete priorTopics.authoredDialogue.authoredStrengthCounters;delete priorTopics.authoredDialogue.authoredEvidenceAcknowledgements;
-  const previous=JSON.parse(JSON.stringify(st));delete previous.semantic.claimClassification;
+  const oldBankPolicy=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);oldBankPolicy.authoredDialogue.semanticBankReuse=2;delete oldBankPolicy.authoredDialogue.reviewedSpecialist;delete oldBankPolicy.authoredDialogue.authoredTopics;delete oldBankPolicy.authoredDialogue.authoredFollowups;delete oldBankPolicy.authoredDialogue.authoredQuestions;delete oldBankPolicy.authoredDialogue.authoredStrengthCounters;delete oldBankPolicy.authoredDialogue.authoredEvidenceAcknowledgements;delete oldBankPolicy.authoredDialogue.authoredExperience;
+  const priorSpecialist=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorSpecialist.authoredDialogue.reviewedSpecialist;delete priorSpecialist.authoredDialogue.authoredTopics;delete priorSpecialist.authoredDialogue.authoredFollowups;delete priorSpecialist.authoredDialogue.authoredQuestions;delete priorSpecialist.authoredDialogue.authoredStrengthCounters;delete priorSpecialist.authoredDialogue.authoredEvidenceAcknowledgements;delete priorSpecialist.authoredDialogue.authoredExperience;
+  const priorTopics=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorTopics.authoredDialogue.authoredTopics;delete priorTopics.authoredDialogue.authoredFollowups;delete priorTopics.authoredDialogue.authoredQuestions;delete priorTopics.authoredDialogue.authoredStrengthCounters;delete priorTopics.authoredDialogue.authoredEvidenceAcknowledgements;delete priorTopics.authoredDialogue.authoredExperience;
+  // Historical controls must not activate later experience rows on fallback.
+   for(const control of [oldBankPolicy,priorSpecialist,priorTopics])assert.equal(control.authoredDialogue.authoredExperience,undefined);
+   const previous=JSON.parse(JSON.stringify(st));delete previous.semantic.claimClassification;
   inc(formatsSeen,st.director?.format||'legacy');
   activeScene=[];
   for(let step=0;st.stage!=='done';step++){
@@ -553,8 +555,10 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
    }
    if(round==='answer'&&id==='turn'){
     topicPairs++;
+     // Both sides of the historical G4C comparison must disable later G4H dialogue.
+     assert.ok(priorExperience,'historical topic comparison requires an experience-disabled control');
     for(const side of ['w','f']){
-     const a=st.log.slice(before).find(e=>e.side===side),b=priorTopics.log.slice(topicAt).find(e=>e.side===side);
+     const a=priorExperience.log.slice(before).find(e=>e.side===side),b=priorTopics.log.slice(topicAt).find(e=>e.side===side);
      assert.ok(a&&b);assert.equal(a.semantic?.claim,b.semantic?.claim);assert.equal(a.semantic?.move,b.semantic?.move);
      if(b.authoredId&&!a.authoredId)topicLosses++;
      if(a.authoredId&&!b.authoredId&&a.semantic?.strengthCounterBank!==1){assert.equal(a.semantic?.topicBank,1);assert.equal(a.semantic.claim,'evidence');topicHits++;topicIds.add(a.authoredId);topicOwners.add(a.dialogueSlot.owner);inc(topicSides,side);if(eighthEvidenceBatch.has(a.dialogueSlot.owner)){batchHits++;batchIds.add(a.authoredId);batchOwners.add(a.dialogueSlot.owner);inc(batchSides,side);}}
