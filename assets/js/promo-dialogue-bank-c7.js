@@ -282,4 +282,23 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceAcknowledgementsG4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG6={
+  "dev": [
+    "That's fair. It would be irresponsible of me to pass on something I cannot verify.",
+    "I take that on board. We should be accountable for what we know, not what we suspect."
+  ],
+  "liya": [
+    "Oh, fair! Just because I can picture it doesn't mean it happened.",
+    "You're right, promise. Let's make the surprise something everybody can see for themselves."
+  ],
+  "kellan": [
+    "Yep! Hang on, I've got ahead of the actual proof. Scrap that bit.",
+    "Fair, fair. It's an idea until somebody actually does it. Got it."
+  ],
+  "sasha": [
+    "All right, the punchline landed before the evidence did. I'll own that.",
+    "Fair correction. A good joke doesn't turn an allegation into a fact."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
