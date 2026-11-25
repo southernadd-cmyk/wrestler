@@ -102,7 +102,7 @@
    irritation:clamp((w.ego??50)*.25),ego:w.ego??50,pro:w.pro??60};
  }
  function begin(w,f,m,format=null){
-  return {v:1,format,phase:'opening',subject:null,claim:null,lastPlayer:null,lastOpponent:null,
+  return {v:2,format,phase:'opening',subject:null,claim:null,lastPlayer:null,lastOpponent:null,
    player:participant(m||w),opponent:participant(f),client:w.id,turns:[],followup:null,ending:null};
  }
  function observe(d,st,record,fresh){
@@ -125,9 +125,25 @@
    opponentLine:theirs.at(-1)?.line||null,playerComposure:a.composure,opponentIrritation:b.irritation});
   d.phase=record.round==='close'?'resolved':record.round==='push'?'closing':record.round==='answer'?'decision':'exchange';
  }
+ // A single unscripted beat after the answer, never a replacement for a
+ // selected spoken line, evidence ruling, or match commitment. Old director
+ // snapshots deliberately retain the original pacing.
+ function spontaneous(d,st,record){
+  if(d.v!==2||!formatFor(d)||d.event||record.round!=='answer'||st.core.case||st.arc||st.speaker||!d.lastOpponent||!d.lastPlayer)return null;
+  const b=d.opponent,a=d.player,personal=record.id==='personal'||record.id==='accusation';
+  const n=hash(st.seed+'|phase6|'+record.id)%100;
+  if(b.stance==='combative'&&b.irritation>=30&&Math.abs(st.meter)<30&&n<(personal?60:32))
+   return {kind:'interrupt',actor:b.id,line:'{F} cuts across the interviewer before the next question can be asked.',follow:true,reason:'the opponent interrupted the handover'};
+  if(b.stance==='reserved'&&b.irritation>=25&&n<45)
+   return {kind:'refusal',actor:b.id,line:'{F} lowers the microphone and waves away another question.',follow:false,reason:'the opponent refuses another question'};
+  if((a.composure<40||b.composure<40)&&n<35)
+   return {kind:'pause',actor:a.composure<b.composure?a.id:b.id,line:'Neither wrestler speaks for a moment. The interviewer waits, then moves on.',follow:false,reason:'the exchange has fallen silent'};
+  return null;
+ }
  function route(d,st,record){
   if(st.core.case?.exposed)return {follow:true,reason:'the opponent has challenged the evidence'};
   if(st.core.case?.commit)return {follow:true,reason:'there is an unresolved public commitment'};
+  if(d.v===2&&d.event&&!st.core.case&&!st.arc&&!st.speaker)return {follow:d.event.follow,reason:d.event.reason};
   // Acknowledging an argument or reaching a firm impasse can lead straight to
   // the final word. A volatile exchange can earn one additional beat, never a loop.
   const a=d.player,b=d.opponent;
@@ -158,6 +174,6 @@
   return {line:null,reply:null,risk:2,base:6};
  }
  function summary(d){return {subject:d.subject,phase:d.phase,...(d.latestPoint?{latestPoint:d.latestPoint}:{}),...(formatFor(d)?{format:d.format,formatName:formatFor(d).name}:{}),player:d.player.composure<40?'Unsettled':d.player.irritation>=42?'Frustrated':'Composed',
-  opponent:d.opponent.irritation>=42?'Heated':d.opponent.composure<40?'Unsettled':'Measured',followup:d.followup,ending:d.ending};}
- root.OfficePromoDirector=Object.freeze({begin,observe,route,options,followup,summary,selectFormat,angles,heading,setup,openingQuestion,answerOpening});
+  opponent:d.opponent.irritation>=42?'Heated':d.opponent.composure<40?'Unsettled':'Measured',followup:d.followup,ending:d.ending,...(d.event?{event:{...d.event}}:{})};}
+ root.OfficePromoDirector=Object.freeze({begin,observe,spontaneous,route,options,followup,summary,selectFormat,angles,heading,setup,openingQuestion,answerOpening});
 })(typeof window!=='undefined'?window:globalThis);
