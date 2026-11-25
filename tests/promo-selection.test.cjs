@@ -71,6 +71,10 @@ assert.equal(L.select(ranked,ctx,'seed').id,'specific');
 assert.equal(L.select(ranked,ctx,'seed',{recent:['specific']}).id,'base');
 assert.throws(()=>L.catalogue([{owner:'mara',role:'wrestler',lines:[make('bad',{variants:['tu_record']})]}]),/unapproved variant/);
 assert.deepEqual(Array.from(L.recentIds({lastPromo:{dialogueIds:['first']}},[{promo:{dialogue:[{authoredId:'first'},{authoredId:'second'}]}}])),['first','second']);
+// History is intentionally bounded, deduplicated, and prioritises the last promo.
+const recentOverflow=Array.from({length:150},(_,i)=>'history-'+i);
+assert.deepEqual(Array.from(L.recentIds({lastPromo:{dialogueIds:[...recentOverflow.slice(0,100),recentOverflow[0]]}},[{promo:{dialogue:recentOverflow.slice(99).map(authoredId=>({authoredId}))}}])),recentOverflow.slice(0,128));
+assert.deepEqual(Array.from(L.recentIds({lastPromo:{dialogueIds:['only']}},Array.from({length:13},(_,i)=>({promo:{dialogue:[{authoredId:'event-'+i}]}})))),['only',...Array.from({length:12},(_,i)=>'event-'+i)]);
 // Conservative closing bank guard: no implicit or vague promise may replace
 // the explicit graph commitment. Other actions are unaffected.
 const vow={stage:'close',side:'w',action:'vow',variant:'vo_hard'};
@@ -106,7 +110,7 @@ for(const w of rows)for(const f of rows.filter(x=>x.id!==w.id))for(let i=0;i<30;
  const a=M.begin(c,w,f,null,null,p,{...opts,authored:true,banks:promoBanks(w.id,f.id)}),b=M.begin(c,w,f,null,null,p,opts);
  const all=Object.keys(Object.fromEntries(authored));
  const avoid=M.begin(c,w,f,{lastPromo:{dialogueIds:all}},null,p,{...opts,authored:true,banks:promoBanks(w.id,f.id)});
- assert.equal(avoid.authoredDialogue.recent.length,authored.size);
+ assert.deepEqual(Array.from(avoid.authoredDialogue.recent),all.slice(0,128),'recent history keeps the first 128 unique IDs in priority order');
  while(a.stage!=='done'){
   const round=M.ROUNDS[a.round].id,choices=M.choices(a),preferred=round==='open'?['proof','people','swagger'][i%3]:round==='answer'?['turn','calm'][i%2]:round==='push'?['press','acknowledge'][i%2]:'vow';
   const id=(choices.find(o=>o.id===preferred)||choices[0]).id,copy=plain(a),start=a.log.length;
