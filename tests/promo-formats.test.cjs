@@ -6,6 +6,8 @@ const localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,Str
 vm.runInNewContext(core,{window:root,localStorage,Date,Math,JSON,console});
 const {OfficeMic:M,OfficeData:D,OfficePromoDirector:Dir,OfficeStory:{Graph},OfficeSigning:Signing}=root;
 const clone=x=>JSON.parse(JSON.stringify(x)),stats={},angles={},counts={};
+const crowdOld=new Set(),crowdNew=new Set();let oldRepeats=0,newRepeats=0,oldTotal=0,newTotal=0;
+const norm=line=>line.replace(/Nova|Bell|Magnus|Graves|Mara|Vale/g,'<name>');
 const w=D.ALL.find(x=>x.id==='nova'),f=D.ALL.find(x=>x.id==='magnus'),mouth=D.ALL.find(x=>x.id==='mara');
 assert.ok(w&&f&&mouth);
 for(let i=0;i<240;i++){
@@ -21,18 +23,25 @@ for(let i=0;i<240;i++){
  const open=M.choices(s).map(o=>o.id);
  (angles[fmt]??=new Set()).add(open.join(','));
  assert.ok(open.length>=3);
+ const previous=clone(s);delete previous.reactionStyle;
  const pattern=[];
  while(s.stage!=='done'){
   assert.ok(pattern.length<4);
   const round=M.ROUNDS[s.round].id,choices=M.choices(s);
   if(round==='close')assert.equal(choices.length,Graph.choices('close',s.core).length,'all valid promises still offered');
   const chosen=choices[(i+pattern.length)%choices.length].id,copy=clone(s);
-  M.choose(s,chosen);M.choose(copy,chosen);
+  M.choose(s,chosen);M.choose(copy,chosen);M.choose(previous,chosen);
   assert.equal(JSON.stringify(s),JSON.stringify(copy),'serialized mid-promo resume exact');
   pattern.push(round);
  }
  assert.equal(pattern[0],'open');assert.equal(pattern[1],'answer');assert.equal(pattern.at(-1),'close');
- const result=M.result(s);
+ const result=M.result(s),old=M.result(previous);
+ for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature','speech','beats'])assert.equal(JSON.stringify(result[k]),JSON.stringify(old[k]),'reaction-only parity: '+k);
+ for(const [state,pool,isNew] of [[s,crowdNew,true],[previous,crowdOld,false]]){
+  const lines=state.log.filter(e=>e.side==='crowd').map(e=>norm(e.line)),unique=new Set(lines);
+  lines.forEach(x=>pool.add(x));
+  if(isNew){newTotal+=lines.length;newRepeats+=lines.length-unique.size;}else{oldTotal+=lines.length;oldRepeats+=lines.length-unique.size;}
+ }
  assert.equal(result.format,fmt);
  assert.equal(JSON.stringify(result.promise),JSON.stringify(Graph.result(s.core).promise));
  assert.equal(JSON.stringify(result.tactic),JSON.stringify(Graph.result(s.core).tactic));
@@ -57,4 +66,8 @@ assert.equal(legacy.director.format,null);
 assert.ok(!M.view(legacy).conversation.format);
 assert.ok(Signing.eligible({...c,title:{pid:c.pid,div:'women'}}));
 assert.ok(Signing.eligible({...c,blowoff:true}));
+assert.equal(oldTotal,newTotal,'no hidden reaction or scoring changes');
+assert.equal(newRepeats,0,'new scenes never repeat a crowd line');
+assert.ok(oldRepeats>newRepeats&&crowdNew.size>crowdOld.size*2,'substantial diversity improvement');
+console.log('PASS crowd variety: '+oldRepeats+'/'+oldTotal+' -> '+newRepeats+'/'+newTotal+' within-scene repeats; '+crowdOld.size+' -> '+crowdNew.size+' distinct lines; gameplay parity.');
 console.log('PASS five promo formats: '+JSON.stringify(stats)+'; decisions by format '+JSON.stringify(counts)+'; evidence, vows, signing eligibility and exact resume preserved.');
