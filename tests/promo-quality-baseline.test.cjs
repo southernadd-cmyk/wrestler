@@ -34,6 +34,9 @@ const availableIds=new Set(),selectedIds=new Set(),slotCoverage=new Map();
 const closingComparison={vow:{before:0,after:0},clean:{before:0,after:0}};let closingPairs=0;
 const voiceVariants=new Set(["ca_long","ca_smile","ch_hand","ch_now","vo_end","sw_ignore","ch_one_fall","pe_grudge"]);
 const voiceOld=new Set(),voiceNew=new Set(),voiceActors=new Set();let voiceChanges=0,voicePairs=0;
+const extendedVariants=new Set(["ch_trade","qu_strikes","qu_studied","pe_reputation"]);
+const extendedOld=new Set(),extendedNew=new Set(),extendedActors=new Set(),extendedChangedVariants=new Map();let extendedPairs=0,extendedChanges=0;
+function withoutPlayerWords(entries){return entries.map(e=>e.side==='w'?{...e,line:null}:e);}
 const opponentVariants=new Set(["ch_one_fall","pr_tape","pr_veteran","ca_long","ca_restraint"]);
 const opponentOld=new Set(),opponentNew=new Set(),opponentActors=new Set(),opponentChangedVariants=new Map();let opponentPairs=0,opponentChanges=0;
 function withoutOpponentWords(entries){return entries.map(e=>e.side==='f'?{...e,line:null}:e);}
@@ -61,6 +64,8 @@ for(const [i,w] of roster.entries()){
    const variant=round!=='push'&&root.OfficeStory.Graph.variantFor(st.core,round,o.id)?.id;
    const oldVoice=st.coreVoiceStyle?.v===1&&voiceVariants.has(variant)?JSON.parse(JSON.stringify(st)):null;
    if(oldVoice){delete oldVoice.coreVoiceStyle;Mic.choose(oldVoice,o.id);}
+   const oldExtended=st.coreVoiceExtension===1&&(extendedVariants.has(variant)||variant==='pe_respect')?JSON.parse(JSON.stringify(st)):null;
+   if(oldExtended){delete oldExtended.coreVoiceExtension;Mic.choose(oldExtended,o.id);}
    const oldOpponent=st.opponentVoiceStyle?.v===1&&opponentVariants.has(variant)?JSON.parse(JSON.stringify(st)):null;
    if(oldOpponent){delete oldOpponent.opponentVoiceStyle;Mic.choose(oldOpponent,o.id);}
    const strict=round==='close'&&st.closingCommitmentStyle===1?JSON.parse(JSON.stringify(st)):null;
@@ -77,6 +82,28 @@ for(const [i,w] of roster.entries()){
     const x=st.log.slice(before).find(e=>e.side==='w'),y=oldVoice.log.slice(before).find(e=>e.side==='w');
     if(x&&y){voiceOld.add(normal(y.line,[w,f],p));voiceNew.add(normal(x.line,[w,f],p));if(x.line!==y.line){voiceChanges++;voiceActors.add(w.id);assert.ok(!x.authoredId&&!x.composedId&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.speaker);assert.ok(!/[{}]/.test(x.line));}}
     if(st.stage==='done')for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature'])assert.equal(JSON.stringify(Mic.result(st)[k]),JSON.stringify(Mic.result(oldVoice)[k]),'core voice outcome '+k);
+   }
+   if(oldExtended){
+    extendedPairs++;
+    assert.equal(JSON.stringify(st.core),JSON.stringify(oldExtended.core),'G2D graph parity');
+    for(const k of ['meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(oldExtended[k]),'G2D '+k);
+    const now=st.log.slice(before),old=oldExtended.log.slice(before);
+    assert.equal(JSON.stringify(withoutPlayerWords(now)),JSON.stringify(withoutPlayerWords(old)),'G2D dialogue metadata and non-player parity');
+    assert.equal(JSON.stringify(Mic.choices(st)),JSON.stringify(Mic.choices(oldExtended)),'G2D next options parity');
+    const x=now.find(e=>e.side==='w'),y=old.find(e=>e.side==='w');
+    if(x&&y){
+     if(variant==='pe_respect')assert.equal(x.line,y.line,'evidence-sensitive respect claim must remain literal');
+     else{
+      extendedOld.add(normal(y.line,[w,f],p));extendedNew.add(normal(x.line,[w,f],p));
+      if(x.line!==y.line){extendedChanges++;extendedActors.add(w.id);inc(extendedChangedVariants,variant);
+       assert.ok(!x.authoredId&&!x.composedId&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.speaker);
+       assert.ok(!/[{}]/.test(x.line));
+       if(variant.startsWith('qu_'))assert.match(x.line,/\bcounter\b/i,'counter commitment explicit');
+       if(variant==='qu_strikes')assert.match(x.line,/\bpunch\b/i,'specific punch commitment retained');
+      }
+     }
+    }
+    if(st.stage==='done')for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature'])assert.equal(JSON.stringify(Mic.result(st)[k]),JSON.stringify(Mic.result(oldExtended)[k]),'G2D outcome '+k);
    }
    if(oldOpponent){
     opponentPairs++;
@@ -153,6 +180,8 @@ assert.equal(resumeChecks,roster.length);
 if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  assert.ok(voiceChanges>100&&voiceActors.size>30&&voiceNew.size>voiceOld.size,'G2 core voice coverage');
  console.log('PASS G2 core voice: '+voiceChanges+'/'+voicePairs+' target turns changed across '+voiceActors.size+' speakers; '+voiceOld.size+' -> '+voiceNew.size+' distinct normalized lines; unchanged graph, scoring and non-player dialogue.');
+ assert.ok(extendedChanges>70&&extendedActors.size>20&&extendedChangedVariants.size===extendedVariants.size&&extendedNew.size>extendedOld.size,'G2D extended player voice coverage');
+ console.log('PASS G2D player voice: '+extendedChanges+'/'+extendedPairs+' reviewed/protected target turns; '+extendedActors.size+' speakers; '+extendedOld.size+' -> '+extendedNew.size+' distinct normalized lines; variants '+JSON.stringify(Object.fromEntries(extendedChangedVariants))+'; unchanged graph, options and consequences.');
  assert.ok(opponentChanges>100&&opponentActors.size>=10&&opponentChangedVariants.size===opponentVariants.size&&opponentNew.size>opponentOld.size,'G2C opponent voice coverage');
  console.log('PASS G2C opponent voice: '+opponentChanges+'/'+opponentPairs+' target turns changed across '+opponentActors.size+' speakers; '+opponentOld.size+' -> '+opponentNew.size+' distinct normalized lines; variants '+JSON.stringify(Object.fromEntries(opponentChangedVariants))+'; unchanged graph, semantic fingerprints, options and other dialogue.');
  assert.equal(closingPairs,scenes.length);
