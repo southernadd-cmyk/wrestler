@@ -536,4 +536,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI8[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI9={
+  "vera": {
+    "w": [
+      "Your observations are from a previous contest. Measure the balance again when we establish contact.",
+      "You've studied the angles I used before. What will you do when the next angle is different?"
+    ],
+    "f": [
+      "I study the smallest shift in weight that changes the stability of a hold, then test it in training.",
+      "I prepare by measuring how far a position can change before the original response is no longer useful."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI9[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
