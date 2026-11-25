@@ -36,6 +36,22 @@ assert.equal(L.closingCommitment({text:'One clean fall in the centre. No qualifi
 assert.equal(L.closingCommitment({text:'Whatever the result, both sides will know where things stand.'},{...vow,action:'clean',variant:'cl_middle'}),false);
 assert.equal(L.closingCommitment({text:'Shake my hand. No shortcuts.'},{...vow,action:'clean',variant:'cl_hand'}),true);
 assert.equal(L.closingCommitment({text:'I have nothing more to say.'},{...vow,action:'uncertainty',variant:'un_done'}),true);
+// G1: preserve an editorially reviewed character lead, complete the
+// commitment, and never promote an arbitrary or contradictory line.
+const closingCtx={...ctx,...vow,hasMouthpiece:false};
+const closingRow=(id,text,variant='vo_hard',action='vow')=>({id,category:'closing',stage:'close',action,side:'w',text,when:{variants:[variant]}});
+const lead='I have made my position clear, and I intend to keep to it all the way to the finish.';
+const unsafe='I will deliberately lose this match.';
+const closeCat=L.catalogue([{owner:'mara',role:'wrestler',lines:[closingRow('reviewed',lead),closingRow('unsafe',unsafe),closingRow('unknown','I am thinking about the match.')] }]);
+const restored=L.selectClosing(closeCat,closingCtx,'g1',{});
+assert.equal(restored.id,'reviewed');assert.ok(restored.text.startsWith(lead+' '));assert.match(restored.text.slice(lead.length),/\b(?:hard|easy|tough)\b/i);assert.match(restored.text.slice(lead.length),/\b(?:I will win|I'll win)\b/);
+assert.equal(L.selectClosing(closeCat,closingCtx,'g1',{recent:['reviewed']}),null);
+for(const patch of [{protected:'recorded-argument'},{protected:'recorded-evidence'},{protected:'closing-contract'},{hasMouthpiece:true},{variant:'vo_plain'},{speaker:{...actor,id:'unknown'}}])assert.equal(L.selectClosing(closeCat,{...closingCtx,...patch},'g1',{}),null);
+const exactCat=L.catalogue([{owner:'mara',role:'wrestler',lines:[closingRow('exact',"It'll be hard graft. I'll be the one standing.")]}]);
+assert.equal(L.selectClosing(exactCat,closingCtx,'g1',{}).text,"It'll be hard graft. I'll be the one standing.");
+const cleanCtx={...closingCtx,action:'clean',variant:'cl_middle'};
+const cleanCat=L.catalogue([{owner:'mara',role:'wrestler',lines:[closingRow('cleanlead','Whatever the result, both sides will know where things stand.','cl_middle','clean'),closingRow('wrong','One clean fall, halfway through. Let everybody see it.','cl_middle','clean')]}]);
+const clean=L.selectClosing(cleanCat,cleanCtx,'g1',{});assert.equal(clean.id,'cleanlead');assert.match(clean.text,/clean fall in the (?:centre|middle)/);
 const p=D.PROMOS[0],rows=ids.map(id=>D.ALL.find(w=>w.id===id));assert.ok(rows.every(Boolean));
 const owners=new Set(),selected=new Set();let spoken=0,scenes=0,protectedN=0,opponentN=0;
 for(const w of rows)for(const f of rows.filter(x=>x.id!==w.id))for(let i=0;i<30;i++){
