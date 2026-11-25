@@ -78,7 +78,7 @@ for(const [i,w] of roster.entries()){
   const st=Mic.begin(c,w,f,rival,null,p,{directed:process.env.PROMO_AUDIT_LEGACY!=='1',formats:process.env.PROMO_AUDIT_LEGACY!=='1',dialogue:process.env.PROMO_AUDIT_LEGACY!=='1',authored:process.env.PROMO_AUDIT_LEGACY!=='1',banks:promoBanks(w.id,f.id),composition:process.env.PROMO_AUDIT_LEGACY!=='1',semantic:process.env.PROMO_AUDIT_LEGACY!=='1'});
   if(st.semantic)delete st.semantic.claimClassification; // frozen historical policy for paired G1–G3 comparisons
   if(st.authoredDialogue?.semanticBankReuse===3)st.authoredDialogue.semanticBankReuse=2;
-  if(st.authoredDialogue){delete st.authoredDialogue.reviewedSpecialist;delete st.authoredDialogue.authoredTopics;delete st.authoredDialogue.authoredFollowups;delete st.authoredDialogue.authoredStrengthCounters;delete st.authoredDialogue.authoredEvidenceAcknowledgements;delete st.authoredDialogue.authoredExperience;}
+  if(st.authoredDialogue){delete st.authoredDialogue.reviewedSpecialist;delete st.authoredDialogue.authoredTopics;delete st.authoredDialogue.authoredFollowups;delete st.authoredDialogue.authoredStrengthCounters;delete st.authoredDialogue.authoredEvidenceAcknowledgements;delete st.authoredDialogue.authoredExperience;delete st.authoredDialogue.authoredStudy;}
   for(const bank of st.authoredDialogue?.banks||[])for(const row of bank.rows){const id=bank.owner+'.'+row[0];availableIds.add(id);slot([row[1],row[2],row[3]].join('|')).available.add(id);}
   const oldFlow=st.openingFlow===1&&j===0?JSON.parse(JSON.stringify(st)):null;if(oldFlow)delete oldFlow.openingFlow;
   const rounds=[],choices=[],spoken=[];
@@ -374,6 +374,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
   if(mem.reviewedSpecialist===1){const own=L.selectSpecialistResponse(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredTopics===1){const own=L.selectAuthoredTopic(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredExperience===1){const own=L.selectAuthoredExperience(cat,ctx,seed,mem,sem);if(own)return own;}
+   if(mem.authoredStudy===1){const own=L.selectAuthoredStudy(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredFollowups===1){const own=L.selectAuthoredFollowup(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredQuestions===1){const own=L.selectAuthoredQuestion(cat,ctx,seed,mem,sem);if(own)return own;}
   if(mem.authoredStrengthCounters===1){const own=L.selectAuthoredStrengthCounter(cat,ctx,seed,mem,sem);if(own)return own;}
@@ -394,6 +395,7 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  let strengthHits=0,strengthLosses=0,strengthPairs=0;const strengthIds=new Set(),strengthOwners=new Set();
  let questionHits=0,questionLosses=0,questionPairs=0;const questionIds=new Set(),questionOwners=new Set();
  let followupHits=0,followupLosses=0,followupPairsD=0;const followupIdsD=new Set(),followupOwnersD=new Set();
+ let studyPairs=0,studyHits=0,studyLosses=0;const studyOwners=new Set(),studyIds=new Set(),studySides=new Map();
  let experiencePairs=0,experienceHits=0,experienceLosses=0,experienceH2Hits=0,experienceH3Hits=0,experienceH4Hits=0,experienceH5Hits=0,experienceH6Hits=0;const experienceH6Owners=new Set(["imani","ivo","kira","kofi","magnus","marisol","milo","nico","nolan","red","rev","sasha","sol","tomas","vera","winnie"]);const experienceH5Owners=new Set(["ash","ayla","bashir","brick","bronte","cedric","dax","dean","ezra","faye"]);const experienceH4Owners=new Set(['kezia','noelle','nova','zane','aisha','anya']);const experienceH3Owners=new Set(['eira','ellis','elodie','felix','gideon','juno']);const experienceH2Owners=new Set(['miro','morgan','nate','rex']);const experienceOwners=new Set(),experienceIds=new Set(),experienceSides=new Map();
  let topicHits=0,topicLosses=0,topicPairs=0;const topicIds=new Set(),topicOwners=new Set(),topicSides=new Map();
  const eighthEvidenceBatch=new Set(['rex','faye','miro','cass','alina','eira','vera','liya','leandro','tomasash']);
@@ -460,11 +462,11 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
   // One scene per identity verifies the observation hook cannot affect
   // transcript, state, or result compared with the uninstrumented engine.
   const plain=j===0?plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts):null;
-  const oldBankPolicy=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);oldBankPolicy.authoredDialogue.semanticBankReuse=2;delete oldBankPolicy.authoredDialogue.reviewedSpecialist;delete oldBankPolicy.authoredDialogue.authoredTopics;delete oldBankPolicy.authoredDialogue.authoredFollowups;delete oldBankPolicy.authoredDialogue.authoredQuestions;delete oldBankPolicy.authoredDialogue.authoredStrengthCounters;delete oldBankPolicy.authoredDialogue.authoredEvidenceAcknowledgements;delete oldBankPolicy.authoredDialogue.authoredExperience;
-  const priorSpecialist=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorSpecialist.authoredDialogue.reviewedSpecialist;delete priorSpecialist.authoredDialogue.authoredTopics;delete priorSpecialist.authoredDialogue.authoredFollowups;delete priorSpecialist.authoredDialogue.authoredQuestions;delete priorSpecialist.authoredDialogue.authoredStrengthCounters;delete priorSpecialist.authoredDialogue.authoredEvidenceAcknowledgements;delete priorSpecialist.authoredDialogue.authoredExperience;
-  const priorTopics=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorTopics.authoredDialogue.authoredTopics;delete priorTopics.authoredDialogue.authoredFollowups;delete priorTopics.authoredDialogue.authoredQuestions;delete priorTopics.authoredDialogue.authoredStrengthCounters;delete priorTopics.authoredDialogue.authoredEvidenceAcknowledgements;delete priorTopics.authoredDialogue.authoredExperience;
+  const oldBankPolicy=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);oldBankPolicy.authoredDialogue.semanticBankReuse=2;delete oldBankPolicy.authoredDialogue.reviewedSpecialist;delete oldBankPolicy.authoredDialogue.authoredTopics;delete oldBankPolicy.authoredDialogue.authoredFollowups;delete oldBankPolicy.authoredDialogue.authoredQuestions;delete oldBankPolicy.authoredDialogue.authoredStrengthCounters;delete oldBankPolicy.authoredDialogue.authoredEvidenceAcknowledgements;delete oldBankPolicy.authoredDialogue.authoredExperience;delete oldBankPolicy.authoredDialogue.authoredStudy;
+  const priorSpecialist=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorSpecialist.authoredDialogue.reviewedSpecialist;delete priorSpecialist.authoredDialogue.authoredTopics;delete priorSpecialist.authoredDialogue.authoredFollowups;delete priorSpecialist.authoredDialogue.authoredQuestions;delete priorSpecialist.authoredDialogue.authoredStrengthCounters;delete priorSpecialist.authoredDialogue.authoredEvidenceAcknowledgements;delete priorSpecialist.authoredDialogue.authoredExperience;delete priorSpecialist.authoredDialogue.authoredStudy;
+  const priorTopics=plainRoot.OfficeMic.begin(c,w,f,rival,null,p,opts);delete priorTopics.authoredDialogue.authoredTopics;delete priorTopics.authoredDialogue.authoredFollowups;delete priorTopics.authoredDialogue.authoredQuestions;delete priorTopics.authoredDialogue.authoredStrengthCounters;delete priorTopics.authoredDialogue.authoredEvidenceAcknowledgements;delete priorTopics.authoredDialogue.authoredExperience;delete priorTopics.authoredDialogue.authoredStudy;
   // Historical controls must not activate later experience rows on fallback.
-   for(const control of [oldBankPolicy,priorSpecialist,priorTopics])assert.equal(control.authoredDialogue.authoredExperience,undefined);
+   for(const control of [oldBankPolicy,priorSpecialist,priorTopics]){assert.equal(control.authoredDialogue.authoredExperience,undefined);assert.equal(control.authoredDialogue.authoredStudy,undefined);}
    const previous=JSON.parse(JSON.stringify(st));delete previous.semantic.claimClassification;
   inc(formatsSeen,st.director?.format||'legacy');
   activeScene=[];
@@ -492,12 +494,25 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
    const priorEvidenceAck=round==='push'&&id==='acknowledge'?JSON.parse(JSON.stringify(st)):null;
    if(priorEvidenceAck){delete priorEvidenceAck.authoredDialogue.authoredEvidenceAcknowledgements;plainRoot.OfficeMic.choose(priorEvidenceAck,id);}
    const priorExperience=round==='answer'&&id==='turn'?JSON.parse(JSON.stringify(st)):null;
-   if(priorExperience){delete priorExperience.authoredDialogue.authoredExperience;plainRoot.OfficeMic.choose(priorExperience,id);}
+   if(priorExperience){delete priorExperience.authoredDialogue.authoredExperience;delete priorExperience.authoredDialogue.authoredStudy;plainRoot.OfficeMic.choose(priorExperience,id);}
+    const priorStudy=round==='answer'&&id==='turn'?JSON.parse(JSON.stringify(st)):null;
+    if(priorStudy){delete priorStudy.authoredDialogue.authoredStudy;plainRoot.OfficeMic.choose(priorStudy,id);}
    Mic.choose(st,id);
-   if(priorExperience){
+   if(priorStudy){
+     studyPairs++;for(const k of ['core','meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(priorStudy[k]),'G4I1 '+k+' parity');
+     assert.equal(JSON.stringify(Mic.choices(st)),JSON.stringify(plainRoot.OfficeMic.choices(priorStudy)),'G4I1 choices parity');
+     const current=st.log.slice(before),previous=priorStudy.log.slice(before);assert.equal(current.length,previous.length);
+     for(let n=0;n<current.length;n++){
+      const a=current[n],b=previous[n];for(const k of ['claim','move','replyTo','kind','detail'])assert.equal(a.semantic?.[k],b.semantic?.[k],'G4I1 '+k+' parity');
+      if(b.authoredId&&!a.authoredId)studyLosses++;
+      if(a.authoredId&&!b.authoredId){assert.equal(a.semantic?.studyBank,1);assert.equal(a.semantic.claim,'study');assert.equal(a.semantic.move,a.side==='w'?'rebut':'counter');studyHits++;studyOwners.add(a.dialogueSlot.owner);studyIds.add(a.authoredId);inc(studySides,a.side);}
+      else assert.equal(JSON.stringify(a),JSON.stringify(b),'G4I1 prior reply unchanged');
+     }
+    }
+    if(priorExperience){
     experiencePairs++;for(const k of ['core','meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(priorExperience[k]),'G4H1 '+k+' parity');
     assert.equal(JSON.stringify(Mic.choices(st)),JSON.stringify(plainRoot.OfficeMic.choices(priorExperience)),'G4H1 choices parity');
-    const current=st.log.slice(before),previous=priorExperience.log.slice(before);
+    const current=priorStudy.log.slice(before),previous=priorExperience.log.slice(before);
     assert.equal(current.length,previous.length);
     for(let n=0;n<current.length;n++){
      const a=current[n],b=previous[n];
@@ -658,7 +673,8 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  assert.equal(strengthHits-strengthF2Hits-strengthF3Hits-strengthF4Hits-strengthF5Hits,10,'G4F1 recovery preserved');assert.equal(strengthF2Hits,13,'G4F2 recovery preserved');assert.equal(strengthF3Hits,10,'G4F3 recovery preserved');assert.equal(strengthF4Hits,10,'G4F4 recovery preserved');assert.equal(strengthF5Hits,8,'G4F5 recovers final eight sampled counters');assert.equal(strengthHits,51,'all sampled strength counters recovered');assert.equal(strengthLosses,0);const strengthBank={pairedExchanges:strengthPairs,recoveredTurns:strengthHits,lostTurns:strengthLosses,distinctIds:strengthIds.size,characters:strengthOwners.size};console.log('G4F5 STRENGTH '+JSON.stringify({...strengthBank,priorBatchTurns:strengthHits-strengthF5Hits,newBatchTurns:strengthF5Hits}));
  assert.equal(evidenceAckHits-evidenceAckG2Hits-evidenceAckG3Hits-evidenceAckG4Hits-evidenceAckG5Hits,8,'G4G1 pilot recovery preserved');assert.equal(evidenceAckG2Hits,14,'G4G2 recovery preserved');assert.equal(evidenceAckG3Hits,10,'G4G3 recovery preserved');assert.equal(evidenceAckG4Hits,10,'G4G4 recovery preserved');assert.equal(evidenceAckG5Hits,5,'G4G5 recovers final five sampled acknowledgements');assert.equal(evidenceAckG6Hits,0,'G4G6 extends roster coverage beyond the already-complete fixed sample');assert.equal(evidenceAckHits,47);assert.equal(evidenceAckLosses,0);assert.equal(evidenceAckOwners.size,39);const evidenceAcknowledgementBank={pairedExchanges:evidenceAckPairs,recoveredTurns:evidenceAckHits,lostTurns:evidenceAckLosses,distinctIds:evidenceAckIds.size,characters:evidenceAckOwners.size};console.log('G4G6 ACKNOWLEDGEMENTS '+JSON.stringify({...evidenceAcknowledgementBank,priorBatchTurns:evidenceAckHits-evidenceAckG6Hits,newBatchTurns:evidenceAckG6Hits,rosterCompletionOwners:evidenceAckG6Owners.size}));
  assert.equal(experienceHits-experienceH2Hits-experienceH3Hits-experienceH4Hits-experienceH5Hits-experienceH6Hits,13,'G4H1 recoveries retained');assert.equal(experienceH2Hits,12,'G4H2 recoveries retained');assert.equal(experienceH3Hits,12,'G4H3 recoveries retained');assert.equal(experienceH4Hits,10,'G4H4 recoveries retained');assert.equal(experienceH5Hits,10,'G4H5 recoveries retained');assert.equal(experienceH6Hits,16,'G4H6 closes all remaining sampled experience gaps');assert.equal(experienceHits,73);assert.equal(experienceLosses,0);assert.equal(experienceOwners.size,46);assert.equal(experienceSides.get('w'),35);assert.equal(experienceSides.get('f'),38);const experienceBank={pairedExchanges:experiencePairs,recoveredTurns:experienceHits,lostTurns:experienceLosses,distinctIds:experienceIds.size,characters:experienceOwners.size,sides:Object.fromEntries(experienceSides)};console.log('G4H7 EXPERIENCE '+JSON.stringify({...experienceBank,priorBatchTurns:73,newBatchTurns:experienceHits-73}));
- const report={classification,recovery,specialist,topicBank,batch,followup,questionBank,strengthBank,evidenceAcknowledgementBank,experienceBank,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
+ assert.equal(studyHits,11,'G4I1 first four study banks recover eleven sampled gaps');assert.equal(studyLosses,0);assert.equal(studyOwners.size,4);assert.equal(studySides.get('w'),5);assert.equal(studySides.get('f'),6);const studyBank={pairedExchanges:studyPairs,recoveredTurns:studyHits,lostTurns:studyLosses,distinctIds:studyIds.size,characters:studyOwners.size,sides:Object.fromEntries(studySides)};console.log('G4I1 STUDY '+JSON.stringify(studyBank));
+ const report={classification,recovery,specialist,topicBank,batch,followup,questionBank,strengthBank,evidenceAcknowledgementBank,experienceBank,studyBank,scenes:sceneCount,characters:roster.length,samplesPerRole:samples,observations,emittedChecks,formats:Object.fromEntries(formatsSeen),loadedBankIds:loadedIds.size,usedBankIds:actualAuthoredIds.size,semanticBankIds:observedIds.size,totals:describe(totals),skipped:Object.fromEntries(skipped),topics,actors,detail};
  console.log('G4A DEMAND SUMMARY '+JSON.stringify({...report,topics:undefined,actors:undefined,detail:undefined}));
  for(const x of topics)console.log('G4A TOPIC '+JSON.stringify(x));
  for(const x of actors)console.log('G4A ACTOR '+JSON.stringify(x));

@@ -297,6 +297,21 @@ for(const {row,pack} of experienceRows){
 }
 assert.deepEqual([...experienceOwners.keys()].sort(),["ace","aisha","alina","anya","ari","ash","ayla","bao","bashir","brick","bronte","cal","cass","cedric","cleo","dax","dean","dee","dev","eira","ellis","elodie","emmett","ezra","faye","felix","gideon","gus","imani","iris","ivo","jett","jun","juno","kellan","kezia","kira","kit","kofi","leandro","liya","lyra","mae","magnus","malik","mara","marisol","milo","miro","morgan","nadia","nate","nico","night","nikita","noelle","nolan","nova","otis","priya","red","rev","rex","rina","rocco","roxy","sasha","silas","sol","soraya","sylvia","theo","tomas","tomasash","tori","val","vera","winnie","zane","zara"]);for(const counts of experienceOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
 console.log('PASS G4H7 experience fixtures: 320 authored replies across all eighty original owners; topic, scope and history guards.');
+const studyRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='study');
+assert.equal(studyRows.length,16);const studyOwners=new Map();
+for(const {row,pack} of studyRows){
+ assert.ok(!topicText.has(row.text));topicText.add(row.text);assert.equal(row.stage,'answer');assert.equal(row.action,'turn');assert.equal(row.category,'rebuttal');
+ if(!studyOwners.has(pack.owner))studyOwners.set(pack.owner,{w:0,f:0});studyOwners.get(pack.owner)[row.side]++;
+ const cat=L.catalogue([{...pack,lines:[row]}]),context={...ctx,stage:'answer',action:'turn',side:row.side,speaker:{...ctx.speaker,id:pack.owner,role:'wrestler'},protected:'contextual-variant',variant:'tu_strength',hasMouthpiece:false};
+ const sem={claim:'study',move:row.side==='w'?'rebut':'counter'};
+ assert.equal(L.selectAuthoredStudy(cat,context,'study',{},sem)?.id,row.id);
+ assert.equal(L.select(cat,{...context,protected:null,variant:null},'ordinary',{}),null);assert.equal(L.selectAuthoredTopic(cat,context,'evidence',{},sem),null);
+ for(const mem of [{used:[row.id]},{recent:[row.id]}])assert.equal(L.selectAuthoredStudy(cat,context,'study',mem,sem),null);
+ for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:row.side==='w'?'f':'w'},{stage:'open'},{action:'calm'}])assert.equal(L.selectAuthoredStudy(cat,{...context,...patch},'study',{},sem),null);
+ for(const patch of [{claim:'evidence'},{claim:'experience'},{move:'press'},{move:row.side==='w'?'counter':'rebut'}])assert.equal(L.selectAuthoredStudy(cat,context,'study',{}, {...sem,...patch}),null);
+}
+assert.deepEqual([...studyOwners.keys()].sort(),["ace","cedric","liya","priya"]);for(const counts of studyOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
+console.log('PASS G4I1 study fixtures: 16 authored replies across four owners; topic, scope and history guards.');
 const followupRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='evidence'&&row.stage==='push'&&row.side==='f');
 assert.equal(followupRows.length,160);
 const followupOwners=new Map();
@@ -449,6 +464,8 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
       const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim==='evidence');assert.equal(sem.claim,'evidence');assert.equal(sem.move,'press_counter');assert.equal(prior.semantic?.move,'press');assert.equal(e.dialogueSlot.stage,'push');assert.equal(e.dialogueSlot.action,'press');assert.equal(e.side,'f');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(e.line,found.row.text);
      }else if(sem.experienceBank===1){
       const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim==='experience');assert.equal(sem.claim,'experience');assert.equal(sem.move,e.side==='w'?'rebut':'counter');assert.equal(e.dialogueSlot.stage,'answer');assert.equal(e.dialogueSlot.action,'turn');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(found.row.side,e.side);assert.equal(e.line,found.row.text);
+     }else if(sem.studyBank===1){
+      const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim==='study');assert.equal(sem.claim,'study');assert.equal(sem.move,e.side==='w'?'rebut':'counter');assert.equal(e.dialogueSlot.stage,'answer');assert.equal(e.dialogueSlot.action,'turn');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(found.row.side,e.side);assert.equal(e.line,found.row.text);
      }else if(sem.topicBank===1){
       const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim===sem.claim);assert.equal(sem.claim,'evidence');assert.equal(e.dialogueSlot.stage,'answer');assert.equal(e.dialogueSlot.action,'turn');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(found.row.side,e.side);assert.equal(e.line,found.row.text);
      }else if(sem.bankReuse){

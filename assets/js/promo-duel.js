@@ -331,7 +331,7 @@
   if(opts.directed&&opts.formats)st.deliveryStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='fluff').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
-  if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,...(opts.formats&&opts.semantic?{reviewedAck:1,reviewedContext:1,semanticBankReuse:3,reviewedSpecialist:1,authoredTopics:1,authoredFollowups:1,authoredQuestions:1,authoredStrengthCounters:1,authoredEvidenceAcknowledgements:1,authoredExperience:1}:{}),used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
+  if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,...(opts.formats&&opts.semantic?{reviewedAck:1,reviewedContext:1,semanticBankReuse:3,reviewedSpecialist:1,authoredTopics:1,authoredFollowups:1,authoredQuestions:1,authoredStrengthCounters:1,authoredEvidenceAcknowledgements:1,authoredExperience:1,authoredStudy:1}:{}),used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
   if(opts.semantic&&Semantic&&st.authoredDialogue&&opts.directed){st.semantic={v:1,...(opts.formats?{variety:1,followupFlow:1,characterRebuttal:1,claimClassification:1}:{})};core.semanticSpeech=true;}
   if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
@@ -476,6 +476,738 @@
    if(line&&mem.authoredExperience===1){
     const own=Dialogue.selectAuthoredExperience(catalogueFor(st),ctx,seed,mem,line.semantic);
     if(own){mem.used.push(own.id);return {id:own.id,text:own.text,semantic:{...line.semantic,source:'authored-response:'+own.id,experienceBank:1}};}
+   }
+   if(line&&mem.authoredFollowups===1){
+    const own=Dialogue.selectAuthoredFollowup(catalogueFor(st),ctx,seed,mem,line.semantic);
+    if(own){mem.used.push(own.id);return {id:own.id,text:own.text,semantic:{...line.semantic,source:'authored-response:'+own.id,followupBank:1}};}
+   }
+   if(line&&mem.authoredQuestions===1){
+    const own=Dialogue.selectAuthoredQuestion(catalogueFor(st),ctx,seed,mem,line.semantic);
+    if(own){mem.used.push(own.id);(mem.composedUsed??=[]).push(line.id);return {id:own.id,text:own.text,semantic:{...line.semantic,source:'authored-response:'+own.id,questionBank:1,questionSource:line.id}};}
+   }
+   if(line&&mem.authoredStrengthCounters===1){
+    const own=Dialogue.selectAuthoredStrengthCounter(catalogueFor(st),ctx,seed,mem,line.semantic);
+    if(own){mem.used.push(own.id);return {id:own.id,text:own.text,semantic:{...line.semantic,source:'authored-response:'+own.id,strengthCounterBank:1}};}
+   }
+   if(line&&mem.authoredEvidenceAcknowledgements===1){
+    const own=Dialogue.selectAuthoredEvidenceAcknowledgement(catalogueFor(st),ctx,seed,mem,line.semantic);
+    if(own){mem.used.push(own.id);return {id:own.id,text:own.text,semantic:{...line.semantic,source:'authored-response:'+own.id,evidenceAcknowledgementBank:1}};}
+   }
+   if(line)(mem.composedUsed??=[]).push(line.id);
+   return line;
+  }
+  const correctedClosing=st.closingCommitmentStyle===1&&ctx.stage==='close'&&ctx.side==='w'&&['vow','clean'].includes(ctx.action);
+  const selection=correctedClosing?Dialogue.selectClosing(catalogueFor(st),ctx,seed,mem):Dialogue.select(catalogueFor(st),ctx,seed,st.closingVariety===1?{...mem,candidateFilter:r=>Dialogue.closingCommitment(r,ctx)}:mem);
+  if(selection){mem.used.push(selection.id);return selection;}
+  if(mem.composition){const line=Dialogue.compose(ctx,seed,{used:mem.composedUsed||[],recent:mem.recent});if(line){(mem.composedUsed??=[]).push(line.id);return line;}}
+  return null;
+ }
+ function annotate(st,index,ctx,line,source){
+  const e=st.log[index];if(!ctx||!e)return;
+  e.dialogueSlot=Dialogue.tag(ctx);
+  if(line){if(line.composed)e.composedId=line.id;else e.authoredId=line.id;}
+  if(st.semantic&&Semantic.allowed(st)){
+   const tag=line?.semantic||(e.side==='f'?(line&&!line.composed?Semantic.fromBank(line.id,line.text):!line?(Semantic.classify(source?.speechSource,source?.speechDetail,st.semantic.claimClassification===1)||reviewedFallbackClaim(st,ctx,e,source)):null):null);
+   if(tag)e.semantic=tag;
+  }
+ }
+ // G3A: ordinary format questions can be answered by the argument itself.
+ // Reviewed literal graph variants only; programme/record prompts, authored
+ // bank wording, mouthpieces and evidence keep their explicit bridge.
+ const DIRECT_OPENINGS={
+  callout:new Set(['pr_tech','pr_brawl','pr_risk','pr_stall','pr_veteran','pr_study','sw_jacket','sw_future','sw_ignore','sw_belt','sw_pose','sw_money']),
+  faceoff:new Set(['pr_tech','pr_brawl','pr_risk','pr_stall','sw_jacket','sw_future','sw_ignore','sw_belt','sw_pose','sw_money']),
+  address:new Set(['p_hometown','p_working','p_chant','p_short','p_show'])
+ };
+ function naturalFormatOpening(st){
+  return st.openingFlow===1&&st.openingQuestion?.kind==='format'&&!st.arc&&Semantic?.allowed(st);
+ }
+ function directOpening(st,step,d,line){
+  const q=st.openingQuestion;
+  return naturalFormatOpening(st)&&!line&&!d.case&&DIRECT_OPENINGS[q.format]?.has(step.variant)===true;
+ }
+ function openingCue(st){
+  // The same coaching cue is available in view(). Don't also narrate it
+  // as though somebody said it aloud in an ordinary live conversation.
+  if(!naturalFormatOpening(st))push(st,'stage',spokenCue(st),'cue');
+ }
+ function spokenCue(st){
+  if(st.semantic&&Semantic.allowed(st)){
+   const point=Semantic.label(Semantic.latest(st.log,'f')?.entry.semantic?.claim);
+   return point?'Their point concerns '+point+'.':st.f.short+' has replied.';
+  }
+  return fmt(ANGLE_CUE[st.angle],st);
+ }
+ // These two literal graph exceptions have no reviewed speech fingerprint.
+ // Vary only their delivery, not the selected action, facts or evidence.
+ const accusationReplies=[
+  "What exactly are you accusing me of, {W}?",
+  "Give us an example. An actual example, not another insult.",
+  "You have made a charge. Where is the evidence?",
+  "Tell these people what I am supposed to have done.",
+  "What are you basing that on?",
+  "Do not ask them to take your word for it. Give them something concrete.",
+  "If you have a specific complaint, let us hear it.",
+  "A claim like that needs more than a microphone.",
+  "You have got their attention. Now substantiate what you just said.",
+  "What incident are you talking about?",
+  "Before you go any further, explain what I am meant to have done.",
+  "There is a difference between disliking me and having a case against me."
+ ];
+ const personalReplies=[
+  "That is another insult, {W}. It is not evidence.",
+  "You have made it personal. You still have not backed it up.",
+  "Saying it more forcefully does not make it any better supported.",
+  "You are attacking me, not answering the question.",
+  "I am still waiting for something more substantial than that.",
+  "More of the same. Where is the example?",
+  "I heard the insult. I have yet to hear the evidence.",
+  "You have not given these people a reason to believe the charge.",
+  "Leave the personal remarks aside until you have something to substantiate them.",
+  "You can question me all you like. That does not establish a fact.",
+  "There is plenty of anger in that reply. Not much to verify.",
+  "You have not answered my objection, {W}. You have just made it personal."
+ ];
+ // Reviewed opponent closing variants. Each pool preserves the actual
+ // graph angle and contains no additional match promise or historical fact.
+ const closingReplies=Object.freeze({
+ "vo_guarantee": [
+  "That is quite a guarantee. Let's see you honour it.",
+  "You've put your word on the line now.",
+  "Everybody heard that prediction."
+ ],
+ "vo_fans": [
+  "Don't give them a result you haven't earned.",
+  "You can dedicate the win when you've actually got it.",
+  "They've paid for a match, not a guarantee."
+ ],
+ "vo_plain": [
+  "We'll find out shortly.",
+  "That's your prediction. I disagree.",
+  "All right. Try."
+ ],
+ "vo_hard": [
+  "You have understood one thing: it won't be easy.",
+  "At least we agree that it'll be a contest.",
+  "Hard work doesn't guarantee you the result."
+ ],
+ "vo_quick": [
+  "Don't start counting the minutes just yet.",
+  "You might want to allow a little longer.",
+  "You still have to get the fall."
+ ],
+ "fi_count": [
+  "You're counting moves you haven't hit yet.",
+  "Try getting to the first one.",
+  "Let's see how far you get with that countdown."
+ ],
+ "fi_intro": [
+  "I'll be watching for the set-up.",
+  "Naming it hasn't made it any easier to land.",
+  "You have to put me in position for it first."
+ ],
+ "fi_air": [
+  "First you've got to get hold of me.",
+  "I'll choose when I leave the ropes.",
+  "Try judging the landing while I'm moving."
+ ],
+ "fi_no_counter": [
+  "Every move has an opening somewhere.",
+  "I'll be looking for a way out of the set-up.",
+  "There's no such thing as an unavoidable hold."
+ ],
+ "fi_outlast": [
+  "You're going to have to work to tire me out.",
+  "Don't rely on me running out of energy.",
+  "Let's see who has anything left for the finish."
+ ],
+ "fi_count_along": [
+  "They can call it. You've still got to hit it.",
+  "Listen for them if you miss.",
+  "The crowd can't put me in position for you."
+ ],
+ "fi_name": [
+  "We'll see if you can land it.",
+  "Try getting me into it.",
+  "I'll be watching for it."
+ ],
+ "cl_hand": [
+  "I'll decide about that handshake for myself.",
+  "We'll see about the hand when we're in there.",
+  "I'm not taking your hand just because you ask."
+ ],
+ "cl_ref": [
+  "The referee can watch both of us.",
+  "Mind your own work. The official can mind mine.",
+  "You concentrate on wrestling."
+ ],
+ "cl_watch": [
+  "They can watch every exchange for all I care.",
+  "Keep your eyes on me, then.",
+  "Let the people judge what they see."
+ ],
+ "cl_middle": [
+  "One clean fall. All right.",
+  "That's a contest I can agree to.",
+  "Fine. Let's wrestle it that way."
+ ],
+ "cl_dare": [
+  "I don't need a shortcut to beat you.",
+  "You might find I don't have to.",
+  "I'll find my own way to a fall."
+ ],
+ "un_plan": [
+  "Then I'll have to work it out in the ring.",
+  "I won't assume I know what's coming.",
+  "I'll have a plan of my own."
+ ],
+ "un_done": [
+  "All right. Enough said.",
+  "Then we're finished here.",
+  "Fine. Put the microphone down."
+ ],
+ "un_see": [
+  "They'll see the result for themselves.",
+  "They'll have to watch the match to find out.",
+  "Let's see what they make of the wrestling."
+ ],
+ "un_tape": [
+  "You still have habits to give away.",
+  "I'll read what happens in front of me.",
+  "I'll adjust when you do something different."
+ ],
+ "un_ready": [
+  "Being ready is only the beginning.",
+  "You'll have to deal with me when I close the distance.",
+  "Let's see how you respond to the first charge."
+ ],
+ "un_look": [
+  "I'll be watching the whole ring.",
+  "I'll decide where to look.",
+  "I'll keep you in sight."
+ ],
+ "un_bigger": [
+  "Get through this match first.",
+  "You're looking further ahead than I'd advise.",
+  "There's a contest in front of you yet."
+ ],
+ "qu_strikes": [
+  "You've still got to read the strike.",
+  "Try timing it when I'm moving.",
+  "I'll vary when I throw it."
+ ],
+ "qu_holds": [
+  "First you've got to find the escape.",
+  "I'll make you work for the reversal.",
+  "Let's see what you do once the hold is on."
+ ],
+ "qu_air": [
+  "I'll decide when to take off.",
+  "You have to read the timing first.",
+  "Let's see whether you're in the right position."
+ ],
+ "qu_tricks": [
+  "You'll have to recognise the opening first.",
+  "You won't get much warning.",
+  "Try reading what I do rather than what I say."
+ ],
+ "qu_watch": [
+  "They'll see whether you can stop it.",
+  "You'll have to earn that counter.",
+  "I'll make you work for that moment."
+ ],
+ "qu_simple": [
+  "Try it when the bell goes.",
+  "Let's see if your timing holds.",
+  "All right. Find that counter."
+ ],
+ "le_plain": [
+  "Then give it everything. I'll do the same.",
+  "Effort is one thing. The contest is still there to win.",
+  "I'll judge the work when we wrestle."
+ ],
+ "gr_plain": [
+  "All right. The wrestling is next.",
+  "They've heard you. Now show them.",
+  "We'll see what they make of the match."
+ ]
+});
+ // G4B.1: the graph sometimes speaks a contextual sentence instead of
+ // a variant reply. Review the complete original and the actual emitted
+ // wording, not the opening angle, style estimate, or a keyword.
+ const fallbackClaimSources=Object.freeze({
+ "accusation": [
+  "You have never even worked a match with me, {W}. Name one thing I have done to deserve that accusation.",
+  "evidence"
+ ],
+ "proof": [
+  "You are claiming you have me worked out before we have ever faced each other. How will you stop my {STRENGTH}?",
+  "strength"
+ ],
+ "people": [
+  "These people will still be here after the match, {W}. Can you give them a reason to remember the result, not just your speech?",
+  "effort"
+ ],
+ "hometown": [
+  "Insult the town all you like, {W}. They paid to watch somebody shut you up, and that somebody is me.",
+  "home"
+ ],
+ "numbers": [
+  "Your maths is wrong, {W}. My {STRENGTH} do not care about percentages.",
+  "strength"
+ ],
+ "imagery": [
+  "That is an interesting picture, {W}. My {STRENGTH} will be real when the bell rings. Where is your answer?",
+  "strength"
+ ],
+ "swagger": [
+  "You want all of the attention, {W}. The difficult part is doing something worth watching when I start using my {STRENGTH}.",
+  "strength"
+ ]
+});
+ const personalClaimSource='You still have no evidence, {W}. Now you are trying to make the insult louder.';
+ function reviewedFallbackClaim(st,ctx,e,d){
+  if(st.semantic?.claimClassification!==1||!Semantic.allowed(st)||!ctx||ctx.side!=='f'||ctx.hasMouthpiece||!d||d.case||d.speechSource||e.side!=='f'||e.authoredId||e.composedId)return null;
+  const detail=st.core.claim?.strength;
+  const render=template=>fmt(template,st).replace(/\{STRENGTH\}/g,detail||'');
+  const review=ctx.stage==='open'&&Object.prototype.hasOwnProperty.call(fallbackClaimSources,ctx.action)?fallbackClaimSources[ctx.action]:ctx.stage==='answer'&&ctx.action==='personal'?[personalClaimSource,'evidence']:null;
+  if(!review)return null;
+  const [original,claim]=review;
+  if(d.line!==render(original)||claim==='strength'&&(!detail||!e.line.includes(detail)))return null;
+  // Compare with the literal original or the exact selected existing
+  // fallback alternative. Never allow arbitrary rewritten text.
+  let template=original;
+  if(e.line!==render(original)){
+   const pool=ctx.stage==='open'&&ctx.action==='accusation'?accusationReplies:ctx.stage==='answer'&&ctx.action==='personal'?personalReplies:null;
+   if(!pool||st.fallbackVariety!==1)return null;
+   template=pick(pool,st.seed,'graph-fallback|'+ctx.stage+'|'+ctx.action);
+   if(e.line!==render(template))return null;
+  }
+  return {v:1,kind:'claim',claim,source:Semantic.source('fallback-'+ctx.stage+'-'+ctx.action,template).replace(/^graph:/,'fallback:'),...(claim==='strength'?{detail}:{})};
+ }
+ function graphFallback(st,stage,id,d){
+  if(stage==='close'){
+   if(st.closingVariety!==1||st.speaker||st.core.case||st.core.claim?.hasEvidence||d.case||d.speechSource)return d.line;
+   const variant=st.core.steps.at(-1)?.variant,pool=Object.prototype.hasOwnProperty.call(closingReplies,variant)?closingReplies[variant]:null;
+   if(pool)return fmt(pick(pool,st.seed,'closing-reply|'+variant),st);
+   return d.line;
+  }
+  if(st.fallbackVariety!==1||st.speaker||st.core.case||st.core.claim?.hasEvidence||d.case||d.speechSource)return d.line;
+  const w=st.w.short;
+  const pool=stage==='open'&&id==='accusation'&&d.line==='You have never even worked a match with me, '+w+'. Name one thing I have done to deserve that accusation.'?accusationReplies:
+    stage==='answer'&&id==='personal'&&d.line==='You still have no evidence, '+w+'. Now you are trying to make the insult louder.'?personalReplies:null;
+  if(!pool)return d.line;
+  return fmt(pick(pool,st.seed,'graph-fallback|'+stage+'|'+id),st);
+ }
+ // G2: reviewed core-graph wording, only when the literal original
+ // and chosen variant match. Preserve authored/semantic lines and every
+ // recorded argument, promise and graph event. Voice pools are fallback
+ // coverage; named character lines take priority when fresh.
+ const CORE_VOICE={
+ "ca_long": {
+  "stage": "answer",
+  "action": "calm",
+  "original": "I have been doing this a long time, {F}. Matches are won in the last minute, not the first.",
+  "voices": {
+   "grand": [
+    "I've been doing this for years, {F}. The opening act is not the finale.",
+    "A veteran knows when to save the grand gesture. I will still be wrestling at the end."
+   ],
+   "gruff": [
+    "Long time in this game. Save your breath for the last minute, {F}.",
+    "Years of this, {F}. It is the last bit of the match that counts."
+   ],
+   "eager": [
+    "I've been at this years! The first minute's exciting, {F}, but we've got to get to the last one.",
+    "I've learned that the hard way: don't spend it all in the first minute."
+   ],
+   "stoic": [
+    "I've done this long enough, {F}. The first minute settles nothing.",
+    "I've been around a while. It's the last minute I work for."
+   ],
+   "precise": [
+    "Experience teaches you to reserve something for the closing exchange, {F}.",
+    "I've spent years learning this: the first minute is preparation, not the result."
+   ],
+   "earnest": [
+    "I've been wrestling a long time, {F}. I know how much work there is after the first minute.",
+    "Years in the ring have taught me not to mistake a good start for a win."
+   ],
+   "sermon": [
+    "Years in this ring have taught me patience, {F}. The contest is settled at the end.",
+    "I've learned over the years that you must have something left when the final minute arrives."
+   ],
+   "slippery": [
+    "I've done enough of these to know the opening minute isn't the one that pays off, {F}.",
+    "I've been around long enough to save the best of it for the finish."
+   ]
+  },
+  "individual": {
+   "mara": "I've argued enough cases in that ring, {F}, to know the opening submission isn't the verdict. Save something for the last minute.",
+   "rex": "Years of hard graft, {F}. You don't knock off after the first minute.",
+   "juno": "I've been at this a long time. The first entry is only the first entry, {F}. The finish is what matters.",
+   "kit": "Years on shift, mate. It isn't the first minute that gets you through; it's the last.",
+   "ezra": "Experience has taught me that the opening exchange is not the conclusion, {F}. Reserve your effort for the decisive fall.",
+   "silas": "After years of this, I can tell you the first minute is only the first variable. The decisive one is at the end.",
+   "tori": "Years of wrestling have taught me to conserve energy. You still need some in the last minute, {F}.",
+   "faye": "I've done this for years, {F}. Don't quote the first minute as the result. Wait for the last."
+  }
+ },
+ "ca_smile": {
+  "stage": "answer",
+  "action": "calm",
+  "original": "Go ahead and have the last word, {F}. I will have the last count.",
+  "voices": {
+   "grand": [
+    "Keep the microphone, {F}. I'll take the applause after the three-count.",
+    "Take your final bow on the microphone. I'll take the final count."
+   ],
+   "gruff": [
+    "Talk all you like, {F}. I'll take the three.",
+    "Have your say. I'm getting the count."
+   ],
+   "eager": [
+    "Go on, finish your speech! I'll be the one celebrating the count.",
+    "Your last word, my last three-count. Sounds good, {F}."
+   ],
+   "stoic": [
+    "You can finish talking. I'll finish the match.",
+    "Last word's yours, {F}. The count will be mine."
+   ],
+   "precise": [
+    "You can conclude the argument, {F}. I intend to secure the deciding fall.",
+    "Have the final statement. The only count I want is the deciding one."
+   ],
+   "earnest": [
+    "I'll let you finish what you're saying, {F}. I intend to earn that last count.",
+    "You can have this exchange. I want the referee's count at the end."
+   ],
+   "sermon": [
+    "Say your final word, {F}. Let my answer be the deciding count.",
+    "Keep the words. I intend to have the last three."
+   ],
+   "slippery": [
+    "You take the microphone, I'll take the pin. Fair exchange, {F}.",
+    "I'll leave you the last word for free. I'm claiming the last count."
+   ]
+  },
+  "individual": {
+   "mara": "Counsel may have the last word, {F}. I'll take the verdict at the count.",
+   "ace": "Have the microphone, darling. I'll take the spotlight at three.",
+   "aisha": "Talk. I'm taking the count, {F}.",
+   "dean": "Have your final statement, {F}. I'll take the deciding three in the right column.",
+   "roxy": "Do enjoy your closing monologue, darling. I'll be taking the final count.",
+   "faye": "I'll let that be your final quote, {F}. My answer will be the last count."
+  }
+ },
+ "ch_hand": {
+  "stage": "answer",
+  "action": "challenge",
+  "original": "Shake my hand, {F}, and then try to beat me.",
+  "voices": {
+   "grand": [
+    "A handshake, {F}. Then let's see which of us deserves the curtain call.",
+    "Before the spectacle begins, shake my hand. Then try to win."
+   ],
+   "gruff": [
+    "Hand first, {F}. Then try and beat me.",
+    "Shake. Then wrestle me for the win."
+   ],
+   "eager": [
+    "Come on, shake my hand! Then let's see if you can beat me, {F}.",
+    "Hand out. Let's start properly, and then you can try to win."
+   ],
+   "stoic": [
+    "Shake my hand. After that, try to beat me.",
+    "A handshake, {F}. Then we wrestle for the fall."
+   ],
+   "precise": [
+    "Shake my hand, {F}. Then demonstrate that you can beat me.",
+    "A sporting handshake first. Then establish your superiority on the mat."
+   ],
+   "earnest": [
+    "I'd like to shake your hand, {F}. Then give me your best shot at beating me.",
+    "Let's shake on it. I want you to try your hardest to win."
+   ],
+   "sermon": [
+    "Give me your hand before we contend, {F}. Then try to defeat me.",
+    "Shake hands first. After that, let the contest decide."
+   ],
+   "slippery": [
+    "Shake my hand, {F}. Then you've got the whole match to prove me wrong.",
+    "Hand first. Then see whether you can actually beat me."
+   ]
+  },
+  "individual": {
+   "mara": "Shake my hand, {F}. Then submit your evidence that you can beat me on the canvas.",
+   "brick": "Hand. Then show me you can beat me, {F}.",
+   "juno": "Shake first, {F}. Then try to earn the grips and the fall.",
+   "dee": "Can we shake hands first? Then I want to see you try to beat me.",
+   "imani": "Shake my hand, {F}. Then we both do the work, and you can try to win.",
+   "ezra": "A handshake before the examination, {F}. Then demonstrate that you can defeat me."
+  }
+ },
+ "ch_now": {
+  "stage": "answer",
+  "action": "challenge",
+  "original": "Why wait for the bell, {F}? I am right here.",
+  "voices": {
+   "grand": [
+    "Why delay the main attraction, {F}? I'm standing right in front of you.",
+    "The curtain's already up, {F}. Why wait for the bell?"
+   ],
+   "gruff": [
+    "Bell? I'm here now, {F}.",
+    "No need to wait. Come on, then."
+   ],
+   "eager": [
+    "I'm right here! Why are we waiting for a bell, {F}?",
+    "Come on, let's get to it now. I'm ready."
+   ],
+   "stoic": [
+    "I'm here, {F}. Why wait?",
+    "We're both here. We don't need to wait for the bell."
+   ],
+   "precise": [
+    "There is no need to defer this, {F}. We are both here.",
+    "Why postpone the confrontation until the bell? I'm ready now."
+   ],
+   "earnest": [
+    "I'm standing right here, {F}. Why do we need to wait any longer?",
+    "I don't see the point in waiting. Let's get to it now."
+   ],
+   "sermon": [
+    "Why delay what is before us, {F}? I'm here now.",
+    "The bell is still to come, but I stand ready before you."
+   ],
+   "slippery": [
+    "Why hang about until the bell, {F}? You've already found me.",
+    "No need to book another minute of this. I'm right here."
+   ]
+  },
+  "individual": {
+   "rex": "Don't stand there waiting to clock on. I'm here now, {F}.",
+   "aisha": "I'm here. Now, {F}.",
+   "zara": "I'm right here, mate! Why are we waiting?",
+   "tori": "We're in the same place at the same time, {F}. Why wait for the bell?",
+   "rocco": "Bell? Come on. I'm here.",
+   "ash": "I'm here. No need to wait."
+  }
+ },
+ "vo_end": {
+  "stage": "close",
+  "action": "vow",
+  "original": "When this is over, {F}, this feud is over too, and I will be the one standing.",
+  "voices": {
+   "grand": [
+    "This is the last act of our feud, {F}. I'll be the one standing when the curtain falls.",
+    "Tonight I bring this rivalry to its finale. I'll win, and it ends there."
+   ],
+   "gruff": [
+    "It ends tonight, {F}. I win. No more of this.",
+    "Last one, {F}. I'm winning it and putting this feud to bed."
+   ],
+   "eager": [
+    "Tonight's the end of all this, {F}! I'm going to win it, and then we're done.",
+    "I want this rivalry finished tonight. I'm going to be the one who wins."
+   ],
+   "stoic": [
+    "This finishes tonight. I'll win, {F}, and that will be the end of it.",
+    "One more match, {F}. I take the win. The feud ends."
+   ],
+   "precise": [
+    "Tonight I intend to settle this rivalry conclusively, {F}. I will win.",
+    "The outcome I intend is a victory and an end to this feud."
+   ],
+   "earnest": [
+    "I want this feud behind us, {F}. Tonight I will win and put it to rest.",
+    "Tonight I will earn the win, and I want that to be the end of our rivalry."
+   ],
+   "sermon": [
+    "Let this be the final chapter of our feud, {F}. I will be victorious.",
+    "Tonight the feud ends. I will take the victory and leave it there."
+   ],
+   "slippery": [
+    "I'm closing the book on this feud tonight, {F}. With a win.",
+    "Last business between us, {F}. I'll take the win and call it finished."
+   ]
+  },
+  "individual": {
+   "mara": "Final submission, {F}: tonight I win, and I close this case for good.",
+   "ace": "One last scene, {F}. I win tonight, and that's the end of our story.",
+   "dean": "One final entry in the record, {F}: a win for me and the end of this feud.",
+   "tori": "Tonight we bring this to a stop, {F}. I'll win and end the rivalry.",
+   "aisha": "Tonight I win. Then we're done, {F}.",
+   "faye": "Let the record show it: tonight I win and this feud ends."
+  }
+ },
+ "sw_ignore": {
+  "stage": "open",
+  "action": "swagger",
+  "original": "Sorry, who am I wrestling tonight? Oh. {F}. Right.",
+  "voices": {
+   "grand": [
+    "Who's been cast opposite me tonight? Ah, {F}. How ordinary.",
+    "I was looking at the headline. Apparently {F} is on the other side of it."
+   ],
+   "gruff": [
+    "Who's it again? {F}. Fine.",
+    "Oh. {F}. That's the opponent, then."
+   ],
+   "eager": [
+    "Wait, who's my match with? Oh, {F}! Right, of course.",
+    "I nearly forgot who was on the other side of this. {F}, isn't it?"
+   ],
+   "stoic": [
+    "It's {F} tonight, is it? Right.",
+    "Oh, {F}. I'd almost forgotten."
+   ],
+   "precise": [
+    "I had rather overlooked the name opposite mine. {F}, apparently.",
+    "The opponent's name had slipped my mind. {F}. Of course."
+   ],
+   "earnest": [
+    "Oh, it's you, {F}. I was thinking more about the match than the name.",
+    "Sorry, {F}. I hadn't given the name much thought."
+   ],
+   "sermon": [
+    "Who stands opposite me tonight? Ah, {F}. So it is.",
+    "The name had escaped me. {F}. Very well."
+   ],
+   "slippery": [
+    "Who have they put across from me? {F}? Lovely.",
+    "I'd almost forgotten the name on the other side of the card. {F}. Right."
+   ]
+  },
+  "individual": {
+   "mara": "The opposing party's name? Oh, {F}. Of course.",
+   "ace": "Who did they cast opposite me? Oh, {F}. Right.",
+   "roxy": "Darling, remind me who's on the other side of the programme. {F}? How nice.",
+   "dean": "The other name on the sheet? {F}. Yes, that's it.",
+   "faye": "I haven't got the name in my notes. {F}, is it?",
+   "kit": "Who am I on with again? {F}. All right, mate."
+  }
+ },
+ "ch_one_fall": {
+  "stage": "answer",
+  "action": "challenge",
+  "original": "One fall, {F}. Nobody else involved. Just you and me.",
+  "voices": {
+   "grand": [
+    "One fall, {F}. No supporting cast. Just the two of us.",
+    "No extras for this performance. One fall, you and me."
+   ],
+   "gruff": [
+    "One fall. Just us. Nobody else.",
+    "You, me, one fall. That's it."
+   ],
+   "eager": [
+    "One fall, just the two of us! Nobody else gets involved.",
+    "Come on, {F}. One fall. No one else, just us."
+   ],
+   "stoic": [
+    "One fall between us, {F}. No interference.",
+    "No one else. One fall. Just us."
+   ],
+   "precise": [
+    "The terms are simple: one fall, {F}, with neither of us involving anyone else.",
+    "One fall, no outside involvement. Just the two competitors."
+   ],
+   "earnest": [
+    "One fall, {F}. Let's do it between us, without anybody else getting involved.",
+    "I want it to be just you and me. One fall, no one else."
+   ],
+   "sermon": [
+    "Let it be one fall between us alone, {F}.",
+    "One fall. No one else shall have a part in it."
+   ],
+   "slippery": [
+    "Let's keep the terms simple, {F}. One fall, no third parties.",
+    "One fall, no outside assistance. You and me, nothing else."
+   ]
+  },
+  "individual": {
+   "ezra": "One fall, {F}. No third participant. Those are the terms of the examination.",
+   "silas": "One fall, {F}. Eliminate outside interference. Just our techniques.",
+   "mara": "One fall, {F}. Two parties to the dispute. Nobody else.",
+   "dean": "One fall between us, {F}. No outside variables.",
+   "brick": "One fall. No mates. Just us.",
+   "imani": "Just our work in there, {F}. One fall, nobody else."
+  }
+ },
+ "pe_grudge": {
+  "stage": "answer",
+  "action": "personal",
+  "original": "This stopped being about wrestling a long time ago, {F}.",
+  "voices": {
+   "grand": [
+    "The wrestling stopped being the whole story long ago, {F}.",
+    "This rivalry left sporting competition behind a long time ago."
+   ],
+   "gruff": [
+    "This ain't just wrestling anymore, {F}. Hasn't been for ages.",
+    "It's personal, {F}. Has been a while."
+   ],
+   "eager": [
+    "This isn't just a wrestling match to me anymore, {F}. It hasn't been for a long time.",
+    "We've been past the wrestling part of this for ages, {F}."
+   ],
+   "stoic": [
+    "This has been personal for a long time, {F}.",
+    "Stopped being just wrestling long ago."
+   ],
+   "precise": [
+    "This dispute ceased to be purely sporting a long time ago, {F}.",
+    "For some time, this has been a personal dispute rather than merely a contest."
+   ],
+   "earnest": [
+    "I wish this were just about wrestling, {F}. It hasn't been for a long time.",
+    "It became personal a long time ago. You know that, {F}."
+   ],
+   "sermon": [
+    "This has gone beyond a contest of skill, {F}. It has for some time.",
+    "The sporting dispute became a personal one long ago."
+   ],
+   "slippery": [
+    "Let's not pretend this is just another match, {F}. It hasn't been for ages.",
+    "We're long past the point where this was only about wrestling."
+   ]
+  },
+  "individual": {
+   "mara": "This stopped being a sporting case a long time ago, {F}. It's personal now.",
+   "faye": "We've been past the sporting question for a long time, {F}.",
+   "aisha": "This has been personal a long time, {F}. Not just wrestling.",
+   "dean": "This stopped being a matter of results a long time ago, {F}.",
+   "anya": "This went beyond the wrestling long ago, {F}. It's personal.",
+   "rocco": "It's personal. Has been for ages, {F}."
+  }
+ }
+};
+ // G2D: separate snapshot marker so existing in-progress promos retain their wording.
+ // The evidence-sensitive pe_respect accusation is deliberately excluded.
+ // Each counter variant explicitly promises the same observable counter.
+ const CORE_VOICE_EXTENSION={
+  "ch_trade": {
+    "stage": "answer",
+    "action": "challenge",
+    "original": "No holds, no tricks. Stand in the middle and trade with me, {F}.",
+    "individual": {
+      "mara": "Terms of the contest, {F}: no holds, no tricks. Stand in the middle and trade blows with me.",
+      "rex": "Middle of the ring, {F}. No holds, no mucking about. Trade with me.",
+      "juno": "No holds this time, {F}. Just stand in the middle and trade strikes. No tricks.",
+      "kit": "Come on, mate. Middle of the ring, no holds, no tricks. Let's trade.",
+      "ezra": "Set aside the holds and trickery, {F}. Meet me in the centre and trade strikes.",
+      "red": "Stand in the middle, {F}. No holds. No tricks. Trade with me.",
+      "roxy": "Centre stage, darling. No holds or clever tricks, just the two of us trading blows.",
+      "silas": "Remove holds and deception from the equation, {F}. Trade strikes with me in the centre.",
+      "nova": "Let's make this a direct test, {F}. No holds, no tricks. Trade strikes in the centre.",
+      "ace": "Centre of the ring, {F}! No holds, no tricks. Let's trade blows under the lights.",
+      "faye": "Clear terms, {F}: no holds or tricks. Meet me in the centre and trade strikes.",
+      "tori": "Forget the clever variables, {F}. No holds or tricks. Just trade strikes with me in the centre."
+    }
+   if(line&&mem.authoredStudy===1){
+    const own=Dialogue.selectAuthoredStudy(catalogueFor(st),ctx,seed,mem,line.semantic);
+    if(own){mem.used.push(own.id);return {id:own.id,text:own.text,semantic:{...line.semantic,source:'authored-response:'+own.id,studyBank:1}};}
    }
    if(line&&mem.authoredFollowups===1){
     const own=Dialogue.selectAuthoredFollowup(catalogueFor(st),ctx,seed,mem,line.semantic);
