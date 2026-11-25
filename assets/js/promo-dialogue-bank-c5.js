@@ -51,6 +51,18 @@
   "I haven't got a specific example. I'm not staying here all night making one up, either.",
   "Good. One less thing to argue about. Let's wrestle and get home.",
   "That's fair. Save the rest of your energy for the bell."
+ ],
+ "soraya": [
+  "The burden is mine to establish the charge. I cannot satisfy that condition, so I withdraw it.",
+  "I will not make your reputation a term of this contest on the strength of an unverified allegation.",
+  "Accepted. The charge is withdrawn; the terms of the match remain.",
+  "Good. We can proceed on the sporting terms without that allegation."
+ ],
+ "theo": [
+  "Define what I've actually established: not enough to support that accusation. I'll remove it.",
+  "You're asking for an observable example. I cannot give one that proves my point, so the point does not stand.",
+  "Precisely. A suspicion and a demonstrated fact are different things. Now we can wrestle.",
+  "That's a useful distinction. The match is something we can actually test."
  ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
