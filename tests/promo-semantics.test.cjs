@@ -120,7 +120,8 @@ for(let i=0;i<240;i++){
 assert.ok(fallbackLines.open.size>=6&&fallbackLines.answer.size>=6,'both exception pools exercised');
 console.log('PASS graph fallback variety: '+JSON.stringify(fallbackCounts)+' replacements; '+fallbackLines.open.size+'/'+fallbackLines.answer.size+' distinct opening/answer replies; graph and outcome parity.');
 const roster=D.ALL,opponents=D.FOES;
-let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0;
+let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
+const ackIds=new Set();
 const reached=new Set();
 for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
  const foe=opponents.filter(x=>x.id!==worker.id)[(i+j)% (opponents.filter(x=>x.id!==worker.id).length)];
@@ -151,7 +152,12 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
    if(sem.source.startsWith('graph:')){assert.ok(!e.authoredId&&!e.composedId);assert.ok(x.core.dialogue.some(d=>d.speechSource===sem.source&&d.line===e.line));graphSources++;}
    if(sem.replyTo!==undefined){
     assert.equal(sem.replyTo,previous,'reply must address immediately preceding spoken line');
-    const prior=x.log[sem.replyTo];assert.notEqual(prior.side,e.side);assert.equal(e.composedId,sem.source);
+    const prior=x.log[sem.replyTo];assert.notEqual(prior.side,e.side);if(sem.source.startsWith('authored-response:')){
+     assert.equal(sem.source,'authored-response:'+e.authoredId);assert.ok(!e.composedId);
+     assert.equal(e.dialogueSlot.stage,'push');assert.equal(e.dialogueSlot.action,'acknowledge');
+     assert.ok(!e.dialogueSlot.protected);assert.ok(e.side==='f'||['unclassified','agreement','end'].includes(sem.claim));
+     authoredResponses++;ackIds.add(e.authoredId);
+    }else assert.equal(e.composedId,sem.source);
     if(e.side==='w'){
      assert.equal(sem.claim,prior.semantic?.claim||'unclassified');
      if(sem.claim==='unclassified')unclassified++;else{responded++;reached.add(sem.claim);}
@@ -164,4 +170,6 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
  scenes++;
 }
 assert.ok(responded>100&&counters>100&&press>0&&authoredSources>0&&graphSources>0&&unclassified>0&&reached.size>=8);
+assert.ok(authoredResponses>0&&ackIds.size>3,'reviewed authored acknowledgements are reachable');
+console.log('PASS reviewed authored acknowledgements: '+authoredResponses+' utterances, '+ackIds.size+' distinct IDs; semantic provenance preserved.');
 console.log('PASS semantic promos: '+scenes+' paired scenes; '+responded+' classified responses across '+reached.size+' reached topics, '+unclassified+' unclassified responses, '+counters+' counters, '+press+' presses, '+authoredSources+' authored and '+graphSources+' graph claim sources; '+protectedN+' protected slots; save/resume and numerical/contract parity.');
