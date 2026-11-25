@@ -508,4 +508,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI8[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI9={
+  "nadia": {
+    "w": [
+      "You've studied where the fire caught last time. What will you do when I send the heat in another direction?",
+      "Your notes describe the old spark. Tonight I have something else to light."
+    ],
+    "f": [
+      "I study how pressure builds through an exchange, then practise the moment when it needs to be released.",
+      "I prepare another way to keep the match alive when the opening I expected fails to catch."
+    ]
+  },
+  "sasha": {
+    "w": [
+      "You've watched the old material? Lovely. Shame I've written a new punchline.",
+      "I hope you've studied the pauses as well. That's when you're likely to miss the joke."
+    ],
+    "f": [
+      "I study the moment an exchange falls flat and work out a different way to bring it back.",
+      "I rehearse an alternative ending to the bit. Nothing worse than repeating a routine that isn't working."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI9[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

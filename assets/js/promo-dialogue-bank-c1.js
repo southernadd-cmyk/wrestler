@@ -514,4 +514,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI8[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI9={
+  "val": {
+    "w": [
+      "You've studied how I apply force. Let's see how you respond when the leverage changes.",
+      "The footage shows the strength I needed in one position. You'll have to find out what I can do in this one."
+    ],
+    "f": [
+      "I study the changes in leverage that let me redirect pressure instead of meeting it head-on.",
+      "My preparation is to test each movement against a different angle of resistance, so the technique doesn't depend on brute force."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI9[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

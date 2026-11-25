@@ -511,4 +511,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI8[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI9={
+  "soraya": {
+    "w": [
+      "Your study assumes the conditions of the earlier match will recur. I have not agreed to that assumption.",
+      "You've prepared for one set of terms. Show me your response when the position changes."
+    ],
+    "f": [
+      "I study the conditions under which a hold remains effective and rehearse the alternatives when those conditions fail.",
+      "Preparation means testing each response within the limits of the contest, not relying on a favourable starting position."
+    ]
+  },
+  "nikita": {
+    "w": [
+      "You've studied the tape. Which grip stops me when I change the entry?",
+      "Name the response you've prepared. Now show me it works."
+    ],
+    "f": [
+      "Study the failed entry. Drill the correction. Repeat under resistance.",
+      "I practise the counter to my own hold. Then I know what to change."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI9[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

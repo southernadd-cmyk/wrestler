@@ -423,4 +423,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI9={
+  "tomasash": {
+    "w": [
+      "You've studied my swings. Did you learn anything from the ones I didn't throw?",
+      "You've watched the fight. Now show me you can tell a real opening from the one I want you to take."
+    ],
+    "f": [
+      "I study when a shot leaves me exposed. Then I practise choosing not to throw it.",
+      "I prepare the response to a missed swing as carefully as the swing itself."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI9[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -486,4 +486,37 @@
   }
 };
  for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI8[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI9={
+  "nico": {
+    "w": [
+      "You've watched the highlights. Tonight you have to deal with the bits between them too.",
+      "You've studied the timing on the footage. See how you handle the next beat when I change it."
+    ],
+    "f": [
+      "I study the moments just before the big move. That's where the timing is usually decided.",
+      "I practise a second route into the sequence, so a missed beat doesn't ruin everything that follows."
+    ]
+  },
+  "otis": {
+    "w": [
+      "You've watched me wrestle. Fair enough. I'm not going to stand still and demonstrate it for you.",
+      "Your notes might help with the first hold. Let's see what you do when we end up somewhere else."
+    ],
+    "f": [
+      "I study the places where a match gets awkward and practise a way to keep it moving.",
+      "I prepare an escape I can rely on when the grip I wanted isn't there."
+    ]
+  },
+  "red": {
+    "w": [
+      "Watched the old tapes, have you? Come on, then. Let's see what stuck.",
+      "You've done your homework. Still got to get past me."
+    ],
+    "f": [
+      "I watch where I lose my footing. That's what I drill.",
+      "I practise getting out of the bad grip before I go looking for the fancy one."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI9[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
