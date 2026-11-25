@@ -33,6 +33,18 @@
   "No point making something up. I've got enough to deal with when the bell goes.",
   "Right. Drop the charge and get on with it.",
   "Good. We can sort the wrestling out without that."
+ ],
+ "ezra": [
+  "I cannot establish the proposition with the information I have. The allegation should therefore be withdrawn.",
+  "You are entitled to a demonstration of the facts. I cannot provide one in support of that assertion.",
+  "Then the unsupported proposition has no further place in our exchange. The contest remains.",
+  "A reasonable distinction. We can test the wrestling without relying on an unverified claim."
+ ],
+ "imani": [
+  "You've asked me to substantiate it, and I can't. I won't hold you to a claim I can't establish.",
+  "I can stand behind my own work. I can't give you a particular example that proves what I've said about yours.",
+  "That's fair. Let our work speak for us, rather than an allegation neither of us has established.",
+  "Good. We've got a match to lead, not an unsupported accusation to carry."
  ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
