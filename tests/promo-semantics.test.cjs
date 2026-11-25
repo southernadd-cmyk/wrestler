@@ -264,6 +264,23 @@ for(const [id,[fingerprint,kind]] of Object.entries(L.specialistReview)){
 const crossVariant=L.selectSpecialistResponse(ownCat,{...ownCtx,variant:'tu_record'},'strength-cross-variant',{},actual);
 assert.ok(crossVariant);assert.match(crossVariant.text,/speed and aerial attacks/);assert.doesNotMatch(crossVariant.text,/hard strikes/);
 console.log('PASS G4B3 specialist fixtures: '+specialistFixtures+' original source approvals and named-strength cross-variant, history, context and source guards.');
+const topicRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='evidence');
+assert.equal(topicRows.length,40,'G4C.1 new authored lines');
+const topicOwners=new Map(),topicText=new Set();
+for(const {row,pack} of topicRows){
+ const cat=L.catalogue([{...pack,lines:[row]}]),context={...ctx,stage:'answer',action:'turn',side:row.side,speaker:{...ctx.speaker,id:pack.owner,role:'wrestler'},protected:'contextual-variant',variant:'tu_strength',hasMouthpiece:false};
+ const sem={claim:'evidence',move:row.side==='w'?'rebut':'counter'};
+ assert.ok(!topicText.has(row.text),'duplicate authored topic text');topicText.add(row.text);
+ if(!topicOwners.has(pack.owner))topicOwners.set(pack.owner,{w:0,f:0});topicOwners.get(pack.owner)[row.side]++;
+ assert.equal(L.selectAuthoredTopic(cat,context,'topic',{},sem)?.id,row.id);
+ assert.equal(L.select(cat,{...context,protected:null,variant:null},'ordinary',{}),null,'topic rows cannot leak into ordinary graph slots');
+ for(const mem of [{used:[row.id]},{recent:[row.id]}])assert.equal(L.selectAuthoredTopic(cat,context,'topic',mem,sem),null);
+ for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:row.side==='w'?'f':'w'},{stage:'open'},{action:'calm'}])assert.equal(L.selectAuthoredTopic(cat,{...context,...patch},'topic',{},sem),null);
+ assert.equal(L.selectAuthoredTopic(cat,context,'topic',{}, {...sem,claim:'proof'}),null);
+}
+assert.equal(topicOwners.size,10);
+for(const counts of topicOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
+console.log('PASS G4C1 topic banks: '+topicRows.length+' distinct original-owner evidence replies; '+topicOwners.size+' characters, two lines per side, scope and history guards.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
 const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;
@@ -345,7 +362,9 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
     assert.equal(sem.replyTo,previous,'reply must address immediately preceding spoken line');
     const prior=x.log[sem.replyTo];assert.notEqual(prior.side,e.side);if(sem.source.startsWith('authored-response:')){
      assert.equal(sem.source,'authored-response:'+e.authoredId);assert.ok(!e.composedId);
-     if(sem.bankReuse){
+     if(sem.topicBank===1){
+      const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim===sem.claim);assert.equal(sem.claim,'evidence');assert.equal(e.dialogueSlot.stage,'answer');assert.equal(e.dialogueSlot.action,'turn');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(found.row.side,e.side);assert.equal(e.line,found.row.text);
+     }else if(sem.bankReuse){
       assert.equal(e.dialogueSlot.action,'turn');assert.equal(e.dialogueSlot.stage,'answer');
       const found=bankRows.get(e.authoredId);assert.ok(found&&L.reviewedBankReuseV3[e.authoredId]?.slice(1).includes(sem.claim));
       assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(found.row.side,e.side);

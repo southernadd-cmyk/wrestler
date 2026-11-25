@@ -5,7 +5,7 @@ const root={addEventListener(){}},store=new Map();
 const localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)};
 vm.runInNewContext(core,{window:root,localStorage,Date,Math,JSON,console});
 const {OfficePromoDialogue:L,OfficeMic:M,OfficeData:D,OfficeStory:{Graph}}=root;
-const banks=[...root.OfficePromoBankC1,...root.OfficePromoBankC2];
+const banks=[...root.OfficePromoBankC1,...root.OfficePromoBankC2].map(p=>({...p,lines:p.lines.filter(r=>!r.when.semanticClaim)}));
 const cat=L.catalogue(L.combine(root.OfficePromoPilot,banks));
 const normal=s=>s.toLowerCase().replace(/[^\p{L}\p{N} ]/gu,'').trim();
 assert.equal(banks.length,20);

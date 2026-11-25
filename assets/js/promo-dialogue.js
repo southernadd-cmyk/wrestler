@@ -10,7 +10,7 @@
  const formats=['interview','callout','faceoff','address','mouthpiece'];
  const roles=['wrestler','manager','promoter'];
  const fields=['id','category','stage','action','side','text','when'];
- const conditions=['variants','formats','minAge','maxAge','minMeetings','titleMatch','hasMouthpiece','speakerStyle','opponentStyle','landed','minComposure','maxComposure','minIrritation','maxIrritation','subject'];
+ const conditions=['variants','formats','minAge','maxAge','minMeetings','titleMatch','hasMouthpiece','speakerStyle','opponentStyle','landed','minComposure','maxComposure','minIrritation','maxIrritation','subject','semanticClaim'];
  const placeholders=['speaker','client','opponent','venue','finisher','strength'];
  // Only these narrowly reviewed variants may be rephrased. Exact variant ID is required.
  const approved=Object.freeze({open:{proof:['pr_tech','pr_brawl','pr_risk','pr_stall'],people:['p_working','p_short'],swagger:['sw_main','sw_pose']},answer:{calm:['ca_simple','ca_pro','ca_restraint'],turn:['tu_strength'],challenge:['ch_one_fall','ch_mat','ch_ground','ch_stay']},close:{vow:['vo_plain','vo_hard','vo_fans','vo_guarantee'],clean:['cl_middle','cl_hand'],uncertainty:['un_done','un_plan','un_see'],legacy:['le_plain']}});
@@ -33,6 +33,7 @@
    if(k==='variants'){if(!Array.isArray(v)||!v.length||v.some(x=>!(approved[row.stage]?.[row.action]||[]).includes(x)))fail('unapproved variant condition '+row.id);}
    else if(k==='formats'){if(!Array.isArray(v)||!v.length||v.some(x=>!formats.includes(x)))fail('invalid format condition');}
    else if(k==='titleMatch'||k==='hasMouthpiece'||k==='landed'){if(typeof v!=='boolean')fail('invalid boolean '+k);}
+   else if(k==='semanticClaim'){if(v!=='evidence'||row.stage!=='answer'||row.action!=='turn'||when.hasMouthpiece!==false||when.variants)fail('invalid semantic topic row '+row.id);}
    else if(k==='speakerStyle'||k==='opponentStyle'||k==='subject'){if(!string(v))fail('invalid string '+k);}
    else if(!Number.isFinite(v)||v<0||(k==='minMeetings'&&!Number.isInteger(v))||(/Composure|Irritation/.test(k)&&v>100))fail('invalid number '+k);
   }
@@ -92,6 +93,7 @@
  }
  function matches(row,c){
   const w=row.when;
+  if(has(w,'semanticClaim')&&w.semanticClaim!==c.semanticClaim)return false;
   if(c.protected==='contextual-variant'&&(!w.variants||!w.variants.includes(c.variant)))return false;
   if(has(w,'variants')&&!w.variants.includes(c.variant))return false;
   const min=(value,limit)=>value!==null&&value!==undefined&&value>=limit;
@@ -2322,6 +2324,13 @@
   "settle"
  ]
 });
+ // New authored topic rows never participate in ordinary graph selection.
+ function selectAuthoredTopic(cat,ctx,seed,mem,sem){
+  if(!ctx||!sem||ctx.hasMouthpiece||ctx.stage!=='answer'||ctx.action!=='turn'||
+     (ctx.protected&&ctx.protected!=='contextual-variant')||sem.claim!=='evidence'||
+     (ctx.side==='w'?sem.move!=='rebut':sem.move!=='counter'))return null;
+  return select(cat,{...ctx,variant:null,protected:null,semanticClaim:sem.claim},seed,{...mem,candidateFilter:r=>r.when.semanticClaim===sem.claim});
+ }
  function selectSpecialistResponse(cat,ctx,seed,mem,sem){
   if(!ctx||!sem||ctx.hasMouthpiece||(ctx.protected&&ctx.protected!=='contextual-variant'))return null;
   const strength=ctx.side==='w'&&ctx.stage==='answer'&&ctx.action==='turn'&&sem.move==='rebut'&&sem.claim==='strength'&&string(sem.detail);
@@ -2675,5 +2684,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectSpecialistResponse,specialistReview,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectSpecialistResponse,specialistReview,selectAuthoredTopic,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);
