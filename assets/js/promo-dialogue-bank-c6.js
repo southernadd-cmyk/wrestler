@@ -14,4 +14,20 @@
  "kezia": "Tell me what I missed. Then give me a chance to show you I heard.\nBrawling is a fair tool when it is used well. Would you show me how you use it?\nA gamble can teach me something. What would you like me to learn from yours?\nPace, for me, is a good pace for learning. Shall we go at that pace?\nThe people deserve a match worth their time. Would you help me give them that?\nI would like a chance to prove I am ready.\nI would like to be trusted to lead, and I know I still have to earn it.\nWould you mark my stance for me? Does it look ready to you?\nTechnique, then? What would you change? What would you change in mine, if you could?\nStrikes are part of learning the job. Tell me which ones you would start with.\nA gamble should be something we can talk about after. Would you like to talk about yours?\nA stall is something I am trying to avoid. Would you show me what you would do instead?\nThe people want to see a contest. Would you let me give them one?\nWould you say I am among the best yet? What do you think I still need to learn?\nWould you show me what makes your {strength} work? Would you show me what makes it work?\nI have been trying to understand your {strength}, and I would like your help with it.\nWould calm be the right approach, do you think? Okay. Would you show me how you did it?\nDid that land for you? Thank you for saying that.\nI could argue that. Would you like to test me on it instead?\nWould you keep the count? Keep me down, and then tell me what I could do better.\nOn the mat I will ask you as I go. Tell me if I am wrong.\nGrounded or standing, would you show me the next step?\nWould you face me for a moment? I would like to learn from what you do.\nWas that a proper answer? Thank you. Would you explain the reasoning?\nI wonder if the question is still open. I would really like your answer, if you have one.\nDid that land for you? I will try to remember that.\nCould I accept that? Will you test me on it at the bell?\nI will wrestle this match and I will listen to every correction you give me.\nI hope my approach is careful enough. I hope you will see me try my best on the night.\nWhatever happens, I hope you will tell me what I learned.\nIs there more to come? I would like the chance to finish it well.\nI have one more question for you, and I hope you will answer it when the bell rings."
 };
  root.OfficePromoBankC6=Object.freeze(Object.entries(rows).map(([owner,body])=>{const texts=body.split('\n');if(texts.length!==slots.length)throw Error('Dialogue bank length: '+owner);return {owner,role:'wrestler',lines:slots.map(([stage,action,side,variant,category],i)=>({id:owner+'.c6.'+String(i+1).padStart(2,'0'),stage,action,side,category,text:texts[i],when:{hasMouthpiece:false,...(variant?{variants:[variant]}:{})}}))};}));
+ // G4C.1: topic-gated, independently authored replies to unsupported charges.
+ const evidenceReplies={
+ "kezia": [
+  "You're right to ask me. I haven't got an example I can stand behind. I'd rather learn than pretend.",
+  "I shouldn't say something about you that I can't explain. Can we start with the wrestling instead?",
+  "Thank you for being clear about that. I'd rather learn what you can do than argue about something we can't establish.",
+  "Then I won't ask you to prove a negative. Let's find out what happens when we wrestle."
+ ],
+ "ari": [
+  "I can make a picture for this room, but I can't pretend that picture is proof. Fair enough.",
+  "You asked for something real. I can't give you a particular example, and I'm not going to dress it up for the crowd.",
+  "Then leave the picture out of it. Let the people watch the contest for themselves.",
+  "Good. There's a difference between an image and an event. The event is our match."
+ ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

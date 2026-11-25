@@ -331,7 +331,7 @@
   if(opts.directed&&opts.formats)st.deliveryStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='fluff').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
-  if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,...(opts.formats&&opts.semantic?{reviewedAck:1,reviewedContext:1,semanticBankReuse:3,reviewedSpecialist:1}:{}),used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
+  if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,...(opts.formats&&opts.semantic?{reviewedAck:1,reviewedContext:1,semanticBankReuse:3,reviewedSpecialist:1,authoredTopics:1}:{}),used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
   if(opts.semantic&&Semantic&&st.authoredDialogue&&opts.directed){st.semantic={v:1,...(opts.formats?{variety:1,followupFlow:1,characterRebuttal:1,claimClassification:1}:{})};core.semanticSpeech=true;}
   if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
@@ -468,6 +468,10 @@
      if(press)(mem.composedUsed??=[]).push(line.id);
      return {id:own.id,text:press?own.text+' '+line.text:own.text,semantic:{...line.semantic,source:'authored-response:'+own.id,specialist:own.specialist,...(press?{questionSource:line.id}:{})}};
     }
+   }
+   if(line&&mem.authoredTopics===1){
+    const own=Dialogue.selectAuthoredTopic(catalogueFor(st),ctx,seed,mem,line.semantic);
+    if(own){mem.used.push(own.id);return {id:own.id,text:own.text,semantic:{...line.semantic,source:'authored-response:'+own.id,topicBank:1}};}
    }
    if(line)(mem.composedUsed??=[]).push(line.id);
    return line;

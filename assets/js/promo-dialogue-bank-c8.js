@@ -12,4 +12,20 @@
  "rev": "Let us begin with the first step, as one begins with a familiar hymn. Everybody here knows how it goes, so listen for the change.\nBrawling is a sin only when it is done for the wrong reason. Tell me your reason.\nRisk, to me, is a parable with a hard ending. Learn from it before you live it.\nTaking it slow is patience, and patience is a virtue the impatient always forget.\nThe people came to be told the truth about this match. I will tell it to them.\nI judge fairly, and I have judged this contest already.\nI have walked to this ring with my conscience clear. Can you say the same?\nBehold the stance. It is the stance of a man who has nothing to hide.\nYou speak of technique. Show me a hold that serves a purpose beyond your own pride.\nStrikes are a judgement passed with the fist. Pass them only when they are deserved.\nA gamble taken for vanity is a sin of its own. Examine yours before the bell.\nA stall is a lie told with the body. I will not tell that lie.\nThe people deserve a reckoning, not a show. Give them a match they can respect.\nYou question my moral authority. Let the crowd be the judge of that, and let them judge what they see.\nI note the pride you take in your {strength}. Pride goes before a fall. Remember that as we begin.\nI have weighed your {strength} carefully, and I find it lighter than you claim.\nSteady, as a faithful servant. Then, let it be. A calm man has room to hear the truth.\nAgreed, for now, as the parable asks. You have spoken truly, and I acknowledge it.\nI could condemn you for that. I would rather invite you to think again.\nOne fall, as judgement. Keep me down, and I will say the judgement was fair.\nOn the mat we will be measured, as the old parables teach. Stay with me.\nGrounded or standing, the judgement is the same. Do right by the people.\nStay in front of me, and let your conduct speak for you.\nA fine answer, measured. It is a true thing, honestly said.\nYou have not replied, and judgement waits. The truth is waiting for your reply.\nAgreed, for now, as the parable asks. I concede a fault of my own there, and I will keep it in mind.\nA fair point, and I accept my fault. We will settle it at the bell, where all things are settled.\nI will wrestle this match with a clear conscience, and I will leave the judgement to the people.\nMy approach is plain and honest. You will see the judgement on the night.\nWhatever happens, I want the people to leave knowing what they saw was true.\nThe reckoning is not finished yet. The reckoning is still to come.\nI have one more lesson to teach, and you will hear it when the bell rings."
 };
  root.OfficePromoBankC8=Object.freeze(Object.entries(rows).map(([owner,body])=>{const texts=body.split('\n');if(texts.length!==slots.length)throw Error('Dialogue bank length: '+owner);return {owner,role:'wrestler',lines:slots.map(([stage,action,side,variant,category],i)=>({id:owner+'.c8.'+String(i+1).padStart(2,'0'),stage,action,side,category,text:texts[i],when:{hasMouthpiece:false,...(variant?{variants:[variant]}:{})}}))};}));
+ // G4C.1: topic-gated, independently authored replies to unsupported charges.
+ const evidenceReplies={
+ "elodie": [
+  "That is a fair question. I will not fill the silence with an example I cannot substantiate.",
+  "I would rather leave that question unanswered than give you an answer I know I cannot justify.",
+  "Then leave the claim where it belongs: unproven. The contest is still worth having.",
+  "All right. Take a moment, and then let us speak about what we can actually test."
+ ],
+ "ash": [
+  "No example. I won't pretend there is one.",
+  "Fair. I said it. I can't back it up. Leave it.",
+  "Leave it out. Wrestle.",
+  "Good. Nothing else on that."
+ ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
