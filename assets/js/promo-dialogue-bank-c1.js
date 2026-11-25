@@ -317,4 +317,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH5={
+  "brick": {
+    "w": [
+      "Aye, you've been about. You'll still have to shift me when the bell goes.",
+      "Years don't put my shoulders down. That's your job tonight."
+    ],
+    "f": [
+      "You learn when to dig your heels in and when not to waste the strength.",
+      "I've learned not to fight every grip the same way. Come and try yours."
+    ]
+  },
+  "dax": {
+    "w": [
+      "You know the usual ways into a hold. I'm not giving you the usual starting position.",
+      "All that experience still needs an opening. I intend to make you earn it."
+    ],
+    "f": [
+      "Experience means spotting the second threat before I've committed to stopping the first.",
+      "I've learned to keep a useful position even when the move I wanted isn't there."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

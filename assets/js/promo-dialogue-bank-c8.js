@@ -298,4 +298,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH5={
+  "ash": {
+    "w": [
+      "Years on the card. Not a fall. Start the match.",
+      "You've learned your trade. Now do it against me."
+    ],
+    "f": [
+      "Experience tells me which opening not to take.",
+      "Seen enough to know when to change tack. Try me."
+    ]
+  },
+  "bashir": {
+    "w": [
+      "I've taught enough pupils to know a lesson is only useful if you can apply it. Let's see you apply yours.",
+      "You can spend years in the gym and still have something left to learn from the person opposite you."
+    ],
+    "f": [
+      "The value of all that practice is knowing how to correct yourself before the mistake costs you a fall.",
+      "A good lesson stays useful even when the pupil brings you a problem you haven't set before."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC8)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
