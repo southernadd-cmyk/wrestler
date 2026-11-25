@@ -195,7 +195,7 @@
   ],
   "faye": [
     "You have accurately quoted my {strength}. That establishes what you have to answer, not that you have answered it.",
-    "Let the record be clear: naming my {strength} is not evidence that you can neutralise them."
+    "Let the record be clear: you can name my {strength} without proving you can neutralise them."
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (strengthCountersF1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
