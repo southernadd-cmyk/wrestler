@@ -129,4 +129,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidencePressRepliesD8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE1={
+  "mara": [
+    "Let us exclude the unsupported allegation. What proposition can we actually establish in the contest?",
+    "On the evidence available to the referee and the audience, what can this match establish?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceQuestionsE1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

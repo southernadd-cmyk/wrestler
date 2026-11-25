@@ -111,4 +111,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidencePressRepliesD8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE1={
+  "bashir": [
+    "Leave the accusation aside. What can we demonstrate in the ring that these young ones could learn from?",
+    "What can we show the people by wrestling properly, rather than asking them to take our word for it?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceQuestionsE1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
