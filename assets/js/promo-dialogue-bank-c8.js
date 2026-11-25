@@ -71,4 +71,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidencePressRepliesD2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD3={
+  "elodie": [
+    "What can we observe without taking either of us at our word? The wrestling itself. That will do.",
+    "Watch the contest and distinguish what happens from what you expected to happen. Fair enough?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

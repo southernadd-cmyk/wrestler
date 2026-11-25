@@ -96,4 +96,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidencePressRepliesD2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD3={
+  "ezra": [
+    "A successful hold, its escape and the resulting position. Each can be observed independently.",
+    "The legal fall will establish the result. It cannot establish an allegation about your character."
+  ],
+  "imani": [
+    "They'll see whether I can take control back when you change the pace. That's the work I want them to judge.",
+    "We can test our plans against each other in the ring. Nobody has to take my word for how that ends."
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

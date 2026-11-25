@@ -9,10 +9,11 @@ const cat=L.catalogue(root.OfficePromoPilot),plain=x=>JSON.parse(JSON.stringify(
 const ids=['mara','brick','nova','magnus'];
 assert.deepEqual(Array.from(cat.coverage(),p=>p.owner).sort(),ids.map(x=>'wrestler:'+x).sort());
 const authored=new Map(root.OfficePromoPilot.flatMap(p=>p.lines.map(r=>[r.id,r])));
-assert.equal(authored.size,81);
+assert.equal(authored.size,83);
 assert.equal([...authored.values()].filter(r=>!r.when.semanticClaim).length,73,'original pilot rows preserved');
 assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='evidence'&&r.id.startsWith('nova.pilot.ev.')).length,4,'Nova evidence expansion');
 assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='evidence'&&r.id.startsWith('magnus.pilot.ev.')).length,4,'Magnus evidence expansion');
+assert.equal([...authored.values()].filter(r=>r.when.semanticClaim==='evidence'&&r.id.startsWith('magnus.pilot.ep.')&&r.stage==='push'&&r.action==='press'&&r.side==='f').length,2,'Magnus evidence follow-up expansion');
 const liveAuthored=new Map(L.combine(root.OfficePromoPilot,root.OfficePromoBankC1,root.OfficePromoBankC2).flatMap(p=>p.lines.map(r=>[r.id,r])));
 assert.equal(new Set(Array.from(authored.values(),r=>r.text)).size,authored.size);
 const actor={id:'mara',role:'wrestler',age:32,style:'Story',short:'Vale'},other={id:'nova',role:'wrestler',short:'Bell',style:'Technical'};

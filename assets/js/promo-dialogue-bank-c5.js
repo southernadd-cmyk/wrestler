@@ -89,4 +89,11 @@
  ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidencePressRepliesD3={
+  "mae": [
+    "Watch what each of us does after losing the first exchange. That's where the lesson begins.",
+    "The whole contest is there for them to see. A lesson has to be demonstrated, not merely announced."
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidencePressRepliesD3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

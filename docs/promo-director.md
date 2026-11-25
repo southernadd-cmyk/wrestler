@@ -143,3 +143,7 @@ G4C completed with 413 recovered turns, zero losses, and 585/1,972 (29.7%) autho
 ## G4D.2 — second opponent evidence follow-up tranche
 
 G4D.1 CI recovered 28 turns across ten owners with no losses; 99 of 127 opponent evidence press counters remain unauthored. Expand the existing scoped banks by two individually authored replies each for Ace, Aisha, Alina, Ash, Bao, Cal, Cass, Dean, Dev and Eira (two remaining sampled gaps per owner, ties ordered by owner ID). Keep selection and snapshot policy unchanged. Regenerate the ten compact payloads and manifest, verify all 40 follow-up rows across 20 owners, require positive incremental recovery and preserve all 28 G4D.1 and 413 G4C recoveries. No new workflow or save migration. Measured incremental results are pending CI.
+
+## G4D.3 — third opponent evidence follow-up tranche
+
+G4D.2 CI recovered 20 additional turns (48 cumulative, zero losses), leaving 79 of 127 eligible counters unauthored. Add two individually written replies each for Elodie, Ezra, Imani, Jun, Kellan, Kezia, Kofi, Lyra, Mae and Magnus; two gaps per owner, ties ordered by owner ID. Maintain existing selection and snapshot policy, regenerate ten payloads and manifest, verify 60 scoped lines across 30 owners, preserve 28 G4D.1, 20 G4D.2 and 413 G4C recoveries. No engine, workflow or save migration. Additional measured recovery pending CI.
