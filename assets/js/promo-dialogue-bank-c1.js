@@ -257,4 +257,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceAcknowledgementsG3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG4={
+  "sol": [
+    "That's fair. These people deserve to see the work, not be asked to believe a rumour.",
+    "I accept that. Let's give them something honest to judge when we wrestle."
+  ]
+};
+ for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceAcknowledgementsG4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
