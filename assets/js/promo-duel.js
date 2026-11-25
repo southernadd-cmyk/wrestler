@@ -82,6 +82,25 @@
   hit:['That one landed. The room turns a few degrees towards {F}.','A cheer for {F}. Not a big one, but you heard it.','Somebody at the back shouts “Fair point!”','They liked that. Unfortunately.'],
   miss:['{F}’s reply dies somewhere over row three.','Nobody reacts. {F} looks at the microphone as if it has let them down.','A long pause. Somebody opens a packet of crisps.','{F} waits for a reaction and gets the tea urn.']
  };
+ // Short, observational reactions for new formatted scenes. The old pools
+ // remain unchanged for old saves and legacy callers.
+ const LIVE_CROWD={
+  roar:['The hall erupts.','A wave of cheers runs down both sides of the ring.','The response is immediate and loud.','People rise from their seats.','The next words will have to wait for the noise.','Applause swells into a roar.','The back rows join in.','For a moment the room is all theirs.','The response carries all the way to the entrance.','The cheers drown out the next breath.','The audience is fully behind that line.','The noise builds as the microphone comes down.'],
+  good:['A ripple of applause.','A few voices call their approval.','Several people nod along.','That earns a warm response.','The front rows clap.','A cheer picks up from the side of the ring.','The audience warms to the point.','The line gets a little more noise than the last.','A short burst of applause follows.','The response is encouraging, not overwhelming.','There is a distinct note of approval.','More of the room is paying attention now.'],
+  flat:['The room stays quiet.','The audience listens without committing.','A few isolated voices, nothing sustained.','The response is difficult to read.','Nobody seems ready to take a side.','There is a brief lull.','The line hangs in the air.','A small reaction fades quickly.','Attention holds, but the noise does not rise.','The audience waits for the next point.','The room gives little away.','There is no clear shift in the response.'],
+  cool:['The response is muted.','A few people turn away from the exchange.','The noise drops off.','Only a scattered reaction follows.','A restless murmur comes from the back.','That does not quite reach the room.','The applause never really starts.','The audience sounds unconvinced.','A few voices express their doubts.','The moment passes without much support.','The hall grows a little restless.','The line earns less than it needed.'],
+  dead:['No cheer follows.','The silence is conspicuous.','A few impatient voices break the quiet.','The room has gone cold.','The line falls flat.','The audience barely acknowledges it.','A long, uncomfortable gap follows.','The response has all but disappeared.','Nobody takes up the line.','The crowd sounds ready to move on.','The microphone catches the quiet of the hall.','There is little left of the earlier attention.']
+ };
+ const LIVE_OPP_CROWD={
+  hit:['A cheer answers {F}.','Several voices back {F} up.','The reply draws real approval.','The room responds to the objection.','A burst of applause follows the reply.','The crowd gives {F} the benefit of the doubt.','The answer earns a noticeable reaction.','{F} has found some support.','A few spectators call out in agreement.','The rebuttal brings the audience in.','That gets a response from both sides of the hall.','The momentum shifts towards {F}.'],
+  miss:['The reply gets little in return.','A few scattered noises, then quiet.','{F} does not find much support.','The objection fails to stir the room.','The audience waits rather than applauding.','The answer passes without a clear reaction.','There is no sustained cheer for {F}.','The room remains unconvinced by the reply.','The response is thin.','Little comes back from the seats.','The rebuttal draws only a murmur.','The audience has not moved with {F}.']
+ };
+ function liveReaction(st,pool,key){
+  const options=pool.map(line=>fmt(line,st)),seen=new Set(st.log.filter(e=>e.side==='crowd').map(e=>e.line));
+  const recent=new Set(st.reactionStyle.recent||[]);
+  const fresh=options.filter(line=>!seen.has(line)),unheard=fresh.filter(line=>!recent.has(line));
+  return pick(unheard.length?unheard:fresh.length?fresh:options,st.seed,'live-reaction|'+key);
+ }
  const HECKLES=['Get on with it!','My nan could have you!','You were better in the nineties!','Who are you again?','Say something about the car park!','Is this the bingo?'];
  const ROUNDS=[
   {id:'open',name:'Opening shot',help:'You have the microphone first. Pick the argument that suits tonight. The crowd decides who is winning.'},
@@ -204,6 +223,7 @@
    venue:p?.venue||'this hall',promoterVoice:p?.voice||'the promoter',promoterName:p?.name||'the promotion',finish:c.finish||null,
    meter:clamp(Math.round(((w.heat||40)-(f.heat||45))/4)+(m&&(m.heat||0)>=60?3:0),-15,15),pushed:null,steps:[],log:[],stage:'live',result:null};
   st.start=st.meter;
+  if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
   if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
   if(opts.semantic&&Semantic&&st.authoredDialogue&&opts.directed){st.semantic={v:1};core.semanticSpeech=true;}
@@ -238,14 +258,14 @@
  function swing(st,n){const before=st.meter;st.meter=clamp(st.meter+n,-50,50);return st.meter-before;}
  function crowdSays(st,delta,key){
   const band=delta>=9?'roar':delta>=3?'good':delta>-3?'flat':delta>-7?'cool':'dead';
-  push(st,'crowd',pick(CROWD[band],st.seed,'crowd|'+key),'reaction');
+  push(st,'crowd',st.reactionStyle?.v===1?liveReaction(st,LIVE_CROWD[band],'player|'+key):pick(CROWD[band],st.seed,'crowd|'+key),'reaction');
  }
  // The opponent answers. How well depends on how good a talker they are, and on whether your line landed.
  function theirTurn(st,line,key,landed,fit=0){
   const hit=rng(st.seed,'their|'+key)<clamp(.3+st.f.mic/170-(landed?.12+.05*Math.max(0,fit):0),.1,.9);
   const d=swing(st,hit?-(4+Math.round(st.f.mic/20)):3);
   if(line)push(st,'f',line,'opponent',d);
-  push(st,'crowd',fmt(pick(OPP_CROWD[hit?'hit':'miss'],st.seed,'opp|'+key),st),'reaction',line?0:d);
+  push(st,'crowd',st.reactionStyle?.v===1?liveReaction(st,LIVE_OPP_CROWD[hit?'hit':'miss'],'opponent|'+key):fmt(pick(OPP_CROWD[hit?'hit':'miss'],st.seed,'opp|'+key),st),'reaction',line?0:d);
   return hit;
  }
  function riskOf(st,stage,id){return (Core.NODES[stage][id].risk||0)+(Core.variantFor(st.core,stage,id)?.fx?.risk||0);}
