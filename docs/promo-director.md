@@ -247,3 +247,7 @@ Twenty additional owner-specific lines for Ellis, Emmett, Faye, Imani, Iris, Kir
 ## G4G.4 — acknowledgement expansion
 
 Twenty additional owner-specific lines for Mae, Morgan, Nadia, Nate, Noelle, Priya, Red, Rev, Sol and Soraya. Target ten new sampled recoveries, preserving all 32 previous recoveries with zero losses; 34 original owners and 68 rows total. Selection engine unchanged; compact assets and manifest rebuilt. CI pending.
+
+## G4G.5 — final sampled acknowledgement gaps
+
+Ten additional owner-specific lines for Sylvia, Theo, Tomas Ash, Vera and Zane. Target the final five sampled recoveries, preserving all 42 previous recoveries with zero losses; 39 original owners and 78 rows total. Sampled recovery and full roster coverage remain distinct: 41 original owners still need authored acknowledgements. Selection engine unchanged; compact assets and manifest rebuilt. CI pending.

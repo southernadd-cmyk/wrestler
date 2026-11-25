@@ -276,4 +276,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceAcknowledgementsG4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG5={
+  "sylvia": [
+    "That's fair. We ought to apply the same standard of evidence to both of us.",
+    "I accept that correction. A clean contest gives us something real to judge, not grounds to invent the rest."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceAcknowledgementsG5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
