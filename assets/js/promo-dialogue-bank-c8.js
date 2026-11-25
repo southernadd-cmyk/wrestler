@@ -25,6 +25,12 @@
   "Fair. I said it. I can't back it up. Leave it.",
   "Leave it out. Wrestle.",
   "Good. Nothing else on that."
+ ],
+ "cleo": [
+  "A claim needs an observation that supports it. I cannot supply that observation, so the claim fails.",
+  "I have no reliable example to offer. Reject that premise; the wrestling question is still testable.",
+  "Correct. No supporting observation, no finding. Let's test the wrestling separately.",
+  "That's a valid distinction. The unsupported conclusion can go; the contest remains."
  ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

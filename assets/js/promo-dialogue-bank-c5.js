@@ -27,6 +27,12 @@
   "You've asked for something solid. I haven't got it. Let that line go.",
   "Good. We don't need that loose end dragging behind us in the match.",
   "That'll hold. Leave the unsupported bit ashore and meet me in the ring."
+ ],
+ "gus": [
+  "Fair question. I wouldn't pull someone up at work without being able to say what they'd done. I can't here.",
+  "I haven't got the facts to back that up, and I'm not going to put it on you anyway.",
+  "Good. Leave that rubbish out of it and let's do the job properly.",
+  "That's settled. We've both got work to do when the bell goes."
  ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

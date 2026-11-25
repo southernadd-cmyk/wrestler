@@ -21,6 +21,12 @@
   "A demand for evidence is reasonable. I withdraw the allegation rather than pretend it is a finding.",
   "Very well. The unsupported allegation is not part of the case. The contest remains.",
   "Let the distinction stand. An unproven charge is not a verdict; neither is a speech a wrestling result."
+ ],
+ "kit": [
+  "Fair enough, mate. I haven't got a proper example, and I'm not doing a whole comedy routine to hide that.",
+  "You've caught me there. No specific incident I can point to. Let's keep the show about the wrestling.",
+  "Lovely. We can bin that bit of the script, then. On with the actual match.",
+  "That's the end of that little detour. Come on, let's give them something worth the ticket."
  ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
