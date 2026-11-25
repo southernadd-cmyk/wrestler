@@ -6,6 +6,7 @@ const localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,Str
 vm.runInNewContext(core,{window:root,localStorage,Date,Math,JSON,console});
 const {OfficeMic:M,OfficeData:D,OfficePromoDirector:Dir,OfficeStory:{Graph},OfficeSigning:Signing}=root;
 const clone=x=>JSON.parse(JSON.stringify(x)),stats={},angles={},counts={};
+const deliveryOld=new Set(),deliveryNew=new Set();let deliveryCount=0,deliveryChanged=0,deliveryScenes=0;
 const closeOld=new Set(),closeNew=new Set();let changedClose=0,comparedClose=0;
 const crowdOld=new Set(),crowdNew=new Set();let oldRepeats=0,newRepeats=0,oldTotal=0,newTotal=0;
 const norm=line=>line.replace(/Nova|Bell|Magnus|Graves|Mara|Vale/g,'<name>');
@@ -25,6 +26,7 @@ for(let i=0;i<240;i++){
  (angles[fmt]??=new Set()).add(open.join(','));
  assert.ok(open.length>=3);
  const previous=clone(s);delete previous.reactionStyle;
+ const previousDelivery=clone(s);delete previousDelivery.deliveryStyle;
  const pattern=[];
  while(s.stage!=='done'){
   assert.ok(pattern.length<4);
@@ -33,7 +35,7 @@ for(let i=0;i<240;i++){
   const chosen=choices[(i+pattern.length)%choices.length].id,copy=clone(s);
   const oldClose=round==='close'?clone(s):null,at=s.log.length;
   if(oldClose){delete oldClose.closingVariety;M.choose(oldClose,chosen);}
-  M.choose(s,chosen);M.choose(copy,chosen);M.choose(previous,chosen);
+  M.choose(s,chosen);M.choose(copy,chosen);M.choose(previous,chosen);M.choose(previousDelivery,chosen);
   if(oldClose){
    assert.equal(JSON.stringify(s.core),JSON.stringify(oldClose.core),'closing presentation cannot alter graph');
    for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature'])assert.equal(JSON.stringify(M.result(s)[k]),JSON.stringify(M.result(oldClose)[k]),'closing parity '+k);
@@ -44,7 +46,20 @@ for(let i=0;i<240;i++){
   pattern.push(round);
  }
  assert.equal(pattern[0],'open');assert.equal(pattern[1],'answer');assert.equal(pattern.at(-1),'close');
- const result=M.result(s),old=M.result(previous);
+ const result=M.result(s),old=M.result(previous),oldDelivery=M.result(previousDelivery);
+ assert.equal(JSON.stringify(s.core),JSON.stringify(previousDelivery.core),'delivery presentation cannot alter graph');
+ for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature','speech','beats','conversation'])assert.equal(JSON.stringify(result[k]),JSON.stringify(oldDelivery[k]),'delivery-only parity: '+k);
+ const notes=s.log.filter(e=>e.kind==='fluff'),oldNotes=previousDelivery.log.filter(e=>e.kind==='fluff');
+ assert.equal(notes.length,oldNotes.length,'no new failure events');
+ assert.equal(JSON.stringify(s.log.filter(e=>e.kind!=='fluff')),JSON.stringify(previousDelivery.log.filter(e=>e.kind!=='fluff')),'spoken and crowd lines unchanged');
+ assert.equal(new Set(notes.map(e=>e.line)).size,notes.length,'no repeated delivery cue');
+ if(notes.length)deliveryScenes++;
+ for(let n=0;n<notes.length;n++){
+  const e=notes[n];assert.equal(e.side,'stage');assert.equal(e.swing,0);
+  assert.ok(e.line.startsWith((s.speaker||s.w).short+' '),'actual speaker named');
+  assert.ok(!/[{}]/.test(e.line));assert.doesNotMatch(e.line,/forgets|wrong name|trips over|ink has run/i);
+  deliveryNew.add(norm(e.line));deliveryOld.add(norm(oldNotes[n].line));deliveryCount++;if(e.line!==oldNotes[n].line)deliveryChanged++;
+ }
  for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature','speech','beats'])assert.equal(JSON.stringify(result[k]),JSON.stringify(old[k]),'reaction-only parity: '+k);
  for(const [state,pool,isNew] of [[s,crowdNew,true],[previous,crowdOld,false]]){
   const lines=state.log.filter(e=>e.side==='crowd').map(e=>norm(e.line)),unique=new Set(lines);
@@ -79,6 +94,8 @@ assert.equal(oldTotal,newTotal,'no hidden reaction or scoring changes');
 assert.equal(newRepeats,0,'new scenes never repeat a crowd line');
 assert.ok(oldRepeats>newRepeats&&crowdNew.size>crowdOld.size*2,'substantial diversity improvement');
 assert.ok(changedClose>20&&closeNew.size>closeOld.size,'closing responses must vary');
+assert.ok(deliveryCount>40&&deliveryScenes>20&&deliveryChanged===deliveryCount&&deliveryNew.size>deliveryOld.size,'delivery variety');
+console.log('PASS delivery variety: '+deliveryCount+' failed deliveries in '+deliveryScenes+' scenes; '+deliveryOld.size+' -> '+deliveryNew.size+' distinct notes; unchanged dialogue, scoring and exact resume.');
 console.log('PASS closing variety: '+changedClose+'/'+comparedClose+' changed replies; '+closeOld.size+' -> '+closeNew.size+' distinct; graph and promise parity.');
 console.log('PASS crowd variety: '+oldRepeats+'/'+oldTotal+' -> '+newRepeats+'/'+newTotal+' within-scene repeats; '+crowdOld.size+' -> '+crowdNew.size+' distinct lines; gameplay parity.');
 console.log('PASS five promo formats: '+JSON.stringify(stats)+'; decisions by format '+JSON.stringify(counts)+'; evidence, vows, signing eligibility and exact resume preserved.');
