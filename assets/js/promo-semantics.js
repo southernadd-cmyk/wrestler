@@ -1195,6 +1195,166 @@
  "respect": "Good work under pressure. That is what I will be judging.",
  "home": "A match worth staying to watch. The crowd can decide the rest."
 });
+ // Additional reviewed counter and press-counter wording for every topic.
+ // Keep the original frame indices stable for existing saves and history.
+ const alternateReplies=Object.freeze({
+ "legitimacy": [
+  "Your place is something you have to justify between those ropes.",
+  "Take the opportunity in front of you. Make me the proof."
+ ],
+ "status": [
+  "They can put your name at the top of the poster. It won't help your shoulders off the mat.",
+  "The poster has done its job. Now we have to do ours."
+ ],
+ "audience": [
+  "Let the audience see something worth getting behind.",
+  "I want them watching the contest, not checking their watches."
+ ],
+ "crowd": [
+  "Listen to them after the bell, not before.",
+  "How we wrestle will determine whether they stay with either of us."
+ ],
+ "cheers": [
+  "Noise won't get your opponent's shoulders down.",
+  "I need to create a chance for the fall, not a louder cheer."
+ ],
+ "endurance": [
+  "Let's see how much of that energy you have left late on.",
+  "I'll make you work for every chance to take a breather."
+ ],
+ "shared_effort": [
+  "Then neither of us gets to take an easy night.",
+  "It's how we deal with the difficult exchanges that will distinguish us."
+ ],
+ "effort": [
+  "What you deliver is what I'm interested in.",
+  "I'm interested in what happens when you have to fight your way back into it."
+ ],
+ "takedown": [
+  "You'll have to stop more than one attempt.",
+  "If the first entry is blocked, I'll look for another angle."
+ ],
+ "strike": [
+  "The second exchange is as important as the first shot.",
+  "I'll look for the next opening. One strike isn't the whole plan."
+ ],
+ "air": [
+  "You'll have to read the take-off before you can intercept me.",
+  "I'll vary the moment I leave the ropes. The timing is yours to read."
+ ],
+ "pace": [
+  "I'm not obliged to engage on your rhythm.",
+  "I'll look for the moment when I can take the initiative back."
+ ],
+ "opportunity": [
+  "You can't count on the opening being there.",
+  "If that chance disappears, I'll look for a different one."
+ ],
+ "strength": [
+  "You may recognise my {detail}. Now you have to deal with them.",
+  "I'll change how I use my {detail} if you find a way to stop them."
+ ],
+ "study": [
+  "Let's see if you can turn that preparation into a useful position.",
+  "I'll adjust when the positions change. Preparation has to allow for that."
+ ],
+ "experience": [
+  "Put those years to work against me.",
+  "I'll set you a new problem and see what your experience tells you."
+ ],
+ "name": [
+  "Give them a reason to remember your name after the match.",
+  "I want what I do out there to be what they remember."
+ ],
+ "talking": [
+  "I'd rather see you answer me between the ropes.",
+  "Once the microphones are down, the wrestling is the only contest left."
+ ],
+ "finisher": [
+  "I'll look to deny you the position you need for it.",
+  "I'll make the set-up as difficult as the move itself."
+ ],
+ "appearance": [
+  "I'll wait to see what you can do once we start wrestling.",
+  "The way you look tells me little about what you can do on the mat."
+ ],
+ "present": [
+  "Then demonstrate it while you have the chance tonight.",
+  "We can only find that out once this match starts."
+ ],
+ "progress": [
+  "You won't get past me just by looking further down the card.",
+  "You'll have to deal with the opponent in front of you first."
+ ],
+ "count": [
+  "You've still got to earn the referee's count.",
+  "I need the right position to give the referee something to count."
+ ],
+ "agreement": [
+  "That much is settled. The contest isn't.",
+  "We don't have to invent a disagreement just to fill the time."
+ ],
+ "terms": [
+  "Then let's stick to what we've agreed.",
+  "Those terms apply to both of us once the bell goes."
+ ],
+ "end": [
+  "We've said enough. Time to wrestle.",
+  "I've nothing to add here. The match can answer the rest."
+ ],
+ "proof": [
+  "Let's see you substantiate that on the mat.",
+  "What you actually do in the match is the evidence I want."
+ ],
+ "early": [
+  "I'll make you work for that early opening.",
+  "If the quick chance isn't there, I'll have to find another route."
+ ],
+ "past": [
+  "There's another result to earn tonight.",
+  "What happens in the next contest matters more than another discussion of the last."
+ ],
+ "strategy": [
+  "I'll adapt to the position you put me in.",
+  "I'll read the position as it changes rather than assume the next move."
+ ],
+ "charge": [
+  "I'm going to try to close off the space you need.",
+  "I'll change my approach if you step out of the line of the charge."
+ ],
+ "evidence": [
+  "Then don't turn an unsupported allegation into a fact.",
+  "We can both be judged on what the people and the referee witness."
+ ],
+ "rules": [
+  "The method will be there for people to judge.",
+  "Watch how the result is earned, not just how it is recorded."
+ ],
+ "ground": [
+  "I'll be looking for the opening that lets me stand again.",
+  "I'll try to create enough space to change levels."
+ ],
+ "outside": [
+  "You still have to keep me inside those ropes.",
+  "I'm aware of the count. Keeping me in the ring is your task."
+ ],
+ "handshake": [
+  "We'll see about the handshake when it's over.",
+  "I'd rather make that decision after we've wrestled."
+ ],
+ "respect": [
+  "Show me something worthy of respect under pressure.",
+  "I'll judge you by the work you put in when it gets difficult."
+ ],
+ "home": [
+  "The locals can choose who they get behind.",
+  "I want to give this hall a contest worth remembering."
+ ],
+ "endurance_self": [
+  "I'll look to be there when the early pace catches up with us.",
+  "I'll pick when to expend my energy. You'll have to disrupt that."
+ ]
+});
  const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(16).padStart(8,'0');};
  function source(id,template){return 'graph:'+id+':'+hash(template);}
  function classify(key,detail){
@@ -1229,10 +1389,27 @@
   }else if(move==='rebut')frames=topic?topic.slice(1,4):['I have heard your objection. The wrestling will have to settle it.','I am not going to put words in your mouth. Let us settle this in the ring.','I intend to give you my answer at the bell.'];
   else if(move==='press')frames=topic?[topic[5]]:['Have you got anything else to add before the bell?','Is there anything about the match itself you still want to say?'];
   else frames=topic?[topic[6]]:['I hear you. We still have a match to wrestle.','All right. I heard what you said.'];
+  if(st.semantic.variety===1){
+   if(side==='f'&&topic&&move!=='settle')frames=[...frames,alternateReplies[claim][move==='press_counter'?1:0]];
+   else if(side==='f'&&move==='settle')frames=[...frames,'We can agree on that and leave the rest to the match.','That is enough on that point.'];
+   else if(side==='f'&&!topic)frames=[...frames,'Put that to the test once the bell goes.','I want to see what you do on the mat.'];
+   else if(!topic&&move==='press')frames=[...frames,'Before we finish, what is your point about tonight?','Is there a challenge here you still want to make?'];
+   else if(!topic&&move==='acknowledge')frames=[...frames,'I heard you. There is no need to go over it again.','I can leave that point where it stands.'];
+  }
   const voice=ctx.voice||ctx.stance,preferred=ctx.irritation>=42||['gruff','stoic','reserved','combative'].includes(voice)?2:['precise','analytical'].includes(voice)?1:0;
   const mem=st.authoredDialogue,used=mem?.composedUsed||[],recent=mem?.recent||[];
   const candidates=frames.map((frame,i)=>({id:'semantic.'+ctx.speaker.id+'.'+move+'.'+claim+'.'+i,text:frame.replace(/\{detail\}/g,detail||''),i}));
-  const rank=(a,b)=>Number(b.i===preferred)-Number(a.i===preferred)||hash(st.seed+'|'+st.steps.length+'|'+a.id).localeCompare(hash(st.seed+'|'+st.steps.length+'|'+b.id));
+  const rank=(a,b)=>{
+   const tie=hash(st.seed+'|'+st.steps.length+'|'+a.id).localeCompare(hash(st.seed+'|'+st.steps.length+'|'+b.id));
+   // Existing saves retain the old hard preference. New scenes vary within
+   // the eligible topic; voice preference is a tie-break within a seeded
+   // subset rather than always selecting the same frame.
+   if(st.semantic.variety===1){
+    const seed=st.seed+'|'+ctx.speaker.id+'|'+move+'|voice-preference';
+    if(parseInt(hash(seed),16)%4!==0)return tie;
+   }
+   return Number(b.i===preferred)-Number(a.i===preferred)||tie;
+  };
   const fresh=candidates.filter(x=>!used.includes(x.id)&&!recent.includes(x.id)),unused=candidates.filter(x=>!used.includes(x.id));
   const line=(fresh.length?fresh:unused.length?unused:candidates).sort(rank)[0];
   return {id:line.id,text:line.text,composed:true,semantic:{v:1,kind:side==='f'?'claim':'response',claim:side==='f'?outClaim:claim,source:line.id,replyTo:prev.index,move,...(detail&&outClaim==='strength'?{detail}:{})}};
