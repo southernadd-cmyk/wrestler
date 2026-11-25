@@ -325,6 +325,7 @@
   if(opts.directed&&opts.formats){st.fallbackVariety=1;st.closingVariety=1;st.closingCommitmentStyle=1;}
   if(opts.directed&&opts.formats)st.coreVoiceStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='strong'||e.kind==='uneven').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.coreVoiceExtension=1;
+  if(opts.directed&&opts.formats)st.openingFlow=1;
   if(opts.directed&&opts.formats)st.opponentVoiceStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.side==='f'||e.kind==='opponent').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.deliveryStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='fluff').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
@@ -471,6 +472,26 @@
    const tag=line?.semantic||(e.side==='f'?(line&&!line.composed?Semantic.fromBank(line.id,line.text):!line?Semantic.classify(source?.speechSource,source?.speechDetail):null):null);
    if(tag)e.semantic=tag;
   }
+ }
+ // G3A: ordinary format questions can be answered by the argument itself.
+ // Reviewed literal graph variants only; programme/record prompts, authored
+ // bank wording, mouthpieces and evidence keep their explicit bridge.
+ const DIRECT_OPENINGS={
+  callout:new Set(['pr_tech','pr_brawl','pr_risk','pr_stall','pr_veteran','pr_study','sw_jacket','sw_future','sw_ignore','sw_belt','sw_pose','sw_money']),
+  faceoff:new Set(['pr_tech','pr_brawl','pr_risk','pr_stall','sw_jacket','sw_future','sw_ignore','sw_belt','sw_pose','sw_money']),
+  address:new Set(['p_hometown','p_working','p_chant','p_short','p_show'])
+ };
+ function naturalFormatOpening(st){
+  return st.openingFlow===1&&st.openingQuestion?.kind==='format'&&!st.arc&&Semantic?.allowed(st);
+ }
+ function directOpening(st,step,d,line){
+  const q=st.openingQuestion;
+  return naturalFormatOpening(st)&&!line&&!d.case&&DIRECT_OPENINGS[q.format]?.has(step.variant)===true;
+ }
+ function openingCue(st){
+  // The same coaching cue is available in view(). Don't also narrate it
+  // as though somebody said it aloud in an ordinary live conversation.
+  if(!naturalFormatOpening(st))push(st,'stage',spokenCue(st),'cue');
  }
  function spokenCue(st){
   if(st.semantic&&Semantic.allowed(st)){
@@ -1497,7 +1518,17 @@
    if(d.speaker===st.w.name&&!said){said=true;const got=swing(st,mine);const ctx=slot('w',d),line=pickAuthored(st,ctx);
     const graphLine=line?d.line:coreVoice(st,stage,id,d,step);
     const lead=stage==='open'?Director?.answerOpening(st.openingQuestion,id):null;
-    if(lead){const answer=line?.text||clientClaim(st,graphLine),spokenLead=st.speaker&&st.openingQuestion.kind!=='format'?clientClaim(st,lead):lead;push(st,'w',spokenLead+' '+answer,step.landed?'strong':'uneven',got);st.log.at(-1).answersQuestion={v:1,prompt:st.openingQuestion.prompt,lead:spokenLead};}
+    if(lead){
+     const answer=line?.text||clientClaim(st,graphLine);
+     if(directOpening(st,step,d,line)){
+      push(st,'w',answer,step.landed?'strong':'uneven',got);
+      st.log.at(-1).answersQuestion={v:1,prompt:st.openingQuestion.prompt,lead:'',direct:true};
+     }else{
+      const spokenLead=st.speaker&&st.openingQuestion.kind!=='format'?clientClaim(st,lead):lead;
+      push(st,'w',spokenLead+' '+answer,step.landed?'strong':'uneven',got);
+      st.log.at(-1).answersQuestion={v:1,prompt:st.openingQuestion.prompt,lead:spokenLead};
+     }
+    }
     else push(st,'w',line?.text||graphLine,step.landed?'strong':'uneven',got,!line);
     annotate(st,st.log.length-1,ctx,line);
     if(!step.landed)push(st,'stage',fluff(st,stage),'fluff');crowdSays(st,got,key);continue;}
@@ -1507,12 +1538,12 @@
     const ctx=slot('f',d),at=st.log.length,line=pickAuthored(st,ctx);
     theirTurn(st,line?.text||opponentVoice(st,stage,id,d,step)||graphFallback(st,stage,id,d),key,step.landed,fit);
     if(st.log[at]?.side==='f')annotate(st,at,ctx,line,d);
-    if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',spokenCue(st),'cue');}
+    if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);openingCue(st);}
     continue;}
    if(d.speaker==='Crowd')push(st,'stage',d.line.replace(/^The opponent/,st.f.short).replace(/the opponent/g,st.f.short),'stage');
   }
   if(!replied&&stage!=='close')theirTurn(st,null,key,step.landed,fit);
-  if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',spokenCue(st),'cue');}
+  if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);openingCue(st);}
   return {id,label:step.label,landed:step.landed};
  }
  function choose(st,id){
