@@ -147,4 +147,11 @@
   ]
 };
  for(const pack of root.OfficePromoPilot)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF8={
+  "nova": [
+    "You've prepared a defence against my {strength}. I want to see what happens to your centre of balance when you put it into practice.",
+    "Knowing how to meet my {strength} gives you a starting position. I'll be looking for the next transition when you commit to your answer."
+  ]
+};
+ for(const pack of root.OfficePromoPilot)for(const [j,text] of (strengthCountersF8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
