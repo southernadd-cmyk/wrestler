@@ -429,4 +429,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI3={
+  "rex": {
+    "w": [
+      "You've watched me, fair enough. What are you going to do when the job in front of you isn't the one on the tape?",
+      "You've got your notes. Let's see if you've put the work in when I make you change grips."
+    ],
+    "f": [
+      "I study where a man puts his weight. Then I get in the gym and practise working around it.",
+      "I prepare for the bits that go wrong, not just the moves that look good when everything goes right."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

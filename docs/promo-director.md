@@ -293,3 +293,7 @@ G4H.7 audit identifies 70 missing study answer/turn exchanges (32 player rebutta
 ## G4I.2 — second study and preparation batch
 
 G4I.1 recovered 11 sampled exchanges (5 player, 6 opponent), zero losses, in run 45710437792. Add two rebuttals and two counters each for Ari, Brick, Dax, Faye, Iris and Jett (two gaps each; alphabetical tie-break). Twenty-four new rows, forty across ten owners. Target twelve incremental recoveries (4 player, 8 opponent), 23 cumulative, preserving all eleven prior hits and earlier policy parity. Selection engine, save schema and CI unchanged. Regenerate six compact banks and remove superseded revisions. CI pending.
+
+## G4I.3 — third study and preparation batch
+
+G4I.2 recovered 23 sampled exchanges (9 player, 14 opponent), zero losses, in run 45711306807. Add two rebuttals and two counters each for Magnus, Nolan, Rex, Roxy, Sylvia, Winnie and Zara (two gaps each; alphabetical tie-break). Twenty-eight new rows, 68 across 17 owners. Target 14 incremental recoveries (8 player, 6 opponent), 37 cumulative, preserving the 11 and 12 prior hits and earlier policy parity. Extend Magnus's pilot inventory. Selection engine, save schema and CI unchanged. Regenerate seven compact banks and remove superseded revisions. CI pending.

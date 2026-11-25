@@ -425,4 +425,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const studyRepliesI3={
+  "sylvia": {
+    "w": [
+      "Your preparation is welcome. I will judge how well you apply it when I change the pace of the exchange.",
+      "Study the standard, by all means. You still have to demonstrate it under pressure."
+    ],
+    "f": [
+      "I review each position for control and balance. A move that only works in rehearsal is not ready for a match.",
+      "My preparation includes the safe way out of every position I intend to enter. I will not compromise that standard."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);

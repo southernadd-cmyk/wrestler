@@ -426,4 +426,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI2[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI3={
+  "nolan": {
+    "w": [
+      "You've done the homework. Now show me you understand the lesson when the first grip changes.",
+      "Watching a good exchange is useful. Working through one with a partner who won't oblige you is the real test."
+    ],
+    "f": [
+      "I study how a wrestler gets into trouble and how they get out of it. There's a lesson in both.",
+      "Preparation means drilling the alternatives until I can change course without losing control of the exchange."
+    ]
+  },
+  "winnie": {
+    "w": [
+      "You've got the recipe written down, love. Let's see how you cope when I leave out the ingredient you were counting on.",
+      "Watching me wrestle is a bit like watching somebody change a tyre. Looks straightforward till you have to do it yourself."
+    ],
+    "f": [
+      "I study the little things that save effort, love. Where to put a foot, when to let go of a grip.",
+      "I practise a second way of doing the job. No point bringing one spanner when you might meet a different nut."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
