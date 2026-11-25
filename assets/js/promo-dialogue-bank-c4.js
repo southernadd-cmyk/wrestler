@@ -178,4 +178,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceQuestionsE5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE6={
+  "miro": [
+    "I don't know whether that accusation is true. What can we honestly show them when we wrestle?",
+    "Right, I'll try to put this simply. What can the people find out by watching our match?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceQuestionsE6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

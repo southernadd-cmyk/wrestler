@@ -159,4 +159,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceQuestionsE4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE6={
+  "kira": [
+    "Do not confuse an allegation with a result. What can we demonstrate under the rules of the contest?",
+    "The audience can assess our discipline in the ring. What else can they establish from the match itself?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceQuestionsE6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -179,4 +179,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceQuestionsE4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE6={
+  "kellan": [
+    "Right! Forget the rumour. What can we actually show them?",
+    "A reaction, yes! But what can the wrestling itself establish for the crowd?"
+  ],
+  "leandro": [
+    "Enough talk, come on. What can we actually show them when we get moving?",
+    "Leave that accusation here. What can the crowd learn from the next thing we do in the ring?"
+  ],
+  "morgan": [
+    "An allegation has no value until it is backed up. What can this contest actually establish?",
+    "Set the claim aside. What can we deliver in the ring that the paying audience can judge?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceQuestionsE6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

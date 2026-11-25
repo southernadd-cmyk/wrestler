@@ -161,4 +161,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceQuestionsE5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE6={
+  "gus": [
+    "Leave the accusation for someone who can check it. What can we show them by doing the job properly tonight?",
+    "A decent shift ought to speak for itself. What can the people actually judge from ours?"
+  ],
+  "jett": [
+    "Okay, okay, leave that claim there. What can we show them, one move at a time?",
+    "One thing first: what can the people actually see us do when the bell goes?"
+  ],
+  "milo": [
+    "We've both made the journey tonight. What can the people actually judge from the work we put in?",
+    "I've heard enough rumours on the road. What can we demonstrate in this match instead?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC5)for(const [j,text] of (evidenceQuestionsE6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c5.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
