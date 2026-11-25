@@ -25,6 +25,17 @@ assert.equal(L.select(ranked,ctx,'seed').id,'specific');
 assert.equal(L.select(ranked,ctx,'seed',{recent:['specific']}).id,'base');
 assert.throws(()=>L.catalogue([{owner:'mara',role:'wrestler',lines:[make('bad',{variants:['tu_record']})]}]),/unapproved variant/);
 assert.deepEqual(Array.from(L.recentIds({lastPromo:{dialogueIds:['first']}},[{promo:{dialogue:[{authoredId:'first'},{authoredId:'second'}]}}])),['first','second']);
+// Conservative closing bank guard: no implicit or vague promise may replace
+// the explicit graph commitment. Other actions are unaffected.
+const vow={stage:'close',side:'w',action:'vow',variant:'vo_hard'};
+assert.equal(L.closingCommitment({text:'I anticipate a difficult case. I intend to win it.'},vow),true);
+assert.equal(L.closingCommitment({text:'I have made my position clear, and I intend to keep to it all the way to the finish.'},vow),false);
+assert.equal(L.closingCommitment({text:'I will win.'},vow),false);
+assert.equal(L.closingCommitment({text:'I will win.'},{...vow,variant:'vo_plain'}),true);
+assert.equal(L.closingCommitment({text:'One clean fall in the centre. No qualifications.'},{...vow,action:'clean',variant:'cl_middle'}),true);
+assert.equal(L.closingCommitment({text:'Whatever the result, both sides will know where things stand.'},{...vow,action:'clean',variant:'cl_middle'}),false);
+assert.equal(L.closingCommitment({text:'Shake my hand. No shortcuts.'},{...vow,action:'clean',variant:'cl_hand'}),true);
+assert.equal(L.closingCommitment({text:'I have nothing more to say.'},{...vow,action:'uncertainty',variant:'un_done'}),true);
 const p=D.PROMOS[0],rows=ids.map(id=>D.ALL.find(w=>w.id===id));assert.ok(rows.every(Boolean));
 const owners=new Set(),selected=new Set();let spoken=0,scenes=0,protectedN=0,opponentN=0;
 for(const w of rows)for(const f of rows.filter(x=>x.id!==w.id))for(let i=0;i<30;i++){
