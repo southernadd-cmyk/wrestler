@@ -57,6 +57,12 @@
   "I got carried away with the rhythm of the argument. It doesn't make an unsupported charge true.",
   "Good. We can drop that note and find the rhythm of the match instead.",
   "That's fair. Let the next phrase be something we can actually wrestle about."
+ ],
+ "sylvia": [
+  "I wouldn't accept that standard of evidence from anybody else. I cannot establish the accusation, and I withdraw it.",
+  "Fairness requires me to back up my words. I can't do that for this charge.",
+  "That's the standard I expect. Leave the accusation out and meet me fairly.",
+  "Good. We'll judge each other by the work we do in the ring."
  ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

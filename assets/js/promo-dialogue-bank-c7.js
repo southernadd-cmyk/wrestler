@@ -51,6 +51,18 @@
   "I want to tell the truth about this match, not invent a chapter about you. I'll leave that charge out.",
   "Good. That part of the story doesn't belong here. The ending is still ours to wrestle for.",
   "That's a better place to start. No invented history between us."
+ ],
+ "nadia": [
+  "I let the argument flare up. I can't point to anything that proves the accusation, so I'll take it back.",
+  "That was heat, not proof. I haven't established the charge. The match can speak for itself.",
+  "Good. Let that argument cool. We've still got a room to light up.",
+  "Fair enough. Keep the fire for the wrestling, not an unsupported charge."
+ ],
+ "sasha": [
+  "Turns out that wasn't much of a punchline. I can't give you an example that backs it up.",
+  "I'd rather get a laugh at my own expense than make a false charge about you. Scrap that bit.",
+  "Good. We can retire that particular joke before the bell.",
+  "Fair play. Now give these people something worth cheering for."
  ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

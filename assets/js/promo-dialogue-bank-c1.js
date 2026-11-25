@@ -63,6 +63,12 @@
   "No example I can give you. Strike that bit.",
   "Fine. Leave it out. We've got work to do.",
   "Right. No fuss. Let's wrestle."
+ ],
+ "juno": [
+  "Sorry. I can't give you a specific example. I shouldn't have said it as if I could.",
+  "Right. I can't establish that. It's my wrestling I need to demonstrate, not an accusation.",
+  "Yes. That's a better way to put it. We can leave that claim alone.",
+  "Okay. We understand that part now. I'd like to wrestle."
  ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

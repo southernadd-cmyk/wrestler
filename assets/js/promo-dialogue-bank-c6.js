@@ -51,6 +51,12 @@
   "I wanted to make a point and I got it wrong. I can't back that accusation up, so I'm taking it back.",
   "Thanks for being straight about it. I'd much rather see what we can both do in the ring.",
   "Fair enough. We can get past that and have a proper contest."
+ ],
+ "gideon": [
+  "I spoke a moment too soon. I cannot give you the example that would justify it.",
+  "The correction is mine to make. I haven't established the charge, so I won't carry it into the match.",
+  "Well judged. You corrected it before it became the whole argument.",
+  "Good. Save your timing for the contest now."
  ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

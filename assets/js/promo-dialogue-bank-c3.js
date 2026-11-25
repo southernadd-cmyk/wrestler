@@ -63,6 +63,12 @@
   "I won't keep cutting at you with a claim that won't stand up to scrutiny. That part goes.",
   "Clean correction. Leave that accusation out of the contest.",
   "Good. The words are settled. The stakes in the ring remain."
+ ],
+ "priya": [
+  "If you asked me to repeat the charge and explain it, I couldn't give you a specific example that proves it. I won't repeat it.",
+  "I've listened to your question. There isn't enough behind my accusation for me to stand by it.",
+  "Noted. We can leave the allegation out of the discussion from now on.",
+  "That's the answer I was asking for. Let's find out what the wrestling tells us."
  ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
