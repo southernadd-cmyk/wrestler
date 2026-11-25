@@ -43,6 +43,18 @@
   "There is no specific evidence I can offer to support the charge. The argument cannot proceed on that basis.",
   "Then we can discard that premise and retain the sporting question.",
   "Accepted. We have established the limit of that argument. The match remains to be decided."
+ ],
+ "zane": [
+  "Oh, fair enough. I haven't got a real example to show you. I shouldn't have said it like that.",
+  "I'm still learning when to keep my mouth shut. I can't prove that one, so I'll take it back.",
+  "That's a good correction. We can both learn more from wrestling than arguing about that.",
+  "Thanks for clearing that up. I'm ready to see how we get on in the ring."
+ ],
+ "bashir": [
+  "You're right to ask, lad or not. A teacher must be able to demonstrate the point, and I cannot demonstrate that one.",
+  "I won't teach anyone to make accusations without backing them up. I should take my own advice.",
+  "Good. Knowing when to take a word back is worth learning. Now we wrestle.",
+  "Fair enough. Let the lesson be in the ring, not in a claim you cannot establish."
  ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

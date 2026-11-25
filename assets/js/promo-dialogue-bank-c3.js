@@ -51,6 +51,18 @@
   "You want an example. I do not have one. Fine. Forget the charge.",
   "Fine. Leave it. Bring your fight.",
   "Good. No more heat from that. Bell."
+ ],
+ "aisha": [
+  "No example. No proof. I withdraw it.",
+  "Fair. I can't establish that. Not going to repeat it.",
+  "Accepted. Leave it there. Wrestle.",
+  "Good. Drop the charge. Stand your ground."
+ ],
+ "anya": [
+  "You've found the weak edge of the argument. I cannot give you an incident that proves it.",
+  "I won't keep cutting at you with a claim that won't stand up to scrutiny. That part goes.",
+  "Clean correction. Leave that accusation out of the contest.",
+  "Good. The words are settled. The stakes in the ring remain."
  ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

@@ -39,6 +39,18 @@
   "I owe you the courtesy of an honest answer. I can't substantiate the allegation, so please disregard it.",
   "Quite right. We can dispense with that little unpleasantness and have a proper match.",
   "Thank you for making the distinction. Let us proceed without the unsupported charge."
+ ],
+ "cedric": [
+  "Would you accept a charge without an example? Neither should I. I cannot give you one that proves it.",
+  "Can I actually show you what I meant? No, not with enough certainty. Let me take that back.",
+  "Can we leave the charge there, then? I'd rather we found out what happens at the bell.",
+  "That's a fair answer. Can we agree to judge the wrestling itself?"
+ ],
+ "felix": [
+  "You're right, I'm sorry. I haven't got anything specific that proves it. I'll try to do better than that.",
+  "I wanted to make a point and I got it wrong. I can't back that accusation up, so I'm taking it back.",
+  "Thanks for being straight about it. I'd much rather see what we can both do in the ring.",
+  "Fair enough. We can get past that and have a proper contest."
  ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});

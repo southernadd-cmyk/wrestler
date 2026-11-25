@@ -57,6 +57,12 @@
   "I've got carried away with the moment. That doesn't make it true. I want to show you what I can do instead.",
   "All right, that's fair. Let's get back to the interesting part, shall we?",
   "Good. We can leave that behind us and keep moving when the bell goes."
+ ],
+ "brick": [
+  "Can't back that up. Shouldn't have said it.",
+  "No example I can give you. Strike that bit.",
+  "Fine. Leave it out. We've got work to do.",
+  "Right. No fuss. Let's wrestle."
  ]
 };
  for(const pack of root.OfficePromoBankC1)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
