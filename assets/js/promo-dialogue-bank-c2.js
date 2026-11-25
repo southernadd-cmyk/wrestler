@@ -348,4 +348,57 @@
   }
 };
  for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6B[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH7={
+  "cal": {
+    "w": [
+      "Good experience. Still need to make the entry.",
+      "Years help. The next position is still open."
+    ],
+    "f": [
+      "Seen enough to know when to release a bad grip.",
+      "Experience. Keep the balance, change the plan."
+    ]
+  },
+  "night": {
+    "w": [
+      "You've spent years learning the usual routes. I'm interested in the one you can't see yet.",
+      "Experience is useful until you assume the next movement will look like the last."
+    ],
+    "f": [
+      "I've learned to wait through the first threat and see what emerges behind it.",
+      "Experience is recognising the opening before the other person realises it's there."
+    ]
+  },
+  "otis": {
+    "w": [
+      "You've done this a while. I'm not here to be a training dummy for your favourite move.",
+      "Those years count, granted. You'll still have to get a proper grip on me."
+    ],
+    "f": [
+      "Experience tells me when to keep a match steady rather than chase a move.",
+      "I've learned to make something useful out of a position that wasn't in the plan."
+    ]
+  },
+  "roxy": {
+    "w": [
+      "Darling, years of rehearsal are splendid. Tonight's audience hasn't seen the ending.",
+      "Your experience deserves applause, not an advance booking for the victory."
+    ],
+    "f": [
+      "Experience teaches a performer when to change the act without letting the audience see the join.",
+      "I've learned when an apparent opening is just someone else's rather obvious stage direction."
+    ]
+  },
+  "silas": {
+    "w": [
+      "Experience increases the available observations. It does not eliminate the uncertainty of this encounter.",
+      "Your accumulated knowledge is relevant; the actual position remains the decisive variable."
+    ],
+    "f": [
+      "Experience reduces the time required to recognise an unstable position.",
+      "A change in the inputs requires a revised response. Practice makes that revision more efficient."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

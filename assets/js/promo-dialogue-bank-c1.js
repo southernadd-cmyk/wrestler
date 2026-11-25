@@ -353,4 +353,57 @@
   }
 };
  for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6C[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH7={
+  "dee": {
+    "w": [
+      "Can I ask you something? What did those years teach you about someone who doesn't go for the usual grip?",
+      "I know you've done this longer. I still want to see whether what I've been learning works."
+    ],
+    "f": [
+      "I've learned to feel when a hold is slipping before it actually goes.",
+      "If something I've practised doesn't work, I try to remember why it worked in the first place."
+    ]
+  },
+  "kit": {
+    "w": [
+      "You've got a few miles on the clock, mate. Doesn't mean you know every turning.",
+      "Fair play to your years in the job. I'm still going to make you work for your wages."
+    ],
+    "f": [
+      "Experience is knowing when the clever bit's gone wrong and it's time for the simple bit.",
+      "I've learned not to take the scenic route out of a perfectly good hold."
+    ]
+  },
+  "lyra": {
+    "w": [
+      "I know how much you've learned. I want to see whether I can find a moment you didn't expect.",
+      "You've had longer to find your rhythm. I think I can still change it."
+    ],
+    "f": [
+      "I've learned to feel the moment an exchange starts moving the other way.",
+      "Experience gives me a way to settle myself and find the next opening."
+    ]
+  },
+  "mara": {
+    "w": [
+      "Your experience is conceded. Your claim that it determines the outcome is not.",
+      "The years you have spent on the mat are not a ruling in your favour."
+    ],
+    "f": [
+      "Experience helps me distinguish a sound argument in the ring from an apparent concession.",
+      "I have learned to abandon an approach when the position no longer supports it."
+    ]
+  },
+  "val": {
+    "w": [
+      "Your experience is formidable. It doesn't remove the need to establish leverage against me.",
+      "Years of practice matter, but so does the force you can actually control in this position."
+    ],
+    "f": [
+      "Experience teaches me how to redirect pressure without surrendering my base.",
+      "I've learned to find the moment when strength needs to give way to timing."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC1)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c1.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
