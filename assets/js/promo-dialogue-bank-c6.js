@@ -389,4 +389,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH6C={
+  "tomas": {
+    "w": [
+      "I admire your experience. I would be even more impressed if you could demonstrate its relevance to this particular encounter.",
+      "You have my respect for the years you've devoted to the craft. You have yet to secure my shoulders."
+    ],
+    "f": [
+      "One hopes experience teaches the distinction between an opportunity and a trap.",
+      "I have learned that an elegant response is sometimes simply to abandon the move one intended."
+    ]
+  },
+  "vera": {
+    "w": [
+      "The years are one measurement. The balance of the next exchange is another.",
+      "Experience has value, but the result has yet to be recorded."
+    ],
+    "f": [
+      "Experience lets me measure how much pressure a position will tolerate before I need to adjust.",
+      "A familiar angle still requires observation. I have learned to check the actual position, not assume it."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC6)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6C[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c6.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

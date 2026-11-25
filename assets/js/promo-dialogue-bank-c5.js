@@ -337,4 +337,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH6C={
+  "winnie": {
+    "w": [
+      "Years in the ring are like a well-worn pair of shoes, love. Comfortable, but they won't walk the match for you.",
+      "You've put the hours in, fair enough. I've still got a shift to do and I'm not clocking out early."
+    ],
+    "f": [
+      "Experience is knowing when a recipe needs changing instead of throwing the whole dinner out.",
+      "You learn not to tug at a knot that only gets tighter. Find the loose end first."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC5)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6C[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c5.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

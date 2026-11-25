@@ -327,4 +327,17 @@
   }
 };
  for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH6C={
+  "sasha": {
+    "w": [
+      "You've got years of material. Let's see how you handle a crowd that hasn't heard my next bit.",
+      "Experience is a fine thing. It doesn't tell you when I'm going to change the punchline."
+    ],
+    "f": [
+      "Experience tells me when to leave a beat of silence rather than rush the next move.",
+      "I've learned that when the first bit falls flat, you find another angle instead of repeating it."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC7)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6C[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
