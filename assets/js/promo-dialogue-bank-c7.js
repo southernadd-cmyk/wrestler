@@ -45,6 +45,12 @@
   "A charge without evidence is a bad investment. I withdraw it. There's still a match worth having.",
   "Good. Take that off the table. We can negotiate nothing about the result once the bell goes.",
   "That's a fair correction. The wrestling will be the only thing that settles our contest."
+ ],
+ "ayla": [
+  "That was a line I shouldn't have written. I have no example that makes the accusation true.",
+  "I want to tell the truth about this match, not invent a chapter about you. I'll leave that charge out.",
+  "Good. That part of the story doesn't belong here. The ending is still ours to wrestle for.",
+  "That's a better place to start. No invented history between us."
  ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceReplies[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ev.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:j<2?'w':'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
