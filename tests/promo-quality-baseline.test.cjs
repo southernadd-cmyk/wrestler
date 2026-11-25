@@ -45,6 +45,7 @@ let followupPairs=0,followupChanges=0;const followupActors=new Set(),followupCla
 let imageryPairs=0,imageryChanges=0,imageryCallbacks=0;const imageryVariants=new Set(),imageryActors=new Set();
 const graphWithoutWords=s=>{const {imageryStyle,...rest}=s;return {...rest,dialogue:s.dialogue.map(e=>({...e,line:null})),steps:s.steps.map(e=>({...e,label:null})),result:null};};
 const stepsWithoutLabels=s=>s.steps.map(e=>({...e,label:null}));
+let characterPairs=0,characterChanges=0;const characterActors=new Set(),characterClaims=new Set(),characterIds=new Set();
 function flowOther(entries){return entries.filter(e=>e.side!=='w'&&e.kind!=='cue');}
 function slot(k){if(!slotCoverage.has(k))slotCoverage.set(k,{available:new Set(),selected:new Set(),spoken:0,authored:0,composed:0,graph:0,protected:0,semanticBypass:0});return slotCoverage.get(k);}
 for(const [i,w] of roster.entries()){
@@ -70,6 +71,8 @@ for(const [i,w] of roster.entries()){
    const before=st.log.length;
    const oldFollowup=round==='push'&&o.id==='press'&&st.semantic?.followupFlow===1?JSON.parse(JSON.stringify(st)):null;
    if(oldFollowup){delete oldFollowup.semantic.followupFlow;Mic.choose(oldFollowup,o.id);}
+   const oldCharacter=round==='answer'&&o.id==='turn'&&st.semantic?.characterRebuttal===1?JSON.parse(JSON.stringify(st)):null;
+   if(oldCharacter){delete oldCharacter.semantic.characterRebuttal;Mic.choose(oldCharacter,o.id);}
    const oldOpening=round==='open'&&st.openingFlow===1?JSON.parse(JSON.stringify(st)):null;
    if(oldOpening){delete oldOpening.openingFlow;Mic.choose(oldOpening,o.id);}
    if(oldFlow){assert.ok(Mic.choices(oldFlow).some(x=>x.id===o.id),'G3A full-scene choice parity');Mic.choose(oldFlow,o.id);}
@@ -123,6 +126,20 @@ for(const [i,w] of roster.entries()){
      assert.equal(JSON.stringify(xf?.semantic),JSON.stringify(yf?.semantic),'G3C preserves semantic claim and source');
     }
     assert.equal(JSON.stringify(Mic.choices(st).map(o=>o.id)),JSON.stringify(Mic.choices(oldImagery).map(o=>o.id)),'G3C available decisions unchanged');
+   }
+   if(oldCharacter){
+    characterPairs++;
+    assert.equal(JSON.stringify(st.core),JSON.stringify(oldCharacter.core),'G3D graph parity');
+    for(const k of ['meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(oldCharacter[k]),'G3D '+k);
+    assert.equal(JSON.stringify(Mic.choices(st)),JSON.stringify(Mic.choices(oldCharacter)),'G3D options parity');
+    const now=st.log.slice(before),old=oldCharacter.log.slice(before),x=now.find(e=>e.side==='w'),y=old.find(e=>e.side==='w');
+    assert.equal(JSON.stringify(now.filter(e=>e.side!=='w')),JSON.stringify(old.filter(e=>e.side!=='w')),'G3D opponent/stage/crowd parity');
+    if(x&&y&&x.line!==y.line){
+     characterChanges++;characterActors.add(w.id);characterClaims.add(x.semantic?.claim);characterIds.add(x.composedId);
+     assert.match(x.composedId,/\.g3d\./);assert.ok(!x.authoredId&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.speaker);
+     for(const k of ['claim','move','replyTo','kind','detail'])assert.equal(x.semantic?.[k],y.semantic?.[k],'G3D semantic '+k);
+     assert.ok(!/[{}]/.test(x.line));
+    }
    }
    if(oldOpening){
     flowPairs++;
@@ -263,6 +280,8 @@ if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  assert.ok(followupPairs>0&&followupChanges>10&&followupActors.size>5&&followupClaims.size>=2,'G3B benchmark live reach');
  console.log('G3C imagery: '+imageryChanges+'/'+imageryPairs+' changed turns, '+imageryActors.size+' speakers, '+imageryCallbacks+' grounded callbacks, variants '+[...imageryVariants].join(', '));
  assert.ok(imageryChanges>10&&imageryActors.size>5&&imageryVariants.size>=3,'G3C live reach');
+ console.log('G3D character rebuttals: '+characterChanges+'/'+characterPairs+' changed turns across '+characterActors.size+' speakers; '+characterIds.size+' distinct IDs; claims '+[...characterClaims].join(', '));
+ assert.ok(characterChanges>10&&characterActors.size>5&&characterClaims.size>=2,'G3D live coverage');
  assert.ok(extendedChanges>70&&extendedActors.size>20&&extendedChangedVariants.size===extendedVariants.size&&extendedNew.size>extendedOld.size,'G2D extended player voice coverage');
  console.log('PASS G2D player voice: '+extendedChanges+'/'+extendedPairs+' reviewed/protected target turns; '+extendedActors.size+' speakers; '+extendedOld.size+' -> '+extendedNew.size+' distinct normalized lines; variants '+JSON.stringify(Object.fromEntries(extendedChangedVariants))+'; unchanged graph, options and consequences.');
  assert.ok(opponentChanges>100&&opponentActors.size>=10&&opponentChangedVariants.size===opponentVariants.size&&opponentNew.size>opponentOld.size,'G2C opponent voice coverage');

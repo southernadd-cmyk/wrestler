@@ -150,6 +150,26 @@ for(const claim of followupTopics)for(const side of ['w','f']){
  }
  assert.ok(reached.size>=2,'G3B reach '+claim+' '+side);
 }
+// G3D: named identities and delivery families must not borrow each
+// other's voices, invent a claim, or displace evidence-sensitive speech.
+const namedRebutters=['mara','rex','juno','kit','ezra','red','roxy','silas','nova','ace','faye','tori'];
+for(const claim of ['unclassified','proof','pace','legitimacy']){
+ const wording=new Set();
+ for(const actor of namedRebutters){
+  const s=clone(probe);s.semantic.characterRebuttal=1;s.log=[{side:'f',line:'Previous spoken point.',...(claim==='unclassified'?{}:{semantic:{kind:'claim',claim}})}];
+  const c={...ctx,stage:'answer',action:'turn',side:'w',speaker:{...ctx.speaker,id:actor},voice:root.OfficeRoom.VOICE[actor]||'stoic',protected:'contextual-variant'};
+  const line=S.select(s,c),old=clone(s);delete old.semantic.characterRebuttal;
+  const prior=S.select(old,c);
+  assert.ok(line&&prior);assert.notEqual(line.text,prior.text);
+  assert.equal(line.semantic.claim,prior.semantic.claim);assert.equal(line.semantic.replyTo,0);assert.equal(line.semantic.move,'rebut');
+  assert.match(line.id,/\.g3d\./);assert.ok(!/[{}]/.test(line.text));wording.add(line.text);
+  const next=clone(s);next.authoredDialogue.composedUsed=[line.id];assert.notEqual(S.select(next,c).id,line.id,'fresh candidate beats repeated character line');
+  const protectedScene=clone(s);protectedScene.core.claim.hasEvidence=true;assert.equal(S.select(protectedScene,c),null);
+  assert.equal(JSON.stringify(S.select(clone(s),c)),JSON.stringify(line));
+ }
+ if(['unclassified','proof'].includes(claim))assert.equal(wording.size,namedRebutters.length,'distinct named identities '+claim);
+ else assert.ok(wording.size>=3,'family differentiation '+claim);
+}
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
 const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;
