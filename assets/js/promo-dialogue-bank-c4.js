@@ -139,4 +139,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidencePressRepliesD8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE1={
+  "kofi": [
+    "Okay, forget the allegation. What can we actually show these people when we get moving?",
+    "I want them to see it, not just hear about it. What can we prove to them in the ring?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceQuestionsE1[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

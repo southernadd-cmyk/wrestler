@@ -20,7 +20,7 @@ function create(){
  assert.ok(!html.includes('src="assets/js/promo-dialogue-pilot.js"')&&!html.includes('src="assets/js/promo-dialogue-bank-'));
  assert.equal(calls.length,0,'startup must not fetch any character');
  assert.equal(root.OfficePromoPilot,undefined,'production engine must not expose editorial sources');
- assert.equal(built.assets.size,212);assert.equal(built.packs.reduce((n,p)=>n+p.lines.length,0),7273);
+ assert.equal(built.assets.size,212);assert.equal(built.packs.reduce((n,p)=>n+p.lines.length,0),7283);
  const [a,b]=await Promise.all([B.load(['mara','brick','mara','unknown']),B.load(['mara'])]);
  assert.equal(calls.length,2);assert.equal(a.length,2);assert.equal(b.length,1);
  for(const asset of a){
@@ -60,5 +60,5 @@ function create(){
  assert.equal(L.compose({...base,strength:null},'seed'),null);
  assert.equal(L.compose({...base,stage:'close'},'seed'),null);
  assert.notEqual(L.compose(base,'seed',{used:[composedLine.id]}).id,composedLine.id);
- console.log('PASS lazy promo banks: exact migration of 3,465 authored lines and 3,808 generated lines, two cold requests, cache/offline/retry, 80 paired scenes, '+authored+' authored and '+composed+' composed lines; deterministic resume and outcome parity.');
+ console.log('PASS lazy promo banks: exact migration of 3,475 authored lines and 3,808 generated lines, two cold requests, cache/offline/retry, 80 paired scenes, '+authored+' authored and '+composed+' composed lines; deterministic resume and outcome parity.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
