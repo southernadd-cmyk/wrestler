@@ -217,4 +217,27 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF6={
+  "cal": [
+    "My {strength}. Watch the feet when you try to stop them.",
+    "You've accounted for my {strength}. Need to see if you can keep your base."
+  ],
+  "otis": [
+    "You've done your preparation for my {strength}. I'll still have a full shift's worth of wrestling left if you stop me once.",
+    "You've got a way to deal with my {strength}. Let's see whether it holds together halfway through the job."
+  ],
+  "kira": [
+    "Your defence against my {strength} must remain disciplined after contact. I will not allow you to set the standard unchallenged.",
+    "I acknowledge your preparation for my {strength}. I expect you to demonstrate that defence under pressure."
+  ],
+  "roxy": [
+    "Darling, you've rehearsed your answer to my {strength}. How charming. Do try to keep your composure when I change the scene.",
+    "You've made my {strength} a feature of your little script. I reserve the right to improvise when the curtain goes up."
+  ],
+  "night": [
+    "You've planned for my {strength}. Watch the gap between the moment you expect them and the moment I move.",
+    "You know what my {strength} look like in the light. Let's see how fast you recognise them when the tempo changes."
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (strengthCountersF6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
