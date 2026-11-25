@@ -223,3 +223,7 @@ G4F.4 verified 43/51 authored strength counters, zero losses. Add two each for R
 ## G4F.6 — extend named-strength counters beyond the sampled owners
 
 G4F.5 verified all 51 sampled recoveries with zero losses. Add two distinct counters for each of the 12 previously uncovered original owners in C1 and C2: Mara, Rex, Brick, Juno, Sol, Dee, Dax, Cal, Otis, Kira, Roxy and Night. Require 110 dedicated counters across 55 original owners, preserve all 51 sampled recoveries and zero losses, and retain the existing semantic scope, actual spoken detail, owner and history guards and graph/presentation parity. The 25 remaining original owners are not yet covered. No engine, UI, save or workflow changes. CI pending.
+
+## G4F.7 — complete named-strength counter coverage in C3–C5
+
+Add two distinct counters each for the 12 previously uncovered original owners in C3–C5: Malik, Dean, Rocco, Aisha, Priya, Bao, Ivo, Cass, Mae, Soraya, Milo and Jett. Require 134 dedicated counters across 67 original owners, preserve all 51 sampled recoveries with zero losses and retain existing semantic scope, actual spoken detail, owner/history guards and graph/presentation parity. The remaining 13 original owners require C6–C8 completion. No engine, UI, save or workflow changes. CI pending.

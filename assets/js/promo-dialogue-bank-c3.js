@@ -217,4 +217,27 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF7={
+  "malik": [
+    "You have a plan for my {strength}. Bring it to the ring and see how long you can stand behind it.",
+    "You will have to do more than name my {strength}. I will make you work until that plan gives out."
+  ],
+  "dean": [
+    "You've priced in my {strength}. I would allow for the cost of a failed defence as well.",
+    "Your proposed answer to my {strength} sounds reasonable. Let us examine the terms when you are the one under pressure."
+  ],
+  "rocco": [
+    "My {strength}. You know what's coming. Stop me, then.",
+    "You've got an answer to my {strength}. Save it for the ring. I want to feel it, not hear it."
+  ],
+  "aisha": [
+    "My {strength}. You've named them. Now stop them without excuses.",
+    "You've prepared for my {strength}. Good. I decide the pace when we start."
+  ],
+  "priya": [
+    "Repeat your answer to my {strength} after the first exchange. I wonder which words you will change.",
+    "You've described my {strength} accurately enough. I will be watching for the difference between your account and what actually happens."
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (strengthCountersF7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

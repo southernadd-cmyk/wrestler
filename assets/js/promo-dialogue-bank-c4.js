@@ -243,4 +243,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF7={
+  "bao": [
+    "When you try to stop my {strength}, watch what happens to your own grip. That is where I will be working.",
+    "You've prepared against my {strength}. I can wait for your weight to shift before I make my next decision."
+  ],
+  "ivo": [
+    "Suppose your answer to my {strength} succeeds. What is the next step in your sequence when I respond?",
+    "Your plan accounts for my {strength}, but not for the effect of your defence on your next position."
+  ],
+  "cass": [
+    "Oh, you've brought a plan for my {strength}! Shall I pretend I haven't noticed it, or would that spoil the joke?",
+    "You've rehearsed how to stop my {strength}. Lovely. I do hope you've left a little room for the bit where I don't cooperate."
+  ]
+};
+ for(const pack of root.OfficePromoBankC4)for(const [j,text] of (strengthCountersF7[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
