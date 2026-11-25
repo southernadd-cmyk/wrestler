@@ -136,4 +136,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidencePressRepliesD8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ep.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceQuestionsE2={
+  "aisha": [
+    "Enough talk. What can you show them in the ring?",
+    "Leave the charge out of it. What can you prove at the bell?"
+  ],
+  "anya": [
+    "Cut away the accusation. What will be left for the people to judge in the ring?",
+    "Strip it back to the wrestling. What can the finish establish?"
+  ],
+  "dean": [
+    "Let us separate the speculation from the facts. What can the contest actually establish?",
+    "The people deserve a straight answer on this. What can they judge for themselves at the bell?"
+  ]
+};
+ for(const pack of root.OfficePromoBankC3)for(const [j,text] of (evidenceQuestionsE2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c3.eq.'+String(j+1).padStart(2,'0'),stage:'push',action:'press',side:'w',category:'pressure',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);

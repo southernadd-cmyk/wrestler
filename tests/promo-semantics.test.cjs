@@ -301,7 +301,7 @@ for(const {row,pack} of followupRows){
 assert.equal(followupOwners.size,80);assert.deepEqual([...followupOwners.keys()].sort(),["ace","aisha","alina","anya","ari","ash","ayla","bao","bashir","brick","bronte","cal","cass","cedric","cleo","dax","dean","dee","dev","eira","ellis","elodie","emmett","ezra","faye","felix","gideon","gus","imani","iris","ivo","jett","jun","juno","kellan","kezia","kira","kit","kofi","leandro","liya","lyra","mae","magnus","malik","mara","marisol","milo","miro","morgan","nadia","nate","nico","night","nikita","noelle","nolan","nova","otis","priya","red","rev","rex","rina","rocco","roxy","sasha","silas","sol","soraya","sylvia","theo","tomas","tomasash","tori","val","vera","winnie","zane","zara"]);for(const n of followupOwners.values())assert.equal(n,2);
 console.log('PASS G4D8 authored follow-up fixtures: 160 evidence press counters across eighty owners; scope, history and ordinary-slot guards.');
 const questionRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='evidence'&&row.stage==='push'&&row.side==='w');
-assert.equal(questionRows.length,10);const questionOwners=new Map();
+assert.equal(questionRows.length,30);const questionOwners=new Map();
 for(const {row,pack} of questionRows){
  assert.ok(!topicText.has(row.text));topicText.add(row.text);assert.equal(row.action,'press');assert.ok(row.text.endsWith('?'));
  questionOwners.set(pack.owner,(questionOwners.get(pack.owner)||0)+1);
@@ -311,8 +311,8 @@ for(const {row,pack} of questionRows){
  for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{protected:'contextual-variant'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:'f'},{stage:'answer'},{action:'acknowledge'}])assert.equal(L.selectAuthoredQuestion(cat,{...context,...patch},'question',{},sem),null);
  for(const patch of [{claim:'proof'},{move:'counter'},{move:'press_counter'}])assert.equal(L.selectAuthoredQuestion(cat,context,'question',{}, {...sem,...patch}),null);
 }
-assert.deepEqual([...questionOwners.keys()].sort(),["ari","bashir","emmett","kofi","mara"]);for(const n of questionOwners.values())assert.equal(n,2);
-console.log('PASS G4E1 authored evidence question fixtures: ten scoped questions across five owners.');
+assert.deepEqual([...questionOwners.keys()].sort(),["aisha","anya","ari","ayla","bashir","cleo","dax","dean","dee","dev","eira","ellis","emmett","kofi","mara"]);for(const n of questionOwners.values())assert.equal(n,2);
+console.log('PASS G4E2 authored evidence question fixtures: thirty scoped questions across fifteen owners.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
 const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;
