@@ -249,4 +249,11 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (strengthCountersF8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const evidenceAcknowledgementsG2={
+  "ayla": [
+    "A fair edit. We should not write a rumour into the story as though it happened.",
+    "I can leave that chapter unwritten. What we do in the ring will give us something real to talk about."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (evidenceAcknowledgementsG2[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
