@@ -404,4 +404,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH7[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const studyRepliesI1={
+  "priya": {
+    "w": [
+      "You studied my matches. Which conclusion survived watching them a second time?",
+      "Interesting. Did you study what I chose, or what my opponent forced me to choose?"
+    ],
+    "f": [
+      "My preparation is not a list of moves to repeat. I study the conditions that made each move useful.",
+      "I've gone over the possible answers. If you change the question, I can check which of those answers still applies."
+    ]
+  },
+  "ace": {
+    "w": [
+      "Ladies and gentlemen, my opponent has been watching my performances. Now let's see whether they can handle the live show.",
+      "You've studied the highlights. The star of this show has rather more material than that."
+    ],
+    "f": [
+      "I study the whole performance, including the bit where my opponent thinks the spotlight has moved.",
+      "Preparation means having something ready when the audience expects one thing and the match gives us another."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
