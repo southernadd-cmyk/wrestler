@@ -310,4 +310,27 @@
   ]
 };
  for(const pack of root.OfficePromoBankC4)for(const [j,text] of (evidenceAcknowledgementsG6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const experienceRepliesH1={
+  "bao": {
+    "w": [
+      "Years teach the hands, but they don't tell them what my next grip will be.",
+      "I respect time on the mat. I would still rather settle this one hold at a time."
+    ],
+    "f": [
+      "Experience is why I don't rush to answer a grip before I've felt it.",
+      "You can set a new problem. The value of practice is knowing how to adjust when it arrives."
+    ]
+  },
+  "jun": {
+    "w": [
+      "Experience gives you a starting point. It doesn't give you the counter to every move.",
+      "The next exchange is the one I care about. What you learned before it may help, but it can't decide it."
+    ],
+    "f": [
+      "A new problem is exactly where experience helps: you recognise the opening before you commit.",
+      "Those lessons matter when the first move fails and you need the next counter."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC4)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH1[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c4.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

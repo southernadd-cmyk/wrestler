@@ -282,6 +282,21 @@ assert.equal(topicOwners.size,80);
 assert.deepEqual([...topicOwners.keys()].sort(),Array.from(D.ALL,w=>w.id).sort(),'every original wrestler has a dedicated evidence bank');
 for(const counts of topicOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
 console.log('PASS G4C8 topic banks: '+topicRows.length+' distinct original-owner evidence replies; '+topicOwners.size+' characters, two lines per side, scope and history guards.');
+const experienceRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='experience');
+assert.equal(experienceRows.length,16);const experienceOwners=new Map();
+for(const {row,pack} of experienceRows){
+ assert.ok(!topicText.has(row.text));topicText.add(row.text);assert.equal(row.stage,'answer');assert.equal(row.action,'turn');assert.equal(row.category,'rebuttal');
+ if(!experienceOwners.has(pack.owner))experienceOwners.set(pack.owner,{w:0,f:0});experienceOwners.get(pack.owner)[row.side]++;
+ const cat=L.catalogue([{...pack,lines:[row]}]),context={...ctx,stage:'answer',action:'turn',side:row.side,speaker:{...ctx.speaker,id:pack.owner,role:'wrestler'},protected:'contextual-variant',variant:'tu_strength',hasMouthpiece:false};
+ const sem={claim:'experience',move:row.side==='w'?'rebut':'counter'};
+ assert.equal(L.selectAuthoredExperience(cat,context,'experience',{},sem)?.id,row.id);
+ assert.equal(L.select(cat,{...context,protected:null,variant:null},'ordinary',{}),null);assert.equal(L.selectAuthoredTopic(cat,context,'evidence',{},sem),null);
+ for(const mem of [{used:[row.id]},{recent:[row.id]}])assert.equal(L.selectAuthoredExperience(cat,context,'experience',mem,sem),null);
+ for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:row.side==='w'?'f':'w'},{stage:'open'},{action:'calm'}])assert.equal(L.selectAuthoredExperience(cat,{...context,...patch},'experience',{},sem),null);
+ for(const patch of [{claim:'evidence'},{claim:'study'},{move:'press'},{move:row.side==='w'?'counter':'rebut'}])assert.equal(L.selectAuthoredExperience(cat,context,'experience',{}, {...sem,...patch}),null);
+}
+assert.deepEqual([...experienceOwners.keys()].sort(),['alina','bao','cleo','jun']);for(const counts of experienceOwners.values()){assert.equal(counts.w,2);assert.equal(counts.f,2);}
+console.log('PASS G4H1 experience fixtures: 16 authored replies across four owners; topic, scope and history guards.');
 const followupRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='evidence'&&row.stage==='push'&&row.side==='f');
 assert.equal(followupRows.length,160);
 const followupOwners=new Map();
@@ -432,6 +447,8 @@ for(const [i,worker] of roster.entries())for(let j=0;j<12;j++){
       const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim==='evidence');assert.equal(sem.claim,'evidence');assert.equal(sem.move,'press');assert.equal(e.side,'w');assert.equal(e.dialogueSlot.stage,'push');assert.equal(e.dialogueSlot.action,'press');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(e.line,found.row.text);assert.ok(e.line.endsWith('?'));assert.ok(x.authoredDialogue.composedUsed.includes(sem.questionSource));authoredPress++;pressIds.add(e.authoredId);
      }else if(sem.followupBank===1){
       const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim==='evidence');assert.equal(sem.claim,'evidence');assert.equal(sem.move,'press_counter');assert.equal(prior.semantic?.move,'press');assert.equal(e.dialogueSlot.stage,'push');assert.equal(e.dialogueSlot.action,'press');assert.equal(e.side,'f');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(e.line,found.row.text);
+     }else if(sem.experienceBank===1){
+      const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim==='experience');assert.equal(sem.claim,'experience');assert.equal(sem.move,e.side==='w'?'rebut':'counter');assert.equal(e.dialogueSlot.stage,'answer');assert.equal(e.dialogueSlot.action,'turn');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(found.row.side,e.side);assert.equal(e.line,found.row.text);
      }else if(sem.topicBank===1){
       const found=bankRows.get(e.authoredId);assert.ok(found&&found.row.when.semanticClaim===sem.claim);assert.equal(sem.claim,'evidence');assert.equal(e.dialogueSlot.stage,'answer');assert.equal(e.dialogueSlot.action,'turn');assert.equal(found.pack.owner,e.dialogueSlot.owner);assert.equal(found.row.side,e.side);assert.equal(e.line,found.row.text);
      }else if(sem.bankReuse){
