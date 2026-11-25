@@ -188,6 +188,19 @@ async function interrupted(browser){
   console.log('PASS promo duplicate/navigation: guarded duplicate input, stale completion, reentry.');
  });
 }
+// A real double-click on one microphone choice is one decision; the second click is ignored.
+async function doubleClick(browser){
+ await withPage(browser,'double-click',{width:1366,height:768},null,async({page})=>{
+  await openMic(page);
+  const first=(await choices(page))[0];
+  await page.locator('#tv [data-mic="'+first+'"]').dblclick();
+  await delay(300);
+  assert.equal((await state(page)).steps.length,1,'double-click must record one decision');
+  await pick(page,'turn');
+  assert.equal((await state(page)).steps.length,2,'a later single click still records a decision');
+  console.log('PASS promo double-click: one decision per double-click.');
+ });
+}
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
@@ -195,5 +208,6 @@ async function interrupted(browser){
   await coldWarm(browser,{width:390,height:844});
   await failures(browser);
   await interrupted(browser);
+  await doubleClick(browser);
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
