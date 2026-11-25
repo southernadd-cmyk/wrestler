@@ -88,8 +88,14 @@ async function coldWarm(browser,viewport){
   assert.equal(after.steps.length,1);
   const first=after.log.find(e=>e.side==='w');assert.ok(first.answersQuestion,'first spoken line must explicitly answer the host');
   assert.equal(first.answersQuestion.prompt,after.log[0].line);
-  assert.ok(first.line.startsWith(first.answersQuestion.lead+' '));
-  assert.ok((await page.locator('#tv #micTalk').innerText()).includes(first.answersQuestion.lead),'answer must appear on screen');
+  if(first.answersQuestion.direct){
+   assert.equal(first.answersQuestion.lead,'');
+   assert.ok(first.line.length>0);
+   assert.ok((await page.locator('#tv #micTalk').innerText()).includes(first.line),'direct answer must appear on screen');
+  }else{
+   assert.ok(first.line.startsWith(first.answersQuestion.lead+' '));
+   assert.ok((await page.locator('#tv #micTalk').innerText()).includes(first.answersQuestion.lead),'answer must appear on screen');
+  }
   const persisted=await page.evaluate(store=>JSON.parse(localStorage.getItem(store)),STORE);
   assert.equal(persisted.promo.steps.length,1);assert.equal(persisted.promoLoading,undefined);
   assert.deepEqual(persisted.promo,after);
