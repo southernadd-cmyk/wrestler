@@ -1375,6 +1375,40 @@
   if(stage==='push'&&action==='press')return {label:topic?'Press them on '+topic:'Ask for their final answer',hint:'Address the most recent spoken point. Can raise tension or overstay the moment.'};
   return null;
  }
+ // G3B: follow-ups are spoken between competitors, not by a neutral host.
+ // Keep the previous semantic topic and the reply-to index. These pools
+ // add no allegations, match facts, or new promises.
+ const rivalFollowup=Object.freeze({
+  unclassified:{
+   press:["What are you going to do about me when that bell goes?","You've had your say. How are you going to deal with me in there?","All right, what have you got for me in that ring?"],
+   press_counter:["Make you work for every inch of that ring.","You'll have to deal with me once the bell goes.","I'll make you show me what you've got."],
+   voices:{gruff:"What have you got for me, then?",stoic:"What have you got in the ring?",precise:"How do you intend to deal with me once we wrestle?",grand:"What are you bringing to the ring that I should be worried about?",slippery:"Go on, what's your answer when we're in there?",eager:"Come on, what have you got for me out there?",earnest:"What do you think you can do against me in there?",sermon:"What answer will you have for me in the ring?"}
+  },
+  end:{
+   press:["Nothing else to say to me, then?","That's it? You're leaving the rest for the ring?"],
+   press_counter:["That's it. See you at the bell.","Yes. I'm done talking."]
+  },
+  proof:{
+   press:["What would you need to see from me in that ring?","What have I got to show you before you'll believe me?"],
+   press_counter:["Show me you can handle it when the match turns against you.","Let's see how you wrestle when I put you under pressure."]
+  },
+  agreement:{
+   press:["So that's settled between us, is it?","We're agreed on that much, then?"],
+   press_counter:["On that, yes. The result is another matter.","Yes. Now let's wrestle."]
+  },
+  terms:{
+   press:["Just us, then? No help for either of us?","You're standing by those terms when the bell goes?"],
+   press_counter:["Agreed. Just you and me.","Yes. Nobody else needs to get involved."]
+  },
+  outside:{
+   press:["And if you go outside, what will you do when the referee starts counting?","How long do you think you can stay out there before the ref counts you out?"],
+   press_counter:["I'll get back in when I need to. You'll have to keep me there.","I know the count. You'll still have to deal with me inside the ropes."]
+  },
+  count:{
+   press:["Three counts, is it? How do you plan to get them?","How are you going to keep my shoulders down for three?"],
+   press_counter:["By making you fight for every chance to get those shoulders up.","I'll have to get you in the right position first."]
+  }
+ });
  function select(st,ctx){
   if(!allowed(st)||!ctx||ctx.hasMouthpiece||ctx.stage==='answer'&&ctx.action!=='turn'||ctx.stage==='push'&&!['press','acknowledge'].includes(ctx.action)||!['answer','push'].includes(ctx.stage))return null;
   const side=ctx.side,prev=latest(st.log,side==='w'?'f':'w');if(!prev)return null;
@@ -1396,9 +1430,16 @@
    else if(!topic&&move==='press')frames=[...frames,'Before we finish, what is your point about tonight?','Is there a challenge here you still want to make?'];
    else if(!topic&&move==='acknowledge')frames=[...frames,'I heard you. There is no need to go over it again.','I can leave that point where it stands.'];
   }
-  const voice=ctx.voice||ctx.stance,preferred=ctx.irritation>=42||['gruff','stoic','reserved','combative'].includes(voice)?2:['precise','analytical'].includes(voice)?1:0;
+  const voice=ctx.voice||ctx.stance;
+  const reviewed=st.semantic.followupFlow===1&&ctx.stage==='push'&&ctx.action==='press'&&!ctx.protected&&Object.prototype.hasOwnProperty.call(rivalFollowup,claim)?rivalFollowup[claim]:null;
+  const rewritten=!!reviewed?.[move];
+  if(rewritten){
+   frames=reviewed[move].slice();
+   if(move==='press'&&reviewed.voices&&Object.prototype.hasOwnProperty.call(reviewed.voices,voice))frames=[reviewed.voices[voice],...frames];
+  }
+  const preferred=ctx.irritation>=42||['gruff','stoic','reserved','combative'].includes(voice)?2:['precise','analytical'].includes(voice)?1:0;
   const mem=st.authoredDialogue,used=mem?.composedUsed||[],recent=mem?.recent||[];
-  const candidates=frames.map((frame,i)=>({id:'semantic.'+ctx.speaker.id+'.'+move+'.'+claim+'.'+i,text:frame.replace(/\{detail\}/g,detail||''),i}));
+  const candidates=frames.map((frame,i)=>({id:'semantic.'+ctx.speaker.id+'.'+move+'.'+claim+'.'+(rewritten?'g3b.'+(move==='press'&&reviewed.voices&&Object.prototype.hasOwnProperty.call(reviewed.voices,voice)?voice+'.':''):'')+i,text:frame.replace(/\{detail\}/g,detail||''),i}));
   const rank=(a,b)=>{
    const tie=hash(st.seed+'|'+st.steps.length+'|'+a.id).localeCompare(hash(st.seed+'|'+st.steps.length+'|'+b.id));
    // Existing saves retain the old hard preference. New scenes vary within
