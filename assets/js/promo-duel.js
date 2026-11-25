@@ -226,7 +226,7 @@
   if(opts.directed&&opts.formats)st.fallbackVariety=1;
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
-  if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,...(opts.formats&&opts.semantic?{reviewedAck:1}:{}),used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
+  if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,...(opts.formats&&opts.semantic?{reviewedAck:1,reviewedContext:1}:{}),used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
   if(opts.semantic&&Semantic&&st.authoredDialogue&&opts.directed){st.semantic={v:1,...(opts.formats?{variety:1}:{})};core.semanticSpeech=true;}
   if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
@@ -328,6 +328,17 @@
       (ctx.side==='f'||['unclassified','agreement','end'].includes(line.semantic.claim))){
     const own=Dialogue.selectAcknowledgement(catalogueFor(st),ctx,seed,mem);
     if(own){mem.used.push(own.id);return {...own,semantic:{...line.semantic,source:'authored-response:'+own.id}};}
+   }
+   if(line&&mem.reviewedContext===1){
+    const own=Dialogue.selectSemanticResponse(catalogueFor(st),ctx,seed,mem,line.semantic);
+    if(own){
+     mem.used.push(own.id);
+     // Press lead-ins preserve the complete topic-specific question. Keep
+     // both IDs in the selection memory so the question also varies.
+     const press=ctx.action==='press';
+     if(press)(mem.composedUsed??=[]).push(line.id);
+     return {...own,text:press?own.text+' '+line.text:own.text,semantic:{...line.semantic,source:'authored-response:'+own.id,...(press?{questionSource:line.id}:{})}};
+    }
    }
    if(line)(mem.composedUsed??=[]).push(line.id);
    return line;
