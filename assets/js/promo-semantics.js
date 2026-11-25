@@ -1251,7 +1251,7 @@
   "If that chance disappears, I'll look for a different one."
  ],
  "strength": [
-  "Recognising my {detail} is one thing. Dealing with them is another.",
+  "You may recognise my {detail}. Now you have to deal with them.",
   "I'll change how I use my {detail} if you find a way to stop them."
  ],
  "study": [
