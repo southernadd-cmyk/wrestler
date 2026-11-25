@@ -453,4 +453,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI3[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
+ const studyRepliesI4={
+  "dean": {
+    "w": [
+      "Your study is relevant. Your assumption that I will reproduce the same decisions is not established.",
+      "What does your analysis recommend when the starting position is different from the one you observed?"
+    ],
+    "f": [
+      "I distinguish the conditions that produced a result from the technique that completed it. Both matter to preparation.",
+      "I rehearse alternatives in order of likely cost, rather than treating my preferred approach as inevitable."
+    ]
+  },
+  "anya": {
+    "w": [
+      "You studied the blade. Have you prepared for the angle at which I bring it down?",
+      "Your notes are precise. Let us see whether they survive contact with the edge."
+    ],
+    "f": [
+      "I study the opening before the strike, when the weight shifts and the guard is thin.",
+      "I sharpen more than one technique in practice. The position decides which edge I use."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC3)for(const side of ['w','f'])for(const [j,text] of (studyRepliesI4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c3.st.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'study'}});
 })(typeof window!=='undefined'?window:globalThis);
