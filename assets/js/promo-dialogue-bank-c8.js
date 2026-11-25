@@ -223,4 +223,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceAcknowledgementsG4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
+ const evidenceAcknowledgementsG5={
+  "tomasash": [
+    "Fair. Raising my voice will not make an unproven charge any stronger.",
+    "I take that point. Keep the judgement under control until there is something to judge."
+  ],
+  "zane": [
+    "You're right. I'm still learning, and I shouldn't pretend to know what I haven't seen.",
+    "Fair enough. I'd rather find out what we can do in the ring than repeat something I can't prove."
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (evidenceAcknowledgementsG5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
