@@ -34,6 +34,9 @@ const availableIds=new Set(),selectedIds=new Set(),slotCoverage=new Map();
 const closingComparison={vow:{before:0,after:0},clean:{before:0,after:0}};let closingPairs=0;
 const voiceVariants=new Set(["ca_long","ca_smile","ch_hand","ch_now","vo_end","sw_ignore","ch_one_fall","pe_grudge"]);
 const voiceOld=new Set(),voiceNew=new Set(),voiceActors=new Set();let voiceChanges=0,voicePairs=0;
+const opponentVariants=new Set(["ch_one_fall","pr_tape","pr_veteran","ca_long","ca_restraint"]);
+const opponentOld=new Set(),opponentNew=new Set(),opponentActors=new Set(),opponentChangedVariants=new Map();let opponentPairs=0,opponentChanges=0;
+function withoutOpponentWords(entries){return entries.map(e=>e.side==='f'?{...e,line:null}:e);}
 function slot(k){if(!slotCoverage.has(k))slotCoverage.set(k,{available:new Set(),selected:new Set(),spoken:0,authored:0,composed:0,graph:0,protected:0,semanticBypass:0});return slotCoverage.get(k);}
 for(const [i,w] of roster.entries()){
  const pool=opponents.filter(f=>f.id!==w.id);
@@ -58,6 +61,8 @@ for(const [i,w] of roster.entries()){
    const variant=round!=='push'&&root.OfficeStory.Graph.variantFor(st.core,round,o.id)?.id;
    const oldVoice=st.coreVoiceStyle?.v===1&&voiceVariants.has(variant)?JSON.parse(JSON.stringify(st)):null;
    if(oldVoice){delete oldVoice.coreVoiceStyle;Mic.choose(oldVoice,o.id);}
+   const oldOpponent=st.opponentVoiceStyle?.v===1&&opponentVariants.has(variant)?JSON.parse(JSON.stringify(st)):null;
+   if(oldOpponent){delete oldOpponent.opponentVoiceStyle;Mic.choose(oldOpponent,o.id);}
    const strict=round==='close'&&st.closingCommitmentStyle===1?JSON.parse(JSON.stringify(st)):null;
    if(strict){delete strict.closingCommitmentStyle;Mic.choose(strict,o.id);}
    if(j===0&&step===1){
@@ -72,6 +77,24 @@ for(const [i,w] of roster.entries()){
     const x=st.log.slice(before).find(e=>e.side==='w'),y=oldVoice.log.slice(before).find(e=>e.side==='w');
     if(x&&y){voiceOld.add(normal(y.line,[w,f],p));voiceNew.add(normal(x.line,[w,f],p));if(x.line!==y.line){voiceChanges++;voiceActors.add(w.id);assert.ok(!x.authoredId&&!x.composedId&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.speaker);assert.ok(!/[{}]/.test(x.line));}}
     if(st.stage==='done')for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature'])assert.equal(JSON.stringify(Mic.result(st)[k]),JSON.stringify(Mic.result(oldVoice)[k]),'core voice outcome '+k);
+   }
+   if(oldOpponent){
+    opponentPairs++;
+    assert.equal(JSON.stringify(st.core),JSON.stringify(oldOpponent.core),'opponent voice graph parity');
+    for(const k of ['meter','steps','stage','round','pushed'])assert.equal(JSON.stringify(st[k]),JSON.stringify(oldOpponent[k]),'opponent voice '+k);
+    const now=st.log.slice(before),old=oldOpponent.log.slice(before);
+    assert.equal(JSON.stringify(withoutOpponentWords(now)),JSON.stringify(withoutOpponentWords(old)),'opponent voice metadata and other dialogue parity');
+    assert.equal(JSON.stringify(Mic.choices(st)),JSON.stringify(Mic.choices(oldOpponent)),'opponent voice next options parity');
+    const x=now.find(e=>e.side==='f'),y=old.find(e=>e.side==='f');
+    if(x&&y){
+     opponentOld.add(normal(y.line,[w,f],p));opponentNew.add(normal(x.line,[w,f],p));
+     if(x.line!==y.line){opponentChanges++;opponentActors.add(f.id);inc(opponentChangedVariants,variant);
+      assert.ok(!x.authoredId&&!x.composedId&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.speaker);
+      assert.ok(x.semantic?.claim&&x.semantic.source===y.semantic?.source,'reviewed semantic fingerprint retained');
+      assert.ok(!/[{}]/.test(x.line),'no unresolved opponent placeholders');
+     }
+    }
+    if(st.stage==='done')for(const k of ['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta','temperature'])assert.equal(JSON.stringify(Mic.result(st)[k]),JSON.stringify(Mic.result(oldOpponent)[k]),'opponent voice outcome '+k);
    }
    if(strict){
     assert.equal(JSON.stringify(st.core),JSON.stringify(strict.core),'closing commitment graph parity');
@@ -130,6 +153,8 @@ assert.equal(resumeChecks,roster.length);
 if(process.env.PROMO_AUDIT_LEGACY!=='1'){
  assert.ok(voiceChanges>100&&voiceActors.size>30&&voiceNew.size>voiceOld.size,'G2 core voice coverage');
  console.log('PASS G2 core voice: '+voiceChanges+'/'+voicePairs+' target turns changed across '+voiceActors.size+' speakers; '+voiceOld.size+' -> '+voiceNew.size+' distinct normalized lines; unchanged graph, scoring and non-player dialogue.');
+ assert.ok(opponentChanges>100&&opponentActors.size>=10&&opponentChangedVariants.size===opponentVariants.size&&opponentNew.size>opponentOld.size,'G2C opponent voice coverage');
+ console.log('PASS G2C opponent voice: '+opponentChanges+'/'+opponentPairs+' target turns changed across '+opponentActors.size+' speakers; '+opponentOld.size+' -> '+opponentNew.size+' distinct normalized lines; variants '+JSON.stringify(Object.fromEntries(opponentChangedVariants))+'; unchanged graph, semantic fingerprints, options and other dialogue.');
  assert.equal(closingPairs,scenes.length);
  for(const [k,v] of Object.entries(closingComparison))assert.ok(v.after>v.before+10,'G1 must restore meaningful '+k+' bank use');
  console.log('PASS G1 closing recovery: '+JSON.stringify(closingComparison)+' across '+closingPairs+' paired closings; unchanged graph and consequences.');
