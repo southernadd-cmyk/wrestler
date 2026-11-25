@@ -324,6 +324,7 @@
   st.start=st.meter;
   if(opts.directed&&opts.formats){st.fallbackVariety=1;st.closingVariety=1;st.closingCommitmentStyle=1;}
   if(opts.directed&&opts.formats)st.coreVoiceStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='strong'||e.kind==='uneven').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
+  if(opts.directed&&opts.formats)st.opponentVoiceStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.side==='f'||e.kind==='opponent').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.deliveryStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.kind==='fluff').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
@@ -1081,6 +1082,173 @@
   const all=named?[named,...pool]:pool,options=all.filter(fresh);
   return pick(options.length?options:all,st.seed,'core-voice|'+v);
  }
+ // G2C: reviewed, claim-equivalent opponent graph speech. The graph's
+ // original fingerprint remains the semantic source; these are display
+ // alternatives only. Do not touch authored speech or recorded evidence.
+ const OPPONENT_VOICE={
+  "ch_one_fall": {
+    "stage": "answer",
+    "action": "challenge",
+    "claim": "terms",
+    "original": "Just you and me. Agreed.",
+    "individual": {
+      "red": "Fine. No one else's business. Just us.",
+      "roxy": "No supporting cast, then. I can live with that.",
+      "silas": "Agreed. No third variable.",
+      "night": "Just us under the lights? Good.",
+      "rev": "Let the two of us answer for our own actions. Agreed.",
+      "malik": "Good. No help for either of us.",
+      "dean": "A straight two-person contest. Those terms suit me.",
+      "rocco": "Fine. Nobody else.",
+      "nova": "Agreed. Just the two of us on the mat.",
+      "ace": "Two names on the bill, no guest stars. Done.",
+      "magnus": "No third party in the bargain. Agreed.",
+      "tori": "Two competitors, nothing else in the equation. I'm in."
+    },
+    "voices": {
+      "grand": "Just the two of us in the spotlight. Agreed.",
+      "gruff": "Just us. Fine.",
+      "eager": "Only us? Sounds good.",
+      "stoic": "Agreed. Nobody else.",
+      "precise": "Agreed: no outside involvement.",
+      "earnest": "I'm happy to settle it between us.",
+      "sermon": "Let neither of us call for help. Agreed.",
+      "slippery": "Those terms suit me. No third parties."
+    }
+  },
+  "pr_tape": {
+    "stage": "open",
+    "action": "proof",
+    "claim": "study",
+    "original": "Watching tape is easy, {W}. Doing something about it is harder.",
+    "individual": {
+      "red": "Easy to watch a match from a chair, {W}. Try doing it.",
+      "roxy": "Lovely homework, {W}. Now let's see you perform it live.",
+      "silas": "Observation isn't execution, {W}. Can you actually apply what you saw?",
+      "night": "You can rewind a tape, {W}. You can't rewind me in the ring.",
+      "rev": "It is easier to study a test than to pass it, {W}.",
+      "malik": "Anyone can watch, {W}. Show me what you can do.",
+      "dean": "You've done the research, {W}. Now comes the difficult part: making it pay.",
+      "rocco": "Tape won't fight back, {W}. I will.",
+      "nova": "Recognising a hold on video isn't the same as escaping it, {W}.",
+      "ace": "You watched the replay, {W}. Tonight you have to perform without a second take.",
+      "magnus": "You know what the tape showed you, {W}. The difficulty is putting that knowledge to work.",
+      "tori": "A recording is a model, {W}. Now try making the theory work in the ring."
+    },
+    "voices": {
+      "grand": "A rehearsal on tape is one thing, {W}. Performing is another.",
+      "gruff": "Watching is easy, {W}. Doing it isn't.",
+      "eager": "You've seen it, {W}! Now can you actually do it?",
+      "stoic": "Seeing it and doing it are different, {W}.",
+      "precise": "Reviewing footage does not establish that you can execute the response, {W}.",
+      "earnest": "I'm glad you studied it, {W}. Applying it is the hard part.",
+      "sermon": "Knowing the lesson is easier than living it, {W}.",
+      "slippery": "Homework's cheap, {W}. Putting it into practice is the expensive bit."
+    }
+  },
+  "pr_veteran": {
+    "stage": "open",
+    "action": "proof",
+    "claim": "experience",
+    "original": "Experience is just another word for old, {W}.",
+    "individual": {
+      "red": "Years on the road don't make you unbeatable, {W}.",
+      "roxy": "All those years, darling, and you still have to earn your place on tonight's bill.",
+      "silas": "Time served isn't proof of superiority, {W}.",
+      "night": "Years on the clock won't keep you ahead of me, {W}.",
+      "rev": "The years alone do not confer victory, {W}.",
+      "malik": "I respect the years, {W}. I don't accept them as an advantage on their own.",
+      "dean": "Experience sounds impressive, {W}, until you have to cash it in.",
+      "rocco": "Years don't win a fight, {W}.",
+      "nova": "Longevity isn't the same as an advantage in the next exchange, {W}.",
+      "ace": "You've had your seasons in the spotlight, {W}. That doesn't make tonight yours.",
+      "magnus": "A long career isn't leverage unless you can use it, {W}.",
+      "tori": "Age is a data point, {W}, not a prediction of the result."
+    },
+    "voices": {
+      "grand": "A long career is not a guarantee of tonight's victory, {W}.",
+      "gruff": "Years don't make you better than me, {W}.",
+      "eager": "You've been here a while, {W}. That doesn't mean you've got the edge!",
+      "stoic": "Time served settles nothing, {W}.",
+      "precise": "Experience alone does not establish an advantage, {W}.",
+      "earnest": "You've done this longer, {W}. That doesn't mean you'll do it better tonight.",
+      "sermon": "The passage of years is not a promise of victory, {W}.",
+      "slippery": "Years look good on paper, {W}. They don't win the match by themselves."
+    }
+  },
+  "ca_long": {
+    "stage": "answer",
+    "action": "calm",
+    "claim": "early",
+    "original": "Then I will finish it before the last minute.",
+    "individual": {
+      "red": "Then I'll get it done early.",
+      "roxy": "Then you won't be getting your grand finale, darling. I'll finish it early.",
+      "silas": "Then I will secure the fall before your closing exchange.",
+      "night": "Then let's see how you handle an early finish.",
+      "rev": "Then I intend to settle it before that final minute arrives.",
+      "malik": "Then I'm going to finish it before you get that far.",
+      "dean": "In that case, I'll aim to have the result decided before the last minute.",
+      "rocco": "Then I'll finish you early.",
+      "nova": "I'll look for the deciding fall before you reach that stage.",
+      "ace": "Then I'll bring the curtain down early.",
+      "magnus": "Then I intend to close the deal before you get your last minute.",
+      "tori": "Then I'll aim to end the match before we reach that final interval."
+    },
+    "voices": {
+      "grand": "Then I'll bring the finale forward.",
+      "gruff": "Then I'll finish it early.",
+      "eager": "Then I'm going to get it done before that last minute!",
+      "stoic": "Then I'll end it before that.",
+      "precise": "I intend to secure an earlier deciding fall.",
+      "earnest": "Then I'll try to earn the win before the last minute.",
+      "sermon": "Then I intend to settle it before that hour comes.",
+      "slippery": "Then I'll aim to settle it before you get to the last minute."
+    }
+  },
+  "ca_restraint": {
+    "stage": "answer",
+    "action": "calm",
+    "claim": "end",
+    "original": "Then stop talking.",
+    "individual": {
+      "red": "Good. Leave it there.",
+      "roxy": "Then do spare us the rest of the speech.",
+      "silas": "Then there is no need for another statement.",
+      "night": "Then put the mic down. We're done.",
+      "rev": "Then let the silence stand.",
+      "malik": "Then leave it there.",
+      "dean": "Well, then, let's not prolong this.",
+      "rocco": "Enough, then.",
+      "nova": "Then we can end the discussion.",
+      "ace": "Then spare us the encore.",
+      "magnus": "Then we've no more to discuss.",
+      "tori": "Then let's stop the discussion here."
+    },
+    "voices": {
+      "grand": "Then let's bring this speech to a close.",
+      "gruff": "Then shut it.",
+      "eager": "Then let's leave it there!",
+      "stoic": "Then say no more.",
+      "precise": "Then there is no reason to continue this discussion.",
+      "earnest": "Then I think we've said enough.",
+      "sermon": "Then let us leave the rest unsaid.",
+      "slippery": "Then let's not spend any more time on it."
+    }
+  }
+};
+ function opponentVoice(st,stage,id,d,step){
+  if(st.opponentVoiceStyle?.v!==1||!Semantic?.allowed(st)||d.case)return null;
+  const v=step.variant,e=Object.prototype.hasOwnProperty.call(OPPONENT_VOICE,v)?OPPONENT_VOICE[v]:null;
+  if(!e||e.stage!==stage||e.action!==id||d.line!==fmt(e.original,st))return null;
+  if(d.speechSource!==Semantic.source(v,e.original)||Semantic.classify(d.speechSource,d.speechDetail)?.claim!==e.claim)return null;
+  const own=Object.prototype.hasOwnProperty.call(e.individual,st.f.id)?e.individual[st.f.id]:null;
+  const family=e.voices[voice(st.f)]||e.voices.stoic;
+  const pool=[...new Set([own,family].filter(Boolean).map(s=>fmt(s,st)))];
+  const recent=st.opponentVoiceStyle.recent||[],seen=st.log.filter(x=>x.side==='f').map(x=>x.line);
+  const fresh=pool.filter(s=>!recent.includes(s)&&!seen.includes(s));
+  return fresh[0]||pick(pool,st.seed,'opponent-voice|'+v);
+ }
  function coreRound(st,stage,id,key){
   const core=st.core,before=core.dialogue.length,m0={...core.metrics},fit=fitOf(st,stage,id);
   // Composure feeds the core's chance of landing a line; a line that suits the night is easier to land.
@@ -1107,7 +1275,7 @@
    if(d.speaker===st.f.name){replied=true;
     if(stage==='open'&&st.director?.format==='callout')push(st,'stage',fmt('{F} comes down from the entrance and takes the second microphone.',st),'stage');
     const ctx=slot('f',d),at=st.log.length,line=pickAuthored(st,ctx);
-    theirTurn(st,line?.text||graphFallback(st,stage,id,d),key,step.landed,fit);
+    theirTurn(st,line?.text||opponentVoice(st,stage,id,d,step)||graphFallback(st,stage,id,d),key,step.landed,fit);
     if(st.log[at]?.side==='f')annotate(st,at,ctx,line,d);
     if(stage==='open'&&!st.angle){st.angle=angleFor(st,id);push(st,'stage',spokenCue(st),'cue');}
     continue;}
