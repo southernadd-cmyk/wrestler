@@ -240,4 +240,15 @@
   ]
 };
  for(const pack of root.OfficePromoBankC2)for(const [j,text] of (strengthCountersF6[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const evidenceAcknowledgementsG3={
+  "imani": [
+    "That's reasonable. I won't ask you to answer for something I can't substantiate.",
+    "I'll give you that. We can earn our case out there through the work."
+  ],
+  "kira": [
+    "Correction accepted. An allegation is not an established fact.",
+    "Agreed. We will confine our judgment to what can be demonstrated within the rules."
+  ]
+};
+ for(const pack of root.OfficePromoBankC2)for(const [j,text] of (evidenceAcknowledgementsG3[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ea.'+String(j+1).padStart(2,'0'),stage:'push',action:'acknowledge',side:'w',category:'respect',text,when:{hasMouthpiece:false,semanticClaim:'evidence'}});
 })(typeof window!=='undefined'?window:globalThis);
