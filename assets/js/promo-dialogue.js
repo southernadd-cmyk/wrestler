@@ -126,6 +126,21 @@
   if(!ctx||ctx.stage!=='push'||ctx.action!=='acknowledge'||ctx.protected||ctx.hasMouthpiece)return null;
   return select(cat,ctx,seed,{...mem,candidateFilter:r=>neutralAcknowledgements[ctx.side]?.has(r.text)});
  }
+ // Exact-text review for substantive responses. These strength lines only
+ // answer a genuinely spoken strength, never a style-derived estimate.
+ const reviewedStrength=new Set(["You have identified {strength}. I will not dispute the existence of the problem; I will dispute its outcome.","Let the record show that your advantage is {strength}. It is the point on which I intend to cross-examine you.","Your {strength}. That's what I've got to get through.","I know what you've got: {strength}. Let's see if it's enough.","I heard you: {strength}. I've got to work out the moment when I can get past that.","Your {strength}. I'll have to get round that.","No use pretending those {strength} aren't there. I'll deal with them.","Right. Your {strength}. I know what I need to work against.","I don't need to dismiss your {strength}. I need an answer to them.","You've told me about your {strength}. I have to respect that and find a way through it.","I'm not going to pretend those {strength} don't matter. I'm asking for the chance to answer them.","I heard the bit about your {strength}. That's the bit I'll have to work around.","You've named your {strength}. Fine. That's what I've prepared to deal with.","You've got {strength}. I know what I've got to get past, and I'm looking forward to it.","I have to deal with your {strength} in this match. I need to find a rhythm that gets around that.","Your {strength}. Right. That's what I'll work against.","Can't ignore your {strength}. Need a way through.","You named {strength}. That gives me a specific problem to solve, which is what I wanted.","Your {strength}. I'll have to find a way to keep working around that.","I won't pretend I can just shrug off your {strength}.","I acknowledge your {strength}. I will not let them dictate my decisions.","You have identified {strength}. My task is to formulate and demonstrate the correct response.","Your {strength}. Fine. That's what I've got to get through.","I know what you can do with those {strength}. I'll have to answer them.","Your {strength}. Yes, I was listening. I'll arrange my performance around the obstacle.","I don't intend to pretend your {strength} aren't impressive. I intend to make something more memorable happen.","You have identified {strength}. That is the variable I will have to control.","I don't dispute your {strength}. I dispute the assumption that they are sufficient.","Those {strength}. That's the bit I've got to find a way through.","I heard the warning about your {strength}. I intend to be ready for it.","Your {strength} will be tested tonight, and I will be the one doing the testing.","I have noted your {strength}. Now prove it.","I cannot afford to ignore your {strength} in this match. Knowing that is a useful starting point.","You have told me to prepare for {strength}. Good. I would rather work on an actual problem than trade insults.","You have identified your own advantage: {strength}. That saves me the trouble of establishing what I need to take away.","Very good. We have established your preferred method: {strength}. Now we can test whether it is sufficient.","I have been thinking about your {strength}. I want to find a way round it, honestly.","I have been thinking about your {strength}, and I want to find a way to meet it that keeps everybody safe.","I have been trying to understand your {strength}. I'll be honest, it's a lot to learn.","I have noted your {strength}. Now do something with it."]);
+ const reviewedPress=new Set(["Answer me. Once will do.","Hold on. I want to hear your answer to that.","Wait! I want to hear the rest of that answer.","Answer that first, please.","Answer. Answer.","Could you answer, please? I am trying. I will wait, and I will keep trying too.","Answer, please. I am sure you have a good reason. Give it.","I wonder if the question is still open. I would really like your answer, if you have one.","Answer, when you are ready. I will wait a little longer.","Hold on. Finish what you were saying."]);
+ function selectSemanticResponse(cat,ctx,seed,mem,sem){
+  if(!ctx||!sem||ctx.side!=='w'||ctx.hasMouthpiece)return null;
+  if(ctx.stage==='answer'&&ctx.action==='turn'&&ctx.variant==='tu_strength'&&
+     ctx.protected==='contextual-variant'&&sem.move==='rebut'&&sem.claim==='strength'&&string(sem.detail)){
+   return select(cat,{...ctx,strength:sem.detail},seed,{...mem,candidateFilter:r=>reviewedStrength.has(r.text)});
+  }
+  if(ctx.stage==='push'&&ctx.action==='press'&&!ctx.protected&&sem.move==='press'){
+   return select(cat,ctx,seed,{...mem,candidateFilter:r=>reviewedPress.has(r.text)});
+  }
+  return null;
+ }
  // A bounded compositional fallback: preserve the actual claim, vary the delivery.
  const replyFrames={
   precise:['I am not disputing your {strength}. Solving that problem is my job.','Then the question is how I deal with your {strength}. I intend to answer it in the ring.'],
@@ -159,5 +174,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);
