@@ -62,4 +62,44 @@ disputed.core.case={exposed:true};
 assert.equal(Dir.route(disputed.director,disputed,{id:'calm',landed:true}).follow,true);
 disputed.round=2;
 assert.deepEqual(Array.from(M.choices(disputed),x=>x.id),['firm','revise','leave']);
+// Phase 6A: deterministic, bounded reactions, including preserved old saves.
+const seen=new Set();
+for(const kind of ['interrupt','refusal','pause']){
+ let example=null;
+ for(let j=0;j<160;j++){
+  const s=M.begin({...c,id:'spontaneous-'+kind+'-'+j},w,f,null,null,p,{directed:true,formats:true});
+  M.choose(s,M.choices(s)[0].id);
+  // Set pressure explicitly to exercise each path independent of roster mix.
+  s.director.opponent.stance=kind==='interrupt'?'combative':kind==='refusal'?'reserved':'adaptive';
+  s.director.opponent.irritation=80;
+  s.director.opponent.composure=kind==='pause'?15:75;
+  s.director.player.composure=kind==='pause'?15:75;
+  s.meter=0;
+  if(s.core.case)continue;
+  const choice=M.choices(s).find(o=>o.id==='personal')||M.choices(s)[0],saved=clone(s);
+  M.choose(s,choice.id);M.choose(saved,choice.id);
+  assert.equal(JSON.stringify(s),JSON.stringify(saved),'spontaneous save/resume');
+  if(s.director.event?.kind!==kind)continue;
+  example=s;seen.add(kind);
+  const events=s.log.filter(e=>e.kind==='event');
+  assert.equal(events.length,1);assert.equal(events[0].side,'stage');
+  assert.ok(!/[{}]/.test(events[0].line));
+  assert.equal(s.round,kind==='interrupt'?2:3);
+  assert.equal(M.view(s).conversation.event.kind,kind);
+  const protectedCopy=clone(saved);delete protectedCopy.director.event;
+  protectedCopy.core.case={exposed:true};
+  assert.equal(Dir.spontaneous(protectedCopy.director,protectedCopy,{round:'answer',id:choice.id}),null);
+  assert.equal(Dir.route(protectedCopy.director,protectedCopy,{id:choice.id,landed:true}).follow,true);
+  const old=clone(saved);delete old.director.event;old.director.v=1;
+  assert.equal(Dir.spontaneous(old.director,old,{round:'answer',id:choice.id}),null);
+  while(s.stage!=='done')M.choose(s,M.choices(s)[0].id);
+  assert.equal(s.log.filter(e=>e.kind==='event').length,1);
+  assert.equal(JSON.stringify(M.result(s).promise),JSON.stringify(Graph.result(s.core).promise));
+  assert.equal(JSON.stringify(M.result(s).tactic),JSON.stringify(Graph.result(s.core).tactic));
+  break;
+ }
+ assert.ok(example,'spontaneous reaction reachable: '+kind);
+}
+assert.equal(seen.size,3);
+console.log('PASS phase 6A: interruption, refusal and pause; bounded events, deterministic resume, protected case and old-save guards.');
 console.log('PASS director: '+count+' live scenes, lengths '+JSON.stringify(Object.fromEntries(rounds))+'; '+routes.size+' route reasons; '+responses.size+' followups; promises, mouthpiece identity, save parity and disputed case guard preserved.');
