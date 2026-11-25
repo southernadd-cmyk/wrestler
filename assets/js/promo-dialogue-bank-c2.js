@@ -302,4 +302,27 @@
   }
 };
  for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH5[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH6={
+  "imani": {
+    "w": [
+      "You've earned those years. I intend to make you work for the rhythm of this match just the same.",
+      "Experience helps you dictate a pace. I want to see how you adjust when I change it."
+    ],
+    "f": [
+      "I've learned to take back the initiative without chasing every move you make.",
+      "Experience is knowing when to change the tempo instead of forcing the next exchange."
+    ]
+  },
+  "kira": {
+    "w": [
+      "I respect your experience. Our positions at the bell are still equal.",
+      "Years of practice do not substitute for control of the next hold."
+    ],
+    "f": [
+      "Experience teaches you to maintain control when the entry you expected disappears.",
+      "Practice helps me recover my balance without resorting to an illegal shortcut."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoBankC2)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.c2.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);

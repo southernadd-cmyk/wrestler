@@ -178,4 +178,17 @@
   }
 };
  for(const pack of root.OfficePromoPilot)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH4[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
+ const experienceRepliesH6={
+  "magnus": {
+    "w": [
+      "Your years in the profession are quite admirable. I fear they do not constitute a hereditary right to victory.",
+      "I shall gladly acknowledge your experience, provided you do not mistake it for a coronation."
+    ],
+    "f": [
+      "The luxury of experience is knowing when not to accept an apparently generous invitation.",
+      "One acquires a certain composure with practice. A novel predicament need not provoke an undignified panic."
+    ]
+  }
+};
+ for(const pack of root.OfficePromoPilot)for(const side of ['w','f'])for(const [j,text] of (experienceRepliesH6[pack.owner]?.[side]||[]).entries())pack.lines.push({id:pack.owner+'.pilot.ex.'+side+'.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side,category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'experience'}});
 })(typeof window!=='undefined'?window:globalThis);
