@@ -234,4 +234,19 @@
   ]
 };
  for(const pack of root.OfficePromoBankC7)for(const [j,text] of (strengthCountersF4[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF8={
+  "nadia": [
+    "You've found a way to dampen my {strength}. Watch what happens when I find another spark in the middle of the exchange.",
+    "You know what to expect from my {strength}. The trick is keeping your composure when the whole room catches fire."
+  ],
+  "sasha": [
+    "You've got a plan for my {strength}. People in the front row, watch their face when we get to the bit they didn't rehearse.",
+    "You've figured out how to stop my {strength}. Lovely setup. I'd like to supply the punchline myself."
+  ],
+  "morgan": [
+    "You've priced in my {strength}. You haven't accounted for the leverage I gain when you commit to that defence.",
+    "Your plan for my {strength} carries a cost. I intend to make you pay it every time you try to take the initiative."
+  ]
+};
+ for(const pack of root.OfficePromoBankC7)for(const [j,text] of (strengthCountersF8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c7.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

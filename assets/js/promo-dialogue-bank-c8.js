@@ -182,4 +182,27 @@
   ]
 };
  for(const pack of root.OfficePromoBankC8)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF8={
+  "tomasash": [
+    "You've prepared to stop my {strength}. Do it with control, even when the first attempt doesn't go your way.",
+    "Knowing about my {strength} doesn't give you permission to lose your head when I use them. Keep your balance."
+  ],
+  "noelle": [
+    "Your proposed answer to my {strength} rests on the premise that I accept the position you require. I do not.",
+    "You have identified my {strength}. The conclusion you draw must still be tested within the stated rules of the contest."
+  ],
+  "ash": [
+    "My {strength}. Right. Stop them. I'll be there.",
+    "You've planned for my {strength}. Now let your wrestling speak for you."
+  ],
+  "bashir": [
+    "You've done your homework on my {strength}. Now show me the patience to do the job properly when I make it difficult.",
+    "You've worked on an answer to my {strength}. Good habit. Make sure it's one you can repeat cleanly, not just get away with once."
+  ],
+  "cleo": [
+    "You've identified my {strength}. What observable result would tell you that your defence had actually succeeded?",
+    "Your plan for my {strength} makes a prediction. I'll change the position and see whether it still holds."
+  ]
+};
+ for(const pack of root.OfficePromoBankC8)for(const [j,text] of (strengthCountersF8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c8.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);

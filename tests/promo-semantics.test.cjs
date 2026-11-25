@@ -314,7 +314,7 @@ for(const {row,pack} of questionRows){
 assert.deepEqual([...questionOwners.keys()].sort(),[...followupOwners.keys()].sort());assert.equal(questionOwners.size,80);for(const n of questionOwners.values())assert.equal(n,2);
 console.log('PASS G4E8 authored evidence question fixtures: 160 scoped questions across all 80 original owners.');
 const strengthRows=[...bankRows.values()].filter(({row})=>row.when.semanticClaim==='strength');
-assert.equal(strengthRows.length,134);const strengthOwners=new Map();
+assert.equal(strengthRows.length,160);const strengthOwners=new Map();
 for(const {row,pack} of strengthRows){
  assert.ok(!topicText.has(row.text));topicText.add(row.text);assert.equal(row.side,'f');assert.equal(row.stage,'answer');assert.equal(row.action,'turn');
  strengthOwners.set(pack.owner,(strengthOwners.get(pack.owner)||0)+1);
@@ -326,8 +326,8 @@ for(const {row,pack} of strengthRows){
  for(const patch of [{protected:'recorded-evidence'},{protected:'recorded-argument'},{hasMouthpiece:true},{speaker:{...context.speaker,id:'other'}},{side:'w'},{stage:'push'},{action:'calm'}])assert.equal(L.selectAuthoredStrengthCounter(cat,{...context,...patch},'strength-counter',{},sem),null);
  for(const patch of [{claim:'proof'},{move:'rebut'},{move:'press_counter'},{detail:null}])assert.equal(L.selectAuthoredStrengthCounter(cat,context,'strength-counter',{}, {...sem,...patch}),null);
 }
-assert.deepEqual([...strengthOwners.keys()].sort(),["ace","aisha","anya","ari","ayla","bao","brick","bronte","cal","cass","cedric","dax","dean","dee","dev","eira","ellis","elodie","emmett","ezra","faye","gus","imani","iris","ivo","jett","jun","juno","kellan","kezia","kira","kit","kofi","leandro","liya","lyra","mae","magnus","malik","mara","marisol","milo","miro","nate","nico","night","nikita","nolan","otis","priya","red","rev","rex","rina","rocco","roxy","silas","sol","soraya","sylvia","theo","tori","val","vera","winnie","zane","zara"]);for(const n of strengthOwners.values())assert.equal(n,2);
-console.log('PASS G4F7 strength counter fixtures: 134 dedicated replies across 67 owners, actual spoken strength, owner, slot and history guards.');
+assert.deepEqual([...strengthOwners.keys()].sort(),[...questionOwners.keys()].sort());assert.equal(strengthOwners.size,80);for(const n of strengthOwners.values())assert.equal(n,2);
+console.log('PASS G4F8 strength counter fixtures: 160 dedicated replies across all 80 original owners, actual spoken strength, owner, slot and history guards.');
 const roster=D.ALL,opponents=D.FOES;
 let scenes=0,responded=0,counters=0,press=0,unclassified=0,protectedN=0,authoredSources=0,graphSources=0,authoredResponses=0;
 const ackIds=new Set(),pressIds=new Set();let authoredPress=0,authoredRebut=0;

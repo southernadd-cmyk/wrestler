@@ -227,3 +227,7 @@ G4F.5 verified all 51 sampled recoveries with zero losses. Add two distinct coun
 ## G4F.7 — complete named-strength counter coverage in C3–C5
 
 Add two distinct counters each for the 12 previously uncovered original owners in C3–C5: Malik, Dean, Rocco, Aisha, Priya, Bao, Ivo, Cass, Mae, Soraya, Milo and Jett. Require 134 dedicated counters across 67 original owners, preserve all 51 sampled recoveries with zero losses and retain existing semantic scope, actual spoken detail, owner/history guards and graph/presentation parity. The remaining 13 original owners require C6–C8 completion. No engine, UI, save or workflow changes. CI pending.
+
+## G4F.8 — complete original roster named-strength counters
+
+Add two distinct counters each for the 13 remaining original owners in C6–C8 and the original pilot: Alina, Ash, Bashir, Cleo, Felix, Gideon, Morgan, Nadia, Noelle, Nova, Sasha, Tomas and Tomas Ash. Require 160 dedicated counters across all 80 original owners, exactly matching the evidence-question owner set; preserve all 51 sampled recoveries with zero losses, existing semantic scope, spoken detail, owner/history guards and graph/presentation parity. Academy and generic rookie banks are outside this tranche. No engine, UI, save or workflow changes. CI pending.

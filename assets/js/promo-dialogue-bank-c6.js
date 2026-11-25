@@ -233,4 +233,23 @@
   ]
 };
  for(const pack of root.OfficePromoBankC6)for(const [j,text] of (strengthCountersF5[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
+ const strengthCountersF8={
+  "alina": [
+    "I'm glad you've paid attention to my {strength}. I want us both to find something real in the struggle when you try to take them away.",
+    "You've thought about how to answer my {strength}. I care enough about this match to give you a difficult answer in return."
+  ],
+  "felix": [
+    "You've got a way to stop my {strength}. Fair enough. I've been practising how to recover without making a complete mess of the next move.",
+    "I know my {strength} won't get me through every exchange. This time I've done some work on what happens if you manage to stop them."
+  ],
+  "gideon": [
+    "Your preparation for my {strength} will count for something if you recognise the opening early enough. That is the part I shall test.",
+    "You know how to meet my {strength} once the exchange starts. Watch what happens a moment before that."
+  ],
+  "tomas": [
+    "How flattering that you've spent so much time studying my {strength}. I wonder how much of that defence you can execute without assistance.",
+    "You've made an elegant proposal for dealing with my {strength}. I shall be delighted to see you deliver it yourself."
+  ]
+};
+ for(const pack of root.OfficePromoBankC6)for(const [j,text] of (strengthCountersF8[pack.owner]||[]).entries())pack.lines.push({id:pack.owner+'.c6.sc.'+String(j+1).padStart(2,'0'),stage:'answer',action:'turn',side:'f',category:'rebuttal',text,when:{hasMouthpiece:false,semanticClaim:'strength'}});
 })(typeof window!=='undefined'?window:globalThis);
