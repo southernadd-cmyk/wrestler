@@ -1296,6 +1296,10 @@
        supportsFinish:!!(alt&&supportsFinish(st,route,alt)&&!supportsFinish(st,route,b)),
        developingPartner:['Rookie','Prospect'].includes(partner.tier),
        simpler:!!(next&&!next.risk&&(next.cost??1)<(original.cost??1)),
+       // A past public technical claim can favour an already legal
+       // late counter of its recorded family, not invent a move or a finish.
+       publicCounterMatch:!!(next?.reverse&&next.counterOf&&obj.window?.[1]>=.58&&
+        profiles[owner].publicCounter?.families?.includes(next.family)),
        noAlternative:!alt};
       const priority=F.huddlePriority(profiles[owner],facts);
       if(priority)candidates.push({...row,alt,priority,tie:rng(st.seed,'initiative|'+obj.id+'|'+owner+'|'+(alt?.action||'open'))});
@@ -1352,6 +1356,7 @@
      t.reason==='visibility'?'The performer wants a stronger crowd moment.':
      t.reason==='craft'?'The alternative is a learned or signature move.':
      t.reason==='guidance'?'A less demanding move could help the developing partner.':
+     t.reason==='publicClaim'?'A previous public counter claim makes this legal alternative worth discussing.':
      'A performer wants a more convincing rhythm.')+
     ' The promoter’s winner and agreed finishing route stay fixed.';
   },
