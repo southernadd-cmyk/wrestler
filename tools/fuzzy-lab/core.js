@@ -54,6 +54,15 @@
   if(room.stage!=='done')throw Error('Replay did not reach a signed layout within 100 decisions.');
   return {steps,log:clone(room.log),sheet:clone(room.sheet)};
  }
+ // Only the isolated Lab page may install previews into its in-memory
+ // registry. Never reset an active career's actual academy intake.
+ function loadAcademy(root,seed=47){
+  if(root.OfficeGame.S)throw Error('Academy previews require an isolated Lab without a loaded career.');
+  root.OfficeRosterV4.enableProfiles();
+  const arrived=root.OfficeAcademy.preview(seed);
+  root.OfficeAcademy.restore({season:2,academy:{arrived}});
+  return {established:root.OfficeData.ALL.length-arrived.length,academy:arrived.length,seed};
+ }
  function distribution(root,cfg,model,edits={}){
   const D=root.OfficeData,rows=[];
   for(const w of D.ALL){
@@ -62,13 +71,14 @@
    if(!opponent)continue;
    const context=setup(root,{...cfg,w:w.id,f:opponent.id,worker:{},opponent:{}});
    const p=context.profile('w'),v=evaluate(root.OfficePsychology,model,p.observation.values,p.cues,edits);
-   rows.push({id:w.id,name:w.name,opponent:opponent.id,scores:v.scores});
+   rows.push({id:w.id,name:w.name,group:w.id.startsWith('academy-')?'academy':'established',opponent:opponent.id,scores:v.scores});
   }
-  return {count:rows.length,rows,outputs:Object.fromEntries(model.outputs.map(k=>{
-   const values=rows.map(r=>r.scores[k]).filter(Number.isFinite),bins=Array(5).fill(0);
+  const summarise=sample=>({count:sample.length,outputs:Object.fromEntries(model.outputs.map(k=>{
+   const values=sample.map(r=>r.scores[k]).filter(Number.isFinite),bins=Array(5).fill(0);
    for(const v of values)bins[Math.min(4,Math.floor(v/20))]++;
    return [k,{count:values.length,bins,mean:values.length?values.reduce((a,b)=>a+b,0)/values.length:null}];
-  }))};
+  }))});
+  return {...summarise(rows),rows,groups:{established:summarise(rows.filter(r=>r.group==='established')),academy:summarise(rows.filter(r=>r.group==='academy'))}};
  }
- return {spec,evaluate,setup,alternatives,replay,distribution};
+ return {spec,evaluate,setup,alternatives,replay,distribution,loadAcademy};
 });
