@@ -37,6 +37,9 @@ assert.equal(hand.main.signed,hand.combined.signed,'handover cannot change agree
 assert.equal(hand.dependencyOnly.signed,hand.combined.signed);
 assert.ok(hand.handoverOffers>0,'real legal handover opportunities exercised');
 assert.equal(hand.changedOutcomes,0,'handover preserves booked outcomes');
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,continuation,opening,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
+const recovery=report.matchedRecoveryProjection;
+assert.ok(recovery.pairs>0,'matched recovery projection comparison');
+assert.equal(recovery.before.signed,recovery.after.signed,'identical signed agreements');
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryProjection,continuation,opening,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryProjection:{...matchedRecoveryProjection,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
