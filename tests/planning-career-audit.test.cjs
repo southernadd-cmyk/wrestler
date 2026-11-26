@@ -129,6 +129,7 @@ assert.equal(risk.pairs,routine.pairs,'all paired bouts covered by risk ledger')
 for(const [side,arm] of [['baseline',original],['quarter',shipped]]){
  const x=risk[side];
  assert.equal(x.botches,arm.botches,'risk ledger matches actual botch counts');
+ assert.equal(x.attempts+x.graphSpotIncrements,arm.spots,'risk rolls and graph spot increments reconcile to generic spots');
  assert.equal(x.playerInjuries,arm.injury,'risk ledger matches actual player injury counts');
  assert.equal(Object.values(x.bySource).reduce((n,r)=>n+r.attempts,0),x.attempts,'attempt sources reconcile');
  assert.equal(Object.values(x.byMove).reduce((n,r)=>n+r.botches,0),x.botches,'move botches reconcile');
