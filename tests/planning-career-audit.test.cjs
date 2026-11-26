@@ -48,6 +48,20 @@ assert.ok(alt.pairs>0&&alt.withAlternatives.pairs>0,'signed alternative comparis
 assert.equal(alt.before.signed,alt.after.signed,'same signed agreements');
 assert.equal(alt.changedOutcomes,0,'booked outcomes unchanged');
 assert.ok(alt.after.credited<=alt.after.opportunities,'actual credited alternative within observed opportunities');
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,continuation,opening,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
+const temporal=report.temporalOpportunityAudit;
+assert.equal(temporal.total,alt.after.timingCases,'all production baseline timing cases classified');
+for(const c of temporal.cases){
+ assert.ok(c.timingOnly||c.mixed,'actual observed early guard');
+ for(const v of c.variants){
+  const n=v.counts,b=v.safetyBreakdown;
+  assert.ok(n.inWindow>=n.safe&&n.safe>=n.prerequisite&&n.prerequisite>=n.matching&&n.matching>=n.legal&&n.legal>=n.ready&&n.ready>=n.offered,'same-variant same-tick funnel');
+  assert.equal(n.early,n.earlyTimingOnly+n.earlyMixed);
+  assert.equal(b.blockedTicks,Object.values(b.flagCombinations).reduce((x,y)=>x+y,0),'safety flags reconcile');
+  assert.ok(b.otherwiseReadyBlocked<=b.blockedTicks);
+ }
+ console.log('MP13F.8B.2 TEMPORAL CASE '+JSON.stringify(c));
+}
+console.log('MP13F.8B.2 TEMPORAL SUMMARY '+JSON.stringify({...temporal,cases:undefined}));
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,temporalOpportunityAudit,continuation,opening,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},temporalOpportunityAudit:{...temporalOpportunityAudit,cases:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
