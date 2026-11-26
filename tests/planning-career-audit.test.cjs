@@ -137,8 +137,32 @@ for(const [side,arm] of [['baseline',original],['quarter',shipped]]){
 }
 for(const p of risk.changed)console.log('MP13F.15 INCIDENT CASE '+JSON.stringify(p));
 console.log('MP13F.15 RISK SUMMARY '+JSON.stringify({...risk,changed:undefined}));
+const pacingAudit=report.spotPacingAudit,before=pacingAudit.before,after=pacingAudit.after;
+assert.equal(pacingAudit.pairs,routine.pairs,'all signed bouts included');
+assert.equal(before.botches,shipped.botches,'quarter-rate control reconciles');
+assert.equal(before.completed,shipped.completed);
+assert.equal(after.signed,before.signed);
+assert.equal(after.accepted,after.witnessed+after.botched+after.refunded);
+const priorRisk=pacingAudit.risk.before,newRisk=pacingAudit.risk.after;
+assert.equal(newRisk.botches,after.botches);
+assert.equal(newRisk.playerInjuries,after.injury);
+console.log('MP13F.16 PACING SUMMARY '+JSON.stringify({...pacingAudit,comparisons:undefined}));
+for(const p of pacingAudit.comparisons)console.log('MP13F.16 PACING CASE '+JSON.stringify(p));
+// Preserve F.14 benefit and improve exposure without reducing managerial authority.
+assert.ok((newRisk.byRequest.not_forced?.attempts||0)<priorRisk.byRequest.not_forced.attempts,'autonomous risk exposure falls');
+assert.ok(newRisk.expectedBotches<priorRisk.expectedBotches,'expected botch count falls');
+assert.ok(after.botches<=before.botches,'actual botches do not increase');
+assert.ok(after.injury<=before.injury,'player injury count does not increase');
+assert.ok(newRisk.opponentInjuries<=priorRisk.opponentInjuries,'opponent injury count does not increase');
+assert.ok(after.completed>=original.completed,'preserve completion benefit over old drain');
+assert.ok(after.staminaCases<original.staminaCases&&after.zeroEnd<original.zeroEnd,'preserve stamina benefit');
+assert.ok(after.stars>=original.stars&&after.crowd>=original.crowd,'preserve quality benefit');
+assert.ok(after.witnessed>=original.witnessed,'manager delivery not below old drain');
+assert.ok(after.shortened<=before.shortened,'no additional shortened bouts');
+assert.equal(pacingAudit.changedOutcomes,0,'no changed booked outcomes in fixed cohort');
+
 for(const p of routine.comparisons)console.log('MP13F.13 ROUTINE CASE '+JSON.stringify(p));
 console.log('MP13F.13 ROUTINE SUMMARY '+JSON.stringify({...routine,comparisons:undefined}));
-const {riskExposureAudit,routineDrainAudit,rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaExpenditureAudit,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
+const {spotPacingAudit,riskExposureAudit,routineDrainAudit,rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaExpenditureAudit,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
 console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},matchedBigSpotArbitration:{...matchedBigSpotArbitration,comparisons:undefined},staminaExpenditureAudit:{...staminaExpenditureAudit,cases:undefined},staminaOpportunityAudit:{...staminaOpportunityAudit,pairs:undefined},temporalOpportunityAudit:{...temporalOpportunityAudit,cases:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
