@@ -89,7 +89,7 @@ function stress(st,spec,w,f){
  }
  // Real evidence cues and direction, not fabricated probabilities.
  assert.ok(tired.scores.caution>fresh.scores.caution);
- assert.ok(tired.scores.improvisation<fresh.scores.improvisation);
+ assert.ok(fresh.scores.improvisation-tired.scores.improvisation>=15,'MP3C fatigue response');
  assert.ok(medium.scores.caution>fresh.scores.caution);
  assert.equal(hurt.cues['condition.injured'],1);
  assert.equal(priorHurt.cues['history.ownInjury'],1);
@@ -98,6 +98,9 @@ function stress(st,spec,w,f){
  assert.equal(respected.cues['goal.respect'],1);
  assert.equal(mentoring.cues['goal.mentor'],1);
  assert.equal(adapted.cues['history.requestedAdaptation'],1);
+ assert.ok(adapted.scores.improvisation>control.scores.improvisation,'adaptation must not reduce improvisation');
+ assert.ok(mentoring.scores.mentorship>control.scores.mentorship,'mentor goal response');
+ assert.ok(humiliated.scores.protectiveness>control.scores.protectiveness,'humiliation response');
  assert.ok(lowConsent.observation.values.consent<=30);
  assert.equal(JSON.stringify(st),before);
 }
