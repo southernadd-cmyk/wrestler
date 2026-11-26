@@ -161,6 +161,26 @@ async function journey(browser,name,viewport){
       flowLayout.stars.top>=flowLayout.moments.bottom-2,
       name+': phone reading order must be phases, moments, stars '+JSON.stringify(flowLayout));
   }
+  // The row above "What happened" uses a five-star glyph string, not a
+  // short numeric score. Check its real bounding boxes at narrow phone sizes.
+  for(const width of viewport.width<=720?[320,360,390]:[viewport.width]){
+   await page.setViewportSize({width,height:viewport.height});
+   await page.evaluate(()=>document.fonts.ready);
+   const rating=await page.evaluate(()=>{
+    const host=document.createElement('section');
+    host.style.cssText='position:absolute;left:0;top:0;width:calc(100% - 52px);max-width:350px;visibility:hidden;pointer-events:none';
+    host.innerHTML='<div class="mf-parts well"><div class="mf-part total"><span>Rating</span><span></span><b>★★★★★</b></div></div>';
+    document.body.appendChild(host);
+    const rect=q=>{const r=host.querySelector(q).getBoundingClientRect();return {left:r.left,right:r.right,width:r.width}};
+    const bounds={panel:rect('.mf-parts'),label:rect('.mf-part.total>span'),stars:rect('.mf-part.total>b')};
+    host.remove();return bounds;
+   });
+   assert.ok(rating.stars.right<=rating.panel.right-4,
+    name+' '+width+'px: rating stars overflow panel: '+JSON.stringify(rating));
+   assert.ok(rating.stars.left>=rating.label.right+4,
+    name+' '+width+'px: rating stars overlap label: '+JSON.stringify(rating));
+  }
+  await page.setViewportSize(viewport);
   await page.locator('[data-title="new"]').waitFor();
   await page.locator('[data-title="new"]').click();
   await page.locator('#modal [data-dlg="identity-save"]').click();
