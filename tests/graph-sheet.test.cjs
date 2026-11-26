@@ -17,7 +17,7 @@ const v=G.validate();
 assert.equal(v.errors.length,0,'all action and arc edges valid');
 assert.ok(v.nodes>=96&&v.edges>=292,'large connected action vocabulary');
 assert.ok(P&&K&&K.commit&&K.eligible);
-assert.ok(script.includes('function showMeeting(){'),'match meeting wired to interface');
+assert.match(script,/\bfunction\s+showMeeting\s*\([^)]*\)\s*\{/,'match meeting wired to interface');
 assert.ok(script.includes('Agreed versus performed'),'match report shows planned and actual events');
 assert.ok(script.includes('saved.stage===\'meeting\''),'pre-match meeting can resume');
 const modes=Object.keys(P.MODE),votes=['compromise','worker','opponent'];
@@ -90,6 +90,48 @@ function cfg(i,mode='landmarks',vote='compromise'){
  const sheet=P.build({id:'contract-'+i,finish},w,f,game,mode,vote);
  return {w:{...w,flags:{},fatigue:i%44},f,p,slot:'mid',minutes:12,finish,
   plan:{game,leash:'script',talk:'calm'},preparation:{},flags:{},seed:1000+i*123,sheet};
+}
+// A missed Shine does not turn an exact Heat move into an audible.
+{
+ const make=missed=>{
+  const m=E.create(cfg(117,'detailed','opponent'));
+  m.sheet.v=4;m.sheet.story={score:.5};m.stage='live';m.t=240;m.fSt=100;
+  m.sheet.nodes=[
+   {id:'opening',title:'Early advantage',actions:['ch_fireman'],owner:'w',window:[0,.25],requires:[],status:missed?'missed':'achieved',actual:missed?null:'ch_fireman',at:missed?null:100,why:''},
+   {id:'pressure',title:'Take over with the running senton',actions:['gd_running_senton'],backup:['mat_hold'],owner:'f',window:[.2,.6],requires:['opening'],status:'pending',actual:null,at:null,why:''}
+  ];
+  Object.assign(m.story,{control:'f',position:'mat',down:'w'});G.resetPhysical(m);
+  return m;
+ };
+ const exact=make(true),clean=make(false),substitute=make(true);
+ const reward=exact.sheetAdj||0,cleanReward=clean.sheetAdj||0;
+ for(const [m,id] of [[exact,'gd_running_senton'],[clean,'gd_running_senton'],[substitute,'mat_hold']]){
+  assert.ok(G.isValid(m,id),'legal actual move '+id);
+  G.apply(m,id);
+  assert.equal(m.graph.events.at(-1).id,id);
+ }
+ const delivered=P.report(exact),beat=delivered.beats[1];
+ assert.equal(beat.expected,'gd_running_senton');assert.equal(beat.actual,beat.expected);
+ assert.equal(beat.status,'achieved');assert.equal(delivered.achieved,1);assert.equal(delivered.adapted,0);assert.equal(delivered.missed,1);
+ assert.equal(JSON.stringify(beat.rebuiltAfter),'["opening"]');assert.match(beat.reason,/Agreed move performed.*rebuilt the sequence/);
+ const strip=P.strip(exact,{final:true}).beats[1];
+ assert.equal(strip.state,'achieved');assert.match(strip.title,/rebuilt the sequence/);assert.doesNotMatch(strip.title,/instead/);
+ assert.equal(P.report(clean).beats[1].status,'achieved');assert.equal(P.report(clean).beats[1].rebuiltAfter.length,0);
+ assert.equal(exact.sheetAdj||0,reward,'separate structural discount unchanged');
+ assert.ok((clean.sheetAdj||0)>cleanReward,'unbroken layout retains existing credit');
+ const alternate=P.report(substitute).beats[1];
+ assert.equal(alternate.status,'adapted');assert.notEqual(alternate.actual,alternate.expected);assert.match(alternate.reason,/alternative replaced.*rebuilt/);
+ assert.equal(P.strip(substitute,{final:true}).beats[1].state,'adapted');
+ const saved=E.restore(JSON.parse(JSON.stringify({...exact,rState:exact.r.getState()})));
+ assert.equal(JSON.stringify(P.report(saved)),JSON.stringify(delivered));
+ const legacy=saved.sheet.nodes[1];delete legacy.rebuiltAfter;legacy.status='adapted';
+ legacy.why='The earlier opening beat was missed; the performers rebuilt the sequence.';
+ assert.equal(P.report(saved).beats[1].status,'achieved');assert.equal(legacy.status,'adapted');
+ assert.equal(P.strip(saved,{final:true}).beats[1].state,'achieved');
+ legacy.actual='mat_hold';assert.equal(P.report(saved).beats[1].status,'adapted');
+ legacy.id='finish';legacy.actual=legacy.actions[0];legacy.why='The agreed finisher finish was not physically available; cradle delivered the contracted result instead.';
+ assert.equal(P.report(saved).beats[1].status,'adapted');
+ console.log('PASS traditional exact move delivery is distinct from structural rebuild, with actual graph evidence, truthful strip, legacy saves and unchanged structural scoring.');
 }
 function complete(m){
  for(let j=0;j<10000;j++){
