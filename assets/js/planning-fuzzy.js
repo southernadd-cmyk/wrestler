@@ -1,4 +1,4 @@
-/* THE OFFICE — MP2C: planning domain membership, evidence and behaviour.
+/* THE OFFICE — MP3C: planning domain membership, evidence and behaviour.
    Reuse the shared Sugeno kernel and canonical worker axes. This module
    is not loaded by the live room yet; no decisions or saves change. */
 (function(root){'use strict';
@@ -94,7 +94,8 @@
  }
  // MP2A: independent behavioural tendencies, not choice probabilities.
  // Equal weight across grades within one family keeps transitions smooth.
- // Rule values/weights are initial design estimates for shadow calibration.
+ // MP3C: targeted calibration of three outputs against the balanced audit.
+ // Other five outputs and all membership curves remain unchanged.
  const behaviourOutputs=['cooperation','assertiveness','caution','ambition','protectiveness','flexibility','mentorship','improvisation'];
  const rule=(id,output,value,weight,...when)=>({id,output,value,weight,when});
  const family=(output,axis,values,weight)=>['low','medium','high'].map((grade,i)=>rule(output+'_'+axis+'_'+grade,output,values[i],weight,axis+'.'+grade));
@@ -120,10 +121,10 @@
   rule('ambition_respect','ambition',85,2,'goal.respect'),
   // Protectiveness here means preserving one's credible portrayal.
   // It is distinct from medical caution and willingness to collaborate.
-  ...family('protectiveness','ego',[25,55,85],2),
-  ...family('protectiveness','ringPsychology',[35,55,80],1),
-  rule('protectiveness_booked_loss','protectiveness',80,1,'booking.actorLoses'),
-  rule('protectiveness_prior_humiliation','protectiveness',90,2,'history.ownHumiliation'),
+  ...family('protectiveness','ego',[25,55,85],1),
+  ...family('protectiveness','ringPsychology',[35,55,80],0.5),
+  rule('protectiveness_booked_loss','protectiveness',90,2,'booking.actorLoses'),
+  rule('protectiveness_prior_humiliation','protectiveness',95,3,'history.ownHumiliation'),
   // Flexibility is capacity/willingness to adapt a workable layout,
   // not blanket consent to changes or permission for illegal moves.
   ...family('flexibility','professionalism',[25,60,85],2),
@@ -131,17 +132,17 @@
   ...family('flexibility','ringAbility',[30,55,80],1),
   // Mentorship: willingness and capacity to guide a partner. A veteran
   // tier is contextual evidence, not a substitute for professionalism.
-  ...family('mentorship','professionalism',[20,55,85],2),
-  ...family('mentorship','ringPsychology',[20,55,85],2),
-  ...family('mentorship','safetyAbility',[30,55,80],1),
-  rule('mentorship_career_goal','mentorship',95,3,'goal.mentor'),
-  rule('mentorship_veteran_developing_partner','mentorship',85,1.5,'pair.veteranDeveloping','professionalism.high'),
+  ...family('mentorship','professionalism',[20,55,85],1),
+  ...family('mentorship','ringPsychology',[20,55,85],1),
+  ...family('mentorship','safetyAbility',[30,55,80],2),
+  rule('mentorship_career_goal','mentorship',95,4,'goal.mentor'),
+  rule('mentorship_veteran_developing_partner','mentorship',90,3,'pair.veteranDeveloping','professionalism.high'),
   // Improvisation: capacity to adapt when a planned beat changes, not
   // permission to abandon a finish, disregard consent or perform a hazard.
   ...family('improvisation','ringPsychology',[15,55,90],3),
   ...family('improvisation','ringAbility',[20,55,85],2),
-  ...family('improvisation','fatigue',[80,55,25],1),
-  rule('improvisation_prior_adaptation','improvisation',85,1,'history.requestedAdaptation')
+  ...family('improvisation','fatigue',[80,55,25],2),
+  rule('improvisation_prior_adaptation','improvisation',95,1,'history.requestedAdaptation')
  ]});
  function behaviour(snapshot,room,side){
   const observation=observe(snapshot,room,side),p=snapshot.participants[side];
