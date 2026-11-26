@@ -1,4 +1,4 @@
-/* THE OFFICE — MP2A: planning domain membership, evidence and behaviour.
+/* THE OFFICE — MP2B: planning domain membership, evidence and behaviour.
    Reuse the shared Sugeno kernel and canonical worker axes. This module
    is not loaded by the live room yet; no decisions or saves change. */
 (function(root){'use strict';
@@ -65,9 +65,12 @@
    }
   }
   const identity=root.OfficePromoIdentity?.wrestler?.(worker);
+  // Existing career ambitions are read directly, never initialized here.
+  const ambition=career?.ambitions?.w?.[id];
+  const goal=ambition&&['title','push','money','body','rivalry','respect','stage','mentor'].includes(ambition.kind)&&(!Number.isFinite(ambition.since)||!Number.isFinite(room.contract?.eventAbs)||ambition.since<=room.contract.eventAbs)?{kind:ambition.kind,since:finite(ambition.since),satisfaction:stat(ambition.sat)}:null;
   return {id,opponentId:rid,style:str(worker.style),identity:identity?Object.fromEntries(['source','delivery','motivation','vulnerability','trigger','tactic','boundary','underPressure'].map(k=>[k,str(identity[k])])):null,
    values:{...K.workerInputs(worker),fatigue:stat(worker.fatigue),safetyAbility:stat(worker.safe),ringAbility:stat(worker.ring),morale:stat(worker.morale),professionalTrust:null},
-   injury:finite(worker.injury),age:finite(worker.age),
+   injury:finite(worker.injury),age:finite(worker.age),careerGoal:goal,
    relationship:{regard,sharedBond:finite(pair?.score),betrayed:typeof pair?.betrayed==='boolean'?pair.betrayed:null,
     memories:entries.slice(0,12).map(e=>({id:str(e.id),week:finite(e.week),kind:str(e.kind),text:str(e.text)})),
     priorMatches:history?.length??null,meetings:[...meetings.values()],talks:[...talks.values()]}};
@@ -92,7 +95,7 @@
  // MP2A: independent behavioural tendencies, not choice probabilities.
  // Equal weight across grades within one family keeps transitions smooth.
  // Rule values/weights are initial design estimates for shadow calibration.
- const behaviourOutputs=['cooperation','assertiveness','caution'];
+ const behaviourOutputs=['cooperation','assertiveness','caution','ambition','protectiveness','flexibility'];
  const rule=(id,output,value,weight,...when)=>({id,output,value,weight,when});
  const family=(output,axis,values,weight)=>['low','medium','high'].map((grade,i)=>rule(output+'_'+axis+'_'+grade,output,values[i],weight,axis+'.'+grade));
  const behaviourModel=createModel({outputs:behaviourOutputs,rules:[
@@ -108,7 +111,24 @@
   ...family('caution','safetyAbility',[35,55,75],1),
   ...family('caution','ringPsychology',[30,55,75],1),
   rule('caution_current_injury','caution',100,4,'condition.injured'),
-  rule('caution_previous_injury','caution',90,2,'history.ownInjury')
+  rule('caution_previous_injury','caution',90,2,'history.ownInjury'),
+  // Ambition is creative/visibility initiative, not a replacement for the
+  // career ambition system or a prediction of contract dissatisfaction.
+  ...family('ambition','ego',[30,55,85],2),
+  ...family('ambition','morale',[40,55,75],1),
+  rule('ambition_advancement','ambition',90,2,'goal.advancement'),
+  rule('ambition_respect','ambition',85,2,'goal.respect'),
+  // Protectiveness here means preserving one's credible portrayal.
+  // It is distinct from medical caution and willingness to collaborate.
+  ...family('protectiveness','ego',[25,55,85],2),
+  ...family('protectiveness','ringPsychology',[35,55,80],1),
+  rule('protectiveness_booked_loss','protectiveness',80,1,'booking.actorLoses'),
+  rule('protectiveness_prior_humiliation','protectiveness',90,2,'history.ownHumiliation'),
+  // Flexibility is capacity/willingness to adapt a workable layout,
+  // not blanket consent to changes or permission for illegal moves.
+  ...family('flexibility','professionalism',[25,60,85],2),
+  ...family('flexibility','ringPsychology',[20,55,90],2),
+  ...family('flexibility','ringAbility',[30,55,80],1)
  ]});
  function behaviour(snapshot,room,side){
   const observation=observe(snapshot,room,side),p=snapshot.participants[side];
@@ -116,6 +136,13 @@
   if(Number.isFinite(p.injury)&&p.injury>0)cues['condition.injured']=1;
   if(rows(p.relationship?.memories).some(m=>m.kind==='hurt')||
      rows(p.relationship?.meetings).some(m=>m.legacy!==true&&(m.ownInjury===true||str(m.ownInjury))))cues['history.ownInjury']=1;
+  const goal=p.careerGoal?.kind;
+  if(['title','push','stage'].includes(goal))cues['goal.advancement']=1;
+  if(goal==='respect')cues['goal.respect']=1;
+  const finish=observation.context.finish;
+  if((side==='w'&&['lose_clean','lose_protected','lose_dq'].includes(finish))||
+     (side==='f'&&['win_clean','win_dirty','win_dq'].includes(finish)))cues['booking.actorLoses']=1;
+  if(rows(p.relationship?.memories).some(m=>m.kind==='humiliation'))cues['history.ownHumiliation']=1;
   const inference=behaviourModel.evaluate(observation.values,cues);
   return {v:1,observation,cues,scores:inference.scores,fired:inference.fired};
  }
