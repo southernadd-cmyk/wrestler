@@ -139,9 +139,34 @@
  // A single unscripted beat after the answer, never a replacement for a
  // selected spoken line, evidence ruling, or match commitment. Old director
  // snapshots deliberately retain the original pacing.
+ function fuzzyPacing(d,st,record){
+  const policy=st.authoredDialogue?.fuzzy;
+  if(policy?.v!==1||policy.pacing!==1||!formatFor(d)||st.core.case||st.core.claim?.hasEvidence||st.arc||st.speaker)return null;
+  return root.OfficePromoFuzzy?.pacing(policy,d,{meter:st.meter,feudHeat:st.core.feudHeat,pace:formatFor(d).pace,
+   personal:record.id==='personal'||record.id==='accusation',calming:record.id==='calm'||record.id==='confession',landed:record.landed})||null;
+ }
  function spontaneous(d,st,record){
   if(d.v!==2||!formatFor(d)||d.event||record.round!=='answer'||st.core.case||st.arc||st.speaker||!d.lastOpponent||!d.lastPlayer)return null;
   const b=d.opponent,a=d.player,personal=record.id==='personal'||record.id==='accusation';
+  const pacing=fuzzyPacing(d,st,record);
+  if(pacing){
+   // One categorical seeded draw, including the remaining no-event mass.
+   let draw=hash(st.seed+'|f5-event|'+record.id)/4294967296;
+   for(const [kind,chance] of Object.entries(pacing.events)){
+    if(draw>=chance){draw-=chance;continue;}
+    // Physical stage cues only: no new allegation, invented quote,
+    // match promise, or physical altercation. The final word still happens.
+    const event={
+     interrupt:{actor:b.id,line:'{F} raises the microphone before the interviewer can speak.',follow:true,reason:'the opponent interrupts the handover'},
+     escalate:{actor:b.id,line:'{F} grips the microphone and gestures for another chance to answer.',follow:true,reason:'the opponent wants to keep the argument going'},
+     refusal:{actor:b.id,line:'{F} lowers the microphone and shakes their head at the interviewer.',follow:false,reason:'the opponent declines another exchange'},
+     pause:{actor:pacing.pauseSide==='w'?a.id:b.id,line:'Neither wrestler speaks for a moment. The interviewer lets the silence settle.',follow:false,reason:'the exchange has reached a pause'},
+     defuse:{actor:b.id,line:'{F} lowers the microphone and gives the interviewer room to continue.',follow:false,reason:'the tension has eased'}
+    }[kind];
+    return {kind,...event};
+   }
+   return null;
+  }
   const n=hash(st.seed+'|phase6|'+record.id)%100;
   if(b.stance==='combative'&&b.irritation>=30&&Math.abs(st.meter)<30&&n<(personal?60:32))
    return {kind:'interrupt',actor:b.id,line:'{F} cuts across the interviewer before the next question can be asked.',follow:true,reason:'the opponent interrupted the handover'};
@@ -159,6 +184,11 @@
   // the final word. A volatile exchange can earn one additional beat, never a loop.
   const a=d.player,b=d.opponent;
   const format=formatFor(d);
+  const pacing=fuzzyPacing(d,st,record);
+  if(pacing){
+   const follow=hash(st.seed+'|f5-route|'+record.id)/4294967296<pacing.follow;
+   return {follow,reason:follow?'the exchange still has room for an answer':'the argument has reached a natural stopping point'};
+  }
   if(format?.pace==='brief'&&record.landed&&b.irritation<38)return {follow:false,reason:'the interviewer has enough for the segment'};
   if(format?.pace==='confrontation'&&b.irritation>=30&&Math.abs(st.meter)<35)return {follow:true,reason:'the face-to-face exchange remains heated'};
   if(record.id==='calm'&&record.landed&&b.irritation<36)return {follow:false,reason:'the reply settled the immediate argument'};

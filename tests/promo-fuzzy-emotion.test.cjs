@@ -107,3 +107,78 @@ for(const [i,worker] of roster.entries())for(let j=0;j<2;j++){
 assert.equal(paired,400);assert.equal(resumes,200);assert.ok(trajectoryChanges>0&&checked>0);
 console.log('F4 EMOTION AUDIT '+JSON.stringify({paired,resumes,trajectoryChanges,routeChanges,resultChanges,checked,totals}));
 console.log('PASS F4: bounded contextual emotion transitions, protected record parity, deterministic resume and unchanged booked finishes.');
+
+ // F5: inspect competing propensities directly, then compare opt-in against
+ // the exact F4 policy on the same 200-worker cohort and scene seeds.
+ const pacingFacts={w:professional,f:volatile};
+ const steady={...participant,irritation:10,composure:80,stance:'adaptive'};
+ const heated={...participant,irritation:80,composure:25,stance:'adaptive'};
+ const situation={meter:0,feudHeat:55,pace:'confrontation',landed:true};
+ const quiet=F.pacing(pacingFacts,{player:steady,opponent:steady},{...situation,calming:true});
+ const loud=F.pacing(pacingFacts,{player:steady,opponent:heated},{...situation,personal:true});
+ assert.ok(loud.events.interrupt>quiet.events.interrupt&&loud.events.escalate>quiet.events.escalate);
+ assert.ok(quiet.events.defuse>loud.events.defuse&&loud.follow>quiet.follow);
+ const reserved=F.pacing(pacingFacts,{player:steady,opponent:{...heated,stance:'reserved'}},situation);
+ const adaptive=F.pacing(pacingFacts,{player:steady,opponent:heated},situation);
+ assert.ok(reserved.events.refusal>adaptive.events.refusal);
+ let last=null;
+ for(let i=0;i<=100;i+=.25){
+  const q=F.pacing(pacingFacts,{player:steady,opponent:{...heated,irritation:i}},situation);
+  assert.ok(q.follow>=.08&&q.follow<=.82);
+  assert.ok(Object.values(q.events).every(x=>x>=0&&Number.isFinite(x)));
+  assert.ok(Object.values(q.events).reduce((a,b)=>a+b,0)<=.55+1e-9);
+  if(last)for(const k of Object.keys(q.events))assert.ok(Math.abs(q.events[k]-last.events[k])<.015);
+  last=q;
+ }
+ // Evidence/commitment priority and unchanged legacy fallback, even with F5.
+ const guardDirector=P.begin({id:'p',ego:70,pro:80,psych:55,mic:60,style:'Technical'},{id:'f',ego:90,pro:30,psych:35,mic:60,style:'Brawl'},null,'faceoff');
+ guardDirector.lastPlayer='Question';guardDirector.lastOpponent='Answer';
+ const guardState={seed:'f5-guard',meter:0,core:{feudHeat:50,case:{commit:{kind:'nocheat'}}},authoredDialogue:{fuzzy:{v:1,emotion:1,pacing:1,...pacingFacts}}};
+ const guardRec={round:'answer',id:'personal',landed:true};
+ assert.equal(P.spontaneous(guardDirector,guardState,guardRec),null);
+ assert.equal(P.route(guardDirector,guardState,guardRec).follow,true);
+ const evidence={...guardState,core:{feudHeat:50,claim:{hasEvidence:true}}};
+ eq(P.spontaneous(guardDirector,evidence,guardRec),P.spontaneous(guardDirector,{...evidence,authoredDialogue:{}},guardRec));
+ eq(P.route(guardDirector,evidence,guardRec),P.route(guardDirector,{...evidence,authoredDialogue:{}},guardRec));
+ const pacingAudit={pairs:0,resumes:0,changed:0,old:{},now:{},oldPush:0,newPush:0,academyEvents:0};
+ function runPacing(st,key,j){
+  let resumed=null;
+  for(let step=0;st.stage!=='done';step++){
+   assert.ok(step<5,'F5 cannot add a second follow-up');
+   const round=M.ROUNDS[st.round].id,options=M.choices(st);
+   const wanted=({open:j?'accusation':'proof',answer:j?'personal':'calm',push:j?'press':'acknowledge',close:'vow'})[round];
+   const id=(options.find(x=>x.id===wanted)||options[0]).id;
+   if(key==='now'&&step===1&&j===0){resumed=clone(st);pacingAudit.resumes++;}
+   M.choose(st,id);if(resumed)M.choose(resumed,id);
+  }
+  if(resumed)eq(st,resumed);
+  const kind=st.director.event?.kind||'none';
+  pacingAudit[key][kind]=(pacingAudit[key][kind]||0)+1;
+  if(st.steps.some(x=>x.round==='push'))pacingAudit[key==='old'?'oldPush':'newPush']++;
+  assert.equal(st.steps.filter(x=>x.round==='close').length,1);
+  assert.ok(st.steps.filter(x=>x.round==='push').length<=1);
+  assert.ok(Number.isFinite(M.result(st).quality));
+  if(st.director.event){
+   assert.ok(st.director.event.actor===st.w.id||st.director.event.actor===st.f.id);
+   assert.equal(st.director.followup.follow,st.director.event.follow);
+  }
+  for(const e of st.log)if(e.semantic?.rookieFamilyBank===1){const prior=st.log[e.semantic.replyTo];assert.ok(prior&&prior.side!==e.side&&prior.semantic?.claim===e.semantic.claim);}
+ }
+ for(const [i,worker] of roster.entries())for(let j=0;j<2;j++){
+  const pool=roster.filter(x=>x.id!==worker.id&&D.divisionOf(x)===D.divisionOf(worker)),other=pool[(i+j*17)%pool.length];
+  const w=j?other:worker,f=j?worker:other,p=D.PROMOS[(i+j)%D.PROMOS.length];
+  const c={id:'f5-'+worker.id+'-'+j,wid:w.id,rid:f.id,pid:p.id,eventAbs:100+j,finish:j?'lose_clean':'win_clean',minutes:12,feudHeat:j?70:0};
+  const opts={directed:true,formats:true,dialogue:true,authored:true,composition:true,semantic:true,fuzzy:true,fuzzyEmotion:true,banks:promoBanks(w.id,f.id)};
+  const old=M.begin(c,w,f,null,null,p,opts),now=M.begin(c,w,f,null,null,p,{...opts,fuzzyPacing:true});
+  const legacy=clone(now);delete legacy.authoredDialogue.fuzzy.pacing;eq(legacy,old);
+  runPacing(old,'old',j);runPacing(now,'now',j);
+  if(now.director.event?.kind!==old.director.event?.kind||now.director.followup.follow!==old.director.followup.follow)pacingAudit.changed++;
+  if(worker.id.startsWith('academy-')&&now.director.event)pacingAudit.academyEvents++;
+  assert.equal(now.finish,c.finish);assert.equal(old.finish,c.finish);
+  pacingAudit.pairs++;
+ }
+ assert.equal(pacingAudit.pairs,400);assert.equal(pacingAudit.resumes,200);
+ assert.ok(pacingAudit.changed>0&&pacingAudit.academyEvents>0);
+ assert.ok((pacingAudit.now.interrupt||0)+(pacingAudit.now.escalate||0)>0);
+ console.log('F5 PACING AUDIT '+JSON.stringify(pacingAudit));
+ console.log('PASS F5: competing continuous event propensities, protected commitments, bounded follow-up and deterministic resume.');
