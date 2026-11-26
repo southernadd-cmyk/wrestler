@@ -119,6 +119,7 @@ function intake(s,season){
 // register anyone, advance the calendar, or touch a career save.
 function preview(seed=47){
  if(!Number.isSafeInteger(seed))throw Error('Invalid academy preview seed');
+ root.OfficeRosterV4.enableProfiles();
  return REGISTER.map(person=>create({careerSeed:seed},person,2));
 }
 root.OfficeAcademy={REGISTER,reset,restore,intake,order,preview};
