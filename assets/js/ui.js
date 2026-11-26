@@ -1446,6 +1446,7 @@ function showMeeting(loadedBanks){
    opts.planningBargaining=true;
    opts.planningSequences=true;
    opts.planningSequencePolicy=3;
+   opts.planningAdaptiveEntries=true;
    opts.planningSequenceSigning=true;
    opts.planningBanks=loadedBanks||[];
   }
