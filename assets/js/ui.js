@@ -1445,6 +1445,7 @@ function showMeeting(loadedBanks){
    opts.planningDialogue=true;
    opts.planningBargaining=true;
    opts.planningSequences=true;
+   opts.planningSequencePolicy=2;
    opts.planningBanks=loadedBanks||[];
   }
   P.room=OfficeRoom.begin(c,w,f,p,opts);P.sheet=null;P.confirmed=false;

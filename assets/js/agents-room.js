@@ -1676,12 +1676,27 @@
   if(st.planningSequences!==1||!t?.alternative||t.decision||!L?.readHuddle(st))return null;
   const second=readCounterOffer(st),cards=second?[second.card,t.alternative]:[t.alternative];
   for(const card of cards){
-   const result=sequenceCandidates(st,t.objective,card.action);
+   const diverse=st.planningSequencePolicy===2;
+   const result=sequenceCandidates(st,t.objective,card.action,{diverse});
    // Prefer an actual connected exchange with both performers where
    // close in merit to the top suggestion, but don't force a reversal.
    const top=result.candidates[0];
    if(!top)continue;
-   const row=result.candidates.find(r=>r.difficulty.components.controlChanges>0&&r.merit>=top.merit-4)||top;
+   let row=result.candidates.find(r=>r.difficulty.components.controlChanges>0&&r.merit>=top.merit-4)||top;
+   if(diverse){
+    const preference=root.OfficePlanningFuzzy.sequencePreference(st.planningEvidence,st);
+    const ranked=result.candidates.filter(r=>!preference.cautious||
+     r.sequence.actions.length===2&&r.evidence.steps.every(s=>!s.risk));
+    if(!ranked.length)continue;
+    // Complexity preference is the marginal creative value of a
+    // longer exchange. The proposal model still supplies both stances.
+    // Scale its merit here to avoid counting difficulty three times.
+    const score=r=>r.merit*.25-10*Math.abs(r.sequence.actions.length-preference.target)
+     +(r.difficulty.components.controlChanges>0&&new Set(r.evidence.steps.map(s=>s.performer)).size>1?preference.scores.exchange*.16:0)
+     -r.evidence.steps.filter(s=>s.risk).length*5;
+    ranked.sort((x,y)=>score(y)-score(x)||y.merit-x.merit||x.sequence.actions.join('|').localeCompare(y.sequence.actions.join('|')));
+    row=ranked[0];
+   }
    const offer={v:1,card:{...card},sequence:row.sequence,evidence:row.evidence,difficulty:row.difficulty,by:row.by};
    const dialogue=L.freezeSequence(st,offer);
    if(dialogue)return {...offer,dialogue};
@@ -1814,7 +1829,7 @@
   }
   return [...(sequenceIncoming.get(id)||[])].sort((a,b)=>a.localeCompare(b));
  }
- function sequenceCandidates(st,objective,action){
+ function sequenceCandidates(st,objective,action,{diverse=false}={}){
   const F=root.OfficePlanningFuzzy,p=proposalEvidence(st,objective,action);
   const empty=reason=>({v:1,eligible:false,reason,candidates:[],search:{tested:0,valid:0,expanded:0,truncated:false}});
   if(!p.eligible)return empty(p.reason);
@@ -1852,7 +1867,12 @@
    next.sort((a,b)=>rankPath(a)-rankPath(b)||pathKey(a).localeCompare(pathKey(b)));
    if(next.length>beam)search.truncated=true;
    frontier=[];
-   for(const ids of next.slice(0,beam)){
+   // Keep a small reserve of real reversal paths; otherwise cost-only
+   // pruning removes them before psychology can assess the exchange.
+   const reverses=ids=>ids.some(id=>A[id].reverse);
+   const leading=diverse?[...next.filter(ids=>!reverses(ids)).slice(0,beam-8),...next.filter(reverses).slice(0,8)]:next.slice(0,beam);
+   if(diverse&&leading.length<beam)for(const ids of next){if(leading.length>=beam)break;if(!leading.includes(ids))leading.push(ids);}
+   for(const ids of leading){
     // Control reverses only on graph reversal nodes. Work backwards
     // from the required final performer; then validate all transitions.
     const control=ids.reduce((s,id)=>A[id].reverse?other(s):s,p.owner);
@@ -1897,7 +1917,14 @@
   const order=(a,b)=>b.merit-a.merit||a.difficulty.score-b.difficulty.score||pathKey(a.sequence.actions).localeCompare(pathKey(b.sequence.actions));
   // Keep two candidates per length rather than crowding out longer
   // alternatives with easier two-move fragments.
-  const shortlist=[2,3,4].flatMap(length=>candidates.filter(x=>x.sequence.actions.length===length).sort(order).slice(0,2)).sort(order);
+  const shortlist=[2,3,4].flatMap(length=>{
+   const ranked=candidates.filter(x=>x.sequence.actions.length===length).sort(order);
+   if(!diverse)return ranked.slice(0,2);
+   // Same shortlist limit: preserve one genuinely two-performer chain
+   // if available rather than two nearly identical cheap setups.
+   const exchange=ranked.find(r=>r.difficulty.components.controlChanges>0&&new Set(r.evidence.steps.map(s=>s.performer)).size>1&&r!==ranked[0]);
+   return exchange?[ranked[0],exchange]:ranked.slice(0,2);
+  }).sort(order);
   return {v:1,eligible:true,scope:'conditional_fragment',objective,action,owner:p.owner,execution:'unverified_live_state',candidates:shortlist,search};
  }
  function structureSeed(st,{refresh=false}={}){
@@ -2215,7 +2242,7 @@
    if(st.planningProposal===1&&opts.planningDialogue===true&&root.OfficePlanningDialogue){
     const L=root.OfficePlanningDialogue,banks=Array.isArray(opts.planningBanks)?opts.planningBanks:[];
     const identities={w:L.capture(w,banks,2),f:L.capture(f,banks,2)};
-    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true)st.planningSequences=1;}}
+    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if(opts.planningSequencePolicy===2)st.planningSequencePolicy=2;}}}
    }
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
