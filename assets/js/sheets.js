@@ -652,6 +652,29 @@
   // can be earned by other moves; that does not complete its signed setup.
   const sequenceRows=M=>active(M)&&Array.isArray(M.structureDirector.sequences)?M.structureDirector.sequences:[];
   const opposite=side=>side==='w'?'f':'w';
+  const adaptiveSequences=M=>active(M)&&M.structureDirector.sequencePolicy===2;
+  // Use the same deterministic psychology kernel as backstage planning.
+  // This is live willingness to follow a plan, not a physical permission.
+  let followModel;
+  function sequenceWillingness(M){
+   if(!followModel&&root.OfficePsychology){
+    const family=(axis,values,weight)=>['low','medium','high'].map((grade,i)=>({
+     id:axis+'_'+grade,output:'follow',value:values[i],weight,when:[axis+'.'+grade]
+    }));
+    followModel=root.OfficePsychology.createModel({curves:{
+     consent:[35,60,85],professionalism:[30,60,85],stamina:[25,55,80],psychology:[30,60,85]
+    },outputs:['follow'],rules:[
+     ...family('consent',[15,55,95],4),...family('professionalism',[25,60,90],2),
+     ...family('stamina',[10,55,90],2),...family('psychology',[30,60,90],1)
+    ]});
+   }
+   const values={
+    consent:Math.min(M.sheet.workerConsent,M.sheet.opponentConsent,M.comply),
+    professionalism:Math.min(M.w.pro,M.f.pro),stamina:Math.min(M.wSt,M.fSt),
+    psychology:Math.min(M.w.psych,M.f.psych)
+   };
+   return followModel?.evaluate(values,{}).scores.follow??50;
+  }
   function sequenceSteps(seq){
    let entry={...seq.start};
    return seq.actions.map(id=>{
@@ -678,9 +701,38 @@
     const last=row.evidence.at(-1);
     if(!last||previous?.id!==last.id||previous.t!==last.at||
        previous.preControl!==last.entry.control||!equalState(previous,last.exit)||
-       M.t-last.at>30)return null;
+       M.t-last.at>30||adaptiveSequences(M)&&Object.prototype.hasOwnProperty.call(pre,'node')&&pre.node!==last.id)return null;
    }else if(row.attempts>=3)return null;
    return {o,steps,step};
+  }
+  function sequenceMoveAllowed(M,id,actor){
+   const n=actions[id],worker=actor==='w'?M.w:M.f,stamina=actor==='w'?M.wSt:M.fSt;
+   const cost=root.OfficeMatch.GRAPH.costOf(id);
+   if(!worker||worker.injury>0&&n.risk||cost>=2.2&&stamina<16+cost*3.2)return false;
+   if(n.risk&&(M.planId==='safe'||M.sheet.spice<0||adaptiveSequences(M)&&(M.injury||M.foeHurt)))return false;
+   const limits=M.sheet.limits,note=M.sheet.note?.honour&&!M.sheet.note.waived?M.sheet.note:null;
+   return ![limits,note].some(l=>l&&(l.banIds?.includes(id)||l.ban?.includes(n.family)));
+  }
+  // A substitution is a real authored bridge between the observed
+  // preceding move and the next signed move. Same performer, family and
+  // resulting state; no risk increase, no substitute for the final call.
+  function sequenceSubstitute(M,row,ctx,previous){
+   if(!row.progress||row.progress>=ctx.steps.length-1||
+      row.evidence.some(e=>e.planned)||!previous)return null;
+   const graph=root.OfficeMatch.GRAPH,original=actions[ctx.step.id];
+   const next=ctx.steps[row.progress+1].id,entry=ctx.step.entry;
+   const candidates=(actions[previous.id]?.next||[]).filter(([,weight])=>weight>0).map(([id])=>id).filter(id=>{
+    const n=actions[id];
+    if(!n||id===ctx.step.id||ctx.o.sequence.actions.includes(id)||row.evidence.some(e=>e.id===id)||
+       n.family!==original.family||n.reverse!==original.reverse||n.counterOf||n.blockOf||n.nearfall||n.risk||
+       graph.costOf(id)>graph.costOf(ctx.step.id)+.3||
+       !n.next.some(([to,weight])=>to===next&&weight>0))return false;
+    const performer=n.reverse?opposite(entry.control):entry.control;
+    const exit={control:performer,position:n.zone,down:n.down==='d'?(n.reverse?entry.control:opposite(entry.control)):n.down==='a'?performer:null};
+    return performer===ctx.step.performer&&equalState(exit,ctx.step.exit)&&
+     sequenceMoveAllowed(M,id,performer)&&graph.isValid(M,id);
+   });
+   return candidates.sort((a,b)=>Math.abs(graph.costOf(a)-graph.costOf(ctx.step.id))-Math.abs(graph.costOf(b)-graph.costOf(ctx.step.id))||a.localeCompare(b))[0]||null;
   }
   // Expose a candidate only; Graph still enforces its complete live pool
   // filters, stamina, physical grip, location, note and authored defences.
@@ -689,24 +741,31 @@
    if(!g||g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)return null;
    const previous=g.events.at(-1);
    for(const row of sequenceRows(M)){
-    const ctx=sequenceContext(M,row,pre,previous);
+    const adaptive=adaptiveSequences(M);
+    const ctx=sequenceContext(M,row,adaptive?{...pre,node:g.node}:pre,previous);
     if(!ctx)continue;
-    const n=actions[ctx.step.id],actor=ctx.step.performer;
-    const worker=actor==='w'?M.w:M.f,stamina=actor==='w'?M.wSt:M.fSt;
-    const cost=root.OfficeMatch.GRAPH.costOf(ctx.step.id);
-    // isValid checks the controller; additionally protect the actual
-    // reversal performer from an expensive move when exhausted.
-    if(!worker||worker.injury>0&&n.risk||cost>=2.2&&stamina<16+cost*3.2)continue;
-    if(n.risk&&(M.planId==='safe'||M.sheet.spice<0))continue;
-    const limits=M.sheet.limits,note=M.sheet.note?.honour&&!M.sheet.note.waived?M.sheet.note:null;
-    if([limits,note].some(l=>l&&(l.banIds?.includes(ctx.step.id)||l.ban?.includes(n.family))))continue;
-    return {id:ctx.step.id,continuation:row.progress>0};
+    const actor=ctx.step.performer;
+    let id=ctx.step.id;
+    const allowed=sequenceMoveAllowed(M,id,actor);
+    if(!adaptive){if(allowed)return {id,continuation:row.progress>0};continue;}
+    if(!allowed||!root.OfficeMatch.GRAPH.isValid(M,id)){
+     id=sequenceSubstitute(M,row,ctx,previous);
+     if(!id)continue;
+    }
+    const willingness=sequenceWillingness(M);
+    // Willing workers get a strong but still probabilistic continuation.
+    // Low consent and fatigue retain a substantial competing pool.
+    const follow=Math.max(0,Math.min(1,willingness/100));
+    const ratio=row.progress?2.5+follow*8:1+follow*2;
+    return {id,continuation:row.progress>0,objective:row.objective,planned:ctx.step.id,
+     ratio,willingness};
    }
    return null;
   }
-  function interruptSequence(row,why){
+  function interruptSequence(row,why,code='exchange_broken'){
    if(row.status!=='running')return;
    row.interruptions++;
+   if(row.causes)row.causes[code]=(row.causes[code]||0)+1;
    // Keep best witnessed prefix for diagnostics, not as future progress.
    if(row.evidence.length>row.best.length)row.best=row.evidence.map(e=>JSON.parse(JSON.stringify(e)));
    row.progress=0;row.evidence=[];row.status=row.attempts>=3?'missed':'pending';row.reason=why;
@@ -714,19 +773,27 @@
   // Called at the sole Graph.apply landing boundary, with genuine
   // pre-state and previous graph event. No attempted/countered parent
   // can count as the expected landing; no synthetic state transitions.
-  function observeSequence(M,e,pre,previous){
+  function observeSequence(M,e,pre,previous,offer=null){
    if(!M.graph?.events?.includes(e)||!actions[e.id]||!pre)return;
    for(const row of sequenceRows(M)){
     if(!['pending','running'].includes(row.status))continue;
     const ctx=sequenceContext(M,row,pre,previous);
-    if(!ctx||e.id!==ctx.step.id||!equalState(e,ctx.step.exit)||e.preControl!==ctx.step.entry.control){
-     interruptSequence(row,'The connected exchange was interrupted.');continue;
+    const substituted=adaptiveSequences(M)&&ctx&&offer?.objective===row.objective&&offer.planned===ctx.step.id&&
+     offer.id===e.id&&e.id!==ctx.step.id;
+    if(!ctx||e.id!==ctx.step.id&&!substituted||!equalState(e,ctx.step.exit)||e.preControl!==ctx.step.entry.control){
+     const n=actions[e.id],expected=ctx?.step.id;
+     const counter=!!(n?.counterOf===expected||n?.blockOf===expected)&&!!expected;
+     const code=counter?'defended':!ctx?'state_or_window':'different_move';
+     interruptSequence(row,!adaptiveSequences(M)?'The connected exchange was interrupted.':counter?'The planned attack was defended.':!ctx?'The required position or timing was lost.':'The wrestlers chose another move.',code);continue;
     }
     if(!row.progress){row.attempts++;row.status='running';row.reason=null;}
-    row.evidence.push({id:e.id,at:e.t,progress:e.t/Math.max(1,M.len),performer:ctx.step.performer,entry:{...ctx.step.entry},exit:{...ctx.step.exit}});
+    row.evidence.push({id:e.id,at:e.t,progress:e.t/Math.max(1,M.len),performer:ctx.step.performer,entry:{...ctx.step.entry},exit:{...ctx.step.exit},
+     ...(substituted?{planned:ctx.step.id,reason:'A legal authored bridge replaced the unavailable intermediate move.'}:{})});
     row.progress++;
     if(row.progress===ctx.steps.length){
-     row.status='completed';row.at=e.t;row.reason='All consecutive graph landings verified.';
+     const adapted=row.evidence.some(x=>x.planned);
+     row.status=adapted?'adapted':'completed';row.at=e.t;
+     row.reason=adapted?'Connected setup adapted; the agreed final move landed.':'All consecutive graph landings verified.';
     }
    }
   }
@@ -734,10 +801,14 @@
    for(const row of sequenceRows(M)){
     if(!['pending','running'].includes(row.status))continue;
     const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
-    if(row.status==='running'&&M.t-row.evidence.at(-1).at>30)interruptSequence(row,'The next move did not follow in time.');
+    if(row.status==='running'&&M.t-row.evidence.at(-1).at>30)interruptSequence(row,'The next move did not follow in time.','timeout');
     if(final||!o||M.t/Math.max(1,M.len)>o.window[1]+.08||M.len-M.t<45||M.shortened){
      if(row.status==='running'&&row.evidence.length>row.best.length)row.best=row.evidence.map(e=>JSON.parse(JSON.stringify(e)));
      row.status='missed';row.reason=final?'The bell came before the sequence was completed.':'The safe window for the sequence closed.';
+     if(row.causes){
+      const code=final?'bell':M.shortened?'shortened':'window_closed';
+      row.causes[code]=(row.causes[code]||0)+1;
+     }
     }
    }
   }
@@ -747,8 +818,9 @@
    if(!M.sheet?.signed||r.mode!=='editorial')throw Error('Active structure requires a valid signed editorial plan');
    M.structureDirector={version:1,mode:'active',id:r.plan.structureId,roles:{...r.plan.roles},
     objectives:r.plan.objectives.map(o=>({id:o.id,intent:o.intent,status:'pending',at:null,reason:null,evidence:[]})),
-    ...(r.plan.version===2?{sequences:r.plan.objectives.filter(o=>o.sequence).map(o=>({
-     objective:o.id,status:'pending',progress:0,attempts:0,interruptions:0,at:null,reason:null,evidence:[],best:[]
+    ...(r.plan.version===2?{...(M.o.sequencePolicy!==1?{sequencePolicy:2}:{}),sequences:r.plan.objectives.filter(o=>o.sequence).map(o=>({
+     objective:o.id,status:'pending',progress:0,attempts:0,interruptions:0,at:null,reason:null,evidence:[],best:[],
+     ...(M.o.sequencePolicy!==1?{causes:{}}:{})
     }))}:{})};
   }
   function current(M){

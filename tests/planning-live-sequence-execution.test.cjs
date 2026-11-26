@@ -17,7 +17,7 @@ for(const structure of S.STRUCTURES.catalogue())for(const lead of ['w','f'])for(
  R.act(st,'hear_sequence');R.act(st,'use_sequence');R.act(st,'review_ok');R.act(st,'talk_none');
  const signed=clone(st.sheet),obj=signed.structurePlan.objectives.find(o=>o.sequence);
  const config={w:{...w,fatigue:4,flags:{}},f,p,slot:'main',minutes:signed.minutes,finish:c.finish,feudHeat:0,
-  plan:{game:plan,leash:'script',talk:'none'},seed:981000+rooms*37,preparation:{},flags:{},sheet:signed,structureExecution:true};
+  plan:{game:plan,leash:'script',talk:'none'},seed:981000+rooms*37,preparation:{},flags:{},sheet:signed,structureExecution:true,sequencePolicy:1};
  const M=E.create(clone(config));assert.equal(M.structureDirector.sequences.length,1);
  const row=M.structureDirector.sequences[0];assert.equal(row.status,'pending');assert.equal(row.progress,0);
  const before=clone(M.structureDirector);
