@@ -132,7 +132,7 @@ function run(seeds=[3,10],weeks=32){
       const saved=copy({...M,rState:M.r.getState()}),restored=E.restore(saved);
       const a=E.next(M),b=E.next(restored);eq(a??null,b??null,key+' resumed next commentary');
       // Mulberry state is a 32-bit bit pattern; restored seeds can be unsigned.
-      assert.equal(M.r.getState()>>>0,restored.r.getState()>>>0,key+' resumed RNG bit pattern');M=restored;trace?.track(M);matchResume=1;
+      assert.equal(M.r.getState()>>>0,restored.r.getState()>>>0,key+' resumed RNG bit pattern');assert.equal(M.wSt,restored.wSt,key+' resumed worker stamina');assert.equal(M.fSt,restored.fSt,key+' resumed opponent stamina');M=restored;trace?.track(M);matchResume=1;
      }else E.next(M);
     }
     assert.ok(M.done&&M.final,key+' completed real bout');

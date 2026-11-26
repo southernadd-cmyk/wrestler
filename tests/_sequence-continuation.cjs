@@ -19,7 +19,9 @@ function budgetSource(source){
   ['M.wSt','clamp(M.wSt-(big?7:4))','w',"'spot_extra'"],
   ['M.fSt','clamp(M.fSt-(big?7:4))','f',"'spot_extra'"],
   ['M.fSt','clamp(M.fSt-25)','f',"'injury'"],
-  ['M.wSt','clamp(M.wSt-8)','w',"'protect_decision'"]
+  ['M.wSt','clamp(M.wSt-8)','w',"'protect_decision'"],
+  ['M.fSt','Math.max(0,M.fSt-6)','f',"'stipulation_impact'"],
+  ['M.wSt','Math.max(0,M.wSt-6)','w',"'stipulation_impact'"]
  ];
  for(const [lhs,rhs,fixed,category,side] of sites){
   const original=lhs+'='+rhs;
@@ -42,11 +44,14 @@ function trace(root,key,withBudget=false){
  const G=root.OfficeMatch.GRAPH,D=root.OfficeSheets.DIRECTOR,A=G.A;
  let tracked=null,phase=null,offer=null;
  const budget={start:null,writes:[]};
+ let runningBalance=null;
  const priorBudget=root.__mp13Budget;
  if(withBudget)root.__mp13Budget=(m,category,side,next)=>{
   if(m===tracked){
    assert.ok(side==='w'||side==='f');
    const before=side==='w'?m.wSt:m.fSt;
+   assert.ok(Math.abs(runningBalance[side]-before)<1e-7,key+' missing stamina write before '+category+' '+side+' at '+m.t+' expected '+runningBalance[side]+' got '+before);
+   runningBalance[side]=next;
    budget.writes.push({at:m.t,side,category,delta:next-before});
   }
   return next;
@@ -323,7 +328,7 @@ function trace(root,key,withBudget=false){
   }
   return result;
  });
- return {track(m){if(!budget.start)budget.start={w:m.wSt,f:m.fSt};tracked=m;},close(m){
+ return {track(m){if(!budget.start){budget.start={w:m.wSt,f:m.fSt};runningBalance={...budget.start};}else if(withBudget){for(const side of ['w','f'])assert.ok(Math.abs(runningBalance[side]-m[side+'St'])<1e-7,key+' resume stamina balance '+side);}tracked=m;},close(m){
   for(const r of rows(m)){
    const rs=records.filter(v=>v.objective===r.objective);
    assert.equal(rs.length,r.attempts,key+' every actual opened attempt traced');
@@ -353,7 +358,7 @@ function trace(root,key,withBudget=false){
   })),rests:(m.graph.events||[]).filter(e=>A[e.id]&&G.costOf(e.id)<0&&(e.id==='catch_breath'||A[e.id].family==='rest')&&!e.blocked&&!e.botched).map(e=>({at:e.t,id:e.id,side:A[e.id].reverse?(e.preControl==='w'?'f':'w'):e.preControl,baseRecovery:-G.costOf(e.id)}))};
   if(withBudget){
    const totals=budgetTotals(budget);
-   for(const side of ['w','f'])assert.ok(Math.abs(totals[side].end-m[side+'St'])<1e-7,key+' all actual stamina writes reconcile '+side);
+   for(const side of ['w','f'])assert.ok(Math.abs(totals[side].end-m[side+'St'])<1e-7,key+' all actual stamina writes reconcile '+side+' expected '+totals[side].end+' got '+m[side+'St']);
   }
   return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers,alternativeReadinessOffers,staminaContext,budget};
  },restore(){for(const fn of undo.reverse())fn();tracked=null;if(withBudget){if(priorBudget===undefined)delete root.__mp13Budget;else root.__mp13Budget=priorBudget;}}};
