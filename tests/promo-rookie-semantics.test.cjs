@@ -85,3 +85,25 @@ for(const rookie of arrivals)for(const side of ['w','f']){
 }
 assert.deepEqual([...liveSides].sort(),['f','w'],'shared response must reach both sides in live duels');
 console.log('PASS academy shared semantics: '+count+' named rookie routes; '+seen.size+' shared lines; actual intake live reach on both sides.');
+
+
+ // R5B1 exact vow and reply routes, both sides, all styles. All variants
+ // retain their public commitment, and no record/mouthpiece bypass exists.
+ const vowIds=new Set();
+ for(const style of ['Technical','Brawl','Story','Spectacle']){
+  const person=people.find(p=>p.wrestling_style===style),facts=L.snapshot({}, {...person,style},other,null,p,{});
+  for(const variant of ['vo_plain','vo_hard','vo_fans','vo_guarantee'])for(const side of ['w','f']){
+   const ctx={stage:'close',action:'vow',side,speaker:facts.player,opponent:facts.opponent,client:facts.player,variant,protected:'contextual-variant',hasMouthpiece:false};
+   const a=L.selectRookieVow(ctx,'fixture',{used:[],recent:[]});
+   assert.ok(a,style+' '+variant+' '+side);vowIds.add(a.id);
+   const b=L.selectRookieVow(ctx,'fixture',{used:[a.id],recent:[]});
+   assert.ok(b);vowIds.add(b.id);assert.notEqual(a.id,b.id);
+   assert.equal(L.selectRookieVow(ctx,'fixture',{used:[b.id],recent:[a.id]}),null);
+   assert.ok(L.closingCommitment({text:a.text},ctx));assert.ok(L.closingCommitment({text:b.text},ctx));
+   assert.equal(L.selectRookieVow({...ctx,protected:'recorded-evidence'},'fixture',{}),null);
+   assert.equal(L.selectRookieVow({...ctx,hasMouthpiece:true},'fixture',{}),null);
+   assert.equal(L.selectRookieVow({...ctx,speaker:facts.opponent},'fixture',{}),null);
+   assert.equal(L.selectRookieVow({...ctx,variant:'vo_quick'},'fixture',{}),null);
+  }
+ }
+ assert.equal(vowIds.size,64);

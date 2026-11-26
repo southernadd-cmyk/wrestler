@@ -61,3 +61,19 @@ and current irritation/composure. Exact claim and protection checks still apply;
 recent/used IDs always override the preference. Older saves retain seed-only
 selection. No new speech or generated bank assets in this tranche. The two missing
 source phrase sets and their asset rebuild remain a separate R5B change.
+
+## R5B1 — high-frequency closing fallback
+
+R5A CI recorded 241 shared semantic responses from 100 academy identities, 562
+rolling-history repeated texts, and 73 changed paired transcripts. Total repetition
+did not decrease. The leading repeated line was “I will win. That is all.” (192
+emissions, 65 owners); the next three recurring phrases were opponent replies to
+hard-earned victory vows. Target these actual closing variants rather than expand
+all 120 generated packs. Four styles × four existing vow variants × two sides ×
+two alternatives adds 64 shared lines. Existing owner-specific approved lines
+retain priority. Each player vow must pass the closing commitment guard; opponent
+replies only express the exact variant's disagreement. Save opt-in, protection,
+recent IDs and delivery preference stay intact. The organic audit now compares
+R5A versus R5B1 and requires reduction of the top repeated closing, reporting
+overall repetition without assuming it improves. The missing phrase keys remain
+R5B2, which requires a deterministic bank/manifest/claim asset rebuild.

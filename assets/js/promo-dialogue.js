@@ -2889,6 +2889,197 @@
   "Let's settle it with one clean fall in the centre."
  ]
 };
+ // R5B1: reviewed shared vow and reply pools. Exact variant/side contracts
+ // preserve every promise; nothing here changes match goals or graph outcomes.
+ const rookieVowWords={
+ "Technical": {
+  "vo_plain": [
+   [
+    "I've got a match to wrestle, not another argument to win. I will win tonight.",
+    "I'll keep my head and work for the fall. I intend to win."
+   ],
+   [
+    "Then show me how you plan to get the fall.",
+    "A prediction doesn't secure a hold. Let's see what you do."
+   ]
+  ],
+  "vo_hard": [
+   [
+    "It'll be a difficult match. I will win.",
+    "I expect to have to fight for every position. It'll be hard. I intend to win."
+   ],
+   [
+    "You'll have to earn every position before you can earn the fall.",
+    "We agree about the difficulty. We don't agree about the result."
+   ]
+  ],
+  "vo_fans": [
+   [
+    "I will win for the people who came to see us wrestle.",
+    "I'll win for everyone here who wants to see a proper contest."
+   ],
+   [
+    "Show them a good hold before you offer them the result.",
+    "They can judge our work at the bell, not our predictions."
+   ]
+  ],
+  "vo_guarantee": [
+   [
+    "I guarantee a win. I'll leave the proof to the wrestling.",
+    "I guarantee that I will win. Watch how I work for it."
+   ],
+   [
+    "You can't guarantee the other person's response to a hold.",
+    "That's a guarantee, not an advantage in the match."
+   ]
+  ]
+ },
+ "Brawl": {
+  "vo_plain": [
+   [
+    "Enough talking. I will win.",
+    "I'll stand my ground and fight for it. I intend to win."
+   ],
+   [
+    "Come and try, then.",
+    "You still have to get through me first."
+   ]
+  ],
+  "vo_hard": [
+   [
+    "Hard night ahead. I will win.",
+    "It won't be easy. I'll stand my ground. I intend to win."
+   ],
+   [
+    "You got the hard part right. You'll have to get past me.",
+    "Don't mistake being willing to fight for having won the fight."
+   ]
+  ],
+  "vo_fans": [
+   [
+    "I'll win for every one of you who came to back me.",
+    "I will win for the crowd that's stood behind me."
+   ],
+   [
+    "They can cheer all they like. You've still got me to beat.",
+    "Give them a fight before you start handing out the victory."
+   ]
+  ],
+  "vo_guarantee": [
+   [
+    "I guarantee a win. That's my word.",
+    "I guarantee that I will win. I'll stand by it when the bell goes."
+   ],
+   [
+    "Big words. Get through the match first.",
+    "You can promise what you like. I'm not stepping aside."
+   ]
+  ]
+ },
+ "Story": {
+  "vo_plain": [
+   [
+    "Let's give them an ending worth remembering. I will win.",
+    "I want this to mean something when they go home. I intend to win."
+   ],
+   [
+    "That's your ending. I haven't agreed to it.",
+    "The crowd will see how this ends, not how you want it to end."
+   ]
+  ],
+  "vo_hard": [
+   [
+    "This will be difficult. I intend to win.",
+    "It won't be easy, and that's why it matters. I will win."
+   ],
+   [
+    "We might agree on the struggle. The ending is still open.",
+    "They've come to watch a contest, not your victory speech."
+   ]
+  ],
+  "vo_fans": [
+   [
+    "This win is for the people who stuck with me.",
+    "I'll win for everyone here who wants this night to mean something."
+   ],
+   [
+    "Let them see the match before you give them its ending.",
+    "They deserve a contest, whatever they want the result to be."
+   ]
+  ],
+  "vo_guarantee": [
+   [
+    "I guarantee a win. That's the ending I'm working for.",
+    "I guarantee that I will win. I want the crowd to remember why."
+   ],
+   [
+    "You haven't got the right to write my part of the ending.",
+    "A promise makes a good story only if you can back it up."
+   ]
+  ]
+ },
+ "Spectacle": {
+  "vo_plain": [
+   [
+    "The moment is coming. I will win.",
+    "I'll wait for the opening and make it count. I intend to win."
+   ],
+   [
+    "Let's see you make the moment count first.",
+    "An opening is something you have to earn."
+   ]
+  ],
+  "vo_hard": [
+   [
+    "Tough match. I will win.",
+    "It will be hard to find the right opening. I intend to win."
+   ],
+   [
+    "Timing gets harder when somebody's trying to stop you.",
+    "You can expect a difficult match. You can't expect me to give you the opening."
+   ]
+  ],
+  "vo_fans": [
+   [
+    "I'll win for the crowd waiting for that big moment.",
+    "I will win for the people who came here to see what we can do."
+   ],
+   [
+    "Give them the moment before you give them the win.",
+    "The crowd deserves a performance, not a result announced early."
+   ]
+  ],
+  "vo_guarantee": [
+   [
+    "I guarantee a win. I'll make the moment count.",
+    "I guarantee that I will win. I'll earn the opening when it's there."
+   ],
+   [
+    "You haven't found the opening yet, never mind the win.",
+    "The moment will be ours to contest, not yours to guarantee."
+   ]
+  ]
+ }
+};
+ const rookieVowCatalogue=catalogue(Object.entries(rookieVowWords).map(([style,variants])=>{
+  const owner='rookie-vow-'+style.toLowerCase();
+  return {role:'wrestler',owner,lines:Object.entries(variants).flatMap(([variant,sides])=>sides.flatMap((lines,side)=>lines.map((text,i)=>({
+   id:owner+'.'+variant+'.'+(side?'f':'w')+'.'+i,stage:'close',action:'vow',side:side?'f':'w',category:'closing',text,
+   when:{variants:[variant],hasMouthpiece:false,speakerStyle:style}
+  }))))};
+ }));
+ function selectRookieVow(ctx,seed,mem){
+  if(!ctx||!ctx.speaker?.academy||!String(ctx.speaker.academy.id).startsWith('academy-')||ctx.speaker.role!=='wrestler'||ctx.hasMouthpiece||ctx.protected!=='contextual-variant'||ctx.stage!=='close'||ctx.action!=='vow'||!has(rookieVowWords,ctx.speaker.style)||!has(rookieVowWords[ctx.speaker.style],ctx.variant))return null;
+  const owner='rookie-vow-'+ctx.speaker.style.toLowerCase(),scoped={...ctx,speaker:{...ctx.speaker,id:owner}};
+  const identity=ctx.speaker.academy;
+  const choose=memory=>select(rookieVowCatalogue,scoped,seed+'|'+identity.id,memory);
+  const concise=['Dry and direct','Reserved until challenged','Blunt but sincere'].includes(identity.delivery)||ctx.irritation>=65||(ctx.composure!=null&&ctx.composure<=30);
+  const reflective=['Measured and methodical','Warm and reflective'].includes(identity.delivery);
+  const blocked=concise||reflective?owner+'.'+ctx.variant+'.'+ctx.side+'.'+(concise?1:0):null;
+  const memory={...mem,candidateFilter:r=>closingCommitment(r,ctx)};
+  const preferred=blocked?choose({...memory,used:[...(mem.used||[]),blocked]}):null;
+  return preferred||choose(memory);
+ }
  function selectClosing(cat,ctx,seed,mem){
   if(!ctx||ctx.stage!=='close'||ctx.side!=='w'||ctx.hasMouthpiece||ctx.protected!=='contextual-variant')return null;
   const variant=ctx.variant,complete=completeClosings[variant]||[],leads=closingLeads[variant]||[];
@@ -2934,5 +3125,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectSpecialistResponse,specialistReview,selectAuthoredTopic,selectAuthoredExperience,selectAuthoredStudy,selectAuthoredFollowup,selectAuthoredQuestion,selectAuthoredStrengthCounter,selectAuthoredEvidenceAcknowledgement,selectRookieSemantic,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectSpecialistResponse,specialistReview,selectAuthoredTopic,selectAuthoredExperience,selectAuthoredStudy,selectAuthoredFollowup,selectAuthoredQuestion,selectAuthoredStrengthCounter,selectAuthoredEvidenceAcknowledgement,selectRookieSemantic,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,selectRookieVow,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);
