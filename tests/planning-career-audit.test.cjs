@@ -137,30 +137,46 @@ for(const [side,arm] of [['baseline',original],['quarter',shipped]]){
 }
 for(const p of risk.changed)console.log('MP13F.15 INCIDENT CASE '+JSON.stringify(p));
 console.log('MP13F.15 RISK SUMMARY '+JSON.stringify({...risk,changed:undefined}));
-const pacingAudit=report.spotPacingAudit,before=pacingAudit.before,after=pacingAudit.after;
-assert.equal(pacingAudit.pairs,routine.pairs,'all signed bouts included');
-assert.equal(before.botches,shipped.botches,'quarter-rate control reconciles');
-assert.equal(before.completed,shipped.completed);
-assert.equal(after.signed,before.signed);
-assert.equal(after.accepted,after.witnessed+after.botched+after.refunded);
-const priorRisk=pacingAudit.risk.before,newRisk=pacingAudit.risk.after;
-assert.equal(newRisk.botches,after.botches);
-assert.equal(newRisk.playerInjuries,after.injury);
-console.log('MP13F.16 PACING SUMMARY '+JSON.stringify({...pacingAudit,comparisons:undefined}));
-for(const p of pacingAudit.comparisons)console.log('MP13F.16 PACING CASE '+JSON.stringify(p));
-// Preserve F.14 benefit and improve exposure without reducing managerial authority.
-assert.ok((newRisk.byRequest.not_forced?.attempts||0)<priorRisk.byRequest.not_forced.attempts,'autonomous risk exposure falls');
-assert.ok(newRisk.expectedBotches<priorRisk.expectedBotches,'expected botch count falls');
-assert.ok(after.botches<=before.botches,'actual botches do not increase');
-assert.ok(after.injury<=before.injury,'player injury count does not increase');
-assert.ok(newRisk.opponentInjuries<=priorRisk.opponentInjuries,'opponent injury count does not increase');
-assert.ok(after.completed>=original.completed,'preserve completion benefit over old drain');
-assert.ok(after.staminaCases<original.staminaCases&&after.zeroEnd<original.zeroEnd,'preserve stamina benefit');
-assert.ok(after.stars>=original.stars&&after.crowd>=original.crowd,'preserve quality benefit');
-assert.ok(after.witnessed>=original.witnessed,'manager delivery not below old drain');
-assert.ok(after.shortened<=before.shortened,'no additional shortened bouts');
-assert.equal(pacingAudit.changedOutcomes,0,'no changed booked outcomes in fixed cohort');
-
+// Diagnostic sweep: failed candidate gates are reported, not waived for
+// production. No scheduling factor is shipped by this PR.
+const historical=report.spotPacingAudit;
+assert.equal(historical.pairs,routine.pairs,'historical signed cohort unchanged');
+const holdout=run([24,31,38],32,{spotOnly:true});
+assert.ok(holdout.careers.every(c=>c.weeks>=16),'independent full-season careers');
+assert.ok(holdout.spotPacingAudit.pairs>0,'holdout signed cohort present');
+const checkSweep=(name,audit)=>{
+ const checks={};
+ for(const factor of ['0.25','0.5','0.75']){
+  const a=audit.arms[factor],b=a.before,c=a.after,r=a.risk.before,n=a.risk.after;
+  assert.equal(a.pairs,audit.pairs,'identical matched cohort for each factor');
+  assert.equal(b.signed,c.signed);
+  assert.equal(c.accepted,c.witnessed+c.botched+c.refunded);
+  assert.equal(n.botches,c.botches);
+  assert.equal(n.playerInjuries,c.injury);
+  assert.equal(a.playerInjuryTransitions.gained-a.playerInjuryTransitions.lost,c.injury-b.injury);
+  assert.equal(a.opponentInjuryTransitions.gained-a.opponentInjuryTransitions.lost,n.opponentInjuries-r.opponentInjuries);
+  if(name==='historical'){
+   assert.equal(b.completed,shipped.completed,'historical quarter-rate control reconciles');
+   assert.equal(b.botches,shipped.botches);
+  }
+  checks[factor]={
+   lowerExposure:(n.byRequest.not_forced?.attempts||0)<(r.byRequest.not_forced?.attempts||0),
+   lowerExpectedBotches:n.expectedBotches<r.expectedBotches,
+   botchesNoWorse:c.botches<=b.botches,playerInjuryNoWorse:c.injury<=b.injury,
+   opponentInjuryNoWorse:n.opponentInjuries<=r.opponentInjuries,
+   completionPreserved:c.completed>=b.completed,staminaMissesNoWorse:c.staminaCases<=b.staminaCases,
+   zeroEndNoWorse:c.zeroEnd<=b.zeroEnd,starsPreserved:c.stars>=b.stars,crowdPreserved:c.crowd>=b.crowd,
+   managerWitnessedNoWorse:c.witnessed>=b.witnessed,shortenedNoWorse:c.shortened<=b.shortened,
+   noChangedOutcomes:a.changedOutcomes===0
+  };
+ }
+ console.log('MP13F.16 SWEEP SUMMARY '+JSON.stringify({cohort:name,pairs:audit.pairs,arms:audit.arms,bySeed:audit.bySeed,checks}));
+ for(const p of audit.comparisons.filter(p=>p.before.injury||p.after.injury||p.beforeInjuries.length||p.afterInjuries.length))
+  console.log('MP13F.16 SWEEP INJURY CASE '+JSON.stringify({cohort:name,...p}));
+ return checks;
+};
+const historicalChecks=checkSweep('historical',historical),holdoutChecks=checkSweep('holdout',holdout.spotPacingAudit);
+console.log('MP13F.16 SWEEP GATES '+JSON.stringify({historical:historicalChecks,holdout:holdoutChecks}));
 for(const p of routine.comparisons)console.log('MP13F.13 ROUTINE CASE '+JSON.stringify(p));
 console.log('MP13F.13 ROUTINE SUMMARY '+JSON.stringify({...routine,comparisons:undefined}));
 const {spotPacingAudit,riskExposureAudit,routineDrainAudit,rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaExpenditureAudit,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
