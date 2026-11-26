@@ -342,3 +342,37 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  const restored=E.restore(copy({...m,rState:m.r.getState()}));assert.equal(restored.o.sequenceRecoveryProjectionVersion,1);
  console.log('PASS MP13F.7A base recovery, performer ownership, cap, no speculative bonuses, no RNG/state changes, actual rest witness, resume and legacy opt-out.');
 }
+
+// MP13F.7B: focused legal recovery preference, not a scripted refill.
+{
+ const room=R.begin(c,w,f,p,{...opts,structure:{id:'dominant_ace',lead:'w'}});
+ room.queue=[];R.act(room,'plan_story');R.act(room,'board_ok');R.act(room,'review_ok');R.act(room,'talk_none');
+ const signed=copy(room.sheet),obj=signed.structurePlan.objectives[0];
+ obj.call={action:'nk_ddt',owner:'w',proposedBy:'w',label:A.nk_ddt.name,source:'negotiated',chosen:true,backups:[]};
+ obj.commitment='landmark';obj.sequence={version:1,mode:'conditional',start:{control:'w',position:'standing',down:null},actions:['front_facelock','nk_ddt']};
+ signed.structurePlan.version=2;signed.sequenceContinuationVersion=1;
+ assert.equal(S.STRUCTURES.readPlan(signed).mode,'editorial');
+ signed.workerConsent=85;signed.opponentConsent=85;
+ const m=E.create({w:{...w,fatigue:0},f,p,slot:'main',minutes:12,finish:c.finish,plan:{game:'story',leash:'script',talk:'none'},seed:9002,sheet:signed,structureExecution:true,sequenceRecoveryProjectionVersion:1});
+ m.stage='live';m.t=80;m.wSt=18;m.fSt=80;m.comply=85;
+ Object.assign(m.story,obj.sequence.start);graph.resetPhysical(m);
+ const dir=S.DIRECTOR,focus=()=>dir.sequenceRecoveryFocus(m,m.story);
+ assert.equal(focus(),null,'legacy opt-out');
+ m.o.sequenceRecoveryPacingVersion=1;
+ const before=JSON.stringify(m),rng=m.r.getState(),target=focus();
+ assert.ok(target&&target.side==='w'&&target.deficit>0&&target.rests.includes('catch_breath'),'correct tired performer');
+ assert.equal(JSON.stringify(m),before);assert.equal(m.r.getState(),rng);
+ assert.ok(graph.isValid(m,'catch_breath'));
+ const pool=[['catch_breath',1],['lockup',10]];
+ const offered=dir.sequenceRecoveryPreference(pool,target);assert.ok(offered.boosted&&pool[0][1]>1&&pool[1][1]===10);
+ assert.ok(pool[0][1]<=10*.6,'bounded preference');
+ assert.equal(dir.sequenceRecoveryPreference([['lockup',10]],target),null,'cannot add a filtered candidate at final weighting');
+ assert.equal(dir.sequenceRecoveryFocus(m,m.story,{id:'lockup'}),null,'ready agreement takes precedence');
+ m.mode='pickup';assert.equal(focus(),null);m.mode=null;
+ m.wSt=80;assert.equal(focus(),null,'no stamina deficit');m.wSt=18;
+ m.story.control='f';assert.equal(focus(),null,'wrong wrestler');m.story.control='w';
+ const restored=E.restore(copy({...m,rState:m.r.getState()}));eq(dir.sequenceRecoveryFocus(restored,restored.story),focus());
+ graph.apply(m,'catch_breath');assert.ok(m.graph.events.some(e=>e.id==='catch_breath'));assert.ok(m.wSt>18);
+ assert.equal(focus(),null,'actual rest imposes cooldown');
+ console.log('PASS MP13F.7B bounded legal recovery preference, ownership, cooldown, ready sequence precedence, purity and resume.');
+}
