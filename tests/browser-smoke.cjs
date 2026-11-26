@@ -427,7 +427,7 @@ async function journey(browser,name,viewport){
   // Exercise the real UI hand-off, not property ordering in a source string.
   for(let i=0;i<20;i++){
    if(await page.locator('#tv [data-pause]').count())break;
-   const action=page.locator('#tv [data-tv="bell"]:visible, #tv [data-tv="promos"]:visible, #tv [data-tv="signing"]:visible, #tv [data-mouth]:visible, #tv [data-mic]:visible, #tv [data-contract]:visible').first();
+   const action=page.locator('#tv [data-tv="bell"]:visible, #tv [data-tv="promos"]:visible, #tv [data-tv="signing"]:visible, #tv [data-segment="duel"]:visible, #tv [data-mouth]:visible, #tv [data-mic]:visible, #tv [data-contract]:visible').first();
    await action.click();
   }
   const live=await page.evaluate(()=>{
