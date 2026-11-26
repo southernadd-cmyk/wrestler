@@ -34,8 +34,26 @@ for(const structure of S.STRUCTURES.catalogue())for(const lead of ['w','f'])for(
    assert.equal(x.finish,c.finish);assert.equal(x.board.finish.route,route);
    if(opt.id==='compromise'){
     assert.equal(x.structureBoard[t.objective].action,offer.card.action);
-    // Reconciliation adjusts provisional consent, not these explicit mood effects.
-    for(const side of ['w','f'])assert.equal(x.mood[side]-a.mood[side],offer.response.by[side].mood);
+    // Board credit is an existing independent mood component, replaced
+    // once when the named call changes. Check both components explicitly.
+    const credit=board=>{
+     const out={w:0,f:0};
+     for(const b of Object.values(board)){
+      if(!b.action||!['w','f'].includes(b.by))continue;
+      out[b.by]+=2;if(b.owner!==b.by)out[b.owner]-=2;
+     }
+     return out;
+    };
+    const before=credit(a.structureBoard),after=credit(x.structureBoard);
+    eq(a.boardMood,before);eq(x.boardMood,after);
+    for(const side of ['w','f']){
+     const net=offer.response.by[side].mood+after[side]-before[side];
+     assert.equal(x.mood[side]-a.mood[side],net);
+     assert.equal((x.mood[side]-x.boardMood[side])-(a.mood[side]-a.boardMood[side]),offer.response.by[side].mood);
+     const display=net===0?'unchanged':(net>0?'+':'')+net+' mood';
+     assert.ok(opt.hint.includes('('+display+')'));
+     if(net!==0)assert.ok(opt.tags.includes(a[side].short+(net>0?' ▲':' ▼')));
+    }
     assert.equal(x.structureTalk.bargaining.selected,'second');
    }else{
     const legacy=clone(original);R.act(legacy,opt.id);eq(x.structureBoard,legacy.structureBoard);eq(x.mood,legacy.mood);

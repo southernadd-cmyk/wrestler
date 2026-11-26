@@ -21,7 +21,10 @@ against the booked original. No fabricated agreement.
 
 After the exchange, the original move, first alternative, second
 alternative and open objective remain choices. Only the selected
-decision affects mood and board. Stored dialogue is validated against
+decision affects mood and board. The second-proposal preview includes
+both the fuzzy reaction and the existing change in board credit for
+whose idea is selected. Regression tests independently calculate board
+credit and verify the fuzzy reaction is applied exactly once. Stored dialogue is validated against
 the frozen proposal before signing. No new loop or sequence execution.
 
 MP6C uncovered Cedric, Felix and Kezia. Review existing question leads

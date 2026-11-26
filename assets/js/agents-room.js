@@ -1409,9 +1409,13 @@
    const compromise=readCounterOffer(st);
    if(compromise){
     const q=compromise.response.by;
+    // The final mood includes the existing board credit for whose idea
+    // is called. Preview that adjustment without mutating the board.
+    const before=structureCallMood(st.structureBoard[t.objective]),after=structureCallMood(compromise.card);
+    const net={w:q.w.mood+after.w-before.w,f:q.f.mood+after.f-before.f};
     out.push({id:'compromise',label:'“Use the '+compromise.card.label+' instead.”',
-     hint:name+' '+stanceText(q[side].stance)+' ('+moodText(q[side].mood)+'); '+opp+' '+stanceText(q[other(side)].stance)+' ('+moodText(q[other(side)].mood)+').',
-     tags:[...['w','f'].filter(s=>q[s].mood!==0).map(s=>nameOf(st,s)+(q[s].mood>0?' ▲':' ▼')),'Second proposal'],
+     hint:name+' '+stanceText(q[side].stance)+' ('+moodText(net[side])+'); '+opp+' '+stanceText(q[other(side)].stance)+' ('+moodText(net[other(side)])+'). Includes the change in credit for the called move.',
+     tags:[...['w','f'].filter(s=>net[s]!==0).map(s=>nameOf(st,s)+(net[s]>0?' ▲':' ▼')),'Second proposal'],
      run(st){
       // Re-check hard eligibility at commit; no extra mood from talking.
       const final=readCounterOffer(st);if(!final)throw Error('Counterproposal is no longer eligible');
@@ -1788,14 +1792,19 @@
   if(trouble.length)notes.push({good:false,text:'Revise unsafe or prohibited commitments: '+trouble.join(', ')+'.'});
   return {score:trouble.length?-1:Math.min(2,named.length>=2?2:1),notes};
  }
+ function structureCallMood(b){
+  const delta={w:0,f:0};
+  if(!b?.action||b.by==='agent')return delta;
+  if(b.by===b.owner)delta[b.owner]+=2;
+  else if(b.by==='w'||b.by==='f'){delta[b.by]+=2;delta[b.owner]-=2;}
+  return delta;
+ }
  function structureSettle(st){
   const prev=st.boardMood||{w:0,f:0},delta={w:0,f:0};
   st.mood.w-=prev.w;st.mood.f-=prev.f;
   for(const obj of structureSlots(st)){
-   const b=st.structureBoard?.[obj.id];
-   if(!b?.action||b.by==='agent')continue;
-   if(b.by===b.owner)delta[b.owner]+=2;
-   else if(b.by==='w'||b.by==='f'){delta[b.by]+=2;delta[b.owner]-=2;}
+   const contribution=structureCallMood(st.structureBoard?.[obj.id]);
+   delta.w+=contribution.w;delta.f+=contribution.f;
   }
   st.mood.w+=delta.w;st.mood.f+=delta.f;st.boardMood=delta;
  }
