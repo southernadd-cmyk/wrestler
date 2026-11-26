@@ -340,6 +340,11 @@
  const other=side=>side==='w'?'f':'w';
  const nameOf=(st,side)=>side==='agent'?AGENT:side==='you'?'You':side==='promoter'?st.promoter.voice:who(st,side).short;
  const log=(st,side,text,kind)=>st.log.push({who:nameOf(st,side),side,text,kind:kind||(side==='agent'?'agent':side==='you'?'you':'talk')});
+ // A private composed line retains provenance in the room transcript.
+ function planningLine(st,side,line,kind){
+  log(st,side,'“'+line.text+'”',kind);
+  st.log.at(-1).planningDialogue={v:1,id:line.id,actorId:line.actorId,turn:line.turn,stance:line.stance,topic:line.topic,source:line.source,bankReuse:line.bankReuse};
+ }
  const tone=(st,side,map)=>map[voice(who(st,side))]||map.stoic||Object.values(map)[0];
  const fmt=(st,t)=>String(t).replace(/\{W\}/g,st.w.short).replace(/\{F\}/g,st.f.short).replace(/\{P\}/g,st.promoter.voice).replace(/\{PN\}/g,st.promoter.name).replace(/\{PF\}/g,st.promoter.voice.split(' ')[0]);
  const first=st=>st.promoter.voice.split(' ')[0];
@@ -1315,12 +1320,19 @@
     const response=root.OfficePlanningFuzzy.huddleProposal(st.planningEvidence,st,x.obj.id,x.alt.action,x.owner);
     if(response)st.structureTalk.proposalResponse=response;
    }
+   if(st.planningDialogue?.v===1&&root.OfficePlanningDialogue){
+    const dialogue=root.OfficePlanningDialogue.freezeHuddle(st);
+    if(dialogue)st.structureTalk.dialogue=dialogue;
+   }
    const read=structureRead(st),v=STRUCTURE_VOICES[voice(who(st,x.owner))]||STRUCTURE_VOICES.stoic;
    log(st,'agent',read.label+' means '+read.focus+'. '+read.advice+' The promoter has already booked '+(D.FINISHES[st.finish]?.name||st.finish)+'.');
-   log(st,x.owner,'“'+v.replace('{move}',x.b.label.toLowerCase()).replace('{goal}',x.obj.title.toLowerCase())+'”','objection');
+   const dialogue=root.OfficePlanningDialogue?.readHuddle(st);
+   if(dialogue)planningLine(st,x.owner,dialogue.lines.request,'objection');
+   else log(st,x.owner,'“'+v.replace('{move}',x.b.label.toLowerCase()).replace('{goal}',x.obj.title.toLowerCase())+'”','objection');
    const response=root.OfficePlanningFuzzy?.readHuddleProposal(st.structureTalk);
    const partner=response?.by[other(x.owner)]?.stance;
-   log(st,other(x.owner),partner==='accept'?'“That alternative works for me. Let’s keep the finish as agreed.”':
+   if(dialogue)planningLine(st,other(x.owner),dialogue.lines.response,partner==='reserved'||partner==='counter'?'objection':undefined);
+   else log(st,other(x.owner),partner==='accept'?'“That alternative works for me. Let’s keep the finish as agreed.”':
     partner==='reserved'?'“I can see the idea, but I have reservations about changing the call.”':
     partner==='counter'?'“I’m not sold on that alternative. I’d rather we looked at another way.”':
     '“I can work a change. Just make sure we both know what comes next.”',partner==='reserved'||partner==='counter'?'objection':undefined);
@@ -1368,12 +1380,15 @@
     hint:'One legal move replaces another for the same wrestler. '+describe('revise',name+' +2 consent; '+opp+' −1 for readjusting.'),
     tags:[...reviseTags,'Changes named call',...(response&&response.by[other(side)].stance==='counter'?['Partner wants another option']:[])],
     run(st){
+     const dialogue=root.OfficePlanningDialogue?.readHuddle(st);
      st.structureBoard[t.objective]={...a,chosen:true,open:false,source:'negotiated'};
      applyReaction('revise');t.decision='revise';
      const own=response?.by[side]?.stance,partner=response?.by[other(side)]?.stance;
-     log(st,side,own==='reserved'?'“I’ll work with the change, though I still have concerns.”':own==='counter'?'“I wanted a change, but this still isn’t quite right.”':'“That move I can work.”',own==='reserved'||own==='counter'?'objection':undefined);
+     if(dialogue)planningLine(st,side,dialogue.lines.requesterResolution,own==='reserved'||own==='counter'?'objection':undefined);
+     else log(st,side,own==='reserved'?'“I’ll work with the change, though I still have concerns.”':own==='counter'?'“I wanted a change, but this still isn’t quite right.”':'“That move I can work.”',own==='reserved'||own==='counter'?'objection':undefined);
      if(response){
-      log(st,other(side),partner==='accept'?'“Agreed. We know the call.”':partner==='reserved'?'“I’ll work it, but put my reservation on the record.”':'“That’s the call, then. I still want another option noted.”',partner==='accept'?undefined:'objection');
+      if(dialogue)planningLine(st,other(side),dialogue.lines.partnerResolution,partner==='accept'?undefined:'objection');
+      else log(st,other(side),partner==='accept'?'“Agreed. We know the call.”':partner==='reserved'?'“I’ll work it, but put my reservation on the record.”':'“That’s the call, then. I still want another option noted.”',partner==='accept'?undefined:'objection');
      }
      log(st,'agent','Revised '+t.title+'; the dramatic objective and booked finish still stand.');
     }});
@@ -1917,6 +1932,11 @@
    if(opts.planningCareer&&root.OfficePlanningFuzzy)st.planningEvidence=root.OfficePlanningFuzzy.capture(st,w,f,opts.planningCareer);
    if(st.planningEvidence&&opts.planningInitiative===true)st.planningInitiative=1;
    if(st.planningInitiative===1&&opts.planningProposal===true)st.planningProposal=1;
+   if(st.planningProposal===1&&opts.planningDialogue===true&&root.OfficePlanningDialogue){
+    const L=root.OfficePlanningDialogue,banks=Array.isArray(opts.planningBanks)?opts.planningBanks:[];
+    const identities={w:L.capture(w,banks),f:L.capture(f,banks)};
+    if(identities.w&&identities.f)st.planningDialogue={v:1,identities};
+   }
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
   st.queue=draw(st,p,opts.recent||[]);
