@@ -176,6 +176,46 @@ const checkSweep=(name,audit)=>{
  return checks;
 };
 const historicalChecks=checkSweep('historical',historical),holdoutChecks=checkSweep('holdout',holdout.spotPacingAudit);
+function managerDiagnostic(cohort,audit){
+ const a=audit.arms['0.25'],cases=audit.managerCases;
+ const outcomeCases=cases.filter(p=>p.before.outcome!==p.after.outcome);
+ assert.equal(outcomeCases.length,a.changedOutcomes,'all changed outcomes including non-injury cases');
+ const summarize=side=>{
+  const rows=cases.map(p=>p[side]),evidence=rows.flatMap(x=>x.evidence),requests=rows.flatMap(x=>x.requests);
+  const byStatus={},byReason={};
+  for(const e of evidence){byStatus[e.status]=(byStatus[e.status]||0)+1;if(e.reason)byReason[e.reason]=(byReason[e.reason]||0)+1;}
+  assert.equal(evidence.length,a[side].accepted,'accepted requests reconcile');
+  assert.equal(byStatus.witnessed||0,a[side].witnessed,'witnessed requests reconcile');
+  assert.equal(byStatus.botched||0,a[side].botched,'botched requests reconcile');
+  assert.equal(byStatus.unavailable||0,a[side].refunded,'refunded requests reconcile');
+  return {attempted:requests.length,ignored:requests.filter(e=>e.ignored).length,accepted:evidence.length,byStatus,byReason};
+ };
+ const requests=x=>{
+  let index=0;
+  return Object.fromEntries(x.requests.map(r=>[r.ordinal,{...r,evidence:r.ignored?null:x.evidence[index++]}]));
+ };
+ const status=r=>!r?'not_attempted':r.ignored?'ignored':r.evidence.status;
+ const transitions={},lost=[],gained=[];
+ for(const p of cases){
+  const b=requests(p.before),c=requests(p.after);
+  for(const ordinal of new Set([...Object.keys(b),...Object.keys(c)])){
+   const from=status(b[ordinal]),to=status(c[ordinal]),k=from+'→'+to;
+   transitions[k]=(transitions[k]||0)+1;
+   if(from==='witnessed'&&to!=='witnessed')lost.push({key:p.key,ordinal,from,to});
+   if(from!=='witnessed'&&to==='witnessed')gained.push({key:p.key,ordinal,from,to});
+  }
+ }
+ assert.equal(gained.length-lost.length,a.after.witnessed-a.before.witnessed,'paired witnessed transitions reconcile');
+ for(const p of outcomeCases){
+  assert.equal(p.before.booked,p.after.booked,'signed finish stays fixed');
+  console.log('MP13F.17 OUTCOME CASE '+JSON.stringify({cohort,...p}));
+ }
+ for(const p of cases.filter(p=>lost.some(x=>x.key===p.key)||gained.some(x=>x.key===p.key)))
+  console.log('MP13F.17 MANAGER CASE '+JSON.stringify({cohort,...p}));
+ console.log('MP13F.17 MANAGER SUMMARY '+JSON.stringify({cohort,before:summarize('before'),after:summarize('after'),transitions,lost,gained,changedOutcomes:outcomeCases.map(p=>({key:p.key,before:p.before.outcome,after:p.after.outcome}))}));
+}
+managerDiagnostic('historical',historical);
+managerDiagnostic('holdout',holdout.spotPacingAudit);
 console.log('MP13F.16 SWEEP GATES '+JSON.stringify({historical:historicalChecks,holdout:holdoutChecks}));
 for(const p of routine.comparisons)console.log('MP13F.13 ROUTINE CASE '+JSON.stringify(p));
 console.log('MP13F.13 ROUTINE SUMMARY '+JSON.stringify({...routine,comparisons:undefined}));
