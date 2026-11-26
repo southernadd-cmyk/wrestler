@@ -30,3 +30,18 @@ named rookies plus future intake. No runtime LLM or per-rookie line quotas.
 Before claiming quality, audit live transcripts, actual selection, repetition,
 and response relevance, not just catalogue counts. R1/R2 alone is not semantic
 coverage or a live dialogue improvement.
+
+## R3/R4 — shared semantic responses
+
+Four style pools contain two lines per route: 80 lines total for the ten completed
+G4 routes. The existing 12 tactical families and individual delivery influence
+seeded choice without separate copies of text. The actual live academy identity
+is snapshotted for new scenes, rather than inferred from appearance or the bank ID.
+Existing owner-specific, specialist and reviewed responses retain precedence;
+recorded evidence, mouthpieces and protected cases retain their existing guards.
+The same existing semantic selectors validate the shared rows. Stable shared IDs
+enter the existing recent history (so a line cannot repeat across academy speakers
+while in that history). Old scenes without the new flag retain old behaviour.
+No compiled per-rookie assets are regenerated. Coverage tests use all 120 named
+identities; real intake fixtures verify both speaker sides. This is targeted
+reachability, not yet an organic frequency or editorial audit (R5/R7).
