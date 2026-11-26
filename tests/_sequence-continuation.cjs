@@ -21,6 +21,17 @@ function trace(root,key){
    const o=objective(m,r);
    openings.set(r.objective,{key,structure:m.structureDirector.id,objective:r.objective,
     actions:o.sequence.actions.slice(),alternatives:o.sequence.openings?.length||0,window:o.window.slice(),requires:o.requires.slice(),
+    schedules:[o.sequence,...(o.sequence.openings||[]).map(x=>({start:x.start,actions:[x.action,...o.sequence.actions.slice(1)]}))].map((seq,i)=>{
+     // Audit-only copy of the existing sequenceWindow/openingReadiness
+     // timing bounds. No runtime helper or experimental flag required.
+     let elapsed=0,earliest=Math.max(0,(o.window[0]-.04)*m.len);
+     for(const id of seq.actions){
+      earliest=Math.max(earliest,(A[id].after||0)*m.len-elapsed);
+      elapsed+=G.sequenceMoveSeconds(id);
+     }
+     const latest=Math.min((o.window[1]+.08)*m.len,.91*m.len-1,m.len-Math.max(45,elapsed+25));
+     return {variant:i,id:seq.actions[0],start:copy(seq.start),earliest,latest,duration:elapsed};
+    }),
     ticks:[],natural:[],final:null});
   }
   return openings.get(r.objective);
@@ -76,6 +87,8 @@ function trace(root,key){
   if(last?.at===m.t)return;
   v.ticks.push({at:m.t,arc:m.graph.arc,control:pre.control,position:pre.position,down:pre.down,
    stamina:{w:Math.round(m.wSt),f:Math.round(m.fSt)},candidates,
+   safety:{outcome:m.outcome,bigSpotRequest:m.bigSpotRequest?{at:m.bigSpotRequest.at,expires:m.bigSpotRequest.expires}:null,
+    workingHurt:!!m.workingHurt,shortened:!!m.shortened,injury:m.injury||0,foeHurt:!!m.foeHurt,length:m.len},
    offered:result?.objective===r.objective?result.id:null,handover:!!(result?.objective===r.objective&&result.handover),otherOffer:result&&result.objective!==r.objective?result.objective:null});
  }
  function record(m,r){
@@ -324,4 +337,44 @@ function summariseOpenings(records){
   examples:details.filter((x,i,xs)=>xs.findIndex(y=>y.firstEmpty===x.firstEmpty)===i).map(x=>({key:x.v.key,objective:x.v.objective,actions:x.v.actions,stage:x.firstEmpty,offered:x.offered,ticks:x.v.ticks.length,natural:x.v.natural.slice(0,2)})),
   records};
 }
-module.exports={trace,summarise,summariseOpenings};
+// Same case definition as the historical timingCases metric. Preserve
+// overlap instead of calling an early guard a proven cause of failure.
+function temporalCases(trace){
+ const readiness=['chain_too_early','chain_stamina','other_readiness'];
+ return trace.openings.filter(v=>!v.final.attempts&&v.ticks.some(t=>t.candidates.some(c=>c.guards.includes('chain_too_early')&&c.guards.every(g=>readiness.includes(g))))).map(v=>{
+  const variants=v.schedules.map(s=>{
+   const all=v.ticks.map(t=>({at:t.at,stamina:t.stamina,safety:t.safety,control:t.control,position:t.position,down:t.down,arc:t.arc,offered:t.offered,otherOffer:t.otherOffer,guards:t.candidates[s.variant].guards}));
+   const early=all.filter(t=>t.guards.includes('chain_too_early')&&t.guards.every(g=>readiness.includes(g)));
+   const inWindow=all.filter(t=>t.at>=s.earliest&&t.at<=s.latest);
+   const safety=['before_window','after_window','finish_runway','safety_or_manager_request'];
+   const state=['wrong_control','wrong_position_or_down'];
+   const first=['first_move_restricted','first_move_stamina','first_move_illegal'];
+   const pass=(xs,gs)=>xs.filter(t=>!t.guards.some(g=>gs.includes(g)));
+   const safe=pass(inWindow,safety),prior=pass(safe,['prerequisite_pending']),matching=pass(prior,state),legal=pass(matching,first),ready=legal.filter(t=>!t.guards.length);
+   const stamina=legal.filter(t=>t.guards.includes('chain_stamina'));
+   // Ordered descriptive funnel. Never combine gates from distinct ticks
+   // or variants, and never infer what would happen on unobserved ticks.
+   const stage=s.earliest>s.latest?'incompatible_window':!inWindow.length?'no_observed_tick_in_window':!safe.length?'safety_or_runway':!prior.length?'prerequisite':!matching.length?'physical_state':!legal.length?'first_move_legality':!ready.length?'chain_readiness':ready.some(t=>t.offered===s.id)?'offered_not_credited':'ready_not_offered';
+   const closest=inWindow.reduce((best,t)=>!best||t.guards.length<best.guards.length?t:best,null);
+   const snapshot=t=>t?{at:t.at,stamina:t.stamina,safety:t.safety,control:t.control,position:t.position,down:t.down,arc:t.arc,offered:t.offered,guards:t.guards}:null;
+   const protectedTicks=inWindow.filter(t=>t.guards.includes('safety_or_manager_request'));
+   const flags=t=>[
+    ...(t.safety.outcome!=='booked'?['non_booked_outcome']:[]),
+    ...(t.safety.bigSpotRequest?['pending_big_spot']:[]),
+    ...(t.safety.workingHurt?['working_hurt']:[]),
+    ...(t.safety.shortened?['shortened']:[])
+   ];
+   for(const tick of inWindow)assert.equal(flags(tick).length>0,tick.guards.includes('safety_or_manager_request'),'exact safety guard decomposition');
+   const safetyBreakdown={blockedTicks:protectedTicks.length,flagTicks:count(protectedTicks.flatMap(t=>flags(t)),x=>x),
+    flagCombinations:count(protectedTicks,t=>flags(t).sort().join('+')),runwayTicks:inWindow.filter(t=>t.guards.includes('finish_runway')).length,
+    firstBlocked:snapshot(protectedTicks[0]),lastBlocked:snapshot(protectedTicks.at(-1)),
+    otherwiseReadyBlocked:protectedTicks.filter(t=>t.guards.length===1).length};
+   return {...s,stage,safetyBreakdown,counts:{early:early.length,earlyTimingOnly:early.filter(t=>t.guards.length===1).length,earlyMixed:early.filter(t=>t.guards.length>1).length,inWindow:inWindow.length,safe:safe.length,prerequisite:prior.length,matching:matching.length,legal:legal.length,ready:ready.length,stamina:stamina.length,offered:ready.filter(t=>t.offered===s.id).length},
+    firstEarly:snapshot(early[0]),lastEarly:snapshot(early.at(-1)),firstWindow:snapshot(inWindow[0]),lastWindow:snapshot(inWindow.at(-1)),firstMatching:snapshot(matching[0]),lastMatching:snapshot(matching.at(-1)),firstStaminaBlock:snapshot(stamina[0]),closest:snapshot(closest),firstReady:snapshot(ready[0]),lastReady:snapshot(ready.at(-1)),windowGuards:[...new Set(inWindow.flatMap(t=>t.guards))]};
+  });
+  return {key:v.key,structure:v.structure,objective:v.objective,actions:v.actions,duration:v.duration,window:v.window,prerequisites:v.prerequisites.map(p=>({id:p.id,status:p.status,at:p.at})),variants,
+   final:v.final,
+   timingOnly:variants.some(x=>x.counts.earlyTimingOnly>0),mixed:variants.some(x=>x.counts.earlyMixed>0),anyReady:variants.some(x=>x.counts.ready>0)};
+ });
+}
+module.exports={trace,summarise,summariseOpenings,temporalCases};

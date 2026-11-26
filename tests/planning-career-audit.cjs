@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],reviewRepairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],reviewRepairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -276,6 +276,11 @@ function run(seeds=[3,10],weeks=32){
      credited:x.traceReport.alternativeReadinessOffers.filter(v=>v.credited).length});
     alternativePairs.push({key,structure:choice.id,hasAlternatives,before:measure(paced),after:measure(alt)});
     alternativeOpportunities.push(...alt.traceReport.alternativeReadinessOffers);
+    // Reuse the currently shipped MP13F.8A policy replay. No extra bouts,
+    // experimental timing weights or changes to settled career outcomes.
+    const temporal=continuation.temporalCases(alt.traceReport);
+    assert.equal(temporal.length,breakdown(alt.traceReport).timingCases,key+' timing cases reconcile');
+    temporalCases.push(...temporal);
    }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
@@ -359,6 +364,17 @@ function run(seeds=[3,10],weeks=32){
     byStructure:Object.fromEntries([...new Set(alternativePairs.map(x=>x.structure))].map(k=>[k,compare(alternativePairs.filter(x=>x.structure===k))])),
     opportunityExamples:alternativeOpportunities.slice(0,10),
     examples:alternativePairs.filter(x=>JSON.stringify(x.before)!==JSON.stringify(x.after)).slice(0,10),comparisons:alternativePairs};
+  })(),temporalOpportunityAudit:(()=>{
+   const stages={},safetyCases={},soleSafetyCases={};
+   for(const c of temporalCases){
+    const early=c.variants.filter(v=>v.counts.early>0);
+    for(const stage of new Set(early.map(v=>v.stage)))inc(stages,stage);
+    const blocked=early.filter(v=>v.stage==='safety_or_runway');
+    for(const flag of new Set(blocked.flatMap(v=>Object.keys(v.safetyBreakdown.flagTicks))))inc(safetyCases,flag);
+    for(const flag of new Set(blocked.flatMap(v=>Object.keys(v.safetyBreakdown.flagCombinations).filter(k=>!k.includes('+')))))inc(soleSafetyCases,flag);
+   }
+   return {total:temporalCases.length,timingOnly:temporalCases.filter(c=>c.timingOnly).length,mixed:temporalCases.filter(c=>c.mixed).length,
+    anyReady:temporalCases.filter(c=>c.anyReady).length,earlyVariantStages:stages,safetyCases,soleSafetyCases,cases:temporalCases};
   })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},opening:continuation.summariseOpenings(openingRecords),rows};
 }
 module.exports={run};
