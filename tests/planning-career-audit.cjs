@@ -194,7 +194,9 @@ function summarizeRoutine(pairs){
   byPlan:Object.fromEntries([...new Set(pairs.map(p=>p.plan))].map(k=>[k,group(pairs.filter(p=>p.plan===k))])),
   byFatigue:Object.fromEntries(['low','moderate','high'].map(k=>[k,group(pairs.filter(p=>p.fatigueBand===k))])),comparisons:pairs};
 }
-function run(seeds=[3,10],weeks=32,{spotOnly=false}={}){
+function run(seeds=[3,10],weeks=32,{spotOnly=false,productionOnly=false}={}){
+ assert.ok(!(spotOnly&&productionOnly),'distinct audit modes');
+ const productionRows=[];
  const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],expenditure=[],reviewRepairs=[],routinePairs=[],riskPairs=[],spotPacingPairs=[];
  for(const seed of seeds){
   let index=0;
@@ -253,9 +255,9 @@ function run(seeds=[3,10],weeks=32,{spotOnly=false}={}){
    return {st,prior,actions,roomResume,sequenceOffer};
    }
    const {st,prior,actions,roomResume,sequenceOffer}=planRoom(3,true,true,1);
-   const continuationRoom=i%3!==0?planRoom(3,false,true):null;
-   const controlRoom=i%3!==0?planRoom(2,false):null;
-   const baselineRoom=i%3!==0?planRoom(3,false,false):null;
+   const continuationRoom=!productionOnly&&i%3!==0?planRoom(3,false,true):null;
+   const controlRoom=!productionOnly&&i%3!==0?planRoom(2,false):null;
+   const baselineRoom=!productionOnly&&i%3!==0?planRoom(3,false,false):null;
    G.S.roomRecent=[...(G.S.roomRecent||[]),...st.queue].slice(-6);
    let promo=null,promoResume=0;
    const arcChoices=root.OfficeProgrammeArcs?.options(c)?.choices||[];
@@ -337,6 +339,27 @@ function run(seeds=[3,10],weeks=32,{spotOnly=false}={}){
       spotPacingPairs.push({key,seed,factor,structure:choice.id,plan:approach,before:base,after:m,beforeRisk:baseRisk,afterRisk:candidate.risk});
      }finally{delete root.__mp13RoutineMultiplier;delete root.__mp13SpotFactor;}
     }
+   }
+   if(productionOnly){
+     // No source transforms, historical multipliers, risk instrumentation,
+     // or counterfactuals. Set the same match feature versions as the UI.
+     const settings={...options,sequenceRecoveryPacingVersion:1,sequenceAlternativeReadinessVersion:1,bigSpotArbitrationVersion:3};
+     const {M,fin,matchResume}=drive(true,i%5===0,settings,immutable);
+     const seq=fin.structure.sequences||[],receipts=seq.map(s=>s.receipt).filter(Boolean);
+     const calls=(fin.ringsideEvidence||[]).filter(e=>e.id==='big');
+     assert.ok(range(M.wSt)&&range(M.fSt),key+' final stamina bounded');
+     assert.ok(['booked','nc','dq','double'].includes(fin.outcome),key+' recognized outcome');
+     assert.ok(calls.every(e=>['witnessed','botched','unavailable'].includes(e.status)),key+' accepted manager calls resolved');
+     assert.equal(receipts.length,seq.length,key+' each signed sequence has a receipt');
+     const opened=receipts.filter(r=>r.attempts>0).length,completed=receipts.filter(r=>['completed','adapted'].includes(r.status)).length;
+     assert.ok(completed<=opened&&opened<=seq.length,key+' sequence delivery reconciles');
+     productionRows.push({seed,key,structure:choice.id,plan:approach,stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome,
+      signed:seq.length,opened,completed,playerInjury:Number(!!fin.injury),opponentInjury:Number(!!fin.foeHurt),
+      botches:fin.botches,spots:fin.spots,zeroEnd:Number(M.wSt===0||M.fSt===0),shortened:Number(!!fin.shortened),
+      accepted:calls.length,witnessed:calls.filter(e=>e.status==='witnessed').length,
+      botched:calls.filter(e=>e.status==='botched').length,refunded:calls.filter(e=>e.status==='unavailable').length,
+      stiff:fin.stiff||'none',roomResume,promoResume,matchResume});
+     return {...fin,log:M.log.slice()};
    }
    if(spotOnly){
     const settings={...options,sequenceRecoveryPacingVersion:1,sequenceAlternativeReadinessVersion:1,bigSpotArbitrationVersion:3};
@@ -555,10 +578,11 @@ function run(seeds=[3,10],weeks=32,{spotOnly=false}={}){
     apply(c,fin);eq(G.S.officeMemory.professionalPairs||{},before,'duplicate result does not duplicate professional memory');
     return result;
    };
-  },real,routineSource);
+  },real,productionOnly?null:routineSource);
   assert.deepEqual(result.problems,[],'career invariant failures: '+result.problems.join('; '));
   careers.push({seed,...result.stats});
  }
+ if(productionOnly)return {seeds,weeks,careers,rows:productionRows};
  if(spotOnly)return {seeds,weeks,careers,spotPacingAudit:summarizeSpotSweep(spotPacingPairs)};
  const groups=key=>Object.fromEntries([...new Set(rows.map(r=>r[key]))].map(k=>[k,summarise(rows.filter(r=>r[key]===k))]));
  return {schema:'office-mp13-career-audit-v1',seeds,weeks,careers,routineDrainAudit:summarizeRoutine(routinePairs),riskExposureAudit:summarizeRisk(riskPairs),spotPacingAudit:summarizeSpotSweep(spotPacingPairs),overall:summarise(rows),byStructure:groups('structure'),byApproach:groups('approach'),byCohort:groups('academy'),
