@@ -30,7 +30,12 @@ for(const structure of S.STRUCTURES.catalogue())for(const lead of ['w','f'])for(
   if(M.decision&&!M.queue.length)E.resolve(M,M.decision.options[0].id);
   E.next(M);
   if(!replay&&(row.status==='running'||M.t>=360)){
-   replay=E.restore(clone(M));restored++;
+   // Mirror the live UI's saveNight serializer, including the current
+   // seeded RNG state; a bare JSON clone drops the RNG function.
+   const rngState=M.r.getState();
+   replay=E.restore(clone({...M,rState:rngState}));
+   assert.equal(replay.r.getState()>>>0,rngState>>>0);
+   restored++;
   }
  }
  assert.ok(M.done&&M.final);assert.ok(replay);drive(replay);eq(M.final,replay.final);eq(M.graph.events,replay.graph.events);
