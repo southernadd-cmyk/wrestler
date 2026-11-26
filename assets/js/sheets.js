@@ -784,7 +784,7 @@
      const n=actions[e.id],expected=ctx?.step.id;
      const counter=!!(n?.counterOf===expected||n?.blockOf===expected)&&!!expected;
      const code=counter?'defended':!ctx?'state_or_window':'different_move';
-     interruptSequence(row,counter?'The planned attack was defended.':!ctx?'The required position or timing was lost.':'The wrestlers chose another move.',code);continue;
+     interruptSequence(row,!adaptiveSequences(M)?'The connected exchange was interrupted.':counter?'The planned attack was defended.':!ctx?'The required position or timing was lost.':'The wrestlers chose another move.',code);continue;
     }
     if(!row.progress){row.attempts++;row.status='running';row.reason=null;}
     row.evidence.push({id:e.id,at:e.t,progress:e.t/Math.max(1,M.len),performer:ctx.step.performer,entry:{...ctx.step.entry},exit:{...ctx.step.exit},
