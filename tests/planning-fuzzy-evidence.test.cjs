@@ -51,6 +51,10 @@ for(let i=0;i<roster.length;i++){
   assert.ok(saved.participants[side].identity?.delivery);
   for(const k of pending)assert.equal(o.values[k],null);
   eq(o,P.observe(plain(saved),plain(room),side));
+  const inferred=P.behaviour(saved,room,side);
+  assert.ok(Object.values(inferred.scores).every(n=>Number.isFinite(n)&&n>=0&&n<=100));
+  for(const out of Object.keys(inferred.scores))assert.ok(inferred.fired[out].length>0);
+  eq(inferred,P.behaviour(plain(saved),plain(room),side));
   observations++;
  }
  assert.equal(JSON.stringify(room),before);
@@ -61,6 +65,7 @@ for(let i=0;i<roster.length;i++){
   const copy=plain(room);copy.mood[side]-=7;
   assert.equal(P.observe(saved,copy,side).values.consent,R.consent(copy,side));
   eq(P.observe(saved,copy,side),P.observe(plain(saved),plain(copy),side));
+  eq(P.behaviour(saved,copy,side),P.behaviour(plain(saved),plain(copy),side));
  }
 }
 assert.equal(observations,400);
