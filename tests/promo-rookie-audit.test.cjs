@@ -24,7 +24,7 @@ for(let season=2;season<=40&&rookies.length<A.REGISTER.length;season++){
 assert.equal(rookies.length,A.REGISTER.length,'audit must use every actual academy identity');
 assert.equal(new Set(rookies.map(w=>w.id)).size,120);
 const inc=(o,k)=>o[k]=(o[k]||0)+1;
-const stats=()=>({scenes:0,spoken:0,semantic:0,shared:0,authored:0,composed:0,graph:0,repeatText:0,distinctSharedIds:new Set(),owners:new Set(),sharedOwners:new Set(),routes:{},styles:{},families:{},lines:new Map()});
+const stats=()=>({scenes:0,spoken:0,semantic:0,shared:0,vows:0,vowOwners:new Set(),vowIds:new Set(),authored:0,composed:0,graph:0,repeatText:0,distinctSharedIds:new Set(),owners:new Set(),sharedOwners:new Set(),routes:{},styles:{},families:{},lines:new Map()});
 const policies={before:stats(),after:stats()},transcripts=[];
 const histories={before:[],after:[]};let paired=0,changed=0;
 function observe(policy,st,rookie,side){
@@ -40,6 +40,12 @@ function observe(policy,st,rookie,side){
   if(priorText.has(text))a.repeatText++;
   texts.push(text);
   const line=a.lines.get(text)||{count:0,owners:new Set()};line.count++;line.owners.add(rookie.id);a.lines.set(text,line);
+  if(e.authoredId?.startsWith('rookie-vow-')){
+   a.vows++;a.vowOwners.add(rookie.id);a.vowIds.add(e.authoredId);
+   assert.ok(!st.authoredDialogue.recent.includes(e.authoredId),'recent vow repeated');
+   assert.ok(st.authoredDialogue.used.includes(e.authoredId));
+   assert.ok(e.dialogueSlot?.stage==='close'&&e.dialogueSlot.action==='vow');
+  }
   if(e.authoredId)a.authored++;else if(e.composedId)a.composed++;else a.graph++;
   if(e.semantic?.move){
    a.semantic++;const key=[e.semantic.claim,e.semantic.move,side].join('|');
@@ -77,7 +83,7 @@ for(const [i,rookie] of rookies.entries())for(let j=0;j<8;j++){
   // Model the existing 12-show ID history from real earlier promo results,
   // not fabricated blocked IDs. Keep the scene's ordinary recent IDs too.
   st.authoredDialogue.recent=[...new Set([...st.authoredDialogue.recent,...histories[policy].flatMap(h=>h.ids)])].slice(0,128);
-  if(policy==='before')delete st.authoredDialogue.rookieVoice;
+  if(policy==='before')delete st.authoredDialogue.rookieVow;
   play(st,choices);observe(policy,st,rookie,side);states[policy]=st;
  }
  const {before,after}=states;
@@ -89,11 +95,16 @@ for(const [i,rookie] of rookies.entries())for(let j=0;j<8;j++){
 }
 assert.equal(paired,960);
 function summary(a){
- const {distinctSharedIds,owners,sharedOwners,lines,...rest}=a;
+ const {distinctSharedIds,owners,sharedOwners,lines,vowOwners,vowIds,...rest}=a;
  const repeats=[...lines].map(([text,v])=>({text,count:v.count,owners:v.owners.size})).sort((a,b)=>b.owners-a.owners||b.count-a.count).slice(0,12);
- return {...rest,owners:owners.size,sharedOwners:sharedOwners.size,distinctSharedIds:distinctSharedIds.size,uniqueText:lines.size,topCrossOwnerRepeats:repeats};
+ return {...rest,vowOwners:vowOwners.size,distinctVowIds:vowIds.size,owners:owners.size,sharedOwners:sharedOwners.size,distinctSharedIds:distinctSharedIds.size,uniqueText:lines.size,topCrossOwnerRepeats:repeats};
 }
 assert.equal(policies.after.owners.size,120);
+assert.equal(policies.before.vows,0,'old policy must remain unchanged');
+assert.ok(policies.after.vows>0&&policies.after.vowOwners.size>0,'shared vows must reach real scenes');
+const worst='i will win that is all';
+assert.ok((policies.after.lines.get(worst)?.count||0)<(policies.before.lines.get(worst)?.count||0),'top repeated closing must be reduced');
+
 const report={paired,changed,before:summary(policies.before),after:summary(policies.after)};
 if(process.env.ROOKIE_AUDIT_JSON)fs.writeFileSync(process.env.ROOKIE_AUDIT_JSON,JSON.stringify({report,transcripts},null,2));
 console.log('R5 ORGANIC AUDIT '+JSON.stringify(report));
