@@ -284,7 +284,7 @@ function run(seeds=[3,10],weeks=32){
     // If no request was accepted in the control bout, the new policy
     // cannot alter anything before the first acceptance. Reuse that result.
     const relevant=(alt.fin.ringsideEvidence||[]).some(e=>e.id==='big');
-    const arbitrated=relevant?drive(true,i%5===0,{...options,sequenceRecoveryPacingVersion:1,sequenceAlternativeReadinessVersion:1,bigSpotArbitrationVersion:1},immutable,'comparison'):alt;
+    const arbitrated=relevant?drive(true,i%5===0,{...options,sequenceRecoveryPacingVersion:1,sequenceAlternativeReadinessVersion:1,bigSpotArbitrationVersion:2},immutable,'comparison'):alt;
     const measureArbitration=x=>{
      const calls=(x.fin.ringsideEvidence||[]).filter(e=>e.id==='big');
      const blocked=continuation.temporalCases(x.traceReport).filter(c=>c.variants.some(v=>v.counts.early&&v.stage==='safety_or_runway'&&v.safetyBreakdown.flagTicks.pending_big_spot));

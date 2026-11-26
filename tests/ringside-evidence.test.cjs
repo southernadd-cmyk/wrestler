@@ -130,3 +130,30 @@ console.log('PASS ringside evidence: deferred big spot and four other evidence-b
  assert.equal(E.bigSpotDeadline(resumed),E.bigSpotDeadline(restoreMe));assert.equal(E.bigSpotPriority(resumed),true);
  console.log('PASS MP13F.9 reserved call, 40-second priority, 90-second refund, shortening and legacy save behavior');
  }
+
+{
+ // MP13F.9B retains exactly the same exclusive priority, while a longer
+ // cooperative request remains reserved without monopolising sequences.
+ const m=setup(24013);m.o.bigSpotArbitrationVersion=2;
+ m.stage='live';m.t=100;m.listen=101;m.wSt=0;m.fSt=100;m.planId='safe';m.r=()=>.99;
+ assert.equal(E.call(m,'big'),true);assert.equal(m.bigSpotRequest.expires,340);
+ m.t=139;assert.equal(E.bigSpotPriority(m),true);
+ m.t=140;assert.equal(E.bigSpotPriority(m),false);
+ m.t=190;assert.equal(E.canCall(m,'big'),false,'still pending beyond old expiry');
+ assert.equal(E.bigSpotDeadline(m),340);
+ m.t=330;until(m,()=>!m.bigSpotRequest);
+ assert.equal(m.ringsideEvidence[0].status,'unavailable');
+ assert.equal(m.ringsideEvidence[0].atEnd,340);assert.equal(m.calls,3);
+ const short=setup(24014);short.o.bigSpotArbitrationVersion=2;
+ short.stage='live';short.t=100;short.listen=101;short.wSt=0;short.r=()=>.99;
+ assert.equal(E.call(short,'big'),true);
+ assert.equal(E.call(short,'home'),true);
+ assert.equal(E.bigSpotDeadline(short),short.len-40);
+ const restore=setup(24015);restore.o.bigSpotArbitrationVersion=2;
+ restore.stage='live';restore.t=100;restore.listen=101;restore.wSt=0;
+ assert.equal(E.call(restore,'big'),true);
+ restore.t=200;
+ const resumed=E.restore(JSON.parse(JSON.stringify({...restore,rState:restore.r.getState()})));
+ assert.equal(E.bigSpotDeadline(resumed),340);assert.equal(E.bigSpotPriority(resumed),false);
+ console.log('PASS MP13F.9B longer cooperative request, bounded expiry, unchanged priority and resumed reservation');
+}
