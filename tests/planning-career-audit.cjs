@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -106,7 +106,7 @@ function run(seeds=[3,10],weeks=32){
    const preparation={...w.prep},focus=D.TRAINING[w.training]?.stat;
    if(focus&&!w.injury)preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);
    const trainingFatigue=['rest','promo'].includes(w.training)?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
-   const options={w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p:G.P(c.pid),slot:c.slot,minutes:sheet.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo,plan:{game:sheet.game,leash:sheet.leash,talk:sheet.talk},preparation,flags:{...w.flags,...sheet.flags},memory:Mem.context(w.id,f.id),sheet,structureExecution:true,sequenceTimingVersion:1,identity:G.normaliseIdentity(G.S.identity),seed:Math.floor(random()*2**31)||1};
+   const options={w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p:G.P(c.pid),slot:c.slot,minutes:sheet.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo,plan:{game:sheet.game,leash:sheet.leash,talk:sheet.talk},preparation,flags:{...w.flags,...sheet.flags},memory:Mem.context(w.id,f.id),sheet,structureExecution:true,sequenceTimingVersion:1,sequenceDependencyVersion:1,identity:G.normaliseIdentity(G.S.identity),seed:Math.floor(random()*2**31)||1};
    const immutable=copy(sheet.structurePlan),callIds=Object.keys(E.CALLS).filter(x=>!['home'].includes(x));
    function drive(active,resume,settings=options,expectedPlan=immutable,traceActual=false){
     let M=E.create({...copy(settings),livePsychologyVersion:active?1:undefined}),matchResume=0,liveScores=[],calls=0;
@@ -133,7 +133,7 @@ function run(seeds=[3,10],weeks=32){
     assert.equal(M.o.finish,c.finish,key+' booked finish unchanged');
     if(settings.structureExecution)assert.equal(M.final.structure.id,choice.id);else assert.equal(M.final.structure,undefined);
     assert.ok(range(M.final.stars,0,5)&&range(M.final.crowd));
-    if(trace){const report=trace.close(M);continuationRecords.push(...report.records);openingRecords.push(...report.openings);}
+    if(trace){const report=trace.close(M);continuationRecords.push(...report.records);openingRecords.push(...report.openings);dependencyWitnesses.push(...report.dependencyWitnesses);}
     return {M,fin:M.final,matchResume,liveScores};
     }finally{trace?.restore();}
    }
@@ -191,6 +191,21 @@ function run(seeds=[3,10],weeks=32){
      stars:x.stars,crowd:x.crowd,injury:Number(!!x.injury),outcome:x.outcome};};
     continuationPairs.push({key,structure:choice.id,before:count(baseline),after:count(fin)});
    }
+   if(sequences.length){
+    // Identical signed sheet, room/promo decisions, workers, seed,
+    // and manager-call policy; only the new live weighting differs.
+    const base=drive(true,false,{...options,sequenceDependencyVersion:undefined},immutable).fin;
+    const count=x=>{const rs=(x.structure.sequences||[]).map(s=>s.receipt).filter(Boolean);
+     const os=x.structure.objectives,layout=sheet.structurePlan.objectives;
+     const predecessors=new Set(layout.filter(o=>o.sequence).flatMap(o=>o.requires));
+     return {signed:rs.length,opened:rs.filter(r=>r.attempts>0).length,
+      completed:rs.filter(r=>['completed','adapted'].includes(r.status)).length,
+      interruptions:rs.reduce((n,r)=>n+r.interruptions,0),
+      objectives:os.filter(o=>['achieved','adapted'].includes(o.status)).length,
+      prerequisiteAchieved:os.filter(o=>predecessors.has(o.id)&&['achieved','adapted'].includes(o.status)).length,
+      stars:x.stars,crowd:x.crowd,injury:Number(!!x.injury),outcome:x.outcome};};
+    dependencyPairs.push({key,structure:choice.id,before:count(base),after:count(fin)});
+   }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
     for(const e of r.witnessed)assert.ok(M.graph.events.some(ev=>ev.id===e.id&&ev.t===e.at),key+' actual graph receipt');
@@ -236,6 +251,11 @@ function run(seeds=[3,10],weeks=32){
   })(),matchedContinuation:(()=>{
    const summarize=side=>{const xs=continuationPairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','attempts','interruptions','objectives','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
    return {pairs:continuationPairs.length,before:summarize('before'),after:summarize('after'),changedOutcomes:continuationPairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:continuationPairs};
+  })(),matchedDependency:(()=>{
+   const sum=xs=>({...Object.fromEntries(['signed','opened','completed','interruptions','objectives','prerequisiteAchieved','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))});
+   const compare=pairs=>({pairs:pairs.length,before:sum(pairs.map(x=>x.before)),after:sum(pairs.map(x=>x.after)),changedOutcomes:pairs.filter(x=>x.before.outcome!==x.after.outcome).length});
+   return {...compare(dependencyPairs),byStructure:Object.fromEntries([...new Set(dependencyPairs.map(x=>x.structure))].map(k=>[k,compare(dependencyPairs.filter(x=>x.structure===k))])),
+    witnessedProgress:dependencyWitnesses.length,witnessedPrerequisiteCompletions:dependencyWitnesses.filter(x=>x.completed).length,examples:dependencyWitnesses.filter(x=>x.completed).slice(0,4),comparisons:dependencyPairs};
   })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},opening:continuation.summariseOpenings(openingRecords),rows};
 }
 module.exports={run};
