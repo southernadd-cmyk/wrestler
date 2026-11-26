@@ -9,7 +9,7 @@ const eqState=(a,b)=>a&&b&&['control','position','down'].every(k=>a[k]===b[k]);
 function trace(root,key){
  const G=root.OfficeMatch.GRAPH,D=root.OfficeSheets.DIRECTOR,A=G.A;
  let tracked=null,phase=null,offer=null;
- const undo=[],attempts=new Map(),records=[],openings=new Map(),dependencyWitnesses=[];
+ const undo=[],attempts=new Map(),records=[],openings=new Map(),dependencyWitnesses=[],recoveryOffers=[];
  const rows=m=>m.structureDirector?.sequences||[];
  const running=m=>rows(m).filter(r=>r.status==='running'&&r.progress>0);
  const id=r=>r.objective+'|'+r.attempts;
@@ -144,6 +144,15 @@ function trace(root,key){
   }
   return result;
  });
+ wrap(D,'sequenceRecoveryPreference',function(original,args){
+  const result=original.apply(this,args);
+  if(tracked&&phase==='step'&&result){
+   const {objective,side,ids,deficit,earliest,latest,boosted}=result;
+   recoveryOffers.push({key,at:tracked.t,objective,side,ids,deficit,earliest,latest,boosted,
+    stamina:side==='w'?tracked.wSt:tracked.fSt});
+  }
+  return result;
+ });
  wrap(D,'observe',function(original,args){
   const [m,e]=args;
   if(m!==tracked)return original.apply(this,args);
@@ -233,7 +242,13 @@ function trace(root,key){
    v.prerequisites=m.structureDirector.objectives.filter(o=>v.requires.includes(o.id)).map(o=>({id:o.id,status:o.status,at:o.at,evidence:o.evidence.map(e=>({id:e.id,at:e.at,actor:e.actor}))}));
    v.duration=m.len;
   }
-  return {records,openings:[...openings.values()],dependencyWitnesses};
+  for(const offer of recoveryOffers){
+   const e=m.graph.events.find(e=>e.t===offer.at&&e.preControl===offer.side&&e.control===offer.side&&offer.ids.includes(e.id));
+   offer.landed=e?.id||null;
+   offer.sequenceOpened=rows(m).some(r=>r.objective===offer.objective&&r.attempts>0);
+   offer.sequenceCompleted=rows(m).some(r=>r.objective===offer.objective&&['completed','adapted'].includes(r.status));
+  }
+  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers};
  },restore(){for(const fn of undo.reverse())fn();tracked=null;}};
 }
 function summarise(records){
