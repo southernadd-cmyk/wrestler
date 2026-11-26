@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set();
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -133,8 +133,9 @@ function run(seeds=[3,10],weeks=32){
     assert.equal(M.o.finish,c.finish,key+' booked finish unchanged');
     if(settings.structureExecution)assert.equal(M.final.structure.id,choice.id);else assert.equal(M.final.structure,undefined);
     assert.ok(range(M.final.stars,0,5)&&range(M.final.crowd));
-    if(trace){const report=trace.close(M);continuationRecords.push(...report.records);openingRecords.push(...report.openings);dependencyWitnesses.push(...report.dependencyWitnesses);}
-    return {M,fin:M.final,matchResume,liveScores};
+    const traceReport=trace?trace.close(M):null;
+    if(traceActual===true){continuationRecords.push(...traceReport.records);openingRecords.push(...traceReport.openings);dependencyWitnesses.push(...traceReport.dependencyWitnesses);}
+    return {M,fin:M.final,matchResume,liveScores,traceReport};
     }finally{trace?.restore();}
    }
    const actual=drive(true,i%5===0,options,immutable,true);
@@ -194,7 +195,42 @@ function run(seeds=[3,10],weeks=32){
    if(sequences.length){
     // Identical signed sheet, room/promo decisions, workers, seed,
     // and manager-call policy; only the new live weighting differs.
-    const base=drive(true,false,{...options,sequenceDependencyVersion:undefined},immutable).fin;
+    const baseline=drive(true,i%5===0,{...options,sequenceDependencyVersion:undefined},immutable,'comparison');
+    const base=baseline.fin;
+    // Independently compare the newly traced baseline with an untraced
+    // identical replay for one bout per structure.
+    if(!dependencyTraceVerified.has(choice.id)){
+     const plain=drive(true,i%5===0,{...options,sequenceDependencyVersion:undefined},immutable);
+     eq(base,plain.fin,key+' dependency baseline trace neutrality');
+     eq(baseline.M.graph,plain.M.graph,key+' dependency baseline graph neutrality');
+     assert.equal(baseline.M.r.getState()>>>0,plain.M.r.getState()>>>0,key+' dependency baseline RNG neutrality');
+     dependencyTraceVerified.add(choice.id);
+    }
+    const beforeTrace=baseline.traceReport,afterTrace=actual.traceReport;
+    const describe=(v,trace)=>{
+     const s=continuation.summariseOpenings([v]),ticks=v.ticks;
+     const stage=Object.keys(s.firstEmptyStage)[0]||null;
+     const guards=['before_window','after_window','finish_runway','safety_or_manager_request','prerequisite_pending'];
+     const available=ticks.filter(t=>t.candidates.some(c=>!c.guards.some(g=>guards.includes(g))));
+     const matching=available.filter(t=>t.candidates.some(c=>!c.guards.some(g=>[...guards,'wrong_control','wrong_position_or_down'].includes(g))));
+     const ready=matching.filter(t=>t.candidates.some(c=>!c.guards.length));
+     const snap=t=>t?{at:t.at,stamina:t.stamina,position:t.position,control:t.control,candidates:t.candidates}:null;
+     return {status:v.final.status,attempts:v.final.attempts,stage,prerequisites:v.prerequisites,matchSeconds:v.duration,
+      eligibleTicks:available.length,matchingTicks:matching.length,readyTicks:ready.length,offers:ticks.filter(t=>t.offered).length,
+      firstEligible:snap(available[0]),firstMatching:snap(matching[0]),lastMatching:snap(matching.at(-1)),
+      natural:v.natural.slice(0,3),attemptsDetail:trace.records.filter(r=>r.objective===v.objective).map(r=>({openedAt:r.openedAt,terminal:r.terminal.kind}))};
+    };
+    for(const v of afterTrace.openings){
+     const b=beforeTrace.openings.find(x=>x.objective===v.objective);
+     assert.ok(b,key+' identical signed objective in trace');
+     eq(b.actions,v.actions,key+' identical signed action chain');
+     const complete=x=>['completed','adapted'].includes(x.final.status);
+     const achieved=x=>x.prerequisites.some(p=>['achieved','adapted'].includes(p.status));
+     if(complete(b)!==complete(v)||!!b.final.attempts!==!!v.final.attempts||achieved(b)!==achieved(v)){
+      dependencyDetails.push({key,structure:choice.id,objective:v.objective,actions:v.actions,window:v.window,
+       before:describe(b,beforeTrace),after:describe(v,afterTrace)});
+     }
+    }
     const count=x=>{const rs=(x.structure.sequences||[]).map(s=>s.receipt).filter(Boolean);
      const os=x.structure.objectives,layout=sheet.structurePlan.objectives;
      const predecessors=new Set(layout.filter(o=>o.sequence).flatMap(o=>o.requires));
@@ -255,7 +291,17 @@ function run(seeds=[3,10],weeks=32){
    const sum=xs=>({...Object.fromEntries(['signed','opened','completed','interruptions','objectives','prerequisiteAchieved','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))});
    const compare=pairs=>({pairs:pairs.length,before:sum(pairs.map(x=>x.before)),after:sum(pairs.map(x=>x.after)),changedOutcomes:pairs.filter(x=>x.before.outcome!==x.after.outcome).length});
    return {...compare(dependencyPairs),byStructure:Object.fromEntries([...new Set(dependencyPairs.map(x=>x.structure))].map(k=>[k,compare(dependencyPairs.filter(x=>x.structure===k))])),
-    witnessedProgress:dependencyWitnesses.length,witnessedPrerequisiteCompletions:dependencyWitnesses.filter(x=>x.completed).length,examples:dependencyWitnesses.filter(x=>x.completed).slice(0,4),comparisons:dependencyPairs};
+    traceVerified:[...dependencyTraceVerified],witnessedProgress:dependencyWitnesses.length,witnessedPrerequisiteCompletions:dependencyWitnesses.filter(x=>x.completed).length,examples:dependencyWitnesses.filter(x=>x.completed).slice(0,4),
+    transitions:(()=>{
+     const done=x=>['completed','adapted'].includes(x.status),earned=x=>x.prerequisites.some(p=>['achieved','adapted'].includes(p.status));
+     const groups={lostCompletion:dependencyDetails.filter(x=>done(x.before)&&!done(x.after)),gainedCompletion:dependencyDetails.filter(x=>!done(x.before)&&done(x.after)),
+      lostOpening:dependencyDetails.filter(x=>x.before.attempts&&!x.after.attempts),gainedOpening:dependencyDetails.filter(x=>!x.before.attempts&&x.after.attempts),
+      gainedPrerequisiteButUnopened:dependencyDetails.filter(x=>!earned(x.before)&&earned(x.after)&&!x.after.attempts)};
+     return Object.fromEntries(Object.entries(groups).map(([k,xs])=>[k,{count:xs.length,afterStages:xs.reduce((o,x)=>(o[x.after.stage||x.after.status]=(o[x.after.stage||x.after.status]||0)+1,o),{}),
+      examples:xs.slice(0,5).map(x=>({key:x.key,structure:x.structure,objective:x.objective,actions:x.actions,
+       before:{status:x.before.status,stage:x.before.stage,prerequisites:x.before.prerequisites.map(p=>({status:p.status,at:p.at})),eligibleTicks:x.before.eligibleTicks,matchingTicks:x.before.matchingTicks,readyTicks:x.before.readyTicks,offers:x.before.offers,matchSeconds:x.before.matchSeconds,firstMatching:x.before.firstMatching,lastMatching:x.before.lastMatching,attemptsDetail:x.before.attemptsDetail},
+       after:{status:x.after.status,stage:x.after.stage,prerequisites:x.after.prerequisites.map(p=>({status:p.status,at:p.at})),eligibleTicks:x.after.eligibleTicks,matchingTicks:x.after.matchingTicks,readyTicks:x.after.readyTicks,offers:x.after.offers,matchSeconds:x.after.matchSeconds,firstMatching:x.after.firstMatching,lastMatching:x.after.lastMatching,attemptsDetail:x.after.attemptsDetail}}))}]));
+    })(),details:dependencyDetails,comparisons:dependencyPairs};
   })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},opening:continuation.summariseOpenings(openingRecords),rows};
 }
 module.exports={run};
