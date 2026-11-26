@@ -1,4 +1,4 @@
-/* THE OFFICE — MP2B: planning domain membership, evidence and behaviour.
+/* THE OFFICE — MP2C: planning domain membership, evidence and behaviour.
    Reuse the shared Sugeno kernel and canonical worker axes. This module
    is not loaded by the live room yet; no decisions or saves change. */
 (function(root){'use strict';
@@ -68,7 +68,7 @@
   // Existing career ambitions are read directly, never initialized here.
   const ambition=career?.ambitions?.w?.[id];
   const goal=ambition&&['title','push','money','body','rivalry','respect','stage','mentor'].includes(ambition.kind)&&(!Number.isFinite(ambition.since)||!Number.isFinite(room.contract?.eventAbs)||ambition.since<=room.contract.eventAbs)?{kind:ambition.kind,since:finite(ambition.since),satisfaction:stat(ambition.sat)}:null;
-  return {id,opponentId:rid,style:str(worker.style),identity:identity?Object.fromEntries(['source','delivery','motivation','vulnerability','trigger','tactic','boundary','underPressure'].map(k=>[k,str(identity[k])])):null,
+  return {id,opponentId:rid,style:str(worker.style),tier:str(worker.tier),identity:identity?Object.fromEntries(['source','delivery','motivation','vulnerability','trigger','tactic','boundary','underPressure'].map(k=>[k,str(identity[k])])):null,
    values:{...K.workerInputs(worker),fatigue:stat(worker.fatigue),safetyAbility:stat(worker.safe),ringAbility:stat(worker.ring),morale:stat(worker.morale),professionalTrust:null},
    injury:finite(worker.injury),age:finite(worker.age),careerGoal:goal,
    relationship:{regard,sharedBond:finite(pair?.score),betrayed:typeof pair?.betrayed==='boolean'?pair.betrayed:null,
@@ -95,7 +95,7 @@
  // MP2A: independent behavioural tendencies, not choice probabilities.
  // Equal weight across grades within one family keeps transitions smooth.
  // Rule values/weights are initial design estimates for shadow calibration.
- const behaviourOutputs=['cooperation','assertiveness','caution','ambition','protectiveness','flexibility'];
+ const behaviourOutputs=['cooperation','assertiveness','caution','ambition','protectiveness','flexibility','mentorship','improvisation'];
  const rule=(id,output,value,weight,...when)=>({id,output,value,weight,when});
  const family=(output,axis,values,weight)=>['low','medium','high'].map((grade,i)=>rule(output+'_'+axis+'_'+grade,output,values[i],weight,axis+'.'+grade));
  const behaviourModel=createModel({outputs:behaviourOutputs,rules:[
@@ -128,7 +128,20 @@
   // not blanket consent to changes or permission for illegal moves.
   ...family('flexibility','professionalism',[25,60,85],2),
   ...family('flexibility','ringPsychology',[20,55,90],2),
-  ...family('flexibility','ringAbility',[30,55,80],1)
+  ...family('flexibility','ringAbility',[30,55,80],1),
+  // Mentorship: willingness and capacity to guide a partner. A veteran
+  // tier is contextual evidence, not a substitute for professionalism.
+  ...family('mentorship','professionalism',[20,55,85],2),
+  ...family('mentorship','ringPsychology',[20,55,85],2),
+  ...family('mentorship','safetyAbility',[30,55,80],1),
+  rule('mentorship_career_goal','mentorship',95,3,'goal.mentor'),
+  rule('mentorship_veteran_developing_partner','mentorship',85,1.5,'pair.veteranDeveloping','professionalism.high'),
+  // Improvisation: capacity to adapt when a planned beat changes, not
+  // permission to abandon a finish, disregard consent or perform a hazard.
+  ...family('improvisation','ringPsychology',[15,55,90],3),
+  ...family('improvisation','ringAbility',[20,55,85],2),
+  ...family('improvisation','fatigue',[80,55,25],1),
+  rule('improvisation_prior_adaptation','improvisation',85,1,'history.requestedAdaptation')
  ]});
  function behaviour(snapshot,room,side){
   const observation=observe(snapshot,room,side),p=snapshot.participants[side];
@@ -143,6 +156,12 @@
   if((side==='w'&&['lose_clean','lose_protected','lose_dq'].includes(finish))||
      (side==='f'&&['win_clean','win_dirty','win_dq'].includes(finish)))cues['booking.actorLoses']=1;
   if(rows(p.relationship?.memories).some(m=>m.kind==='humiliation'))cues['history.ownHumiliation']=1;
+  if(goal==='mentor')cues['goal.mentor']=1;
+  const partner=snapshot.participants[sideOther(side)];
+  if(p.tier==='Veteran'&&['Rookie','Prospect'].includes(partner?.tier))cues['pair.veteranDeveloping']=1;
+  // A recorded request followed by an adapted delivery is modest pair
+  // evidence, not proof that this actor alone improvised successfully.
+  if(rows(p.relationship?.talks).some(t=>t.requestedBy===p.id&&t.delivered==='adapted'))cues['history.requestedAdaptation']=1;
   const inference=behaviourModel.evaluate(observation.values,cues);
   return {v:1,observation,cues,scores:inference.scores,fired:inference.fired};
  }
