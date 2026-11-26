@@ -1324,6 +1324,10 @@
     const dialogue=root.OfficePlanningDialogue.freezeHuddle(st);
     if(dialogue)st.structureTalk.dialogue=dialogue;
    }
+   if(st.planningSequences===1){
+    const offer=makeSequenceOffer(st);
+    if(offer)st.structureTalk.sequenceTalk={v:1,offer,heard:false};
+   }
    const read=structureRead(st),v=STRUCTURE_VOICES[voice(who(st,x.owner))]||STRUCTURE_VOICES.stoic;
    log(st,'agent',read.label+' means '+read.focus+'. '+read.advice+' The promoter has already booked '+(D.FINISHES[st.finish]?.name||st.finish)+'.');
    const dialogue=root.OfficePlanningDialogue?.readHuddle(st);
@@ -1394,7 +1398,7 @@
     }});
    // One extra discussion, never a loop. Ask without committing a move
    // or charging mood; afterwards both actual offers remain available.
-   if(st.planningBargaining===1&&response&&!t.bargaining){
+   if(st.planningBargaining===1&&response&&!t.bargaining&&!t.sequenceTalk?.heard){
     const offer=counterOffer(st);
     if(offer)out.push({id:'hear_counter',label:'“'+opp+', what would you suggest instead?”',
      hint:'Hear one more legal proposal. No change to the layout or consent yet.',tags:['Continue discussion'],
@@ -1404,6 +1408,10 @@
       const reply=offer.response.by[side].stance;
       planningLine(st,side,offer.dialogue.lines.response,reply==='accept'?undefined:'objection');
       log(st,'agent','Two alternatives on the table. Choose one, keep the original, or leave the objective open.');
+      if(st.planningSequences===1&&!t.sequenceTalk?.heard){
+       const next=makeSequenceOffer(st);
+       if(next)t.sequenceTalk={v:1,offer:next,heard:false};else delete t.sequenceTalk;
+      }
      }});
    }
    const compromise=readCounterOffer(st);
@@ -1425,6 +1433,39 @@
       planningLine(st,side,final.dialogue.lines.requesterResolution,q[side].stance==='accept'?undefined:'objection');
       planningLine(st,other(side),final.dialogue.lines.partnerResolution,q[other(side)].stance==='accept'?undefined:'objection');
       log(st,'agent','Revised '+t.title+' using the second proposal. The booked finish still stands.');
+     }});
+   }
+   const sequence=readSequenceOffer(st);
+   if(sequence&&!t.sequenceTalk.heard){
+    out.push({id:'hear_sequence',label:'“Talk me through the setup for '+sequence.card.label+'.”',
+     hint:'Hear a connected sequence and both wrestlers’ reactions. No commitment or mood change yet.',
+     tags:['Continue discussion'],
+     run(st){
+      const offer=readSequenceOffer(st);if(!offer)throw Error('Sequence is no longer eligible');
+      t.sequenceTalk.heard=true;
+      const proposer=offer.dialogue.point.requester,partner=other(proposer);
+      planningLine(st,proposer,offer.dialogue.lines.request);
+      const start=offer.evidence.start,guards=[...new Set(offer.evidence.steps.flatMap(s=>s.guards))];
+      log(st,'agent',sequenceDescription(st,offer)+'. Start: '+nameOf(st,start.control)+' in control, '+start.position+
+       (start.down?', '+nameOf(st,start.down)+' down':'')+'. Difficulty '+Math.round(offer.difficulty.score)+'/100. '+
+       (guards.length?'Check '+guards.map(g=>g.replace('live_','').replaceAll('_',' ')).join(', ')+' live. ':'')+'Conditional setup only.');
+      planningLine(st,partner,offer.dialogue.lines.response,offer.by[partner].stance==='accept'?undefined:'objection');
+     }});
+   }else if(sequence&&t.sequenceTalk.heard){
+    const q=sequence.by,before=structureCallMood(st.structureBoard[t.objective]),after=structureCallMood(sequence.card);
+    const net={w:q.w.mood+after.w-before.w,f:q.f.mood+after.f-before.f};
+    out.push({id:'use_sequence',label:'“Pencil in that '+sequence.evidence.steps.length+'-move setup.”',
+     hint:sequenceDescription(st,sequence)+'. '+name+' '+stanceText(q[side].stance)+' ('+moodText(net[side])+'); '+opp+' '+stanceText(q[other(side)].stance)+' ('+moodText(net[other(side)])+'). Only the final named call is signed in this version; the setup is provisional.',
+     tags:[...['w','f'].filter(s=>net[s]!==0).map(s=>nameOf(st,s)+(net[s]>0?' ▲':' ▼')),'Conditional setup'],
+     run(st){
+      const offer=readSequenceOffer(st);if(!offer)throw Error('Sequence is no longer eligible');
+      st.structureBoard[t.objective]={...offer.card,chosen:true,open:false,source:'negotiated'};
+      st.mood.w+=offer.by.w.mood;st.mood.f+=offer.by.f.mood;
+      t.decision='revise';t.sequenceTalk.selected=true;
+      if(t.bargaining)t.bargaining.selected=offer.card.action===t.bargaining.offer.card.action?'second':'first';
+      planningLine(st,side,offer.dialogue.lines.ownerResolution,q[side].stance==='accept'?undefined:'objection');
+      planningLine(st,other(side),offer.dialogue.lines.partnerResolution,q[other(side)].stance==='accept'?undefined:'objection');
+      log(st,'agent','Setup pencilled in for discussion. Only '+offer.card.label+' is signed as a named call in this version; the connected setup is not an execution commitment.');
      }});
    }
    out.push({id:'open',label:'“Call this objective in the ring.”',
@@ -1511,9 +1552,13 @@
   if(!st.structurePlanning)return null;
   const info=structureRead(st),route=st.lockRoute||st.board.finish?.route||null;
   const named=structureSlots(st).filter(o=>st.structureBoard?.[o.id]?.action).length,t=st.structureTalk;
-  const discussion=t?.decision==='revise'?'Negotiated '+t.title+': '+t.original.label+' became '+(st.structureBoard?.[t.objective]?.label||'another legal move')+'.':
+  let discussion=t?.decision==='revise'?'Negotiated '+t.title+': '+t.original.label+' became '+(st.structureBoard?.[t.objective]?.label||'another legal move')+'.':
    t?.decision==='open'?'Negotiated '+t.title+': no named move is promised.':
    t?.decision==='keep'?'Kept '+t.original.label+' for '+t.title+' despite '+nameOf(st,t.by)+'’s reservation.':null;
+  if(t?.sequenceTalk?.selected&&t.sequenceTalk.offer?.card?.action===st.structureBoard?.[t.objective]?.action){
+   const offer=t.sequenceTalk.offer,ev=sequenceEvidence(st,t.objective,offer.card.action,offer.sequence);
+   if(ev.eligible&&JSON.stringify(ev)===JSON.stringify(offer.evidence))discussion+=' Discussed setup: '+sequenceDescription(st,offer)+'. Provisional; only the named call is signed.';
+  }
   return {label:info.label,focus:info.focus,lead:nameOf(st,st.structure.roles.lead),
    booked:D.FINISHES[st.finish]?.name||st.finish,
    route:route?ROUTE_NAME[route]||route:'Not selected',
@@ -1623,6 +1668,48 @@
   if(!bargainingCards(st,structureSlot(st,t.objective),t.by).some(c=>JSON.stringify(c)===JSON.stringify(saved.card)))return null;
   const dialogue=root.OfficePlanningDialogue?.freezeCounter(st,saved);
   return dialogue&&JSON.stringify(dialogue)===JSON.stringify(saved.dialogue)?saved:null;
+ }
+ // One optional sequence exchange. Freeze the candidate once and
+ // revalidate its exact evidence and replies before showing/accepting it.
+ function makeSequenceOffer(st){
+  const t=st.structureTalk,L=root.OfficePlanningDialogue;
+  if(st.planningSequences!==1||!t?.alternative||t.decision||!L?.readHuddle(st))return null;
+  const second=readCounterOffer(st),cards=second?[second.card,t.alternative]:[t.alternative];
+  for(const card of cards){
+   const result=sequenceCandidates(st,t.objective,card.action);
+   // Prefer an actual connected exchange with both performers where
+   // close in merit to the top suggestion, but don't force a reversal.
+   const top=result.candidates[0];
+   if(!top)continue;
+   const row=result.candidates.find(r=>r.difficulty.components.controlChanges>0&&r.merit>=top.merit-4)||top;
+   const offer={v:1,card:{...card},sequence:row.sequence,evidence:row.evidence,difficulty:row.difficulty,by:row.by};
+   const dialogue=L.freezeSequence(st,offer);
+   if(dialogue)return {...offer,dialogue};
+  }
+  return null;
+ }
+ function readSequenceOffer(st){
+  const t=st.structureTalk,F=root.OfficePlanningFuzzy,L=root.OfficePlanningDialogue,s=t?.sequenceTalk,offer=s?.offer;
+  if(st.planningSequences!==1||t?.decision||s?.v!==1||offer?.v!==1||!L?.readHuddle(st))return null;
+  const second=readCounterOffer(st),card=[t.alternative,second?.card].filter(Boolean).find(c=>JSON.stringify(c)===JSON.stringify(offer.card));
+  if(!card)return null;
+  const evidence=sequenceEvidence(st,t.objective,card.action,offer.sequence);
+  if(!evidence.eligible||JSON.stringify(evidence)!==JSON.stringify(offer.evidence))return null;
+  const difficulty=F.sequenceDifficulty(evidence);
+  if(!difficulty||JSON.stringify(difficulty)!==JSON.stringify(offer.difficulty))return null;
+  const by={};
+  for(const side of ['w','f']){
+   const result=F.evaluateProposal(st.planningEvidence,st,side,t.objective,card.action,offer.sequence);
+   const scores=result.assessment?.scores,reply=F.proposalReply(scores,side===t.by?'requester':'partner');
+   if(!result.eligible||!reply)return null;
+   by[side]={scores,...reply};
+  }
+  if(JSON.stringify(by)!==JSON.stringify(offer.by))return null;
+  const dialogue=L.freezeSequence(st,offer);
+  return dialogue&&JSON.stringify(dialogue)===JSON.stringify(offer.dialogue)?offer:null;
+ }
+ function sequenceDescription(st,offer){
+  return offer.evidence.steps.map(s=>nameOf(st,s.performer)+': '+name(s.action)).join(' → ');
  }
  function proposalEvidence(st,objective,action){
   const deny=reason=>({v:1,eligible:false,reason});
@@ -2128,7 +2215,7 @@
    if(st.planningProposal===1&&opts.planningDialogue===true&&root.OfficePlanningDialogue){
     const L=root.OfficePlanningDialogue,banks=Array.isArray(opts.planningBanks)?opts.planningBanks:[];
     const identities={w:L.capture(w,banks,2),f:L.capture(f,banks,2)};
-    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true)st.planningBargaining=1;}
+    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true)st.planningSequences=1;}}
    }
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
@@ -2304,7 +2391,7 @@
    const s=current(st),real=s.options(st).find(x=>x.id===id);
    if(real.fx)apply(st,real.fx);
    real.run?.(st);
-   if(s.id==='structure_huddle'&&id==='hear_counter')return st;
+   if(s.id==='structure_huddle'&&['hear_counter','hear_sequence'].includes(id))return st;
    reconcile(st);
    st.at++;enter(st);return st;
   }
@@ -2593,5 +2680,5 @@
   }
   G.save();return out;
  };
- root.OfficeRoom={sequenceCandidates,sequenceEvidence,proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
+ root.OfficeRoom={readSequenceOffer,sequenceCandidates,sequenceEvidence,proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
 })(typeof window!=='undefined'?window:globalThis);
