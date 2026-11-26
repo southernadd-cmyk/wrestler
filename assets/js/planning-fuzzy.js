@@ -178,5 +178,28 @@
    revise:{requester:limit(2+(a.cooperation-50)/30+(a.flexibility-50)/40,1,4),partner:-limit(1+(50-b.flexibility)/30,0,3)},
    open:{requester:limit(3+(a.flexibility-50)/35,1,5),partner:-limit(2+(50-b.improvisation)/35+(b.caution-50)/50,0,4)}};
  }
- root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction});
+ // MP4B: priority for an existing legal objective/counterproposal.
+ // Evidence is supplied by the room; this function cannot create moves.
+ // Bounded continuous components express what matters to the performer,
+ // not whether the performer is allowed to execute the action.
+ function huddlePriority(profile,facts){
+  const s=profile?.scores;
+  if(!s||!facts||!['assertiveness','protectiveness','ambition','caution','mentorship','flexibility'].every(k=>Number.isFinite(s[k])&&s[k]>=0&&s[k]<=100))return null;
+  const flag=k=>facts[k]===true?1:0;
+  const components={
+   initiative: (s.assertiveness-50)/12,
+   safety:flag('safer')*(2+s.caution/20)+flag('lessTaxing')*s.caution/35,
+   visibility:flag('higherImpact')*(s.ambition/22+s.protectiveness/30),
+   craft:flag('familiar')*(1+s.flexibility/30),
+   finish:flag('supportsFinish')*(3+s.protectiveness/30),
+   guidance:flag('developingPartner')*flag('simpler')*s.mentorship/22,
+   compromise:flag('noAlternative')*(-2+s.flexibility/35)
+  };
+  // Select a concrete, truthful explanation from evidence, not personality
+  // adjectives or a claim about an unobserved move.
+  const reason=Object.entries(components).filter(([k,v])=>k!=='initiative'&&k!=='compromise'&&v>0)
+   .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0]?.[0]||'pacing';
+  return {score:Object.values(components).reduce((a,b)=>a+b,0),reason};
+ }
+ root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority});
 })(typeof window!=='undefined'?window:globalThis);
