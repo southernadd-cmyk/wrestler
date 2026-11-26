@@ -61,6 +61,7 @@ jobs:
             add tests/promo-rookie-audit.test.cjs
             add tests/promo-roster-audit.test.cjs
             add tests/promo-fuzzy.test.cjs
+            add tests/psychology-fuzzy.test.cjs
           }
           if [[ "$EVENT_NAME" == "workflow_dispatch" || "$EVENT_NAME" == "schedule" || "$REF_TYPE" == "tag" || "$FULL_REFACTOR" == "true" ]]; then
             echo "mode=full" >> "$GITHUB_OUTPUT"
@@ -88,6 +89,10 @@ jobs:
                   add tests/ui-accessibility.test.cjs
                   add tests/structure-career-activation.test.cjs
                   add_promo ;;
+                assets/js/psychology-fuzzy.js)
+                  add_promo
+                  add tests/agents-room.test.cjs
+                  add tests/negotiations-v2.test.cjs ;;
                 assets/js/promo-*.js|assets/promo-banks/*|scripts/build-promo-banks.cjs|scripts/build-rookie-banks.cjs|scripts/rookie-dialogue-families.cjs|assets/js/story.js|assets/js/rivalry.js|assets/js/mouthpiece.js|tests/_source.cjs|.gitattributes|index.html)
                   add_promo
                   add tests/ui-accessibility.test.cjs ;;
