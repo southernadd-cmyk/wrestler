@@ -1418,10 +1418,23 @@ function backstageBrief(c,P,v){
   <div class="${plan?.kind==='warning'?'brief-warning':''}"><small>Finish</small><b>${esc(readiness)}</b></div>
  </section>`;
 }
-function showMeeting(){
+function showMeeting(loadedBanks){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan,S0=S();
  if(!P.room||P.room.cid!==c.id||P.room.v!==3){
+  const dialogue=window.OfficePlanningDialogue;
+  if(P.structureChoice&&dialogue&&loadedBanks===undefined){
+   // Never let a stale network completion replace a different match or
+   // structure. Only the compact room snapshot goes into the autosave.
+   const n=night,cid=c.id;
+   P.room=null;
+   const token=dialogue.beginLoad(n,P,cid);if(!token)return;
+   persistNight();
+   $('#tv').innerHTML=strip(c,'backstage')+'<div class="stage screen s-back"><p role="status">Preparing the backstage conversation…</p></div>';
+   Promise.resolve(dialogue.loadPair(w,f)).catch(()=>[]).then(banks=>{
+    if(dialogue.completeLoad(n,token,()=>night===n&&current()?.id===cid))showMeeting(banks);
+   });return;
+  }
   const opts={recent:S0.roomRecent||[],threads:OfficeRoom.liveThreads(S0.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)};
   if(P.structureChoice){
    opts.structure={id:P.structureChoice.id,lead:P.structureChoice.lead};
@@ -1429,6 +1442,8 @@ function showMeeting(){
    opts.planningCareer=S0;
    opts.planningInitiative=true;
    opts.planningProposal=true;
+   opts.planningDialogue=true;
+   opts.planningBanks=loadedBanks||[];
   }
   P.room=OfficeRoom.begin(c,w,f,p,opts);P.sheet=null;P.confirmed=false;
  }

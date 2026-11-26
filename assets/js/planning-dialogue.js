@@ -68,7 +68,7 @@
   return {v:1,cid:room.cid,objective:t.objective,title:t.title,requester:t.by,actorId:evidence.actorId,partnerId:evidence.partnerId,
    original:t.original.label,alternative:t.alternative.label,topic,stances:{w:response.by.w.stance,f:response.by.f.stance}};
  }
- const reason={risk:'It avoids the marked high-risk move.',finish:'It may help set up the agreed finish.',effort:'It has a lower planned move cost.',impact:'It has a stronger authored crowd moment.',familiarity:'It is a move I know.',layout:'I would like to work that objective differently.'};
+ const reason={risk:'It avoids the marked high-risk move.',finish:'It may help set up the agreed finish.',effort:'It should take a little less out of me.',impact:'I think it could get a bigger reaction.',familiarity:'It is a move I know.',layout:'I would like to work that objective differently.'};
  function compose(identity,point,turn,who,seed,{used=[]}={}){
   if(identity?.v!==1||point?.v!==1||!side(who)||!side(point.requester)||!['request','response','resolution'].includes(turn)||!families[identity.family]||
      identity.id!==(who===point.requester?point.actorId:point.partnerId)||!clean(point.original)||!clean(point.alternative)||!clean(point.title)||!Object.hasOwn(reason,point.topic))return null;
@@ -76,13 +76,50 @@
   const stance=turn==='request'?'request':point.stances?.[who];
   if(!Object.hasOwn(families[identity.family],stance))return null;
   const body=turn==='request'?'For '+point.title.toLowerCase()+', could we use '+point.alternative+' instead of '+point.original+'? '+reason[point.topic]:
-   turn==='response'?(stance==='accept'?'I can work '+point.alternative+' in that spot.':stance==='reserved'?'I have reservations about using '+point.alternative+' there.':'I would like another option for '+point.title.toLowerCase()+'.'):
-   stance==='accept'?'I will work the agreed '+point.alternative+'.':stance==='reserved'?'I will work '+point.alternative+', but note my reservation.':'I still prefer another option, but '+point.alternative+' is the call.';
+   turn==='response'?(stance==='accept'?'I can work with '+point.alternative+' in that spot.':stance==='reserved'?'I have reservations about using '+point.alternative+' there.':'I would like another option for '+point.title.toLowerCase()+'.'):
+   stance==='accept'?'I will work with the agreed '+point.alternative+'.':stance==='reserved'?'I will work with '+point.alternative+', but note my reservation.':'I still prefer another option, but '+point.alternative+' is the call.';
   const bank=stance==='accept'&&Array.isArray(identity.fragments)?identity.fragments.filter(f=>acknowledgements.has(f.text)&&typeof f.id==='string'&&typeof f.source==='string'&&!used.includes(f.id)):[],
    frames=families[identity.family][stance].map((text,i)=>({id:'planning.'+identity.id+'.'+turn+'.'+stance+'.'+i,text,source:null}));
   const fresh=frames.filter(f=>!used.includes(f.id)),pool=bank.length?bank:fresh.length?fresh:frames;
   const line=pool[hash(seed+'|'+identity.id+'|'+point.objective+'|'+turn+'|'+stance)%pool.length];
   return {v:1,id:line.id,text:line.text+' '+body,actorId:identity.id,turn,stance,topic:point.topic,source:line.source||null,bankReuse:bank.length>0};
  }
- root.OfficePlanningDialogue=Object.freeze({capture,subject,compose,family});
+ // Use the same lazy bank loader/cache as promos; runtime academy workers
+ // are generated locally. No full bank payload is retained in the room.
+ async function loadPair(w,f){
+  const I=root.OfficePromoIdentity;
+  const ids=[w,f].filter(worker=>!root.OfficeRookiePhraseFactory?.runtime(worker)).map(worker=>I?.bankId(worker)).filter(Boolean);
+  try{return await root.OfficePromoBanks?.load(ids)||[];}catch(_){return [];}
+ }
+ function beginLoad(n,plan,cid){
+  if(n.planningLoading?.plan===plan&&n.planningLoading.cid===cid&&n.stage==='meeting')return null;
+  const token={plan,cid,choice:JSON.stringify(plan.structureChoice)};
+  n.planningLoading=token;n.stage='meeting';return token;
+ }
+ function completeLoad(n,token,isCurrent){
+  if(n.planningLoading!==token)return false;
+  delete n.planningLoading;
+  return n.stage==='meeting'&&n.plan===token.plan&&JSON.stringify(n.plan.structureChoice)===token.choice&&!n.plan.room&&isCurrent();
+ }
+ function freezeHuddle(room){
+  const point=subject(room),identities=room.planningDialogue?.identities;
+  if(!point||room.planningDialogue?.v!==1||!identities)return null;
+  const used=[],lines={};
+  for(const [key,turn,who] of [['request','request',point.requester],['response','response',other(point.requester)],['requesterResolution','resolution',point.requester],['partnerResolution','resolution',other(point.requester)]]){
+   const line=compose(identities[who],point,turn,who,room.seed,{used});
+   if(!line)return null;
+   used.push(line.id);lines[key]=line;
+  }
+  return {v:1,point,lines};
+ }
+ // Only read a frozen line while the original proposal is still current.
+ // Compare the entire subject and selected lines against the frozen
+ // identity snapshot, not the network cache or live career personality.
+ function readHuddle(room){
+  const frozen=room?.structureTalk?.dialogue;
+  if(frozen?.v!==1)return null;
+  const current=freezeHuddle(room);
+  return current&&JSON.stringify(current)===JSON.stringify(frozen)?frozen:null;
+ }
+ root.OfficePlanningDialogue=Object.freeze({capture,subject,compose,family,loadPair,beginLoad,completeLoad,freezeHuddle,readHuddle});
 })(typeof window!=='undefined'?window:globalThis);
