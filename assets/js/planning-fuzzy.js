@@ -77,14 +77,16 @@
     talks.set(t.cid,{cid:t.cid,requestedBy:t.by==='w'?ledger.w:t.by==='f'?ledger.f:null,issue:str(t.issue),slot:str(t.slot),original:str(t.original),final:str(t.final),reply:str(t.reply),delivered:str(t.delivered)});
    }
   }
+  const professional=Number.isFinite(room.contract?.eventAbs)?
+   root.OfficeMemory?.professionalContext?.(career,id,rid,room.contract.eventAbs,room.cid):null;
   const identity=root.OfficePromoIdentity?.wrestler?.(worker);
   // Existing career ambitions are read directly, never initialized here.
   const ambition=career?.ambitions?.w?.[id];
   const goal=ambition&&['title','push','money','body','rivalry','respect','stage','mentor'].includes(ambition.kind)&&(!Number.isFinite(ambition.since)||!Number.isFinite(room.contract?.eventAbs)||ambition.since<=room.contract.eventAbs)?{kind:ambition.kind,since:finite(ambition.since),satisfaction:stat(ambition.sat)}:null;
   return {id,opponentId:rid,style:str(worker.style),tier:str(worker.tier),identity:identity?Object.fromEntries(['source','delivery','motivation','vulnerability','trigger','tactic','boundary','underPressure'].map(k=>[k,str(identity[k])])):null,
-   values:{...K.workerInputs(worker),fatigue:stat(worker.fatigue),safetyAbility:stat(worker.safe),ringAbility:stat(worker.ring),morale:stat(worker.morale),professionalTrust:null},
+   values:{...K.workerInputs(worker),fatigue:stat(worker.fatigue),safetyAbility:stat(worker.safe),ringAbility:stat(worker.ring),morale:stat(worker.morale),professionalTrust:stat(professional?.score)},
    injury:finite(worker.injury),age:finite(worker.age),careerGoal:goal,
-   relationship:{regard,sharedBond:finite(pair?.score),betrayed:typeof pair?.betrayed==='boolean'?pair.betrayed:null,
+   relationship:{regard,...(professional?{professional}:{}),sharedBond:finite(pair?.score),betrayed:typeof pair?.betrayed==='boolean'?pair.betrayed:null,
     memories:entries.slice(0,12).map(e=>({id:str(e.id),week:finite(e.week),kind:str(e.kind),text:str(e.text)})),
     priorMatches:history?.length??null,meetings:[...meetings.values()],talks:[...talks.values()]}};
  }
@@ -114,6 +116,7 @@
  const family=(output,axis,values,weight)=>['low','medium','high'].map((grade,i)=>rule(output+'_'+axis+'_'+grade,output,values[i],weight,axis+'.'+grade));
  const behaviourModel=createModel({outputs:behaviourOutputs,rules:[
   ...family('cooperation','consent',[15,55,90],3),
+  ...family('cooperation','professionalTrust',[25,55,85],1),
   ...family('cooperation','professionalism',[25,60,85],2),
   ...family('cooperation','ringPsychology',[35,55,75],1),
   ...family('cooperation','morale',[30,55,75],1),

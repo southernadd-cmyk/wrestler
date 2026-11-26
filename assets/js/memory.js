@@ -41,6 +41,44 @@
    recall:event?.text||null,
    promoPrompt:event?(rid&&event.against===rid?'Before the microphone, one question hangs over this rematch: ':'Before this match, a question from the last dressing-room conversation remains: ')+event.text:null};
  }
+ // MP11: shared professional evidence, separate from manager trust,
+ // personal regard, bonds and public rivalry. No fabricated starting score.
+ const pairKey=(a,b)=>[a,b].sort().join('|');
+ function professionalContext(career,a,b,before=Infinity,exclude=null){
+  if(!a||!b||a===b)return null;
+  const rows=career?.officeMemory?.professionalPairs?.[pairKey(a,b)];
+  if(!Array.isArray(rows))return null;
+  const entries=rows.filter(e=>e?.v===1&&typeof e.cid==='string'&&e.cid!==exclude&&
+   Number.isFinite(e.abs)&&e.abs<before&&Number.isFinite(e.delta)&&e.delta>=-3&&e.delta<=3)
+   .slice(0,6);
+  if(!entries.length)return null;
+  return {score:clamp(50+entries.reduce((sum,e,i)=>sum+e.delta*(6-i)/2,0)),
+   entries:entries.map(e=>({...e}))};
+ }
+ function recordProfessional(c,fin,delivery){
+  if(!G.S||!c?.id||!c.wid||!c.rid||c.wid===c.rid||
+     !Number.isFinite(c.eventAbs)||!fin?.structure||!Array.isArray(delivery))return null;
+  // Only terminal graph receipts accepted by the rivalry recorder. A
+  // protected exit, partial sequence or lack of opening is not evidence
+  // of bad faith. A broken finish is a shared professional setback, not
+  // an attribution of blame to the other wrestler.
+  const complete=delivery.filter(x=>['completed','adapted'].includes(x.status)&&
+   x.witnessed?.length===x.planned?.length&&x.witnessed.length>=2);
+  const exact=complete.filter(x=>x.status==='completed').length;
+  const adapted=complete.filter(x=>x.status==='adapted').length;
+  const protectedExit=!!(fin.injury||fin.foeHurt||fin.shortened||fin.workingHurt||fin.outcome==='nc');
+  const broken=fin.outcome==='double';
+  const delta=broken&&!protectedExit?-3:fin.outcome==='booked'&&!protectedExit?Math.min(3,exact+adapted*2):0;
+  if(!delta)return null;
+  const memory=state(),key=pairKey(c.wid,c.rid);
+  memory.professionalPairs??={};
+  const rows=memory.professionalPairs[key]??=[];
+  if(rows.some(e=>e.cid===c.id))return null;
+  const entry={v:1,cid:c.id,abs:c.eventAbs,delta,exact,adapted,
+   kind:delta<0?'broken_finish':'shared_delivery'};
+  rows.unshift(entry);rows.sort((a,b)=>b.abs-a.abs);memory.professionalPairs[key]=rows.slice(0,12);
+  return {...entry};
+ }
  const originalApply=G.applyResult;
  function incident(c,fin,w,f){
   if(fin.injury)return {kind:'hurt',text:w.short+' remembers the painful landing against '+f.short+' and the fear of being asked to work hurt again.',shift:-2,rivalShift:-3,prompt:true};
@@ -235,5 +273,5 @@
   }
   G.save();return result;
  };
- root.OfficeMemory={view,context,trust,rival,remember};
+ root.OfficeMemory={view,context,trust,rival,remember,professionalContext,recordProfessional};
 })(typeof window!=='undefined'?window:globalThis);

@@ -841,6 +841,13 @@
   }
   L.meetings.push(m);L.meetings=L.meetings.slice(-LIMIT.meetings);L.meetings.forEach((x,i)=>{x.n=i+1;});
   const notes=[];
+  const professional=root.OfficeMemory?.recordProfessional?.(c,fin,m.sequenceDelivery||[]);
+  if(professional){
+   const context=root.OfficeMemory.professionalContext(G.S,w.id,f.id);
+   notes.push(professional.delta>0?
+    'Professional memory: '+w.short+' and '+f.short+' delivered '+professional.exact+' agreed and '+professional.adapted+' adapted sequences. Shared working confidence: '+context.score+'/100.':
+    'Professional memory: the agreed finish was broken. Shared working confidence: '+context.score+'/100. No blame is assigned to the partner.');
+  }
   if(m.sequenceDelivery){
    const exact=m.sequenceDelivery.filter(x=>x.status==='completed').length,
     adapted=m.sequenceDelivery.filter(x=>x.status==='adapted').length,
