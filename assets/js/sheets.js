@@ -727,7 +727,7 @@
    const duration=M.o.sequenceTimingVersion===1?o.sequence.actions.slice(-remaining).reduce((n,id,i)=>n+root.OfficeMatch.GRAPH.sequenceMoveSeconds(i===0&&opening?opening.action:id),0):remaining*20;
    return M.outcome==='booked'&&frac>=o.window[0]-.04&&frac<=o.window[1]+.08&&
     M.len-M.t>=Math.max(45,duration+25)&&frac<.91&&
-    !M.bigSpotRequest&&!M.workingHurt&&!M.shortened;
+    !root.OfficeMatch.bigSpotPriority(M)&&!M.workingHurt&&!M.shortened;
   }
   // MP13F.7A: base recovery from an actual signed rest is a conservative
   // projection of its successful landing, not an award of live stamina.
@@ -767,7 +767,7 @@
   function sequenceRecoveryFocus(M,pre,negotiated=null){
    if(M.o.sequenceRecoveryPacingVersion!==1||M.sheet?.sequenceContinuationVersion!==1||
       !adaptiveSequences(M)||M.structureDirector.id==='chickenshit_heel'||negotiated||
-      M.outcome!=='booked'||M.workingHurt||M.shortened||M.bigSpotRequest||M.injury||M.foeHurt||
+      M.outcome!=='booked'||M.workingHurt||M.shortened||root.OfficeMatch.bigSpotPriority(M)||M.injury||M.foeHurt||
       M.mode==='pickup'||M.mode==='crowd'||M.len-M.t<=90)return null;
    const g=M.graph,side=pre.control,rows=sequenceRows(M),graph=root.OfficeMatch.GRAPH;
    if(!['w','f'].includes(side)||!g||g.physical?.area!=='ring'||
@@ -1129,7 +1129,7 @@
   const performer=(side,n)=>n.reverse||n.blockOf?(side==='w'?'f':'w'):side;
   function dependencyFocus(M){
    if(M.o.sequenceDependencyVersion!==1||M.sheet?.sequenceContinuationVersion!==1||
-      M.outcome!=='booked'||M.workingHurt||M.shortened||M.bigSpotRequest)return null;
+      M.outcome!=='booked'||M.workingHurt||M.shortened||root.OfficeMatch.bigSpotPriority(M))return null;
    const x=current(M);if(!x)return null;
    const {objective:o,state}=x,frac=M.t/Math.max(1,M.len);
    // Respect the active objective's actual evidence window. Restrict

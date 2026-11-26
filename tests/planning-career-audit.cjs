@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],reviewRepairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],reviewRepairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -281,6 +281,19 @@ function run(seeds=[3,10],weeks=32){
     const temporal=continuation.temporalCases(alt.traceReport);
     assert.equal(temporal.length,breakdown(alt.traceReport).timingCases,key+' timing cases reconcile');
     temporalCases.push(...temporal);
+    // If no request was accepted in the control bout, the new policy
+    // cannot alter anything before the first acceptance. Reuse that result.
+    const relevant=(alt.fin.ringsideEvidence||[]).some(e=>e.id==='big');
+    const arbitrated=relevant?drive(true,i%5===0,{...options,sequenceRecoveryPacingVersion:1,sequenceAlternativeReadinessVersion:1,bigSpotArbitrationVersion:1},immutable,'comparison'):alt;
+    const measureArbitration=x=>{
+     const calls=(x.fin.ringsideEvidence||[]).filter(e=>e.id==='big');
+     const blocked=continuation.temporalCases(x.traceReport).filter(c=>c.variants.some(v=>v.counts.early&&v.stage==='safety_or_runway'&&v.safetyBreakdown.flagTicks.pending_big_spot));
+     const durations=calls.map(e=>Math.max(0,(e.atAction??e.atEnd??x.fin.len)-e.at));
+     return {...measure(x),accepted:calls.length,witnessed:calls.filter(e=>e.status==='witnessed').length,
+      botched:calls.filter(e=>e.status==='botched').length,refunded:calls.filter(e=>e.status==='unavailable').length,
+      maxWait:Math.max(0,...durations),bigSpotBlocked:blocked.length,ignored:x.fin.ignored,spent:x.fin.callsUsed.length};
+    };
+    arbitrationPairs.push({key,structure:choice.id,relevant,before:measureArbitration(alt),after:measureArbitration(arbitrated)});
    }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
@@ -364,6 +377,12 @@ function run(seeds=[3,10],weeks=32){
     byStructure:Object.fromEntries([...new Set(alternativePairs.map(x=>x.structure))].map(k=>[k,compare(alternativePairs.filter(x=>x.structure===k))])),
     opportunityExamples:alternativeOpportunities.slice(0,10),
     examples:alternativePairs.filter(x=>JSON.stringify(x.before)!==JSON.stringify(x.after)).slice(0,10),comparisons:alternativePairs};
+  })(),matchedBigSpotArbitration:(()=>{
+   const sum=(pairs,side)=>{const xs=pairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','readinessMiss','staminaCases','timingCases','interruptions','objectives','injury','accepted','witnessed','botched','refunded','bigSpotBlocked','ignored','spent'].map(k=>[k,xs.reduce((n,x)=>n+(x[k]||0),0)])),maxWait:Math.max(0,...xs.map(x=>x.maxWait)),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
+   const compare=pairs=>({pairs:pairs.length,before:sum(pairs,'before'),after:sum(pairs,'after'),changedOutcomes:pairs.filter(x=>x.before.outcome!==x.after.outcome).length});
+   return {...compare(arbitrationPairs),acceptedRequestBouts:compare(arbitrationPairs.filter(x=>x.relevant)),
+    byStructure:Object.fromEntries([...new Set(arbitrationPairs.map(x=>x.structure))].map(k=>[k,compare(arbitrationPairs.filter(x=>x.structure===k))])),
+    examples:arbitrationPairs.filter(x=>x.relevant).slice(0,15),comparisons:arbitrationPairs};
   })(),temporalOpportunityAudit:(()=>{
    const stages={},safetyCases={},soleSafetyCases={};
    for(const c of temporalCases){

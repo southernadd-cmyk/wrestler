@@ -42,7 +42,7 @@ function trace(root,key){
   if(o.requires.some(id=>m.structureDirector.objectives.some(s=>s.id===id&&s.status==='pending')))shared.push('prerequisite_pending');
   if(frac<o.window[0]-.04)shared.push('before_window');
   if(frac>o.window[1]+.08||frac>=.91)shared.push('after_window');
-  if(m.outcome!=='booked'||m.bigSpotRequest||m.workingHurt||m.shortened)shared.push('safety_or_manager_request');
+  if(m.outcome!=='booked'||root.OfficeMatch.bigSpotPriority(m)||m.workingHurt||m.shortened)shared.push('safety_or_manager_request');
   return [{start:seq.start,action:seq.actions[0],alternative:false},...(seq.openings||[]).map(x=>({...x,alternative:true}))].map(c=>{
    const ids=[c.action,...seq.actions.slice(1)],guards=shared.slice();
    const duration=ids.reduce((n,id)=>n+(m.o.sequenceTimingVersion===1?G.sequenceMoveSeconds(id):20),0);
@@ -87,7 +87,7 @@ function trace(root,key){
   if(last?.at===m.t)return;
   v.ticks.push({at:m.t,arc:m.graph.arc,control:pre.control,position:pre.position,down:pre.down,
    stamina:{w:Math.round(m.wSt),f:Math.round(m.fSt)},candidates,
-   safety:{outcome:m.outcome,bigSpotRequest:m.bigSpotRequest?{at:m.bigSpotRequest.at,expires:m.bigSpotRequest.expires}:null,
+   safety:{outcome:m.outcome,bigSpotPriority:root.OfficeMatch.bigSpotPriority(m),bigSpotRequest:m.bigSpotRequest?{at:m.bigSpotRequest.at,expires:m.bigSpotRequest.expires}:null,
     workingHurt:!!m.workingHurt,shortened:!!m.shortened,injury:m.injury||0,foeHurt:!!m.foeHurt,length:m.len},
    offered:result?.objective===r.objective?result.id:null,handover:!!(result?.objective===r.objective&&result.handover),otherOffer:result&&result.objective!==r.objective?result.objective:null});
  }
@@ -112,7 +112,7 @@ function trace(root,key){
   if(m.t-last.at>30)guards.push('continuity_timeout');
   if(frac<o.window[0]-.04||frac>o.window[1]+.08||frac>=.91)guards.push('objective_window');
   if(m.len-m.t<Math.max(45,remaining+25))guards.push('finish_runway');
-  if(m.outcome!=='booked'||m.bigSpotRequest||m.workingHurt||m.shortened)guards.push('protected_or_manager_request');
+  if(m.outcome!=='booked'||root.OfficeMatch.bigSpotPriority(m)||m.workingHurt||m.shortened)guards.push('protected_or_manager_request');
   if(need&&(!grip||grip.type!==need||grip.side!==side))guards.push('missing_or_wrong_grip');
   else if(need&&m.t-grip.at>20)guards.push('stale_grip');
   if(cost>=2.2&&stamina<16+cost*3.2)guards.push('stamina');
@@ -360,7 +360,7 @@ function temporalCases(trace){
    const protectedTicks=inWindow.filter(t=>t.guards.includes('safety_or_manager_request'));
    const flags=t=>[
     ...(t.safety.outcome!=='booked'?['non_booked_outcome']:[]),
-    ...(t.safety.bigSpotRequest?['pending_big_spot']:[]),
+    ...(t.safety.bigSpotPriority?['pending_big_spot']:[]),
     ...(t.safety.workingHurt?['working_hurt']:[]),
     ...(t.safety.shortened?['shortened']:[])
    ];

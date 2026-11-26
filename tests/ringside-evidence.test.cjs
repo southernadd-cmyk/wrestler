@@ -104,3 +104,29 @@ assert.equal(performed.kind,'ordinary-graph');
 assert.ok(technical.graph.events.some(e=>e.id===performed.action&&e.t===performed.atAction),
  'big moment must refer to a real performed move');
 console.log('PASS ringside evidence: deferred big spot and four other evidence-based calls');
+
+ // MP13F.9: deadline, priority, reservation and legacy compatibility.
+ {
+ const m=setup(24009);m.o.bigSpotArbitrationVersion=1;
+ m.stage='live';m.t=100;m.listen=101;m.wSt=0;m.fSt=100;m.planId='safe';m.r=()=>.99;
+ assert.equal(E.call(m,'big'),true);assert.equal(m.bigSpotRequest.expires,190);
+ assert.equal(m.calls,2);assert.equal(E.bigSpotPriority(m),true);
+ m.t=139;assert.equal(E.bigSpotPriority(m),true);
+ m.t=140;assert.equal(E.bigSpotPriority(m),false);
+ assert.equal(E.canCall(m,'big'),false,'cooperation does not allow stacking');
+ m.t=180;until(m,()=>!m.bigSpotRequest);
+ assert.equal(m.ringsideEvidence[0].status,'unavailable');assert.equal(m.ringsideEvidence[0].atEnd,190);
+ assert.equal(m.calls,3);assert.equal(m.callsUsed.includes('big'),false);
+ const old=setup(24010);old.stage='live';old.t=100;old.listen=101;old.wSt=0;old.r=()=>.99;
+ assert.equal(E.call(old,'big'),true);assert.equal(old.bigSpotRequest.expires,old.len-40);
+ old.t=200;assert.equal(E.bigSpotPriority(old),true);
+ const shortened=setup(24011);shortened.o.bigSpotArbitrationVersion=1;
+ shortened.stage='live';shortened.t=100;shortened.wSt=0;shortened.listen=101;shortened.r=()=>.99;
+ assert.equal(E.call(shortened,'big'),true);assert.equal(E.call(shortened,'home'),true);
+ assert.equal(shortened.bigSpotRequest.expires,shortened.len-40);
+ const restoreMe=setup(24012);restoreMe.o.bigSpotArbitrationVersion=1;restoreMe.stage='live';restoreMe.t=100;restoreMe.wSt=0;restoreMe.listen=101;
+ assert.equal(E.call(restoreMe,'big'),true);
+ const resumed=E.restore(JSON.parse(JSON.stringify({...restoreMe,rState:restoreMe.r.getState()})));
+ assert.equal(E.bigSpotDeadline(resumed),E.bigSpotDeadline(restoreMe));assert.equal(E.bigSpotPriority(resumed),true);
+ console.log('PASS MP13F.9 reserved call, 40-second priority, 90-second refund, shortening and legacy save behavior');
+ }
