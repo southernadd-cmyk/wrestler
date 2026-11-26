@@ -713,6 +713,15 @@
     M.len-M.t>=Math.max(45,duration+25)&&frac<.91&&
     !M.bigSpotRequest&&!M.workingHurt&&!M.shortened;
   }
+  // MP13F.7A: base recovery from an actual signed rest is a conservative
+  // projection of its successful landing, not an award of live stamina.
+  // Do not assume special style bonuses, manager calls or future rests.
+  function projectedSequenceEnergy(M,energy,step,cost){
+   const side=step.performer;
+   const rest=M.o.sequenceRecoveryProjectionVersion===1&&cost<0&&
+    (step.id==='catch_breath'||actions[step.id]?.family==='rest');
+   energy[side]=rest?Math.min(100,Math.max(0,energy[side]-cost)):energy[side]-Math.max(0,cost);
+  }
   function openingReadiness(M,steps,landed=false){
    if(M.sheet?.sequenceContinuationVersion!==1)return true;
    const graph=root.OfficeMatch.GRAPH,F=root.OfficePlanningFuzzy;
@@ -728,7 +737,7 @@
     if(i===0&&landed){at+=10;continue;}
     if(at/Math.max(1,M.len)<(actions[x.id].after||0))return false;
     if(cost>=2.2&&energy[side]<16+cost*3.2)return false;
-    energy[x.performer]-=Math.max(0,cost);
+    projectedSequenceEnergy(M,energy,x,cost);
     const ticks=graph.sequenceMoveSeconds(x.id)/10;
     // Lower-bound routine exertion estimate; actual live validator is
     // still authoritative and may reject a later action.
@@ -1176,7 +1185,7 @@
    if(r.interruptions>0)return {label:'Interrupted sequence',tone:'missed',note:'A verified prefix was interrupted. Future sequence proposals may reflect this shared experience, not personal blame.'};
    return {label:'Incomplete sequence',tone:'',note:'Only part of the sequence was verified. No interruption-based negative evidence is inferred.'};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,dependencyFocus,dependencyPreference,sequenceOffer,openingReadiness,observeSequence,deliveryDebrief};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,dependencyFocus,dependencyPreference,sequenceOffer,openingReadiness,projectedSequenceEnergy,observeSequence,deliveryDebrief};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
