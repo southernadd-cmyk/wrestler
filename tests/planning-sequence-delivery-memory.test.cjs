@@ -115,3 +115,30 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  claimMeeting.legacy=true;
  assert.equal(F.behaviour(F.capture(next,G.W(w.id),G.F(f.id),claimCareer),next,'w').publicCounter,undefined);
  console.log('PASS MP9: settled historical public counter claims, correct claimant, bounded proposal priority, no same-week or legacy leakage.');
+
+ // MP9 same-night: preserve the original signed structure and restrictions.
+ const publicPromo={promise:{type:'counter'},tactic:{kind:'counter',nodes:['counter_strike']}};
+ const publicSheet=copy(original);
+ const unsignedCopy=copy(publicSheet);
+ const rec=R.promoReconciliation(publicSheet,publicPromo,w,f,c.finish);
+ assert.ok(rec&&['aligned','conditional','conflict'].includes(rec.status));
+ const added=R.addVow(publicSheet,publicPromo,w,f,c.finish);
+ eq(publicSheet,unsignedCopy);
+ eq(added.structurePlan,publicSheet.structurePlan);
+ eq(added.limits,publicSheet.limits);
+ assert.equal(added.finishRoute,publicSheet.finishRoute);
+ eq(R.addVow(added,publicPromo,w,f,c.finish),added);
+ const blocked=copy(publicSheet);
+ blocked.limits.banIds=Object.keys(A);
+ const noCounter=R.addVow(blocked,publicPromo,w,f,c.finish);
+ assert.equal(noCounter.promoReconciliation.status,'conflict');
+ assert.ok(!noCounter.nodes.some(n=>n.vow));
+ const badWin={promise:{type:'win'},tactic:{kind:'win',nodes:['finish_tease']}};
+ assert.equal(R.promoReconciliation(publicSheet,badWin,w,f,'lose_clean').status,'conflict');
+ assert.equal(R.promoReconciliation(publicSheet,{promise:{type:'finisher'}},w,f,'lose_clean').status,'conflict');
+ assert.equal(R.promoReconciliation(publicSheet,{promise:{type:'clean'}},w,f,'win_dirty').status,'conflict');
+ assert.equal(R.promoReconciliation(publicSheet,{promise:{type:'nocheat'}},w,f,'lose_dq').status,'conflict');
+ const legacySheet=copy(publicSheet);delete legacySheet.structurePlan;
+ assert.equal(R.promoReconciliation(legacySheet,publicPromo,w,f,c.finish),null);
+ assert.equal(R.addVow(legacySheet,publicPromo,w,f,c.finish).promoReconciliation,undefined);
+ console.log('PASS MP9 same-night reconciliation: signed structure immutable, restrictions preserved, contradictory promises do not add vows, legacy path unchanged.');
