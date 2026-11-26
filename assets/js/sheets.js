@@ -155,6 +155,40 @@
   // Phase 2, still a signed EDITORIAL plan, not an executable instruction
   // to Graph or a record of moves landed. No structure objective can bypass
   // match physics or silently change the contracted winner or finish route.
+  // MP7C: signed conditional setup metadata can be restored without
+  // the original room. Validate graph topology, timing, safety limits
+  // and control/position continuity independently of live execution.
+  // Physical eligibility was checked by the room at signing; stamina,
+  // grip, locations and participant fitness must be checked live in MP8.
+  function validateSequence(seq,obj,sheet){
+   const bad=[],fail=why=>['Invalid conditional sequence '+obj.id+': '+why];
+   if(!plain(seq)||seq.version!==1||seq.mode!=='conditional'||
+      Object.keys(seq).some(k=>!['version','mode','start','actions'].includes(k)))return fail('schema');
+   if(!obj.call?.chosen||obj.call.source!=='negotiated'||!['w','f'].includes(obj.call.owner))return fail('missing negotiated call');
+   const ids=seq.actions,start=seq.start,positions=['standing','mat','corner','top','outside'],other=s=>s==='w'?'f':'w';
+   if(!Array.isArray(ids)||ids.length<2||ids.length>4||new Set(ids).size!==ids.length||ids.at(-1)!==obj.call.action||
+      !plain(start)||Object.keys(start).some(k=>!['control','position','down'].includes(k))||
+      !['w','f'].includes(start.control)||!positions.includes(start.position)||
+      (start.position==='mat'?!['w','f'].includes(start.down):start.down!==null))return fail('entry or actions');
+   let {control,position,down}=start,performer=null;
+   const limits=sheet?.limits||{},note=sheet?.note?.honour&&!sheet.note.waived?sheet.note:null;
+   const banned=(id,n)=>[limits,note].some(l=>l&&((Array.isArray(l.banIds)&&l.banIds.includes(id))||
+    (Array.isArray(l.ban)&&l.ban.includes(n.family))))||sheet?.spice<0&&n.risk;
+   for(let i=0;i<ids.length;i++){
+    const id=ids[i],n=typeof id==='string'&&Object.prototype.hasOwnProperty.call(actions,id)?actions[id]:null;
+    if(!n||n.counterOf||n.blockOf||n.nearfall||n.family==='pin'||
+       ['early_cover','cover','near_kickout','counter_rollup','finish_tease','finish_counter'].includes(id))return fail('excluded action '+i);
+    if(i&&!actions[ids[i-1]].next.some(([to,weight])=>to===id&&weight>0))return fail('disconnected action '+i);
+    if(!['any',position].includes(n.requires)||n.requires==='mat'&&down===null||
+       n.family==='ground'&&(position!=='mat'||down!==other(control)))return fail('position or control '+i);
+    if(!Number.isFinite(n.after)||n.after>Math.min(.98,obj.window[1]+.08)||banned(id,n))return fail('timing or restriction '+i);
+    performer=n.reverse?other(control):control;
+    down=n.down==='d'?(n.reverse?control:other(control)):n.down==='a'?performer:null;
+    control=performer;position=n.zone;
+   }
+   if(performer!==obj.call.owner)return fail('final performer');
+   return bad;
+  }
   function validatePlan(plan,structure,sheet){
    const bad=[];
    const structureBad=validate(structure);
@@ -163,7 +197,7 @@
    for(const k of Object.keys(plan))
     if(!['version','structureId','roles','finishRoute','objectives','objections'].includes(k))
      bad.push('Unexpected plan field '+k);
-   if(plan.version!==1||plan.structureId!==structure.id)bad.push('Structure plan version or identity mismatch');
+   if(![1,2].includes(plan.version)||plan.structureId!==structure.id)bad.push('Structure plan version or identity mismatch');
    const roles=plan.roles;
    if(!plain(roles)||roles.lead!==structure.roles.lead||roles.other!==structure.roles.other)
     bad.push('Structure plan role mismatch');
@@ -171,11 +205,12 @@
    if(!Array.isArray(plan.objectives)||plan.objectives.length!==structure.objectives.length){
     bad.push('Structure objective count mismatch');return bad;
    }
+   let sequences=0;
    plan.objectives.forEach((obj,i)=>{
     const known=structure.objectives[i];
     if(!plain(obj)){bad.push('Objective '+i+' must be an object');return}
     for(const k of Object.keys(obj))
-     if(!['id','title','intent','actor','window','requires','commitment','call'].includes(k))
+     if(!['id','title','intent','actor','window','requires','commitment','call',...(plan.version===2?['sequence']:[])].includes(k))
       bad.push('Unexpected objective plan field '+k);
     for(const k of ['id','title','intent','actor'])
      if(obj[k]!==known[k])bad.push('Objective '+i+' changes '+k);
@@ -183,6 +218,11 @@
        JSON.stringify(obj.requires)!==JSON.stringify(known.requires))
      bad.push('Objective '+i+' changes timing or dependencies');
     if(obj.commitment!==(obj.call?'landmark':'guide'))bad.push('Objective '+i+' commitment must reflect actual signed call');
+    if(Object.prototype.hasOwnProperty.call(obj,'sequence')){
+     sequences++;
+     if(plan.version!==2)bad.push('Conditional sequence requires plan v2');
+     else bad.push(...validateSequence(obj.sequence,{...obj,window:known.window},sheet));
+    }
     if(obj.call!=null){
      const c=obj.call;
      if(!plain(c)){bad.push('Invalid called spot '+i);return}
@@ -203,6 +243,7 @@
      if('status' in c||'actual' in c||'at' in c)bad.push('A planned spot must not claim to be performed '+i);
     }
    });
+   if(plan.version===2&&sequences===0)bad.push('Plan v2 requires at least one conditional sequence');
    if(!Array.isArray(plan.objections)||plan.objections.length>10||
       plan.objections.some(x=>!plain(x)||!structure.objectives.some(o=>o.id===x.objective)||
        !['safety','prohibited'].includes(x.reason)||!['replace','open','keep'].includes(x.decision)||
