@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set();
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -38,8 +38,8 @@ function run(seeds=[3,10],weeks=32){
    const structures=S.STRUCTURES.catalogue(),choice={id:pick(structures,i+seed).id,lead:i%2?'f':'w'};
    const approach=pick(['story','technical','safe','brawl','spots'],i+seed);
    const banks=promoBanks(root.OfficePromoIdentity.bankId(w),root.OfficePromoIdentity.bankId(f));
-   function planRoom(policy,resume,adaptive=false){
-   let st=R.begin(c,w,f,G.P(c.pid),{structure:choice,structurePlanning:true,planningCareer:G.S,planningInitiative:true,planningProposal:true,planningDialogue:true,planningBanks:banks,planningBargaining:true,planningSequences:true,planningSequencePolicy:policy,planningAdaptiveEntries:adaptive,planningSequenceSigning:true,
+   function planRoom(policy,resume,adaptive=false,continuationVersion=undefined){
+   let st=R.begin(c,w,f,G.P(c.pid),{structure:choice,structurePlanning:true,planningCareer:G.S,planningInitiative:true,planningProposal:true,planningDialogue:true,planningBanks:banks,planningBargaining:true,planningSequences:true,planningSequencePolicy:policy,planningAdaptiveEntries:adaptive,planningSequenceSigning:true,planningContinuationVersion:continuationVersion,
     recent:G.S.roomRecent||[],threads:R.liveThreads(G.S.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)});
    assert.ok(st.planningEvidence&&st.planningDialogue&&st.planningSequenceSigning,key+' full planning policy active');
    const prior=st.planningEvidence.participants.w.relationship.professional;
@@ -75,7 +75,8 @@ function run(seeds=[3,10],weeks=32){
    assert.ok(range(st.sheet.workerConsent)&&range(st.sheet.opponentConsent));
    return {st,prior,actions,roomResume,sequenceOffer};
    }
-   const {st,prior,actions,roomResume,sequenceOffer}=planRoom(3,true,true);
+   const {st,prior,actions,roomResume,sequenceOffer}=planRoom(3,true,true,1);
+   const continuationRoom=i%3!==0?planRoom(3,false,true):null;
    const controlRoom=i%3!==0?planRoom(2,false):null;
    const baselineRoom=i%3!==0?planRoom(3,false,false):null;
    G.S.roomRecent=[...(G.S.roomRecent||[]),...st.queue].slice(-6);
@@ -180,6 +181,16 @@ function run(seeds=[3,10],weeks=32){
      withAlternatives:layout.objectives.filter(x=>x.sequence?.openings?.length).length,stars:fin.stars,injury:Number(!!fin.injury),outcome:fin.outcome};};
     adaptivePairs.push({key,structure:choice.id,before:count(base,old.structurePlan),after:count(fin,sheet.structurePlan)});
    }
+   if(continuationRoom){
+    const old=R.addVow(continuationRoom.st.sheet,promo,w,f,c.finish);
+    const baseline=drive(true,false,{...options,sheet:old,minutes:old.minutes,plan:{game:old.game,leash:old.leash,talk:old.talk},flags:{...w.flags,...old.flags}},copy(old.structurePlan)).fin;
+    const count=x=>{const rs=(x.structure.sequences||[]).map(s=>s.receipt).filter(Boolean);return {
+     signed:rs.length,opened:rs.filter(r=>r.attempts>0).length,completed:rs.filter(r=>['completed','adapted'].includes(r.status)).length,
+     attempts:rs.reduce((n,r)=>n+r.attempts,0),interruptions:rs.reduce((n,r)=>n+r.interruptions,0),
+     objectives:x.structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length,
+     stars:x.stars,crowd:x.crowd,injury:Number(!!x.injury),outcome:x.outcome};};
+    continuationPairs.push({key,structure:choice.id,before:count(baseline),after:count(fin)});
+   }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
     for(const e of r.witnessed)assert.ok(M.graph.events.some(ev=>ev.id===e.id&&ev.t===e.at),key+' actual graph receipt');
@@ -222,6 +233,9 @@ function run(seeds=[3,10],weeks=32){
   })(),matchedAdaptive:(()=>{
    const summarize=side=>{const xs=adaptivePairs.map(x=>x[side]);return {...Object.fromEntries(['signed','completed','adapted','alternativeDelivered','noOpening','withAlternatives','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars))};};
    return {pairs:adaptivePairs.length,before:summarize('before'),after:summarize('after'),changedOutcomes:adaptivePairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:adaptivePairs};
+  })(),matchedContinuation:(()=>{
+   const summarize=side=>{const xs=continuationPairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','attempts','interruptions','objectives','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
+   return {pairs:continuationPairs.length,before:summarize('before'),after:summarize('after'),changedOutcomes:continuationPairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:continuationPairs};
   })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},rows};
 }
 module.exports={run};
