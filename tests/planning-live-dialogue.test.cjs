@@ -52,7 +52,13 @@ for(const structure of S.STRUCTURES.catalogue())for(const lead of ['w','f'])for(
   assert.equal(x.finish,c.finish);assert.equal(x.board.finish.route,a.board.finish.route);
   R.act(x,'review_ok');R.act(y,'review_ok');R.act(z,'review_ok');
   R.act(x,'talk_none');R.act(y,'talk_none');R.act(z,'talk_none');
-  eq(x.sheet,y.sheet);eq(x,z);choices++;
+  // The sheet deliberately retains the last six spoken lines. Verify
+  // that transcript excerpt exactly, then compare every other field.
+  const speakers=st=>st.log.filter(l=>l.kind!=='you').slice(-6).map(l=>({actor:l.who,text:l.text}));
+  eq(x.sheet.speakers,speakers(x));eq(y.sheet.speakers,speakers(y));
+  const {speakers:xs,...contractX}=x.sheet,{speakers:ys,...contractY}=y.sheet;
+  eq(xs.map(l=>l.actor),ys.map(l=>l.actor));eq(contractX,contractY);
+  eq(x,z);choices++;
  }
  rooms++;
 }

@@ -24,7 +24,10 @@ speaker and bank provenance without changing the public promo ledger.
 The wording for effort and impact is deliberately conversational
 rather than a reference to internal graph statistics. The partner
 works WITH the call, not necessarily performing the move. No new
-options, mood effects, signed sheet content or match execution changes.
+options, mood effects, signed mechanical contract or match execution changes.
+The existing signed sheet speakers excerpt intentionally reflects the
+new dialogue; assert it matches each transcript and compare all other
+sheet fields exactly. The first CI failure confirmed only speakers differed.
 
 Paired 80-room tests include offline snapshots, actual banks,
 reloads, all choices, unchanged mood/contract and stale loading
