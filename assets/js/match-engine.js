@@ -321,6 +321,40 @@ const {brawlConditioning,Graph}=root.OfficeMatchGraph.install({
   get vic(){return vic}
 });
 
+// MP10: shared fuzzy psychology at the actual live decision boundaries.
+// Versioned opt-in: existing matches and traditional layouts retain their
+// original RNG and behaviour. These are preferences, not legal permissions.
+let liveModel;
+function livePsychology(M,side='w'){
+ if(M.o?.livePsychologyVersion!==1||!root.OfficeSheets?.DIRECTOR?.active(M)||!['w','f'].includes(side)||!root.OfficePsychology)return null;
+ const K=root.OfficePsychology,w=side==='w'?M.w:M.f;
+ if(!liveModel){
+  const family=(output,axis,values,weight)=>['low','medium','high'].map((grade,i)=>({id:output+'_'+axis+'_'+grade,output,value:values[i],weight,when:[axis+'.'+grade]}));
+  liveModel=K.createModel({curves:{...K.workerCurves,consent:[35,60,85],stamina:[25,55,80],morale:[30,55,80]},outputs:['obedience','improvisation','frustration'],rules:[
+   ...family('obedience','consent',[15,55,95],3),...family('obedience','professionalism',[25,60,90],2),
+   ...family('obedience','ego',[85,55,25],1),...family('obedience','morale',[30,55,80],1),
+   ...family('improvisation','ringPsychology',[15,55,90],3),...family('improvisation','stamina',[15,55,90],2),
+   ...family('improvisation','professionalism',[30,60,85],1),
+   ...family('frustration','ego',[15,50,90],2),...family('frustration','stamina',[85,50,15],2),
+   ...family('frustration','consent',[90,50,10],2),...family('frustration','morale',[85,50,15],1),
+   {id:'frustration_existing_resentment',output:'frustration',value:90,weight:2,when:['context.resentment']}
+  ]});
+ }
+ const values={...K.workerInputs(w),consent:side==='w'?M.sheet.workerConsent:M.sheet.opponentConsent,
+  stamina:side==='w'?M.wSt:M.fSt,morale:w.morale};
+ const cues=side==='w'&&M.resent?{'context.resentment':1}:{};
+ return {v:1,side,values,...liveModel.evaluate(values,cues)};
+}
+function liveObedienceDelta(M,id){
+ const p=livePsychology(M);if(!p)return 0;
+ const s=p.scores;
+ // Tired wrestlers can prefer rest or an earlier safe finish without
+ // treating fatigue as consent for a risky highlight. No new permissions.
+ const condition=Number.isFinite(p.values.stamina)?(50-p.values.stamina)/10:0;
+ const context=id==='slow'||id==='home'?Math.max(0,condition):
+  id==='pickup'||id==='big'?-Math.max(0,condition):0;
+ return Math.max(-12,Math.min(12,Math.round((s.obedience-50)*.18-(s.frustration-50)*.12+context)));
+}
 function create(o){
  const r=mulberry(o.seed||Date.now());
  const w=o.w,f=o.f,p=o.p,plan=D.PLANS[o.plan.game]||D.PLANS.story,slot=D.SLOTS[o.slot]||D.SLOTS.mid;
@@ -771,7 +805,7 @@ function onPhase(M){
  const ph=M.phase,w=M.w;
  if(M.leash==='script'&&ph.id!=='open'){
   M.scriptChecks++;
-  if(M.r()*100<M.comply){M.scriptHits++;M.offScript=null;}
+  if(M.r()*100<M.comply+liveObedienceDelta(M,'layout')){M.scriptHits++;M.offScript=null;}
   else{
    M.offScript=w.ego>=65?'showboat':'audible';
    // Keep real layout disagreements in state, but make the agent report
@@ -1041,7 +1075,7 @@ function call(M,id){
  if(!canCall(M,id))return false;
  M.calls--;M.callsUsed.push(id);const w=M.w;mark(M,'call:'+id,1);
  say(M,M.o.identity?.manager?`${M.o.identity.manager} calls from ringside: “${CALLS[id].name}.”`:`You shout from ringside: “${CALLS[id].name}.”`,'you');
- const listen=M.listen+(id==='home'?20:0)+(id==='sheet'&&M.leash==='script'?10:0);
+ const listen=M.listen+(id==='home'?20:0)+(id==='sheet'&&M.leash==='script'?10:0)+liveObedienceDelta(M,id);
  if(M.r()*100>listen){M.ignored++;say(M,rnd(M,[`${w.short} waves you away.`,`${w.short} doesn’t even look over.`,`${w.short} hears you. Does the opposite.`]),'bad');if(w.ego>=70)M.adj.morale-=1;return true}
  root.OfficeSheets?.intervention(M,id);
  if(['slow','pickup','crowd','home'].includes(id))settlePaceEvidence(M);
@@ -1450,7 +1484,7 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,lift,call,canCall,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,structureReport:M=>root.OfficeSheets?.DIRECTOR?.report(M)||null,structureAssessment,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);
+root.OfficeMatch={create,next,lift,call,canCall,livePsychology,liveObedienceDelta,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,structureReport:M=>root.OfficeSheets?.DIRECTOR?.report(M)||null,structureAssessment,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);
  if(root.OfficeSheets?.DIRECTOR?.active(M)&&!M.structureSpoken){
   M.structureSpoken=Object.fromEntries(M.structureDirector.objectives.filter(o=>o.status!=='pending').map(o=>[o.id,o.status]));
  }
