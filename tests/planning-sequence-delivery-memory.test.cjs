@@ -240,3 +240,32 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  assert.equal(memory.professionalSummary(null),null);
  assert.match(memory.professionalSummary(memory.professionalContext(G.S,w.id,f.id)),/agreed finish was broken/);
  console.log('PASS MP12: isolated 200-identity cohort distribution, deterministic production rookie previews, and factual player-facing professional memory.');
+
+// MP13C: opening preference is opt-in, side-effect-free and operates
+// only on existing legal candidate transitions into the actual entry.
+const openingMatch=E.create({w:{...w,fatigue:0,flags:{}},f,p,slot:'main',minutes:12,finish:c.finish,feudHeat:0,plan:{game:'story',leash:'script',talk:'none'},seed:800413,preparation:{},flags:{},sheet:copy(sheet),structureExecution:true,sequenceOpeningVersion:1});
+openingMatch.stage='live';openingMatch.t=60;
+const openingPlan=openingMatch.sheet.structurePlan.objectives[0].sequence;
+const openingGraph=E.GRAPH;
+let openingCase=null;
+// Find a real reversal/standing recovery that leads to the signed entry.
+// A synthetic pool is used ONLY to isolate the eligibility predicate;
+// production supplies its actual already-filtered weighted move pool.
+for(const side of ['w','f'])for(const position of ['standing','mat','corner']){
+ const down=position==='mat'?(side==='w'?'f':'w'):null;
+ Object.assign(openingMatch.story,{control:side,position,down});openingGraph.resetPhysical(openingMatch);
+ const pool=Object.keys(A).filter(id=>openingGraph.isValid(openingMatch,id)).map(id=>[id,1]);
+ const pre={control:side,position,down},offer=S.DIRECTOR.sequenceOpening(openingMatch,pre,pool);
+ if(offer){openingCase={pre,pool,offer};break;}
+}
+if(openingCase){
+ const {pre,pool,offer}=openingCase;Object.assign(openingMatch.story,pre);openingGraph.resetPhysical(openingMatch);
+ const before=JSON.stringify(openingMatch),rng=openingMatch.r.getState();
+ eq(S.DIRECTOR.sequenceOpening(openingMatch,pre,pool),offer);
+ assert.equal(JSON.stringify(openingMatch),before);assert.equal(openingMatch.r.getState(),rng);
+ assert.ok(offer.ids.every(id=>pool.some(x=>x[0]===id)&&openingGraph.isValid(openingMatch,id)&&!A[id].risk&&A[id].next.some(([to,weight])=>to===openingPlan.actions[0]&&weight>0)));
+ assert.equal(S.DIRECTOR.sequenceOpening(openingMatch,pre,[]),null);
+ openingMatch.o.sequenceOpeningVersion=undefined;assert.equal(S.DIRECTOR.sequenceOpening(openingMatch,pre,pool),null);
+ openingMatch.o.sequenceOpeningVersion=1;openingMatch.t=openingMatch.len-30;assert.equal(S.DIRECTOR.sequenceOpening(openingMatch,pre,pool),null);
+}
+console.log('PASS MP13C opening preference: real existing graph candidates only, opt-in, no forced transitions; fixture available '+Boolean(openingCase));
