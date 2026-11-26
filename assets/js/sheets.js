@@ -162,8 +162,8 @@
   // grip, locations and participant fitness must be checked live in MP8.
   function validateSequence(seq,obj,sheet){
    const bad=[],fail=why=>['Invalid conditional sequence '+obj.id+': '+why];
-   if(!plain(seq)||seq.version!==1||seq.mode!=='conditional'||
-      Object.keys(seq).some(k=>!['version','mode','start','actions'].includes(k)))return fail('schema');
+   if(!plain(seq)||![1,2].includes(seq.version)||seq.mode!=='conditional'||
+      Object.keys(seq).some(k=>!['version','mode','start','actions',...(seq.version===2?['openings']:[])].includes(k)))return fail('schema');
    if(!obj.call?.chosen||obj.call.source!=='negotiated'||!['w','f'].includes(obj.call.owner))return fail('missing negotiated call');
    const ids=seq.actions,start=seq.start,positions=['standing','mat','corner','top','outside'],other=s=>s==='w'?'f':'w';
    if(!Array.isArray(ids)||ids.length<2||ids.length>4||new Set(ids).size!==ids.length||ids.at(-1)!==obj.call.action||
@@ -187,6 +187,27 @@
     control=performer;position=n.zone;
    }
    if(performer!==obj.call.owner)return fail('final performer');
+   if(seq.version===2){
+    if(!Array.isArray(seq.openings)||seq.openings.length<1||seq.openings.length>2)return fail('opening count');
+    const graph=root.OfficeMatch?.GRAPH,first=actions[ids[0]];
+    const transition=(n,entry)=>{
+     const actor=n.reverse?other(entry.control):entry.control;
+     return {control:actor,position:n.zone,down:n.down==='d'?(n.reverse?entry.control:other(entry.control)):n.down==='a'?actor:null};
+    };
+    const canonical=transition(first,start),seen=new Set();
+    for(const entry of seq.openings){
+     if(!plain(entry)||Object.keys(entry).some(k=>!['start','action'].includes(k))||
+        !plain(entry.start)||!['standing','mat','corner'].includes(entry.start.position)||
+        ids.includes(entry.action)||seen.has(JSON.stringify(entry.start)))return fail('alternative schema');
+     seen.add(JSON.stringify(entry.start));
+     const n=actions[entry.action];
+     if(!n||n.risk||!graph||graph.costOf(entry.action)>Math.max(1.8,graph.costOf(ids[0]))||
+        graph.PHYSICAL_GRIP_MOVES[entry.action]||graph.GRIP_ENTRY[entry.action]!==graph.GRIP_ENTRY[ids[0]]||
+        JSON.stringify(transition(n,entry.start))!==JSON.stringify(canonical))return fail('alternative continuity or risk');
+     const errors=validateSequence({version:1,mode:'conditional',start:entry.start,actions:[entry.action,...ids.slice(1)]},obj,sheet);
+     if(errors.length)return fail('alternative: '+errors[0]);
+    }
+   }
    return bad;
   }
   function validatePlan(plan,structure,sheet){
@@ -684,27 +705,40 @@
    });
   }
   const equalState=(a,b)=>!!a&&!!b&&a.control===b.control&&a.position===b.position&&a.down===b.down;
-  function sequenceWindow(M,o,remaining){
+  function sequenceWindow(M,o,remaining,opening=null){
    const frac=M.t/Math.max(1,M.len);
    // Preserve a finishing runway even for a very late negotiated setup.
-   const duration=M.o.sequenceTimingVersion===1?o.sequence.actions.slice(-remaining).reduce((n,id)=>n+root.OfficeMatch.GRAPH.sequenceMoveSeconds(id),0):remaining*20;
+   const duration=M.o.sequenceTimingVersion===1?o.sequence.actions.slice(-remaining).reduce((n,id,i)=>n+root.OfficeMatch.GRAPH.sequenceMoveSeconds(i===0&&opening?opening.action:id),0):remaining*20;
    return M.outcome==='booked'&&frac>=o.window[0]-.04&&frac<=o.window[1]+.08&&
     M.len-M.t>=Math.max(45,duration+25)&&frac<.91&&
     !M.bigSpotRequest&&!M.workingHurt&&!M.shortened;
   }
-  function sequenceContext(M,row,pre,previous){
+  function sequenceContext(M,row,pre,previous,landed=null){
    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
    if(!o?.sequence||!['pending','running'].includes(row.status))return null;
    if(o.requires.some(id=>M.structureDirector.objectives.some(s=>s.id===id&&s.status==='pending')))return null;
-   const steps=sequenceSteps(o.sequence),step=steps[row.progress];
-   if(!step||!sequenceWindow(M,o,steps.length-row.progress)||!equalState(pre,step.entry))return null;
+   const steps=sequenceSteps(o.sequence);let step=steps[row.progress],opening=null;
+   if(!step)return null;
+   // A fallback is a separately signed first move, not invented after
+   // the fact. For a natural landing, match its actual pre-state and ID.
+   if(!row.progress&&o.sequence.version===2&&adaptiveSequences(M)&&
+      (!equalState(pre,step.entry)||landed&&landed!==step.id||
+       !landed&&(!sequenceMoveAllowed(M,step.id,step.performer)||!root.OfficeMatch.GRAPH.isValid(M,step.id)))){
+    for(const entry of o.sequence.openings){
+     if(!equalState(pre,entry.start)||landed&&landed!==entry.action)continue;
+     const alt=sequenceSteps({start:entry.start,actions:[entry.action,...o.sequence.actions.slice(1)]})[0];
+     if(!landed&&(!sequenceMoveAllowed(M,alt.id,alt.performer)||!root.OfficeMatch.GRAPH.isValid(M,alt.id)))continue;
+     step=alt;opening=entry;break;
+    }
+   }
+   if(!sequenceWindow(M,o,steps.length-row.progress,opening)||!equalState(pre,step.entry))return null;
    if(row.progress){
     const last=row.evidence.at(-1);
     if(!last||previous?.id!==last.id||previous.t!==last.at||
        previous.preControl!==last.entry.control||!equalState(previous,last.exit)||
        M.t-last.at>30||adaptiveSequences(M)&&Object.prototype.hasOwnProperty.call(pre,'node')&&pre.node!==last.id)return null;
    }else if(row.attempts>=3)return null;
-   return {o,steps,step};
+   return {o,steps,step,opening};
   }
   function sequenceMoveAllowed(M,id,actor){
    const n=actions[id],worker=actor==='w'?M.w:M.f,stamina=actor==='w'?M.wSt:M.fSt;
@@ -762,7 +796,7 @@
     // the bridge, final call, retry limit and physics checks stay unchanged.
     const improv=id!==ctx.step.id&&actorProfile?Math.max(.8,Math.min(1.2,1+(actorProfile.scores.improvisation-50)/200)):1;
     const ratio=(row.progress?2.5+follow*8:1+follow*2)*improv;
-    return {id,continuation:row.progress>0,objective:row.objective,planned:ctx.step.id,
+    return {id,continuation:row.progress>0,objective:row.objective,planned:ctx.opening?ctx.o.sequence.actions[0]:ctx.step.id,
      ratio,willingness};
    }
    return null;
@@ -782,7 +816,7 @@
    if(!M.graph?.events?.includes(e)||!actions[e.id]||!pre)return;
    for(const row of sequenceRows(M)){
     if(!['pending','running'].includes(row.status))continue;
-    const ctx=sequenceContext(M,row,pre,previous);
+    const ctx=sequenceContext(M,row,pre,previous,e.id);
     const substituted=adaptiveSequences(M)&&ctx&&offer?.objective===row.objective&&offer.planned===ctx.step.id&&
      offer.id===e.id&&e.id!==ctx.step.id;
     if(!ctx||e.id!==ctx.step.id&&!substituted||!equalState(e,ctx.step.exit)||e.preControl!==ctx.step.entry.control){
@@ -793,7 +827,7 @@
     }
     if(!row.progress){row.attempts++;row.status='running';row.reason=null;}
     row.evidence.push({id:e.id,at:e.t,progress:e.t/Math.max(1,M.len),performer:ctx.step.performer,entry:{...ctx.step.entry},exit:{...ctx.step.exit},
-     ...(substituted?{planned:ctx.step.id,reason:'A legal authored bridge replaced the unavailable intermediate move.'}:{})});
+     ...(ctx.opening?{planned:ctx.o.sequence.actions[0],opening:true,reason:'A signed alternative opening reached the agreed exchange.'}:substituted?{planned:ctx.step.id,reason:'A legal authored bridge replaced the unavailable intermediate move.'}:{})});
     row.progress++;
     if(row.progress===ctx.steps.length){
      const adapted=row.evidence.some(x=>x.planned);
@@ -1023,15 +1057,19 @@
    if(!Array.isArray(evidence)||evidence.length>planned.length)return null;
    let changes=0;
    for(let i=0;i<evidence.length;i++){
-    const e=evidence[i],step=steps[i],n=actions[e.id];
+    const e=evidence[i],n=actions[e.id];let step=steps[i];
+    const opening=i===0&&e.opening===true&&seq.version===2?seq.openings.find(x=>x.action===e.id&&equalState(x.start,e.entry)):null;
+    if(e.opening&&!opening)return null;
+    if(opening)step=sequenceSteps({start:opening.start,actions:[opening.action,...planned.slice(1)]})[0];
     if(!n||!equalState(e.entry,step.entry)||!equalState(e.exit,step.exit)||e.performer!==step.performer||
-       (e.planned||e.id)!==step.id||!Number.isFinite(e.at)||
+       (e.planned||e.id)!==(opening?planned[0]:step.id)||!Number.isFinite(e.at)||
        !M.graph?.events?.some(x=>x.id===e.id&&x.t===e.at&&x.preControl===e.entry.control&&equalState(x,e.exit)&&
         ['aerialResolution','grappleResolution','strikeResolution','contactResolution'].every(k=>!x[k]||x[k]==='landed')))return null;
     if(i&&(!actions[evidence[i-1].id]?.next?.some(([id,w])=>id===e.id&&w>0)||
        e.at<evidence[i-1].at||e.at-evidence[i-1].at>30))return null;
     if(e.planned){
      const original=actions[step.id];
+     if(opening){if(++changes>1||e.planned!==planned[0]||e.id===planned[0])return null;continue;}
      if(++changes>1||i===0||i===planned.length-1||e.id===e.planned||n.risk||
         n.family!==original.family||n.reverse!==original.reverse||
         !n.next.some(([id,w])=>id===planned[i+1]&&w>0))return null;
@@ -1041,7 +1079,7 @@
       (row.status==='adapted')!==(changes===1)))return null;
    if(row.status==='missed'&&evidence.length===planned.length)return null;
    return {v:1,objective:obj.id,status:row.status,planned:planned.slice(),
-    witnessed:evidence.map(e=>({id:e.id,at:e.at,performer:e.performer,...(e.planned?{planned:e.planned}:{})})),
+    witnessed:evidence.map(e=>({id:e.id,at:e.at,performer:e.performer,...(e.planned?{planned:e.planned}:{}) ,...(e.opening?{opening:true}:{})})),
     attempts:row.attempts,interruptions:row.interruptions,
     protectedExit:!!(M.injury||M.foeHurt||M.workingHurt||M.shortened||M.outcome!=='booked')};
   }

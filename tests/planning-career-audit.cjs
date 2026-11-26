@@ -24,7 +24,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -37,8 +37,8 @@ function run(seeds=[3,10],weeks=32){
    const structures=S.STRUCTURES.catalogue(),choice={id:pick(structures,i+seed).id,lead:i%2?'f':'w'};
    const approach=pick(['story','technical','safe','brawl','spots'],i+seed);
    const banks=promoBanks(root.OfficePromoIdentity.bankId(w),root.OfficePromoIdentity.bankId(f));
-   function planRoom(policy,resume){
-   let st=R.begin(c,w,f,G.P(c.pid),{structure:choice,structurePlanning:true,planningCareer:G.S,planningInitiative:true,planningProposal:true,planningDialogue:true,planningBanks:banks,planningBargaining:true,planningSequences:true,planningSequencePolicy:policy,planningSequenceSigning:true,
+   function planRoom(policy,resume,adaptive=false){
+   let st=R.begin(c,w,f,G.P(c.pid),{structure:choice,structurePlanning:true,planningCareer:G.S,planningInitiative:true,planningProposal:true,planningDialogue:true,planningBanks:banks,planningBargaining:true,planningSequences:true,planningSequencePolicy:policy,planningAdaptiveEntries:adaptive,planningSequenceSigning:true,
     recent:G.S.roomRecent||[],threads:R.liveThreads(G.S.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)});
    assert.ok(st.planningEvidence&&st.planningDialogue&&st.planningSequenceSigning,key+' full planning policy active');
    const prior=st.planningEvidence.participants.w.relationship.professional;
@@ -74,8 +74,9 @@ function run(seeds=[3,10],weeks=32){
    assert.ok(range(st.sheet.workerConsent)&&range(st.sheet.opponentConsent));
    return {st,prior,actions,roomResume,sequenceOffer};
    }
-   const {st,prior,actions,roomResume,sequenceOffer}=planRoom(3,true);
+   const {st,prior,actions,roomResume,sequenceOffer}=planRoom(3,true,true);
    const controlRoom=i%3!==0?planRoom(2,false):null;
+   const baselineRoom=i%3!==0?planRoom(3,false,false):null;
    G.S.roomRecent=[...(G.S.roomRecent||[]),...st.queue].slice(-6);
    let promo=null,promoResume=0;
    const arcChoices=root.OfficeProgrammeArcs?.options(c)?.choices||[];
@@ -160,6 +161,15 @@ function run(seeds=[3,10],weeks=32){
     };
     feasibilityPairs.push({key,structure:choice.id,before:count(baseline,old.structurePlan),after:count(fin,sheet.structurePlan)});
    }
+   if(baselineRoom){
+    const old=R.addVow(baselineRoom.st.sheet,promo,w,f,c.finish);
+    const base=drive(true,false,{...options,sheet:old,minutes:old.minutes,plan:{game:old.game,leash:old.leash,talk:old.talk},flags:{...w.flags,...old.flags}},copy(old.structurePlan)).fin;
+    const count=(fin,layout)=>{const rs=(fin.structure.sequences||[]).map(x=>x.receipt).filter(Boolean);return {
+     signed:rs.length,completed:rs.filter(x=>['completed','adapted'].includes(x.status)).length,adapted:rs.filter(x=>x.status==='adapted').length,
+     alternativeDelivered:rs.filter(x=>x.status==='adapted'&&x.witnessed.some(e=>e.opening)).length,noOpening:rs.filter(x=>x.status==='missed'&&!x.attempts).length,
+     withAlternatives:layout.objectives.filter(x=>x.sequence?.openings?.length).length,stars:fin.stars,injury:Number(!!fin.injury),outcome:fin.outcome};};
+    adaptivePairs.push({key,structure:choice.id,before:count(base,old.structurePlan),after:count(fin,sheet.structurePlan)});
+   }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
     for(const e of r.witnessed)assert.ok(M.graph.events.some(ev=>ev.id===e.id&&ev.t===e.at),key+' actual graph receipt');
@@ -199,6 +209,9 @@ function run(seeds=[3,10],weeks=32){
     return {signed:xs.reduce((n,x)=>n+x.signed,0),completed:xs.reduce((n,x)=>n+x.completed,0),noOpening:xs.reduce((n,x)=>n+x.noOpening,0),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd)),injuries:xs.reduce((n,x)=>n+x.injury,0),entries};};
    const both=feasibilityPairs.filter(x=>x.before.signed&&x.after.signed);
    return {pairs:feasibilityPairs.length,before:summarize('before'),after:summarize('after'),bothSigned:both.length,bothCompletedBefore:both.reduce((n,x)=>n+x.before.completed,0),bothCompletedAfter:both.reduce((n,x)=>n+x.after.completed,0),changedOutcomes:feasibilityPairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:feasibilityPairs};
+  })(),matchedAdaptive:(()=>{
+   const summarize=side=>{const xs=adaptivePairs.map(x=>x[side]);return {...Object.fromEntries(['signed','completed','adapted','alternativeDelivered','noOpening','withAlternatives','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars))};};
+   return {pairs:adaptivePairs.length,before:summarize('before'),after:summarize('after'),changedOutcomes:adaptivePairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:adaptivePairs};
   })(),rows};
 }
 module.exports={run};
