@@ -67,7 +67,7 @@ function play(spec,w,f,p){
  for(let n=0;n<32&&st.stage!=='done';n++){
   const option=choose(st,spec);
   assert.ok(option,'policy could not resolve '+st.stage+' '+booking.id);
-  if(spec.replay&&!saved&&st.stage==='scene'){saved=clone(st);resumeAt=actions.length;}
+  if(spec.replay&&!saved&&(st.stage==='scene'||st.stage==='review')){saved=clone(st);resumeAt=actions.length;}
   if(option.id==='review_edit')repairs++;
   choices.push({stage:st.stage,situation:st.stage==='scene'?st.queue[st.at]:null,id:option.id});
   actions.push(option.id);R.act(st,option.id);
@@ -130,5 +130,6 @@ for(const b of owners.values())assert.equal(b.meetings,4);
 const summary=b=>{const {lines,...rest}=b;return {...rest,uniqueText:lines.size,repeatPer100:b.focusLines?100*b.rollingRepeats/b.focusLines:0,meanConsent:b.meetings?b.consentSum/b.meetings:null};};
 const result={policy:'legacy-planning-mp0b',groups:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,summary(v)])),structures:Object.fromEntries(Object.entries(byStructure).map(([k,v])=>[k,summary(v)])),plans:Object.fromEntries(Object.entries(byPlan).map(([k,v])=>[k,summary(v)])),coverage,owners:[...owners].map(([id,b])=>({id,...summary(b)}))};
 console.log('MP0B planning baseline '+JSON.stringify({groups:result.groups,structures:result.structures,plans:result.plans,coverage}));
+console.log('MP0B focus-owner coverage '+JSON.stringify(result.owners.map(({id,focusLines,uniqueText,withinRepeats,rollingRepeats,meanConsent,objections,discussion})=>({id,focusLines,uniqueText,withinRepeats,rollingRepeats,meanConsent,objections,discussion}))));
 if(process.env.PLANNING_AUDIT_JSON)fs.writeFileSync(process.env.PLANNING_AUDIT_JSON,JSON.stringify({...result,transcripts},null,2));
 console.log('PASS MP0B: 800 real planning meetings, 200 focus identities and JSON resumes; no gameplay policy changed.');
