@@ -3322,6 +3322,19 @@ const Graph=(function makeGraph(){
     target[1]=Math.max(target[1],rest*desired);
    }
   }
+  // An opening is not an agreed landing. Reweight only existing legal
+  // choices, and never override an immediately available signed sequence.
+  if(!negotiated){
+   const opening=root.OfficeSheets?.DIRECTOR?.sequenceOpening(M,p,pool);
+   if(opening){
+    const ids=new Set(opening.ids),ours=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?w:0),0);
+    const others=pool.reduce((sum,[id,w])=>sum+(ids.has(id)?0:w),0);
+    if(ours>0&&others>0&&ours<others*opening.ratio){
+     const scale=Math.min(12,others*opening.ratio/ours);
+     for(const entry of pool)if(ids.has(entry[0]))entry[1]*=scale;
+    }
+   }
+  }
   return pool;
  }
  function recover(M){
