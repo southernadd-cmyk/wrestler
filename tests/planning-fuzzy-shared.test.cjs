@@ -1,0 +1,60 @@
+'use strict';
+// MP1A: test the dormant planning foundation in the same VM as production.
+const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+const {core}=require('./_source.cjs');
+const root={addEventListener(){}},store=new Map();
+const ctx=vm.createContext({window:root,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},Date,Math,JSON,console});
+vm.runInContext(core,ctx);
+const K=root.OfficePsychology,F=root.OfficePromoFuzzy;
+const plain=x=>JSON.parse(JSON.stringify(x));
+const equal=(a,b)=>assert.deepEqual(plain(a),plain(b));
+const promoRules=JSON.stringify(F.rules),promoCurves=JSON.stringify(F.curves);
+const oldBegin=root.OfficeRoom.begin,oldAct=root.OfficeRoom.act;
+assert.equal(root.OfficePlanningFuzzy,undefined,'MP1A remains outside live script loading');
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','assets','js','planning-fuzzy.js'),'utf8'),ctx);
+const P=root.OfficePlanningFuzzy;
+assert.ok(Object.isFrozen(P));
+assert.equal(P.version,1);
+assert.equal(P.workerCurves,K.workerCurves,'same canonical reference, not a copy');
+assert.equal(P.workerInputs,K.workerInputs);
+const rule={id:'probe',output:'probe',value:80,weight:1,when:['ego.high']};
+const spec={outputs:['probe'],rules:[rule]};
+const model=P.createModel(spec);
+assert.ok(Object.isFrozen(model));
+equal(model.curves,K.workerCurves);
+let observations=0;
+for(const axis of Object.keys(K.workerCurves)){
+ assert.ok(Object.isFrozen(model.curves[axis]));
+ for(let x=-10;x<=110;x+=.5){
+  const g=model.membership(axis,x);
+  equal(g,F.membership(axis,x));
+  assert.ok(Object.values(g).every(v=>v>=0&&v<=1));
+  assert.ok(Math.abs(g.low+g.medium+g.high-1)<1e-12);
+  observations++;
+ }
+ for(const x of [null,undefined,NaN,Infinity,-Infinity,'50'])assert.equal(model.membership(axis,x),null);
+ const [a,b,c]=K.workerCurves[axis];
+ equal(model.membership(axis,a),{low:1,medium:0,high:0});
+ equal(model.membership(axis,b),{low:0,medium:1,high:0});
+ equal(model.membership(axis,c),{low:0,medium:0,high:1});
+ equal(model.membership(axis,(a+b)/2),{low:.5,medium:.5,high:0});
+ equal(model.membership(axis,(b+c)/2),{low:0,medium:.5,high:.5});
+ assert.throws(()=>P.createModel({...spec,curves:{[axis]:[10,50,90]}}),/Cannot override/);
+}
+assert.equal(model.evaluate({}).scores.probe,null);
+assert.equal(model.evaluate({}, {'ego.high':1}).scores.probe,null);
+assert.ok(model.evaluate({ego:95}).scores.probe>50);
+equal(P.workerInputs({}),{ego:null,professionalism:null,ringPsychology:null,microphone:null});
+equal(P.workerInputs({ego:0,pro:100,psych:0,mic:0}),{ego:0,professionalism:100,ringPsychology:0,microphone:0});
+const extra={probeAxis:[20,40,80]};
+const extended=P.createModel({...spec,curves:extra});
+extra.probeAxis[0]=1;
+equal(extended.curves.probeAxis,[20,40,80]);
+assert.throws(()=>P.createModel({...spec,curves:{bad:[30,20,80]}}));
+assert.throws(()=>P.createModel(null));
+assert.throws(()=>P.createModel({...spec,curves:[]}));
+assert.equal(JSON.stringify(F.rules),promoRules);
+assert.equal(JSON.stringify(F.curves),promoCurves);
+assert.equal(root.OfficeRoom.begin,oldBegin);
+assert.equal(root.OfficeRoom.act,oldAct);
+console.log('PASS MP1A: '+observations+' shared membership comparisons, canonical knots, missing/zero inputs, domain extension and no live integration.');
