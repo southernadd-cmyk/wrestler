@@ -1,0 +1,22 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {run}=require('./planning-career-audit.cjs');
+const report=run([24,31,38],32,{productionOnly:true});
+const {rows,careers}=report;
+assert.ok(careers.every(c=>c.weeks===32),'all scheduled weeks completed');
+assert.equal(rows.length,careers.reduce((n,c)=>n+c.matches,0),'every settled match accounted for');
+assert.ok(rows.length>=24,'meaningful number of real bookings');
+const summary=rs=>{
+ const totals=Object.fromEntries(['signed','opened','completed','playerInjury','opponentInjury','botches','spots','zeroEnd','shortened','accepted','witnessed','botched','refunded','roomResume','promoResume','matchResume'].map(k=>[k,rs.reduce((n,r)=>n+r[k],0)]));
+ const freq=k=>rs.reduce((a,r)=>(a[r[k]]=(a[r[k]]||0)+1,a),{});
+ const mean=k=>rs.reduce((n,r)=>n+r[k],0)/rs.length;
+ assert.equal(totals.accepted,totals.witnessed+totals.botched+totals.refunded);
+ return {matches:rs.length,...totals,stars:mean('stars'),crowd:mean('crowd'),outcomes:freq('outcome'),stiffChoices:freq('stiff'),structures:freq('structure'),plans:freq('plan')};
+};
+const overall=summary(rows);
+assert.ok(overall.signed>0&&overall.completed>0&&overall.accepted>0&&overall.witnessed>0,'real sequence and manager delivery exercised');
+assert.ok(overall.roomResume>0&&overall.promoResume>0&&overall.matchResume>0,'all stage resume paths exercised');
+assert.equal(Object.keys(overall.structures).length,4);
+assert.equal(Object.keys(overall.plans).length,5);
+console.log('MP13F.20 PRODUCTION SOAK '+JSON.stringify({careers,overall,bySeed:Object.fromEntries(report.seeds.map(seed=>[seed,summary(rows.filter(r=>r.seed===seed))]))}));
+console.log('PASS: production match engine and career settlement, no historical overrides or replay sweep.');
