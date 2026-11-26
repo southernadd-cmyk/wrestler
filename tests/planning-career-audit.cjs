@@ -68,10 +68,12 @@ function riskSource(source){
 }
 function routineSource(source){
  source=riskSource(source);
- // Preserve historical F.13–15 controls; candidate uses exact shipped factor.
- const spotAnchor="recoveryWeight*optionalSpotFactor;";
+ // Keep the established historical control at 100%; the 25% arm uses
+ // the actual production factor. All other suites see the shipped engine.
+ const spotAnchor="recoveryWeight*optionalSpotFactor*autonomousSpotFactor;";
+ assert.equal(source.split("const autonomousSpotFactor=.25;").length,2,"production quarter-rate autonomous scheduling");
  assert.equal(source.split(spotAnchor).length,2,'unique autonomous schedule factor');
- source=source.replace(spotAnchor,"recoveryWeight*optionalSpotFactor*(root.__mp13SpotFactor??1);");
+ source=source.replace(spotAnchor,"recoveryWeight*optionalSpotFactor*(root.__mp13SpotFactor===.25?autonomousSpotFactor:(root.__mp13SpotFactor??1));");
  const wNew="clamp(M.wSt-routineDebit+(mode==='slow'?1.6:0))";
  const fNew="clamp(M.fSt-routineDebit+(mode==='slow'?1.2:0))";
  const wOld="clamp(M.wSt-drain+(mode==='slow'?1.6:0))";
