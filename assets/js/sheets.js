@@ -818,9 +818,18 @@
     // MP10: improv preference only changes a legal substitute's weight;
     // the bridge, final call, retry limit and physics checks stay unchanged.
     const improv=id!==ctx.step.id&&actorProfile?Math.max(.8,Math.min(1.2,1+(actorProfile.scores.improvisation-50)/200)):1;
-    const ratio=(row.progress?2.5+follow*8:1+follow*2)*improv;
+    // MP13F.5: a brief preference for an already legal, fully ready
+    // first opening immediately after an earned prerequisite. No new
+    // candidates, arc retention, attempt retries, or forced execution.
+    const handover=M.o.sequenceHandoverVersion===1&&M.sheet.sequenceContinuationVersion===1&&
+     M.structureDirector.id!=='chickenshit_heel'&&!row.progress&&!row.attempts&&
+     row.status==='pending'&&willingness>=35&&!actions[id].risk&&!actions[id].counterOf&&!actions[id].blockOf&&
+     ctx.o.requires.some(dep=>M.structureDirector.objectives.some(p=>p.id===dep&&
+      ['achieved','adapted'].includes(p.status)&&Number.isFinite(p.at)&&M.t>=p.at&&M.t-p.at<=30&&
+      p.evidence.some(e=>e.at===p.at&&g.events.some(ev=>ev.t===e.at&&ev.id===e.id))));
+    const ratio=(row.progress?2.5+follow*8:1+follow*2+(handover?3*follow:0))*improv;
     return {id,continuation:row.progress>0,objective:row.objective,planned:ctx.opening?ctx.o.sequence.actions[0]:ctx.step.id,
-     ratio,willingness};
+     ratio,willingness,...(handover?{handover:true}:{})};
    }
    return null;
   }
