@@ -1934,8 +1934,8 @@
    if(st.planningInitiative===1&&opts.planningProposal===true)st.planningProposal=1;
    if(st.planningProposal===1&&opts.planningDialogue===true&&root.OfficePlanningDialogue){
     const L=root.OfficePlanningDialogue,banks=Array.isArray(opts.planningBanks)?opts.planningBanks:[];
-    const identities={w:L.capture(w,banks),f:L.capture(f,banks)};
-    if(identities.w&&identities.f)st.planningDialogue={v:1,identities};
+    const identities={w:L.capture(w,banks,2),f:L.capture(f,banks,2)};
+    if(identities.w&&identities.f)st.planningDialogue={v:1,composer:2,identities};
    }
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
