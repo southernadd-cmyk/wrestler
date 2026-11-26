@@ -819,6 +819,15 @@
   const w=G.W(c.wid),f=G.F(c.rid);if(!w||!f)return;
   const L=ledger(w.id,f.id,c.id);if(L.done[c.id])return;L.done[c.id]=1;
   const m=meetingFrom(c,fin,w,f,L.meetings.length+1);
+  // The graph director issues receipts only for terminal, witnessed
+  // sequences. Older results carry no receipt and create no new memory.
+  const delivery=(fin.structure?.sequences||[]).map(row=>row.receipt).filter(x=>
+   x?.v===1&&['completed','adapted','missed'].includes(x.status)&&typeof x.objective==='string'&&
+   Array.isArray(x.planned)&&x.planned.length>=2&&x.planned.length<=4&&Array.isArray(x.witnessed)&&
+   x.witnessed.length<=x.planned.length&&x.witnessed.every(e=>e&&['w','f'].includes(e.performer)&&
+    typeof e.id==='string'&&Number.isFinite(e.at))&&
+   (x.status==='missed'?x.witnessed.length<x.planned.length:x.witnessed.length===x.planned.length));
+  if(delivery.length)m.sequenceDelivery=JSON.parse(JSON.stringify(delivery.slice(0,4)));
   const h=G.S.history.find(x=>x.cid===c.id);
   const pr=fin.promo||null;
   if(pr?.promise&&pr.promise.type&&pr.promise.type!=='none'&&h?.promo?.promise?.checked){
@@ -832,6 +841,12 @@
   }
   L.meetings.push(m);L.meetings=L.meetings.slice(-LIMIT.meetings);L.meetings.forEach((x,i)=>{x.n=i+1;});
   const notes=[];
+  if(m.sequenceDelivery){
+   const exact=m.sequenceDelivery.filter(x=>x.status==='completed').length,
+    adapted=m.sequenceDelivery.filter(x=>x.status==='adapted').length,
+    missed=m.sequenceDelivery.filter(x=>x.status==='missed').length;
+   notes.push('Shared planning memory: '+exact+' negotiated sequences delivered, '+adapted+' adapted, '+missed+' incomplete. No personal blame is assigned.');
+  }
   if(cs&&cs.used){
    L.claims.push({cid:c.id,n:m.n,issue:cs.issue,factId:cs.factId,family:cs.family,owner:cs.owner,raisedBy:cs.raisedBy,case:true,thesis:cs.thesis,evidence:cs.evidence,
     prop:cs.prop,counter:cs.counter,mode:cs.mode,response:cs.response,resolution:cs.resolution||'unresolved',exposed:!!cs.exposed,fConceded:!!cs.fConceded,

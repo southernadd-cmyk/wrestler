@@ -1007,12 +1007,48 @@
    const x=current(M);return x&&ARC[x.objective.intent]?.includes(id)?
     (M.structureDirector.id==='chickenshit_heel'?3.4:5.6):1;
   }
+  // Export a compact, factual receipt for the existing career rivalry
+  // ledger. A planned or attempted action is not a witnessed delivery.
+  function sequenceReceipt(M,row){
+   if(!['completed','adapted','missed'].includes(row.status))return null;
+   const obj=M.sheet?.structurePlan?.objectives?.find(o=>o.id===row.objective),seq=obj?.sequence;
+   if(!seq)return null;
+   const planned=seq.actions,steps=sequenceSteps(seq);
+   const evidence=row.status==='missed'&&row.best.length>row.evidence.length?row.best:row.evidence;
+   if(!Array.isArray(evidence)||evidence.length>planned.length)return null;
+   let changes=0;
+   for(let i=0;i<evidence.length;i++){
+    const e=evidence[i],step=steps[i],n=actions[e.id];
+    if(!n||!equalState(e.entry,step.entry)||!equalState(e.exit,step.exit)||e.performer!==step.performer||
+       (e.planned||e.id)!==step.id||!Number.isFinite(e.at)||
+       !M.graph?.events?.some(x=>x.id===e.id&&x.t===e.at&&x.preControl===e.entry.control&&equalState(x,e.exit)&&
+        ['aerialResolution','grappleResolution','strikeResolution','contactResolution'].every(k=>!x[k]||x[k]==='landed')))return null;
+    if(i&&(!actions[evidence[i-1].id]?.next?.some(([id,w])=>id===e.id&&w>0)||
+       e.at<evidence[i-1].at||e.at-evidence[i-1].at>30))return null;
+    if(e.planned){
+     const original=actions[step.id];
+     if(++changes>1||i===0||i===planned.length-1||e.id===e.planned||n.risk||
+        n.family!==original.family||n.reverse!==original.reverse||
+        !n.next.some(([id,w])=>id===planned[i+1]&&w>0))return null;
+    }
+   }
+   if(row.status!=='missed'&&(evidence.length!==planned.length||evidence.at(-1)?.id!==obj.call.action||
+      (row.status==='adapted')!==(changes===1)))return null;
+   if(row.status==='missed'&&evidence.length===planned.length)return null;
+   return {v:1,objective:obj.id,status:row.status,planned:planned.slice(),
+    witnessed:evidence.map(e=>({id:e.id,at:e.at,performer:e.performer,...(e.planned?{planned:e.planned}:{})})),
+    attempts:row.attempts,interruptions:row.interruptions,
+    protectedExit:!!(M.injury||M.foeHurt||M.workingHurt||M.shortened||M.outcome!=='booked')};
+  }
   function report(M){
    if(!active(M))return null;
    const d=M.structureDirector;
    return {version:d.version,id:d.id,roles:{...d.roles},
     objectives:d.objectives.map(s=>({...s,evidence:s.evidence.map(x=>({...x}))})),
-    ...(Array.isArray(d.sequences)?{sequences:JSON.parse(JSON.stringify(d.sequences))}:{})};
+    ...(Array.isArray(d.sequences)?{sequences:d.sequences.map(row=>{
+     const receipt=sequenceReceipt(M,row);
+     return {...JSON.parse(JSON.stringify(row)),...(receipt?{receipt}:{})};
+    })}:{})};
   }
   return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,observeSequence};
  })();

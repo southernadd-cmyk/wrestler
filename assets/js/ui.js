@@ -1812,6 +1812,13 @@ function result(){
   '</div><p class="dim">The star rating is unchanged by structural completion. A named move must be witnessed in its objective window; an achieved objective may use a different move.</p></section>':'';
  const structureHtml=structureReport?'<h3 class="section-h" style="margin-top:12px">Dramatic structure: '+esc(OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===structureReport.id)?.label||structureReport.id)+'</h3>'+
   '<p class="dim">Only moves performed in the ring count. There is no automatic bonus for following a structure.</p>'+structureAssessmentHtml+
+  (structureReport.sequences?.length?'<h4>Negotiated sequences</h4><div class="well"><ol class="structure-result-list">'+structureReport.sequences.map(row=>{
+   const objective=structurePlan?.find(o=>o.id===row.objective),name=id=>Mx.GRAPH.A[id]?.name||id.replace(/_/g,' ');
+   const planned=objective?.sequence?.actions||[],actual=row.receipt?.witnessed||[];
+   return '<li><b>'+esc(objective?.title||row.objective)+'</b> · <span class="structure-status s-'+esc(row.status==='completed'?'achieved':row.status)+'">'+esc(row.status)+'</span>'+
+    '<small>Agreed: '+esc(planned.map(name).join(' → '))+' · Witnessed: '+esc(actual.length?actual.map(e=>name(e.id)).join(' → '):'No verified chain')+'</small>'+
+    '<small>'+esc(row.reason||'')+'</small></li>';
+  }).join('')+'</ol></div>':'')+
   (finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+
   '<div class="well"><ol class="structure-result-list">'+structureReport.objectives.map((o,i)=>{
    const planned=structurePlan?.[i],actor=planned?.actor==='w'?w.short:f.short,
