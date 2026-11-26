@@ -145,7 +145,7 @@
   const policy=st.authoredDialogue?.fuzzy;
   if(policy?.v!==1||policy.pacing!==1||!formatFor(d)||st.core.case||st.core.claim?.hasEvidence||st.arc||(st.speaker&&!mouthFuzzy(st)))return null;
   const audience=policy.crowd===1?Object.fromEntries(['w','f'].map(side=>[side,root.OfficePromoFuzzy?.heard(policy,side,st.round-1)])):null;
-  return root.OfficePromoFuzzy?.pacing(policy,d,{meter:st.meter,feudHeat:st.core.feudHeat,pace:formatFor(d).pace,audience,
+  return root.OfficePromoFuzzy?.pacing(policy,d,{meter:st.meter,feudHeat:st.core.feudHeat,pace:formatFor(d).pace,audience,balance:policy.balance,
    personal:record.id==='personal'||record.id==='accusation',calming:record.id==='calm'||record.id==='confession',landed:record.landed})||null;
  }
  function spontaneous(d,st,record){

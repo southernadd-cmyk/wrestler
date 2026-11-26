@@ -89,7 +89,8 @@ function observe(a,worker,side,st,prior,emotionTrace,actions){
  }
 }
 const paired=new Map();
-const pairedStats={scenes:0,changedSpeech:0,changedEvents:0,changedRoute:0,changedQuality:0,changedCloseAction:0,sameActions:0,sameActionsChangedQuality:0,sameActionsChangedPromise:0,protected:0,qualityDeltaSum:0,qualityDeltaMin:100,qualityDeltaMax:-100,commonOpeningActions:0};
+const freshPairStats=()=>({scenes:0,changedSpeech:0,changedEvents:0,changedRoute:0,changedQuality:0,changedCloseAction:0,sameActions:0,sameActionsChangedQuality:0,sameActionsChangedPromise:0,protected:0,qualityDeltaSum:0,qualityDeltaMin:100,qualityDeltaMax:-100,commonOpeningActions:0});
+const pairedStats=freshPairStats(),tunedStats=freshPairStats(),f6Signatures=new Map();
 function run(policy){
  const groups={all:bucket(),established:bucket(),academy:bucket(),w:bucket(),f:bucket()},byOwner=new Map(),byStyle=new Map();
  const histories=[];let resumeChecks=0,scenes=0;
@@ -104,7 +105,7 @@ function run(policy){
   const c={id:'r7-'+worker.id+'-'+j,wid:w.id,rid:f.id,pid:p.id,eventAbs:100+j,slot:['opener','mid','feature','main'][Math.floor(j/2)],finish:finishes[Math.floor(j/2)],minutes:12,feudHeat:j>=4?55:0};
   // Only synthetic feud heat, not invented recorded matches/claims.
   const rival=j>=4?{heat:55,closed:false}:null;
-  const st=M.begin(c,w,f,rival,null,p,{directed:true,formats:true,dialogue:true,authored:true,composition:true,semantic:true,banks:promoBanks(w.id,f.id),...(policy==='fuzzy'?{fuzzy:true,fuzzyEmotion:true,fuzzyPacing:true,fuzzyAudience:true}:{})});
+  const st=M.begin(c,w,f,rival,null,p,{directed:true,formats:true,dialogue:true,authored:true,composition:true,semantic:true,banks:promoBanks(w.id,f.id),...(policy!=='baseline'?{fuzzy:true,fuzzyEmotion:true,fuzzyPacing:true,fuzzyAudience:true,...(policy==='tuned'?{fuzzyBalance:true}:{})}:{})});
   const prior=new Set(histories.flatMap(h=>h.texts));
   st.authoredDialogue.recent=[...new Set([...st.authoredDialogue.recent,...histories.flatMap(h=>h.ids)])].slice(0,128);
   const readEmotion=()=>{const d=st.director[side==='w'?'player':'opponent'];return {composure:d.composure,irritation:d.irritation};};
@@ -131,26 +132,28 @@ function run(policy){
   pacing.turns+=actions.length;
   pacing.irritationExtreme+=emotions.filter(e=>e.irritation>=85).length;pacing.composureExtreme+=emotions.filter(e=>e.composure<=15).length;
   if(st.director.event){assert.ok([w.id,f.id].includes(st.director.event.actor));inc(pacing.actorEvents,event+'|'+(st.director.event.actor===worker.id?'focus':'other'));}
-  if(policy==='fuzzy')for(const a of Object.values(st.authoredDialogue.fuzzy.audience))if(a) pacing.audienceObserved++;
+  if(policy!=='baseline')for(const a of Object.values(st.authoredDialogue.fuzzy.audience))if(a) pacing.audienceObserved++;
   const signature={actions,spoken:st.log.filter(e=>e.side==='w'||e.side==='f').map(e=>e.line),event,hasPush,quality:result.quality,promise:result.promise??null,protected:!!(st.core.case||st.core.claim?.hasEvidence)};
   if(policy==='baseline')paired.set(c.id,signature);
   else{
-   const before=paired.get(c.id);assert.ok(before);
-   pairedStats.scenes++;
+   if(policy==='fuzzy')f6Signatures.set(c.id,signature);
+   const before=(policy==='tuned'?f6Signatures:paired).get(c.id);assert.ok(before);
+   const pairedStatsForRun=policy==='tuned'?tunedStats:pairedStats;
+   pairedStatsForRun.scenes++;
    const sameActions=JSON.stringify(before.actions)===JSON.stringify(actions);
    const delta=signature.quality-before.quality;
-   pairedStats.changedSpeech+=Number(JSON.stringify(before.spoken)!==JSON.stringify(signature.spoken));
-   pairedStats.changedEvents+=Number(before.event!==event);
-   pairedStats.changedRoute+=Number(before.hasPush!==hasPush);
-   pairedStats.changedQuality+=Number(delta!==0);
-   pairedStats.changedCloseAction+=Number(before.actions.at(-1).id!==actions.at(-1).id);
-   pairedStats.sameActions+=Number(sameActions);
-   pairedStats.sameActionsChangedQuality+=Number(sameActions&&delta!==0);
-   pairedStats.sameActionsChangedPromise+=Number(sameActions&&JSON.stringify(before.promise)!==JSON.stringify(signature.promise));
-   pairedStats.protected+=Number(signature.protected);
-   pairedStats.qualityDeltaSum+=delta;pairedStats.qualityDeltaMin=Math.min(pairedStats.qualityDeltaMin,delta);pairedStats.qualityDeltaMax=Math.max(pairedStats.qualityDeltaMax,delta);
+   pairedStatsForRun.changedSpeech+=Number(JSON.stringify(before.spoken)!==JSON.stringify(signature.spoken));
+   pairedStatsForRun.changedEvents+=Number(before.event!==event);
+   pairedStatsForRun.changedRoute+=Number(before.hasPush!==hasPush);
+   pairedStatsForRun.changedQuality+=Number(delta!==0);
+   pairedStatsForRun.changedCloseAction+=Number(before.actions.at(-1).id!==actions.at(-1).id);
+   pairedStatsForRun.sameActions+=Number(sameActions);
+   pairedStatsForRun.sameActionsChangedQuality+=Number(sameActions&&delta!==0);
+   pairedStatsForRun.sameActionsChangedPromise+=Number(sameActions&&JSON.stringify(before.promise)!==JSON.stringify(signature.promise));
+   pairedStatsForRun.protected+=Number(signature.protected);
+   pairedStatsForRun.qualityDeltaSum+=delta;pairedStatsForRun.qualityDeltaMin=Math.min(pairedStatsForRun.qualityDeltaMin,delta);pairedStatsForRun.qualityDeltaMax=Math.max(pairedStatsForRun.qualityDeltaMax,delta);
    assert.deepEqual(before.actions.slice(0,2),actions.slice(0,2),'matched opening/answer choice');
-   pairedStats.commonOpeningActions++;
+   pairedStatsForRun.commonOpeningActions++;
   }
   if(resumed)assert.equal(JSON.stringify(resumed),JSON.stringify(st),worker.id+' resume divergence');
   for(const a of [groups.all,groups[group],groups[side],owner,byStyle.get(worker.style)])observe(a,worker,side,st,prior,emotions,actions);
@@ -168,15 +171,23 @@ function summary(a){
  return {...rest,owners:owners.size,distinctAuthoredIds:authoredIds.size,uniqueText:lines.size,topRepeats:[...lines].map(([text,v])=>({text,count:v.count,owners:v.owners.size})).sort((a,b)=>b.owners-a.owners||b.count-a.count).slice(0,10)};
 }
 const all=summary(groups.all),owners=[...byOwner].map(([id,a])=>({id,style:D.ALL.find(w=>w.id===id).style,spoken:a.spoken,own:a.own,shared:a.shared,uniqueText:a.lines.size,rollingRepeat:a.rollingRepeat,semanticReplies:a.semanticReplies,semanticLinked:a.semanticLinked}));
-const report={version:policy==='baseline'?'F7-matched-baseline-v1':'F7-full-fuzzy-v1',scenes,resumeChecks,all,pacing,groups:Object.fromEntries(Object.entries(groups).filter(([k])=>k!=='all').map(([k,a])=>[k,summary(a)])),styles:Object.fromEntries([...byStyle].map(([k,a])=>[k,summary(a)])),owners};
+const report={version:policy==='baseline'?'F7-matched-baseline-v1':policy==='tuned'?'F7-balanced-v1':'F7-full-fuzzy-v1',scenes,resumeChecks,all,pacing,groups:Object.fromEntries(Object.entries(groups).filter(([k])=>k!=='all').map(([k,a])=>[k,summary(a)])),styles:Object.fromEntries([...byStyle].map(([k,a])=>[k,summary(a)])),owners};
 return report;
 }
-const baseline=run('baseline'),fuzzy=run('fuzzy');
+const baseline=run('baseline'),fuzzy=run('fuzzy'),tuned=run('tuned');
 assert.equal(pairedStats.scenes,1600);assert.equal(pairedStats.commonOpeningActions,1600);
 assert.ok(pairedStats.changedSpeech>0&&pairedStats.changedRoute>0);
 assert.equal(baseline.scenes,fuzzy.scenes);assert.equal(baseline.resumeChecks,fuzzy.resumeChecks);
+assert.equal(tuned.scenes,fuzzy.scenes);assert.equal(tuned.resumeChecks,fuzzy.resumeChecks);
+assert.equal(tunedStats.scenes,1600);assert.equal(tunedStats.commonOpeningActions,1600);
+assert.equal(tunedStats.sameActionsChangedPromise,0,'same-action promise changed');
+assert.ok(tuned.pacing.push>fuzzy.pacing.push,'balancing must restore additional exchanges');
+assert.ok(tuned.all.semanticLinked>fuzzy.all.semanticLinked,'balancing must restore linked replies');
+assert.equal(tuned.all.withinSceneRepeat,0);
+assert.ok(tuned.all.events.interrupt+tuned.all.events.escalate>=fuzzy.all.events.interrupt+fuzzy.all.events.escalate,'lost spontaneous conflict');
+assert.ok(tuned.all.semanticLinked/tuned.all.semanticReplies>=baseline.all.semanticLinked/baseline.all.semanticReplies,'lost baseline semantic accuracy');
 const report=baseline,{all,owners,scenes,resumeChecks}=baseline;
-if(process.env.PROMO_ROSTER_AUDIT_JSON)fs.writeFileSync(process.env.PROMO_ROSTER_AUDIT_JSON,JSON.stringify({report,baseline,fuzzy,paired:pairedStats,transcripts},null,2));
+if(process.env.PROMO_ROSTER_AUDIT_JSON)fs.writeFileSync(process.env.PROMO_ROSTER_AUDIT_JSON,JSON.stringify({report,baseline,fuzzy,tuned,paired:pairedStats,tunedPaired:tunedStats,transcripts},null,2));
 // Compact per-group log, with full per-worker records in optional JSON.
 const compact=a=>{const {routes,actions,delivery,topRepeats,...rest}=a;return rest;};
 console.log('R7 TOTAL '+JSON.stringify(compact(all)));
@@ -197,7 +208,7 @@ function metrics(a){
   events:a.events,meanComposure:Number((e.composureSum/e.observations).toFixed(2)),meanIrritation:Number((e.irritationSum/e.observations).toFixed(2)),
   composureRange:[e.composureMin,e.composureMax],irritationRange:[e.irritationMin,e.irritationMax],emotionObservations:e.observations};
 }
-for(const [name,r] of [['baseline',baseline],['fuzzy',fuzzy]]){
+for(const [name,r] of [['baseline',baseline],['fuzzy',fuzzy],['tuned',tuned]]){
  console.log('F7 '+name.toUpperCase()+' '+JSON.stringify({all:metrics(r.all),groups:Object.fromEntries(Object.entries(r.groups).map(([k,a])=>[k,metrics(a)])),
   styles:Object.fromEntries(Object.entries(r.styles).map(([k,a])=>[k,metrics(a)])),pacing:r.pacing}));
  console.log('F7 '+name.toUpperCase()+' REPEATS '+JSON.stringify(r.all.topRepeats));
@@ -210,5 +221,7 @@ console.log('F7 OWNER IMPACT '+JSON.stringify({moreUnique:ownerDiffs.filter(x=>x
  moreOwn:ownerDiffs.filter(x=>x.ownDelta>0).length,lessOwn:ownerDiffs.filter(x=>x.ownDelta<0).length,
  higherRepeatRate:ownerDiffs.filter(x=>x.repeatRateDelta>0).length,lowerRepeatRate:ownerDiffs.filter(x=>x.repeatRateDelta<0).length,
  worstRepeat:ownerDiffs.slice().sort((a,b)=>b.repeatRateDelta-a.repeatRateDelta).slice(0,12)}));
-console.log('PASS F7: 1600 matched pairs, 3200 total actual-choice promos, 800 JSON resumes, no changed booked finish or unlinked shared semantic reply.');
+console.log('F7B PAIRED '+JSON.stringify(tunedStats));
+console.log('F7B COMPARISON '+JSON.stringify({before:metrics(fuzzy.all),after:metrics(tuned.all),beforePush:fuzzy.pacing.push,afterPush:tuned.pacing.push,beforeQuality:fuzzy.pacing.qualitySum/fuzzy.scenes,afterQuality:tuned.pacing.qualitySum/tuned.scenes}));
+console.log('PASS F7B: 1600 matched contracts across three policies, 4800 actual-choice promos, 1200 JSON resumes, restored linked replies and follow-ups, unchanged booked finish.');
 

@@ -206,7 +206,12 @@
   const events=Object.fromEntries(Object.entries(raw).map(([k,v])=>[k,v*factor]));
   const pressure=Math.max(heat(a)*get(as,'aggression'),heat(b)*ag);
   const audienceLift=context.audience?Math.max(0,context.audience.w??0,context.audience.f??0)*.08*Math.max(get(as,'showmanship'),get(bs,'showmanship')):0;
-  const follow=Math.max(.08,Math.min(.82,.20+.28*balanced+.28*pressure+audienceLift
+  // F7A: optional exchanges fell 754 -> 506 / 1600, costing 148
+  // semantic replies. Restore space for substantive follow-up without
+  // changing event probabilities, emotion curves or the single-push cap.
+  // Favor unresolved, balanced exchanges; keep the calm and brief discounts.
+  const continuationLift=context.balance===1?.12+.08*balanced+(personal?.04:0)+(calm?.04:0):0;
+  const follow=Math.max(.08,Math.min(.82,.20+.28*balanced+.28*pressure+audienceLift+continuationLift
    +(personal?.16:0)+(confrontation?.12:0)+(context.landed===false?.12:0)
    -(brief?.17:0)-(calm?.25:0)-.18*respect*cool(b)-.13*(reserved(a)?strain(a):0)));
   return {events,follow,pauseSide:strain(a)*get(as,'defensiveness')>strain(b)*de?'w':'f'};

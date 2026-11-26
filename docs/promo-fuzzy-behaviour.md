@@ -203,3 +203,32 @@ does not fabricate recorded career evidence. No quality score is treated
 as proof of improved writing. Optional `PROMO_ROSTER_AUDIT_JSON` exports
 both reports and full policy-tagged transcripts. No live coefficients
 changed in F7A: use the measured results for a focused balancing pass.
+
+## F7B — restore substantive follow-up
+
+F7A measured 754 baseline versus 506 F6 optional exchanges over 1,600
+matched contracts; linked semantic replies fell from 676 to 563 even
+as linked share rose from 91.97% to 95.91%. Unique utterances per 100
+rose from 58.32 to 59.91, but absolute distinct text fell 2,959 to 2,951.
+Interruptions/escalations rose from 5 to 71. Mean quality was essentially
+unchanged (57.25 vs 57.30). Repetition changed only 9.80 to 9.72 per
+100 utterances; the same five academy profiles had no own authored line
+in the sample. The largest demonstrated pacing regression is shortened
+exchanges, not failed emotional bounds or broken semantic guards.
+
+New scenes explicitly opt into `balance:1`. Add a bounded continuation
+lift of .12 + .08 * meter balance, with a further .04 for personal
+challenges or calming responses. The calm/brief discounts, single
+optional exchange, .08–.82 route cap and all five spontaneous event
+weights remain intact. The new policy affects only the no-event route;
+older snapshots retain their prior coefficients. Do not inflate
+irritation to manufacture conflict or rewrite stock graph lines in
+this patch. Repetitive stock dialogue and individual owner-bank gaps
+are separate editorial/selector work.
+
+The permanent audit now runs three arms (baseline, F6, F7B), 4,800
+actual-choice scenes and 1,200 resumes. It checks improvement in both
+optional exchanges and correctly linked reply counts relative to F6,
+retained baseline semantic accuracy, no lost conflict events, unchanged
+same-action promises and no within-scene repetition. All other variety,
+quality and distribution changes are reported rather than assumed.
