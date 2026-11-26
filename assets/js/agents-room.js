@@ -1704,7 +1704,7 @@
     // Scale its merit here to avoid counting difficulty three times.
     const score=r=>r.merit*.25-10*Math.abs(r.sequence.actions.length-preference.target)
      +(r.difficulty.components.controlChanges>0&&new Set(r.evidence.steps.map(s=>s.performer)).size>1?preference.scores.exchange*.16:0)
-     -r.evidence.steps.filter(s=>s.risk).length*5+(feasible?(r.feasibility.scores.feasibility-50)*.65:0);
+     -r.evidence.steps.filter(s=>s.risk).length*5+(feasible?(r.feasibility.scores.feasibility-50)*.65:0)+(r.feasibility?.readiness?(r.feasibility.readiness.score-50)*.8:0);
     ranked.sort((x,y)=>score(y)-score(x)||y.merit-x.merit||x.sequence.actions.join('|').localeCompare(y.sequence.actions.join('|')));
     row=ranked[0];
    }
@@ -1748,7 +1748,7 @@
     if(by.some((q,i)=>!q||q.acceptance<offer.by[['w','f'][i]].scores.acceptance-8||q.reservations>offer.by[['w','f'][i]].scores.reservations+8))continue;
     const feasibility=F.sequenceFeasibility(st,objective,ev);if(!feasibility?.possible)continue;
     const different=JSON.stringify(entry.start)!==JSON.stringify(offer.sequence.start);
-    rows.push({entry,score:feasibility.scores.feasibility+(different?25:0)-graph.costOf(id)*2});
+    rows.push({entry,score:feasibility.scores.feasibility+(different?25:0)-graph.costOf(id)*2+(feasibility.readiness?(feasibility.readiness.score-50)*.65:0)});
    }
   }
   rows.sort((a,b)=>b.score-a.score||a.entry.action.localeCompare(b.entry.action)||JSON.stringify(a.entry.start).localeCompare(JSON.stringify(b.entry.start)));
@@ -2002,7 +2002,7 @@
    }
    if(search.tested>=maxTested||search.expanded>=maxExpanded)break;
   }
-  const rank=r=>r.merit+(feasible?(r.feasibility.scores.feasibility-50)*.85:0);
+  const rank=r=>r.merit+(feasible?(r.feasibility.scores.feasibility-50)*.85:0)+(r.feasibility?.readiness?(r.feasibility.readiness.score-50)*.8:0);
   const order=(a,b)=>rank(b)-rank(a)||a.difficulty.score-b.difficulty.score||pathKey(a.sequence.actions).localeCompare(pathKey(b.sequence.actions));
   // Keep two candidates per length rather than crowding out longer
   // alternatives with easier two-move fragments.
@@ -2337,7 +2337,7 @@
    if(st.planningProposal===1&&opts.planningDialogue===true&&root.OfficePlanningDialogue){
     const L=root.OfficePlanningDialogue,banks=Array.isArray(opts.planningBanks)?opts.planningBanks:[];
     const identities={w:L.capture(w,banks,2),f:L.capture(f,banks,2)};
-    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if([2,3].includes(opts.planningSequencePolicy))st.planningSequencePolicy=opts.planningSequencePolicy;if(opts.planningSequenceSigning===true)st.planningSequenceSigning=1;if(opts.planningAdaptiveEntries===true)st.planningAdaptiveEntries=1;if(opts.planningContinuationVersion===1)st.planningContinuationVersion=1;}}}
+    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if([2,3].includes(opts.planningSequencePolicy))st.planningSequencePolicy=opts.planningSequencePolicy;if(opts.planningSequenceSigning===true)st.planningSequenceSigning=1;if(opts.planningAdaptiveEntries===true)st.planningAdaptiveEntries=1;if(opts.planningContinuationVersion===1){st.planningContinuationVersion=1;if(opts.planningReadinessVersion===1)st.planningReadinessVersion=1;}}}}
    }
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
