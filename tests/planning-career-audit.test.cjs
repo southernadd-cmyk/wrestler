@@ -1,7 +1,8 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const {run}=require('./planning-career-audit.cjs');
-const report=run([3,10],32);
+// Include a third independent career seed for the alternative-readiness comparison.
+const report=run([3,10,17],32);
 assert.ok(report.overall.matches>=24,'meaningful number of real booked matches: '+report.overall.matches);
 assert.ok(report.careers.every(c=>c.weeks>=16),'at least one season per career');
 assert.equal(Object.keys(report.byStructure).length,4);
@@ -42,6 +43,11 @@ assert.ok(recovery.pairs>0,'matched proactive recovery comparison');
 assert.equal(recovery.before.signed,recovery.after.signed,'identical signed agreements');
 assert.ok(recovery.offers>0,'actual validated sequence-aware recovery opportunities');
 assert.ok(recovery.landed>0&&recovery.landed<=recovery.offers,'actual recovery landings, not credit');
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,continuation,opening,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
+const alt=report.matchedAlternativeReadiness;
+assert.ok(alt.pairs>0&&alt.withAlternatives.pairs>0,'signed alternative comparison');
+assert.equal(alt.before.signed,alt.after.signed,'same signed agreements');
+assert.equal(alt.changedOutcomes,0,'booked outcomes unchanged');
+assert.ok(alt.after.credited<=alt.after.opportunities,'actual credited alternative within observed opportunities');
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,continuation,opening,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');

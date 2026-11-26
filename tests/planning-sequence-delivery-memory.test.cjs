@@ -376,3 +376,113 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  assert.equal(focus(),null,'actual rest imposes cooldown');
  console.log('PASS MP13F.7B bounded legal recovery preference, ownership, cooldown, ready sequence precedence, purity and resume.');
 }
+
+// MP13F.8A: establish independent full-chain readiness using the
+// actual catalogue, not an arbitrary minimum difference between costs.
+{
+ const room=R.begin(c,w,f,p,{...opts,structure:{id:'dominant_ace',lead:'w'}});
+ room.queue=[];R.act(room,'plan_story');R.act(room,'board_ok');R.act(room,'review_ok');R.act(room,'talk_none');
+ const originalSheet=copy(room.sheet),dir=S.DIRECTOR,start={control:'w',position:'standing',down:null};
+ const safe=id=>{const n=A[id];return n&&!n.risk&&!n.reverse&&!n.counterOf&&!n.blockOf&&!n.nearfall&&n.family!=='pin';};
+ const steps=ids=>{let entry={...start};return ids.map(id=>{
+  const n=A[id],performer=entry.control,step={id,action:id,performer,entry:{...entry}};
+  entry={control:performer,position:n.zone,down:n.down==='d'?'f':n.down==='a'?'w':null};return step;
+ });};
+ const diagnostics={stamina:{},timing:{}};
+ const mark=(kind,reason)=>{const d=diagnostics[kind];d[reason]=(d[reason]||0)+1;};
+ function fixture(primary,alternative,suffix,kind){
+  const base=copy(originalSheet),obj=base.structurePlan.objectives[0],payoff=suffix.at(-1);
+  if(![primary,alternative,...suffix].every(safe)||!dir.compatibleCall(obj,payoff,'w')||
+     graph.PHYSICAL_GRIP_MOVES[alternative]||graph.GRIP_ENTRY[primary]!==graph.GRIP_ENTRY[alternative]||
+     graph.costOf(alternative)>Math.max(1.8,graph.costOf(primary))||
+     A[primary].zone!==A[alternative].zone||A[primary].down!==A[alternative].down||
+     !links(primary).includes(suffix[0])||!links(alternative).includes(suffix[0])||
+     suffix.slice(1).some((id,i)=>!links(suffix[i]).includes(id))){mark(kind,'topology');return null;}
+  obj.call={action:payoff,owner:'w',proposedBy:'w',label:A[payoff].name||payoff,source:'negotiated',chosen:true,backups:[]};
+  obj.commitment='landmark';obj.sequence={version:2,mode:'conditional',start,actions:[primary,...suffix],openings:[{start:{...start},action:alternative}]};
+  base.structurePlan.version=2;base.sequenceContinuationVersion=1;
+  if(S.STRUCTURES.readPlan(base).mode!=='editorial'){mark(kind,'signedPlan');return null;}
+  const m=E.create({w:{...w,fatigue:0,flags:{}},f,p,slot:'main',minutes:12,finish:c.finish,plan:{game:'story',leash:'script',talk:'none'},seed:9302,sheet:copy(base),structureExecution:true,sequenceTimingVersion:1,sequenceRecoveryProjectionVersion:1});
+  m.stage='live';m.fSt=100;Object.assign(m.story,start);graph.resetPhysical(m);
+  const primarySteps=steps([primary,...suffix]),alternativeSteps=steps([alternative,...suffix]);
+  if(kind==='stamina'){
+   const debit=id=>Math.max(0,graph.costOf(id))+graph.sequenceMoveSeconds(id)/20;
+   const lower=16+graph.costOf(payoff)*3.2+debit(alternative),upper=16+graph.costOf(payoff)*3.2+debit(primary);
+   if(!(upper>lower)){mark(kind,'energyInterval');return null;}
+   m.t=Math.max(60,Math.ceil(Math.max(A[primary].after,A[alternative].after,A[payoff].after)*m.len));
+   m.wSt=lower+(upper-lower)*.75;
+  }else{
+   const primaryDelay=graph.sequenceMoveSeconds(primary)+graph.sequenceMoveSeconds(suffix[0]);
+   const alternativeDelay=graph.sequenceMoveSeconds(alternative)+graph.sequenceMoveSeconds(suffix[0]);
+   if(alternativeDelay<=primaryDelay){mark(kind,'duration');return null;}
+   m.t=Math.ceil(A[payoff].after*m.len-alternativeDelay);
+   m.wSt=100;
+  }
+  if(m.t<0||m.t/m.len<obj.window[0]-.04||m.t/m.len>obj.window[1]+.08||
+     !graph.isValid(m,primary)||!graph.isValid(m,alternative)){mark(kind,'liveFirstMove');return null;}
+  if(!F.continuationGrip(primarySteps).possible||!F.continuationGrip(alternativeSteps).possible){mark(kind,'grip');return null;}
+  if(dir.openingReadiness(m,primarySteps)||!dir.openingReadiness(m,alternativeSteps)){mark(kind,'independentReadiness');return null;}
+  // Check that the stamina fixture has a genuinely legal continuation
+  // after the actual alternative landing. Do not select by new policy
+  // output or receipt: those are the assertions under test below.
+  if(kind==='stamina'){
+   const trial=E.restore(copy({...m,rState:m.r.getState()}));
+   graph.apply(trial,alternative);trial.t+=10;
+   if(!graph.isValid(trial,payoff)){mark(kind,'actualContinuation');return null;}
+  }
+  return {m,primary,alternative,suffix,primarySteps,alternativeSteps};
+ }
+ // Authored graph paths verified against the catalogue, including cost
+ // differences below .8 and transition moves without a named family.
+ const staminaPaths=[
+  ['stiff_forearm','strike_trade',['pw_sidewalk']],
+  ['stiff_forearm','strike_trade',['pw_double_chop_slam']],
+  ['st_headbutt','strike_trade',['pw_body_slam']],
+  ['knuckle_lock','lockup',['pw_torture_rack']],
+  ['st_spinning_backfist','body_shot',['pw_scoop_powerslam']],
+  ['rope_rebound','rope_run',['pw_lariat_catch']],
+  ['fr_punch_flurry','rope_run',['pw_chokeslam']]
+ ];
+ const st=staminaPaths.map(args=>fixture(...args,'stamina')).find(Boolean);
+ assert.ok(st,'independent legal stamina alternative: '+JSON.stringify(diagnostics.stamina));
+ const {m,primary,alternative,suffix,primarySteps,alternativeSteps}=st,payoff=suffix[0],energy=m.wSt;
+ assert.equal(dir.openingReadiness(m,primarySteps),false);
+ assert.equal(dir.openingReadiness(m,alternativeSteps),true);
+ m.wSt=100;assert.equal(dir.openingReadiness(m,primarySteps),true,'only energy blocks primary');
+ m.wSt=energy;
+ assert.equal(dir.sequenceOffer(m,m.story),null,'legacy chooses primary then rejects entire chain');
+ m.o.sequenceAlternativeReadinessVersion=1;
+ const before=JSON.stringify(m),rng=m.r.getState(),offer=dir.sequenceOffer(m,m.story);
+ assert.equal(offer?.id,alternative);assert.equal(offer.planned,primary);
+ assert.equal(JSON.stringify(m),before);assert.equal(m.r.getState(),rng);
+ m.wSt=100;assert.equal(dir.sequenceOffer(m,m.story)?.id,primary,'ready primary still preferred');m.wSt=energy;
+ m.o.sheet.limits.banIds.push(alternative);assert.equal(dir.sequenceOffer(m,m.story),null,'restricted alternative not offered');m.o.sheet.limits.banIds.pop();
+ m.bigSpotRequest=true;assert.equal(dir.sequenceOffer(m,m.story),null,'manager protection');m.bigSpotRequest=false;
+ const restored=E.restore(copy({...m,rState:m.r.getState()}));
+ eq(dir.sequenceOffer(restored,restored.story),offer);
+ graph.apply(m,alternative);assert.equal(m.structureDirector.sequences[0].progress,1);
+ m.t+=10;assert.ok(graph.isValid(m,payoff));graph.apply(m,payoff);
+ const receipt=E.structureReport(m).sequences[0].receipt;
+ assert.equal(receipt.status,'adapted');eq(receipt.witnessed.map(e=>e.id),[alternative,payoff]);assert.equal(receipt.witnessed[0].opening,true);
+ console.log('PASS MP13F.8A stamina: '+primary+' / '+alternative+' -> '+payoff+'; actual receipt, purity, guards and resume; search '+JSON.stringify(diagnostics.stamina));
+ // Independent timing case: the alternative takes 20 seconds rather
+ // than 10, placing a later signed move inside its authored timing gate.
+ // This is offer/readiness coverage, not a synthetic landed receipt for
+ // a grapple parent that would require normal attempt resolution.
+ const timingPaths=[];
+ for(const first of ['power_spinebuster','heavy_slam','pw_scoop_powerslam','pw_sidewalk','pw_spinebuster_running','pw_fallaway','pw_side_slam','pw_tiltawhirl_slam','pw_lariat_catch','pw_double_chop_slam','rn_lariat'])
+  for(const alt of ['nk_inverted_ddt','nk_bulldog'])timingPaths.push([first,alt,['mat_hold','gd_standing_moonsault']]);
+ const tm=timingPaths.map(args=>fixture(...args,'timing')).find(Boolean);
+ assert.ok(tm,'independent legal timing alternative: '+JSON.stringify(diagnostics.timing));
+ const T=tm.m;
+ assert.equal(T.wSt,100);assert.equal(T.fSt,100);
+ assert.equal(dir.openingReadiness(T,tm.primarySteps),false);
+ assert.equal(dir.openingReadiness(T,tm.alternativeSteps),true);
+ assert.equal(dir.sequenceOffer(T,T.story),null,'legacy timing failure');
+ T.o.sequenceAlternativeReadinessVersion=1;
+ assert.equal(dir.sequenceOffer(T,T.story)?.id,tm.alternative,'longer signed opening clears timing gate');
+ T.t+=10;
+ assert.equal(dir.openingReadiness(T,tm.primarySteps),true,'elapsed time alone clears primary');
+ assert.equal(dir.sequenceOffer(T,T.story)?.id,tm.primary,'primary preference restored');
+ console.log('PASS MP13F.8A timing: '+tm.primary+' / '+tm.alternative+' -> '+tm.suffix.join(' -> ')+'; independent readiness and primary preference; search '+JSON.stringify(diagnostics.timing));
+}

@@ -825,6 +825,23 @@
    if(o.requires.some(id=>M.structureDirector.objectives.some(s=>s.id===id&&s.status==='pending')))return null;
    const steps=sequenceSteps(o.sequence);let step=steps[row.progress],opening=null;
    if(!step)return null;
+   // MP13F.8A: test every signed opening independently, in signed order.
+   // A primary first move can be legal while its full chain cannot start.
+   // Natural landings must still match the actual first move and pre-state.
+   if(!row.progress&&o.sequence.version===2&&adaptiveSequences(M)&&
+      M.sheet.sequenceContinuationVersion===1&&M.o.sequenceAlternativeReadinessVersion===1){
+    if(row.attempts>=3)return null;
+    for(const entry of [null,...o.sequence.openings]){
+     const variant=entry?sequenceSteps({start:entry.start,actions:[entry.action,...o.sequence.actions.slice(1)]}):steps;
+     const first=variant[0];
+     if(!equalState(pre,first.entry)||landed&&landed!==first.id||
+        !sequenceWindow(M,o,variant.length,entry))continue;
+     if(!landed&&(!sequenceMoveAllowed(M,first.id,first.performer)||!root.OfficeMatch.GRAPH.isValid(M,first.id)))continue;
+     if(!openingReadiness(M,variant,!!landed))continue;
+     return {o,steps:variant,step:first,opening:entry};
+    }
+    return null;
+   }
    // A fallback is a separately signed first move, not invented after
    // the fact. For a natural landing, match its actual pre-state and ID.
    if(!row.progress&&o.sequence.version===2&&adaptiveSequences(M)&&

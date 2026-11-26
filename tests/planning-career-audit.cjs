@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],reviewRepairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],reviewRepairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -265,6 +265,17 @@ function run(seeds=[3,10],weeks=32){
     };
     const restCount=x=>x.M.graph.events.filter(e=>e.id==='catch_breath'||E.GRAPH.A[e.id]?.family==='rest'&&E.GRAPH.costOf(e.id)<0).length;
     pacingPairs.push({key,structure:choice.id,before:{...count(fin),...breakdown(actual.traceReport),rests:restCount(actual)},after:{...count(paced.fin),...breakdown(paced.traceReport),rests:restCount(paced),offers:paced.traceReport.recoveryOffers.length,landed:paced.traceReport.recoveryOffers.filter(x=>x.landed).length}});
+    // Both arms use the now-merged pacing policy. Only replay bouts
+    // with signed alternatives; other bouts are structurally unaffected.
+    const hasAlternatives=sheet.structurePlan.objectives.some(o=>o.sequence?.version===2);
+    const alt=hasAlternatives?drive(true,i%5===0,{...options,sequenceRecoveryPacingVersion:1,sequenceAlternativeReadinessVersion:1},immutable,'comparison'):paced;
+    const measure=x=>({...count(x.fin),...breakdown(x.traceReport),
+     alternativeLandings:(x.fin.structure.sequences||[]).flatMap(r=>r.receipt?.witnessed||[]).filter(e=>e.opening).length,
+     opportunities:x.traceReport.alternativeReadinessOffers.length,
+     offered:x.traceReport.alternativeReadinessOffers.filter(v=>v.ready.includes(v.offered)).length,
+     credited:x.traceReport.alternativeReadinessOffers.filter(v=>v.credited).length});
+    alternativePairs.push({key,structure:choice.id,hasAlternatives,before:measure(paced),after:measure(alt)});
+    alternativeOpportunities.push(...alt.traceReport.alternativeReadinessOffers);
    }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
@@ -341,6 +352,13 @@ function run(seeds=[3,10],weeks=32){
     offers:pacingOffers.length,boosted:pacingOffers.filter(x=>x.boosted).length,landed:pacingOffers.filter(x=>x.landed).length,
     offerExamples:pacingOffers.filter(x=>x.landed).slice(0,8),
     examples:pacingPairs.filter(x=>x.before.completed!==x.after.completed||x.before.readinessMiss!==x.after.readinessMiss).slice(0,12),comparisons:pacingPairs};
+  })(),matchedAlternativeReadiness:(()=>{
+   const sum=(pairs,side)=>{const xs=pairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','readinessMiss','staminaCases','timingCases','interruptions','objectives','injury','alternativeLandings','opportunities','offered','credited'].map(k=>[k,xs.reduce((n,x)=>n+(x[k]||0),0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
+   const compare=pairs=>({pairs:pairs.length,before:sum(pairs,'before'),after:sum(pairs,'after'),changedOutcomes:pairs.filter(x=>x.before.outcome!==x.after.outcome).length});
+   return {...compare(alternativePairs),withAlternatives:compare(alternativePairs.filter(x=>x.hasAlternatives)),
+    byStructure:Object.fromEntries([...new Set(alternativePairs.map(x=>x.structure))].map(k=>[k,compare(alternativePairs.filter(x=>x.structure===k))])),
+    opportunityExamples:alternativeOpportunities.slice(0,10),
+    examples:alternativePairs.filter(x=>JSON.stringify(x.before)!==JSON.stringify(x.after)).slice(0,10),comparisons:alternativePairs};
   })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},opening:continuation.summariseOpenings(openingRecords),rows};
 }
 module.exports={run};
