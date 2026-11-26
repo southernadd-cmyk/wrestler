@@ -24,7 +24,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],handoffPairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],handoffPairs=[];let handoffFixture=null;
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -108,6 +108,23 @@ function run(seeds=[3,10],weeks=32){
    const immutable=copy(sheet.structurePlan),callIds=Object.keys(E.CALLS).filter(x=>!['home'].includes(x));
    function drive(active,resume,settings=options,expectedPlan=immutable){
     let M=E.create({...copy(settings),livePsychologyVersion:active?1:undefined}),matchResume=0,liveScores=[],calls=0;
+    const director=S.DIRECTOR,observe=director.observeSequence;
+    if(!handoffFixture&&settings.sequenceCoordinationVersion===1&&settings.structureExecution)director.observeSequence=function(m,e,pre,previous,offer){
+     const before=m.structureDirector.objectives.map(o=>({id:o.id,status:o.status,evidence:o.evidence.length}));
+     observe(m,e,pre,previous,offer);
+     for(const o of m.structureDirector.objectives){
+      if(o.handoff?.at!==e.t||o.handoff.opening!==e.id)continue;
+      const previousState=before.find(x=>x.id===o.id);
+      if(previousState?.status!=='pending')continue;
+      const row=m.structureDirector.sequences.find(r=>r.objective===o.handoff.to);
+      assert.equal(previousState.evidence,0,'protect all earlier objective evidence');
+      assert.equal(o.status,'missed');assert.equal(o.at,null);
+      assert.ok(row?.evidence.some(x=>x.id===e.id&&x.at===e.t),'handoff must have actual first landing');
+      assert.ok(m.graph.events.includes(e));
+      handoffFixture={key,prior:o.id,next:o.handoff.to,opening:e.id,at:e.t};
+     }
+    };
+    try{
     for(let n=0;n<10000&&!M.done;n++){
      if(M.decision&&!M.queue.length){const opts=M.decision.options;E.resolve(M,pick(opts,i+seed+calls).id);}
      if(M.stage==='live'&&!M.decision&&calls<2&&M.t>=M.len*(calls?.65:.3)){
@@ -130,6 +147,7 @@ function run(seeds=[3,10],weeks=32){
     if(settings.structureExecution)assert.equal(M.final.structure.id,choice.id);else assert.equal(M.final.structure,undefined);
     assert.ok(range(M.final.stars,0,5)&&range(M.final.crowd));
     return {M,fin:M.final,matchResume,liveScores};
+    }finally{director.observeSequence=observe;}
    }
    const actual=drive(true,i%5===0);
    const {M,fin,matchResume,liveScores}=actual,report=fin.structure;
@@ -225,7 +243,7 @@ function run(seeds=[3,10],weeks=32){
    return {pairs:adaptivePairs.length,before:summarize('before'),after:summarize('after'),changedOutcomes:adaptivePairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:adaptivePairs};
   })(),matchedHandoff:(()=>{
    const summarize=side=>{const xs=handoffPairs.map(x=>x[side]);return {...Object.fromEntries(['signed','completed','noOpening','objectives','handoffs','handoffDelivered','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
-   return {pairs:handoffPairs.length,before:summarize('before'),after:summarize('after'),changedOutcomes:handoffPairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:handoffPairs};
+   return {fixture:handoffFixture,pairs:handoffPairs.length,before:summarize('before'),after:summarize('after'),changedOutcomes:handoffPairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:handoffPairs};
   })(),rows};
 }
 module.exports={run};
