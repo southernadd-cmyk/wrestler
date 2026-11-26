@@ -95,3 +95,25 @@ behaviour, no new career state fields. Follow the promo F3–F7 sequence;
 then add a separate versioned match-planning domain policy, followed by
 other systems individually with paired regression tests. Do not duplicate
 the kernel or silently substitute fuzzy values for physical constraints.
+
+## F3 — live dialogue preference
+
+New full-format semantic promos started from the live UI explicitly opt in
+to F3 (`fuzzy:true`); older snapshots and default engine callers keep the
+prior policy, so the existing R7 audit remains a reproducible baseline.
+No mouthpiece or programme scene opt-in. Versioned stable worker stat/style
+snapshots are embedded at scene creation. At each authored selection the
+current director emotion and oriented meter feed the shared inference model.
+Only already eligible fresh candidates can be weighted, within the same
+owner and relevance tier. The category preference uses existing editorial
+metadata and a deliberately weak 0.75–1.25 weight; it does not reinterpret
+the content of the line. Reviewed rookie semantic and vow pairs use a
+bounded 0.15–0.85 preference for the existing direct/reflective alternative,
+blending delivery identity and current drives. Legacy crisp preferences
+are preserved when the flag is absent. Recorded facts, unapproved variants,
+commitments, recent ID guards and all selector precedence remain hard gates.
+No changes to the graph, event pacing, emotional updates or mechanical
+outcomes. This is a first narrow integration; graph fallbacks and single
+eligible lines cannot gain variety through ranking. Tests compare 800
+paired scenes with 200 save/resume round trips, and exercise conditional
+ranking and shared alternative guards. F4 will address emotion trajectories.

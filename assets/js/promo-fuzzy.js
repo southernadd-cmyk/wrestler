@@ -110,5 +110,32 @@
  function infer(snapshot,identity,style,signals){
   return model.infer(snapshot?.grades,cues(identity,style,signals));
  }
- root.OfficePromoFuzzy=Object.freeze({version:1,curves,membership,inputs,fuzzify,snapshot,outputs,rules,cues,infer});
+ // F3: snapshot only the stable inputs needed by this policy. The live
+ // director remains authoritative for changing emotions and the signed meter.
+ function selectionFacts(worker){
+  return {values:K.workerInputs(worker),style:worker?.style||null};
+ }
+ function selectionScores(facts,participant,meter,side,feudHeat){
+  if(!facts||!participant)return null;
+  const values={...facts.values,irritation:participant.irritation,composure:participant.composure,
+   rivalryHeat:feudHeat,momentum:Number.isFinite(meter)?clamp(50+(side==='w'?meter:-meter)/2):null};
+  return infer({grades:fuzzify(values)},participant.identity,facts.style).scores;
+ }
+ // A weak continuous bias (0.75..1.25), never a hard eligibility filter.
+ // Categories are editorial metadata, not inferred sentiment from text.
+ function categoryWeight(category,scores){
+  if(!scores)return 1;
+  const axis={challenge:'assertiveness',disrespect:'aggression',respect:'respect',vulnerability:'vulnerability',pressure:'defensiveness'}[category];
+  const n=axis&&scores[axis];return Number.isFinite(n)?.75+.5*n/100:1;
+ }
+ // For the reviewed shared rookie pairs only: blend existing delivery
+ // preferences with current behavioural drives rather than a crisp cutoff.
+ function directWeight(scores,delivery){
+  if(!scores)return .5;
+  const grade=k=>Number.isFinite(scores[k])?scores[k]/100:.5;
+  const base=['Dry and direct','Reserved until challenged','Blunt but sincere'].includes(delivery)?.65:
+   ['Measured and methodical','Warm and reflective'].includes(delivery)?.35:.5;
+  return Math.max(.15,Math.min(.85,.5+(base-.5)*.8+.35*(grade('aggression')-.5)+.2*(grade('defensiveness')-.5)+.15*(grade('assertiveness')-.5)-.2*(grade('respect')-.5)));
+ }
+ root.OfficePromoFuzzy=Object.freeze({version:1,curves,membership,inputs,fuzzify,snapshot,outputs,rules,cues,infer,selectionFacts,selectionScores,categoryWeight,directWeight});
 })(typeof window!=='undefined'?window:globalThis);

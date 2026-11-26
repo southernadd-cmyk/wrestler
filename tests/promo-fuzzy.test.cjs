@@ -144,3 +144,75 @@ console.log('PASS F1: '+Object.keys(F.curves).length+' continuous membership axe
  assert.ok(F.outputs.every(k=>ranges[k].max-ranges[k].min>15),'insufficient output range');
  console.log('F2 INFERENCE AUDIT '+JSON.stringify({evaluated,distinct:inferred.size,academyDistinct:academyVectors.size,rules:F.rules.length,observedRules:usedRules.size,ranges}));
  console.log('PASS F2: bounded, continuous, deterministic independent behavioural drives; explicit signals only; no live policy changes.');
+
+ // F3: controlled candidate-ranking tests and paired live scene audit.
+ const L=root.OfficePromoDialogue;
+ const make=(id,category)=>({id,category,stage:'push',action:'acknowledge',side:'w',text:'Fair point. The match is next.',when:{hasMouthpiece:false}});
+ const cat=L.catalogue([{role:'wrestler',owner:'test',lines:[make('test.respect','respect'),make('test.pressure','pressure')]}]);
+ const ctx={stage:'push',action:'acknowledge',side:'w',speaker:{id:'test',role:'wrestler'},opponent:{},client:{},hasMouthpiece:false};
+ const rScore={respect:100,defensiveness:0},dScore={respect:0,defensiveness:100};
+ let rWins=0,dWins=0;
+ for(let i=0;i<1000;i++){
+  const seed='fuzzy-preference-'+i;
+  const a=L.select(cat,{...ctx,fuzzyScores:rScore},seed),b=L.select(cat,{...ctx,fuzzyScores:dScore},seed);
+  if(a.id==='test.respect')rWins++;if(b.id==='test.respect')dWins++;
+  assert.equal(L.select(cat,{...ctx,fuzzyScores:rScore},seed,{recent:['test.respect']}).id,'test.pressure');
+  assert.equal(L.select(cat,{...ctx,fuzzyScores:dScore},seed,{used:['test.pressure']}).id,'test.respect');
+  assert.equal(L.select(cat,{...ctx,fuzzyScores:rScore},seed,{candidateFilter:r=>r.id==='test.pressure'}).id,'test.pressure');
+ }
+ assert.ok(rWins>dWins,'weighting must change selection distribution');
+ assert.equal(L.select(cat,{...ctx,protected:'recorded-evidence',fuzzyScores:rScore},'protected'),null);
+ const calmScores={aggression:10,defensiveness:10,assertiveness:60,respect:90};
+ const hotScores={aggression:90,defensiveness:80,assertiveness:70,respect:20};
+ assert.ok(F.directWeight(hotScores,'Warm and reflective')>F.directWeight(calmScores,'Warm and reflective'));
+ // Verify exact semantic guards and memory on shared alternatives across
+ // existing academy routes. The normal approved selector still owns eligibility.
+ const rookie=arrivals.find(w=>w.style==='Technical'),opp=established.find(w=>D.divisionOf(w)===D.divisionOf(rookie));
+ const facts=L.snapshot({},rookie,opp,null,D.PROMOS[0],{});
+ const sem={claim:'evidence',move:'rebut'};
+ const rookieCtx={speaker:facts.player,client:facts.player,opponent:facts.opponent,side:'w',stage:'answer',action:'turn',protected:'contextual-variant',previous:'An evidence claim',hasMouthpiece:false};
+ let different=0;
+ for(let i=0;i<1000;i++){
+  const seed='fuzzy-rookie-'+i,mem={rookieVoice:1,used:[],recent:[]};
+  const a=L.selectRookieSemantic({...rookieCtx,fuzzyScores:calmScores},seed,mem,sem);
+  const b=L.selectRookieSemantic({...rookieCtx,fuzzyScores:hotScores},seed,mem,sem);
+  assert.ok(a&&b);if(a.id!==b.id)different++;
+  const fresh=L.selectRookieSemantic({...rookieCtx,fuzzyScores:hotScores},seed,{...mem,recent:[b.id]},sem);
+  assert.ok(fresh&&fresh.id!==b.id);
+  assert.equal(L.selectRookieSemantic({...rookieCtx,fuzzyScores:hotScores,protected:'recorded-evidence'},seed,mem,sem),null);
+ }
+ assert.ok(different>0);
+ let paired=0,changed=0,resumedCount=0,sharedCount=0,mechanicalDifferences=0;
+ const metrics=['promise','tactic','quality','crowdShift','heatDelta','moraleDelta','trustDelta','repDelta'];
+ for(const [i,worker] of roster.entries())for(let j=0;j<4;j++){
+  const side=j%2?'f':'w',pool=roster.filter(x=>x.id!==worker.id&&D.divisionOf(x)===D.divisionOf(worker)),other=pool[(i+j*13)%pool.length];
+  const w=side==='w'?worker:other,f=side==='f'?worker:other,p=D.PROMOS[(i+j)%D.PROMOS.length];
+  const c={id:'f3-'+worker.id+'-'+j,wid:w.id,rid:f.id,pid:p.id,eventAbs:100+j,finish:j%2?'lose_clean':'win_clean',minutes:12,feudHeat:j>=2?55:0};
+  const opts={directed:true,formats:true,dialogue:true,authored:true,composition:true,semantic:true,banks:promoBanks(w.id,f.id)};
+  const old=M.begin(c,w,f,null,null,p,opts),now=M.begin(c,w,f,null,null,p,{...opts,fuzzy:true});
+  assert.ok(now.authoredDialogue.fuzzy&&!old.authoredDialogue.fuzzy);
+  const legacy=clone(now);delete legacy.authoredDialogue.fuzzy;eq(legacy,old);
+  let resumed=null;
+  for(let step=0;old.stage!=='done';step++){
+   assert.ok(step<12);
+   const round=M.ROUNDS[old.round].id,wanted=({open:j<2?'proof':'people',answer:'turn',push:j<2?'press':'acknowledge',close:'vow'})[round];
+   const options=M.choices(old),id=(options.find(x=>x.id===wanted)||options[0]).id;
+   assert.ok(M.choices(now).some(o=>o.id===id),'fuzzy removed a chosen action');
+   if(step===1&&j===0){resumed=clone(now);resumedCount++;}
+   M.choose(old,id);M.choose(now,id);if(resumed)M.choose(resumed,id);
+  }
+  if(resumed)eq(resumed,now);
+  assert.equal(now.stage,'done');
+  for(const k of metrics)if(JSON.stringify(M.result(old)[k])!==JSON.stringify(M.result(now)[k]))mechanicalDifferences++;
+  eq(old.steps,now.steps);
+  if(JSON.stringify(old.log.map(e=>e.line))!==JSON.stringify(now.log.map(e=>e.line)))changed++;
+  for(const e of now.log){
+   if(e.semantic?.rookieFamilyBank===1){sharedCount++;const prior=now.log[e.semantic.replyTo];assert.ok(prior&&prior.side!==e.side&&prior.semantic?.claim===e.semantic.claim);}
+   if(e.authoredId?.startsWith('rookie-'))assert.ok(!now.authoredDialogue.recent.includes(e.authoredId));
+  }
+  paired++;
+ }
+ assert.equal(paired,800);assert.equal(resumedCount,200);assert.ok(changed>0&&sharedCount>0);
+ assert.equal(mechanicalDifferences,0,'wording-only policy changed result');
+ console.log('F3 PAIRED AUDIT '+JSON.stringify({paired,changed,resumedCount,sharedCount,mechanicalDifferences,rWins,dWins,sharedPreferenceChanges:different}));
+ console.log('PASS F3: fuzzy preference among eligible lines, legacy and resumed scene parity, unchanged mechanics.');
