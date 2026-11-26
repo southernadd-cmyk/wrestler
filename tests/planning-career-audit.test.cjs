@@ -19,6 +19,7 @@ assert.ok(c.attempts>0&&c.failed>0&&c.selectionOpportunities>0,'real opened sequ
 assert.equal(c.completed,report.overall.exact+report.overall.adapted,'all completed sequences traced exactly once');
 assert.equal(c.finalOpenedMisses,report.overall.missed-report.overall.noOpening,'all final opened misses traced');
 assert.equal(c.traceVerified.length,4,'trace neutrality verified per structure');
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,continuation,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},continuation:{...continuation,records:undefined}}));
+assert.ok(report.matchedContinuation.pairs>0,'same booking and seed continuation policy comparison');
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,continuation,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},continuation:{...continuation,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
