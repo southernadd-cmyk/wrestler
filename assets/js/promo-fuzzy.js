@@ -2,48 +2,28 @@
    Membership grades are not probabilities or new career statistics.
    No live selector calls this module until a later explicit opt-in phase. */
 (function(root){'use strict';
+ const K=root.OfficePsychology;
  const clamp=x=>Math.max(0,Math.min(100,x));
  const owns=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
- // [end of low plateau, medium peak, start of high plateau].
- // Adjacent sets overlap linearly and the three grades sum to one.
- const curves=Object.freeze(Object.fromEntries(Object.entries({
-  irritation:[15,40,70],
-  composure:[25,50,75],
-  ego:[25,50,80],
-  professionalism:[30,60,85],
-  ringPsychology:[25,50,80],
-  microphone:[25,50,80],
-  rivalryHeat:[15,45,75],
-  momentum:[25,50,75]
- }).map(([k,v])=>[k,Object.freeze(v)])));
- function membership(axis,value){
-  if(!owns(curves,axis)||!Number.isFinite(value))return null;
-  const [a,b,c]=curves[axis],x=clamp(value);
-  if(x<=a)return {low:1,medium:0,high:0};
-  if(x<b){const t=(x-a)/(b-a);return {low:1-t,medium:t,high:0};}
-  if(x<c){const t=(x-b)/(c-b);return {low:0,medium:1-t,high:t};}
-  return {low:0,medium:0,high:1};
- }
+ const curveSpec={
+  irritation:[15,40,70],composure:[25,50,75],
+  ...K.workerCurves,rivalryHeat:[15,45,75],momentum:[25,50,75]
+ };
  // Read existing values without creating, modifying or inferring career facts.
  // Participant ego/pro are scene snapshots; skill values come from the worker.
  // Momentum is the current signed duel meter, not a measure of crowd affection.
  // A missing/nonfinite value is unknown, never a fabricated neutral grade.
  function inputs(worker,participant,context={}){
   const known=x=>Number.isFinite(x)?clamp(x):null;
-  const first=(a,b)=>Number.isFinite(a)?a:b;
   const meter=context.meter,side=context.side;
   return {
    irritation:known(participant?.irritation),composure:known(participant?.composure),
-   ego:known(first(participant?.ego,worker?.ego)),
-   professionalism:known(first(participant?.pro,worker?.pro)),
-   ringPsychology:known(worker?.psych),microphone:known(worker?.mic),
+   ...K.workerInputs(worker,participant),
    rivalryHeat:known(context.feudHeat),
    momentum:Number.isFinite(meter)&&['w','f'].includes(side)?known(50+(side==='w'?meter:-meter)/2):null
   };
  }
- function fuzzify(values={}){
-  return Object.fromEntries(Object.keys(curves).map(axis=>[axis,membership(axis,values?.[axis])]));
- }
+ function fuzzify(values){return model.fuzzify(values);}
  function snapshot(worker,participant,context){
   const values=inputs(worker,participant,context);
   return {v:1,values,grades:fuzzify(values)};
@@ -51,8 +31,8 @@
  // F2: zero-order Sugeno rules. Antecedent conjunction is min; each output
  // independently aggregates weighted singleton consequents. No winner-takes-all
  // personality class and no rule may alter a claim or choose a line.
- const outputs=Object.freeze(['aggression','respect','defensiveness','assertiveness','vulnerability','showmanship']);
- const rules=Object.freeze([
+ const outputSpec=Object.freeze(['aggression','respect','defensiveness','assertiveness','vulnerability','showmanship']);
+ const ruleSpec=Object.freeze([
   // [id, output, singleton 0..100, weight, antecedents]
   ['a-hot','aggression',90,1.2,['irritation.high']],
   ['a-warm','aggression',55,.8,['irritation.medium']],
@@ -125,29 +105,10 @@
   for(const key of ['credibleArgument','vulnerabilityTouched','recognitionDenied','crowdSupport'])if(signals?.[key]===true)out['signal.'+key]=1;
   return out;
  }
+ const model=K.createModel({curves:curveSpec,outputs:outputSpec,rules:ruleSpec});
+ const {curves,outputs,rules,membership}=model;
  function infer(snapshot,identity,style,signals){
-  const facts=cues(identity,style,signals),grades=snapshot?.grades||{};
-  for(const axis of Object.keys(curves))for(const label of ['low','medium','high']){
-   const n=grades[axis]?.[label];
-   if(Number.isFinite(n))facts[axis+'.'+label]=Math.max(0,Math.min(1,n));
-  }
-  const scores={},fired={};
-  for(const output of outputs){
-   let sum=0,total=0;const evidence=[];
-   for(const rule of rules){
-    if(rule.output!==output)continue;
-    const activation=Math.min(...rule.when.map(key=>facts[key]||0));
-    if(!activation)continue;
-    const weight=activation*rule.weight;
-    sum+=weight*rule.value;total+=weight;
-    evidence.push({id:rule.id,activation,weight,value:rule.value});
-   }
-   // A small neutral prior regularises the low-activation boundary. No
-   // evidence means unknown, rather than a fabricated personality score.
-   scores[output]=total?(sum+10)/(total+.2):null;
-   fired[output]=evidence;
-  }
-  return {v:1,scores,fired};
+  return model.infer(snapshot?.grades,cues(identity,style,signals));
  }
  root.OfficePromoFuzzy=Object.freeze({version:1,curves,membership,inputs,fuzzify,snapshot,outputs,rules,cues,infer});
 })(typeof window!=='undefined'?window:globalThis);

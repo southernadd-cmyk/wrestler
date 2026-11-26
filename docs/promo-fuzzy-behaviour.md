@@ -64,3 +64,34 @@ inferences) and reports ranges, distinct outputs and rule utilisation;
 these are synthetic stress conditions, not observed live frequencies.
 Existing F1 tests still check exact gameplay/resume parity. F3 will
 consume these scores only within hard-eligible dialogue candidates.
+
+## F2 shared psychology architecture
+
+The mathematical kernel lives in `assets/js/psychology-fuzzy.js`
+(`OfficePsychology.createModel`), not in the promo director. Each domain
+supplies named membership curves, independent outputs, immutable rules,
+and explicitly sourced numeric values or graded categorical cues.
+`workerInputs` and `workerCurves` share existing stat meanings;
+`scale` maps signed or other documented scales without guessing unknowns.
+The kernel returns bounded scores and rule traces; it does not choose an
+action, mutate a wrestler or create career facts. Promo F2 is a domain
+adapter over this kernel; all 47 rules and existing curve values remain.
+
+Future match planning can supply effective consent, fatigue, actual trust,
+mood and known proposal constraints from its existing room snapshot;
+booking talks, locker-room relationships, ambitions, training and ringside
+decisions can each define their own evidence and consequences. A single
+global aggression score is not persisted across systems: context matters.
+Shared actor stats and durable relationship/memory records stay authoritative.
+Snapshot a model version and relevant input facts when a future live domain
+opts in, so resumed scenes remain reproducible. Hard rules (physical move
+legality, injury/safety limits, agreed finishes, contracts, factual dialogue,
+player decisions) always gate candidate actions before fuzzy preference.
+
+The test uses a small illustrative planning model on 160 real agents-room
+participant snapshots and a separate bargaining model. These are test-only
+policies, not approved production tuning. No changes to planning or booking
+behaviour, no new career state fields. Follow the promo F3–F7 sequence;
+then add a separate versioned match-planning domain policy, followed by
+other systems individually with paired regression tests. Do not duplicate
+the kernel or silently substitute fuzzy values for physical constraints.
