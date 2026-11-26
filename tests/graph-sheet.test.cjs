@@ -17,7 +17,7 @@ const v=G.validate();
 assert.equal(v.errors.length,0,'all action and arc edges valid');
 assert.ok(v.nodes>=96&&v.edges>=292,'large connected action vocabulary');
 assert.ok(P&&K&&K.commit&&K.eligible);
-assert.ok(script.includes('function showMeeting(){'),'match meeting wired to interface');
+assert.match(script,/\bfunction\s+showMeeting\s*\([^)]*\)\s*\{/,'match meeting wired to interface');
 assert.ok(script.includes('Agreed versus performed'),'match report shows planned and actual events');
 assert.ok(script.includes('saved.stage===\'meeting\''),'pre-match meeting can resume');
 const modes=Object.keys(P.MODE),votes=['compromise','worker','opponent'];
