@@ -2268,6 +2268,8 @@ const Graph=(function makeGraph(){
   const selected=[...from,...entries];
   const negotiated=root.OfficeSheets?.DIRECTOR?.sequenceOffer(M,p);
   if(negotiated)selected.push([negotiated.id,negotiated.continuation?8:4]);
+  const recoveryFocus=root.OfficeSheets?.DIRECTOR?.sequenceRecoveryFocus(M,p,negotiated);
+  if(recoveryFocus)for(const id of recoveryFocus.rests)selected.push([id,1]);
   const postCoverOffers=nearfallFollowupOffers(M,p.control);
   selected.push(...postCoverOffers);
   // Only the explicitly activated Chickenshit structure gets additional
@@ -3322,6 +3324,7 @@ const Graph=(function makeGraph(){
     target[1]=Math.max(target[1],rest*desired);
    }
   }
+  if(recoveryFocus)root.OfficeSheets.DIRECTOR.sequenceRecoveryPreference(pool,recoveryFocus);
   return pool;
  }
  function recover(M){
