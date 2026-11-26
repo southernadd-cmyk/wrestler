@@ -25,6 +25,10 @@ assert.equal(o.signed,report.overall.sequences,'one opening trace per signed seq
 assert.equal(o.neverOpened,report.overall.noOpening,'all unopened misses traced');
 assert.equal(o.opened+o.neverOpened,o.signed);
 assert.equal(Object.values(o.firstEmptyStage).reduce((a,b)=>a+b,0),o.neverOpened,'exclusive funnel attribution');
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,continuation,opening,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
+const dep=report.matchedDependency;
+assert.ok(dep.pairs>0,'identical signed-sheet dependency comparison');
+assert.equal(dep.before.signed,dep.after.signed,'no changed agreements');
+assert.ok(dep.witnessedProgress>0&&dep.witnessedPrerequisiteCompletions>0,'actual prerequisite evidence witnessed under focused policy');
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,continuation,opening,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
