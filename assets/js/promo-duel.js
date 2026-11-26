@@ -350,6 +350,11 @@
   }
   if(opts.semantic&&Semantic&&st.authoredDialogue&&opts.directed){st.semantic={v:1,...(opts.formats?{variety:1,followupFlow:1,characterRebuttal:1,claimClassification:1}:{})};core.semanticSpeech=true;}
   if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
+  // Explicit live opt-in. Earlier scene snapshots and engine callers retain
+  // exact prior behaviour. F3 is wording-only; no mouthpiece/arc changes.
+  if(opts.fuzzy===true&&opts.formats&&st.semantic&&st.director&&st.authoredDialogue&&!m&&!opts.arc&&root.OfficePromoFuzzy){
+   st.authoredDialogue.fuzzy={v:1,w:root.OfficePromoFuzzy.selectionFacts(w),f:root.OfficePromoFuzzy.selectionFacts(f)};
+  }
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
   if(m)st.read.voice=voice(m); // the room knows the wrestler; the voice is the mouthpiece's
@@ -451,6 +456,11 @@
  function pickAuthored(st,ctx){
   if(!st.authoredDialogue||!ctx)return null;
   const seed=st.seed+'|'+st.steps.length+'|'+ctx.side,mem=st.authoredDialogue;
+  if(mem.fuzzy?.v===1&&st.director&&!ctx.hasMouthpiece&&!st.arc&&(!ctx.protected||ctx.protected==='contextual-variant')){
+   const part=ctx.side==='w'?st.director.player:st.director.opponent;
+   const scores=root.OfficePromoFuzzy?.selectionScores(mem.fuzzy[ctx.side],part,st.meter,ctx.side,st.core.feudHeat);
+   if(scores)ctx={...ctx,fuzzyScores:scores};
+  }
   // For new semantic scenes, never fall through to a style-only turn or generic press.
   if(st.semantic&&((ctx.stage==='answer'&&ctx.action==='turn')||(ctx.stage==='push'&&['press','acknowledge'].includes(ctx.action)))){
    const line=Semantic.select(st,ctx);

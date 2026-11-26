@@ -116,13 +116,19 @@
  // Reviewed generic acknowledgement lines. Exact text matching prevents a
  // future bank edit from inheriting approval. Selection remains owner/slot scoped.
  const neutralAcknowledgements={w:new Set(["I accept that particular point; nothing further.","Fair. Fair credit to you.","All right, I see what you mean. Fair.","I'll take that point.","Yes. That's a fair point.","I can accept that. I still believe in what I'm doing.","That's fair. I'll take that on board.","All right, that's a good point. That point is yours.","That will do, then. I'll give you that one.","That's a fair point. I won't argue with it.","Reasonable enough. I can work with that.","Fair, I suppose.","I can see the merit in that. My position hasn't changed.","I'll give you that one. No point pretending otherwise.","I accept that correction.","That point is valid. I accept it.","Fair point.","I'll grant you that. Don't get carried away.","That observation is correct. I'll concede it.","Credit where it is due. The rest is still to come.","Fair point. Let us turn it into something useful.","Noted, in your own words.","Yeah, fair point. Let's keep going.","Noted. Next.","Fair, my call. Move on.","Point taken. That term stands.","Noted. That is a point I will keep.","Agreed, for the moment. We will keep it straight.","Very fair, then. I respect that.","Your point is taken. I will take that on board.","Got it, point taken! I hear you. Let us get on.","Yep, fair, yep! Got it. Right.","A fair observation. I shall concede it without conceding the evening.","I will grant you that point. You may find the rest of my argument considerably less accommodating.","Fair, and short. I will give you that.","That is a fair correction. It does not change what I have to do at the bell."]),f:new Set(["Concession noted. We can proceed.","Right. That's settled.","Good. Now we can get on with the exciting bit.","Good. That's enough.","Okay. We understand each other.","Good. Let's give them a match.","Alright, let's see. I'll see you at the bell.","Good enough for me.","Good. That's a useful place to leave it.","Good. Now we have a contest.","Good. Now let's get moving.","Right. That's done.","Good. We can move on from that.","Good. We've got that sorted.","Agreed. We can proceed.","Then we have resolved that matter.","Good. On with it.","Wonderful. Let's leave it there.","Then the question is resolved.","Let us call that agreed. We can settle the rest at the bell, sensibly.","I will grant you that, with a bow. The bell is calling.","Noted. The bell, then.","Fair, done. Bell, then.","Understood. We will test it at the bell.","Understood. We sort the rest out at the bell.","Fair point, that. I will take it. We will sort the rest out at the bell.","I will let that stand. We will settle it at the bell.","Noted, got it! Bell time, see you!","Understood. Bell.","Accepted. We can dispense with the rest of the speeches.","Right. See you out there.","Then we have something we can test in the ring.","At last, a point of agreement. Let us not spoil it."])};
+ // Weighted exponential race, using the existing deterministic hash.
+ // Unweighted paths retain the original hash ordering exactly.
+ function fuzzyTie(seed,id,weight=1){
+  const u=(hash(seed+'|'+id)+1)/4294967297;
+  return -Math.log(1-u)/Math.max(.01,weight);
+ }
  function select(cat,ctx,seed,{used=[],recent=[],candidateFilter=null}={}){
   const options=cat.candidates(ctx).filter(r=>!used.includes(r.id)&&(!candidateFilter||candidateFilter(r)));
   if(!options.length)return null;
   const fresh=options.filter(r=>!recent.includes(r.id));
   // Do not repeat an authored line on consecutive appearances just to meet coverage. Fall back.
   if(!fresh.length)return null;
-  const ranked=fresh.map(r=>({r,score:Object.keys(r.when).filter(k=>k!=='variants'&&k!=='hasMouthpiece').length,tie:hash(seed+'|'+r.id)})).sort((a,b)=>b.score-a.score||a.tie-b.tie||a.r.id.localeCompare(b.r.id));
+  const ranked=fresh.map(r=>({r,score:Object.keys(r.when).filter(k=>k!=='variants'&&k!=='hasMouthpiece').length,tie:ctx.fuzzyScores?fuzzyTie(seed,r.id,root.OfficePromoFuzzy.categoryWeight(r.category,ctx.fuzzyScores)):hash(seed+'|'+r.id)})).sort((a,b)=>b.score-a.score||a.tie-b.tie||a.r.id.localeCompare(b.r.id));
   const row=ranked[0].r;return {id:row.id,text:render(row,ctx)};
  }
  function selectAcknowledgement(cat,ctx,seed,mem){
@@ -2569,6 +2575,12 @@
     Story:[0,0,0,0,0,1,0,0,1,0],
     Spectacle:[0,0,0,0,0,0,0,0,0,0]
    }[ctx.speaker.style][route];
+   if(ctx.fuzzyScores){
+    const chance=root.OfficePromoFuzzy.directWeight(ctx.fuzzyScores,identity.delivery);
+    const preferred=hash(voiceSeed+'|fuzzy-direct')/4294967296<chance?directIndex:1-directIndex;
+    const alternative=owner+'.semantic.'+route+'.'+(1-preferred);
+    return selectWith({...mem,used:[...(mem.used||[]),alternative]})||selectWith(mem);
+   }
    const direct=['Dry and direct','Reserved until challenged','Blunt but sincere'].includes(identity.delivery);
    const reflective=['Measured and methodical','Warm and reflective'].includes(identity.delivery);
    const pressure=(ctx.irritation!=null&&ctx.irritation>=65)||(ctx.composure!=null&&ctx.composure<=30);
@@ -3075,7 +3087,8 @@
   const choose=memory=>select(rookieVowCatalogue,scoped,seed+'|'+identity.id,memory);
   const concise=['Dry and direct','Reserved until challenged','Blunt but sincere'].includes(identity.delivery)||ctx.irritation>=65||(ctx.composure!=null&&ctx.composure<=30);
   const reflective=['Measured and methodical','Warm and reflective'].includes(identity.delivery);
-  const blocked=concise||reflective?owner+'.'+ctx.variant+'.'+ctx.side+'.'+(concise?1:0):null;
+  const fuzzyDirect=ctx.fuzzyScores?hash(seed+'|'+identity.id+'|fuzzy-vow')/4294967296<root.OfficePromoFuzzy.directWeight(ctx.fuzzyScores,identity.delivery):null;
+  const blocked=ctx.fuzzyScores?owner+'.'+ctx.variant+'.'+ctx.side+'.'+(fuzzyDirect?1:0):concise||reflective?owner+'.'+ctx.variant+'.'+ctx.side+'.'+(concise?1:0):null;
   const memory={...mem,candidateFilter:r=>closingCommitment(r,ctx)};
   const preferred=blocked?choose({...memory,used:[...(mem.used||[]),blocked]}):null;
   return preferred||choose(memory);
