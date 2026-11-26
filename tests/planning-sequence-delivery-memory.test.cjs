@@ -375,6 +375,20 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  graph.apply(m,'catch_breath');assert.ok(m.graph.events.some(e=>e.id==='catch_breath'));assert.ok(m.wSt>18);
  assert.equal(focus(),null,'actual rest imposes cooldown');
  console.log('PASS MP13F.7B bounded legal recovery preference, ownership, cooldown, ready sequence precedence, purity and resume.');
+ // Test the isolated final-pool preference with real legal catalogue
+ // candidates. It cannot inject an absent move or reduce another weight.
+ const cheap=Object.keys(A).find(id=>{const n=A[id],cost=graph.costOf(id);return n.family&&n.family!=='rest'&&cost>0&&cost<=1.5&&!n.reverse&&!n.counterOf&&!n.blockOf&&!n.nearfall&&!n.risk&&n.crowd>=0&&graph.isValid(m,id);});
+ assert.ok(cheap,'legal economical action');
+ const cf={objective:obj.id,side:'w',ratio:.6},cp=[[cheap,1],['catch_breath',10]];
+ const result=dir.sequenceConservationPreference(cp,cf);
+ assert.ok(result&&result.factor<=3&&cp[0][1]>1&&cp[1][1]===10);
+ assert.equal(dir.sequenceConservationPreference([['catch_breath',10]],cf),null);
+ assert.equal(dir.sequenceConservationFocus(m,m.story),null,'legacy opt-out');
+ m.o.sequenceConservationVersion=1;
+ assert.equal(dir.sequenceConservationFocus(m,m.story,{id:cheap}),null,'ready signed sequence precedence');
+ m.bigSpotRequest={at:m.t,expires:m.t+240};
+ assert.equal(dir.sequenceConservationFocus(m,m.story),null,'manager request precedence');m.bigSpotRequest=null;
+ console.log('PASS MP13F.11 final legal pool preference, no injection, legacy and manager/signed priority');
 }
 
 // MP13F.8A: establish independent full-chain readiness using the

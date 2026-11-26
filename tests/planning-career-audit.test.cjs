@@ -90,6 +90,13 @@ for(const p of stamina.pairs){
  console.log('MP13F.10 STAMINA CASE '+JSON.stringify(p));
 }
 console.log('MP13F.10 STAMINA SUMMARY '+JSON.stringify({...stamina,pairs:undefined}));
+const conservation=report.matchedConservation;
+assert.equal(conservation.before.signed,conservation.after.signed,'conservation preserves same signed sheets');
+assert.equal(conservation.changedOutcomes,0,'conservation preserves booked outcomes');
+assert.ok(conservation.after.offers>0,'actual legal economical preference opportunities');
+assert.ok(conservation.after.landed>0&&conservation.after.landed<=conservation.after.offers,'actual economical landings');
+assert.equal(conservation.before.completed,arbitration.after.completed,'same shipped baseline');
+console.log('MP13F.11 CONSERVATION SUMMARY '+JSON.stringify(conservation));
 const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
 console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},matchedBigSpotArbitration:{...matchedBigSpotArbitration,comparisons:undefined},staminaOpportunityAudit:{...staminaOpportunityAudit,pairs:undefined},temporalOpportunityAudit:{...temporalOpportunityAudit,cases:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');

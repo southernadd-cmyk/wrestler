@@ -9,7 +9,7 @@ const eqState=(a,b)=>a&&b&&['control','position','down'].every(k=>a[k]===b[k]);
 function trace(root,key){
  const G=root.OfficeMatch.GRAPH,D=root.OfficeSheets.DIRECTOR,A=G.A;
  let tracked=null,phase=null,offer=null;
- const undo=[],attempts=new Map(),records=[],openings=new Map(),dependencyWitnesses=[],recoveryOffers=[],alternativeReadinessOffers=[];
+ const undo=[],attempts=new Map(),records=[],openings=new Map(),dependencyWitnesses=[],recoveryOffers=[],alternativeReadinessOffers=[],conservationOffers=[];
  const rows=m=>m.structureDirector?.sequences||[];
  const running=m=>rows(m).filter(r=>r.status==='running'&&r.progress>0);
  const id=r=>r.objective+'|'+r.attempts;
@@ -205,6 +205,11 @@ function trace(root,key){
   }
   return result;
  });
+ wrap(D,'sequenceConservationPreference',function(original,args){
+  const result=original.apply(this,args);
+  if(tracked&&phase==='step'&&result)conservationOffers.push({key,at:tracked.t,...result});
+  return result;
+ });
  wrap(D,'observe',function(original,args){
   const [m,e]=args;
   if(m!==tracked)return original.apply(this,args);
@@ -309,7 +314,11 @@ function trace(root,key){
   const staminaContext={plan:m.planId,workers:Object.fromEntries(['w','f'].map(side=>{
    const worker=m[side];return [side,{id:worker.id,style:worker.style,ring:worker.ring,safe:worker.safe,fatigue:worker.fatigue}];
   })),rests:(m.graph.events||[]).filter(e=>A[e.id]&&G.costOf(e.id)<0&&(e.id==='catch_breath'||A[e.id].family==='rest')&&!e.blocked&&!e.botched).map(e=>({at:e.t,id:e.id,side:A[e.id].reverse?(e.preControl==='w'?'f':'w'):e.preControl,baseRecovery:-G.costOf(e.id)}))};
-  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers,alternativeReadinessOffers,staminaContext};
+  for(const offer of conservationOffers){
+   const event=m.graph.events.find(e=>e.t===offer.at&&e.preControl===offer.side&&offer.ids.includes(e.id)&&!e.botched&&!e.blocked);
+   offer.landed=event?.id||null;
+  }
+  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers,alternativeReadinessOffers,staminaContext,conservationOffers};
  },restore(){for(const fn of undo.reverse())fn();tracked=null;}};
 }
 function summarise(records){
