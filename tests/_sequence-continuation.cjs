@@ -21,6 +21,10 @@ function trace(root,key){
    const o=objective(m,r);
    openings.set(r.objective,{key,structure:m.structureDirector.id,objective:r.objective,
     actions:o.sequence.actions.slice(),alternatives:o.sequence.openings?.length||0,window:o.window.slice(),requires:o.requires.slice(),
+    schedules:[o.sequence,...(o.sequence.openings||[]).map(x=>({start:x.start,actions:[x.action,...o.sequence.actions.slice(1)]}))].map((seq,i)=>{
+     const {earliest,latest,duration}=D.sequenceSchedule(m,o,seq);
+     return {variant:i,id:seq.actions[0],start:copy(seq.start),earliest,latest,duration};
+    }),
     ticks:[],natural:[],final:null});
   }
   return openings.get(r.objective);
@@ -333,4 +337,33 @@ function summariseOpenings(records){
   examples:details.filter((x,i,xs)=>xs.findIndex(y=>y.firstEmpty===x.firstEmpty)===i).map(x=>({key:x.v.key,objective:x.v.objective,actions:x.v.actions,stage:x.firstEmpty,offered:x.offered,ticks:x.v.ticks.length,natural:x.v.natural.slice(0,2)})),
   records};
 }
-module.exports={trace,summarise,summariseOpenings};
+// Same case definition as the historical timingCases metric. Preserve
+// overlap instead of calling an early guard a proven cause of failure.
+function temporalCases(trace){
+ const readiness=['chain_too_early','chain_stamina','other_readiness'];
+ return trace.openings.filter(v=>!v.final.attempts&&v.ticks.some(t=>t.candidates.some(c=>c.guards.includes('chain_too_early')&&c.guards.every(g=>readiness.includes(g))))).map(v=>{
+  const variants=v.schedules.map(s=>{
+   const all=v.ticks.map(t=>({at:t.at,stamina:t.stamina,control:t.control,position:t.position,down:t.down,arc:t.arc,offered:t.offered,otherOffer:t.otherOffer,guards:t.candidates[s.variant].guards}));
+   const early=all.filter(t=>t.guards.includes('chain_too_early')&&t.guards.every(g=>readiness.includes(g)));
+   const inWindow=all.filter(t=>t.at>=s.earliest&&t.at<=s.latest);
+   const safety=['before_window','after_window','finish_runway','safety_or_manager_request'];
+   const state=['wrong_control','wrong_position_or_down'];
+   const first=['first_move_restricted','first_move_stamina','first_move_illegal'];
+   const pass=(xs,gs)=>xs.filter(t=>!t.guards.some(g=>gs.includes(g)));
+   const safe=pass(inWindow,safety),prior=pass(safe,['prerequisite_pending']),matching=pass(prior,state),legal=pass(matching,first),ready=legal.filter(t=>!t.guards.length);
+   const stamina=legal.filter(t=>t.guards.includes('chain_stamina'));
+   // Ordered descriptive funnel. Never combine gates from distinct ticks
+   // or variants, and never infer what would happen on unobserved ticks.
+   const stage=s.earliest>s.latest?'incompatible_window':!inWindow.length?'no_observed_tick_in_window':!safe.length?'safety_or_runway':!prior.length?'prerequisite':!matching.length?'physical_state':!legal.length?'first_move_legality':!ready.length?'chain_readiness':ready.some(t=>t.offered===s.id)?'offered_not_credited':'ready_not_offered';
+   const closest=inWindow.reduce((best,t)=>!best||t.guards.length<best.guards.length?t:best,null);
+   const snapshot=t=>t?{at:t.at,stamina:t.stamina,control:t.control,position:t.position,down:t.down,arc:t.arc,offered:t.offered,guards:t.guards}:null;
+   return {...s,stage,counts:{early:early.length,earlyTimingOnly:early.filter(t=>t.guards.length===1).length,earlyMixed:early.filter(t=>t.guards.length>1).length,inWindow:inWindow.length,safe:safe.length,prerequisite:prior.length,matching:matching.length,legal:legal.length,ready:ready.length,stamina:stamina.length,offered:ready.filter(t=>t.offered===s.id).length},
+    firstEarly:snapshot(early[0]),lastEarly:snapshot(early.at(-1)),firstWindow:snapshot(inWindow[0]),lastWindow:snapshot(inWindow.at(-1)),firstMatching:snapshot(matching[0]),lastMatching:snapshot(matching.at(-1)),firstStaminaBlock:snapshot(stamina[0]),closest:snapshot(closest),firstReady:snapshot(ready[0]),lastReady:snapshot(ready.at(-1)),windowGuards:[...new Set(inWindow.flatMap(t=>t.guards))]};
+  });
+  const preferences=trace.timingPreferences.filter(p=>p.objective===v.objective);
+  return {key:v.key,structure:v.structure,objective:v.objective,actions:v.actions,duration:v.duration,window:v.window,prerequisites:v.prerequisites.map(p=>({id:p.id,status:p.status,at:p.at})),variants,
+   preferences:preferences.map(p=>({at:p.at,ids:p.ids,earliest:p.earliest,latest:p.latest})),final:v.final,
+   timingOnly:variants.some(x=>x.counts.earlyTimingOnly>0),mixed:variants.some(x=>x.counts.earlyMixed>0),anyReady:variants.some(x=>x.counts.ready>0)};
+ });
+}
+module.exports={trace,summarise,summariseOpenings,temporalCases};

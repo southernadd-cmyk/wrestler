@@ -53,6 +53,20 @@ assert.ok(timing.pairs>0,'matched timing experiment');
 assert.equal(timing.before.signed,timing.after.signed,'same signed agreements');
 assert.equal(timing.changedOutcomes,0,'booked outcomes unchanged');
 assert.ok(timing.after.laterCompleted<=timing.after.laterOpened&&timing.after.laterOpened<=timing.after.preferences);
+assert.equal(timing.temporal.before.cases,timing.before.timingCases,'all baseline timing cases classified');
+assert.equal(timing.temporal.after.cases,timing.after.timingCases,'all scheduled timing cases classified');
+for(const pair of timing.temporal.cases)for(const side of ['before','after'])for(const c of pair[side]){
+ assert.ok(c.timingOnly||c.mixed,'actual observed early guard');
+ for(const v of c.variants){
+  const n=v.counts;
+  assert.ok(n.inWindow>=n.safe&&n.safe>=n.prerequisite&&n.prerequisite>=n.matching&&n.matching>=n.legal&&n.legal>=n.ready&&n.ready>=n.offered,'same-variant same-tick funnel');
+  assert.equal(n.early,n.earlyTimingOnly+n.earlyMixed);
+ }
+}
+// Log every case in a separate compact line, so the CI log retains all
+// failures without adding a large single JSON line to the career summary.
+for(const pair of timing.temporal.cases)console.log('MP13F.8B.1 TEMPORAL CASE '+JSON.stringify(pair));
+console.log('MP13F.8B.1 TEMPORAL SUMMARY '+JSON.stringify({...timing.temporal,cases:undefined}));
 const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedTimingScheduling,continuation,opening,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},matchedTimingScheduling:{...matchedTimingScheduling,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},matchedTimingScheduling:{...matchedTimingScheduling,comparisons:undefined,temporal:{...matchedTimingScheduling.temporal,cases:undefined}},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');

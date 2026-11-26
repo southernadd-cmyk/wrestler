@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],timingPairs=[],timingPreferences=[],reviewRepairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],timingPairs=[],timingPreferences=[],temporalPairs=[],reviewRepairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -281,6 +281,10 @@ function run(seeds=[3,10],weeks=32){
      laterOpened:x.traceReport.timingPreferences.filter(v=>v.laterOpened).length,laterCompleted:x.traceReport.timingPreferences.filter(v=>v.laterCompleted).length});
     timingPairs.push({key,structure:choice.id,before:timingMeasure(alt),after:timingMeasure(scheduled)});
     timingPreferences.push(...scheduled.traceReport.timingPreferences);
+    const beforeCases=continuation.temporalCases(alt.traceReport),afterCases=continuation.temporalCases(scheduled.traceReport);
+    assert.equal(beforeCases.length,breakdown(alt.traceReport).timingCases,key+' baseline timing cases reconcile');
+    assert.equal(afterCases.length,breakdown(scheduled.traceReport).timingCases,key+' scheduled timing cases reconcile');
+    if(beforeCases.length||afterCases.length)temporalPairs.push({key,before:beforeCases,after:afterCases});
    }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
@@ -368,7 +372,16 @@ function run(seeds=[3,10],weeks=32){
    const sum=(pairs,side)=>{const xs=pairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','readinessMiss','staminaCases','timingCases','interruptions','objectives','injury','preferences','laterOpened','laterCompleted'].map(k=>[k,xs.reduce((n,x)=>n+(x[k]||0),0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
    const compare=pairs=>({pairs:pairs.length,before:sum(pairs,'before'),after:sum(pairs,'after'),changedOutcomes:pairs.filter(x=>x.before.outcome!==x.after.outcome).length});
    return {...compare(timingPairs),byStructure:Object.fromEntries([...new Set(timingPairs.map(x=>x.structure))].map(k=>[k,compare(timingPairs.filter(x=>x.structure===k))])),
-    preferenceExamples:timingPreferences.slice(0,10),examples:timingPairs.filter(x=>JSON.stringify(x.before)!==JSON.stringify(x.after)).slice(0,10),comparisons:timingPairs};
+    preferenceExamples:timingPreferences.slice(0,10),examples:timingPairs.filter(x=>JSON.stringify(x.before)!==JSON.stringify(x.after)).slice(0,10),comparisons:timingPairs,
+    temporal:(()=>{
+     const summarise=side=>{
+      const cases=temporalPairs.flatMap(x=>x[side]),stages={};
+      for(const c of cases)for(const stage of new Set(c.variants.filter(v=>v.counts.early>0).map(v=>v.stage)))inc(stages,stage);
+      return {cases:cases.length,timingOnly:cases.filter(c=>c.timingOnly).length,mixed:cases.filter(c=>c.mixed).length,
+       anyReady:cases.filter(c=>c.anyReady).length,withPreference:cases.filter(c=>c.preferences.length>0).length,earlyVariantStages:stages};
+     };
+     return {before:summarise('before'),after:summarise('after'),cases:temporalPairs};
+    })()};
   })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},opening:continuation.summariseOpenings(openingRecords),rows};
 }
 module.exports={run};
