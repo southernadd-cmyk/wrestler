@@ -41,6 +41,10 @@ for(const structure of S.STRUCTURES.catalogue())for(const lead of ['w','f'])for(
  assert.ok(M.done&&M.final);assert.ok(replay);drive(replay);eq(M.final,replay.final);eq(M.graph.events,replay.graph.events);
  eq(M.sheet.structurePlan,source);
  const result=E.structureReport(M).sequences[0];
+ assert.ok(result.receipt,'terminal graph evidence must issue a receipt');
+ assert.equal(result.receipt.status,result.status);
+ eq(result.receipt.planned,obj.sequence.actions);
+ for(const e of result.receipt.witnessed)assert.ok(M.graph.events.some(x=>x.id===e.id&&x.t===e.at));
  eq(result,M.final.structure.sequences[0]);
  assert.ok(['completed','adapted','missed'].includes(result.status));assert.ok(result.attempts<=3);
  assert.equal(result.progress,result.evidence.length);
