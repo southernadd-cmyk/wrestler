@@ -554,16 +554,18 @@
    const alternate=b.backup?.includes(id)||(landedScripted&&b.backup?.includes('special_spot'));
    if(!exact&&!alternate)continue;
    const missedBefore=b.id==='finish'?[]:(b.requires||[]).filter(dep=>s.nodes.some(x=>x.id===dep&&x.status==='missed'));
-   b.status=missedBefore.length?'adapted':exact?'achieved':'adapted';b.actual=id;b.at=M.t;
-   b.why=missedBefore.length?'The earlier '+missedBefore.join(', ')+' beat was missed; the performers rebuilt the sequence.':
-    exact?'Agreed move performed.':'A legal alternative replaced the original beat.';
+   // Move delivery and continuity are independent.
+   b.status=exact?'achieved':'adapted';b.actual=id;b.at=M.t;
+   b.rebuiltAfter=missedBefore;
+   b.why=(exact?'Agreed move performed.':'A legal alternative replaced the original beat.')+
+    (missedBefore.length?' The performers rebuilt the sequence after the missed '+missedBefore.join(', ')+' beat.':'');
    event.cause=b.id;
    if(s.v>=4&&b.id!=='finish'){
-    const sc=Math.max(0,s.story?.score||0),hit=b.status==='achieved';
-    // Stars for doing what was agreed, more if the running order told a story.
+    const sc=Math.max(0,s.story?.score||0),hit=exact&&!missedBefore.length;
+    // Preserve existing structural reward; do not rebalance ratings here.
     M.sheetAdj=(M.sheetAdj||0)+(hit?.01+.035*sc:0);if(root.OfficeMatch?.lift)root.OfficeMatch.lift(M,hit?2:1);else M.crowd=Math.min(100,(M.crowd||0)+(hit?2:1));
    }
-   if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?(s.v>=4?'Just as agreed backstage: '+b.title+'.':'The agreed '+b.title.toLowerCase()+' pays off.'):'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'),'runner');
+   if(b.id!=='finish'&&root.OfficeMatch?.note)root.OfficeMatch.note(M,(exact?(missedBefore.length?'The agreed move lands after the wrestlers rebuild the sequence: '+b.title+'.':s.v>=4?'Just as agreed backstage: '+b.title+'.':'The agreed '+b.title.toLowerCase()+' pays off.'):'An audible: '+label(id)+' replaces the planned '+label(b.actions[0])+'.'),'runner');
    break;
   }
  }
@@ -609,11 +611,24 @@
   for(const b of s.nodes)if(b.status==='pending'&&!b.vow){b.status='missed';b.why='The bell came before this planned commitment.'}
   return report(M);
  }
+ // Recover the old exact/rebuilt classification from its explicit reason
+ // and signed action without modifying saved rewards or historical records.
+ function beatDelivery(b){
+  const priorRebuild=b.status==='adapted'&&b.id!=='finish'&&
+   /^The earlier .+ beat was missed; the performers rebuilt the sequence\.$/.test(b.why||'');
+  const legacyExact=priorRebuild&&b.actions.includes(b.actual);
+  const rebuiltAfter=Array.isArray(b.rebuiltAfter)?b.rebuiltAfter.slice():
+   priorRebuild?b.why.match(/^The earlier (.+) beat was missed;/)[1].split(', '):[];
+  const status=legacyExact?'achieved':b.status;
+  const reason=legacyExact?'Agreed move performed. '+b.why:priorRebuild?'A legal alternative replaced the original beat. '+b.why:b.why;
+  return {status,reason,rebuiltAfter};
+ }
  function report(M){
   const s=current(M);if(!s)return null;
-  const achieved=s.nodes.filter(b=>b.status==='achieved').length,adapted=s.nodes.filter(b=>b.status==='adapted').length,missed=s.nodes.filter(b=>b.status==='missed').length;
+  const beats=s.nodes.map(b=>({id:b.id,title:b.title,expected:b.actions[0],actual:b.actual,at:b.at,...beatDelivery(b)}));
+  const achieved=beats.filter(b=>b.status==='achieved').length,adapted=beats.filter(b=>b.status==='adapted').length,missed=beats.filter(b=>b.status==='missed').length;
   return {method:s.method,focus:s.focus,room:s.v>=4?{premise:s.premise,left:s.clockLeft,route:s.finishRoute,performed:s.performedFinishRoute||null}:null,decision:s.decision,revisions:(s.revisions||[]).map(x=>({...x})),calls:(s.calls||[]).map(x=>({...x})),total:s.nodes.length,achieved,adapted,missed,
-   beats:s.nodes.map(b=>({id:b.id,title:b.title,status:b.status,expected:b.actions[0],actual:b.actual,reason:b.why,at:b.at})),
+   beats,
    ...(s.promoReconciliation?{promoReconciliation:JSON.parse(JSON.stringify(s.promoReconciliation))}:{}),eventCount:s.ledger.length};
  }
  // v3.7 THE MATCH STRIP. The running order laid along the match clock: where each beat is due,
@@ -629,14 +644,15 @@
    const start=Math.max(0,b.window[0]),end=Math.min(1,b.window[1]),slot=STRIP_NAME[b.id]||b.id;
    const move=b.move?b.move:b.vow?(b.kind==='counter'?'a counter on '+(M.f?.short||'them'):(M.w?.finisher||'the finisher')):b.id==='finish'?label(b.actions[0]):b.actions[0]==='scheduled_nearfall'?'a run of near-falls':label(b.actions[0]);
    const open=frac>=b.window[0]-.07&&frac<=b.window[1];
-   const state=b.status!=='pending'?b.status:final?'missed':open?'due':'waiting';
+   const delivery=beatDelivery(b);
+   const state=b.status!=='pending'?delivery.status:final?'missed':open?'due':'waiting';
    // Where the mark goes: when it happened, or where the chance ran out.
    const at=b.at!=null?b.at/len:b.status==='missed'||state==='missed'?end:null;
    const mark=at==null?null:Math.round(Math.max(0,Math.min(1,(at-start)/Math.max(.01,end-start)))*1000)/10;
    const owner=who(b.owner),whose=owner&&!b.vow?owner+'’s ':'';
    const title=slot+': '+whose+move+'. '+(
-    state==='achieved'?(b.vow?'Promise kept at '+clock(b.at)+'.':'Landed at '+clock(b.at)+'.'):
-    state==='adapted'?'Audible at '+clock(b.at)+': '+label(b.actual)+' instead.':
+    state==='achieved'?(b.vow?'Promise kept at '+clock(b.at)+'.':'Landed at '+clock(b.at)+'.'+(delivery.rebuiltAfter.length?' '+delivery.reason:'')):
+    state==='adapted'?(b.id==='finish'&&delivery.reason?delivery.reason:'Audible at '+clock(b.at)+': '+label(b.actual)+' instead.'+(delivery.rebuiltAfter.length?' '+delivery.reason:'')):
     state==='missed'?(b.why||'It never happened.'):
     state==='due'?'Due now.':'Due between '+clock(b.window[0]*len)+' and '+clock(Math.min(1,b.window[1])*len)+'.');
    return {id:b.id,slot,move,owner:b.owner,ownerName:owner,lane,vow:!!b.vow,start:pct(start),width:Math.max(4,pct(end)-pct(start)),state,mark,title};
