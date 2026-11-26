@@ -318,3 +318,27 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  delete m.sheet.sequenceContinuationVersion;assert.equal(S.DIRECTOR.openingReadiness(m,bad),true,'legacy agreement unchanged');
  console.log('PASS MP13F.2 actual grip incompatibility, timing/stamina preflight, pure check and legacy opt-out');
 }
+
+// MP13F.7A: credit only base recovery to the actual performer; no
+// fabricated rest event or future bonus. Real graph application is separate.
+{
+ const m=E.create({w:{...w,fatigue:0},f,p,slot:'main',minutes:12,finish:c.finish,plan:{game:'story',leash:'script',talk:'none'},seed:9001,sheet:copy(original),structureExecution:true});
+ m.sheet.sequenceContinuationVersion=1;m.stage='live';m.t=400;m.wSt=25;m.fSt=60;
+ Object.assign(m.story,{control:'w',position:'standing',down:null});graph.resetPhysical(m);
+ const cost=graph.costOf('catch_breath'),step={id:'catch_breath',performer:'w',entry:{control:'w',position:'standing',down:null}};
+ assert.ok(cost<0&&graph.isValid(m,'catch_breath'));
+ const energy={w:m.wSt,f:m.fSt};
+ S.DIRECTOR.projectedSequenceEnergy(m,energy,step,cost);eq(energy,{w:25,f:60});
+ m.o.sequenceRecoveryProjectionVersion=1;
+ const rng=m.r.getState(),state=JSON.stringify(m);
+ S.DIRECTOR.projectedSequenceEnergy(m,energy,step,cost);
+ eq(energy,{w:25-cost,f:60});assert.equal(JSON.stringify(m),state);assert.equal(m.r.getState(),rng);
+ const high={w:99,f:30};S.DIRECTOR.projectedSequenceEnergy(m,high,step,cost);eq(high,{w:100,f:30});
+ const foe={w:25,f:30};S.DIRECTOR.projectedSequenceEnergy(m,foe,{...step,performer:'f'},cost);eq(foe,{w:25,f:30-cost});
+ const nonRest={w:25,f:60};S.DIRECTOR.projectedSequenceEnergy(m,nonRest,{...step,id:'crowd_pose'},graph.costOf('crowd_pose'));eq(nonRest,{w:25,f:60});
+ const debit={w:25,f:60};S.DIRECTOR.projectedSequenceEnergy(m,debit,{...step,id:'lockup'},graph.costOf('lockup'));eq(debit,{w:25-Math.max(0,graph.costOf('lockup')),f:60});
+ graph.apply(m,'catch_breath');assert.equal(m.wSt,25-cost,'actual authored base recovery matches projection in story plan');
+ assert.ok(m.graph.events.some(e=>e.id==='catch_breath'),'actual recovery witnessed');
+ const restored=E.restore(copy({...m,rState:m.r.getState()}));assert.equal(restored.o.sequenceRecoveryProjectionVersion,1);
+ console.log('PASS MP13F.7A base recovery, performer ownership, cap, no speculative bonuses, no RNG/state changes, actual rest witness, resume and legacy opt-out.');
+}
