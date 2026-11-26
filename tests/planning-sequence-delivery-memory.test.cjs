@@ -142,3 +142,33 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  assert.equal(R.promoReconciliation(legacySheet,publicPromo,w,f,c.finish),null);
  assert.equal(R.addVow(legacySheet,publicPromo,w,f,c.finish).promoReconciliation,undefined);
  console.log('PASS MP9 same-night reconciliation: signed structure immutable, restrictions preserved, contradictory promises do not add vows, legacy path unchanged.');
+
+ // MP10: actual live inference, bounded modifiers and legacy opt-out.
+ const liveConfig={w:{...w,pro:85,ego:25,morale:85,psych:85,fatigue:0,flags:{}},f,p,slot:'main',
+  minutes:12,finish:c.finish,feudHeat:0,plan:{game:'story',leash:'script',talk:'none'},seed:810010,
+  preparation:{},flags:{},sheet:copy(sheet),structureExecution:true,livePsychologyVersion:1};
+ const live=E.create(copy(liveConfig));live.stage='live';live.t=60;live.sheet.workerConsent=85;live.wSt=90;
+ const cooperative=E.livePsychology(live),positive=E.liveObedienceDelta(live,'layout');
+ assert.ok(cooperative.scores.obedience>50);
+ assert.ok(positive>0&&positive<=12);
+ const beforePsych=copy({...live,rState:live.r.getState()});
+ E.livePsychology(live);E.liveObedienceDelta(live,'big');
+ eq({...live,rState:live.r.getState()},beforePsych);
+ live.w={...live.w,ego:90,pro:25,morale:20,psych:25};live.sheet.workerConsent=20;live.wSt=20;live.resent=true;
+ const resistant=E.livePsychology(live);
+ assert.ok(resistant.scores.obedience<cooperative.scores.obedience);
+ assert.ok(resistant.scores.frustration>cooperative.scores.frustration);
+ assert.ok(resistant.scores.improvisation<cooperative.scores.improvisation);
+ assert.ok(E.liveObedienceDelta(live,'slow')>=E.liveObedienceDelta(live,'big'));
+ for(const id of ['layout','home','slow','pickup','big','sheet','crowd'])assert.ok(Math.abs(E.liveObedienceDelta(live,id))<=12);
+ const liveReplay=E.restore(copy({...live,rState:live.r.getState()}));
+ eq(E.livePsychology(live),E.livePsychology(liveReplay));
+ assert.equal(E.call(live,'slow'),E.call(liveReplay,'slow'));
+ // A restored save already contains rState, so subsequent properties can
+ // have a different insertion order. Compare the entire serialized state
+ // structurally, including the exact RNG state, rather than JSON key order.
+ assert.deepStrictEqual(copy({...live,rState:live.r.getState()}),copy({...liveReplay,rState:liveReplay.r.getState()}));
+ assert.equal(live.o.finish,c.finish);eq(live.sheet.structurePlan,sheet.structurePlan);
+ const oldLive=E.create({...copy(liveConfig),livePsychologyVersion:undefined});
+ assert.equal(E.livePsychology(oldLive),null);assert.equal(E.liveObedienceDelta(oldLive,'layout'),0);
+ console.log('PASS MP10: graded live obedience, improvisation and frustration; bounded context response, no RNG in inference, exact call replay, immutable booked result and layout, legacy opt-out.');

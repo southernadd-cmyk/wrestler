@@ -756,7 +756,11 @@
     // Willing workers get a strong but still probabilistic continuation.
     // Low consent and fatigue retain a substantial competing pool.
     const follow=Math.max(0,Math.min(1,willingness/100));
-    const ratio=row.progress?2.5+follow*8:1+follow*2;
+    const actorProfile=root.OfficeMatch.livePsychology?.(M,actor);
+    // MP10: improv preference only changes a legal substitute's weight;
+    // the bridge, final call, retry limit and physics checks stay unchanged.
+    const improv=id!==ctx.step.id&&actorProfile?Math.max(.8,Math.min(1.2,1+(actorProfile.scores.improvisation-50)/200)):1;
+    const ratio=(row.progress?2.5+follow*8:1+follow*2)*improv;
     return {id,continuation:row.progress>0,objective:row.objective,planned:ctx.step.id,
      ratio,willingness};
    }
