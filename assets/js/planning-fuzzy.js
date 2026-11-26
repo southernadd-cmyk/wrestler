@@ -531,6 +531,58 @@
   }
   return {start,duration:offset};
  }
+ // MP13F.6: independent planning-only prior, not a prediction of a
+ // particular match or an additional hard gate. The previous stamina
+ // estimate at the earliest opening ignores uncertainty in prerequisite
+ // delivery and ordinary grappling exertion. Sample plausible release
+ // times, preserving a distinct cost penalty even when all are marginal.
+ function readinessPrior(room,objective,evidence){
+  const graph=root.OfficeMatch?.GRAPH,steps=evidence?.steps;
+  if(!graph||!objective||!steps?.length)return null;
+  const seconds=Math.max(5,room.minutes+(room.fx?.minutes||0))*60;
+  const schedule=continuationSchedule(steps,seconds),duration=schedule.duration;
+  const from=Math.max(0,objective.window[0]-.04);
+  const end=Math.min(objective.window[1]+.08,.91,1-Math.max(45,duration+25)/seconds);
+  const prior=room.structure?.objectives?.find(x=>objective.requires.includes(x.id));
+  const release=prior?[prior.window[0]+.5*(prior.window[1]-prior.window[0]),prior.window[1],prior.window[1]+.08]:[from,from,from];
+  const drain=root.OfficeData?.PLANS?.[room.game]?.drain||1;
+  // Conservative baseline includes modest net action expenditure; no
+  // assumed manager intervention, special recovery or guaranteed rest.
+  const rate={w:.55*drain*(1+(room.w?.fatigue||0)/250)+.25,f:.5*drain+.25};
+  const initial={w:Math.max(0,100-(room.w?.fatigue||0)*.7),f:92};
+  let required=0,spent={w:0,f:0};
+  for(const step of steps){
+   const cost=graph.costOf(step.action),side=step.entry?.control||step.performer;
+   if(cost>=2.2)required=Math.max(required,16+cost*3.2+spent[side]);
+   spent[step.performer]+=Math.max(0,cost);
+   for(const k of ['w','f'])spent[k]+=graph.sequenceMoveSeconds(step.action)/10*rate[k];
+  }
+  const samples=release.map(r=>{
+   const start=Math.max(from,r,schedule.start/seconds);
+   const window=Math.max(0,end-start);
+   const times=[start,start+window*.5];
+   return times.map(at=>{
+    const energy={w:Math.max(0,initial.w-at*seconds/10*rate.w),f:Math.max(0,initial.f-at*seconds/10*rate.f)};
+    let margin=100,elapsed=0;
+    for(const step of steps){
+     const side=step.entry?.control||step.performer,cost=graph.costOf(step.action);
+     if(cost>=2.2)margin=Math.min(margin,energy[side]-(16+cost*3.2));
+     energy[step.performer]-=Math.max(0,cost);
+     const ticks=graph.sequenceMoveSeconds(step.action)/10;
+     for(const k of ['w','f'])energy[k]-=ticks*rate[k];
+     elapsed+=ticks*10;
+    }
+    const usable=start<=end&&at<.91;
+    const headroom=Math.max(0,Math.min(100,55+margin*1.5));
+    const runway=Math.max(0,Math.min(100,window*seconds/Math.max(20,duration)*40));
+    return {at,margin,usable,score:usable?.7*headroom+.3*runway:0};
+   });
+  }).flat();
+  const mean=samples.reduce((n,x)=>n+x.score,0)/samples.length;
+  // Keep a cost gradient even if late-bout margins all fall below zero.
+  const score=Math.max(0,Math.min(100,.8*mean+.2*Math.max(0,100-required*1.5)));
+  return {score,required,samples};
+ }
  function sequenceFeasibility(room,objective,evidence){
   const graph=root.OfficeMatch?.GRAPH,steps=evidence?.steps;
   if(!graph||!objective||!steps?.length)return null;
@@ -575,7 +627,8 @@
    values.runway=Math.min(values.runway,Math.max(0,100*(end-start)/Math.max(.04,end-(objective.window[0]-.04))));
   }
   const scores=sequenceFeasibilityModel.evaluate(values,{}).scores;
-  return {v:1,values,scores,duration,slack,possible:end>=start&&(!strict||continuationGrip(steps).possible),...(strict?{earliestStart:start,latestStart:end}: {})};
+  const readiness=room.planningReadinessVersion===1&&room.structure?.id!=='chickenshit_heel'?readinessPrior(room,objective,evidence):null;
+  return {v:1,values,scores,duration,slack,...(readiness?{readiness}:{}),possible:end>=start&&(!strict||continuationGrip(steps).possible),...(strict?{earliestStart:start,latestStart:end}: {})};
  }
- root.OfficePlanningFuzzy=Object.freeze({continuationGrip,continuationSchedule,sequenceFeasibility,sequenceFeasibilityModel,sequencePreference,sequencePreferenceModel,version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty,proposalReply,huddleProposal,readHuddleProposal});
+ root.OfficePlanningFuzzy=Object.freeze({readinessPrior,continuationGrip,continuationSchedule,sequenceFeasibility,sequenceFeasibilityModel,sequencePreference,sequencePreferenceModel,version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty,proposalReply,huddleProposal,readHuddleProposal});
 })(typeof window!=='undefined'?window:globalThis);
