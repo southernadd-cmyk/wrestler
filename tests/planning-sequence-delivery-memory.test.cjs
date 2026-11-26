@@ -164,7 +164,10 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  const liveReplay=E.restore(copy({...live,rState:live.r.getState()}));
  eq(E.livePsychology(live),E.livePsychology(liveReplay));
  assert.equal(E.call(live,'slow'),E.call(liveReplay,'slow'));
- eq({...live,rState:live.r.getState()},{...liveReplay,rState:liveReplay.r.getState()});
+ // A restored save already contains rState, so subsequent properties can
+ // have a different insertion order. Compare the entire serialized state
+ // structurally, including the exact RNG state, rather than JSON key order.
+ assert.deepStrictEqual(copy({...live,rState:live.r.getState()}),copy({...liveReplay,rState:liveReplay.r.getState()}));
  assert.equal(live.o.finish,c.finish);eq(live.sheet.structurePlan,sheet.structurePlan);
  const oldLive=E.create({...copy(liveConfig),livePsychologyVersion:undefined});
  assert.equal(E.livePsychology(oldLive),null);assert.equal(E.liveObedienceDelta(oldLive,'layout'),0);
