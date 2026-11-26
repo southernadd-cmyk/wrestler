@@ -139,3 +139,22 @@ rules separately. Coefficients are provisional, not empirically fitted.
 Tests exercise continuous transition bounds, contrasting personalities,
 protected record parity, 400 paired full-roster scenes and 200 resumes,
 with descriptive trajectory, pacing and quality differences.
+
+## F5 — competing conversational propensities
+
+New ordinary UI scenes opt into `pacing:1` in their version-one fuzzy
+snapshot; F4 and prior saves keep the legacy director. Five possible
+non-substantive beats compete for a single seeded draw after the answer:
+interrupt, escalate (request another answer), refusal, pause and defuse.
+Total event probability cannot exceed .55; no event is always possible.
+The existing stance contributes only a soft modifier. Academy adaptive
+participants can now express all behaviours. No event invents words,
+allegations, threats, physical contact or booked outcomes. With no event,
+a separate seeded follow-up chance is bounded .08–.82 and varies with
+format, conversational choice, current drives and oriented meter balance.
+At most one push and exactly one final word remain. Evidence/record,
+programme and mouthpiece scenes keep legacy routes; recorded commitments
+and exposed cases retain priority. No new emotional update on a stage cue.
+Coefficients are provisional; the paired audit reports actual event and
+route frequencies across 400 scenes, 200 resumes. F7 tunes against the
+whole-roster baseline, not arbitrary target rates.

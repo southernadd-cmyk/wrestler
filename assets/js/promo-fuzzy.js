@@ -171,5 +171,41 @@
   const limited=(n,max)=>Math.max(-max,Math.min(max,n));
   return {composure:clamp(c+limited(dc,18)),irritation:clamp(i+limited(di,22))};
  }
- root.OfficePromoFuzzy=Object.freeze({version:1,curves,membership,inputs,fuzzify,snapshot,outputs,rules,cues,infer,selectionFacts,selectionScores,categoryWeight,directWeight,emotionStep});
+ // F5: conditional propensities, not probabilities attached to personality
+ // categories. Competing events share one budget; an optional follow-up
+ // is still bounded by the director's existing state machine.
+ function pacing(facts,d,context={}){
+  if(!facts?.w||!facts?.f||!d?.player||!d?.opponent||!Number.isFinite(context.meter))return null;
+  const a=d.player,b=d.opponent;
+  const as=selectionScores(facts.w,a,context.meter,'w',context.feudHeat);
+  const bs=selectionScores(facts.f,b,context.meter,'f',context.feudHeat);
+  if(!as||!bs)return null;
+  const unit=n=>Number.isFinite(n)?clamp(n)/100:.5;
+  const get=(s,k)=>unit(s[k]);
+  const grade=(axis,value,key)=>membership(axis,value)?.[key]??0;
+  const heat=p=>grade('irritation',p.irritation,'high')+.45*grade('irritation',p.irritation,'medium');
+  const strain=p=>grade('composure',p.composure,'low')+.25*grade('composure',p.composure,'medium');
+  const cool=p=>grade('irritation',p.irritation,'low')+.25*grade('irritation',p.irritation,'medium');
+  const balanced=1-Math.min(1,Math.abs(context.meter)/50);
+  const personal=context.personal===true,calm=context.calming===true;
+  const confrontation=context.pace==='confrontation',brief=context.pace==='brief';
+  const reserved=p=>p.stance==='reserved'||['Dry and direct','Reserved until challenged','Blunt but sincere'].includes(p.identity?.delivery);
+  const ag=get(bs,'aggression'),de=get(bs,'defensiveness'),respect=get(bs,'respect'),assertive=get(bs,'assertiveness');
+  const attack=(.35+.65*heat(b))*ag*(.5+.5*assertive);
+  const interrupt=attack*(.18+(personal?.24:0)+(confrontation?.12:0))*balanced*(b.stance==='combative'?1.2:1);
+  const escalate=attack*(.12+(personal?.20:0)+(confrontation?.10:0))*(1-.5*respect);
+  const refusal=heat(b)*de*(reserved(b)?.34:.12)*(1-.55*assertive);
+  const pa=Math.max(strain(a)*get(as,'defensiveness'),strain(b)*de);
+  const pause=pa*.28;
+  const defuse=(cool(b)*respect+cool(a)*get(as,'respect'))/2*(calm?.27:.075);
+  const raw={interrupt,escalate,refusal,pause,defuse};
+  const total=Object.values(raw).reduce((n,x)=>n+x,0),factor=total>.55?.55/total:1;
+  const events=Object.fromEntries(Object.entries(raw).map(([k,v])=>[k,v*factor]));
+  const pressure=Math.max(heat(a)*get(as,'aggression'),heat(b)*ag);
+  const follow=Math.max(.08,Math.min(.82,.20+.28*balanced+.28*pressure
+   +(personal?.16:0)+(confrontation?.12:0)+(context.landed===false?.12:0)
+   -(brief?.17:0)-(calm?.25:0)-.18*respect*cool(b)-.13*(reserved(a)?strain(a):0)));
+  return {events,follow,pauseSide:strain(a)*get(as,'defensiveness')>strain(b)*de?'w':'f'};
+ }
+ root.OfficePromoFuzzy=Object.freeze({version:1,curves,membership,inputs,fuzzify,snapshot,outputs,rules,cues,infer,selectionFacts,selectionScores,categoryWeight,directWeight,emotionStep,pacing});
 })(typeof window!=='undefined'?window:globalThis);
