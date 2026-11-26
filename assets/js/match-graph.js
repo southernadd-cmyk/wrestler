@@ -1189,6 +1189,17 @@ const Graph=(function makeGraph(){
   const n=A[id],original=n?.counterOf||n?.blockOf;
   return original&&isGrappleParent(original)?original:null;
  }
+ // Reconciliation can withdraw tactical encouragement, never erase the
+ // original public statement or prevent a naturally witnessed payoff.
+ function activePromoTactic(M){
+  const t=M.o.promo?.tactic,r=M.o.sheet?.promoReconciliation;
+  if(r?.v!==1)return t;
+  if(r.status==='conflict')return null;
+  if(t?.kind==='counter'&&r.type==='counter'){
+   return {...t,nodes:(t.nodes||[]).filter(id=>r.nodes.includes(id))};
+  }
+  return t;
+ }
  function isValid(M,nodeId){
   const n=A[nodeId],p=$d.Psy.get(M);if(!n)return false;
   // A restriction agreed backstage is a rule, not a 3% chance of breaking it.
@@ -1647,7 +1658,7 @@ const Graph=(function makeGraph(){
   const defenceSkill=defender.ring*.65+defender.psych*.35;
   let counterChance=Math.max(.075,Math.min(.28,.15+(defenceSkill-attackSkill)/300));
   // A promised defensive counter can pay off only against the promised move.
-  const tactic=M.o.promo?.tactic;
+  const tactic=activePromoTactic(M);
   if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
    counterChance=Math.min(.42,counterChance*1.6);
   const counterSide=pending.side==='w'?'f':'w';
@@ -1716,7 +1727,7 @@ const Graph=(function makeGraph(){
   // A cradle is easier to read than an ordinary grounded stomp.
   const base=pending.kind==='pin'?.19:.14;
   let counterChance=Math.max(.07,Math.min(.32,base+(skillD-skillA)/350));
-  const tactic=M.o.promo?.tactic;
+  const tactic=activePromoTactic(M);
   if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
    counterChance=Math.min(.4,counterChance*1.4);
   const blockChance=A[blk]?Math.max(.05,Math.min(.14,.075+
@@ -1783,7 +1794,7 @@ const Graph=(function makeGraph(){
   const attackSkill=attacker.ring*.65+attacker.psych*.35,
    defenceSkill=defender.ring*.65+defender.psych*.35;
   let counterChance=Math.max(.06,Math.min(.31,.145+(defenceSkill-attackSkill)/320));
-  const tactic=M.o.promo?.tactic;
+  const tactic=activePromoTactic(M);
   if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
    counterChance=Math.min(.43,counterChance*1.5);
   const blockChance=A[blk]?Math.max(.05,Math.min(.16,.095+(defender.safe-attacker.safe)/500)):0;
@@ -1941,7 +1952,7 @@ const Graph=(function makeGraph(){
   const defenderSkill=defender.ring*.7+defender.psych*.3;
   const base=pending.type==='hold'?.19:.13;
   let counterChance=Math.max(.06,Math.min(.32,base+(defenderSkill-attackerSkill)/350));
-  const tactic=M.o.promo?.tactic;
+  const tactic=activePromoTactic(M);
   if(tactic?.kind==='counter'&&tactic.nodes?.includes(rev)&&pending.side==='f')
    counterChance=Math.min(.4,counterChance*1.5);
   const blockChance=A[blk]?Math.max(.04,Math.min(.13,.07+(defender.safe-attacker.safe)/600)):0;
@@ -2802,7 +2813,7 @@ const Graph=(function makeGraph(){
     n*=10;
    // The public promo is a tactical declaration. Counter promises favour
    // genuine worker reversals of opponent control, not arbitrary bonuses.
-   const publicTactic=M.o.promo?.tactic;
+   const publicTactic=activePromoTactic(M);
    if(publicTactic){
     if(publicTactic.kind==='clean'&&(['cheap_shot','outside_toss','floor_brawl'].includes(id)||A[id].family==='heel'||(A[id].family&&A[id].crowd<0&&!A[id].counterOf)))n*=.28;
     if(publicTactic.kind==='counter'&&publicTactic.nodes.includes(id))

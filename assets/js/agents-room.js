@@ -2586,15 +2586,52 @@
    moods:{w:{value:consent(st,'w'),word:word(consent(st,'w'))},f:{value:consent(st,'f'),word:word(consent(st,'f'))}}};
  }
  // ---- the microphone's promise, as a beat on the sheet ----
- function addVow(sheet,promo,w,f){
+ // MP9: reconcile a public statement against a signed editorial layout.
+ // This is an advisory, not a new agreement, permission or guarantee.
+ function promoReconciliation(sheet,promo,w,f,booked=null){
   const type=promo?.promise?.type;
-  if(!sheet?.signed||sheet.v<4||!['counter','finisher'].includes(type))return sheet;
-  if(type==='finisher'&&!w.finisher)return sheet;
-  const out=JSON.parse(JSON.stringify(sheet));if(out.nodes.some(n=>n.id==='vow'))return out;
+  if(!sheet?.signed||sheet.v!==4||!sheet.structurePlan||!['counter','finisher','win','clean','nocheat'].includes(type))return null;
+  const result=booked||sheet.nodes?.find(n=>n.id==='finish')?.result||null;
+  const route=sheet.finishRoute||null;
+  const base={v:1,type,status:'conditional',nodes:[],reason:'The public promise is separate from the signed layout. Only what happens in the ring counts.'};
+  const conflict=reason=>({...base,status:'conflict',reason});
+  if(type==='win'&&result?.startsWith('lose'))return conflict('The public victory prediction contradicts the booked result. The contract stays fixed.');
+  if(type==='finisher'&&(result&&result!=='win_clean'||!w?.finisher))return conflict('The announced winning finisher conflicts with the booked result or available finisher.');
+  if(type==='clean'&&result&&!['win_clean','lose_clean'].includes(result))return conflict('A clean contest conflicts with the booked result. The contract stays fixed.');
+  if(type==='nocheat'&&['win_dirty','lose_dq'].includes(result))return conflict('The no-cheating promise conflicts with the booked result. The contract stays fixed.');
+  if(type==='counter'){
+   const tactic=promo?.tactic,explicit=Array.isArray(tactic?.nodes)?tactic.nodes:[];
+   if(tactic?.kind!=='counter')return conflict('There is no specific counter tactic to reconcile.');
+   const permitted=id=>{
+    const n=A[id],note=sheet.note;
+    return !!(n?.reverse&&!n.risk&&legal(id,w,f)&&!sheet.limits?.banIds?.includes(id)&&
+     !sheet.limits?.ban?.includes(n.family)&&!(note?.honour&&!note.waived&&
+      (note.banIds?.includes(id)||note.ban?.includes(n.family))));
+   };
+   const nodes=Object.keys(A).filter(id=>permitted(id)&&(explicit.includes(id)||
+    (A[id].counterOf&&(!tactic.families||tactic.families.includes(A[id].family)))));
+   if(!nodes.length)return conflict('No permitted counter matches the public tactic. The signed restrictions stay in force.');
+   const overlaps=sheet.structurePlan.objectives.some(o=>o.window?.[1]>=.58&&
+    (o.call?.owner==='w'&&nodes.includes(o.call.action)||o.sequence?.actions?.some(id=>nodes.includes(id))));
+   return {...base,nodes,status:overlaps?'aligned':'conditional',
+    reason:overlaps?'The signed layout contains a potentially relevant late counter. It must still be witnessed.':'No suitable counter is promised on the signed layout. A legal live opening may fulfil the public promise.'};
+  }
+  if(type==='finisher')return {...base,nodes:['finish_tease'],status:route==='finisher'?'aligned':'conditional',
+   reason:'The booked winner and agreed finishing route stay fixed. The announced finisher must actually win the match.'};
+  return base;
+ }
+ function addVow(sheet,promo,w,f,booked=null){
+  const type=promo?.promise?.type;
+  const reconciliation=promoReconciliation(sheet,promo,w,f,booked);
+  if(!reconciliation&&(!sheet?.signed||sheet.v<4||!['counter','finisher'].includes(type)))return sheet;
+  if(!reconciliation&&type==='finisher'&&!w.finisher)return sheet;
+  const out=JSON.parse(JSON.stringify(sheet));if(out.nodes.some(n=>n.id==='vow')||out.promoReconciliation)return out;
+  if(reconciliation)out.promoReconciliation=reconciliation;
+  if(reconciliation?.status==='conflict'||!['counter','finisher'].includes(type))return out;
   const counter=type==='counter';
   out.nodes.splice(out.nodes.length-1,0,{id:'vow',vow:true,kind:type,owner:'w',planned:true,requires:[],backup:[],
    title:counter?'Vow: '+w.short+' counters '+f.short:'Vow: '+w.short+' wins with the '+w.finisher,
-   actions:[counter?(promo.tactic?.nodes||[]).find(id=>A[id])||'counter_strike':'finish_tease'],
+   actions:[counter?(reconciliation?.nodes.find(id=>promo.tactic?.nodes?.includes(id))||reconciliation?.nodes[0]||(promo.tactic?.nodes||[]).find(id=>A[id])||'counter_strike'):'finish_tease'],
    window:counter?[.58,1]:[.8,1.2],status:'pending',actual:null,at:null,why:''});
   const problems=K.validate(out.nodes);if(problems.length)throw Error('Vow: '+problems.join(', '));
   return out;
@@ -2757,5 +2794,5 @@
   }
   G.save();return out;
  };
- root.OfficeRoom={agreedSequence,readSequenceOffer,sequenceCandidates,sequenceEvidence,proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
+ root.OfficeRoom={agreedSequence,readSequenceOffer,sequenceCandidates,sequenceEvidence,proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,promoReconciliation,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
 })(typeof window!=='undefined'?window:globalThis);
