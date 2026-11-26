@@ -3,6 +3,7 @@
    argument graph owns substantive claims, closing commitments and payoffs. */
 (function(root){'use strict';
  const I=root.OfficePromoIdentity;
+ const mouthFuzzy=st=>st.authoredDialogue?.fuzzy?.mouthpiece===1&&st.authoredDialogue.fuzzy.speakerId===st.speaker?.id&&st.authoredDialogue.fuzzy.clientId===st.w?.id;
  const clamp=(n)=>Math.max(0,Math.min(100,n));
  const topics={people:'the crowd and what they deserve',proof:'competitive credibility',imagery:'the picture painted of the match',accusation:'the accusation',swagger:'status and confidence',hometown:'the local crowd',numbers:'the competitive record'};
  const hash=s=>{let h=2166136261;for(const ch of String(s)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
@@ -120,11 +121,12 @@
   // Both reactions use the same pre-turn conditions and actual meter change.
   // Do not sum log swings: crowd reaction entries can repeat a spoken swing.
   const policy=st.authoredDialogue?.fuzzy;
-  const fuzzy=policy?.v===1&&policy.emotion===1&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.arc&&!st.speaker&&root.OfficePromoFuzzy;
+  const fuzzy=policy?.v===1&&policy.emotion===1&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.arc&&(!st.speaker||mouthFuzzy(st))&&root.OfficePromoFuzzy;
   const event={beforeMeter,afterMeter:st.meter,feudHeat:st.core.feudHeat,landed:record.landed,
    personal:personal&&mine.length>0,calming:concedes&&mine.length>0};
-  const nextA=fuzzy?fuzzy.emotionStep(policy.w,a,{...event,side:'w',spoke:mine.length>0}):null;
-  const nextB=fuzzy?fuzzy.emotionStep(policy.f,b,{...event,side:'f',spoke:theirs.length>0}):null;
+  const feedback=side=>policy?.crowd===1?fuzzy?.heard?.(policy,side,st.round-1):null;
+  const nextA=fuzzy?fuzzy.emotionStep(policy.w,a,{...event,side:'w',spoke:mine.length>0,audience:feedback('w')}):null;
+  const nextB=fuzzy?fuzzy.emotionStep(policy.f,b,{...event,side:'f',spoke:theirs.length>0,audience:feedback('f')}):null;
   if(nextA&&nextB){Object.assign(a,nextA);Object.assign(b,nextB);}
   else{
    a.composure=clamp(a.composure+(record.landed?7:-12)+(concedes?6:0));
@@ -141,12 +143,13 @@
  // snapshots deliberately retain the original pacing.
  function fuzzyPacing(d,st,record){
   const policy=st.authoredDialogue?.fuzzy;
-  if(policy?.v!==1||policy.pacing!==1||!formatFor(d)||st.core.case||st.core.claim?.hasEvidence||st.arc||st.speaker)return null;
-  return root.OfficePromoFuzzy?.pacing(policy,d,{meter:st.meter,feudHeat:st.core.feudHeat,pace:formatFor(d).pace,
+  if(policy?.v!==1||policy.pacing!==1||!formatFor(d)||st.core.case||st.core.claim?.hasEvidence||st.arc||(st.speaker&&!mouthFuzzy(st)))return null;
+  const audience=policy.crowd===1?Object.fromEntries(['w','f'].map(side=>[side,root.OfficePromoFuzzy?.heard(policy,side,st.round-1)])):null;
+  return root.OfficePromoFuzzy?.pacing(policy,d,{meter:st.meter,feudHeat:st.core.feudHeat,pace:formatFor(d).pace,audience,
    personal:record.id==='personal'||record.id==='accusation',calming:record.id==='calm'||record.id==='confession',landed:record.landed})||null;
  }
  function spontaneous(d,st,record){
-  if(d.v!==2||!formatFor(d)||d.event||record.round!=='answer'||st.core.case||st.arc||st.speaker||!d.lastOpponent||!d.lastPlayer)return null;
+  if(d.v!==2||!formatFor(d)||d.event||record.round!=='answer'||st.core.case||st.arc||(st.speaker&&!mouthFuzzy(st))||!d.lastOpponent||!d.lastPlayer)return null;
   const b=d.opponent,a=d.player,personal=record.id==='personal'||record.id==='accusation';
   const pacing=fuzzyPacing(d,st,record);
   if(pacing){
@@ -160,7 +163,7 @@
      interrupt:{actor:b.id,line:'{F} raises the microphone before the interviewer can speak.',follow:true,reason:'the opponent interrupts the handover'},
      escalate:{actor:b.id,line:'{F} grips the microphone and gestures for another chance to answer.',follow:true,reason:'the opponent wants to keep the argument going'},
      refusal:{actor:b.id,line:'{F} lowers the microphone and shakes their head at the interviewer.',follow:false,reason:'the opponent declines another exchange'},
-     pause:{actor:pacing.pauseSide==='w'?a.id:b.id,line:'Neither wrestler speaks for a moment. The interviewer lets the silence settle.',follow:false,reason:'the exchange has reached a pause'},
+     pause:{actor:pacing.pauseSide==='w'?a.id:b.id,line:'Neither speaker says anything for a moment. The interviewer lets the silence settle.',follow:false,reason:'the exchange has reached a pause'},
      defuse:{actor:b.id,line:'{F} lowers the microphone and gives the interviewer room to continue.',follow:false,reason:'the tension has eased'}
     }[kind];
     return {kind,...event};
@@ -179,7 +182,7 @@
  function route(d,st,record){
   if(st.core.case?.exposed)return {follow:true,reason:'the opponent has challenged the evidence'};
   if(st.core.case?.commit)return {follow:true,reason:'there is an unresolved public commitment'};
-  if(d.v===2&&d.event&&!st.core.case&&!st.arc&&!st.speaker)return {follow:d.event.follow,reason:d.event.reason};
+  if(d.v===2&&d.event&&!st.core.case&&!st.arc&&(!st.speaker||mouthFuzzy(st)))return {follow:d.event.follow,reason:d.event.reason};
   // Acknowledging an argument or reaching a firm impasse can lead straight to
   // the final word. A volatile exchange can earn one additional beat, never a loop.
   const a=d.player,b=d.opponent;
