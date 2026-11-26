@@ -241,31 +241,56 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  assert.match(memory.professionalSummary(memory.professionalContext(G.S,w.id,f.id)),/agreed finish was broken/);
  console.log('PASS MP12: isolated 200-identity cohort distribution, deterministic production rookie previews, and factual player-facing professional memory.');
 
-// MP13C: opening preference is opt-in, side-effect-free and operates
-// only on existing legal candidate transitions into the actual entry.
+// MP13C: require an actual positive fixture instead of silently skipping.
+// Find a legal prep transition in the real weighted graph pool and an
+// authored signed two-step chain starting at its resulting coarse state.
+const openingGraph=E.GRAPH,openingBase=copy(original);
 const openingMatch=E.create({w:{...w,fatigue:0,flags:{}},f,p,slot:'main',minutes:12,finish:c.finish,feudHeat:0,plan:{game:'story',leash:'script',talk:'none'},seed:800413,preparation:{},flags:{},sheet:copy(sheet),structureExecution:true,sequenceOpeningVersion:1});
 openingMatch.stage='live';openingMatch.t=60;
-const openingPlan=openingMatch.sheet.structurePlan.objectives[0].sequence;
-const openingGraph=E.GRAPH;
 let openingCase=null;
-// Find a real reversal/standing recovery that leads to the signed entry.
-// A synthetic pool is used ONLY to isolate the eligibility predicate;
-// production supplies its actual already-filtered weighted move pool.
-for(const side of ['w','f'])for(const position of ['standing','mat','corner']){
- const down=position==='mat'?(side==='w'?'f':'w'):null;
- Object.assign(openingMatch.story,{control:side,position,down});openingGraph.resetPhysical(openingMatch);
- const pool=Object.keys(A).filter(id=>openingGraph.isValid(openingMatch,id)).map(id=>[id,1]);
- const pre={control:side,position,down},offer=S.DIRECTOR.sequenceOpening(openingMatch,pre,pool);
- if(offer){openingCase={pre,pool,offer};break;}
+const nonhazard=id=>{const n=A[id];return n&&!n.risk&&!n.counterOf&&!n.blockOf&&!n.nearfall&&n.family!=='pin'&&!['finish_tease','finish_counter','early_cover','cover','near_kickout','counter_rollup'].includes(id);};
+const opposite=side=>side==='w'?'f':'w';
+const exit=(n,pre)=>{const performer=n.reverse?opposite(pre.control):pre.control;return {control:performer,position:n.zone,down:n.down==='d'?(n.reverse?pre.control:opposite(pre.control)):n.down==='a'?performer:null};};
+const stateEq=(x,y)=>x.control===y.control&&x.position===y.position&&x.down===y.down;
+const template=openingBase.structurePlan.objectives[0];
+openingMatch.t=Math.ceil(openingMatch.len*(template.window[0]+template.window[1])/2/10)*10;
+search:for(const side of ['w','f'])for(const position of ['standing','mat','corner']){
+ for(const down of position==='mat'?['w','f']:[null]){
+  const pre={control:side,position,down};
+  Object.assign(openingMatch.story,pre);openingGraph.resetPhysical(openingMatch);
+  const pool=openingGraph.pool(openingMatch);
+  for(const [prep,weight] of pool){
+   if(!nonhazard(prep)||!(weight>0)||openingGraph.costOf(prep)>1.8)continue;
+   const start=exit(A[prep],pre);if(stateEq(pre,start))continue;
+   for(const one of links(prep).filter(nonhazard)){
+    if(!['any',start.position].includes(A[one].requires))continue;
+    const midState=exit(A[one],start);
+    for(const two of links(one).filter(nonhazard)){
+     if(new Set([prep,one,two]).size!==3||!['any',midState.position].includes(A[two].requires))continue;
+     const end=exit(A[two],midState);
+     if(!S.DIRECTOR.compatibleCall(template,two,end.control))continue;
+     const signed=copy(openingBase),obj=signed.structurePlan.objectives[0];
+     obj.call={action:two,owner:end.control,proposedBy:end.control,label:A[two].name||two,source:'negotiated',chosen:true,backups:[]};
+     obj.commitment='landmark';obj.sequence={version:1,mode:'conditional',start,actions:[one,two]};signed.structurePlan.version=2;
+     if(S.STRUCTURES.readPlan(signed).mode!=='editorial')continue;
+     openingMatch.o.sheet=copy(signed);openingMatch.sheet=copy(signed);S.DIRECTOR.init(openingMatch);
+     const livePool=openingGraph.pool(openingMatch),offer=S.DIRECTOR.sequenceOpening(openingMatch,pre,livePool);
+     if(offer?.ids.includes(prep)){openingCase={pre,pool:livePool,offer,prep,seq:obj.sequence};break search;}
+    }
+   }
+  }
+ }
 }
-if(openingCase){
- const {pre,pool,offer}=openingCase;Object.assign(openingMatch.story,pre);openingGraph.resetPhysical(openingMatch);
+assert.ok(openingCase,'a genuine legal weighted-pool preparation into an authored signed sequence must exist');
+{
+ const {pre,pool,offer,prep,seq}=openingCase;
  const before=JSON.stringify(openingMatch),rng=openingMatch.r.getState();
  eq(S.DIRECTOR.sequenceOpening(openingMatch,pre,pool),offer);
  assert.equal(JSON.stringify(openingMatch),before);assert.equal(openingMatch.r.getState(),rng);
- assert.ok(offer.ids.every(id=>pool.some(x=>x[0]===id)&&openingGraph.isValid(openingMatch,id)&&!A[id].risk&&A[id].next.some(([to,weight])=>to===openingPlan.actions[0]&&weight>0)));
+ assert.ok(offer.ids.every(id=>pool.some(x=>x[0]===id)&&openingGraph.isValid(openingMatch,id)&&!A[id].risk&&A[id].next.some(([to,weight])=>to===seq.actions[0]&&weight>0)));
+ assert.ok(offer.ids.includes(prep));
  assert.equal(S.DIRECTOR.sequenceOpening(openingMatch,pre,[]),null);
  openingMatch.o.sequenceOpeningVersion=undefined;assert.equal(S.DIRECTOR.sequenceOpening(openingMatch,pre,pool),null);
  openingMatch.o.sequenceOpeningVersion=1;openingMatch.t=openingMatch.len-30;assert.equal(S.DIRECTOR.sequenceOpening(openingMatch,pre,pool),null);
+ console.log('PASS MP13C mandatory real-pool opening fixture: '+prep+' -> '+seq.actions.join(' -> '));
 }
-console.log('PASS MP13C opening preference: real existing graph candidates only, opt-in, no forced transitions; fixture available '+Boolean(openingCase));
