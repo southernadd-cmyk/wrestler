@@ -1277,6 +1277,12 @@
     reason:x.b.risk&&st.game==='safe'?'risk':
      x.alt&&supportsFinish(st,route,x.alt)&&!supportsFinish(st,route,x.b)?'finish_support':'pacing',
     decision:null};
+   // Freeze the reactions at opening: preview, choice and reload agree.
+   if(st.planningEvidence&&root.OfficePlanningFuzzy){
+    const F=root.OfficePlanningFuzzy;
+    const reactions=F.huddleReaction(F.behaviour(st.planningEvidence,st,x.owner),F.behaviour(st.planningEvidence,st,other(x.owner)));
+    if(reactions)st.structureTalk.reactions=reactions;
+   }
    const read=structureRead(st),v=STRUCTURE_VOICES[voice(who(st,x.owner))]||STRUCTURE_VOICES.stoic;
    log(st,'agent',read.label+' means '+read.focus+'. '+read.advice+' The promoter has already booked '+(D.FINISHES[st.finish]?.name||st.finish)+'.');
    log(st,x.owner,'“'+v.replace('{move}',x.b.label.toLowerCase()).replace('{goal}',x.obj.title.toLowerCase())+'”','objection');
@@ -1295,30 +1301,38 @@
   options(st){
    const t=st.structureTalk;if(!t)return [];
    const side=t.by,name=nameOf(st,side),opp=nameOf(st,other(side)),a=t.alternative;
+   const legacy={keep:{requester:-2,partner:0},revise:{requester:2,partner:-1},open:{requester:3,partner:-2}};
+   // Old in-progress saves have no reactions. Preserve their exact policy.
+   const valid=(r,lo,hi,partnerMin)=>r&&Number.isInteger(r.requester)&&r.requester>=lo&&r.requester<=hi&&Number.isInteger(r.partner)&&r.partner>=partnerMin&&r.partner<=0;
+   const r=t.reactions;
+   const reactions=r?.v===1&&valid(r.keep,-5,-1,0)&&valid(r.revise,1,4,-3)&&valid(r.open,1,5,-4)?r:legacy;
+   const dynamic=reactions!==legacy;
+   const describe=(k,original)=>dynamic?name+' '+(reactions[k].requester>0?'+':'')+reactions[k].requester+' mood; '+opp+' '+(reactions[k].partner===0?'unchanged':reactions[k].partner+' mood')+'.':original;
+   const applyReaction=k=>{st.mood[side]+=reactions[k].requester;st.mood[other(side)]+=reactions[k].partner;};
    const out=[{id:'keep',label:'“Keep the '+t.original.label+'.”',
-    hint:'Preserve the named call and finish; '+name+' loses 2 consent for being overruled.',
+    hint:'Preserve the named call and finish; '+describe('keep',name+' loses 2 consent for being overruled.'),
     tags:[name+' ▼','Keeps original call'],
     run(st){
-     st.mood[side]-=2;t.decision='keep';
+     applyReaction('keep');t.decision='keep';
      log(st,side,'“Fine. But I wanted it noted.”','objection');
      log(st,'agent','Kept the call; the reservation remains on the record.');
     }}];
    if(a)out.push({id:'revise',label:'“Use the '+a.label+' instead.”',
-    hint:'One legal move replaces another for the same wrestler. '+name+' +2 consent; '+opp+' −1 for readjusting.',
-    tags:[name+' ▲',opp+' ▼','Changes named call'],
+    hint:'One legal move replaces another for the same wrestler. '+describe('revise',name+' +2 consent; '+opp+' −1 for readjusting.'),
+    tags:[name+' ▲',...(reactions.revise.partner<0?[opp+' ▼']:[]),'Changes named call'],
     run(st){
      st.structureBoard[t.objective]={...a,chosen:true,open:false,source:'negotiated'};
-     st.mood[side]+=2;st.mood[other(side)]-=1;t.decision='revise';
+     applyReaction('revise');t.decision='revise';
      log(st,side,'“That move I can work.”');
      log(st,'agent','Revised '+t.title+'; the dramatic objective and booked finish still stand.');
     }});
    out.push({id:'open',label:'“Call this objective in the ring.”',
-    hint:'Removes the named commitment, not the objective. '+name+' +3 consent; '+opp+' −2 for uncertainty.',
-    tags:[name+' ▲',opp+' ▼','No promised move'],
+    hint:'Removes the named commitment, not the objective. '+describe('open',name+' +3 consent; '+opp+' −2 for uncertainty.'),
+    tags:[name+' ▲',...(reactions.open.partner<0?[opp+' ▼']:[]),'No promised move'],
     run(st){
      st.structureBoard[t.objective]={owner:side,action:null,label:'Call this objective in the ring',
       by:'agent',chosen:true,open:true,source:'open'};
-     st.mood[side]+=3;st.mood[other(side)]-=2;t.decision='open';
+     applyReaction('open');t.decision='open';
      log(st,side,'“Good. I will find the opening when it comes.”');
      log(st,'agent','The objective remains, but no one has promised the move will land.');
     }});
@@ -1765,6 +1779,7 @@
   if(opts.structurePlanning===true){
    if(!st.structure)throw Error('Structure planning requires a valid structure selection');
    st.structurePlanning=true;
+   if(opts.planningCareer&&root.OfficePlanningFuzzy)st.planningEvidence=root.OfficePlanningFuzzy.capture(st,w,f,opts.planningCareer);
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
   st.queue=draw(st,p,opts.recent||[]);

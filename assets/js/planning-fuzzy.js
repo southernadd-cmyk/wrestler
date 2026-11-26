@@ -1,6 +1,5 @@
 /* THE OFFICE — MP3C: planning domain membership, evidence and behaviour.
-   Reuse the shared Sugeno kernel and canonical worker axes. This module
-   is not loaded by the live room yet; no decisions or saves change. */
+   Reuse the shared Sugeno kernel and canonical worker axes. The live structure huddle uses bounded reactions for opted-in new meetings. */
 (function(root){'use strict';
  const K=root.OfficePsychology;
  if(!K)throw Error('Planning fuzzy requires OfficePsychology');
@@ -166,5 +165,18 @@
   const inference=behaviourModel.evaluate(observation.values,cues);
   return {v:1,observation,cues,scores:inference.scores,fired:inference.fired};
  }
- root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel});
+ // MP4A: bounded reaction deltas, never permissions or option selection.
+ // Inputs are the two independent fuzzy profiles at the huddle opening.
+ function huddleReaction(requester,partner){
+  const a=requester?.scores,b=partner?.scores;
+  const valid=(v,keys)=>v&&keys.every(k=>Number.isFinite(v[k])&&v[k]>=0&&v[k]<=100);
+  if(!valid(a,['assertiveness','protectiveness','flexibility','cooperation'])||
+     !valid(b,['flexibility','improvisation','caution']))return null;
+  const limit=(n,lo,hi)=>Math.min(hi,Math.max(lo,Math.round(n)));
+  return {v:1,
+   keep:{requester:-limit(2+(a.assertiveness-50)/35+(a.protectiveness-50)/30,1,5),partner:0},
+   revise:{requester:limit(2+(a.cooperation-50)/30+(a.flexibility-50)/40,1,4),partner:-limit(1+(50-b.flexibility)/30,0,3)},
+   open:{requester:limit(3+(a.flexibility-50)/35,1,5),partner:-limit(2+(50-b.improvisation)/35+(b.caution-50)/50,0,4)}};
+ }
+ root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction});
 })(typeof window!=='undefined'?window:globalThis);
