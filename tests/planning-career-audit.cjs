@@ -9,6 +9,17 @@ const inc=(o,k,n=1)=>o[k]=(o[k]||0)+n;
 const range=(x,lo=0,hi=100)=>Number.isFinite(x)&&x>=lo&&x<=hi;
 const pick=(xs,n)=>xs[((n%xs.length)+xs.length)%xs.length];
 const avg=xs=>xs.length?Math.round(xs.reduce((a,b)=>a+b,0)/xs.length*1000)/1000:null;
+function openingDiagnostics(rows){
+ const totals={},groups={};
+ for(const row of rows){
+  for(const [k,n] of Object.entries(row.counts))inc(totals,k,n);
+  const key=row.structure+'|'+row.entry,group=groups[key]??={sequences:0,complete:0,missed:0,noOpening:0,counts:{},firstMoves:{}};
+  group.sequences++;inc(group,row.status==='completed'||row.status==='adapted'?'complete':'missed');if(!row.attempts)group.noOpening++;
+  inc(group.firstMoves,row.first);
+  for(const [k,n] of Object.entries(row.counts))inc(group.counts,k,n);
+ }
+ return {totals,groups};
+}
 function summarise(rows){
  const sum=k=>rows.reduce((a,r)=>a+(r[k]||0),0);
  const frequencies=k=>rows.reduce((o,r)=>(inc(o,String(r[k]??'unknown')),o),{});
@@ -24,7 +35,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],openingComparisons=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],openingComparisons=[],openingTraces=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -102,6 +113,45 @@ function run(seeds=[3,10],weeks=32){
    const immutable=copy(sheet.structurePlan),callIds=Object.keys(E.CALLS).filter(x=>!['home'].includes(x));
    function drive(active,resume,settings=options){
     let M=E.create({...copy(settings),livePsychologyVersion:active?1:undefined}),matchResume=0,liveScores=[],calls=0;
+    const director=S.DIRECTOR,realOffer=director.sequenceOffer,realOpening=director.sequenceOpening;
+    const traced=new Map(),traceEnabled=settings.structureExecution&&settings.sequenceOpeningVersion===1;
+    const graph=E.GRAPH;
+    function trace(m,pre,result){
+     // sequenceOffer is called from arc progression, candidate selection and
+     // real landing observation. Deduplicate same tick+state+pending status.
+     for(const row of m.structureDirector?.sequences||[]){
+      const o=m.sheet.structurePlan.objectives.find(x=>x.id===row.objective),seq=o?.sequence;
+      if(!seq||row.status!=='pending'||row.progress||row.attempts>=3)continue;
+      let diag=traced.get(row.objective);
+      if(!diag){diag={structure:choice.id,objective:row.objective,entry:seq.start.control+'/'+seq.start.position+'/'+seq.start.down,first:seq.actions[0],length:seq.actions.length,counts:{},seen:new Set()};traced.set(row.objective,diag);}
+      const pending=!!(m.graph.pendingAerial||m.graph.pendingGrapple||m.graph.pendingStrike||m.graph.pendingContact);
+      const k=[m.t,m.len,pre.control,pre.position,pre.down,m.graph.node,pending,row.attempts].join('|');
+      if(diag.seen.has(k))continue;diag.seen.add(k);
+      const count=key=>inc(diag.counts,key);
+      const frac=m.t/Math.max(1,m.len);
+      if(frac<o.window[0]-.04||frac>o.window[1]+.08)continue;
+      count('windowObserved');
+      if(m.outcome!=='booked'||m.len-m.t<Math.max(45,seq.actions.length*20+25)||frac>=.91||m.bigSpotRequest||m.workingHurt||m.shortened){count('runwayOrSafety');continue;}
+      if(o.requires.some(id=>m.structureDirector.objectives.some(s=>s.id===id&&s.status==='pending'))){count('prerequisitePending');continue;}
+      if(pending){count('pendingAttack');continue;}
+      count('eligibleTick');
+      const same=pre.control===seq.start.control&&pre.position===seq.start.position&&pre.down===seq.start.down;
+      if(!same){
+       if(pre.control!==seq.start.control)count('wrongControl');
+       if(pre.position!==seq.start.position||pre.down!==seq.start.down)count('wrongPosition');
+       continue;
+      }
+      count('exactEntry');
+      if(!graph.isValid(m,seq.actions[0]))count('firstMoveIllegal');
+      else if(result?.objective===row.objective&&!result.continuation)count('firstMoveOffered');
+      else count('legalButNotOffered');
+     }
+    }
+    if(traceEnabled){
+     director.sequenceOffer=function(m,pre){const result=realOffer(m,pre);trace(m,pre,result);return result;};
+     director.sequenceOpening=function(m,pre,pool){const result=realOpening(m,pre,pool);if(result&&traced.has(result.objective))inc(traced.get(result.objective).counts,'prepOffers');return result;};
+    }
+    try{
     for(let n=0;n<10000&&!M.done;n++){
      if(M.decision&&!M.queue.length){const opts=M.decision.options;E.resolve(M,pick(opts,i+seed+calls).id);}
      if(M.stage==='live'&&!M.decision&&calls<2&&M.t>=M.len*(calls?.65:.3)){
@@ -123,7 +173,9 @@ function run(seeds=[3,10],weeks=32){
     assert.equal(M.o.finish,c.finish,key+' booked finish unchanged');
     if(settings.structureExecution)assert.equal(M.final.structure.id,choice.id);else assert.equal(M.final.structure,undefined);
     assert.ok(range(M.final.stars,0,5)&&range(M.final.crowd));
+    if(traceEnabled)for(const row of M.final.structure.sequences||[]){const diag=traced.get(row.objective);if(diag){const {seen,...rest}=diag;openingTraces.push({...rest,status:row.status,attempts:row.attempts,causes:row.causes||{}});}}
     return {M,fin:M.final,matchResume,liveScores};
+    }finally{if(traceEnabled){director.sequenceOffer=realOffer;director.sequenceOpening=realOpening;}}
    }
    const actual=drive(true,i%5===0);
    const {M,fin,matchResume,liveScores}=actual,report=fin.structure;
@@ -188,7 +240,7 @@ function run(seeds=[3,10],weeks=32){
  }
  const groups=key=>Object.fromEntries([...new Set(rows.map(r=>r[key]))].map(k=>[k,summarise(rows.filter(r=>r[key]===k))]));
  return {schema:'office-mp13-career-audit-v1',seeds,weeks,careers,overall:summarise(rows),byStructure:groups('structure'),byApproach:groups('approach'),byCohort:groups('academy'),
-  matchedLive:{pairs:comparisons.length,meanStarDelta:avg(comparisons.map(x=>x.starDelta)),meanCrowdDelta:avg(comparisons.map(x=>x.crowdDelta)),meanIgnoredDelta:avg(comparisons.map(x=>x.ignoredDelta)),changedOutcomes:comparisons.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons},matchedTraditional:{pairs:traditional.length,meanStructuredStars:avg(traditional.map(x=>x.structuredStars)),meanTraditionalStars:avg(traditional.map(x=>x.traditionalStars)),meanStarDelta:avg(traditional.map(x=>x.starDelta)),meanCrowdDelta:avg(traditional.map(x=>x.crowdDelta)),changedOutcomes:traditional.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons:traditional},matchedOpenings:{pairs:openingComparisons.length,completedBefore:openingComparisons.reduce((n,x)=>n+x.before.completed,0),completedAfter:openingComparisons.reduce((n,x)=>n+x.after.completed,0),noOpeningBefore:openingComparisons.reduce((n,x)=>n+x.before.noOpening,0),noOpeningAfter:openingComparisons.reduce((n,x)=>n+x.after.noOpening,0),meanStarDelta:avg(openingComparisons.map(x=>x.after.stars-x.before.stars)),injuryDelta:openingComparisons.reduce((n,x)=>n+x.after.injury-x.before.injury,0),changedOutcomes:openingComparisons.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:openingComparisons},rows};
+  matchedLive:{pairs:comparisons.length,meanStarDelta:avg(comparisons.map(x=>x.starDelta)),meanCrowdDelta:avg(comparisons.map(x=>x.crowdDelta)),meanIgnoredDelta:avg(comparisons.map(x=>x.ignoredDelta)),changedOutcomes:comparisons.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons},matchedTraditional:{pairs:traditional.length,meanStructuredStars:avg(traditional.map(x=>x.structuredStars)),meanTraditionalStars:avg(traditional.map(x=>x.traditionalStars)),meanStarDelta:avg(traditional.map(x=>x.starDelta)),meanCrowdDelta:avg(traditional.map(x=>x.crowdDelta)),changedOutcomes:traditional.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons:traditional},openingDiagnostics:openingDiagnostics(openingTraces),matchedOpenings:{pairs:openingComparisons.length,completedBefore:openingComparisons.reduce((n,x)=>n+x.before.completed,0),completedAfter:openingComparisons.reduce((n,x)=>n+x.after.completed,0),noOpeningBefore:openingComparisons.reduce((n,x)=>n+x.before.noOpening,0),noOpeningAfter:openingComparisons.reduce((n,x)=>n+x.after.noOpening,0),meanStarDelta:avg(openingComparisons.map(x=>x.after.stars-x.before.stars)),injuryDelta:openingComparisons.reduce((n,x)=>n+x.after.injury-x.before.injury,0),changedOutcomes:openingComparisons.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:openingComparisons},rows};
 }
 module.exports={run};
 if(require.main===module){const seeds=(process.argv[2]||'3,10,24,41').split(',').map(Number),weeks=Number(process.argv[3]||48);console.log(JSON.stringify(run(seeds,weeks),null,2));}
