@@ -501,13 +501,45 @@
   ...family('feasibility','runway',[10,55,95],3),
   ...family('feasibility','physicalReadiness',[10,55,95],3)
  ]});
+ function continuationGrip(steps){
+  const graph=root.OfficeMatch?.GRAPH;if(!graph||!steps?.length)return {possible:false,index:0};
+  let grip=null;
+  for(let i=0;i<steps.length;i++){
+   const step=steps[i],n=graph.A[step.action],need=graph.PHYSICAL_GRIP_MOVES[step.action],side=step.entry?.control;
+   if(!n)return {possible:false,index:i};
+   if(need){
+    if(i===0)grip={type:need,side,age:0};
+    if(!grip||grip.type!==need||grip.side!==side||grip.age>20)return {possible:false,index:i,required:need,available:grip?.type||null};
+   }
+   if(n.reverse){grip=null;continue;}
+   const type=graph.GRIP_ENTRY[step.action];
+   if(type)grip={type,side,age:0};
+   else if(grip&&grip.side===side&&['ground-leg','ground-arm','ground-head','ground-back'].includes(grip.type)&&
+     n.zone==='mat'&&['mat_hold','target_hold'].includes(step.action)&&grip.age+graph.sequenceMoveSeconds(step.action)<=20)
+    grip={...grip,age:grip.age+graph.sequenceMoveSeconds(step.action)};
+   else grip=null;
+  }
+  return {possible:true};
+ }
+ // Earliest realistic opening: every subsequent move must be eligible
+ // by its earliest selection tick, not merely somewhere in the objective.
+ function continuationSchedule(steps,seconds){
+  const graph=root.OfficeMatch.GRAPH;let offset=0,start=0;
+  for(const step of steps){
+   start=Math.max(start,Math.max(0,(graph.A[step.action].after||0)*seconds-offset));
+   offset+=graph.sequenceMoveSeconds(step.action);
+  }
+  return {start,duration:offset};
+ }
  function sequenceFeasibility(room,objective,evidence){
   const graph=root.OfficeMatch?.GRAPH,steps=evidence?.steps;
   if(!graph||!objective||!steps?.length)return null;
   const seconds=Math.max(5,room.minutes+(room.fx?.minutes||0))*60;
   const duration=steps.reduce((n,x)=>n+graph.sequenceMoveSeconds(x.action),0);
   const end=Math.min(objective.window[1]+.08,.91,1-Math.max(45,duration+25)/seconds);
-  const start=Math.max(0,objective.window[0]-.04,...steps.map(x=>graph.A[x.action].after||0));
+  const strict=room.planningContinuationVersion===1;
+  const schedule=strict?continuationSchedule(steps,seconds):null;
+  const start=Math.max(0,objective.window[0]-.04,...(strict?[schedule.start/seconds]:steps.map(x=>graph.A[x.action].after||0)));
   const prior=room.structure?.objectives?.find(x=>objective.requires.includes(x.id));
   // The midpoint is a conservative scheduling estimate, not an assertion
   // that the earlier objective will be delivered by then.
@@ -523,8 +555,27 @@
   if(position==='top'||position==='outside')physicalReadiness-=18;
   const values={entryAccess:({standing:95,mat:48,corner:24,top:12,outside:12})[position]??10,
    runway:Math.min(100,slack/Math.max(1,duration)*32),physicalReadiness:Math.max(0,physicalReadiness)};
+  // Stamina is a planning prior, not a promised live value. Estimate
+  // capacity at the earliest sensible opening and penalise expensive
+  // chains, especially late in a long bout. Never reject on this estimate.
+  if(strict){
+   const energy={w:Math.max(0,100-(room.w?.fatigue||0)*.7),f:92};
+   const elapsed=Math.max(start,expectedStart)*seconds/10;
+   const drain=root.OfficeData?.PLANS?.[room.game]?.drain||1;
+   energy.w-=elapsed*.55*drain*(1+(room.w?.fatigue||0)/250);
+   energy.f-=elapsed*.5*drain;
+   let margin=100;
+   for(const step of steps){
+    const side=step.entry.control,performer=step.performer,cost=graph.costOf(step.action);
+    if(cost>=2.2)margin=Math.min(margin,energy[side]-(16+cost*3.2));
+    energy[performer]-=Math.max(0,cost);
+    for(const k of ['w','f'])energy[k]-=graph.sequenceMoveSeconds(step.action)/10*.55*drain;
+   }
+   values.physicalReadiness=Math.max(0,values.physicalReadiness-Math.max(0,25-margin)*1.2);
+   values.runway=Math.min(values.runway,Math.max(0,100*(end-start)/Math.max(.04,end-(objective.window[0]-.04))));
+  }
   const scores=sequenceFeasibilityModel.evaluate(values,{}).scores;
-  return {v:1,values,scores,duration,slack,possible:end>=start};
+  return {v:1,values,scores,duration,slack,possible:end>=start&&(!strict||continuationGrip(steps).possible),...(strict?{earliestStart:start,latestStart:end}: {})};
  }
- root.OfficePlanningFuzzy=Object.freeze({sequenceFeasibility,sequenceFeasibilityModel,sequencePreference,sequencePreferenceModel,version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty,proposalReply,huddleProposal,readHuddleProposal});
+ root.OfficePlanningFuzzy=Object.freeze({continuationGrip,continuationSchedule,sequenceFeasibility,sequenceFeasibilityModel,sequencePreference,sequencePreferenceModel,version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty,proposalReply,huddleProposal,readHuddleProposal});
 })(typeof window!=='undefined'?window:globalThis);
