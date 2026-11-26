@@ -283,12 +283,17 @@ function summariseOpenings(records){
  const combinations={};for(const {v} of details){
   for(const g of new Set(v.ticks.filter(t=>t.candidates.some(c=>!c.guards.some(g=>['before_window','after_window','finish_runway','safety_or_manager_request','prerequisite_pending'].includes(g)))).flatMap(t=>t.candidates.filter(c=>!c.guards.some(g=>['before_window','after_window','finish_runway','safety_or_manager_request','prerequisite_pending'].includes(g))).flatMap(c=>c.guards))))inc(combinations,g);
  }
+ const readinessCases=details.filter(x=>x.firstEmpty==='chain_ready').map(({v})=>{
+  const viable=v.ticks.flatMap(t=>t.candidates.filter(c=>c.guards.length&&c.guards.every(g=>['chain_too_early','chain_stamina','other_readiness'].includes(g))).map(c=>({at:t.at,stamina:t.stamina,id:c.id,guards:c.guards})));
+  const types=[...new Set(viable.flatMap(c=>c.guards))].sort();
+  return {key:v.key,structure:v.structure,objective:v.objective,actions:v.actions,types,first:viable[0],last:viable.at(-1)};
+ });
  const byStructure=Object.fromEntries([...new Set(records.map(v=>v.structure))].map(k=>[k,{signed:records.filter(v=>v.structure===k).length,opened:opened.filter(v=>v.structure===k).length,missed:missed.filter(v=>v.structure===k).length,bottlenecks:count(details.filter(x=>x.v.structure===k),x=>x.firstEmpty)}]));
  return {signed:records.length,opened:opened.length,neverOpened:missed.length,withAlternatives:missed.filter(v=>v.alternatives).length,
   missedWithOffer:details.filter(x=>x.offered).length,missedWithNaturalLanding:missed.filter(v=>v.natural.length).length,
   missedWithMatchingNaturalLanding:missed.filter(v=>v.natural.some(x=>x.candidates.some(c=>!c.guards.includes('wrong_control')&&!c.guards.includes('wrong_position_or_down')))).length,
   protectedMisses:missed.filter(v=>v.final.protected).length,
-  funnel,firstEmptyStage:count(details,x=>x.firstEmpty),overlappingGuards:guards,guardsInsidePrerequisiteReadyWindow:combinations,byStructure,
+  funnel,firstEmptyStage:count(details,x=>x.firstEmpty),readinessBreakdown:count(readinessCases,x=>x.types.join('+')||'unclassified'),readinessExamples:readinessCases.slice(0,6),overlappingGuards:guards,guardsInsidePrerequisiteReadyWindow:combinations,byStructure,
   examples:details.filter((x,i,xs)=>xs.findIndex(y=>y.firstEmpty===x.firstEmpty)===i).map(x=>({key:x.v.key,objective:x.v.objective,actions:x.v.actions,stage:x.firstEmpty,offered:x.offered,ticks:x.v.ticks.length,natural:x.v.natural.slice(0,2)})),
   records};
 }
