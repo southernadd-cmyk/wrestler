@@ -1050,7 +1050,20 @@
      return {...JSON.parse(JSON.stringify(row)),...(receipt?{receipt}:{})};
     })}:{})};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,observeSequence};
+  // Presentation only: do not turn missing evidence or protected exits into blame.
+  function deliveryDebrief(row){
+   const r=row?.receipt, count=r?.witnessed?.length||0;
+   if(r?.v!==1||r.status!==row.status||!Array.isArray(r.planned)||!Array.isArray(r.witnessed))
+    return {label:'Unverified',tone:'',note:'No verified receipt is available. No delivery memory is inferred.'};
+   if(r.status==='completed')return {label:'Delivered as agreed',tone:'achieved',note:'All agreed moves were witnessed.'};
+   if(r.status==='adapted')return {label:'Delivered with adaptation',tone:'adapted',note:'An alternative move preserved the agreed final move.'};
+   if(r.status!=='missed')return {label:'Unverified',tone:'',note:'No terminal delivery is verified.'};
+   if(r.protectedExit)return {label:'Protected exit',tone:'',note:'The bout had a protected exit. Incomplete delivery is not negative evidence.'};
+   if(!count)return {label:r.attempts?'No verified landing':'No opening',tone:'',note:'No agreed sequence move was verified. This is not negative evidence.'};
+   if(r.interruptions>0)return {label:'Interrupted sequence',tone:'missed',note:'A verified prefix was interrupted. Future sequence proposals may reflect this shared experience, not personal blame.'};
+   return {label:'Incomplete sequence',tone:'',note:'Only part of the sequence was verified. No interruption-based negative evidence is inferred.'};
+  }
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,observeSequence,deliveryDebrief};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);

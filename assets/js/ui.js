@@ -1814,10 +1814,11 @@ function result(){
   '<p class="dim">Only moves performed in the ring count. There is no automatic bonus for following a structure.</p>'+structureAssessmentHtml+
   (structureReport.sequences?.length?'<h4>Negotiated sequences</h4><div class="well"><ol class="structure-result-list">'+structureReport.sequences.map(row=>{
    const objective=structurePlan?.find(o=>o.id===row.objective),name=id=>Mx.GRAPH.A[id]?.name||id.replace(/_/g,' ');
-   const planned=objective?.sequence?.actions||[],actual=row.receipt?.witnessed||[];
-   return '<li><b>'+esc(objective?.title||row.objective)+'</b> · <span class="structure-status s-'+esc(row.status==='completed'?'achieved':row.status)+'">'+esc(row.status)+'</span>'+
-    '<small>Agreed: '+esc(planned.map(name).join(' → '))+' · Witnessed: '+esc(actual.length?actual.map(e=>name(e.id)).join(' → '):'No verified chain')+'</small>'+
-    '<small>'+esc(row.reason||'')+'</small></li>';
+   const planned=row.receipt?.planned||objective?.sequence?.actions||[],actual=row.receipt?.witnessed||[];
+   const debrief=OfficeSheets.DIRECTOR.deliveryDebrief(row);
+   return '<li><b>'+esc(objective?.title||row.objective)+'</b> · <span class="structure-status'+(debrief.tone?' s-'+esc(debrief.tone):'')+'">'+esc(debrief.label)+'</span>'+
+    '<small>Agreed: '+esc(planned.map(name).join(' → ')||'Plan unavailable')+' · Witnessed: '+esc(actual.length?actual.map(e=>name(e.id)).join(' → '):'No verified landing')+'</small>'+
+    '<small>'+esc(debrief.note)+'</small></li>';
   }).join('')+'</ol></div>':'')+
   (finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+
   '<div class="well"><ol class="structure-result-list">'+structureReport.objectives.map((o,i)=>{

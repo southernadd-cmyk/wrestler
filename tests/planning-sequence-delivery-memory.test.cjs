@@ -80,3 +80,17 @@ assert.equal(cue(protectedCareer)['history.sequenceInterrupted'],undefined);
 m.sequenceDelivery[0].protectedExit=false;assert.equal(cue(protectedCareer)['history.sequenceInterrupted'],1);
 m.sequenceDelivery[0].witnessed=[];assert.equal(cue(protectedCareer)['history.sequenceInterrupted'],undefined);
 console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead of '+mid+') -> '+last+'; actual graph receipts, no fabricated witness, idempotent rivalry settlement, JSON persistence, both workers remember, protected/no-opening misses neutral.');
+
+ // MP9A: debrief labels reflect verified receipts, never raw director claims.
+ const describe=(status,patch={})=>S.DIRECTOR.deliveryDebrief({status,receipt:{...receipt,status,...patch}});
+ assert.equal(describe('adapted').label,'Delivered with adaptation');
+ assert.equal(describe('completed').label,'Delivered as agreed');
+ assert.equal(describe('missed',{witnessed:[],attempts:0}).label,'No opening');
+ assert.equal(describe('missed',{witnessed:[],attempts:1}).label,'No verified landing');
+ const prefix=receipt.witnessed.slice(0,1);
+ assert.equal(describe('missed',{witnessed:prefix,protectedExit:true,interruptions:1}).label,'Protected exit');
+ assert.equal(describe('missed',{witnessed:prefix,protectedExit:false,interruptions:1}).label,'Interrupted sequence');
+ assert.equal(describe('missed',{witnessed:prefix,protectedExit:false,interruptions:0}).label,'Incomplete sequence');
+ assert.equal(S.DIRECTOR.deliveryDebrief({status:'completed'}).label,'Unverified');
+ assert.equal(S.DIRECTOR.deliveryDebrief({status:'completed',receipt}).tone,'');
+ console.log('PASS MP9A: evidence-qualified sequence debrief, neutral protected and unopened outcomes, legacy missing receipts.');
