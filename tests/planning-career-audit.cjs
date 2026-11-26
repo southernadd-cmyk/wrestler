@@ -16,7 +16,7 @@ function summarise(rows){
   outcomes:frequencies('outcome'),injuries:sum('injury'),shortened:sum('shortened'),botches:sum('botches'),
   calls:sum('calls'),ignored:sum('ignored'),consent:avg(rows.map(r=>r.consent)),opponentConsent:avg(rows.map(r=>r.opponentConsent)),
   objectives:sum('objectives'),witnessed:sum('witnessed'),named:sum('named'),landed:sum('landed'),
-  sequences:sum('sequences'),exact:sum('exact'),adapted:sum('adapted'),missed:sum('missed'),
+  sequenceOffers:sum('sequenceOffer'),sequenceHeard:sum('sequenceHeard'),sequenceSelected:sum('sequenceSelected'),sequences:sum('sequences'),exact:sum('exact'),adapted:sum('adapted'),missed:sum('missed'),
   noReceipt:sum('noReceipt'),protected:sum('protected'),noOpening:sum('noOpening'),priorProfessional:sum('priorProfessional'),
   negotiation:frequencies('negotiation'),promoReconciliation:frequencies('reconciliation'),
   academyMatches:sum('academy'),planningResumes:sum('roomResume'),matchResumes:sum('matchResume'),
@@ -24,7 +24,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[];
+ const rows=[],careers=[],comparisons=[],traditional=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -42,7 +42,7 @@ function run(seeds=[3,10],weeks=32){
    assert.ok(st.planningEvidence&&st.planningDialogue&&st.planningSequenceSigning,key+' full planning policy active');
    const prior=st.planningEvidence.participants.w.relationship.professional;
    if(prior){assert.ok(range(prior.score));assert.ok(prior.entries.every(e=>e.cid!==c.id&&e.abs<c.eventAbs));}
-   const actions=[];let roomResume=0;
+   const actions=[];let roomResume=0,sequenceOffer=0;const sequencePolicy=i%3!==0;
    for(let n=0;n<60&&st.stage!=='done';n++){
     const options=R.options(st),take=id=>options.find(o=>o.id===id);
     assert.ok(options.length,key+' available room choice');
@@ -53,7 +53,12 @@ function run(seeds=[3,10],weeks=32){
      option=bad?take('objective_'+bad[0]+'_open'):take('board_ok');
     }else if(st.stage==='review')option=take('review_ok')||take('review_edit');
     else if(st.stage==='curtain')option=take('talk_none')||options[0];
-    else if(st.queue[st.at]==='structure_huddle')option=take(pick(['keep','revise','open'],i+seed))||take('open')||options[0];
+    else if(st.queue[st.at]==='structure_huddle'){
+     if(take('hear_sequence')||take('use_sequence'))sequenceOffer=1;
+     // A sequence-aware manager hears real offers before deciding. Rotate
+     // through sequence-first, counter-first and single-call policies.
+     option=(sequencePolicy&&(take('use_sequence')||(i%3===2&&take('hear_counter'))||take('hear_sequence')||take('hear_counter')))||take(pick(['keep','revise','open'],i+seed))||take('open')||options[0];
+    }
     else if(st.queue[st.at]==='structure_objection')option=take('replace')||take('open')||options[0];
     else option=pick(options,i+n+seed);
     assert.ok(option,key+' chosen room option');actions.push(option.id);
@@ -95,8 +100,8 @@ function run(seeds=[3,10],weeks=32){
    const trainingFatigue=['rest','promo'].includes(w.training)?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
    const options={w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p:G.P(c.pid),slot:c.slot,minutes:sheet.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo,plan:{game:sheet.game,leash:sheet.leash,talk:sheet.talk},preparation,flags:{...w.flags,...sheet.flags},memory:Mem.context(w.id,f.id),sheet,structureExecution:true,identity:G.normaliseIdentity(G.S.identity),seed:Math.floor(random()*2**31)||1};
    const immutable=copy(sheet.structurePlan),callIds=Object.keys(E.CALLS).filter(x=>!['home'].includes(x));
-   function drive(active,resume){
-    let M=E.create({...copy(options),livePsychologyVersion:active?1:undefined}),matchResume=0,liveScores=[],calls=0;
+   function drive(active,resume,settings=options){
+    let M=E.create({...copy(settings),livePsychologyVersion:active?1:undefined}),matchResume=0,liveScores=[],calls=0;
     for(let n=0;n<10000&&!M.done;n++){
      if(M.decision&&!M.queue.length){const opts=M.decision.options;E.resolve(M,pick(opts,i+seed+calls).id);}
      if(M.stage==='live'&&!M.decision&&calls<2&&M.t>=M.len*(calls?.65:.3)){
@@ -114,9 +119,9 @@ function run(seeds=[3,10],weeks=32){
      }else E.next(M);
     }
     assert.ok(M.done&&M.final,key+' completed real bout');
-    eq(M.o.sheet.structurePlan,immutable,key+' original agreement unchanged');
+    if(settings.structureExecution)eq(M.o.sheet.structurePlan,immutable,key+' original agreement unchanged');
     assert.equal(M.o.finish,c.finish,key+' booked finish unchanged');
-    assert.equal(M.final.structure.id,choice.id);
+    if(settings.structureExecution)assert.equal(M.final.structure.id,choice.id);else assert.equal(M.final.structure,undefined);
     assert.ok(range(M.final.stars,0,5)&&range(M.final.crowd));
     return {M,fin:M.final,matchResume,liveScores};
    }
@@ -126,18 +131,32 @@ function run(seeds=[3,10],weeks=32){
     const control=drive(false,false).fin;
     comparisons.push({key,structure:choice.id,approach,starDelta:fin.stars-control.stars,crowdDelta:fin.crowd-control.crowd,ignoredDelta:fin.ignored-control.ignored,injuryDelta:Number(!!fin.injury)-Number(!!control.injury),outcome:[control.outcome,fin.outcome],sameSeed:options.seed});
    }
+   // Same booking, wrestlers, promo result, approach and seed, but a
+   // separately negotiated traditional sheet. No counterfactual settles.
+   if(i%4===1){
+    const legacy=R.begin(c,w,f,G.P(c.pid),{recent:G.S.roomRecent||[],threads:R.liveThreads(G.S.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)});
+    for(let n=0;n<60&&legacy.stage!=='done';n++){
+     const opts=R.options(legacy),preferred={plan:'plan_'+approach,board:'board_ok',review:'review_ok',curtain:'talk_none'}[legacy.stage];
+     const selected=opts.find(o=>o.id===preferred)||pick(opts,i+n+seed);assert.ok(selected,key+' traditional choice');
+     R.act(legacy,selected.id);
+    }
+    assert.ok(legacy.sheet?.signed,key+' signed traditional sheet');
+    const ls=R.addVow(legacy.sheet,promo,w,f,c.finish);
+    const baseline=drive(false,false,{...options,sheet:ls,minutes:ls.minutes,plan:{game:ls.game,leash:ls.leash,talk:ls.talk},flags:{...w.flags,...ls.flags},structureExecution:false}).fin;
+    traditional.push({key,structure:choice.id,approach,structuredStars:fin.stars,traditionalStars:baseline.stars,starDelta:fin.stars-baseline.stars,crowdDelta:fin.crowd-baseline.crowd,outcome:[baseline.outcome,fin.outcome]});
+   }
    const sequences=report.sequences||[],receipts=sequences.map(s=>s.receipt).filter(Boolean);
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
     for(const e of r.witnessed)assert.ok(M.graph.events.some(ev=>ev.id===e.id&&ev.t===e.at),key+' actual graph receipt');
    }
    assert.ok(report.objectives.every(o=>o.status!=='pending'));
-   const spoken=st.log.filter(x=>x.text&&['w','f'].includes(x.who)).map(x=>x.who+'|'+x.text.toLowerCase());
+   const spoken=st.log.filter(x=>x.text&&['w','f'].includes(x.side)).map(x=>x.side+'|'+x.text.toLowerCase());
    rows.push({key,seed,week:c.eventAbs,wid:w.id,rid:f.id,structure:choice.id,approach,lead:choice.lead,
     stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome,injury:Number(!!fin.injury),shortened:Number(!!fin.shortened),botches:fin.botches,calls:fin.callsUsed.length,ignored:fin.ignored,
     consent:sheet.workerConsent,opponentConsent:sheet.opponentConsent,objectives:report.objectives.length,witnessed:report.objectives.filter(x=>['achieved','adapted'].includes(x.status)).length,
     named:fin.structureAssessment.planAdherence.namedCalls,landed:fin.structureAssessment.planAdherence.witnessedCalls,
-    sequences:sequences.length,exact:receipts.filter(r=>r.status==='completed').length,adapted:receipts.filter(r=>r.status==='adapted').length,missed:receipts.filter(r=>r.status==='missed').length,
+    sequenceOffer,sequenceHeard:Number(actions.includes('hear_sequence')),sequenceSelected:Number(actions.includes('use_sequence')),sequences:sequences.length,exact:receipts.filter(r=>r.status==='completed').length,adapted:receipts.filter(r=>r.status==='adapted').length,missed:receipts.filter(r=>r.status==='missed').length,
     protected:receipts.filter(r=>r.protectedExit).length,noOpening:receipts.filter(r=>r.status==='missed'&&!r.attempts).length,noReceipt:sequences.length-receipts.length,priorProfessional:Number(!!prior),negotiation:sheet.structureDiscussion?.decision||null,
     reconciliation:sheet.promoReconciliation?.status||null,academy:Number([w.id,f.id].some(id=>id.startsWith('academy-'))),
     roomResume,matchResume,promoResume,liveScores,spokenLines:spoken.length,repeatLines:spoken.length-new Set(spoken).size});
@@ -161,7 +180,7 @@ function run(seeds=[3,10],weeks=32){
  }
  const groups=key=>Object.fromEntries([...new Set(rows.map(r=>r[key]))].map(k=>[k,summarise(rows.filter(r=>r[key]===k))]));
  return {schema:'office-mp13-career-audit-v1',seeds,weeks,careers,overall:summarise(rows),byStructure:groups('structure'),byApproach:groups('approach'),byCohort:groups('academy'),
-  matchedLive:{pairs:comparisons.length,meanStarDelta:avg(comparisons.map(x=>x.starDelta)),meanCrowdDelta:avg(comparisons.map(x=>x.crowdDelta)),meanIgnoredDelta:avg(comparisons.map(x=>x.ignoredDelta)),changedOutcomes:comparisons.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons},rows};
+  matchedLive:{pairs:comparisons.length,meanStarDelta:avg(comparisons.map(x=>x.starDelta)),meanCrowdDelta:avg(comparisons.map(x=>x.crowdDelta)),meanIgnoredDelta:avg(comparisons.map(x=>x.ignoredDelta)),changedOutcomes:comparisons.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons},matchedTraditional:{pairs:traditional.length,meanStructuredStars:avg(traditional.map(x=>x.structuredStars)),meanTraditionalStars:avg(traditional.map(x=>x.traditionalStars)),meanStarDelta:avg(traditional.map(x=>x.starDelta)),meanCrowdDelta:avg(traditional.map(x=>x.crowdDelta)),changedOutcomes:traditional.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons:traditional},rows};
 }
 module.exports={run};
 if(require.main===module){const seeds=(process.argv[2]||'3,10,24,41').split(',').map(Number),weeks=Number(process.argv[3]||48);console.log(JSON.stringify(run(seeds,weeks),null,2));}
