@@ -111,6 +111,19 @@ for(const arm of Object.values(routine.arms)){
  assert.equal(arm.accepted,arm.witnessed+arm.botched+arm.refunded);
  assert.ok(arm.completed<=arm.opened&&arm.opened<=arm.signed);
 }
+// Fixed historical cohort: accept the demonstrated trade-off, but prevent
+// any further safety degradation or loss of the intended gameplay benefit.
+const original=routine.arms['1'],shipped=routine.arms['0.25'];
+assert.ok(shipped.completed>original.completed,'quarter rate improves signed sequence completion');
+assert.ok(shipped.staminaCases<original.staminaCases,'quarter rate reduces stamina-associated misses');
+assert.ok(shipped.zeroEnd<original.zeroEnd,'quarter rate reduces zero-stamina finishes');
+assert.ok(shipped.stars>=original.stars&&shipped.crowd>=original.crowd,'quality and crowd preserved');
+assert.equal(shipped.changedOutcomes,0,'no changed outcomes in fixed cohort');
+assert.ok(shipped.shortened<=original.shortened,'no additional shortened bouts');
+assert.ok(shipped.injury<=original.injury+2,'no further increase over observed injury trade-off');
+assert.ok(shipped.botches<=original.botches+13,'no further increase over observed botch trade-off');
+assert.ok(shipped.witnessed>=original.witnessed,'manager request delivery preserved');
+console.log('MP13F.14 PRODUCTION CANDIDATE '+JSON.stringify(shipped));
 for(const p of routine.comparisons)console.log('MP13F.13 ROUTINE CASE '+JSON.stringify(p));
 console.log('MP13F.13 ROUTINE SUMMARY '+JSON.stringify({...routine,comparisons:undefined}));
 const {routineDrainAudit,rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaExpenditureAudit,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
