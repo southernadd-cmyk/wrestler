@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const {run}=require('./planning-career-audit.cjs');
+const report=run([3,10],32);
+assert.ok(report.overall.matches>=24,'meaningful number of real booked matches: '+report.overall.matches);
+assert.ok(report.careers.every(c=>c.weeks>=16),'at least one season per career');
+assert.equal(Object.keys(report.byStructure).length,4);
+assert.equal(Object.keys(report.byApproach).length,5);
+assert.ok(report.overall.planningResumes>0&&report.overall.matchResumes>0&&report.matchedLive.pairs>0);
+assert.equal(report.overall.exact+report.overall.adapted+report.overall.missed+report.overall.noReceipt,report.overall.sequences);
+if(process.env.MP13_AUDIT_JSON)fs.writeFileSync(process.env.MP13_AUDIT_JSON,JSON.stringify(report,null,2));
+const {rows,matchedLive,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined}}));
+console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
