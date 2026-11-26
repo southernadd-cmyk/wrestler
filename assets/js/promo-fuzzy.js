@@ -115,11 +115,11 @@
  function selectionFacts(worker){
   return {values:K.workerInputs(worker),style:worker?.style||null};
  }
- function selectionScores(facts,participant,meter,side,feudHeat){
+ function selectionScores(facts,participant,meter,side,feudHeat,audience){
   if(!facts||!participant)return null;
   const values={...facts.values,irritation:participant.irritation,composure:participant.composure,
    rivalryHeat:feudHeat,momentum:Number.isFinite(meter)?clamp(50+(side==='w'?meter:-meter)/2):null};
-  return infer({grades:fuzzify(values)},participant.identity,facts.style).scores;
+  return infer({grades:fuzzify(values)},participant.identity,facts.style,{crowdSupport:Number.isFinite(audience)&&audience>=.6}).scores;
  }
  // A weak continuous bias (0.75..1.25), never a hard eligibility filter.
  // Categories are editorial metadata, not inferred sentiment from text.
@@ -142,7 +142,7 @@
  // personal vulnerabilities, crowd preferences or new career facts.
  function emotionStep(facts,participant,event={}){
   if(!facts||!participant||!Number.isFinite(participant.composure)||!Number.isFinite(participant.irritation))return null;
-  const scores=selectionScores(facts,participant,event.beforeMeter,event.side,event.feudHeat);
+  const scores=selectionScores(facts,participant,event.beforeMeter,event.side,event.feudHeat,event.audience);
   if(!scores||!['w','f'].includes(event.side)||!Number.isFinite(event.beforeMeter)||!Number.isFinite(event.afterMeter))return null;
   const unit=(n)=>Number.isFinite(n)?clamp(n)/100:.5;
   const drive=k=>unit(scores[k]);
@@ -150,7 +150,10 @@
   const recovery=.35+.35*pro+.3*psych;
   const reactivity=.55+.35*ego+.45*drive('defensiveness')+.25*drive('aggression');
   const oriented=(event.afterMeter-event.beforeMeter)*(event.side==='w'?1:-1);
-  const gain=Math.max(-1,Math.min(1,oriented/18));
+  const meterGain=Math.max(-1,Math.min(1,oriented/18));
+  // This is a blend of two observations, not a second award for the
+  // same applause. A speaker can land their line and still lose the meter.
+  const gain=Number.isFinite(event.audience)?.65*meterGain+.35*Math.max(-1,Math.min(1,event.audience)):meterGain;
   const success=event.spoke&&event.side==='w'&&typeof event.landed==='boolean'?(event.landed?1:-1):0;
   const targeted=event.side==='f'&&event.personal===true;
   const calming=event.calming===true;
@@ -177,8 +180,8 @@
  function pacing(facts,d,context={}){
   if(!facts?.w||!facts?.f||!d?.player||!d?.opponent||!Number.isFinite(context.meter))return null;
   const a=d.player,b=d.opponent;
-  const as=selectionScores(facts.w,a,context.meter,'w',context.feudHeat);
-  const bs=selectionScores(facts.f,b,context.meter,'f',context.feudHeat);
+  const as=selectionScores(facts.w,a,context.meter,'w',context.feudHeat,context.audience?.w);
+  const bs=selectionScores(facts.f,b,context.meter,'f',context.feudHeat,context.audience?.f);
   if(!as||!bs)return null;
   const unit=n=>Number.isFinite(n)?clamp(n)/100:.5;
   const get=(s,k)=>unit(s[k]);
@@ -202,10 +205,19 @@
   const total=Object.values(raw).reduce((n,x)=>n+x,0),factor=total>.55?.55/total:1;
   const events=Object.fromEntries(Object.entries(raw).map(([k,v])=>[k,v*factor]));
   const pressure=Math.max(heat(a)*get(as,'aggression'),heat(b)*ag);
-  const follow=Math.max(.08,Math.min(.82,.20+.28*balanced+.28*pressure
+  const audienceLift=context.audience?Math.max(0,context.audience.w??0,context.audience.f??0)*.08*Math.max(get(as,'showmanship'),get(bs,'showmanship')):0;
+  const follow=Math.max(.08,Math.min(.82,.20+.28*balanced+.28*pressure+audienceLift
    +(personal?.16:0)+(confrontation?.12:0)+(context.landed===false?.12:0)
    -(brief?.17:0)-(calm?.25:0)-.18*respect*cool(b)-.13*(reserved(a)?strain(a):0)));
   return {events,follow,pauseSide:strain(a)*get(as,'defensiveness')>strain(b)*de?'w':'f'};
  }
- root.OfficePromoFuzzy=Object.freeze({version:1,curves,membership,inputs,fuzzify,snapshot,outputs,rules,cues,infer,selectionFacts,selectionScores,categoryWeight,directWeight,emotionStep,pacing});
+ // F6: use only the audience response class already selected by the
+ // duel, not a sentiment classifier or a guess from the overall meter.
+ const audienceGrades=Object.freeze({roar:1,good:.65,flat:0,cool:-.55,dead:-1,hit:.85,miss:-.55});
+ function audienceGrade(band){return owns(audienceGrades,band)?audienceGrades[band]:null;}
+ function heard(policy,side,round){
+  const a=policy?.audience?.[side];
+  return a&&a.round===round?audienceGrade(a.band):null;
+ }
+ root.OfficePromoFuzzy=Object.freeze({version:1,curves,membership,inputs,fuzzify,snapshot,outputs,rules,cues,infer,selectionFacts,selectionScores,categoryWeight,directWeight,emotionStep,pacing,audienceGrade,heard});
 })(typeof window!=='undefined'?window:globalThis);

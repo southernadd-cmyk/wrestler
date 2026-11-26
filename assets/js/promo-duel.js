@@ -349,11 +349,15 @@
    }
   }
   if(opts.semantic&&Semantic&&st.authoredDialogue&&opts.directed){st.semantic={v:1,...(opts.formats?{variety:1,followupFlow:1,characterRebuttal:1,claimClassification:1}:{})};core.semanticSpeech=true;}
-  if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
+  // A mouthpiece candidate is a lightweight eligibility record. Only
+  // use the selected same-ID full profile for psychology, not the client's.
+  const f6=opts.fuzzyAudience===true&&opts.fuzzy===true&&opts.fuzzyEmotion===true&&opts.fuzzyPacing===true;
+  const mouthPsych=m&&f6&&opts.mouthProfile?.id===m.id?{...opts.mouthProfile,...m}:m;
+  if(opts.directed&&Director)st.director=Director.begin(w,f,mouthPsych,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   // Explicit live opt-in. Earlier scene snapshots and engine callers retain
   // exact prior behaviour. F3 is wording-only; no mouthpiece/arc changes.
-  if(opts.fuzzy===true&&opts.formats&&st.semantic&&st.director&&st.authoredDialogue&&!m&&!opts.arc&&root.OfficePromoFuzzy){
-   st.authoredDialogue.fuzzy={v:1,...(opts.fuzzyEmotion===true?{emotion:1}:{}),...(opts.fuzzyPacing===true&&opts.fuzzyEmotion===true?{pacing:1}:{}),w:root.OfficePromoFuzzy.selectionFacts(w),f:root.OfficePromoFuzzy.selectionFacts(f)};
+  if(opts.fuzzy===true&&opts.formats&&st.semantic&&st.director&&st.authoredDialogue&&(!m||f6)&&!opts.arc&&root.OfficePromoFuzzy){
+   st.authoredDialogue.fuzzy={v:1,...(opts.fuzzyEmotion===true?{emotion:1}:{}),...(opts.fuzzyPacing===true&&opts.fuzzyEmotion===true?{pacing:1}:{}),...(f6?{crowd:1,audience:{},...(m?{mouthpiece:1,speakerId:m.id,clientId:w.id}:{})}:{}),w:root.OfficePromoFuzzy.selectionFacts(mouthPsych||w),f:root.OfficePromoFuzzy.selectionFacts(f)};
   }
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
@@ -394,14 +398,22 @@
   return rng(st.seed,key)<clamp(.38+skill/170-risk*.09+edge,.12,.96);
  }
  function swing(st,n){const before=st.meter;st.meter=clamp(st.meter+n,-50,50);return st.meter-before;}
+ function rememberAudience(st,side,band){
+  const policy=st.authoredDialogue?.fuzzy;
+  if(policy?.crowd===1&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.arc){
+   policy.audience[side]={round:st.round,band};
+  }
+ }
  function crowdSays(st,delta,key){
   const band=delta>=9?'roar':delta>=3?'good':delta>-3?'flat':delta>-7?'cool':'dead';
+  rememberAudience(st,'w',band);
   push(st,'crowd',st.reactionStyle?.v===1?liveReaction(st,LIVE_CROWD[band],'player|'+key):pick(CROWD[band],st.seed,'crowd|'+key),'reaction');
  }
  // The opponent answers. How well depends on how good a talker they are, and on whether your line landed.
  function theirTurn(st,line,key,landed,fit=0){
   const hit=rng(st.seed,'their|'+key)<clamp(.3+st.f.mic/170-(landed?.12+.05*Math.max(0,fit):0),.1,.9);
   const d=swing(st,hit?-(4+Math.round(st.f.mic/20)):3);
+  rememberAudience(st,'f',hit?'hit':'miss');
   if(line)push(st,'f',line,'opponent',d);
   push(st,'crowd',st.reactionStyle?.v===1?liveReaction(st,LIVE_OPP_CROWD[hit?'hit':'miss'],'opponent|'+key):fmt(pick(OPP_CROWD[hit?'hit':'miss'],st.seed,'opp|'+key),st),'reaction',line?0:d);
   return hit;
@@ -458,7 +470,9 @@
   const seed=st.seed+'|'+st.steps.length+'|'+ctx.side,mem=st.authoredDialogue;
   if(mem.fuzzy?.v===1&&st.director&&!ctx.hasMouthpiece&&!st.arc&&(!ctx.protected||ctx.protected==='contextual-variant')){
    const part=ctx.side==='w'?st.director.player:st.director.opponent;
-   const scores=root.OfficePromoFuzzy?.selectionScores(mem.fuzzy[ctx.side],part,st.meter,ctx.side,st.core.feudHeat);
+   const F=root.OfficePromoFuzzy;
+   const heard=mem.fuzzy.crowd===1?(F?.heard(mem.fuzzy,ctx.side,st.round)??F?.heard(mem.fuzzy,ctx.side,st.round-1)):null;
+   const scores=F?.selectionScores(mem.fuzzy[ctx.side],part,st.meter,ctx.side,st.core.feudHeat,heard);
    if(scores)ctx={...ctx,fuzzyScores:scores};
   }
   // For new semantic scenes, never fall through to a style-only turn or generic press.

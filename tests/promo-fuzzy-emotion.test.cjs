@@ -182,3 +182,71 @@ console.log('PASS F4: bounded contextual emotion transitions, protected record p
  assert.ok((pacingAudit.now.interrupt||0)+(pacingAudit.now.escalate||0)>0);
  console.log('F5 PACING AUDIT '+JSON.stringify(pacingAudit));
  console.log('PASS F5: competing continuous event propensities, protected commitments, bounded follow-up and deterministic resume.');
+
+ // F6: actual response bands, not the signed net meter. Unknown and stale
+ // feedback are absent. The same meter can conceal opposite receptions.
+ assert.equal(F.audienceGrade('roar'),1);assert.equal(F.audienceGrade('dead'),-1);
+ assert.equal(F.audienceGrade('unknown'),null);
+ assert.equal(F.heard({audience:{w:{round:0,band:'roar'}}},'w',1),null);
+ assert.equal(F.heard({audience:{w:{round:0,band:'roar'}}},'w',0),1);
+ const highMic=F.selectionFacts({ego:70,pro:60,psych:65,mic:90,style:'Story'});
+ const supportive=F.selectionScores(highMic,steady,0,'w',0,1),hostile=F.selectionScores(highMic,steady,0,'w',0,-1);
+ assert.ok(supportive.showmanship>hostile.showmanship);
+ const neutralEvent={side:'w',beforeMeter:0,afterMeter:0,feudHeat:0,landed:true,spoke:true};
+ const cheers=F.emotionStep(highMic,participant,{...neutralEvent,audience:1});
+ const jeers=F.emotionStep(highMic,participant,{...neutralEvent,audience:-1});
+ assert.ok(cheers.composure>jeers.composure&&cheers.irritation<jeers.irritation);
+ const f6Audit={solo:0,mouth:0,resumes:0,reactions:0,distinctReception:0,changed:0,events:{},protected:0};
+ function exerciseF6(st,key,j){
+  let saved=null;
+  for(let step=0;st.stage!=='done';step++){
+   assert.ok(step<5);
+   const round=M.ROUNDS[st.round].id,options=M.choices(st);
+   const wanted=({open:j?'accusation':'proof',answer:j?'personal':'calm',push:j?'press':'acknowledge',close:'vow'})[round];
+   const id=(options.find(x=>x.id===wanted)||options[0]).id;
+   if(key==='new'&&step===1){saved=clone(st);f6Audit.resumes++;}
+   M.choose(st,id);if(saved)M.choose(saved,id);
+   if(key==='new'&&!st.core.case&&!st.core.claim?.hasEvidence){
+    const a=st.authoredDialogue.fuzzy.audience;
+    for(const side of ['w','f'])if(a[side]?.round===st.round-1){
+     assert.ok(Number.isFinite(F.audienceGrade(a[side].band)));f6Audit.reactions++;
+    }
+    if(a.w&&a.f&&a.w.round===a.f.round&&F.audienceGrade(a.w.band)!==F.audienceGrade(a.f.band))f6Audit.distinctReception++;
+   }
+  }
+  if(saved)eq(st,saved);
+  assert.equal(st.steps.filter(x=>x.round==='close').length,1);
+  assert.ok(Number.isFinite(M.result(st).quality));
+  if(st.speaker){
+   assert.equal(M.result(st).mouth.id,st.speaker.id);
+   assert.equal(st.director.player.id,st.speaker.id);assert.equal(st.director.client,st.w.id);
+   // Client remains the booked wrestler; any event actor is a speaker.
+   if(st.director.event)assert.ok([st.speaker.id,st.f.id].includes(st.director.event.actor));
+  }
+  if(key==='new'){const k=st.director.event?.kind||'none';f6Audit.events[k]=(f6Audit.events[k]||0)+1;}
+ }
+ for(const [i,worker] of roster.entries())for(let j=0;j<2;j++){
+  const pool=roster.filter(x=>x.id!==worker.id&&D.divisionOf(x)===D.divisionOf(worker)),opponent=pool[i%pool.length],manager=pool[(i+1)%pool.length];
+  const p=D.PROMOS[i%D.PROMOS.length],c={id:'f6-'+worker.id+'-'+j,wid:worker.id,rid:opponent.id,pid:p.id,eventAbs:100+j,finish:'win_clean',minutes:12,feudHeat:j?55:0};
+  const mouth=j?{id:manager.id,name:manager.name,short:manager.short,mic:manager.mic,psych:manager.psych,heat:manager.heat}:null;
+  const opts={mouth,directed:true,formats:true,dialogue:true,authored:true,composition:true,semantic:true,fuzzy:true,fuzzyEmotion:true,fuzzyPacing:true,banks:promoBanks((mouth||worker).id,opponent.id)};
+  const old=M.begin(c,worker,opponent,null,null,p,opts),now=M.begin(c,worker,opponent,null,null,p,{...opts,mouthProfile:manager,fuzzyAudience:true});
+  const policy=now.authoredDialogue.fuzzy;assert.equal(policy.crowd,1);
+  if(mouth){
+   assert.equal(policy.mouthpiece,1);assert.equal(policy.speakerId,manager.id);assert.equal(policy.clientId,worker.id);
+   eq(policy.w,F.selectionFacts(manager));assert.ok(!old.authoredDialogue.fuzzy);
+   assert.equal(now.director.player.ego,manager.ego);assert.equal(now.director.player.pro,manager.pro);
+   f6Audit.mouth++;
+  }else{
+   const legacy=clone(now);delete legacy.authoredDialogue.fuzzy.crowd;delete legacy.authoredDialogue.fuzzy.audience;eq(legacy,old);
+   f6Audit.solo++;
+  }
+  exerciseF6(old,'old',j);exerciseF6(now,'new',j);
+  if(JSON.stringify(old.director.turns)!==JSON.stringify(now.director.turns))f6Audit.changed++;
+  assert.equal(now.finish,c.finish);assert.equal(now.w.id,old.w.id);
+  if(now.core.case||now.core.claim?.hasEvidence)f6Audit.protected++;
+ }
+ assert.equal(f6Audit.solo,200);assert.equal(f6Audit.mouth,200);assert.equal(f6Audit.resumes,400);
+ assert.ok(f6Audit.reactions>0&&f6Audit.distinctReception>0&&f6Audit.changed>0);
+ console.log('F6 AUDIENCE AUDIT '+JSON.stringify(f6Audit));
+ console.log('PASS F6: separate audience observations, actual mouthpiece identity, retained client commitments, versioned scene parity and bounded progression.');

@@ -158,3 +158,27 @@ and exposed cases retain priority. No new emotional update on a stage cue.
 Coefficients are provisional; the paired audit reports actual event and
 route frequencies across 400 scenes, 200 resumes. F7 tunes against the
 whole-roster baseline, not arbitrary target rates.
+
+## F6 — audience and mouthpiece influence
+
+New F6 UI scenes snapshot the actual stablemate's full worker profile
+when a validated mouthpiece is selected, and retain a separate speaker
+and client ID. The existing graph, booked outcome, client promises,
+authored/semantic mouthpiece guards and post-promo credit/morale
+application remain unchanged. F4 and F5 now apply to the actual speaker
+in ordinary mouthpiece scenes; no programme or record policy is replaced.
+The mouthpiece is a speaking stablemate, not automatically the player
+manager. Older scenes and F5-only callers keep their existing behaviour.
+
+Audience response observations are recorded separately by speaker and
+round from the actual existing reaction bands (roar/good/flat/cool/dead,
+opponent hit/miss). They are not inferred from the signed net duel meter.
+Positive observed reception supplies the existing crowdSupport rule;
+the emotion update blends the net meter change with speaker-specific
+response rather than double-counting it. Showmanship can modestly extend
+an engaged exchange. Missing/stale feedback stays absent. No new crowd
+reaction roll, career attribute, or credit transfer is introduced.
+Mouthpiece-specific dialogue banks and programme/evidence progression
+remain protected. F6 coefficients are provisional. Tests compare 200
+solo and 200 mouthpiece scenes with the prior policy, checking 400
+resumes, speaker/client attribution, audience evidence and finish guards.
