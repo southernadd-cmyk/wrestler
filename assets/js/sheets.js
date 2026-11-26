@@ -687,8 +687,9 @@
   function sequenceWindow(M,o,remaining){
    const frac=M.t/Math.max(1,M.len);
    // Preserve a finishing runway even for a very late negotiated setup.
+   const duration=M.o.sequenceTimingVersion===1?o.sequence.actions.slice(-remaining).reduce((n,id)=>n+root.OfficeMatch.GRAPH.sequenceMoveSeconds(id),0):remaining*20;
    return M.outcome==='booked'&&frac>=o.window[0]-.04&&frac<=o.window[1]+.08&&
-    M.len-M.t>=Math.max(45,remaining*20+25)&&frac<.91&&
+    M.len-M.t>=Math.max(45,duration+25)&&frac<.91&&
     !M.bigSpotRequest&&!M.workingHurt&&!M.shortened;
   }
   function sequenceContext(M,row,pre,previous){
