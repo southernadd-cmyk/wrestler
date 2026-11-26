@@ -90,17 +90,26 @@ function loadProfiles(){
  const root={addEventListener(){}};const store=new Map();
  vm.runInNewContext(core,{window:root,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},Date,Math,JSON,console});
  const I=root.OfficePromoIdentity;
- return root.OfficeAcademyRegister.map(e=>{const live={...e,style:e.wrestling_style};return {id:e.id,profile:I.wrestler(live)};});
+ return root.OfficeAcademyRegister.map(e=>{const live={...e,style:e.wrestling_style};return {id:e.id,style:e.wrestling_style,profile:I.wrestler(live)};});
 }
 
-// Returns one pack per academy entrant in the same shape as an editorial pack.
+// Keep one compilation path for sample and shipped banks; stable IDs and wording are unchanged.
+function packFor(id,profile,slots){
+ if(slots.length!==FRAMES.length)throw Error('slot/frame mismatch '+slots.length+' vs '+FRAMES.length);
+ return {role:'wrestler',owner:id,lines:slots.map(([stage,action,side,variant,category],i)=>({
+  id:id+'.g.'+String(i+1).padStart(2,'0'),stage,action,side,category,text:lineFor(profile,id,i,FRAMES[i]),when:{hasMouthpiece:false,...(variant?{variants:[variant]}:{})}}))};
+}
 function packs(){
  const slots=slotsFromSource();
- if(slots.length!==FRAMES.length)throw Error('slot/frame mismatch '+slots.length+' vs '+FRAMES.length);
- return loadProfiles().map(({id,profile})=>({role:'wrestler',owner:id,lines:slots.map(([stage,action,side,variant,category],i)=>({
-  id:id+'.g.'+String(i+1).padStart(2,'0'),stage,action,side,category,text:lineFor(profile,id,i,FRAMES[i]),when:{hasMouthpiece:false,...(variant?{variants:[variant]}:{})}}))}));
+ return loadProfiles().map(({id,profile})=>packFor(id,profile,slots));
 }
 
+// Expose read-only inventory metadata for the family audit. Missing keys must be
+// reported rather than silently considered a fully covered personality trait.
+function phraseCoverage(profile){
+ const fields={delivery:OPEN,motivation:MOTIV,vulnerability:VULN,trigger:TRIGGER,tactic:TACTIC,boundary:BOUND,underPressure:PRESS};
+ return Object.fromEntries(Object.entries(fields).map(([key,pool])=>[key,(pool[profile[key]]||[]).length]));
+}
 // Claim each generated opponent-side line raises, taken from its first placeholder. Used for the reviewed table.
 const TACTIC_CLAIM={'Test the rival with one precise question':'strategy','Ask for the sequence before the first move':'strategy','Challenge the rival to meet force with control':'effort','Ask for a clean finish with no shortcuts':'effort','Ask the rival what they want from the match':'strategy','Give the crowd one moment to remember':'audience','Promise a memorable moment built with care':'appearance','Ask for the crowd to lean in before the big move':'audience','Ask one tactical question':'strategy','Ask for a direct sporting test':'effort','Find a reason the crowd should care':'audience','Build anticipation of a credible athletic moment':'appearance'};
 const TRIGGER_CLAIM={'A rival dismisses their progress':'progress','Being spoken for without permission':'legitimacy','A rival doubts their readiness':'present','A rival ridicules aerial work':'air','A rival takes the credit':'name','A rival mocks technique':'effort','A rival questions courage':'present'};
@@ -116,14 +125,12 @@ function generate(authoredOwners=new Set()){
  const slots=slotsFromSource();const out={packs:[],claims:{}};
  for(const {id,profile} of loadProfiles()){
   if(authoredOwners.has(id))continue;
-  const lines=slots.map(([stage,action,side,variant,category],i)=>({
-   id:id+'.g.'+String(i+1).padStart(2,'0'),stage,action,side,category,text:lineFor(profile,id,i,FRAMES[i]),when:{hasMouthpiece:false,...(variant?{variants:[variant]}:{})}}));
-  out.packs.push({role:'wrestler',owner:id,lines});
+  out.packs.push(packFor(id,profile,slots));
   for(let i=0;i<slots.length;i++){const [,,side]=slots[i];if(side==='f'){const c=claimFor(profile,FRAMES[i]);if(c)out.claims[id+'.g.'+String(i+1).padStart(2,'0')]=c;}}
  }
  return out;
 }
-module.exports={packs,lineFor,FRAMES,claimFor,generate};
+module.exports={packs,lineFor,FRAMES,claimFor,generate,loadProfiles,phraseCoverage};
 if(require.main===module){
  const ps=packs();
  const sample=process.argv[2];

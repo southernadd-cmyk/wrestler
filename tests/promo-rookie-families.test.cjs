@@ -1,0 +1,27 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {check}=require('../scripts/build-promo-banks.cjs');
+const {packs,generate}=require('../scripts/build-rookie-banks.cjs');
+const {report,FAMILIES}=require('../scripts/rookie-dialogue-families.cjs');
+// Exact generated assets, manifest and claim table must remain byte-identical.
+const built=check(),r=report(built);
+assert.equal(r.families.length,12);
+assert.equal(Object.values(FAMILIES).flatMap(Object.values).length,12);
+const members=r.families.flatMap(f=>f.members);
+assert.equal(members.length,r.namedRookies);
+assert.equal(new Set(members.map(m=>m.id)).size,r.namedRookies);
+assert.ok(r.namedRookies>=120);
+assert.ok(r.families.every(f=>f.members.length>0));
+assert.equal(members.filter(m=>m.authored).length,r.authoredRookies);
+assert.equal(members.filter(m=>!m.authored).length,r.generatedRookies);
+const sample=new Map(packs().map(p=>[p.owner,p]));
+const actual=generate(new Set(members.filter(m=>m.authored).map(m=>m.id))).packs;
+for(const p of actual)assert.deepEqual(p,sample.get(p.owner),'sample and build path differ: '+p.owner);
+const sourceIds=r.inventory.flatMap(f=>f.rows.flatMap(row=>row.sourceIds));
+assert.equal(sourceIds.length,actual.reduce((n,p)=>n+p.lines.length,0));
+assert.equal(new Set(sourceIds).size,sourceIds.length);
+assert.equal(r.families.reduce((n,f)=>n+f.generatedLines,0),sourceIds.length);
+assert.ok(r.families.every(f=>f.duplicates===f.generatedLines-f.uniqueSlotLines));
+assert.ok(r.missingPhraseKeys.every(x=>x.ids.length>0&&x.ids.every(id=>members.some(m=>m.id===id&&!m.authored))));
+assert.deepEqual(r,report(built),'family catalogue must be deterministic');
+console.log('PASS academy families: '+r.namedRookies+' named rookies; '+r.families.length+' families; '+r.generatedRookies+' generated banks; '+sourceIds.length+' generated lines; '+r.missingPhraseKeys.length+' uncovered profile keys (reported, not silently counted).');
