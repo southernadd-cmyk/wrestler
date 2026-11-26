@@ -64,6 +64,22 @@ function riskSource(source){
   "if(id==='aerial_counter'){M.spots++;"
  ];
  for(const site of graphSites)replace(site,site+event("{kind:'graph_spot',source:'graph_counter',id,side,at:M.t}"));
+ // Observe the actual arbitration branches, not hypothetical legality
+ // queries that could affect graph state or its RNG.
+ replace("if(!agreed||!Graph.isValid(M,agreed.id))spoke=tryPendingBigSpot(M);",
+  "if(!agreed||!Graph.isValid(M,agreed.id))spoke=tryPendingBigSpot(M);else{"+event("{kind:'manager_tick',reason:'agreed_exchange',at:M.t,index:M.bigSpotRequest.index,action:agreed.id,stamina:M.wSt}")+"}");
+ replace("if(!pending||M.stage!=='live'||bigSpotArbitrationEnabled(M)&&M.t>=bigSpotDeadline(M)||!availableBigSpot(M))return false;",
+  "if(!pending||M.stage!=='live'||bigSpotArbitrationEnabled(M)&&M.t>=bigSpotDeadline(M))return false;\n const available=availableBigSpot(M);"+event("{kind:'manager_tick',reason:available?'scripted_legal':M.wSt<28?'low_stamina':'no_scripted_setup',at:M.t,index:pending.index,stamina:M.wSt,deadline:bigSpotDeadline(M),priority:bigSpotPriority(M),control:Psy.get(M).control,position:Psy.get(M).position}")+"if(!available)return false;");
+ replace("if(!spot(M,true,true))return false;",
+  "if(!spot(M,true,true)){"+event("{kind:'manager_tick',reason:'scripted_setup_failed',at:M.t,index:pending.index,stamina:M.wSt}")+"return false;}");
+ replace("if(M.bigSpotRequest&&p.control==='w'&&$d.regularBigMoment(M,id))\n    n*=root.OfficeMatch.bigSpotWeight(M);",
+  "if(M.bigSpotRequest&&p.control==='w'&&$d.regularBigMoment(M,id)){"+event("{kind:'manager_candidate',at:M.t,index:M.bigSpotRequest.index,id,weight:n,boost:root.OfficeMatch.bigSpotWeight(M)}")+"n*=root.OfficeMatch.bigSpotWeight(M);}");
+ replace("if(M.dqCall&&M.stage==='live'&&M.outcome==='booked'){M.outcome='dq';",
+  "if(M.dqCall&&M.stage==='live'&&M.outcome==='booked'){"+event("{kind:'outcome_write',at:M.t,from:M.outcome,to:'dq',reason:'dq_call'}")+"M.outcome='dq';");
+ replace("if(choice==='stop'){M.outcome='nc';",
+  "if(choice==='stop'){"+event("{kind:'outcome_write',at:M.t,from:M.outcome,to:'nc',reason:'injury_stop'}")+"M.outcome='nc';");
+ replace("else{M.outcome='double';say(M,'You give the signal.'",
+  "else{"+event("{kind:'outcome_write',at:M.t,from:M.outcome,to:'double',reason:'manager_double_cross'}")+"M.outcome='double';say(M,'You give the signal.'");
  return source;
 }
 function routineSource(source){
@@ -167,7 +183,8 @@ function summarizeSpotSweep(pairs){
  const compact=p=>{const {comparisons,...summary}=summarizeSpotPacing(p);return summary;};
  return {pairs:pairs.filter(p=>p.factor===.5).length,arms:Object.fromEntries(spotFactors.map(f=>[String(f),compact(pairs.filter(p=>p.factor===f))])),
   bySeed:Object.fromEntries([...new Set(pairs.map(p=>p.seed))].map(seed=>[seed,Object.fromEntries(spotFactors.map(f=>[String(f),compact(pairs.filter(p=>p.seed===seed&&p.factor===f))]))])),
-  comparisons:pairs.map(({beforeRisk,afterRisk,...p})=>({...p,beforeInjuries:beforeRisk.filter(e=>e.kind==='injury'),afterInjuries:afterRisk.filter(e=>e.kind==='injury')}))};
+  comparisons:pairs.map(({beforeRisk,afterRisk,beforeManager,afterManager,...p})=>({...p,beforeInjuries:beforeRisk.filter(e=>e.kind==='injury'),afterInjuries:afterRisk.filter(e=>e.kind==='injury')})),
+  managerCases:pairs.filter(p=>p.factor===.25&&(p.beforeManager.requests.length||p.afterManager.requests.length||p.before.outcome!==p.after.outcome)).map(p=>({key:p.key,seed:p.seed,plan:p.plan,structure:p.structure,before:p.beforeManager,after:p.afterManager}))};
 }
 function summarizeRoutine(pairs){
  const summarize=rows=>{
@@ -284,10 +301,10 @@ function run(seeds=[3,10],weeks=32,{spotOnly=false}={}){
     if(traceActual)root.__mp13Risk=(m,e)=>{if(m===M)risk.push(copy(e));};
     try{
     for(let n=0;n<10000&&!M.done;n++){
-     if(M.decision&&!M.queue.length){const opts=M.decision.options;E.resolve(M,pick(opts,i+seed+calls).id);}
+     if(M.decision&&!M.queue.length){const opts=M.decision.options,choice=pick(opts,i+seed+calls).id;if(traceActual)risk.push({kind:'decision',at:M.t,id:M.decision.id,choice,crowd:M.crowd,injury:M.injury});E.resolve(M,choice);}
      if(M.stage==='live'&&!M.decision&&calls<2&&M.t>=M.len*(calls?.65:.3)){
       const id=pick(callIds,i+calls);
-      if(E.canCall(M,id)){E.call(M,id);calls++;}
+      if(E.canCall(M,id)){const before=M.ignored,at=M.t,stamina=M.wSt;E.call(M,id);if(traceActual&&id==='big')risk.push({kind:'manager_call',at,ordinal:calls,stamina,ignored:M.ignored>before});calls++;}
      }
      if(M.stage==='live'&&liveScores.length<3&&M.t>=M.len*(liveScores.length+1)/4&&active){
       const q=E.livePsychology(M,'w');assert.ok(q&&Object.values(q.scores).every(x=>range(x)));liveScores.push(copy(q.scores));
@@ -311,12 +328,17 @@ function run(seeds=[3,10],weeks=32,{spotOnly=false}={}){
      assert.equal(risk.filter(e=>e.kind==='attempt'&&e.botched).length,M.botches,key+' risk botches reconcile');
      for(const side of ['w','f'])assert.equal(risk.filter(e=>e.kind==='injury'&&e.side===side).length,Number(side==='w'?!!M.injury:!!M.foeHurt),key+' actual injury onset reconciles '+side);
     }
-    return {M,fin:M.final,matchResume,liveScores,traceReport,risk};
+    const manager=traceActual?{booked:M.o.finish,outcome:M.final.outcome,finishRoute:M.final.finishRoute,graphOutcome:M.graph?.outcome,
+      evidence:(M.final.ringsideEvidence||[]).map((e,index)=>({...e,index})).filter(e=>e.id==='big'),
+      requests:risk.filter(e=>e.kind==='manager_call'),timeline:risk.filter(e=>['manager_tick','manager_candidate','decision','outcome_write'].includes(e.kind)),
+      lastActions:(M.graph?.events||[]).slice(-8).map(e=>({id:e.id,t:e.t,preControl:e.preControl})),injuries:risk.filter(e=>e.kind==='injury')}:null;
+    if(manager)assert.equal(manager.requests.filter(e=>!e.ignored).length,manager.evidence.length,key+' attempted/ignored/accepted requests reconcile');
+    return {M,fin:M.final,matchResume,liveScores,traceReport,risk,manager};
     }finally{trace?.restore();if(traceActual){if(priorRisk===undefined)delete root.__mp13Risk;else root.__mp13Risk=priorRisk;}}
    }
    // Holdout careers settle the current quarter-drain policy, not the
    // historical asymmetric control. Counterfactuals never settle.
-   function sweepSpots(base,baseRisk,settings,measure){
+   function sweepSpots(base,baseRisk,settings,measure,baseManager){
     for(const factor of spotFactors){
      root.__mp13RoutineMultiplier=.25;root.__mp13SpotFactor=factor;
      try{
@@ -326,7 +348,7 @@ function run(seeds=[3,10],weeks=32,{spotOnly=false}={}){
       assert.equal(m.startW,base.startW,key+' same player starting energy');
       assert.equal(m.startF,base.startF,key+' same opponent starting energy');
       assert.equal(m.accepted,m.witnessed+m.botched+m.refunded,key+' every accepted request resolved');
-      spotPacingPairs.push({key,seed,factor,structure:choice.id,plan:approach,before:base,after:m,beforeRisk:baseRisk,afterRisk:candidate.risk});
+      spotPacingPairs.push({key,seed,factor,structure:choice.id,plan:approach,before:base,after:m,beforeRisk:baseRisk,afterRisk:candidate.risk,...(factor===.25?{beforeManager:baseManager,afterManager:candidate.manager}:{})});
      }finally{delete root.__mp13RoutineMultiplier;delete root.__mp13SpotFactor;}
     }
    }
@@ -335,7 +357,7 @@ function run(seeds=[3,10],weeks=32,{spotOnly=false}={}){
     root.__mp13RoutineMultiplier=.25;
     let current;
     try{current=drive(true,i%5===0,settings,immutable,'comparison');}finally{delete root.__mp13RoutineMultiplier;}
-    if(current.fin.structure.sequences?.length)sweepSpots(spotMetric(current,E),current.risk,settings,x=>spotMetric(x,E));
+    if(current.fin.structure.sequences?.length)sweepSpots(spotMetric(current,E),current.risk,settings,x=>spotMetric(x,E),current.manager);
     return {...current.fin,log:current.M.log.slice()};
    }
    const actual=drive(true,i%5===0,options,immutable,true);
@@ -498,7 +520,7 @@ function run(seeds=[3,10],weeks=32,{spotOnly=false}={}){
     // isolates equalization; the remaining arms also reduce shared debit.
     const routineOptions={...options,sequenceRecoveryPacingVersion:1,sequenceAlternativeReadinessVersion:1,bigSpotArbitrationVersion:3};
     const arms={'1':routineMetrics(arbitrated,E,measureArbitration,restCount)};
-    let quarterRisk=null;
+    let quarterRisk=null,quarterManager=null;
     for(const factor of routineFactors.slice(1)){
      root.__mp13RoutineMultiplier=factor==='equal-1'?1:factor;
      try{
@@ -510,11 +532,11 @@ function run(seeds=[3,10],weeks=32,{spotOnly=false}={}){
       assert.equal(metric.accepted,metric.witnessed+metric.botched+metric.refunded,key+' manager requests resolved');
       if(factor===0)assert.ok(metric.routineSpent<1e-7,key+' zero routine debit control');
       arms[String(factor)]=metric;
-      if(factor===.25)quarterRisk=replay.risk;
+      if(factor===.25){quarterRisk=replay.risk;quarterManager=replay.manager;}
      }finally{delete root.__mp13RoutineMultiplier;}
     }
     assert.ok(quarterRisk,key+' quarter-rate risk evidence');
-    sweepSpots(arms['0.25'],quarterRisk,routineOptions,x=>routineMetrics(x,E,measureArbitration,restCount));
+    sweepSpots(arms['0.25'],quarterRisk,routineOptions,x=>routineMetrics(x,E,measureArbitration,restCount),quarterManager);
     riskPairs.push({key,structure:choice.id,plan:approach,before:arbitrated.risk,after:quarterRisk});
     const fatigue=arms['1'].fatigueW;
     routinePairs.push({key,structure:choice.id,plan:approach,fatigueBand:fatigue>=75?'high':fatigue>=25?'moderate':'low',arms});
