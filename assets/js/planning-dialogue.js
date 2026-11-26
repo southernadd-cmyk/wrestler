@@ -223,5 +223,39 @@
   }
   return {v:1,point,lines};
  }
- root.OfficePlanningDialogue=Object.freeze({capture,subject,compose,family,loadPair,beginLoad,completeLoad,freezeHuddle,readHuddle,counterTopic,freezeCounter});
+ // Compose private sequence dialogue from the same identities and stance
+ // vocabulary. Replace the single-move body, not the reviewed bank lead.
+ function freezeSequence(room,offer){
+  const first=readHuddle(room),t=room.structureTalk,identities=room.planningDialogue?.identities;
+  const steps=offer?.evidence?.steps,graph=root.OfficeMatch?.GRAPH?.A;
+  if(!first||!graph||!identities||offer?.v!==1||!Array.isArray(steps)||steps.length<2||steps.length>4)return null;
+  const owner=t.by,partner=other(owner),proposer=offer.card.by===partner?partner:owner;
+  const actor=proposer===owner?first.point.actorId:first.point.partnerId,recipient=proposer===owner?first.point.partnerId:first.point.actorId;
+  const labels=steps.map(s=>clean(graph[s.action]?.name||s.action));
+  if(labels.some(x=>!x)||!offer.by?.w||!offer.by?.f)return null;
+  const point={...first.point,requester:proposer,actorId:actor,partnerId:recipient,alternative:offer.card.label,topic:'layout',
+   stances:{w:offer.by.w.stance,f:offer.by.f.stance}};
+  const used=[];
+  for(const exchange of [first,t.bargaining?.offer?.dialogue]){
+   if(!exchange)continue;
+   for(const k of ['request','response']){
+    const l=exchange.lines[k];used.push(l.id,'prefix:'+l.prefix);
+   }
+  }
+  const lines={};
+  for(const [key,turn,who] of [['request','request',proposer],['response','response',other(proposer)],['ownerResolution','resolution',owner],['partnerResolution','resolution',partner]]){
+   const line=compose(identities[who],point,turn,who,room.seed+'|sequence|'+steps.map(s=>s.action).join('|'),{used});
+   if(!line||line.v!==2)return null;
+   const stance=line.stance,short=identities[who].family==='quiet'||identities[who].family==='direct';
+   const body=turn==='request'?(short?'Try a connected setup for '+offer.card.label+'?':'How about working a connected setup into '+offer.card.label+'?')+
+     ' '+labels.join(', then ')+'. Only if the opening is there.':
+    turn==='response'?(stance==='accept'?'I can work that sequence if the setup is there.':stance==='reserved'?'I have reservations about the whole sequence. We need the right opening.':'I would rather keep the setup simpler. We should not promise that sequence.'):
+    stance==='accept'?'I am happy to discuss that setup. The named call is '+offer.card.label+'.':
+    stance==='reserved'?'I still have reservations about that setup. I know the named call.':'I would prefer a simpler setup. I know what the named call is.';
+   used.push(line.id,'prefix:'+line.prefix);
+   lines[key]={...line,text:line.prefix+' '+body};
+  }
+  return {v:1,point,lines};
+ }
+ root.OfficePlanningDialogue=Object.freeze({capture,subject,compose,family,loadPair,beginLoad,completeLoad,freezeHuddle,readHuddle,counterTopic,freezeCounter,freezeSequence});
 })(typeof window!=='undefined'?window:globalThis);
