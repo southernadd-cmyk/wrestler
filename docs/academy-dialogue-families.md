@@ -105,3 +105,22 @@ Existing manifest entries, supplied actual-owner banks, mouthpieces and legacy
 scene formats retain priority/behaviour. No network request or regeneration
 during a resumed scene. This does not create new wrestlers or extend the finite
 career intake. Tests use synthetic future IDs in real promo choice paths.
+
+## R7 — whole-roster pre-fuzzy baseline
+
+Run `node tests/promo-roster-audit.test.cjs` (optional
+`PROMO_ROSTER_AUDIT_JSON=/tmp/roster-audit.json` exports full transcripts and
+per-worker metrics). Samples eight real-choice scenes per worker, four on each
+side, across the original 80 and all 120 actual academy arrivals. A rolling
+12-scene history supplies actual recent IDs and repeated spoken text. Samples
+include different opponent pairings, styles, formats, opening/answer/follow-up/
+closing choices, four finishes and synthetic feud heat. Checks structural
+invariants, shared selection protections and 400 mid-scene JSON round trips.
+Reports semantic reply linkage (not proof of natural-language entailment),
+own/shared/composed/graph utilisation, repeated text, per-style and cohort
+results, and existing director emotions and spontaneous events. Threshold bands
+are descriptive counts around current crisp rules, to guide future fuzzy
+membership calibration. Does not invent recorded match evidence or claim tags.
+This is a repeatable engine baseline, not a human judgement of literary quality
+or a browser/UI audit. No production code or dialogue assets change. Keep this
+scenario schedule and baseline policy for future paired F1–F7 comparisons.
