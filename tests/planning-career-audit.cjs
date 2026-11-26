@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set();
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -106,7 +106,7 @@ function run(seeds=[3,10],weeks=32){
    const preparation={...w.prep},focus=D.TRAINING[w.training]?.stat;
    if(focus&&!w.injury)preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);
    const trainingFatigue=['rest','promo'].includes(w.training)?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
-   const options={w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p:G.P(c.pid),slot:c.slot,minutes:sheet.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo,plan:{game:sheet.game,leash:sheet.leash,talk:sheet.talk},preparation,flags:{...w.flags,...sheet.flags},memory:Mem.context(w.id,f.id),sheet,structureExecution:true,sequenceTimingVersion:1,sequenceDependencyVersion:1,identity:G.normaliseIdentity(G.S.identity),seed:Math.floor(random()*2**31)||1};
+   const options={w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p:G.P(c.pid),slot:c.slot,minutes:sheet.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo,plan:{game:sheet.game,leash:sheet.leash,talk:sheet.talk},preparation,flags:{...w.flags,...sheet.flags},memory:Mem.context(w.id,f.id),sheet,structureExecution:true,sequenceTimingVersion:1,sequenceDependencyVersion:1,sequenceHandoverVersion:1,identity:G.normaliseIdentity(G.S.identity),seed:Math.floor(random()*2**31)||1};
    const immutable=copy(sheet.structurePlan),callIds=Object.keys(E.CALLS).filter(x=>!['home'].includes(x));
    function drive(active,resume,settings=options,expectedPlan=immutable,traceActual=false){
     let M=E.create({...copy(settings),livePsychologyVersion:active?1:undefined}),matchResume=0,liveScores=[],calls=0;
@@ -195,12 +195,12 @@ function run(seeds=[3,10],weeks=32){
    if(sequences.length){
     // Identical signed sheet, room/promo decisions, workers, seed,
     // and manager-call policy; only the new live weighting differs.
-    const baseline=drive(true,i%5===0,{...options,sequenceDependencyVersion:undefined},immutable,'comparison');
+    const baseline=drive(true,i%5===0,{...options,sequenceDependencyVersion:undefined,sequenceHandoverVersion:undefined},immutable,'comparison');
     const base=baseline.fin;
     // Independently compare the newly traced baseline with an untraced
     // identical replay for one bout per structure.
     if(!dependencyTraceVerified.has(choice.id)){
-     const plain=drive(true,i%5===0,{...options,sequenceDependencyVersion:undefined},immutable);
+     const plain=drive(true,i%5===0,{...options,sequenceDependencyVersion:undefined,sequenceHandoverVersion:undefined},immutable);
      eq(base,plain.fin,key+' dependency baseline trace neutrality');
      eq(baseline.M.graph,plain.M.graph,key+' dependency baseline graph neutrality');
      assert.equal(baseline.M.r.getState()>>>0,plain.M.r.getState()>>>0,key+' dependency baseline RNG neutrality');
@@ -241,6 +241,8 @@ function run(seeds=[3,10],weeks=32){
       prerequisiteAchieved:os.filter(o=>predecessors.has(o.id)&&['achieved','adapted'].includes(o.status)).length,
       stars:x.stars,crowd:x.crowd,injury:Number(!!x.injury),outcome:x.outcome};};
     dependencyPairs.push({key,structure:choice.id,before:count(base),after:count(fin)});
+    const dependencyOnly=drive(true,i%5===0,{...options,sequenceHandoverVersion:undefined},immutable).fin;
+    handoverPairs.push({key,structure:choice.id,main:count(base),dependencyOnly:count(dependencyOnly),combined:count(fin)});
    }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
@@ -302,6 +304,14 @@ function run(seeds=[3,10],weeks=32){
        before:{status:x.before.status,stage:x.before.stage,prerequisites:x.before.prerequisites.map(p=>({status:p.status,at:p.at})),eligibleTicks:x.before.eligibleTicks,matchingTicks:x.before.matchingTicks,readyTicks:x.before.readyTicks,offers:x.before.offers,matchSeconds:x.before.matchSeconds,firstMatching:x.before.firstMatching,lastMatching:x.before.lastMatching,attemptsDetail:x.before.attemptsDetail},
        after:{status:x.after.status,stage:x.after.stage,prerequisites:x.after.prerequisites.map(p=>({status:p.status,at:p.at})),eligibleTicks:x.after.eligibleTicks,matchingTicks:x.after.matchingTicks,readyTicks:x.after.readyTicks,offers:x.after.offers,matchSeconds:x.after.matchSeconds,firstMatching:x.after.firstMatching,lastMatching:x.after.lastMatching,attemptsDetail:x.after.attemptsDetail}}))}]));
     })(),details:dependencyDetails,comparisons:dependencyPairs};
+  })(),matchedHandover:(()=>{
+   const sum=(pairs,side)=>{const xs=pairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','interruptions','objectives','prerequisiteAchieved','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
+   const compare=pairs=>({pairs:pairs.length,main:sum(pairs,'main'),dependencyOnly:sum(pairs,'dependencyOnly'),combined:sum(pairs,'combined'),changedOutcomes:pairs.filter(x=>x.main.outcome!==x.combined.outcome||x.dependencyOnly.outcome!==x.combined.outcome).length});
+   const offered=openingRecords.filter(v=>v.ticks.some(t=>t.handover));
+   return {...compare(handoverPairs),byStructure:Object.fromEntries([...new Set(handoverPairs.map(x=>x.structure))].map(k=>[k,compare(handoverPairs.filter(x=>x.structure===k))])),
+    handoverOffers:offered.reduce((n,v)=>n+v.ticks.filter(t=>t.handover).length,0),sequencesWithHandoverOffer:offered.length,
+    openedAmongOffered:offered.filter(v=>v.final.attempts>0).length,completedAmongOffered:offered.filter(v=>['completed','adapted'].includes(v.final.status)).length,
+    comparisons:handoverPairs};
   })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},opening:continuation.summariseOpenings(openingRecords),rows};
 }
 module.exports={run};
