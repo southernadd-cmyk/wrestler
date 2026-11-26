@@ -68,6 +68,10 @@ function riskSource(source){
 }
 function routineSource(source){
  source=riskSource(source);
+ // Preserve historical F.13–15 controls; candidate uses exact shipped factor.
+ const spotAnchor="recoveryWeight*optionalSpotFactor*.5;";
+ assert.equal(source.split(spotAnchor).length,2,'unique autonomous schedule factor');
+ source=source.replace(spotAnchor,"recoveryWeight*optionalSpotFactor*(root.__mp13NewSpotPacing?.5:1);");
  const wNew="clamp(M.wSt-routineDebit+(mode==='slow'?1.6:0))";
  const fNew="clamp(M.fSt-routineDebit+(mode==='slow'?1.2:0))";
  const wOld="clamp(M.wSt-drain+(mode==='slow'?1.6:0))";
@@ -130,6 +134,15 @@ function summarizeRisk(pairs){
  const incidentCount=events=>events.filter(e=>e.kind==='injury'||e.kind==='attempt'&&e.botched).length;
  return {pairs:pairs.length,baseline,quarter,changed:pairs.filter(p=>incidentCount(p.before)||incidentCount(p.after))};
 }
+function summarizeSpotPacing(pairs){
+ const risk=summarizeRisk(pairs.map(p=>({key:p.key,structure:p.structure,plan:p.plan,before:p.beforeRisk,after:p.afterRisk})));
+ const sums=side=>{
+  const xs=pairs.map(p=>p[side]);
+  const keys=['signed','opened','completed','staminaCases','timingCases','injury','botches','zeroEnd','shortened','accepted','witnessed','botched','refunded','lateOffence','lateHighCost','rests'];
+  return {...Object.fromEntries(keys.map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd)),endW:avg(xs.map(x=>x.endW)),endF:avg(xs.map(x=>x.endF))};
+ };
+ return {pairs:pairs.length,before:sums('before'),after:sums('after'),risk:{before:risk.baseline,after:risk.quarter},changedOutcomes:pairs.filter(p=>p.before.outcome!==p.after.outcome).length,comparisons:pairs.map(({beforeRisk,afterRisk,...p})=>p)};
+}
 function summarizeRoutine(pairs){
  const summarize=rows=>{
   const sum=k=>rows.reduce((n,x)=>n+x[k],0);
@@ -148,7 +161,7 @@ function summarizeRoutine(pairs){
   byFatigue:Object.fromEntries(['low','moderate','high'].map(k=>[k,group(pairs.filter(p=>p.fatigueBand===k))])),comparisons:pairs};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],expenditure=[],reviewRepairs=[],routinePairs=[],riskPairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],expenditure=[],reviewRepairs=[],routinePairs=[],riskPairs=[],spotPacingPairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -451,6 +464,16 @@ function run(seeds=[3,10],weeks=32){
      }finally{delete root.__mp13RoutineMultiplier;}
     }
     assert.ok(quarterRisk,key+' quarter-rate risk evidence');
+    root.__mp13RoutineMultiplier=.25;root.__mp13NewSpotPacing=true;
+    try{
+     const candidate=drive(true,i%5===0,routineOptions,immutable,'comparison');
+     const m=routineMetrics(candidate,E,measureArbitration,restCount),base=arms['0.25'];
+     assert.equal(m.signed,base.signed,key+' same signed sheet');
+     assert.equal(m.startW,base.startW,key+' same player starting energy');
+     assert.equal(m.startF,base.startF,key+' same opponent starting energy');
+     assert.equal(m.accepted,m.witnessed+m.botched+m.refunded,key+' every accepted request resolved');
+     spotPacingPairs.push({key,structure:choice.id,plan:approach,before:base,after:m,beforeRisk:quarterRisk,afterRisk:candidate.risk});
+    }finally{delete root.__mp13RoutineMultiplier;delete root.__mp13NewSpotPacing;}
     riskPairs.push({key,structure:choice.id,plan:approach,before:arbitrated.risk,after:quarterRisk});
     const fatigue=arms['1'].fatigueW;
     routinePairs.push({key,structure:choice.id,plan:approach,fatigueBand:fatigue>=75?'high':fatigue>=25?'moderate':'low',arms});
@@ -488,7 +511,7 @@ function run(seeds=[3,10],weeks=32){
   careers.push({seed,...result.stats});
  }
  const groups=key=>Object.fromEntries([...new Set(rows.map(r=>r[key]))].map(k=>[k,summarise(rows.filter(r=>r[key]===k))]));
- return {schema:'office-mp13-career-audit-v1',seeds,weeks,careers,routineDrainAudit:summarizeRoutine(routinePairs),riskExposureAudit:summarizeRisk(riskPairs),overall:summarise(rows),byStructure:groups('structure'),byApproach:groups('approach'),byCohort:groups('academy'),
+ return {schema:'office-mp13-career-audit-v1',seeds,weeks,careers,routineDrainAudit:summarizeRoutine(routinePairs),riskExposureAudit:summarizeRisk(riskPairs),spotPacingAudit:summarizeSpotPacing(spotPacingPairs),overall:summarise(rows),byStructure:groups('structure'),byApproach:groups('approach'),byCohort:groups('academy'),
   matchedLive:{pairs:comparisons.length,meanStarDelta:avg(comparisons.map(x=>x.starDelta)),meanCrowdDelta:avg(comparisons.map(x=>x.crowdDelta)),meanIgnoredDelta:avg(comparisons.map(x=>x.ignoredDelta)),changedOutcomes:comparisons.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons},matchedTraditional:{pairs:traditional.length,meanStructuredStars:avg(traditional.map(x=>x.structuredStars)),meanTraditionalStars:avg(traditional.map(x=>x.traditionalStars)),meanStarDelta:avg(traditional.map(x=>x.starDelta)),meanCrowdDelta:avg(traditional.map(x=>x.crowdDelta)),changedOutcomes:traditional.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons:traditional},matchedFeasibility:(()=>{
    const summarize=side=>{const xs=feasibilityPairs.map(x=>x[side]),entries={};for(const x of xs)for(const e of x.entries)inc(entries,e);
     return {signed:xs.reduce((n,x)=>n+x.signed,0),completed:xs.reduce((n,x)=>n+x.completed,0),noOpening:xs.reduce((n,x)=>n+x.noOpening,0),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd)),injuries:xs.reduce((n,x)=>n+x.injury,0),entries};};
