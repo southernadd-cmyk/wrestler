@@ -24,8 +24,52 @@ function summarise(rows){
   promoResumes:sum('promoResume'),liveScores:Object.fromEntries(['obedience','improvisation','frustration'].map(k=>[k,avg(rows.flatMap(r=>r.liveScores.map(x=>x[k])))])),
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
+// Diagnostic VM only: scale actual routine debits, not rest credits or
+// the existing conservative sequence-readiness projection.
+const routineFactors=[1,.75,.5,.25,0];
+function routineSource(source){
+ let instrumented=continuation.budgetSource(source);
+ const edits=[
+  ["clamp(M.wSt-drain+(mode==='slow'?1.6:0))","clamp(M.wSt-drain*(root.__mp13RoutineMultiplier??1)+(mode==='slow'?1.6:0))"],
+  ["clamp(M.fSt-.5*workDrain(f)*paceFactor(f,'f')+(mode==='slow'?1.2:0))","clamp(M.fSt-.5*workDrain(f)*paceFactor(f,'f')*(root.__mp13RoutineMultiplier??1)+(mode==='slow'?1.2:0))"]
+ ];
+ for(const [before,after] of edits){
+  assert.equal(instrumented.split(before).length,3,'instrumented debit occurs in both traced and untraced branches');
+  instrumented=instrumented.split(before).join(after);
+ }
+ return instrumented;
+}
+function routineMetrics(x,E,measure,restCount){
+ const {M,fin,traceReport:t}=x, budget=t.budget;
+ const staminaAt=(side,frac)=>budget.start[side]+budget.writes.filter(w=>w.side===side&&w.at<=M.len*frac).reduce((n,w)=>n+w.delta,0);
+ const meanStamina=frac=>(staminaAt('w',frac)+staminaAt('f',frac))/2;
+ const late=M.graph.events.filter(e=>e.t>=M.len*.75&&E.GRAPH.A[e.id]&&!e.blocked&&!e.botched&&E.GRAPH.costOf(e.id)>0);
+ return {...measure(x),rests:restCount(x),recoveryOffered:t.recoveryOffers.length,recoveryLanded:t.recoveryOffers.filter(o=>o.landed).length,
+  startW:budget.start.w,startF:budget.start.f,fatigueW:t.staminaContext.workers.w.fatigue,fatigueF:t.staminaContext.workers.f.fatigue,
+  stamina25:meanStamina(.25),stamina50:meanStamina(.5),stamina75:meanStamina(.75),endW:M.wSt,endF:M.fSt,
+  lateOffence:late.length,lateHighCost:late.filter(e=>E.GRAPH.costOf(e.id)>=2.2).length,
+  routineSpent:budget.writes.filter(w=>w.category==='routine'||w.category==='slow_tick').reduce((n,w)=>n+Math.max(0,-w.delta),0),
+  zeroEnd:Number(M.wSt<=1e-7)+Number(M.fSt<=1e-7),shortened:Number(!!fin.shortened),botches:fin.botches||0};
+}
+function summarizeRoutine(pairs){
+ const summarize=rows=>{
+  const sum=k=>rows.reduce((n,x)=>n+x[k],0);
+  const totals=['signed','opened','completed','interruptions','objectives','injury','staminaCases','timingCases','accepted','witnessed','botched','refunded','ignored','spent','rests','recoveryOffered','recoveryLanded','lateOffence','lateHighCost','zeroEnd','shortened','botches'];
+  const means=['stars','crowd','startW','startF','fatigueW','fatigueF','stamina25','stamina50','stamina75','endW','endF','routineSpent'];
+  return {...Object.fromEntries(totals.map(k=>[k,sum(k)])),...Object.fromEntries(means.map(k=>[k,avg(rows.map(x=>x[k]))])),bouts:rows.length};
+ };
+ const group=rows=>Object.fromEntries(routineFactors.map(f=>{
+  const xs=rows.map(p=>p.arms[String(f)]),base=rows.map(p=>p.arms['1']);
+  return [String(f),{...summarize(xs),changedOutcomes:xs.filter((x,i)=>x.outcome!==base[i].outcome).length,
+    gainedCompletions:xs.reduce((n,x,i)=>n+Math.max(0,x.completed-base[i].completed),0),
+    lostCompletions:xs.reduce((n,x,i)=>n+Math.max(0,base[i].completed-x.completed),0)}];
+ }));
+ return {pairs:pairs.length,arms:group(pairs),byStructure:Object.fromEntries([...new Set(pairs.map(p=>p.structure))].map(k=>[k,group(pairs.filter(p=>p.structure===k))])),
+  byPlan:Object.fromEntries([...new Set(pairs.map(p=>p.plan))].map(k=>[k,group(pairs.filter(p=>p.plan===k))])),
+  byFatigue:Object.fromEntries(['low','moderate','high'].map(k=>[k,group(pairs.filter(p=>p.fatigueBand===k))])),comparisons:pairs};
+}
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],expenditure=[],reviewRepairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],expenditure=[],reviewRepairs=[],routinePairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -301,6 +345,25 @@ function run(seeds=[3,10],weeks=32){
     assert.equal(afterStamina.length,breakdown(arbitrated.traceReport).staminaCases,key+' current stamina cases reconcile');
     if(beforeStamina.length||afterStamina.length)staminaPairs.push({key,before:beforeStamina,after:afterStamina});
     expenditure.push(...continuation.staminaExpenditure(arbitrated.traceReport,afterStamina));
+    // Reuse the production-policy comparison as the 1.0 control. All
+    // counterfactuals use identical signed sheets, match seeds and fatigue.
+    const routineOptions={...options,sequenceRecoveryPacingVersion:1,sequenceAlternativeReadinessVersion:1,bigSpotArbitrationVersion:3};
+    const arms={'1':routineMetrics(arbitrated,E,measureArbitration,restCount)};
+    for(const factor of routineFactors.slice(1)){
+     root.__mp13RoutineMultiplier=factor;
+     try{
+      const replay=drive(true,i%5===0,routineOptions,immutable,'comparison');
+      const metric=routineMetrics(replay,E,measureArbitration,restCount);
+      assert.equal(metric.signed,arms['1'].signed,key+' drain cannot rewrite agreements');
+      assert.equal(metric.startW,arms['1'].startW,key+' same starting worker energy');
+      assert.equal(metric.startF,arms['1'].startF,key+' same starting opponent energy');
+      assert.equal(metric.accepted,metric.witnessed+metric.botched+metric.refunded,key+' manager requests resolved');
+      if(factor===0)assert.ok(metric.routineSpent<1e-7,key+' zero routine debit control');
+      arms[String(factor)]=metric;
+     }finally{delete root.__mp13RoutineMultiplier;}
+    }
+    const fatigue=arms['1'].fatigueW;
+    routinePairs.push({key,structure:choice.id,plan:approach,fatigueBand:fatigue>=75?'high':fatigue>=25?'moderate':'low',arms});
    }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
@@ -330,12 +393,12 @@ function run(seeds=[3,10],weeks=32){
     apply(c,fin);eq(G.S.officeMemory.professionalPairs||{},before,'duplicate result does not duplicate professional memory');
     return result;
    };
-  },real,continuation.budgetSource);
+  },real,routineSource);
   assert.deepEqual(result.problems,[],'career invariant failures: '+result.problems.join('; '));
   careers.push({seed,...result.stats});
  }
  const groups=key=>Object.fromEntries([...new Set(rows.map(r=>r[key]))].map(k=>[k,summarise(rows.filter(r=>r[key]===k))]));
- return {schema:'office-mp13-career-audit-v1',seeds,weeks,careers,overall:summarise(rows),byStructure:groups('structure'),byApproach:groups('approach'),byCohort:groups('academy'),
+ return {schema:'office-mp13-career-audit-v1',seeds,weeks,careers,routineDrainAudit:summarizeRoutine(routinePairs),overall:summarise(rows),byStructure:groups('structure'),byApproach:groups('approach'),byCohort:groups('academy'),
   matchedLive:{pairs:comparisons.length,meanStarDelta:avg(comparisons.map(x=>x.starDelta)),meanCrowdDelta:avg(comparisons.map(x=>x.crowdDelta)),meanIgnoredDelta:avg(comparisons.map(x=>x.ignoredDelta)),changedOutcomes:comparisons.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons},matchedTraditional:{pairs:traditional.length,meanStructuredStars:avg(traditional.map(x=>x.structuredStars)),meanTraditionalStars:avg(traditional.map(x=>x.traditionalStars)),meanStarDelta:avg(traditional.map(x=>x.starDelta)),meanCrowdDelta:avg(traditional.map(x=>x.crowdDelta)),changedOutcomes:traditional.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons:traditional},matchedFeasibility:(()=>{
    const summarize=side=>{const xs=feasibilityPairs.map(x=>x[side]),entries={};for(const x of xs)for(const e of x.entries)inc(entries,e);
     return {signed:xs.reduce((n,x)=>n+x.signed,0),completed:xs.reduce((n,x)=>n+x.completed,0),noOpening:xs.reduce((n,x)=>n+x.noOpening,0),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd)),injuries:xs.reduce((n,x)=>n+x.injury,0),entries};};
