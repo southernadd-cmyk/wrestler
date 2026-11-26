@@ -458,6 +458,16 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  m.wSt=100;assert.equal(dir.sequenceOffer(m,m.story)?.id,primary,'ready primary still preferred');m.wSt=energy;
  m.o.sheet.limits.banIds.push(alternative);assert.equal(dir.sequenceOffer(m,m.story),null,'restricted alternative not offered');m.o.sheet.limits.banIds.pop();
  m.bigSpotRequest=true;assert.equal(dir.sequenceOffer(m,m.story),null,'manager protection');m.bigSpotRequest=false;
+ // Use the proven legal signed alternative fixture, not a fabricated
+ // physical state or an unsigned move. Preserve current timing/energy.
+ m.o.bigSpotArbitrationVersion=1;
+ m.bigSpotRequest={index:0,at:m.t-20,expires:m.t+70};
+ assert.equal(dir.sequenceOffer(m,m.story),null,'exclusive managerial priority');
+ m.bigSpotRequest.at=m.t-40;m.bigSpotRequest.expires=m.t+50;
+ assert.equal(dir.sequenceOffer(m,m.story)?.id,alternative,'legal signed opening available during cooperation');
+ m.workingHurt=true;assert.equal(dir.sequenceOffer(m,m.story),null,'injury protection unchanged');m.workingHurt=false;
+ m.shortened=true;assert.equal(dir.sequenceOffer(m,m.story),null,'shortened match protection unchanged');m.shortened=false;
+ m.bigSpotRequest=null;
  const restored=E.restore(copy({...m,rState:m.r.getState()}));
  eq(dir.sequenceOffer(restored,restored.story),offer);
  graph.apply(m,alternative);assert.equal(m.structureDirector.sequences[0].progress,1);

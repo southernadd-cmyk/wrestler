@@ -2812,7 +2812,7 @@ const Graph=(function makeGraph(){
    // not a new move, synthetic setup or forced landing. Agreed calls still
    // receive their existing priority below.
    if(M.bigSpotRequest&&p.control==='w'&&$d.regularBigMoment(M,id))
-    n*=10;
+    n*=root.OfficeMatch.bigSpotWeight(M);
    // The public promo is a tactical declaration. Counter promises favour
    // genuine worker reversals of opponent control, not arbitrary bonuses.
    const publicTactic=activePromoTactic(M);

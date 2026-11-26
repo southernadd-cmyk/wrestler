@@ -610,6 +610,13 @@ function tick(M){
  const grappleResolved=Graph.resolveGrapple(M);
  const strikeResolved=Graph.resolveStrike(M);
  const contactResolved=Graph.resolveContact(M);
+ // Settle a genuine already-committed landing before releasing the
+ // reservation. A new attempt cannot start at or beyond its deadline.
+ if(bigSpotArbitrationEnabled(M)&&M.bigSpotRequest){
+  M.bigSpotRequest.expires=bigSpotDeadline(M);
+  witnessOrdinaryBigSpot(M);
+  expireBigSpot(M);
+ }
  const frac=M.t/M.len,ph=Graph.advance(M,frac),w=M.w,f=M.f,plan=M.plan;
  // Minor graph arcs update the label, but do not repeatedly roll the
  // producer's compliance/incidents checks within the same timed phase.
@@ -722,7 +729,11 @@ function tick(M){
  // A requested spectacular spot waits for a physically legal setup. The
  // script never awards one merely because the manager pressed a button.
  if(M.bigSpotRequest&&!spoke){
-  spoke=tryPendingBigSpot(M);
+  // Once exclusive priority ends, an actually ready agreed exchange
+  // can take the graph opportunity; the manager's request stays live.
+  const agreed=bigSpotArbitrationEnabled(M)&&!bigSpotPriority(M)?
+   root.OfficeSheets?.DIRECTOR?.sequenceOffer(M,Psy.get(M)):null;
+  if(!agreed||!Graph.isValid(M,agreed.id))spoke=tryPendingBigSpot(M);
  }
  // Once both workers contest the turnbuckles for a legal named move,
  // resolve that organic exchange before an unrelated scheduled spectacle.
@@ -980,10 +991,33 @@ function regularBigMoment(M,id){
  if(n.family==='chain')return (n.cost||0)>=1.8&&(n.crowd||0)>=3;
  return (n.cost||0)>=2.2&&(n.crowd||0)>=2;
 }
+// Versioned reservation; old matches keep their original policy.
+function bigSpotArbitrationEnabled(M){return [1,2,3].includes(M.o.bigSpotArbitrationVersion);}
+function bigSpotLifetime(M){return [2,3].includes(M.o.bigSpotArbitrationVersion)?240:90;}
+function bigSpotDeadline(M){
+ const r=M.bigSpotRequest;
+ return !r?null:bigSpotArbitrationEnabled(M)?
+  Math.min(r.expires,r.at+bigSpotLifetime(M),Math.max(r.at,M.len-40)):r.expires;
+}
+function bigSpotPriority(M){
+ const r=M.bigSpotRequest;
+ return !!r&&(!bigSpotArbitrationEnabled(M)||M.t<Math.min(r.at+40,bigSpotDeadline(M)));
+}
+// Only an already legal ordinary highlight receives this preference.
+// It is not a new offer, extra attempt or override of physical guards.
+function bigSpotWeight(M){
+ if(!M.bigSpotRequest)return 1;
+ if(bigSpotPriority(M))return 10;
+ return M.o.bigSpotArbitrationVersion===3?6:3;
+}
+function expireBigSpot(M){
+ if(M.bigSpotRequest&&M.t>=bigSpotDeadline(M))
+  closePendingBigSpot(M,'No legal big-spot opening before the request expired');
+}
 function witnessOrdinaryBigSpot(M){
  const pending=M.bigSpotRequest;if(!pending)return;
  const event=(M.graph?.events||[]).findLast(e=>
-  e.t>pending.at&&e.t/Math.max(1,M.len)>=.35&&
+  e.t>pending.at&&(!bigSpotArbitrationEnabled(M)||e.t<=bigSpotDeadline(M))&&e.t/Math.max(1,M.len)>=.35&&
   e.preControl==='w'&&regularBigMoment(M,e.id)&&
   !e.botched&&!e.blocked);
  if(!event)return;
@@ -1036,10 +1070,10 @@ function settlePaceEvidence(M){
    'The crowd has not grown any louder after the appeal.','crowd');
  }
 }
-function closePendingBigSpot(M){
+function closePendingBigSpot(M,reason='No physically legal opening before the finish'){
  const pending=M.bigSpotRequest;if(!pending)return;
  const evidence=M.ringsideEvidence?.[pending.index];
- if(evidence){evidence.status='unavailable';evidence.reason='No physically legal opening before the finish';}
+ if(evidence){evidence.status='unavailable';evidence.reason=reason;if(bigSpotArbitrationEnabled(M))evidence.atEnd=M.t;}
  M.calls=Math.min(3,M.calls+1); // Reserve only: no attempt means no spent call.
  const idx=M.callsUsed.lastIndexOf('big');if(idx>=0)M.callsUsed.splice(idx,1);
  M.bigSpotRequest=null;
@@ -1047,12 +1081,15 @@ function closePendingBigSpot(M){
 }
 function tryPendingBigSpot(M){
  const pending=M.bigSpotRequest;
- if(!pending||M.stage!=='live'||!availableBigSpot(M))return false;
+ if(!pending||M.stage!=='live'||bigSpotArbitrationEnabled(M)&&M.t>=bigSpotDeadline(M)||!availableBigSpot(M))return false;
  const before=Graph.get(M).events.length;
  if(!spot(M,true,true))return false; // setup must still pass actual graph legality
- const landed=Graph.get(M).events.slice(before).some(e=>e.scriptedSpot===true);
+ const event=Graph.get(M).events.slice(before).find(e=>e.scriptedSpot===true);
+ const landed=!!event;
  const evidence=M.ringsideEvidence?.[pending.index];
- if(evidence){evidence.status=landed?'witnessed':'botched';evidence.atAction=M.t;}
+ if(evidence){evidence.status=landed?'witnessed':'botched';evidence.atAction=M.t;
+  if(event&&bigSpotArbitrationEnabled(M)){evidence.action=event.id;evidence.kind='scripted-graph';evidence.atAction=event.t;}
+ }
  M.bigSpotRequest=null;
  return true;
 }
@@ -1101,7 +1138,8 @@ function call(M,id){
   const evidence={id,at:M.t,status:'pending'};
   const list=M.ringsideEvidence??(M.ringsideEvidence=[]);
   const index=list.push(evidence)-1;
-  M.bigSpotRequest={index,at:M.t,expires:Math.max(M.t,M.len-40)};
+  M.bigSpotRequest={index,at:M.t,expires:bigSpotArbitrationEnabled(M)?
+   Math.min(M.t+bigSpotLifetime(M),Math.max(M.t,M.len-40)):Math.max(M.t,M.len-40)};
   if(!tryPendingBigSpot(M)){
    if(M.wSt<28)M.mode={type:'slow',ticks:3};
    say(M,M.planId==='safe'?
@@ -1118,6 +1156,9 @@ function call(M,id){
  if(id==='home'){const originalLen=M.len;const frac=M.t/M.len;if(frac<.6){M.shortened=true;M.len=M.t+70;}else M.len=Math.min(M.len,M.t+40);
   (M.ringsideEvidence??=[]).push({id,at:M.t,status:'applied',oldLength:originalLen,newLength:M.len});
   M.nearfallAt=M.nearfallAt.filter(x=>x*M.len>M.t).slice(0,1);if(!M.nearfallAt.length&&M.len-M.t>30)M.nearfallAt=[(M.t+20)/M.len];
+  if(bigSpotArbitrationEnabled(M)&&M.bigSpotRequest){
+   M.bigSpotRequest.expires=bigSpotDeadline(M);expireBigSpot(M);
+  }
   say(M,`${w.short} relays it to ${M.f.short}: take it home.`,'play',{who:'runner'})}
  return true;
 }
@@ -1484,7 +1525,7 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,lift,call,canCall,livePsychology,liveObedienceDelta,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,structureReport:M=>root.OfficeSheets?.DIRECTOR?.report(M)||null,structureAssessment,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);
+root.OfficeMatch={create,next,lift,call,canCall,bigSpotPriority,bigSpotDeadline,bigSpotWeight,livePsychology,liveObedienceDelta,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,structureReport:M=>root.OfficeSheets?.DIRECTOR?.report(M)||null,structureAssessment,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);
  if(root.OfficeSheets?.DIRECTOR?.active(M)&&!M.structureSpoken){
   M.structureSpoken=Object.fromEntries(M.structureDirector.objectives.filter(o=>o.status!=='pending').map(o=>[o.id,o.status]));
  }
