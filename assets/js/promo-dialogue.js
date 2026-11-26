@@ -2948,7 +2948,7 @@
   "vo_hard": [
    [
     "Hard night ahead. I will win.",
-    "It won't be easy. I'll stand my ground. I intend to win."
+    "It will be hard. I'll stand my ground. I intend to win."
    ],
    [
     "You got the hard part right. You'll have to get past me.",
@@ -2990,7 +2990,7 @@
   "vo_hard": [
    [
     "This will be difficult. I intend to win.",
-    "It won't be easy, and that's why it matters. I will win."
+    "It will be hard, and that's why it matters. I will win."
    ],
    [
     "We might agree on the struggle. The ending is still open.",
