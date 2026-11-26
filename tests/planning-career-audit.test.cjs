@@ -13,6 +13,7 @@ assert.ok(report.overall.spokenLines>0,'measure real wrestler dialogue');
 assert.ok(report.overall.sequenceOffers>0&&report.overall.sequenceHeard>0&&report.overall.sequenceSelected>0&&report.overall.sequences>0,'exercise available sequence choices, not just single calls');
 assert.ok(report.matchedTraditional.pairs>0,'real traditional comparison');
 assert.ok(report.matchedOpenings.pairs>0,'same-booking opening comparison');
+assert.ok(report.openingDiagnostics.totals.windowObserved>0&&report.openingDiagnostics.totals.eligibleTick>0,'trace actual live sequence entry checks');
 assert.equal(report.matchedOpenings.changedOutcomes,0,'opening preference preserves contracted outcomes in matched sample');
 const {rows,matchedLive,matchedTraditional,matchedOpenings,...summary}=report;
 console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedOpenings:{...matchedOpenings,comparisons:undefined}}));
