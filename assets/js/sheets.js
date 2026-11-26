@@ -713,6 +713,29 @@
     M.len-M.t>=Math.max(45,duration+25)&&frac<.91&&
     !M.bigSpotRequest&&!M.workingHurt&&!M.shortened;
   }
+  function openingReadiness(M,steps,landed=false){
+   if(M.sheet?.sequenceContinuationVersion!==1)return true;
+   const graph=root.OfficeMatch.GRAPH,F=root.OfficePlanningFuzzy;
+   const evidence=steps.map(x=>({...x,action:x.id}));
+   if(!F.continuationGrip(evidence).possible)return false;
+   const energy={w:M.wSt,f:M.fSt};
+   let at=M.t;
+   // At a witnessed first landing its costs have already been paid.
+   // At a proposed opening they have not. Future selections begin no
+   // earlier than the next 10-second graph opportunity.
+   for(let i=0;i<steps.length;i++){
+    const x=steps[i],cost=graph.costOf(x.id),side=x.entry.control;
+    if(i===0&&landed){at+=10;continue;}
+    if(at/Math.max(1,M.len)<(actions[x.id].after||0))return false;
+    if(cost>=2.2&&energy[side]<16+cost*3.2)return false;
+    energy[x.performer]-=Math.max(0,cost);
+    const ticks=graph.sequenceMoveSeconds(x.id)/10;
+    // Lower-bound routine exertion estimate; actual live validator is
+    // still authoritative and may reject a later action.
+    energy.w-=ticks*.5;energy.f-=ticks*.5;at+=ticks*10;
+   }
+   return true;
+  }
   function sequenceContext(M,row,pre,previous,landed=null){
    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
    if(!o?.sequence||!['pending','running'].includes(row.status))return null;
@@ -737,7 +760,7 @@
     if(!last||previous?.id!==last.id||previous.t!==last.at||
        previous.preControl!==last.entry.control||!equalState(previous,last.exit)||
        M.t-last.at>30||adaptiveSequences(M)&&Object.prototype.hasOwnProperty.call(pre,'node')&&pre.node!==last.id)return null;
-   }else if(row.attempts>=3)return null;
+   }else if(row.attempts>=3||!openingReadiness(M,opening?[step,...steps.slice(1)]:steps,!!landed))return null;
    return {o,steps,step,opening};
   }
   function sequenceMoveAllowed(M,id,actor){
@@ -1106,7 +1129,7 @@
    if(r.interruptions>0)return {label:'Interrupted sequence',tone:'missed',note:'A verified prefix was interrupted. Future sequence proposals may reflect this shared experience, not personal blame.'};
    return {label:'Incomplete sequence',tone:'',note:'Only part of the sequence was verified. No interruption-based negative evidence is inferred.'};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,observeSequence,deliveryDebrief};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,openingReadiness,observeSequence,deliveryDebrief};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
