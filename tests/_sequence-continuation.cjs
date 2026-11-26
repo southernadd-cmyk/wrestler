@@ -6,9 +6,51 @@ const copy=x=>JSON.parse(JSON.stringify(x));
 const inc=(o,k)=>o[k]=(o[k]||0)+1;
 const count=(xs,fn)=>xs.reduce((o,x)=>(inc(o,fn(x)),o),{});
 const eqState=(a,b)=>a&&b&&['control','position','down'].every(k=>a[k]===b[k]);
-function trace(root,key){
+// Exact write-site instrumentation in the test VM only. The original
+// clamped expression is evaluated once; its value is returned unchanged.
+function budgetSource(source){
+ const sites=[
+  ['M.wSt',"clamp(M.wSt-drain+(mode==='slow'?1.6:0))",'w',"mode==='slow'?'slow_tick':'routine'"],
+  ['M.fSt',"clamp(M.fSt-.5*workDrain(f)*paceFactor(f,'f')+(mode==='slow'?1.2:0))",'f',"mode==='slow'?'slow_tick':'routine'"],
+  ['M[staminaKey]','$d.clamp(M[staminaKey]-effective)',null,"exertion<0?'rest_action':'graph_action'","activeSide"],
+  ['M[key]','$d.clamp(M[key]-.8)',null,"'aerial_commitment'","side"],
+  ['M[staminaKey]','$d.clamp(M[staminaKey]-.45)',null,"'strike_commitment'","side"],
+  ['M[key]','$d.clamp(M[key]-.65)',null,"'grapple_commitment'","side"],
+  ['M.wSt','clamp(M.wSt-(big?7:4))','w',"'spot_extra'"],
+  ['M.fSt','clamp(M.fSt-(big?7:4))','f',"'spot_extra'"],
+  ['M.fSt','clamp(M.fSt-25)','f',"'injury'"],
+  ['M.wSt','clamp(M.wSt-8)','w',"'protect_decision'"]
+ ];
+ for(const [lhs,rhs,fixed,category,side] of sites){
+  const original=lhs+'='+rhs;
+  assert.equal(source.split(original).length,2,'exactly one stamina write site: '+original);
+  const actor=fixed?JSON.stringify(fixed):side;
+  source=source.replace(original,lhs+'=(root.__mp13Budget?root.__mp13Budget(M,'+category+','+actor+','+rhs+'):'+rhs+')');
+ }
+ return source;
+}
+function budgetTotals(ledger,index=ledger.writes.length){
+ const sides={w:{start:ledger.start.w,end:ledger.start.w,byCategory:{}},f:{start:ledger.start.f,end:ledger.start.f,byCategory:{}}};
+ for(const {side,category,delta} of ledger.writes.slice(0,index)){
+  const out=sides[side];out.end+=delta;
+  const row=out.byCategory[category]??={spent:0,recovered:0,writes:0};
+  row.spent+=Math.max(0,-delta);row.recovered+=Math.max(0,delta);row.writes++;
+ }
+ return sides;
+}
+function trace(root,key,withBudget=false){
  const G=root.OfficeMatch.GRAPH,D=root.OfficeSheets.DIRECTOR,A=G.A;
  let tracked=null,phase=null,offer=null;
+ const budget={start:null,writes:[]};
+ const priorBudget=root.__mp13Budget;
+ if(withBudget)root.__mp13Budget=(m,category,side,next)=>{
+  if(m===tracked){
+   assert.ok(side==='w'||side==='f');
+   const before=side==='w'?m.wSt:m.fSt;
+   budget.writes.push({at:m.t,side,category,delta:next-before});
+  }
+  return next;
+ };
  const undo=[],attempts=new Map(),records=[],openings=new Map(),dependencyWitnesses=[],recoveryOffers=[],alternativeReadinessOffers=[];
  const rows=m=>m.structureDirector?.sequences||[];
  const running=m=>rows(m).filter(r=>r.status==='running'&&r.progress>0);
@@ -101,7 +143,7 @@ function trace(root,key){
      });
      const gripPossible=root.OfficePlanningFuzzy.continuationGrip(steps.map(x=>({...x,action:x.id}))).possible;
      assert.ok(detail.some(x=>x.deficit>0),'stamina guard has projected deficit');
-     energyAudit={raw:{w:round(raw.w),f:round(raw.f)},steps:detail,gripPossible,
+     energyAudit={raw:{w:round(raw.w),f:round(raw.f)},budgetIndex:budget.writes.length,steps:detail,gripPossible,
       type:detail.some(x=>x.rawDeficit>0)?'raw_stamina':detail.some(x=>x.costOnlyDeficit>0)?'chain_move_cost':'routine_projection_only',
       maxDeficit:Math.max(...detail.map(x=>x.deficit)),
       plan:m.planId,mode:m.mode?.type||null,remaining:m.len-m.t};
@@ -281,7 +323,7 @@ function trace(root,key){
   }
   return result;
  });
- return {track(m){tracked=m;},close(m){
+ return {track(m){if(!budget.start)budget.start={w:m.wSt,f:m.fSt};tracked=m;},close(m){
   for(const r of rows(m)){
    const rs=records.filter(v=>v.objective===r.objective);
    assert.equal(rs.length,r.attempts,key+' every actual opened attempt traced');
@@ -309,8 +351,12 @@ function trace(root,key){
   const staminaContext={plan:m.planId,workers:Object.fromEntries(['w','f'].map(side=>{
    const worker=m[side];return [side,{id:worker.id,style:worker.style,ring:worker.ring,safe:worker.safe,fatigue:worker.fatigue}];
   })),rests:(m.graph.events||[]).filter(e=>A[e.id]&&G.costOf(e.id)<0&&(e.id==='catch_breath'||A[e.id].family==='rest')&&!e.blocked&&!e.botched).map(e=>({at:e.t,id:e.id,side:A[e.id].reverse?(e.preControl==='w'?'f':'w'):e.preControl,baseRecovery:-G.costOf(e.id)}))};
-  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers,alternativeReadinessOffers,staminaContext};
- },restore(){for(const fn of undo.reverse())fn();tracked=null;}};
+  if(withBudget){
+   const totals=budgetTotals(budget);
+   for(const side of ['w','f'])assert.ok(Math.abs(totals[side].end-m[side+'St'])<1e-7,key+' all actual stamina writes reconcile '+side);
+  }
+  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers,alternativeReadinessOffers,staminaContext,budget};
+ },restore(){for(const fn of undo.reverse())fn();tracked=null;if(withBudget){if(priorBudget===undefined)delete root.__mp13Budget;else root.__mp13Budget=priorBudget;}}};
 }
 function summarise(records){
  const failed=records.filter(v=>!['completed','adapted'].includes(v.terminal.kind));
@@ -437,4 +483,15 @@ function staminaCases(trace){
    mixed:variants.some(s=>s.counts.mixed>0)};
  });
 }
-module.exports={trace,summarise,summariseOpenings,temporalCases,staminaCases};
+function staminaExpenditure(trace,cases){
+ return cases.map(c=>{
+  const best=c.variants.map(v=>v.closestPure).filter(Boolean).sort((a,b)=>a.maxDeficit-b.maxDeficit)[0];
+  if(!best)return {key:c.key,objective:c.objective,structure:c.structure,plan:c.plan,noPure:true};
+  const totals=budgetTotals(trace.budget,best.budgetIndex);
+  for(const side of ['w','f'])assert.ok(Math.abs(totals[side].end-best.raw[side])<=.001,c.key+'|'+c.objective+' exact pre-selection ledger');
+  const deficitSides=[...new Set(best.steps.filter(x=>x.deficit>0).map(x=>x.side))];
+  return {key:c.key,objective:c.objective,structure:c.structure,plan:c.plan,duration:c.duration,at:best.at,
+   deficit:best.maxDeficit,deficitSides,workers:c.workers,totals};
+ });
+}
+module.exports={trace,summarise,summariseOpenings,temporalCases,staminaCases,budgetSource,staminaExpenditure};

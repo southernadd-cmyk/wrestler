@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],reviewRepairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],expenditure=[],reviewRepairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -117,7 +117,7 @@ function run(seeds=[3,10],weeks=32){
    const immutable=copy(sheet.structurePlan),callIds=Object.keys(E.CALLS).filter(x=>!['home'].includes(x));
    function drive(active,resume,settings=options,expectedPlan=immutable,traceActual=false){
     let M=E.create({...copy(settings),livePsychologyVersion:active?1:undefined}),matchResume=0,liveScores=[],calls=0;
-    const trace=traceActual?continuation.trace(root,key):null;trace?.track(M);
+    const trace=traceActual?continuation.trace(root,key,true):null;trace?.track(M);
     try{
     for(let n=0;n<10000&&!M.done;n++){
      if(M.decision&&!M.queue.length){const opts=M.decision.options;E.resolve(M,pick(opts,i+seed+calls).id);}
@@ -300,6 +300,7 @@ function run(seeds=[3,10],weeks=32){
     assert.equal(beforeStamina.length,breakdown(alt.traceReport).staminaCases,key+' original stamina cases reconcile');
     assert.equal(afterStamina.length,breakdown(arbitrated.traceReport).staminaCases,key+' current stamina cases reconcile');
     if(beforeStamina.length||afterStamina.length)staminaPairs.push({key,before:beforeStamina,after:afterStamina});
+    expenditure.push(...continuation.staminaExpenditure(arbitrated.traceReport,afterStamina));
    }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
@@ -329,7 +330,7 @@ function run(seeds=[3,10],weeks=32){
     apply(c,fin);eq(G.S.officeMemory.professionalPairs||{},before,'duplicate result does not duplicate professional memory');
     return result;
    };
-  },real);
+  },real,continuation.budgetSource);
   assert.deepEqual(result.problems,[],'career invariant failures: '+result.problems.join('; '));
   careers.push({seed,...result.stats});
  }
@@ -389,6 +390,26 @@ function run(seeds=[3,10],weeks=32){
    return {...compare(arbitrationPairs),acceptedRequestBouts:compare(arbitrationPairs.filter(x=>x.relevant)),
     byStructure:Object.fromEntries([...new Set(arbitrationPairs.map(x=>x.structure))].map(k=>[k,compare(arbitrationPairs.filter(x=>x.structure===k))])),
     examples:arbitrationPairs.filter(x=>x.relevant).slice(0,15),comparisons:arbitrationPairs};
+  })(),staminaExpenditureAudit:(()=>{
+   const byCategory={},bySide={},byPlan={},byStructure={};
+   for(const c of expenditure){
+    if(c.noPure)continue;
+    for(const side of c.deficitSides){
+     const x=c.totals[side];
+     const gross=Object.values(x.byCategory).reduce((n,r)=>n+r.spent,0);
+     const recovered=Object.values(x.byCategory).reduce((n,r)=>n+r.recovered,0);
+     const summarise=(dst,k)=>{
+      const r=dst[k]??={samples:0,start:0,end:0,spent:0,recovered:0,routineSpent:0};
+      r.samples++;r.start+=x.start;r.end+=x.end;r.spent+=gross;r.recovered+=recovered;r.routineSpent+=x.byCategory.routine?.spent||0;
+     };
+     summarise(bySide,side);summarise(byPlan,c.plan);summarise(byStructure,c.structure);
+     for(const [category,row] of Object.entries(x.byCategory)){
+      const total=byCategory[category]??={spent:0,recovered:0,writes:0};
+      for(const k of ['spent','recovered','writes'])total[k]+=row[k];
+     }
+    }
+   }
+   return {total:expenditure.length,withPure:expenditure.filter(c=>!c.noPure).length,byCategory,bySide,byPlan,byStructure,cases:expenditure};
   })(),staminaOpportunityAudit:(()=>{
    const summarise=side=>{
     const cs=staminaPairs.flatMap(p=>p[side]),types={},closestPureTypes={},deficitBands={},byStructure={},byPlan={},deficitSides={},payoffs={};
