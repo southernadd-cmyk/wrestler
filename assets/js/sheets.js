@@ -777,7 +777,8 @@
    const previous=g.events.at(-1);
    for(const row of sequenceRows(M)){
     const adaptive=adaptiveSequences(M);
-    const ctx=sequenceContext(M,row,adaptive?{...pre,node:g.node}:pre,previous);
+    const entry=adaptive?{...pre,node:g.node}:pre;
+    const ctx=sequenceContext(M,row,entry,previous)||handoffContext(M,row,entry,previous);
     if(!ctx)continue;
     const actor=ctx.step.performer;
     let id=ctx.step.id;
@@ -797,38 +798,38 @@
     const improv=id!==ctx.step.id&&actorProfile?Math.max(.8,Math.min(1.2,1+(actorProfile.scores.improvisation-50)/200)):1;
     const ratio=(row.progress?2.5+follow*8:1+follow*2)*improv;
     return {id,continuation:row.progress>0,objective:row.objective,planned:ctx.opening?ctx.o.sequence.actions[0]:ctx.step.id,
-     ratio,willingness};
+     ratio,willingness,...(ctx.handoff?{handoff:true}:{})};
    }
    return null;
   }
-  // MP13E: the nominal end of an objective is a real editorial deadline.
-  // Its existing eight-point grace is optional, not a reason to consume a
-  // subsequent signed sequence's genuine opportunity. Do not fabricate
-  // achievement, credit one landing twice, or abandon a live exchange.
-  function coordinateSequence(M,pre){
+  // MP13E revised: keep the earlier objective alive unless a real
+  // opening of the next signed sequence actually lands. Protect ANY
+  // accumulated dramatic evidence; no speculative early abandonment.
+  function handoffContext(M,row,pre,previous,landed=null){
    if(M.o?.sequenceCoordinationVersion!==1||!adaptiveSequences(M)||!M.graph||
-      M.graph.pendingAerial||M.graph.pendingGrapple||M.graph.pendingStrike||M.graph.pendingContact||
-      sequenceRows(M).some(row=>row.status==='running')||sequenceWillingness(M)<35)return null;
+      (!landed&&(M.graph.pendingAerial||M.graph.pendingGrapple||M.graph.pendingStrike||M.graph.pendingContact))||
+      sequenceRows(M).some(r=>r.status==='running')||sequenceWillingness(M)<35||
+      row.status!=='pending'||row.progress||row.attempts>=3)return null;
    const states=M.structureDirector.objectives,plan=M.sheet.structurePlan.objectives,frac=M.t/Math.max(1,M.len);
+   const o=plan.find(x=>x.id===row.objective),state=states.find(x=>x.id===row.objective);
+   if(!o||state?.status!=='pending')return null;
+   const pending=o.requires.map(id=>states.find(x=>x.id===id)).filter(x=>x?.status==='pending');
+   if(!pending.length||pending.some(x=>{
+    const prior=plan.find(p=>p.id===x.id);
+    return !prior||frac<prior.window[1]||x.evidence.length>0||
+     sequenceRows(M).some(r=>r.objective===x.id&&['pending','running'].includes(r.status));
+   }))return null;
+   const ctx=sequenceContext(M,row,pre,previous,landed,true);
+   if(!ctx||!sequenceMoveAllowed(M,ctx.step.id,ctx.step.performer)||
+      (!landed&&!root.OfficeMatch.GRAPH.isValid(M,ctx.step.id))||
+      (landed&&landed!==ctx.step.id))return null;
+   return {...ctx,handoff:pending};
+  }
+  // Public pure probe for deterministic fixture checks; no state/RNG changes.
+  function coordinateSequence(M,pre){
    for(const row of sequenceRows(M)){
-    if(row.status!=='pending'||row.progress||row.attempts>=3)continue;
-    const o=plan.find(x=>x.id===row.objective),state=states.find(x=>x.id===row.objective);
-    if(!o||state?.status!=='pending')continue;
-    const pending=o.requires.map(id=>states.find(s=>s.id===id)).filter(x=>x?.status==='pending');
-    if(!pending.length||pending.some(x=>{
-     const prior=plan.find(p=>p.id===x.id);
-     return !prior||frac<prior.window[1]||sequenceRows(M).some(r=>r.objective===x.id&&['pending','running'].includes(r.status));
-    }))continue;
-    // Only an actually available first move can justify yielding the grace
-    // period. The same state/physics/safety gates apply to the later offer.
-    const ctx=sequenceContext(M,row,{...pre,node:M.graph.node},M.graph.events.at(-1),null,true);
-    if(!ctx||!sequenceMoveAllowed(M,ctx.step.id,ctx.step.performer)||!root.OfficeMatch.GRAPH.isValid(M,ctx.step.id))continue;
-    for(const prior of pending){
-     prior.status='missed';prior.reason='The nominal window ended without sufficient evidence; the next agreed exchange had a legal opening.';
-     prior.handoff={at:M.t,to:o.id,opening:ctx.step.id};
-    }
-    M.structureDirector.sequenceHandoff={at:M.t,objective:o.id,opening:ctx.step.id};
-    return M.structureDirector.sequenceHandoff;
+    const ctx=handoffContext(M,row,{...pre,node:M.graph?.node},M.graph?.events.at(-1));
+    if(ctx)return {at:M.t,objective:row.objective,opening:ctx.step.id};
    }
    return null;
   }
@@ -847,7 +848,7 @@
    if(!M.graph?.events?.includes(e)||!actions[e.id]||!pre)return;
    for(const row of sequenceRows(M)){
     if(!['pending','running'].includes(row.status))continue;
-    const ctx=sequenceContext(M,row,pre,previous,e.id);
+    const ctx=sequenceContext(M,row,pre,previous,e.id)||handoffContext(M,row,pre,previous,e.id);
     const substituted=adaptiveSequences(M)&&ctx&&offer?.objective===row.objective&&offer.planned===ctx.step.id&&
      offer.id===e.id&&e.id!==ctx.step.id;
     if(!ctx||e.id!==ctx.step.id&&!substituted||!equalState(e,ctx.step.exit)||e.preControl!==ctx.step.entry.control){
@@ -855,6 +856,13 @@
      const counter=!!(n?.counterOf===expected||n?.blockOf===expected)&&!!expected;
      const code=counter?'defended':!ctx?'state_or_window':'different_move';
      interruptSequence(row,!adaptiveSequences(M)?'The connected exchange was interrupted.':counter?'The planned attack was defended.':!ctx?'The required position or timing was lost.':'The wrestlers chose another move.',code);continue;
+    }
+    if(ctx.handoff){
+     if(!['aerialResolution','grappleResolution','strikeResolution','contactResolution'].every(k=>!e[k]||e[k]==='landed'))continue;
+     for(const prior of ctx.handoff){
+      prior.status='missed';prior.reason='The nominal window ended without evidence; the next signed exchange actually opened.';
+      prior.handoff={at:e.t,to:row.objective,opening:e.id};
+     }
     }
     if(!row.progress){row.attempts++;row.status='running';row.reason=null;}
     row.evidence.push({id:e.id,at:e.t,progress:e.t/Math.max(1,M.len),performer:ctx.step.performer,entry:{...ctx.step.entry},exit:{...ctx.step.exit},
