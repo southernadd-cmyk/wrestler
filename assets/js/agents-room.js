@@ -1455,17 +1455,18 @@
     const q=sequence.by,before=structureCallMood(st.structureBoard[t.objective]),after=structureCallMood(sequence.card);
     const net={w:q.w.mood+after.w-before.w,f:q.f.mood+after.f-before.f};
     out.push({id:'use_sequence',label:'“Pencil in that '+sequence.evidence.steps.length+'-move setup.”',
-     hint:sequenceDescription(st,sequence)+'. '+name+' '+stanceText(q[side].stance)+' ('+moodText(net[side])+'); '+opp+' '+stanceText(q[other(side)].stance)+' ('+moodText(net[other(side)])+'). Only the final named call is signed in this version; the setup is provisional.',
+     hint:sequenceDescription(st,sequence)+'. '+name+' '+stanceText(q[side].stance)+' ('+moodText(net[side])+'); '+opp+' '+stanceText(q[other(side)].stance)+' ('+moodText(net[other(side)])+'). '+(st.planningSequenceSigning===1?'Sign the setup conditionally at review. Live execution is not yet enabled.':'Only the final named call is signed in this version; the setup is provisional.'),
      tags:[...['w','f'].filter(s=>net[s]!==0).map(s=>nameOf(st,s)+(net[s]>0?' ▲':' ▼')),'Conditional setup'],
      run(st){
       const offer=readSequenceOffer(st);if(!offer)throw Error('Sequence is no longer eligible');
       st.structureBoard[t.objective]={...offer.card,chosen:true,open:false,source:'negotiated'};
       st.mood.w+=offer.by.w.mood;st.mood.f+=offer.by.f.mood;
       t.decision='revise';t.sequenceTalk.selected=true;
+      if(st.planningSequenceSigning===1)st.structureBoard[t.objective].sequence=sequenceCommitmentFrom(offer);
       if(t.bargaining)t.bargaining.selected=offer.card.action===t.bargaining.offer.card.action?'second':'first';
       planningLine(st,side,offer.dialogue.lines.ownerResolution,q[side].stance==='accept'?undefined:'objection');
       planningLine(st,other(side),offer.dialogue.lines.partnerResolution,q[other(side)].stance==='accept'?undefined:'objection');
-      log(st,'agent','Setup pencilled in for discussion. Only '+offer.card.label+' is signed as a named call in this version; the connected setup is not an execution commitment.');
+      log(st,'agent',st.planningSequenceSigning===1?'The connected setup is on the sheet, conditional on the right opening. We can still revise it before signing. The booked result stands.':'Setup pencilled in for discussion. Only '+offer.card.label+' is signed as a named call in this version; the connected setup is not an execution commitment.');
      }});
    }
    out.push({id:'open',label:'“Call this objective in the ring.”',
@@ -1555,7 +1556,11 @@
   let discussion=t?.decision==='revise'?'Negotiated '+t.title+': '+t.original.label+' became '+(st.structureBoard?.[t.objective]?.label||'another legal move')+'.':
    t?.decision==='open'?'Negotiated '+t.title+': no named move is promised.':
    t?.decision==='keep'?'Kept '+t.original.label+' for '+t.title+' despite '+nameOf(st,t.by)+'’s reservation.':null;
-  if(t?.sequenceTalk?.selected&&t.sequenceTalk.offer?.card?.action===st.structureBoard?.[t.objective]?.action){
+  if(st.planningSequenceSigning===1&&t?.sequenceTalk?.selected&&st.structureBoard?.[t.objective]?.sequence){
+   const offer=t.sequenceTalk.offer,valid=agreedSequence(st,structureSlot(st,t.objective));
+   if(valid)discussion+=' Conditional setup: '+sequenceDescription(st,offer)+'. Signed as a plan, not a guaranteed execution.';
+   else discussion+=' The setup needs revision before signing.';
+  }else if(st.planningSequenceSigning!==1&&t?.sequenceTalk?.selected&&t.sequenceTalk.offer?.card?.action===st.structureBoard?.[t.objective]?.action){
    const offer=t.sequenceTalk.offer,ev=sequenceEvidence(st,t.objective,offer.card.action,offer.sequence);
    if(ev.eligible&&JSON.stringify(ev)===JSON.stringify(offer.evidence))discussion+=' Discussed setup: '+sequenceDescription(st,offer)+'. Provisional; only the named call is signed.';
   }
@@ -1722,6 +1727,26 @@
   if(JSON.stringify(by)!==JSON.stringify(offer.by))return null;
   const dialogue=L.freezeSequence(st,offer);
   return dialogue&&JSON.stringify(dialogue)===JSON.stringify(offer.dialogue)?offer:null;
+ }
+ // An agreed sequence has no live status, promised landing or invented
+ // execution evidence. Store only the canonical entry and graph IDs.
+ function sequenceCommitmentFrom(offer){
+  return {version:1,mode:'conditional',start:{...offer.sequence.start},actions:offer.sequence.actions.slice()};
+ }
+ function agreedSequence(st,obj){
+  const b=st.structureBoard?.[obj.id],t=st.structureTalk,s=t?.sequenceTalk,offer=s?.offer;
+  if(st.planningSequenceSigning!==1||!b?.sequence||!s?.selected||t.objective!==obj.id||
+     offer?.card?.action!==b.action||offer.card.owner!==b.owner||offer.card.by!==b.by||
+     b.source!=='negotiated'||!b.chosen)return null;
+  const expected=sequenceCommitmentFrom(offer);
+  if(JSON.stringify(expected)!==JSON.stringify(b.sequence))return null;
+  // The psychology was assessed before selection; do not rerun it with
+  // changed consent. Recheck actual move eligibility and transitions.
+  const ev=sequenceEvidence(st,obj.id,b.action,expected);
+  if(!ev.eligible||ev.owner!==offer.evidence?.owner||ev.cid!==offer.evidence?.cid||
+     ev.bookedResult!==offer.evidence?.bookedResult||
+     JSON.stringify(ev.steps)!==JSON.stringify(offer.evidence?.steps))return null;
+  return expected;
  }
  function sequenceDescription(st,offer){
   return offer.evidence.steps.map(s=>nameOf(st,s.performer)+': '+name(s.action)).join(' → ');
@@ -1958,9 +1983,12 @@
    }));
    cards.push({id:'objective_'+obj.id+'_open',label:'Call this objective in the ring',by:'agent',who:AGENT,
     selected:!!cur?.open,risk:false,tags:['No named move commitment']});
+   if(cur?.sequence)cards.push({id:'objective_'+obj.id+'_drop_sequence',
+    label:'Keep '+cur.label+'; remove the connected setup',by:'agent',who:AGENT,selected:false,risk:false,
+    tags:['Remove sequence only']});
    const owned=obj.actor==='either'?'Both wrestlers may contribute':nameOf(st,obj.actor)+' leads';
    return {slot:obj.id,name:obj.title,ask:owned+'. Agree a real move if you want, or leave it open.',
-    cards,current:cur?.label||null,actor:obj.actor,intent:obj.intent,window:obj.window.slice()};
+    cards,current:cur?.sequence?(cur.label+' · '+(agreedSequence(st,obj)?cur.sequence.actions.map(name).join(' → '):'setup requires revision')):cur?.label||null,actor:obj.actor,intent:obj.intent,window:obj.window.slice()};
   });
  }
  function structureReconcile(st){
@@ -1991,7 +2019,7 @@
  function structureWarnings(st){
   return structureSlots(st).filter(obj=>{
    const b=st.structureBoard?.[obj.id];
-   return b?.action&&(b.conflict||banned(st,b.action)||
+   return !!b?.sequence&&!agreedSequence(st,obj)||b?.action&&(b.conflict||banned(st,b.action)||
     !legal(b.action,who(st,b.owner),who(st,other(b.owner))));
   }).map(obj=>obj.title);
  }
@@ -2034,13 +2062,16 @@
    const b=st.structureBoard?.[obj.id]||null,action=b?.action||null;
    if(action&&(banned(st,action)||!legal(action,who(st,b.owner),who(st,other(b.owner)))))
     throw Error('Unsafe structure spot must be revised: '+obj.id);
+   const sequence=b?.sequence?agreedSequence(st,obj):null;
+   if(b?.sequence&&!sequence)throw Error('Unsafe or changed sequence must be revised: '+obj.id);
    return {id:obj.id,intent:obj.intent,title:obj.title,actor:obj.actor,
+    ...(sequence?{sequence}:{}),
     window:obj.window.slice(),requires:obj.requires.slice(),
     commitment:action?'landmark':'guide',
     call:action?{action,owner:b.owner,proposedBy:b.by,label:b.label,source:b.source||'suggested',
      chosen:!!b.chosen,backups:structureCards(st,obj).filter(c=>c.owner===b.owner&&c.action!==action).slice(0,2).map(c=>c.action)}:null};
   });
-  return {version:1,structureId:st.structure.id,roles:{...st.structure.roles},
+  return {version:selected.some(o=>o.sequence)?2:1,structureId:st.structure.id,roles:{...st.structure.roles},
    finishRoute:st.lockRoute||st.board.finish?.route||null,
    objectives:selected,objections:(st.structureObjections||[]).map(n=>({...n}))};
  }
@@ -2242,7 +2273,7 @@
    if(st.planningProposal===1&&opts.planningDialogue===true&&root.OfficePlanningDialogue){
     const L=root.OfficePlanningDialogue,banks=Array.isArray(opts.planningBanks)?opts.planningBanks:[];
     const identities={w:L.capture(w,banks,2),f:L.capture(f,banks,2)};
-    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if(opts.planningSequencePolicy===2)st.planningSequencePolicy=2;}}}
+    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if(opts.planningSequencePolicy===2)st.planningSequencePolicy=2;if(opts.planningSequenceSigning===true)st.planningSequenceSigning=1;}}}
    }
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
@@ -2294,7 +2325,7 @@
   }
   if(st.stage==='scene'){const s=current(st);return s.options(st).map(o=>({id:o.id,label:fmt(st,o.label),hint:fmt(st,o.hint||''),tags:(o.tags||tagsOf(st,o.fx||{})).map(t=>fmt(st,t))}));}
   if(st.stage==='review'&&st.structurePlanning&&structureWarnings(st).length)return [
-   {id:'review_edit',label:'Resolve unsafe called spots',hint:'A manually selected move became prohibited or impossible. Choose another move or leave the objective open.',tags:['Revision required']}];
+   {id:'review_edit',label:'Resolve unsafe called spots',hint:st.planningSequenceSigning===1?'A named move or connected setup is no longer valid. Revise it, remove just the setup, or leave the objective open.':'A manually selected move became prohibited or impossible. Choose another move or leave the objective open.',tags:['Revision required']}];
   if(st.stage==='review')return [
    {id:'review_ok',label:st.structurePlanning?'Sign this structure and finish':'Approve this layout',hint:'Keep the contracted result and move to the last word before the bell.',tags:[]},
    {id:'review_edit',label:st.structurePlanning?'Revise the objectives':'Revise the called spots',hint:st.lockRoute?
@@ -2371,13 +2402,27 @@
     st.stage='scene';st.at=0;enter(st);return st;
    }
    if(st.structurePlanning&&id.startsWith('objective_')){
-    const match=id.match(/^objective_([a-z][a-z0-9_]+)_(\d+|open)$/);
+    const match=id.match(/^objective_([a-z][a-z0-9_]+)_(\d+|open|drop_sequence)$/);
     if(!match)throw Error('Invalid objective choice '+id);
     const obj=structureSlot(st,match[1]);if(!obj)throw Error('Unknown structure objective '+id);
+    if(match[2]==='drop_sequence'){
+     const b=st.structureBoard?.[obj.id];
+     if(!b?.sequence)throw Error('No setup to remove');
+     delete b.sequence;
+     if(st.structureTalk?.objective===obj.id&&st.structureTalk.sequenceTalk)st.structureTalk.sequenceTalk.selected=false;
+     log(st,'you','“Keep the '+b.label+', but call the setup in the ring.”');
+     log(st,'agent','The connected setup is removed. The named move remains on the sheet.');
+     st.decided.push({stage:'board',situation:obj.id,id,label:o.label,tags:o.tags});
+     return st;
+    }
     const choice=match[2]==='open'?null:structureCards(st,obj)[+match[2]];
     if(match[2]!=='open'&&!choice)throw Error('Unavailable structure move '+id);
     const next=choice?{...choice,chosen:true,open:false,source:'manual'}:
      {owner:obj.actor,action:null,label:'Call this objective in the ring',by:'agent',chosen:true,open:true,source:'open'};
+    if(st.structureBoard?.[obj.id]?.sequence){
+     if(st.structureTalk?.objective===obj.id&&st.structureTalk.sequenceTalk)st.structureTalk.sequenceTalk.selected=false;
+     log(st,'agent','Changing that call removes the previously agreed connected setup.');
+    }
     st.structureBoard??={};st.structureBoard[obj.id]=next;
     log(st,'you','“'+obj.title+': '+(choice?'the '+choice.label:'call it in the ring')+'.”');
     st.decided.push({stage:'board',situation:obj.id,id,label:choice?.label||'Call in the ring',tags:o.tags});
@@ -2707,5 +2752,5 @@
   }
   G.save();return out;
  };
- root.OfficeRoom={readSequenceOffer,sequenceCandidates,sequenceEvidence,proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
+ root.OfficeRoom={agreedSequence,readSequenceOffer,sequenceCandidates,sequenceEvidence,proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
 })(typeof window!=='undefined'?window:globalThis);
