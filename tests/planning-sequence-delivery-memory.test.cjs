@@ -203,3 +203,17 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  const profSave=copy(G.S);G.S=copy(profSave);
  eq(memory.professionalContext(G.S,w.id,f.id),memory.professionalContext(profSave,w.id,f.id));
  console.log('PASS MP11: verified professional pair memory, neutral protected/incomplete exchanges, no personal blame, independent relationship axes, earlier-only planning, save persistence and deduplication.');
+
+ // MP12 Lab: same engine and hard proposal gates, sandbox changes isolated.
+ const Lab=require('../tools/fuzzy-lab/core.js');
+ const labCfg={w:w.id,f:f.id,structure:'classic_american',approach:'story',lead:'w',finish:'win_clean',seed:12345,worker:{fatigue:30},opponent:{}};
+ const lab=Lab.setup(root,labCfg),lp=lab.profile('w'),lm=F.behaviourModel;
+ const baseline=Lab.evaluate(root.OfficePsychology,lm,lp.observation.values,lp.cues);
+ eq(baseline.scores,lp.scores);eq(baseline.fired,lp.fired);
+ const altered=Lab.evaluate(root.OfficePsychology,lm,lp.observation.values,lp.cues,{fatigue:[5,15,25]});
+ assert.ok(altered.scores.caution>baseline.scores.caution);
+ eq(Lab.evaluate(root.OfficePsychology,lm,lp.observation.values,lp.cues).scores,baseline.scores);
+ assert.throws(()=>Lab.evaluate(root.OfficePsychology,lm,{}, {},{fatigue:[80,20,50]}));
+ for(const alt of Lab.alternatives(root,lab.room))assert.ok(R.proposalEvidence(lab.room,alt.objective,alt.action).eligible);
+ const tape=Lab.replay(root,labCfg);assert.ok(tape.sheet.signed);eq(tape,Lab.replay(root,labCfg,tape.steps.slice(1).map(x=>x.id)));
+ console.log('PASS MP12 Lab: kernel parity, isolated editable curves, legal proposals and seeded negotiation replay.');
