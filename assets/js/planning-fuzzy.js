@@ -201,5 +201,31 @@
    .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0]?.[0]||'pacing';
   return {score:Object.values(components).reduce((a,b)=>a+b,0),reason};
  }
- root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority});
+ // MP5A: explicitly separate proposal evidence from baseline worker values.
+ // Ordinal/relative game design proxies, not injury probabilities or
+ // predictions of live crowd reactions. Unknown axes remain unknown.
+ function proposalValues(evidence){
+  if(evidence?.v!==1||evidence.eligible!==true)return null;
+  const from=evidence.original,to=evidence.proposed;
+  if(!from||!to||typeof from.action!=='string'||typeof to.action!=='string')return null;
+  const compatible=to.compatible===true&&to.legal===true&&to.permitted===true;
+  if(!compatible||from.legal!==true||from.permitted!==true||from.compatible!==true)return null;
+  const values={
+   proposalRisk:typeof to.risk==='boolean'?(to.risk?75:20):null,
+   proposalFairness:null,
+   sequenceDifficulty:null,
+   structureCompatibility:100,
+   creativeBenefit:Number.isFinite(from.crowd)&&Number.isFinite(to.crowd)?K.scale(to.crowd-from.crowd,-5,5):null
+  };
+  return {v:1,values,unknown:{
+   proposalFairness:'A single same-owner substitution does not establish a fair distribution of credit or burden.',
+   sequenceDifficulty:'No ordered sequence or transition contract has been proposed.'
+  },comparison:{
+   riskFlagChanged:typeof from.risk==='boolean'&&typeof to.risk==='boolean'?from.risk!==to.risk:null,
+   costDelta:Number.isFinite(from.cost)&&Number.isFinite(to.cost)?to.cost-from.cost:null,
+   crowdDelta:Number.isFinite(from.crowd)&&Number.isFinite(to.crowd)?to.crowd-from.crowd:null,
+   finishSupportChanged:typeof from.supportsFinish==='boolean'&&typeof to.supportsFinish==='boolean'?Number(to.supportsFinish)-Number(from.supportsFinish):null
+  }};
+ }
+ root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues});
 })(typeof window!=='undefined'?window:globalThis);
