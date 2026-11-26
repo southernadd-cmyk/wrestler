@@ -90,3 +90,18 @@ excluded. The inventory now uses actual compiler provenance, not ID spelling.
 Update revisioned assets, manifest and exact-text claim keys together; remove
 superseded revisions. CI requires zero uncovered profile keys and canonical
 build parity. Existing saved scenes retain embedded bank snapshots.
+
+## R6 — manifest-free future recruit dialogue
+
+The original shared phrase compiler now lives with promo identity and is consumed
+by both the browser and offline asset builder. The offline path still takes the
+canonical editorial slot table and register profiles; the existing full asset
+check must reproduce all shipped revisions. A future academy ID with no manifest
+entry gets a deterministic 32-slot bank at the start of a new full semantic
+scene. Known live academy voice and ambition aliases map to covered phrase keys;
+unknown labels fall back to stable identity defaults. The actor's real ID and
+normalised delivery are saved alongside the payload and exact-text claim map.
+Existing manifest entries, supplied actual-owner banks, mouthpieces and legacy
+scene formats retain priority/behaviour. No network request or regeneration
+during a resumed scene. This does not create new wrestlers or extend the finite
+career intake. Tests use synthetic future IDs in real promo choice paths.

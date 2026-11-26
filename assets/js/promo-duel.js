@@ -332,6 +332,22 @@
   if(opts.directed&&opts.formats)st.reactionStyle={v:1,recent:[...new Set((root.OfficeGame?.S?.history||[]).slice(0,6).flatMap(h=>(h.promo?.dialogue||[]).filter(e=>e.speaker==='Crowd').map(e=>e.line)))].filter(x=>typeof x==='string').slice(0,48)};
   if(opts.dialogue&&Dialogue)st.dialogueFacts=Dialogue.snapshot(c,w,f,m,p,core);
   if(opts.authored&&st.dialogueFacts)st.authoredDialogue={v:1,...(opts.formats&&opts.semantic?{reviewedAck:1,reviewedContext:1,semanticBankReuse:3,reviewedSpecialist:1,authoredTopics:1,authoredFollowups:1,authoredQuestions:1,authoredStrengthCounters:1,authoredEvidenceAcknowledgements:1,authoredExperience:1,authoredStudy:1,rookieSemantic:1,rookieVoice:1,rookieVow:1}:{}),used:[],recent:Dialogue.recentIds(rival,root.OfficeGame?.S?.history||[]),...(Array.isArray(opts.banks)?{banks:JSON.parse(JSON.stringify(opts.banks))}:{}),...(opts.composition?{composition:true,composedUsed:[]}:{} )};
+  // New full-format scenes only: compile manifest-free academy entrants
+  // once, before play, and keep the exact bank and claim map in the save.
+  if(st.authoredDialogue&&opts.formats&&opts.semantic&&!m){
+   for(const [worker,actor] of [[w,st.dialogueFacts.player],[f,st.dialogueFacts.opponent]]){
+    const future=root.OfficeRookiePhraseFactory?.runtime(worker);
+    if(!future)continue;
+    const mem=st.authoredDialogue;
+    // A caller-provided actual owner bank always wins.
+    if(mem.banks?.some(b=>b.owner===worker.id))continue;
+    Banks.catalogue([future.bank]);
+    (mem.banks??=[]).push(future.bank);
+    Object.assign(mem.futureClaims??={},future.claims);
+    actor.id=worker.id;actor.academy={id:worker.id,tactic:future.profile.tactic,delivery:future.profile.delivery};
+    if(worker.id===w.id)st.dialogueFacts.client={...actor};
+   }
+  }
   if(opts.semantic&&Semantic&&st.authoredDialogue&&opts.directed){st.semantic={v:1,...(opts.formats?{variety:1,followupFlow:1,characterRebuttal:1,claimClassification:1}:{})};core.semanticSpeech=true;}
   if(opts.directed&&Director)st.director=Director.begin(w,f,m,opts.formats?Director.selectFormat(c,w,f,m,p,core,st.seed):null);
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
@@ -519,7 +535,7 @@
   e.dialogueSlot=Dialogue.tag(ctx);
   if(line){if(line.composed)e.composedId=line.id;else e.authoredId=line.id;}
   if(st.semantic&&Semantic.allowed(st)){
-   const tag=line?.semantic||(e.side==='f'?(line&&!line.composed?Semantic.fromBank(line.id,line.text):!line?(Semantic.classify(source?.speechSource,source?.speechDetail,st.semantic.claimClassification===1)||reviewedFallbackClaim(st,ctx,e,source)):null):null);
+   const tag=line?.semantic||(e.side==='f'?(line&&!line.composed?Semantic.fromBank(line.id,line.text,st.authoredDialogue?.futureClaims):!line?(Semantic.classify(source?.speechSource,source?.speechDetail,st.semantic.claimClassification===1)||reviewedFallbackClaim(st,ctx,e,source)):null):null);
    if(tag)e.semantic=tag;
   }
  }

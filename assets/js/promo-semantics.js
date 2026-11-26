@@ -1388,7 +1388,12 @@
   const claim=Object.prototype.hasOwnProperty.call(table,key)?table[key]:null;if(!claim||claim==='strength'&&!detail)return null;
   return {v:1,kind:'claim',claim,source:key,...(claim==='strength'?{detail}:{})};
  }
- function fromBank(id,line){return classify('bank:'+id+':'+hash(line));}
+ function fromBank(id,line,futureClaims){
+  const key='bank:'+id+':'+hash(line),existing=classify(key);
+  if(existing)return existing;
+  const claim=Object.prototype.hasOwnProperty.call(futureClaims||{},key)?futureClaims[key]:null;
+  return claim&&claim!=='strength'&&topicFor(claim)?{v:1,kind:'claim',claim,source:key}:null;
+ }
  function latest(log,side){for(let i=log.length-1;i>=0;i--)if(log[i].side==='w'||log[i].side==='f')return log[i].side===side?{index:i,entry:log[i]}:null;return null;}
  function allowed(st){return st.semantic?.v===1&&!st.speaker&&!st.core.case&&!st.core.claim?.hasEvidence&&!(st.core.claim?.opening==='proof'&&st.core.claim?.planFocus==='counter');}
  const topicFor=claim=>Object.prototype.hasOwnProperty.call(topics,claim)?topics[claim]:null;

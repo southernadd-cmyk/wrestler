@@ -107,3 +107,54 @@ console.log('PASS academy shared semantics: '+count+' named rookie routes; '+see
   }
  }
  assert.equal(vowIds.size,64);
+
+ // R6: synthetic future entrants beyond the fixed 120-person reserve.
+ // Do not add them to the career registry or alter the intake cap.
+ const F=root.OfficeRookiePhraseFactory,B=root.OfficePromoBanks,I=root.OfficePromoIdentity;
+ const futureIds=new Set(),futureVoices=new Set(),futureGoals=new Set();
+ const voices=['Measured and methodical','Eager and quick to speak','Reserved until challenged','Blunt but sincere','Restless and ambitious','Warm and reflective'];
+ const goals=['Earn a first regular circuit booking','Learn from a veteran without losing their own style','Make a name on every promotion’s card','Earn a title opportunity through consistent work'];
+ for(const style of ['Technical','Brawl','Story','Spectacle'])for(let i=0;i<24;i++){
+  const veteran=D.ALL.find(w=>!w.id.startsWith('academy-')&&w.style===style);
+  const rookie={...veteran,id:'academy-future-'+style.toLowerCase()+'-'+i,name:'Future '+style+' '+i,short:'Future '+i,age:21,tier:'Rookie',voice:voices[i%voices.length],ambition:goals[i%goals.length]};
+  const made=F.runtime(rookie);
+  assert.ok(made);futureIds.add(made.bank.owner);futureVoices.add(made.profile.delivery);futureGoals.add(made.profile.motivation);
+  assert.equal(made.bank.rows.length,32);
+  assert.ok(Object.values(F.phraseCoverage(made.profile)).every(n=>n>0));
+  assert.equal(JSON.stringify(made),JSON.stringify(F.runtime({...rookie,age:45,heat:0,mic:99})));
+  B.catalogue([made.bank]);
+  for(const row of made.bank.rows.filter(r=>r[3]==='f')){
+   const id=rookie.id+'.'+row[0],tag=S.fromBank(id,row[5],made.claims);
+   // Some claims are not semantic topics (safe unclassified fallback).
+   if(tag){assert.equal(tag.kind,'claim');assert.equal(S.fromBank(id,row[5]+' altered',made.claims),null);}
+  }
+ }
+ assert.equal(futureIds.size,96);assert.ok(futureVoices.size>=4);assert.ok(futureGoals.size>=3);
+ assert.equal(F.runtime(D.ALL.find(w=>!w.id.startsWith('academy-'))),null);
+ assert.equal(F.runtime({...people[0],style:people[0].wrestling_style}),null,'existing manifest bank unchanged');
+ assert.equal(F.runtime({id:'academy-future-bad',style:'Unknown'}),null);
+ const liveFuture=new Set();
+ for(const style of ['Technical','Brawl','Story','Spectacle'])for(const side of ['w','f']){
+  const veteran=D.ALL.find(w=>!w.id.startsWith('academy-')&&w.style===style);
+  const rookie={...veteran,id:'academy-future-live-'+style.toLowerCase(),name:'Future Worker',short:'Future',age:21,tier:'Rookie',voice:'Warm and reflective',ambition:goals[0]};
+  const w=side==='w'?rookie:veteran,f=side==='f'?rookie:veteran;
+  for(let i=0;i<16;i++){
+   const c={id:'future-live-'+style+'-'+side+'-'+i,wid:w.id,rid:f.id,pid:p.id,eventAbs:100+i,finish:'win_clean',minutes:12,feudHeat:0};
+   const options={directed:true,formats:true,dialogue:true,authored:true,composition:true,semantic:true,banks:promoBanks(w.id,f.id)};
+   const st=M.begin(c,w,f,null,null,p,options);
+   assert.ok(st.authoredDialogue.banks.some(b=>b.owner===rookie.id));
+   assert.equal(st.dialogueFacts[side==='w'?'player':'opponent'].id,rookie.id);
+   const resumed=clone(st);
+   for(let step=0;st.stage!=='done';step++){
+    assert.ok(step<12);
+    const round=M.ROUNDS[st.round].id,choices=M.choices(st);
+    const wanted=({open:'proof',answer:'turn',push:'press',close:'vow'})[round];
+    const action=(choices.find(x=>x.id===wanted)||choices[0]).id;
+    M.choose(st,action);M.choose(resumed,action);
+   }
+   assert.equal(JSON.stringify(st),JSON.stringify(resumed));
+   if(st.log.some(e=>e.side===side&&e.authoredId?.startsWith(rookie.id+'.g.')))liveFuture.add(style+'|'+side);
+  }
+ }
+ assert.ok([...liveFuture].some(x=>x.endsWith('|w'))&&[...liveFuture].some(x=>x.endsWith('|f')),'future generated banks must speak on both sides');
+ console.log('PASS R6 future recruit dialogue: '+futureIds.size+' manifest-free identities, '+liveFuture.size+' live style/side groups, deterministic save snapshots.');
