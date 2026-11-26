@@ -138,8 +138,11 @@ function play(seed,weeks=48,hook=null,realBout=null,sourceTransform=null){
    const mate=!realBout&&R&&w&&o&&R.seconds(c,w,o).find(x=>!x.refuse);
    if(mate){const job=mate.jobs[pick(mate.jobs.length)],roll=random();
     R.settle(c,{sheet:{corner:{id:mate.id,job,cid:c.id,fired:job==='support'||roll<.9,ok:roll<.6,ejected:roll>=.6&&roll<.85,hurtRef:job==='refbump'&&roll>=.85,lift:3}}});stats.corners++;}
-   // After the bell: a planned angle and something said on the microphone.
-   if(A&&w&&o){const plans=A.plans(c,w,o),st=A.begin(c,f,plans[pick(plans.length)].id),opts=A.micOptions(st);
+   // After the bell: the angle, chosen with the result known, then something said on the microphone.
+   // One draw for the angle either way, so the soak's random sequence does not depend on the stage.
+   if(A&&w&&o){const st=A.begin(c,f),angles=A.angleOptions(st),k=pick(Math.max(1,angles.length));
+    if(st.stage==='angle')A.choose(st,angles[k].id);
+    const opts=A.micOptions(st);
     if(opts.length){A.speak(st,opts[pick(opts.length)].id);stats.afters++;if(st.call?.ok)stats.callouts++;}}
   }}
   s.card=s.card.filter(c=>G.W(c.wid));

@@ -56,6 +56,15 @@ console.log('PASS each programme has three distinct, phase-specific directions')
  const nextMic=Mic.begin(contracts[1],w,G.F(contracts[1].rid),null,null,p,{arc:A.intro(contracts[1],'steady')});
  assert.ok(nextMic.readLines.some(x=>x.includes(rec.recap)),'promo carries the callback');
  assert.match(After.begin(c,fin(4),'none').log.map(x=>x.text).join(' '),/another date/,'after the bell acknowledges the next chapter');
+ // When the angle is chosen in the segment, the chapter line follows the angle, once.
+ {const {contracts:cs}=withProgramme(),c2=cs[0],f2=fin(4);G.applyResult(c2,f2);
+  const ready=JSON.parse(JSON.stringify({id:c2.id,wid:c2.wid,rid:c2.rid,pid:c2.pid,slot:c2.slot,finish:c2.finish,programme:c2.programme}));
+  const st=After.begin(ready,f2);assert.equal(st.stage,'angle');
+  assert.doesNotMatch(st.log.map(x=>x.text).join(' '),/another date/,'nothing is said before the angle');
+  assert.ok(After.choose(st,'staredown'));
+  const said=st.log.map(x=>x.text).join(' ');
+  assert.equal((said.match(/another date/g)||[]).length,1,'the next chapter is acknowledged once, after the angle');
+  assert.ok(said.indexOf('another date')>said.indexOf('stare'),'and after the stare-down');}
  console.log('PASS the microphone and after-bell segments acknowledge the actual previous chapter');
 }
 

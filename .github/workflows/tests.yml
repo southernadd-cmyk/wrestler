@@ -86,7 +86,16 @@ jobs:
                   add tests/early-career-finances.test.cjs
                   add tests/ui-accessibility.test.cjs
                   add tests/structure-career-activation.test.cjs
+                  add tests/after-bell-choice.test.cjs
+                  add tests/match-consequence-integrity.test.cjs
                   add_promo ;;
+                assets/js/after-bell.js|assets/js/programme-arcs.js|assets/js/relationships.js|tests/_world.cjs)
+                  add tests/after-bell.test.cjs
+                  add tests/after-bell-choice.test.cjs
+                  add tests/match-consequence-integrity.test.cjs
+                  add tests/programme-arcs.test.cjs
+                  add tests/simulation-consistency.test.cjs
+                  add tests/ui-accessibility.test.cjs ;;
                 assets/js/sheets.js|assets/js/agents-room.js)
                   add tests/ui-accessibility.test.cjs
                   add tests/structure-career-activation.test.cjs
