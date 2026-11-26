@@ -1448,6 +1448,7 @@ function showMeeting(loadedBanks){
    opts.planningSequencePolicy=3;
    opts.planningAdaptiveEntries=true;
    opts.planningContinuationVersion=1;
+   opts.planningReadinessVersion=1;
    opts.planningSequenceSigning=true;
    opts.planningBanks=loadedBanks||[];
   }
