@@ -1507,6 +1507,38 @@
    const k=c.owner+'|'+c.action;if(used.has(k))return false;used.add(k);return true;
   });
  }
+ // MP5A: read-only evidence contract for a single existing called spot.
+ // The room owns eligibility; fuzzy consumers cannot invent a legal card.
+ function proposalEvidence(st,objective,action){
+  const deny=reason=>({v:1,eligible:false,reason});
+  if(!st?.structurePlanning||!st.game)return deny('not_structured');
+  const obj=structureSlot(st,objective),b=st.structureBoard?.[objective];
+  if(!obj||!b?.action||!['w','f'].includes(b.owner))return deny('no_named_call');
+  const owner=b.owner,actor=who(st,owner),partner=who(st,other(owner));
+  if(typeof action!=='string'||!A[action])return deny('unknown_move');
+  if(!A[b.action])return deny('unknown_original');
+  const route=st.lockRoute||st.board.finish?.route||null;
+  const facts=id=>{
+   const n=A[id],card={action:id,owner};
+   return {action:id,legal:legal(id,actor,partner),permitted:!banned(st,id),
+    compatible:P.DIRECTOR.compatibleCall(obj,id,owner),
+    risk:typeof n.risk==='boolean'?n.risk:null,cost:Number.isFinite(n.cost)?n.cost:null,
+    crowd:Number.isFinite(n.crowd)?n.crowd:null,requires:n.requires||null,
+    after:Number.isFinite(n.after)?n.after:null,agile:typeof n.agile==='boolean'?n.agile:null,
+    lift:Number.isFinite(n.lift)?n.lift:null,
+    familiar:(actor.learned||[]).includes(id)||(D.PROFILES[actor.id]?.signature||[]).includes(id),
+    supportsFinish:supportsFinish(st,route,card)};
+  };
+  const original=facts(b.action),proposed=facts(action);
+  if(!original.legal||!original.permitted||!original.compatible)return deny('original_requires_repair');
+  if(!proposed.legal||!proposed.permitted||!proposed.compatible)return deny('prohibited_or_incompatible');
+  if(action!==b.action&&!structureCards(st,obj).some(c=>c.owner===owner&&c.action===action))return deny('not_existing_card');
+  return {v:1,eligible:true,cid:st.cid,objective:obj.id,intent:obj.intent,owner,
+   actorId:actor.id,partnerId:partner.id,bookedResult:st.finish,finishRoute:route,
+   window:obj.window.slice(),original,proposed,
+   // Neither a signed move nor an authored crowd value is an achieved beat.
+   scope:'single_call',sameOwner:true};
+ }
  function structureSeed(st,{refresh=false}={}){
   st.structureBoard??={};
   const route=st.lockRoute||st.board.finish?.route;
@@ -2275,5 +2307,5 @@
   }
   G.save();return out;
  };
- root.OfficeRoom={negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
+ root.OfficeRoom={proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
 })(typeof window!=='undefined'?window:globalThis);
