@@ -1310,6 +1310,8 @@ const Graph=(function makeGraph(){
  function apply(M,id,options={}){
   const n=A[id],p=$d.Psy.get(M),g=get(M);
   const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';
+  const sequencePre=M.structureDirector?.sequences?{control:p.control,position:p.position,down:p.down}:null;
+  const sequencePrevious=sequencePre?g.events.at(-1):null;
   if(n.reverse){
    p.control=opp;p.changes++;M.mom=opp==='w'?30:-30;
   }
@@ -1496,6 +1498,7 @@ const Graph=(function makeGraph(){
    ...(options.scriptedSpot?{scriptedSpot:true,scriptedBig:!!options.big}:{})});
   if(g.events.length>220)g.events.shift();
   sellingNarration(M,id,activeSide,sellingExtra);
+  if(sequencePre)root.OfficeSheets?.DIRECTOR?.observeSequence(M,g.events[g.events.length-1],sequencePre,sequencePrevious);
   root.OfficeSheets?.DIRECTOR?.observe(M,g.events[g.events.length-1]);
   $d.structureCommentary(M);
   if(id==='cheap_shot')$d.referee(M,side);
@@ -2242,6 +2245,8 @@ const Graph=(function makeGraph(){
   const from=current?.next?.length?current.next.map(([id,w])=>[id,w*4]):[];
   const entries=arc.entry.map(id=>[id,1]);
   const selected=[...from,...entries];
+  const negotiated=root.OfficeSheets?.DIRECTOR?.sequenceOffer(M,p);
+  if(negotiated)selected.push([negotiated.id,negotiated.continuation?8:4]);
   const postCoverOffers=nearfallFollowupOffers(M,p.control);
   selected.push(...postCoverOffers);
   // Only the explicitly activated Chickenshit structure gets additional
@@ -3283,6 +3288,17 @@ const Graph=(function makeGraph(){
     const rest=pool.reduce((total,x,j)=>j===i?total:total+x[1],0);
     const notePenalty=Math.min(1,root.OfficeRoom.bias(M,agreed[0]));
     pool[i][1]=Math.max(pool[i][1],rest*agreed[1]*notePenalty);
+   }
+  }
+  // An available conditional setup competes with ordinary validated
+  // moves. A stronger continuation preference follows a real landing;
+  // no forced transition, RNG override or bypass of the pool filters.
+  if(negotiated){
+   const target=pool.find(([id])=>id===negotiated.id);
+   if(target&&target[1]>0){
+    const rest=pool.reduce((sum,[id,w])=>sum+(id===negotiated.id?0:w),0);
+    const desired=negotiated.continuation?2.5:.85;
+    target[1]=Math.max(target[1],rest*desired);
    }
   }
   return pool;

@@ -648,12 +648,108 @@
    finish_build:['escalation','finish_setup']
   };
   const active=M=>M?.structureDirector?.version===1&&M.structureDirector.mode==='active';
+  // MP8A: independent conditional execution ledger. A dramatic objective
+  // can be earned by other moves; that does not complete its signed setup.
+  const sequenceRows=M=>active(M)&&Array.isArray(M.structureDirector.sequences)?M.structureDirector.sequences:[];
+  const opposite=side=>side==='w'?'f':'w';
+  function sequenceSteps(seq){
+   let entry={...seq.start};
+   return seq.actions.map(id=>{
+    const n=actions[id],performer=n.reverse?opposite(entry.control):entry.control;
+    const exit={control:performer,position:n.zone,down:n.down==='d'?(n.reverse?entry.control:opposite(entry.control)):n.down==='a'?performer:null};
+    const step={id,performer,entry,exit};entry=exit;return step;
+   });
+  }
+  const equalState=(a,b)=>!!a&&!!b&&a.control===b.control&&a.position===b.position&&a.down===b.down;
+  function sequenceWindow(M,o,remaining){
+   const frac=M.t/Math.max(1,M.len);
+   // Preserve a finishing runway even for a very late negotiated setup.
+   return M.outcome==='booked'&&frac>=o.window[0]-.04&&frac<=o.window[1]+.08&&
+    M.len-M.t>=Math.max(45,remaining*20+25)&&frac<.91&&
+    !M.bigSpotRequest&&!M.workingHurt&&!M.shortened;
+  }
+  function sequenceContext(M,row,pre,previous){
+   const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
+   if(!o?.sequence||!['pending','running'].includes(row.status))return null;
+   if(o.requires.some(id=>M.structureDirector.objectives.some(s=>s.id===id&&s.status==='pending')))return null;
+   const steps=sequenceSteps(o.sequence),step=steps[row.progress];
+   if(!step||!sequenceWindow(M,o,steps.length-row.progress)||!equalState(pre,step.entry))return null;
+   if(row.progress){
+    const last=row.evidence.at(-1);
+    if(!last||previous?.id!==last.id||previous.t!==last.at||
+       previous.preControl!==last.entry.control||!equalState(previous,last.exit)||
+       M.t-last.at>30)return null;
+   }else if(row.attempts>=3)return null;
+   return {o,steps,step};
+  }
+  // Expose a candidate only; Graph still enforces its complete live pool
+  // filters, stamina, physical grip, location, note and authored defences.
+  function sequenceOffer(M,pre){
+   const g=M.graph;
+   if(!g||g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact)return null;
+   const previous=g.events.at(-1);
+   for(const row of sequenceRows(M)){
+    const ctx=sequenceContext(M,row,pre,previous);
+    if(!ctx)continue;
+    const n=actions[ctx.step.id],actor=ctx.step.performer;
+    const worker=actor==='w'?M.w:M.f,stamina=actor==='w'?M.wSt:M.fSt;
+    const cost=root.OfficeMatch.GRAPH.costOf(ctx.step.id);
+    // isValid checks the controller; additionally protect the actual
+    // reversal performer from an expensive move when exhausted.
+    if(!worker||worker.injury>0&&n.risk||cost>=2.2&&stamina<16+cost*3.2)continue;
+    if(n.risk&&(M.planId==='safe'||M.sheet.spice<0))continue;
+    const limits=M.sheet.limits,note=M.sheet.note?.honour&&!M.sheet.note.waived?M.sheet.note:null;
+    if([limits,note].some(l=>l&&(l.banIds?.includes(ctx.step.id)||l.ban?.includes(n.family))))continue;
+    return {id:ctx.step.id,continuation:row.progress>0};
+   }
+   return null;
+  }
+  function interruptSequence(row,why){
+   if(row.status!=='running')return;
+   row.interruptions++;
+   // Keep best witnessed prefix for diagnostics, not as future progress.
+   if(row.evidence.length>row.best.length)row.best=row.evidence.map(e=>JSON.parse(JSON.stringify(e)));
+   row.progress=0;row.evidence=[];row.status=row.attempts>=3?'missed':'pending';row.reason=why;
+  }
+  // Called at the sole Graph.apply landing boundary, with genuine
+  // pre-state and previous graph event. No attempted/countered parent
+  // can count as the expected landing; no synthetic state transitions.
+  function observeSequence(M,e,pre,previous){
+   if(!M.graph?.events?.includes(e)||!actions[e.id]||!pre)return;
+   for(const row of sequenceRows(M)){
+    if(!['pending','running'].includes(row.status))continue;
+    const ctx=sequenceContext(M,row,pre,previous);
+    if(!ctx||e.id!==ctx.step.id||!equalState(e,ctx.step.exit)||e.preControl!==ctx.step.entry.control){
+     interruptSequence(row,'The connected exchange was interrupted.');continue;
+    }
+    if(!row.progress){row.attempts++;row.status='running';row.reason=null;}
+    row.evidence.push({id:e.id,at:e.t,progress:e.t/Math.max(1,M.len),performer:ctx.step.performer,entry:{...ctx.step.entry},exit:{...ctx.step.exit}});
+    row.progress++;
+    if(row.progress===ctx.steps.length){
+     row.status='completed';row.at=e.t;row.reason='All consecutive graph landings verified.';
+    }
+   }
+  }
+  function advanceSequences(M,final=false){
+   for(const row of sequenceRows(M)){
+    if(!['pending','running'].includes(row.status))continue;
+    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
+    if(row.status==='running'&&M.t-row.evidence.at(-1).at>30)interruptSequence(row,'The next move did not follow in time.');
+    if(final||!o||M.t/Math.max(1,M.len)>o.window[1]+.08||M.len-M.t<45||M.shortened){
+     if(row.status==='running'&&row.evidence.length>row.best.length)row.best=row.evidence.map(e=>JSON.parse(JSON.stringify(e)));
+     row.status='missed';row.reason=final?'The bell came before the sequence was completed.':'The safe window for the sequence closed.';
+    }
+   }
+  }
   function init(M){
    if(M.o.structureExecution!==true)return;
    const r=STRUCTURES.readPlan(M.sheet);
    if(!M.sheet?.signed||r.mode!=='editorial')throw Error('Active structure requires a valid signed editorial plan');
    M.structureDirector={version:1,mode:'active',id:r.plan.structureId,roles:{...r.plan.roles},
-    objectives:r.plan.objectives.map(o=>({id:o.id,intent:o.intent,status:'pending',at:null,reason:null,evidence:[]}))};
+    objectives:r.plan.objectives.map(o=>({id:o.id,intent:o.intent,status:'pending',at:null,reason:null,evidence:[]})),
+    ...(r.plan.version===2?{sequences:r.plan.objectives.filter(o=>o.sequence).map(o=>({
+     objective:o.id,status:'pending',progress:0,attempts:0,interruptions:0,at:null,reason:null,evidence:[],best:[]
+    }))}:{})};
   }
   function current(M){
    if(!active(M))return null;
@@ -754,6 +850,7 @@
   }
   function advance(M){
    if(!active(M))return;
+   advanceSequences(M);
    const at=M.t/Math.max(1,M.len);
    M.structureDirector.objectives.forEach((s,i)=>{
     if(s.status==='pending'&&at>M.sheet.structurePlan.objectives[i].window[1]+.08){
@@ -763,7 +860,7 @@
   }
   function finalize(M){
    if(!active(M))return;
-   advance(M);
+   advance(M);advanceSequences(M,true);
    for(const s of M.structureDirector.objectives)if(s.status==='pending'){
     s.status='missed';s.reason='The bell came before enough performed evidence.';
    }
@@ -842,9 +939,10 @@
    if(!active(M))return null;
    const d=M.structureDirector;
    return {version:d.version,id:d.id,roles:{...d.roles},
-    objectives:d.objectives.map(s=>({...s,evidence:s.evidence.map(x=>({...x}))}))};
+    objectives:d.objectives.map(s=>({...s,evidence:s.evidence.map(x=>({...x}))})),
+    ...(Array.isArray(d.sequences)?{sequences:JSON.parse(JSON.stringify(d.sequences))}:{})};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,observeSequence};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
