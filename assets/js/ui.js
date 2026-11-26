@@ -1259,7 +1259,7 @@ const NIGHT_STORE='the-office-v23-match'; // same key: preserve existing mid-mat
 function persistNight(){
  if(!night?.queue)return;
  try{const m=night.M?{...night.M,rState:night.M.r?.getState?.()}:null;
- localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,resultHTML:night.stage==='result'?night.resultHTML||null:null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,signing:night.signing||null,after:night.after||null,afterReady:night.afterReady||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
+ localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,resultHTML:night.stage==='result'?night.resultHTML||null:null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,segment:night.segment||null,seg:night.seg||null,signing:night.signing||null,after:night.after||null,afterReady:night.afterReady||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
@@ -1282,7 +1282,7 @@ function resumeNight(){
   bell();clearTimeout(night.timer);night.M=restored;night.past=saved.past||[];night.paused=true;
   updateLive();const last=restored.log?.[restored.log.length-1];if(last)showLine(last,true);
   if(restored.decision&&!restored.queue.length)showDecision();
- }else if(saved.stage==='after'&&saved.after)showAfter();else if(saved.stage==='signing')showSigning();else if(saved.stage==='promo'||saved.stage==='mouth')showPromos();else if(saved.stage==='meeting')showMeeting();else prep();
+ }else if(saved.stage==='after'&&saved.after)showAfter();else if(saved.stage==='signing')showSigning();else if(saved.stage==='segment')showSegment();else if(saved.stage==='segpick')showPromos();else if(saved.stage==='promo'||saved.stage==='mouth')showPromos();else if(saved.stage==='meeting')showMeeting();else prep();
  persistNight();return true;
 }
 const SPEED={slow:{line:2600,pause:1100},normal:{line:1500,pause:750},fast:{line:520,pause:260},skip:{line:0,pause:0}};
@@ -1353,6 +1353,43 @@ function showSigning(){
  $('#tv').innerHTML=strip(c,'contract signing')+'<div class="stage screen s-back">'+win('The contract signing: '+w.short+' and '+f.short,matchupBar(c,w,f,middle)+arcCue+sceneLog(entries,'signTalk',w,f,p.id)+decide,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'The paperwork is done.':'Every choice turns the room up or down.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('signTalk');persistNight();
+}
+
+/* ---------- promo segments that are not a back-and-forth ---------- */
+function showSegmentPick(c,w,f,p){
+ night.stage='segpick';
+ const SG=window.OfficeSegments;
+ const body=matchupBar(c,w,f,'<b class="fin">What kind of segment?</b>')+`<div class="decide2"><h3 class="section-h">Before the match</h3><p class="lede">${esc(OfficeRoom.AGENT)}: “${esc(SG.advice(c,w,f))}”</p>${pickCards(SG.menu(c,w,f,p),'segment')}</div>`;
+ $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win('The segment',body,{h:'h3',body:'tight'})+'</div><div class="tv-foot"><span class="dim">Not every segment needs two people talking.</span></div>';
+ persistNight();
+}
+function showSegment(loadedBanks){
+ const c=current();if(!c)return endNight();
+ const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),SG=window.OfficeSegments,type=night.segment.type;
+ if(!night.seg||night.seg.cid!==c.id||night.seg.type!==type){
+  // A solo promo or a grilling speaks in the wrestler's own words: fetch their bank first.
+  if(SG.BANKED.has(type)&&loadedBanks===undefined){
+   const n=night,cid=c.id,token={cid,type};n.segLoading=token;n.seg=null;n.stage='segment';
+   $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back"><p role="status">Preparing the microphone…</p></div>';
+   persistNight();
+   const id=window.OfficePromoIdentity?.bankId?.(w)||w.id;
+   Promise.resolve(window.OfficePromoBanks?.load([id])||[]).catch(()=>[]).then(banks=>{
+    if(n.segLoading!==token)return;delete n.segLoading;
+    if(night===n&&n.stage==='segment'&&current()?.id===cid&&n.segment?.type===type)showSegment(banks);
+   });return;
+  }
+  night.seg=SG.begin(type,c,w,f,p,{banks:loadedBanks||[]});
+ }
+ const st=night.seg,v=SG.view(st);night.stage='segment';
+ const entries=v.log.map(e=>({who:e.who,side:e.side==='stage'||e.side==='crowd'?'c':e.side==='p'?'promoter':e.side,text:e.text,kind:e.kind}));
+ const m=v.meter,tone=v.type==='ambush'?'':m.value>=3?'good':m.value<=-3?'bad':'';
+ const middle=`<b class="fin">${esc(v.name)}</b><span class="${tone}">${esc(m.label)}: ${esc(m.word)}</span>`;
+ const reconciliation=v.stage==='done'&&v.result.promise?OfficeRoom.promoReconciliation(night.plan?.sheet,v.result,w,f,c.finish):null;
+ const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">${esc(v.heading)}</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.hook)}</p>${reconciliation?`<p class="dim"><b>${esc(OfficeRoom.AGENT)} — ${esc(reconciliation.status)}:</b> ${esc(reconciliation.reason)}</p>`:''}</div>`:
+  `<div class="decide2"><h3 class="section-h">${esc(v.heading)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${pickCards(v.options,'seg')}</div>`;
+ $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win(v.name+': '+w.short+(v.type==='ambush'?' and ':' before facing ')+f.short,matchupBar(c,w,f,middle)+sceneLog(entries,'segTalk',w,f,p.id)+decide,{h:'h3',body:'tight'})+'</div>'+
+  `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'That is the segment.':'Every choice says what it risks.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.heading)}</span>`}</div>`;
+ scrollTalk('segTalk');persistNight();
 }
 
 /* ---------- the mouthpiece (v0.3.25) ---------- */
@@ -1547,6 +1584,13 @@ function showPromos(loadedBanks){
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
  if(night.plan?.sheet?.skipPromo)return bell();
+ // Before anything is said: what kind of segment is it? A duel saved before segments existed stays a duel.
+ const SG=window.OfficeSegments;
+ if(SG&&night.segment?.cid!==c.id){
+  if(night.promo?.cid===c.id&&night.promo.v===5)night.segment={cid:c.id,type:'duel'};
+  else return showSegmentPick(c,w,f,p);
+ }
+ if(SG&&night.segment.type!=='duel')return showSegment();
  // v0.3.25 Before the first line: does somebody else do the talking?
  const MP=window.OfficeMouthpiece,talkers=MP&&(!night.promo||night.promo.cid!==c.id)?MP.candidates(c,w):[];
  if(talkers.length&&night.mouth?.cid!==c.id)return showMouthpiece(c,w,f,p,talkers);
@@ -1613,7 +1657,8 @@ function bell(){
  const preparation={...w.prep};const focus=D.TRAINING[w.training]?.stat;
  if(focus&&!w.injury){preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);}
  const signed=window.OfficeSigning&&night.signing?.cid===c.id?OfficeSigning.result(night.signing):null;
- const promoRes=signed||(P.sheet?.skipPromo?null:night.promo?.v>=4?OfficeMic.result(night.promo):night.promo?.v===2?OfficeStory.Graph.result(night.promo):null);
+ const segRes=window.OfficeSegments&&night.segment?.cid===c.id&&night.segment.type!=='duel'&&night.seg?.cid===c.id?OfficeSegments.result(night.seg):null;
+ const promoRes=signed||segRes||(P.sheet?.skipPromo?null:night.promo?.v>=4?OfficeMic.result(night.promo):night.promo?.v===2?OfficeStory.Graph.result(night.promo):null);
  if(window.OfficeProgrammeArcs)OfficeProgrammeArcs.prepare(c,P.arcChoice,promoRes);
  const matchSheet=P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f,c.finish),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f,c.finish)):null;
  // Verify the signed plan AFTER vow and ringside additions. Refuse a stale
@@ -2031,6 +2076,9 @@ document.addEventListener('click',e=>{
   return;
  }
  if(d.mouth){if(night?.stage!=='mouth')return;const c=current();if(!c)return;night.mouth={cid:c.id,id:d.mouth};return showPromos()}
+ if(d.segment){if(e.detail>1||night?.stage!=='segpick')return;const c=current();if(!c||!window.OfficeSegments?.TYPES[d.segment])return;
+  night.segment={cid:c.id,type:d.segment};night.seg=null;night.mouth=null;return showPromos()}
+ if(d.seg){if(e.detail>1||night?.segLoading)return;const st=night?.seg;if(night?.stage!=='segment'||!st||st.stage!=='live'||current()?.id!==st.cid)return;OfficeSegments.choose(st,d.seg);return showSegment()}
  if(d.contract){const st=night?.signing;if(night?.stage!=='signing'||!st||st.stage!=='live')return;OfficeSigning.choose(st,d.contract);return showSigning()}
  if(d.tv==='signing'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showSigning();}
  // A double-click sends a second click (detail 2) at the same spot, after the first pick has
@@ -2039,8 +2087,8 @@ document.addEventListener('click',e=>{
   if(!OfficeMic.choices(st).some(o=>o.id===d.mic))return;OfficeMic.choose(st,d.mic);return showPromos()}
  if(d.tv==='meeting')return showMeeting();
  if(d.tv==='promos'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showPromos();}
- if(d.tv==='bell'){if(window.OfficeSigning?.eligible(current())&&night?.signing?.stage!=='done')return;if(!night?.plan?.sheet?.skipPromo&&!night?.signing&&night?.promo?.v>=4&&night.promo.stage!=='done')return;if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return bell();}
- if(d.tv==='next'){night.after=null;night.afterReady=null;night.signing=null;prep();return}
+ if(d.tv==='bell'){if(window.OfficeSigning?.eligible(current())&&night?.signing?.stage!=='done')return;if(night?.segment?.cid===current()?.id&&night.segment.type!=='duel'&&night.seg?.stage!=='done')return;if(!night?.plan?.sheet?.skipPromo&&!night?.signing&&night?.promo?.v>=4&&night.promo.stage!=='done')return;if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return bell();}
+ if(d.tv==='next'){night.after=null;night.afterReady=null;night.signing=null;night.segment=null;night.seg=null;prep();return}
  if(d.tv==='done'){night.afterReady=null;return endNight();}
  if(d.call)return doCall(d.call);
  if(d.decide)return decideNow(d.decide);

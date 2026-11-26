@@ -42,8 +42,13 @@ async function resume(page){
 }
 const mic=page=>page.locator('#tv [data-mic]:visible');
 const loading=page=>page.locator('#tv').getByText('Preparing the microphone…',{exact:true});
-async function openMic(page){
+// The segment picker comes first; these tests are about the face-to-face duel.
+async function toPromo(page){
  await page.locator('#tv [data-tv="promos"]').click();
+ const duel=page.locator('#tv [data-segment="duel"]');if(await duel.count())await duel.click();
+}
+async function openMic(page){
+ await toPromo(page);
  await mic(page).first().waitFor({timeout:8000});
 }
 async function state(page){return page.evaluate(()=>JSON.parse(JSON.stringify(window.OfficeUI.night.promo)));}
@@ -158,7 +163,7 @@ async function failures(browser){
   await delay(3300);try{await route.continue();}catch(_){/* browser aborted at the deadline */}
  },async({page,requests})=>{
   const start=Date.now();
-  await page.locator('#tv [data-tv="promos"]').click();await loading(page).waitFor();
+  await toPromo(page);await loading(page).waitFor();
   await mic(page).first().waitFor({timeout:8000});const ms=Date.now()-start;
   await assertBankOwners(page,[]);assert.equal(requests.length,2);
   assert.ok(ms>=2100&&ms<5500,'deadline should bound wait: '+ms);
@@ -171,7 +176,7 @@ async function interrupted(browser){
  await withPage(browser,'duplicate/navigation',{width:1366,height:768},async route=>{
   await gate;try{await route.continue();}catch(_){}
  },async({page,requests})=>{
-  await page.locator('#tv [data-tv="promos"]').click();await loading(page).waitFor();
+  await toPromo(page);await loading(page).waitFor();
   // No navigation button is exposed while loading. Dispatch the existing delegated
   // actions through temporary test-only buttons to stress stale/duplicate handlers.
   const dispatch=async(action,attr='tv')=>page.evaluate(({action,attr})=>{

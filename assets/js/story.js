@@ -950,7 +950,8 @@
     if(!fd.closed){fd.heat=clamp(fd.heat+pr.heatDelta);fd.last=G.abs()}
    }
    h.promo={speaker:pr.speaker,opponent:pr.opponent,speech:pr.speech,reply:pr.reply,quality:pr.quality,style:pr.styleName,reaction:pr.reaction,dialogue:pr.dialogue||null,path:pr.path||[],claim:pr.claim||null,tactic:pr.tactic||null,argument:pr.argument||0,promise:pr.promise?{...pr.promise}:null,angle:pr.angle||null,case:pr.case||null};
-   if(pr.v===2){
+   // A promise made in a segment (a solo promo's closing vow) is held to the same standard as a duel's.
+   if(pr.v===2||(pr.v===3&&pr.promise?.type)){
     const promise=pr.promise?.type||'none',won=fin.outcome==='double'||(fin.outcome!=='nc'&&c.finish.startsWith('win'));
     const clean=fin.outcome!=='double'&&fin.outcome!=='nc'&&['win_clean','lose_clean'].includes(c.finish);
     const finisher=won&&c.finish==='win_clean'&&!!G.W(c.wid)?.finisher
@@ -968,8 +969,10 @@
        c.rid,kept?(sure?1:3):-3,kept?(sure?1:3):-2,c.id+':promo:'+promise);
      h.promo.promise.kept=kept;h.promo.promise.checked=true;h.notes.push(line);out.push({text:line,tone:kept?1:-1});
     }
+    if(pr.v===2){
     const mood=pr.trustDelta>1?'The promoter appreciated the restraint.':pr.trustDelta<0?'The promoter was unhappy about how personal it became.':'The promoter took note of the exchange.';
     h.notes.push(mood);out.push({text:mood,tone:Math.sign(pr.trustDelta||0)});
+    }
    }
    const msg=pr.format==='signing'?pr.speaker+' and '+pr.opponent+' signed the contract'+(pr.brawl?', and it ended in a brawl':'')+': '+pr.quality+'/100'+(fd?.closed?'.':', signing heat +'+(pr.signingHeat??pr.heatDelta)+' (applied at the signing).'):pr.speaker+' spoke before the match: '+(pr.v===2?pr.path.map(x=>x.id).join(' → '):'promo '+pr.quality+'/100')+', rivalry '+(fd?.closed?'concluded':'+'+pr.heatDelta)+'.';
    h.notes.push(msg);out.push({text:msg,tone:pr.quality>=55?1:0});

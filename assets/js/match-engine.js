@@ -375,7 +375,7 @@ function create(o){
  const reactions=talkReaction(w,talk);
  const M={v:1,r,w,f,p,o,plan,planId:o.plan.game,leash,talk,len:minutes*60,minutes,t:0,stage:'entrance',phase:null,
   crowd:clamp(Math.round(crowd),5,88),crowdStart:0,crowdPeak:0,crowdSum:0,lastCrowdBand:null,
-  wSt:clamp(100-w.fatigue*.7+(talk==='calm'?6:0)),fSt:92,mom:0,comply,listen:clamp(comply+(leash==='free'?10:0),15,97),resent:leash==='script'&&ego>=75&&(o.memory?.trust??60)<78,
+  wSt:clamp(100-w.fatigue*.7+(talk==='calm'?6:0)),fSt:clamp(92-(o.promo?.opponentHurt||0)),mom:0,comply,listen:clamp(comply+(leash==='free'?10:0),15,97),resent:leash==='script'&&ego>=75&&(o.memory?.trust??60)<78,
   fit,riskMul,mode:null,calls:3,callsUsed:[],ignored:0,offScript:null,scriptChecks:0,scriptHits:0,
   qSum:0,qN:0,bonus:0,spots:0,spotHits:0,botches:0,nearfalls:0,nearfallAt,
   injury:0,injuryPart:null,workingHurt:false,foeHurt:false,stiff:false,shortened:false,
@@ -866,6 +866,10 @@ function playByPlay(M){
   if(M.o.promo.style==='rally')context.push('Listen to those supporters. {W} asked them to get involved, and they have.','Colour: {W} has made the crowd part of the contest.');
   if(M.o.promo.style==='mindgames')context.push('Colour: {F} still looks unsettled by that opening exchange on the microphone.','Those mind games have followed them out of the dressing room.');
   if(M.o.promo.style==='respect')context.push('There was respect on the microphone. There is no room for hesitation in the ring.','Colour: They said this was about wrestling. They are proving it.');
+  // Segments that were not a back-and-forth leave their own mark on the commentary.
+  if(M.o.promo.format==='ambush')context.push(M.o.promo.opponentHurt?'Colour: {F} is still feeling that attack backstage. Look at the way they are moving.':'Colour: {W} got in {F}’s face backstage without throwing a punch. {F} has not settled since.','We all saw what happened backstage before this one. That is still in the air.');
+  if(M.o.promo.format==='vignette')context.push('Colour: That video package before the match has this crowd invested in {W}.');
+  if(M.o.promo.format==='grilling')context.push('Colour: {W} faced some hard questions backstage tonight. This is the answer that counts.');
  }
  if((M.o.feudHeat||0)>=35)context.push('There is a lot of history under every exchange here.','Colour: {W} and {F} remember every previous meeting.','Neither wrestler has forgotten what happened last time.');
  if(M.wSt<35)context.push('Colour: {W} is running on fumes. This is the dangerous part.','{W} is working from instinct now. There is not much left in the tank.');
