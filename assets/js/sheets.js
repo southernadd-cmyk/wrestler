@@ -1002,6 +1002,38 @@
   // The action pool is built for the controller, but the defending side
   // PERFORMS a reversal or block. Never weight that for the attacker.
   const performer=(side,n)=>n.reverse||n.blockOf?(side==='w'?'f':'w'):side;
+  function dependencyFocus(M){
+   if(M.o.sequenceDependencyVersion!==1||M.sheet?.sequenceContinuationVersion!==1||
+      M.outcome!=='booked'||M.workingHurt||M.shortened||M.bigSpotRequest)return null;
+   const x=current(M);if(!x)return null;
+   const {objective:o,state}=x,frac=M.t/Math.max(1,M.len);
+   // Respect the active objective's actual evidence window. Restrict
+   // this policy to simple distinct-action evidence, not special heel,
+   // callback, escape, or both-performer technical conditions.
+   if(!['opening_advantage','pressure','comeback','dominance','challenge','reassertion','escalation'].includes(o.intent)||
+      frac<o.window[0]-.04||frac>o.window[1]+.08)return null;
+   const rows=sequenceRows(M),graph=root.OfficeMatch.GRAPH;
+   if(rows.some(r=>r.status==='running'))return null;
+   const next=M.sheet.structurePlan.objectives.find(n=>n.requires.includes(o.id)&&n.sequence&&
+    rows.some(r=>r.objective===n.id&&r.status==='pending'&&!r.attempts));
+   if(!next||frac>next.window[1]+.08||frac>=.91)return null;
+   const duration=next.sequence.actions.reduce((n,id)=>n+graph.sequenceMoveSeconds(id),0);
+   const earliest=Math.max(M.t,next.window[0]*M.len-.04*M.len);
+   if(M.len-earliest<Math.max(45,duration+25)+20)return null;
+   return {state,objective:o,next};
+  }
+  function dependencyPreference(M,id,side,focus=dependencyFocus(M)){
+   const n=actions[id];if(!focus||!n)return 1;
+   const actor=performer(side,n),{state,objective:o}=focus;
+   // The same recogniser used at actual landing, not family alone.
+   // Do not boost hazards, pending-parent counters, or repeated moves.
+   if(n.risk||n.blockOf||n.counterOf||n.nearfall||!fits(o,{id},n,actor)||
+      state.evidence.some(e=>e.id===id)||!sequenceMoveAllowed(M,id,actor))return 1;
+   // A second distinct qualifying action is enough for these intents.
+   // A bounded preference only: no new graph candidates, RNG draws,
+   // forced success, change of control, or fabricated evidence.
+   return state.evidence.length?2.8:1.7;
+  }
   function bias(M,id,side){
    const x=current(M),n=actions[id];if(!x||!n)return 1;
    const o=x.objective,frac=M.t/Math.max(1,M.len);
@@ -1011,7 +1043,13 @@
     // Defensive moves belong to the defender, not the source attacker.
     const actor=performer(side,n);
     if(frac<o.window[0]-.07||o.actor!=='either'&&o.actor!==actor)return 1;
-    if(o.call?.action===id&&o.call.owner===actor&&fits(o,{id},n,actor))return 4.6;
+    const focus=dependencyFocus(M);
+    const preference=focus?dependencyPreference(M,id,side,focus):1;
+    if(o.call?.action===id&&o.call.owner===actor&&fits(o,{id},n,actor))return 4.6*preference;
+    // In the focused window, remove the structural bonus from moves
+    // that do not actually add distinct evidence. Their ordinary
+    // graph/style weights remain intact; signed named calls retain theirs.
+    if(focus)return fits(o,{id},n,actor)&&!focus.state.evidence.some(e=>e.id===id)?2.8*preference:1;
     return F[o.intent]?.includes(n.family)&&
      (!['evasion','shortcut','escape'].includes(o.intent)||fits(o,{id},n,actor))?2.8:1;
    }
@@ -1129,7 +1167,7 @@
    if(r.interruptions>0)return {label:'Interrupted sequence',tone:'missed',note:'A verified prefix was interrupted. Future sequence proposals may reflect this shared experience, not personal blame.'};
    return {label:'Incomplete sequence',tone:'',note:'Only part of the sequence was verified. No interruption-based negative evidence is inferred.'};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,openingReadiness,observeSequence,deliveryDebrief};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,dependencyFocus,dependencyPreference,sequenceOffer,openingReadiness,observeSequence,deliveryDebrief};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
