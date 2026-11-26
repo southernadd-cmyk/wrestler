@@ -1537,7 +1537,13 @@
    actorId:actor.id,partnerId:partner.id,bookedResult:st.finish,finishRoute:route,
    window:obj.window.slice(),original,proposed,
    // Neither a signed move nor an authored crowd value is an achieved beat.
-   scope:'single_call',sameOwner:true};
+   scope:'single_call',sameOwner:true,
+   allocation:structureSlots(st).map(slot=>{
+    const call=st.structureBoard?.[slot.id],id=call?.action,side=call?.owner,n=id&&A[id];
+    const named=!!(n&&['w','f'].includes(side)&&!banned(st,id)&&legal(id,who(st,side),who(st,other(side)))&&P.DIRECTOR.compatibleCall(slot,id,side));
+    return {objective:slot.id,owner:named?side:null,action:named?id:null,
+     crowd:named&&Number.isFinite(n.crowd)?n.crowd:null,cost:named&&Number.isFinite(n.cost)?n.cost:null};
+   })};
  }
  function structureSeed(st,{refresh=false}={}){
   st.structureBoard??={};
