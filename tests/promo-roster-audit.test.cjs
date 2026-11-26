@@ -26,8 +26,8 @@ for(let season=2;season<=40&&rookies.length<A.REGISTER.length;season++){
 assert.equal(veterans.length,80);assert.equal(rookies.length,120);
 const roster=[...veterans,...rookies];assert.equal(new Set(roster.map(w=>w.id)).size,200);
 function bucket(){return {scenes:0,spoken:0,words:0,authored:0,own:0,shared:0,composed:0,graph:0,semanticReplies:0,semanticLinked:0,semanticMissingOrDifferent:0,opponentTurns:0,opponentClaims:0,rollingRepeat:0,withinSceneRepeat:0,protected:0,formats:{},actions:{},routes:{},sources:{},events:{},stances:{},delivery:{},emotions:{observations:0,composureSum:0,irritationSum:0,composureMin:100,composureMax:0,irritationMin:100,irritationMax:0,irritation30to44:0,irritation60to69:0,composure25to44:0,composureChanges:0,irritationChanges:0},lines:new Map(),owners:new Set(),authoredIds:new Set()};}
-const groups={all:bucket(),established:bucket(),academy:bucket(),w:bucket(),f:bucket()},byOwner=new Map(),byStyle=new Map();
-const histories=[],transcripts=[];let resumeChecks=0,scenes=0;
+// Per-policy histories are isolated: each policy sees its own actual prior lines.
+const transcripts=[];
 const finishes=['win_clean','lose_clean','win_dirty','lose_protected'];
 const schedules=[
  {open:'proof',answer:'turn',push:'press',close:'vow'},
@@ -88,7 +88,13 @@ function observe(a,worker,side,st,prior,emotionTrace,actions){
   }
  }
 }
-for(const [i,worker] of roster.entries()){
+const paired=new Map();
+const pairedStats={scenes:0,changedSpeech:0,changedEvents:0,changedRoute:0,changedQuality:0,changedCloseAction:0,sameActions:0,sameActionsChangedQuality:0,sameActionsChangedPromise:0,protected:0,qualityDeltaSum:0,qualityDeltaMin:100,qualityDeltaMax:-100,commonOpeningActions:0};
+function run(policy){
+ const groups={all:bucket(),established:bucket(),academy:bucket(),w:bucket(),f:bucket()},byOwner=new Map(),byStyle=new Map();
+ const histories=[];let resumeChecks=0,scenes=0;
+ const pacing={push:0,qualitySum:0,qualityMin:100,qualityMax:0,turns:0,irritationExtreme:0,composureExtreme:0,actorEvents:{},actionGroups:{},audienceObserved:0};
+ for(const [i,worker] of roster.entries()){
  const pool=roster.filter(w=>w.id!==worker.id&&D.divisionOf(w)===D.divisionOf(worker));
  const group=worker.id.startsWith('academy-')?'academy':'established';
  const owner=bucket();byOwner.set(worker.id,owner);
@@ -98,7 +104,7 @@ for(const [i,worker] of roster.entries()){
   const c={id:'r7-'+worker.id+'-'+j,wid:w.id,rid:f.id,pid:p.id,eventAbs:100+j,slot:['opener','mid','feature','main'][Math.floor(j/2)],finish:finishes[Math.floor(j/2)],minutes:12,feudHeat:j>=4?55:0};
   // Only synthetic feud heat, not invented recorded matches/claims.
   const rival=j>=4?{heat:55,closed:false}:null;
-  const st=M.begin(c,w,f,rival,null,p,{directed:true,formats:true,dialogue:true,authored:true,composition:true,semantic:true,banks:promoBanks(w.id,f.id)});
+  const st=M.begin(c,w,f,rival,null,p,{directed:true,formats:true,dialogue:true,authored:true,composition:true,semantic:true,banks:promoBanks(w.id,f.id),...(policy==='fuzzy'?{fuzzy:true,fuzzyEmotion:true,fuzzyPacing:true,fuzzyAudience:true}:{})});
   const prior=new Set(histories.flatMap(h=>h.texts));
   st.authoredDialogue.recent=[...new Set([...st.authoredDialogue.recent,...histories.flatMap(h=>h.ids)])].slice(0,128);
   const readEmotion=()=>{const d=st.director[side==='w'?'player':'opponent'];return {composure:d.composure,irritation:d.irritation};};
@@ -107,16 +113,50 @@ for(const [i,worker] of roster.entries()){
    assert.ok(step<12,worker.id+' scene does not terminate');
    if(j<2&&step===1){resumed=clone(st);resumeChecks++;}
    const round=M.ROUNDS[st.round].id,choices=M.choices(st);assert.ok(choices.length);
-   const chosen=(choices.find(o=>o.id===schedules[j][round])||choices[(i+j+step)%choices.length]).id;
+   // Stable round index, not number of earlier turns: a skipped push must not change the fallback close choice.
+   const chosen=(choices.find(o=>o.id===schedules[j][round])||choices[(i+j+M.ROUNDS.findIndex(r=>r.id===round))%choices.length]).id;
    actions.push({round,id:chosen});M.choose(st,chosen);if(resumed)M.choose(resumed,chosen);
    emotions.push(readEmotion());
   }
-  assert.ok(M.result(st),worker.id+' missing result');
+  const result=M.result(st);
+  assert.ok(result,worker.id+' missing result');
+  assert.equal(st.finish,c.finish,worker.id+' booked finish changed');
+  assert.equal(st.steps.filter(x=>x.round==='close').length,1);
+  assert.ok(st.steps.filter(x=>x.round==='push').length<=1);
+  assert.ok(Number.isFinite(result.quality)&&result.quality>=10&&result.quality<=97);
+  const hasPush=actions.some(x=>x.round==='push'),event=st.director.event?.kind||'none';
+  const actionGroup=pacing.actionGroups[schedules[j].answer]??={scenes:0,push:0,events:{},qualitySum:0};
+  actionGroup.scenes++;actionGroup.push+=Number(hasPush);inc(actionGroup.events,event);actionGroup.qualitySum+=result.quality;
+  pacing.push+=Number(hasPush);pacing.qualitySum+=result.quality;pacing.qualityMin=Math.min(pacing.qualityMin,result.quality);pacing.qualityMax=Math.max(pacing.qualityMax,result.quality);
+  pacing.turns+=actions.length;
+  pacing.irritationExtreme+=emotions.filter(e=>e.irritation>=85).length;pacing.composureExtreme+=emotions.filter(e=>e.composure<=15).length;
+  if(st.director.event){assert.ok([w.id,f.id].includes(st.director.event.actor));inc(pacing.actorEvents,event+'|'+(st.director.event.actor===worker.id?'focus':'other'));}
+  if(policy==='fuzzy')for(const a of Object.values(st.authoredDialogue.fuzzy.audience))if(a) pacing.audienceObserved++;
+  const signature={actions,spoken:st.log.filter(e=>e.side==='w'||e.side==='f').map(e=>e.line),event,hasPush,quality:result.quality,promise:result.promise??null,protected:!!(st.core.case||st.core.claim?.hasEvidence)};
+  if(policy==='baseline')paired.set(c.id,signature);
+  else{
+   const before=paired.get(c.id);assert.ok(before);
+   pairedStats.scenes++;
+   const sameActions=JSON.stringify(before.actions)===JSON.stringify(actions);
+   const delta=signature.quality-before.quality;
+   pairedStats.changedSpeech+=Number(JSON.stringify(before.spoken)!==JSON.stringify(signature.spoken));
+   pairedStats.changedEvents+=Number(before.event!==event);
+   pairedStats.changedRoute+=Number(before.hasPush!==hasPush);
+   pairedStats.changedQuality+=Number(delta!==0);
+   pairedStats.changedCloseAction+=Number(before.actions.at(-1).id!==actions.at(-1).id);
+   pairedStats.sameActions+=Number(sameActions);
+   pairedStats.sameActionsChangedQuality+=Number(sameActions&&delta!==0);
+   pairedStats.sameActionsChangedPromise+=Number(sameActions&&JSON.stringify(before.promise)!==JSON.stringify(signature.promise));
+   pairedStats.protected+=Number(signature.protected);
+   pairedStats.qualityDeltaSum+=delta;pairedStats.qualityDeltaMin=Math.min(pairedStats.qualityDeltaMin,delta);pairedStats.qualityDeltaMax=Math.max(pairedStats.qualityDeltaMax,delta);
+   assert.deepEqual(before.actions.slice(0,2),actions.slice(0,2),'matched opening/answer choice');
+   pairedStats.commonOpeningActions++;
+  }
   if(resumed)assert.equal(JSON.stringify(resumed),JSON.stringify(st),worker.id+' resume divergence');
   for(const a of [groups.all,groups[group],groups[side],owner,byStyle.get(worker.style)])observe(a,worker,side,st,prior,emotions,actions);
   histories.unshift({ids:Array.from(M.result(st).dialogueIds||[]),texts:st.log.filter(e=>e.side==='w'||e.side==='f').map(e=>norm(e.line))});histories.splice(12);
   scenes++;
-  if(process.env.PROMO_ROSTER_AUDIT_JSON)transcripts.push({focus:worker.id,side,other:other.id,actions,emotions,log:st.log,result:M.result(st)});
+  if(process.env.PROMO_ROSTER_AUDIT_JSON)transcripts.push({policy,focus:worker.id,side,other:other.id,actions,emotions,log:st.log,result:M.result(st)});
  }
 }
 assert.equal(scenes,1600);assert.equal(resumeChecks,400);assert.equal(groups.all.owners.size,200);
@@ -128,8 +168,15 @@ function summary(a){
  return {...rest,owners:owners.size,distinctAuthoredIds:authoredIds.size,uniqueText:lines.size,topRepeats:[...lines].map(([text,v])=>({text,count:v.count,owners:v.owners.size})).sort((a,b)=>b.owners-a.owners||b.count-a.count).slice(0,10)};
 }
 const all=summary(groups.all),owners=[...byOwner].map(([id,a])=>({id,style:D.ALL.find(w=>w.id===id).style,spoken:a.spoken,own:a.own,shared:a.shared,uniqueText:a.lines.size,rollingRepeat:a.rollingRepeat,semanticReplies:a.semanticReplies,semanticLinked:a.semanticLinked}));
-const report={version:'R7-pre-fuzzy-v1',scenes,resumeChecks,all,groups:Object.fromEntries(Object.entries(groups).filter(([k])=>k!=='all').map(([k,a])=>[k,summary(a)])),styles:Object.fromEntries([...byStyle].map(([k,a])=>[k,summary(a)])),owners};
-if(process.env.PROMO_ROSTER_AUDIT_JSON)fs.writeFileSync(process.env.PROMO_ROSTER_AUDIT_JSON,JSON.stringify({report,transcripts},null,2));
+const report={version:policy==='baseline'?'F7-matched-baseline-v1':'F7-full-fuzzy-v1',scenes,resumeChecks,all,pacing,groups:Object.fromEntries(Object.entries(groups).filter(([k])=>k!=='all').map(([k,a])=>[k,summary(a)])),styles:Object.fromEntries([...byStyle].map(([k,a])=>[k,summary(a)])),owners};
+return report;
+}
+const baseline=run('baseline'),fuzzy=run('fuzzy');
+assert.equal(pairedStats.scenes,1600);assert.equal(pairedStats.commonOpeningActions,1600);
+assert.ok(pairedStats.changedSpeech>0&&pairedStats.changedRoute>0);
+assert.equal(baseline.scenes,fuzzy.scenes);assert.equal(baseline.resumeChecks,fuzzy.resumeChecks);
+const report=baseline,{all,owners,scenes,resumeChecks}=baseline;
+if(process.env.PROMO_ROSTER_AUDIT_JSON)fs.writeFileSync(process.env.PROMO_ROSTER_AUDIT_JSON,JSON.stringify({report,baseline,fuzzy,paired:pairedStats,transcripts},null,2));
 // Compact per-group log, with full per-worker records in optional JSON.
 const compact=a=>{const {routes,actions,delivery,topRepeats,...rest}=a;return rest;};
 console.log('R7 TOTAL '+JSON.stringify(compact(all)));
@@ -140,3 +187,28 @@ console.log('R7 REPEATS '+JSON.stringify(all.topRepeats));
 console.log('R7 LOW OWN '+JSON.stringify(owners.slice().sort((a,b)=>a.own/a.spoken-b.own/b.spoken||a.id.localeCompare(b.id)).slice(0,15)));
 console.log('R7 NO OWN '+JSON.stringify(owners.filter(a=>!a.own).map(a=>a.id)));
 console.log('PASS R7: '+scenes+' actual-choice promos, 200 workers on both sides, '+resumeChecks+' mid-scene JSON save/resume checks.');
+function metrics(a){
+ const e=a.emotions;
+ return {scenes:a.scenes,spoken:a.spoken,words:a.words,authored:a.authored,own:a.own,shared:a.shared,composed:a.composed,graph:a.graph,
+  uniqueText:a.uniqueText,distinctAuthoredIds:a.distinctAuthoredIds,uniquePer100:Number((100*a.uniqueText/a.spoken).toFixed(2)),
+  repeatPer100:Number((100*a.rollingRepeat/a.spoken).toFixed(2)),rollingRepeat:a.rollingRepeat,withinSceneRepeat:a.withinSceneRepeat,
+  authoredPer100:Number((100*a.authored/a.spoken).toFixed(2)),semanticReplies:a.semanticReplies,semanticLinked:a.semanticLinked,
+  linkedPer100:Number((100*a.semanticLinked/Math.max(1,a.semanticReplies)).toFixed(2)),
+  events:a.events,meanComposure:Number((e.composureSum/e.observations).toFixed(2)),meanIrritation:Number((e.irritationSum/e.observations).toFixed(2)),
+  composureRange:[e.composureMin,e.composureMax],irritationRange:[e.irritationMin,e.irritationMax],emotionObservations:e.observations};
+}
+for(const [name,r] of [['baseline',baseline],['fuzzy',fuzzy]]){
+ console.log('F7 '+name.toUpperCase()+' '+JSON.stringify({all:metrics(r.all),groups:Object.fromEntries(Object.entries(r.groups).map(([k,a])=>[k,metrics(a)])),
+  styles:Object.fromEntries(Object.entries(r.styles).map(([k,a])=>[k,metrics(a)])),pacing:r.pacing}));
+ console.log('F7 '+name.toUpperCase()+' REPEATS '+JSON.stringify(r.all.topRepeats));
+ console.log('F7 '+name.toUpperCase()+' NO OWN '+JSON.stringify(r.owners.filter(a=>!a.own).map(a=>a.id)));
+}
+const ownerDiffs=fuzzy.owners.map(a=>{const b=baseline.owners.find(x=>x.id===a.id);return {id:a.id,spokenDelta:a.spoken-b.spoken,ownDelta:a.own-b.own,
+ repeatRateDelta:Number((100*(a.rollingRepeat/a.spoken-b.rollingRepeat/b.spoken)).toFixed(2)),uniqueDelta:a.uniqueText-b.uniqueText};});
+console.log('F7 PAIRED '+JSON.stringify(pairedStats));
+console.log('F7 OWNER IMPACT '+JSON.stringify({moreUnique:ownerDiffs.filter(x=>x.uniqueDelta>0).length,lessUnique:ownerDiffs.filter(x=>x.uniqueDelta<0).length,
+ moreOwn:ownerDiffs.filter(x=>x.ownDelta>0).length,lessOwn:ownerDiffs.filter(x=>x.ownDelta<0).length,
+ higherRepeatRate:ownerDiffs.filter(x=>x.repeatRateDelta>0).length,lowerRepeatRate:ownerDiffs.filter(x=>x.repeatRateDelta<0).length,
+ worstRepeat:ownerDiffs.slice().sort((a,b)=>b.repeatRateDelta-a.repeatRateDelta).slice(0,12)}));
+console.log('PASS F7: 1600 matched pairs, 3200 total actual-choice promos, 800 JSON resumes, no changed booked finish or unlinked shared semantic reply.');
+
