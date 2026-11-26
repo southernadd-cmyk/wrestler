@@ -1,4 +1,4 @@
-/* THE OFFICE — MP1C: planning domain membership and evidence.
+/* THE OFFICE — MP2A: planning domain membership, evidence and behaviour.
    Reuse the shared Sugeno kernel and canonical worker axes. This module
    is not loaded by the live room yet; no decisions or saves change. */
 (function(root){'use strict';
@@ -89,5 +89,35 @@
   return {v:1,cid:snapshot.cid,side,actorId:p.id,opponentId:p.opponentId,values,
    context:{stage:str(room.stage),plan:str(room.game),structure:str(room.structure?.id),lead:str(room.structure?.roles?.lead),finish:str(room.finish),minutes:finite(room.minutes),rivalryHeat:stat(room.heat),moodDelta:finite(room.mood?.[side])}};
  }
- root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe});
+ // MP2A: independent behavioural tendencies, not choice probabilities.
+ // Equal weight across grades within one family keeps transitions smooth.
+ // Rule values/weights are initial design estimates for shadow calibration.
+ const behaviourOutputs=['cooperation','assertiveness','caution'];
+ const rule=(id,output,value,weight,...when)=>({id,output,value,weight,when});
+ const family=(output,axis,values,weight)=>['low','medium','high'].map((grade,i)=>rule(output+'_'+axis+'_'+grade,output,values[i],weight,axis+'.'+grade));
+ const behaviourModel=createModel({outputs:behaviourOutputs,rules:[
+  ...family('cooperation','consent',[15,55,90],3),
+  ...family('cooperation','professionalism',[25,60,85],2),
+  ...family('cooperation','ringPsychology',[35,55,75],1),
+  ...family('cooperation','morale',[30,55,75],1),
+  ...family('assertiveness','ego',[20,55,90],3),
+  ...family('assertiveness','ringPsychology',[25,55,80],1.5),
+  ...family('assertiveness','ringAbility',[30,55,75],1),
+  rule('assertiveness_constructive','assertiveness',85,1,'professionalism.high','ringPsychology.high'),
+  ...family('caution','fatigue',[15,60,95],3),
+  ...family('caution','safetyAbility',[35,55,75],1),
+  ...family('caution','ringPsychology',[30,55,75],1),
+  rule('caution_current_injury','caution',100,4,'condition.injured'),
+  rule('caution_previous_injury','caution',90,2,'history.ownInjury')
+ ]});
+ function behaviour(snapshot,room,side){
+  const observation=observe(snapshot,room,side),p=snapshot.participants[side];
+  const cues={};
+  if(Number.isFinite(p.injury)&&p.injury>0)cues['condition.injured']=1;
+  if(rows(p.relationship?.memories).some(m=>m.kind==='hurt')||
+     rows(p.relationship?.meetings).some(m=>m.legacy!==true&&(m.ownInjury===true||str(m.ownInjury))))cues['history.ownInjury']=1;
+  const inference=behaviourModel.evaluate(observation.values,cues);
+  return {v:1,observation,cues,scores:inference.scores,fired:inference.fired};
+ }
+ root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel});
 })(typeof window!=='undefined'?window:globalThis);
