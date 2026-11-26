@@ -1472,6 +1472,7 @@ function showMeeting(loadedBanks){
  // Phase 5 keeps contracted result, finishing route and dramatic
  // intentions visibly separate. The room's conversation record is an
  // agreement, not evidence of a performed move or guaranteed star bonus.
+ const professionalNote=st.structurePlanning?OfficeMemory.professionalSummary(st.planningEvidence?.participants?.w?.relationship?.professional):null;
  const structurePanel=v.structureBrief&&['review','done'].includes(v.stage)?
   `<section class="structure-review" aria-label="Structure and signed finish summary">
    <h3 class="section-h">Dramatic structure versus booked result</h3>
@@ -1483,6 +1484,7 @@ function showMeeting(loadedBanks){
    </dl>
    <p>${esc(v.structureBrief.focus)}. ${esc(v.structureBrief.advice)}</p>
    <p><b>${v.structureBrief.named} named moves, ${v.structureBrief.open} objectives left open.</b> These are instructions, not guaranteed actions.</p>
+   ${professionalNote?'<p class="structure-conversation"><b>Previous working experience:</b> '+esc(professionalNote)+'</p>':''}
    ${v.structureBrief.discussion?'<p class="structure-conversation"><b>Backstage agreement:</b> '+esc(v.structureBrief.discussion)+'</p>':''}
   </section>`:'';
  const routePicker=v.board?`<section class="finish-choice" role="group" aria-label="Choose the finish">

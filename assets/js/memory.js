@@ -55,6 +55,16 @@
   return {score:clamp(50+entries.reduce((sum,e,i)=>sum+e.delta*(6-i)/2,0)),
    entries:entries.map(e=>({...e}))};
  }
+ // Player-facing factual digest. The hidden confidence score and
+ // individual fuzzy inclinations remain in the simulation.
+ function professionalSummary(context){
+  const entries=Array.isArray(context?.entries)?context.entries:[];
+  if(!entries.length)return null;
+  const latest=entries[0];
+  if(latest.kind==='broken_finish')return 'Last recorded working experience: the agreed finish was broken. That is a shared setback, not evidence of which partner was responsible.';
+  if(latest.kind==='shared_delivery')return 'Last recorded working experience: '+latest.exact+' agreed and '+latest.adapted+' adapted sequences delivered. An encouraging precedent, not a guarantee tonight.';
+  return null;
+ }
  function recordProfessional(c,fin,delivery){
   if(!G.S||!c?.id||!c.wid||!c.rid||c.wid===c.rid||
      !Number.isFinite(c.eventAbs)||!fin?.structure||!Array.isArray(delivery))return null;
@@ -273,5 +283,5 @@
   }
   G.save();return result;
  };
- root.OfficeMemory={view,context,trust,rival,remember,professionalContext,recordProfessional};
+ root.OfficeMemory={view,context,trust,rival,remember,professionalContext,professionalSummary,recordProfessional};
 })(typeof window!=='undefined'?window:globalThis);
