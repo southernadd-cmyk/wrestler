@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],readinessPairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],readinessPairs=[],reviewRepairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -51,8 +51,24 @@ function run(seeds=[3,10],weeks=32){
     let option;
     if(st.stage==='plan')option=take('plan_'+approach);
     else if(st.stage==='board'){
-     const bad=Object.entries(st.structureBoard||{}).find(([,b])=>b?.action&&(b.conflict||R.banned(st,b.action)||!R.legal(b.action,st[b.owner],st[b.owner==='w'?'f':'w'])));
-     option=bad?take('objective_'+bad[0]+'_open'):take('board_ok');
+     // Match the real signing guard, including stale connected setups.
+     // A legal named call can survive when only its negotiated chain is
+     // no longer valid. Use the same explicit review actions as a player.
+     const bad=st.structure.objectives.map(obj=>{
+      const b=st.structureBoard?.[obj.id];
+      if(!b?.action&&!b?.sequence)return null;
+      const named=!!b.action&&(b.conflict||R.banned(st,b.action)||!R.legal(b.action,st[b.owner],st[b.owner==='w'?'f':'w']));
+      const setup=!!b.sequence&&!R.agreedSequence(st,obj);
+      return named||setup?{obj,b,named,setup}:null;
+     }).find(Boolean);
+     if(bad){
+      const {obj,b,named,setup}=bad;
+      const ev=setup?R.sequenceEvidence(st,obj.id,b.action,b.sequence):null;
+      const invalidAlternatives=setup?(b.sequence.openings||[]).map(entry=>({entry,evidence:R.sequenceEvidence(st,obj.id,b.action,{start:entry.start,actions:[entry.action,...b.sequence.actions.slice(1)]})})).filter(x=>!x.evidence.eligible).map(x=>({action:x.entry.action,reason:x.evidence.reason,index:x.evidence.index})):[];
+      option=take('objective_'+obj.id+(named?'_open':'_drop_sequence'));
+      assert.ok(option,key+' explicit revision choice for invalid commitment');
+      reviewRepairs.push({key,structure:choice.id,policy,adaptive,continuationVersion:continuationVersion||0,readinessVersion:readinessVersion||0,objective:obj.id,named:!!named,setup,action:b.action,chain:b.sequence?.actions||[],reason:named?'named_move_prohibited':ev?.eligible?'agreement_or_alternative_changed':ev?.reason||'unknown',invalidAlternatives,choice:option.id});
+     }else option=take('board_ok');
     }else if(st.stage==='review')option=take('review_ok')||take('review_edit');
     else if(st.stage==='curtain')option=take('talk_none')||options[0];
     else if(st.queue[st.at]==='structure_huddle'){
@@ -326,7 +342,7 @@ function run(seeds=[3,10],weeks=32){
     handoverOffers:offered.reduce((n,v)=>n+v.ticks.filter(t=>t.handover).length,0),sequencesWithHandoverOffer:offered.length,
     openedAmongOffered:offered.filter(v=>v.final.attempts>0).length,completedAmongOffered:offered.filter(v=>['completed','adapted'].includes(v.final.status)).length,
     comparisons:handoverPairs};
-  })(),matchedReadiness:(()=>{
+  })(),reviewRepairs:{total:reviewRepairs.length,byReason:reviewRepairs.reduce((o,x)=>(o[x.reason]=(o[x.reason]||0)+1,o),{}),examples:reviewRepairs.slice(0,8),records:reviewRepairs},matchedReadiness:(()=>{
    const sum=(pairs,side)=>{const xs=pairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','readinessMiss','prerequisiteMiss','interruptions','objectives','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
    const compare=pairs=>({pairs:pairs.length,before:sum(pairs,'before'),after:sum(pairs,'after'),changedChains:pairs.filter(x=>JSON.stringify(x.before.chains)!==JSON.stringify(x.after.chains)).length,changedOutcomes:pairs.filter(x=>x.before.outcome!==x.after.outcome).length});
    const both=readinessPairs.filter(x=>x.before.signed&&x.after.signed);
