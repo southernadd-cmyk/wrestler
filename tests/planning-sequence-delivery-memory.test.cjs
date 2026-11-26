@@ -318,3 +318,20 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  delete m.sheet.sequenceContinuationVersion;assert.equal(S.DIRECTOR.openingReadiness(m,bad),true,'legacy agreement unchanged');
  console.log('PASS MP13F.2 actual grip incompatibility, timing/stamina preflight, pure check and legacy opt-out');
 }
+
+// MP13F.6: readiness is a deterministic soft planning prior, never a live gate.
+{
+ const evidence={start:{control:'w',position:'standing',down:null},steps:['front_facelock','sx_delayed'].map(action=>({action,performer:'w',entry:{control:'w',position:'standing',down:null}}))};
+ const objective={window:[.2,.85],requires:[]};
+ const room={...st,minutes:12,fx:{},game:'story',w:{...st.w,fatigue:0},planningContinuationVersion:1,planningReadinessVersion:1};
+ const fresh=F.readinessPrior(room,objective,evidence),tired=F.readinessPrior({...room,w:{...room.w,fatigue:80}},objective,evidence);
+ assert.ok(fresh.score>=tired.score);
+ assert.ok(fresh.samples.every(x=>Number.isFinite(x.margin)&&Number.isFinite(x.score)));
+ eq(fresh,F.readinessPrior(room,objective,evidence));
+ const prior=F.sequenceFeasibility(room,objective,evidence),legacy=F.sequenceFeasibility({...room,planningReadinessVersion:undefined},objective,evidence);
+ assert.equal(prior.possible,legacy.possible);
+ assert.ok(prior.readiness&&!legacy.readiness);
+ const heel=F.sequenceFeasibility({...room,structure:{...room.structure,id:'chickenshit_heel'}},objective,evidence);
+ assert.equal(heel.readiness,undefined);
+ console.log('PASS MP13F.6 deterministic readiness prior, fatigue sensitivity, legacy opt-in, unchanged feasibility hard gates.');
+}
