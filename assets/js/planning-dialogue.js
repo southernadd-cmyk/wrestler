@@ -35,7 +35,7 @@
  const receptive=new Set([...acknowledgements,
   "I accept that particular point; nothing further.","Fair, and short.","Right.","Good.","All right, I see what you mean.","I'll take that point.","Yes.","Okay.","I can accept that.","That's fair.","All right, that's a good point.","Good enough for me.","That will do, then.","That's a fair point.","Reasonable enough.","Fair, I suppose.","I can see the merit in that.","I'll give you that one.","I accept that correction.","That point is valid.","Then we have resolved that matter.","I'll grant you that.","Wonderful.","That observation is correct.","Then the question is resolved.","Credit where it is due.","That is fair, I think you will find.","Let us call that agreed.","Fine, then.","Fine.","Very well, I grant you that much.","I will grant you that, with a bow.","Fair enough, the static is gone.","Yeah, fair point.","Fair, then, go on.","That is a clean point.","I accept that cut.","Right, that is fair, I noted it.","I take that on board.","I give you that much hold.","Fair point, I am sorry.","Agreed, in this order.","I accept that for now.","That lands in the sequence.","That step I accept.","Fair tune, then.","I accept that phrase.","Fair, my call.","Fair, done.","A fair point, rare as sunshine.","Fair, I suppose, you lucky thing.","That is a fair counter.","I take that counter on board.","That meets the standard.","That meets the bar.","Agreed, for now, yes!","Fair point, I love that!","Fair enough, the lesson stands.","I concede that lesson.","Lesson taken.","I will let that lesson stand.","Point taken.","I will allow that.","I will allow that, with one tired nod.","Agreed, for the moment.","Fair point, that.","Agreed, yeah, for now.","Fair point, got it.","That lands with me.","I can let that stand.","The small point is taken.","I will allow the small point.","Agreed within limits.","A clean point, I accept.","That measures well.","That I accept, to the decimal.","Very fair, then.","I concede that, politely.","Your point is taken.","Agreed, for now, promise.","That is a fair point, I will take it kindly.","That lands, item three.","That I accept, as item one.","Agreed, for now, the spark holds.","Fair spark, I take it.","Got it, point taken!","Fine, allowed, go on.","That is sensible, I suppose.","Yep, fair, yep!","Noted, got it!","That line goes into the story.","That line gets my nod.","That is a fair premise.","I accept that premise.","Fair, I am learning from that.","I will concede that, slowly.","Good point, that.","I will let that teaching stand.","That is fair on the evidence.","I take that as data.","Agreed, for now, as the parable asks.","Fair play.","Exactly.","Reasonable, that.","Perfect.","Reasonable.","A reasonable answer.","Fair enough, like a current.","Fair, fair.","Acceptable.","Right, that is fair, I think.","Brilliant answer!","That knot will hold.","Good answer, nice.","Decent answer, that.","A sensible answer, so far.","That'll do.","A fine answer, measured."]);
  const neutral=new Set(["Noted.","Understood.","I heard you.","Got it.","Right, precisely.","Right, look."]);
- const requestLeads=new Set(["Can I ask you something?","Let me set out the facts before anyone gets excited.","Right, look.","Let me put it in order.","Start with the sequence, not the claim.","Okay, here is the honest bit.","Name the conditions of this match.","Here is the plan.","Right.","Okay, okay.","Let me say the true thing first.","Let me say this plainly.","I have got a better idea."]);
+ const requestLeads=new Set(["Tell me what I missed.","Could I ask you a question about that?","Can I ask you something?","Let me set out the facts before anyone gets excited.","Right, look.","Let me put it in order.","Start with the sequence, not the claim.","Okay, here is the honest bit.","Name the conditions of this match.","Here is the plan.","Right.","Okay, okay.","Let me say the true thing first.","Let me say this plainly.","I have got a better idea."]);
  function reviewedStances(row,prefix){
   const keys=Object.keys(row.when),plain=keys.every(k=>k==='hasMouthpiece'),variantOnly=keys.every(k=>k==='hasMouthpiece'||k==='variants');
   if(row.when.hasMouthpiece!==false)return [];
@@ -49,6 +49,7 @@
    if(receptive.has(prefix))return ['accept'];
   }
   if(row.stage==='open'&&row.action==='proof'&&row.side==='w'&&variantOnly&&requestLeads.has(prefix))return ['request'];
+  if(row.stage==='answer'&&row.action==='calm'&&row.category==='pressure'&&variantOnly&&prefix==='Could I ask you a question about that?')return ['request'];
   return [];
  }
  function capture(worker,banks=[],version=1){
@@ -65,6 +66,9 @@
     const lines=D.catalogue([L.decode(bank)]).lines('wrestler',owner);
     if(version===2){
      fragments=lines.map(row=>({row,prefix:row.text.match(/^[^.!?]+[.!?]/)?.[0]}))
+      // Felix's reviewed standalone interjection, not the following
+      // admission of fault. Exact original wording and slot required.
+      .map(x=>x.row.stage==='push'&&x.row.action==='acknowledge'&&x.prefix==='Fair, I deserved that.'?{...x,prefix:'Fair.'}:x)
       .map(({row,prefix})=>({row,prefix,stances:reviewedStances(row,prefix)}))
       .filter(x=>x.stances.length)
       .map(({row,prefix,stances})=>({id:row.id,text:prefix,stances,source:'bank:'+row.id+':'+L.hash(row.text),
@@ -133,7 +137,8 @@
   const ordered=identity.family==='quiet'||identity.family==='direct'?[...bodies].sort((a,b)=>a.length-b.length):bodies;
   const body=ordered[hash(key+'|syntax')%(identity.family==='quiet'||identity.family==='direct'?3:ordered.length)]
    .replaceAll('{move}',point.alternative).replaceAll('{old}',point.original).replaceAll('{goal}',point.title.toLowerCase());
-  const why=turn==='request'?' '+reasonFrames[point.topic][hash(key+'|reason')%reasonFrames[point.topic].length]:'';
+  const counterReasons={risk:'That avoids the riskier call.',finish:'That could help set up our finish.',effort:'That should take less out of you.',impact:'That could get a bigger reaction.',familiarity:'That is one you know.',layout:'It is another way to work the same objective.'};
+  const why=turn==='request'?' '+(point.counterOffer===true?counterReasons[point.topic]:reasonFrames[point.topic][hash(key+'|reason')%reasonFrames[point.topic].length]):'';
   return {v:2,id:line.id,text:line.text+' '+body+why,actorId:identity.id,turn,stance,topic:point.topic,source:line.source||null,bankReuse:bank.length>0,prefix:line.text};
  }
  function compose(identity,point,turn,who,seed,{used=[]}={}){
@@ -189,5 +194,34 @@
   const current=freezeHuddle(room);
   return current&&JSON.stringify(current)===JSON.stringify(frozen)?frozen:null;
  }
- root.OfficePlanningDialogue=Object.freeze({capture,subject,compose,family,loadPair,beginLoad,completeLoad,freezeHuddle,readHuddle});
+ // The partner can put forward a genuine second card for the same
+ // performer. Their reason compares the two proposals, not the booked
+ // original. No claim that the partner performs the move.
+ function counterTopic(first,next){
+  const from=first?.proposed,to=next?.proposed;
+  if(!from||!to)return null;
+  if(from.risk===true&&to.risk===false)return 'risk';
+  if(from.supportsFinish===false&&to.supportsFinish===true)return 'finish';
+  if(Number.isFinite(from.cost)&&Number.isFinite(to.cost)&&to.cost<from.cost)return 'effort';
+  if(from.familiar===false&&to.familiar===true)return 'familiarity';
+  if(Number.isFinite(from.crowd)&&Number.isFinite(to.crowd)&&to.crowd>from.crowd)return 'impact';
+  return 'layout';
+ }
+ function freezeCounter(room,offer){
+  const t=room.structureTalk,R=root.OfficeRoom,F=root.OfficePlanningFuzzy,first=readHuddle(room);
+  if(!first||!offer?.card||offer.card.owner!==t.by||offer.card.action===t.alternative.action||offer.card.action===t.original.action)return null;
+  const original=R.proposalEvidence(room,t.objective,t.alternative.action),next=R.proposalEvidence(room,t.objective,offer.card.action);
+  if(!original.eligible||!next.eligible||!F.readHuddleProposal({...t,alternative:offer.card,proposalResponse:offer.response}))return null;
+  const topic=counterTopic(original,next),owner=t.by,partner=other(owner);
+  const point={...first.point,requester:partner,actorId:first.point.partnerId,partnerId:first.point.actorId,original:t.alternative.label,alternative:offer.card.label,topic,
+   stances:{w:offer.response.by.w.stance,f:offer.response.by.f.stance},counterOffer:true};
+  const used=[first.lines.request.id,first.lines.response.id,'prefix:'+first.lines.request.prefix,'prefix:'+first.lines.response.prefix],lines={};
+  for(const [key,turn,who] of [['request','request',partner],['response','response',owner],['requesterResolution','resolution',owner],['partnerResolution','resolution',partner]]){
+   const line=compose(room.planningDialogue.identities[who],point,turn,who,room.seed+'|counter',{used});
+   if(!line)return null;
+   used.push(line.id,'prefix:'+line.prefix);lines[key]=line;
+  }
+  return {v:1,point,lines};
+ }
+ root.OfficePlanningDialogue=Object.freeze({capture,subject,compose,family,loadPair,beginLoad,completeLoad,freezeHuddle,readHuddle,counterTopic,freezeCounter});
 })(typeof window!=='undefined'?window:globalThis);

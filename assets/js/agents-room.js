@@ -1382,7 +1382,7 @@
     run(st){
      const dialogue=root.OfficePlanningDialogue?.readHuddle(st);
      st.structureBoard[t.objective]={...a,chosen:true,open:false,source:'negotiated'};
-     applyReaction('revise');t.decision='revise';
+     applyReaction('revise');t.decision='revise';if(t.bargaining)t.bargaining.selected='first';
      const own=response?.by[side]?.stance,partner=response?.by[other(side)]?.stance;
      if(dialogue)planningLine(st,side,dialogue.lines.requesterResolution,own==='reserved'||own==='counter'?'objection':undefined);
      else log(st,side,own==='reserved'?'“I’ll work with the change, though I still have concerns.”':own==='counter'?'“I wanted a change, but this still isn’t quite right.”':'“That move I can work.”',own==='reserved'||own==='counter'?'objection':undefined);
@@ -1392,6 +1392,37 @@
      }
      log(st,'agent','Revised '+t.title+'; the dramatic objective and booked finish still stand.');
     }});
+   // One extra discussion, never a loop. Ask without committing a move
+   // or charging mood; afterwards both actual offers remain available.
+   if(st.planningBargaining===1&&response&&!t.bargaining){
+    const offer=counterOffer(st);
+    if(offer)out.push({id:'hear_counter',label:'“'+opp+', what would you suggest instead?”',
+     hint:'Hear one more legal proposal. No change to the layout or consent yet.',tags:['Continue discussion'],
+     run(st){
+      t.bargaining={v:1,offer,first:{card:{...a},response}};
+      planningLine(st,other(side),offer.dialogue.lines.request,'talk');
+      const reply=offer.response.by[side].stance;
+      planningLine(st,side,offer.dialogue.lines.response,reply==='accept'?undefined:'objection');
+      log(st,'agent','Two alternatives on the table. Choose one, keep the original, or leave the objective open.');
+     }});
+   }
+   const compromise=readCounterOffer(st);
+   if(compromise){
+    const q=compromise.response.by;
+    out.push({id:'compromise',label:'“Use the '+compromise.card.label+' instead.”',
+     hint:name+' '+stanceText(q[side].stance)+' ('+moodText(q[side].mood)+'); '+opp+' '+stanceText(q[other(side)].stance)+' ('+moodText(q[other(side)].mood)+').',
+     tags:[...['w','f'].filter(s=>q[s].mood!==0).map(s=>nameOf(st,s)+(q[s].mood>0?' ▲':' ▼')),'Second proposal'],
+     run(st){
+      // Re-check hard eligibility at commit; no extra mood from talking.
+      const final=readCounterOffer(st);if(!final)throw Error('Counterproposal is no longer eligible');
+      st.structureBoard[t.objective]={...final.card,chosen:true,open:false,source:'negotiated'};
+      st.mood[side]+=q[side].mood;st.mood[other(side)]+=q[other(side)].mood;
+      t.decision='revise';t.bargaining.selected='second';
+      planningLine(st,side,final.dialogue.lines.requesterResolution,q[side].stance==='accept'?undefined:'objection');
+      planningLine(st,other(side),final.dialogue.lines.partnerResolution,q[other(side)].stance==='accept'?undefined:'objection');
+      log(st,'agent','Revised '+t.title+' using the second proposal. The booked finish still stands.');
+     }});
+   }
    out.push({id:'open',label:'“Call this objective in the ring.”',
     hint:'Removes the named commitment, not the objective. '+describe('open',name+' +3 consent; '+opp+' −2 for uncertainty.'),
     tags:[name+' ▲',...(reactions.open.partner<0?[opp+' ▼']:[]),'No promised move'],
@@ -1543,6 +1574,52 @@
  }
  // MP5A: read-only evidence contract for a single existing called spot.
  // The room owns eligibility; fuzzy consumers cannot invent a legal card.
+ // Bounded extra offers, only for opt-in bargaining. The visible board
+ // still has its original cards; every extra comes from its legal pool.
+ function bargainingCards(st,obj,owner){
+  if(st.planningBargaining!==1||!obj||!['w','f'].includes(owner)||obj.actor!=='either'&&obj.actor!==owner)return [];
+  const pool=structurePool(st,obj,owner),route=st.lockRoute||st.board.finish?.route||null;
+  const low=[...pool].sort((a,b)=>(A[a].cost??Infinity)-(A[b].cost??Infinity)||pain(a)-pain(b)||a.localeCompare(b));
+  const known=id=>(who(st,owner).learned||[]).includes(id)||(D.PROFILES[who(st,owner).id]?.signature||[]).includes(id);
+  const ids=[...new Set([...pool.slice(0,4),...low.slice(0,3),pool.find(id=>known(id)),pool.find(id=>supportsFinish(st,route,{action:id,owner})),pool.find(id=>!A[id].risk)].filter(Boolean))];
+  return ids.map(action=>({by:other(owner),owner,action,label:name(action),risk:!!A[action].risk}));
+ }
+ function counterOffer(st){
+  const t=st.structureTalk,F=root.OfficePlanningFuzzy,L=root.OfficePlanningDialogue;
+  if(st.planningBargaining!==1||!t?.alternative||t.decision||!L?.readHuddle(st)||!F?.readHuddleProposal(t))return null;
+  const obj=structureSlot(st,t.objective),first=proposalEvidence(st,t.objective,t.alternative.action);
+  if(!first.eligible)return null;
+  const candidates=[];
+  for(const card of bargainingCards(st,obj,t.by)){
+   if([t.original.action,t.alternative.action].includes(card.action))continue;
+   const e=proposalEvidence(st,t.objective,card.action);
+   if(!e.eligible)continue;
+   const response=F.huddleProposal(st.planningEvidence,st,t.objective,card.action,t.by);
+   if(!response)continue;
+   const topic=L.counterTopic(first,e),owner=response.by[t.by].scores,partner=response.by[other(t.by)].scores;
+   const utility=s=>s.acceptance-.5*s.reservations-.5*s.counterproposal;
+   const balance=Math.min(utility(owner),utility(partner)),joint=(utility(owner)+utility(partner))/2;
+   // Prefer a workable trade-off to another attempt at maximum impact.
+   // A different rationale cannot override either worker's assessment.
+   const merit=joint*.65+balance*.35+(topic==='risk'||topic==='finish'||topic==='effort'||topic==='familiarity'?3:0);
+   candidates.push({card,response,merit});
+  }
+  candidates.sort((x,y)=>y.merit-x.merit||x.card.action.localeCompare(y.card.action));
+  if(!candidates.length)return null;
+  const {card,response}=candidates[0],offer={v:1,card,response};
+  const dialogue=L.freezeCounter(st,offer);
+  return dialogue?{...offer,dialogue}:null;
+ }
+ function readCounterOffer(st){
+  const saved=st.structureTalk?.bargaining?.offer;
+  if(st.structureTalk?.bargaining?.v!==1||!saved)return null;
+  // Freeze the chosen offer across reloads; validate the exact card and
+  // response against the still-current original, not a new ranking.
+  const t=st.structureTalk;
+  if(!bargainingCards(st,structureSlot(st,t.objective),t.by).some(c=>JSON.stringify(c)===JSON.stringify(saved.card)))return null;
+  const dialogue=root.OfficePlanningDialogue?.freezeCounter(st,saved);
+  return dialogue&&JSON.stringify(dialogue)===JSON.stringify(saved.dialogue)?saved:null;
+ }
  function proposalEvidence(st,objective,action){
   const deny=reason=>({v:1,eligible:false,reason});
   if(!st?.structurePlanning||!st.game)return deny('not_structured');
@@ -1566,7 +1643,7 @@
   const original=facts(b.action),proposed=facts(action);
   if(!original.legal||!original.permitted||!original.compatible)return deny('original_requires_repair');
   if(!proposed.legal||!proposed.permitted||!proposed.compatible)return deny('prohibited_or_incompatible');
-  if(action!==b.action&&!structureCards(st,obj).some(c=>c.owner===owner&&c.action===action))return deny('not_existing_card');
+  if(action!==b.action&&![...structureCards(st,obj),...bargainingCards(st,obj,owner)].some(c=>c.owner===owner&&c.action===action))return deny('not_existing_card');
   return {v:1,eligible:true,cid:st.cid,objective:obj.id,intent:obj.intent,owner,
    actorId:actor.id,partnerId:partner.id,bookedResult:st.finish,finishRoute:route,
    window:obj.window.slice(),original,proposed,
@@ -1935,7 +2012,7 @@
    if(st.planningProposal===1&&opts.planningDialogue===true&&root.OfficePlanningDialogue){
     const L=root.OfficePlanningDialogue,banks=Array.isArray(opts.planningBanks)?opts.planningBanks:[];
     const identities={w:L.capture(w,banks,2),f:L.capture(f,banks,2)};
-    if(identities.w&&identities.f)st.planningDialogue={v:1,composer:2,identities};
+    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true)st.planningBargaining=1;}
    }
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
@@ -2111,6 +2188,7 @@
    const s=current(st),real=s.options(st).find(x=>x.id===id);
    if(real.fx)apply(st,real.fx);
    real.run?.(st);
+   if(s.id==='structure_huddle'&&id==='hear_counter')return st;
    reconcile(st);
    st.at++;enter(st);return st;
   }
