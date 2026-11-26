@@ -376,3 +376,49 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  assert.equal(focus(),null,'actual rest imposes cooldown');
  console.log('PASS MP13F.7B bounded legal recovery preference, ownership, cooldown, ready sequence precedence, purity and resume.');
 }
+
+// MP13F.8A: a legal primary opening can leave insufficient energy
+// for the signed payoff, while a cheaper signed alternative is ready.
+{
+ const room=R.begin(c,w,f,p,{...opts,structure:{id:'dominant_ace',lead:'w'}});
+ room.queue=[];R.act(room,'plan_story');R.act(room,'board_ok');R.act(room,'review_ok');R.act(room,'talk_none');
+ const base=copy(room.sheet),obj=base.structurePlan.objectives[0],start={control:'w',position:'standing',down:null};
+ const dir=S.DIRECTOR;
+ const firsts=Object.keys(A).filter(id=>usable(id)&&!graph.PHYSICAL_GRIP_MOVES[id]);
+ const finals=Object.keys(A).filter(id=>!excluded.has(id)&&!A[id].risk&&!A[id].reverse&&!A[id].counterOf&&!A[id].blockOf&&!A[id].nearfall&&
+  !graph.PHYSICAL_GRIP_MOVES[id]&&graph.costOf(id)>=2.2&&dir.compatibleCall(obj,id,'w')&&A[id].after<=.25);
+ let fixture;
+ search:for(const primary of firsts)for(const payoff of finals.filter(id=>id!==primary&&links(primary).includes(id)))for(const alternative of firsts){
+  if([primary,payoff].includes(alternative)||!links(alternative).includes(payoff)||graph.GRIP_ENTRY[primary]!==graph.GRIP_ENTRY[alternative])continue;
+  const diff=graph.costOf(primary)-graph.costOf(alternative);
+  if(diff<.8||graph.costOf(alternative)<0||graph.costOf(alternative)>Math.max(1.8,graph.costOf(primary)))continue;
+  obj.call={action:payoff,owner:'w',proposedBy:'w',label:A[payoff].name||payoff,source:'negotiated',chosen:true,backups:[]};
+  obj.commitment='landmark';obj.sequence={version:2,mode:'conditional',start,actions:[primary,payoff],openings:[{start:{...start},action:alternative}]};
+  base.structurePlan.version=2;base.sequenceContinuationVersion=1;
+  if(S.STRUCTURES.readPlan(base).mode!=='editorial')continue;
+  const m=E.create({w:{...w,fatigue:0},f,p,slot:'main',minutes:12,finish:c.finish,plan:{game:'story',leash:'script',talk:'none'},seed:9302,sheet:copy(base),structureExecution:true,sequenceTimingVersion:1,sequenceRecoveryProjectionVersion:1});
+  m.stage='live';m.t=200;m.fSt=90;
+  m.wSt=16+graph.costOf(payoff)*3.2+graph.costOf(primary)+graph.sequenceMoveSeconds(primary)/20-diff/2;
+  Object.assign(m.story,start);graph.resetPhysical(m);
+  if(!graph.isValid(m,primary)||!graph.isValid(m,alternative)||dir.sequenceOffer(m,m.story))continue;
+  m.o.sequenceAlternativeReadinessVersion=1;
+  if(dir.sequenceOffer(m,m.story)?.id!==alternative)continue;
+  fixture={m,primary,payoff,alternative};break search;
+ }
+ assert.ok(fixture,'actual legal primary with blocked full chain, cheaper signed alternative ready');
+ const {m,primary,payoff,alternative}=fixture,energy=m.wSt;
+ const before=JSON.stringify(m),rng=m.r.getState();
+ const offer=dir.sequenceOffer(m,m.story);
+ assert.equal(offer.id,alternative);assert.equal(offer.planned,primary);
+ assert.equal(JSON.stringify(m),before);assert.equal(m.r.getState(),rng);
+ m.wSt=100;assert.equal(dir.sequenceOffer(m,m.story)?.id,primary,'ready primary still preferred');m.wSt=energy;
+ m.o.sheet.limits.banIds.push(alternative);assert.equal(dir.sequenceOffer(m,m.story),null,'restricted alternative not offered');m.o.sheet.limits.banIds.pop();
+ const prior=m.t;m.t=0;m.bigSpotRequest=true;assert.equal(dir.sequenceOffer(m,m.story),null);m.bigSpotRequest=false;m.t=prior;
+ const restored=E.restore(copy({...m,rState:m.r.getState()}));
+ eq(dir.sequenceOffer(restored,restored.story),offer);
+ graph.apply(m,alternative);assert.equal(m.structureDirector.sequences[0].progress,1);
+ m.t+=10;assert.ok(graph.isValid(m,payoff));graph.apply(m,payoff);
+ const receipt=E.structureReport(m).sequences[0].receipt;
+ assert.equal(receipt.status,'adapted');eq(receipt.witnessed.map(e=>e.id),[alternative,payoff]);assert.equal(receipt.witnessed[0].opening,true);
+ console.log('PASS MP13F.8A complete alternative readiness, primary preference, unchanged guards, actual adapted receipt and resume: '+primary+' / '+alternative+' -> '+payoff);
+}
