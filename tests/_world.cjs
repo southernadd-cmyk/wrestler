@@ -77,7 +77,7 @@ function check(root,s,label){
 
 // Play one career for `weeks` weeks. Returns {problems, stats}. `hook(root)` runs before the career
 // starts, for diagnostics (tools can wrap engine functions).
-function play(seed,weeks=48,hook=null){
+function play(seed,weeks=48,hook=null,realBout=null){
  const {root,random}=engine(seed);
  if(hook)hook(root);
  const {OfficeData:D,OfficeGame:G,OfficeTerritory:T,OfficeApproaches:X,OfficeAfter:A,OfficeRingside:R}=root;
@@ -122,20 +122,20 @@ function play(seed,weeks=48,hook=null){
   }
   // Match night.
   for(const c of s.card.slice()){if(G.W(c.wid)){
-   const f=fin(),w=G.W(c.wid),o=G.F(c.rid);
+   const w=G.W(c.wid),o=G.F(c.rid),f=realBout?realBout(root,c,w,o,random):fin();
    // The big matches start at a table: a signing, played one way or another, goes in as the promo.
    const Sg=root.OfficeSigning;
-   if(Sg&&w&&o&&Sg.eligible(c)){const st=Sg.begin(c,w,o,G.P(c.pid));for(const R of Sg.ROUNDS)Sg.choose(st,R.options[pick(R.options.length)].id);f.promo=Sg.result(st);stats.signings++;}
+   if(!realBout&&Sg&&w&&o&&Sg.eligible(c)){const st=Sg.begin(c,w,o,G.P(c.pid));for(const R of Sg.ROUNDS)Sg.choose(st,R.options[pick(R.options.length)].id);f.promo=Sg.result(st);stats.signings++;}
    // Otherwise, now and then, a promo with a stablemate doing the talking.
-   else if(root.OfficeMouthpiece&&w&&o&&random()<.35){const m=root.OfficeMouthpiece.candidates(c,w).find(x=>!x.refuse);
+   else if(!realBout&&root.OfficeMouthpiece&&w&&o&&random()<.35){const m=root.OfficeMouthpiece.candidates(c,w).find(x=>!x.refuse);
     if(m){const Mic=root.OfficeMic,st=Mic.begin(c,w,o,G.feud(w.id,o.id),null,G.P(c.pid),{mouth:m});while(st.stage!=='done'){const ch=Mic.choices(st);Mic.choose(st,ch[pick(ch.length)].id);}f.promo=Mic.result(st);stats.mouths++;}}
    // Choose a programme direction before the bell; the resulting promo and bout judge it.
-   if(c.programme&&root.OfficeProgrammeArcs){const Aarc=root.OfficeProgrammeArcs,choices=Aarc.options(c)?.choices||[];
+   if(!realBout&&c.programme&&root.OfficeProgrammeArcs){const Aarc=root.OfficeProgrammeArcs,choices=Aarc.options(c)?.choices||[];
     Aarc.prepare(c,choices[pick(choices.length)]?.id,f.promo);}
    G.applyResult(c,f);stats.matches++;
    if(c.programme&&root.OfficeProgrammeArcs?.record(c.programme.id)?.arc?.timeline.some(x=>x.cid===c.id))stats.arcs++;
    // At ringside: somebody from the stable, with a job that went one way or the other.
-   const mate=R&&w&&o&&R.seconds(c,w,o).find(x=>!x.refuse);
+   const mate=!realBout&&R&&w&&o&&R.seconds(c,w,o).find(x=>!x.refuse);
    if(mate){const job=mate.jobs[pick(mate.jobs.length)],roll=random();
     R.settle(c,{sheet:{corner:{id:mate.id,job,cid:c.id,fired:job==='support'||roll<.9,ok:roll<.6,ejected:roll>=.6&&roll<.85,hurtRef:job==='refbump'&&roll>=.85,lift:3}}});stats.corners++;}
    // After the bell: a planned angle and something said on the microphone.
