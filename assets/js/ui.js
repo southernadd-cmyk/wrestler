@@ -1427,6 +1427,7 @@ function showMeeting(){
    opts.structure={id:P.structureChoice.id,lead:P.structureChoice.lead};
    opts.structurePlanning=true;
    opts.planningCareer=S0;
+   opts.planningInitiative=true;
   }
   P.room=OfficeRoom.begin(c,w,f,p,opts);P.sheet=null;P.confirmed=false;
  }

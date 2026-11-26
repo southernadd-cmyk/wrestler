@@ -1266,17 +1266,45 @@
      !banned(st,c.action)&&legal(c.action,who(st,owner),who(st,other(owner))));
     const rank=c=>(supportsFinish(st,route,c)?4:0)-(c.risk?st.game==='safe'?5:1:0);
     alts.sort((a,z)=>rank(z)-rank(a)||a.action.localeCompare(z.action));
-    available.push({obj,b,owner,alt:alts[0]||null});
+    available.push({obj,b,owner,alt:alts[0]||null,alts});
    }
    if(!available.length)return false;
    const opponents=available.filter(x=>x.owner===st.structure.roles.other),
     pool=opponents.length?opponents:available;
-   const x=pool[Math.floor(rng(st.seed,'structure-huddle-'+st.game)*pool.length)];
+   let x=pool[Math.floor(rng(st.seed,'structure-huddle-'+st.game)*pool.length)],initiative=null;
+   // Only newly created MP4B meetings opt in. Existing evidence-bearing
+   // MP4A saves retain the original requester and alternative policy.
+   if(st.planningInitiative===1&&st.planningEvidence&&root.OfficePlanningFuzzy){
+    const F=root.OfficePlanningFuzzy,profiles={w:F.behaviour(st.planningEvidence,st,'w'),f:F.behaviour(st.planningEvidence,st,'f')};
+    const candidates=[];
+    for(const row of available){
+     const {obj,b,owner}=row,o=who(st,owner),partner=who(st,other(owner));
+     // Do not reopen a prohibited commitment; existing safety scene owns it.
+     if(banned(st,b.action)||!legal(b.action,o,partner))continue;
+     for(const alt of row.alts.length?row.alts:[null]){
+      const original=A[b.action],next=alt&&A[alt.action];
+      const known=id=>(o.learned||[]).includes(id)||(D.PROFILES[o.id]?.signature||[]).includes(id);
+      const facts={safer:!!(next&&original.risk&&!next.risk),
+       lessTaxing:!!(next&&pain(alt.action)<pain(b.action)),
+       higherImpact:!!(next&&(next.crowd||0)>(original.crowd||0)),
+       familiar:!!(next&&known(alt.action)&&!known(b.action)),
+       supportsFinish:!!(alt&&supportsFinish(st,route,alt)&&!supportsFinish(st,route,b)),
+       developingPartner:['Rookie','Prospect'].includes(partner.tier),
+       simpler:!!(next&&!next.risk&&(next.cost??1)<(original.cost??1)),
+       noAlternative:!alt};
+      const priority=F.huddlePriority(profiles[owner],facts);
+      if(priority)candidates.push({...row,alt,priority,tie:rng(st.seed,'initiative|'+obj.id+'|'+owner+'|'+(alt?.action||'open'))});
+     }
+    }
+    candidates.sort((a,b)=>b.priority.score-a.priority.score||b.tie-a.tie||a.obj.id.localeCompare(b.obj.id));
+    if(candidates.length){x=candidates[0];initiative={v:1,reason:x.priority.reason};}
+   }
    st.structureTalk={objective:x.obj.id,title:x.obj.title,by:x.owner,
     original:{...x.b},alternative:x.alt?{...x.alt}:null,
     reason:x.b.risk&&st.game==='safe'?'risk':
      x.alt&&supportsFinish(st,route,x.alt)&&!supportsFinish(st,route,x.b)?'finish_support':'pacing',
     decision:null};
+   if(initiative){st.structureTalk.initiative=initiative;st.structureTalk.reason=initiative.reason==='finish'?'finish_support':initiative.reason;}
    // Freeze the reactions at opening: preview, choice and reload agree.
    if(st.planningEvidence&&root.OfficePlanningFuzzy){
     const F=root.OfficePlanningFuzzy;
@@ -1295,6 +1323,10 @@
    return !t?'':t.original.label+' is pencilled in for '+t.title+'. '+
     (t.reason==='risk'?'The safer approach makes the risk matter.':
      t.reason==='finish_support'?'A different legal move may support the finish better.':
+     t.reason==='safety'?'The alternative is less risky or physically taxing.':
+     t.reason==='visibility'?'The performer wants a stronger crowd moment.':
+     t.reason==='craft'?'The alternative is a learned or signature move.':
+     t.reason==='guidance'?'A less demanding move could help the developing partner.':
      'A performer wants a more convincing rhythm.')+
     ' The promoter’s winner and agreed finishing route stay fixed.';
   },
@@ -1780,6 +1812,7 @@
    if(!st.structure)throw Error('Structure planning requires a valid structure selection');
    st.structurePlanning=true;
    if(opts.planningCareer&&root.OfficePlanningFuzzy)st.planningEvidence=root.OfficePlanningFuzzy.capture(st,w,f,opts.planningCareer);
+   if(st.planningEvidence&&opts.planningInitiative===true)st.planningInitiative=1;
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
   st.queue=draw(st,p,opts.recent||[]);
