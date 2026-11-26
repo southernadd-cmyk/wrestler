@@ -124,8 +124,21 @@ assert.ok(shipped.injury<=original.injury+2,'no further increase over observed i
 assert.ok(shipped.botches<=original.botches+13,'no further increase over observed botch trade-off');
 assert.ok(shipped.witnessed>=original.witnessed,'manager request delivery preserved');
 console.log('MP13F.14 PRODUCTION CANDIDATE '+JSON.stringify(shipped));
+const risk=report.riskExposureAudit;
+assert.equal(risk.pairs,routine.pairs,'all paired bouts covered by risk ledger');
+for(const [side,arm] of [['baseline',original],['quarter',shipped]]){
+ const x=risk[side];
+ assert.equal(x.botches,arm.botches,'risk ledger matches actual botch counts');
+ assert.equal(x.attempts+x.graphSpotIncrements,arm.spots,'risk rolls and graph spot increments reconcile to generic spots');
+ assert.equal(x.playerInjuries,arm.injury,'risk ledger matches actual player injury counts');
+ assert.equal(Object.values(x.bySource).reduce((n,r)=>n+r.attempts,0),x.attempts,'attempt sources reconcile');
+ assert.equal(Object.values(x.byMove).reduce((n,r)=>n+r.botches,0),x.botches,'move botches reconcile');
+ assert.equal(Object.values(x.injuriesBySource).reduce((n,r)=>n+r,0),x.playerInjuries+x.opponentInjuries,'injury origins reconcile');
+}
+for(const p of risk.changed)console.log('MP13F.15 INCIDENT CASE '+JSON.stringify(p));
+console.log('MP13F.15 RISK SUMMARY '+JSON.stringify({...risk,changed:undefined}));
 for(const p of routine.comparisons)console.log('MP13F.13 ROUTINE CASE '+JSON.stringify(p));
 console.log('MP13F.13 ROUTINE SUMMARY '+JSON.stringify({...routine,comparisons:undefined}));
-const {routineDrainAudit,rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaExpenditureAudit,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
+const {riskExposureAudit,routineDrainAudit,rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaExpenditureAudit,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
 console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},matchedBigSpotArbitration:{...matchedBigSpotArbitration,comparisons:undefined},staminaExpenditureAudit:{...staminaExpenditureAudit,cases:undefined},staminaOpportunityAudit:{...staminaOpportunityAudit,pairs:undefined},temporalOpportunityAudit:{...temporalOpportunityAudit,cases:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');

@@ -29,7 +29,45 @@ function summarise(rows){
 // on the same signed bouts. All overrides live in this test VM, never in
 // production code or save state.
 const routineFactors=[1,'equal-1',.75,.5,.25,0];
+// Observe actual resolved risk rolls and injury writes, never re-roll them.
+function riskSource(source){
+ const replace=(a,b)=>{
+  assert.equal(source.split(a).length,2,'unique risk observation site: '+a);
+  source=source.replace(a,b);
+ };
+ const event=(payload)=>'root.__mp13Risk?.(M,'+payload+');';
+ replace(" if(yours)M.wSt=clamp(M.wSt-(big?7:4));",
+  " "+event("{kind:'attempt',source:'scripted_spot',id:chosen.id,side,big:!!big,forced:!!forced,at:M.t,phase:M.phase?.id,stamina:st,safe:A.safe,ring:A.ring,riskMul:M.riskMul,probability:botchP,botched:attempt.outcome==='botched'}")+"\n if(yours)M.wSt=clamp(M.wSt-(big?7:4));");
+ replace(" const botchP=(.12+(100-M.w.safe)*.004)*M.riskMul;",
+  " const botchP=(.12+(100-M.w.safe)*.004)*M.riskMul;\n const riskBotchesBefore=M.botches,riskStaminaBefore=M.wSt;");
+ replace(" Psy.get(M).position='outside';Psy.get(M).down=null;Graph.resetPhysical(M,'floor');",
+  " "+event("{kind:'attempt',source:'balcony_dive',id:'balcony_dive',side:'w',big:true,forced:null,at:M.t,phase:M.phase?.id,stamina:riskStaminaBefore,safe:M.w.safe,ring:M.w.ring,riskMul:M.riskMul,probability:botchP,botched:M.botches>riskBotchesBefore}")+"\n Psy.get(M).position='outside';Psy.get(M).down=null;Graph.resetPhysical(M,'floor');");
+ replace("M.injury=1+(M.r()<.4?1:0)+(big&&M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);decide(M,'injury');",
+  "M.injury=1+(M.r()<.4?1:0)+(big&&M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);"+event("{kind:'injury',source:'scripted_spot',id:chosen.id,side:'w',performer:side,big:!!big,forced:!!forced,at:M.t,severity:M.injury,stamina:st,probability:injP}")+"decide(M,'injury');");
+ replace("else if(!hurtYours&&!M.foeHurt){M.foeHurt=true;",
+  "else if(!hurtYours&&!M.foeHurt){M.foeHurt=true;"+event("{kind:'injury',source:'scripted_spot',id:chosen.id,side:'f',performer:side,big:!!big,forced:!!forced,at:M.t,severity:null,stamina:st,probability:injP}"));
+ replace("M.injury=2+(M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);decide(M,'injury');",
+  "M.injury=2+(M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);"+event("{kind:'injury',source:'balcony_dive',id:'balcony_dive',side:'w',at:M.t,severity:M.injury,stamina:riskStaminaBefore}")+"decide(M,'injury');");
+ replace("M.injury=1;M.injuryPart='jaw';",
+  "M.injury=1;M.injuryPart='jaw';"+event("{kind:'injury',source:'stiff_fire',side:'w',at:M.t,severity:M.injury,stamina:M.wSt}"));
+ replace("else{M.foeHurt=true;say(M,`${f.short} is bleeding from the nose.",
+  "else{if(!M.foeHurt){"+event("{kind:'injury',source:'stiff_fire',side:'f',at:M.t,severity:null,stamina:M.fSt}")+"}M.foeHurt=true;say(M,`${f.short} is bleeding from the nose.");
+ replace("M.injury++;say(M,","M.injury++;"+event("{kind:'worsening',source:'working_hurt',side:'w',at:M.t,severity:M.injury,stamina:M.wSt}")+"say(M,");
+ // The generic graph spot counter is not a botch-risk roll. Keep its
+ // increments as separate evidence so the entire counter still reconciles.
+ const graphSites=[
+  "if(!options.scriptedSpot&&n.family&&n.risk&&!n.counterOf&&!n.blockOf){M.spots++;",
+  "if(n.counterOf&&A[n.counterOf]?.risk){M.spots++;",
+  "if(id==='aerial_attack'){M.spots++;",
+  "if(id==='springboard_strike'){M.spots++;",
+  "if(id==='springboard_evaded'){M.spots++;",
+  "if(id==='aerial_counter'){M.spots++;"
+ ];
+ for(const site of graphSites)replace(site,site+event("{kind:'graph_spot',source:'graph_counter',id,side,at:M.t}"));
+ return source;
+}
 function routineSource(source){
+ source=riskSource(source);
  const wNew="clamp(M.wSt-routineDebit+(mode==='slow'?1.6:0))";
  const fNew="clamp(M.fSt-routineDebit+(mode==='slow'?1.2:0))";
  const wOld="clamp(M.wSt-drain+(mode==='slow'?1.6:0))";
@@ -60,12 +98,42 @@ function routineMetrics(x,E,measure,restCount){
   stamina25:meanStamina(.25),stamina50:meanStamina(.5),stamina75:meanStamina(.75),endW:M.wSt,endF:M.fSt,
   lateOffence:late.length,lateHighCost:late.filter(e=>E.GRAPH.costOf(e.id)>=2.2).length,
   routineSpent:budget.writes.filter(w=>w.category==='routine'||w.category==='slow_tick').reduce((n,w)=>n+Math.max(0,-w.delta),0),
-  zeroEnd:Number(M.wSt<=1e-7)+Number(M.fSt<=1e-7),shortened:Number(!!fin.shortened),botches:fin.botches||0};
+  zeroEnd:Number(M.wSt<=1e-7)+Number(M.fSt<=1e-7),shortened:Number(!!fin.shortened),botches:fin.botches||0,spots:M.spots};
+}
+function summarizeRisk(pairs){
+ const summarize=rows=>{
+  const result={bouts:rows.length,attempts:0,graphSpotIncrements:0,botches:0,expectedBotches:0,playerInjuries:0,opponentInjuries:0,worsenings:0,bySource:{},bySide:{},byStamina:{},byMove:{},byRequest:{},byPlan:{},byStructure:{},byPhase:{},injuriesBySource:{},injurySeverity:{}};
+  const add=(group,key,e)=>{
+   const row=group[key]??={attempts:0,botches:0,expectedBotches:0};
+   row.attempts++;row.botches+=Number(e.botched);row.expectedBotches+=e.probability;
+  };
+  for(const p of rows)for(const e of p.events){
+   if(e.kind==='attempt'){
+    assert.ok(Number.isFinite(e.probability)&&e.probability>=0,'valid observed botch probability');
+    result.attempts++;result.botches+=Number(e.botched);result.expectedBotches+=e.probability;
+    add(result.bySource,e.source,e);add(result.bySide,e.side,e);add(result.byMove,e.id,e);
+    add(result.byRequest,e.forced===null?'balcony':e.forced?'forced':'not_forced',e);
+    add(result.byStamina,e.stamina<28?'under28':e.stamina<45?'28–44':e.stamina<65?'45–64':'65+',e);
+    add(result.byPlan,p.plan,e);add(result.byStructure,p.structure,e);add(result.byPhase,e.phase??'unknown',e);
+   }else if(e.kind==='graph_spot'){result.graphSpotIncrements++;
+   }else if(e.kind==='injury'){
+    if(e.side==='w')result.playerInjuries++;else result.opponentInjuries++;
+    inc(result.injuriesBySource,e.source+'|'+e.side);
+    if(e.severity!==null)inc(result.injurySeverity,String(e.severity));
+   }else if(e.kind==='worsening')result.worsenings++;
+  }
+  result.botchRate=result.attempts?result.botches/result.attempts:null;
+  result.expectedBotchRate=result.attempts?result.expectedBotches/result.attempts:null;
+  return result;
+ };
+ const baseline=summarize(pairs.map(p=>({...p,events:p.before}))),quarter=summarize(pairs.map(p=>({...p,events:p.after})));
+ const incidentCount=events=>events.filter(e=>e.kind==='injury'||e.kind==='attempt'&&e.botched).length;
+ return {pairs:pairs.length,baseline,quarter,changed:pairs.filter(p=>incidentCount(p.before)||incidentCount(p.after))};
 }
 function summarizeRoutine(pairs){
  const summarize=rows=>{
   const sum=k=>rows.reduce((n,x)=>n+x[k],0);
-  const totals=['signed','opened','completed','interruptions','objectives','injury','staminaCases','timingCases','accepted','witnessed','botched','refunded','ignored','spent','rests','recoveryOffered','recoveryLanded','lateOffence','lateHighCost','zeroEnd','shortened','botches'];
+  const totals=['signed','opened','completed','interruptions','objectives','injury','staminaCases','timingCases','accepted','witnessed','botched','refunded','ignored','spent','rests','recoveryOffered','recoveryLanded','lateOffence','lateHighCost','zeroEnd','shortened','botches','spots'];
   const means=['stars','crowd','startW','startF','fatigueW','fatigueF','stamina25','stamina50','stamina75','endW','endF','routineSpent'];
   return {...Object.fromEntries(totals.map(k=>[k,sum(k)])),...Object.fromEntries(means.map(k=>[k,avg(rows.map(x=>x[k]))])),bouts:rows.length};
  };
@@ -80,7 +148,7 @@ function summarizeRoutine(pairs){
   byFatigue:Object.fromEntries(['low','moderate','high'].map(k=>[k,group(pairs.filter(p=>p.fatigueBand===k))])),comparisons:pairs};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],expenditure=[],reviewRepairs=[],routinePairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],expenditure=[],reviewRepairs=[],routinePairs=[],riskPairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -173,6 +241,8 @@ function run(seeds=[3,10],weeks=32){
    function drive(active,resume,settings=options,expectedPlan=immutable,traceActual=false){
     let M=E.create({...copy(settings),livePsychologyVersion:active?1:undefined}),matchResume=0,liveScores=[],calls=0;
     const trace=traceActual?continuation.trace(root,key,true):null;trace?.track(M);
+    const risk=[],priorRisk=root.__mp13Risk;
+    if(traceActual)root.__mp13Risk=(m,e)=>{if(m===M)risk.push(copy(e));};
     try{
     for(let n=0;n<10000&&!M.done;n++){
      if(M.decision&&!M.queue.length){const opts=M.decision.options;E.resolve(M,pick(opts,i+seed+calls).id);}
@@ -197,8 +267,13 @@ function run(seeds=[3,10],weeks=32){
     assert.ok(range(M.final.stars,0,5)&&range(M.final.crowd));
     const traceReport=trace?trace.close(M):null;
     if(traceActual===true){continuationRecords.push(...traceReport.records);openingRecords.push(...traceReport.openings);dependencyWitnesses.push(...traceReport.dependencyWitnesses);}
-    return {M,fin:M.final,matchResume,liveScores,traceReport};
-    }finally{trace?.restore();}
+    if(traceActual){
+     assert.equal(risk.filter(e=>e.kind==='attempt'||e.kind==='graph_spot').length,M.spots,key+' risk rolls plus graph spot counter increments reconcile');
+     assert.equal(risk.filter(e=>e.kind==='attempt'&&e.botched).length,M.botches,key+' risk botches reconcile');
+     for(const side of ['w','f'])assert.equal(risk.filter(e=>e.kind==='injury'&&e.side===side).length,Number(side==='w'?!!M.injury:!!M.foeHurt),key+' actual injury onset reconciles '+side);
+    }
+    return {M,fin:M.final,matchResume,liveScores,traceReport,risk};
+    }finally{trace?.restore();if(traceActual){if(priorRisk===undefined)delete root.__mp13Risk;else root.__mp13Risk=priorRisk;}}
    }
    const actual=drive(true,i%5===0,options,immutable,true);
    const {M,fin,matchResume,liveScores}=actual,report=fin.structure;
@@ -360,6 +435,7 @@ function run(seeds=[3,10],weeks=32){
     // isolates equalization; the remaining arms also reduce shared debit.
     const routineOptions={...options,sequenceRecoveryPacingVersion:1,sequenceAlternativeReadinessVersion:1,bigSpotArbitrationVersion:3};
     const arms={'1':routineMetrics(arbitrated,E,measureArbitration,restCount)};
+    let quarterRisk=null;
     for(const factor of routineFactors.slice(1)){
      root.__mp13RoutineMultiplier=factor==='equal-1'?1:factor;
      try{
@@ -371,8 +447,11 @@ function run(seeds=[3,10],weeks=32){
       assert.equal(metric.accepted,metric.witnessed+metric.botched+metric.refunded,key+' manager requests resolved');
       if(factor===0)assert.ok(metric.routineSpent<1e-7,key+' zero routine debit control');
       arms[String(factor)]=metric;
+      if(factor===.25)quarterRisk=replay.risk;
      }finally{delete root.__mp13RoutineMultiplier;}
     }
+    assert.ok(quarterRisk,key+' quarter-rate risk evidence');
+    riskPairs.push({key,structure:choice.id,plan:approach,before:arbitrated.risk,after:quarterRisk});
     const fatigue=arms['1'].fatigueW;
     routinePairs.push({key,structure:choice.id,plan:approach,fatigueBand:fatigue>=75?'high':fatigue>=25?'moderate':'low',arms});
    }
@@ -409,7 +488,7 @@ function run(seeds=[3,10],weeks=32){
   careers.push({seed,...result.stats});
  }
  const groups=key=>Object.fromEntries([...new Set(rows.map(r=>r[key]))].map(k=>[k,summarise(rows.filter(r=>r[key]===k))]));
- return {schema:'office-mp13-career-audit-v1',seeds,weeks,careers,routineDrainAudit:summarizeRoutine(routinePairs),overall:summarise(rows),byStructure:groups('structure'),byApproach:groups('approach'),byCohort:groups('academy'),
+ return {schema:'office-mp13-career-audit-v1',seeds,weeks,careers,routineDrainAudit:summarizeRoutine(routinePairs),riskExposureAudit:summarizeRisk(riskPairs),overall:summarise(rows),byStructure:groups('structure'),byApproach:groups('approach'),byCohort:groups('academy'),
   matchedLive:{pairs:comparisons.length,meanStarDelta:avg(comparisons.map(x=>x.starDelta)),meanCrowdDelta:avg(comparisons.map(x=>x.crowdDelta)),meanIgnoredDelta:avg(comparisons.map(x=>x.ignoredDelta)),changedOutcomes:comparisons.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons},matchedTraditional:{pairs:traditional.length,meanStructuredStars:avg(traditional.map(x=>x.structuredStars)),meanTraditionalStars:avg(traditional.map(x=>x.traditionalStars)),meanStarDelta:avg(traditional.map(x=>x.starDelta)),meanCrowdDelta:avg(traditional.map(x=>x.crowdDelta)),changedOutcomes:traditional.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons:traditional},matchedFeasibility:(()=>{
    const summarize=side=>{const xs=feasibilityPairs.map(x=>x[side]),entries={};for(const x of xs)for(const e of x.entries)inc(entries,e);
     return {signed:xs.reduce((n,x)=>n+x.signed,0),completed:xs.reduce((n,x)=>n+x.completed,0),noOpening:xs.reduce((n,x)=>n+x.noOpening,0),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd)),injuries:xs.reduce((n,x)=>n+x.injury,0),entries};};
