@@ -227,5 +227,69 @@
    finishSupportChanged:typeof from.supportsFinish==='boolean'&&typeof to.supportsFinish==='boolean'?Number(to.supportsFinish)-Number(from.supportsFinish):null
   }};
  }
- root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues});
+ // MP5B: the proposal model consumes the already inferred behavioural
+ // tendencies, not a second set of raw wrestler personality statistics.
+ // Scores are independent degrees of inclination, NOT probabilities.
+ const proposalAxes=Object.freeze(Object.fromEntries(['Cooperation','Caution','Ambition','Protectiveness','Flexibility','Assertiveness'].map(k=>['tendency'+k,Object.freeze([25,50,80])])));
+ const crossed=(output,a,b,table,weight)=>['low','medium','high'].flatMap((g,i)=>['low','medium','high'].map((h,j)=>rule(output+'_'+a+'_'+g+'_'+b+'_'+h,output,table[i][j],weight,a+'.'+g,b+'.'+h)));
+ const proposalModel=createModel({curves:proposalAxes,outputs:['acceptance','reservations','counterproposal'],rules:[
+  ...family('acceptance','proposalRisk',[85,55,20],2),
+  ...family('acceptance','creativeBenefit',[30,55,85],1),
+  ...family('acceptance','tendencyCooperation',[25,55,85],1),
+  ...family('acceptance','tendencyFlexibility',[30,55,80],1),
+  ...crossed('acceptance','proposalRisk','tendencyCaution',[[85,85,85],[70,55,35],[45,25,5]],2),
+  ...crossed('acceptance','creativeBenefit','tendencyAmbition',[[45,30,15],[55,55,55],[70,85,95]],1),
+  rule('acceptance_familiar','acceptance',85,1,'change.actorFamiliar'),
+  rule('acceptance_finish_gain','acceptance',90,2,'change.finishGain'),
+  rule('acceptance_finish_loss','acceptance',15,2,'change.finishLoss'),
+  ...family('reservations','proposalRisk',[15,50,90],3),
+  ...crossed('reservations','proposalRisk','tendencyCaution',[[15,15,15],[30,55,75],[65,85,100]],3),
+  ...family('reservations','creativeBenefit',[75,50,25],1),
+  rule('reservations_cost_increase','reservations',75,1,'change.costIncrease'),
+  rule('reservations_cost_reduction','reservations',20,1,'change.costReduction'),
+  rule('reservations_finish_loss','reservations',95,2,'change.finishLoss'),
+  rule('reservations_finish_gain','reservations',15,1,'change.finishGain'),
+  ...family('counterproposal','proposalRisk',[15,50,85],2),
+  ...family('counterproposal','creativeBenefit',[85,45,15],1),
+  ...family('counterproposal','tendencyAssertiveness',[15,50,85],1),
+  ...crossed('counterproposal','proposalRisk','tendencyCaution',[[15,15,15],[30,55,75],[60,80,95]],2),
+  ...crossed('counterproposal','creativeBenefit','tendencyAmbition',[[55,75,95],[45,45,45],[20,15,10]],1),
+  rule('counterproposal_finish_loss','counterproposal',95,2,'change.finishLoss'),
+  rule('counterproposal_protect_finish','counterproposal',100,2,'change.finishLoss','tendencyProtectiveness.high'),
+  rule('counterproposal_finish_gain','counterproposal',15,1,'change.finishGain')
+ ]});
+ function inferProposal(profile,evidence){
+  const assessed=proposalValues(evidence),o=profile?.observation;
+  if(!assessed||!o||o.cid!==evidence.cid||!['w','f'].includes(o.side)||
+     (o.actorId!==evidence.actorId&&o.actorId!==evidence.partnerId)||
+     o.opponentId!==(o.actorId===evidence.actorId?evidence.partnerId:evidence.actorId))return null;
+  // Do not manufacture a proposal opinion from personality alone.
+  if(assessed.values.proposalRisk===null&&assessed.values.creativeBenefit===null)return null;
+  const values={...assessed.values};
+  for(const axis of Object.keys(proposalAxes)){
+   const key=axis.slice(8),out=key[0].toLowerCase()+key.slice(1);
+   values[axis]=stat(profile.scores?.[out]);
+  }
+  const comparison=assessed.comparison,cues={};
+  const actor=o.actorId===evidence.actorId;
+  if(actor&&evidence.proposed.familiar===true&&evidence.original.familiar===false)cues['change.actorFamiliar']=1;
+  // Graph cost is performer effort, not evidence of the recipient's pain.
+  if(actor&&comparison.costDelta>0)cues['change.costIncrease']=1;
+  if(actor&&comparison.costDelta<0)cues['change.costReduction']=1;
+  if(comparison.finishSupportChanged===1)cues['change.finishGain']=1;
+  if(comparison.finishSupportChanged===-1)cues['change.finishLoss']=1;
+  const result=proposalModel.evaluate(values,cues);
+  return {v:1,cid:evidence.cid,objective:evidence.objective,action:evidence.proposed.action,
+   side:o.side,actorId:o.actorId,role:actor?'performer':'partner',values,cues,
+   scores:result.scores,fired:result.fired};
+ }
+ // Re-read eligibility from the room, rather than trusting a stale card.
+ function evaluateProposal(snapshot,room,side,objective,action){
+  assertSide(side);
+  const evidence=root.OfficeRoom.proposalEvidence(room,objective,action);
+  if(!evidence.eligible)return {v:1,eligible:false,reason:evidence.reason,assessment:null};
+  const assessment=inferProposal(behaviour(snapshot,room,side),evidence);
+  return {v:1,eligible:true,evidence,assessment};
+ }
+ root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal});
 })(typeof window!=='undefined'?window:globalThis);
