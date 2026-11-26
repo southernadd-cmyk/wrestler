@@ -240,3 +240,19 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  assert.equal(memory.professionalSummary(null),null);
  assert.match(memory.professionalSummary(memory.professionalContext(G.S,w.id,f.id)),/agreed finish was broken/);
  console.log('PASS MP12: isolated 200-identity cohort distribution, deterministic production rookie previews, and factual player-facing professional memory.');
+
+// MP13C: deterministic feasibility priors are separate from consent.
+{
+ const target=sheet.structurePlan.objectives[0],seq=target.sequence;
+ const evidence={start:seq.start,steps:seq.actions.map(action=>({action,performer:'w'}))};
+ const roomy=F.sequenceFeasibility({...st,minutes:15,fx:{}},target,evidence);
+ const tight=F.sequenceFeasibility({...st,minutes:5,fx:{}},target,evidence);
+ assert.ok(roomy.possible&&roomy.scores.feasibility>=tight.scores.feasibility);
+ const corner=F.sequenceFeasibility({...st,minutes:15,fx:{}},target,{...evidence,start:{...seq.start,position:'corner'}});
+ assert.ok(roomy.scores.feasibility>corner.scores.feasibility);
+ assert.ok(roomy.duration===seq.actions.reduce((n,id)=>n+graph.sequenceMoveSeconds(id),0));
+ assert.ok(graph.GRAPPLE_PILOT.every(id=>graph.sequenceMoveSeconds(id)===20));
+ assert.ok(graph.STRIKE_PILOT.every(id=>graph.sequenceMoveSeconds(id)===10));
+ eq(F.sequenceFeasibility({...st,minutes:15,fx:{}},target,evidence),roomy);
+ console.log('PASS MP13C feasibility: independent entry, timing and physical readiness priors, actual graph duration classes.');
+}
