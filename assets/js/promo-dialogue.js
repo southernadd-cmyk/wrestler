@@ -2559,7 +2559,27 @@
   // contract. Only the bank lookup is shared; the spoken actor remains unchanged.
   const scoped={...ctx,speaker:{...ctx.speaker,id:owner}};
   const voiceSeed=seed+'|'+identity.id+'|'+identity.tactic+'|'+identity.delivery;
-  return rookieSelectors[route](rookieCatalogue,scoped,voiceSeed,mem,sem);
+  const selectWith=memory=>rookieSelectors[route](rookieCatalogue,scoped,voiceSeed,memory,sem);
+  // New scenes prefer a reviewed delivery, not a different semantic topic.
+  // An exhausted preferred line never beats a fresh alternative.
+  if(mem.rookieVoice===1){
+   const directIndex={
+    Technical:[0,0,0,1,0,0,0,0,0,0],
+    Brawl:[0,0,0,0,0,0,0,1,0,0],
+    Story:[0,0,0,0,0,1,0,0,1,0],
+    Spectacle:[0,0,0,0,0,0,0,0,0,0]
+   }[ctx.speaker.style][route];
+   const direct=['Dry and direct','Reserved until challenged','Blunt but sincere'].includes(identity.delivery);
+   const reflective=['Measured and methodical','Warm and reflective'].includes(identity.delivery);
+   const pressure=(ctx.irritation!=null&&ctx.irritation>=65)||(ctx.composure!=null&&ctx.composure<=30);
+   if(direct||reflective||pressure){
+    const preferred=pressure||direct?directIndex:1-directIndex;
+    const alternative=owner+'.semantic.'+route+'.'+(1-preferred);
+    const line=selectWith({...mem,used:[...(mem.used||[]),alternative]});
+    if(line)return line;
+   }
+  }
+  return selectWith(mem);
  }
  function selectSpecialistResponse(cat,ctx,seed,mem,sem){
   if(!ctx||!sem||ctx.hasMouthpiece||(ctx.protected&&ctx.protected!=='contextual-variant'))return null;

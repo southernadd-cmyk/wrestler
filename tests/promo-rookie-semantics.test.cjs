@@ -34,6 +34,23 @@ for(const person of people){
 }
 assert.equal(count,1200);
 assert.equal(seen.size,80,'two shared lines per style and route, no per-character duplication');
+// Preference is observable without changing the actor or seed. Older saved
+// scenes keep their existing seed-only selection.
+for(const style of ['Technical','Brawl','Story','Spectacle']){
+ const person=people.find(p=>p.wrestling_style===style);
+ const facts=L.snapshot({}, {...person,style},other,null,p,{});
+ const base={stage:'answer',action:'turn',side:'w',speaker:facts.player,opponent:facts.opponent,client:facts.player,hasMouthpiece:false,previous:'Prove it.',protected:'contextual-variant',irritation:10,composure:80};
+ const withDelivery=delivery=>({...base,speaker:{...base.speaker,academy:{...base.speaker.academy,delivery}}});
+ const sem={claim:'evidence',move:'rebut'},mem={rookieVoice:1,used:[],recent:[]};
+ const direct=L.selectRookieSemantic(withDelivery('Dry and direct'),'same',mem,sem);
+ const warm=L.selectRookieSemantic(withDelivery('Warm and reflective'),'same',mem,sem);
+ assert.ok(direct&&warm);assert.notEqual(direct.id,warm.id,style+' delivery must matter');
+ const pressure=L.selectRookieSemantic({...withDelivery('Warm and reflective'),irritation:75},'same',mem,sem);
+ assert.equal(pressure.id,direct.id,style+' pressure narrows delivery');
+ assert.equal(L.selectRookieSemantic(withDelivery('Dry and direct'),'same',{...mem,recent:[direct.id]},sem).id,warm.id);
+ assert.equal(L.selectRookieSemantic(withDelivery('Dry and direct'),'same',{...mem,recent:[direct.id,warm.id]},sem),null);
+}
+
 // Actual academy arrivals: compare real choices with identical prior claim and
 // disabled new policy. A prior saved scene with no flag must not use new lines.
 G.fresh();G.S.week=16;G.endWeek();
