@@ -76,7 +76,7 @@ function trace(root,key){
   if(last?.at===m.t)return;
   v.ticks.push({at:m.t,arc:m.graph.arc,control:pre.control,position:pre.position,down:pre.down,
    stamina:{w:Math.round(m.wSt),f:Math.round(m.fSt)},candidates,
-   offered:result?.objective===r.objective?result.id:null,otherOffer:result&&result.objective!==r.objective?result.objective:null});
+   offered:result?.objective===r.objective?result.id:null,handover:!!(result?.objective===r.objective&&result.handover),otherOffer:result&&result.objective!==r.objective?result.objective:null});
  }
  function record(m,r){
   const k=id(r);if(!attempts.has(k)){
