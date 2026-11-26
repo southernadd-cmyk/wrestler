@@ -713,10 +713,10 @@
     M.len-M.t>=Math.max(45,duration+25)&&frac<.91&&
     !M.bigSpotRequest&&!M.workingHurt&&!M.shortened;
   }
-  function sequenceContext(M,row,pre,previous,landed=null){
+  function sequenceContext(M,row,pre,previous,landed=null,probeExpiredPrerequisite=false){
    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
    if(!o?.sequence||!['pending','running'].includes(row.status))return null;
-   if(o.requires.some(id=>M.structureDirector.objectives.some(s=>s.id===id&&s.status==='pending')))return null;
+   if(!probeExpiredPrerequisite&&o.requires.some(id=>M.structureDirector.objectives.some(s=>s.id===id&&s.status==='pending')))return null;
    const steps=sequenceSteps(o.sequence);let step=steps[row.progress],opening=null;
    if(!step)return null;
    // A fallback is a separately signed first move, not invented after
@@ -798,6 +798,37 @@
     const ratio=(row.progress?2.5+follow*8:1+follow*2)*improv;
     return {id,continuation:row.progress>0,objective:row.objective,planned:ctx.opening?ctx.o.sequence.actions[0]:ctx.step.id,
      ratio,willingness};
+   }
+   return null;
+  }
+  // MP13E: the nominal end of an objective is a real editorial deadline.
+  // Its existing eight-point grace is optional, not a reason to consume a
+  // subsequent signed sequence's genuine opportunity. Do not fabricate
+  // achievement, credit one landing twice, or abandon a live exchange.
+  function coordinateSequence(M,pre){
+   if(M.o?.sequenceCoordinationVersion!==1||!adaptiveSequences(M)||!M.graph||
+      M.graph.pendingAerial||M.graph.pendingGrapple||M.graph.pendingStrike||M.graph.pendingContact||
+      sequenceRows(M).some(row=>row.status==='running')||sequenceWillingness(M)<35)return null;
+   const states=M.structureDirector.objectives,plan=M.sheet.structurePlan.objectives,frac=M.t/Math.max(1,M.len);
+   for(const row of sequenceRows(M)){
+    if(row.status!=='pending'||row.progress||row.attempts>=3)continue;
+    const o=plan.find(x=>x.id===row.objective),state=states.find(x=>x.id===row.objective);
+    if(!o||state?.status!=='pending')continue;
+    const pending=o.requires.map(id=>states.find(s=>s.id===id)).filter(x=>x?.status==='pending');
+    if(!pending.length||pending.some(x=>{
+     const prior=plan.find(p=>p.id===x.id);
+     return !prior||frac<prior.window[1]||sequenceRows(M).some(r=>r.objective===x.id&&['pending','running'].includes(r.status));
+    }))continue;
+    // Only an actually available first move can justify yielding the grace
+    // period. The same state/physics/safety gates apply to the later offer.
+    const ctx=sequenceContext(M,row,{...pre,node:M.graph.node},M.graph.events.at(-1),null,true);
+    if(!ctx||!sequenceMoveAllowed(M,ctx.step.id,ctx.step.performer)||!root.OfficeMatch.GRAPH.isValid(M,ctx.step.id))continue;
+    for(const prior of pending){
+     prior.status='missed';prior.reason='The nominal window ended without sufficient evidence; the next agreed exchange had a legal opening.';
+     prior.handoff={at:M.t,to:o.id,opening:ctx.step.id};
+    }
+    M.structureDirector.sequenceHandoff={at:M.t,objective:o.id,opening:ctx.step.id};
+    return M.structureDirector.sequenceHandoff;
    }
    return null;
   }
@@ -1106,7 +1137,7 @@
    if(r.interruptions>0)return {label:'Interrupted sequence',tone:'missed',note:'A verified prefix was interrupted. Future sequence proposals may reflect this shared experience, not personal blame.'};
    return {label:'Incomplete sequence',tone:'',note:'Only part of the sequence was verified. No interruption-based negative evidence is inferred.'};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,observeSequence,deliveryDebrief};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,coordinateSequence,observeSequence,deliveryDebrief};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
