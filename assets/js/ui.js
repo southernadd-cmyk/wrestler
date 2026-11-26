@@ -1584,7 +1584,8 @@ function showPromos(loadedBanks){
  const read=v.read?`<div class="mic-read"><b>${esc(OfficeRoom.AGENT)}’s read</b>${v.read.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:'';
  const cue=v.cue?`<p class="mic-cue">${esc(v.cue)}</p>`:'';
  const conversation=v.conversation&&v.stage!=='done'&&v.conversation.subject?`<p class="dim claim"><b>Subject:</b> ${esc(v.conversation.subject)} · ${esc(spokenMood(st,v.conversation))}${v.conversation.latestPoint?`<span>Latest point: ${esc(v.conversation.latestPoint)}</span>`:''}</p>`:'';
- const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">The final word</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.tactic?.stake||'')}</p></div>`:
+ const reconciliation=v.stage==='done'?OfficeRoom.promoReconciliation(night.plan?.sheet,v.result,w,f,c.finish):null;
+ const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">The final word</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.tactic?.stake||'')}</p>${reconciliation?`<p class="dim"><b>Dennis — ${esc(reconciliation.status)}:</b> ${esc(reconciliation.reason)}</p>`:''}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.name)} ${v.conversation?'':`<small>${v.round+1} of ${v.total}</small>`}</h3><p class="lede">${esc(v.help)}</p>${read}${cue}${open}${conversation}${claim}${pickCards(v.options,'mic',true)}</div>`;
  const sp=st.speaker?G.W(st.speaker.id)||w:w;
  const body=matchupBar(c,w,f,meter)+(st.speaker?`<p class="dim mouth-note">${esc(st.speaker.short)} is doing the talking for ${esc(w.short)}.</p>`:'')+sceneLog(entries,'micTalk',sp,f,p.id)+decide;
@@ -1610,7 +1611,7 @@ function bell(){
  const signed=window.OfficeSigning&&night.signing?.cid===c.id?OfficeSigning.result(night.signing):null;
  const promoRes=signed||(P.sheet?.skipPromo?null:night.promo?.v>=4?OfficeMic.result(night.promo):night.promo?.v===2?OfficeStory.Graph.result(night.promo):null);
  if(window.OfficeProgrammeArcs)OfficeProgrammeArcs.prepare(c,P.arcChoice,promoRes);
- const matchSheet=P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null;
+ const matchSheet=P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f,c.finish),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f,c.finish)):null;
  // Verify the signed plan AFTER vow and ringside additions. Refuse a stale
  // or imported mismatch rather than activating the wrong dramatic layout.
  let structureExecution;
