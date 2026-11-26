@@ -53,6 +53,17 @@ function riskSource(source){
  replace("else{M.foeHurt=true;say(M,`${f.short} is bleeding from the nose.",
   "else{if(!M.foeHurt){"+event("{kind:'injury',source:'stiff_fire',side:'f',at:M.t,severity:null,stamina:M.fSt}")+"}M.foeHurt=true;say(M,`${f.short} is bleeding from the nose.");
  replace("M.injury++;say(M,","M.injury++;"+event("{kind:'worsening',source:'working_hurt',side:'w',at:M.t,severity:M.injury,stamina:M.wSt}")+"say(M,");
+ // The generic graph spot counter is not a botch-risk roll. Keep its
+ // increments as separate evidence so the entire counter still reconciles.
+ const graphSites=[
+  "if(!options.scriptedSpot&&n.family&&n.risk&&!n.counterOf&&!n.blockOf){M.spots++;",
+  "if(n.counterOf&&A[n.counterOf]?.risk){M.spots++;",
+  "if(id==='aerial_attack'){M.spots++;",
+  "if(id==='springboard_strike'){M.spots++;",
+  "if(id==='springboard_evaded'){M.spots++;",
+  "if(id==='aerial_counter'){M.spots++;"
+ ];
+ for(const site of graphSites)replace(site,site+event("{kind:'graph_spot',source:'graph_counter',id,side,at:M.t}"));
  return source;
 }
 function routineSource(source){
@@ -87,11 +98,11 @@ function routineMetrics(x,E,measure,restCount){
   stamina25:meanStamina(.25),stamina50:meanStamina(.5),stamina75:meanStamina(.75),endW:M.wSt,endF:M.fSt,
   lateOffence:late.length,lateHighCost:late.filter(e=>E.GRAPH.costOf(e.id)>=2.2).length,
   routineSpent:budget.writes.filter(w=>w.category==='routine'||w.category==='slow_tick').reduce((n,w)=>n+Math.max(0,-w.delta),0),
-  zeroEnd:Number(M.wSt<=1e-7)+Number(M.fSt<=1e-7),shortened:Number(!!fin.shortened),botches:fin.botches||0};
+  zeroEnd:Number(M.wSt<=1e-7)+Number(M.fSt<=1e-7),shortened:Number(!!fin.shortened),botches:fin.botches||0,spots:M.spots};
 }
 function summarizeRisk(pairs){
  const summarize=rows=>{
-  const result={bouts:rows.length,attempts:0,botches:0,expectedBotches:0,playerInjuries:0,opponentInjuries:0,worsenings:0,bySource:{},bySide:{},byStamina:{},byMove:{},byRequest:{},byPlan:{},byStructure:{},byPhase:{},injuriesBySource:{},injurySeverity:{}};
+  const result={bouts:rows.length,attempts:0,graphSpotIncrements:0,botches:0,expectedBotches:0,playerInjuries:0,opponentInjuries:0,worsenings:0,bySource:{},bySide:{},byStamina:{},byMove:{},byRequest:{},byPlan:{},byStructure:{},byPhase:{},injuriesBySource:{},injurySeverity:{}};
   const add=(group,key,e)=>{
    const row=group[key]??={attempts:0,botches:0,expectedBotches:0};
    row.attempts++;row.botches+=Number(e.botched);row.expectedBotches+=e.probability;
@@ -104,6 +115,7 @@ function summarizeRisk(pairs){
     add(result.byRequest,e.forced===null?'balcony':e.forced?'forced':'not_forced',e);
     add(result.byStamina,e.stamina<28?'under28':e.stamina<45?'28–44':e.stamina<65?'45–64':'65+',e);
     add(result.byPlan,p.plan,e);add(result.byStructure,p.structure,e);add(result.byPhase,e.phase??'unknown',e);
+   }else if(e.kind==='graph_spot'){result.graphSpotIncrements++;
    }else if(e.kind==='injury'){
     if(e.side==='w')result.playerInjuries++;else result.opponentInjuries++;
     inc(result.injuriesBySource,e.source+'|'+e.side);
@@ -121,7 +133,7 @@ function summarizeRisk(pairs){
 function summarizeRoutine(pairs){
  const summarize=rows=>{
   const sum=k=>rows.reduce((n,x)=>n+x[k],0);
-  const totals=['signed','opened','completed','interruptions','objectives','injury','staminaCases','timingCases','accepted','witnessed','botched','refunded','ignored','spent','rests','recoveryOffered','recoveryLanded','lateOffence','lateHighCost','zeroEnd','shortened','botches'];
+  const totals=['signed','opened','completed','interruptions','objectives','injury','staminaCases','timingCases','accepted','witnessed','botched','refunded','ignored','spent','rests','recoveryOffered','recoveryLanded','lateOffence','lateHighCost','zeroEnd','shortened','botches','spots'];
   const means=['stars','crowd','startW','startF','fatigueW','fatigueF','stamina25','stamina50','stamina75','endW','endF','routineSpent'];
   return {...Object.fromEntries(totals.map(k=>[k,sum(k)])),...Object.fromEntries(means.map(k=>[k,avg(rows.map(x=>x[k]))])),bouts:rows.length};
  };
@@ -256,7 +268,7 @@ function run(seeds=[3,10],weeks=32){
     const traceReport=trace?trace.close(M):null;
     if(traceActual===true){continuationRecords.push(...traceReport.records);openingRecords.push(...traceReport.openings);dependencyWitnesses.push(...traceReport.dependencyWitnesses);}
     if(traceActual){
-     assert.equal(risk.filter(e=>e.kind==='attempt').length,M.spots,key+' risk attempts reconcile');
+     assert.equal(risk.filter(e=>e.kind==='attempt'||e.kind==='graph_spot').length,M.spots,key+' risk rolls plus graph spot counter increments reconcile');
      assert.equal(risk.filter(e=>e.kind==='attempt'&&e.botched).length,M.botches,key+' risk botches reconcile');
      for(const side of ['w','f'])assert.equal(risk.filter(e=>e.kind==='injury'&&e.side===side).length,Number(side==='w'?!!M.injury:!!M.foeHurt),key+' actual injury onset reconciles '+side);
     }
