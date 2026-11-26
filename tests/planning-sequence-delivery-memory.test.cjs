@@ -172,3 +172,34 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  const oldLive=E.create({...copy(liveConfig),livePsychologyVersion:undefined});
  assert.equal(E.livePsychology(oldLive),null);assert.equal(E.liveObedienceDelta(oldLive,'layout'),0);
  console.log('PASS MP10: graded live obedience, improvisation and frustration; bounded context response, no RNG in inference, exact call replay, immutable booked result and layout, legacy opt-out.');
+
+ // MP11: shared professional trust is separate from private manager trust,
+ // storyline rivalry and personal bonds; only earlier actual evidence enters.
+ const memory=root.OfficeMemory,prof=memory.professionalContext(G.S,w.id,f.id);
+ assert.ok(prof&&prof.score>50);
+ eq(prof,memory.professionalContext(G.S,f.id,w.id));
+ assert.equal(prof.entries[0].cid,c.id);
+ assert.equal(prof.entries[0].kind,'shared_delivery');
+ assert.equal(prof.entries[0].adapted,1);
+ assert.equal(prof.entries[0].delta,2);
+ assert.equal(F.capture(next,G.W(w.id),G.F(f.id),G.S).participants.w.values.professionalTrust,prof.score);
+ assert.equal(F.capture(next,G.W(w.id),G.F(f.id),G.S).participants.f.values.professionalTrust,prof.score);
+ assert.equal(F.capture(sameWeek,G.W(w.id),G.F(f.id),G.S).participants.w.values.professionalTrust,null);
+ const oldCareer=copy(G.S);delete oldCareer.officeMemory.professionalPairs;
+ assert.equal(memory.professionalContext(oldCareer,w.id,f.id),null);
+ assert.equal(F.capture(next,G.W(w.id),G.F(f.id),oldCareer).participants.w.values.professionalTrust,null);
+ const privateBefore=copy(G.S.officeMemory.trust),regardBefore=copy(G.S.officeMemory.rivals),bondsBefore=G.S.bonds?copy(G.S.bonds):null;
+ assert.equal(memory.recordProfessional(c,M.final,meeting.sequenceDelivery),null);
+ const nextC={...c,id:'mp11-protected',eventAbs:c.eventAbs+1};
+ assert.equal(memory.recordProfessional(nextC,{...M.final,shortened:true},meeting.sequenceDelivery),null);
+ assert.equal(memory.recordProfessional(nextC,{...M.final,outcome:'booked'},[{...receipt,status:'missed',witnessed:receipt.witnessed.slice(0,1)}]),null);
+ assert.equal(memory.recordProfessional(nextC,{...M.final,outcome:'nc'},meeting.sequenceDelivery),null);
+ eq(memory.professionalContext(G.S,w.id,f.id),prof);
+ const setback=memory.recordProfessional({...nextC,id:'mp11-broken'},{...M.final,outcome:'double',injury:0,foeHurt:false,shortened:false,workingHurt:false},[]);
+ assert.equal(setback.delta,-3);
+ assert.ok(memory.professionalContext(G.S,w.id,f.id).score<prof.score);
+ eq(G.S.officeMemory.trust,privateBefore);eq(G.S.officeMemory.rivals,regardBefore);
+ eq(G.S.bonds||null,bondsBefore);
+ const profSave=copy(G.S);G.S=copy(profSave);
+ eq(memory.professionalContext(G.S,w.id,f.id),memory.professionalContext(profSave,w.id,f.id));
+ console.log('PASS MP11: verified professional pair memory, neutral protected/incomplete exchanges, no personal blame, independent relationship axes, earlier-only planning, save persistence and deduplication.');
