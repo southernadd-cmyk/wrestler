@@ -14,6 +14,11 @@ assert.ok(report.overall.sequenceOffers>0&&report.overall.sequenceHeard>0&&repor
 assert.ok(report.matchedTraditional.pairs>0,'real traditional comparison');
 assert.ok(report.matchedFeasibility.pairs>0&&report.matchedFeasibility.bothSigned>0,'matched planning policy comparison');
 assert.ok(report.matchedAdaptive.pairs>0&&report.matchedAdaptive.after.withAlternatives>0,'actual agreed alternate entry coverage');
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined}}));
+const c=report.continuation;
+assert.ok(c.attempts>0&&c.failed>0&&c.selectionOpportunities>0,'real opened sequence interruption coverage');
+assert.equal(c.completed,report.overall.exact+report.overall.adapted,'all completed sequences traced exactly once');
+assert.equal(c.finalOpenedMisses,report.overall.missed-report.overall.noOpening,'all final opened misses traced');
+assert.equal(c.traceVerified.length,4,'trace neutrality verified per structure');
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,continuation,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},continuation:{...continuation,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
