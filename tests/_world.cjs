@@ -7,12 +7,12 @@ const vm=require('node:vm');
 const {script}=require('./_source.cjs');
 const cut=script.indexOf('/* THE OFFICE — interface v3');
 
-function engine(seed){
+function engine(seed,sourceTransform=null){
  let r=seed>>>0||1;const random=()=>{r=(Math.imul(r,1664525)+1013904223)>>>0;return r/4294967296;};
  const math=Object.create(Math);math.random=random;
  const FixedDate=class extends Date{static now(){return 1700000000000+seed*977;}};
  const store=new Map(),root={addEventListener(){}};
- vm.runInNewContext(script.slice(0,cut),{window:root,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},Date:FixedDate,Math:math,JSON,console});
+ vm.runInNewContext(sourceTransform?sourceTransform(script.slice(0,cut)):script.slice(0,cut),{window:root,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},Date:FixedDate,Math:math,JSON,console});
  return {root,random};
 }
 
@@ -77,8 +77,8 @@ function check(root,s,label){
 
 // Play one career for `weeks` weeks. Returns {problems, stats}. `hook(root)` runs before the career
 // starts, for diagnostics (tools can wrap engine functions).
-function play(seed,weeks=48,hook=null,realBout=null){
- const {root,random}=engine(seed);
+function play(seed,weeks=48,hook=null,realBout=null,sourceTransform=null){
+ const {root,random}=engine(seed,sourceTransform);
  if(hook)hook(root);
  const {OfficeData:D,OfficeGame:G,OfficeTerritory:T,OfficeApproaches:X,OfficeAfter:A,OfficeRingside:R}=root;
  const pick=n=>Math.floor(random()*n);

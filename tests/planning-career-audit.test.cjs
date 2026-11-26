@@ -90,6 +90,17 @@ for(const p of stamina.pairs){
  console.log('MP13F.10 STAMINA CASE '+JSON.stringify(p));
 }
 console.log('MP13F.10 STAMINA SUMMARY '+JSON.stringify({...stamina,pairs:undefined}));
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},matchedBigSpotArbitration:{...matchedBigSpotArbitration,comparisons:undefined},staminaOpportunityAudit:{...staminaOpportunityAudit,pairs:undefined},temporalOpportunityAudit:{...temporalOpportunityAudit,cases:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
+const expenditure=report.staminaExpenditureAudit;
+assert.equal(expenditure.total,stamina.after.total,'all shipped stamina cases have expenditure classification');
+for(const c of expenditure.cases){
+ if(c.noPure)continue;
+ for(const side of c.deficitSides){
+  const x=c.totals[side],rows=Object.values(x.byCategory);
+  assert.ok(Math.abs(x.start+rows.reduce((n,r)=>n+r.recovered-r.spent,0)-x.end)<1e-7,'actual energy balance');
+ }
+ console.log('MP13F.12 EXPENDITURE CASE '+JSON.stringify(c));
+}
+console.log('MP13F.12 EXPENDITURE SUMMARY '+JSON.stringify({...expenditure,cases:undefined}));
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaExpenditureAudit,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},matchedBigSpotArbitration:{...matchedBigSpotArbitration,comparisons:undefined},staminaExpenditureAudit:{...staminaExpenditureAudit,cases:undefined},staminaOpportunityAudit:{...staminaOpportunityAudit,pairs:undefined},temporalOpportunityAudit:{...temporalOpportunityAudit,cases:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
