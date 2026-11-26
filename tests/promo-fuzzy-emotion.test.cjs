@@ -250,3 +250,16 @@ console.log('PASS F4: bounded contextual emotion transitions, protected record p
  assert.ok(f6Audit.reactions>0&&f6Audit.distinctReception>0&&f6Audit.changed>0);
  console.log('F6 AUDIENCE AUDIT '+JSON.stringify(f6Audit));
  console.log('PASS F6: separate audience observations, actual mouthpiece identity, retained client commitments, versioned scene parity and bounded progression.');
+
+ // F7B: opt-in pacing lift only, preserving event draw and legacy policy.
+ for(const state of [{player:steady,opponent:steady},{player:steady,opponent:heated}]){
+  for(const meter of [-40,-20,0,20,40])for(const calming of [true,false]){
+   const ctx={...situation,meter,calming};
+   const old=F.pacing(pacingFacts,state,ctx),now=F.pacing(pacingFacts,state,{...ctx,balance:1});
+   eq(old.events,now.events);assert.ok(now.follow>=old.follow&&now.follow<=.82);
+  }
+ }
+ const initial=F.pacing(pacingFacts,{player:steady,opponent:steady},{...situation,meter:0});
+ const lifted=F.pacing(pacingFacts,{player:steady,opponent:steady},{...situation,meter:0,balance:1});
+ assert.ok(lifted.follow>initial.follow);
+ console.log('PASS F7B: bounded opt-in follow-up adjustment, identical spontaneous event weights.');

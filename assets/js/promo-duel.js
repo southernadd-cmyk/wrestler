@@ -357,7 +357,7 @@
   // Explicit live opt-in. Earlier scene snapshots and engine callers retain
   // exact prior behaviour. F3 is wording-only; no mouthpiece/arc changes.
   if(opts.fuzzy===true&&opts.formats&&st.semantic&&st.director&&st.authoredDialogue&&(!m||f6)&&!opts.arc&&root.OfficePromoFuzzy){
-   st.authoredDialogue.fuzzy={v:1,...(opts.fuzzyEmotion===true?{emotion:1}:{}),...(opts.fuzzyPacing===true&&opts.fuzzyEmotion===true?{pacing:1}:{}),...(f6?{crowd:1,audience:{},...(m?{mouthpiece:1,speakerId:m.id,clientId:w.id}:{})}:{}),w:root.OfficePromoFuzzy.selectionFacts(mouthPsych||w),f:root.OfficePromoFuzzy.selectionFacts(f)};
+   st.authoredDialogue.fuzzy={v:1,...(opts.fuzzyEmotion===true?{emotion:1}:{}),...(opts.fuzzyPacing===true&&opts.fuzzyEmotion===true?{pacing:1}:{}),...(f6?{crowd:1,audience:{},...(opts.fuzzyBalance===true?{balance:1}:{}),...(m?{mouthpiece:1,speakerId:m.id,clientId:w.id}:{})}:{}),w:root.OfficePromoFuzzy.selectionFacts(mouthPsych||w),f:root.OfficePromoFuzzy.selectionFacts(f)};
   }
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
