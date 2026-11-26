@@ -1541,7 +1541,7 @@ function showPromos(loadedBanks){
  if(!newPromo&&needsBanks&&existing)existing.banks=loadedBanks||[];
  if(newPromo){
   const arc=window.OfficeProgrammeArcs?.intro(c,night.plan?.arcChoice);
-  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth,arc,directed:true,formats:true,dialogue:true,authored:true,banks:loadedBanks||[],composition:true,semantic:true,fuzzy:true});
+  night.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),night.plan?.sheet,p,{mouth,arc,directed:true,formats:true,dialogue:true,authored:true,banks:loadedBanks||[],composition:true,semantic:true,fuzzy:true,fuzzyEmotion:true});
   // v0.3.12 The interviewer asks about what the crowd saw: the rivalry's public record. A backstage
   // memory (recalled.promoPrompt) stays backstage; it is no longer read out on air.
   const intro=window.OfficeRivalry?.introFor(night.promo.core);

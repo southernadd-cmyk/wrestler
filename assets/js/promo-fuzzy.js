@@ -137,5 +137,39 @@
    ['Measured and methodical','Warm and reflective'].includes(delivery)?.35:.5;
   return Math.max(.15,Math.min(.85,.5+(base-.5)*.8+.35*(grade('aggression')-.5)+.2*(grade('defensiveness')-.5)+.15*(grade('assertiveness')-.5)-.2*(grade('respect')-.5)));
  }
- root.OfficePromoFuzzy=Object.freeze({version:1,curves,membership,inputs,fuzzify,snapshot,outputs,rules,cues,infer,selectionFacts,selectionScores,categoryWeight,directWeight});
+ // F4: bounded emotional transition using the pre-turn fuzzy drives.
+ // Context supplies only actual observed results, never inferred insults,
+ // personal vulnerabilities, crowd preferences or new career facts.
+ function emotionStep(facts,participant,event={}){
+  if(!facts||!participant||!Number.isFinite(participant.composure)||!Number.isFinite(participant.irritation))return null;
+  const scores=selectionScores(facts,participant,event.beforeMeter,event.side,event.feudHeat);
+  if(!scores||!['w','f'].includes(event.side)||!Number.isFinite(event.beforeMeter)||!Number.isFinite(event.afterMeter))return null;
+  const unit=(n)=>Number.isFinite(n)?clamp(n)/100:.5;
+  const drive=k=>unit(scores[k]);
+  const pro=unit(facts.values.professionalism),psych=unit(facts.values.ringPsychology),ego=unit(facts.values.ego);
+  const recovery=.35+.35*pro+.3*psych;
+  const reactivity=.55+.35*ego+.45*drive('defensiveness')+.25*drive('aggression');
+  const oriented=(event.afterMeter-event.beforeMeter)*(event.side==='w'?1:-1);
+  const gain=Math.max(-1,Math.min(1,oriented/18));
+  const success=event.spoke&&event.side==='w'&&typeof event.landed==='boolean'?(event.landed?1:-1):0;
+  const targeted=event.side==='f'&&event.personal===true;
+  const calming=event.calming===true;
+  const baseComposure=clamp(50+((facts.values.ringPsychology??50)-50)*.35);
+  const baseIrritation=clamp((facts.values.ego??50)*.25);
+  const c=participant.composure,i=participant.irritation;
+  // Gentle drift to the actor's own starting equilibrium. Positive feedback
+  // helps composure; negative feedback and personal attacks hurt more when
+  // defensive. Acknowledgement offers relief rather than guaranteed agreement.
+  const dc=(baseComposure-c)*.12*recovery
+   +Math.max(0,gain)*9*recovery+Math.min(0,gain)*12*reactivity
+   +(success>0?4*recovery:success<0?-5*reactivity:0)
+   -(targeted?4*reactivity:0)+(calming?5*recovery:0);
+  const di=(baseIrritation-i)*.1*recovery
+   -Math.max(0,gain)*5*recovery-Math.min(0,gain)*10*reactivity
+   +(success<0?5*reactivity:success>0?-2*recovery:0)
+   +(targeted?12*reactivity:0)-(calming?10*recovery:0);
+  const limited=(n,max)=>Math.max(-max,Math.min(max,n));
+  return {composure:clamp(c+limited(dc,18)),irritation:clamp(i+limited(di,22))};
+ }
+ root.OfficePromoFuzzy=Object.freeze({version:1,curves,membership,inputs,fuzzify,snapshot,outputs,rules,cues,infer,selectionFacts,selectionScores,categoryWeight,directWeight,emotionStep});
 })(typeof window!=='undefined'?window:globalThis);

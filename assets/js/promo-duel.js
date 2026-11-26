@@ -353,7 +353,7 @@
   // Explicit live opt-in. Earlier scene snapshots and engine callers retain
   // exact prior behaviour. F3 is wording-only; no mouthpiece/arc changes.
   if(opts.fuzzy===true&&opts.formats&&st.semantic&&st.director&&st.authoredDialogue&&!m&&!opts.arc&&root.OfficePromoFuzzy){
-   st.authoredDialogue.fuzzy={v:1,w:root.OfficePromoFuzzy.selectionFacts(w),f:root.OfficePromoFuzzy.selectionFacts(f)};
+   st.authoredDialogue.fuzzy={v:1,...(opts.fuzzyEmotion===true?{emotion:1}:{}),w:root.OfficePromoFuzzy.selectionFacts(w),f:root.OfficePromoFuzzy.selectionFacts(f)};
   }
   st.arc=opts.arc?{id:opts.arc.id,step:opts.arc.step??null,follow:opts.arc.follow||null}:null;
   st.read=readFor(c,w,f,rival,sheet,fmic,st.seed,core);
@@ -1679,7 +1679,7 @@
   if(!st||st.stage==='done')throw Error('The promo is over');
   const o=choices(st).find(x=>x.id===id);
   if(!o)throw Error('Not an option at the microphone: '+id);
-  const r=ROUNDS[st.round].id,v=voice(talker(st)),beforeLog=st.log.length;
+  const r=ROUNDS[st.round].id,v=voice(talker(st)),beforeLog=st.log.length,beforeMeter=st.meter;
   let rec={round:r,id,label:o.label,landed:true};
   if(r==='open')rec={round:r,...coreRound(st,'open',id,'open')};
   else if(r==='answer')rec={round:r,...coreRound(st,'answer',id,'answer')};
@@ -1732,7 +1732,7 @@
   if(st.semantic&&Semantic.option(st,r,id))rec.label=o.label;
   st.steps.push(rec);st.round++;
   if(st.director){
-   Director.observe(st.director,st,rec,st.log.slice(beforeLog));
+   Director.observe(st.director,st,rec,st.log.slice(beforeLog),beforeMeter);
    if(r==='answer'){
     const event=Director.spontaneous(st.director,st,rec);
     if(event){
