@@ -1460,7 +1460,7 @@
     const q=sequence.by,before=structureCallMood(st.structureBoard[t.objective]),after=structureCallMood(sequence.card);
     const net={w:q.w.mood+after.w-before.w,f:q.f.mood+after.f-before.f};
     out.push({id:'use_sequence',label:'“Pencil in that '+sequence.evidence.steps.length+'-move setup.”',
-     hint:sequenceDescription(st,sequence)+'. '+name+' '+stanceText(q[side].stance)+' ('+moodText(net[side])+'); '+opp+' '+stanceText(q[other(side)].stance)+' ('+moodText(net[other(side)])+'). '+(st.planningSequenceSigning===1?'Sign the setup conditionally at review. Live execution is not yet enabled.':'Only the final named call is signed in this version; the setup is provisional.'),
+     hint:sequenceDescription(st,sequence)+'. '+name+' '+stanceText(q[side].stance)+' ('+moodText(net[side])+'); '+opp+' '+stanceText(q[other(side)].stance)+' ('+moodText(net[other(side)])+'). '+(st.planningSequenceSigning===1?'Sign the setup conditionally at review. The wrestlers must earn the opening in the ring.':'Only the final named call is signed in this version; the setup is provisional.'),
      tags:[...['w','f'].filter(s=>net[s]!==0).map(s=>nameOf(st,s)+(net[s]>0?' ▲':' ▼')),'Conditional setup'],
      run(st){
       const offer=readSequenceOffer(st);if(!offer)throw Error('Sequence is no longer eligible');
@@ -1686,8 +1686,9 @@
   if(st.planningSequences!==1||!t?.alternative||t.decision||!L?.readHuddle(st))return null;
   const second=readCounterOffer(st),cards=second?[second.card,t.alternative]:[t.alternative];
   for(const card of cards){
-   const diverse=st.planningSequencePolicy===2;
-   const result=sequenceCandidates(st,t.objective,card.action,{diverse});
+   const diverse=st.planningSequencePolicy===2||st.planningSequencePolicy===3;
+   const feasible=st.planningSequencePolicy===3;
+   const result=sequenceCandidates(st,t.objective,card.action,{diverse,feasible});
    // Prefer an actual connected exchange with both performers where
    // close in merit to the top suggestion, but don't force a reversal.
    const top=result.candidates[0];
@@ -1703,7 +1704,7 @@
     // Scale its merit here to avoid counting difficulty three times.
     const score=r=>r.merit*.25-10*Math.abs(r.sequence.actions.length-preference.target)
      +(r.difficulty.components.controlChanges>0&&new Set(r.evidence.steps.map(s=>s.performer)).size>1?preference.scores.exchange*.16:0)
-     -r.evidence.steps.filter(s=>s.risk).length*5;
+     -r.evidence.steps.filter(s=>s.risk).length*5+(feasible?(r.feasibility.scores.feasibility-50)*.65:0);
     ranked.sort((x,y)=>score(y)-score(x)||y.merit-x.merit||x.sequence.actions.join('|').localeCompare(y.sequence.actions.join('|')));
     row=ranked[0];
    }
@@ -1859,7 +1860,7 @@
   }
   return [...(sequenceIncoming.get(id)||[])].sort((a,b)=>a.localeCompare(b));
  }
- function sequenceCandidates(st,objective,action,{diverse=false}={}){
+ function sequenceCandidates(st,objective,action,{diverse=false,feasible=false}={}){
   const F=root.OfficePlanningFuzzy,p=proposalEvidence(st,objective,action);
   const empty=reason=>({v:1,eligible:false,reason,candidates:[],search:{tested:0,valid:0,expanded:0,truncated:false}});
   if(!p.eligible)return empty(p.reason);
@@ -1930,7 +1931,9 @@
       const risks=evidence.steps.filter(s=>s.risk).length;
       const u=utility(w.scores),v=utility(f.scores);
       const merit=.65*(u+v)/2+.35*Math.min(u,v)-difficulty.score*.12-risks*3;
-      candidates.push({v:1,sequence,evidence,difficulty,by,merit});
+      const feasibility=feasible?F.sequenceFeasibility(st,structureSlot(st,objective),evidence):null;
+      if(feasible&&!feasibility?.possible)continue;
+      candidates.push({v:1,sequence,evidence,difficulty,by,merit,...(feasibility?{feasibility}:{})});
       // One canonical valid entry per path: no near-duplicates differing
       // only in the hypothetical starting position.
       break;
@@ -1944,7 +1947,8 @@
    }
    if(search.tested>=maxTested||search.expanded>=maxExpanded)break;
   }
-  const order=(a,b)=>b.merit-a.merit||a.difficulty.score-b.difficulty.score||pathKey(a.sequence.actions).localeCompare(pathKey(b.sequence.actions));
+  const rank=r=>r.merit+(feasible?(r.feasibility.scores.feasibility-50)*.85:0);
+  const order=(a,b)=>rank(b)-rank(a)||a.difficulty.score-b.difficulty.score||pathKey(a.sequence.actions).localeCompare(pathKey(b.sequence.actions));
   // Keep two candidates per length rather than crowding out longer
   // alternatives with easier two-move fragments.
   const shortlist=[2,3,4].flatMap(length=>{
@@ -2278,7 +2282,7 @@
    if(st.planningProposal===1&&opts.planningDialogue===true&&root.OfficePlanningDialogue){
     const L=root.OfficePlanningDialogue,banks=Array.isArray(opts.planningBanks)?opts.planningBanks:[];
     const identities={w:L.capture(w,banks,2),f:L.capture(f,banks,2)};
-    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if(opts.planningSequencePolicy===2)st.planningSequencePolicy=2;if(opts.planningSequenceSigning===true)st.planningSequenceSigning=1;}}}
+    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if([2,3].includes(opts.planningSequencePolicy))st.planningSequencePolicy=opts.planningSequencePolicy;if(opts.planningSequenceSigning===true)st.planningSequenceSigning=1;}}}
    }
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
