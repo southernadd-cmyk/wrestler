@@ -617,11 +617,14 @@ const Graph=(function makeGraph(){
  function readyNegotiatedSequence(M){
   if(M.structureDirector?.sequencePolicy!==2)return false;
   const offer=root.OfficeSheets?.DIRECTOR?.sequenceOffer(M,$d.Psy.get(M));
-  return !!offer?.continuation&&offer.willingness>=35&&isValid(M,offer.id);
+  const handoff=M.o.sequenceCoordinationVersion===1&&M.structureDirector.sequenceHandoff;
+  const justOpened=handoff&&handoff.at===M.t&&handoff.objective===offer?.objective&&handoff.opening===offer?.id;
+  return !!(offer?.continuation||justOpened)&&offer.willingness>=35&&isValid(M,offer.id);
  }
  function advance(M,frac){
   const g=get(M);if(!g.started){g.started=true;enter(M,'opening',null);}g.age++;
   const a=ARCS[g.arc],schedule=$d.phaseFor(frac,M),order={open:0,shine:1,heat:2,comeback:3,stretch:4};
+  root.OfficeSheets?.DIRECTOR?.coordinateSequence?.(M,$d.Psy.get(M));
   if(readyNegotiatedSequence(M))return {id:schedule.id,name:a.label};
   // A genuine top-rope setup must get its ONE legal follow-through choice.
   // Previously the arc clock could immediately change to finish_setup,
