@@ -61,7 +61,7 @@ function trace(root,key){
      if(i===0&&landed){at+=10;continue;}
      if(at/Math.max(1,m.len)<(A[step.id].after||0))early=true;
      if(cost>=2.2&&energy[step.entry.control]<16+cost*3.2)low=true;
-     energy[step.performer]-=Math.max(0,cost);
+     D.projectedSequenceEnergy(m,energy,step,cost);
      const ticks=G.sequenceMoveSeconds(step.id)/10;energy.w-=ticks*.5;energy.f-=ticks*.5;at+=ticks*10;
     }
     if(early)guards.push('chain_too_early');
