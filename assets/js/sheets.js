@@ -766,6 +766,37 @@
    }
    return null;
   }
+  // MP13C: seek an attainable entry through an already legal, ordinary
+  // graph move. Do not create an edge, assign control or fabricate grip.
+  // Explicit opt-in on new matches preserves older in-flight saves.
+  function sequenceOpening(M,pre,pool){
+   if(M.o?.sequenceOpeningVersion!==1||!adaptiveSequences(M)||!M.graph||
+      M.graph.pendingAerial||M.graph.pendingGrapple||M.graph.pendingStrike||M.graph.pendingContact||
+      !['w','f'].includes(pre?.control)||!Array.isArray(pool))return null;
+   const graph=root.OfficeMatch.GRAPH,follow=sequenceWillingness(M)/100;
+   if(follow<.35)return null;
+   for(const row of sequenceRows(M)){
+    if(row.status!=='pending'||row.progress||row.attempts>=3)continue;
+    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective),seq=o?.sequence;
+    if(!seq||!sequenceWindow(M,o,seq.actions.length+1)||
+       o.requires.some(id=>M.structureDirector.objectives.some(x=>x.id===id&&x.status==='pending')))continue;
+    if(equalState(pre,seq.start))continue;
+    // Only actual legal existing candidates, low-energy and non-hazardous.
+    // Respect pending attacks, restrictions, stamina and independent
+    // defensive outcomes. A preparation may be defended or never selected.
+    const candidates=pool.filter(([id,weight])=>{
+     const n=actions[id];if(!n||!(weight>0)||n.risk||n.counterOf||n.blockOf||n.nearfall||n.family==='pin'||
+        graph.costOf(id)>1.8||seq.actions.includes(id)||!graph.isValid(M,id))return false;
+     if(M.graph.events.slice(-4).some(e=>e.id===id))return false;
+     const performer=n.reverse?opposite(pre.control):pre.control;
+     if(!sequenceMoveAllowed(M,id,performer))return false;
+     const exit={control:performer,position:n.zone,down:n.down==='d'?(n.reverse?pre.control:opposite(pre.control)):n.down==='a'?performer:null};
+     return equalState(exit,seq.start)&&n.next.some(([to,w])=>to===seq.actions[0]&&w>0);
+    }).map(([id])=>id);
+    if(candidates.length)return {objective:row.objective,ids:candidates,ratio:.20+.45*follow,willingness:follow*100};
+   }
+   return null;
+  }
   function interruptSequence(row,why,code='exchange_broken'){
    if(row.status!=='running')return;
    row.interruptions++;
@@ -1067,7 +1098,7 @@
    if(r.interruptions>0)return {label:'Interrupted sequence',tone:'missed',note:'A verified prefix was interrupted. Future sequence proposals may reflect this shared experience, not personal blame.'};
    return {label:'Incomplete sequence',tone:'',note:'Only part of the sequence was verified. No interruption-based negative evidence is inferred.'};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,observeSequence,deliveryDebrief};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,sequenceOffer,sequenceOpening,observeSequence,deliveryDebrief};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
