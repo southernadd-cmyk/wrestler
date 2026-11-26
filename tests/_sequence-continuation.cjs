@@ -9,7 +9,7 @@ const eqState=(a,b)=>a&&b&&['control','position','down'].every(k=>a[k]===b[k]);
 function trace(root,key){
  const G=root.OfficeMatch.GRAPH,D=root.OfficeSheets.DIRECTOR,A=G.A;
  let tracked=null,phase=null,offer=null;
- const undo=[],attempts=new Map(),records=[],openings=new Map(),dependencyWitnesses=[],recoveryOffers=[];
+ const undo=[],attempts=new Map(),records=[],openings=new Map(),dependencyWitnesses=[],recoveryOffers=[],alternativeReadinessOffers=[];
  const rows=m=>m.structureDirector?.sequences||[];
  const running=m=>rows(m).filter(r=>r.status==='running'&&r.progress>0);
  const id=r=>r.objective+'|'+r.attempts;
@@ -135,7 +135,18 @@ function trace(root,key){
    // First sequenceOffer inside Graph.step is from its actual validPool.
    // A later apply-time query is not another selection opportunity.
    offer={result:result?copy(result):null};
-   for(const r of rows(m))if(r.status==='pending'&&!r.attempts)openingTick(m,r,pre,result);
+   for(const r of rows(m))if(r.status==='pending'&&!r.attempts){
+    openingTick(m,r,pre,result);
+    const v=openingRecord(m,r),tick=v.ticks.at(-1);
+    if(tick?.at!==m.t)continue;
+    const primary=tick.candidates[0],ready=tick.candidates.slice(1).filter(c=>!c.guards.length);
+    // Same actual selection opportunity; primary is legal but blocked
+    // by chain readiness or runway, while an alternative is ready.
+    if(primary.guards.length&&primary.guards.every(g=>['chain_too_early','chain_stamina','other_readiness','finish_runway'].includes(g))&&ready.length){
+     alternativeReadinessOffers.push({key,objective:r.objective,at:m.t,primary:primary.id,guards:primary.guards,
+      ready:ready.map(c=>c.id),offered:result?.objective===r.objective?result.id:null});
+    }
+   }
    for(const r of running(m)){
     const s=snapshot(m,r,pre),v=observe(m,r,s);
     v.selections.push({at:m.t,progress:r.progress,expected:s.expected,offered:result?.objective===r.objective?result.id:null,
@@ -248,7 +259,13 @@ function trace(root,key){
    offer.sequenceOpened=rows(m).some(r=>r.objective===offer.objective&&r.attempts>0);
    offer.sequenceCompleted=rows(m).some(r=>r.objective===offer.objective&&['completed','adapted'].includes(r.status));
   }
-  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers};
+  for(const opportunity of alternativeReadinessOffers){
+   const row=rows(m).find(r=>r.objective===opportunity.objective);
+   const witness=records.find(v=>v.objective===opportunity.objective&&v.openedAt===opportunity.at&&opportunity.ready.includes(v.opening));
+   opportunity.credited=witness?.opening||null;
+   opportunity.completed=!!witness&&['completed','adapted'].includes(witness.terminal.kind);
+  }
+  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers,alternativeReadinessOffers};
  },restore(){for(const fn of undo.reverse())fn();tracked=null;}};
 }
 function summarise(records){
