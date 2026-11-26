@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],reviewRepairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],reviewRepairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -294,6 +294,12 @@ function run(seeds=[3,10],weeks=32){
       maxWait:Math.max(0,...durations),bigSpotBlocked:blocked.length,ignored:x.fin.ignored,spent:x.fin.callsUsed.length};
     };
     arbitrationPairs.push({key,structure:choice.id,relevant,before:measureArbitration(alt),after:measureArbitration(arbitrated)});
+    // Reuse both existing replay arms. The after arm is now shipped
+    // F.9C; no additional replays or engine changes.
+    const beforeStamina=continuation.staminaCases(alt.traceReport),afterStamina=continuation.staminaCases(arbitrated.traceReport);
+    assert.equal(beforeStamina.length,breakdown(alt.traceReport).staminaCases,key+' original stamina cases reconcile');
+    assert.equal(afterStamina.length,breakdown(arbitrated.traceReport).staminaCases,key+' current stamina cases reconcile');
+    if(beforeStamina.length||afterStamina.length)staminaPairs.push({key,before:beforeStamina,after:afterStamina});
    }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
@@ -383,6 +389,30 @@ function run(seeds=[3,10],weeks=32){
    return {...compare(arbitrationPairs),acceptedRequestBouts:compare(arbitrationPairs.filter(x=>x.relevant)),
     byStructure:Object.fromEntries([...new Set(arbitrationPairs.map(x=>x.structure))].map(k=>[k,compare(arbitrationPairs.filter(x=>x.structure===k))])),
     examples:arbitrationPairs.filter(x=>x.relevant).slice(0,15),comparisons:arbitrationPairs};
+  })(),staminaOpportunityAudit:(()=>{
+   const summarise=side=>{
+    const cs=staminaPairs.flatMap(p=>p[side]),types={},closestPureTypes={},deficitBands={},byStructure={},byPlan={},deficitSides={},payoffs={};
+    for(const c of cs){
+     const variants=c.variants.filter(v=>v.counts.blocked);
+     const pure=variants.map(v=>v.closestPure).filter(Boolean).sort((a,b)=>a.maxDeficit-b.maxDeficit)[0];
+     for(const type of new Set(variants.flatMap(v=>Object.keys(v.counts.types))))inc(types,type);
+     for(const side of new Set(variants.flatMap(v=>v.deficitSides)))inc(deficitSides,side);
+     inc(byStructure,c.structure);inc(byPlan,c.plan);inc(payoffs,c.actions.at(-1));
+     if(pure){
+      inc(closestPureTypes,pure.type);
+      inc(deficitBands,pure.maxDeficit<=2?'0–2':pure.maxDeficit<=5?'2–5':pure.maxDeficit<=10?'5–10':pure.maxDeficit<=20?'10–20':'>20');
+     }
+    }
+    return {total:cs.length,staminaOnly:cs.filter(c=>c.staminaOnly).length,mixed:cs.filter(c=>c.mixed).length,
+     anyReady:cs.filter(c=>c.anyReady).length,types,closestPureTypes,deficitBands,byStructure,byPlan,deficitSides,payoffs,
+     withRecoveryOffer:cs.filter(c=>c.offers.length).length,withRecoveryLanding:cs.filter(c=>c.offers.some(o=>o.landed)).length,
+     withRestInPrevious120:cs.filter(c=>c.variants.some(v=>Object.values(v.recoveryInPrevious120).some(n=>n>0))).length};
+   };
+   const before=staminaPairs.flatMap(p=>p.before),after=staminaPairs.flatMap(p=>p.after);
+   const id=c=>c.key+'|'+c.objective;
+   const b=new Set(before.map(id)),n=new Set(after.map(id));
+   return {before:summarise('before'),after:summarise('after'),retained:after.filter(c=>b.has(id(c))).length,
+    newlyAssociated:after.filter(c=>!b.has(id(c))).map(id),noLongerAssociated:before.filter(c=>!n.has(id(c))).map(id),pairs:staminaPairs};
   })(),temporalOpportunityAudit:(()=>{
    const stages={},safetyCases={},soleSafetyCases={};
    for(const c of temporalCases){

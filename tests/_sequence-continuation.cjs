@@ -65,6 +65,7 @@ function trace(root,key){
    // G.isValid reads live state; never use it with historical pre-state
    // at a landing. Natural observations use post-landing readiness only.
    if(!landed&&eqState(pre,c.start)&&!G.isValid(m,c.action))guards.push('first_move_illegal');
+   let energyAudit=null;
    if(!D.openingReadiness(m,steps,!!landed)){
     let at=m.t,early=false,low=false,energy={w:m.wSt,f:m.fSt};
     for(let i=0;i<steps.length;i++){
@@ -78,8 +79,35 @@ function trace(root,key){
     if(early)guards.push('chain_too_early');
     if(low)guards.push('chain_stamina');
     if(!early&&!low)guards.push('other_readiness');
+    // Store detailed energy evidence only at genuine selection ticks
+    // which already pass all non-readiness guards. No altered validator.
+    if(!landed&&low&&guards.every(g=>['chain_too_early','chain_stamina','other_readiness'].includes(g))){
+     const raw={w:m.wSt,f:m.fSt},costOnly={...raw},projected={...raw};
+     const round=x=>Math.round(x*1000)/1000;
+     let time=m.t;
+     const detail=steps.map((step,i)=>{
+      const cost=G.costOf(step.id),side=step.entry.control,threshold=cost>=2.2?16+cost*3.2:null;
+      const duration=G.sequenceMoveSeconds(step.id);
+      // Controller is the live graph's threshold side, while the
+      // performer pays the actual move cost (not always the same).
+      const x={index:i,id:step.id,side,performer:step.performer,at:time,cost,duration,threshold,
+       raw:round(raw[side]),costOnly:round(costOnly[side]),projected:round(projected[side]),
+       rawDeficit:threshold===null?0:Math.max(0,threshold-raw[side]),
+       costOnlyDeficit:threshold===null?0:Math.max(0,threshold-costOnly[side]),
+       deficit:threshold===null?0:Math.max(0,threshold-projected[side])};
+      D.projectedSequenceEnergy(m,costOnly,step,cost);D.projectedSequenceEnergy(m,projected,step,cost);
+      projected.w-=duration/10*.5;projected.f-=duration/10*.5;time+=duration;
+      return x;
+     });
+     const gripPossible=root.OfficePlanningFuzzy.continuationGrip(steps.map(x=>({...x,action:x.id}))).possible;
+     assert.ok(detail.some(x=>x.deficit>0),'stamina guard has projected deficit');
+     energyAudit={raw:{w:round(raw.w),f:round(raw.f)},steps:detail,gripPossible,
+      type:detail.some(x=>x.rawDeficit>0)?'raw_stamina':detail.some(x=>x.costOnlyDeficit>0)?'chain_move_cost':'routine_projection_only',
+      maxDeficit:Math.max(...detail.map(x=>x.deficit)),
+      plan:m.planId,mode:m.mode?.type||null,remaining:m.len-m.t};
+    }
    }
-   return {id:c.action,alternative:c.alternative,guards};
+   return {id:c.action,alternative:c.alternative,guards,...(energyAudit?{energyAudit}:{})};
   });
  }
  function openingTick(m,r,pre,result){
@@ -278,7 +306,10 @@ function trace(root,key){
    opportunity.credited=witness?.opening||null;
    opportunity.completed=!!witness&&['completed','adapted'].includes(witness.terminal.kind);
   }
-  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers,alternativeReadinessOffers};
+  const staminaContext={plan:m.planId,workers:Object.fromEntries(['w','f'].map(side=>{
+   const worker=m[side];return [side,{id:worker.id,style:worker.style,ring:worker.ring,safe:worker.safe,fatigue:worker.fatigue}];
+  })),rests:(m.graph.events||[]).filter(e=>A[e.id]&&G.costOf(e.id)<0&&(e.id==='catch_breath'||A[e.id].family==='rest')&&!e.blocked&&!e.botched).map(e=>({at:e.t,id:e.id,side:A[e.id].reverse?(e.preControl==='w'?'f':'w'):e.preControl,baseRecovery:-G.costOf(e.id)}))};
+  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers,alternativeReadinessOffers,staminaContext};
  },restore(){for(const fn of undo.reverse())fn();tracked=null;}};
 }
 function summarise(records){
@@ -377,4 +408,33 @@ function temporalCases(trace){
    timingOnly:variants.some(x=>x.counts.earlyTimingOnly>0),mixed:variants.some(x=>x.counts.earlyMixed>0),anyReady:variants.some(x=>x.counts.ready>0)};
  });
 }
-module.exports={trace,summarise,summariseOpenings,temporalCases};
+// The historical staminaCases metric is an association, not a causal
+// finding. This drill-down uses exactly its eligible observed ticks.
+function staminaCases(trace){
+ return trace.openings.filter(v=>!v.final.attempts&&v.ticks.some(t=>t.candidates.some(c=>c.energyAudit))).map(v=>{
+  const variants=v.schedules.map(s=>{
+   const all=v.ticks.map(t=>({at:t.at,arc:t.arc,control:t.control,position:t.position,down:t.down,guards:t.candidates[s.variant].guards,energy:t.candidates[s.variant].energyAudit}));
+   const blocked=all.filter(t=>t.energy);
+   const pure=blocked.filter(t=>t.guards.length===1);
+   const best=xs=>xs.reduce((b,x)=>!b||x.energy.maxDeficit<b.energy.maxDeficit?x:b,null);
+   const snapshot=x=>x?{at:x.at,arc:x.arc,control:x.control,position:x.position,down:x.down,guards:x.guards,...x.energy}:null;
+   const closest=best(blocked),closestPure=best(pure);
+   const recoveryBefore=x=>x?trace.staminaContext.rests.filter(e=>e.at<x.at):[];
+   const recovery=closestPure||closest;
+   const deficitSides=[...new Set(blocked.flatMap(t=>t.energy.steps.filter(x=>x.deficit>0).map(x=>x.side)))];
+   return {...s,counts:{blocked:blocked.length,staminaOnly:pure.length,mixed:blocked.length-pure.length,
+    ready:all.filter(t=>!t.guards.length).length,types:count(blocked,t=>t.energy.type),pureTypes:count(pure,t=>t.energy.type),
+    gripImpossible:blocked.filter(t=>!t.energy.gripPossible).length},
+    deficitSides,first:snapshot(blocked[0]),last:snapshot(blocked.at(-1)),closest:snapshot(closest),closestPure:snapshot(closestPure),
+    recoveryBefore:count(recoveryBefore(recovery),e=>e.side),
+    recoveryInPrevious120:count(recoveryBefore(recovery).filter(e=>recovery.at-e.at<=120),e=>e.side)};
+  });
+  const offers=trace.recoveryOffers.filter(o=>o.objective===v.objective);
+  return {key:v.key,structure:v.structure,objective:v.objective,actions:v.actions,window:v.window,duration:v.duration,
+   final:v.final,workers:trace.staminaContext.workers,plan:trace.staminaContext.plan,
+   variants,offers:offers.map(o=>({at:o.at,side:o.side,ids:o.ids,deficit:o.deficit,stamina:o.stamina,boosted:o.boosted,landed:o.landed})),
+   anyReady:variants.some(s=>s.counts.ready>0),staminaOnly:variants.some(s=>s.counts.staminaOnly>0),
+   mixed:variants.some(s=>s.counts.mixed>0)};
+ });
+}
+module.exports={trace,summarise,summariseOpenings,temporalCases,staminaCases};

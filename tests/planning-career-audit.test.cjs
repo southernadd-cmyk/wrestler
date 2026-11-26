@@ -70,6 +70,26 @@ for(const side of ['before','after']){
  const x=arbitration[side];assert.equal(x.accepted,x.witnessed+x.botched+x.refunded,'every accepted request resolved');
 }
 assert.ok(arbitration.after.maxWait<=240,'bounded request lifetime');
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,temporalOpportunityAudit,continuation,opening,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},matchedBigSpotArbitration:{...matchedBigSpotArbitration,comparisons:undefined},temporalOpportunityAudit:{...temporalOpportunityAudit,cases:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
+const stamina=report.staminaOpportunityAudit;
+assert.equal(stamina.before.total,arbitration.before.staminaCases,'historical stamina cases reconcile');
+assert.equal(stamina.after.total,arbitration.after.staminaCases,'shipped policy stamina cases reconcile');
+assert.equal(stamina.retained+stamina.newlyAssociated.length,stamina.after.total);
+assert.equal(stamina.retained+stamina.noLongerAssociated.length,stamina.before.total);
+for(const p of stamina.pairs){
+ for(const c of [...p.before,...p.after]){
+  assert.ok(c.staminaOnly||c.mixed);
+  for(const v of c.variants){
+   const n=v.counts;assert.equal(n.blocked,n.staminaOnly+n.mixed);
+   assert.equal(n.blocked,Object.values(n.types).reduce((a,b)=>a+b,0));
+   for(const snap of [v.first,v.last,v.closest,v.closestPure].filter(Boolean)){
+    assert.ok(snap.maxDeficit>0&&snap.steps.some(x=>x.deficit>0));
+    assert.ok(snap.guards.includes('chain_stamina'));
+   }
+  }
+ }
+ console.log('MP13F.10 STAMINA CASE '+JSON.stringify(p));
+}
+console.log('MP13F.10 STAMINA SUMMARY '+JSON.stringify({...stamina,pairs:undefined}));
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},matchedBigSpotArbitration:{...matchedBigSpotArbitration,comparisons:undefined},staminaOpportunityAudit:{...staminaOpportunityAudit,pairs:undefined},temporalOpportunityAudit:{...temporalOpportunityAudit,cases:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
