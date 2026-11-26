@@ -227,6 +227,47 @@
    finishSupportChanged:typeof from.supportsFinish==='boolean'&&typeof to.supportsFinish==='boolean'?Number(to.supportsFinish)-Number(from.supportsFinish):null
   }};
  }
+ // MP5C: relative allocation of planned contributions, not objective
+ // fairness or entitlement. Compare the current layout, never 50/50.
+ // Negative crowd values still represent authored crowd reaction.
+ function proposalAllocation(evidence,side){
+  assertSide(side);
+  if(!proposalValues(evidence)||!['w','f'].includes(evidence.owner)||!Array.isArray(evidence.allocation))return null;
+  const board=evidence.allocation,selected=board.filter(b=>b.objective===evidence.objective);
+  if(selected.length!==1||selected[0].owner!==evidence.owner||selected[0].action!==evidence.original.action||
+     selected[0].crowd!==evidence.original.crowd||selected[0].cost!==evidence.original.cost)return null;
+  const complete=board.length===4&&new Set(board.map(b=>b.objective)).size===4&&board.every(b=>['w','f'].includes(b.owner)&&typeof b.action==='string'&&Number.isFinite(b.crowd)&&Number.isFinite(b.cost))&&['w','f'].every(s=>board.some(b=>b.owner===s))&&Number.isFinite(evidence.proposed.crowd)&&Number.isFinite(evidence.proposed.cost);
+  if(!complete)return {v:1,score:null,reason:'incomplete_allocation'};
+  const sum=(list,s)=>list.filter(b=>b.owner===s).reduce((t,b)=>({calls:t.calls+1,visibility:t.visibility+Math.abs(b.crowd),effort:t.effort+Math.max(0,b.cost)}),{calls:0,visibility:0,effort:0});
+  const after=board.map(b=>b.objective===evidence.objective?{...b,action:evidence.proposed.action,crowd:evidence.proposed.crowd,cost:evidence.proposed.cost}:b);
+  const before={w:sum(board,'w'),f:sum(board,'f')},proposed={w:sum(after,'w'),f:sum(after,'f')};
+  const total=(x,k)=>x.w[k]+x.f[k];
+  const oldVis=total(before,'visibility'),newVis=total(proposed,'visibility'),oldEffort=total(before,'effort');
+  if(!oldVis||!newVis||!oldEffort)return {v:1,score:null,reason:'zero_denominator',before,proposed};
+  const visibilityDelta=proposed[side].visibility/newVis-before[side].visibility/oldVis;
+  // Only own absolute authored performer effort changes; the partner's
+  // relative share of cost is not a change in their actual workload.
+  const effortDelta=(proposed[side].effort-before[side].effort)/oldEffort;
+  const net=visibilityDelta-effortDelta;
+  return {v:1,score:K.scale(net,-.5,.5),before,proposed,visibilityDelta,effortDelta,
+   tradeoff:visibilityDelta<0&&effortDelta<0?'less_visibility_less_effort':
+    visibilityDelta>0&&effortDelta>0?'more_visibility_more_effort':
+    visibilityDelta<=0&&effortDelta>=0&&(visibilityDelta<0||effortDelta>0)?'potential_concession':
+    visibilityDelta>=0&&effortDelta<=0&&(visibilityDelta>0||effortDelta<0)?'potential_gain':'unchanged'};
+ }
+ // Historical changes are evidence of recorded requests, NOT reciprocal
+ // debts or proof that either party conceded. After-bell angles excluded.
+ function requestHistory(snapshot,side){
+  assertSide(side);
+  const p=snapshot?.participants?.[side],partner=snapshot?.participants?.[sideOther(side)];
+  if(!p?.id||!partner?.id||!Array.isArray(p.relationship?.talks))return null;
+  const tally=id=>{
+   const records=p.relationship.talks.filter(t=>t.issue!=='after'&&t.requestedBy===id&&typeof t.original==='string'&&typeof t.final==='string');
+   return {recorded:records.length,changed:records.filter(t=>t.original!==t.final).length,
+    changedDelivered:records.filter(t=>t.original!==t.final&&['achieved','adapted'].includes(t.delivered)).length};
+  };
+  return {v:1,own:tally(p.id),partner:tally(partner.id)};
+ }
  // MP5B: the proposal model consumes the already inferred behavioural
  // tendencies, not a second set of raw wrestler personality statistics.
  // Scores are independent degrees of inclination, NOT probabilities.
@@ -256,7 +297,16 @@
   ...crossed('counterproposal','creativeBenefit','tendencyAmbition',[[55,75,95],[45,45,45],[20,15,10]],1),
   rule('counterproposal_finish_loss','counterproposal',95,2,'change.finishLoss'),
   rule('counterproposal_protect_finish','counterproposal',100,2,'change.finishLoss','tendencyProtectiveness.high'),
-  rule('counterproposal_finish_gain','counterproposal',15,1,'change.finishGain')
+  rule('counterproposal_finish_gain','counterproposal',15,1,'change.finishGain'),
+  // The scoped allocation score is neutral at no relative change.
+  // Do not fire rules for incomplete evidence or a neutral baseline.
+  rule('acceptance_allocation_loss','acceptance',25,1.5,'proposalFairness.low'),
+  rule('acceptance_allocation_gain','acceptance',85,1.5,'proposalFairness.high'),
+  rule('reservations_allocation_loss','reservations',85,1.5,'proposalFairness.low'),
+  rule('reservations_allocation_gain','reservations',20,1.5,'proposalFairness.high'),
+  rule('counterproposal_allocation_loss','counterproposal',85,1.5,'proposalFairness.low'),
+  rule('counterproposal_protect_allocation','counterproposal',95,2,'proposalFairness.low','tendencyProtectiveness.high'),
+  rule('counterproposal_allocation_gain','counterproposal',15,1.5,'proposalFairness.high')
  ]});
  function inferProposal(profile,evidence){
   const assessed=proposalValues(evidence),o=profile?.observation;
@@ -266,6 +316,8 @@
   // Do not manufacture a proposal opinion from personality alone.
   if(assessed.values.proposalRisk===null&&assessed.values.creativeBenefit===null)return null;
   const values={...assessed.values};
+  const allocation=proposalAllocation(evidence,o.side);
+  if(allocation&&Number.isFinite(allocation.score))values.proposalFairness=allocation.score;
   for(const axis of Object.keys(proposalAxes)){
    const key=axis.slice(8),out=key[0].toLowerCase()+key.slice(1);
    values[axis]=stat(profile.scores?.[out]);
@@ -281,7 +333,7 @@
   const result=proposalModel.evaluate(values,cues);
   return {v:1,cid:evidence.cid,objective:evidence.objective,action:evidence.proposed.action,
    side:o.side,actorId:o.actorId,role:actor?'performer':'partner',values,cues,
-   scores:result.scores,fired:result.fired};
+   scores:result.scores,fired:result.fired,...(allocation?{allocation}:{})};
  }
  // Re-read eligibility from the room, rather than trusting a stale card.
  function evaluateProposal(snapshot,room,side,objective,action){
@@ -289,7 +341,7 @@
   const evidence=root.OfficeRoom.proposalEvidence(room,objective,action);
   if(!evidence.eligible)return {v:1,eligible:false,reason:evidence.reason,assessment:null};
   const assessment=inferProposal(behaviour(snapshot,room,side),evidence);
-  return {v:1,eligible:true,evidence,assessment};
+  return {v:1,eligible:true,evidence,assessment,...(assessment?{requestHistory:requestHistory(snapshot,side)}:{})};
  }
- root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal});
+ root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory});
 })(typeof window!=='undefined'?window:globalThis);
