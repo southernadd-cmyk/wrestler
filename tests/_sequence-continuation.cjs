@@ -9,7 +9,7 @@ const eqState=(a,b)=>a&&b&&['control','position','down'].every(k=>a[k]===b[k]);
 function trace(root,key){
  const G=root.OfficeMatch.GRAPH,D=root.OfficeSheets.DIRECTOR,A=G.A;
  let tracked=null,phase=null,offer=null;
- const undo=[],attempts=new Map(),records=[],openings=new Map();
+ const undo=[],attempts=new Map(),records=[],openings=new Map(),dependencyWitnesses=[];
  const rows=m=>m.structureDirector?.sequences||[];
  const running=m=>rows(m).filter(r=>r.status==='running'&&r.progress>0);
  const id=r=>r.objective+'|'+r.attempts;
@@ -144,6 +144,22 @@ function trace(root,key){
   }
   return result;
  });
+ wrap(D,'observe',function(original,args){
+  const [m,e]=args;
+  if(m!==tracked)return original.apply(this,args);
+  const focus=D.dependencyFocus(m);
+  const preferred=focus&&e&&D.dependencyPreference(m,e.id,e.preControl,focus)>1;
+  const prior=preferred?focus.state.evidence.length:0;
+  const result=original.apply(this,args);
+  if(preferred&&focus.state.evidence.length>prior){
+   assert.ok(m.graph.events.includes(e),'dependency evidence is an actual graph landing');
+   const fact=focus.state.evidence.at(-1);
+   assert.equal(fact.id,e.id);assert.equal(fact.at,e.t);
+   dependencyWitnesses.push({key,structure:m.structureDirector.id,objective:focus.objective.id,dependent:focus.next.id,
+    id:e.id,at:e.t,completed:focus.state.status!=='pending'});
+  }
+  return result;
+ });
  wrap(D,'observeSequence',function(original,args){
   const [m,e,pre,previous,actualOffer]=args;
   if(m!==tracked)return original.apply(this,args);
@@ -215,7 +231,7 @@ function trace(root,key){
   for(const r of rows(m)){
    const v=openingRecord(m,r);v.final={status:r.status,attempts:r.attempts,reason:r.reason,protected:!!(m.injury||m.foeHurt||m.workingHurt||m.shortened||m.outcome!=='booked')};
   }
-  return {records,openings:[...openings.values()]};
+  return {records,openings:[...openings.values()],dependencyWitnesses};
  },restore(){for(const fn of undo.reverse())fn();tracked=null;}};
 }
 function summarise(records){
