@@ -1191,6 +1191,17 @@ function decide(M,id){
  M.decision={id,...defs[id]};
  say(M,defs[id].title+'.','alert',{big:true});
 }
+// Retaliation is a deliberate escalation, but a well-conditioned,
+// experienced and professional pairing can better control the exchange.
+// Both wrestlers contribute; absent legacy ratings are neutral.
+function stiffInjuryRisk(M){
+ const unit=(v,fallback)=>clamp(Number.isFinite(v)?v:fallback)/100;
+ const mean=(key,fallback)=>(unit(M.w[key],fallback)+unit(M.f[key],fallback))/2;
+ const stamina=(unit(M.wSt,50)+unit(M.fSt,50))/2;
+ const danger=.35*(1-mean('safe',50))+.20*(1-mean('ring',50))+
+  .15*(1-mean('pro',50))+.20*(1-stamina)+.10*mean('fatigue',0);
+ return clamp(.05+.20*danger,.05,.25);
+}
 function resolve(M,choice){
  const d=M.decision;if(!d)return;M.decision=null;const w=M.w,f=M.f;
  const opt=d.options.find(o=>o.id===choice)||d.options[0];
@@ -1203,7 +1214,7 @@ function resolve(M,choice){
  if(d.id==='stiff'){
   if(choice==='protect'){M.stiff='protect';M.mode={type:'slow',ticks:3};M.wSt=clamp(M.wSt-8);say(M,`${w.short} covers up and rides out the storm.`)}
   if(choice==='fire'){M.stiff='fire';lift(M,9);M.bonus+=10;M.adj.trust-=4;M.adj.morale+=4;say(M,`${w.short} fires back for real! This is a fight now!`,'crowd',{big:true});
-   if(M.r()<.25){if(M.r()<.5&&!M.injury){M.injury=1;M.injuryPart='jaw';say(M,`${w.short} took one flush on the jaw. Wobbly.`,'bad')}else{M.foeHurt=true;say(M,`${f.short} is bleeding from the nose. That was not planned.`,'bad')}}}
+   if(M.r()<stiffInjuryRisk(M)){if(M.r()<.5&&!M.injury){M.injury=1;M.injuryPart='jaw';say(M,`${w.short} took one flush on the jaw. Wobbly.`,'bad')}else{M.foeHurt=true;say(M,`${f.short} is bleeding from the nose. That was not planned.`,'bad')}}}
   if(choice==='ref'){M.stiff='ref';lift(M,-4);say(M,`The referee has a word with ${f.short}. Things settle down.`)}
  }
  if(d.id==='time'){
