@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -133,7 +133,7 @@ function run(seeds=[3,10],weeks=32){
     assert.equal(M.o.finish,c.finish,key+' booked finish unchanged');
     if(settings.structureExecution)assert.equal(M.final.structure.id,choice.id);else assert.equal(M.final.structure,undefined);
     assert.ok(range(M.final.stars,0,5)&&range(M.final.crowd));
-    if(trace)continuationRecords.push(...trace.close(M));
+    if(trace){const report=trace.close(M);continuationRecords.push(...report.records);openingRecords.push(...report.openings);}
     return {M,fin:M.final,matchResume,liveScores};
     }finally{trace?.restore();}
    }
@@ -236,7 +236,7 @@ function run(seeds=[3,10],weeks=32){
   })(),matchedContinuation:(()=>{
    const summarize=side=>{const xs=continuationPairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','attempts','interruptions','objectives','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
    return {pairs:continuationPairs.length,before:summarize('before'),after:summarize('after'),changedOutcomes:continuationPairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:continuationPairs};
-  })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},rows};
+  })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},opening:continuation.summariseOpenings(openingRecords),rows};
 }
 module.exports={run};
 if(require.main===module){const seeds=(process.argv[2]||'3,10,24,41').split(',').map(Number),weeks=Number(process.argv[3]||48);console.log(JSON.stringify(run(seeds,weeks),null,2));}

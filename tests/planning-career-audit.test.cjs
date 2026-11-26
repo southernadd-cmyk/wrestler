@@ -20,6 +20,11 @@ assert.equal(c.completed,report.overall.exact+report.overall.adapted,'all comple
 assert.equal(c.finalOpenedMisses,report.overall.missed-report.overall.noOpening,'all final opened misses traced');
 assert.equal(c.traceVerified.length,4,'trace neutrality verified per structure');
 assert.ok(report.matchedContinuation.pairs>0,'same booking and seed continuation policy comparison');
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,continuation,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},continuation:{...continuation,records:undefined}}));
+const o=report.opening;
+assert.equal(o.signed,report.overall.sequences,'one opening trace per signed sequence');
+assert.equal(o.neverOpened,report.overall.noOpening,'all unopened misses traced');
+assert.equal(o.opened+o.neverOpened,o.signed);
+assert.equal(Object.values(o.firstEmptyStage).reduce((a,b)=>a+b,0),o.neverOpened,'exclusive funnel attribution');
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,continuation,opening,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
