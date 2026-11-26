@@ -45,3 +45,19 @@ while in that history). Old scenes without the new flag retain old behaviour.
 No compiled per-rookie assets are regenerated. Coverage tests use all 120 named
 identities; real intake fixtures verify both speaker sides. This is targeted
 reachability, not yet an organic frequency or editorial audit (R5/R7).
+
+## R5A — organic utilisation and delivery preference
+
+A paired audit runs 960 actual-choice scenes across all 120 real intake identities,
+with both speaker sides, different openings, actual claim tags, and a rolling
+12-promo ID history. It reports shared usage, topic routes, unique IDs, family
+and style usage, and cross-owner wording repetition; it compares numerical
+results and steps to the prior selection policy. Run
+`node tests/promo-rookie-audit.test.cjs`; set `ROOKIE_AUDIT_JSON` to export full
+paired transcripts. This is a seeded sample, not an exhaustive reachability proof.
+
+New scenes prefer existing direct versus reflective lines based on actual delivery
+and current irritation/composure. Exact claim and protection checks still apply;
+recent/used IDs always override the preference. Older saves retain seed-only
+selection. No new speech or generated bank assets in this tranche. The two missing
+source phrase sets and their asset rebuild remain a separate R5B change.
