@@ -298,3 +298,41 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  assert.equal(E.structureReport(m).sequences[0].receipt,undefined);
  console.log('PASS MP13D signed alternative first move: '+alternate+' -> '+two+'; actual receipt and resume verified');
 }
+
+// MP13E: a prior objective can yield only its optional grace period,
+// only to a real currently legal signed sequence. Never mark it achieved.
+{
+ const layout=copy(original),prior=layout.structurePlan.objectives[0],next=layout.structurePlan.objectives[1];
+ let candidate=null;
+ search:for(const one of Object.keys(A).filter(usable))for(const two of links(one).filter(usable)){
+  if(one===two||!S.DIRECTOR.compatibleCall(next,two,'f'))continue;
+  next.call={action:two,owner:'f',proposedBy:'f',label:A[two].name||two,source:'negotiated',chosen:true,backups:[]};
+  next.commitment='landmark';next.sequence={version:1,mode:'conditional',start:{control:'f',position:'standing',down:null},actions:[one,two]};layout.structurePlan.version=2;
+  if(S.STRUCTURES.readPlan(layout).mode!=='editorial')continue;
+  const make=(enabled)=>{const m=E.create({w:{...w,fatigue:0,flags:{}},f,p,slot:'main',minutes:12,finish:c.finish,feudHeat:0,plan:{game:'story',leash:'script',talk:'none'},seed:77131,preparation:{},flags:{},sheet:copy(layout),structureExecution:true,sequenceTimingVersion:1,sequenceCoordinationVersion:enabled?1:undefined});m.stage='live';m.t=Math.ceil(m.len*prior.window[1]/10)*10;Object.assign(m.story,next.sequence.start);graph.resetPhysical(m);return m;};
+  const probe=make(true);
+  if(!graph.isValid(probe,one))continue;
+  if(!S.DIRECTOR.coordinateSequence(probe,probe.story))continue;
+  candidate={make,one,two};break search;
+ }
+ assert.ok(candidate,'mandatory real legal handoff fixture');
+ const {make,one,two}=candidate,m=make(true),old=make(false);
+ const before=copy(m.o.sheet),rng=m.r.getState(),priorState=m.structureDirector.objectives[0];
+ assert.equal(S.DIRECTOR.sequenceOffer(m,m.story),null);
+ assert.equal(S.DIRECTOR.coordinateSequence(old,old.story),null);
+ assert.equal(old.structureDirector.objectives[0].status,'pending');
+ const early=make(true);early.t=Math.floor(early.len*prior.window[1]/10)*10-10;
+ assert.equal(S.DIRECTOR.coordinateSequence(early,early.story),null);
+ const wrong=make(true);wrong.story.control='w';assert.equal(S.DIRECTOR.coordinateSequence(wrong,wrong.story),null);
+ const hurt=make(true);hurt.workingHurt=true;assert.equal(S.DIRECTOR.coordinateSequence(hurt,hurt.story),null);
+ const banned=make(true);banned.o.sheet.limits.banIds.push(one);assert.equal(S.DIRECTOR.coordinateSequence(banned,banned.story),null);
+ const handoff=S.DIRECTOR.coordinateSequence(m,m.story);
+ assert.equal(handoff.opening,one);assert.equal(priorState.status,'missed');assert.equal(priorState.evidence.length,0);assert.equal(priorState.at,null);
+ assert.equal(m.structureDirector.objectives[1].status,'pending');eq(m.o.sheet,before);assert.equal(m.r.getState(),rng);
+ assert.equal(S.DIRECTOR.coordinateSequence(m,m.story),null);
+ assert.ok(graph.readyNegotiatedSequence(m));assert.equal(S.DIRECTOR.sequenceOffer(m,m.story).id,one);
+ const resume=E.restore(copy({...m,rState:m.r.getState()}));assert.ok(graph.readyNegotiatedSequence(resume));
+ graph.apply(m,one);m.t+=10;assert.ok(graph.isValid(m,two));graph.apply(m,two);
+ assert.equal(E.structureReport(m).sequences[0].receipt.status,'completed');
+ console.log('PASS MP13E actual legal handoff '+one+' -> '+two+'; no false achievement, safe gates, save resume, real delivery');
+}
