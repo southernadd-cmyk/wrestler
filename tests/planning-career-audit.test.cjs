@@ -101,6 +101,18 @@ for(const c of expenditure.cases){
  console.log('MP13F.12 EXPENDITURE CASE '+JSON.stringify(c));
 }
 console.log('MP13F.12 EXPENDITURE SUMMARY '+JSON.stringify({...expenditure,cases:undefined}));
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaExpenditureAudit,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
+const routine=report.routineDrainAudit;
+assert.equal(routine.pairs,arbitration.pairs,'all signed production-policy bouts included');
+assert.equal(routine.arms['1'].completed,arbitration.after.completed,'control matches production comparison');
+assert.equal(routine.arms['1'].staminaCases,arbitration.after.staminaCases,'control misses reconcile');
+for(const arm of Object.values(routine.arms)){
+ assert.equal(arm.signed,routine.arms['1'].signed,'same signed sequences');
+ assert.equal(arm.bouts,routine.pairs,'same booked bouts');
+ assert.equal(arm.accepted,arm.witnessed+arm.botched+arm.refunded);
+ assert.ok(arm.completed<=arm.opened&&arm.opened<=arm.signed);
+}
+for(const p of routine.comparisons)console.log('MP13F.13 ROUTINE CASE '+JSON.stringify(p));
+console.log('MP13F.13 ROUTINE SUMMARY '+JSON.stringify({...routine,comparisons:undefined}));
+const {routineDrainAudit,rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedRecoveryPacing,matchedAlternativeReadiness,matchedBigSpotArbitration,staminaExpenditureAudit,staminaOpportunityAudit,temporalOpportunityAudit,continuation,opening,...summary}=report;
 console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedRecoveryPacing:{...matchedRecoveryPacing,comparisons:undefined},matchedAlternativeReadiness:{...matchedAlternativeReadiness,comparisons:undefined},matchedBigSpotArbitration:{...matchedBigSpotArbitration,comparisons:undefined},staminaExpenditureAudit:{...staminaExpenditureAudit,cases:undefined},staminaOpportunityAudit:{...staminaOpportunityAudit,pairs:undefined},temporalOpportunityAudit:{...temporalOpportunityAudit,cases:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
