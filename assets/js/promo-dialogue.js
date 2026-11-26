@@ -69,7 +69,8 @@
  }
  function actor(w){
   const voice=root.OfficePromoIdentity?.bankId?.(w)||w.id;
-  return {id:voice,role:'wrestler',short:w.short||w.name||null,age:Number.isFinite(w.age)?w.age:null,style:w.style||null,finisher:w.finisher||null};
+  const profile=String(w.id).startsWith('academy-')?root.OfficePromoIdentity?.wrestler(w):null;
+  return {id:voice,role:'wrestler',short:w.short||w.name||null,age:Number.isFinite(w.age)?w.age:null,style:w.style||null,finisher:w.finisher||null,...(profile?.source==='generated'?{academy:{id:w.id,tactic:profile.tactic,delivery:profile.delivery}}:{})};
  }
  function snapshot(c,w,f,m,p,core){
   return {v:1,client:actor(w),player:actor(m||w),opponent:actor(f),venue:p?.venue||null,titleMatch:!!c.title,
@@ -2365,6 +2366,201 @@
      (ctx.side==='w'?sem.move!=='rebut':sem.move!=='counter'))return null;
   return select(cat,{...ctx,variant:null,protected:null,semanticClaim:sem.claim},seed,{...mem,candidateFilter:r=>r.when.semanticClaim===sem.claim});
  }
+ // R3/R4: shared academy semantic banks. One authored corpus, not 120 copies.
+ // Stable shared IDs let existing recent-dialogue memory prevent cross-rookie reuse.
+ const rookieRoutes=[{"claim":"evidence","stage":"answer","action":"turn","side":"w","move":"rebut"},{"claim":"evidence","stage":"answer","action":"turn","side":"f","move":"counter"},{"claim":"experience","stage":"answer","action":"turn","side":"w","move":"rebut"},{"claim":"experience","stage":"answer","action":"turn","side":"f","move":"counter"},{"claim":"study","stage":"answer","action":"turn","side":"w","move":"rebut"},{"claim":"study","stage":"answer","action":"turn","side":"f","move":"counter"},{"claim":"strength","stage":"answer","action":"turn","side":"f","move":"counter"},{"claim":"evidence","stage":"push","action":"press","side":"w","move":"press"},{"claim":"evidence","stage":"push","action":"press","side":"f","move":"press_counter"},{"claim":"evidence","stage":"push","action":"acknowledge","side":"w","move":"acknowledge"}];
+ const rookieWords={
+ "Technical": [
+  [
+   "Then judge the hold when it is applied, not the claim before it.",
+   "A useful test, then. See whether I can keep control when you try to take it away."
+  ],
+  [
+   "A hold that works against resistance is evidence. Let's see yours.",
+   "We can talk through a sequence all day. It has to work against somebody who won't cooperate."
+  ],
+  [
+   "Experience gives you options. It doesn't tell you which one I'll take.",
+   "I can't argue with experience in the abstract. I can make you adjust to the grip in front of you."
+  ],
+  [
+   "Experience is useful if it helps you make the right decision under pressure.",
+   "Years alone don't secure a hold. The position still has to be earned."
+  ],
+  [
+   "Studying a hold and escaping it under resistance are different things.",
+   "You've studied the setup. The question is whether you can recognise the change of angle."
+  ],
+  [
+   "Study the sequence by all means. I'll still have to choose the next move when we're in there.",
+   "Preparation matters. Neither of us gets to know the other person's next decision for certain."
+  ],
+  [
+   "I start with my {strength}, but that's not my whole plan.",
+   "If you're expecting my {strength}, I'll have to be precise about when I use them."
+  ],
+  [
+   "Which part of the exchange would actually convince you?",
+   "What would you need to see in a contested hold to change your mind?"
+  ],
+  [
+   "Show me control against resistance. That's a test worth having.",
+   "If you can make the move work while I'm trying to stop it, I'll take that seriously."
+  ],
+  [
+   "Fair. A claim about technique needs a test.",
+   "You're right to ask for something observable. The wrestling should give us an answer."
+  ]
+ ],
+ "Brawl": [
+  [
+   "Talk isn't proof. Make me work for it when we get in there.",
+   "Fine. Let the people see what happens when neither of us gives ground."
+  ],
+  [
+   "A tough speech doesn't prove a tough match. Bring the fight.",
+   "You'll get your chance to show it. I won't make it easy."
+  ],
+  [
+   "All those years won't do the fighting for you tonight.",
+   "I respect time in the ring. I won't step aside just because you've put more of it in."
+  ],
+  [
+   "Experience counts when the match gets difficult, not while we're stood here.",
+   "You still have to get through the person in front of you. Experience won't do that on its own."
+  ],
+  [
+   "You can study the strikes. You've still got to stand there when they come.",
+   "Knowing where the pressure might come from isn't the same as handling it."
+  ],
+  [
+   "Good. Be prepared. I won't ask you to make it easy for me.",
+   "Studying the fight is sensible. Dealing with it when the pace changes is the next bit."
+  ],
+  [
+   "Come and test my {strength}. That's what the match is for.",
+   "You've got a plan for my {strength}? Fine. Let's see it hold up when there's pressure."
+  ],
+  [
+   "What would I have to do in that ring for you to give me credit?",
+   "How are we testing this, then? Standing our ground or talking about it?"
+  ],
+  [
+   "Make me give ground without taking a shortcut. That'll tell us something.",
+   "Stand your ground when the pressure's on. I'll respect what you can actually do."
+  ],
+  [
+   "Fair. We'll find out at the bell.",
+   "You've asked for proof. I can live with that. Let's give it a proper contest."
+  ]
+ ],
+ "Story": [
+  [
+   "Then give the crowd something they can judge with their own eyes.",
+   "The interesting part isn't what either of us claims. It's what the people see when the claim gets tested."
+  ],
+  [
+   "Let the crowd decide whether your argument survives the match.",
+   "If we want them to believe the words, the wrestling needs to back them up."
+  ],
+  [
+   "You've had your chapters. This one hasn't been written yet.",
+   "Experience deserves respect. It doesn't give you the right to decide how this contest ends."
+  ],
+  [
+   "Experience can shape a match, but it cannot write the other person's part.",
+   "That's the value of experience: making choices when the story doesn't go to plan."
+  ],
+  [
+   "You've read what happened before. You haven't seen this match.",
+   "Study the earlier chapters if you like. I want to see how you handle the one we're about to write."
+  ],
+  [
+   "It's worth studying an opponent. It's also worth remembering they can change.",
+   "You've done your reading? Good. A match still has to make sense when the unexpected happens."
+  ],
+  [
+   "You know about my {strength}. That's not the whole story.",
+   "If you can take my {strength} out of the picture, that's a different match. I intend to make you work for it."
+  ],
+  [
+   "What would the crowd have to see to know that you're right?",
+   "What would make this more than a good story told into a microphone?"
+  ],
+  [
+   "Let them see you deal with an actual obstacle. That's a story worth following.",
+   "Give them a moment that tests your claim, not another speech about it."
+  ],
+  [
+   "That's fair. They deserve something they can see for themselves.",
+   "I can accept that. We owe the audience more than a claim with nothing behind it."
+  ]
+ ],
+ "Spectacle": [
+  [
+   "A big claim isn't a big moment. Let me earn the second one.",
+   "Watch what happens when the bell goes. The crowd doesn't have to take my word for anything."
+  ],
+  [
+   "The crowd will know the difference between a promise and a performance.",
+   "Fine, let's make the wrestling the thing they remember rather than this speech."
+  ],
+  [
+   "Experience gets you ready for the moment. It doesn't own the moment.",
+   "I respect the time you've spent out there. I'd still like the chance to make something of tonight."
+  ],
+  [
+   "Experience helps you judge the timing. It doesn't guarantee the crowd's reaction.",
+   "Time in the ring can teach you when to go and when to hold back. We'll see what choices we make."
+  ],
+  [
+   "You've studied the timing. You've still got to react when it changes.",
+   "Knowing what might happen is useful. Being in the right place when it happens is another matter."
+  ],
+  [
+   "Preparation is good. I still want to see how you react in the moment.",
+   "You can study the spectacle, but the timing has to work against a real opponent."
+  ],
+  [
+   "With my {strength}, timing still matters. That's what I'll have to get right.",
+   "If you're watching for my {strength}, I'll have to earn the opening instead of rushing it."
+  ],
+  [
+   "What would you need to see before you'd believe the hype?",
+   "What moment in the match would actually make you change your mind?"
+  ],
+  [
+   "Earn the moment against resistance. That's what would convince me.",
+   "Show the people something that works when there's an opponent in the way. That's enough for me."
+  ],
+  [
+   "Fair. Let's make the performance speak for itself.",
+   "I hear you. A memorable moment has to be earned, not advertised into existence."
+  ]
+ ]
+};
+ const rookieSelectors=[selectAuthoredTopic,selectAuthoredTopic,selectAuthoredExperience,selectAuthoredExperience,selectAuthoredStudy,selectAuthoredStudy,selectAuthoredStrengthCounter,selectAuthoredQuestion,selectAuthoredFollowup,selectAuthoredEvidenceAcknowledgement];
+ const rookieCatalogue=catalogue(Object.entries(rookieWords).map(([style,groups])=>{
+  const owner='rookie-family-'+style.toLowerCase();
+  return {owner,role:'wrestler',lines:groups.flatMap((words,i)=>{
+   const {claim,stage,action,side}=rookieRoutes[i];
+   return words.map((text,j)=>({id:owner+'.semantic.'+i+'.'+j,stage,action,side,text,
+    category:action==='acknowledge'?'respect':stage==='push'?'pressure':'rebuttal',
+    when:{semanticClaim:claim,hasMouthpiece:false,speakerStyle:style}}));
+  })};
+ }));
+ function selectRookieSemantic(ctx,seed,mem,sem){
+  const identity=ctx?.speaker?.academy;
+  if(!identity||!String(identity.id).startsWith('academy-')||ctx.speaker.role!=='wrestler'||!has(rookieWords,ctx.speaker.style)||!sem||!ctx.previous)return null;
+  const route=rookieRoutes.findIndex(r=>r.claim===sem.claim&&r.stage===ctx.stage&&r.action===ctx.action&&r.side===ctx.side&&r.move===sem.move);
+  if(route<0)return null;
+  const owner='rookie-family-'+ctx.speaker.style.toLowerCase();
+  // Use the existing reviewed selector for the exact topic, side and protection
+  // contract. Only the bank lookup is shared; the spoken actor remains unchanged.
+  const scoped={...ctx,speaker:{...ctx.speaker,id:owner}};
+  const voiceSeed=seed+'|'+identity.id+'|'+identity.tactic+'|'+identity.delivery;
+  return rookieSelectors[route](rookieCatalogue,scoped,voiceSeed,mem,sem);
+ }
  function selectSpecialistResponse(cat,ctx,seed,mem,sem){
   if(!ctx||!sem||ctx.hasMouthpiece||(ctx.protected&&ctx.protected!=='contextual-variant'))return null;
   const strength=ctx.side==='w'&&ctx.stage==='answer'&&ctx.action==='turn'&&sem.move==='rebut'&&sem.claim==='strength'&&string(sem.detail);
@@ -2718,5 +2914,5 @@
   return [...new Set(ids)].slice(0,128);
  }
  function tag(ctx){return ctx?{owner:ctx.speaker.id,role:ctx.speaker.role,stage:ctx.stage,action:ctx.action,side:ctx.side,protected:ctx.protected||null}:null;}
- root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectSpecialistResponse,specialistReview,selectAuthoredTopic,selectAuthoredExperience,selectAuthoredStudy,selectAuthoredFollowup,selectAuthoredQuestion,selectAuthoredStrengthCounter,selectAuthoredEvidenceAcknowledgement,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,compose,recentIds});
+ root.OfficePromoDialogue=Object.freeze({categories,targets:freeze(targets),catalogue,combine,snapshot,context,render,tag,select,selectAcknowledgement,selectSemanticResponse,selectSpecialistResponse,specialistReview,selectAuthoredTopic,selectAuthoredExperience,selectAuthoredStudy,selectAuthoredFollowup,selectAuthoredQuestion,selectAuthoredStrengthCounter,selectAuthoredEvidenceAcknowledgement,selectRookieSemantic,selectReviewedBankResponse,reviewedBankReuse,reviewedBankReuseV2,reviewedBankReuseV3,bankReuseRecovery,closingCommitment,selectClosing,compose,recentIds});
 })(typeof window!=='undefined'?window:globalThis);

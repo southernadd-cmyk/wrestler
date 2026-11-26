@@ -1,0 +1,70 @@
+'use strict';
+const assert=require('node:assert/strict'),vm=require('node:vm');
+const {core,promoBanks}=require('./_source.cjs');
+const root={addEventListener(){}},store=new Map();
+vm.runInNewContext(core,{window:root,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},Date,Math,JSON,console});
+const {OfficePromoDialogue:L,OfficePromoSemantics:S,OfficeMic:M,OfficeData:D,OfficeAcademy:A,OfficeGame:G}=root;
+const routes=[{"claim":"evidence","stage":"answer","action":"turn","side":"w","move":"rebut"},{"claim":"evidence","stage":"answer","action":"turn","side":"f","move":"counter"},{"claim":"experience","stage":"answer","action":"turn","side":"w","move":"rebut"},{"claim":"experience","stage":"answer","action":"turn","side":"f","move":"counter"},{"claim":"study","stage":"answer","action":"turn","side":"w","move":"rebut"},{"claim":"study","stage":"answer","action":"turn","side":"f","move":"counter"},{"claim":"strength","stage":"answer","action":"turn","side":"f","move":"counter"},{"claim":"evidence","stage":"push","action":"press","side":"w","move":"press"},{"claim":"evidence","stage":"push","action":"press","side":"f","move":"press_counter"},{"claim":"evidence","stage":"push","action":"acknowledge","side":"w","move":"acknowledge"}];
+const clone=x=>JSON.parse(JSON.stringify(x));
+const seen=new Set();
+const people=A.REGISTER, p=D.PROMOS[0],other=D.ALL[0];
+let count=0;
+for(const person of people){
+ const w={...person,style:person.wrestling_style,age:person.entry_age};
+ const facts=L.snapshot({},w,other,null,p,{});
+ assert.equal(facts.player.academy.id,w.id);
+ for(const r of routes){
+  const ctx={...r,speaker:facts.player,opponent:facts.opponent,client:facts.player,hasMouthpiece:false,previous:'Prior spoken claim',protected:r.stage==='answer'?'contextual-variant':null};
+  const sem={claim:r.claim,move:r.move,detail:r.claim==='strength'?'hard strikes':null};
+  const first=L.selectRookieSemantic(ctx,'fixture',{used:[],recent:[]},sem);
+  assert.ok(first,w.id+' '+JSON.stringify(r));seen.add(first.id);
+  const second=L.selectRookieSemantic(ctx,'fixture',{used:[first.id],recent:[]},sem);
+  assert.ok(second);assert.notEqual(second.id,first.id);seen.add(second.id);
+  assert.equal(L.selectRookieSemantic(ctx,'fixture',{used:[second.id],recent:[first.id]},sem),null);
+  assert.equal(JSON.stringify(first),JSON.stringify(L.selectRookieSemantic(clone(ctx),'fixture',{used:[],recent:[]},clone(sem))));
+  assert.equal(L.selectRookieSemantic({...ctx,protected:'recorded-evidence'},'fixture',{},sem),null);
+  assert.equal(L.selectRookieSemantic({...ctx,hasMouthpiece:true},'fixture',{},sem),null);
+  assert.equal(L.selectRookieSemantic({...ctx,speaker:facts.opponent},'fixture',{},sem),null);
+  assert.equal(L.selectRookieSemantic(ctx,'fixture',{}, {...sem,move:'settle'}),null);
+  if(r.claim==='strength'){assert.match(first.text,/hard strikes/);assert.equal(L.selectRookieSemantic(ctx,'fixture',{}, {...sem,detail:null}),null);}
+  if(r.move==='press')assert.ok(first.text.endsWith('?'));
+  assert.doesNotMatch(first.text,/[{}]/);
+  count++;
+ }
+}
+assert.equal(count,1200);
+assert.equal(seen.size,80,'two shared lines per style and route, no per-character duplication');
+// Actual academy arrivals: compare real choices with identical prior claim and
+// disabled new policy. A prior saved scene with no flag must not use new lines.
+G.fresh();G.S.week=16;G.endWeek();
+const arrivals=G.S.academy.arrived;
+assert.ok(arrivals.length>0);
+const liveSides=new Set();
+for(const rookie of arrivals)for(const side of ['w','f']){
+ const veteran=D.ALL.find(x=>!x.id.startsWith('academy-')&&D.divisionOf(x)===D.divisionOf(rookie));
+ assert.ok(veteran,'missing same-division veteran for '+rookie.id);
+ const w=side==='w'?rookie:veteran,f=side==='f'?rookie:veteran;
+ for(let i=0;i<48;i++){
+  const c={id:'rookie-family-'+side+'-'+rookie.id+'-'+i,wid:w.id,rid:f.id,pid:p.id,eventAbs:100+i,finish:'win_clean',minutes:12,feudHeat:0};
+  const st=M.begin(c,w,f,null,null,p,{directed:true,formats:true,dialogue:true,authored:true,composition:true,semantic:true,banks:promoBanks(w.id,f.id)});
+  const opening=M.choices(st).find(o=>['people','swagger','proof','imagery'].includes(o.id));
+  if(!opening)continue;M.choose(st,opening.id);
+  const prior=S.latest(st.log,'f');
+  if(!prior||!S.allowed(st)||M.ROUNDS[st.round]?.id!=='answer'||!M.choices(st).some(o=>o.id==='turn'))continue;
+  prior.entry.line='I have studied your previous matches and prepared for your approach.';
+  prior.entry.semantic={v:1,kind:'claim',claim:'study',source:'rookie-fixture'};
+  const before=st.log.length,legacy=clone(st),restored=clone(st);
+  delete legacy.authoredDialogue.rookieSemantic;
+  M.choose(st,'turn');M.choose(restored,'turn');M.choose(legacy,'turn');
+  assert.equal(JSON.stringify(st),JSON.stringify(restored));
+  const e=st.log.slice(before).find(e=>e.side===side&&e.semantic?.rookieFamilyBank===1);
+  if(!e)continue; // eligible individual rows retain priority
+  assert.equal(e.semantic.claim,'study');assert.ok(st.authoredDialogue.used.includes(e.authoredId));
+  assert.equal(e.dialogueSlot.owner,rookie.id);
+  assert.ok(!legacy.log.slice(before).some(e=>e.semantic?.rookieFamilyBank));
+  for(const k of ['core','meter','steps','stage','round'])assert.equal(JSON.stringify(st[k]),JSON.stringify(legacy[k]),k);
+  liveSides.add(side);break;
+ }
+}
+assert.deepEqual([...liveSides].sort(),['f','w'],'shared response must reach both sides in live duels');
+console.log('PASS academy shared semantics: '+count+' named rookie routes; '+seen.size+' shared lines; actual intake live reach on both sides.');
