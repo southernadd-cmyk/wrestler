@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],reviewRepairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],alternativePairs=[],alternativeOpportunities=[],temporalCases=[],arbitrationPairs=[],staminaPairs=[],conservationPairs=[],reviewRepairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -300,6 +300,16 @@ function run(seeds=[3,10],weeks=32){
     assert.equal(beforeStamina.length,breakdown(alt.traceReport).staminaCases,key+' original stamina cases reconcile');
     assert.equal(afterStamina.length,breakdown(arbitrated.traceReport).staminaCases,key+' current stamina cases reconcile');
     if(beforeStamina.length||afterStamina.length)staminaPairs.push({key,before:beforeStamina,after:afterStamina});
+    const conserved=drive(true,i%5===0,{...options,sequenceRecoveryPacingVersion:1,sequenceAlternativeReadinessVersion:1,bigSpotArbitrationVersion:3,sequenceConservationVersion:1},immutable,'comparison');
+    const conserveMeasure=x=>{
+     const offers=x.traceReport.conservationOffers;
+     const moves=x.M.graph.events.filter(e=>E.GRAPH.A[e.id]&&!e.blocked&&!e.botched);
+     return {...measureArbitration(x),offers:offers.length,landed:offers.filter(o=>o.landed).length,
+      moveCost:moves.reduce((n,e)=>n+Math.max(0,E.GRAPH.costOf(e.id)),0),moves:moves.length,
+      cheapMoves:moves.filter(e=>E.GRAPH.costOf(e.id)>0&&E.GRAPH.costOf(e.id)<=1.5).length,
+      rests:restCount(x)};
+    };
+    conservationPairs.push({key,structure:choice.id,before:conserveMeasure(arbitrated),after:conserveMeasure(conserved)});
    }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
@@ -389,6 +399,12 @@ function run(seeds=[3,10],weeks=32){
    return {...compare(arbitrationPairs),acceptedRequestBouts:compare(arbitrationPairs.filter(x=>x.relevant)),
     byStructure:Object.fromEntries([...new Set(arbitrationPairs.map(x=>x.structure))].map(k=>[k,compare(arbitrationPairs.filter(x=>x.structure===k))])),
     examples:arbitrationPairs.filter(x=>x.relevant).slice(0,15),comparisons:arbitrationPairs};
+  })(),matchedConservation:(()=>{
+   const sum=(pairs,side)=>{const xs=pairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','readinessMiss','staminaCases','timingCases','interruptions','objectives','injury','accepted','witnessed','botched','refunded','bigSpotBlocked','offers','landed','moveCost','moves','cheapMoves','rests'].map(k=>[k,xs.reduce((n,x)=>n+(x[k]||0),0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
+   const compare=pairs=>({pairs:pairs.length,before:sum(pairs,'before'),after:sum(pairs,'after'),changedOutcomes:pairs.filter(x=>x.before.outcome!==x.after.outcome).length});
+   return {...compare(conservationPairs),affected:compare(conservationPairs.filter(x=>x.after.offers)),
+    byStructure:Object.fromEntries([...new Set(conservationPairs.map(x=>x.structure))].map(k=>[k,compare(conservationPairs.filter(x=>x.structure===k))])),
+    examples:conservationPairs.filter(x=>x.after.offers).slice(0,12)};
   })(),staminaOpportunityAudit:(()=>{
    const summarise=side=>{
     const cs=staminaPairs.flatMap(p=>p[side]),types={},closestPureTypes={},deficitBands={},byStructure={},byPlan={},deficitSides={},payoffs={};

@@ -3325,6 +3325,12 @@ const Graph=(function makeGraph(){
    }
   }
   if(recoveryFocus)root.OfficeSheets.DIRECTOR.sequenceRecoveryPreference(pool,recoveryFocus);
+  // Do not dilute the final share of a ready negotiated exchange,
+  // existing named agreement or the established recovery preference.
+  if(!negotiated&&!agreed&&!recoveryFocus){
+   const conserve=root.OfficeSheets?.DIRECTOR?.sequenceConservationFocus(M,p);
+   if(conserve)root.OfficeSheets.DIRECTOR.sequenceConservationPreference(pool,conserve);
+  }
   return pool;
  }
  function recover(M){

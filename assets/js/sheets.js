@@ -835,6 +835,79 @@
    if(own<desired)for(const x of targets)x[1]*=desired/own;
    return {...focus,ids:targets.map(x=>x[0]),boosted:own<desired};
   }
+  // MP13F.11: anticipate a future signed payoff before the worker is
+  // exhausted. Only reweight inexpensive already-legal wrestling.
+  function sequenceConservationFocus(M,pre,negotiated=null){
+   if(M.o.sequenceConservationVersion!==1||M.sheet?.sequenceContinuationVersion!==1||
+      !adaptiveSequences(M)||!active(M)||negotiated||M.structureDirector.id==='chickenshit_heel'||
+      M.outcome!=='booked'||M.workingHurt||M.shortened||M.bigSpotRequest||M.injury||M.foeHurt||
+      ['pickup','crowd','slow'].includes(M.mode?.type)||M.len-M.t<=90||
+      M.o.sheet?.finishRoute==='outlasted')return null;
+   const side=pre.control,g=M.graph,rows=sequenceRows(M),graph=root.OfficeMatch.GRAPH;
+   if(!['w','f'].includes(side)||!g||g.physical?.area!=='ring'||
+      !['standing','mat'].includes(pre.position)||pre.down===side||
+      g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact||
+      rows.some(r=>r.status==='running'))return null;
+   const willingness=sequenceWillingness(M),stamina=side==='w'?M.wSt:M.fSt;
+   if(willingness<35||stamina<18||stamina>75)return null;
+   const now=current(M)?.objective;
+   for(const row of rows){
+    if(row.status!=='pending'||row.attempts)continue;
+    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
+    if(!o?.sequence||o.requires.some(id=>id!==now?.id&&M.structureDirector.objectives.some(x=>x.id===id&&x.status==='pending')))continue;
+    const variants=[o.sequence,...(o.sequence.openings||[]).map(x=>({start:x.start,actions:[x.action,...o.sequence.actions.slice(1)]}))];
+    const targets=[];
+    for(const seq of variants){
+     const steps=sequenceSteps(seq),limits=[M.sheet.limits,M.sheet.note?.honour&&!M.sheet.note.waived?M.sheet.note:null];
+     if(!root.OfficePlanningFuzzy.continuationGrip(steps.map(x=>({...x,action:x.id}))).possible||
+       steps.some(x=>limits.some(l=>l&&(l.banIds?.includes(x.id)||l.ban?.includes(actions[x.id].family)))||
+        actions[x.id].risk&&(M.planId==='safe'||M.sheet.spice<0||(x.performer==='w'?M.w:M.f).injury>0)))continue;
+     let elapsed=0,earliest=Math.max(M.t,(o.window[0]-.04)*M.len);
+     for(const x of steps){earliest=Math.max(earliest,(actions[x.id].after||0)*M.len-elapsed);elapsed+=graph.sequenceMoveSeconds(x.id);}
+     earliest=Math.ceil(earliest/10)*10;
+     const latest=Math.min((o.window[1]+.08)*M.len,.91*M.len-1,M.len-Math.max(45,elapsed+25));
+     if(earliest>latest)continue;
+     // Estimate reserve required by the actual threshold and preceding
+     // signed costs. Extra 1 point per 10s of lead time is a planning
+     // heuristic, NOT a modification to the actual stamina drain.
+     const energy={w:0,f:0},need={w:0,f:0};
+     for(const x of steps){
+      const cost=graph.costOf(x.id),actor=x.entry.control;
+      if(cost>=2.2)need[actor]=Math.max(need[actor],16+cost*3.2-energy[actor]);
+      // Track a relative energy budget (no speculative recovery credit).
+      energy[x.performer]-=Math.max(0,cost);
+      const ticks=graph.sequenceMoveSeconds(x.id)/10;
+      energy.w-=ticks*.5;energy.f-=ticks*.5;
+     }
+     targets.push({earliest,latest,need:need[side],total:need.w+need.f});
+    }
+    // Do not conserve for an expensive variant when a cheaper signed
+    // alternative avoids the same worker's energy requirement.
+    targets.sort((a,b)=>a.need-b.need||a.total-b.total||a.earliest-b.earliest);
+    const target=targets[0];
+    if(!target||target.need<=0||target.earliest-M.t<30||target.earliest-M.t>300)continue;
+    const reserve=Math.min(75,target.need+4+(target.earliest-M.t)/10);
+    if(stamina>=reserve)continue;
+    return {objective:o.id,side,earliest:target.earliest,latest:target.latest,reserve,stamina,
+     ratio:.35+.35*Math.min(1,(reserve-stamina)/20)*(willingness/100)};
+   }
+   return null;
+  }
+  function sequenceConservationPreference(pool,focus){
+   if(!focus)return null;
+   const graph=root.OfficeMatch.GRAPH;
+   const cheap=pool.filter(([id,w])=>{
+    const n=actions[id],cost=graph.costOf(id);
+    return w>0&&n?.family&&n.family!=='rest'&&cost>0&&cost<=1.5&&
+     !n.reverse&&!n.counterOf&&!n.blockOf&&!n.nearfall&&!n.risk&&n.crowd>=0;
+   });
+   if(!cheap.length)return null;
+   const own=cheap.reduce((n,x)=>n+x[1],0),other=pool.reduce((n,x)=>n+(cheap.includes(x)?0:x[1]),0);
+   const factor=Math.min(3,Math.max(1,other*focus.ratio/own));
+   if(factor<=1)return null;
+   for(const x of cheap)x[1]*=factor;
+   return {...focus,ids:cheap.map(x=>x[0]),factor};
+  }
   function sequenceContext(M,row,pre,previous,landed=null){
    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
    if(!o?.sequence||!['pending','running'].includes(row.status))return null;
@@ -1292,7 +1365,7 @@
    if(r.interruptions>0)return {label:'Interrupted sequence',tone:'missed',note:'A verified prefix was interrupted. Future sequence proposals may reflect this shared experience, not personal blame.'};
    return {label:'Incomplete sequence',tone:'',note:'Only part of the sequence was verified. No interruption-based negative evidence is inferred.'};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,dependencyFocus,dependencyPreference,sequenceOffer,openingReadiness,projectedSequenceEnergy,sequenceRecoveryFocus,sequenceRecoveryPreference,observeSequence,deliveryDebrief};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,dependencyFocus,dependencyPreference,sequenceOffer,openingReadiness,projectedSequenceEnergy,sequenceRecoveryFocus,sequenceRecoveryPreference,sequenceConservationFocus,sequenceConservationPreference,observeSequence,deliveryDebrief};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
