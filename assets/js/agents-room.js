@@ -1545,6 +1545,52 @@
      crowd:named&&Number.isFinite(n.crowd)?n.crowd:null,cost:named&&Number.isFinite(n.cost)?n.cost:null};
    })};
  }
+ // MP5D: an explicitly proposed, ordered fragment ending at the named call.
+ // This is static continuity, NOT a simulation or a promise of execution.
+ function sequenceEvidence(st,objective,action,sequence){
+  const deny=(reason,index=null)=>({v:1,eligible:false,reason,index});
+  const proposal=proposalEvidence(st,objective,action);
+  if(!proposal.eligible)return deny(proposal.reason);
+  const ids=sequence?.actions,start=sequence?.start,positions=['standing','mat','corner','top','outside'];
+  if(!Array.isArray(ids)||ids.length<2||ids.length>6||ids.at(-1)!==action||
+     !['w','f'].includes(start?.control)||!positions.includes(start?.position)||
+     ![null,'w','f'].includes(start?.down)||start.position==='mat'&&start.down===null)return deny('invalid_sequence');
+  let control=start.control,position=start.position,down=start.down;
+  const steps=[];
+  for(let i=0;i<ids.length;i++){
+   const id=ids[i],n=A[id],previous=steps.at(-1);
+   if(typeof id!=='string'||!n)return deny('unknown_move',i);
+   // Generated blocks/counters answer a pending attempt; never represent
+   // them as an action occurring after the parent has already landed.
+   if(n.counterOf||n.blockOf)return deny('conditional_attempt_alternative',i);
+   if(n.nearfall||n.family==='pin'||['early_cover','cover','near_kickout','counter_rollup','finish_tease','finish_counter'].includes(id))return deny('finish_or_pin_out_of_scope',i);
+   if(previous&&!A[previous.action].next.some(([to,weight])=>to===id&&weight>0))return deny('missing_edge',i);
+   if(!['any',position].includes(n.requires)||n.requires==='mat'&&down===null)return deny('position_mismatch',i);
+   if(n.family==='ground'&&(position!=='mat'||down!==other(control)))return deny('ground_control_mismatch',i);
+   if(banned(st,id))return deny('prohibited_move',i);
+   if(!legal(id,who(st,control),who(st,other(control))))return deny('physically_ineligible',i);
+   if(id==='snap_suplex'&&kg(who(st,other(control)))>kg(who(st,control))+Math.max(-5,((who(st,control).ring||60)-60)*.23)+42)return deny('physically_ineligible',i);
+   const performer=n.reverse?other(control):control;
+   if(n.reverse&&!legal(id,who(st,performer),who(st,control)))return deny('physically_ineligible',i);
+   if(n.after>Math.min(.98,proposal.window[1]+.08))return deny('too_late_for_objective',i);
+   const guards=[];
+   if(MX.GRAPH.PHYSICAL_GRIP_MOVES[id])guards.push('live_grip');
+   if(['superplex','aerial','springboard','dive','outside'].includes(n.family)||['outside','top'].includes(n.requires))guards.push('live_locations');
+   const cost=MX.GRAPH.costOf(id);
+   if(cost>=2.2)guards.push('live_stamina');
+   if(n.after>0)guards.push('live_timing');
+   if(n.risk)guards.push('live_hazard');
+   const nextControl=performer,nextDown=n.down==='d'?(n.reverse?control:other(control)):n.down==='a'?nextControl:null;
+   steps.push({action:id,performer,entry:{control,position,down},exit:{control:nextControl,position:n.zone,down:nextDown},
+    cost:Number.isFinite(cost)?cost:null,risk:!!n.risk,guards});
+   control=nextControl;position=n.zone;down=nextDown;
+  }
+  if(steps.at(-1).performer!==proposal.owner)return deny('wrong_final_performer',steps.length-1);
+  return {v:1,eligible:true,scope:'conditional_fragment',cid:proposal.cid,objective,action,owner:proposal.owner,
+   actorId:proposal.actorId,partnerId:proposal.partnerId,bookedResult:proposal.bookedResult,finishRoute:proposal.finishRoute,
+   start:{control:start.control,position:start.position,down:start.down},steps,
+   execution:'unverified_live_state'};
+ }
  function structureSeed(st,{refresh=false}={}){
   st.structureBoard??={};
   const route=st.lockRoute||st.board.finish?.route;
@@ -2313,5 +2359,5 @@
   }
   G.save();return out;
  };
- root.OfficeRoom={proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
+ root.OfficeRoom={sequenceEvidence,proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
 })(typeof window!=='undefined'?window:globalThis);

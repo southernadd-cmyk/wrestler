@@ -268,6 +268,20 @@
   };
   return {v:1,own:tally(p.id),partner:tally(partner.id)};
  }
+ // MP5D: relative difficulty of an explicitly ordered fragment. The
+ // existing engine owns actual execution and all live physical gates.
+ function sequenceDifficulty(sequence){
+  if(sequence?.v!==1||sequence.eligible!==true||sequence.scope!=='conditional_fragment'||!Array.isArray(sequence.steps)||sequence.steps.length<2||sequence.steps.length>6)return null;
+  const steps=sequence.steps;
+  if(steps.some(s=>!s||!Number.isFinite(s.cost)||!['w','f'].includes(s.performer)||!s.entry||!s.exit||!Array.isArray(s.guards)))return null;
+  const effort=steps.reduce((n,s)=>n+Math.max(0,s.cost),0);
+  const changes=steps.filter(s=>s.entry.position!==s.exit.position).length;
+  const reversals=steps.filter(s=>s.entry.control!==s.exit.control).length;
+  const guarded=steps.filter(s=>s.guards.includes('live_grip')||s.guards.includes('live_locations')).length;
+  const components={length:(steps.length-1)*8,effort:effort*3,positionChanges:changes*5,controlChanges:reversals*6,conditionalSetups:guarded*8};
+  const score=stat(Object.values(components).reduce((a,b)=>a+b,0));
+  return {v:1,score,components,effortBy:{w:steps.filter(s=>s.performer==='w').reduce((n,s)=>n+Math.max(0,s.cost),0),f:steps.filter(s=>s.performer==='f').reduce((n,s)=>n+Math.max(0,s.cost),0)},execution:sequence.execution};
+ }
  // MP5B: the proposal model consumes the already inferred behavioural
  // tendencies, not a second set of raw wrestler personality statistics.
  // Scores are independent degrees of inclination, NOT probabilities.
@@ -306,9 +320,12 @@
   rule('reservations_allocation_gain','reservations',20,1.5,'proposalFairness.high'),
   rule('counterproposal_allocation_loss','counterproposal',85,1.5,'proposalFairness.low'),
   rule('counterproposal_protect_allocation','counterproposal',95,2,'proposalFairness.low','tendencyProtectiveness.high'),
-  rule('counterproposal_allocation_gain','counterproposal',15,1.5,'proposalFairness.high')
+  rule('counterproposal_allocation_gain','counterproposal',15,1.5,'proposalFairness.high'),
+  ...family('acceptance','sequenceDifficulty',[85,55,20],1.5),
+  ...crossed('reservations','sequenceDifficulty','tendencyCaution',[[15,15,15],[35,50,65],[65,85,95]],1.5),
+  ...crossed('counterproposal','sequenceDifficulty','tendencyFlexibility',[[20,15,10],[65,45,30],[95,75,55]],1.5)
  ]});
- function inferProposal(profile,evidence){
+ function inferProposal(profile,evidence,sequence=null){
   const assessed=proposalValues(evidence),o=profile?.observation;
   if(!assessed||!o||o.cid!==evidence.cid||!['w','f'].includes(o.side)||
      (o.actorId!==evidence.actorId&&o.actorId!==evidence.partnerId)||
@@ -316,6 +333,15 @@
   // Do not manufacture a proposal opinion from personality alone.
   if(assessed.values.proposalRisk===null&&assessed.values.creativeBenefit===null)return null;
   const values={...assessed.values};
+  let difficulty=null;
+  if(sequence!==null){
+   if(sequence.cid!==evidence.cid||sequence.objective!==evidence.objective||sequence.action!==evidence.proposed.action||
+      sequence.owner!==evidence.owner||sequence.actorId!==evidence.actorId||sequence.partnerId!==evidence.partnerId||
+      sequence.bookedResult!==evidence.bookedResult||sequence.finishRoute!==evidence.finishRoute)return null;
+   difficulty=sequenceDifficulty(sequence);
+   if(!difficulty)return null;
+   values.sequenceDifficulty=difficulty.score;
+  }
   const allocation=proposalAllocation(evidence,o.side);
   if(allocation&&Number.isFinite(allocation.score))values.proposalFairness=allocation.score;
   for(const axis of Object.keys(proposalAxes)){
@@ -333,15 +359,17 @@
   const result=proposalModel.evaluate(values,cues);
   return {v:1,cid:evidence.cid,objective:evidence.objective,action:evidence.proposed.action,
    side:o.side,actorId:o.actorId,role:actor?'performer':'partner',values,cues,
-   scores:result.scores,fired:result.fired,...(allocation?{allocation}:{})};
+   scores:result.scores,fired:result.fired,...(allocation?{allocation}:{}),...(difficulty?{difficulty}:{})};
  }
  // Re-read eligibility from the room, rather than trusting a stale card.
- function evaluateProposal(snapshot,room,side,objective,action){
+ function evaluateProposal(snapshot,room,side,objective,action,sequence=null){
   assertSide(side);
   const evidence=root.OfficeRoom.proposalEvidence(room,objective,action);
   if(!evidence.eligible)return {v:1,eligible:false,reason:evidence.reason,assessment:null};
-  const assessment=inferProposal(behaviour(snapshot,room,side),evidence);
-  return {v:1,eligible:true,evidence,assessment,...(assessment?{requestHistory:requestHistory(snapshot,side)}:{})};
+  const fragment=sequence===null?null:root.OfficeRoom.sequenceEvidence(room,objective,action,sequence);
+  if(fragment&&!fragment.eligible)return {v:1,eligible:false,reason:fragment.reason,assessment:null,sequence:fragment};
+  const assessment=inferProposal(behaviour(snapshot,room,side),evidence,fragment);
+  return {v:1,eligible:true,evidence,assessment,...(fragment?{sequence:fragment}:{}),...(assessment?{requestHistory:requestHistory(snapshot,side)}:{})};
  }
- root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory});
+ root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty});
 })(typeof window!=='undefined'?window:globalThis);
