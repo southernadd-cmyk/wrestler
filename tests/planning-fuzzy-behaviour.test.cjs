@@ -7,10 +7,10 @@ vm.runInContext(core,ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'..','assets','js','planning-fuzzy.js'),'utf8'),ctx);
 const P=root.OfficePlanningFuzzy,M=P.behaviourModel;
 const plain=x=>JSON.parse(JSON.stringify(x)),eq=(a,b)=>assert.deepEqual(plain(a),plain(b));
-eq(M.outputs,['cooperation','assertiveness','caution','ambition','protectiveness','flexibility']);
-assert.equal(M.rules.length,58);
+eq(M.outputs,['cooperation','assertiveness','caution','ambition','protectiveness','flexibility','mentorship','improvisation']);
+assert.equal(M.rules.length,79);
 assert.ok(Object.isFrozen(M.rules)&&M.rules.every(Object.isFrozen));
-eq(M.evaluate({}).scores,{cooperation:null,assertiveness:null,caution:null,ambition:null,protectiveness:null,flexibility:null});
+eq(M.evaluate({}).scores,{cooperation:null,assertiveness:null,caution:null,ambition:null,protectiveness:null,flexibility:null,mentorship:null,improvisation:null});
 const base={ego:50,professionalism:60,ringPsychology:50,ringAbility:65,consent:60,fatigue:45,safetyAbility:70,morale:55};
 const score=(v={},c={})=>M.evaluate({...base,...v},c).scores;
 assert.ok(score({consent:90}).cooperation>score({consent:20}).cooperation);
@@ -27,7 +27,7 @@ assert.ok(balanced.cooperation>70&&balanced.assertiveness>70,'assertive and coop
 eq(score({professionalTrust:0,proposalRisk:100,microphone:0}),score({professionalTrust:100,proposalRisk:0,microphone:100}));
 const unknown=M.evaluate({}, {'consent.high':1});assert.equal(unknown.scores.cooperation,null);
 let samples=0;
-for(const [axis,out] of [['consent','cooperation'],['ego','assertiveness'],['fatigue','caution'],['ego','ambition'],['ego','protectiveness'],['ringPsychology','flexibility']]){
+for(const [axis,out] of [['consent','cooperation'],['ego','assertiveness'],['fatigue','caution'],['ego','ambition'],['ego','protectiveness'],['ringPsychology','flexibility'],['professionalism','mentorship'],['ringPsychology','improvisation']]){
  let prev=-Infinity;
  for(let i=0;i<=100;i++){
   const res=score({[axis]:i})[out];
@@ -97,4 +97,42 @@ assert.equal(P.behaviour(hum,room,'f').cues['history.ownHumiliation'],undefined)
 assert.ok(P.behaviour(hum,room,'w').scores.protectiveness>first.scores.protectiveness);
 assert.equal(P.behaviour(hum,room,'w').scores.caution,first.scores.caution);
 eq(P.behaviour(goalSnap,winRoom,'w'),P.behaviour(plain(goalSnap),plain(winRoom),'w'));
-console.log('PASS MP2A/B: '+M.rules.length+' rules, '+samples+' monotonic samples, 101 original-output parity cases, career goals and booking direction, independent tendencies and replay parity.');
+// MP2C: preserve the six previous outputs and traces exactly.
+const six=P.createModel({outputs:M.outputs.slice(0,6),rules:M.rules.slice(0,58)});
+for(let i=0;i<=100;i++){
+ const values={...base,ego:i,professionalism:100-i,ringPsychology:i,consent:i,fatigue:100-i};
+ const cues={'condition.injured':1,'goal.advancement':1,'booking.actorLoses':1,'goal.mentor':1,'pair.veteranDeveloping':1,'history.requestedAdaptation':1};
+ const old=six.evaluate(values,cues),next=M.evaluate(values,cues);
+ for(const out of six.outputs){assert.equal(old.scores[out],next.scores[out]);eq(old.fired[out],next.fired[out]);}
+}
+assert.ok(score({ringPsychology:90}).improvisation>score({ringPsychology:20}).improvisation);
+assert.ok(score({fatigue:0}).improvisation>score({fatigue:90}).improvisation);
+assert.equal(score({ego:100}).mentorship,score({ego:0}).mentorship);
+assert.equal(score({ego:100}).improvisation,score({ego:0}).improvisation);
+assert.ok(score({},{'goal.mentor':1}).mentorship>score().mentorship);
+assert.ok(score({},{'history.requestedAdaptation':1}).improvisation>score().improvisation);
+assert.equal(score({},{'goal.mentor':1}).ambition,score().ambition);
+assert.equal(score({professionalism:20},{'pair.veteranDeveloping':1}).mentorship,score({professionalism:20}).mentorship);
+assert.ok(score({professionalism:90},{'pair.veteranDeveloping':1}).mentorship>score({professionalism:90}).mentorship);
+const vet={...w,tier:'Veteran',pro:90},rook={...f,tier:'Rookie'};
+const mentorCareer={ambitions:{w:{a:{kind:'mentor',since:10,sat:70}}}};
+const paired=P.capture(room,vet,rook,mentorCareer);
+assert.equal(paired.participants.w.tier,'Veteran');assert.equal(paired.participants.f.tier,'Rookie');
+const mentor=P.behaviour(paired,room,'w'),learner=P.behaviour(paired,room,'f');
+assert.equal(mentor.cues['goal.mentor'],1);assert.equal(mentor.cues['pair.veteranDeveloping'],1);
+assert.equal(learner.cues['goal.mentor'],undefined);assert.equal(learner.cues['pair.veteranDeveloping'],undefined);
+assert.ok(mentor.scores.mentorship>P.behaviour(P.capture(room,vet,rook),room,'w').scores.mentorship);
+assert.equal(P.behaviour(P.capture(room,{...vet,tier:'Star'},rook),room,'w').cues['pair.veteranDeveloping'],undefined);
+assert.equal(P.behaviour(P.capture(room,vet,{...rook,tier:'Veteran'}),room,'w').cues['pair.veteranDeveloping'],undefined);
+const ledgers={rivalries:{'b:a':{w:'b',f:'a',meetings:[{cid:'previous',abs:10},{cid:'future',abs:30}],talks:[{cid:'previous',by:'f',delivered:'adapted'},{cid:'future',by:'w',delivered:'adapted'}]}}};
+const adapted=P.capture(room,w,f,ledgers);
+assert.equal(P.behaviour(adapted,room,'w').cues['history.requestedAdaptation'],1);
+assert.equal(P.behaviour(adapted,room,'f').cues['history.requestedAdaptation'],undefined);
+assert.ok(P.behaviour(adapted,room,'w').scores.improvisation>first.scores.improvisation);
+assert.equal(P.behaviour(adapted,room,'w').scores.caution,first.scores.caution);
+const missed=plain(ledgers);missed.rivalries['b:a'].talks[0].delivered='missed';
+assert.equal(P.behaviour(P.capture(room,w,f,missed),room,'w').cues['history.requestedAdaptation'],undefined);
+const legacy=plain(paired);delete legacy.participants.w.tier;delete legacy.participants.f.tier;
+assert.equal(P.behaviour(legacy,room,'w').cues['pair.veteranDeveloping'],undefined);
+eq(mentor,P.behaviour(plain(paired),plain(room),'w'));
+console.log('PASS MP2A/B/C: '+M.rules.length+' rules, '+samples+' monotonic samples, 202 previous-output parity cases, mentorship pairing, prior adaptation and replay parity.');
