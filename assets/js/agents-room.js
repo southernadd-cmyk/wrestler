@@ -1883,6 +1883,12 @@
    control=nextControl;position=n.zone;down=nextDown;
   }
   if(steps.at(-1).performer!==proposal.owner)return deny('wrong_final_performer',steps.length-1);
+  if(st.planningContinuationVersion===1){
+   const F=root.OfficePlanningFuzzy,grip=F.continuationGrip(steps);
+   if(!grip.possible)return deny('continuation_grip_mismatch',grip.index);
+   const feasibility=F.sequenceFeasibility(st,structureSlot(st,objective),{start,steps});
+   if(!feasibility?.possible)return deny('continuation_window_impossible');
+  }
   return {v:1,eligible:true,scope:'conditional_fragment',cid:proposal.cid,objective,action,owner:proposal.owner,
    actorId:proposal.actorId,partnerId:proposal.partnerId,bookedResult:proposal.bookedResult,finishRoute:proposal.finishRoute,
    start:{control:start.control,position:start.position,down:start.down},steps,
@@ -2331,7 +2337,7 @@
    if(st.planningProposal===1&&opts.planningDialogue===true&&root.OfficePlanningDialogue){
     const L=root.OfficePlanningDialogue,banks=Array.isArray(opts.planningBanks)?opts.planningBanks:[];
     const identities={w:L.capture(w,banks,2),f:L.capture(f,banks,2)};
-    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if([2,3].includes(opts.planningSequencePolicy))st.planningSequencePolicy=opts.planningSequencePolicy;if(opts.planningSequenceSigning===true)st.planningSequenceSigning=1;if(opts.planningAdaptiveEntries===true)st.planningAdaptiveEntries=1;}}}
+    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if([2,3].includes(opts.planningSequencePolicy))st.planningSequencePolicy=opts.planningSequencePolicy;if(opts.planningSequenceSigning===true)st.planningSequenceSigning=1;if(opts.planningAdaptiveEntries===true)st.planningAdaptiveEntries=1;if(opts.planningContinuationVersion===1)st.planningContinuationVersion=1;}}}
    }
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
@@ -2592,7 +2598,7 @@
    stunt:null,bonus:0,story:story(st),finishPreparation:finishPlan(st),negotiation:st.negotiation?JSON.parse(JSON.stringify(st.negotiation)):null,rehearsed:!!st.rehearsed,situations:st.queue.slice(),threads:(st.carry||[]).map(t=>({...t})),threadUsed:st.thread?.id||null,decided:st.decided.map(d=>({...d})),
    premise:(st.structurePlanning?'Four dramatic objectives with '+planned+' named '+(planned===1?'move':'moves'):'A running order of '+planned+' '+(planned===1?'move':'moves'))+'; '+st.queue.length+' things came up backstage'+(st.reworked?' and '+st.reworked+' '+(st.reworked===1?'beat was':'beats were')+' rewritten':'')+'.',
    speakers:st.log.filter(x=>x.kind!=='you').slice(-6).map(x=>({actor:x.who,text:x.text})),
-   ...(st.structurePlanning?{structurePlan:structurePlan(st),
+   ...(st.structurePlanning?{structurePlan:structurePlan(st),...(st.planningContinuationVersion===1?{sequenceContinuationVersion:1}:{}),
     ...(st.structureTalk?.decision?{structureDiscussion:{
      objective:st.structureTalk.objective,by:st.structureTalk.by,reason:st.structureTalk.reason,
      decision:st.structureTalk.decision,from:st.structureTalk.original.action,

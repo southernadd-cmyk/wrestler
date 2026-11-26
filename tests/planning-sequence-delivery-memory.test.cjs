@@ -298,3 +298,23 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  assert.equal(E.structureReport(m).sequences[0].receipt,undefined);
  console.log('PASS MP13D signed alternative first move: '+alternate+' -> '+two+'; actual receipt and resume verified');
 }
+
+// MP13F.2: real diagnostic pair, timing and stamina opening gates.
+{
+ const asSteps=ids=>ids.map(id=>({id,action:id,performer:'w',entry:{control:'w',position:'standing',down:null}}));
+ const bad=asSteps(['lockup','sx_delayed']),good=asSteps(['front_facelock','sx_delayed']);
+ assert.equal(graph.PHYSICAL_GRIP_MOVES.sx_delayed,'front-facelock');
+ assert.equal(F.continuationGrip(bad).possible,false);
+ assert.equal(F.continuationGrip(good).possible,true);
+ const m=E.create({w:{...w,fatigue:0},f,p,slot:'main',minutes:12,finish:c.finish,plan:{game:'story',leash:'script',talk:'none'},seed:9000,sheet:copy(sheet),structureExecution:true});
+ m.sheet.sequenceContinuationVersion=1;m.t=0;m.wSt=100;m.fSt=100;
+ const rng=m.r.getState(),before=JSON.stringify(m);
+ assert.equal(S.DIRECTOR.openingReadiness(m,bad),false);
+ assert.equal(S.DIRECTOR.openingReadiness(m,good),false,'late suplex cannot be started too early');
+ assert.equal(JSON.stringify(m),before);assert.equal(m.r.getState(),rng);
+ m.t=Math.ceil(A.sx_delayed.after*m.len/10)*10;
+ assert.equal(S.DIRECTOR.openingReadiness(m,good),true);
+ m.wSt=10;assert.equal(S.DIRECTOR.openingReadiness(m,good),false,'insufficient actual energy');
+ delete m.sheet.sequenceContinuationVersion;assert.equal(S.DIRECTOR.openingReadiness(m,bad),true,'legacy agreement unchanged');
+ console.log('PASS MP13F.2 actual grip incompatibility, timing/stamina preflight, pure check and legacy opt-out');
+}
