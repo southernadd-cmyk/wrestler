@@ -1,7 +1,8 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const {run}=require('./planning-career-audit.cjs');
-const report=run([3,10],32);
+// Include a third independent career seed for the alternative-readiness comparison.
+const report=run([3,10,17],32);
 assert.ok(report.overall.matches>=24,'meaningful number of real booked matches: '+report.overall.matches);
 assert.ok(report.careers.every(c=>c.weeks>=16),'at least one season per career');
 assert.equal(Object.keys(report.byStructure).length,4);
