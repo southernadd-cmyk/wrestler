@@ -409,5 +409,32 @@
   }
   return p;
  }
- root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty,proposalReply,huddleProposal,readHuddleProposal});
+ // MP7B.1: decide how much complexity the pair wants, independently
+ // of their assessment of a particular candidate. Outputs are soft
+ // preferences, not permission to attempt a move.
+ const sequencePreferenceModel=createModel({curves:{
+  pairAbility:[35,65,85],pairCaution:[30,55,80],pairFlexibility:[30,55,80],pairCooperation:[30,55,80],planExchange:[20,50,80]
+ },outputs:['complexity','exchange'],rules:[
+  ...family('complexity','planExchange',[15,55,95],4),
+  ...family('complexity','pairAbility',[10,55,90],2),
+  ...family('complexity','pairCaution',[85,55,10],2),
+  ...family('complexity','pairFlexibility',[15,55,90],1),
+  ...family('exchange','planExchange',[10,55,95],4),
+  ...family('exchange','pairAbility',[10,55,90],2),
+  ...family('exchange','pairCooperation',[10,55,95],2),
+  ...family('exchange','pairCaution',[85,55,15],1)
+ ]});
+ function sequencePreference(snapshot,room){
+  const w=behaviour(snapshot,room,'w'),f=behaviour(snapshot,room,'f');
+  const pair=(k,fn)=>fn(w.scores[k],f.scores[k]);
+  const ability=[w.observation.values.ringAbility,f.observation.values.ringAbility];
+  const planExchange={safe:10,brawl:35,spots:70,story:80,technical:95}[room.game]??50;
+  const values={pairAbility:ability.every(Number.isFinite)?Math.min(...ability):null,
+   pairCaution:pair('caution',Math.max),pairFlexibility:pair('flexibility',Math.min),pairCooperation:pair('cooperation',Math.min),planExchange};
+  const result=sequencePreferenceModel.evaluate(values,{});
+  const cautious=room.game==='safe'||['w','f'].some(side=>snapshot.participants[side]?.injury>0||snapshot.participants[side]?.values?.fatigue>=80);
+  const target=cautious?2:Math.min(4,Math.max(2,2+2*(result.scores.complexity/100)));
+  return {v:1,values,scores:result.scores,target,cautious};
+ }
+ root.OfficePlanningFuzzy=Object.freeze({sequencePreference,sequencePreferenceModel,version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty,proposalReply,huddleProposal,readHuddleProposal});
 })(typeof window!=='undefined'?window:globalThis);
