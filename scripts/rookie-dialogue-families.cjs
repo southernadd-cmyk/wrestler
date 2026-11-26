@@ -17,7 +17,7 @@ function familyFor(style,profile){
 function report(built=build()){
  const groups=new Map(Object.values(FAMILIES).flatMap(Object.values).map(id=>[id,{id,members:[],generatedLines:0,uniqueSlotLines:0,duplicates:0}]));
  const packById=new Map(built.packs.map(p=>[p.owner,p]));
- const generated=new Set(gen.generate(new Set(built.packs.filter(p=>!p.lines.every(l=>l.id.startsWith(p.owner+'.g.'))).map(p=>p.owner))).packs.map(p=>p.owner));
+ const generated=new Set(built.generatedOwners);
  const inventory=new Map([...groups.keys()].map(k=>[k,new Map()]));
  const missing=new Map();
  const profiles=gen.loadProfiles();

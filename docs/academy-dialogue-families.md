@@ -77,3 +77,16 @@ recent IDs and delivery preference stay intact. The organic audit now compares
 R5A versus R5B1 and requires reduction of the top repeated closing, reporting
 overall repetition without assuming it improves. The missing phrase keys remain
 R5B2, which requires a deterministic bank/manifest/claim asset rebuild.
+
+## R5B2 — complete source phrase coverage
+
+Add eight warm/reflective opening phrases and twelve novelty-dismissal vulnerability
+phrases at the shared generator source. The affected 32 rookie banks have 368
+changed lines, with identical slot IDs and semantic claim labels. All original
+80 wrestler assets and unrelated rookie revisions stay untouched. The previous
+119 generated rookie revisions were reproduced against the existing manifest
+hashes; academy-001 has a dedicated editorial pack with legacy .g. IDs and is
+excluded. The inventory now uses actual compiler provenance, not ID spelling.
+Update revisioned assets, manifest and exact-text claim keys together; remove
+superseded revisions. CI requires zero uncovered profile keys and canonical
+build parity. Existing saved scenes retain embedded bank snapshots.
