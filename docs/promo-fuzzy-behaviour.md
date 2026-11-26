@@ -182,3 +182,24 @@ Mouthpiece-specific dialogue banks and programme/evidence progression
 remain protected. F6 coefficients are provisional. Tests compare 200
 solo and 200 mouthpiece scenes with the prior policy, checking 400
 resumes, speaker/client attribution, audience evidence and finish guards.
+
+## F7A — matched comparative audit
+
+Run `node tests/promo-roster-audit.test.cjs` to compare the pre-fuzzy
+policy with F1–F6 on 1,600 identical contracts (eight per worker, equal
+speaking sides), 3,200 actual-choice scenes and 800 JSON resumes.
+Both policies start from identical career facts and scene seeds, but
+retain independent rolling dialogue histories; this measures actual
+sequential use rather than forcing the same memory on both systems.
+Fallback action selection now uses the round index rather than elapsed
+steps so a skipped follow-up cannot change a fallback close action.
+Consequently the matched baseline is not strictly identical to the
+previous R7 choice schedule. Results include raw and per-100-utterance
+variety, repetition, authored and semantic coverage, event/push rates,
+emotion ranges, quality, owner-level changes and paired action/route
+differences. The audit samples ordinary solo scenes; F6's separate
+mouthpiece tests remain in the regression suite. Synthetic rivalry heat
+does not fabricate recorded career evidence. No quality score is treated
+as proof of improved writing. Optional `PROMO_ROSTER_AUDIT_JSON` exports
+both reports and full policy-tagged transcripts. No live coefficients
+changed in F7A: use the measured results for a focused balancing pass.
