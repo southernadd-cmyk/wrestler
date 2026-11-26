@@ -109,13 +109,13 @@
  const reason={risk:'It avoids the marked high-risk move.',finish:'It may help set up the agreed finish.',effort:'It should take a little less out of me.',impact:'I think it could get a bigger reaction.',familiarity:'It is a move I know.',layout:'I would like to work that objective differently.'};
  // Shared grammar varies sentence structure, not just a prefixed tag.
  const bodyFrames={
-  request:['Could we swap {old} for {move} on {goal}?','For {goal}, I would rather call {move} than {old}.','Instead of {old}, how about {move} for {goal}?','Keep the objective, but change {old} to {move}?'],
+  request:['Could we swap {old} for {move} for {goal}?','For {goal}, I would rather call {move} than {old}.','Instead of {old}, how about {move} for {goal}?','Keep the objective, but change {old} to {move}?'],
   response:{accept:['I can work with {move} there.','Put {move} in that spot, then.','That change to {move} works for me.','I am fine with {move} for {goal}.'],
    reserved:['I still have a concern about {move}.','I am not quite sold on {move} for {goal}.','I have not settled my reservations about that switch.','I need to think through the change to {move}.'],
    counter:['Can we consider another move for {goal}?','I would rather not settle on {move}. What else have we got?','I want a different option before we commit.','Neither of those calls convinces me. Can we look again?']},
   resolution:{accept:['I will work with the agreed {move}.','{move} is the call. Understood.','We have {move} in the plan now.','All set for {move} on {goal}.'],
-   reserved:['I will work with {move}, but note my reservation.','{move} it is. I still have a concern.','I will follow that call, even with my doubts.','I know the decision. My reservation about {move} stands.'],
-   counter:['I still prefer another option, but {move} is the call.','I would have chosen differently. I will follow {move}.','I wanted a different move, but I know what has been called.','That is the instruction, even if I would rather have changed it.']}
+   reserved:['I will work with {move}, but note my reservation.','{move} it is. I still have a concern.','I will follow the call for {move}, even with my doubts.','I know the decision. My reservation about {move} stands.'],
+   counter:['I still prefer another option, but {move} is the call.','I would have chosen differently. I will follow {move}.','I wanted a different move, but I know {move} has been called.','{move} is the instruction, even if I would rather have changed it.']}
  };
  const reasonFrames={risk:['It avoids the riskier move.','I would rather not take that extra risk.'],finish:['It may help set up the agreed finish.','That could lead into our finish more naturally.'],effort:['It should take a little less out of me.','I want to save some energy for later.'],impact:['I think it could get a bigger reaction.','It might make more of that moment.'],familiarity:['It is a move I know.','I am more familiar with that one.'],layout:['I would like to work that objective differently.','That is the way I would like to try it.']};
  function composeV2(identity,point,turn,who,seed,used){
