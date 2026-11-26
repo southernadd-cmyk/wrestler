@@ -262,7 +262,7 @@ async function journey(browser,name,viewport){
     '<div id="phase5-restored">The saved match result is back.</div>'+
     '<button type="button" data-tv="after">After the bell</button>',
     afterReady:{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish},
-     fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome},plan:'staredown'},after:null,plan:null,promo:null,past:[]};
+     fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome}},after:null,plan:null,promo:null,past:[]};
    localStorage.setItem('the-office-v23-match',JSON.stringify(saved));
    return c.id;
   });
@@ -286,6 +286,14 @@ async function journey(browser,name,viewport){
   // The broken PR #109 squeezed dialogue and decisions into narrow columns.
   await page.locator('#tv button[data-tv="after"]').click();
   await page.locator('#afterTalk').waitFor();
+  // The segment opens on what happens after the bell, chosen with the result known.
+  await page.locator('#tv button[data-afterangle="staredown"]').waitFor();
+  assert.equal(await page.locator('#tv button[data-aftermic]').count(),0,
+    name+': the microphone waits for the post-bell angle');
+  assert.equal(await page.locator('#tv button[data-afterangle="celebrate"]').count(),1,
+    name+': a winner may take a lap of honour');
+  await page.locator('#tv button[data-afterangle="staredown"]').click();
+  await page.locator('#tv button[data-aftermic="walk"]').waitFor();
   assert.equal(await page.locator('#tv .after-consequences').count(),0,
     name+': consequences must not appear before the mic decision');
   assert.equal(await page.locator('#tv .tv-foot button[data-tv="done"]').count(),0,

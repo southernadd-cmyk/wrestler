@@ -1,11 +1,12 @@
 /* THE OFFICE v0.3.20 — after the bell.
-   The match is not over when the referee counts three. Backstage, Dennis asks what happens next: a
-   handshake, a stare-down that says this is not finished, an attack once the bell has gone, or a
-   lap of honour. After the result it plays out (the other wrestler may not shake, and may not have
-   agreed to be jumped), and then your wrestler has the microphone: rub it in, give them credit, take
+   The match is not over when the referee counts three. With the result known, the first call is
+   what happens next: a handshake, a stare-down that says this is not finished, an attack once the
+   bell has gone, or a lap of honour. It plays out there and then (the other wrestler may not shake,
+   and may not have agreed to be jumped), and then your wrestler has the microphone: rub it in, give them credit, take
    the loss, blame the finish, or call somebody out. A callout that the room believes brings that
    match onto the promoter's desk the following week.
-   Deterministic: every outcome is read from the save and hashed from the contract id. */
+   Deterministic: every outcome is read from the save and hashed from the contract id.
+   Older saves may carry a plan agreed backstage in Dennis's room; that plan still plays as agreed. */
 (function installAfterBell(root){'use strict';
  const G=root.OfficeGame,D=root.OfficeData,T=root.OfficeTerritory;
  function hash(text){let h=2166136261;for(const ch of String(text)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return ((h>>>0)%10007)/10007;}
@@ -23,7 +24,7 @@
  }
 
  // ---------------------------------------------------------------------------------------------
- // Backstage: what the wrestlers agree to do once the bell has gone.
+ // What the wrestlers do once the bell has gone. Chosen after the result, at the start of the segment.
  const PLANS={
   none:{label:'Nothing. Back through the curtain',hint:'Let the match speak for itself.',tags:['Safe']},
   handshake:{label:'Offer a handshake',hint:'Respect, in front of everyone. They might not take it.',tags:['Builds a bond','Cools the feud','Risk: refused']},
@@ -31,8 +32,9 @@
   beatdown:{label:'Attack after the bell',hint:'Big heat, if the other side agreed to it. If they did not, it is a real fight.',tags:['Feud heat ▲','Gamble: did they agree?']},
   celebrate:{label:'A lap of honour',hint:'Slap every hand on the barrier. Only works if the crowd is still with them.',tags:['Heat ▲ if the crowd is hot']}
  };
- function plans(c,w,f){
-  const won=String(c?.finish||'').startsWith('win');
+ function plans(c,w,f,actuallyWon){
+  // With the result known, the lap of honour follows who actually won, not the booked finish.
+  const won=typeof actuallyWon==='boolean'?actuallyWon:String(c?.finish||'').startsWith('win');
   const bond=root.OfficeBonds?.score?.(w.id,f.id)||0;
   return Object.entries(PLANS).filter(([id])=>id!=='celebrate'||won).map(([id,x])=>{
    let hint=x.hint;
@@ -316,21 +318,43 @@
   root.OfficeRivalry?.recordAfter?.(st);
  }
  // A selected post-bell scene, never started merely by viewing the result.
- function begin(c,fin,plan='none'){
+ // With no plan, the segment opens on the angle choice (stage 'angle'). A plan passed in is one
+ // agreed backstage in an older save, and it plays straight away as it always did.
+ function begin(c,fin,plan){
   const x=ctxOf(c,fin);if(!x.w||!x.f||!x.p)return null;
-  const a=state(),st={v:1,cid:c.id,c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish},fin:{stars:x.stars,crowd:x.crowd,outcome:x.outcome},plan:PLANS[plan]?plan:'none',stage:'mic',log:[],cons:[],angle:null,said:null,call:null};
+  const turned=!!G.S?.bonds?.done?.[c.id+':turn'],choosing=plan==null&&!turned;
+  const a=state(),st={v:1,cid:c.id,c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{...c.programme}}:{})},fin:{stars:x.stars,crowd:x.crowd,outcome:x.outcome},plan:PLANS[plan]?plan:'none',stage:choosing?'angle':'mic',log:[],cons:[],angle:null,said:null,call:null};
   if(st.plan==='celebrate'&&!x.won)st.plan='none';
   st.log.push({side:'stage',who:null,text:x.outcome==='dq'?'The referee is still pointing at '+x.w.short+'. Disqualified.':x.won?'The referee raises '+x.w.short+'’s hand.':x.outcome==='nc'?'Nobody’s hand is raised. The referee waves it off.':'The referee raises '+x.f.short+'’s hand.'});
   if(a.done[c.id]){st.stage='done';return st;}
   a.done[c.id]=1;
+  // A friend who turned at the bell has already decided what happens after it.
+  if(turned&&plan==null)st.log.push({side:'stage',who:null,text:fill('{F} shakes {W}’s hand, then hits them from behind. Whatever came next is out of the window.',x)});
+  if(st.stage==='angle'){G.save();return st;}
   if(st.plan!=='none')playAngle(st,x);
   recordEvidence(st);
   G.save();return st;
  }
+ function angleOptions(st){
+  if(st?.stage!=='angle')return [];
+  const x=ctxOf(st.c,st.fin);if(!x.w||!x.f)return [];
+  return plans(st.c,x.w,x.f,x.won);
+ }
+ // The first call of the segment: what happens now the bell has gone. Final once made.
+ function choose(st,plan){
+  if(st?.stage!=='angle'||!angleOptions(st).some(o=>o.id===plan))return false;
+  const x=ctxOf(st.c,st.fin);
+  st.plan=plan;st.stage='mic';
+  if(plan!=='none')playAngle(st,x);
+  recordEvidence(st);
+  G.save();return true;
+ }
  function view(st){
   const x=ctxOf(st.c,st.fin);
-  return {stage:st.stage,plan:st.plan,planLabel:PLANS[st.plan]?.label||'',log:st.log.slice(),cons:st.cons.slice(),options:micOptions(st),
-   title:st.stage==='mic'?x.w.short+' has the microphone':'After the bell',ask:st.stage==='mic'?(x.won?'The crowd is still on its feet. What does '+x.w.short+' say?':'The crowd is quietening down. What does '+x.w.short+' say?'):''};
+  const angle=st.stage==='angle';
+  return {stage:st.stage,plan:st.plan,planLabel:angle?'':PLANS[st.plan]?.label||'',log:st.log.slice(),cons:st.cons.slice(),options:angle?angleOptions(st):micOptions(st),
+   title:angle?'The bell has gone':st.stage==='mic'?x.w.short+' has the microphone':'After the bell',
+   ask:angle?(x.won?'The crowd is still on its feet. What does '+x.w.short+' do now?':x.outcome==='nc'?'Nobody won. What does '+x.w.short+' do now?':'The crowd is watching '+x.w.short+'. What happens now?'):st.stage==='mic'?(x.won?'The crowd is still on its feet. What does '+x.w.short+' say?':'The crowd is quietening down. What does '+x.w.short+' say?'):''};
  }
 
  // ---------------------------------------------------------------------------------------------
@@ -382,5 +406,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,begin,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={state,PLANS,plans,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);

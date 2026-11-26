@@ -1319,11 +1319,6 @@ function cornerPicker(c,w,f){
 }
 
 /* ---------- after the bell (v0.3.20) ---------- */
-function afterPicker(c,w,f){
- if(!window.OfficeAfter)return '';
- const on=night.plan?.after||'none';
- return `<h3 class="section-h after-h">After the bell</h3><p class="dim">${esc(OfficeRoom.AGENT)}: “And when it’s over? Decide now. They need to know before they go out.”</p><div class="picks after-picks">${OfficeAfter.plans(c,w,f).map(o=>`<button class="decision-option${o.id===on?' on':''}" data-afterplan="${esc(o.id)}" aria-pressed="${o.id===on}"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span>${tagChips(o.tags)}</button>`).join('')}</div>`;
-}
 function afterNext(){const more=night.i<night.queue.length;return `<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Finish show'}</button>`}
 function showAfter(){
  const st=night.after;if(!st)return night.i<night.queue.length?prep():endNight();
@@ -1331,9 +1326,10 @@ function showAfter(){
  const v=OfficeAfter.view(st);night.stage='after';
  const entries=v.log.map(e=>({who:e.who,side:e.side==='stage'?'c':e.side,text:e.text}));
  const cons=v.stage==='done'&&v.cons.length?`<section class="after-consequences" aria-label="Consequences"><h3 class="section-h">Consequences</h3><ul class="cons">${v.cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul></section>`:'';
- const decide=v.stage==='mic'?`<div class="decide2"><h3 class="section-h">${esc(v.title)}</h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'aftermic')}</div>`:'';
- const middle=`<b class="fin">${esc(v.plan==='none'?'Straight to the microphone':v.planLabel)}</b><span>${esc(p?.venue||'')}</span>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p?.name||'')}: after the bell</b><span>${esc(w?.name||'')} v ${esc(f?.name||'')}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-back s-after${v.stage==='done'?' is-done':''}">${win('After the bell',matchupBar({},w,f,middle)+sceneLog(entries,'afterTalk',w,f,p?.id)+decide+cons,{h:'h3',body:'tight'})}</div><div class="tv-foot"><span class="dim">${esc(v.stage==='mic'?'The microphone is live.':'The crowd starts filing out.')}</span>${v.stage==='done'?afterNext():''}</div>`;
+ // The first call is the angle, made with the result known; then the microphone.
+ const decide=v.stage==='angle'||v.stage==='mic'?`<div class="decide2"><h3 class="section-h">${esc(v.title)}</h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,v.stage==='angle'?'afterangle':'aftermic')}</div>`:'';
+ const middle=`<b class="fin">${esc(v.stage==='angle'?'Your call':v.plan==='none'?'Straight to the microphone':v.planLabel)}</b><span>${esc(p?.venue||'')}</span>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p?.name||'')}: after the bell</b><span>${esc(w?.name||'')} v ${esc(f?.name||'')}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-back s-after${v.stage==='done'?' is-done':''}">${win('After the bell',matchupBar({},w,f,middle)+sceneLog(entries,'afterTalk',w,f,p?.id)+decide+cons,{h:'h3',body:'tight'})}</div><div class="tv-foot"><span class="dim">${esc(v.stage==='angle'?'The bell has gone. Nobody has left the ring.':v.stage==='mic'?'The microphone is live.':'The crowd starts filing out.')}</span>${v.stage==='done'?afterNext():''}</div>`;
  scrollTalk('afterTalk');persistNight();
 }
 
@@ -1552,7 +1548,7 @@ function showMeeting(loadedBanks){
    <div class="review-actions"><button class="btn" data-room="review_edit">${st.structurePlanning?'Revise the objectives':'Revise the called spots'}</button>
     <button class="btn go" data-room="review_ok">Approve this layout</button></div>
   </div>`:'';
- const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${structurePanel}${arcPicker(c)}${rivalNote(c)}${cornerPicker(c,w,f)}${afterPicker(c,w,f)}</div>`:
+ const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${structurePanel}${arcPicker(c)}${rivalNote(c)}${cornerPicker(c,w,f)}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
  const descriptions={traditional:'Start strong, take the pressure, fight back and reach the finish.',
   classic_american:'Guided opening, pressure, comeback and payoff.',
@@ -1796,8 +1792,9 @@ function doCall(id){const M=night.M;if(!Mx.canCall(M,id))return;Mx.call(M,id);pe
 function result(){
  clearTimeout(night.timer);const M=night.M,c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
  const fin={...M.final,log:M.log.map(({t,text,kind,big,who,actionId})=>({t,text,kind,big,who,...(actionId?{actionId}:{})}))};
- // A planned post-bell segment replaces spontaneous, contradictory improvisations.
- c.afterPlan=night.plan?.after||'none';
+ // The post-bell angle is chosen in the segment itself, after the result. A night saved by an
+ // older version may still carry one agreed in the meeting; that plan keeps first call on the scene.
+ if(night.plan?.after)c.afterPlan=night.plan.after;
  const cons=G.applyResult(c,fin);
  if(window.OfficeRingside)cons.push(...OfficeRingside.settle(c,M));
  if(window.OfficeRivalCorner)cons.push(...OfficeRivalCorner.settle(c,M));
@@ -1832,7 +1829,7 @@ function result(){
  night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,actualOutcome:fin.outcome,bookedFinish:c.finish,baseConsequences,consequences:baseConsequences.slice()});
  // No angle or microphone mutations occur while the result screen is merely open.
  night.after=null;
- night.afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish},fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome},plan:c.afterPlan}:null;
+ night.afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{id:c.programme.id,step:c.programme.step}}:{})},fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome},...(c.afterPlan?{plan:c.afterPlan}:{})}:null;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=structureReport?structureReport.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structureReport.objectives.length+' objectives':sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  const actualFinish={booked:'Booked finish delivered',dq:'Unplanned disqualification',nc:'No contest',double:'Finish broken'}[fin.outcome]||
@@ -1882,7 +1879,7 @@ function result(){
   ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p>'+(finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+'<div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title.charAt(0).toUpperCase()+b.title.slice(1))+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span>'+((b.status==='adapted'||b.rebuiltAfter?.length)&&b.actual&&b.reason?'<span class="dim" style="display:block">'+esc(b.reason)+'</span>':'')+'</li>').join('')+'</ol></div>':'';
  const story=flowReport(fin,w,f);
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the layout</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div>${matchSummary}</div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What changed',`<h3 class="section-h">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul><h3 class="section-h">Match statistics</h3>${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}`,{h:'h3'})}${win('Full commentary',`<details class="result-log"><summary>Read full commentary (${fin.log.length} entries)</summary><div class="well">${logList(fin.log)}</div></details>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.afterReady?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Next match':'Finish show'}</button><button class="btn go" data-tv="after" title="Play the post-bell angle and microphone">After the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div>${matchSummary}</div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What changed',`<h3 class="section-h">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul><h3 class="section-h">Match statistics</h3>${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}`,{h:'h3'})}${win('Full commentary',`<details class="result-log"><summary>Read full commentary (${fin.log.length} entries)</summary><div class="well">${logList(fin.log)}</div></details>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.afterReady?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Next match':'Finish show'}</button><button class="btn go" data-tv="after" title="Decide what happens after the bell, then take the microphone">After the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';night.resultHTML=$('#tv').innerHTML;persistNight();
 }
 function syncAfterEvidence(){
@@ -2063,7 +2060,7 @@ document.addEventListener('click',e=>{
  if(d.cornerwho){if(night?.stage!=='meeting'||!night.plan)return;night.plan.cornerWho=d.cornerwho;night.plan.corner=null;return showMeeting()}
  if(d.cornerjob){if(night?.stage!=='meeting'||!night.plan)return;const x=OfficeRingside.parse(d.cornerjob);if(!x)return;night.plan.cornerWho=x.id;night.plan.corner=night.plan.corner===d.cornerjob?null:d.cornerjob;return showMeeting()}
  if(d.arcchoice){if(night?.stage!=='meeting'||night.plan?.room?.stage!=='done')return;const v=window.OfficeProgrammeArcs?.options(current());if(!v?.choices.some(x=>x.id===d.arcchoice))return;night.plan.arcChoice=d.arcchoice;return showMeeting()}
- if(d.afterplan){if(night?.stage!=='meeting'||!night.plan||!OfficeAfter.PLANS[d.afterplan])return;night.plan.after=d.afterplan;return showMeeting()}
+ if(d.afterangle){const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='angle')return;OfficeAfter.choose(st,d.afterangle);syncAfterEvidence();return showAfter()}
  if(d.aftermic){const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='mic')return;OfficeAfter.speak(st,d.aftermic);syncAfterEvidence();return showAfter()}
  if(d.tv==='after'){
   if(!night||!['result','after'].includes(night.stage))return;
