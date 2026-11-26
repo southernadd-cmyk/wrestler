@@ -3,6 +3,7 @@
 // The surrounding world uses the existing seeded career policy; no forced moves.
 const assert=require('node:assert/strict');
 const {play}=require('./_world.cjs'),{promoBanks}=require('./_source.cjs');
+const continuation=require('./_sequence-continuation.cjs');
 const copy=x=>JSON.parse(JSON.stringify(x));
 const eq=(a,b,msg)=>assert.deepEqual(copy(a),copy(b),msg);
 const inc=(o,k,n=1)=>o[k]=(o[k]||0)+n;
@@ -24,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set();
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -106,8 +107,10 @@ function run(seeds=[3,10],weeks=32){
    const trainingFatigue=['rest','promo'].includes(w.training)?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
    const options={w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p:G.P(c.pid),slot:c.slot,minutes:sheet.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo,plan:{game:sheet.game,leash:sheet.leash,talk:sheet.talk},preparation,flags:{...w.flags,...sheet.flags},memory:Mem.context(w.id,f.id),sheet,structureExecution:true,sequenceTimingVersion:1,identity:G.normaliseIdentity(G.S.identity),seed:Math.floor(random()*2**31)||1};
    const immutable=copy(sheet.structurePlan),callIds=Object.keys(E.CALLS).filter(x=>!['home'].includes(x));
-   function drive(active,resume,settings=options,expectedPlan=immutable){
+   function drive(active,resume,settings=options,expectedPlan=immutable,traceActual=false){
     let M=E.create({...copy(settings),livePsychologyVersion:active?1:undefined}),matchResume=0,liveScores=[],calls=0;
+    const trace=traceActual?continuation.trace(root,key):null;trace?.track(M);
+    try{
     for(let n=0;n<10000&&!M.done;n++){
      if(M.decision&&!M.queue.length){const opts=M.decision.options;E.resolve(M,pick(opts,i+seed+calls).id);}
      if(M.stage==='live'&&!M.decision&&calls<2&&M.t>=M.len*(calls?.65:.3)){
@@ -121,7 +124,7 @@ function run(seeds=[3,10],weeks=32){
       const saved=copy({...M,rState:M.r.getState()}),restored=E.restore(saved);
       const a=E.next(M),b=E.next(restored);eq(a??null,b??null,key+' resumed next commentary');
       // Mulberry state is a 32-bit bit pattern; restored seeds can be unsigned.
-      assert.equal(M.r.getState()>>>0,restored.r.getState()>>>0,key+' resumed RNG bit pattern');M=restored;matchResume=1;
+      assert.equal(M.r.getState()>>>0,restored.r.getState()>>>0,key+' resumed RNG bit pattern');M=restored;trace?.track(M);matchResume=1;
      }else E.next(M);
     }
     assert.ok(M.done&&M.final,key+' completed real bout');
@@ -129,10 +132,17 @@ function run(seeds=[3,10],weeks=32){
     assert.equal(M.o.finish,c.finish,key+' booked finish unchanged');
     if(settings.structureExecution)assert.equal(M.final.structure.id,choice.id);else assert.equal(M.final.structure,undefined);
     assert.ok(range(M.final.stars,0,5)&&range(M.final.crowd));
+    if(trace)continuationRecords.push(...trace.close(M));
     return {M,fin:M.final,matchResume,liveScores};
+    }finally{trace?.restore();}
    }
-   const actual=drive(true,i%5===0);
+   const actual=drive(true,i%5===0,options,immutable,true);
    const {M,fin,matchResume,liveScores}=actual,report=fin.structure;
+   if(report.sequences?.some(r=>r.attempts>0)&&!traceVerified.has(choice.id)){
+    const control=drive(true,i%5===0);
+    eq(fin,control.fin,key+' audit trace does not change final result');eq(M.graph,control.M.graph,key+' audit trace does not change graph');
+    assert.equal(M.r.getState()>>>0,control.M.r.getState()>>>0,key+' audit trace does not change RNG');traceVerified.add(choice.id);
+   }
    if(i%4===0){
     const control=drive(false,false).fin;
     comparisons.push({key,structure:choice.id,approach,starDelta:fin.stars-control.stars,crowdDelta:fin.crowd-control.crowd,ignoredDelta:fin.ignored-control.ignored,injuryDelta:Number(!!fin.injury)-Number(!!control.injury),outcome:[control.outcome,fin.outcome],sameSeed:options.seed});
@@ -212,7 +222,7 @@ function run(seeds=[3,10],weeks=32){
   })(),matchedAdaptive:(()=>{
    const summarize=side=>{const xs=adaptivePairs.map(x=>x[side]);return {...Object.fromEntries(['signed','completed','adapted','alternativeDelivered','noOpening','withAlternatives','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars))};};
    return {pairs:adaptivePairs.length,before:summarize('before'),after:summarize('after'),changedOutcomes:adaptivePairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:adaptivePairs};
-  })(),rows};
+  })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},rows};
 }
 module.exports={run};
 if(require.main===module){const seeds=(process.argv[2]||'3,10,24,41').split(',').map(Number),weeks=Number(process.argv[3]||48);console.log(JSON.stringify(run(seeds,weeks),null,2));}
