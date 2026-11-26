@@ -20,7 +20,7 @@ function trace(root,key){
   if(!openings.has(r.objective)){
    const o=objective(m,r);
    openings.set(r.objective,{key,structure:m.structureDirector.id,objective:r.objective,
-    actions:o.sequence.actions.slice(),alternatives:o.sequence.openings?.length||0,
+    actions:o.sequence.actions.slice(),alternatives:o.sequence.openings?.length||0,window:o.window.slice(),requires:o.requires.slice(),
     ticks:[],natural:[],final:null});
   }
   return openings.get(r.objective);
@@ -230,6 +230,8 @@ function trace(root,key){
   }
   for(const r of rows(m)){
    const v=openingRecord(m,r);v.final={status:r.status,attempts:r.attempts,reason:r.reason,protected:!!(m.injury||m.foeHurt||m.workingHurt||m.shortened||m.outcome!=='booked')};
+   v.prerequisites=m.structureDirector.objectives.filter(o=>v.requires.includes(o.id)).map(o=>({id:o.id,status:o.status,at:o.at,evidence:o.evidence.map(e=>({id:e.id,at:e.at,actor:e.actor}))}));
+   v.duration=m.len;
   }
   return {records,openings:[...openings.values()],dependencyWitnesses};
  },restore(){for(const fn of undo.reverse())fn();tracked=null;}};
