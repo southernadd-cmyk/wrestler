@@ -55,7 +55,13 @@
     if(!prior(m,room)||!str(m.cid))continue;
     const event={cid:m.cid,abs:finite(m.abs),outcome:str(m.outcome),
      ownInjury:m.injured?.[actor]??null,opponentInjury:m.injured?.[sideOther(actor)]??null,
-     legacy:m.legacy===true};
+     legacy:m.legacy===true,
+     ...(m.legacy!==true&&Array.isArray(m.sequenceDelivery)?{sequenceDelivery:m.sequenceDelivery.slice(0,4).map(x=>({
+      v:x.v,status:x.status,objective:str(x.objective),plannedCount:rows(x.planned).length,
+      witnessedCount:rows(x.witnessed).length,attempts:finite(x.attempts),interruptions:finite(x.interruptions),
+      sharedExchange:new Set(rows(x.witnessed).map(e=>e.performer)).size===2,
+      protectedExit:x.protectedExit===true
+     }))}:{})};
     meetings.set(m.cid,event);
    }
    for(const t of rows(ledger.talks)){
@@ -162,6 +168,26 @@
   // A recorded request followed by an adapted delivery is modest pair
   // evidence, not proof that this actor alone improvised successfully.
   if(rows(p.relationship?.talks).some(t=>t.requestedBy===p.id&&t.delivered==='adapted'))cues['history.requestedAdaptation']=1;
+  // Shared experience, not a personal grievance: both participants saw
+  // the same exchange. Weight recent meetings more heavily; unknown
+  // delivery and protected exits do not create adverse evidence.
+  const recent=rows(p.relationship?.meetings).filter(m=>!m.legacy&&Array.isArray(m.sequenceDelivery))
+   .sort((a,b)=>(b.abs??0)-(a.abs??0)).slice(0,4);
+  let total=0,exact=0,adapted=0,incomplete=0;
+  recent.forEach((m,i)=>{
+   for(const d of m.sequenceDelivery){
+    if(d.v!==1||d.plannedCount<2||d.plannedCount>4||d.witnessedCount<0||d.witnessedCount>d.plannedCount)continue;
+    const weight=1/(i+1);
+    if(d.status==='completed'&&d.witnessedCount===d.plannedCount){total+=weight;exact+=weight;}
+    else if(d.status==='adapted'&&d.witnessedCount===d.plannedCount){total+=weight;adapted+=weight;}
+    else if(d.status==='missed'&&!d.protectedExit&&d.witnessedCount>0&&d.witnessedCount<d.plannedCount&&d.interruptions>0){total+=weight;incomplete+=weight;}
+   }
+  });
+  if(total){
+   if(exact)cues['history.sequenceDelivered']=exact/total;
+   if(adapted)cues['history.sequenceAdapted']=adapted/total;
+   if(incomplete)cues['history.sequenceInterrupted']=incomplete/total;
+  }
   const inference=behaviourModel.evaluate(observation.values,cues);
   return {v:1,observation,cues,scores:inference.scores,fired:inference.fired};
  }
@@ -323,7 +349,13 @@
   rule('counterproposal_allocation_gain','counterproposal',15,1.5,'proposalFairness.high'),
   ...family('acceptance','sequenceDifficulty',[85,55,20],1.5),
   ...crossed('reservations','sequenceDifficulty','tendencyCaution',[[15,15,15],[35,50,65],[65,85,95]],1.5),
-  ...crossed('counterproposal','sequenceDifficulty','tendencyFlexibility',[[20,15,10],[65,45,30],[95,75,55]],1.5)
+  ...crossed('counterproposal','sequenceDifficulty','tendencyFlexibility',[[20,15,10],[65,45,30],[95,75,55]],1.5),
+  rule('acceptance_shared_sequence_delivery','acceptance',90,1.5,'history.sequenceDelivered'),
+  rule('acceptance_shared_sequence_adaptation','acceptance',85,1.5,'history.sequenceAdapted'),
+  rule('reservations_shared_sequence_delivery','reservations',20,1,'history.sequenceDelivered'),
+  rule('reservations_shared_sequence_adaptation','reservations',25,1,'history.sequenceAdapted'),
+  rule('reservations_shared_sequence_interruption','reservations',80,1,'history.sequenceInterrupted'),
+  rule('counterproposal_shared_sequence_interruption','counterproposal',70,1,'history.sequenceInterrupted')
  ]});
  function inferProposal(profile,evidence,sequence=null){
   const assessed=proposalValues(evidence),o=profile?.observation;
@@ -356,6 +388,10 @@
   if(actor&&comparison.costDelta<0)cues['change.costReduction']=1;
   if(comparison.finishSupportChanged===1)cues['change.finishGain']=1;
   if(comparison.finishSupportChanged===-1)cues['change.finishLoss']=1;
+  // Delivery history informs only future sequence proposals, not single
+  // moves, medical gates, old consent or the negotiated finish.
+  if(sequence!==null)for(const key of ['history.sequenceDelivered','history.sequenceAdapted','history.sequenceInterrupted'])
+   if(Number.isFinite(profile.cues?.[key]))cues[key]=profile.cues[key];
   const result=proposalModel.evaluate(values,cues);
   return {v:1,cid:evidence.cid,objective:evidence.objective,action:evidence.proposed.action,
    side:o.side,actorId:o.actorId,role:actor?'performer':'partner',values,cues,
