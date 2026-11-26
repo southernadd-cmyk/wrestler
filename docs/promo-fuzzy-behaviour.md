@@ -117,3 +117,25 @@ outcomes. This is a first narrow integration; graph fallbacks and single
 eligible lines cannot gain variety through ranking. Tests compare 800
 paired scenes with 200 save/resume round trips, and exercise conditional
 ranking and shared alternative guards. F4 will address emotion trajectories.
+
+## F4 — contextual emotional progression
+
+New ordinary UI scenes explicitly opt into the version-one emotion policy
+inside their F3 snapshot. F3-only and older scenes retain the original
+director update. Both speakers react to the same pre-turn state and actual
+signed meter delta (not the sum of log swings, which can double-count
+crowd reaction). The F2 inference drives and snapshotted worker stats
+modulate sensitivity to setbacks and recovery towards each actor's initial
+equilibrium. A spoken personal challenge can affect the opponent;
+acknowledgement/calm can reduce tension without inventing agreement.
+No new permanent character stats or inferred personal grievances.
+Updates are simultaneous and clamped to 0–100, with maximum movement of
+18 composure and 22 irritation points per turn. Record/evidence,
+programme and mouthpiece paths retain legacy progression.
+The current director still routes and rolls using composure and irritation:
+pacing and promo quality may consequently change; booked outcomes and
+semantic protection do not become fuzzy. F5 replaces crisp event/pacing
+rules separately. Coefficients are provisional, not empirically fitted.
+Tests exercise continuous transition bounds, contrasting personalities,
+protected record parity, 400 paired full-roster scenes and 200 resumes,
+with descriptive trajectory, pacing and quality differences.

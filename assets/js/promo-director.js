@@ -105,7 +105,7 @@
   return {v:2,format,phase:'opening',subject:null,claim:null,lastPlayer:null,lastOpponent:null,
    player:participant(m||w),opponent:participant(f),client:w.id,turns:[],followup:null,ending:null};
  }
- function observe(d,st,record,fresh){
+ function observe(d,st,record,fresh,beforeMeter){
   const mine=fresh.filter(e=>e.side==='w'),theirs=fresh.filter(e=>e.side==='f');
   if(mine.length)d.lastPlayer=mine.at(-1).line;
   if(theirs.length){d.lastOpponent=theirs.at(-1).line;if(st.semantic){const claim=theirs.at(-1).semantic?.claim;d.latestPoint=root.OfficePromoSemantics.label(claim);}}
@@ -117,10 +117,21 @@
   const personal=record.id==='personal'||record.id==='accusation',concedes=record.id==='confession'||record.id==='calm'||record.id==='acknowledge'||record.id==='revise';
   const swing=fresh.reduce((n,e)=>n+(e.swing||0),0);
   const a=d.player,b=d.opponent;
-  a.composure=clamp(a.composure+(record.landed?7:-12)+(concedes?6:0));
-  a.irritation=clamp(a.irritation+(record.landed?-3:13)+(swing<0?6:0)+(personal?4:0)-(concedes?9:0));
-  b.composure=clamp(b.composure+(swing<0?5:-5));
-  b.irritation=clamp(b.irritation+(personal?16:0)+(swing>5?8:0)-(concedes?9:0));
+  // Both reactions use the same pre-turn conditions and actual meter change.
+  // Do not sum log swings: crowd reaction entries can repeat a spoken swing.
+  const policy=st.authoredDialogue?.fuzzy;
+  const fuzzy=policy?.v===1&&policy.emotion===1&&!st.core.case&&!st.core.claim?.hasEvidence&&!st.arc&&!st.speaker&&root.OfficePromoFuzzy;
+  const event={beforeMeter,afterMeter:st.meter,feudHeat:st.core.feudHeat,landed:record.landed,
+   personal:personal&&mine.length>0,calming:concedes&&mine.length>0};
+  const nextA=fuzzy?fuzzy.emotionStep(policy.w,a,{...event,side:'w',spoke:mine.length>0}):null;
+  const nextB=fuzzy?fuzzy.emotionStep(policy.f,b,{...event,side:'f',spoke:theirs.length>0}):null;
+  if(nextA&&nextB){Object.assign(a,nextA);Object.assign(b,nextB);}
+  else{
+   a.composure=clamp(a.composure+(record.landed?7:-12)+(concedes?6:0));
+   a.irritation=clamp(a.irritation+(record.landed?-3:13)+(swing<0?6:0)+(personal?4:0)-(concedes?9:0));
+   b.composure=clamp(b.composure+(swing<0?5:-5));
+   b.irritation=clamp(b.irritation+(personal?16:0)+(swing>5?8:0)-(concedes?9:0));
+  }
   d.turns.push({round:record.round,id:record.id,landed:record.landed,subject:d.subject,playerLine:mine.at(-1)?.line||null,
    opponentLine:theirs.at(-1)?.line||null,playerComposure:a.composure,opponentIrritation:b.irritation});
   d.phase=record.round==='close'?'resolved':record.round==='push'?'closing':record.round==='answer'?'decision':'exchange';

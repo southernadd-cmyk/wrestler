@@ -61,6 +61,7 @@ jobs:
             add tests/promo-rookie-audit.test.cjs
             add tests/promo-roster-audit.test.cjs
             add tests/promo-fuzzy.test.cjs
+            add tests/promo-fuzzy-emotion.test.cjs
             add tests/psychology-fuzzy.test.cjs
           }
           if [[ "$EVENT_NAME" == "workflow_dispatch" || "$EVENT_NAME" == "schedule" || "$REF_TYPE" == "tag" || "$FULL_REFACTOR" == "true" ]]; then
