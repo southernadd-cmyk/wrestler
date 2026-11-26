@@ -1706,6 +1706,113 @@
    start:{control:start.control,position:start.position,down:start.down},steps,
    execution:'unverified_live_state'};
  }
+ // MP7A: discover bounded conditional fragments in the existing graph.
+ // Reverse-search positive edges towards an already eligible named call.
+ // No hypothetical transitions, pin/finish threats or attempt alternatives.
+ // Return a compact Pareto-like shortlist by length and joint fuzzy merit.
+ const sequenceNode=n=>n&&!n.counterOf&&!n.blockOf&&!n.nearfall&&n.family!=='pin'&&
+  !['early_cover','cover','near_kickout','counter_rollup','finish_tease','finish_counter'].includes(n.id);
+ let sequenceIncoming=null;
+ function sequencePredecessors(id){
+  if(!sequenceIncoming){
+   sequenceIncoming=new Map();
+   for(const [from,n] of Object.entries(A)){
+    if(!sequenceNode(n))continue;
+    for(const [to,weight] of n.next||[]){
+     if(weight<=0||!sequenceNode(A[to]))continue;
+     if(!sequenceIncoming.has(to))sequenceIncoming.set(to,new Set());
+     sequenceIncoming.get(to).add(from);
+    }
+   }
+  }
+  return [...(sequenceIncoming.get(id)||[])].sort((a,b)=>a.localeCompare(b));
+ }
+ function sequenceCandidates(st,objective,action){
+  const F=root.OfficePlanningFuzzy,p=proposalEvidence(st,objective,action);
+  const empty=reason=>({v:1,eligible:false,reason,candidates:[],search:{tested:0,valid:0,expanded:0,truncated:false}});
+  if(!p.eligible)return empty(p.reason);
+  if(!sequenceNode(A[action]))return empty('finish_or_attempt_alternative');
+  if(!F||!st.planningEvidence)return empty('no_planning_profile');
+  const profiles={w:F.behaviour(st.planningEvidence,st,'w'),f:F.behaviour(st.planningEvidence,st,'f')};
+  if(!profiles.w||!profiles.f)return empty('no_planning_profile');
+  const search={tested:0,valid:0,expanded:0,truncated:false},candidates=[];
+  // Fixed work limits independent of input/save data. Lengths 2–4 only
+  // for discovery; the shared validator still supports authored 2–6.
+  const beam=24,maxExpanded=240,maxTested=192;
+  const zones=['standing','mat','corner','top','outside'];
+  const allowed=id=>sequenceNode(A[id])&&!banned(st,id)&&Number.isFinite(A[id].after)&&A[id].after<=Math.min(.98,p.window[1]+.08);
+  const prefilter=(from,to)=>allowed(from)&&zones.includes(A[from].zone)&&['any',A[from].zone].includes(A[to].requires);
+  const rankPath=ids=>ids.reduce((n,id)=>n+(Number.isFinite(MX.GRAPH.costOf(id))?Math.max(0,MX.GRAPH.costOf(id)):20)+(A[id].risk?4:0),0);
+  const pathKey=ids=>ids.join('|');
+  const utility=s=>s.acceptance-.5*s.reservations-.5*s.counterproposal;
+  let frontier=[[action]];
+  for(let length=2;length<=4&&frontier.length;length++){
+   const next=[];
+   // Round-robin predecessors prevents a single prolific last node
+   // consuming the whole search. Deduplicate exact chains.
+   const parents=frontier.map(ids=>({ids,pred:sequencePredecessors(ids[0]).filter(id=>!ids.includes(id)&&prefilter(id,ids[0]))}));
+   const seen=new Set();
+   for(let i=0;parents.some(row=>i<row.pred.length);i++){
+    for(const row of parents){
+     const id=row.pred[i];if(!id)continue;
+     if(search.expanded>=maxExpanded){search.truncated=true;break;}
+     search.expanded++;
+     const ids=[id,...row.ids],key=pathKey(ids);
+     if(!seen.has(key)){seen.add(key);next.push(ids);}
+    }
+    if(search.expanded>=maxExpanded)break;
+   }
+   next.sort((a,b)=>rankPath(a)-rankPath(b)||pathKey(a).localeCompare(pathKey(b)));
+   if(next.length>beam)search.truncated=true;
+   frontier=[];
+   for(const ids of next.slice(0,beam)){
+    // Control reverses only on graph reversal nodes. Work backwards
+    // from the required final performer; then validate all transitions.
+    const control=ids.reduce((s,id)=>A[id].reverse?other(s):s,p.owner);
+    const positions=A[ids[0]].requires==='any'?zones:[A[ids[0]].requires];
+    let extend=false;
+    for(const position of positions){
+     if(!zones.includes(position))continue;
+     for(const down of position==='mat'?[other(control),control]:[null]){
+      if(search.tested>=maxTested){search.truncated=true;break;}
+      const sequence={start:{control,position,down},actions:ids.slice()};
+      search.tested++;
+      const evidence=sequenceEvidence(st,objective,action,sequence);
+      if(!evidence.eligible)continue;
+      const difficulty=F.sequenceDifficulty(evidence);
+      if(!difficulty)continue;
+      const w=F.inferProposal(profiles.w,p,evidence),f=F.inferProposal(profiles.f,p,evidence);
+      if(!w||!f)continue;
+      extend=true;search.valid++;
+      const by={};
+      for(const [side,res] of [['w',w],['f',f]]){
+       const reply=F.proposalReply(res.scores,side===p.owner?'requester':'partner');
+       if(reply)by[side]={scores:res.scores,...reply};
+      }
+      if(!by.w||!by.f)continue;
+      const risks=evidence.steps.filter(s=>s.risk).length;
+      const u=utility(w.scores),v=utility(f.scores);
+      const merit=.65*(u+v)/2+.35*Math.min(u,v)-difficulty.score*.12-risks*3;
+      candidates.push({v:1,sequence,evidence,difficulty,by,merit});
+      // One canonical valid entry per path: no near-duplicates differing
+      // only in the hypothetical starting position.
+      break;
+     }
+     if(extend||search.tested>=maxTested)break;
+    }
+    // Keep invalid prefixes in the beam too: adding a preceding action
+    // can establish the state that an isolated suffix lacks.
+    frontier.push(ids);
+    if(search.tested>=maxTested)break;
+   }
+   if(search.tested>=maxTested||search.expanded>=maxExpanded)break;
+  }
+  const order=(a,b)=>b.merit-a.merit||a.difficulty.score-b.difficulty.score||pathKey(a.sequence.actions).localeCompare(pathKey(b.sequence.actions));
+  // Keep two candidates per length rather than crowding out longer
+  // alternatives with easier two-move fragments.
+  const shortlist=[2,3,4].flatMap(length=>candidates.filter(x=>x.sequence.actions.length===length).sort(order).slice(0,2)).sort(order);
+  return {v:1,eligible:true,scope:'conditional_fragment',objective,action,owner:p.owner,execution:'unverified_live_state',candidates:shortlist,search};
+ }
  function structureSeed(st,{refresh=false}={}){
   st.structureBoard??={};
   const route=st.lockRoute||st.board.finish?.route;
@@ -2486,5 +2593,5 @@
   }
   G.save();return out;
  };
- root.OfficeRoom={sequenceEvidence,proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
+ root.OfficeRoom={sequenceCandidates,sequenceEvidence,proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
 })(typeof window!=='undefined'?window:globalThis);
