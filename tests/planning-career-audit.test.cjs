@@ -37,6 +37,10 @@ assert.equal(hand.main.signed,hand.combined.signed,'handover cannot change agree
 assert.equal(hand.dependencyOnly.signed,hand.combined.signed);
 assert.ok(hand.handoverOffers>0,'real legal handover opportunities exercised');
 assert.equal(hand.changedOutcomes,0,'handover preserves booked outcomes');
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,continuation,opening,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
+const readiness=report.matchedReadiness;
+assert.ok(readiness.pairs>0&&readiness.bothSigned.pairs>0,'matched readiness planning comparison');
+assert.equal(Object.values(o.readinessBreakdown).reduce((a,b)=>a+b,0),o.firstEmptyStage.chain_ready||0,'readiness breakdown reconciles');
+assert.equal(readiness.changedOutcomes,0,'booked finishes preserved');
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedContinuation,matchedDependency,matchedHandover,matchedReadiness,continuation,opening,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedContinuation:{...matchedContinuation,comparisons:undefined},matchedDependency:{...matchedDependency,comparisons:undefined,details:undefined},matchedHandover:{...matchedHandover,comparisons:undefined},matchedReadiness:{...matchedReadiness,comparisons:undefined},continuation:{...continuation,records:undefined},opening:{...opening,records:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
