@@ -42,3 +42,25 @@ candidates. F4: bounded emotional updates. F5: optional pacing and events.
 F6: manager and audience influence. F7: paired R7 scenario comparison
 plus qualitative transcript review. Evidence, match commitments, memory,
 role and slot compatibility remain hard constraints throughout.
+
+## F2 — behavioural inference (shadow-only)
+
+Six independent 0–100 drives: aggression, respect, defensiveness,
+assertiveness, vulnerability (expressed openness/exposure, not a clinical
+state), and showmanship. Uses a zero-order Sugeno system with minimum
+conjunction and weighted singleton averaging, plus a small neutral prior
+(weight .2, singleton 50) when evidence exists. No active rule means
+unknown/null. Rules and activation traces are exposed for debugging.
+Exact 12 academy tactics provide categorical cues; unmatched established
+tactics use a weaker style cue, not a hard class. Exact reviewed delivery
+labels provide reserved/reflective cues. No fabricated numeric identity
+traits or inferred insult, crowd support, or recognition event: the four
+optional scene signals must be explicitly supplied. F2 does not connect
+them to live events yet.
+
+Rule weights and singleton values are provisional design choices.
+The roster test evaluates four emotional conditions per worker (800
+inferences) and reports ranges, distinct outputs and rule utilisation;
+these are synthetic stress conditions, not observed live frequencies.
+Existing F1 tests still check exact gameplay/resume parity. F3 will
+consume these scores only within hard-eligible dialogue candidates.
