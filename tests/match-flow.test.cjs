@@ -38,6 +38,40 @@ function drain(x,max=5000){
  }
  throw new Error('Match did not finish');
 }
+// Test the production resolve path, not a separate copy of its formula.
+// Fixed RNG values are sufficient to discriminate the probability bounds
+// without hundreds of extra stochastic matches.
+function stiffFixture(ratings,stamina,roll,choice='fire',other=ratings,otherStamina=stamina){
+ const o=options(12,'story','win_clean','mid');
+ o.w={...o.w,...ratings};o.f={...o.f,...other};
+ const m=M.create(o);m.stage='live';m.t=120;
+ m.wSt=stamina;m.fSt=otherStamina;
+ m.decision={id:'stiff',options:['protect','fire','ref'].map(id=>({id,label:id}))};
+ m.r=()=>roll;
+ const trust=m.adj.trust,bonus=m.bonus;
+ M.resolve(m,choice);
+ assert.equal(m.stiff,choice);
+ assert.equal(m.decision,null);
+ assert.equal(m.outcome,'booked');
+ if(choice==='fire'){assert.equal(m.adj.trust,trust-4);assert.equal(m.bonus,bonus+10);}
+ if(choice==='protect'){assert.equal(m.wSt,Math.max(0,stamina-8));assert.equal(m.mode.type,'slow');}
+ return m;
+}
+const safePair={safe:100,ring:100,pro:100,fatigue:0};
+const unsafePair={safe:0,ring:0,pro:0,fatigue:100};
+const averagePair={safe:50,ring:50,pro:50,fatigue:50};
+const hurt=m=>!!(m.injury||m.foeHurt);
+assert.ok(hurt(stiffFixture(safePair,100,.049)),'minimum retaliation risk remains real');
+assert.ok(!hurt(stiffFixture(safePair,100,.051)),'fresh elite pair has approximately five percent risk');
+assert.ok(hurt(stiffFixture(averagePair,50,.149)),'average pair retains intermediate risk');
+assert.ok(!hurt(stiffFixture(averagePair,50,.151)),'average pair below old fixed risk');
+assert.ok(hurt(stiffFixture(unsafePair,0,.249)),'exhausted unsafe pair retains maximum risk');
+assert.ok(!hurt(stiffFixture(unsafePair,0,.251)),'retaliation risk never exceeds old 25 percent');
+assert.ok(hurt(stiffFixture(safePair,100,.10,'fire',unsafePair,0)),'opponent attributes contribute');
+assert.ok(hurt(stiffFixture(unsafePair,0,.10,'fire',safePair,100)),'worker attributes contribute symmetrically');
+assert.ok(!hurt(stiffFixture(unsafePair,40,0,'protect')),'covering up does not roll retaliation injury');
+assert.ok(!hurt(stiffFixture(unsafePair,40,0,'ref')),'referee warning does not roll retaliation injury');
+console.log('PASS: stiff retaliation risk bounds, both wrestlers and all three decisions');
 const plans=['story','technical','brawl','spots','safe'];
 const finishes=['win_clean','win_dirty','lose_protected','lose_clean'];
 const slots=['opener','mid','feature','main'];

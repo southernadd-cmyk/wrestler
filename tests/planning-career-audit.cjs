@@ -67,6 +67,12 @@ function riskSource(source){
  return source;
 }
 function routineSource(source){
+ // Historical F.12–18 matched controls predate the new retaliation risk.
+ // Keep their cohort reproducible; production match-flow tests exercise
+ // the new calculation without a source override.
+ const stiffAnchor="if(M.r()<stiffInjuryRisk(M)){";
+ assert.equal(source.split(stiffAnchor).length,2,'unique shipped retaliation probability');
+ source=source.replace(stiffAnchor,"if(M.r()<.25){");
  source=riskSource(source);
  // Keep the established historical control at 100%; the 25% arm uses
  // the actual production factor. All other suites see the shipped engine.
