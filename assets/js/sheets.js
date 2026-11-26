@@ -835,6 +835,77 @@
    if(own<desired)for(const x of targets)x[1]*=desired/own;
    return {...focus,ids:targets.map(x=>x[0]),boosted:own<desired};
   }
+  // MP13F.8B: schedule only an already signed entry. The exact
+  // continuous gate is based on the original authored timing and duration.
+  function sequenceSchedule(M,o,seq){
+   const graph=root.OfficeMatch.GRAPH,steps=sequenceSteps(seq);
+   let elapsed=0,earliest=Math.max(0,(o.window[0]-.04)*M.len);
+   for(const step of steps){
+    earliest=Math.max(earliest,(actions[step.id].after||0)*M.len-elapsed);
+    elapsed+=graph.sequenceMoveSeconds(step.id);
+   }
+   const latest=Math.min((o.window[1]+.08)*M.len,.91*M.len-1,M.len-Math.max(45,elapsed+25));
+   return {earliest,latest,duration:elapsed,steps};
+  }
+  function sequenceTimingFocus(M,pre,negotiated=null){
+   if(M.o.sequenceTimingSchedulingVersion!==1||M.o.sequenceTimingVersion!==1||
+      M.sheet?.sequenceContinuationVersion!==1||!adaptiveSequences(M)||
+      M.structureDirector.id==='chickenshit_heel'||negotiated||
+      M.outcome!=='booked'||M.workingHurt||M.shortened||M.bigSpotRequest||M.injury||M.foeHurt||
+      M.mode==='pickup'||M.mode==='crowd'||M.len-M.t<=90)return null;
+   const graph=root.OfficeMatch.GRAPH,g=M.graph,rows=sequenceRows(M),side=pre.control;
+   if(!['w','f'].includes(side)||!g||g.physical?.area!=='ring'||
+      g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact||
+      rows.some(r=>r.status==='running'))return null;
+   const willingness=sequenceWillingness(M);if(willingness<35)return null;
+   for(const row of rows){
+    if(row.status!=='pending'||row.attempts)continue;
+    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
+    if(!o?.sequence||o.requires.some(id=>M.structureDirector.objectives.some(x=>x.id===id&&x.status==='pending')))continue;
+    const variants=[o.sequence,...(o.sequence.openings||[]).map(x=>({start:x.start,actions:[x.action,...o.sequence.actions.slice(1)]}))];
+    const viable=[],blocked=[];
+    for(const seq of variants){
+     const first=seq.actions[0];
+     if(!equalState(pre,seq.start)||!sequenceMoveAllowed(M,first,side)||!graph.isValid(M,first))continue;
+     const schedule=sequenceSchedule(M,o,seq);
+     // Do not discourage an entry that is ready now (including an alternative).
+     if(M.t>=schedule.earliest&&M.t<=schedule.latest&&openingReadiness(M,schedule.steps))return null;
+     const delay=schedule.earliest-M.t;
+     if(delay<=0||delay>60||M.t<(o.window[0]-.04)*M.len||schedule.earliest>schedule.latest||
+        actions[first].risk||actions[first].reverse||actions[first].blockOf||actions[first].counterOf)continue;
+     // Evaluate readiness at the next actual 10-second opportunity,
+     // deducting the same conservative routine energy estimate. This
+     // excludes mixed stamina/grip failures rather than masking them.
+     const futureAt=M.t+Math.ceil(delay/10)*10;
+     if(futureAt>schedule.latest)continue;
+     const debit=(futureAt-M.t)/20;
+     const future={...M,t:futureAt,wSt:M.wSt-debit,fSt:M.fSt-debit};
+     if(!openingReadiness(future,schedule.steps))continue;
+     if(schedule.steps.some(x=>[M.sheet.limits,M.sheet.note?.honour&&!M.sheet.note.waived?M.sheet.note:null].some(l=>l&&(l.banIds?.includes(x.id)||l.ban?.includes(actions[x.id].family)))||
+       actions[x.id].risk&&(M.planId==='safe'||M.sheet.spice<0||(x.performer==='w'?M.w:M.f).injury>0)))continue;
+     viable.push(schedule);blocked.push(first);
+    }
+    if(!viable.length)continue;
+    return {objective:o.id,side,position:pre.position,down:pre.down,ids:[...new Set(blocked)],
+     earliest:Math.min(...viable.map(x=>x.earliest)),latest:Math.max(...viable.map(x=>x.latest)),
+     factor:1-.45*Math.min(1,willingness/100)};
+   }
+   return null;
+  }
+  function sequenceTimingPreference(pool,focus){
+   if(!focus)return null;
+   const targets=pool.filter(([id,w])=>focus.ids.includes(id)&&w>0);
+   // Only when a normal, legal, state-preserving low-cost exchange already
+   // exists. No injected moves, forced rest, removal or defence suppression.
+   const wait=pool.filter(([id,w])=>{
+    const n=actions[id];return w>0&&!focus.ids.includes(id)&&n&&!n.risk&&!n.reverse&&!n.counterOf&&!n.blockOf&&!n.nearfall&&
+     n.zone===focus.position&&(n.down==='d'?opposite(focus.side):n.down==='a'?focus.side:null)===focus.down&&
+     root.OfficeMatch.GRAPH.costOf(id)<=1.8;
+   });
+   if(!targets.length||!wait.length)return null;
+   for(const x of targets)x[1]*=focus.factor;
+   return {...focus,ids:targets.map(x=>x[0]),waiting:wait.map(x=>x[0])};
+  }
   function sequenceContext(M,row,pre,previous,landed=null){
    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
    if(!o?.sequence||!['pending','running'].includes(row.status))return null;
@@ -1292,7 +1363,7 @@
    if(r.interruptions>0)return {label:'Interrupted sequence',tone:'missed',note:'A verified prefix was interrupted. Future sequence proposals may reflect this shared experience, not personal blame.'};
    return {label:'Incomplete sequence',tone:'',note:'Only part of the sequence was verified. No interruption-based negative evidence is inferred.'};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,dependencyFocus,dependencyPreference,sequenceOffer,openingReadiness,projectedSequenceEnergy,sequenceRecoveryFocus,sequenceRecoveryPreference,observeSequence,deliveryDebrief};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,dependencyFocus,dependencyPreference,sequenceOffer,openingReadiness,projectedSequenceEnergy,sequenceRecoveryFocus,sequenceRecoveryPreference,sequenceSchedule,sequenceTimingFocus,sequenceTimingPreference,observeSequence,deliveryDebrief};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);

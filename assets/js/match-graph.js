@@ -2269,6 +2269,7 @@ const Graph=(function makeGraph(){
   const negotiated=root.OfficeSheets?.DIRECTOR?.sequenceOffer(M,p);
   if(negotiated)selected.push([negotiated.id,negotiated.continuation?8:4]);
   const recoveryFocus=root.OfficeSheets?.DIRECTOR?.sequenceRecoveryFocus(M,p,negotiated);
+  const timingFocus=root.OfficeSheets?.DIRECTOR?.sequenceTimingFocus(M,p,negotiated);
   if(recoveryFocus)for(const id of recoveryFocus.rests)selected.push([id,1]);
   const postCoverOffers=nearfallFollowupOffers(M,p.control);
   selected.push(...postCoverOffers);
@@ -3325,6 +3326,7 @@ const Graph=(function makeGraph(){
    }
   }
   if(recoveryFocus)root.OfficeSheets.DIRECTOR.sequenceRecoveryPreference(pool,recoveryFocus);
+  if(timingFocus)root.OfficeSheets.DIRECTOR.sequenceTimingPreference(pool,timingFocus);
   return pool;
  }
  function recover(M){

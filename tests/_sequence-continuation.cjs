@@ -9,7 +9,7 @@ const eqState=(a,b)=>a&&b&&['control','position','down'].every(k=>a[k]===b[k]);
 function trace(root,key){
  const G=root.OfficeMatch.GRAPH,D=root.OfficeSheets.DIRECTOR,A=G.A;
  let tracked=null,phase=null,offer=null;
- const undo=[],attempts=new Map(),records=[],openings=new Map(),dependencyWitnesses=[],recoveryOffers=[],alternativeReadinessOffers=[];
+ const undo=[],attempts=new Map(),records=[],openings=new Map(),dependencyWitnesses=[],recoveryOffers=[],alternativeReadinessOffers=[],timingPreferences=[];
  const rows=m=>m.structureDirector?.sequences||[];
  const running=m=>rows(m).filter(r=>r.status==='running'&&r.progress>0);
  const id=r=>r.objective+'|'+r.attempts;
@@ -164,6 +164,11 @@ function trace(root,key){
   }
   return result;
  });
+ wrap(D,'sequenceTimingPreference',function(original,args){
+  const result=original.apply(this,args);
+  if(tracked&&phase==='step'&&result)timingPreferences.push({key,at:tracked.t,...copy(result)});
+  return result;
+ });
  wrap(D,'observe',function(original,args){
   const [m,e]=args;
   if(m!==tracked)return original.apply(this,args);
@@ -265,7 +270,11 @@ function trace(root,key){
    opportunity.credited=witness?.opening||null;
    opportunity.completed=!!witness&&['completed','adapted'].includes(witness.terminal.kind);
   }
-  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers,alternativeReadinessOffers};
+  for(const preference of timingPreferences){
+   const witness=records.find(v=>v.objective===preference.objective&&v.openedAt>=preference.earliest&&v.openedAt>=preference.at);
+   preference.laterOpened=!!witness;preference.laterCompleted=!!witness&&['completed','adapted'].includes(witness.terminal.kind);
+  }
+  return {records,openings:[...openings.values()],dependencyWitnesses,recoveryOffers,alternativeReadinessOffers,timingPreferences};
  },restore(){for(const fn of undo.reverse())fn();tracked=null;}};
 }
 function summarise(records){

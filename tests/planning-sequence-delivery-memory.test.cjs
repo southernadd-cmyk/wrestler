@@ -484,5 +484,31 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  T.t+=10;
  assert.equal(dir.openingReadiness(T,tm.primarySteps),true,'elapsed time alone clears primary');
  assert.equal(dir.sequenceOffer(T,T.story)?.id,tm.primary,'primary preference restored');
+ // MP13F.8B: use this same independently proven real timing fixture.
+ const timing=T,seq=timing.sheet.structurePlan.objectives[0].sequence,obj=timing.sheet.structurePlan.objectives[0];
+ const primarySchedule=dir.sequenceSchedule(timing,obj,seq);
+ const altSchedule=dir.sequenceSchedule(timing,obj,{start:seq.openings[0].start,actions:[seq.openings[0].action,...seq.actions.slice(1)]});
+ assert.ok(primarySchedule.earliest>altSchedule.earliest,'distinct actual move durations');
+ timing.t=Math.ceil(altSchedule.earliest)-20;
+ timing.wSt=100;timing.fSt=100;timing.comply=85;timing.sheet.workerConsent=85;timing.sheet.opponentConsent=85;
+ assert.equal(dir.sequenceTimingFocus(timing,timing.story),null,'legacy opt-out');
+ timing.o.sequenceTimingSchedulingVersion=1;
+ const snapshot=JSON.stringify(timing),random=timing.r.getState(),focus=dir.sequenceTimingFocus(timing,timing.story);
+ assert.ok(focus&&focus.ids.includes(tm.primary)&&focus.ids.includes(tm.alternative),'both premature signed variants');
+ assert.equal(JSON.stringify(timing),snapshot);assert.equal(timing.r.getState(),random);
+ const waiting=[['lockup',10],[tm.primary,8],[tm.alternative,4],['counter_strike',2]];
+ const adjusted=dir.sequenceTimingPreference(waiting,focus);
+ assert.ok(adjusted&&waiting[1][1]<8&&waiting[1][1]>=8*.55&&waiting[2][1]>0);
+ assert.equal(waiting[0][1],10);assert.equal(waiting[3][1],2);
+ assert.equal(dir.sequenceTimingPreference([[tm.primary,8]],focus),null,'no alternative legal exchange');
+ assert.equal(dir.sequenceTimingFocus(timing,timing.story,{id:'lockup'}),null,'ready sequence takes precedence');
+ timing.mode='pickup';assert.equal(dir.sequenceTimingFocus(timing,timing.story),null);timing.mode=null;
+ const checkpoint=E.restore(copy({...timing,rState:timing.r.getState()}));
+ eq(dir.sequenceTimingFocus(checkpoint,checkpoint.story),focus);
+ timing.wSt=1;assert.equal(dir.sequenceTimingFocus(timing,timing.story),null,'not a stamina intervention');timing.wSt=100;
+ timing.t=Math.ceil(altSchedule.earliest);assert.equal(dir.sequenceTimingFocus(timing,timing.story),null,'ready signed alternative stops scheduling');
+ assert.equal(dir.sequenceOffer(timing,timing.story)?.id,tm.alternative);
+ timing.t=Math.ceil(primarySchedule.earliest);assert.equal(dir.sequenceOffer(timing,timing.story)?.id,tm.primary);
+ console.log('PASS MP13F.8B signed timing bounds, bounded waiting preference, ready alternative, manager guards, legacy, purity and resume.');
  console.log('PASS MP13F.8A timing: '+tm.primary+' / '+tm.alternative+' -> '+tm.suffix.join(' -> ')+'; independent readiness and primary preference; search '+JSON.stringify(diagnostics.timing));
 }
