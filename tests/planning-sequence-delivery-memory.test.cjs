@@ -217,3 +217,26 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  for(const alt of Lab.alternatives(root,lab.room))assert.ok(R.proposalEvidence(lab.room,alt.objective,alt.action).eligible);
  const tape=Lab.replay(root,labCfg);assert.ok(tape.sheet.signed);eq(tape,Lab.replay(root,labCfg,tape.steps.slice(1).map(x=>x.id)));
  console.log('PASS MP12 Lab: kernel parity, isolated editable curves, legal proposals and seeded negotiation replay.');
+
+ // MP12 finish: the preview is deterministic, covers all authored recruits,
+ // and cannot replace a live career's registry or write into its save.
+ const isolated=engine(12347).root;
+ const preview=isolated.OfficeAcademy.preview(47);
+ assert.equal(preview.length,120);assert.equal(new Set(preview.map(x=>x.id)).size,120);
+ eq(preview,isolated.OfficeAcademy.preview(47));assert.notEqual(JSON.stringify(preview),JSON.stringify(isolated.OfficeAcademy.preview(48)));
+ assert.equal(isolated.OfficeData.ALL.length,80);assert.equal(isolated.OfficeGame.S,null);
+ const cohorts=Lab.loadAcademy(isolated);assert.equal(cohorts.established,80);assert.equal(cohorts.academy,120);
+ assert.equal(isolated.OfficeGame.S,null);assert.equal(isolated.OfficeData.ALL.length,200);
+ const rookie=isolated.OfficeData.ALL.find(x=>x.id.startsWith('academy-'));
+ const partner=isolated.OfficeData.ALL.find(x=>x.id!==rookie.id&&isolated.OfficeData.divisionOf(x.id)===isolated.OfficeData.divisionOf(rookie.id));
+ const rookieRoom=Lab.setup(isolated,{...labCfg,w:rookie.id,f:partner.id});
+ assert.equal(rookieRoom.profile('w').observation.actorId,rookie.id);
+ const distribution=Lab.distribution(isolated,labCfg,isolated.OfficePlanningFuzzy.behaviourModel);
+ assert.equal(distribution.count,200);assert.equal(distribution.groups.established.count,80);assert.equal(distribution.groups.academy.count,120);
+ for(const group of Object.values(distribution.groups))for(const v of Object.values(group.outputs))assert.equal(v.bins.reduce((sum,n)=>sum+n,0),group.count);
+ assert.equal(isolated.OfficeGame.S,null);
+ assert.throws(()=>Lab.loadAcademy(root),/isolated Lab/);
+ const note=memory.professionalSummary(prof);assert.match(note,/adapted sequences delivered/);assert.ok(!note.includes('/100'));
+ assert.equal(memory.professionalSummary(null),null);
+ assert.match(memory.professionalSummary(memory.professionalContext(G.S,w.id,f.id)),/agreed finish was broken/);
+ console.log('PASS MP12: isolated 200-identity cohort distribution, deterministic production rookie previews, and factual player-facing professional memory.');
