@@ -492,5 +492,39 @@
   const target=cautious?2:Math.min(4,Math.max(2,2+2*(result.scores.complexity/100)));
   return {v:1,values,scores:result.scores,target,cautious};
  }
- root.OfficePlanningFuzzy=Object.freeze({sequencePreference,sequencePreferenceModel,version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty,proposalReply,huddleProposal,readHuddleProposal});
+ // MP13C: feasibility is separate from willingness and permission.
+ // Scores are editorial priors, not calibrated probabilities.
+ const sequenceFeasibilityModel=createModel({curves:{
+  entryAccess:[25,55,85],runway:[20,50,80],physicalReadiness:[25,55,85]
+ },outputs:['feasibility'],rules:[
+  ...family('feasibility','entryAccess',[10,55,95],4),
+  ...family('feasibility','runway',[10,55,95],3),
+  ...family('feasibility','physicalReadiness',[10,55,95],3)
+ ]});
+ function sequenceFeasibility(room,objective,evidence){
+  const graph=root.OfficeMatch?.GRAPH,steps=evidence?.steps;
+  if(!graph||!objective||!steps?.length)return null;
+  const seconds=Math.max(5,room.minutes+(room.fx?.minutes||0))*60;
+  const duration=steps.reduce((n,x)=>n+graph.sequenceMoveSeconds(x.action),0);
+  const end=Math.min(objective.window[1]+.08,.91,1-Math.max(45,duration+25)/seconds);
+  const start=Math.max(0,objective.window[0]-.04,...steps.map(x=>graph.A[x.action].after||0));
+  const prior=room.structure?.objectives?.find(x=>objective.requires.includes(x.id));
+  // The midpoint is a conservative scheduling estimate, not an assertion
+  // that the earlier objective will be delivered by then.
+  const expectedStart=Math.max(start,prior?(prior.window[0]+prior.window[1])/2:0);
+  const slack=Math.max(0,(end-expectedStart)*seconds);
+  const first=steps[0],position=evidence.start.position;
+  let physicalReadiness=95;
+  if(graph.PHYSICAL_GRIP_MOVES[first.action])physicalReadiness-=60;
+  for(let i=1;i<steps.length;i++){
+   const need=graph.PHYSICAL_GRIP_MOVES[steps[i].action];
+   if(need&&(graph.GRIP_ENTRY[steps[i-1].action]!==need||steps[i-1].performer!==steps[i].performer))physicalReadiness-=28;
+  }
+  if(position==='top'||position==='outside')physicalReadiness-=18;
+  const values={entryAccess:({standing:95,mat:48,corner:24,top:12,outside:12})[position]??10,
+   runway:Math.min(100,slack/Math.max(1,duration)*32),physicalReadiness:Math.max(0,physicalReadiness)};
+  const scores=sequenceFeasibilityModel.evaluate(values,{}).scores;
+  return {v:1,values,scores,duration,slack,possible:end>=start};
+ }
+ root.OfficePlanningFuzzy=Object.freeze({sequenceFeasibility,sequenceFeasibilityModel,sequencePreference,sequencePreferenceModel,version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty,proposalReply,huddleProposal,readHuddleProposal});
 })(typeof window!=='undefined'?window:globalThis);

@@ -3586,7 +3586,9 @@ const Graph=(function makeGraph(){
    return {nodes:Object.keys(A).length,arcs:Object.keys(ARCS).length,outcomes:Object.keys(OUTCOMES).length,edges:Object.values(A).reduce((n,a)=>n+a.next.length,0),
     families:Object.keys(CAT.F).length,moves:CAT.counts.moves,reversals:CAT.counts.reversals,blocks:CAT.counts.blocks,errors};
  }
- return {A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,costOf,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,earnedNearfallSource,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,DIVE_PILOT,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
+ // Conservative duration of one successful authored move on the live clock.
+ function sequenceMoveSeconds(id){return isAerialParent(id)||isGrappleParent(id)?20:10;}
+ return {sequenceMoveSeconds,A,ARCS,OUTCOMES,OUTCOME_EDGES,PATTERNS,costOf,CATALOG:CAT,SCRIPTED_SPOT_IDS,canScriptedSpot,prepareScriptedSpot,TECHNIQUE_PILOT,TECHNIQUE_EXPANSION,TECHNIQUE_TRANCHE2,TECHNIQUE_DEPTH,TECHNIQUE_CHAINS,TECHNIQUE_AUDIT24_LINKS,PHASE9_NEW_EDGES:Object.freeze([...introducedPhase9].sort()),PART_OF,ARC_FAMILIES,STYLE_BEATS,fighter,pool:validPool,get,init,advance,step,nearfall,earnedNearfallSource,special,finishCue,validate,apply,selectArc,scout,isValid,startAerial,resolveAerial,abortAerial,DIVE_PILOT,GRAPPLE_PILOT,startGrapple,resolveGrapple,abortGrapple,
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,

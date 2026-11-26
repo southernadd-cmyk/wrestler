@@ -12,6 +12,7 @@ if(process.env.MP13_AUDIT_JSON)fs.writeFileSync(process.env.MP13_AUDIT_JSON,JSON
 assert.ok(report.overall.spokenLines>0,'measure real wrestler dialogue');
 assert.ok(report.overall.sequenceOffers>0&&report.overall.sequenceHeard>0&&report.overall.sequenceSelected>0&&report.overall.sequences>0,'exercise available sequence choices, not just single calls');
 assert.ok(report.matchedTraditional.pairs>0,'real traditional comparison');
-const {rows,matchedLive,matchedTraditional,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined}}));
+assert.ok(report.matchedFeasibility.pairs>0&&report.matchedFeasibility.bothSigned>0,'matched planning policy comparison');
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
