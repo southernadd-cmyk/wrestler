@@ -24,7 +24,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -37,7 +37,8 @@ function run(seeds=[3,10],weeks=32){
    const structures=S.STRUCTURES.catalogue(),choice={id:pick(structures,i+seed).id,lead:i%2?'f':'w'};
    const approach=pick(['story','technical','safe','brawl','spots'],i+seed);
    const banks=promoBanks(root.OfficePromoIdentity.bankId(w),root.OfficePromoIdentity.bankId(f));
-   let st=R.begin(c,w,f,G.P(c.pid),{structure:choice,structurePlanning:true,planningCareer:G.S,planningInitiative:true,planningProposal:true,planningDialogue:true,planningBanks:banks,planningBargaining:true,planningSequences:true,planningSequencePolicy:2,planningSequenceSigning:true,
+   function planRoom(policy,resume){
+   let st=R.begin(c,w,f,G.P(c.pid),{structure:choice,structurePlanning:true,planningCareer:G.S,planningInitiative:true,planningProposal:true,planningDialogue:true,planningBanks:banks,planningBargaining:true,planningSequences:true,planningSequencePolicy:policy,planningSequenceSigning:true,
     recent:G.S.roomRecent||[],threads:R.liveThreads(G.S.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)});
    assert.ok(st.planningEvidence&&st.planningDialogue&&st.planningSequenceSigning,key+' full planning policy active');
    const prior=st.planningEvidence.participants.w.relationship.professional;
@@ -62,7 +63,7 @@ function run(seeds=[3,10],weeks=32){
     else if(st.queue[st.at]==='structure_objection')option=take('replace')||take('open')||options[0];
     else option=pick(options,i+n+seed);
     assert.ok(option,key+' chosen room option');actions.push(option.id);
-    if(!roomResume&&i%5===0&&st.stage==='scene'){
+    if(resume&&!roomResume&&i%5===0&&st.stage==='scene'){
      const restored=copy(st);eq(R.options(restored),options,key+' resumed choices');
      for(const side of ['w','f'])eq(F.behaviour(restored.planningEvidence,restored,side),F.behaviour(st.planningEvidence,st,side),key+' resumed inference');
      R.act(st,option.id);R.act(restored,option.id);eq(st,restored,key+' resumed negotiation');st=restored;roomResume=1;
@@ -71,6 +72,10 @@ function run(seeds=[3,10],weeks=32){
    assert.equal(st.stage,'done',key+' room terminated');assert.ok(st.sheet.signed);
    assert.ok(S.STRUCTURES.executionChoice(st.sheet,choice));
    assert.ok(range(st.sheet.workerConsent)&&range(st.sheet.opponentConsent));
+   return {st,prior,actions,roomResume,sequenceOffer};
+   }
+   const {st,prior,actions,roomResume,sequenceOffer}=planRoom(3,true);
+   const controlRoom=i%3!==0?planRoom(2,false):null;
    G.S.roomRecent=[...(G.S.roomRecent||[]),...st.queue].slice(-6);
    let promo=null,promoResume=0;
    const arcChoices=root.OfficeProgrammeArcs?.options(c)?.choices||[];
@@ -98,9 +103,9 @@ function run(seeds=[3,10],weeks=32){
    const preparation={...w.prep},focus=D.TRAINING[w.training]?.stat;
    if(focus&&!w.injury)preparation[focus]=(preparation[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);
    const trainingFatigue=['rest','promo'].includes(w.training)?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
-   const options={w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p:G.P(c.pid),slot:c.slot,minutes:sheet.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo,plan:{game:sheet.game,leash:sheet.leash,talk:sheet.talk},preparation,flags:{...w.flags,...sheet.flags},memory:Mem.context(w.id,f.id),sheet,structureExecution:true,identity:G.normaliseIdentity(G.S.identity),seed:Math.floor(random()*2**31)||1};
+   const options={w:{...w,fatigue:G.clamp(w.fatigue+trainingFatigue)},f,p:G.P(c.pid),slot:c.slot,minutes:sheet.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo,plan:{game:sheet.game,leash:sheet.leash,talk:sheet.talk},preparation,flags:{...w.flags,...sheet.flags},memory:Mem.context(w.id,f.id),sheet,structureExecution:true,sequenceTimingVersion:1,identity:G.normaliseIdentity(G.S.identity),seed:Math.floor(random()*2**31)||1};
    const immutable=copy(sheet.structurePlan),callIds=Object.keys(E.CALLS).filter(x=>!['home'].includes(x));
-   function drive(active,resume,settings=options){
+   function drive(active,resume,settings=options,expectedPlan=immutable){
     let M=E.create({...copy(settings),livePsychologyVersion:active?1:undefined}),matchResume=0,liveScores=[],calls=0;
     for(let n=0;n<10000&&!M.done;n++){
      if(M.decision&&!M.queue.length){const opts=M.decision.options;E.resolve(M,pick(opts,i+seed+calls).id);}
@@ -119,7 +124,7 @@ function run(seeds=[3,10],weeks=32){
      }else E.next(M);
     }
     assert.ok(M.done&&M.final,key+' completed real bout');
-    if(settings.structureExecution)eq(M.o.sheet.structurePlan,immutable,key+' original agreement unchanged');
+    if(settings.structureExecution)eq(M.o.sheet.structurePlan,expectedPlan,key+' original agreement unchanged');
     assert.equal(M.o.finish,c.finish,key+' booked finish unchanged');
     if(settings.structureExecution)assert.equal(M.final.structure.id,choice.id);else assert.equal(M.final.structure,undefined);
     assert.ok(range(M.final.stars,0,5)&&range(M.final.crowd));
@@ -146,6 +151,15 @@ function run(seeds=[3,10],weeks=32){
     traditional.push({key,structure:choice.id,approach,structuredStars:fin.stars,traditionalStars:baseline.stars,starDelta:fin.stars-baseline.stars,crowdDelta:fin.crowd-baseline.crowd,outcome:[baseline.outcome,fin.outcome]});
    }
    const sequences=report.sequences||[],receipts=sequences.map(s=>s.receipt).filter(Boolean);
+   if(controlRoom){
+    const old=R.addVow(controlRoom.st.sheet,promo,w,f,c.finish);
+    const baseline=drive(true,false,{...options,sheet:old,minutes:old.minutes,plan:{game:old.game,leash:old.leash,talk:old.talk},flags:{...w.flags,...old.flags},sequenceTimingVersion:undefined},copy(old.structurePlan)).fin;
+    const count=(fin,layout)=>{
+     const seq=fin.structure.sequences||[],receipts=seq.map(x=>x.receipt).filter(Boolean);
+     return {signed:seq.length,completed:receipts.filter(x=>['completed','adapted'].includes(x.status)).length,noOpening:receipts.filter(x=>x.status==='missed'&&!x.attempts).length,stars:fin.stars,crowd:fin.crowd,injury:Number(!!fin.injury),outcome:fin.outcome,entries:layout.objectives.filter(x=>x.sequence).map(x=>x.sequence.start.position)};
+    };
+    feasibilityPairs.push({key,structure:choice.id,before:count(baseline,old.structurePlan),after:count(fin,sheet.structurePlan)});
+   }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
     for(const e of r.witnessed)assert.ok(M.graph.events.some(ev=>ev.id===e.id&&ev.t===e.at),key+' actual graph receipt');
@@ -180,7 +194,12 @@ function run(seeds=[3,10],weeks=32){
  }
  const groups=key=>Object.fromEntries([...new Set(rows.map(r=>r[key]))].map(k=>[k,summarise(rows.filter(r=>r[key]===k))]));
  return {schema:'office-mp13-career-audit-v1',seeds,weeks,careers,overall:summarise(rows),byStructure:groups('structure'),byApproach:groups('approach'),byCohort:groups('academy'),
-  matchedLive:{pairs:comparisons.length,meanStarDelta:avg(comparisons.map(x=>x.starDelta)),meanCrowdDelta:avg(comparisons.map(x=>x.crowdDelta)),meanIgnoredDelta:avg(comparisons.map(x=>x.ignoredDelta)),changedOutcomes:comparisons.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons},matchedTraditional:{pairs:traditional.length,meanStructuredStars:avg(traditional.map(x=>x.structuredStars)),meanTraditionalStars:avg(traditional.map(x=>x.traditionalStars)),meanStarDelta:avg(traditional.map(x=>x.starDelta)),meanCrowdDelta:avg(traditional.map(x=>x.crowdDelta)),changedOutcomes:traditional.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons:traditional},rows};
+  matchedLive:{pairs:comparisons.length,meanStarDelta:avg(comparisons.map(x=>x.starDelta)),meanCrowdDelta:avg(comparisons.map(x=>x.crowdDelta)),meanIgnoredDelta:avg(comparisons.map(x=>x.ignoredDelta)),changedOutcomes:comparisons.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons},matchedTraditional:{pairs:traditional.length,meanStructuredStars:avg(traditional.map(x=>x.structuredStars)),meanTraditionalStars:avg(traditional.map(x=>x.traditionalStars)),meanStarDelta:avg(traditional.map(x=>x.starDelta)),meanCrowdDelta:avg(traditional.map(x=>x.crowdDelta)),changedOutcomes:traditional.filter(x=>x.outcome[0]!==x.outcome[1]).length,comparisons:traditional},matchedFeasibility:(()=>{
+   const summarize=side=>{const xs=feasibilityPairs.map(x=>x[side]),entries={};for(const x of xs)for(const e of x.entries)inc(entries,e);
+    return {signed:xs.reduce((n,x)=>n+x.signed,0),completed:xs.reduce((n,x)=>n+x.completed,0),noOpening:xs.reduce((n,x)=>n+x.noOpening,0),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd)),injuries:xs.reduce((n,x)=>n+x.injury,0),entries};};
+   const both=feasibilityPairs.filter(x=>x.before.signed&&x.after.signed);
+   return {pairs:feasibilityPairs.length,before:summarize('before'),after:summarize('after'),bothSigned:both.length,bothCompletedBefore:both.reduce((n,x)=>n+x.before.completed,0),bothCompletedAfter:both.reduce((n,x)=>n+x.after.completed,0),changedOutcomes:feasibilityPairs.filter(x=>x.before.outcome!==x.after.outcome).length,comparisons:feasibilityPairs};
+  })(),rows};
 }
 module.exports={run};
 if(require.main===module){const seeds=(process.argv[2]||'3,10,24,41').split(',').map(Number),weeks=Number(process.argv[3]||48);console.log(JSON.stringify(run(seeds,weeks),null,2));}
