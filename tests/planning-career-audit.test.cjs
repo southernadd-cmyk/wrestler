@@ -14,6 +14,7 @@ assert.ok(report.overall.sequenceOffers>0&&report.overall.sequenceHeard>0&&repor
 assert.ok(report.matchedTraditional.pairs>0,'real traditional comparison');
 assert.ok(report.matchedFeasibility.pairs>0&&report.matchedFeasibility.bothSigned>0,'matched planning policy comparison');
 assert.ok(report.matchedAdaptive.pairs>0&&report.matchedAdaptive.after.withAlternatives>0,'actual agreed alternate entry coverage');
-const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,...summary}=report;
-console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined}}));
+assert.ok(report.matchedHandoff.pairs>0,'same signed layout, same seed handoff comparison');
+const {rows,matchedLive,matchedTraditional,matchedFeasibility,matchedAdaptive,matchedHandoff,...summary}=report;
+console.log('MP13 CAREER AUDIT '+JSON.stringify({...summary,matchedLive:{...matchedLive,comparisons:undefined},matchedTraditional:{...matchedTraditional,comparisons:undefined},matchedFeasibility:{...matchedFeasibility,comparisons:undefined},matchedAdaptive:{...matchedAdaptive,comparisons:undefined},matchedHandoff:{...matchedHandoff,comparisons:undefined}}));
 console.log('PASS MP13 real booked matches, multi-season career invariants, deterministic stage resumes and same-seed live psychology comparisons.');
