@@ -136,3 +136,47 @@ const legacy=plain(paired);delete legacy.participants.w.tier;delete legacy.parti
 assert.equal(P.behaviour(legacy,room,'w').cues['pair.veteranDeveloping'],undefined);
 eq(mentor,P.behaviour(plain(paired),plain(room),'w'));
 console.log('PASS MP2A/B/C: '+M.rules.length+' rules, '+samples+' monotonic samples, 202 previous-output parity cases, mentorship pairing, prior adaptation and replay parity.');
+
+// MP3C: exact pre-calibration model, test-only reconstruction from the
+// frozen MP2C rule values. No second live policy or alternative kernel.
+const priorFamilies={protectiveness_ego:2,protectiveness_ringPsychology:1,
+ mentorship_professionalism:2,mentorship_ringPsychology:2,mentorship_safetyAbility:1,
+ improvisation_fatigue:1};
+const priorSpecial={protectiveness_booked_loss:[80,1],protectiveness_prior_humiliation:[90,2],
+ mentorship_career_goal:[95,3],mentorship_veteran_developing_partner:[85,1.5],
+ improvisation_prior_adaptation:[85,1]};
+const oldModel=P.createModel({outputs:M.outputs,rules:M.rules.map(r=>{
+ const special=priorSpecial[r.id];
+ if(special)return {...r,value:special[0],weight:special[1]};
+ const family=r.id.replace(/_(low|medium|high)$/,'');
+ return Object.hasOwn(priorFamilies,family)?{...r,weight:priorFamilies[family]}:r;
+})});
+const unchanged=['cooperation','assertiveness','caution','ambition','flexibility'];
+const allCues={'booking.actorLoses':1,'history.ownHumiliation':1,'goal.mentor':1,
+ 'pair.veteranDeveloping':1,'history.requestedAdaptation':1,'condition.injured':1};
+for(let i=0;i<=100;i++){
+ const v={...base,ego:i,professionalism:i,ringPsychology:100-i,ringAbility:i,safetyAbility:100-i,fatigue:i};
+ for(const cues of [{},allCues]){
+  const old=oldModel.evaluate(v,cues),next=M.evaluate(v,cues);
+  for(const out of unchanged){assert.equal(old.scores[out],next.scores[out]);eq(old.fired[out],next.fired[out]);}
+ }
+ const fresh={...v,fatigue:0},tired={...v,fatigue:90};
+ const delta=M.evaluate(fresh).scores.improvisation-M.evaluate(tired).scores.improvisation;
+ assert.ok(delta>=15,'fatigue response too weak');
+ assert.ok(delta>oldModel.evaluate(fresh).scores.improvisation-oldModel.evaluate(tired).scores.improvisation);
+ const ordinary=M.evaluate(v).scores;
+ for(const [cue,out] of [['booking.actorLoses','protectiveness'],['history.ownHumiliation','protectiveness'],['goal.mentor','mentorship'],['history.requestedAdaptation','improvisation']]){
+  const s=M.evaluate(v,{[cue]:1}).scores;
+  assert.ok(s[out]>ordinary[out],cue+' should never lower its intended tendency');
+  for(const o of M.outputs.filter(o=>o!==out))assert.equal(s[o],ordinary[o],cue+' changed unrelated output '+o);
+ }
+}
+const expert={...base,ego:100,professionalism:100,ringPsychology:100,ringAbility:100,safetyAbility:100,fatigue:0};
+assert.ok(M.evaluate(expert,{'history.requestedAdaptation':1}).scores.improvisation>M.evaluate(expert).scores.improvisation);
+assert.ok(M.evaluate(expert,{'booking.actorLoses':1}).scores.protectiveness>M.evaluate(expert).scores.protectiveness);
+const sensitive={...base,ego:20,professionalism:90,ringPsychology:50,safetyAbility:85};
+const boost=(model,cue,out)=>model.evaluate(sensitive,{[cue]:1}).scores[out]-model.evaluate(sensitive).scores[out];
+assert.ok(boost(M,'booking.actorLoses','protectiveness')>boost(oldModel,'booking.actorLoses','protectiveness'));
+assert.ok(boost(M,'goal.mentor','mentorship')>boost(oldModel,'goal.mentor','mentorship'));
+assert.ok(boost(M,'pair.veteranDeveloping','mentorship')>boost(oldModel,'pair.veteranDeveloping','mentorship'));
+console.log('PASS MP3C: 202 exact unchanged-output comparisons; 101 fatigue and contextual direction fixtures; expert ceiling regression.');
