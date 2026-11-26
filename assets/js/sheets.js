@@ -745,6 +745,80 @@
    }
    return true;
   }
+  // MP13F.7B: anticipate an actual signed payoff's energy demand. This
+  // is a preference for physical recovery actions, not a new permission,
+  // schedule, control change, or a promise to land the setup.
+  function sequenceRecoveryFocus(M,pre,negotiated=null){
+   if(M.o.sequenceRecoveryPacingVersion!==1||M.sheet?.sequenceContinuationVersion!==1||
+      !adaptiveSequences(M)||M.structureDirector.id==='chickenshit_heel'||negotiated||
+      M.outcome!=='booked'||M.workingHurt||M.shortened||M.bigSpotRequest||M.injury||M.foeHurt||
+      M.mode==='pickup'||M.mode==='crowd'||M.len-M.t<=90)return null;
+   const g=M.graph,side=pre.control,rows=sequenceRows(M),graph=root.OfficeMatch.GRAPH;
+   if(!['w','f'].includes(side)||!g||g.physical?.area!=='ring'||
+      g.pendingAerial||g.pendingGrapple||g.pendingStrike||g.pendingContact||
+      rows.some(r=>r.status==='running'))return null;
+   const restAction=id=>id==='catch_breath'||actions[id]?.family==='rest'&&graph.costOf(id)<0;
+   // Cooldown counts actual landed recovery, including organic rests.
+   if(g.events.some(e=>e.preControl===side&&e.control===side&&M.t>=e.t&&M.t-e.t<40&&restAction(e.id)))return null;
+   const willingness=sequenceWillingness(M);
+   if(willingness<35)return null;
+   const rests=(pre.position==='standing'&&pre.down===null?['catch_breath']:
+    pre.position==='mat'&&pre.down===opposite(side)?['rs_side_headlock','rs_front_chancery']:[])
+    .filter(id=>actions[id]&&graph.costOf(id)<0&&sequenceMoveAllowed(M,id,side));
+   if(!rests.length)return null;
+   const now=current(M)?.objective;
+   for(const row of rows){
+    if(row.status!=='pending'||row.attempts)continue;
+    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
+    if(!o?.sequence)continue;
+    const pending=o.requires.filter(id=>M.structureDirector.objectives.some(x=>x.id===id&&x.status==='pending'));
+    if(pending.some(id=>id!==now?.id))continue;
+    const variants=[o.sequence,...(o.sequence.openings||[]).map(x=>({start:x.start,actions:[x.action,...o.sequence.actions.slice(1)]}))];
+    const needs=[];
+    for(const seq of variants){
+     const steps=sequenceSteps(seq);
+     if(!root.OfficePlanningFuzzy.continuationGrip(steps.map(x=>({...x,action:x.id}))).possible)continue;
+     const signedLimits=[M.sheet.limits,M.sheet.note?.honour&&!M.sheet.note.waived?M.sheet.note:null];
+     if(steps.some(x=>signedLimits.some(l=>l&&(l.banIds?.includes(x.id)||l.ban?.includes(actions[x.id].family)))||
+        actions[x.id].risk&&(M.planId==='safe'||M.sheet.spice<0||(x.performer==='w'?M.w:M.f).injury>0)))continue;
+     let elapsed=0,earliest=Math.max(M.t,(o.window[0]-.04)*M.len);
+     for(const x of steps){earliest=Math.max(earliest,(actions[x.id].after||0)*M.len-elapsed);elapsed+=graph.sequenceMoveSeconds(x.id);}
+     earliest=Math.ceil(earliest/10)*10;
+     const latest=Math.min((o.window[1]+.08)*M.len,.91*M.len-1,M.len-Math.max(45,elapsed+25));
+     if(earliest>M.t+120||Math.max(earliest,M.t+20)>latest)continue;
+     const lead=(earliest-M.t)/10*.5,energy={w:M.wSt-lead,f:M.fSt-lead},deficits={w:0,f:0};
+     for(const x of steps){
+      const cost=graph.costOf(x.id),actor=x.entry.control;
+      if(cost>=2.2)deficits[actor]=Math.max(deficits[actor],16+cost*3.2+4-energy[actor]);
+      projectedSequenceEnergy(M,energy,x,cost);
+      const ticks=graph.sequenceMoveSeconds(x.id)/10;
+      energy.w-=ticks*.5;energy.f-=ticks*.5;
+     }
+     needs.push({deficits,earliest,latest,total:deficits.w+deficits.f});
+    }
+    // If a signed alternative needs less energy, do not prepare for a
+    // more expensive chain unnecessarily. No entry preference is changed.
+    needs.sort((a,b)=>a.total-b.total||a.earliest-b.earliest);
+    const target=needs[0];
+    if(!target||target.deficits[side]<3)continue;
+    const deficit=target.deficits[side],follow=Math.max(0,Math.min(1,willingness/100));
+    return {objective:o.id,side,rests,deficit,earliest:target.earliest,latest:target.latest,
+     ratio:.25+.35*Math.min(1,deficit/18)*follow};
+   }
+   return null;
+  }
+  // Called only on the final validated pool. Reserve a modest combined
+  // share for recovery; never force a selection or lower other weights.
+  function sequenceRecoveryPreference(pool,focus){
+   if(!focus)return null;
+   const targets=pool.filter(([id,w])=>focus.rests.includes(id)&&w>0);
+   if(!targets.length)return null;
+   const own=targets.reduce((n,x)=>n+x[1],0);
+   const other=pool.reduce((n,x)=>n+(targets.includes(x)?0:x[1]),0);
+   const desired=other*focus.ratio;
+   if(own<desired)for(const x of targets)x[1]*=desired/own;
+   return {...focus,ids:targets.map(x=>x[0]),boosted:own<desired};
+  }
   function sequenceContext(M,row,pre,previous,landed=null){
    const o=M.sheet.structurePlan.objectives.find(x=>x.id===row.objective);
    if(!o?.sequence||!['pending','running'].includes(row.status))return null;
@@ -1185,7 +1259,7 @@
    if(r.interruptions>0)return {label:'Interrupted sequence',tone:'missed',note:'A verified prefix was interrupted. Future sequence proposals may reflect this shared experience, not personal blame.'};
    return {label:'Incomplete sequence',tone:'',note:'Only part of the sequence was verified. No interruption-based negative evidence is inferred.'};
   }
-  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,dependencyFocus,dependencyPreference,sequenceOffer,openingReadiness,projectedSequenceEnergy,observeSequence,deliveryDebrief};
+  return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,dependencyFocus,dependencyPreference,sequenceOffer,openingReadiness,projectedSequenceEnergy,sequenceRecoveryFocus,sequenceRecoveryPreference,observeSequence,deliveryDebrief};
  })();
  root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);

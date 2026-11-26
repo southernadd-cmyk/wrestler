@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],recoveryPairs=[],reviewRepairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],pacingPairs=[],pacingOffers=[],reviewRepairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -250,9 +250,10 @@ function run(seeds=[3,10],weeks=32){
     dependencyPairs.push({key,structure:choice.id,before:count(base),after:count(fin)});
     const dependencyOnly=drive(true,i%5===0,{...options,sequenceHandoverVersion:undefined},immutable).fin;
     handoverPairs.push({key,structure:choice.id,main:count(base),dependencyOnly:count(dependencyOnly),combined:count(fin)});
-    // Same signed sheet, same live policies, same seed: only projected
-    // recovery differs. Readiness attribution remains based on actual ticks.
-    const legacy=drive(true,i%5===0,{...options,sequenceRecoveryProjectionVersion:undefined},immutable,'comparison');
+    // Keep the settled career and all historical controls on main's
+    // policy. A separate replay changes ONLY the proactive pacing flag.
+    const paced=drive(true,i%5===0,{...options,sequenceRecoveryPacingVersion:1},immutable,'comparison');
+    pacingOffers.push(...paced.traceReport.recoveryOffers);
     const breakdown=trace=>{
      const diag=continuation.summariseOpenings(trace.openings);
      const cases=trace.openings.filter(v=>!v.final.attempts).map(v=>{
@@ -262,7 +263,8 @@ function run(seeds=[3,10],weeks=32){
      return {readinessMiss:diag.firstEmptyStage.chain_ready||0,staminaCases:cases.filter(x=>x.types.includes('chain_stamina')).length,
       timingCases:cases.filter(x=>x.types.includes('chain_too_early')).length};
     };
-    recoveryPairs.push({key,structure:choice.id,before:{...count(legacy.fin),...breakdown(legacy.traceReport)},after:{...count(fin),...breakdown(actual.traceReport)}});
+    const restCount=x=>x.M.graph.events.filter(e=>e.id==='catch_breath'||E.GRAPH.A[e.id]?.family==='rest'&&E.GRAPH.costOf(e.id)<0).length;
+    pacingPairs.push({key,structure:choice.id,before:{...count(fin),...breakdown(actual.traceReport),rests:restCount(actual)},after:{...count(paced.fin),...breakdown(paced.traceReport),rests:restCount(paced),offers:paced.traceReport.recoveryOffers.length,landed:paced.traceReport.recoveryOffers.filter(x=>x.landed).length}});
    }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
@@ -332,11 +334,13 @@ function run(seeds=[3,10],weeks=32){
     handoverOffers:offered.reduce((n,v)=>n+v.ticks.filter(t=>t.handover).length,0),sequencesWithHandoverOffer:offered.length,
     openedAmongOffered:offered.filter(v=>v.final.attempts>0).length,completedAmongOffered:offered.filter(v=>['completed','adapted'].includes(v.final.status)).length,
     comparisons:handoverPairs};
-  })(),reviewRepairs:{total:reviewRepairs.length,examples:reviewRepairs.slice(0,8)},matchedRecoveryProjection:(()=>{
-   const sum=(pairs,side)=>{const xs=pairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','readinessMiss','staminaCases','timingCases','interruptions','objectives','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
+  })(),reviewRepairs:{total:reviewRepairs.length,examples:reviewRepairs.slice(0,8)},matchedRecoveryPacing:(()=>{
+   const sum=(pairs,side)=>{const xs=pairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','readinessMiss','staminaCases','timingCases','interruptions','objectives','injury','rests','offers','landed'].map(k=>[k,xs.reduce((n,x)=>n+(x[k]||0),0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
    const compare=pairs=>({pairs:pairs.length,before:sum(pairs,'before'),after:sum(pairs,'after'),changedOutcomes:pairs.filter(x=>x.before.outcome!==x.after.outcome).length});
-   return {...compare(recoveryPairs),byStructure:Object.fromEntries([...new Set(recoveryPairs.map(x=>x.structure))].map(k=>[k,compare(recoveryPairs.filter(x=>x.structure===k))])),
-    examples:recoveryPairs.filter(x=>JSON.stringify(x.before)!==JSON.stringify(x.after)).slice(0,8),comparisons:recoveryPairs};
+   return {...compare(pacingPairs),byStructure:Object.fromEntries([...new Set(pacingPairs.map(x=>x.structure))].map(k=>[k,compare(pacingPairs.filter(x=>x.structure===k))])),
+    offers:pacingOffers.length,boosted:pacingOffers.filter(x=>x.boosted).length,landed:pacingOffers.filter(x=>x.landed).length,
+    offerExamples:pacingOffers.filter(x=>x.landed).slice(0,8),
+    examples:pacingPairs.filter(x=>x.before.completed!==x.after.completed||x.before.readinessMiss!==x.after.readinessMiss).slice(0,12),comparisons:pacingPairs};
   })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},opening:continuation.summariseOpenings(openingRecords),rows};
 }
 module.exports={run};
