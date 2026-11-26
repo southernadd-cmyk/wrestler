@@ -727,8 +727,10 @@ function tick(M){
    (frac>=.76&&frac<.98&&loserSt<38&&lead>=7));
  const optionalSpotFactor=electiveWinnerSpot?
   (M.planId==='spots'?.30:.43):1;
+ // MP13F.18: pace unsolicited spectacles independently of stamina and manager calls.
+ const autonomousSpotFactor=.25;
  const spotP=plan.spotRate*SPOT_MUL[ph.id]*(mode==='pickup'?1.6:mode==='slow'?.2:1)*
-  (M.offScript==='showboat'?1.5:1)*recoveryWeight*optionalSpotFactor;
+  (M.offScript==='showboat'?1.5:1)*recoveryWeight*optionalSpotFactor*autonomousSpotFactor;
  let spoke=aerialResolved||grappleResolved;
  // A requested spectacular spot waits for a physically legal setup. The
  // script never awards one merely because the manager pressed a button.
