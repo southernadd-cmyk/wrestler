@@ -256,3 +256,45 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  eq(F.sequenceFeasibility({...st,minutes:15,fx:{}},target,evidence),roomy);
  console.log('PASS MP13C feasibility: independent entry, timing and physical readiness priors, actual graph duration classes.');
 }
+
+// MP13D: mandatory positive receipt fixture with two real graph first
+// moves converging on the same signed continuation. No assumed graph IDs.
+{
+ const base=copy(original),obj=base.structurePlan.objectives[0],opposite=side=>side==='w'?'f':'w';
+ let chosen=null;
+ const candidates=Object.keys(A).filter(usable);
+ search:for(const one of candidates)for(const two of links(one).filter(usable)){
+  if(one===two||!S.DIRECTOR.compatibleCall(obj,two,'w'))continue;
+  for(const alternate of candidates){
+   if([one,two].includes(alternate)||!links(alternate).includes(two)||graph.PHYSICAL_GRIP_MOVES[alternate]||
+      graph.GRIP_ENTRY[alternate]!==graph.GRIP_ENTRY[one]||graph.costOf(alternate)>Math.max(1.8,graph.costOf(one)))continue;
+   const start={control:'w',position:'standing',down:null};
+   obj.call={action:two,owner:'w',proposedBy:'w',label:A[two].name||two,source:'negotiated',chosen:true,backups:[]};
+   obj.commitment='landmark';obj.sequence={version:2,mode:'conditional',start,actions:[one,two],openings:[{start:{...start},action:alternate}]};
+   base.structurePlan.version=2;
+   if(S.STRUCTURES.readPlan(base).mode!=='editorial')continue;
+   const m=E.create({w:{...w,fatigue:0,flags:{}},f,p,slot:'main',minutes:12,finish:c.finish,feudHeat:0,plan:{game:'story',leash:'script',talk:'none'},seed:98101,preparation:{},flags:{},sheet:copy(base),structureExecution:true,sequenceTimingVersion:1});
+   m.stage='live';m.t=60;Object.assign(m.story,start);graph.resetPhysical(m);
+   if(!graph.isValid(m,alternate))continue;
+   // Disable only the primary choice to exercise the actual fallback offer.
+   m.o.sheet.limits.banIds.push(one);
+   const offer=S.DIRECTOR.sequenceOffer(m,m.story);
+   if(offer?.id!==alternate)continue;
+   chosen={m,one,two,alternate};break search;
+  }
+ }
+ assert.ok(chosen,'real signed alternative opening fixture');
+ const {m,one,two,alternate}=chosen;
+ const bad=copy(base);bad.structurePlan.objectives[0].sequence.openings[0].action=two;
+ assert.notEqual(S.STRUCTURES.readPlan(bad).mode,'editorial');
+ graph.apply(m,alternate);
+ assert.equal(m.structureDirector.sequences[0].progress,1);
+ const resumed=E.restore(copy({...m,rState:m.r.getState()}));
+ m.t+=10;resumed.t+=10;assert.ok(graph.isValid(m,two));graph.apply(m,two);graph.apply(resumed,two);
+ const receipt=E.structureReport(m).sequences[0].receipt;
+ assert.equal(receipt.status,'adapted');eq(receipt.planned,[one,two]);eq(receipt.witnessed.map(x=>x.id),[alternate,two]);assert.equal(receipt.witnessed[0].opening,true);
+ eq(E.structureReport(resumed),E.structureReport(m));
+ const forged=copy(m.structureDirector.sequences[0].evidence);forged[0].id=one;m.structureDirector.sequences[0].evidence=forged;
+ assert.equal(E.structureReport(m).sequences[0].receipt,undefined);
+ console.log('PASS MP13D signed alternative first move: '+alternate+' -> '+two+'; actual receipt and resume verified');
+}
