@@ -25,7 +25,7 @@ function summarise(rows){
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
 function run(seeds=[3,10],weeks=32){
- const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[];
+ const rows=[],careers=[],comparisons=[],traditional=[],feasibilityPairs=[],adaptivePairs=[],continuationRecords=[],traceVerified=new Set(),continuationPairs=[],openingRecords=[],dependencyPairs=[],dependencyWitnesses=[],dependencyDetails=[],dependencyTraceVerified=new Set(),handoverPairs=[],readinessPairs=[];
  for(const seed of seeds){
   let index=0;
   const real=(root,c,w,f,random)=>{
@@ -38,8 +38,8 @@ function run(seeds=[3,10],weeks=32){
    const structures=S.STRUCTURES.catalogue(),choice={id:pick(structures,i+seed).id,lead:i%2?'f':'w'};
    const approach=pick(['story','technical','safe','brawl','spots'],i+seed);
    const banks=promoBanks(root.OfficePromoIdentity.bankId(w),root.OfficePromoIdentity.bankId(f));
-   function planRoom(policy,resume,adaptive=false,continuationVersion=undefined){
-   let st=R.begin(c,w,f,G.P(c.pid),{structure:choice,structurePlanning:true,planningCareer:G.S,planningInitiative:true,planningProposal:true,planningDialogue:true,planningBanks:banks,planningBargaining:true,planningSequences:true,planningSequencePolicy:policy,planningAdaptiveEntries:adaptive,planningSequenceSigning:true,planningContinuationVersion:continuationVersion,
+   function planRoom(policy,resume,adaptive=false,continuationVersion=undefined,readinessVersion=undefined){
+   let st=R.begin(c,w,f,G.P(c.pid),{structure:choice,structurePlanning:true,planningCareer:G.S,planningInitiative:true,planningProposal:true,planningDialogue:true,planningBanks:banks,planningBargaining:true,planningSequences:true,planningSequencePolicy:policy,planningAdaptiveEntries:adaptive,planningSequenceSigning:true,planningContinuationVersion:continuationVersion,planningReadinessVersion:readinessVersion,
     recent:G.S.roomRecent||[],threads:R.liveThreads(G.S.roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)});
    assert.ok(st.planningEvidence&&st.planningDialogue&&st.planningSequenceSigning,key+' full planning policy active');
    const prior=st.planningEvidence.participants.w.relationship.professional;
@@ -75,7 +75,8 @@ function run(seeds=[3,10],weeks=32){
    assert.ok(range(st.sheet.workerConsent)&&range(st.sheet.opponentConsent));
    return {st,prior,actions,roomResume,sequenceOffer};
    }
-   const {st,prior,actions,roomResume,sequenceOffer}=planRoom(3,true,true,1);
+   const {st,prior,actions,roomResume,sequenceOffer}=planRoom(3,true,true,1,1);
+   const readinessRoom=i%3!==0?planRoom(3,false,true,1):null;
    const continuationRoom=i%3!==0?planRoom(3,false,true):null;
    const controlRoom=i%3!==0?planRoom(2,false):null;
    const baselineRoom=i%3!==0?planRoom(3,false,false):null;
@@ -244,6 +245,19 @@ function run(seeds=[3,10],weeks=32){
     const dependencyOnly=drive(true,i%5===0,{...options,sequenceHandoverVersion:undefined},immutable).fin;
     handoverPairs.push({key,structure:choice.id,main:count(base),dependencyOnly:count(dependencyOnly),combined:count(fin)});
    }
+   if(readinessRoom){
+    const old=R.addVow(readinessRoom.st.sheet,promo,w,f,c.finish);
+    const baseline=drive(true,i%5===0,{...options,sheet:old,minutes:old.minutes,plan:{game:old.game,leash:old.leash,talk:old.talk},flags:{...w.flags,...old.flags}},copy(old.structurePlan),'comparison');
+    const count=(x,trace,layout)=>{
+     const rs=(x.structure.sequences||[]).map(s=>s.receipt).filter(Boolean),diag=continuation.summariseOpenings(trace.openings);
+     return {signed:rs.length,opened:rs.filter(r=>r.attempts>0).length,completed:rs.filter(r=>['completed','adapted'].includes(r.status)).length,
+      readinessMiss:diag.firstEmptyStage.chain_ready||0,prerequisiteMiss:diag.firstEmptyStage.prerequisite||0,
+      interruptions:rs.reduce((n,r)=>n+r.interruptions,0),objectives:x.structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length,
+      injury:Number(!!x.injury),stars:x.stars,crowd:x.crowd,outcome:x.outcome,
+      chains:layout.objectives.filter(o=>o.sequence).map(o=>({objective:o.id,actions:o.sequence.actions,openings:o.sequence.openings||[]}))};
+    };
+    readinessPairs.push({key,structure:choice.id,before:count(baseline.fin,baseline.traceReport,old.structurePlan),after:count(fin,actual.traceReport,sheet.structurePlan)});
+   }
    for(const r of receipts){
     assert.equal(r.v,1);assert.ok(r.witnessed.length<=r.planned.length);
     for(const e of r.witnessed)assert.ok(M.graph.events.some(ev=>ev.id===e.id&&ev.t===e.at),key+' actual graph receipt');
@@ -312,6 +326,12 @@ function run(seeds=[3,10],weeks=32){
     handoverOffers:offered.reduce((n,v)=>n+v.ticks.filter(t=>t.handover).length,0),sequencesWithHandoverOffer:offered.length,
     openedAmongOffered:offered.filter(v=>v.final.attempts>0).length,completedAmongOffered:offered.filter(v=>['completed','adapted'].includes(v.final.status)).length,
     comparisons:handoverPairs};
+  })(),matchedReadiness:(()=>{
+   const sum=(pairs,side)=>{const xs=pairs.map(x=>x[side]);return {...Object.fromEntries(['signed','opened','completed','readinessMiss','prerequisiteMiss','interruptions','objectives','injury'].map(k=>[k,xs.reduce((n,x)=>n+x[k],0)])),stars:avg(xs.map(x=>x.stars)),crowd:avg(xs.map(x=>x.crowd))};};
+   const compare=pairs=>({pairs:pairs.length,before:sum(pairs,'before'),after:sum(pairs,'after'),changedChains:pairs.filter(x=>JSON.stringify(x.before.chains)!==JSON.stringify(x.after.chains)).length,changedOutcomes:pairs.filter(x=>x.before.outcome!==x.after.outcome).length});
+   const both=readinessPairs.filter(x=>x.before.signed&&x.after.signed);
+   return {...compare(readinessPairs),bothSigned:compare(both),byStructure:Object.fromEntries([...new Set(readinessPairs.map(x=>x.structure))].map(k=>[k,compare(readinessPairs.filter(x=>x.structure===k))])),
+    examples:readinessPairs.filter(x=>x.before.completed!==x.after.completed).slice(0,6),comparisons:readinessPairs};
   })(),continuation:{...continuation.summarise(continuationRecords),traceVerified:[...traceVerified]},opening:continuation.summariseOpenings(openingRecords),rows};
 }
 module.exports={run};
