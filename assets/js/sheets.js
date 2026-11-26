@@ -593,7 +593,7 @@
   const achieved=s.nodes.filter(b=>b.status==='achieved').length,adapted=s.nodes.filter(b=>b.status==='adapted').length,missed=s.nodes.filter(b=>b.status==='missed').length;
   return {method:s.method,focus:s.focus,room:s.v>=4?{premise:s.premise,left:s.clockLeft,route:s.finishRoute,performed:s.performedFinishRoute||null}:null,decision:s.decision,revisions:(s.revisions||[]).map(x=>({...x})),calls:(s.calls||[]).map(x=>({...x})),total:s.nodes.length,achieved,adapted,missed,
    beats:s.nodes.map(b=>({id:b.id,title:b.title,status:b.status,expected:b.actions[0],actual:b.actual,reason:b.why,at:b.at})),
-   eventCount:s.ledger.length};
+   ...(s.promoReconciliation?{promoReconciliation:JSON.parse(JSON.stringify(s.promoReconciliation))}:{}),eventCount:s.ledger.length};
  }
  // v3.7 THE MATCH STRIP. The running order laid along the match clock: where each beat is due,
  // whose it is, and what became of it. Pure data, so the screen only has to draw it.
