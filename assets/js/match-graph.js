@@ -612,9 +612,17 @@ const Graph=(function makeGraph(){
   resetPhysical(M);
   g.node=null;
  }
+ // Reserve an opportunity for a genuinely available planned continuation,
+ // not for a signed move that is illegal in the current physical state.
+ function readyNegotiatedSequence(M){
+  if(M.structureDirector?.sequencePolicy!==2)return false;
+  const offer=root.OfficeSheets?.DIRECTOR?.sequenceOffer(M,$d.Psy.get(M));
+  return !!offer?.continuation&&offer.willingness>=35&&isValid(M,offer.id);
+ }
  function advance(M,frac){
   const g=get(M);if(!g.started){g.started=true;enter(M,'opening',null);}g.age++;
   const a=ARCS[g.arc],schedule=$d.phaseFor(frac,M),order={open:0,shine:1,heat:2,comeback:3,stretch:4};
+  if(readyNegotiatedSequence(M))return {id:schedule.id,name:a.label};
   // A genuine top-rope setup must get its ONE legal follow-through choice.
   // Previously the arc clock could immediately change to finish_setup,
   // resetting both physical locations before the prepared wrestler could
@@ -1310,7 +1318,9 @@ const Graph=(function makeGraph(){
  function apply(M,id,options={}){
   const n=A[id],p=$d.Psy.get(M),g=get(M);
   const {A:attacker,Df:defender,side}=context(M),opp=side==='w'?'f':'w';
-  const sequencePre=M.structureDirector?.sequences?{control:p.control,position:p.position,down:p.down}:null;
+  const sequencePre=M.structureDirector?.sequences?{control:p.control,position:p.position,down:p.down,
+   ...(M.structureDirector.sequencePolicy===2?{node:g.node}:{})}:null;
+  const sequenceChoice=M.structureDirector?.sequencePolicy===2?root.OfficeSheets.DIRECTOR.sequenceOffer(M,p):null;
   const sequencePrevious=sequencePre?g.events.at(-1):null;
   if(n.reverse){
    p.control=opp;p.changes++;M.mom=opp==='w'?30:-30;
@@ -1498,7 +1508,7 @@ const Graph=(function makeGraph(){
    ...(options.scriptedSpot?{scriptedSpot:true,scriptedBig:!!options.big}:{})});
   if(g.events.length>220)g.events.shift();
   sellingNarration(M,id,activeSide,sellingExtra);
-  if(sequencePre)root.OfficeSheets?.DIRECTOR?.observeSequence(M,g.events[g.events.length-1],sequencePre,sequencePrevious);
+  if(sequencePre)root.OfficeSheets?.DIRECTOR?.observeSequence(M,g.events[g.events.length-1],sequencePre,sequencePrevious,sequenceChoice);
   root.OfficeSheets?.DIRECTOR?.observe(M,g.events[g.events.length-1]);
   $d.structureCommentary(M);
   if(id==='cheap_shot')$d.referee(M,side);
@@ -3297,7 +3307,7 @@ const Graph=(function makeGraph(){
    const target=pool.find(([id])=>id===negotiated.id);
    if(target&&target[1]>0){
     const rest=pool.reduce((sum,[id,w])=>sum+(id===negotiated.id?0:w),0);
-    const desired=negotiated.continuation?2.5:.85;
+    const desired=negotiated.ratio??(negotiated.continuation?2.5:.85);
     target[1]=Math.max(target[1],rest*desired);
    }
   }
@@ -3569,7 +3579,7 @@ const Graph=(function makeGraph(){
  STRIKE_PILOT,QUICK_NECK_IDS,PHASE4_NECK_THROWS,
  startStrike,resolveStrike,abortStrike,
  GROUND_PILOT,PIN_PILOT,CONTACT_PILOT,ENVIRONMENT_PILOT,
- startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport,closingRunway,closingOffers,closingPlanSetups,nearfallDrama,nearfallFollowupOffers};
+ startContact,resolveContact,abortContact,SUPERPLEX_PILOT,PHYSICAL_GRIP_MOVES,GRIP_ENTRY,resetPhysical,affordableSuperplex,readyTopContest,readyNamedAerial,readyBrawlRebound,readyTechnicalGrip,readyStoryHope,readyNegotiatedSequence,maybeBrawlComboRun,motifOffers,motifSummary,sellingStrain,sellingWeight,sellingReport,closingRunway,closingOffers,closingPlanSetups,nearfallDrama,nearfallFollowupOffers};
 })();
 return {brawlConditioning,Graph};
 };

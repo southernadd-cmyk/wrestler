@@ -698,15 +698,16 @@ function tick(M){
  const preparedRun=!spoke&&!topContest&&!preparedFlight&&Graph.readyBrawlRebound(M);
  const preparedGrip=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&Graph.readyTechnicalGrip(M);
  const preparedHope=!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&Graph.readyStoryHope(M);
+ const preparedSequence=!spoke&&Graph.readyNegotiatedSequence(M);
  const earnedCover=!spoke&&!topContest&&
-  !preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&
+  !preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&!preparedSequence&&
   M.o.stip!=='submission'&&M.nearfallAt.length&&
   frac>=M.nearfallAt[0]?Graph.earnedNearfallSource(M):null;
  // All plans must earn their scheduled pin from a genuinely landed,
  // still-live knockdown. A timer is only an opportunity, never a strike,
  // unsolicited control switch or imaginary physical relocation.
  // Submission-only stipulations preserve their non-pin escape sequence.
- if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&
+ if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&!preparedSequence&&
     M.nearfallAt.length&&frac>=M.nearfallAt[0]&&
     (M.o.stip==='submission'||earnedCover)){
   if(M.o.stip==='submission'){
@@ -714,7 +715,7 @@ function tick(M){
   }else if(Graph.nearfall(M,earnedCover)){
    M.nearfallAt.shift();spoke=true;
   }
- }else if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&M.r()<spotP)spoke=Graph.special(M);
+ }else if(!spoke&&!topContest&&!preparedFlight&&!preparedRun&&!preparedGrip&&!preparedHope&&!preparedSequence&&M.r()<spotP)spoke=Graph.special(M);
  // crowd bands
  crowdBand(M);
  // producer hints
@@ -734,7 +735,7 @@ function tick(M){
  const closingStory=!spoke&&M.planId==='story'&&M.len>=720&&
   M.len-M.t<=60&&M.len-M.t>=0;
  if(!spoke&&(topContest||preparedFlight||preparedRun||preparedGrip||
-    preparedHope||closingStory||M.r()<.64))Graph.step(M);
+    preparedHope||preparedSequence||closingStory||M.r()<.64))Graph.step(M);
  // Count the *performed* big moment, not the request or a failed setup.
  if(M.bigSpotRequest)witnessOrdinaryBigSpot(M);
  if(M.bigSpotRequest&&M.t>=M.bigSpotRequest.expires)closePendingBigSpot(M);
