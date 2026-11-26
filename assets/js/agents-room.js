@@ -1709,10 +1709,54 @@
     row=ranked[0];
    }
    const offer={v:1,card:{...card},sequence:row.sequence,evidence:row.evidence,difficulty:row.difficulty,by:row.by};
+   if(st.planningAdaptiveEntries===1){
+    const openings=alternativeEntries(st,offer);
+    if(openings.length)offer.openings=openings;
+   }
    const dialogue=L.freezeSequence(st,offer);
    if(dialogue)return {...offer,dialogue};
   }
   return null;
+ }
+ // Explicitly discussed fallback first moves, converging on the identical
+ // signed second step. Keep the primary plan and its psychology intact.
+ function validAlternativeEntry(st,offer,entry){
+  const primary=offer.sequence,first=offer.evidence.steps[0],graph=MX.GRAPH;
+  if(!entry||!entry.start||typeof entry.action!=='string'||primary.actions.includes(entry.action)||
+     !['standing','mat','corner'].includes(entry.start.position)||
+     entry.start.position!=='mat'&&entry.start.down!==null)return null;
+  const n=A[entry.action];if(!n||n.risk||graph.costOf(entry.action)>Math.max(1.8,graph.costOf(first.action))||
+     graph.PHYSICAL_GRIP_MOVES[entry.action]||
+     graph.GRIP_ENTRY[entry.action]!==graph.GRIP_ENTRY[first.action])return null;
+  const ev=sequenceEvidence(st,offer.evidence.objective,offer.card.action,{start:entry.start,actions:[entry.action,...primary.actions.slice(1)]});
+  if(!ev.eligible||ev.steps[0].performer!==first.performer||
+     JSON.stringify(ev.steps[0].exit)!==JSON.stringify(first.exit))return null;
+  return ev;
+ }
+ function alternativeEntries(st,offer){
+  const F=root.OfficePlanningFuzzy,graph=MX.GRAPH,first=offer.evidence.steps[0],objective=structureSlot(st,offer.evidence.objective);
+  const rows=[];
+  for(const id of sequencePredecessors(offer.sequence.actions[1])){
+   const n=A[id],control=n.reverse?other(first.performer):first.performer;
+   const positions=n.requires==='any'?['standing','mat','corner']:[n.requires];
+   for(const position of positions)for(const down of position==='mat'?[other(control),control]:[null]){
+    const entry={start:{control,position,down},action:id},ev=validAlternativeEntry(st,offer,entry);
+    if(!ev)continue;
+    // No inferior willingness or high-risk improvisation is being silently
+    // inserted: evaluate the actual fallback with both performers.
+    const by=['w','f'].map(side=>F.evaluateProposal(st.planningEvidence,st,side,objective.id,offer.card.action,{start:entry.start,actions:[id,...offer.sequence.actions.slice(1)]}).assessment?.scores);
+    if(by.some((q,i)=>!q||q.acceptance<offer.by[['w','f'][i]].scores.acceptance-8||q.reservations>offer.by[['w','f'][i]].scores.reservations+8))continue;
+    const feasibility=F.sequenceFeasibility(st,objective,ev);if(!feasibility?.possible)continue;
+    const different=JSON.stringify(entry.start)!==JSON.stringify(offer.sequence.start);
+    rows.push({entry,score:feasibility.scores.feasibility+(different?25:0)-graph.costOf(id)*2});
+   }
+  }
+  rows.sort((a,b)=>b.score-a.score||a.entry.action.localeCompare(b.entry.action)||JSON.stringify(a.entry.start).localeCompare(JSON.stringify(b.entry.start)));
+  // Prefer two distinct actual entry states, then one different legal first
+  // move at the original entry if available. Never force any choice.
+  const result=[],seen=new Set();
+  for(const row of rows){const key=JSON.stringify(row.entry.start);if(seen.has(key))continue;seen.add(key);result.push(row.entry);if(result.length===2)break;}
+  return result;
  }
  function readSequenceOffer(st){
   const t=st.structureTalk,F=root.OfficePlanningFuzzy,L=root.OfficePlanningDialogue,s=t?.sequenceTalk,offer=s?.offer;
@@ -1731,13 +1775,17 @@
    by[side]={scores,...reply};
   }
   if(JSON.stringify(by)!==JSON.stringify(offer.by))return null;
+  if(offer.openings!==undefined){
+   if(st.planningAdaptiveEntries!==1||!Array.isArray(offer.openings)||!offer.openings.length||
+      JSON.stringify(alternativeEntries(st,offer))!==JSON.stringify(offer.openings))return null;
+  }
   const dialogue=L.freezeSequence(st,offer);
   return dialogue&&JSON.stringify(dialogue)===JSON.stringify(offer.dialogue)?offer:null;
  }
  // An agreed sequence has no live status, promised landing or invented
  // execution evidence. Store only the canonical entry and graph IDs.
  function sequenceCommitmentFrom(offer){
-  return {version:1,mode:'conditional',start:{...offer.sequence.start},actions:offer.sequence.actions.slice()};
+  return {version:offer.openings?.length?2:1,mode:'conditional',start:{...offer.sequence.start},actions:offer.sequence.actions.slice(),...(offer.openings?.length?{openings:offer.openings.map(x=>({start:{...x.start},action:x.action}))}:{})};
  }
  function agreedSequence(st,obj){
   const b=st.structureBoard?.[obj.id],t=st.structureTalk,s=t?.sequenceTalk,offer=s?.offer;
@@ -1752,10 +1800,11 @@
   if(!ev.eligible||ev.owner!==offer.evidence?.owner||ev.cid!==offer.evidence?.cid||
      ev.bookedResult!==offer.evidence?.bookedResult||
      JSON.stringify(ev.steps)!==JSON.stringify(offer.evidence?.steps))return null;
+  if(expected.openings?.some(entry=>!validAlternativeEntry(st,offer,entry)))return null;
   return expected;
  }
  function sequenceDescription(st,offer){
-  return offer.evidence.steps.map(s=>nameOf(st,s.performer)+': '+name(s.action)).join(' → ');
+  return offer.evidence.steps.map(s=>nameOf(st,s.performer)+': '+name(s.action)).join(' → ')+(offer.openings?.length?' (alternatively start with '+offer.openings.map(x=>name(x.action)+' from '+x.start.position+', '+nameOf(st,x.start.control)+' in control').join(' or ')+')':'');
  }
  function proposalEvidence(st,objective,action){
   const deny=reason=>({v:1,eligible:false,reason});
@@ -2282,7 +2331,7 @@
    if(st.planningProposal===1&&opts.planningDialogue===true&&root.OfficePlanningDialogue){
     const L=root.OfficePlanningDialogue,banks=Array.isArray(opts.planningBanks)?opts.planningBanks:[];
     const identities={w:L.capture(w,banks,2),f:L.capture(f,banks,2)};
-    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if([2,3].includes(opts.planningSequencePolicy))st.planningSequencePolicy=opts.planningSequencePolicy;if(opts.planningSequenceSigning===true)st.planningSequenceSigning=1;}}}
+    if(identities.w&&identities.f){st.planningDialogue={v:1,composer:2,identities};if(opts.planningBargaining===true){st.planningBargaining=1;if(opts.planningSequences===true){st.planningSequences=1;if([2,3].includes(opts.planningSequencePolicy))st.planningSequencePolicy=opts.planningSequencePolicy;if(opts.planningSequenceSigning===true)st.planningSequenceSigning=1;if(opts.planningAdaptiveEntries===true)st.planningAdaptiveEntries=1;}}}
    }
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
