@@ -157,3 +157,21 @@ console.log('PASS ringside evidence: deferred big spot and four other evidence-b
  assert.equal(E.bigSpotDeadline(resumed),340);assert.equal(E.bigSpotPriority(resumed),false);
  console.log('PASS MP13F.9B longer cooperative request, bounded expiry, unchanged priority and resumed reservation');
 }
+
+{
+ // MP13F.9C changes only the cooperative ordinary highlight multiplier.
+ // Previous versions and old saves retain their exact weights.
+ for(const [version,cooperative,lifetime] of [[undefined,10,620],[1,3,90],[2,3,240],[3,6,240]]){
+  const m=setup(24016);m.o.bigSpotArbitrationVersion=version;
+  m.stage='live';m.t=60;m.listen=101;m.wSt=0;m.planId='safe';m.r=()=>.99;
+  assert.equal(E.bigSpotWeight(m),1);
+  assert.equal(E.call(m,'big'),true);
+  assert.equal(E.bigSpotDeadline(m)-m.t,lifetime);
+  m.t=99;assert.equal(E.bigSpotWeight(m),10);
+  m.t=100;assert.equal(E.bigSpotWeight(m),cooperative);
+  assert.equal(E.bigSpotPriority(m),version===undefined);
+  assert.equal(E.canCall(m,'big'),false);
+  m.bigSpotRequest=null;assert.equal(E.bigSpotWeight(m),1);
+ }
+ console.log('PASS MP13F.9C isolated cooperative highlight weight, original priority, lifetime and legacy behavior');
+}

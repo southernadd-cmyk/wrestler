@@ -992,8 +992,8 @@ function regularBigMoment(M,id){
  return (n.cost||0)>=2.2&&(n.crowd||0)>=2;
 }
 // Versioned reservation; old matches keep their original policy.
-function bigSpotArbitrationEnabled(M){return [1,2].includes(M.o.bigSpotArbitrationVersion);}
-function bigSpotLifetime(M){return M.o.bigSpotArbitrationVersion===2?240:90;}
+function bigSpotArbitrationEnabled(M){return [1,2,3].includes(M.o.bigSpotArbitrationVersion);}
+function bigSpotLifetime(M){return [2,3].includes(M.o.bigSpotArbitrationVersion)?240:90;}
 function bigSpotDeadline(M){
  const r=M.bigSpotRequest;
  return !r?null:bigSpotArbitrationEnabled(M)?
@@ -1002,6 +1002,13 @@ function bigSpotDeadline(M){
 function bigSpotPriority(M){
  const r=M.bigSpotRequest;
  return !!r&&(!bigSpotArbitrationEnabled(M)||M.t<Math.min(r.at+40,bigSpotDeadline(M)));
+}
+// Only an already legal ordinary highlight receives this preference.
+// It is not a new offer, extra attempt or override of physical guards.
+function bigSpotWeight(M){
+ if(!M.bigSpotRequest)return 1;
+ if(bigSpotPriority(M))return 10;
+ return M.o.bigSpotArbitrationVersion===3?6:3;
 }
 function expireBigSpot(M){
  if(M.bigSpotRequest&&M.t>=bigSpotDeadline(M))
@@ -1518,7 +1525,7 @@ function starText(s){const whole=Math.floor(s),frac=s-whole;return '★'.repeat(
 function liveStars(M){return stars(M,false)}
 function phaseName(M){return M.stage==='entrance'?'Entrances':M.stage==='live'?M.phase?.name||'Feeling out':M.stage==='finish'?'The finish':'Full time'}
 
-root.OfficeMatch={create,next,lift,call,canCall,bigSpotPriority,bigSpotDeadline,livePsychology,liveObedienceDelta,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,structureReport:M=>root.OfficeSheets?.DIRECTOR?.report(M)||null,structureAssessment,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);
+root.OfficeMatch={create,next,lift,call,canCall,bigSpotPriority,bigSpotDeadline,bigSpotWeight,livePsychology,liveObedienceDelta,resolve,CALLS,FINISH_ROUTES,FINISH_ROUTE_COUNT,liveStars,starText,fmt,phaseName,PHASES,_stars:stars,_starParts:starParts,_construction:constructionOf,_earnedPlanQuality:earnedPlanQuality,GRAPH:Graph,scout:Graph.scout,structureReport:M=>root.OfficeSheets?.DIRECTOR?.report(M)||null,structureAssessment,note:(M,line,who)=>say(M,line,'story',who?{who}:{}),restore(M){M.r=mulberry(M.rState??M.o.seed);
  if(root.OfficeSheets?.DIRECTOR?.active(M)&&!M.structureSpoken){
   M.structureSpoken=Object.fromEntries(M.structureDirector.objectives.filter(o=>o.status!=='pending').map(o=>[o.id,o.status]));
  }
