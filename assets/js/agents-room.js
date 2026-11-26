@@ -1311,10 +1311,19 @@
     const reactions=F.huddleReaction(F.behaviour(st.planningEvidence,st,x.owner),F.behaviour(st.planningEvidence,st,other(x.owner)));
     if(reactions)st.structureTalk.reactions=reactions;
    }
+   if(st.planningProposal===1&&st.planningEvidence&&x.alt&&root.OfficePlanningFuzzy){
+    const response=root.OfficePlanningFuzzy.huddleProposal(st.planningEvidence,st,x.obj.id,x.alt.action,x.owner);
+    if(response)st.structureTalk.proposalResponse=response;
+   }
    const read=structureRead(st),v=STRUCTURE_VOICES[voice(who(st,x.owner))]||STRUCTURE_VOICES.stoic;
    log(st,'agent',read.label+' means '+read.focus+'. '+read.advice+' The promoter has already booked '+(D.FINISHES[st.finish]?.name||st.finish)+'.');
    log(st,x.owner,'“'+v.replace('{move}',x.b.label.toLowerCase()).replace('{goal}',x.obj.title.toLowerCase())+'”','objection');
-   log(st,other(x.owner),'“I can work a change. Just make sure we both know what comes next.”');
+   const response=root.OfficePlanningFuzzy?.readHuddleProposal(st.structureTalk);
+   const partner=response?.by[other(x.owner)]?.stance;
+   log(st,other(x.owner),partner==='accept'?'“That alternative works for me. Let’s keep the finish as agreed.”':
+    partner==='reserved'?'“I can see the idea, but I have reservations about changing the call.”':
+    partner==='counter'?'“I’m not sold on that alternative. I’d rather we looked at another way.”':
+    '“I can work a change. Just make sure we both know what comes next.”',partner==='reserved'||partner==='counter'?'objection':undefined);
    return true;
   },
   title:st=>st.structureTalk?.title||'Talk through the structure',
@@ -1336,11 +1345,17 @@
    const legacy={keep:{requester:-2,partner:0},revise:{requester:2,partner:-1},open:{requester:3,partner:-2}};
    // Old in-progress saves have no reactions. Preserve their exact policy.
    const valid=(r,lo,hi,partnerMin)=>r&&Number.isInteger(r.requester)&&r.requester>=lo&&r.requester<=hi&&Number.isInteger(r.partner)&&r.partner>=partnerMin&&r.partner<=0;
+   const response=root.OfficePlanningFuzzy?.readHuddleProposal(t);
    const r=t.reactions;
    const reactions=r?.v===1&&valid(r.keep,-5,-1,0)&&valid(r.revise,1,4,-3)&&valid(r.open,1,5,-4)?r:legacy;
    const dynamic=reactions!==legacy;
-   const describe=(k,original)=>dynamic?name+' '+(reactions[k].requester>0?'+':'')+reactions[k].requester+' mood; '+opp+' '+(reactions[k].partner===0?'unchanged':reactions[k].partner+' mood')+'.':original;
-   const applyReaction=k=>{st.mood[side]+=reactions[k].requester;st.mood[other(side)]+=reactions[k].partner;};
+   const revised=response?{requester:response.by[side].mood,partner:response.by[other(side)].mood}:reactions.revise;
+   const delta=k=>k==='revise'?revised:reactions[k];
+   const moodText=n=>n===0?'unchanged':(n>0?'+':'')+n+' mood';
+   const stanceText=s=>s==='accept'?'receptive':s==='reserved'?'has reservations':'wants another alternative';
+   const reviseTags=response?[...(revised.requester?[name+(revised.requester>0?' ▲':' ▼')]:[]),...(revised.partner?[opp+(revised.partner>0?' ▲':' ▼')]:[])]:[name+' ▲',...(reactions.revise.partner<0?[opp+' ▼']:[])];
+   const describe=(k,original)=>k==='revise'&&response?name+' '+stanceText(response.by[side].stance)+' ('+moodText(revised.requester)+'); '+opp+' '+stanceText(response.by[other(side)].stance)+' ('+moodText(revised.partner)+').':dynamic?name+' '+(reactions[k].requester>0?'+':'')+reactions[k].requester+' mood; '+opp+' '+(reactions[k].partner===0?'unchanged':reactions[k].partner+' mood')+'.':original;
+   const applyReaction=k=>{st.mood[side]+=delta(k).requester;st.mood[other(side)]+=delta(k).partner;};
    const out=[{id:'keep',label:'“Keep the '+t.original.label+'.”',
     hint:'Preserve the named call and finish; '+describe('keep',name+' loses 2 consent for being overruled.'),
     tags:[name+' ▼','Keeps original call'],
@@ -1349,13 +1364,17 @@
      log(st,side,'“Fine. But I wanted it noted.”','objection');
      log(st,'agent','Kept the call; the reservation remains on the record.');
     }}];
-   if(a)out.push({id:'revise',label:'“Use the '+a.label+' instead.”',
+   if(a&&(!response||proposalEvidence(st,t.objective,a.action).eligible))out.push({id:'revise',label:'“Use the '+a.label+' instead.”',
     hint:'One legal move replaces another for the same wrestler. '+describe('revise',name+' +2 consent; '+opp+' −1 for readjusting.'),
-    tags:[name+' ▲',...(reactions.revise.partner<0?[opp+' ▼']:[]),'Changes named call'],
+    tags:[...reviseTags,'Changes named call',...(response&&response.by[other(side)].stance==='counter'?['Partner wants another option']:[])],
     run(st){
      st.structureBoard[t.objective]={...a,chosen:true,open:false,source:'negotiated'};
      applyReaction('revise');t.decision='revise';
-     log(st,side,'“That move I can work.”');
+     const own=response?.by[side]?.stance,partner=response?.by[other(side)]?.stance;
+     log(st,side,own==='reserved'?'“I’ll work with the change, though I still have concerns.”':own==='counter'?'“I wanted a change, but this still isn’t quite right.”':'“That move I can work.”',own==='reserved'||own==='counter'?'objection':undefined);
+     if(response){
+      log(st,other(side),partner==='accept'?'“Agreed. We know the call.”':partner==='reserved'?'“I’ll work it, but put my reservation on the record.”':'“That’s the call, then. I still want another option noted.”',partner==='accept'?undefined:'objection');
+     }
      log(st,'agent','Revised '+t.title+'; the dramatic objective and booked finish still stand.');
     }});
    out.push({id:'open',label:'“Call this objective in the ring.”',
@@ -1897,6 +1916,7 @@
    st.structurePlanning=true;
    if(opts.planningCareer&&root.OfficePlanningFuzzy)st.planningEvidence=root.OfficePlanningFuzzy.capture(st,w,f,opts.planningCareer);
    if(st.planningEvidence&&opts.planningInitiative===true)st.planningInitiative=1;
+   if(st.planningInitiative===1&&opts.planningProposal===true)st.planningProposal=1;
   }
   st.loserSide=st.finish.startsWith('win')?'f':'w';
   st.queue=draw(st,p,opts.recent||[]);

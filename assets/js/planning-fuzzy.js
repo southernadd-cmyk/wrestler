@@ -371,5 +371,43 @@
   const assessment=inferProposal(behaviour(snapshot,room,side),evidence,fragment);
   return {v:1,eligible:true,evidence,assessment,...(fragment?{sequence:fragment}:{}),...(assessment?{requestHistory:requestHistory(snapshot,side)}:{})};
  }
- root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty});
+ // MP5E: interpret independent inclinations, not probabilities.
+ // Provisional thresholds based on the MP5B shadow distribution.
+ // This is a response to a specific eligible alternative, not consent
+ // to its execution or permission to change the contract.
+ function proposalReply(scores,role){
+  if(!['requester','partner'].includes(role)||!scores||!['acceptance','reservations','counterproposal'].every(k=>Number.isFinite(scores[k])&&scores[k]>=0&&scores[k]<=100))return null;
+  const {acceptance:a,reservations:r,counterproposal:c}=scores;
+  const stance=c>=55&&c>=a-5&&r>=40?'counter':r>=35||a<65||c>=45?'reserved':'accept';
+  const mood=stance==='accept'?(role==='requester'?(a>=80?4:3):(a>=80?2:1)):
+   stance==='reserved'?(role==='requester'?(a>=65?1:0):(r>=55?-2:-1)):
+   role==='requester'?(r>=65?-3:-2):(r>=65?-4:-3);
+  return {stance,mood};
+ }
+ function huddleProposal(snapshot,room,objective,action,requester){
+  assertSide(requester);
+  const evidence=root.OfficeRoom.proposalEvidence(room,objective,action);
+  if(!evidence.eligible||evidence.original.action===action||evidence.owner!==requester)return null;
+  const by={};
+  for(const side of ['w','f']){
+   const result=inferProposal(behaviour(snapshot,room,side),evidence);
+   if(!result)return null;
+   const scores={...result.scores};
+   const reply=proposalReply(scores,side===requester?'requester':'partner');
+   if(!reply)return null;
+   by[side]={scores,...reply};
+  }
+  return {v:1,objective,action,requester,by};
+ }
+ // Saved responses use their frozen inputs, not a newly inferred profile.
+ function readHuddleProposal(t){
+  const p=t?.proposalResponse;
+  if(p?.v!==1||p.objective!==t.objective||p.action!==t.alternative?.action||p.requester!==t.by||!['w','f'].includes(t.by))return null;
+  for(const side of ['w','f']){
+   const row=p.by?.[side],r=proposalReply(row?.scores,side===t.by?'requester':'partner');
+   if(!r||r.stance!==row.stance||r.mood!==row.mood)return null;
+  }
+  return p;
+ }
+ root.OfficePlanningFuzzy=Object.freeze({version:1,workerCurves,planningCurves,curves,workerInputs:K.workerInputs,createModel,capture,observe,behaviour,behaviourModel,huddleReaction,huddlePriority,proposalValues,proposalAxes,proposalModel,inferProposal,evaluateProposal,proposalAllocation,requestHistory,sequenceDifficulty,proposalReply,huddleProposal,readHuddleProposal});
 })(typeof window!=='undefined'?window:globalThis);
