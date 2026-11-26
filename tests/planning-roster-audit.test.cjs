@@ -1,5 +1,5 @@
 'use strict';
-// MP0B: current production planning, no fuzzy policy or fabricated dialogue.
+// MP3B: balanced legacy-policy sample plus isolated matched evidence probes.
 // Run node tests/planning-roster-audit.test.cjs; optionally set
 // PLANNING_AUDIT_JSON to a local filename to retain all sampled transcripts.
 const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
@@ -7,7 +7,7 @@ const {core}=require('./_source.cjs');
 const root={addEventListener(){}},store=new Map();
 vm.runInNewContext(core,{window:root,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},Date,Math,JSON,console});
 const {OfficeData:D,OfficeAcademy:A,OfficeGame:G,OfficeWorldV4:V,OfficeRoom:R,OfficeSheets:S,OfficeMatch:M}=root;
- // Load the dormant model only in this audit. Production still uses legacy policy.
+// Load the dormant model only in this audit. Production still uses legacy policy.
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','assets','js','planning-fuzzy.js'),'utf8'),{window:root,Math,JSON});
 const P=root.OfficePlanningFuzzy,model=P.behaviourModel,outputs=[...model.outputs];
 assert.equal(outputs.length,8);assert.equal(model.rules.length,79);
@@ -33,7 +33,8 @@ assert.equal(veterans.length,80);assert.equal(rookies.length,120);
 const roster=[...veterans,...rookies];assert.equal(new Set(roster.map(w=>w.id)).size,200);
 const structures=S.STRUCTURES.catalogue().map(x=>x.id);
 const plans=['story','technical','brawl','spots','safe'];
-const finishes=['win_clean','lose_clean','win_dirty','lose_protected'];
+const winFinishes=['win_clean','win_dirty'],loseFinishes=['lose_clean','lose_protected'];
+const bookingCoverage={},ownerBooking=new Map();
 const durations=[8,12,18];
 const clean=/undefined|NaN|\{(?:move|them|alt|orig|fam|goal)\}|\[object Object\]/;
 const bucket=()=>({meetings:0,focusLines:0,withinRepeats:0,rollingRepeats:0,objections:0,decisions:0,named:0,open:0,resumes:0,consentSum:0,consentMin:100,consentMax:0,reviewRepairs:0,actions:{},situations:{},discussion:{},lines:new Set()});
@@ -47,6 +48,59 @@ const owners=new Map(),history=new Map(),coverage={},transcripts=[];
 const shadowStages=new Map(),shadowFinal=new Map(),shadowOwners=new Map();
 const ruleUse=Object.fromEntries(model.rules.map(r=>[r.id,{output:r.output,count:0,activation:0,weight:0,share:0}]));
 const cueUse={},inputMissing={},counterfactuals={},shadowMeta={samples:0,finals:0,resumes:0};
+const stressRules=new Set(),stressDeltas=new Map(),stressCounts={};
+let stressPairs=0;
+function stress(st,spec,w,f){
+ const side=spec.side,actor=side==='w'?w:f,partner=side==='w'?f:w;
+ const before=JSON.stringify(st);
+ const evaluate=(changes={},career={},room=st)=>{
+  const a={...actor,...changes},args=side==='w'?[a,partner]:[partner,a];
+  const snapshot=P.capture(room,...args,career);
+  return P.behaviour(snapshot,room,side);
+ };
+ const control=evaluate();
+ const id=actor.id,rid=partner.id,abs=st.contract.eventAbs-1,cid='probe-prior-'+id;
+ const memory=kind=>({officeMemory:{entries:{[id]:[{id:cid,against:rid,week:abs,kind}]}}});
+ const goal=kind=>({ambitions:{w:{[id]:{kind,since:abs,sat:50}}}});
+ const ledger={rivalries:{[id+':'+rid]:{w:id,f:rid,meetings:[{cid,abs}],talks:[{cid,by:'w',delivered:'adapted'}]}}};
+ const tired=evaluate({fatigue:90}),fresh=evaluate({fatigue:0});
+ const medium=evaluate({fatigue:45});
+ const lowMorale=evaluate({morale:15});
+ const hurt=evaluate({injury:2}),unhurt=evaluate({injury:0});
+ const priorHurt=evaluate({},memory('hurt')),humiliated=evaluate({},memory('humiliation'));
+ const advanced=evaluate({},goal('title')),respected=evaluate({},goal('respect')),mentoring=evaluate({},goal('mentor'));
+ const adapted=evaluate({},ledger);
+ const lowRoom=clone(st);lowRoom.consent[side]=20;lowRoom.mood[side]=0;
+ const lowConsent=evaluate({}, {},lowRoom);
+ const cases=[
+  ['fatigue.high',tired,fresh,'caution'],['fatigue.high.improv',tired,fresh,'improvisation'],
+  ['fatigue.medium',medium,fresh,'caution'],['morale.low',lowMorale,control,'cooperation'],
+  ['injury.current',hurt,unhurt,'caution'],['injury.prior',priorHurt,control,'caution'],
+  ['humiliation',humiliated,control,'protectiveness'],['goal.title',advanced,control,'ambition'],
+  ['goal.respect',respected,control,'ambition'],['goal.mentor',mentoring,control,'mentorship'],
+  ['history.adapted',adapted,control,'improvisation'],['consent.low',lowConsent,control,'cooperation']
+ ];
+ for(const [key,observed,base,out] of cases){
+  for(const rules of Object.values(observed.fired))for(const r of rules)stressRules.add(r.id);
+  for(const v of Object.values(observed.scores))assert.ok(Number.isFinite(v)&&v>=0&&v<=100);
+  if(!stressDeltas.has(key))stressDeltas.set(key,[]);
+  stressDeltas.get(key).push(observed.scores[out]-base.scores[out]);
+  inc(stressCounts,key);stressPairs++;
+ }
+ // Real evidence cues and direction, not fabricated probabilities.
+ assert.ok(tired.scores.caution>fresh.scores.caution);
+ assert.ok(tired.scores.improvisation<fresh.scores.improvisation);
+ assert.ok(medium.scores.caution>fresh.scores.caution);
+ assert.equal(hurt.cues['condition.injured'],1);
+ assert.equal(priorHurt.cues['history.ownInjury'],1);
+ assert.equal(humiliated.cues['history.ownHumiliation'],1);
+ assert.equal(advanced.cues['goal.advancement'],1);
+ assert.equal(respected.cues['goal.respect'],1);
+ assert.equal(mentoring.cues['goal.mentor'],1);
+ assert.equal(adapted.cues['history.requestedAdaptation'],1);
+ assert.ok(lowConsent.observation.values.consent<=30);
+ assert.equal(JSON.stringify(st),before);
+}
 const rounded=n=>Math.round(n*1000)/1000;
 const addTo=(map,key,scores)=>{if(!map.has(key))map.set(key,[]);map.get(key).push(outputs.map(k=>scores[k]));};
 function shadow(snapshot,st,spec,final=false){
@@ -175,6 +229,9 @@ function play(spec,w,f,p){
  assert.doesNotMatch(st.log.map(e=>e.text).join('\n'),clean);
  for(const b of Object.values(st.structureBoard||{}))assert.ok(!invalid(st,b),'prohibited signed objective '+booking.id);
  const finalInference=shadow(evidence,st,spec,true);
+ const loses=spec.side==='w'?booking.finish.startsWith('lose'):booking.finish.startsWith('win');
+ assert.equal(Boolean(finalInference.cues['booking.actorLoses']),loses,'booked outcome cue mismatch');
+ if(spec.probe)stress(st,spec,w,f);
  if(saved){
   for(const id of actions.slice(resumeAt))R.act(saved,id);
   assert.equal(JSON.stringify(saved.sheet),JSON.stringify(sheet),'resume sheet mismatch');
@@ -188,7 +245,16 @@ for(let i=0;i<roster.length;i++){
  const focus=roster[i],peers=roster.filter(w=>w.id!==focus.id&&D.divisionOf(w)===D.divisionOf(focus));
  for(let j=0;j<4;j++){
   const index=i*4+j,side=(i+j)%2?'f':'w',other=peers[(i*7+j*13)%peers.length];
-  const spec={index,side,group:i<80?'established':'academy',structure:structures[j],lead:(Math.floor(i/2)+j)%2?'w':'f',plan:plans[(i+j)%plans.length],finish:finishes[(i+j)%finishes.length],minutes:durations[(i+j)%3],choice:(i+j)%3,replay:j===0};
+  // Orthogonal to side parity: every identity has two wins and two losses,
+  // one of each on both sides. Alternate clean/dirty/protected variants.
+  const focusWins=(Math.floor(i/2)+Math.floor(j/2))%2===0;
+  const wWins=side==='w'?focusWins:!focusWins;
+  const finish=(wWins?winFinishes:loseFinishes)[(Math.floor(i/4)+j)%2];
+  const spec={index,side,group:i<80?'established':'academy',structure:structures[j],lead:(Math.floor(i/2)+j)%2?'w':'f',plan:plans[(i+j)%plans.length],finish,minutes:durations[(i+j)%3],choice:(i+j)%3,replay:j===0,probe:j===0};
+  const outcome=focusWins?'win':'loss';
+  inc(bookingCoverage,side+'|'+outcome);
+  if(!ownerBooking.has(focus.id))ownerBooking.set(focus.id,{});
+  inc(ownerBooking.get(focus.id),side+'|'+outcome);
   const w=side==='w'?focus:other,f=side==='f'?focus:other,p=D.PROMOS[(i+j)%D.PROMOS.length];
   const {st,sheet,choices,repairs,replayed,booking}=play(spec,w,f,p);
   const group=i<80?'established':'academy';
@@ -222,14 +288,22 @@ for(const b of Object.values(byStructure))assert.equal(b.meetings,200);
 for(const b of Object.values(byPlan))assert.equal(b.meetings,160);
 for(const b of owners.values())assert.equal(b.meetings,4);
 const summary=b=>{const {lines,...rest}=b;return {...rest,uniqueText:lines.size,repeatPer100:b.focusLines?100*b.rollingRepeats/b.focusLines:0,meanConsent:b.meetings?b.consentSum/b.meetings:null};};
-const result={policy:'legacy-planning-mp0b',groups:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,summary(v)])),structures:Object.fromEntries(Object.entries(byStructure).map(([k,v])=>[k,summary(v)])),plans:Object.fromEntries(Object.entries(byPlan).map(([k,v])=>[k,summary(v)])),coverage,owners:[...owners].map(([id,b])=>({id,...summary(b)}))};
-console.log('MP0B planning baseline '+JSON.stringify({groups:result.groups,structures:result.structures,plans:result.plans,coverage}));
-console.log('MP0B focus-owner coverage '+JSON.stringify(result.owners.map(({id,focusLines,uniqueText,withinRepeats,rollingRepeats,meanConsent,objections,discussion})=>({id,focusLines,uniqueText,withinRepeats,rollingRepeats,meanConsent,objections,discussion}))));
+const result={policy:'legacy-planning-mp3b-balanced',bookingCoverage,groups:Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,summary(v)])),structures:Object.fromEntries(Object.entries(byStructure).map(([k,v])=>[k,summary(v)])),plans:Object.fromEntries(Object.entries(byPlan).map(([k,v])=>[k,summary(v)])),coverage,owners:[...owners].map(([id,b])=>({id,...summary(b)}))};
+console.log('MP3B balanced planning baseline '+JSON.stringify({groups:result.groups,structures:result.structures,plans:result.plans,coverage}));
+console.log('MP3B focus-owner coverage '+JSON.stringify(result.owners.map(({id,focusLines,uniqueText,withinRepeats,rollingRepeats,meanConsent,objections,discussion})=>({id,focusLines,uniqueText,withinRepeats,rollingRepeats,meanConsent,objections,discussion}))));
 assert.equal(shadowMeta.finals,800);assert.equal(shadowMeta.resumes,200);
 assert.equal(shadowMeta.samples,groups.all.decisions+800);
 assert.equal(shadowOwners.size,200);
 for(const v of shadowOwners.values())assert.equal(v.length,4);
 for(const v of Object.values(counterfactuals))assert.equal(v.n,800);
+assert.equal(stressPairs,2400);
+for(const n of Object.values(stressCounts))assert.equal(n,200);
+for(const b of ownerBooking.values())for(const k of ['w|win','w|loss','f|win','f|loss'])assert.equal(b[k],1);
+for(const k of ['w|win','w|loss','f|win','f|loss'])assert.equal(bookingCoverage[k],200);
+const coveredRules=new Set([...Object.keys(ruleUse).filter(k=>ruleUse[k].count>0),...stressRules]);
+assert.equal(coveredRules.size,79,'combined coverage missing: '+model.rules.filter(r=>!coveredRules.has(r.id)).map(r=>r.id).join(', '));
+const stressResult={pairs:stressPairs,bookingCoverage,coveredRules:coveredRules.size,stressRules:[...stressRules],deltas:Object.fromEntries([...stressDeltas].map(([k,v])=>[k,stats(v)]))};
+console.log('MP3B stress coverage '+JSON.stringify(stressResult));
 const sep=separation();
 const shadowResult={meta:shadowMeta,stages:distributions(shadowStages),final:distributions(shadowFinal),
  rules:Object.fromEntries(Object.entries(ruleUse).map(([k,v])=>[k,{output:v.output,count:v.count,meanActivation:v.count?rounded(v.activation/v.count):null,meanShare:v.count?rounded(v.share/v.count):null}])),
@@ -240,6 +314,6 @@ const {ownerMeans,...separationSummary}=sep;
 console.log('MP3 shadow distributions '+JSON.stringify({meta:shadowMeta,stages:shadowResult.stages,final:shadowResult.final}));
 console.log('MP3 rule utilisation '+JSON.stringify({rules:shadowResult.rules,cues:cueUse,missing:inputMissing,counterfactuals:shadowResult.counterfactuals,separation:separationSummary}));
 console.log('MP3 owner means '+JSON.stringify(ownerMeans));
-if(process.env.PLANNING_AUDIT_JSON)fs.writeFileSync(process.env.PLANNING_AUDIT_JSON,JSON.stringify({...result,transcripts,shadow:shadowResult},null,2));
-console.log('PASS MP3: '+shadowMeta.samples+' focus observations, 800 final profiles, 200 replay checks and matched interventions; legacy planning unchanged.');
-console.log('PASS MP0B: 800 real planning meetings, 200 focus identities and JSON resumes; no gameplay policy changed.');
+if(process.env.PLANNING_AUDIT_JSON)fs.writeFileSync(process.env.PLANNING_AUDIT_JSON,JSON.stringify({...result,transcripts,shadow:shadowResult,stress:stressResult},null,2));
+console.log('PASS MP3B: '+shadowMeta.samples+' focus observations, 800 final profiles, 200 replay checks and matched interventions; legacy planning unchanged.');
+console.log('PASS MP3B: 800 balanced real planning meetings, 200 focus identities and JSON resumes; no gameplay policy changed.');
