@@ -24,19 +24,25 @@ function summarise(rows){
   promoResumes:sum('promoResume'),liveScores:Object.fromEntries(['obedience','improvisation','frustration'].map(k=>[k,avg(rows.flatMap(r=>r.liveScores.map(x=>x[k])))])),
   repeatLines:sum('repeatLines'),spokenLines:sum('spokenLines')};
 }
-// Diagnostic VM only: equalize and scale the actual routine debits.
-// Preserve the existing asymmetric control and the slow-call recovery credits.
+// Historical diagnostic cohort: keep the original asymmetric control and
+// settled career path, then replay the exact shipped quarter-rate expression
+// on the same signed bouts. All overrides live in this test VM, never in
+// production code or save state.
 const routineFactors=[1,'equal-1',.75,.5,.25,0];
 function routineSource(source){
+ const wNew="clamp(M.wSt-routineDebit+(mode==='slow'?1.6:0))";
+ const fNew="clamp(M.fSt-routineDebit+(mode==='slow'?1.2:0))";
+ const wOld="clamp(M.wSt-drain+(mode==='slow'?1.6:0))";
+ const fOld="clamp(M.fSt-.5*workDrain(f)*paceFactor(f,'f')+(mode==='slow'?1.2:0))";
+ assert.equal(source.split("const routineDebit=sharedRoutineDebit*.25;").length,2,'production quarter-rate debit');
+ for(const [before,after] of [[wNew,wOld],[fNew,fOld]]){
+  assert.equal(source.split(before).length,2,'unique production routine write');
+  source=source.replace(before,after);
+ }
  let instrumented=continuation.budgetSource(source);
- // The shared debit is the mean of both original requested debits before
- // clamping. At equal-1 the combined requested debit is unchanged.
- const anchor="*paceFactor(w,'w');";
- assert.equal(instrumented.split(anchor).length,2,'unique routine debit calculation');
- instrumented=instrumented.replace(anchor,anchor+"\n const sharedRoutineDebit=(drain+.5*workDrain(f)*paceFactor(f,'f'))/2;");
  const edits=[
-  ["clamp(M.wSt-drain+(mode==='slow'?1.6:0))","clamp(M.wSt-(root.__mp13RoutineMultiplier===undefined?drain:sharedRoutineDebit*root.__mp13RoutineMultiplier)+(mode==='slow'?1.6:0))"],
-  ["clamp(M.fSt-.5*workDrain(f)*paceFactor(f,'f')+(mode==='slow'?1.2:0))","clamp(M.fSt-(root.__mp13RoutineMultiplier===undefined?.5*workDrain(f)*paceFactor(f,'f'):sharedRoutineDebit*root.__mp13RoutineMultiplier)+(mode==='slow'?1.2:0))"]
+  [wOld,"clamp(M.wSt-(root.__mp13RoutineMultiplier===undefined?drain:root.__mp13RoutineMultiplier===.25?routineDebit:sharedRoutineDebit*root.__mp13RoutineMultiplier)+(mode==='slow'?1.6:0))"],
+  [fOld,"clamp(M.fSt-(root.__mp13RoutineMultiplier===undefined?.5*workDrain(f)*paceFactor(f,'f'):root.__mp13RoutineMultiplier===.25?routineDebit:sharedRoutineDebit*root.__mp13RoutineMultiplier)+(mode==='slow'?1.2:0))"]
  ];
  for(const [before,after] of edits){
   assert.equal(instrumented.split(before).length,3,'instrumented debit occurs in both traced and untraced branches');

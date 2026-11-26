@@ -673,8 +673,12 @@ function tick(M){
   spotDrain(worker);
  const drain=.55*workDrain(w)*(mode==='pickup'?1.7:mode==='slow'?.3:1)*
   (1+w.fatigue/250)*(M.workingHurt?1.5:1)*paceFactor(w,'w');
- M.wSt=clamp(M.wSt-drain+(mode==='slow'?1.6:0));
- M.fSt=clamp(M.fSt-.5*workDrain(f)*paceFactor(f,'f')+(mode==='slow'?1.2:0));
+ // MP13F.14: share the sustained exertion cost, at the tested quarter rate.
+ // Move costs, individual recovery credits and safety checks remain separate.
+ const sharedRoutineDebit=(drain+.5*workDrain(f)*paceFactor(f,'f'))/2;
+ const routineDebit=sharedRoutineDebit*.25;
+ M.wSt=clamp(M.wSt-routineDebit+(mode==='slow'?1.6:0));
+ M.fSt=clamp(M.fSt-routineDebit+(mode==='slow'?1.2:0));
  // quality of this ten seconds
  const sk=(w.ring*plan.w.ring+w.psych*plan.w.psych)*(.55+.45*M.wSt/100);
  const sf=(f.ring*plan.w.ring+f.psych*plan.w.psych)*(.55+.45*M.fSt/100);
