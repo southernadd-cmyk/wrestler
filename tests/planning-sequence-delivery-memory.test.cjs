@@ -94,3 +94,24 @@ console.log('PASS MP8C: real authored bridge '+first+' -> '+offer.id+' (instead 
  assert.equal(S.DIRECTOR.deliveryDebrief({status:'completed'}).label,'Unverified');
  assert.equal(S.DIRECTOR.deliveryDebrief({status:'completed',receipt}).tone,'');
  console.log('PASS MP9A: evidence-qualified sequence debrief, neutral protected and unopened outcomes, legacy missing receipts.');
+
+ // MP9: historical public technical claims enter private planning only
+ // through their settled, earlier, same-pair ledger records.
+ const claimCareer=copy(G.S),claimMeeting=claimCareer.rivalries[w.id+':'+f.id].meetings.find(x=>x.cid===c.id);
+ claimMeeting.promise={type:'counter',kept:false,sure:false,families:['submission']};
+ const claimSnap=F.capture(next,G.W(w.id),G.F(f.id),claimCareer);
+ const claimant=F.behaviour(claimSnap,next,'w'),subject=F.behaviour(claimSnap,next,'f');
+ assert.equal(claimant.cues['history.publicCounterBroken'],1);
+ assert.equal(subject.cues['history.publicCounterBroken'],undefined);
+ assert.equal(claimant.publicCounter.families[0],'submission');
+ assert.ok(F.huddlePriority(claimant,{publicCounterMatch:true}).score>F.huddlePriority(claimant,{}).score);
+ assert.equal(F.huddlePriority(subject,{publicCounterMatch:true}).score,F.huddlePriority(subject,{}).score);
+ claimMeeting.promise.kept=true;
+ assert.equal(F.behaviour(F.capture(next,G.W(w.id),G.F(f.id),claimCareer),next,'w').cues['history.publicCounterKept'],1);
+ claimMeeting.promise.sure=true;
+ assert.equal(F.behaviour(F.capture(next,G.W(w.id),G.F(f.id),claimCareer),next,'w').publicCounter,undefined);
+ claimMeeting.promise.sure=false;
+ assert.equal(F.behaviour(F.capture(sameWeek,G.W(w.id),G.F(f.id),claimCareer),sameWeek,'w').publicCounter,undefined);
+ claimMeeting.legacy=true;
+ assert.equal(F.behaviour(F.capture(next,G.W(w.id),G.F(f.id),claimCareer),next,'w').publicCounter,undefined);
+ console.log('PASS MP9: settled historical public counter claims, correct claimant, bounded proposal priority, no same-week or legacy leakage.');

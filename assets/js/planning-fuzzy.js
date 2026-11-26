@@ -56,6 +56,14 @@
     const event={cid:m.cid,abs:finite(m.abs),outcome:str(m.outcome),
      ownInjury:m.injured?.[actor]??null,opponentInjury:m.injured?.[sideOther(actor)]??null,
      legacy:m.legacy===true,
+     // Only the public claimant, not the subject of the promo, owns this
+     // evidence. In the existing ledger the promise/commit speaker is L.w.
+     ...(m.legacy!==true&&Number.isFinite(m.abs)&&Number.isFinite(room.contract?.eventAbs)&&m.abs<room.contract.eventAbs&&actor==='w'?(()=>{
+      const p=m.promise,c=m.commit;
+      const source=p?.type==='counter'&&p.sure!==true&&typeof p.kept==='boolean'?{verdict:p.kept?'kept':'broken',families:p.families}:
+       c?.kind==='counter'&&['kept','broken'].includes(c.verdict)?c:null;
+      return source?{publicCounter:{verdict:source.verdict,families:rows(source.families).filter(x=>typeof x==='string').slice(0,8)}}:{};
+     })():{}),
      ...(m.legacy!==true&&Array.isArray(m.sequenceDelivery)?{sequenceDelivery:m.sequenceDelivery.slice(0,4).map(x=>({
       v:x.v,status:x.status,objective:str(x.objective),plannedCount:rows(x.planned).length,
       witnessedCount:rows(x.witnessed).length,attempts:finite(x.attempts),interruptions:finite(x.interruptions),
@@ -124,6 +132,7 @@
   ...family('ambition','morale',[40,55,75],1),
   rule('ambition_advancement','ambition',90,2,'goal.advancement'),
   rule('ambition_respect','ambition',85,2,'goal.respect'),
+  rule('ambition_public_counter_unfulfilled','ambition',80,1,'history.publicCounterBroken'),
   // Protectiveness here means preserving one's credible portrayal.
   // It is distinct from medical caution and willingness to collaborate.
   ...family('protectiveness','ego',[25,55,85],1),
@@ -147,7 +156,8 @@
   ...family('improvisation','ringPsychology',[15,55,90],3),
   ...family('improvisation','ringAbility',[20,55,85],2),
   ...family('improvisation','fatigue',[80,55,25],2),
-  rule('improvisation_prior_adaptation','improvisation',95,1,'history.requestedAdaptation')
+  rule('improvisation_prior_adaptation','improvisation',95,1,'history.requestedAdaptation'),
+  rule('improvisation_public_counter_delivered','improvisation',85,1,'history.publicCounterKept')
  ]});
  function behaviour(snapshot,room,side){
   const observation=observe(snapshot,room,side),p=snapshot.participants[side];
@@ -188,8 +198,14 @@
    if(adapted)cues['history.sequenceAdapted']=adapted/total;
    if(incomplete)cues['history.sequenceInterrupted']=incomplete/total;
   }
+  // The last settled technical claim is contextual evidence, not a debt
+  // or a promise to repeat it. Never infer from unchecked public rhetoric.
+  const publicCounter=rows(p.relationship?.meetings).filter(m=>!m.legacy&&m.publicCounter)
+   .sort((a,b)=>b.abs-a.abs)[0]?.publicCounter;
+  if(publicCounter?.verdict==='kept')cues['history.publicCounterKept']=1;
+  if(publicCounter?.verdict==='broken')cues['history.publicCounterBroken']=1;
   const inference=behaviourModel.evaluate(observation.values,cues);
-  return {v:1,observation,cues,scores:inference.scores,fired:inference.fired};
+  return {v:1,observation,cues,scores:inference.scores,fired:inference.fired,...(publicCounter?{publicCounter:{...publicCounter,families:publicCounter.families.slice()}}:{})};
  }
  // MP4A: bounded reaction deltas, never permissions or option selection.
  // Inputs are the two independent fuzzy profiles at the huddle opening.
@@ -219,6 +235,7 @@
    craft:flag('familiar')*(1+s.flexibility/30),
    finish:flag('supportsFinish')*(3+s.protectiveness/30),
    guidance:flag('developingPartner')*flag('simpler')*s.mentorship/22,
+   publicClaim:flag('publicCounterMatch')*(profile.publicCounter?.verdict==='broken'?1+s.ambition/35:profile.publicCounter?.verdict==='kept'?1:0),
    compromise:flag('noAlternative')*(-2+s.flexibility/35)
   };
   // Select a concrete, truthful explanation from evidence, not personality
