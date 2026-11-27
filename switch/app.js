@@ -25,7 +25,7 @@ function highlight(item,state){
 const boothSpeech=window.OfficeBoothSpeech.create(V);
 let narrationLock=null,broadcastStopRequested=false;
 const broadcastHeld=new Set();
-function requestBroadcastPause(){broadcastStopRequested=true;$('controls').textContent='Pause requested — after the current commentary line.';}
+function requestBroadcastPause(){broadcastStopRequested=true;$('controls').textContent='Pausing broadcast…';if(narrationLock?.continuous)narrationLock.ticket?.cancel();}
 const MODE_KEY='the-office-switch-management-mode';
 let managementMode='guided';try{if(localStorage.getItem(MODE_KEY)==='full')managementMode='full';}catch(_){}
 const guided=()=>managementMode==='guided';
@@ -39,7 +39,7 @@ function narrateMatch(parts,onComplete=null,{skippable=!onComplete}={}){
  // they speak; a stationary announcement can always be dismissed on release.
  // Wait for Speech still controls ordinary highlighted choice labels.
  const lock={ticket:null,continuous:!!onComplete,skippable,held:onComplete?broadcastHeld:new Set()};narrationLock=lock;scan.setSuspended(true);
- $('controls').textContent=onComplete?'Live broadcast · Press and release Enter to pause after this line.':skippable?'Listening to the scene. Press and release your switch to skip narration; then choose.':'Listening to commentary. Choices resume when speech ends.';
+ $('controls').textContent=onComplete?'Live broadcast · Press and release Enter to pause.':skippable?'Listening to the scene. Press and release your switch to skip narration; then choose.':'Listening to commentary. Choices resume when speech ends.';
  const finish=result=>{
   if(narrationLock!==lock)return;
   narrationLock=null;input.cancel();scan.setSuspended(false);
@@ -53,9 +53,15 @@ function narrateMatch(parts,onComplete=null,{skippable=!onComplete}={}){
 }
 input=window.OfficeChoiceInput.create({scan,manager:M,holdThreshold:600});
 function choose(item){if(narrationLock||!item||!items.some(x=>x===item))return;try{item.run();}catch(e){console.error(e);screen('Office notice','The action could not be completed. Your career remains available.',[a('back','Return to the office',()=>s()?desk():mainMenu())]);}}
-function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,announce=true,kicker='DENNIS · YOUR ASSISTANT',speechParts=null,onSpeechComplete=null,scene=null}={}){
+function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,announce=true,kicker='DENNIS · YOUR ASSISTANT',speechParts=null,onSpeechComplete=null,scene=null,pauseMenu=false}={}){
  if(fresh){stopNarration();input.cancel();refreshSettings=null;}
  const repeat=()=>{if(V.getSettings().ttsEnabled){stopNarration();const parked=scan.getState().parked?[{text:'Parked. Press Enter to start scanning.'}]:[];const parts=speechParts?.length?speechParts:[{text:title+'. '+body}];narrateMatch([...parts,...parked]);}else $('saveNotice').textContent=[saveNotice(),'Text to speech is off. Enable it in Settings to hear this information.'].filter(Boolean).join(' ');};
+ // Every stationary choice screen has a tap-only route to communication.
+ // Resume redraws the captured choices, never re-runs the action that opened them.
+ if(!onSpeechComplete&&!pauseMenu&&title!=='Settings'&&!choices.some(x=>x.id==='pause'||/^Pause(?:\s|$)/i.test(x.label))){
+  const original=choices;
+  choices=[...original,a('__pause','Pause / help',()=>pause(()=>screen(title,body,original,{restoreId:'__pause',portrait,announce:false,kicker,speechParts,scene})))];
+ }
  // Repeat reads the displayed snapshot, never re-enters its game action.
  // Keep dedicated match replay/status controls and do not add a live stop.
  if(!onSpeechComplete){
@@ -179,7 +185,7 @@ function help(returnTo){
   back(returnTo)]);
 }
 function controlHelp(ret){
- learningScreen('Switch controls','Two switches: Space moves the highlight, Enter selects. One switch: the highlight moves automatically after scanning starts; Enter selects. If scanning is parked, press Enter to start. Release your switch to choose. Press and release either switch to stop a spoken screen description without choosing. Use Repeat information to hear it again. In Guided mode with speech on, matches play automatically. Press and release Enter to pause after the current line. With speech off, use the next commentary choices. Pause gives access to settings and I Need Help.',[back(ret)]);
+ learningScreen('Switch controls','Two switches: Space moves the highlight, Enter selects. One switch: the highlight moves automatically after scanning starts; Enter selects. If scanning is parked, press Enter to start. Release your switch to choose. Press and release either switch to stop a spoken screen description without choosing. Use Repeat information to hear it again. In Guided mode with speech on, matches play automatically. Press and release Enter to open Pause immediately. With speech off, use the next commentary choices. Pause / help is available from decision screens. I Need Help speaks even when ordinary text to speech is off.',[back(ret)]);
 }
 function basicsHelp(ret,page=0,restoreId=null){
  const i=Math.max(0,Math.min(page,Math.ceil(BASICS.length/3)-1)),rows=BASICS.slice(i*3,i*3+3);
@@ -190,12 +196,22 @@ function basicsHelp(ret,page=0,restoreId=null){
 
 function exit(returnTo){confirm('Exit game?',window.parent===window?'Return to the main menu? Your career is kept.':'Return to the Hub? Your career is kept.','Exit game',()=>{mainMenu();if(window.parent!==window){input.cancel({resetGuard:true});V.cancel();window.parent.postMessage({action:'focusBackButton'},'*');}},returnTo);}
 function requestHelp(){
- const message='I need help, please! I need help, please!';
- let service;try{if(window.parent!==window&&window.parent.location.origin===window.location.origin)service=window.parent.NarbeCommunicationSpeech;}catch(_){}
- let ticket;try{ticket=service?.isEnabled?.()?service.speak(message):V.speak(message,{force:true});}catch(_){ticket=V.speak(message,{force:true});}
- if(ticket)scan.holdForSpeech(ticket);
+ const message='I need help, please! I need help, please!',currentItems=items;
+ const fallback=()=>V.speak(message,{force:true,completeUtterance:true});
+ clearTimeout(helpNoticeTimer);
+ let service=window.NarbeCommunicationSpeech;
+ try{if(window.parent!==window&&window.parent.location.origin===window.location.origin)service=window.parent.NarbeCommunicationSpeech||service;}catch(_){}
+ let ticket;
+ try{ticket=typeof service?.help==='function'?service.help(fallback,message):service?.isEnabled?.()?service.speak(message):fallback();}catch(_){try{ticket=fallback();}catch(_){}}
+ if(!ticket?.finished){try{ticket=fallback();}catch(_){}}
+ if(!ticket?.finished){$('saveNotice').textContent=[saveNotice(),'Help could not be spoken. Select I Need Help to try again.'].filter(Boolean).join(' ');return;}
+ $('saveNotice').textContent=[saveNotice(),'Calling for help…'].filter(Boolean).join(' ');
+ scan.holdForSpeech(ticket);
+ const notice=result=>{if(items!==currentItems||ticket!==helpTicket)return;clearTimeout(helpNoticeTimer);const reason=result?.reason;const text=reason==='end'||reason==='ended'?'Help message spoken.':reason==='cancelled'?'Help message stopped.':'Help could not be confirmed. Select I Need Help to try again.';$('saveNotice').textContent=[saveNotice(),text].filter(Boolean).join(' ');};
+ helpTicket=ticket;helpNoticeTimer=setTimeout(()=>notice({reason:'timeout'}),12000);Promise.resolve(ticket.finished).then(notice,()=>notice({reason:'error'}));
 }
-function pause(returnTo,restoreId=null){returnFromPause=returnTo;screen('Pause','Your game is waiting. No match time passes here.',[a('continue','Continue',returnTo),a('settings','Settings',()=>settings(()=>pause(returnTo,'settings'))),a('mode','Management mode',()=>modeScreen(()=>pause(returnTo,'mode'))),a('help','I Need Help',requestHelp),a('learn','How to play / wrestling words',()=>help(()=>pause(returnTo,'learn'))),a('menu','Main menu',()=>mainMenu()),a('exit','Exit game',()=>exit(()=>pause(returnTo,'exit')))],{restoreId});}
+let helpTicket=null,helpNoticeTimer=null;
+function pause(returnTo,restoreId=null){returnFromPause=returnTo;screen('Pause','Your game is waiting. No match time passes here. I Need Help calls out even with text to speech off.',[a('continue','Continue',returnTo),a('help','I Need Help',requestHelp),a('settings','Settings',()=>settings(()=>pause(returnTo,'settings'))),a('mode','Management mode',()=>modeScreen(()=>pause(returnTo,'mode'))),a('learn','How to play / wrestling words',()=>help(()=>pause(returnTo,'learn'))),a('menu','Main menu',()=>confirm('Return to main menu?','Your saved career is kept.','Main menu',()=>mainMenu(),()=>pause(returnTo,'menu'))),a('exit','Exit game',()=>exit(()=>pause(returnTo,'exit')))],{restoreId,pauseMenu:true});}
 function settings(returnTo,fresh=true,restoreId=null){
  screen('Settings',window.NarbePlatform.settings.hasHubParent()?'Access settings are shared with Benny’s Hub.':'Access settings are saved in this browser on this site. Settings from a Hub on another site cannot be copied automatically.',[
  a('tts','Text to speech: '+(V.getSettings().ttsEnabled?'On':'Off'),()=>{V.toggleTTS();settings(returnTo,false);}),
@@ -663,7 +679,7 @@ function beginRoom(c,choice){
   catch(e){console.error(e);planning=null;screen('Backstage unavailable','Could not prepare the conversation. Choose a structure to retry.',[back(()=>prepare())]);}
  };
  if(!choice){begin([]);return;}
- screen('Backstage','Preparing the wrestlers’ conversation.',[a('cancel','Cancel',()=>{planLoadToken++;prepare();})],{portrait:w});
+ screen('Backstage','Preparing the wrestlers’ conversation.',[a('cancel','Cancel',()=>{planLoadToken++;prepare();}),a('pause','Pause / help',()=>{planLoadToken++;pause(()=>beginRoom(c,choice));})],{portrait:w});
  Promise.resolve(OfficePlanningDialogue.loadPair(w,f)).catch(()=>[]).then(begin);
 }
 function roomText(v,st){
@@ -972,28 +988,29 @@ function matchScreen(note='',commentary=[],played=false,readStatus=false){
  }
  screen('At ringside',(note?note+'\n\n':'')+status,[a('line','Hear next commentary',()=>burst(1)),a('burst','Continue — up to five commentary lines',()=>burst(5)),...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',()=>calls(note,commentary))]:[]),a('status',commentary.length?'Replay commentary / status':'Repeat match status',()=>commentary.length?replay():matchScreen()),a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(''),announce:!played});
 }
-// Pull just one commentary line from the real engine at a time. A pause
-// finishes that line, never simulates the next one, and retains a replay window.
+// Pull one commentary line at a time. Pause interrupts speech immediately,
+// never simulates the next line, and retains a replay window.
 function startBroadcast(){
  if(!active)return;
  broadcastStopRequested=false;broadcastHeld.clear();
  const run=active,m=run.M;let recent=[];
  if(m.switchAdvice?.pending){delete m.switchAdvice.pending;persistMatch();}
  const display=lines=>lines.map(l=>(D.BOOTH?.[l.who]?.short?D.BOOTH[l.who].short+': ':'')+l.text).join('\n');
- const finish=()=>{broadcastHeld.clear();matchScreen(display(recent),recent,true);};
+ const finish=()=>{broadcastHeld.clear();const resume=()=>matchScreen(display(recent),recent,true);if(broadcastStopRequested)pause(resume);else resume();};
  const nextLine=()=>{
   if(active!==run)return;
   if(broadcastStopRequested||(!m.queue.length&&(m.done||m.decision))){finish();return;}
   const line=X.next(m);
   if(!line){finish();return;}
   recent=[...recent,line].slice(-3);persistMatch();
-  screen('Live broadcast',display(recent),[a('pause','Pause after this line',requestBroadcastPause)],{portrait:m.w,kicker:'LIVE FROM RINGSIDE',scene:liveScene(m,s().card.find(x=>x.id===run.cid)),speechParts:boothSpeech.parts([line]),onSpeechComplete:result=>{
+  screen('Live broadcast',display(recent),[a('pause','Pause / help',requestBroadcastPause)],{portrait:m.w,kicker:'LIVE FROM RINGSIDE',scene:liveScene(m,s().card.find(x=>x.id===run.cid)),speechParts:boothSpeech.parts([line]),onSpeechComplete:result=>{
    if(active!==run)return;
+   if(broadcastStopRequested){finish();return;}
    if(result?.reason!=='end'){
     finish();
     $('saveNotice').textContent=[saveNotice(),'Speech stopped. Replay commentary or continue.'].filter(Boolean).join(' ');return;
    }
-   if(broadcastStopRequested||(!m.queue.length&&(m.done||m.decision))){finish();return;}
+   if(!m.queue.length&&(m.done||m.decision)){finish();return;}
    const advice=contextualAdvice(m,X.canCall);
    if(advice){broadcastHeld.clear();recordAdvice(m,advice);adviceScreen(advice,display(recent),recent);return;}
    nextLine();
