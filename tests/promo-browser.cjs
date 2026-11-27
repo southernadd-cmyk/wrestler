@@ -85,16 +85,19 @@ async function coldWarm(browser,viewport){
  },async({page,saved,requests})=>{
   const start=Date.now();await openMic(page);const coldMs=Date.now()-start;
   await assertBankOwners(page,['rex','silas']);
+  assert.equal(await page.locator('.crowd-broadcast').count(),1);
+  assert.equal(await page.locator('.desk-table .grid [data-mic]').count(),await mic(page).count());
+  assert.equal(await page.locator('#micTalk .dialogue-history').count(),0);
   if(viewport.width>=901){
    const geometry=await page.evaluate(()=>{
     const stage=document.querySelector('.s-promo'),decision=stage.querySelector('.decide2'),win=stage.querySelector('.win');
     const r=stage.getBoundingClientRect(),buttons=[...decision.querySelectorAll('[data-mic]')];
     const nested=[...stage.querySelectorAll('.win,.wbody,.scene,.promo-context,.decide2,.sheetline')].filter(el=>/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollHeight>el.clientHeight+2);
     const conversation=stage.querySelector('.promo-conversation').getBoundingClientRect(),d=decision.getBoundingClientRect();
-    return {win:win.clientWidth,decision:decision.clientWidth,split:conversation.right<=d.left+2&&Math.abs(conversation.top-d.top)<=2,buttons:buttons.length,nested:nested.length,
+    return {win:win.clientWidth,decision:decision.clientWidth,split:conversation.bottom<=d.top+2&&stage.querySelector('.crowd-broadcast').getBoundingClientRect().bottom<=conversation.top+2,buttons:buttons.length,nested:nested.length,
      allVisible:buttons.every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=Math.min(r.bottom,innerHeight)+2}),horizontal:decision.scrollWidth-decision.clientWidth};
    });
-   assert.ok(geometry.split&&geometry.decision>=geometry.win*.55,'conversation left, choices right '+JSON.stringify(geometry));
+   assert.ok(geometry.split&&geometry.decision>=geometry.win*.9,'scoreboard, transcript, full-width choices '+JSON.stringify(geometry));
    assert.equal(geometry.nested,0,'no independently scrolling promo panes');
    assert.ok(geometry.buttons>0&&geometry.allVisible,'initial promo choices should fit without scrolling '+JSON.stringify(geometry));
    assert.ok(geometry.horizontal<=2,'decision pane must not overflow horizontally '+JSON.stringify(geometry));
@@ -201,16 +204,19 @@ async function compactPlanning(browser,viewport){
   assert.ok(g.horizontal<=2,'structure choices must not overflow '+JSON.stringify(g));
   await page.locator('#tv [data-structure="traditional"]').click();
   const choice=page.locator('#tv [data-room]').first();await choice.waitFor();
+  assert.equal(await page.locator('.match-desk-sheet').count(),1);
+  assert.equal(await page.locator('.desk-rail span').count(),5);
+  assert.equal(await page.locator('#roomTalk .dialogue-history').count(),0);
   assert.equal(await page.locator('#tv .structure-change').getAttribute('open'),null,'selected structure is collapsed');
   if(viewport.width>=901){
    const g=await page.evaluate(()=>{
     const stage=document.querySelector('.s-meeting'),r=stage.getBoundingClientRect(),buttons=[...stage.querySelectorAll('[data-room]')];
     const nested=[...stage.querySelectorAll('.win,.wbody,.scene,.decide2,.sheetline')].filter(el=>/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollHeight>el.clientHeight+2);
-    const c=stage.querySelector('.scene').getBoundingClientRect(),d=stage.querySelector('.decide2').getBoundingClientRect();
+    const c=stage.querySelector('.match-desk-sheet').getBoundingClientRect(),d=stage.querySelector('.match-desk-room').getBoundingClientRect();
     return {split:c.right<=d.left+2&&Math.abs(c.top-d.top)<=2,nested:nested.length,visible:buttons.every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=Math.min(r.bottom,innerHeight)+2})};
    });
    assert.equal(g.nested,0,'no independently scrolling planning panes');
-   assert.ok(g.split,'planning must use a vertical split');
+   assert.ok(g.split,'persistent match sheet left, room right');
    assert.ok(g.visible,'actual planning options fit in the viewport '+JSON.stringify(g));
   }
   await choice.click();
