@@ -77,18 +77,15 @@ jobs:
               case "$file" in
                 *.md|*.mdx|docs/readme/*.svg|docs/readme/*.png)
                   continue ;;
-                .github/workflows/tests.yml)
-                  add tests/structure-career-activation.test.cjs
-                  add_promo ;;
+                .github/workflows/tests.yml|scripts/ci-ui-suites.sh)
+                  add tests/ci-routing.test.cjs ;;
                 .github/workflows/*)
                   continue ;;
                 assets/js/ui.js)
-                  add tests/early-career-finances.test.cjs
                   add tests/ui-accessibility.test.cjs
-                  add tests/structure-career-activation.test.cjs
-                  add tests/after-bell-choice.test.cjs
-                  add tests/match-consequence-integrity.test.cjs
-                  add_promo ;;
+                  while IFS= read -r suite; do
+                    [[ -z "$suite" ]] || add "$suite"
+                  done < <(bash scripts/ci-ui-suites.sh "$BASE_SHA" "$HEAD_SHA") ;;
                 assets/js/after-bell.js|assets/js/programme-arcs.js|assets/js/relationships.js|tests/_world.cjs)
                   add tests/after-bell.test.cjs
                   add tests/after-bell-choice.test.cjs
@@ -104,13 +101,13 @@ jobs:
                   add_promo
                   add tests/agents-room.test.cjs
                   add tests/negotiations-v2.test.cjs ;;
-                assets/js/promo-*.js|assets/promo-banks/*|scripts/build-promo-banks.cjs|scripts/build-rookie-banks.cjs|scripts/rookie-dialogue-families.cjs|assets/js/story.js|assets/js/rivalry.js|assets/js/mouthpiece.js|tests/_source.cjs|.gitattributes|index.html)
+                assets/js/promo-*.js|assets/promo-banks/*|scripts/build-promo-banks.cjs|scripts/build-rookie-banks.cjs|scripts/rookie-dialogue-families.cjs|assets/js/story.js|assets/js/rivalry.js|assets/js/mouthpiece.js|tests/_source.cjs|.gitattributes)
                   add_promo
                   add tests/ui-accessibility.test.cjs ;;
                 assets/js/ringfax.js|assets/css/ringfax.css|tests/ringfax-*.cjs)
                   add tests/ringfax-phase0-baseline.test.cjs
                   add tests/ringfax-phase1.test.cjs ;;
-                assets/js/portrait-age-map.js|assets/js/portraits.js|assets/portrait-ages/*)
+                assets/js/portrait-age-map.js|assets/js/portraits.js|assets/portrait-ages/*|assets/portraits/*|assets/portrait-atlas.png|tools/import_age_atlases.py|tools/split_age_portraits.py)
                   add tests/portrait-ageing.test.cjs
                   add tests/portrait-v4.test.cjs ;;
                 assets/js/academy*.js|tests/academy-intake.test.cjs)
@@ -132,13 +129,23 @@ jobs:
                   add tests/academy-intake.test.cjs
                   add tests/portrait-ageing.test.cjs
                   add tests/early-career-finances.test.cjs ;;
-                assets/js/*.js|assets/*.js|assets/css/*.css|assets/*.css|index.html)
+                index.html)
+                  add tests/ui-accessibility.test.cjs
+                  # Script loading changes can affect more than presentation.
+                  if git diff --unified=0 "$BASE_SHA" "$HEAD_SHA" -- index.html | grep -E '^[+-].*<script' >/dev/null; then
+                    add tests/match-flow.test.cjs
+                    add tests/promo-flow.test.cjs
+                  fi ;;
+                assets/js/*.js|assets/*.js|assets/css/*.css|assets/*.css)
                   add tests/ui-accessibility.test.cjs ;;
                 tests/*.test.cjs)
                   add "$file" ;;
                 *)
-                  # Source changes outside known areas get one cheap smoke check.
-                  add tests/match-flow.test.cjs ;;
+                  # Images and other static art do not change simulation.
+                  case "$file" in
+                    *.png|*.webp|*.jpg|*.jpeg|*.gif|*.svg|*.ico|*.woff|*.woff2) ;;
+                    *) add tests/match-flow.test.cjs ;;
+                  esac ;;
               esac
               if [[ "$file" == *.js || "$file" == *.cjs ]]; then
                 [[ -f "$file" ]] && echo "$file" >> "$syntax"
@@ -169,13 +176,17 @@ jobs:
           while IFS= read -r path; do
             [[ -z "$path" ]] || node --check "$path"
           done < "$RUNNER_TEMP/changed-js.txt"
+          start=$SECONDS
           while IFS= read -r suite; do
             if [[ -n "$suite" ]]; then
               echo "::group::$suite"
+              suite_start=$SECONDS
               node "$suite"
+              echo "Suite duration: $((SECONDS-suite_start))s"
               echo "::endgroup::"
             fi
           done < "$RUNNER_TEMP/fast-suites.txt"
+          echo "Targeted regression duration: $((SECONDS-start))s"
       - name: Exact before-after graph refactor parity
         if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'graph-refactor/')
         env:
