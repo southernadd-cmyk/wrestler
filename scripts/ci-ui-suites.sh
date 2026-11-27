@@ -11,9 +11,19 @@ if cmp -s <(git show "$base:assets/js/ui.js" | sed '/^function posterFace(/,/^}/
   printf '%s\n' tests/portrait-v4.test.cjs tests/portrait-ageing.test.cjs
   exit 0
 fi
-diff="$(git diff --unified=3 "$base" "$head" -- assets/js/ui.js)"
-# Include nearby context and hunk labels so edits to handlers route to their
-# domain even when the actual changed line is a short expression.
+# Match changed lines only, plus the actual enclosing top-level function
+# on each side. Never match unchanged neighbours or Git's hunk labels.
+old="$(git show "$base:assets/js/ui.js")"
+new="$(git show "$head:assets/js/ui.js")"
+patch="$(git diff --unified=0 "$base" "$head" -- assets/js/ui.js)"
+diff="$(awk '
+  FILENAME==ARGV[1] {if ($0 ~ /^function /) fn=$0; oldfn[FNR]=fn; if ($0 ~ /^}/) fn=""; next}
+  FILENAME==ARGV[2] {if (FNR==1) fn=""; if ($0 ~ /^function /) fn=$0; newfn[FNR]=fn; if ($0 ~ /^}/) fn=""; next}
+  /^@@ / {split($2,a,","); split($3,b,","); o=-(a[1]+0); n=b[1]+0; next}
+  /^--- / || /^\+\+\+ / {next}
+  /^-/ {print substr($0,2); print oldfn[o++]; next}
+  /^\+/ {print substr($0,2); print newfn[n++]; next}
+' <(printf '%s\n' "$old") <(printf '%s\n' "$new") <(printf '%s\n' "$patch"))"
 has() { grep -Ei "$1" <<< "$diff" >/dev/null; }
 if has 'portrait|posterFace|OfficePortraits|playerPortrait'; then
   printf '%s\n' tests/portrait-v4.test.cjs

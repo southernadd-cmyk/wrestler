@@ -83,9 +83,10 @@ jobs:
                   continue ;;
                 assets/js/ui.js)
                   add tests/ui-accessibility.test.cjs
+                  ui_suites="$(bash scripts/ci-ui-suites.sh "$BASE_SHA" "$HEAD_SHA")"
                   while IFS= read -r suite; do
                     [[ -z "$suite" ]] || add "$suite"
-                  done < <(bash scripts/ci-ui-suites.sh "$BASE_SHA" "$HEAD_SHA") ;;
+                  done <<< "$ui_suites" ;;
                 assets/js/after-bell.js|assets/js/programme-arcs.js|assets/js/relationships.js|tests/_world.cjs)
                   add tests/after-bell.test.cjs
                   add tests/after-bell-choice.test.cjs

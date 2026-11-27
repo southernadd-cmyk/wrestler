@@ -29,6 +29,14 @@ try{
  assert.ok(result.includes('tests/early-career-finances.test.cjs'));
  assert.ok(result.includes('tests/match-flow.test.cjs'));
  assert.ok(!result.includes('tests/promo-flow.test.cjs'));
+ result=check(original.replace('OfficeMic.choose()','42'));
+ assert.ok(result.includes('tests/promo-flow.test.cjs'),'removed domain call is still routed');
+ write(poster+promo+finance);git('add','.');git('commit','-qm','adjacent baseline');
+ const adjacentBase=git('rev-parse','HEAD');
+ write(poster+promo+finance.replace('state.cash','state.cash+1'));git('add','.');git('commit','-qm','adjacent finance');
+ result=cp.execFileSync('bash',[route,adjacentBase,git('rev-parse','HEAD')],{cwd:dir,encoding:'utf8'}).trim().split('\n');
+ assert.ok(result.includes('tests/early-career-finances.test.cjs'));
+ assert.ok(!result.includes('tests/promo-flow.test.cjs'),'adjacent unchanged promo must not route');
  const workflow=fs.readFileSync(path.join(root,'.github/workflows/tests.yml'),'utf8');
  assert.match(workflow,/scripts\/ci-ui-suites\.sh "\$BASE_SHA" "\$HEAD_SHA"/);
  assert.match(workflow,/\.github\/workflows\/tests\.yml\|scripts\/ci-ui-suites\.sh\)\s*add tests\/ci-routing\.test\.cjs/);
