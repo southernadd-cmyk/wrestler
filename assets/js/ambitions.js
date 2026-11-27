@@ -129,7 +129,7 @@
     const won=fin.outcome==='nc'?null:fin.outcome==='double'||!!D.FINISHES[c.finish]?.win;
     const base={a:now(),pid:c.pid,slot:c.slot,stars:fin.stars||0,title:!!c.title,minutes:fin.minutes||D.SLOTS[c.slot]?.mins||10,injured:!!fin.injury};
     a.log.unshift({...base,id:c.wid,opp:c.rid,won,purse:c.purse||0});
-    a.log.unshift({...base,id:c.rid,opp:c.wid,won:won===null?null:!won,injured:false});
+    a.log.unshift({...base,id:c.rid,opp:c.wid,won:won===null?null:!won,injured:!!(fin.foeHurt||fin.evidence?.injured?.f)});
     a.log=a.log.slice(0,MAX_LOG);
     const keys=Object.keys(a.done);if(keys.length>60)for(const k of keys.slice(0,keys.length-60))delete a.done[k];
    }
@@ -141,7 +141,7 @@
   const a=state(s),mine=a.log.filter(m=>m.a===wk&&m.id===id);
   const res=s.territory?.lastResults;
   const circuit=res&&res.week===wk+1?res.matches.filter(m=>m.a===id||m.b===id).map(m=>({
-   a:wk,pid:m.pid,slot:m.a===id?m.slotA:m.slotB,opp:m.a===id?m.b:m.a,won:m.winner===id,title:!!m.title,stars:m.stars,minutes:D.SLOTS[m.a===id?m.slotA:m.slotB]?.mins||10,circuit:true})):[];
+   a:wk,pid:m.pid,slot:m.a===id?m.slotA:m.slotB,opp:m.a===id?m.b:m.a,won:m.winner===id,title:!!m.title,stars:m.stars,minutes:m.minutes||D.SLOTS[m.a===id?m.slotA:m.slotB]?.mins||10,injured:!!m.condition?.[id]?.injury,circuit:true})):[];
   return [...mine,...circuit];
  }
 

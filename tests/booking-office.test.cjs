@@ -160,3 +160,26 @@ console.log('PASS bookers plan to their own style');
  assert.equal(t.lastResults.matches.map(m=>m.a+'|'+m.b).sort().join(),predicted.map(m=>m.a.id+'|'+m.b.id).sort().join(),'the prediction matches the week');
  console.log('PASS a vacant belt is settled before the prediction, as it is before the real week');
 }
+
+// INT5: the circuit plays the booker's result, but its performance and wear are real.
+{
+ const s=fresh(),week=T.absWeek(s)+1,match=B.decide(s,s.territory,week).bill[0];
+ const before=JSON.stringify(s),sim=T.simulateCircuitMatch(s,week,match);
+ assert.equal(JSON.stringify(sim),JSON.stringify(T.simulateCircuitMatch(s,week,match)));
+ assert.equal(JSON.stringify(s),before,'performance preview is pure');
+ const rested={...match,a:{...match.a,ring:90,psych:90,fatigue:0},b:{...match.b,ring:90,psych:90,fatigue:0}};
+ const tired={...rested,a:{...rested.a,ring:35,psych:35,fatigue:85},b:{...rested.b,ring:35,psych:35,fatigue:85}};
+ const good=T.simulateCircuitMatch(s,week,rested),bad=T.simulateCircuitMatch(s,week,tired);
+ assert.ok(good.stars>bad.stars);assert.ok(good.condition[match.a.id].stamina>bad.condition[match.a.id].stamina);
+ const expected=G.matchFatigue(match.a,{minutes:sim.minutes,plan:sim.plan,evidence:{stamina:{w:sim.condition[match.a.id].stamina}}},'w');
+ assert.equal(sim.condition[match.a.id].fatigueGain,expected,'same shared physical cost');
+ s.card=[];G.endWeek();
+ const rows=s.territory.lastResults.matches;assert.ok(rows.length);
+ for(const m of rows){assert.ok(m.minutes>=8&&m.minutes<=20&&m.stars>=.5&&m.stars<=5);assert.ok([m.a,m.b].includes(m.winner));
+  for(const id of [m.a,m.b]){assert.ok(m.condition[id].fatigueGain>0);assert.equal(G.personnel(s,id).fatigue,m.condition[id].fatigue);}
+ }
+ const saved=JSON.parse(JSON.stringify(s));G.S=saved;
+ for(const m of rows)for(const id of [m.a,m.b])assert.equal(G.personnel(G.S,id).fatigue,m.condition[id].fatigue);
+ const snapshot=JSON.stringify(G.S.worldV4.personnel);T.evolve();assert.equal(JSON.stringify(G.S.worldV4.personnel),snapshot,'week settles once');
+ console.log('PASS INT5 deterministic performance, quality/condition sensitivity, shared fatigue, persistent circuit condition');
+}
