@@ -1449,6 +1449,7 @@ function finish(M){
   say(M,`${f.short} looks at the referee. The referee looks at the curtain.`,'agent',{...step(6),pause:1,who:'pbp'});
   say(M,`That was not the plan. ${M.p.name} will want a word.`,'agent',{...step(0)});
   decisive(M,w,f,step,`${w.name} has pulled off the upset!`);
+  M.finishReceipt={v:1,finisher:'w',route:null};
   say(M,`Chaos at ${M.p.venue}.`,'crowd',{...step(),big:true});
  }else if(M.outcome==='dq'){
   const k=M.dqCall||{why:'cheap'};M.finishRoute='dq_'+(k.why==='runin'?'runin':'cheap');
@@ -1488,7 +1489,10 @@ function finish(M){
    evidence.spoken=true;
   }
   route.run(M,w,f,step);
+  const named=['finisher','reversal_finisher','top_rope','limb_finish','strike_knockout','outlasted','duck_finisher','finisher_reversed'].includes(route.id);
+  M.finishReceipt={v:1,finisher:named?(D.FINISHES[o.finish]?.win?'w':'f'):null,route:route.id};
  }
+ M.finishReceipt??={v:1,finisher:null,route:M.finishRoute||null};
  M.t=at;M.stage='over';
  // The bell can interrupt an accepted order. Do not turn an unperformed
  // request into a successful call or invent a move at the result.
@@ -1514,6 +1518,8 @@ function summary(M){
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,...(ringsideEvidence.length?{ringsideEvidence}:{}),injury:M.injury,injuryPart:M.injuryPart,
   outcome:M.outcome,finishRoute:M.finishRoute||null,crowdTrace:[...(M.crowdTrace||[]),[M.t,Math.round(M.crowd)]],flow:(M.flow||[]).slice(),marks:(M.marks||[]).slice(),starParts:starParts(M).map(([k,label,v])=>[k,label,Math.round(v*100)/100]),len:M.len,rehearsed:!!M.o.sheet?.rehearsed,roomNote:root.OfficeRoom?.verify(M)||null,roomBonus:M.o.sheet?.bonus||0,roomFx:M.o.sheet?.fx||null,roomThreads:M.o.sheet?.threads||null,roomThreadUsed:M.o.sheet?.threadUsed||null,roomRepStake:M.o.sheet?.repStake||0,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,foeInjuryPart:M.foeInjuryPart||null,workingHurt:M.workingHurt,
   resent:M.resent,promo:M.o.promo||null,
+  finishReceipt:M.finishReceipt?{...M.finishReceipt}:null,
+  corners:{w:M.sheet?.corner?{job:M.sheet.corner.job,fired:!!M.sheet.corner.fired,ok:!!M.sheet.corner.ok,dq:!!M.sheet.corner.dq,hurtRef:!!M.sheet.corner.hurtRef,ejected:!!M.sheet.corner.ejected}:null,f:M.rivalCorner?{job:M.rivalCorner.job,fired:!!M.rivalCorner.fired,ok:!!M.rivalCorner.ok,ejected:!!M.rivalCorner.ejected}:null},
   promoSignals:{
    workerCounter:!!M.graph?.promoCounterPaid,
    workerFinisherSetup:!!M.graph?.events?.some(e=>e.id==='finish_tease'&&e.preControl==='w'),
