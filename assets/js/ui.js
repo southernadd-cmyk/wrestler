@@ -666,15 +666,10 @@ function renderTraining(){
   const selected=w.id===chosen.id;
   const condition=w.injury?`Injured · ${w.injury} ${plural(w.injury,'week')}`:w.fatigue>=60?'Rest recommended':w.fatigue>=40?'Fatigue building':'Available';
   const line=w.program?`${w.program.type==='camp'?'Residential camp':'Training block'} · ${w.program.left} wk left`:w.training==='rest'?'Rest':w.training==='promo'?'Promo':`${D.TRAINING[w.training]?.name||'Training'} · ${G.INTENSITY[w.intensity||'light']?.name||'Light drills'}`;
-  return `<button type="button" class="train-person ${selected?'selected':''}" data-trainpick="${esc(w.id)}" aria-pressed="${selected}" aria-label="Manage training for ${esc(w.name)}">
-   ${face('wrestler',w.id,w.name)}
-   <span class="train-person-main"><b>${esc(w.name)}</b><small>${esc(line)}</small><small class="${w.injury||w.fatigue>=60?'bad':''}">${esc(condition)}</small></span>
-   <span class="train-person-fatigue"><small>Fatigue ${Math.round(w.fatigue)}</small>${bar(w.fatigue,fatKind(w.fatigue))}</span>
-  </button>`;
- }).join(''):`<div class="empty">Sign a wrestler to begin training.<br><button class="btn sm" data-go="scouting">Free agents</button></div>`;
- const overview=`${figures}<p class="train-context">Select a wrestler to manage their weekly training. Plans continue until you change them.</p>
- <div class="train-roster well" role="group" aria-label="Stable training roster">${people}</div>
- <p class="train-footnote">Condition alerts identify injuries or fatigue of 60+. Sessions with Dennis are shared across the whole stable.</p>${s.trainingReviews?.length?`<div class="train-review-teaser"><b>Last completed week: ${weekLabel(s.trainingReviews.at(-1).a)}</b><p>${money(s.trainingReviews.at(-1).trainingCost||0)} spent on training and promos</p><button class="btn sm" data-trainpane="reports">Read review</button></div>`:''}`;
+  return `<tr class="pick" data-selected="${selected}"><td><button type="button" class="row-pick" data-trainpick="${esc(w.id)}" aria-pressed="${selected}" aria-label="Manage training for ${esc(w.name)}">${face('wrestler',w.id,w.name)} <b>${esc(w.name)}</b></button></td><td>${esc(line)}</td><td>${Math.round(w.fatigue)}</td><td class="${w.injury||w.fatigue>=60?'bad':''}">${esc(condition)}</td></tr>`;
+ }).join(''):'';
+ const overview=`${figures}<div class="train-roster well" aria-label="Stable training roster">${roster.length?`<table class="grid train-grid"><thead><tr><th>Wrestler</th><th>Assignment</th><th>Fatigue</th><th>Condition</th></tr></thead><tbody>${people}</tbody></table>`:'<div class="empty">Sign a wrestler to begin training.<br><button class="btn sm" data-go="scouting">Free agents</button></div>'}</div>
+ <p class="train-footnote">Plans continue until changed. Condition alerts: injury or fatigue of 60+. Dennis’s sessions are shared.</p>${s.trainingReviews?.length?`<div class="train-review-teaser"><b>Last completed week: ${weekLabel(s.trainingReviews.at(-1).a)}</b><p>${money(s.trainingReviews.at(-1).trainingCost||0)} spent on training and promos</p><button class="btn sm" data-trainpane="reports">Read review</button></div>`:''}`;
  const tabs=`<div class="train-tabs" role="group" aria-label="Training view">
   <button type="button" class="btn sm ${trainingPane==='development'?'go':''}" data-trainpane="development" aria-pressed="${trainingPane==='development'}">Wrestler development</button>
   <button type="button" class="btn sm ${trainingPane==='coaches'?'go':''}" data-trainpane="coaches" aria-pressed="${trainingPane==='coaches'}">Coaching staff</button>
@@ -737,12 +732,12 @@ function renderTraining(){
    <div><h3>${esc(w.name)}</h3><p>${esc(w.style||'Wrestler')} · ${status(w)}</p><p>Fatigue ${Math.round(w.fatigue)} ${bar(w.fatigue,fatKind(w.fatigue))}</p></div>
    <button class="btn sm" data-openw="${esc(w.id)}">Full profile</button></div>
    ${attributes}
-   <h3 class="section-h">Weekly training</h3>
+   <div class="train-workbench"><section><h3 class="section-h">Weekly training</h3>
    <div class="train-settings"><label class="field">Focus${focusSelect}</label><label class="field">Intensity${intensitySelect}</label></div>
    <div class="train-effect"><b>${money(G.trainingCost(w))} this week</b><p>${esc(expectation)}</p>${paused?`<p>${esc(trainNote(w))}</p>`:''}</div>
-   <h3 class="section-h">Development programme</h3>${programme}
+   </section><section><h3 class="section-h">Development programme</h3>${programme}
    ${w.prepHistory?.length?`<p class="train-footnote">Last completed: ${esc(D.TRAINING[w.prepHistory[0].focus]?.name||w.prepHistory[0].focus)} · +${w.prepHistory[0].gains} points (${weekLabel(w.prepHistory[0].week)}).</p>`:''}
-   ${trainingAdvicePanel(w)}${sessions}`;
+   </section></div><div class="train-workbench"><section>${trainingAdvicePanel(w)}</section><section>${sessions}</section></div>`;
  }
  paint('s-split s-train',
   win('Stable training',overview,{keep:'train-roster'})+
