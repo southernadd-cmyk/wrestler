@@ -2198,9 +2198,9 @@ function savedCareer(){
 }
 function posterFace(img,caption,w,saved){
  const el=$(img),cell=Pt.portraitCell({key:'wrestler:'+w.id,name:w.name},saved);
- el.style.backgroundImage=`url("${cell?.url||'assets/portraits/'+w.id+'.png'}")`;
- el.style.backgroundPosition=cell?.position||'center';
- el.style.backgroundSize=cell?.size||'cover';
+ el.style.backgroundImage=`url("${cell?.fileUrl||'assets/portraits/'+w.id+'.png'}")`;
+ el.style.backgroundPosition='center';
+ el.style.backgroundSize=cell?'100% 100%':'cover';
  el.classList.toggle('age-portrait',!!cell);
  el.setAttribute('aria-label','Pixel-art portrait of '+w.name);
  $(caption).textContent=w.name;
