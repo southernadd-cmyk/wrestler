@@ -218,8 +218,7 @@ function recoverPersonnel(s,week){
  for(const [id,c] of Object.entries(world.contracts)){
   if(!['market','ai','independent'].includes(c.owner))continue;
   const worker=G.personnel(s,id);if(!worker)continue;
-  // Only off-roster injuries already present in the persistent record are settled.
-  // AI match results currently do not simulate new physical injuries.
+  // Shared recovery for injuries and fatigue from player-facing and circuit matches.
   if(!worker.injury&&!worker.niggle&&!worker.relapse&&!(worker.fatigue>0))continue;
   if(worker.injury&&(worker.injurySince??week-1)<week)worker.injury=Math.max(0,worker.injury-1);
   if(worker.niggle>0&&!--worker.niggle)worker.nigglePart=null;
