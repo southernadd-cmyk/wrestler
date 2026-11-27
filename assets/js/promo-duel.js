@@ -447,6 +447,21 @@
   }
   return tags;
  }
+ // How well a line suits tonight. This is the same score that moves the odds of landing it and the size of
+ // the swing (coreRound, the push), shown so the player can see it. Display only: no roll is made here.
+ const ANGLE_WORD={personal:'personal',mock:'for laughs',facts:'with the facts',crowd:'to the crowd',case_evidence:'with the record',case_dismiss:'by dismissing it',case_concede:'by giving ground',case_deflect:'by changing the angle'};
+ function fitNote(st,stage,id){
+  const fit=stage==='open'?openFit(st,id):stage==='answer'?answerFit(st,id):stage==='push'&&PUSH[id]?pushFit(st,id):0;
+  if(!fit)return null;
+  const good=fit>0,tag=good?'Suits tonight '+(fit>=2?'▲▲':'▲'):'Wrong for tonight '+(fit<=-2?'▼▼':'▼');
+  const why=stage==='answer'&&st.angle?(good?`${st.f.short} went ${ANGLE_WORD[st.angle]||'their own way'}, and this is the right answer to it.`:`${st.f.short} went ${ANGLE_WORD[st.angle]||'their own way'}, and this plays into their hands.`)
+   :good?`It suits tonight’s room and ${talker(st).short}’s way of talking, so it lands more easily and bigger.`:`It is wrong for tonight’s room or ${talker(st).short}’s way of talking, so it is harder to land.`;
+  return {fit,tag,why};
+ }
+ function withFit(st,stage,o){
+  const n=fitNote(st,stage,o.id);
+  return n?{...o,hint:(o.hint?o.hint+' ':'')+n.why,tags:[...(o.tags||[]),n.tag],fit:n.fit}:o;
+ }
  function choices(st){
   if(!st||st.stage==='done')return [];
   const r=ROUNDS[st.round].id;
@@ -459,10 +474,13 @@
   }
   if(r==='push'&&st.director)return Director.options(st.director).map(o=>({...o,...(Semantic?.option(st,r,o.id)||{})}));
   if(r==='push')return [{id:'leave',label:'Leave it there',hint:st.meter>0?'Quit while you are ahead.':'Cut your losses.',tags:['Safe','Shorter promo']},
-   ...Object.entries(PUSH).map(([id,o])=>({id,label:fmt(o.label,st),hint:o.hint,tags:[riskWord(o.risk),o.gain>=9?'Big swing either way':'Small gain']}))];
+   ...Object.entries(PUSH).map(([id,o])=>withFit(st,'push',{id,label:fmt(o.label,st),hint:o.hint,tags:[riskWord(o.risk),o.gain>=9?'Big swing either way':'Small gain']}))];
   const stage=r==='open'?'open':r==='answer'?'answer':'close';
   const offered=Core.choices(stage,st.core);
-  return (st.director?Director.angles(st.director,stage,offered,st.core):offered).map(o=>({id:o.id,label:o.label,hint:o.hint,tags:stakes(st,stage,o.id,o),evidence:o.evidence||null,caseResponse:!!o.caseResponse,followsCase:!!o.followsCase,...(Semantic?.option(st,stage,o.id)||{})}));
+  return (st.director?Director.angles(st.director,stage,offered,st.core):offered).map(o=>{
+   const x={id:o.id,label:o.label,hint:o.hint,tags:stakes(st,stage,o.id,o),evidence:o.evidence||null,caseResponse:!!o.caseResponse,followsCase:!!o.followsCase,...(Semantic?.option(st,stage,o.id)||{})};
+   return stage==='close'?x:withFit(st,stage,x);
+  });
  }
  function fitOf(st,stage,id){return stage==='open'?openFit(st,id):stage==='answer'?answerFit(st,id):arcFit(st,'close',id);}
  function pickAuthored(st,ctx){
