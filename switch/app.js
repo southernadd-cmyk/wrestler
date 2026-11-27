@@ -1055,7 +1055,7 @@ function adviceScreen(q,note='',commentary=[],replay=false){
   ...legal.map(id=>a(id,X.CALLS[id].name,()=>resume(id),X.CALLS[id].hint)),
   a('pause','Pause / settings',()=>pause(()=>adviceScreen(q,note,commentary)))];
  const status='Calls left: '+m.calls+'.';
- const speech='Dennis. '+q.title+'. '+q.body+' '+status;
+ const speech=q.title+'. '+q.body+' '+status;
  screen('Dennis: '+q.title,q.body+' '+status+(note?'\n\n'+note:''),choices,{scene:liveScene(m,c),kicker:'LIVE FROM RINGSIDE · DENNIS',speechParts:replay?boothSpeech.parts(commentary,speech):[{text:speech}]});
 }
 function ringStatus(m){return X.fmt(m.t)+' · '+m.w.name+' stamina '+Math.round(m.wSt)+' percent. '+m.f.name+' stamina '+Math.round(m.fSt)+' percent. Crowd '+Math.round(m.crowd)+' out of 100. '+momentumText(m)+'. Calls left '+m.calls+'.';}
