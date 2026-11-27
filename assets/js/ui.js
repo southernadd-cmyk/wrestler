@@ -1379,6 +1379,7 @@ function showSegmentPick(c,w,f,p){
 }
 function showSegment(loadedBanks){
  const c=current();if(!c)return endNight();
+ const choicePosition=night.stage==='segment'?decisionScroll('s-promo'):null;
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),SG=window.OfficeSegments,type=night.segment.type;
  if(!night.seg||night.seg.cid!==c.id||night.seg.type!==type){
   // A solo promo or a grilling speaks in the wrestler's own words: fetch their bank first.
@@ -1403,7 +1404,7 @@ function showSegment(loadedBanks){
   `<div class="decide2"><h3 class="section-h">${esc(v.heading)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${pickCards(v.options,'seg')}</div>`;
  $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo">'+win(v.name+': '+w.short+(v.type==='ambush'?' and ':' before facing ')+f.short,matchupBar(c,w,f,middle)+sceneLog(entries,'segTalk',w,f,p.id)+decide,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'That is the segment.':'Every choice says what it risks.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.heading)}</span>`}</div>`;
- scrollTalk('segTalk');persistNight();
+ scrollTalk('segTalk');restoreDecisionScroll('s-promo',choicePosition);persistNight();
 }
 
 /* ---------- the mouthpiece (v0.3.25) ---------- */
@@ -1424,6 +1425,9 @@ function signatureText(w){const A=window.OfficeMatch?.GRAPH?.A||{},list=(D.PROFI
 function beatLabel(x){if(x.startsWith('outcome_')){const k=x.slice(8);return 'finish: '+(FINISH_WORDS[k]||k.replace(/_/g,' '));}
  const n=window.OfficeMatch?.GRAPH?.A?.[x];if(n?.name)return n.counterOf?'reversal of the '+n.name:n.blockOf?'blocked '+n.name:n.name;return x.replace(/_/g,' ');}
 function scrollTalk(id){const el=document.getElementById(id);if(el)el.scrollTop=el.scrollHeight;if(phoneLayout())$('#tv').scrollTop=0}
+// Redrawing a conversation must not send the manager back to the top of the choices.
+function decisionScroll(stage){const tv=$('#tv'),panel=tv?.querySelector('.'+stage+' .decide2');return panel?{tv:tv.scrollTop,panel:panel.scrollTop}:null}
+function restoreDecisionScroll(stage,position){if(!position)return;const tv=$('#tv'),panel=tv?.querySelector('.'+stage+' .decide2');if(panel)panel.scrollTop=position.panel;if(tv)tv.scrollTop=position.tv}
 function tagChips(tags){
  // What an option will do, at a glance: green helps, red costs, amber is a risk or a gamble.
  const cls=t=>/▲ or ▼|Gamble|risk|Risk|Risky|stake|if |Unlikely|booked|Will not work|either way|loses clean/.test(t)?'warn':/▼|−£|Shorter|Limits|No promo/.test(t)?'down':/▲|\+£|Safe|Safer|Better|Wins|Builds|Steady/.test(t)?'up':'';
@@ -1471,6 +1475,7 @@ function backstageBrief(c,P,v){
 }
 function showMeeting(loadedBanks){
  const c=current();if(!c)return endNight();
+ const choicePosition=night.stage==='meeting'?decisionScroll('s-meeting'):null;
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),P=night.plan,S0=S();
  if(!P.room||P.room.cid!==c.id||P.room.v!==3){
   const dialogue=window.OfficePlanningDialogue;
@@ -1589,12 +1594,14 @@ function showMeeting(loadedBanks){
  $('#tv').innerHTML=strip(c,'backstage')+backstageBrief(c,P,v)+'<div class="stage screen s-back s-meeting">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
   '<div class="tv-foot"><span class="dim">'+esc(v.stage==='done'?(st.sheet.skipPromo?'No promo tonight. Straight to the ring.':'Match layout signed.'):'Every option says what it will cost you.')+'</span>'+nextBtn+'</div>';
  scrollTalk('roomTalk');
+ restoreDecisionScroll('s-meeting',choicePosition);
  night.stage='meeting';persistNight();
 }
 
 function spokenMood(st,c){return (st.speaker?.short||st.w.short)+': '+c.player+' · '+st.f.short+': '+c.opponent;}
 function showPromos(loadedBanks){
  const c=current();if(!c)return endNight();
+ const choicePosition=night.stage==='promo'?decisionScroll('s-promo'):null;
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
  if(night.plan?.sheet?.skipPromo)return bell();
  // Before anything is said: what kind of segment is it? A duel saved before segments existed stays a duel.
@@ -1653,6 +1660,7 @@ function showPromos(loadedBanks){
  $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo">'+win((v.conversation?.formatName||'The promo')+': '+w.short+' against '+f.short,body,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'It is said.':'Once it is out of your mouth, it stays said.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('micTalk');
+ restoreDecisionScroll('s-promo',choicePosition);
  persistNight();
 }
 // Where both wrestlers sit on this promoter's card pyramid, so the commentary can talk about it.
