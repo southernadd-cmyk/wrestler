@@ -90,10 +90,11 @@ async function coldWarm(browser,viewport){
     const stage=document.querySelector('.s-promo'),decision=stage.querySelector('.decide2'),win=stage.querySelector('.win');
     const r=stage.getBoundingClientRect(),buttons=[...decision.querySelectorAll('[data-mic]')];
     const nested=[...stage.querySelectorAll('.win,.wbody,.scene,.promo-context,.decide2,.sheetline')].filter(el=>/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollHeight>el.clientHeight+2);
-    return {win:win.clientWidth,decision:decision.clientWidth,buttons:buttons.length,nested:nested.length,
+    const conversation=stage.querySelector('.promo-conversation').getBoundingClientRect(),d=decision.getBoundingClientRect();
+    return {win:win.clientWidth,decision:decision.clientWidth,split:conversation.right<=d.left+2&&Math.abs(conversation.top-d.top)<=2,buttons:buttons.length,nested:nested.length,
      allVisible:buttons.every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=Math.min(r.bottom,innerHeight)+2}),horizontal:decision.scrollWidth-decision.clientWidth};
    });
-   assert.ok(geometry.decision>=geometry.win*.95,'choices must use the full desk '+JSON.stringify(geometry));
+   assert.ok(geometry.split&&geometry.decision>=geometry.win*.55,'conversation left, choices right '+JSON.stringify(geometry));
    assert.equal(geometry.nested,0,'no independently scrolling promo panes');
    assert.ok(geometry.buttons>0&&geometry.allVisible,'initial promo choices should fit without scrolling '+JSON.stringify(geometry));
    assert.ok(geometry.horizontal<=2,'decision pane must not overflow horizontally '+JSON.stringify(geometry));
@@ -196,7 +197,7 @@ async function compactPlanning(browser,viewport){
    const pane=document.querySelector('.s-meeting .decide2'),win=document.querySelector('.s-meeting>.win'),r=pane.getBoundingClientRect();
    return {pane:pane.clientWidth,win:win.clientWidth,visible:[...pane.querySelectorAll('.structure-option')].every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=r.bottom+2&&x.right<=r.right+2}),horizontal:pane.scrollWidth-pane.clientWidth};
   });
-  if(viewport.width>=901){assert.ok(g.pane>=g.win*.95,'structure choices need full width '+JSON.stringify(g));assert.ok(g.visible,'all five structures must fit '+JSON.stringify(g));}
+  if(viewport.width>=901){assert.ok(g.pane>=g.win*.55,'structure choices need the wider right column '+JSON.stringify(g));assert.ok(g.visible,'all five structures must fit '+JSON.stringify(g));}
   assert.ok(g.horizontal<=2,'structure choices must not overflow '+JSON.stringify(g));
   await page.locator('#tv [data-structure="traditional"]').click();
   const choice=page.locator('#tv [data-room]').first();await choice.waitFor();
@@ -205,16 +206,18 @@ async function compactPlanning(browser,viewport){
    const g=await page.evaluate(()=>{
     const stage=document.querySelector('.s-meeting'),r=stage.getBoundingClientRect(),buttons=[...stage.querySelectorAll('[data-room]')];
     const nested=[...stage.querySelectorAll('.win,.wbody,.scene,.decide2,.sheetline')].filter(el=>/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollHeight>el.clientHeight+2);
-    return {nested:nested.length,visible:buttons.every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=Math.min(r.bottom,innerHeight)+2})};
+    const c=stage.querySelector('.scene').getBoundingClientRect(),d=stage.querySelector('.decide2').getBoundingClientRect();
+    return {split:c.right<=d.left+2&&Math.abs(c.top-d.top)<=2,nested:nested.length,visible:buttons.every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=Math.min(r.bottom,innerHeight)+2})};
    });
    assert.equal(g.nested,0,'no independently scrolling planning panes');
+   assert.ok(g.split,'planning must use a vertical split');
    assert.ok(g.visible,'actual planning options fit in the viewport '+JSON.stringify(g));
   }
   await choice.click();
   await page.locator('#tv .runorder').waitFor();
   if(viewport.width>=901){
    const board=await page.evaluate(()=>({pane:document.querySelector('.s-meeting .runorder').clientWidth,win:document.querySelector('.s-meeting>.win').clientWidth}));
-   assert.ok(board.pane>=board.win*.95,'running order must use full width '+JSON.stringify(board));
+   assert.ok(board.pane>=board.win*.55,'running order must use the wider right column '+JSON.stringify(board));
   }
   assert.equal(await page.locator('#tv [data-room="board_ok"]').count(),1);
   // Short laptop and phone use different scroll containers from the full desktop.
