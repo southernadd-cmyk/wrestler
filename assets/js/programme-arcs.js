@@ -190,6 +190,12 @@
   const entry=arc(x.prog).timeline.find(e=>e.cid===c.id&&e.step===x.step);
   if(!entry||entry.afterStory)return false;
   entry.afterStory={...receipt};
+  // Only future chapters can benefit from a public hook. Never revise a settled finale.
+  if(x.step<x.prog.beats.length-1&&x.prog.status!=='broken'){
+   const change=({challenge:3,dispute:2,scuffle:1,attack:-3})[receipt.kind]||0;
+   const a=arc(x.prog),before=a.momentum;a.momentum=clamp(before+change);
+   entry.afterMomentum=a.momentum-before;
+  }
   return true;
  }
  root.OfficeProgrammeArcs={recordAfterStory,STAGES,band,chapter,options,intro,prepare,settle,locate,arc,record};
