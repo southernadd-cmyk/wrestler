@@ -112,10 +112,6 @@ body[data-ringfax=true] .sceneHeader h2{color:#ffff00;text-shadow:none}
 body[data-ringfax=true] .sceneHeader .eyebrow{color:#00ffff}
 body[data-ringfax=true] #story{background:#080808;color:#fff;padding:12px;border:2px solid #000080}
 body[data-ringfax=true] #story .storyLine{line-height:1.45}
-body[data-ringfax=true] #choices button[data-choice=quiz-0]{border-left:7px solid #ff5252}
-body[data-ringfax=true] #choices button[data-choice=quiz-1]{border-left:7px solid #60ff60}
-body[data-ringfax=true] #choices button[data-choice=quiz-2]{border-left:7px solid #ffff00}
-body[data-ringfax=true] #choices button[data-choice=quiz-3]{border-left:7px solid #00ffff}
 
 /* S8G: accessible appearance overrides retain the Office's default chrome.
    Hub preference names are validated before being assigned to data attributes. */
