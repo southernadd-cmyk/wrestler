@@ -1,9 +1,11 @@
 /* THE OFFICE v2.2 — regional circuit management layer */
 (function(root){'use strict';
 const D=root.OfficeData;
-const STORE='the-office-v22';
-const PRIOR_STORE='the-office-v21';
-const LEGACY_STORE='the-office-v2';
+// A separate entry point opts into an isolated career namespace. The desktop keys remain unchanged.
+const switchEdition=root.OfficeCareerEdition==='switch';
+const STORE=switchEdition?'the-office-switch-v22':'the-office-v22';
+const PRIOR_STORE=switchEdition?STORE:'the-office-v21';
+const LEGACY_STORE=switchEdition?STORE:'the-office-v2';
 const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const r10=n=>Math.round(n/10)*10;
 const money=n=>(n<0?'−':'')+'£'+Math.abs(Math.round(n)).toLocaleString('en-GB');
