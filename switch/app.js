@@ -122,7 +122,7 @@ const back=(fn)=>a('back','Back',fn);
 function confirm(title,body,yes,fn,cancel){screen(title,body,[a('cancel','Cancel',cancel),a('confirm',yes,fn)]);}
 function mainMenu(restoreId=null){
  const has=G.hasSave();
- screen('Main menu','Run your own wrestling stable. Sign talent, make bookings and manage matches at your own pace.',[
+ screen('Main menu','Run your own wrestling stable. Sign talent, make bookings and manage matches at your own pace. '+(M.getSettings().autoScan?'One switch: Enter selects.':'Two switches: Space moves, Enter selects.')+' Change controls in Settings.',[
  ...(has?[a('continue','Continue career',()=>{if(G.load()){restoreMatch();restorePlanning();desk();}else screen('Save unavailable','Your saved career could not be opened.',[back(mainMenu)]);})]:[]),
  a('new','New career',()=>has?confirm('New career?','This replaces only your Switch Edition career. The regular game is unaffected.','Start new career',newIdentity,()=>mainMenu('new')):newIdentity()),
  a('help','How to play',()=>help(()=>mainMenu('help'))),a('settings','Settings',()=>settings(()=>mainMenu('settings'))),a('exit','Exit game',()=>exit(()=>mainMenu('exit')))
@@ -189,7 +189,7 @@ function requestHelp(){
 }
 function pause(returnTo,restoreId=null){returnFromPause=returnTo;screen('Pause','Your game is waiting. No match time passes here.',[a('continue','Continue',returnTo),a('settings','Settings',()=>settings(()=>pause(returnTo,'settings'))),a('mode','Management mode',()=>modeScreen(()=>pause(returnTo,'mode'))),a('help','I Need Help',requestHelp),a('learn','How to play / wrestling words',()=>help(()=>pause(returnTo,'learn'))),a('menu','Main menu',()=>mainMenu()),a('exit','Exit game',()=>exit(()=>pause(returnTo,'exit')))],{restoreId});}
 function settings(returnTo,fresh=true,restoreId=null){
- screen('Settings','Access settings are shared with other compatible NARBE games on this origin.',[
+ screen('Settings',window.NarbePlatform.settings.hasHubParent()?'Access settings are shared with Benny’s Hub.':'Access settings are saved in this browser on this site. Settings from a Hub on another site cannot be copied automatically.',[
  a('tts','Text to speech: '+(V.getSettings().ttsEnabled?'On':'Off'),()=>{V.toggleTTS();settings(returnTo,false);}),
  a('voice','Voice: '+V.getVoiceDisplayName(V.getCurrentVoice()),()=>{V.cycleVoice();settings(returnTo,false);}),
  a('auto','Auto scan: '+(M.getSettings().autoScan?'On — One switch':'Off — Two switches'),()=>{if(M.getSettings().autoScan)confirm('Use two switches?','You need Space to move the highlight and Enter to select. Cancel if you only use one switch.','Use two switches',()=>{M.setAutoScan(false);settings(returnTo,true,'auto');},()=>settings(returnTo,true,'auto'));else{M.setAutoScan(true);settings(returnTo,false);}}),
