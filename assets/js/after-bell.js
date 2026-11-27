@@ -162,11 +162,66 @@
  // AB5/6 can add autonomous entry points and interactive continuation edges.
  const interference=k=>!!(k?.fired&&k.ok&&!k.ejected&&['runin','argue','distract','refbump'].includes(k.job));
  const injured=v=>v===true||typeof v==='string'&&v.length>0;
+ // AB5: one optional autonomous opening, before the manager's decision.
+ // An opening is an observed action, not a forced manager choice. No extra
+ // physical attacks, invented entrants, or changes to the settled result.
+ const openingIds=['respect_offer','rival_protest','own_assistance','corner_protest','official_space'];
+ function openingCandidates(st,x){
+  if(x.context?.v!==1||st?.psychology?.v!==1)return [];
+  const e=x.context,score=(side,key)=>Number.isFinite(st.psychology[side]?.scores?.[key])?st.psychology[side].scores[key]/100:0;
+  const choices=[],add=(id,side,actorId,weight,line)=>{if(weight>0)choices.push({id,side,actorId,weight,line});};
+  const hurtW=injured(e.injured?.w),hurtF=injured(e.injured?.f);
+  if(!hurtW&&!hurtF&&x.stars>=3.5&&x.outcome==='booked'&&e.dirty?.w===false&&e.dirty?.f===false)
+   add('respect_offer','f',x.f.id,.18*score('f','respect'),'{F} gestures for {W} to join them in acknowledging the crowd.');
+  if(!hurtF&&(e.dirty?.w===true||x.won&&x.outcome==='booked'&&score('f','escalation')>.65))
+   add('rival_protest','f',x.f.id,.24*score('f','escalation'),'{F} points at {W} and demands an explanation before leaving.');
+  if(hurtW)
+   add('own_assistance','w',x.w.id,.25*score('w','caution'),'{W} signals to the referee that they need assistance.');
+  const corner=e.rivalCorner;
+  if(!hurtW&&!hurtF&&interference(corner)&&corner.second&&corner.secondName&&corner.second!==x.w.id&&corner.second!==x.f.id)
+   add('corner_protest','corner',corner.second,.18+.08*score('f','escalation'),corner.secondName+' calls towards the ring from ringside, defending their involvement.');
+  if(hurtF)
+   add('official_space','official',null,.26,'The referee asks both wrestlers to give the officials room to attend to {F}.');
+  return choices;
+ }
+ function selectOpening(st,x){
+  const choices=openingCandidates(st,x),sum=choices.reduce((n,o)=>n+o.weight,0);
+  // Competing openings share a single budget: at least 65% have no event,
+  // even when several triggers fire. Stable CID hash; no simulation RNG.
+  const total=Math.min(.35,sum);
+  let roll=hash(st.cid+'|ab5|opening');
+  if(!sum||roll>=total)return null;
+  roll=roll/total*sum;
+  const selected=choices.find(o=>(roll-=o.weight)<0)||choices[choices.length-1];
+  return {v:1,id:selected.id,side:selected.side,actorId:selected.actorId,line:fill(selected.line,x)};
+ }
+ function openingContext(st,x){return {...x,opening:st.intervention?.id||null};}
+ function startOpening(st,x){
+  const event=selectOpening(st,x);if(!event)return;
+  st.intervention=event;
+  st.log.push({side:'stage',who:null,text:event.line});
+ }
  const legacyReactions={none:['pass'],handshake:['accepted','refused'],staredown:['engaged','flat'],
   beatdown:['worked','scuffle'],celebrate:['cheered','flat']};
  const angleGraph=Object.freeze({
   version:1,entry:'bell',exit:'mic',
   actions:Object.freeze({
+   join_respect:{label:'Join the opponent in acknowledging the crowd',hint:'Answer their gesture without demanding physical contact.',tags:['Respect'],guard:x=>x.opening==='respect_offer',
+    line:'{W} joins {F} in acknowledging the crowd.',reactions:[
+     {id:'shared_respect',drive:'respect',line:'{F} applauds as both wrestlers turn towards the audience.',bond:8,morale:2},
+     {id:'brief_respect',drive:'caution',line:'{F} gives a brief nod and steps away.',bond:3}]},
+   answer_protest:{label:'Answer the opponent’s protest',hint:'Respond to their grievance without physical contact.',tags:['Rivalry'],guard:x=>x.opening==='rival_protest',
+    line:'{W} stops and answers {F} from a distance.',reactions:[
+     {id:'hear_explanation',drive:'respect',line:'{F} hears them out and backs away.',bond:2},
+     {id:'reject_explanation',drive:'escalation',line:'{F} shakes their head and continues the argument.',bond:-3,feud:6}]},
+   address_corner:{label:'Respond to the rival corner',hint:'Answer the ringside protest; do not enter the aisle.',tags:['Rivalry'],guard:x=>x.opening==='corner_protest',
+    line:'{W} answers the protest from inside the ring.',reactions:[
+     {id:'corner_ignored',drive:'caution',line:'{F} gestures for their second to leave it there.',bond:1},
+     {id:'corner_backed',drive:'escalation',line:'{F} backs their second and keeps arguing.',bond:-3,feud:6}]},
+   give_space:{label:'Give the officials room',hint:'Let the officials attend to the injured wrestler.',tags:['Care'],guard:x=>['own_assistance','official_space'].includes(x.opening),
+    line:'{W} signals that the officials should take over.',reactions:[
+     {id:'officials_attend',drive:'caution',line:'The officials attend to the injured wrestler. {F} gives them room.',trust:1},
+     {id:'quiet_exit',drive:'respect',line:'{F} steps away as the officials continue their assessment.',bond:2}]},
    acknowledge:{label:'Applaud the opponent',hint:'Recognise a good match without demanding a handshake.',tags:['Respect','Bond'],guard:x=>x.stars>=3&&x.outcome==='booked'&&x.context.dirty?.w!==true,
     line:'{W} steps back and applauds {F}.',reactions:[
      {id:'reciprocate',drive:'respect',line:'{F} nods and applauds in return.',bond:7,morale:2},
@@ -194,12 +249,15 @@
   return Object.entries(angleGraph.actions).filter(([,n])=>n.guard(x)).map(([id,n])=>({id,label:n.label,hint:n.hint,tags:n.tags.slice()}));
  }
  function graphEdges(){
+  const responseOpenings={join_respect:['respect_offer'],answer_protest:['rival_protest'],address_corner:['corner_protest'],give_space:['own_assistance','official_space']};
+  const normal=[...Object.keys(legacyReactions),...Object.keys(angleGraph.actions).filter(k=>!responseOpenings[k])];
   return [
+   ...openingIds.flatMap(id=>[[angleGraph.entry,'opening:'+id],...[...normal,...Object.keys(responseOpenings).filter(k=>responseOpenings[k].includes(id))].map(k=>['opening:'+id,k])]),
    ...Object.entries(legacyReactions).flatMap(([id,rs])=>[[angleGraph.entry,id],...rs.flatMap(r=>[[id,id+':'+r],[id+':'+r,angleGraph.exit]])]),
-   ...Object.entries(angleGraph.actions).flatMap(([id,n])=>[[angleGraph.entry,id],...n.reactions.flatMap(r=>[[id,id+':'+r.id],[id+':'+r.id,angleGraph.exit]])])
+   ...Object.entries(angleGraph.actions).flatMap(([id,n])=>[...(responseOpenings[id]?[]:[[angleGraph.entry,id]]),...n.reactions.flatMap(r=>[[id,id+':'+r.id],[id+':'+r.id,angleGraph.exit]])])
   ];
  }
- function graphTrace(plan,reaction){return [angleGraph.entry,plan,plan+':'+reaction,angleGraph.exit];}
+ function graphTrace(plan,reaction,st){return [angleGraph.entry,...(st?.intervention?['opening:'+st.intervention.id]:[]),plan,plan+':'+reaction,angleGraph.exit];}
  function playGraph(st,x){
   const node=Object.prototype.hasOwnProperty.call(angleGraph.actions,st.plan)?angleGraph.actions[st.plan]:null;
   if(!node||x.context?.v!==1||!node.guard(x))return false;
@@ -208,7 +266,7 @@
   const total=node.reactions.reduce((n,r)=>n+weight(r),0);
   let roll=hash(st.cid+'|ab3|'+st.plan)*total;
   const reaction=node.reactions.find(r=>(roll-=weight(r))<0)||node.reactions[node.reactions.length-1];
-  st.angle={plan:st.plan,ok:reaction.bond>=0||(reaction.bond==null&&reaction.feud==null),reaction:reaction.id,path:graphTrace(st.plan,reaction.id)};
+  st.angle={plan:st.plan,ok:reaction.bond>=0||(reaction.bond==null&&reaction.feud==null),reaction:reaction.id,path:graphTrace(st.plan,reaction.id,st)};
   for(const text of [node.line,reaction.line])st.log.push({side:'stage',who:null,text:fill(text,x)});
   const add=(text,tone=0)=>st.cons.push({text:cap(text),tone});
   const source=st.cid+':after';
@@ -232,7 +290,7 @@
   if(x.context?.v!==1)return;
   const rs=legacyReactions[st.plan];if(!rs)return;
   const reaction=st.plan==='none'?'pass':rs[st.angle?.ok?0:1];
-  if(st.angle){st.angle.reaction=reaction;st.angle.path=graphTrace(st.plan,reaction);}
+  if(st.angle){st.angle.reaction=reaction;st.angle.path=graphTrace(st.plan,reaction,st);}
  }
 
  // What the angle does. Each returns the lines it plays and the consequences, and changes the save once.
@@ -446,6 +504,9 @@
   appreciate:['accept','Thank you.'],accept_apology:['accept','We can leave it there.'],
   reject_apology:['counter','Not tonight.'],argue_back:['counter','The decision stands.'],
   defend_corner:['counter','I stand by my corner.'],distance_corner:['counter','I am not defending that.'],
+  shared_respect:['accept','Good work tonight.'],brief_respect:['accept','Thank you.'],
+  hear_explanation:['accept','I hear you.'],reject_explanation:['counter','That does not settle it.'],
+  corner_ignored:['counter','Leave it there.'],corner_backed:['counter','I stand by my corner.'],
   accepted:['accept','Respect.'],refused:null
  };
  function speakReaction(st,x){
@@ -535,7 +596,7 @@
  function recordEvidence(st){
   const h=G.S?.history?.find(x=>x.cid===st.cid);if(!h)return;
   const fresh=st.cons.map(x=>x.text),prior=h.after?.effects||[];
-  h.after={plan:st.plan,angle:st.angle?{...st.angle}:null,said:st.said||null,
+  h.after={plan:st.plan,...(st.intervention?{intervention:{...st.intervention}}:{}),angle:st.angle?{...st.angle}:null,said:st.said||null,
    call:st.call?{...st.call}:null,demand:st.demand?{...st.demand}:null,effects:fresh,
    log:st.log.map(x=>({side:x.side,text:x.text,...(x.lineId?{lineId:x.lineId,source:x.source}:{})}))};
   for(const line of fresh)if(!prior.includes(line))h.notes.push('After the bell: '+line);
@@ -556,7 +617,7 @@
   for(const text of contextLines(x))st.log.push({side:'stage',who:null,text});
   // A friend who turned at the bell has already decided what happens after it.
   if(turned&&plan==null)st.log.push({side:'stage',who:null,text:fill('{F} shakes {W}’s hand, then hits them from behind. Whatever came next is out of the window.',x)});
-  if(st.stage==='angle'){G.save();return st;}
+  if(st.stage==='angle'){startOpening(st,x);G.save();return st;}
   if(st.plan!=='none')playAngle(st,x);
   recordEvidence(st);
   G.save();return st;
@@ -566,14 +627,14 @@
   const x=ctxOf(st.c,st.fin);if(!x.w||!x.f)return [];
   const base=plans(st.c,x.w,x.f,x.won);
   if(x.context?.v!==1)return base;
-  return [...base.filter(o=>o.id!=='beatdown'||!injured(x.context.injured?.w)&&!injured(x.context.injured?.f)),...graphOptions(x)];
+  return [...base.filter(o=>o.id!=='beatdown'||!injured(x.context.injured?.w)&&!injured(x.context.injured?.f)),...graphOptions(openingContext(st,x))];
  }
  // The first call of the segment: what happens now the bell has gone. Final once made.
  function choose(st,plan){
   if(st?.stage!=='angle'||!angleOptions(st).some(o=>o.id===plan))return false;
   const x=ctxOf(st.c,st.fin);
   st.plan=plan;st.stage='mic';
-  performAngle(st,x);
+  performAngle(st,openingContext(st,x));
   speakReaction(st,x);
   recordEvidence(st);
   G.save();return true;
@@ -583,7 +644,7 @@
   const angle=st.stage==='angle';
   return {stage:st.stage,plan:st.plan,planLabel:angle?'':PLANS[st.plan]?.label||angleGraph.actions[st.plan]?.label||'',log:st.log.slice(),cons:st.cons.slice(),options:angle?angleOptions(st):micOptions(st),
    title:angle?'The bell has gone':st.stage==='mic'?x.w.short+' has the microphone':'After the bell',
-   ask:angle?(x.won?'The crowd is still on its feet. What does '+x.w.short+' do now?':x.outcome==='nc'?'Nobody won. What does '+x.w.short+' do now?':'The crowd is watching '+x.w.short+'. What happens now?'):st.stage==='mic'?(x.won?'The crowd is still on its feet. What does '+x.w.short+' say?':'The crowd is quietening down. What does '+x.w.short+' say?'):''};
+   ask:angle?(st.intervention?'What does '+x.w.short+' do in response?':x.won?'The crowd is still on its feet. What does '+x.w.short+' do now?':x.outcome==='nc'?'Nobody won. What does '+x.w.short+' do now?':'The crowd is watching '+x.w.short+'. What happens now?'):st.stage==='mic'?(x.won?'The crowd is still on its feet. What does '+x.w.short+' say?':'The crowd is quietening down. What does '+x.w.short+' say?'):''};
  }
 
  // ---------------------------------------------------------------------------------------------
@@ -635,5 +696,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,attachDialogue,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,openingCandidates,selectOpening,attachDialogue,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);
