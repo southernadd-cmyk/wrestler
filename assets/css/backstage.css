@@ -253,7 +253,11 @@
 #tv .sheet-redesign .desk-rail button:focus-visible{outline:2px solid var(--cyan);outline-offset:-2px}
 #tv .board-redesign .match-desk-sheet .momentum-shape{height:50px;width:100%}
 #tv .board-redesign .match-night-matchup .mid{display:none}
-#tv .board-redesign .match-night-matchup{justify-content:space-between;gap:6px}
+#tv .board-redesign .match-night-matchup{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center}
+#tv .board-redesign .match-night-matchup .mu.you{grid-column:1;grid-row:1;justify-content:flex-start;text-align:left}
+#tv .board-redesign .match-night-matchup .mu.them{grid-column:2;grid-row:1;justify-content:flex-end;text-align:right}
+#tv .board-redesign .match-night-matchup .mu>div{min-width:0}
+#tv .board-redesign .match-night-matchup .mu .portrait{flex:none}
 #tv .board-redesign .match-attributes{white-space:normal;font-size:14px}
 #tv .board-redesign .match-attributes b{display:inline;font-size:inherit}
 #tv .board-conversation{position:relative;background:var(--well);color:var(--white);border-bottom:1px solid var(--ink)}
