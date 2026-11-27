@@ -1426,8 +1426,8 @@ function beatLabel(x){if(x.startsWith('outcome_')){const k=x.slice(8);return 'fi
  const n=window.OfficeMatch?.GRAPH?.A?.[x];if(n?.name)return n.counterOf?'reversal of the '+n.name:n.blockOf?'blocked '+n.name:n.name;return x.replace(/_/g,' ');}
 function scrollTalk(id){const el=document.getElementById(id);if(el)el.scrollTop=el.scrollHeight;if(phoneLayout())$('#tv').scrollTop=0}
 // Redrawing a conversation must not send the manager back to the top of the choices.
-function decisionScroll(stage){const tv=$('#tv'),panel=tv?.querySelector('.'+stage+' .decide2');return panel?{tv:tv.scrollTop,panel:panel.scrollTop}:null}
-function restoreDecisionScroll(stage,position){if(!position)return;const tv=$('#tv'),panel=tv?.querySelector('.'+stage+' .decide2');if(panel)panel.scrollTop=position.panel;if(tv)tv.scrollTop=position.tv}
+function decisionScroll(stage){const tv=$('#tv'),panel=tv?.querySelector('.'+stage+' .decide2');return panel?{tv:tv.scrollTop,panel:panel.scrollTop,stage:tv.querySelector('.'+stage)?.scrollTop||0}:null}
+function restoreDecisionScroll(stage,position){if(!position)return;const tv=$('#tv'),panel=tv?.querySelector('.'+stage+' .decide2');if(panel)panel.scrollTop=position.panel;const screen=tv?.querySelector('.'+stage);if(screen)screen.scrollTop=position.stage||0;if(tv)tv.scrollTop=position.tv}
 function tagChips(tags){
  // What an option will do, at a glance: green helps, red costs, amber is a risk or a gamble.
  const cls=t=>/▲ or ▼|Gamble|risk|Risk|Risky|stake|if |Unlikely|booked|Will not work|either way|loses clean/.test(t)?'warn':/▼|−£|Shorter|Limits|No promo/.test(t)?'down':/▲|\+£|Safe|Safer|Better|Wins|Builds|Steady/.test(t)?'up':'';
@@ -1654,9 +1654,10 @@ function showPromos(loadedBanks){
  const conversation=v.conversation&&v.stage!=='done'&&v.conversation.subject?`<p class="dim claim"><b>Subject:</b> ${esc(v.conversation.subject)} · ${esc(spokenMood(st,v.conversation))}${v.conversation.latestPoint?`<span>Latest point: ${esc(v.conversation.latestPoint)}</span>`:''}</p>`:'';
  const reconciliation=v.stage==='done'?OfficeRoom.promoReconciliation(night.plan?.sheet,v.result,w,f,c.finish):null;
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">The final word</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.tactic?.stake||'')}</p>${reconciliation?`<p class="dim"><b>Dennis — ${esc(reconciliation.status)}:</b> ${esc(reconciliation.reason)}</p>`:''}</div>`:
-  `<div class="decide2"><h3 class="section-h">${esc(v.name)} ${v.conversation?'':`<small>${v.round+1} of ${v.total}</small>`}</h3><p class="lede">${esc(v.help)}</p>${read}${cue}${open}${conversation}${claim}${pickCards(v.options,'mic',true)}</div>`;
+  `<div class="decide2"><h3 class="section-h">${esc(v.name)} ${v.conversation?'':`<small>${v.round+1} of ${v.total}</small>`}</h3><p class="lede">${esc(v.help)}</p>${pickCards(v.options,'mic',true)}</div>`;
  const sp=st.speaker?G.W(st.speaker.id)||w:w;
- const body=matchupBar(c,w,f,meter)+(st.speaker?`<p class="dim mouth-note">${esc(st.speaker.short)} is doing the talking for ${esc(w.short)}.</p>`:'')+sceneLog(entries,'micTalk',sp,f,p.id)+decide;
+ const context=(st.speaker?`<p class="dim mouth-note">${esc(st.speaker.short)} is doing the talking for ${esc(w.short)}.</p>`:'')+read+cue+open+conversation+claim;
+ const body=matchupBar(c,w,f,meter)+'<div class="promo-conversation">'+sceneLog(entries,'micTalk',sp,f,p.id)+(context?'<section class="promo-context" aria-label="Promo context" tabindex="0">'+context+'</section>':'')+'</div>'+decide;
  $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo">'+win((v.conversation?.formatName||'The promo')+': '+w.short+' against '+f.short,body,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'It is said.':'Once it is out of your mouth, it stays said.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('micTalk');
