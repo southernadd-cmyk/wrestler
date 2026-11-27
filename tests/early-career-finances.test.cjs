@@ -138,3 +138,20 @@ for(const seed of [13,41,91]){
   assert.ok(Number.isFinite(row.endCash));console.log('INT10 ECONOMY '+JSON.stringify(row));
  }
 }
+
+// INT11: read-only booking intelligence distinguishes real offers from unavailable ones.
+{
+ const {root}=engine(13),G=root.OfficeGame,D=root.OfficeData;G.fresh();assert.equal(G.sign('kit'),null);
+ const s=G.S,w=G.W('kit'),o=s.offers.find(o=>o.eventAbs===G.abs()&&G.offerCandidates(o).some(x=>x.id===w.id));
+ assert.ok(o,'opening has a valid current offer');
+ const snapshot=JSON.stringify(s),brief=G.officeBrief();
+ assert.equal(JSON.stringify(s),snapshot,'office briefing does not mutate career');
+ assert.ok(brief.today.some(x=>x.id===o.id));
+ assert.ok(brief.unbooked.includes(w.id));
+ assert.equal(brief.after,s.cash+G.projected());
+ assert.equal(G.book(o.id,w.id),null);
+ assert.ok(!G.officeBrief().unbooked.includes(w.id),'already booked wrestler is not an extra opportunity');
+ assert.equal(G.offerCandidates({...o,expiresAbs:G.abs()-1}).length,0);
+ assert.equal(G.offerCandidates({...o,talk:{wid:'another'}}).length,0);
+ console.log('PASS INT11 actionable weekly briefing and booked wrestler exclusion');
+}
