@@ -254,12 +254,45 @@ function requestHelp(){
 }
 let helpTicket=null,helpNoticeTimer=null;
 function pause(returnTo,restoreId=null){returnFromPause=returnTo;screen('Pause','Your game is waiting. No match time passes here. I Need Help calls out even with text to speech off.',[a('continue','Continue',returnTo),a('help','I Need Help',requestHelp),a('settings','Settings',()=>settings(()=>pause(returnTo,'settings'))),a('mode','Management mode',()=>modeScreen(()=>pause(returnTo,'mode'))),a('learn','How to play / wrestling words',()=>help(()=>pause(returnTo,'learn'))),a('menu','Main menu',()=>confirm('Return to main menu?','Your saved career is kept.','Main menu',()=>mainMenu(),()=>pause(returnTo,'menu'))),a('exit','Exit game',()=>exit(()=>pause(returnTo,'exit')))],{restoreId,pauseMenu:true});}
+// Visual preferences are presentation-only; never write the Hub's settings.
+const APPEARANCE_KEY='the-office-switch-appearance-v1',HUB_APPEARANCE_KEY='narbe-hub-settings';
+const visualOptions={
+ highlightColor:['default','blue','green','purple','red','yellow','white'],
+ highlightStyle:['outline','full'],
+ textColor:['default','green','purple','red','gold','black','white'],
+ bgTheme:['default','ocean','forest','sunset','midnight','rose','sky','cream','mint','lavender','peach'],
+ uiSize:['default','large','larger','largest']
+};
+const visualDefaults={highlightColor:'default',highlightStyle:'full',textColor:'default',bgTheme:'default',uiSize:'default'};
+function readVisual(key){try{const value=JSON.parse(localStorage.getItem(key)||'{}');return value&&typeof value==='object'?value:{};}catch(_){return {};}}
+let localVisual=readVisual(APPEARANCE_KEY);
+function visualValue(key){
+ const local=localVisual[key],hub=readVisual(HUB_APPEARANCE_KEY)[key];
+ return visualOptions[key].includes(local)?local:visualOptions[key].includes(hub)?hub:visualDefaults[key];
+}
+function applyAppearance(){for(const key of Object.keys(visualOptions))document.body.dataset[key]=visualValue(key);}
+function cycleVisual(key){
+ const values=['hub',...visualOptions[key]],i=values.indexOf(localVisual[key]||'hub');
+ localVisual={...localVisual,[key]:values[(i+1)%values.length]};
+ try{localStorage.setItem(APPEARANCE_KEY,JSON.stringify(localVisual));}catch(_){}
+ applyAppearance();
+}
+function visualLabel(key){
+ const value=visualValue(key),name=value==='default'?'Office default':value[0].toUpperCase()+value.slice(1);
+ return visualOptions[key].includes(localVisual[key])?name:'Use Hub / default ('+name+')';
+}
+function appearance(returnTo,fresh=true){
+ const fields=[['highlightColor','Highlight colour'],['highlightStyle','Highlight style'],['textColor','Text colour'],['bgTheme','Background'],['uiSize','Interface size']];
+ screen('Appearance','Choose the appearance that is easiest to read. Use Hub / default inherits available settings on this site, or the Office defaults. Local overrides apply only to Switch Edition.',fields.map(([key,label])=>a(key,label+': '+visualLabel(key),()=>{cycleVisual(key);appearance(returnTo,false);})).concat(back(returnTo)),{fresh,announce:fresh});
+ refreshSettings=()=>appearance(returnTo,false);
+}
 function settings(returnTo,fresh=true,restoreId=null){
  screen('Settings',window.NarbePlatform.settings.hasHubParent()?'Access settings are shared with Benny’s Hub.':'Access settings are saved in this browser on this site. Settings from a Hub on another site cannot be copied automatically.',[
  a('tts','Text to speech: '+(V.getSettings().ttsEnabled?'On':'Off'),()=>{V.toggleTTS();settings(returnTo,false);}),
  a('voice','Voice: '+V.getVoiceDisplayName(V.getCurrentVoice()),()=>{V.cycleVoice();settings(returnTo,false);}),
  a('auto','Auto scan: '+(M.getSettings().autoScan?'On — One switch':'Off — Two switches'),()=>{if(M.getSettings().autoScan)confirm('Use two switches?','You need Space to move the highlight and Enter to select. Cancel if you only use one switch.','Use two switches',()=>{M.setAutoScan(false);settings(returnTo,true,'auto');},()=>settings(returnTo,true,'auto'));else{M.setAutoScan(true);settings(returnTo,false);}}),
  a('speed','Scan speed: '+M.getScanInterval()/1000+' seconds',()=>{M.cycleScanSpeed();settings(returnTo,false);}),
+ a('appearance','Appearance',()=>appearance(()=>settings(returnTo,true,'appearance'))),
  back(returnTo)],{fresh,announce:fresh,restoreId});
  refreshSettings=()=>settings(returnTo,false);
 }
@@ -1269,6 +1302,8 @@ function results(returnTo=more,filter=null){
  const rows=s().history.filter(h=>!filter||(h.season===filter.season&&h.week===filter.week)).slice(0,20).map((h,i)=>({...h,id:h.cid||String(i)}));
  paged(filter?'This week’s match reports':'Recent results',rows,0,matchReport,returnTo,h=>h.name+' v '+h.foe+' — '+ratingText(h.stars));
 }
+applyAppearance();
+window.addEventListener('storage',e=>{if(e.key===APPEARANCE_KEY||e.key===null)localVisual=readVisual(APPEARANCE_KEY);if(e.key===HUB_APPEARANCE_KEY||e.key===APPEARANCE_KEY||e.key===null){applyAppearance();if(refreshSettings)refreshSettings();}});
 M.subscribe(()=>{if(refreshSettings)refreshSettings();});
 V.onSettingsChange(()=>{if(refreshSettings)refreshSettings();});
 const duringNarration=(handler)=>e=>{
