@@ -226,6 +226,7 @@ jobs:
           FOCUSED_LAYOUT: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'browser-audit/') }}
           FOCUSED_PROMO: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'browser-audit/promo-') }}
           FOCUSED_FUZZY: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'browser-audit/fuzzy-') }}
+          FOCUSED_SWITCH: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'browser-audit/switch-') }}
         run: |
           set -euo pipefail
           python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/office-http.log 2>&1 &
@@ -235,6 +236,10 @@ jobs:
             curl -fsS http://127.0.0.1:8765/ >/dev/null && break
             sleep 1
           done
+          if [[ "$FOCUSED_SWITCH" == "true" ]]; then
+            node tests/switch-accessibility-browser.cjs
+            exit 0
+          fi
           if [[ "$FOCUSED_FUZZY" == "true" ]]; then
             node tests/fuzzy-lab-browser.cjs
             OFFICE_LAYOUT_ONLY=1 node tests/browser-smoke.cjs
