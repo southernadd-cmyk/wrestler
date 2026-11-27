@@ -155,7 +155,7 @@ function marketTarget(s,team,taken=new Set()){
  const w=activeWorld(s);if(!w)return null;
  const offers=[...s.free,...all.filter(p=>w.contracts[p.id]?.owner==='independent').map(p=>G.personnel(s,p.id)||p)];
  return offers.filter(p=>!taken.has(p.id)&&recruitmentAllowed(s,team,p)&&canAfford(s,team.id,p.id))
-  .map(p=>({p,fit:(p.style===team.style?30:0)+p.pro*.35+p.ring*.22-p.fee/180-(p.ego>85?5:0)-(p.injury?12:0)-(p.fatigue||0)*.08}))
+  .map(p=>({p,fit:(p.style===team.style?30:0)+p.pro*.35+p.ring*.22-p.fee/180-(p.ego>85?5:0)-(p.injury?12:0)-(p.fatigue||0)*.08+(root.OfficeManagers?.strategicFit(team,p)||0)*.45}))
   .sort((a,b)=>b.fit-a.fit||a.p.id.localeCompare(b.p.id))[0]?.p||null;
 }
 function evolve(s,t,week,reports){
@@ -231,8 +231,14 @@ function developmentPlan(s,worker,week,worked=false){
  if(worker.age>=35)target.psych+=8;
  const score=key=>target[key]-(worker[key]??60)+(lifecycleRoll(s,worker.id,week,'focus:'+key)-.5)*18;
  const focus=Object.keys(target).sort((a,b)=>score(b)-score(a)||a.localeCompare(b))[0];
- const plan=G.trainingWeekPlan({...worker,ceiling,fatigue:worker.fatigue||0,training:focus,intensity:'light',program:null},{worked,independent:true});
- return plan?.kind==='skill'?{...plan,focus,ceiling}:null;
+ const teamId=s.worldV4?.contracts[worker.id]?.agencyId,agency=s.worldV4?.agencies?.[teamId],team=s.territory?.teams?.find(t=>t.id===teamId);
+ const q=agency?.strategy,prof=root.OfficeManagers?.profile(teamId);
+ const reserve=Math.max(0,agency?.weeklyPayroll||0)*(2+(prof?.thrift||0));
+ // One named investment per agency, never use the player's coach or funds.
+ const coached=owner==='ai'&&q?.mode==='invest'&&q.target===worker.id&&q.until>=week&&!worked&&(worker.fatigue||0)<20&&agency.cash-55>=reserve;
+ const chosen=coached&&['ring','mic','psych','safe'].includes(q.skill)?q.skill:focus;
+ const plan=G.trainingWeekPlan({...worker,ceiling,fatigue:worker.fatigue||0,training:chosen,intensity:coached?'standard':'light',program:null},{worked,independent:true});
+ return plan?.kind==='skill'?{...plan,focus:chosen,ceiling,teamId,coached}:null;
 }
 function developPersonnel(s,week,{preview=false}={}){
  const world=activeWorld(s);if(!world||world.lastDevelopmentWeek>=week)return [];
@@ -248,6 +254,9 @@ function developPersonnel(s,week,{preview=false}={}){
   const startSkills=worker.startSkills||Object.fromEntries(['ring','mic','psych','safe'].map(k=>[k,worker[k]]));
   const progress={...(worker.progress||{}),[plan.stat]:plan.progressBank};
   const patch={ceiling:plan.ceiling,startSkills,progress,[plan.stat]:plan.skillAfter,fatigue:plan.fatigue};
+  if(plan.coached){const agency=world.agencies[plan.teamId];agency.cash-=plan.cost;agency.trainingSpent=(agency.trainingSpent||0)+plan.cost;
+   if(lifecycleRoll(s,id,week,'training-injury')<plan.risk)Object.assign(patch,{injury:1,injurySince:week,wear:{...(worker.wear||{}),body:(worker.wear?.body||0)+1}});
+  }
   G.updatePersonnel(s,id,patch);
   if(plan.gain)gains.push({id,stat:plan.stat,gain:plan.gain});
  }
