@@ -1269,9 +1269,9 @@ function gameOver(){
 /* ======================= MATCH NIGHT ======================= */
 const NIGHT_STORE='the-office-v23-match'; // same key: preserve existing mid-match saves
 function persistNight(){
- if(!night?.queue)return;
+ if(!night?.queue||G.saveStatus().ok===false)return;
  try{const m=night.M?{...night.M,rState:night.M.r?.getState?.()}:null;
- localStorage.setItem(NIGHT_STORE,JSON.stringify({careerSeed:S().careerSeed,queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,resultHTML:night.stage==='result'?night.resultHTML||null:null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,segment:night.segment||null,seg:night.seg||null,signing:night.signing||null,after:night.after||null,afterReady:night.afterReady||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
+ localStorage.setItem(NIGHT_STORE,JSON.stringify({careerSeed:S().careerSeed,period:night.period??night.before?.abs??G.abs(),queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,resultHTML:night.stage==='result'?night.resultHTML||null:null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,segment:night.segment||null,seg:night.seg||null,signing:night.signing||null,after:night.after||null,afterReady:night.afterReady||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
@@ -1305,7 +1305,7 @@ function resumeNight(){
 const SPEED={slow:{line:2600,pause:1100},normal:{line:1500,pause:750},fast:{line:520,pause:260},skip:{line:0,pause:0}};
 function startNight(){
  if(S().after?.autonomous&&resumeNight())return;
- night={queue:S().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>c.id),i:0,speed:night?.speed||'normal',results:[],before:OfficeNightReport.capture(S())};
+ night={period:G.abs(),queue:S().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>c.id),i:0,speed:night?.speed||'normal',results:[],before:OfficeNightReport.capture(S())};
  openTV();night.stage='prep';prep();persistNight();
 }
 function current(){return S().card.find(c=>c.id===night.queue[night.i])}
@@ -1808,10 +1808,14 @@ function showDecision(){
 function decideNow(id){const M=night.M;Mx.resolve(M,id);persistNight();$('#decision').hidden=true;if(night.speed==='skip')night.speed='normal',document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.speed===night.speed));updateLive();schedule(400)}
 function doCall(id){const M=night.M;if(!Mx.canCall(M,id))return;Mx.call(M,id);persistNight();updateLive();if(!night.paused)schedule(250);else{const l=Mx.next(M);if(l)showLine(l)}}
 function result(){
+ if(!night?.M||!current()||night.settling)return;
  clearTimeout(night.timer);const M=night.M,c=current(),w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
  const fin={...M.final,log:M.log.map(({t,text,kind,big,who,actionId})=>({t,text,kind,big,who,...(actionId?{actionId}:{})}))};
  // The post-bell angle is chosen in the segment itself, after the result. A night saved by an
  // older version may still carry one agreed in the meeting; that plan keeps first call on the scene.
+ let settled;
+ night.settling=true;
+ try{settled=G.atomicSettlement(()=>{
  if(night.plan?.after)c.afterPlan=night.plan.after;
  const cons=G.applyResult(c,fin);
  if(window.OfficeRingside)cons.push(...OfficeRingside.settle(c,M));
@@ -1819,7 +1823,7 @@ function result(){
  const structureReport=Mx.structureReport(M),structurePlan=structureReport?M.sheet?.structurePlan?.objectives:null;
  const sheetReport=OfficeSheets.report(M),finalStrip=structureReport?structureStrip(M,{final:true}):OfficeSheets.strip(M,{final:true});
  if(sheetReport){
-  const h=S().history.find(x=>x.wid===w.id&&x.rid===f.id&&x.season===S().season&&x.week===S().week);
+  const h=S().history.find(x=>x.cid===c.id);
   if(h){h.sheet=sheetReport;if(structureReport){h.structure=JSON.parse(JSON.stringify(structureReport));
    if(fin.structureAssessment)h.structureAssessment=JSON.parse(JSON.stringify(fin.structureAssessment));}}
   if(structureReport){
@@ -1844,11 +1848,15 @@ function result(){
   for(const effect of h.consequences)if(!h.notes.includes(effect.text))h.notes.push(effect.text);
   G.save();
  }
- night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,actualOutcome:fin.outcome,bookedFinish:c.finish,baseConsequences,consequences:baseConsequences.slice()});
+ const matchResult={name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,actualOutcome:fin.outcome,bookedFinish:c.finish,baseConsequences,consequences:baseConsequences.slice()};
  // Select any autonomous event now. A routine result still has an optional segment.
- night.after=null;
- night.afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{id:c.programme.id,step:c.programme.step}}:{})},fin:OfficeAfter.capture(fin,S().history.find(h=>h.cid===c.id)),...(c.afterPlan?{plan:c.afterPlan}:{})}:null;
- if(night.afterReady){const {c,fin,plan}=night.afterReady;night.after=OfficeAfter.prepareAutonomous(c,fin,plan);}
+ let after=null;
+ const afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{id:c.programme.id,step:c.programme.step}}:{})},fin:OfficeAfter.capture(fin,S().history.find(h=>h.cid===c.id)),...(c.afterPlan?{plan:c.afterPlan}:{})}:null;
+ if(afterReady){const {c,fin,plan}=afterReady;after=OfficeAfter.prepareAutonomous(c,fin,plan);}
+ return {cons,structureReport,structurePlan,sheetReport,finalStrip,matchResult,after,afterReady};
+ });}catch(error){console.error('Match settlement rolled back',error);toast('Match settlement failed. No consequences were applied. Retry the result.');return;}finally{night.settling=false;}
+ const {cons,structureReport,structurePlan,sheetReport,finalStrip,matchResult,after,afterReady}=settled;
+ night.results.push(matchResult);night.after=null;night.after=after;night.afterReady=window.OfficeAfter?afterReady:null;
  const requiredAfter=!!night.after?.required;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=structureReport?structureReport.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structureReport.objectives.length+' objectives':sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
@@ -1908,12 +1916,17 @@ function syncAfterEvidence(){
  if(r)r.consequences=[...(r.baseConsequences||r.consequences||[]),...(h?.after?.effects||[])];
 }
 function endNight(){
- clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';closeTVFocus();
+ if(!night?.queue||night.settling||night.i<night.queue.length||S().after?.autonomous)return;
+ if((night.period??night.before?.abs??G.abs())!==G.abs())return;
  const res=night?.results||[],before=night?.before||null,speed=night?.speed||'normal';
- // Finish all weekly systems first; the report then reads their settled state.
- G.endWeek();
- if(res.length)G.msg(OfficeNightReport.build(before,S(),res.map(r=>({...r,label:starsText(r.stars)||'DUD'}))));
- if(G.save())clearNight();night={speed};
+ night.settling=true;
+ // Weekly finance, world updates and the recap form one career commit.
+ try{G.atomicSettlement(()=>{
+  G.endWeek();
+  if(res.length)G.msg(OfficeNightReport.build(before,S(),res.map(r=>({...r,label:starsText(r.stars)||'DUD'}))));
+ });}catch(error){console.error('Weekly settlement rolled back',error);toast('Week settlement failed. Nothing was charged. Retry Finish show.');return;}finally{night.settling=false;}
+ clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';closeTVFocus();
+ if(G.saveStatus().ok)clearNight();night={speed};
  if(S().over){render();return gameOver()}
  openMsg=null;past=[];ahead=[];route={s:'desk',id:null};render(true);toast(`Week ${S().week}. ${S().offers.length} ${plural(S().offers.length,'offer')} on the table.`);
 }
@@ -2051,7 +2064,7 @@ document.addEventListener('click',e=>{
  if(d.dlg==='confirm-empty-week'){
   $('#modal').close();
   if(S().card.length||G.pending().length)return proceed();
-  G.endWeek();
+  try{G.atomicSettlement(()=>G.endWeek());}catch(error){console.error('Weekly settlement rolled back',error);toast('Week settlement failed. Nothing was charged. Please retry.');return;}
   if(S().over)return gameOver();
   openMsg=null;past=[];ahead=[];route={s:'desk',id:null};render(true);
   toast(`Week ${S().week}. ${S().offers.length} ${plural(S().offers.length,'offer')} on the table.`);
