@@ -124,10 +124,16 @@ const ready=s=>{s.focus=2;};
  assert.ok(champ&&champ.belts.length&&champ.belts.every(b=>b.img&&b.name.includes('Championship')),'a champion carries their belt');
  const fs=require('node:fs'),path=require('node:path'),Pt=root.OfficePortraits;
  for(const t of all){
-  const html=Pt.avatar({key:'manager:'+t.id,name:t.manager,type:'manager'},null);
+  const actor={key:'manager:'+t.id,name:t.manager,type:'manager'};
+  const html=Pt.avatar(actor,null);
   const file=path.join(__dirname,'..','assets','portraits','manager-'+t.id+'.png');
   assert.match(html,/age-portrait/,'age-relevant manager portrait for '+t.manager);
-  assert.match(html,/assets\/portrait-ages\/atlas-\d+\.webp/);
+  const rendered=html.match(/background-image:url\('(assets\/portrait-ages\/cells\/\d{2}-\d-\d\.webp)'\)/);
+  assert.ok(rendered,'individual age portrait for '+t.manager);
+  assert.equal(rendered[1],Pt.portraitCell(actor).fileUrl,'correct age cell for '+t.manager);
+  const webp=fs.readFileSync(path.join(__dirname,'..',rendered[1]));
+  assert.equal(webp.subarray(0,4).toString(),'RIFF');
+  assert.equal(webp.subarray(8,12).toString(),'WEBP');
   const png=fs.readFileSync(file);assert.equal(png.readUInt32BE(16),144);assert.equal(png.readUInt32BE(20),180);
  }
  console.log('PASS wants and moods show on an older career; champions show their belt; six manager portraits');
