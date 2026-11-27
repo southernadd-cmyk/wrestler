@@ -249,10 +249,12 @@
   return Object.entries(angleGraph.actions).filter(([,n])=>n.guard(x)).map(([id,n])=>({id,label:n.label,hint:n.hint,tags:n.tags.slice()}));
  }
  function graphEdges(){
+  const responseOpenings={join_respect:['respect_offer'],answer_protest:['rival_protest'],address_corner:['corner_protest'],give_space:['own_assistance','official_space']};
+  const normal=[...Object.keys(legacyReactions),...Object.keys(angleGraph.actions).filter(k=>!responseOpenings[k])];
   return [
-   ...openingIds.flatMap(id=>[[angleGraph.entry,'opening:'+id],...['none',...Object.keys(legacyReactions).filter(k=>k!=='none'),...Object.keys(angleGraph.actions)].map(k=>['opening:'+id,k])]),
+   ...openingIds.flatMap(id=>[[angleGraph.entry,'opening:'+id],...[...normal,...Object.keys(responseOpenings).filter(k=>responseOpenings[k].includes(id))].map(k=>['opening:'+id,k])]),
    ...Object.entries(legacyReactions).flatMap(([id,rs])=>[[angleGraph.entry,id],...rs.flatMap(r=>[[id,id+':'+r],[id+':'+r,angleGraph.exit]])]),
-   ...Object.entries(angleGraph.actions).flatMap(([id,n])=>[[angleGraph.entry,id],...n.reactions.flatMap(r=>[[id,id+':'+r.id],[id+':'+r.id,angleGraph.exit]])])
+   ...Object.entries(angleGraph.actions).flatMap(([id,n])=>[...(responseOpenings[id]?[]:[[angleGraph.entry,id]]),...n.reactions.flatMap(r=>[[id,id+':'+r.id],[id+':'+r.id,angleGraph.exit]])])
   ];
  }
  function graphTrace(plan,reaction,st){return [angleGraph.entry,...(st?.intervention?['opening:'+st.intervention.id]:[]),plan,plan+':'+reaction,angleGraph.exit];}
