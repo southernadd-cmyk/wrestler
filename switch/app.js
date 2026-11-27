@@ -18,7 +18,7 @@ function restoreMatch(){
 function saveNotice(){return [G.saveStatus().ok===false?'Career could not be saved. Keep this page open.':'',saveError,planSaveError].filter(Boolean).join(' ');}
 function highlight(item,state){
  for(const x of items){x.element.classList.toggle('scan',x.id===item?.id);if(x.id===item?.id)x.element.dataset.braked=String(!!state.braked||!!state.brakePaused);else delete x.element.dataset.braked;}
- $('controls').textContent=M.getSettings().autoScan?'ONE SWITCH · Enter selects · '+M.getScanInterval()/1000+' second scan':'TWO SWITCHES · Space moves · Enter selects';
+ if(!narrationLock)$('controls').textContent=M.getSettings().autoScan?'ONE SWITCH · Enter selects · '+M.getScanInterval()/1000+' second scan':'TWO SWITCHES · Space moves · Enter selects';
  $('scanPosition').textContent=state.suspended?'Listening…':state.parked?'Scan parked':item?'Choice '+(items.indexOf(item)+1)+' of '+items.length:'Ready to scan';
  if(item?.element&&!state.suspended)item.element.scrollIntoView({block:'nearest',inline:'nearest'});
 }
@@ -55,7 +55,7 @@ input=window.OfficeChoiceInput.create({scan,manager:M,holdThreshold:600});
 function choose(item){if(narrationLock||!item||!items.some(x=>x===item))return;try{item.run();}catch(e){console.error(e);screen('Office notice','The action could not be completed. Your career remains available.',[a('back','Return to the office',()=>s()?desk():mainMenu())]);}}
 function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,announce=true,kicker='DENNIS · YOUR ASSISTANT',speechParts=null,onSpeechComplete=null,scene=null}={}){
  if(fresh){stopNarration();input.cancel();refreshSettings=null;}
- const repeat=()=>{if(V.getSettings().ttsEnabled){stopNarration();const parked=scan.getState().parked?[{text:'Parked. Press Enter to start scanning.'}]:[];const parts=speechParts?.length?[{text:title},...speechParts]:[{text:title+'. '+body}];narrateMatch([...parts,...parked]);}else $('saveNotice').textContent=[saveNotice(),'Text to speech is off. Enable it in Settings to hear this information.'].filter(Boolean).join(' ');};
+ const repeat=()=>{if(V.getSettings().ttsEnabled){stopNarration();const parked=scan.getState().parked?[{text:'Parked. Press Enter to start scanning.'}]:[];const parts=speechParts?.length?speechParts:[{text:title+'. '+body}];narrateMatch([...parts,...parked]);}else $('saveNotice').textContent=[saveNotice(),'Text to speech is off. Enable it in Settings to hear this information.'].filter(Boolean).join(' ');};
  // Repeat reads the displayed snapshot, never re-enters its game action.
  // Keep dedicated match replay/status controls and do not add a live stop.
  if(!onSpeechComplete){
