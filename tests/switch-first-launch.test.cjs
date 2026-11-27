@@ -40,7 +40,7 @@ function harness({saved,voice,parentKind='standalone',blocked=false}={}){
  assert.equal(scan.select(),false,'blank is inert');
  fresh.advance(2000);
  assert.equal(scan.getState().id,'new');
- await Promise.resolve();await Promise.resolve();
+ await new Promise(setImmediate);
  fresh.advance(2000);
  assert.equal(scan.getState().id,'settings');
  assert.equal(scan.select(),true);
