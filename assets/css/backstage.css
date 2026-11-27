@@ -125,3 +125,107 @@
 /* The decision renderer restores these offsets explicitly. Do not let browser
    scroll anchoring move them again after the conversation DOM is replaced. */
 #tv:has(.s-meeting,.s-promo),#tv :is(.s-meeting,.s-promo) :is(.win,.wbody,.decide2,.promo-context),#tv :is(.s-meeting,.s-promo){overflow-anchor:none}
+
+/* Match sheet and broadcast: the same paper, well, gold and grid language as the roster. */
+#tv :is(.sheet-redesign,.broadcast-redesign) .wbody{display:flex;flex-direction:column;gap:6px;padding:6px;min-width:0}
+#tv :is(.sheet-redesign,.broadcast-redesign)>.win{min-height:100%;align-self:stretch}
+#tv .desk-rail{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+#tv .desk-rail span{background:var(--deep);color:var(--dim);border:1px solid var(--ink);padding:4px 6px;font-size:15px}
+#tv .desk-rail .active{background:var(--gold);color:var(--ink);font-weight:bold}
+#tv .match-desk{display:grid;grid-template-columns:minmax(220px,30%) minmax(0,1fr);gap:6px;flex:1;align-items:stretch}
+#tv .match-desk-sheet,#tv .match-desk-room{min-width:0;border:2px solid var(--ink)}
+#tv .desk-title{margin:0;background:var(--blood);color:white;padding:4px 8px;font:22px/1.2 var(--jersey);border-bottom:2px solid var(--ink)}
+#tv .sheet-body{padding:8px;line-height:1.25;overflow-wrap:anywhere}
+#tv .sheet-body h3{font:25px/1.1 var(--jersey);margin:3px 0}
+#tv .sheet-body p{margin:4px 0 7px}
+#tv .sheet-mobile{display:none}
+#tv .momentum-shape{display:block;width:100%;height:auto;background:var(--well);border:1px solid var(--ink);margin:5px 0}
+#tv .structure-option .momentum-shape{height:42px;margin:2px 0 0}
+#tv .desk-objectives{list-style:decimal;margin:5px 0 8px;padding-left:24px;font-size:16px}
+#tv .desk-objectives li{padding:4px 3px;margin:1px 0}
+#tv .desk-objectives li span{display:block;color:var(--ink-2)}
+#tv .desk-objectives .active{background:var(--gold);outline:1px solid var(--ink)}
+#tv .desk-finish{border-top:1px solid var(--stone-lo);padding-top:5px}
+#tv .desk-notes{font-size:14px}
+#tv .match-desk-room{display:flex;flex-direction:column;background:var(--stone)}
+#tv .match-desk-room .match-night-matchup{background:var(--well);color:var(--white);border-bottom:2px solid var(--ink)}
+#tv :is(.sheet-redesign,.broadcast-redesign) .desk-transcript{background:var(--well);color:var(--white);border:1px solid var(--ink);outline:0;display:block;padding:6px 8px;max-height:none;overflow:visible;min-width:0}
+#tv .desk-line{display:grid;grid-template-columns:minmax(65px,16%) minmax(0,1fr) 40px;gap:6px;padding:2px 0;line-height:1.22;font-size:16px}
+#tv .desk-line b{color:var(--cyan);font-weight:500;overflow-wrap:anywhere}
+#tv .desk-line.w b{color:var(--gold)}
+#tv .desk-line.f b{color:var(--white)}
+#tv .desk-line.c{color:var(--dim)}
+#tv .desk-line>span:last-child{text-align:right}
+#tv .desk-line .up,#tv .desk-table .up{color:var(--good)}
+#tv .desk-line .down,#tv .desk-table .down{color:var(--bad)}
+#tv :is(.sheet-redesign,.broadcast-redesign) .decide2{border:0;padding:5px 6px;min-width:0;overflow:visible}
+#tv .desk-table{min-width:0;overflow:visible;border:1px solid var(--ink);outline:0}
+#tv .desk-table .grid{table-layout:auto;font-size:16px;color:var(--white)}
+#tv .desk-table .grid th{position:static;font-size:15px;padding:4px 5px}
+#tv .desk-table .grid td{padding:3px 5px;white-space:normal;overflow-wrap:anywhere}
+#tv .desk-table .desk-response{width:54%}
+#tv .desk-table .desk-index{width:24px}
+#tv .desk-table .desk-effect{font-size:14px;text-align:left}
+#tv .desk-table .desk-effect span{display:inline-block}
+#tv .desk-table .row-pick.decision-option{border:0;box-shadow:none;background:none;color:inherit;display:block;width:100%;text-align:left;padding:2px;min-height:0;font:inherit}
+#tv .desk-table .row-pick b{font-weight:500}
+#tv .desk-table .row-pick small{display:block;font-size:13px;color:var(--dim);line-height:1.15}
+#tv .desk-table .grid tr:focus-within td{background:var(--gold);color:var(--ink)}
+#tv .desk-table .grid tr:focus-within small,#tv .desk-table .grid tr:focus-within .desk-effect span{color:var(--ink)}
+#tv .desk-table .risk-pips{white-space:nowrap;letter-spacing:1px}
+#tv .risk-0,#tv .risk-1{color:var(--good)}
+#tv .risk-2{color:var(--warn)}
+#tv .risk-3{color:var(--bad)}
+#tv .sheet-redesign .finish-options{display:grid;grid-template-columns:1fr;gap:2px}
+#tv .sheet-redesign .finish-option{display:block;text-align:left;padding:4px 6px}
+#tv .sheet-redesign .finish-option b:before{content:'○ ';color:var(--ink)}
+#tv .sheet-redesign .finish-option.on b:before{content:'● '}
+#tv .sheet-redesign .rorder-row{display:grid;grid-template-columns:minmax(100px,25%) minmax(0,1fr);gap:4px}
+#tv .sheet-redesign .rorder-picks{display:flex;flex-wrap:wrap;gap:3px}
+#tv .sheet-redesign .rorder-pick{display:inline-block;flex:1 1 125px;text-align:left;padding:3px 5px;font-size:14px;line-height:1.15}
+#tv .sheet-redesign .rorder-pick>span:not(.tags){font-size:13px}
+#tv .sheet-redesign .rorder-pick small{display:block;font-size:12px}
+#tv .crowd-broadcast{padding:8px 10px;min-width:0;outline:0}
+#tv .broadcast-meter{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
+#tv .broadcast-meter>div:not(.crowd-axis){display:flex;align-items:center;gap:6px;font:22px/1 var(--jersey)}
+#tv .broadcast-meter>div:first-child{color:var(--gold)}
+#tv .crowd-axis{height:26px;position:relative;background:var(--deep);border:2px solid var(--ink)}
+#tv .crowd-axis:after{content:'';position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--white)}
+#tv .crowd-axis i{position:absolute;top:0;bottom:0}
+#tv .crowd-axis .towards{right:50%;background:var(--gold)}
+#tv .crowd-axis .away{left:50%;background:var(--bad)}
+#tv .crowd-word{display:block;text-align:center;color:var(--gold);font:32px/1.1 var(--jersey);margin:2px 0}
+#tv .crowd-trace{display:flex;gap:4px;align-items:end;min-width:0}
+#tv .crowd-event{flex:1;min-width:0;text-align:center}
+#tv .trace-plot{height:55px;position:relative;border-bottom:0;background:linear-gradient(to bottom,transparent 49%,var(--well-line) 49% 51%,transparent 51%)}
+#tv .trace-plot i{position:absolute;left:10%;right:10%}
+#tv .trace-plot .positive{bottom:50%;background:var(--good)}
+#tv .trace-plot .negative{top:50%;background:var(--bad)}
+#tv .crowd-event small{display:block;font-size:12px;overflow-wrap:anywhere;line-height:1.1}
+#tv .broadcast-redesign .promo-conversation:has(.promo-context){display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);gap:6px;align-items:stretch}
+#tv .broadcast-redesign .promo-context{background:var(--paper);color:var(--ink);border:2px solid var(--ink);padding:7px 9px}
+#tv .desk-context-title{font:22px/1.1 var(--jersey);color:var(--blood);margin-bottom:4px}
+#tv .broadcast-redesign .desk-table .desk-response{width:47%}
+@media(max-width:900px){
+ #tv .match-desk{grid-template-columns:minmax(0,1fr)}
+ #tv .sheet-mobile{display:block;padding:6px 8px}
+ #tv .match-desk-sheet:not(:has(.sheet-mobile[open])) .sheet-body{display:none}
+ #tv .match-desk-sheet>.desk-title{display:none}
+ #tv .desk-rail span{font-size:12px;padding:4px 2px}
+ #tv .broadcast-redesign .promo-conversation:has(.promo-context){grid-template-columns:minmax(0,1fr)}
+ #tv .desk-table .grid,#tv .desk-table .grid tbody{display:block}
+ #tv .desk-table .grid thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ #tv .desk-table .grid tr{display:flex;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--well-line);padding:3px 5px}
+ #tv .desk-table .grid tr:nth-child(even){background:var(--well-row)}
+ #tv .desk-table .grid td{border:0;background:transparent!important}
+ #tv .desk-table .desk-index{width:22px}
+ #tv .desk-table .desk-response{flex:1 1 calc(100% - 30px);width:auto!important}
+ #tv .desk-table .desk-effect{flex:0 1 auto;font-size:12px;padding:2px 5px}
+ #tv .desk-table .desk-effect:before{content:attr(data-label) ' ';color:var(--cyan)}
+ #tv .desk-table .row-pick.decision-option{min-height:40px}
+ #tv .desk-table .grid tr:focus-within{background:var(--well-hover)}
+ #tv .desk-table .grid tr:focus-within td,#tv .desk-table .grid tr:focus-within small,#tv .desk-table .grid tr:focus-within .desk-effect span{color:var(--white)}
+ #tv .broadcast-meter>div:not(.crowd-axis){font-size:16px}
+ #tv .broadcast-meter .portrait{width:24px;height:30px}
+ #tv .desk-line{grid-template-columns:minmax(50px,17%) minmax(0,1fr) 30px;font-size:14px}
+}

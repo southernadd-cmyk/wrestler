@@ -1373,7 +1373,7 @@ function showSigning(){
 function showSegmentPick(c,w,f,p){
  night.stage='segpick';
  const SG=window.OfficeSegments;
- const body=matchupBar(c,w,f,'<b class="fin">What kind of segment?</b>')+`<div class="decide2"><h3 class="section-h">Before the match</h3><p class="lede">${esc(OfficeRoom.AGENT)}: “${esc(SG.advice(c,w,f))}”</p>${pickCards(SG.menu(c,w,f,p),'segment')}</div>`;
+ const body=matchupBar(c,w,f,'<b class="fin">Mic '+esc(w.mic)+' v '+esc(f.mic)+'</b>')+`<div class="decide2"><h3 class="section-h">Before the match</h3><p class="lede">${esc(OfficeRoom.AGENT)}: “${esc(SG.advice(c,w,f))}”</p>${deskTable(SG.menu(c,w,f,p),'segment',w,f,p)}</div>`;
  $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo">'+win('The segment',body,{h:'h3',body:'tight'})+'</div><div class="tv-foot"><span class="dim">Not every segment needs two people talking.</span></div>';
  persistNight();
 }
@@ -1466,6 +1466,53 @@ function pickCards(options,attr,compact){
  // In the duel there are five options at once, so hints are cut to their first sentence.
  const brief=t=>compact?String(t||'').split(/(?<=[.!?])\s/)[0]:t;
  return `<div class="picks${compact?' five':''}">${options.map(o=>`<button class="decision-option" data-${attr}="${esc(o.id)}"><b>${esc(o.label)}</b>${o.hint?`<span>${esc(brief(o.hint))}</span>`:''}${tagChips(o.tags)}</button>`).join('')}</div>`;
+}
+function deskTable(options,attr,w,f,p){
+ const planning=attr==='room',promo=attr==='mic',seg=attr==='segment';
+ const riskLabels=['Safe','Steady','Risky','Very risky'];
+ const cols=planning?[w.short,f.short,'Sheet']:promo?['Risk','Crowd','Rivalry','Cred. ',p?.name?.split(' ')[0]||'Promoter','Promise']:seg?['Risk','Details']:['Effects'];
+ const sign=t=>/▲|Wins the crowd|Stokes the rivalry|Builds credibility/.test(t)?'up':/▼/.test(t)?'down':'';
+ const cell=(a,label)=>`<td class="desk-effect" data-label="${esc(label)}">${a.length?a.map(t=>`<span class="${sign(t)}">${esc(t)}</span>`).join(' · '):'–'}</td>`;
+ return `<div class="well desk-table"><table class="grid"><thead><tr><th>#</th><th>${planning?'Response':promo?'Line':'Choice'}</th>${cols.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${options.map((o,i)=>{
+  let tags=[...(o.tags||[])],cells=[];
+  const take=fn=>{const a=tags.filter(fn);tags=tags.filter(t=>!fn(t));return a;};
+  if(planning){
+   for(const x of [w,f])cells.push(cell(take(t=>t.startsWith(x.short+' ')&&/[▲▼]/.test(t)).map(t=>t.slice(x.short.length).trim()),x.short));
+   cells.push(cell(take(t=>/layout|running order|Changes |Keeps |finish|Limits the match|objective|sequence|called spots/i.test(t)),'Sheet'));
+  }else if(promo||seg){
+   const risk=take(t=>riskLabels.includes(t))[0],r=riskLabels.indexOf(risk);
+   cells.push(`<td class="desk-effect" data-label="Risk">${r<0?'–':`<span class="risk-pips risk-${r}" title="${risk}" aria-label="${risk}">${'●'.repeat(r+1)}${'○'.repeat(3-r)}</span>`}</td>`);
+   if(promo){
+    for(const [label,re] of [['Crowd',/Wins the crowd|Big swing either way|Small gain|Crowd [▲▼]/i],['Rivalry',/Stokes the rivalry|Rivalry [▲▼]/i],['Cred.',/Builds credibility/i],[cols[4],null],['Promise',/Promise|Names the finisher|match strip|booked|Unlikely|Safe bet/i]]){
+     const a=take(t=>re?re.test(t):t.startsWith(cols[4]+' ')&&/[▲▼]/.test(t));
+     cells.push(cell(a.map(t=>t==='Wins the crowd'||t==='Stokes the rivalry'||t==='Builds credibility'?'▲':t.startsWith(cols[4]+' ')?t.slice(cols[4].length).trim():t),label));
+    }
+   }else cells.push(cell(take(()=>true),'Details'));
+  }else cells.push(cell(take(()=>true),'Effects'));
+  return `<tr class="pick"><td class="desk-index">${i+1}</td><td class="wrap desk-response"><button class="row-pick decision-option" data-${attr}="${esc(o.id)}"><b>${esc(o.label)}</b>${o.hint?`<small>${esc(o.hint)}</small>`:''}${tags.length?`<small class="desk-extra">${esc(tags.join(' · '))}</small>`:''}</button></td>${cells.join('')}</tr>`;
+ }).join('')}</tbody></table></div>`;
+}
+function deskTranscript(entries,id,w,f){
+ return `<div class="scene well desk-transcript" id="${id}" aria-label="Full conversation">${entries.map(e=>`<div class="desk-line ${esc(e.side||'')}"><b>${esc(e.who||(e.side==='w'?w.short:e.side==='f'?f.short:e.side==='agent'?'Dennis':e.side==='you'?'You':e.side==='host'?'Host':''))}</b><span>${esc(e.text||e.line||'')}</span><span class="${e.swing>0?'up':e.swing<0?'down':''}" ${e.swing?'title="Change towards your wrestler"':''}>${e.swing?(e.swing>0?'▲':'▼')+Math.abs(e.swing):''}</span></div>`).join('')}</div>`;
+}
+function momentumShape(id,windows=[],minutes){
+ const shapes={traditional:[45,38,68,82,65,25,10],classic_american:[42,34,72,85,65,25,8],kings_road:[67,60,70,42,48,22,8],chickenshit_heel:[62,46,76,35,58,82,58],dominant_ace:[42,18,25,58,23,14,8]};
+ const points=shapes[id]||shapes.traditional;
+ return `<svg class="momentum-shape" viewBox="0 0 240 106" role="img" aria-label="Illustrative dramatic shape, not a match prediction${minutes?' · '+minutes+' minutes':''}"><path d="M4 48H236" stroke="var(--well-line)" stroke-dasharray="3 3"/><polyline fill="none" stroke="var(--gold)" stroke-width="3" points="${points.map((y,i)=>`${5+i*230/(points.length-1)},${4+y*.65}`).join(' ')}"/>${windows.map((r,i)=>r.window?`<rect x="${5+230*r.window[0]}" y="${67+i*7}" width="${230*(r.window[1]-r.window[0])}" height="5" fill="var(--cyan)" opacity=".45"><title>${esc(r.name||r.title||'Objective')} ${Math.round(r.window[0]*100)}–${Math.round(r.window[1]*100)}%</title></rect>`:'').join('')}</svg>`;
+}
+function matchDeskSheet(st,v,c,w,f,p,selected,structurePicked,finishLine){
+ const rows=OfficeRoom.boardView(st),minutes=st.sheet?.minutes||Math.max(5,c.minutes+(st.fx.minutes||0)),named=rows.filter(r=>r.current&&!/call this objective in the ring/i.test(r.current)).length;
+ const route=v.structureBrief?.route||OfficeRoom.ROUTE_NAME[st.lockRoute||st.board?.finish?.route]||'Not selected';
+ const approach=st.game?D.PLANS[st.game]?.name||st.game:'Not selected';
+ const structure=selected==='traditional'?'Traditional':OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===selected)?.label||selected;
+ const details=v.agreed.filter(x=>!x.startsWith('Structure: ')&&!x.startsWith('Finish: ')&&!rows.some(r=>x.startsWith(r.name+': '))&&x!==approach);
+ const rail=['Structure','Approach','Finish & spots','Backstage','Sign'],index=!structurePicked?0:st.stage==='plan'?1:st.stage==='board'?2:st.stage==='scene'?3:4;
+ return {rail:`<nav class="desk-rail" aria-label="Planning stage">${rail.map((x,i)=>`<span ${i===index?'aria-current="step"':''} class="${i<index?'complete':i===index?'active':''}">${i+1} ${x}${i<index?' ✓':''}</span>`).join('')}</nav>`,
+ sheet:`<aside class="paper match-desk-sheet"><h3 class="desk-title">Match sheet</h3><details class="sheet-mobile"><summary>${named} of ${rows.length} named · ${st.stage==='done'?'Signed':st.stage==='review'?'Ready to review':esc(rail[index])}</summary><div class="sheet-mobile-body"></div></details><div class="sheet-body"><small>Booked by ${esc(p.name)} (locked)</small><h3>${esc(finishLine||D.FINISHES[c.finish]?.name||c.finish)}</h3><p>${esc(D.SLOTS[c.slot].name)} · ${minutes} minutes${c.stip?' · '+esc(stipName(c.stip)):''}</p><b>${structurePicked?esc(structure):'Choose a structure'}${v.structureBrief?' · '+esc(v.structureBrief.lead)+' leads':''}</b><p>${esc(approach)}</p>${structurePicked?momentumShape(selected,rows,minutes):''}<ol class="desk-objectives">${rows.map(r=>`<li class="${st.structureTalk?.objective===r.slot&&st.stage==='scene'?'active':''}"><b>${esc(r.name)}</b><span>${esc(r.current||'Not agreed')}${r.actor==='w'?' · '+esc(w.short):r.actor==='f'?' · '+esc(f.short):''}</span></li>`).join('')}</ol><p class="desk-finish"><b>Finish:</b> ${esc(route)}</p>${details.length?`<p class="desk-notes">${details.map(esc).join(' · ')}</p>`:''}${v.structureBrief?.discussion?`<p>${esc(v.structureBrief.discussion)}</p>`:''}</div></aside>`};
+}
+function crowdBroadcast(v,w,f){
+ const entries=v.log.filter(e=>e.swing),max=Math.max(1,...entries.map(e=>Math.abs(e.swing))),m=v.meter;
+ return `<section class="well crowd-broadcast" aria-label="Crowd scoreboard"><div class="broadcast-meter"><div>${face('wrestler',w.id,w.name)}<b>${esc(w.short)}</b></div><div class="crowd-axis" role="img" aria-label="${esc(v.meterWord)}"><i class="${m>=0?'towards':'away'}" style="width:${Math.abs(m)}%"></i></div><div><b>${esc(f.short)}</b>${face('wrestler',f.id,f.name)}</div></div><strong class="crowd-word">${esc(v.meterWord)}</strong><div class="crowd-trace" aria-label="Recorded crowd swings towards your wrestler">${entries.map(e=>`<div class="crowd-event" title="${esc(e.speaker||'Crowd')}: ${e.swing>0?'+':''}${e.swing}"><div class="trace-plot"><i class="${e.swing>0?'positive':'negative'}" style="height:${Math.abs(e.swing)/max*48}%"></i></div><small>${esc(e.speaker||'Crowd')} ${e.swing>0?'+':''}${e.swing}</small></div>`).join('')||'<span class="dim">No crowd swings yet</span>'}</div></section>`;
 }
 function matchupBar(c,w,f,middle,wNote,fNote){
  return `<div class="match-night-matchup"><div class="mu you">${face('wrestler',w.id,w.name,'portrait x2')}<div><b>${esc(w.short)}</b>${ownedChamps(w.id)}${wNote||''}</div></div><div class="mid">${middle}</div><div class="mu them"><div><b>${esc(f.short)}</b>${fNote||''}</div>${face('wrestler',f.id,f.name,'portrait x2')}</div></div>`;
@@ -1572,28 +1619,23 @@ function showMeeting(loadedBanks,previousPosition){
    '<p class="dim">The backstage negotiation has locked the finish. You can still revise the called spots.</p>'}
   ${finishReadout}</section>`:'';
  // The called spots are real selections from the graph, not decorative script lines.
- const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>
+ const board=v.board?`<div class="decide2 runorder"><h3 class="section-h">${esc(v.title)}</h3><p class="lede">${esc(v.ask)}</p>
   ${routePicker}
   <div class="rorder-heading"><b>${st.structurePlanning?"2. Plan the dramatic objectives":"2. Call the spots"}</b><span>${st.structurePlanning?"Agree an optional real move for each objective or leave it to the wrestlers.":"Dennis adjusts his suggestions when the finish changes. Your choices stay put."}</span></div>
-  <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span>${esc(c.who)}’s idea</span>${tagChips(c.tags)}</button>`).join('')}</div></div>`).join('')}</div>
+  <div class="rorder">${v.board.map(r=>`<div class="rorder-row" role="group" aria-label="${esc(r.name)}"><div class="rorder-slot"><b>${esc(r.name)}</b><small>${esc(r.ask)}</small></div><div class="rorder-picks">${r.cards.map(c=>`<button class="decision-option rorder-pick${c.selected?' on':''}" data-room="${esc(c.id)}" aria-pressed="${c.selected}"><b>${esc(c.label.charAt(0).toUpperCase()+c.label.slice(1))}</b><span> · ${esc(c.who)}${c.risk?" · High risk":""}${c.impossible?" · Will not work":""}</span><small>${esc((c.tags||[]).filter(t=>!/suggestion|High risk|Will not work/.test(t)).join(" · "))}</small></button>`).join('')}</div></div>`).join('')}</div>
   <div class="rorder-foot"><p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p><button class="btn go" data-room="board_ok">Agree the finish and running order</button></div></div>`:'';
  const review=v.review?`<div class="decide2 runorder finish-review">
-   <h3 class="section-h">Review the match <small>${v.step} of ${v.total}</small></h3>
+   <h3 class="section-h">Review the match</h3>
    <p class="lede">The conversations are over. Check what they changed before the wrestlers go out.</p>
    <section class="finish-choice"><div class="rorder-heading"><b>Agreed finish</b><span>${esc(v.finishPlan?.label||'Not chosen')}</span></div>
     ${finishReadout}</section>
-   ${structurePanel}
-   <div class="rorder-heading"><b>${st.structurePlanning?"The dramatic objectives":"The called spots"}</b><span>In order, subject to what actually happens in the ring.</span></div>
-   <div class="rorder review-spots">${v.review.map(r=>`<div class="rorder-row">
-    <div class="rorder-slot"><b>${esc(r.name)}</b>${st.structurePlanning?'<small>'+esc(r.actor==='w'?w.short:r.actor==='f'?f.short:'Either wrestler')+' · '+Math.round(r.window[0]*100)+'–'+Math.round(r.window[1]*100)+'% of match</small>':''}</div>
-    <p class="review-spot"><b>${esc(r.current||'Called in the ring')}</b>${v.finishPlan?.supported?.includes(r.name.toLowerCase())?'<span class="review-fit">May help build the finish</span>':''}</p>
-   </div>`).join('')}</div>
+   ${professionalNote?'<p class="structure-conversation"><b>Previous working experience:</b> '+esc(professionalNote)+'</p>':''}
    <p class="rorder-verdict ${verdictBad?'bad':'good'}"><b>${esc(OfficeRoom.AGENT)}:</b> ${esc(v.story.verdict)}</p>
    <div class="review-actions"><button class="btn" data-room="review_edit">${st.structurePlanning?'Revise the objectives':'Revise the called spots'}</button>
-    <button class="btn go" data-room="review_ok">Approve this layout</button></div>
+    <button class="btn go" data-room="review_ok">Sign this layout</button></div>
   </div>`:'';
- const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${structurePanel}${arcPicker(c)}${rivalNote(c)}${cornerPicker(c,w,f)}</div>`:
-  `<div class="decide2"><h3 class="section-h">${esc(v.title)} <small>${v.step} of ${v.total}</small></h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,'room')}</div>`);
+ const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${arcPicker(c)}${rivalNote(c)}${cornerPicker(c,w,f)}</div>`:
+  `<div class="decide2"><h3 class="section-h">${esc(v.title)}</h3><p class="lede">${esc(v.ask)}</p>${deskTable(v.options,'room',w,f,p)}</div>`);
  const descriptions={traditional:'Start strong, take the pressure, fight back and reach the finish.',
   classic_american:'Guided opening, pressure, comeback and payoff.',
   kings_road:'Technical exchanges, escalation, callback and finish build.',
@@ -1604,16 +1646,18 @@ function showMeeting(loadedBanks,previousPosition){
  // Choose BEFORE the first backstage decision. The meeting is re-created
  // only while still at its initial plan stage, never after a signed decision.
  const structurePicked=P.structureSelected===true||!!P.structureChoice||v.stage!=='plan';
- const structureCards='<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(structurePicked&&x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(structurePicked&&x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small></button>').join('')+'</div>';
+ const structureCards='<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(structurePicked&&x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(structurePicked&&x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small>'+momentumShape(x.id)+'</button>').join('')+'</div>';
  const chooser=v.stage==='plan'?'<section class="structure-chooser'+(structurePicked?' structure-picked':'')+'" aria-label="Shape the match">'+
   (structurePicked?'<details class="structure-change"><summary>Structure: <b>'+esc(variants.find(x=>x.id===selected)?.label||selected)+'</b> · Change</summary>'+structureCards+'</details>':'<h3 class="section-h">Shape the match</h3><p class="dim">Choose the match structure before discussing the plan.</p>'+structureCards)+
   (P.structureChoice?'<div class="structure-lead"><span>Dramatic lead (not the booked winner)</span><div role="group" aria-label="Which wrestler leads the structure?">'+[{id:'w',name:w.short},{id:'f',name:f.short}].map(x=>'<button class="btn'+(P.structureChoice.lead===x.id?' on':'')+'" data-structurelead="'+x.id+'" aria-pressed="'+(P.structureChoice.lead===x.id)+'">'+esc(x.name)+'</button>').join('')+'</div></div>':'')+
   (!structurePicked?'<p class="dim structure-help">The promoter’s booked result stays fixed. The structure guides the action; specific moves depend on what happens in the ring.</p>':'')+'</section>':'';
  const decisionWithStructure=chooser?'<div class="decide2">'+chooser+(structurePicked?decide.slice('<div class="decide2">'.length,-6):'<p class="lede" role="status">Pick a structure to start the backstage discussion.</p>')+'</div>':decide;
- const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decisionWithStructure+agreed;
+ const sheet=matchDeskSheet(st,v,c,w,f,p,selected,structurePicked,finishLine);
+ const stats=x=>`<span>Mic ${esc(x.mic)} · Psych ${esc(x.psych)} · Safe ${esc(x.safe)} · Ego ${esc(x.ego)}</span>`;
+ const body=sheet.rail+'<div class="match-desk">'+sheet.sheet+'<section class="match-desk-room"><h3 class="desk-title">Backstage with '+esc(OfficeRoom.AGENT)+'</h3>'+matchupBar(c,w,f,'<span>v</span>',stats(w)+wNote,stats(f)+fNote)+deskTranscript(v.log,'roomTalk',w,f)+decisionWithStructure+'</section></div>';
  const signing=window.OfficeSigning?.eligible(c);
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:signing?'<button class="btn go" data-tv="signing">To the contract signing</button>':st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
- $('#tv').innerHTML=strip(c,'backstage')+backstageBrief(c,P,v)+'<div class="stage screen s-back s-meeting">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
+ $('#tv').innerHTML=strip(c,'backstage')+'<div class="stage screen s-back s-meeting sheet-redesign">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
   '<div class="tv-foot"><span class="dim">'+esc(v.stage==='done'?(st.sheet.skipPromo?'No promo tonight. Straight to the ring.':'Match layout signed.'):'Every option says what it will cost you.')+'</span>'+nextBtn+'</div>';
  scrollTalk('roomTalk',!choicePosition);
  restoreDecisionScroll('s-meeting',choicePosition);
@@ -1676,11 +1720,11 @@ function showPromos(loadedBanks,previousPosition){
  const conversation=v.conversation&&v.stage!=='done'&&v.conversation.subject?`<p class="dim claim"><b>Subject:</b> ${esc(v.conversation.subject)} · ${esc(spokenMood(st,v.conversation))}${v.conversation.latestPoint?`<span>Latest point: ${esc(v.conversation.latestPoint)}</span>`:''}</p>`:'';
  const reconciliation=v.stage==='done'?OfficeRoom.promoReconciliation(night.plan?.sheet,v.result,w,f,c.finish):null;
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">The final word</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.tactic?.stake||'')}</p>${reconciliation?`<p class="dim"><b>Dennis — ${esc(reconciliation.status)}:</b> ${esc(reconciliation.reason)}</p>`:''}</div>`:
-  `<div class="decide2"><h3 class="section-h">${esc(v.name)} ${v.conversation?'':`<small>${v.round+1} of ${v.total}</small>`}</h3><p class="lede">${esc(v.help)}</p>${pickCards(v.options,'mic',true)}</div>`;
+  `<div class="decide2"><h3 class="section-h">${esc(v.name)} ${v.conversation?'':`<small>${v.round+1} of ${v.total}</small>`}</h3><p class="lede">${esc(v.help)}</p>${deskTable(v.options,'mic',w,f,p)}</div>`;
  const sp=st.speaker?G.W(st.speaker.id)||w:w;
  const context=(st.speaker?`<p class="dim mouth-note">${esc(st.speaker.short)} is doing the talking for ${esc(w.short)}.</p>`:'')+read+cue+open+conversation+claim;
- const body=matchupBar(c,w,f,meter)+'<div class="promo-conversation">'+sceneLog(entries,'micTalk',sp,f,p.id)+(context?'<section class="promo-context" aria-label="Promo context" tabindex="0">'+context+'</section>':'')+'</div>'+decide;
- $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo">'+win((v.conversation?.formatName||'The promo')+': '+w.short+' against '+f.short,body,{h:'h3',body:'tight'})+'</div>'+
+ const body=crowdBroadcast(v,w,f)+'<div class="promo-conversation">'+deskTranscript(entries,'micTalk',sp,f)+(context?'<section class="promo-context paper" aria-label="Promo context" tabindex="0"><h3 class="desk-context-title">Dennis’s read</h3>'+context+'</section>':'')+'</div>'+decide;
+ $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo broadcast-redesign">'+win((v.conversation?.formatName||'The promo')+': '+w.short+' against '+f.short,body,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'It is said.':'Once it is out of your mouth, it stays said.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('micTalk',!choicePosition);
  restoreDecisionScroll('s-promo',choicePosition);
