@@ -95,16 +95,43 @@ console.log('PASS 227 three-age identities, real season transition, staff progre
 {
 
  // Audit the actual lossless pixel cells, not just their mapped coordinates.
- // ImageMagick is available on the Linux GitHub hosted runner. Local Node-only
- // installs may omit it; the geometry assertions above still run there.
+ // Decode with the system WebP library (Ubuntu ships libwebp), or Pillow
+ // if installed. No new npm dependency, workflow or package install.
  const cp=require('node:child_process');
- const bin=['magick','convert'].find(name=>cp.spawnSync(name,['-version'],{encoding:'utf8'}).status===0);
- if(!bin){if(process.env.CI)throw new Error('Portrait pixel audit requires ImageMagick on CI');console.log('PORTRAIT FRAME AUDIT skipped: ImageMagick not installed locally');}
+ const decoder=String.raw`
+import sys
+try:
+    from PIL import Image
+except ImportError:
+    import ctypes as c
+    import ctypes.util
+    lib=c.CDLL(ctypes.util.find_library("webp") or "libwebp.so.7")
+    lib.WebPDecodeRGBA.argtypes=[c.c_void_p,c.c_size_t,c.POINTER(c.c_int),c.POINTER(c.c_int)]
+    lib.WebPDecodeRGBA.restype=c.c_void_p
+    lib.WebPFree.argtypes=[c.c_void_p]
+    lib.WebPFree.restype=None
+    data=open(sys.argv[1],"rb").read()
+    buf=c.create_string_buffer(data)
+    w,h=c.c_int(),c.c_int()
+    ptr=lib.WebPDecodeRGBA(buf,len(data),c.byref(w),c.byref(h))
+    if not ptr: raise ValueError("Invalid WebP")
+    try:
+        assert (w.value,h.value)==(1296,1440)
+        sys.stdout.buffer.write(c.string_at(ptr,w.value*h.value*4))
+    finally:
+        lib.WebPFree(ptr)
+else:
+    with Image.open(sys.argv[1]) as im:
+        assert im.size==(1296,1440)
+        sys.stdout.buffer.write(im.convert("RGBA").tobytes())
+`;
+ const bin=['python3','python'].find(name=>cp.spawnSync(name,['--version'],{encoding:'utf8'}).status===0);
+ if(!bin){if(process.env.CI)throw new Error('Portrait pixel audit requires Python on CI');console.log('PORTRAIT FRAME AUDIT skipped: Python not installed locally');}
  else{
   const W=1296,H=1440,CW=144,CH=180,rows=[];
   for(let sheet=1;sheet<=10;sheet++){
    const file=path.join(__dirname,`../assets/portrait-ages/atlas-${String(sheet).padStart(2,'0')}.webp`);
-   const decoded=cp.spawnSync(bin,[file,'-alpha','on','-depth','8','rgba:-'],{maxBuffer:W*H*4+1024});
+   const decoded=cp.spawnSync(bin,['-c',decoder,file],{maxBuffer:W*H*4+1024});
    assert.equal(decoded.status,0,decoded.stderr?.toString());
    const pixels=decoded.stdout;assert.equal(pixels.length,W*H*4,'exact decoded atlas dimensions');
    for(const r of manifest.records.filter(x=>x.atlas.endsWith('-'+String(sheet).padStart(2,'0')+'.png'))){
