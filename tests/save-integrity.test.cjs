@@ -83,3 +83,54 @@ assert.equal(G.S.inbox.length,60);
 assert.match(ui,/G\.importCareer\(x\)/);
 assert.match(ui,/G\.recoverNight\(saved\)/);
 console.log('PASS INT12A recovery validation, settled match guard, protected decisions and import safety');
+
+// INT12B: exercise the real outer match and weekly wrapper chains, not mocks.
+G.fresh();assert.equal(G.sign('kit'),null);
+{
+ const c={id:'atomic-match',pid:'dock',wid:'kit',rid:'silas',slot:'mid',finish:'win_clean',purse:100,eventAbs:G.abs()};
+ G.S.card=[c];G.save();
+ const baseline=values.get('the-office-v22'),startEvents=events;
+ assert.throws(()=>G.atomicSettlement(()=>{
+  G.applyResult(c,fin());
+  assert.equal(values.get('the-office-v22'),baseline,'core and wrapper saves are deferred');
+  G.msg({subject:'should roll back',kind:'info'});G.save();
+  throw new Error('late match failure');
+ }),/late match failure/);
+ assert.equal(values.get('the-office-v22'),baseline,'no half-settled result reaches disk');
+ assert.equal(events,startEvents,'no intermediate persistence notifications');
+ assert.equal(JSON.stringify(G.S),baseline,'in-memory match settlement rolled back');
+ const current=G.S.card[0];
+ G.atomicSettlement(()=>{
+  G.applyResult(current,fin());
+  G.msg({subject:'final consequence',kind:'info'});G.save();
+  assert.equal(values.get('the-office-v22'),baseline);
+ });
+ assert.equal(events,startEvents+1,'only one commit after all match consequences');
+ assert.equal(JSON.parse(values.get('the-office-v22')).inbox[0].subject,'final consequence');
+ assert.equal(G.S.card.length,0);
+ const restored=G.recoverNight({period:G.abs(),careerSeed:G.S.careerSeed,queue:[c.id],i:0,stage:'live',results:[]});
+ assert.equal(restored.results[0].cid,c.id,'recovered show retains settled match in report');
+ assert.equal(restored.stage,'recovered-result');
+ const optional=G.recoverNight({period:G.abs(),careerSeed:G.S.careerSeed,queue:[c.id],i:1,stage:'after',after:{cid:c.id,stage:'mic'}});
+ assert.equal(optional.stage,'after','a valid unfinished optional microphone scene survives refresh');
+ const beforeWeek=values.get('the-office-v22'),week=G.abs(),beforeEvents=events;
+ assert.throws(()=>G.atomicSettlement(()=>{
+  G.endWeek();
+  assert.equal(values.get('the-office-v22'),beforeWeek);
+  throw new Error('late weekly failure');
+ }),/late weekly failure/);
+ assert.equal(G.abs(),week,'week rolled back');
+ assert.equal(JSON.stringify(G.S),beforeWeek,'all weekly changes rolled back');
+ assert.equal(events,beforeEvents);
+ G.atomicSettlement(()=>{G.endWeek();G.msg({subject:'whole week recap',kind:'info'});G.save();});
+ assert.equal(G.abs(),week+1);assert.equal(events,beforeEvents+1);
+ assert.equal(JSON.parse(values.get('the-office-v22')).inbox[0].subject,'whole week recap');
+ const durable=values.get('the-office-v22');blocked=true;
+ G.atomicSettlement(()=>{G.S.cash+=11;G.save();G.S.cash+=12;});
+ assert.equal(G.saveStatus().ok,false);assert.equal(values.get('the-office-v22'),durable);
+ assert.equal(G.S.cash,JSON.parse(durable).cash+23,'complete unsaved career stays available for export');
+ blocked=false;G.save();
+}
+assert.match(ui,/G\.atomicSettlement\(\(\)=>\{/);
+assert.match(ui,/!night\?\.queue\|\|G\.saveStatus\(\)\.ok===false/);
+console.log('PASS INT12B atomic match and weekly settlement, late failure rollback, recovered reporting and failed disk write');
