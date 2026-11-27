@@ -11,8 +11,7 @@
  const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Math.round(n)));
 
  // Everything inside sees an ordinary booked disqualification loss; the history and the promoter know better.
- const originalApply=G.applyResult;
- G.applyResult=function(c,fin){
+ G.registerResultStage('disqualify',originalApply=>function(c,fin){
   if(fin?.outcome!=='dq'||!c)return originalApply.apply(this,arguments);
   const booked=c.finish,w=G.W(c.wid),p=G.P(c.pid);
   const c2={...c,finish:'lose_dq'},f2={...fin,outcome:'booked',actualOutcome:'dq',bookedFinish:booked,contractHonoured:false,script:null,adj:{...(fin.adj||{}),purseMul:(fin.adj?.purseMul??1)*.75}};
@@ -24,7 +23,7 @@
   if(w){w.morale=clamp(w.morale-(wasWin?4:2));w.loyal=clamp(w.loyal-(w.ego>=70?0:2));}
   root.OfficeMemory?.remember?.(c.wid,'humiliation',`${w?.short||'They'} remember being disqualified against ${G.F(c.rid)?.short||'them'}.`,c.rid,-2,0,c.id+':dq');
   G.save();return out;
- };
+ });
 
  // Promoters book a disqualification now and then: most often to keep a champion's belt or to set up a rematch.
  const DQ_RATE={'Title defence':.3,'Title match':.22,'Rematch':.25,'Callout':.15};
