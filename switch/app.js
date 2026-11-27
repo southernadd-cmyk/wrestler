@@ -753,13 +753,13 @@ function roomReview(v){
 // On a successful new decision, show only the newly spoken lines. History and
 // explicit re-entry retain context; this cursor is never persisted to the career.
 function guidedLines(log,previousCount,limit){return previousCount!==null&&previousCount>=0&&previousCount<=log.length?log.slice(previousCount):log.slice(-limit);}
-function roomScreen(page=0,section='main',extra='',previousCount=null){
+function roomScreen(page=0,section='main',extra='',previousCount=null,historyReturn=null){
  if(!planning?.room){prepare();return;}
  const st=planning.room,v=OfficeRoom.view(st),c=s().card.find(x=>x.id===planning.cid);
  if(!c){planning=null;persistPlanning();desk('The booked match is no longer available.');return;}
  const scene=matchScene(c,st.w,st.f,'backstage',['Meeting '+v.step+' / '+v.total,st.w.short+': '+v.moods.w.word,st.f.short+': '+v.moods.f.word]);
  const show=(title,body,choices,opts={})=>screen(title,body,choices,{...opts,scene});
- const root=()=>roomScreen(),returnHere=()=>roomScreen(page,section),pauseHere=()=>pause(returnHere);
+ const root=()=>roomScreen(),returnHere=()=>roomScreen(page,section,extra,previousCount,historyReturn),pauseHere=()=>pause(returnHere);
  const act=(id,stay=false)=>{
   const before=v.log.length;
    try{OfficeRoom.act(st,id);persistPlanning();}
@@ -774,7 +774,7 @@ function roomScreen(page=0,section='main',extra='',previousCount=null){
  };
  if(section==='history'){
   const pages=Math.max(1,Math.ceil(v.log.length/3)),i=Math.max(0,Math.min(page,pages-1));
-  show('Backstage conversation',v.log.slice(i*3,i*3+3).map(x=>x.who+': '+x.text).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>roomScreen((i+1)%pages,'history'))]:[]),back(root)]);return;
+  show('Backstage conversation',v.log.slice(i*3,i*3+3).map(x=>x.who+': '+x.text).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>roomScreen((i+1)%pages,'history','',null,historyReturn))]:[]),back(historyReturn||root)]);return;
  }
  if(section==='more'){
   show('Backstage options','Your current plan is saved when storage is available. No match time passes here.',[a('history','Read full conversation',()=>roomScreen(0,'history')),a('pause','Pause / settings',pauseHere),back(root)]);return;
@@ -824,14 +824,14 @@ function roomScreen(page=0,section='main',extra='',previousCount=null){
    ...(v.finishes?.length?[a('finish','Choose finishing route',()=>roomScreen(0,'finish'))]:[]),
    a('objectives',st.structurePlanning?'Edit dramatic objectives':'Edit called spots',()=>roomScreen(0,'objectives')),
    a('agree','Agree finish and running order',()=>act('board_ok')),
-   a('more','Conversation / pause',()=>roomScreen(0,'more'))
+   a('history','Review conversation',()=>roomScreen(0,'history','',null,returnHere))
   ],{portrait:st.w});return;
  }
  const text=v.stage==='review'?body+'\n'+roomReview(v):body;
  const rows=v.options||[],pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
  const choices=rows.slice(i*3,i*3+3).map(o=>a(o.id,fmt(o),()=>act(o.id),hint(o)));
  if(pages>1)choices.push(a('next','More responses — page '+((i+1)%pages+1),()=>roomScreen((i+1)%pages)));
- choices.push(a('more','Conversation / pause',()=>roomScreen(0,'more')));
+ choices.push(a('history','Review conversation',()=>roomScreen(0,'history','',null,returnHere)));
  show(v.title,text+(pages>1?'\nPage '+(i+1)+' of '+pages+'.':''),choices,{portrait:st.w});
 }
 function switchLadder(c){
@@ -841,13 +841,13 @@ function switchLadder(c){
  }catch(e){return null;}
 }
 // The existing pre-match scene engines remain the authority for choices and effects.
-function preMatch(page=0,section='main',previousCount=null){
+function preMatch(page=0,section='main',previousCount=null,historyReturn=null){
  const P=planning,c=P&&s().card.find(x=>x.id===P.cid);
  if(!c||!P.room?.sheet?.signed){roomScreen();return;}
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),SG=OfficeSegments,MP=OfficeMouthpiece;
  const scene=matchScene(c,w,f,'promo',['Layout signed']);
  const show=(title,body,choices,opts={})=>screen(title,body,choices,{...opts,scene});
- const root=()=>preMatch(),here=()=>preMatch(page,section);
+ const root=()=>preMatch(),here=()=>preMatch(page,section,previousCount,historyReturn);
  const pauseHere=()=>pause(here);
  const label=x=>x.label;
  const hint=x=>[x.hint,...(x.tags||[]),x.risk].filter(Boolean).join(' · ');
@@ -948,7 +948,7 @@ function preMatch(page=0,section='main',previousCount=null){
  const renderEntries=rows=>rows.map(e=>e.who+': '+e.text).join('\n');
  if(section==='history'){
   const pages=Math.max(1,Math.ceil(entries.length/3)),i=Math.max(0,Math.min(page,pages-1));
-  show('Microphone transcript',renderEntries(entries.slice(i*3,i*3+3))+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>preMatch((i+1)%pages,'history'))]:[]),back(root)]);return;
+  show('Microphone transcript',renderEntries(entries.slice(i*3,i*3+3))+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>preMatch((i+1)%pages,'history',null,historyReturn))]:[]),back(historyReturn||root)]);return;
  }
  if(section==='more'){
   show('Microphone options','Your conversation is saved. No match time passes here.',[a('history','Read the full conversation',()=>preMatch(0,'history')),a('pause','Pause / settings',()=>pause(root)),back(root)]);return;
@@ -967,7 +967,7 @@ function preMatch(page=0,section='main',previousCount=null){
   catch(e){console.error(e);show('Microphone decision','That response could not be completed. Review the conversation and retry.',[back(root)]);}
  },hint(x)));
  if(pages>1)buttons.push(a('next','More responses — page '+((i+1)%pages+1),()=>preMatch((i+1)%pages)));
- buttons.push(a('more','Conversation / pause',()=>preMatch(0,'more')));
+ buttons.push(a('history','Review conversation',()=>preMatch(0,'history',null,here)));
  show(title,body+(pages>1?'\nPage '+(i+1)+' of '+pages+'.':''),buttons,{portrait:w,kicker:'PRE-MATCH · '+p.name.toUpperCase()});
 }
 function startMatch(c,P,promoRes=null){
@@ -1045,7 +1045,8 @@ function matchScreen(note='',commentary=[],played=false,readStatus=false){
    ...replayOption,
    a('pause','Pause / settings',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(readStatus?status:played?'Ringside. Continue listening, give an instruction if available, or pause.':''),announce:true});return;
  }
- screen('At ringside',(note?note+'\n\n':'')+status,[a('line','Hear next commentary',()=>burst(1)),a('burst','Continue — up to five commentary lines',()=>burst(5)),...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',()=>calls(note,commentary))]:[]),a('status',commentary.length?'Replay commentary / status':'Repeat match status',()=>commentary.length?replay():narrateMatch([{text:ringStatus(m)+'. '+statusSpeech()}])),a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(''),announce:!played});
+ const single=a('line','Hear next commentary',()=>burst(1)),batch=a('burst','Continue — up to five commentary lines',()=>burst(5));
+ screen('At ringside',(note?note+'\n\n':'')+status,[...(guided()?[batch,single]:[single,batch]),...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',()=>calls(note,commentary))]:[]),a('status',commentary.length?'Replay commentary / status':'Repeat match status',()=>commentary.length?replay():narrateMatch([{text:ringStatus(m)+'. '+statusSpeech()}])),a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(''),announce:!played});
 }
 // Pull one commentary line at a time. Pause interrupts speech immediately,
 // never simulates the next line, and retains a replay window.
@@ -1069,6 +1070,10 @@ function startBroadcast(){
     finish();
     showNotice('Speech stopped. Replay commentary or continue.');return;
    }
+   // A normal, fully delivered final line can go directly to the existing
+   // result review. Pause, interrupted speech and mandatory decisions keep
+   // their normal ringside screens. No extra engine events are generated.
+   if(!m.queue.length&&m.done&&!m.decision){broadcastHeld.clear();settleMatch();return;}
    if(!m.queue.length&&(m.done||m.decision)){finish();return;}
    const advice=contextualAdvice(m,X.canCall);
    if(advice){broadcastHeld.clear();recordAdvice(m,advice);adviceScreen(advice,display(recent),recent);return;}
@@ -1104,11 +1109,11 @@ function finishAfter(next){
  G.atomicSettlement(()=>{delete s().switchAfter;});
  if(next&&s().card.length)prepare();else if(next)endWeek();else desk();
 }
-function afterScreen(page=0,section='main'){
+function afterScreen(page=0,section='main',historyReturn=null){
  const record=afterRecord();if(!record){desk();return;}
- const root=()=>afterScreen(),here=()=>afterScreen(page,section);
+ const root=()=>afterScreen(),here=()=>afterScreen(page,section,historyReturn);
  const nextLabel=s().card.length?'Prepare next match':'Finish the week';
- if(section==='result'){const h=s().history.find(x=>x.cid===record.c?.id);if(h)matchReport(h,root);else screen('Match result',record.summary,[back(root)]);return;}
+ if(section==='result'){const h=s().history.find(x=>x.cid===record.c?.id),ret=historyReturn||root;if(h)matchReport(h,ret);else screen('Match result',record.summary,[back(ret)]);return;}
  if(!record.scene||record.reviewPending){
   const h=s().history.find(x=>x.cid===record.c?.id),review=h?matchOverview(h,s()):null;
   const details=h?[a('details','Full match report',()=>matchReport(h,root))]:[];
@@ -1121,7 +1126,7 @@ function afterScreen(page=0,section='main'){
  const log=v.log.map(x=>(x.who?x.who+': ':'')+x.text);
  if(section==='history'){
   const pages=Math.max(1,Math.ceil(log.length/3)),i=Math.max(0,Math.min(page,pages-1));
-  screen('Post-match transcript',log.slice(i*3,i*3+3).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>afterScreen((i+1)%pages,'history'))]:[]),back(root)]);return;
+  screen('Post-match transcript',log.slice(i*3,i*3+3).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>afterScreen((i+1)%pages,'history',historyReturn))]:[]),a('result','Review match result',()=>afterScreen(0,'result',here)),back(historyReturn||root)]);return;
  }
  if(section==='more'){screen('Post-match options','No match time passes here.',[a('history','Read full transcript',()=>afterScreen(0,'history')),a('result','Review match result',()=>afterScreen(0,'result')),a('pause','Pause / settings',()=>pause(root)),back(root)]);return;}
  const body=log.slice(-3).join('\n')+'\n'+v.ask+(v.cons.length?'\n'+v.cons.map(x=>x.text).join('\n'):'');
@@ -1136,7 +1141,7 @@ function afterScreen(page=0,section='main'){
   catch(e){console.error(e);screen('Post-match decision','The response could not be completed. No partial consequences were saved.',[back(root)]);}
  }));
  if(pages>1)choices.push(a('next','More responses — page '+((i+1)%pages+1),()=>afterScreen((i+1)%pages)));
- choices.push(a('more','Conversation / pause',()=>afterScreen(0,'more')));
+ choices.push(a('history','Review conversation',()=>afterScreen(0,'history',here)));
  screen(v.title,(st.required?'Required response. ':'')+body+(pages>1?'\nPage '+(i+1)+' of '+pages+'.':''),choices,{portrait:w,kicker:'AFTER THE BELL'});
 }
 function openAfterScene(record){
