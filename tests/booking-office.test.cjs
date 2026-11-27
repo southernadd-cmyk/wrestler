@@ -224,3 +224,24 @@ console.log('PASS bookers plan to their own style');
  s.history.shift();s.week+=7;assert.equal(N.storyLeverage(s,o,w,'fee','crowd').delta,0,'old events expire');
  console.log('PASS INT8 bounded recent argument-specific story leverage');
 }
+
+// INT9: Ringfax reports verified wider-circuit events, not planned finishes.
+{
+ const s=fresh(),RF=root.OfficeRingfax,week=T.absWeek(s)+1;
+ s.card=[];G.endWeek();
+ const desk=RF.circuitDesk(s),rows=s.territory.lastResults.matches;
+ assert.ok(desk.best);assert.equal(desk.best.stars,Math.max(...rows.map(m=>m.stars)));
+ const page=RF.build(s);
+ assert.ok(page[102].lines.some(r=>r.text.includes('stars')));
+ const m=rows[0];m.condition[m.a].injury=2;
+ assert.ok(RF.circuitDesk(s).injuries.some(x=>x.id===m.a&&x.weeks===2));
+ assert.ok(RF.build(s)[102].subpages.length>=2);
+ const id=Object.keys(s.worldV4.contracts).find(id=>s.worldV4.contracts[id].owner==='market');
+ s.territory.agents.wanted={[id]:s.territory.teams[0].id};
+ assert.ok(RF.circuitDesk(s).rumours.some(x=>x.id===id));
+ assert.ok(RF.build(s)[103].lines.some(r=>r.text.includes('TRANSFER TALK')));
+ assert.ok(RF.build(s)[103].lines.length<=17);
+ const copy=JSON.parse(JSON.stringify(s));copy.territory.lastResults.week=week-1;
+ assert.equal(RF.circuitDesk(copy).best,null,'stale results cannot become new news');
+ console.log('PASS INT9 verified match selection, injuries, rumours and stale news exclusion');
+}
