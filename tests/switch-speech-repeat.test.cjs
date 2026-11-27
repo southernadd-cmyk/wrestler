@@ -5,6 +5,14 @@ class Element{
  constructor(){this.children=[];this.dataset={};this.style={};this.classList={toggle(){}};this.textContent='';}
  append(...children){this.children.push(...children);}
  replaceChildren(...children){this.children=children;}
+ querySelector(selector){
+  const classes=selector.split('.').filter(Boolean);
+  for(const child of this.children){
+   if(classes.every(name=>String(child.className||'').split(/\s+/).includes(name)))return child;
+   const nested=child.querySelector(selector);if(nested)return nested;
+  }
+  return null;
+ }
  setAttribute(){} removeAttribute(){} scrollIntoView(){} addEventListener(){}
 }
 function harness(ttsEnabled=true,hub=false){
