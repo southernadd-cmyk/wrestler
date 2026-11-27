@@ -111,3 +111,16 @@
  #view .phead .acts>.btn{grid-column:1;width:100%;min-height:44px;margin:0}
  #view .phead .acts>span{grid-column:2;line-height:1.25}
 }
+
+/* ---------- Contrast: text on dark wells must use light ink ----------
+   Shared rules force <b> inside choices to dark ink; when a choice sits on a
+   dark well it must inherit the light row colour instead. */
+.neg-choices .neg-choice b,.neg-choices .neg-choice strong{color:inherit}
+.neg-choices>.neg-more{color:var(--white);background:var(--well);border-color:var(--well-line)}
+.neg-choices>.neg-more>summary,.neg-choices>.neg-more>.stip-ask{color:var(--white)}
+.neg-choices>.neg-more .choice{color:var(--ink)}
+.neg-choices>.neg-more .choice b{color:var(--ink)}
+.cons li{color:var(--ink)}
+/* Muted text inside dark cards and table wells uses the light muted ink. */
+:is(.phone-card,.well .grid) .dim{color:var(--dim)}
+.phone-card .good{color:var(--good)}.phone-card .bad{color:var(--bad)}
