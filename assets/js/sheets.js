@@ -599,10 +599,8 @@
   const s=current(M);if(!s)return;
   const fv=s.nodes.find(n=>n.vow&&n.kind==='finisher'&&n.status==='pending');
   // A named finisher counts only if it won the match it was promised for.
-  if(fv&&M.o?.finish==='win_clean'&&M.outcome==='booked'&&M.w?.finisher){
-   const line=(M.log||[]).find(l=>String(l.text||'').includes(M.w.finisher));
-   if(line){const [m,sec]=String(line.t).split(':').map(Number);settleVow(M,'finisher','finish_tease',Number.isFinite(m*60+sec)?m*60+sec:M.t);}
-  }
+  if(fv&&root.OfficeOutcome.promiseVerdict({finish:M.o?.finish},{outcome:M.outcome,finishRoute:M.finishRoute,finishReceipt:M.finishReceipt},'finisher'))
+   settleVow(M,'finisher','finish_tease',M.t);
   for(const b of s.nodes)if(b.vow&&b.status==='pending'){b.status='missed';b.why=b.kind==='finisher'?'The finishing move promised at the microphone never won the match.':'The counter promised at the microphone never came.';M.sheetAdj=(M.sheetAdj||0)-.15;}
  }
  function finalize(M){

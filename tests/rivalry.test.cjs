@@ -296,3 +296,24 @@ assert.ok(negotiated>=1,'counter-proposals happen in real careers');
 console.log('PASS rivalry v0.3.12: '+Object.keys(Riv.ISSUES).length+' argument issues in '+new Set(Object.values(Riv.ISSUES).map(x=>x.family)).size+' families ('+exchanges+' issue/register pairs); evidence-gated; claims, counterclaims and five distinct answers; exposure and revision; '+
  'counter-proposals change the signed sheet and keep the contract; credible refusals; no-cheating promises checked against the engine, once; legacy saves and mid-promo states; '+
  runs.length+' five-bout careers, '+callbacks+' rematches citing real facts, '+issues.size+' issues, '+resolutions.size+' resolutions, '+stances.size+' stances, '+negotiated+' negotiated sheets; deterministic');
+
+// INT3: promises share actual finish evidence; an early finisher mention is not a finish.
+{
+ const O=root.OfficeOutcome,c=contract({finish:'win_clean'}),base={outcome:'booked',finishRoute:'finisher',evidence:{dirty:{w:false,f:false}}};
+ assert.equal(O.promiseVerdict(c,base,'clean'),true);
+ assert.equal(O.promiseVerdict(c,{...base,evidence:{dirty:{w:true,f:false}}},'clean'),false);
+ const corner={job:'runin',fired:true,ok:true,second:'test',secondName:'Their second',cid:c.id};
+ assert.equal(O.promiseVerdict(c,{...base,corners:{f:corner}},'clean'),false);
+ assert.equal(O.promiseVerdict(c,{...base,corners:{w:corner}},'nocheat'),false);
+ assert.equal(O.promiseVerdict(c,{...base,finishRoute:null,log:[{text:'Named finisher'}]},'finisher'),false);
+ assert.equal(O.promiseVerdict(c,base,'finisher'),true);
+ assert.equal(O.promiseVerdict(c,{...base,outcome:'double',finishReceipt:{v:1,finisher:'w'}},'finisher'),true);
+ assert.equal(O.promiseVerdict(c,{...base,outcome:'booked',actualOutcome:'dq',bookedFinish:'win_clean'},'win'),false);
+ seed([{finish:'win_clean',route:'finisher'}]);
+ const L=Riv.ledger('rex','silas'),cid=L.meetings.at(-1).cid,k={...corner,cid};
+ Riv.recordRivalCorner({id:cid,wid:'rex',rid:'silas'},k);
+ assert.equal(L.meetings.at(-1).rivalCorner.job,'runin');
+ assert.ok(Riv.facts('rex','silas').some(x=>x.kind==='rival_interference'&&x.owner==='w'));
+ assert.ok(Riv.ISSUES.rival_interference,'rival interference has its own argument');
+ console.log('PASS INT3 actual promise outcomes and rival-corner grievance');
+}
