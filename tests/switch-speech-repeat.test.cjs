@@ -26,8 +26,8 @@ function harness(ttsEnabled=true,hub=false){
  };
  let autoScan=true;
  const M={getSettings:()=>({autoScan}),getScanInterval:()=>2000,isParkingEnabled:()=>false,subscribe(){},resetInputState(){},setAutoScan(v){autoScan=v;},cycleScanSpeed(){},createChoiceScan(o){scanOptions=o;return scan;}};
- let saveCalls=0;
- const window={OfficeGame:{S:null,hasSave:()=>false,saveStatus:()=>({ok:true}),save(){saveCalls++;},money:x=>'£'+x,abs:()=>1,P:()=>({name:'Test promotion'})},OfficeData:{SLOTS:{},FINISHES:{}},OfficeMatch:{fmt:t=>String(t),CALLS:{},canCall:()=>false,next(m){nextCalls++;m.t++;return {who:'pbp',text:'The wrestlers lock up.'};}},NarbeScanManager:M,NarbeVoiceManager:V,NarbePlatform:{settings:{hasHubParent:()=>false}},addEventListener:(k,fn)=>listen(windowEvents,k,fn)};
+ let saveCalls=0,saveOK=true,watchCalls=0,signCalls=0;
+ const window={OfficeGame:{S:null,hasSave:()=>false,saveStatus:()=>({ok:saveOK}),save(){saveCalls++;},scoutWatch(w){if(!w.watched){w.watched=true;watchCalls++;}},scoutBand(w,key){return key==='heat'?{lo:55,hi:55,exact:true}:{lo:40,hi:49,exact:false};},signingForecast(id){return {affordable:true,afterFee:1500,weeklyCost:600,afterWeek:900,runway:2,risk:'limited'};},sign(){signCalls++;},money:x=>'£'+x,abs:()=>1,P:()=>({name:'Test promotion'})},OfficeData:{SLOTS:{},FINISHES:{},DIVISIONS:{open:{name:'Open'}},divisionOf:()=> 'open'},OfficeMatch:{fmt:t=>String(t),CALLS:{},canCall:()=>false,next(m){nextCalls++;m.t++;return {who:'pbp',text:'The wrestlers lock up.'};}},NarbeScanManager:M,NarbeVoiceManager:V,NarbePlatform:{settings:{hasHubParent:()=>false}},addEventListener:(k,fn)=>listen(windowEvents,k,fn)};
  window.parent=hub?{location:{origin:'https://example.test'},NarbeCommunicationSpeech:{help(fallback,message){hubRequests.push(message);return V.speak(message,{force:true,hub:true});}}}:window;
  window.location={origin:'https://example.test'};
  const context=vm.createContext({window,document,localStorage:{getItem:()=>null,setItem(){}},console,setTimeout,clearTimeout});
@@ -35,9 +35,9 @@ function harness(ttsEnabled=true,hub=false){
  vm.runInContext(read('choice-input.js'),context);
  window.OfficeChoiceInput=context.OfficeChoiceInput;
  // Test-only entry to the real broadcast controller; no production hooks.
- const app=read('app.js').replace(/mainMenu\(\);\n\}\)\(\);\s*$/,"window.startTestBroadcast=match=>{active={cid:'c',M:match};startBroadcast();};window.testPaged=()=>paged('Test list',Array.from({length:7},(_,i)=>({id:'row'+i,name:'Row '+i})),0,(x,ret)=>screen(x.name,'Details',[back(ret)]),()=>mainMenu());mainMenu();\n})();");
+ const app=read('app.js').replace(/mainMenu\(\);\n\}\)\(\);\s*$/,"window.startTestBroadcast=match=>{active={cid:'c',M:match};startBroadcast();};window.testScout=w=>signProfile(w,mainMenu);window.testPaged=()=>paged('Test list',Array.from({length:7},(_,i)=>({id:'row'+i,name:'Row '+i})),0,(x,ret)=>screen(x.name,'Details',[back(ret)]),()=>mainMenu());mainMenu();\n})();");
  vm.runInContext(app,context);
- return {get,spoken,V,scan,announcements,testPaged:()=>window.testPaged(),helpHold:()=>helpHold,hubRequests,nextCalls:()=>nextCalls,broadcast:()=>{window.OfficeGame.S={season:1,week:1,cash:2250,rep:0,card:[{id:'c',pid:'p'}]};window.startTestBroadcast({w:{id:'w',name:'W',short:'W'},f:{id:'f',name:'F',short:'F'},wSt:90,fSt:90,t:0,crowd:50,calls:2,mom:0,queue:[],r:{getState:()=>1}});},select:id=>{selected=id;scan.select();},key:(type,code)=>{for(const fn of events.get(type)||[])fn({type,code,repeat:false,preventDefault(){},target:{matches:()=>false}});},click:id=>get('choices').children.find(x=>x.dataset.choice===id).onclick(),blur:()=>{for(const fn of windowEvents.get('blur')||[])fn();},opens:()=>opens,saves:()=>saveCalls};
+ return {get,spoken,V,scan,announcements,setSaveOK:v=>{saveOK=v;},scout:()=>{const w={id:'test',name:'Test wrestler',style:'Technical',fee:750,wage:100};window.OfficeGame.S={season:1,week:1,cash:2250,rep:3,free:[w],roster:[]};window.testScout(w);},watchCalls:()=>watchCalls,signCalls:()=>signCalls,testPaged:()=>window.testPaged(),helpHold:()=>helpHold,hubRequests,nextCalls:()=>nextCalls,broadcast:()=>{window.OfficeGame.S={season:1,week:1,cash:2250,rep:0,card:[{id:'c',pid:'p'}]};window.startTestBroadcast({w:{id:'w',name:'W',short:'W'},f:{id:'f',name:'F',short:'F'},wSt:90,fSt:90,t:0,crowd:50,calls:2,mom:0,queue:[],r:{getState:()=>1}});},select:id=>{selected=id;scan.select();},key:(type,code)=>{for(const fn of events.get(type)||[])fn({type,code,repeat:false,preventDefault(){},target:{matches:()=>false}});},click:id=>get('choices').children.find(x=>x.dataset.choice===id).onclick(),blur:()=>{for(const fn of windowEvents.get('blur')||[])fn();},opens:()=>opens,saves:()=>saveCalls};
 }
 const tick=()=>new Promise(setImmediate);
 (async()=>{
@@ -106,5 +106,21 @@ const tick=()=>new Promise(setImmediate);
  const spokenNav=harness();spokenNav.click('help');spokenNav.click('controls');spokenNav.click('back');
  assert.equal(spokenNav.get('heading').textContent,'How to play');assert.equal(spokenNav.scan.getState().id,'controls');
  spokenNav.key('keydown','Enter');spokenNav.key('keyup','Enter');await tick();assert.equal(spokenNav.announcements.at(-1),'controls','restored choice spoken after narration is dismissed');
- console.log('S8B–S8D: speech, help, broadcast stop and navigation restoration passed');
+ const scout=harness();
+ scout.setSaveOK(false);scout.scout();
+ assert.equal(scout.get('heading').textContent,'Test wrestler');
+ assert.match(scout.spoken.at(-1).text,/Career could not be saved/,'save warning precedes screen description');
+ const drain=async h=>{for(let i=0;h.scan.getState().suspended&&i<100;i++){h.spoken.at(-1).settle('end');await tick();}assert.equal(h.scan.getState().suspended,false);};
+ await drain(scout);
+ const spoken=scout.spoken.map(x=>x.text).join(' ');
+ assert.match(spoken,/Ring skill: 40 to 49 out of 99, estimated/);
+ assert.match(spoken,/Draw \(fan appeal\): 55 out of 99, known/);
+ assert.match(spoken,/Estimated balance after one week without income £900/);
+ const count=scout.spoken.length;
+ scout.select(repeat);await drain(scout);
+ const again=scout.spoken.slice(count).map(x=>x.text).join(' ');
+ assert.match(again,/Season 1.*Week 1.*£2250.*Reputation 3/);
+ assert.match(again,/Career could not be saved/);
+ assert.equal(scout.watchCalls(),1,'repeat does not scout again');assert.equal(scout.signCalls(),0);
+ console.log('S8B–S8E: speech, help, navigation, scouting ranges and status replay passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
