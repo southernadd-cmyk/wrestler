@@ -62,6 +62,31 @@
     t.topic==='slot'?(arg==='reliability'&&w.pro>=80?7:-8):-8;
   return 0;
  };
+ // Specific, recent evidence changes the case for a particular booking.
+ // No global heat/trust change, no cumulative bonuses, and no invented history.
+ const storyLeverage=(s,o,w,topic,arg)=>{
+  const now=(s.season-1)*16+s.week,past=s.history||[];
+  const recent=h=>h&&Number.isFinite(h.season)&&Number.isFinite(h.week)&&now-((h.season-1)*16+h.week)>=0&&now-((h.season-1)*16+h.week)<=6;
+  const last=past.find(h=>h.pid===o.pid&&h.wid===w.id);
+  const pair=past.find(h=>h.pid===o.pid&&h.wid===w.id&&h.rid===o.rid);
+  const story=recent(pair)&&pair.after?.story?.v===1&&pair.after.story.cid===pair.cid&&pair.after.story.wid===w.id&&pair.after.story.rid===o.rid&&pair.after.story.pid===o.pid?pair.after.story:null;
+  const zero={delta:0,text:'',cid:null};
+  if(!['fee','slot','protect'].includes(topic))return zero;
+  if(arg==='crowd'&&story&&['fee','slot'].includes(topic)){
+   const delta=({challenge:5,dispute:3,scuffle:2})[story.kind]||0;
+   if(delta)return {delta,text:'There is unfinished business on this card. '+story.text,cid:story.cid};
+  }
+  if(arg==='reliability'&&recent(last)){
+   // The booked finish already affected promoter trust. Do not count that breach twice.
+   if(last.contractHonoured===false)return zero;
+   if(story?.kind==='attack'&&last.cid===story.cid)return {delta:-5,text:'The attack after the last match makes this a harder case to justify.',cid:story.cid};
+   const promise=last.promo?.promise;
+   if(promise?.checked&&typeof promise.kept==='boolean'&&!promise.sure){
+    return {delta:promise.kept?4:-5,text:promise.kept?'Your wrestler backed up their last public promise.':'Your wrestler did not deliver their last public promise.',cid:last.cid};
+   }
+  }
+  return zero;
+ };
  const introLine=(p,w,o)=>{
   const past=G.S.history?.find(h=>h.pid===p.id&&h.wid===w.id);
   const realMemory=root.OfficeNegotiationCareer?.memory?.(p.id,w.id);
@@ -115,6 +140,7 @@
   return {
    name:v.name,priority:v.priority,signal:v.signal,warning:v.warning,
    failureCost:v.failed,hardballCost:v.hardball,feeRaiseCost:v.feeRaiseCost,
+   storyCases:['crowd','reliability','trade'].map(arg=>({arg,...storyLeverage(G.S,o,w,'fee',arg)})).filter(x=>x.delta),
    evidence:story?.text||realMemory?.evidence||(
     past&&Number.isFinite(past.stars)?
      'Past booking: '+w.short+' earned '+past.stars+' stars on '+p.name+'.':
@@ -170,8 +196,9 @@
   const price=G.purse(o,w);
   const financialStake=t.topic==='fee'?Math.min(30,Math.max(0,Math.round((price-450)/35))):0;
   const cardStake=t.topic==='slot'?({opener:0,mid:9,feature:27,main:0}[o.slot]||0):0;
-  return {strength:base+bonus-(p.personality==='cold'?7:0)+personalityEdge(p,w,t,arg),
-   threshold:{fee:58,protect:62,slot:69}[t.topic]+financialStake+cardStake};
+  const leverage=storyLeverage(s,o,w,t.topic,arg);
+  return {strength:base+bonus-(p.personality==='cold'?7:0)+personalityEdge(p,w,t,arg)+leverage.delta,
+   threshold:{fee:58,protect:62,slot:69}[t.topic]+financialStake+cardStake,leverage};
  };
  // Phase 4 — concrete, negotiated exchanges. These packages use the existing
  // permitted slot/finish/stipulation vocabulary; they never change the winner.
@@ -382,7 +409,7 @@
    p.trust=trustBefore; // Relationship penalties are applied once, below.
    t.lastArg=arg;
    const measured=pressure(o,w,t,arg),v=profile(p);
-   t.strength=measured.strength;t.threshold=measured.threshold;
+   t.strength=measured.strength;t.threshold=measured.threshold;t.storyLeverage=measured.leverage||null;
    const kind=t.topic==='stip'?engineKind:
     measured.strength>=measured.threshold?'agreed':
     measured.strength>=measured.threshold-17?'counter':'refused';
@@ -409,6 +436,7 @@
      t.detail='Argument rejected; promoter trust −'+v.failed+'.';
     }
    }
+   if(measured.leverage?.delta)t.log[t.log.length-1].text+=' '+measured.leverage.text;
    G.save();return result();
   }
   if(t.step==='challenge'){
@@ -527,7 +555,7 @@
   }
   return {error:'No response is available at this stage.'};
  };
- root.OfficeNegotiationsV2={active:true,read,
+ root.OfficeNegotiationsV2={active:true,read,storyLeverage,
   tradeOptions:(o,w,t)=>tradeCandidates(o,w,t).map(({id,label,hint,give,get})=>({id,label,hint,give,get})),
   profileFor:pid=>{
   const p=G.P(pid);return p?profile(p):null;
