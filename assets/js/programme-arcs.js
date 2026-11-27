@@ -71,7 +71,7 @@
  function options(c){
   const x=locate(c);if(!x)return null;
   const ch=chapter(x.prog,x.step),a=arc(x.prog),last=previous(x.prog,x.step);
-  const follow=last?`Last chapter: ${last.recap}`:x.step>0?'The earlier chapters were booked before this feature was added.':null;
+  const follow=last?`Last chapter: ${last.recap}${last.afterStory?.text?' '+last.afterStory.text:''}`:x.step>0?'The earlier chapters were booked before this feature was added.':null;
   return {id:x.prog.id,step:x.step,total:x.prog.beats.length,title:ch.name,ask:ch.ask,follow,
    mood:band(a.momentum),momentum:a.momentum,
    choices:['steady','needle','gamble'].map(id=>({id,label:ch[id][0],hint:ch[id][1],cue:ch[id][2],risk:id==='steady'?'Low risk':id==='needle'?'Needs a strong promo':'Needs a standout promo and match'}))};
@@ -185,5 +185,12 @@
    const ok=originalContinue.call(this,st,id);if(ok)acknowledge(st,st.c);return ok;
   };
  }
- root.OfficeProgrammeArcs={STAGES,band,chapter,options,intro,prepare,settle,locate,arc,record};
+ function recordAfterStory(c,receipt){
+  const x=locate(c);if(!x||receipt?.v!==1||receipt.cid!==c.id)return false;
+  const entry=arc(x.prog).timeline.find(e=>e.cid===c.id&&e.step===x.step);
+  if(!entry||entry.afterStory)return false;
+  entry.afterStory={...receipt};
+  return true;
+ }
+ root.OfficeProgrammeArcs={recordAfterStory,STAGES,band,chapter,options,intro,prepare,settle,locate,arc,record};
 })(typeof window!=='undefined'?window:globalThis);
