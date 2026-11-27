@@ -152,8 +152,7 @@
   if(out==null&&offered){const pr=record(offered);if(pr)arc(pr);}
   return out;
  };
- const originalApply=G.applyResult;
- G.applyResult=function(c,fin){
+ G.registerResultStage('programme-arcs',originalApply=>function(c,fin){
   // This is the outermost result wrapper. Never run any of the inner DQ,
   // title, programme, wrestler or financial hooks for an already-played contract.
   if(G.resultRecorded(c))return [];
@@ -161,7 +160,7 @@
   if(!Array.isArray(out))return out;
   const note=settle(c,fin);if(note)out.push(note);
   return out;
- };
+ });
  // The post-bell segment remains a real choice. Its opening line acknowledges the continuing arc.
  const after=root.OfficeAfter;
  // It follows whatever happens straight after the bell, so it waits for the angle to be chosen.
