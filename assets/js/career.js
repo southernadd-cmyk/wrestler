@@ -992,7 +992,26 @@ function ageRoster(){
  }
  return {retired:retired.map(w=>w.id)};
 }
+// Read-only office briefing: offers are alternatives, not guaranteed additive income.
+function offerCandidates(o){
+ if(!o||!P(o.pid)||o.expiresAbs<abs()||o.eventAbs<abs())return [];
+ const dates=o.programme?.beats?.length?o.programme.beats:[{at:o.eventAbs,rid:o.rid,title:o.title}];
+ return S.roster.filter(w=>(!o.wid||o.wid===w.id)&&(!o.talk?.wid||o.talk.wid===w.id)&&(!o.programme?.wid||o.programme.wid===w.id)&&
+  dates.every(b=>D.divisionOf(w)===D.divisionOf(b.rid)&&availableAt(w,b.at)&&opponentReady(S,b.rid,b.at)&&!bookingConflict(w.id,b.rid,b.at)&&
+   (!b.title||root.OfficeTerritory.titleValid(S,S.territory,{...b,pid:o.pid,rid:b.rid,title:b.title},w.id))));
+}
+function officeBrief(){
+ const now=abs(),today=[],deadline=[];
+ for(const o of S.offers){
+  const candidates=offerCandidates(o);if(!candidates.length)continue;
+  const row={id:o.id,wids:candidates.map(w=>w.id)};
+  if(o.eventAbs===now||o.programme?.beats?.some(b=>b.at===now))today.push(row);
+  else if(o.expiresAbs===now)deadline.push(row);
+ }
+ const income=S.card.filter(c=>c.eventAbs===now).reduce((n,c)=>n+c.purse,0),cost=wages()+overhead()+trainingBill();
+ return {today,deadline,unbooked:[...new Set(today.flatMap(o=>o.wids))],income,cost,after:S.cash+income-cost};
+}
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,trainingWeekPlan,ageWorker,opponentReady};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,trainingWeekPlan,ageWorker,opponentReady,offerCandidates,officeBrief};
 })(typeof window!=='undefined'?window:globalThis);
