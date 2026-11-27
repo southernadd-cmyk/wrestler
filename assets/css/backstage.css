@@ -245,3 +245,52 @@
  #tv .s-meeting.sheet-redesign .structure-options{grid-template-columns:minmax(0,1fr)}
  #tv .s-meeting.sheet-redesign .structure-option .momentum-shape{height:128px}
 }
+
+/* Finish and spots: match the compact match-sheet mockup. */
+#tv .sheet-redesign .desk-rail>*{box-sizing:border-box;min-width:0;width:100%;padding:5px 6px;border:1px solid var(--ink);font:inherit;text-align:left;background:var(--deep);color:var(--dim)}
+#tv .sheet-redesign .desk-rail .active{background:var(--gold);color:var(--ink);font-weight:bold}
+#tv .sheet-redesign .desk-rail button.complete{cursor:pointer}
+#tv .sheet-redesign .desk-rail button:focus-visible{outline:2px solid var(--cyan);outline-offset:-2px}
+#tv .board-redesign .match-desk-sheet .momentum-shape{height:50px;width:100%}
+#tv .board-redesign .match-night-matchup .mid{display:none}
+#tv .board-redesign .match-night-matchup{justify-content:space-between;gap:6px}
+#tv .board-redesign .match-attributes{white-space:normal;font-size:14px}
+#tv .board-redesign .match-attributes b{display:inline;font-size:inherit}
+#tv .board-conversation{position:relative;background:var(--well);color:var(--white);border-bottom:1px solid var(--ink)}
+#tv .board-conversation summary{display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;min-width:0}
+#tv .board-conversation summary b{color:var(--cyan)}
+#tv .board-conversation summary span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tv .board-conversation summary small{white-space:nowrap;color:var(--dim)}
+#tv .board-redesign .board-conversation #roomTalk{position:absolute;top:100%;left:0;right:0;z-index:5;margin:0;box-shadow:0 4px 8px #0008}
+#tv .board-redesign .finish-spots{padding:0;display:block}
+#tv .board-redesign .rorder-heading{display:flex;justify-content:space-between;align-items:center;gap:6px;margin:0;padding:6px 8px}
+#tv .board-redesign .finish-table,#tv .board-redesign .spots-table{width:100%;table-layout:fixed;border-collapse:collapse}
+#tv .board-redesign .finish-table th:first-child{width:58%}
+#tv .board-redesign .finish-table td,#tv .board-redesign .spots-table td{padding:4px 7px;white-space:normal;overflow-wrap:anywhere;vertical-align:top}
+#tv .board-redesign .finish-table .row-pick{width:100%;text-align:left;color:inherit;padding:4px 0;min-height:28px}
+#tv .board-redesign .finish-table tr.chosen td{background:var(--gold);color:var(--ink)}
+#tv .board-redesign .finish-objection{display:block;font-size:12px}
+#tv .board-redesign .finish-preparation{display:flex;align-items:center;gap:10px;padding:8px;margin:6px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);font-size:14px}
+#tv .board-redesign .prep-boxes{display:flex;gap:3px;flex:none}
+#tv .board-redesign .prep-boxes i{width:16px;height:16px;border:1px solid var(--ink);background:var(--white)}
+#tv .board-redesign .prep-boxes i.filled{background:var(--gold)}
+#tv .board-redesign .spots-table th:nth-child(1){width:26%}
+#tv .board-redesign .spots-table th:nth-child(2){width:18%}
+#tv .board-redesign .spots-table th:nth-child(4){width:15%}
+#tv .board-redesign button.spot-select{cursor:pointer;border:1px solid var(--well-line);padding:3px 6px;color:var(--white);background:var(--deep);font:inherit;text-align:left;max-width:100%;white-space:normal}
+#tv .board-redesign .spot-select[aria-expanded="true"]{color:var(--gold);border-color:var(--gold)}
+#tv .board-redesign .spot-expanded[hidden]{display:none}
+#tv .board-redesign .spot-expanded td{padding:4px 12px;background:var(--deep)}
+#tv .board-redesign .spot-options{display:flex;flex-wrap:wrap;gap:3px;padding:4px 0}
+#tv .board-redesign .spot-options .btn{font-size:13px;white-space:normal;text-align:left;min-height:28px}
+#tv .board-redesign .finish-fixed td{color:var(--dim)}
+#tv .board-redesign .rorder-verdict{margin:4px 8px;font-size:14px}
+@media(max-width:600px){
+ #tv .board-redesign .finish-table,#tv .board-redesign .spots-table{font-size:13px}
+ #tv .board-redesign .finish-table td,#tv .board-redesign .spots-table td{padding:4px}
+ #tv .board-redesign .spots-table th:nth-child(2){width:17%}
+ #tv .board-redesign .spots-table th:nth-child(4){width:18%}
+ #tv .board-redesign .finish-preparation{flex-wrap:wrap}
+ #tv .board-redesign .spot-options .btn{min-height:40px}
+ #tv .sheet-redesign .desk-rail>*{font-size:12px;padding:4px 2px}
+}

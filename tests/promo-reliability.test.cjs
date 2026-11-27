@@ -22,13 +22,16 @@ if(process.platform!=='win32'){
  const code=workflow.split('      - name: Select only relevant checks')[1].split('        run: |\n')[1].split('      - uses: actions/setup-node')[0].split('\n').map(l=>l.replace(/^          /,'')).join('\n');
  const temp=fs.mkdtempSync(path.join(os.tmpdir(),'office-promo-ci-'));
  try{
-  for(const changed of ['assets/js/promo-duel.js','assets/js/promo-bank-loader.js','assets/promo-banks/brick.test.json','scripts/build-promo-banks.cjs','assets/js/story.js','assets/js/ui.js','tests/_source.cjs','index.html','docs/promo-note.md']){
+  for(const changed of ['assets/js/promo-duel.js','assets/js/promo-bank-loader.js','assets/promo-banks/brick.test.json','scripts/build-promo-banks.cjs','assets/js/story.js','tests/_source.cjs','index.html','docs/promo-note.md']){
    const output=path.join(temp,'github-output');fs.writeFileSync(output,'');
    const fake='git(){ if [[ "$1" == cat-file ]]; then return 0; elif [[ "$1" == diff ]]; then printf "%s\\0" "$TEST_PATH"; else return 1; fi; }\n';
    const result=spawnSync('bash',['-c',fake+code],{cwd:base,encoding:'utf8',env:{...process.env,EVENT_NAME:'pull_request',REF_TYPE:'branch',FULL_REFACTOR:'false',BASE_SHA:'a'.repeat(40),HEAD_SHA:'b'.repeat(40),RUNNER_TEMP:temp,GITHUB_OUTPUT:output,TEST_PATH:changed}});
    assert.equal(result.status,0,changed+': '+result.stderr);
    const selected=read(path.join(temp,'fast-suites.txt'),'utf8');
    if(changed.endsWith('.md'))assert.equal(selected,'','docs-only should remain fast');
+   // UI changes are covered by the changed-line routing fixture in ci-routing.test.cjs.
+   // An HTML-only change without a script diff needs the accessibility check, not all promo suites.
+   else if(changed==='index.html')assert.ok(selected.includes('tests/ui-accessibility.test.cjs'));
    else for(const name of ['promo-dialogue','promo-selection','promo-bank-c','promo-lazy-banks','promo-reliability'])assert.ok(selected.includes('tests/'+name+'.test.cjs'),changed+' skipped '+name);
   }
  }finally{fs.rmSync(temp,{recursive:true,force:true});}
