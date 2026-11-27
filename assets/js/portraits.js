@@ -238,19 +238,39 @@ function ageBand(actor,state=root.OfficeGame?.S){
  const age=(staffStartingAges[key]??45)+Math.max(0,(Number(state?.season)||1)-1);
  return age>=55?'old':age>=38?'middle':'young';
 }
+// Native 144×180 cells with a truncated torso or stray bottom-edge pixels.
+// Measured from the dominant connected silhouette in the lossless source
+// atlases. The final usable torso row is included; only the empty/remnant
+// tail is excluded. Keep all other frames at their exact original mapping.
+const portraitBaseTrim=Object.freeze({
+ magnus:Object.freeze({young:8,middle:8,old:8}),
+ cal:Object.freeze({young:5,middle:5,old:0}),
+ 'booker:union':Object.freeze({young:9,middle:9,old:9}),
+ 'booker:dennis':Object.freeze({young:3,middle:3,old:3})
+});
 function portraitCell(actor,state=root.OfficeGame?.S){
  const key=actor?.key||'';
- const cell=root.OfficeAgePortraitCells?.[key.startsWith('wrestler:')?key.slice(9):key];
+ const id=key.startsWith('wrestler:')?key.slice(9):key;
+ return portraitFrame(id,ageBand(actor,state));
+}
+function portraitFrame(id,band){
+ const cell=root.OfficeAgePortraitCells?.[id];
  if(!cell)return null;
- const band=ageBand(actor,state),column=cell[1]+({young:0,middle:1,old:2})[band];
+ const column=cell[1]+({young:0,middle:1,old:2})[band];
+ const trim=portraitBaseTrim[id]?.[band]||0;
+ const height=180-trim;
+ // CSS percentage positions are relative to container minus image size.
+ // Preserve the full width and top of this cell, remap its useful height to
+ // the frame, and never sample the adjacent cell or the discarded tail.
  return {url:'assets/portrait-ages/atlas-'+String(cell[0]).padStart(2,'0')+'.webp',
-  position:(column*100/8)+'% '+(cell[2]*100/7)+'%',band};
+  position:(column*100/8)+'% '+(cell[2]*180*100/(1440-height))+'%',
+  size:trim?'900% '+(1440*100/height)+'%':'900% 800%',band,trim};
 }
 function avatar(actor,appearance=null,cssClass='portrait',state=root.OfficeGame?.S){
  const safe=String(actor?.name||'Wrestler').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
  const label='Pixel-art portrait of '+safe;
  const aged=appearance===null&&portraitCell(actor,state);
- if(aged)return `<span class="${cssClass} roster-portrait age-portrait" role="img" aria-label="${label}" style="background-image:url('${aged.url}');background-position:${aged.position}"></span>`;
+ if(aged)return `<span class="${cssClass} roster-portrait age-portrait" role="img" aria-label="${label}" style="background-image:url('${aged.url}');background-position:${aged.position};background-size:${aged.size}"></span>`;
  const painted=appearance===null&&imagePortraits[actor?.key];
  if(painted)return `<img class="${cssClass}" src="${painted}" alt="${label}" width="48" height="60" decoding="async">`;
  const position=appearance===null&&portraitCells.get(actor?.key);
@@ -283,11 +303,11 @@ function playerPortrait(index=0,name='Manager',cssClass='portrait'){
  const safe=String(name).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
  const aged=portraitCell({key:'player-manager-'+String(n+1).padStart(2,'0')});
  if(aged)return '<span class="'+cssClass+' player-manager-portrait age-portrait" role="img" aria-label="Pixel-art portrait of '+
-  safe+'" style="background-image:url(\''+aged.url+'\');background-position:'+aged.position+'"></span>';
+  safe+'" style="background-image:url(\''+aged.url+'\');background-position:'+aged.position+';background-size:'+aged.size+'"></span>';
  const position=(n%4)*(100/3)+'% '+Math.floor(n/4)*(100/3)+'%';
  return '<span class="'+cssClass+' player-manager-portrait" role="img" aria-label="Pixel-art portrait of '+
   safe+'" style="background-position:'+position+'"></span>';
 }
 function png(actor,appearance=null){const canvas=renderCanvas(actor,appearance||getLook(actor),8);const link=document.createElement('a');link.download='the-office-'+(actor.name||actor.key).replace(/[^a-z0-9-]+/gi,'-').toLowerCase()+'-portrait.png';link.href=canvas.toDataURL('image/png');link.click()}
-root.OfficePortraits={OPTIONS,items,generated,getLook,renderCanvas,asData,avatar,png,hash,curatedLooks,portraitDetails,PLAYER_PORTRAITS,playerPortrait,ageBand,portraitCell};
+root.OfficePortraits={OPTIONS,items,generated,getLook,renderCanvas,asData,avatar,png,hash,curatedLooks,portraitDetails,PLAYER_PORTRAITS,playerPortrait,ageBand,portraitCell,portraitFrame};
 })(typeof window!=='undefined'?window:globalThis);
