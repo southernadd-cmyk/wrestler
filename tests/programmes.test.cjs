@@ -141,3 +141,23 @@ console.log('PASS a change of ending can be accepted, argued or walked out on');
  assert.ok(JSON.stringify(s.territory.programmes).length<20000);
  console.log('PASS 24 weeks with programmes: circuit still predictable, save sound');
 }
+
+// INT2: ordinary signed title dates reserve the belt; invalid dates never move it.
+{
+ const s=career(),t=s.territory,pid='crown',div=D.divisionOf('rex'),holder=t.titles[pid][div].holder;
+ const replacement=T.promotionRank(pid,div).find(w=>w.id!==holder&&!w.owned&&T.contracted(s,w.id)).id;
+ const o={id:'int2-offer',pid,rid:holder,wid:'rex',slot:'main',finish:'win_clean',tag:'Title match',title:{pid,div},boost:1.5,eventAbs:G.abs()+2,expiresAbs:G.abs()+1};
+ s.offers=[o];assert.ok(T.titleValid(s,t,o));assert.equal(G.book(o.id,'rex'),null);
+ const c=s.futureBookings.find(c=>c.title&&c.rid===holder);assert.ok(c);
+ assert.ok(P.claims(s,t,G.abs()+1).belts.has(pid+':'+div));
+ const plan=B.decide(s,t,G.abs()+1);assert.ok(!plan.bill.some(m=>m.pid===pid&&m.div===div&&m.title));
+ t.titles[pid][div].holder=replacement;const trust=G.P(pid).trust;
+ assert.equal(T.titleValid(s,t,c),false);
+ assert.equal(T.reconcileOrdinaryTitles(),1);assert.equal(G.P(pid).trust,trust);
+ assert.ok(!s.futureBookings.some(x=>x.id===c.id));assert.equal(T.reconcileOrdinaryTitles(),0);
+ assert.equal(root.OfficeNegotiationCareer.ledger().find(x=>x.cid===c.id).status,'promoter_cancelled');
+ s.offers=[{...o,id:'int2-stale'}];assert.match(G.book('int2-stale','rex'),/championship booking is no longer valid/);
+ const replay={...c,id:'int2-late-result'};G.applyResult(replay,fin());assert.equal(t.titles[pid][div].holder,replacement);
+ assert.equal(s.history.find(h=>h.cid===replay.id).title,null);
+ console.log('PASS INT2 signed title reservation, stale title rejection, penalty-free cancellation and settlement guard');
+}
