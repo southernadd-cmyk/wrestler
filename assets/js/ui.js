@@ -1462,16 +1462,16 @@ function pickCards(options,attr,compact){
  const brief=t=>compact?String(t||'').split(/(?<=[.!?])\s/)[0]:t;
  return `<div class="picks${compact?' five':''}">${options.map(o=>`<button class="decision-option" data-${attr}="${esc(o.id)}"><b>${esc(o.label)}</b>${o.hint?`<span>${esc(brief(o.hint))}</span>`:''}${tagChips(o.tags)}</button>`).join('')}</div>`;
 }
-function deskTable(options,attr,w,f,p){
+function deskTable(options,attr,w,f,p,approachOnly=false){
  const planning=attr==='room',promo=attr==='mic',seg=attr==='segment';
  const riskLabels=['Safe','Steady','Risky','Very risky'];
- const cols=planning?[w.short,f.short,'Sheet']:promo?['Risk','Crowd','Rivalry','Cred. ',p?.name?.split(' ')[0]||'Promoter','Promise']:seg?['Risk','Details']:['Effects'];
+ const cols=planning?(approachOnly?[]:[w.short,f.short,'Sheet']):promo?['Risk','Crowd','Rivalry','Cred. ',p?.name?.split(' ')[0]||'Promoter','Promise']:seg?['Risk','Details']:['Effects'];
  const sign=t=>/▲|Wins the crowd|Stokes the rivalry|Builds credibility/.test(t)?'up':/▼/.test(t)?'down':'';
  const cell=(a,label)=>`<td class="desk-effect" data-label="${esc(label)}">${a.length?a.map(t=>`<span class="${sign(t)}">${esc(t)}</span>`).join(' · '):'–'}</td>`;
  return `<div class="well desk-table"><table class="grid"><thead><tr><th>#</th><th>${planning?'Response':promo?'Line':'Choice'}</th>${cols.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${options.map((o,i)=>{
   let tags=[...(o.tags||[])],cells=[];
   const take=fn=>{const a=tags.filter(fn);tags=tags.filter(t=>!fn(t));return a;};
-  if(planning){
+  if(planning&&!approachOnly){
    for(const x of [w,f])cells.push(cell(take(t=>t.startsWith(x.short+' ')&&/[▲▼]/.test(t)).map(t=>t.slice(x.short.length).trim()),x.short));
    cells.push(cell(take(t=>/layout|running order|Changes |Keeps |finish|Limits the match|objective|sequence|called spots/i.test(t)),'Sheet'));
   }else if(promo||seg){
@@ -1483,7 +1483,7 @@ function deskTable(options,attr,w,f,p){
      cells.push(cell(a.map(t=>t==='Wins the crowd'||t==='Stokes the rivalry'||t==='Builds credibility'?'▲':t.startsWith(cols[4]+' ')?t.slice(cols[4].length).trim():t),label));
     }
    }else cells.push(cell(take(()=>true),'Details'));
-  }else cells.push(cell(take(()=>true),'Effects'));
+  }else if(!planning)cells.push(cell(take(()=>true),'Effects'));
   return `<tr class="pick"><td class="desk-index">${i+1}</td><td class="wrap desk-response"><button class="row-pick decision-option" data-${attr}="${esc(o.id)}"><b>${esc(o.label)}</b>${o.hint?`<small>${esc(o.hint)}</small>`:''}${tags.length?`<small class="desk-extra">${esc(tags.join(' · '))}</small>`:''}</button></td>${cells.join('')}</tr>`;
  }).join('')}</tbody></table></div>`;
 }
@@ -1628,7 +1628,7 @@ function showMeeting(loadedBanks,previousPosition){
     <button class="btn go" data-room="review_ok">Sign this layout</button></div>
   </div>`:'';
  const decide=board||review||(v.stage==='done'?`<div class="decide2"><h3 class="section-h">Signed</h3><p class="lede">What is in the match layout is what they will try to do. Whether they manage it is another matter.</p>${arcPicker(c)}${rivalNote(c)}${cornerPicker(c,w,f)}</div>`:
-  `<div class="decide2"><h3 class="section-h">${esc(v.title)}</h3><p class="lede">${esc(v.ask)}</p>${deskTable(v.options,'room',w,f,p)}</div>`);
+  `<div class="decide2"><h3 class="section-h">${esc(v.title)}</h3><p class="lede">${esc(v.ask)}</p>${deskTable(v.options,'room',w,f,p,v.stage==='plan')}</div>`);
  const descriptions={traditional:'Start strong, take the pressure, fight back and reach the finish.',
   classic_american:'Guided opening, pressure, comeback and payoff.',
   kings_road:'Technical exchanges, escalation, callback and finish build.',
