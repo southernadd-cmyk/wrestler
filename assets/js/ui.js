@@ -1003,7 +1003,7 @@ function bizCell(p){
  const v=window.OfficeBusiness?.view(p.id);if(!v)return '';
  const arrow={up:'▲',down:'▼',flat:'▬'}[v.trend],tone=v.tone==='Struggling'?'bad':v.tone==='Hot'?'good':'';
  const f=v.finance,delta=f?`<small class="dim" title="${esc('Last show: gate '+money(f.gate)+', sponsors '+money(f.sponsors)+', production '+money(f.production)+', talent '+money(f.talent)+', big matches '+money(f.marquee)+', savings '+money(f.savings))}"> · Last show ${f.net>=0?'+':''}${money(f.net)}</small>`:'';
- return `<span class="${tone}"><b>${esc(v.tone)}</b> ${arrow}</span><br><span class="dim">Crowd ${v.crowd} (usual ${v.base}) · Buzz ${v.buzz} · ${money(v.money)}</span>${delta}`;
+ return `<span class="${tone}"><b>${esc(v.tone)}</b> <span class="${v.trend==='up'?'good':v.trend==='down'?'bad':''}">${arrow}</span></span><br><span class="dim">Crowd ${v.crowd} (usual ${v.base}) · Buzz ${v.buzz} · ${money(v.money)}</span>${delta}`;
 }
 function renderPromoters(){
  const s=S();
@@ -1492,7 +1492,7 @@ function deskTable(options,attr,w,f,p,approachOnly=false){
  const keep=cols.map((_,c)=>rows.filter(r=>!r.cells[c].empty).length*2>rows.length);
  return `<div class="well desk-table"><table class="grid"><thead><tr><th>#</th><th>${planning?'Response':promo?'Line':'Choice'}</th>${cols.filter((_,c)=>keep[c]).map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.map(({o,tags,cells},i)=>{
   const folded=cells.filter((x,c)=>!keep[c]&&!x.empty).map(x=>`<span class="desk-fold"><span class="desk-fold-label">${esc(x.label.trim())}</span> ${x.inner}</span>`);
-  return `<tr class="pick"><td class="desk-index">${i+1}</td><td class="wrap desk-response"><button class="row-pick decision-option" data-${attr}="${esc(o.id)}"><b>${esc(o.label)}</b>${o.hint?`<small>${esc(o.hint)}</small>`:''}${tags.length?`<small class="desk-extra">${esc(tags.join(' · '))}</small>`:''}${folded.length?`<small class="desk-effects">${folded.join(' ')}</small>`:''}</button></td>${cells.filter((_,c)=>keep[c]).map(x=>`<td class="desk-effect" data-label="${esc(x.label)}">${x.empty?'–':x.inner}</td>`).join('')}</tr>`;
+  return `<tr class="pick"><td class="desk-index">${i+1}</td><td class="wrap desk-response"><button class="row-pick decision-option" data-${attr}="${esc(o.id)}"><b>${esc(o.label)}</b>${o.hint?`<small>${esc(o.hint)}</small>`:''}${tags.length?`<small class="desk-extra">${tags.map(t=>`<span class="${sign(t)}">${esc(t)}</span>`).join(' · ')}</small>`:''}${folded.length?`<small class="desk-effects">${folded.join(' ')}</small>`:''}</button></td>${cells.filter((_,c)=>keep[c]).map(x=>`<td class="desk-effect" data-label="${esc(x.label)}">${x.empty?'–':x.inner}</td>`).join('')}</tr>`;
  }).join('')}</tbody></table></div>`;
 }
 function deskTranscript(entries,id,w,f){
