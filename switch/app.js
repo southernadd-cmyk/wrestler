@@ -198,17 +198,19 @@ function exit(returnTo){confirm('Exit game?',window.parent===window?'Return to t
 function requestHelp(){
  const message='I need help, please! I need help, please!',currentItems=items;
  const fallback=()=>V.speak(message,{force:true,completeUtterance:true});
+ clearTimeout(helpNoticeTimer);
  let service=window.NarbeCommunicationSpeech;
  try{if(window.parent!==window&&window.parent.location.origin===window.location.origin)service=window.parent.NarbeCommunicationSpeech||service;}catch(_){}
  let ticket;
- try{ticket=typeof service?.help==='function'?service.help(fallback,message):service?.isEnabled?.()?service.speak(message):fallback();}catch(_){ticket=fallback();}
- if(!ticket?.finished){ticket=fallback();}
+ try{ticket=typeof service?.help==='function'?service.help(fallback,message):service?.isEnabled?.()?service.speak(message):fallback();}catch(_){try{ticket=fallback();}catch(_){}}
+ if(!ticket?.finished){try{ticket=fallback();}catch(_){}}
+ if(!ticket?.finished){$('saveNotice').textContent=[saveNotice(),'Help could not be spoken. Select I Need Help to try again.'].filter(Boolean).join(' ');return;}
  $('saveNotice').textContent=[saveNotice(),'Calling for help…'].filter(Boolean).join(' ');
  scan.holdForSpeech(ticket);
- const notice=result=>{if(items!==currentItems||ticket!==helpTicket)return;const reason=result?.reason;const text=reason==='end'||reason==='ended'?'Help message spoken.':reason==='cancelled'?'Help message stopped.':'Help could not be confirmed. Select I Need Help to try again.';$('saveNotice').textContent=[saveNotice(),text].filter(Boolean).join(' ');};
- helpTicket=ticket;Promise.resolve(ticket.finished).then(notice,()=>notice({reason:'error'}));
+ const notice=result=>{if(items!==currentItems||ticket!==helpTicket)return;clearTimeout(helpNoticeTimer);const reason=result?.reason;const text=reason==='end'||reason==='ended'?'Help message spoken.':reason==='cancelled'?'Help message stopped.':'Help could not be confirmed. Select I Need Help to try again.';$('saveNotice').textContent=[saveNotice(),text].filter(Boolean).join(' ');};
+ helpTicket=ticket;helpNoticeTimer=setTimeout(()=>notice({reason:'timeout'}),12000);Promise.resolve(ticket.finished).then(notice,()=>notice({reason:'error'}));
 }
-let helpTicket=null;
+let helpTicket=null,helpNoticeTimer=null;
 function pause(returnTo,restoreId=null){returnFromPause=returnTo;screen('Pause','Your game is waiting. No match time passes here. I Need Help calls out even with text to speech off.',[a('continue','Continue',returnTo),a('help','I Need Help',requestHelp),a('settings','Settings',()=>settings(()=>pause(returnTo,'settings'))),a('mode','Management mode',()=>modeScreen(()=>pause(returnTo,'mode'))),a('learn','How to play / wrestling words',()=>help(()=>pause(returnTo,'learn'))),a('menu','Main menu',()=>confirm('Return to main menu?','Your saved career is kept.','Main menu',()=>mainMenu(),()=>pause(returnTo,'menu'))),a('exit','Exit game',()=>exit(()=>pause(returnTo,'exit')))],{restoreId,pauseMenu:true});}
 function settings(returnTo,fresh=true,restoreId=null){
  screen('Settings',window.NarbePlatform.settings.hasHubParent()?'Access settings are shared with Benny’s Hub.':'Access settings are saved in this browser on this site. Settings from a Hub on another site cannot be copied automatically.',[
@@ -677,7 +679,7 @@ function beginRoom(c,choice){
   catch(e){console.error(e);planning=null;screen('Backstage unavailable','Could not prepare the conversation. Choose a structure to retry.',[back(()=>prepare())]);}
  };
  if(!choice){begin([]);return;}
- screen('Backstage','Preparing the wrestlers’ conversation.',[a('cancel','Cancel',()=>{planLoadToken++;prepare();})],{portrait:w});
+ screen('Backstage','Preparing the wrestlers’ conversation.',[a('cancel','Cancel',()=>{planLoadToken++;prepare();}),a('pause','Pause / help',()=>{planLoadToken++;pause(()=>beginRoom(c,choice));})],{portrait:w});
  Promise.resolve(OfficePlanningDialogue.loadPair(w,f)).catch(()=>[]).then(begin);
 }
 function roomText(v,st){
@@ -1008,7 +1010,7 @@ function startBroadcast(){
     finish();
     $('saveNotice').textContent=[saveNotice(),'Speech stopped. Replay commentary or continue.'].filter(Boolean).join(' ');return;
    }
-   if(broadcastStopRequested||(!m.queue.length&&(m.done||m.decision))){finish();return;}
+   if(!m.queue.length&&(m.done||m.decision)){finish();return;}
    const advice=contextualAdvice(m,X.canCall);
    if(advice){broadcastHeld.clear();recordAdvice(m,advice);adviceScreen(advice,display(recent),recent);return;}
    nextLine();
