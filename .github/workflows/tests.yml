@@ -97,7 +97,9 @@ jobs:
                 assets/js/sheets.js|assets/js/agents-room.js)
                   add tests/ui-accessibility.test.cjs
                   add tests/structure-career-activation.test.cjs
-                  add_promo ;;
+                  add tests/agents-room.test.cjs
+                  add tests/promo-flow.test.cjs
+                  add tests/promo-segments.test.cjs ;;
                 assets/js/psychology-fuzzy.js)
                   add_promo
                   add tests/agents-room.test.cjs
