@@ -229,3 +229,19 @@
  #tv .broadcast-meter .portrait{width:24px;height:30px}
  #tv .desk-line{grid-template-columns:minmax(50px,17%) minmax(0,1fr) 30px;font-size:14px}
 }
+
+/* Planning transcript must never grow with its contents. Match the actual #tv
+   container and override the shared transcript rule in this stylesheet. */
+#tv .s-meeting.sheet-redesign #roomTalk.desk-transcript{
+ box-sizing:border-box;height:144px;min-height:144px;max-height:144px;
+ flex:0 0 144px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+}
+#tv .s-meeting.sheet-redesign .structure-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+#tv .s-meeting.sheet-redesign .structure-option .momentum-shape{
+ width:100%;height:120px;max-height:none;margin:6px 0 2px;
+}
+#tv .s-meeting.sheet-redesign .shape-axis{display:flex;justify-content:space-between;font-size:12px}
+@media(max-width:520px){
+ #tv .s-meeting.sheet-redesign .structure-options{grid-template-columns:minmax(0,1fr)}
+ #tv .s-meeting.sheet-redesign .structure-option .momentum-shape{height:128px}
+}
