@@ -1374,7 +1374,7 @@ function showSegmentPick(c,w,f,p){
  night.stage='segpick';
  const SG=window.OfficeSegments;
  const body=matchupBar(c,w,f,'<b class="fin">What kind of segment?</b>')+`<div class="decide2"><h3 class="section-h">Before the match</h3><p class="lede">${esc(OfficeRoom.AGENT)}: “${esc(SG.advice(c,w,f))}”</p>${pickCards(SG.menu(c,w,f,p),'segment')}</div>`;
- $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win('The segment',body,{h:'h3',body:'tight'})+'</div><div class="tv-foot"><span class="dim">Not every segment needs two people talking.</span></div>';
+ $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo">'+win('The segment',body,{h:'h3',body:'tight'})+'</div><div class="tv-foot"><span class="dim">Not every segment needs two people talking.</span></div>';
  persistNight();
 }
 function showSegment(loadedBanks){
@@ -1401,7 +1401,7 @@ function showSegment(loadedBanks){
  const reconciliation=v.stage==='done'&&v.result.promise?OfficeRoom.promoReconciliation(night.plan?.sheet,v.result,w,f,c.finish):null;
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">${esc(v.heading)}</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.hook)}</p>${reconciliation?`<p class="dim"><b>${esc(OfficeRoom.AGENT)} — ${esc(reconciliation.status)}:</b> ${esc(reconciliation.reason)}</p>`:''}</div>`:
   `<div class="decide2"><h3 class="section-h">${esc(v.heading)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${pickCards(v.options,'seg')}</div>`;
- $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win(v.name+': '+w.short+(v.type==='ambush'?' and ':' before facing ')+f.short,matchupBar(c,w,f,middle)+sceneLog(entries,'segTalk',w,f,p.id)+decide,{h:'h3',body:'tight'})+'</div>'+
+ $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo">'+win(v.name+': '+w.short+(v.type==='ambush'?' and ':' before facing ')+f.short,matchupBar(c,w,f,middle)+sceneLog(entries,'segTalk',w,f,p.id)+decide,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'That is the segment.':'Every choice says what it risks.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.heading)}</span>`}</div>`;
  scrollTalk('segTalk');persistNight();
 }
@@ -1413,7 +1413,7 @@ function showMouthpiece(c,w,f,p,talkers){
   ...talkers.map(x=>({id:x.id,label:x.short+' does the talking',hint:'Mic '+x.mic+' against '+w.short+'’s '+w.mic+'. '+(x.refuse||x.note||'')+(x.ego?' '+x.ego:''),tags:x.refuse?['Refuses']:['Better talker','Builds a bond',...(x.ego?['Ego risk']:[]),'They will mock it']}))]
   .filter(o=>!/Refuses/.test(o.tags.join()));
  const body=matchupBar(c,w,f,'<b class="fin">Who talks?</b>')+`<div class="decide2"><h3 class="section-h">Who has the microphone?</h3><p class="lede">${esc(OfficeRoom.AGENT)}: “${esc(w.short)} isn’t the best talker in the stable. Do we send somebody out to do it for them?”</p>${pickCards(opts,'mouth')}</div>`;
- $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win('Before the promo',body,{h:'h3',body:'tight'})+'</div><div class="tv-foot"><span class="dim">A mouthpiece speaks; the wrestler is held to it.</span></div>';
+ $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo">'+win('Before the promo',body,{h:'h3',body:'tight'})+'</div><div class="tv-foot"><span class="dim">A mouthpiece speaks; the wrestler is held to it.</span></div>';
  persistNight();
 }
 
@@ -1587,7 +1587,7 @@ function showMeeting(loadedBanks){
  const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decisionWithStructure+agreed;
  const signing=window.OfficeSigning?.eligible(c);
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:signing?'<button class="btn go" data-tv="signing">To the contract signing</button>':st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
- $('#tv').innerHTML=strip(c,'backstage')+backstageBrief(c,P,v)+'<div class="stage screen s-back">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
+ $('#tv').innerHTML=strip(c,'backstage')+backstageBrief(c,P,v)+'<div class="stage screen s-back s-meeting">'+win('Backstage with '+OfficeRoom.AGENT+', your road agent',body,{h:'h3',body:'tight'})+'</div>'+
   '<div class="tv-foot"><span class="dim">'+esc(v.stage==='done'?(st.sheet.skipPromo?'No promo tonight. Straight to the ring.':'Match layout signed.'):'Every option says what it will cost you.')+'</span>'+nextBtn+'</div>';
  scrollTalk('roomTalk');
  night.stage='meeting';persistNight();
@@ -1651,7 +1651,7 @@ function showPromos(loadedBanks){
   `<div class="decide2"><h3 class="section-h">${esc(v.name)} ${v.conversation?'':`<small>${v.round+1} of ${v.total}</small>`}</h3><p class="lede">${esc(v.help)}</p>${read}${cue}${open}${conversation}${claim}${pickCards(v.options,'mic',true)}</div>`;
  const sp=st.speaker?G.W(st.speaker.id)||w:w;
  const body=matchupBar(c,w,f,meter)+(st.speaker?`<p class="dim mouth-note">${esc(st.speaker.short)} is doing the talking for ${esc(w.short)}.</p>`:'')+sceneLog(entries,'micTalk',sp,f,p.id)+decide;
- $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back">'+win((v.conversation?.formatName||'The promo')+': '+w.short+' against '+f.short,body,{h:'h3',body:'tight'})+'</div>'+
+ $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo">'+win((v.conversation?.formatName||'The promo')+': '+w.short+' against '+f.short,body,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'It is said.':'Once it is out of your mouth, it stays said.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.name)}</span>`}</div>`;
  scrollTalk('micTalk');
  persistNight();
