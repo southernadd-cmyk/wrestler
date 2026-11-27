@@ -83,7 +83,80 @@ function profile(w,returnTo){screen(w.name,w.style+'. Morale '+w.morale+', fatig
 function training(w,returnTo){const list=Object.entries(D.TRAINING).filter(([k])=>k!=='rest').map(([k,t])=>({id:k,name:t.name}));paged('Training focus',list,0,(t,ret)=>confirm('Train '+w.name+'?',t.name+' training carries the usual weekly cost.','Set '+t.name,()=>{const e=G.setTraining(w.id,t.id);screen('Training',e||'Training set to '+t.name,[back(()=>profile(w,returnTo))]);},ret),()=>profile(w,returnTo));}
 function offers(){const rows=s().offers.filter(o=>G.offerCandidates(o).length);paged('Available booking offers',rows,0,offer,()=>desk('','offers'),o=>G.P(o.pid).name+' · versus '+G.F(o.rid).name);}
 function offer(o,returnTo){const candidates=G.offerCandidates(o);paged(G.P(o.pid).name+' — choose your wrestler',candidates,0,(w,ret)=>offerTerms(o,w,ret),returnTo,w=>w.name+' · '+money(o.programme?OfficeProgrammes.totalPurse(o,w):G.purse(o,w)));}
-function offerTerms(o,w,returnTo){const p=G.P(o.pid),f=G.F(o.rid),fee=o.programme?OfficeProgrammes.totalPurse(o,w):G.purse(o,w);screen('Contract offer',p.name+' wants '+w.name+' against '+f.name+'. '+(o.programme?o.programme.beats.length+' match programme.':D.FINISHES[o.finish].name+'. '+D.SLOTS[o.slot].name+' match.')+' Purse '+money(fee)+'. '+(o.eventAbs===G.abs()?'This week.':'Future week '+o.eventAbs+'.')+' This preview accepts the offered terms; bargaining is not yet available.',[a('book','Accept offered terms',()=>confirm('Sign the booking?','Commit '+w.name+' to '+p.name+'.','Sign contract',()=>{const e=G.book(o.id,w.id);if(e){screen('Booking unavailable',e,[back(()=>offers())]);return;}desk('Booking confirmed for '+w.name+'.');},()=>offerTerms(o,w,returnTo))),back(returnTo)],{portrait:w});}
+function bookingTerms(o,w,terms=o){
+ const x={...o,...terms};
+ return D.SLOTS[x.slot].name+' match. '+D.FINISHES[x.finish].name+'. '+(x.stip?OfficeStips.STIPS[x.stip]?.name+'. ':'')+'Purse '+money(o.programme?OfficeProgrammes.totalPurse(o,w):G.purse(x,w))+'.';
+}
+function offerTerms(o,w,returnTo){
+ const live=s().offers.find(x=>x.id===o.id),worker=G.W(w.id);
+ if(!live||!worker||!G.offerCandidates(live).some(x=>x.id===worker.id)){screen('Offer unavailable','This invitation can no longer be accepted by this wrestler.',[back(offers)]);return;}
+ o=live;w=worker;
+ const p=G.P(o.pid),f=G.F(o.rid),t=o.talk;
+ const body=p.name+' wants '+w.name+' against '+f.name+'. '+(o.programme?o.programme.beats.length+' match programme. ':'')+bookingTerms(o,w)+' '+(o.eventAbs===G.abs()?'This week.':'Future week '+o.eventAbs+'.')+' Reply by week '+o.expiresAbs+'.';
+ const choices=[];
+ if(!t||t.step==='start'||t.step==='done')choices.push(a('book',t?.step==='done'?'Sign current terms':'Accept offered terms',()=>signBooking(o,w,()=>offerTerms(o,w,returnTo))));
+ if(!o.programme&&(t||s().focus>0))choices.push(a('talk',t?.step==='done'?'Review negotiation':t&&t.step!=='start'?'Resume negotiation':'Negotiate with '+p.voice,()=>negotiation(o.id,w.id)));
+ choices.push(back(returnTo));
+ screen('Contract offer',body+(!o.programme?' '+s().focus+' management meetings left. Asking for changes uses one meeting; signing as offered does not.':''),choices,{portrait:w});
+}
+function signBooking(o,w,cancel,revert=false){
+ const original=revert?o.talk?.original:null;
+ confirm('Sign the booking?', 'Commit '+w.name+' to '+G.P(o.pid).name+'. '+bookingTerms(o,w,original||o),'Sign contract',()=>{
+  const current=s().offers.find(x=>x.id===o.id);
+  if(!current){screen('Booking unavailable','This invitation is no longer available.',[back(offers)]);return;}
+  if(revert){const r=G.talkMove(o.id,w.id,'revert');if(r.error){screen('Booking unavailable',r.error,[back(cancel)]);return;}}
+  const e=G.book(o.id,w.id);if(e){screen('Booking unavailable',e,[back(offers)]);return;}
+  desk('Booking confirmed for '+w.name+'.');
+ },cancel);
+}
+function leaveNegotiation(oid,wid){
+ const o=s().offers.find(x=>x.id===oid),w=G.W(wid);
+ // Merely opening a discussion never reserves the wrestler or spends a meeting.
+ if(o?.talk?.step==='start'){o.talk=null;G.save();}
+ if(o&&w)offerTerms(o,w,offers);else offers();
+}
+function negotiation(oid,wid,page=0,section='main',extra=''){
+ const r=G.meeting(oid,wid);
+ if(r.error){screen('Negotiation unavailable',r.error,[back(offers)]);return;}
+ const {offer:o,talk:t}=r,w=G.W(wid),p=G.P(o.pid),read=OfficeNegotiationsV2.read(o,w),trades=OfficeNegotiationsV2.tradeOptions(o,w,t);
+ const reopen=()=>negotiation(oid,wid,page,section),root=()=>negotiation(oid,wid);
+ const move=id=>{
+  const perform=()=>{
+   const x=G.talkMove(oid,wid,id);
+   if(x.error){screen('Negotiation',x.error,[back(reopen)]);return;}
+   if(x.withdrawn){screen('Invitation withdrawn',x.detail||'The promoter has withdrawn the booking.',[back(offers)]);return;}
+   root();
+  };
+  if(id==='reply:walk')confirm('Walk away?', 'This withdraws the invitation. It cannot be undone.','Withdraw from booking',perform,reopen);
+  else if(id==='push:hold')confirm('Insist on the full change?', 'Promoter trust will fall by '+read.hardballCost+'. The booking could be withdrawn.','Insist on the full change',perform,reopen);
+  else perform();
+ };
+ const last=t.log?.slice(-2).map(x=>x.who+': '+x.text).join('\n')||'';
+ const body=(extra?extra+'\n':'')+last+'\n'+(t.proposal&&t.step!=='done'?'Proposed, not accepted: '+bookingTerms(o,w,t.proposal):'Current unsigned terms: '+bookingTerms(o,w))+'\n'+(t.package?'Exchange: '+t.package.give+' in return for '+t.package.get+'.\n':'')+'Trust '+p.trust+'. '+s().focus+' meetings left.'+(t.step==='start'?' '+read.signal:'')+(t.detail?' '+t.detail:'');
+ const leave=()=>leaveNegotiation(oid,wid);
+ if(section==='history'){
+  const rows=t.log||[],pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
+  screen('Negotiation transcript',rows.slice(i*3,i*3+3).map(x=>x.who+': '+x.text).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>negotiation(oid,wid,(i+1)%pages,'history'))]:[]),back(root)]);return;
+ }
+ if(section==='details'){
+  screen('Promoter and terms',p.voice+'. '+read.name+'. '+read.priority+'. '+read.evidence+'. '+read.warning+'\nOriginal: '+bookingTerms(o,w,t.original)+'\n'+(t.proposal&&t.step!=='done'?'Proposed, not accepted: '+bookingTerms(o,w,t.proposal):'Current unsigned terms: '+bookingTerms(o,w)),[a('history','Read full conversation',()=>negotiation(oid,wid,0,'history')),back(root)]);return;
+ }
+ if(section==='stips'||section==='trades'){
+  const rows=section==='stips'?Object.entries(OfficeStips.STIPS).map(([id,x])=>({id:'ask:stip:'+id,label:x.name,hint:x.hint+(OfficeStips.tasteOf(p,id)>=8?' '+p.voice+' likes this.':OfficeStips.tasteOf(p,id)<=-8?' '+p.voice+' dislikes this.':'')})):trades.map(x=>({id:'trade:'+x.id,label:x.label,hint:x.hint}));
+  const pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
+  screen(section==='stips'?'Match stipulations':'Concrete exchanges','Choose a request. '+(section==='trades'?'A rejected trade costs one promoter trust. ':'')+'Page '+(i+1)+' of '+pages,rows.slice(i*3,i*3+3).map(x=>a(x.id,x.label+(x.hint?'. '+x.hint:''),()=>move(x.id))).concat(pages>1?[a('next','Next page',()=>negotiation(oid,wid,(i+1)%pages,section))]:[],back(root)));return;
+ }
+ if(t.step==='done'){
+  const changed=t.original.slot!==o.slot||t.original.finish!==o.finish||(t.original.stip||null)!==(o.stip||null)||t.original.fee!==G.purse(o,w);
+  screen('Negotiation complete',body,[a('sign',changed?'Sign accepted terms':'Sign original terms',()=>signBooking(o,w,root)),...(changed?[a('original','Sign original terms',()=>signBooking(o,w,root,true))]:[]),a('details','Review terms and transcript',()=>negotiation(oid,wid,0,'details')),a('later','Decide later',leave)]);return;
+ }
+ const opts=OfficeSwitchNegotiation.options(o,t,read,trades,s().focus);
+ const pages=Math.max(1,Math.ceil(opts.length/3)),i=Math.max(0,Math.min(page,pages-1));
+ const buttons=opts.slice(i*3,i*3+3).map(x=>a(x.id,x.label+(x.hint?'. '+x.hint:''),()=>['stips','trades'].includes(x.id)?negotiation(oid,wid,0,x.id):move(x.id)));
+ if(pages>1)buttons.push(a('next','More responses',()=>negotiation(oid,wid,(i+1)%pages)));
+ buttons.push(a('review','Review or leave discussion',()=>screen('Review discussion','Nothing is booked until you sign.',[a('details','Promoter, terms and transcript',()=>negotiation(oid,wid,0,'details')),...(t.step==='start'?[a('sign','Sign as offered',()=>signBooking(o,w,root))]:t.step!=='done'?[a('original','Keep and sign original terms',()=>confirm('Return to original terms?','Any unaccepted proposal will be discarded. The meeting and trust costs remain.','Keep original terms',()=>{const x=G.talkMove(oid,wid,'reply:original');if(x.error){screen('Negotiation',x.error,[back(root)]);return;}root();},root))]:[]),a('later','Decide later',leave),back(root)])));
+ screen('Speaking with '+p.voice,body+(pages>1?' Responses page '+(i+1)+' of '+pages+'.':''),buttons,{kicker:'BOOKING OFFICE · '+p.name.toUpperCase()});
+}
 function advance(){
  if(G.pending().length){screen('Reply before continuing','There are decisions waiting in your inbox.',[a('inbox','Review inbox',inbox),back(()=>desk())]);return;}
  OfficeTerritory.reconcileOrdinaryTitles();
