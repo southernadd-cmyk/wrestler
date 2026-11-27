@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage British wrestling newsletter, issue v0.65" width="100%">
+  <img src="docs/readme/masthead.svg" alt="THE OFFICE — a vintage British wrestling newsletter, issue v0.7" width="100%">
 </p>
 
-<p align="center"><strong>ISSUE v0.65</strong> &nbsp; • &nbsp; 23 NOVEMBER 2026 &nbsp; • &nbsp; THE TERRITORY TALKS BACK</p>
+<p align="center"><strong>ISSUE v0.7</strong> &nbsp; • &nbsp; 27 NOVEMBER 2026 &nbsp; • &nbsp; THE WORDS BEFORE THE BELL</p>
 
 <p align="center"><strong>THE MATCHES ARE SCRIPTED. THE PEOPLE AREN'T.</strong></p>
 
@@ -33,7 +33,7 @@
 1. **Sign a wrestler.** Start a **New career** and open **Roster → Free agents**. You've got **£2,250** and room for **five contracts**. Look beyond ring skill: wages, personality, microphone work and condition all matter.
 2. **Find a booking.** Open **Bookings → Offers**. Check the opponent, money, billing and proposed finish. Negotiate if you've got a case; pushing too hard can cost you.
 3. **Run the office.** Read the inbox, choose a training focus, check fatigue and use your management meetings wisely. The other managers aren't sitting idle.
-4. **Work the show.** Press **Continue** when you're ready. Dennis, your road agent, helps you agree a match layout and any backstage decisions. Cut a promo, then follow the bout in live text commentary. You can call instructions from ringside.
+4. **Work the show.** Press **Continue** when you're ready. Dennis, your road agent, helps you agree a match layout and any backstage decisions. Choose a pre-match promo segment, then follow the bout in live text commentary. You can call instructions from ringside.
 5. **Collect the consequences.** Read the report, decide what happens after the bell and check the next offers. A good match can build a rivalry; a broken promise can come back weeks later.
 
 The career is **16 weeks per season** and autosaves in your browser. **Game → Export save** makes a portable copy; **Import save** restores one. Play on desktop or mobile. There's no account to create or software to install.
@@ -61,7 +61,7 @@ Wrestlers develop, get tired, carry injuries and remember slights. You can train
 
 Before the bell, Dennis and both wrestlers work out the **signed match plan**. Choose the performance approach — **Story, Technical, Brawl, Spot-fest or Safe** — and, if it suits the booking, an additional dramatic structure such as **Classic American, King's Road, Chickenshit Heel or Dominant Ace**. Agree real moves and objectives, handle objections and accept that the wrestlers may change course when they get out there. The **booked winner and finish remain the booker's call**.
 
-Promos are conversations, not a single charisma roll. Open an argument, hear the reply, choose whether to push it and make promises the actual match might have to honour. Wrestlers remember who insulted them, who conceded a point and who talked a big game before losing.
+Promos are playable scenes, not a single charisma roll. Choose a face-to-face argument, solo promo, pre-taped vignette, backstage ambush or interview grilling. Individual character writing and fuzzy psychology shape the exchanges; promises made on the microphone can have consequences when the bell rings. Wrestlers remember what was said and done.
 
 ### THE WRESTLING BETWEEN THE BELLS
 
@@ -200,27 +200,33 @@ The 80-wrestler circuit includes technical specialists, brawlers, flyers, vetera
 
 ## THE MAIN EVENT
 
-*The latest issue · v0.65 · 23 November 2026*
+*The latest issue · v0.7 · 27 November 2026*
 
-### THE TERRITORY TALKS BACK
+### THE WORDS BEFORE THE BELL
 
-*The latest additions from the agents' room, the ring and the back pages.*
+*From the dressing room: the microphone is no longer just a warm-up for the wrestling.*
 
-**A better reason for every phase of the fight.** The new **Match Structure Director** brings different dramatic patterns into live, signed match planning. Characters can haggle over a real named move; the match follows the agreement only where the wrestling permits it. Follow-up work gives selling, rest, counters, late offence and near falls more believable causes. [Match structures](https://github.com/southernadd-cmyk/wrestler/pull/194) · [Late-match work](https://github.com/southernadd-cmyk/wrestler/pull/220)
+**Five ways to make a point.** Before the match, choose the familiar face-to-face duel, a solo promo, a pre-taped vignette, a backstage ambush or an interview grilling. Work the crowd on your own, build a television piece around setting and tone, risk the booker's trust by jumping an opponent, or answer awkward questions about form, injury and reputation. An ambush can even affect the opponent's starting stamina. Contract signings remain their own occasion. [New promo segments](https://github.com/southernadd-cmyk/wrestler/pull/491)
 
-**Ringside calls that answer back.** **Hit the big spot** no longer demands an impossible move the instant you press the button. It can queue a legal opportunity and later report the move that really happened; an unfulfilled request is refunded. Other calls also distinguish what the wrestler actually did from what you merely asked for. [Ringside changes](https://github.com/southernadd-cmyk/wrestler/pull/242)
+**Eighty voices, not eighty versions of the same speech.** The original roster now has individual dialogue banks covering arguments, reactions, technical claims, acknowledgements and replies. The duel responds to what was actually said. Academy wrestlers draw on a shared personality-sensitive writing system that can supply future intakes, while solo promos and interviews also use appropriate character-bank lines. [Roster dialogue](https://github.com/southernadd-cmyk/wrestler/pull/411) · [Academy dialogue](https://github.com/southernadd-cmyk/wrestler/pull/417)
 
-**The booking office has found its voice.** Promoters argue their case, offer real trade-offs and react differently to pressure. Dennis now makes the training desk more useful, with assessments, forecasts and a record of actual weekly development. There have also been practical changes to the old-school, Championship Manager-style navigation and management screens. [Negotiation conversations](https://github.com/southernadd-cmyk/wrestler/pull/184) · [Training](https://github.com/southernadd-cmyk/wrestler/pull/225)
+**Nobody is entirely predictable.** A shared fuzzy-logic psychology engine gives personality, relationships and circumstances a say in how wrestlers behave. It influences emotional reactions, interruptions, dialogue choices and follow-ups, using authored writing rather than a live chatbot. [Psychology](https://github.com/southernadd-cmyk/wrestler/pull/420) · [Promo pacing](https://github.com/southernadd-cmyk/wrestler/pull/426)
 
-**The body keeps score.** Wrestlers age between seasons and can retire. Injuries now lead to decisions about full recovery, early return or working through the pain, while repeated damage to the same body part can lengthen the layoff. There is no risk-free shortcut. [Ageing](https://github.com/southernadd-cmyk/wrestler/pull/252) · [Injury choices](https://github.com/southernadd-cmyk/wrestler/pull/256)
+### FROM THE AGENTS' ROOM
 
-### RINGFAX
+**The signed sheet is an agreement, not a wish list.** Dennis now brokers more substantial discussions using the shared psychology system. Wrestlers can object, counter a proposal, negotiate conditional exchanges of legal moves and agree alternative openings. Fatigue, caution, ambition and willingness to cooperate affect the discussion. Public technical claims and promises can inform the private meeting and the match itself. [Bargaining](https://github.com/southernadd-cmyk/wrestler/pull/447) · [Conditional exchanges](https://github.com/southernadd-cmyk/wrestler/pull/451) · [Promises](https://github.com/southernadd-cmyk/wrestler/pull/457)
 
-*From our teletext correspondent: page 100 is where the news starts.*
+**The ring has the last word.** Agreed exchanges need physically possible openings and legal follow-through. Wrestlers can adapt an opening, recover or be interrupted; the debrief distinguishes exact delivery from an alternative or an undelivered sequence. Professional pair memory carries witnessed cooperation and delivery into future encounters. Ringside requests receive a bounded opportunity without indefinitely blocking other agreed work. [Pair memory](https://github.com/southernadd-cmyk/wrestler/pull/459) · [Adaptation](https://github.com/southernadd-cmyk/wrestler/pull/466) · [Ringside arbitration](https://github.com/southernadd-cmyk/wrestler/pull/479)
 
-There's a **Ceefax-inspired wrestling service** inside the game. Ringfax carries editorial headlines, rumours, reports, fan letters and title talk drawn from your actual career. It's the voice of the circuit, **not a duplicate of the booking sheets or champions screen**. Its presentation is still being refined.
+**Leave something for the finish.** Routine stamina expenditure has been reduced to a quarter of its former rate, using the same routine debit for both wrestlers. Autonomous scripted high spots also run at a quarter of their former scheduling rate, without applying that reduction to managerial requests or ordinary graph moves. Stiff-exchange injury risk now takes both wrestlers' attributes and condition into account. [Stamina](https://github.com/southernadd-cmyk/wrestler/pull/484) · [High spots](https://github.com/southernadd-cmyk/wrestler/pull/488) · [Injury risk](https://github.com/southernadd-cmyk/wrestler/pull/489)
 
-For those who know their **World of Sport** from their **King's Road**, the hidden **page 777 quiz** uses four coloured Teletext answers, checkpoints and a library of **192 different wrestling questions**. Each of the **16 weeks** in a season deals 12 new questions, with no repeats that season. The material covers wrestlers, moves, tags, match types, personalities, women's wrestling and notable UK careers abroad — not just championship trivia. [Ringfax editorial work](https://github.com/southernadd-cmyk/wrestler/pull/243) · [Weekly quiz](https://github.com/southernadd-cmyk/wrestler/pull/257)
+**After the bell means after the bell.** Decide what happens next once the actual result is known, rather than signing away that decision in the planning meeting. The angle leads into the microphone segment; older saves retain their previously agreed plans. [After the bell](https://github.com/southernadd-cmyk/wrestler/pull/492)
+
+### AROUND THE TERRITORY
+
+**Your name on the office door.** Name your manager and stable, choose a portrait and see your identity reflected across the game. Training forecasts and settlement have been brought into line, wrestler condition persists across contracts, and the territory's ageing, recovery, retirement and academy intake make the longer career matter. Financial runway is clearer before you sign a contract.
+
+**From the technical desk.** The match-planning work has been exercised in seeded multi-season career simulations, including the integrated production engine. The Fuzzy Logic Lab offers a separate workbench for examining the psychology model alongside Graph Lab. These are development tools, not required reading before your first booking. [Fuzzy Logic Lab](https://github.com/southernadd-cmyk/wrestler/pull/460) · [Integrated career audit](https://github.com/southernadd-cmyk/wrestler/pull/490)
 
 <p align="center"><img src="docs/readme/three-stars.svg" alt="" width="100%"></p>
 <p align="center"><img src="docs/readme/07-archive.svg" alt="BACK ISSUES — THE OFFICE NEWSLETTER ARCHIVE" width="100%"></p>
@@ -231,7 +237,8 @@ For those who know their **World of Sport** from their **King's Road**, the hidd
 
 | Edition | Main story |
 | --- | --- |
-| **v0.65** · 23 Nov 2026 | **The Territory Talks Back** — match structures, better ringside decisions, career depth and Ringfax. [Main Event](#the-main-event). |
+| **v0.7** · 27 Nov 2026 | **The Words Before the Bell** — expanded promo formats, individual dialogue, shared psychology and deeper match planning. [Main Event](#the-main-event). |
+| **v0.65** · 23 Nov 2026 | **The Territory Talks Back** — match structures, better ringside decisions, career depth and Ringfax. [Release guide](docs/v0.65-release.md). |
 | **v0.6.0** · 21 Nov 2026 | **Earn the Finish** — five distinct match plans, legitimate near falls and earned long-match recovery. [Release guide](docs/v0.6-release.md). |
 | **v0.5.0** · 20 Nov 2026 | **Every Hold Has a History** — richer grappling, technical identities and legal transitions. [Release guide](docs/v0.5-release.md). |
 | **v0.4.0** · 19 Nov 2026 | **The Wrestling Knows Its Way Around** — foundational authored graph and technical styles. [Release guide](docs/v0.4-release.md). |
