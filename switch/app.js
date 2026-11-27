@@ -128,7 +128,16 @@ function mainMenu(restoreId=null){
  ],{restoreId});
 }
 function newIdentity(){identity=G.suggestIdentity();identityScreen();}
-function identityScreen(){screen('Meet the new boss',identity.manager+' · '+identity.stable+'. You can choose another identity or begin with this one.',[a('start','Start career',()=>{active=null;persistMatch();planning=null;planLoadToken++;persistPlanning();G.fresh(identity);desk('The keys are yours. You have £2,250 and an empty stable. Sign your first wrestler.');}),a('another','Suggest another identity',()=>{identity=G.suggestIdentity();identityScreen();}),back(()=>mainMenu('new'))]);}
+function difficultyName(state=s()){return state?.switchDifficulty==='relaxed'?'Relaxed':'Standard';}
+function startCareer(difficulty){
+ active=null;persistMatch();planning=null;planLoadToken++;persistPlanning();G.fresh(identity);
+ if(difficulty==='relaxed'){s().switchDifficulty='relaxed';G.save();}
+ desk('The keys are yours. You have £2,250 and an empty stable. '+difficultyName()+' career. Sign your first wrestler.');
+}
+function identityScreen(){screen('Meet the new boss',identity.manager+' · '+identity.stable+'. Choose your career challenge, or suggest another identity.',[
+ a('start','Start standard career',()=>startCareer('standard'),'The original challenge. Financial failure can end the career.'),
+ a('relaxed','Start relaxed career',()=>startCareer('relaxed'),'No bankruptcy. Weekly support restores the bank to at least £750. All wrestling and other consequences remain.'),
+ a('another','Suggest another identity',()=>{identity=G.suggestIdentity();identityScreen();}),back(()=>mainMenu('new'))]);}
 function help(returnTo){screen('How to play','Sign a wrestler, review offers, book matches and choose training. On match night choose a game plan, then advance commentary or give ringside instructions. The simulation waits for each choice. Space advances and Enter selects in two-switch mode. In one-switch mode the highlight moves automatically and Enter selects. Pause and settings are always available at decision screens.',[a('repeat','Repeat instructions',()=>help(returnTo)),back(returnTo)]);}
 function exit(returnTo){confirm('Exit game?',window.parent===window?'Return to the main menu? Your career is kept.':'Return to the Hub? Your career is kept.','Exit game',()=>{mainMenu();if(window.parent!==window){input.cancel({resetGuard:true});V.cancel();window.parent.postMessage({action:'focusBackButton'},'*');}},returnTo);}
 function requestHelp(){
@@ -162,7 +171,18 @@ function desk(note='',restoreId=null,full=false){
 function modeScreen(ret){
  screen('Management mode','Guided: Dennis brings you important decisions. Full: choose every task through the office. Both use the same rules, wrestlers and finances.',[
  a('guided','Guided management'+(guided()?' — selected':''),()=>setMode('guided',ret)),
- a('full','Full management'+(!guided()?' — selected':''),()=>setMode('full',ret)),back(ret)]);
+ a('full','Full management'+(!guided()?' — selected':''),()=>setMode('full',ret)),
+ ...(s()&&!s().over?[a('difficulty','Career difficulty: '+difficultyName(),()=>difficultyScreen(()=>modeScreen(ret)))]:[]),back(ret)]);
+}
+function difficultyScreen(ret){
+ const current=difficultyName();
+ const choose=mode=>{
+  if(difficultyName().toLowerCase()===mode){ret();return;}
+  confirm('Change career difficulty?',mode==='relaxed'?'Future weekly settlements restore the bank to at least £750. Match results, wages, injuries and other consequences do not change.':'Financial support stops from the next settlement. Bankruptcy is possible again. Previous support is not reversed.',mode==='relaxed'?'Use relaxed mode':'Use standard mode',()=>{if(mode==='relaxed')s().switchDifficulty='relaxed';else delete s().switchDifficulty;G.save();ret();},()=>difficultyScreen(ret));
+ };
+ screen('Career difficulty','Current: '+current+'. Standard uses the original financial rules. Relaxed keeps the career going with a minimum £750 balance after weekly settlement. Spending is still limited by available cash; no matches, training or contracts are automatically decided.',[
+ a('standard','Standard'+(current==='Standard'?' — selected':''),()=>choose('standard')),
+ a('relaxed','Relaxed'+(current==='Relaxed'?' — selected':''),()=>choose('relaxed')),back(ret)]);
 }
 function setMode(mode,ret){
  managementMode=mode;try{localStorage.setItem(MODE_KEY,mode);}catch(_){}
@@ -907,6 +927,7 @@ function buildWeekReview(state,period,season,week,preCash,preRep){
  summary.push('Bank balance: '+money(state.cash)+'. Reputation: '+state.rep+'.');
  const detail=[];
  if(ledger)detail.push('Weekly wages: '+money(ledger.wages)+'. Other weekly costs: '+money(ledger.other)+'.');
+ if(ledger?.switchSupport>0)detail.push('Relaxed career support: '+money(ledger.switchSupport)+'. This is support, not match earnings.');
  if(Number.isFinite(preCash)&&Number.isFinite(state.cash))detail.push('Bank before weekly settlement: '+money(preCash)+'. After settlement: '+money(state.cash)+'.');
  if(Number.isFinite(preRep)&&Number.isFinite(state.rep)&&preRep!==state.rep)detail.push('Reputation changed from '+preRep+' to '+state.rep+' during weekly settlement.');
  for(const e of training?.entries||[]){
@@ -917,6 +938,7 @@ function buildWeekReview(state,period,season,week,preCash,preRep){
  }
  const titleLines=[...new Set(matches.flatMap(h=>matchTitleChanges(h,state)))];
  const highlights=[...titleLines];
+ if(ledger?.switchSupport>0)highlights.push('Relaxed career support of '+money(ledger.switchSupport)+' kept the bank at £750.');
  if(best?.stars>=4)highlights.push('Four-star performance this week!');
  if(season===1&&week===4&&state.monthReview)highlights.push(state.monthReview.passed?'First-month target achieved. The backer invested £450.':'First-month target not achieved. No investment this time; the campaign continues.');
  const seasonLetter=(state.inbox||[]).find(m=>m.subject==='Season '+season+' review'&&m.season===season);
@@ -942,7 +964,7 @@ function careerProgress(){
  const state=s(),goals=G.goalList(),achieved=goals.filter(g=>g.done&&g.id!=='solvent').length;
  const ratings=(state.seasonResults||[]).filter(h=>h.season===state.season&&Number.isFinite(h.stars));
  const best=ratings.length?Math.max(...ratings.map(h=>h.stars)):null;
- const lines=['Season '+state.season+', week '+state.week+'. '+state.roster.length+' wrestlers under contract.',ratings.length+' recorded matches this season.'+(best!==null?' Best: '+ratingText(best)+'.':''),achieved+' of '+goals.filter(g=>g.id!=='solvent').length+' performance objectives currently met.',...goals.map(g=>g.id==='solvent'?'Financial objective: '+g.text+'. Current balance '+money(state.cash)+'.':(g.done?'Achieved: ':'Still to achieve: ')+g.text+'.')];
+ const lines=['Season '+state.season+', week '+state.week+'. '+difficultyName(state)+' career. '+state.roster.length+' wrestlers under contract.',ratings.length+' recorded matches this season.'+(best!==null?' Best: '+ratingText(best)+'.':''),achieved+' of '+goals.filter(g=>g.id!=='solvent').length+' performance objectives currently met.',...goals.map(g=>g.id==='solvent'?'Financial objective: '+g.text+'. Current balance '+money(state.cash)+'.':(g.done?'Achieved: ':'Still to achieve: ')+g.text+'.')];
  if(state.monthReview)lines.push(state.monthReview.passed?'First-month investment secured.':'First-month investment was not secured.');
  screen('Career progress',lines.join('\n'),[...(state.switchWeekReview?[a('review','Latest weekly review',()=>weeklyReview(careerProgress))]:[]),a('results','Recent match reports',()=>results(careerProgress)),back(more)]);
 }
