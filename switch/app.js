@@ -40,7 +40,7 @@ function narrateMatch(parts,onComplete=null,{skippable=false}={}){
  $('controls').textContent=onComplete?'Live broadcast · Enter requests a pause after this batch.':skippable?'Listening to the scene. Press and release your switch to skip narration; then choose.':'Listening to commentary. Choices resume when speech ends.';
  const finish=result=>{
   if(narrationLock!==lock)return;
-  narrationLock=null;input.cancel();
+  narrationLock=null;input.cancel();scan.setSuspended(false);
   if(onComplete){onComplete(result);return;}
   if(result?.reason==='timeout'||result?.reason==='error'||result?.reason==='failed-to-start'||result?.reason==='unavailable'){
    $('saveNotice').textContent=[saveNotice(),'Speech could not finish. The current text remains visible; you can review the conversation or replay commentary where available.'].filter(Boolean).join(' ');
@@ -172,14 +172,14 @@ function guidedDesk(note=''){
   const rows=(pending.options||[]).map(o=>a(o.id,o.label+(o.hint?'. '+o.hint:''),()=>{
    const result=G.answer(pending.id,o.id);
    if(!pending.answer){screen('Response unavailable',String(result),[back(()=>guidedDesk())]);return;}
-   screen('Decision made',pending.outcome||'Response recorded.',[a('continue','Continue with Dennis',()=>guidedDesk()),moreChoice]);
+   guidedDesk('Decision recorded: '+(pending.outcome||'Response recorded.'));
   }));
   screen(pending.subject,(note?note+'\n':'')+pending.from+'. '+body,rows.concat(moreChoice));return;
  }
  if(!s().roster.length){
   const choices=s().free.filter(w=>G.signingForecast(w.id)?.affordable).sort((x,y)=>x.fee-y.fee||y.ring-x.ring).slice(0,3);
   screen('Dennis: build your stable',(note?note+'\n':'')+'We need wrestlers before we can book a show. Here are three affordable recruits. Review any of them or browse all free agents.',[
-   ...choices.map(w=>a(w.id,w.name+' — '+w.style+', '+money(w.fee),()=>signProfile(w,()=>guidedDesk()))),a('scout','Browse all free agents',scout),moreChoice]);return;
+   ...choices.map(w=>a(w.id,w.name+' — '+w.style+', '+money(w.fee),()=>signProfile(w,()=>guidedDesk()))),a('scout','Browse all free agents',()=>scout(()=>guidedDesk())),moreChoice]);return;
  }
  const urgent=s().roster.flatMap(w=>G.trainingAdvice(w).filter(x=>x.priority==='urgent'&&!seen.has('training:'+w.id+':'+x.title)).map(x=>({w,x})))[0];
  if(urgent){
@@ -216,9 +216,9 @@ function paged(title,rows,page,open,returnTo,describe=x=>x.name,restoreId=null){
 function inbox(){const rows=[...s().inbox].sort((x,y)=>Number(y.kind==='decision'&&!y.answer)-Number(x.kind==='decision'&&!x.answer));paged('Inbox',rows,0,message,()=>desk('','inbox'),m=>m.subject+(m.kind==='decision'&&!m.answer?' — reply needed':''));}
 function message(m,returnTo){m.read=true;G.save();screen(m.subject,m.from+'.\n'+(Array.isArray(m.body)?m.body.join('\n'):m.body||'')+(m.outcome?'\nOutcome: '+m.outcome:''),[...(m.kind==='decision'&&!m.answer?(m.options||[]).map(o=>a(o.id,o.label+(o.hint?'. '+o.hint:''),()=>{const result=G.answer(m.id,o.id);if(!m.answer){screen('Response unavailable',String(result),[back(()=>message(m,returnTo))]);return;}screen('Response recorded',m.outcome||'Decision recorded.',[back(returnTo)]);})):[]),a('repeat','Repeat message',()=>message(m,returnTo)),back(returnTo)]);}
 function stable(){const opts=[...(s().roster.length?[a('roster','Your wrestlers',()=>paged('Your wrestlers',s().roster,0,profile,stable))]:[]),a('scout','Scout and sign wrestlers',scout),a('coach','Coaching staff',coaches),a('reports','Training reports',trainingReports),back(()=>desk('','stable'))];screen('Your stable',s().roster.length+' of 5 contract places filled.',opts);}
-function scout(){screen('Find talent','Choose a division. The shortlist is ordered by signing fee; every affordable free agent is available.',D.DIVISION_ORDER.map(div=>a(div,D.DIVISIONS[div].name+' division',()=>scoutList(div))).concat(back(stable)));}
-function scoutList(div){const rows=s().free.filter(w=>D.divisionOf(w)===div).sort((x,y)=>x.fee-y.fee);paged('Free agents',rows,0,signProfile,scout,w=>w.name+' · '+money(w.fee));}
-function signProfile(w,returnTo){const f=G.signingForecast(w.id);if(!f){scout();return;}const bands=['ring','mic','psych','safe'].map(k=>{const b=G.scoutBand(w,k);return k+': '+(typeof b==='string'?b:Array.isArray(b)?b.join(' to '):b?.label||'estimated');}).join('. ');screen(w.name,w.style+' wrestler. Signing fee '+money(w.fee)+'. Weekly wage '+money(w.wage)+'. Bank after signing '+money(f.afterFee)+'. '+bands,[...(f.affordable?[a('sign','Sign for '+money(w.fee),()=>confirm('Sign '+w.name+'?','Pay '+money(w.fee)+' now and '+money(w.wage)+' each week.','Confirm signing',()=>{const e=G.sign(w.id);if(e){screen('Signing unavailable',e,[back(returnTo)]);return;}desk(w.name+' has joined your stable.');},()=>signProfile(w,returnTo)))]:[]),back(returnTo)],{portrait:w});}
+function scout(returnTo=stable,restoreId=null){screen('Find talent','Choose a division. The shortlist is ordered by signing fee; every affordable free agent is available.',D.DIVISION_ORDER.map(div=>a(div,D.DIVISIONS[div].name+' division',()=>scoutList(div,returnTo))).concat(back(returnTo)),{restoreId});}
+function scoutList(div,returnTo=stable){const rows=s().free.filter(w=>D.divisionOf(w)===div).sort((x,y)=>x.fee-y.fee);paged('Free agents',rows,0,signProfile,()=>scout(returnTo,div),w=>w.name+' · '+money(w.fee));}
+function signProfile(w,returnTo){const f=G.signingForecast(w.id);if(!f){returnTo();return;}const bands=['ring','mic','psych','safe'].map(k=>{const b=G.scoutBand(w,k);return k+': '+(typeof b==='string'?b:Array.isArray(b)?b.join(' to '):b?.label||'estimated');}).join('. ');screen(w.name,w.style+' wrestler. Signing fee '+money(w.fee)+'. Weekly wage '+money(w.wage)+'. Bank after signing '+money(f.afterFee)+'. '+bands,[...(f.affordable?[a('sign','Sign for '+money(w.fee),()=>confirm('Sign '+w.name+'?','Pay '+money(w.fee)+' now and '+money(w.wage)+' each week.','Confirm signing',()=>{const e=G.sign(w.id);if(e){screen('Signing unavailable',e,[back(returnTo)]);return;}desk(w.name+' has joined your stable.');},()=>signProfile(w,returnTo)))]:[]),back(returnTo)],{portrait:w});}
 function profile(w,returnTo){
  w=G.W(w.id);if(!w){stable();return;}
  const again=()=>profile(w,returnTo),amb=window.OfficeAmbitions?.view(w.id);
@@ -313,13 +313,13 @@ function bookingTerms(o,w,terms=o){
 }
 function offerTerms(o,w,returnTo){
  const live=s().offers.find(x=>x.id===o.id),worker=G.W(w.id);
- if(!live||!worker||!G.offerCandidates(live).some(x=>x.id===worker.id)){screen('Offer unavailable','This invitation can no longer be accepted by this wrestler.',[back(offers)]);return;}
+ if(!live||!worker||!G.offerCandidates(live).some(x=>x.id===worker.id)){screen('Offer unavailable','This invitation can no longer be accepted by this wrestler.',[back(returnTo)]);return;}
  o=live;w=worker;
  const p=G.P(o.pid),f=G.F(o.rid),t=o.talk;
  const body=p.name+' wants '+w.name+' against '+f.name+'. '+(o.programme?o.programme.beats.length+' match programme. ':'')+bookingTerms(o,w)+' '+(o.eventAbs===G.abs()?'This week.':'Future week '+o.eventAbs+'.')+' Reply by week '+o.expiresAbs+'.';
  const choices=[];
  if(!t||t.step==='start'||t.step==='done')choices.push(a('book',t?.step==='done'?'Sign current terms':'Accept offered terms',()=>signBooking(o,w,()=>offerTerms(o,w,returnTo))));
- if(!o.programme&&(t||s().focus>0))choices.push(a('talk',t?.step==='done'?'Review negotiation':t&&t.step!=='start'?'Resume negotiation':'Negotiate with '+p.voice,()=>negotiation(o.id,w.id)));
+ if(!o.programme&&(t||s().focus>0))choices.push(a('talk',t?.step==='done'?'Review negotiation':t&&t.step!=='start'?'Resume negotiation':'Negotiate with '+p.voice,()=>negotiation(o.id,w.id,0,'main','',returnTo)));
  choices.push(back(returnTo));
  screen('Contract offer',body+(!o.programme?' '+s().focus+' management meetings left. Asking for changes uses one meeting; signing as offered does not.':''),choices,{portrait:w});
 }
@@ -333,22 +333,23 @@ function signBooking(o,w,cancel,revert=false){
   desk('Booking confirmed for '+w.name+'.');
  },cancel);
 }
-function leaveNegotiation(oid,wid){
+function leaveNegotiation(oid,wid,returnTo=offers){
  const o=s().offers.find(x=>x.id===oid),w=G.W(wid);
  // Merely opening a discussion never reserves the wrestler or spends a meeting.
  if(o?.talk?.step==='start'){o.talk=null;G.save();}
- if(o&&w)offerTerms(o,w,offers);else offers();
+ if(o&&w)offerTerms(o,w,returnTo);else returnTo();
 }
-function negotiation(oid,wid,page=0,section='main',extra=''){
+function negotiation(oid,wid,page=0,section='main',extra='',returnTo=offers){
  const r=G.meeting(oid,wid);
- if(r.error){screen('Negotiation unavailable',r.error,[back(offers)]);return;}
+ if(r.error){screen('Negotiation unavailable',r.error,[back(returnTo)]);return;}
  const {offer:o,talk:t}=r,w=G.W(wid),p=G.P(o.pid),read=OfficeNegotiationsV2.read(o,w),trades=OfficeNegotiationsV2.tradeOptions(o,w,t);
- const reopen=()=>negotiation(oid,wid,page,section),root=()=>negotiation(oid,wid);
+ const go=(page=0,section='main')=>negotiation(oid,wid,page,section,'',returnTo);
+ const reopen=()=>go(page,section),root=()=>go();
  const move=id=>{
   const perform=()=>{
    const x=G.talkMove(oid,wid,id);
    if(x.error){screen('Negotiation',x.error,[back(reopen)]);return;}
-   if(x.withdrawn){screen('Invitation withdrawn',x.detail||'The promoter has withdrawn the booking.',[back(offers)]);return;}
+   if(x.withdrawn){screen('Invitation withdrawn',x.detail||'The promoter has withdrawn the booking.',[back(returnTo)]);return;}
    root();
   };
   if(id==='reply:walk')confirm('Walk away?', 'This withdraws the invitation. It cannot be undone.','Withdraw from booking',perform,reopen);
@@ -357,28 +358,28 @@ function negotiation(oid,wid,page=0,section='main',extra=''){
  };
  const last=t.log?.slice(-2).map(x=>x.who+': '+x.text).join('\n')||'';
  const body=(extra?extra+'\n':'')+last+'\n'+(t.proposal&&t.step!=='done'?'Proposed, not accepted: '+bookingTerms(o,w,t.proposal):'Current unsigned terms: '+bookingTerms(o,w))+'\n'+(t.package?'Exchange: '+t.package.give+' in return for '+t.package.get+'.\n':'')+'Trust '+p.trust+'. '+s().focus+' meetings left.'+(t.step==='start'?' '+read.signal:'')+(t.detail?' '+t.detail:'');
- const leave=()=>leaveNegotiation(oid,wid);
+ const leave=()=>leaveNegotiation(oid,wid,returnTo);
  if(section==='history'){
   const rows=t.log||[],pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
-  screen('Negotiation transcript',rows.slice(i*3,i*3+3).map(x=>x.who+': '+x.text).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>negotiation(oid,wid,(i+1)%pages,'history'))]:[]),back(root)]);return;
+  screen('Negotiation transcript',rows.slice(i*3,i*3+3).map(x=>x.who+': '+x.text).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>go((i+1)%pages,'history'))]:[]),back(root)]);return;
  }
  if(section==='details'){
-  screen('Promoter and terms',p.voice+'. '+read.name+'. '+read.priority+'. '+read.evidence+'. '+read.warning+'\nOriginal: '+bookingTerms(o,w,t.original)+'\n'+(t.proposal&&t.step!=='done'?'Proposed, not accepted: '+bookingTerms(o,w,t.proposal):'Current unsigned terms: '+bookingTerms(o,w)),[a('history','Read full conversation',()=>negotiation(oid,wid,0,'history')),back(root)]);return;
+  screen('Promoter and terms',p.voice+'. '+read.name+'. '+read.priority+'. '+read.evidence+'. '+read.warning+'\nOriginal: '+bookingTerms(o,w,t.original)+'\n'+(t.proposal&&t.step!=='done'?'Proposed, not accepted: '+bookingTerms(o,w,t.proposal):'Current unsigned terms: '+bookingTerms(o,w)),[a('history','Read full conversation',()=>go(0,'history')),back(root)]);return;
  }
  if(section==='stips'||section==='trades'){
   const rows=section==='stips'?Object.entries(OfficeStips.STIPS).map(([id,x])=>({id:'ask:stip:'+id,label:x.name,hint:x.hint+(OfficeStips.tasteOf(p,id)>=8?' '+p.voice+' likes this.':OfficeStips.tasteOf(p,id)<=-8?' '+p.voice+' dislikes this.':'')})):trades.map(x=>({id:'trade:'+x.id,label:x.label,hint:x.hint}));
   const pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
-  screen(section==='stips'?'Match stipulations':'Concrete exchanges','Choose a request. '+(section==='trades'?'A rejected trade costs one promoter trust. ':'')+'Page '+(i+1)+' of '+pages,rows.slice(i*3,i*3+3).map(x=>a(x.id,x.label+(x.hint?'. '+x.hint:''),()=>move(x.id))).concat(pages>1?[a('next','Next page',()=>negotiation(oid,wid,(i+1)%pages,section))]:[],back(root)));return;
+  screen(section==='stips'?'Match stipulations':'Concrete exchanges','Choose a request. '+(section==='trades'?'A rejected trade costs one promoter trust. ':'')+'Page '+(i+1)+' of '+pages,rows.slice(i*3,i*3+3).map(x=>a(x.id,x.label+(x.hint?'. '+x.hint:''),()=>move(x.id))).concat(pages>1?[a('next','Next page',()=>go((i+1)%pages,section))]:[],back(root)));return;
  }
  if(t.step==='done'){
   const changed=t.original.slot!==o.slot||t.original.finish!==o.finish||(t.original.stip||null)!==(o.stip||null)||t.original.fee!==G.purse(o,w);
-  screen('Negotiation complete',body,[a('sign',changed?'Sign accepted terms':'Sign original terms',()=>signBooking(o,w,root)),...(changed?[a('original','Sign original terms',()=>signBooking(o,w,root,true))]:[]),a('details','Review terms and transcript',()=>negotiation(oid,wid,0,'details')),a('later','Decide later',leave)]);return;
+  screen('Negotiation complete',body,[a('sign',changed?'Sign accepted terms':'Sign original terms',()=>signBooking(o,w,root)),...(changed?[a('original','Sign original terms',()=>signBooking(o,w,root,true))]:[]),a('details','Review terms and transcript',()=>go(0,'details')),a('later','Decide later',leave)]);return;
  }
  const opts=OfficeSwitchNegotiation.options(o,t,read,trades,s().focus);
  const pages=Math.max(1,Math.ceil(opts.length/3)),i=Math.max(0,Math.min(page,pages-1));
- const buttons=opts.slice(i*3,i*3+3).map(x=>a(x.id,x.label+(x.hint?'. '+x.hint:''),()=>['stips','trades'].includes(x.id)?negotiation(oid,wid,0,x.id):move(x.id)));
- if(pages>1)buttons.push(a('next','More responses',()=>negotiation(oid,wid,(i+1)%pages)));
- buttons.push(a('review','Review or leave discussion',()=>screen('Review discussion','Nothing is booked until you sign.',[a('details','Promoter, terms and transcript',()=>negotiation(oid,wid,0,'details')),...(t.step==='start'?[a('sign','Sign as offered',()=>signBooking(o,w,root))]:t.step!=='done'?[a('original','Keep and sign original terms',()=>confirm('Return to original terms?','Any unaccepted proposal will be discarded. The meeting and trust costs remain.','Keep original terms',()=>{const x=G.talkMove(oid,wid,'reply:original');if(x.error){screen('Negotiation',x.error,[back(root)]);return;}root();},root))]:[]),a('later','Decide later',leave),back(root)])));
+ const buttons=opts.slice(i*3,i*3+3).map(x=>a(x.id,x.label+(x.hint?'. '+x.hint:''),()=>['stips','trades'].includes(x.id)?go(0,x.id):move(x.id)));
+ if(pages>1)buttons.push(a('next','More responses',()=>go((i+1)%pages)));
+ buttons.push(a('review','Review or leave discussion',()=>screen('Review discussion','Nothing is booked until you sign.',[a('details','Promoter, terms and transcript',()=>go(0,'details')),...(t.step==='start'?[a('sign','Sign as offered',()=>signBooking(o,w,root))]:t.step!=='done'?[a('original','Keep and sign original terms',()=>confirm('Return to original terms?','Any unaccepted proposal will be discarded. The meeting and trust costs remain.','Keep original terms',()=>{const x=G.talkMove(oid,wid,'reply:original');if(x.error){screen('Negotiation',x.error,[back(root)]);return;}root();},root))]:[]),a('later','Decide later',leave),back(root)])));
  screen('Speaking with '+p.voice,body+(pages>1?' Responses page '+(i+1)+' of '+pages+'.':''),buttons,{kicker:'BOOKING OFFICE · '+p.name.toUpperCase()});
 }
 function advance(){
@@ -434,7 +435,10 @@ function roomReview(v){
  const b=v.structureBrief;
  return [v.finishPlan?.label?'Finish: '+v.finishPlan.label:'',v.finishPlan?.requirement||'',v.finishPlan?.summary||'',b?b.label+'. '+b.lead+' leads. '+b.approach+'. '+b.focus+'. '+b.advice:'',...(v.review||v.board||[]).map(x=>x.name+': '+(x.current||'Called in the ring')),v.story?.verdict||''].filter(Boolean).join('\n');
 }
-function roomScreen(page=0,section='main',extra=''){
+// On a successful new decision, show only the newly spoken lines. History and
+// explicit re-entry retain context; this cursor is never persisted to the career.
+function guidedLines(log,previousCount,limit){return previousCount!==null&&previousCount>=0&&previousCount<=log.length?log.slice(previousCount):log.slice(-limit);}
+function roomScreen(page=0,section='main',extra='',previousCount=null){
  if(!planning?.room){prepare();return;}
  const st=planning.room,v=OfficeRoom.view(st),c=s().card.find(x=>x.id===planning.cid);
  if(!c){planning=null;persistPlanning();desk('The booked match is no longer available.');return;}
@@ -442,9 +446,10 @@ function roomScreen(page=0,section='main',extra=''){
  const show=(title,body,choices,opts={})=>screen(title,body,choices,{...opts,scene});
  const root=()=>roomScreen(),returnHere=()=>roomScreen(page,section),pauseHere=()=>pause(returnHere);
  const act=(id,stay=false)=>{
-  try{OfficeRoom.act(st,id);persistPlanning();}
+  const before=v.log.length;
+   try{OfficeRoom.act(st,id);persistPlanning();}
   catch(e){console.error(e);show('Backstage decision','Dennis could not agree that choice. Review the plan before trying again.',[back(returnHere)]);return;}
-  roomScreen(0,stay&&st.stage==='board'?section:'main');
+  roomScreen(0,stay&&st.stage==='board'?section:'main','',before);
  };
  const fmt=o=>o.label+(o.selected?' — selected':'');
  const hint=o=>[o.hint,...(o.tags||[])].filter(Boolean).join(' · ');
@@ -459,7 +464,7 @@ function roomScreen(page=0,section='main',extra=''){
  if(section==='more'){
   show('Backstage options','Your current plan is saved when storage is available. No match time passes here.',[a('history','Read full conversation',()=>roomScreen(0,'history')),a('pause','Pause / settings',pauseHere),back(root)]);return;
  }
- const body=(extra?extra+'\n':'')+(guided()&&!planning.fullRoom?v.log.slice(-2).map(x=>x.who+': '+x.text).join('\n')+'\n'+v.ask:roomText(v,st));
+ const body=(extra?extra+'\n':'')+(guided()&&!planning.fullRoom?guidedLines(v.log,previousCount,2).map(x=>x.who+': '+x.text).join('\n')+'\n'+v.ask:roomText(v,st));
  const assisted=guided()&&!planning.fullRoom;
  const detailed=()=>{planning.fullRoom=true;persistPlanning();root();};
  if(assisted&&section==='main'&&v.stage==='plan'){
@@ -521,7 +526,7 @@ function switchLadder(c){
  }catch(e){return null;}
 }
 // The existing pre-match scene engines remain the authority for choices and effects.
-function preMatch(page=0,section='main'){
+function preMatch(page=0,section='main',previousCount=null){
  const P=planning,c=P&&s().card.find(x=>x.id===P.cid);
  if(!c||!P.room?.sheet?.signed){roomScreen();return;}
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),SG=OfficeSegments,MP=OfficeMouthpiece;
@@ -576,8 +581,8 @@ function preMatch(page=0,section='main'){
     {id:'tape',type:'vignette',picks:['road','intense','tight'],label:'Run a short recorded promo',hint:'A focused, lower-risk pre-taped segment; less potential impact than a live promo.'}
    ];
    if(w.mic<40)presets.unshift(presets.pop());
-   const direct=presets.slice(0,2);
-   show('Dennis: what is the message?',SG.advice(c,w,f)+' Choose the direction and let '+w.short+' deliver it. You can still direct each individual line.',[
+   const direct=presets;
+   show('Dennis: what is the message?',SG.advice(c,w,f)+' Choose the direction and let '+w.short+' deliver it, or direct each individual line.',[
     ...direct.map(x=>a(x.id,x.label,()=>{P.quickPromo={...x,at:0};P.segment=x.type;persistPlanning();root();},x.hint)),
     a('duel','Face off with '+f.short,()=>{P.segment='duel';persistPlanning();root();},'Trade words with your opponent. You choose the responses.'),
     a('custom','More segments / full control',()=>{P.fullPromo=true;persistPlanning();root();}),a('pause','Pause',pauseHere)],{portrait:w,kicker:'PRE-MATCH · '+p.name.toUpperCase()});return;
@@ -638,12 +643,12 @@ function preMatch(page=0,section='main'){
  scene.read=[mood,kind==='segment'?'Segment '+Math.min(v.round+1,v.total)+' / '+v.total:kind==='signing'?'Contract signing':'Face to face'];
  const context=[...(v.read||[]),v.cue,v.unresolved,v.conversation?.subject?'Subject: '+v.conversation.subject:null,v.conversation?.latestPoint,v.claim?.thesis?'Your argument: '+v.claim.thesis:null,v.claim?.evidence,...(v.record||[])].filter(Boolean).join('\n');
  const reconciliation=result?OfficeRoom.promoReconciliation(P.room.sheet,result,w,f,c.finish):null;
- const body=renderEntries(entries.slice(guided()&&!P.fullPromo?-2:-3))+'\n'+mood+'\n'+(done?[result?.reaction,result?.hook,result?.tactic?.stake,reconciliation?'Dennis: '+reconciliation.reason:null].filter(Boolean).join('\n'):[v.help,context].filter(Boolean).join('\n'));
+ const body=renderEntries(guided()&&!P.fullPromo?guidedLines(entries,previousCount,2):entries.slice(-3))+'\n'+mood+'\n'+(done?[result?.reaction,result?.hook,result?.tactic?.stake,reconciliation?'Dennis: '+reconciliation.reason:null].filter(Boolean).join('\n'):[v.help,context].filter(Boolean).join('\n'));
  const title=kind==='signing'?'Contract signing — '+v.name:kind==='duel'?(v.conversation?.formatName||'Promo duel')+' — '+v.name:v.name+' — '+v.heading;
  if(done){const parts=P.quickPromo?[...entries.filter(e=>e.text).map(e=>({text:e.text})),{text:[result?.reaction,result?.hook,reconciliation?'Dennis: '+reconciliation.reason:null].filter(Boolean).join(' ')}]:null;show(title,body,[a('ring','Ring the bell',()=>startMatch(c,P,result)),a('history','Review conversation',()=>preMatch(0,'history')),a('pause','Pause',pauseHere)],{portrait:w,kicker:'PRE-MATCH · '+p.name.toUpperCase(),speechParts:parts});return;}
  const rows=v.options||[],pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
  const buttons=rows.slice(i*3,i*3+3).map(x=>a(x.id,label(x),()=>{
-  try{api.choose(st,x.id);persistPlanning();root();}
+  try{api.choose(st,x.id);persistPlanning();preMatch(0,'main',entries.length);}
   catch(e){console.error(e);show('Microphone decision','That response could not be completed. Review the conversation and retry.',[back(root)]);}
  },hint(x)));
  if(pages>1)buttons.push(a('next','More responses — page '+((i+1)%pages+1),()=>preMatch((i+1)%pages)));
