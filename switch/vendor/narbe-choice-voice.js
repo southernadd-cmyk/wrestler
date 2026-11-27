@@ -1015,8 +1015,13 @@ window.NarbeVoiceManager = (function () {
     watchdog = setTimeout(() => {
       // Release scan waiters without truncating a long spoken announcement.
       // The next speech request (or an explicit cancel) still owns cancellation.
-      finish({ reason: 'timeout', started: didStart });
-    }, getSpeechTimeout(text, rate));
+      if (options.completeUtterance) {
+        // Commentary chunks have a generous safety deadline; never start
+        // another voice over an unfinished or stuck utterance.
+        finish({ reason: 'timeout', started: didStart });
+        nativeTicket?.cancel();
+      } else finish({ reason: 'timeout', started: didStart });
+    }, options.completeUtterance ? Math.max(15000, Math.ceil(String(text).length / (10 * Math.max(0.1, rate)) * 2000) + 5000) : getSpeechTimeout(text, rate));
     try {
       // Optional per-utterance voice; never changes the player's saved voice.
       const voice = options.voice || getCurrentVoice();
