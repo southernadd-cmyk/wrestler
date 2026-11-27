@@ -108,7 +108,7 @@ function tape(setting,o={}){
  assert.ok(good.crowdShift>cold.crowdShift);
  assert.ok(mk(good).crowd>mk(cold).crowd,'the hall starts louder after a good package: '+mk(good).crowd+' v '+mk(cold).crowd);
  const a=tape('scrapyard').r,b=tape('scrapyard').r;assert.deepEqual(a,b,'deterministic');
- for(const s of SETTINGS){const lo=tape(s.id,{w:as({mic:10})}).r,hi=tape(s.id,{w:as({mic:95})}).r;assert.equal(lo.quality,hi.quality,'taped: mic is never rolled ('+s.id+')');}
+ for(const s of SETTINGS){const lo=tape(s.id,{w:as({mic:55})}).r,hi=tape(s.id,{w:as({mic:95})}).r,weak=tape(s.id,{w:as({mic:30})}).r;assert.equal(lo.quality,hi.quality,'taped: mic is never rolled ('+s.id+')');assert.ok(weak.quality>=lo.quality,'taping hides a weak mic ('+s.id+')');}
  console.log('PASS the setting reaches the match through the starting crowd; deterministic and mic-free');
 }
 
