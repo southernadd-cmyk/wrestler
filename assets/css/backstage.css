@@ -302,3 +302,23 @@
  #tv .board-redesign .spot-options .btn{min-height:40px}
  #tv .sheet-redesign .desk-rail>*{font-size:12px;padding:4px 2px}
 }
+
+/* Compact planning matchup stats: keep each label and value together. */
+#tv .s-meeting.sheet-redesign .match-attributes>span{display:contents}
+@media(max-width:720px){
+ #tv .s-meeting.sheet-redesign .match-night-matchup{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px 6px}
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mid{grid-column:1/-1;grid-row:1}
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mu{gap:4px;min-width:0}
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mu>div{flex:1;min-width:0}
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mu .portrait.x2{flex:none;width:30px;height:38px}
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mu .match-attributes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 5px;margin:3px 0;white-space:normal;text-align:left}
+ #tv .s-meeting.sheet-redesign .match-attributes>.match-stat{display:flex;align-items:baseline;justify-content:space-between;gap:2px;margin:0;font-size:12px;white-space:nowrap}
+ #tv .s-meeting.sheet-redesign .match-attributes>.match-stat>b{display:inline;font-size:16px;line-height:1}
+ #tv .s-meeting.sheet-redesign .match-attributes>.match-stat-separator{display:none}
+}
+@media(max-width:350px){
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mu .portrait.x2{width:24px;height:30px}
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mu .match-attributes{column-gap:3px}
+ #tv .s-meeting.sheet-redesign .match-attributes>.match-stat{font-size:11px}
+ #tv .s-meeting.sheet-redesign .match-attributes>.match-stat>b{font-size:14px}
+}

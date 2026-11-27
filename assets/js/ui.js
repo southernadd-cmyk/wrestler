@@ -1646,7 +1646,7 @@ function showMeeting(loadedBanks,previousPosition){
   (!structurePicked?'<p class="dim structure-help">The promoter’s booked result stays fixed. The structure guides the action; specific moves depend on what happens in the ring.</p>':'')+'</section>':'';
  const decisionWithStructure=chooser?'<div class="decide2">'+chooser+(structurePicked?decide.slice('<div class="decide2">'.length,-6):'<p class="lede" role="status">Pick a structure to start the backstage discussion.</p>')+'</div>':decide;
  const sheet=matchDeskSheet(st,v,c,w,f,p,selected,structurePicked,finishLine);
- const stats=x=>`<span class="match-attributes">${[['Mic',x.mic],['Psy',x.psych],['Safe',x.safe],['Ego',x.ego]].map(([label,val])=>`${label} <b class="${val>=75?'good':val<50?'bad':'warn'}">${esc(val)}</b>`).join(' · ')}</span>`;
+ const stats=x=>`<span class="match-attributes">${[['Mic',x.mic],['Psy',x.psych],['Safe',x.safe],['Ego',x.ego]].map(([label,val])=>`<span class="match-stat">${label} <b class="${val>=75?'good':val<50?'bad':'warn'}">${esc(val)}</b></span>`).join('<span class="match-stat-separator" aria-hidden="true"> · </span>')}</span>`;
  const lastDennis=[...v.log].reverse().find(e=>e.side==='agent');
  const conversation=v.board?'<details class="board-conversation"><summary><b>Dennis</b><span>'+esc(lastDennis?.text||'')+'</span><small>Show all ('+v.log.length+')</small></summary>'+deskTranscript(v.log,'roomTalk',w,f)+'</details>':deskTranscript(v.log,'roomTalk',w,f);
  const body=sheet.rail+'<div class="match-desk">'+sheet.sheet+'<section class="match-desk-room"><h3 class="desk-title">Backstage with '+esc(OfficeRoom.AGENT)+'</h3>'+matchupBar(c,w,f,v.board?'':'<span>v</span>',stats(w)+wNote,stats(f)+fNote)+conversation+decisionWithStructure+'</section></div>';
