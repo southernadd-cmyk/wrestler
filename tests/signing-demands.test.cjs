@@ -111,6 +111,9 @@ const contract=(o={})=>({id:'sd-'+(n++),pid:'crown',rid:'silas',wid:'rex',slot:'
   s.territory.cards.dock.rex={score:30,matches:2,wins:1};
   const c=contract({pid:'dock',slot:'mid'});s.card.push(c);const f=fin({stars:3.75});G.applyResult(c,f);
   const st=A.begin(c,f,'none');if(!A.micOptions(st).some(o=>o.id==='demand:slot'))continue;
+  const slotHint=A.micOptions(st).find(o=>o.id==='demand:slot').hint;
+  assert.match(slotHint,/card ladder\. Current standing:/,'explain that the demand concerns ladder standing');
+  assert.doesNotMatch(slotHint,/higher up the card than opener/,'do not describe a mid-card bout as an opener');
   const before=s.territory.cards.dock.rex.score;A.speak(st,'demand:slot');
   if(st.demand.ok){up++;assert.equal(s.territory.cards.dock.rex.score,before+8);}else down++;
   assert.ok(st.cons.every(x=>!clean.test(x.text)));
