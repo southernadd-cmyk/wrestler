@@ -2415,7 +2415,7 @@
     tags:[...(ROUTE_CONDITION[c.route]?['Conditional finish']:[]),...c.hate.map(side=>nameOf(st,side)+' objects')],
     route:c.route,selected:st.board.finish?.route===c.route}));
    for(const r of boardView(st))for(const c of r.cards)out.push({id:c.id,label:c.label,hint:r.name+': '+c.who+'’s idea.',tags:c.tags,slot:r.slot,selected:c.selected});
-   if(!st.structurePlanning||!structureWarnings(st).length)out.push({id:'board_ok',label:'Agree the running order',hint:'Then deal with whatever comes up.',tags:[]});
+   out.push({id:'board_ok',label:'Agree the running order',hint:'Then deal with whatever comes up.',tags:[]});
    return out;
   }
   if(st.stage==='scene'){const s=current(st);return s.options(st).map(o=>({id:o.id,label:fmt(st,o.label),hint:fmt(st,o.hint||''),tags:(o.tags||tagsOf(st,o.fx||{})).map(t=>fmt(st,t))}));}
