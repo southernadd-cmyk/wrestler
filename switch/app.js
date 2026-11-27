@@ -16,11 +16,11 @@ function restoreMatch(){
  try{const r=JSON.parse(localStorage.getItem(MATCH_KEY)||'null');if(r&&r.careerSeed===s().careerSeed&&r.period===G.abs()&&s().card.some(c=>c.id===r.cid)&&!G.resultRecorded({id:r.cid}))active={cid:r.cid,M:X.restore(r.M)};}catch(e){saveError='Could not restore the unfinished match. The booked match is still on your card.';}
 }
 function saveNotice(){return [G.saveStatus().ok===false?'Career could not be saved. Keep this page open.':'',saveError,planSaveError].filter(Boolean).join(' ');}
-// A persistent error is spoken once until cleared; explicit status replay always includes it.
+// Queue each new persistent warning once; explicit status replay always includes it.
 let lastSpokenSaveNotice='',screenNotice='';
 function noticeText(){return [saveNotice(),screenNotice].filter(Boolean).join(' ');}
 function showNotice(text){screenNotice=text;$('saveNotice').textContent=noticeText();}
-function saveSpeech({repeat=false}={}){const warning=saveNotice();const changed=warning!==lastSpokenSaveNotice;lastSpokenSaveNotice=warning;return (repeat||changed)&&warning?[{text:warning}]:[];}
+function saveSpeech(){const warning=saveNotice();if(!warning){lastSpokenSaveNotice='';return [];}if(!V.getSettings().ttsEnabled||warning===lastSpokenSaveNotice)return [];lastSpokenSaveNotice=warning;return [{text:warning}];}
 function statusSpeech(){return [summary(),noticeText()].filter(Boolean).join('. ');}
 function highlight(item,state){
  for(const x of items){x.element.classList.toggle('scan',x.id===item?.id);if(x.id===item?.id)x.element.dataset.braked=String(!!state.braked||!!state.brakePaused);else delete x.element.dataset.braked;}
@@ -113,7 +113,7 @@ function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,anno
  renderPresentation(title,body,portrait,scene,kicker);
  items=choices.map(x=>{const element=document.createElement('button');element.type='button';element.dataset.choice=x.id;const label=document.createElement('span');label.className='choiceLabel';label.textContent=x.label;element.append(label);if(x.hint){const hint=document.createElement('span');hint.className='choiceHint';hint.textContent=x.hint;element.append(hint);}const item={...x,element};element.onclick=()=>{if(narrationLock){if(narrationLock.continuous&&item.id==='pause')requestBroadcastPause();if(!narrationLock.skippable)return;stopNarration();}input.cancel();choose(item);};return item;});
  $('choices').replaceChildren(...items.map(x=>x.element));if(fresh)scan.open(items,{restoreId,startParked:restoreId===null&&M.isParkingEnabled()});else scan.setItems(items);
- const warnings=V.getSettings().ttsEnabled?saveSpeech():[];
+ const warnings=saveSpeech();
  if(announce||warnings.length){const parkedHint=scan.getState().parked?' Parked. Press Enter to start scanning.':'';if(speechParts?.length)narrateMatch([...warnings,...speechParts,...(parkedHint&&!onSpeechComplete?[{text:parkedHint.trim()}]:[])],onSpeechComplete);else if(V.getSettings().ttsEnabled)narrateMatch([...warnings,...(announce?[{text:title+'. '+body+parkedHint}]:[])]);else scan.announceCurrent(title+'. '+body+parkedHint);}
 }
 // Visual information is supplementary; the same text is available to speech.
@@ -1032,7 +1032,7 @@ function matchScreen(note='',commentary=[],played=false,readStatus=false){
  const scene=liveScene(m,c);
  const status=ringStatus(m);
  const narration=(tail)=>played?(tail?[{text:tail}]:null):commentary.length?boothSpeech.parts(commentary,tail):null;
- const replay=()=>narrateMatch(boothSpeech.parts(commentary,ringStatus(m)+'. '+statusSpeech()));
+ const replay=()=>narrateMatch(boothSpeech.parts(commentary,[m.decision&&!m.queue.length?m.decision.title+'. '+m.decision.body:'',ringStatus(m),statusSpeech()].filter(Boolean).join('. ')));
  const replayOption=commentary.length?[a('replay','Replay commentary',replay)]:[];
  if(m.done&&(!guided()||!V.getSettings().ttsEnabled||!m.queue.length)){screen('The final bell',status+' '+(note||''),[a('result','Review result',settleMatch),...replayOption,a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))],{scene,speechParts:narration('The final bell. '+status)});return;}
  if(m.decision&&!m.queue.length){const d=m.decision;screen(d.title,(note?note+'\n':'')+d.body+'\n'+status,d.options.map(o=>a(o.id,o.label+'. '+o.hint,()=>{X.resolve(m,o.id);persistMatch();if(guided()&&V.getSettings().ttsEnabled)startBroadcast();else burst(1);})).concat(replayOption,a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))),{scene,speechParts:narration(d.title+'. '+d.body+' '+status)});return;}
