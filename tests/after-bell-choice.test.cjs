@@ -2,7 +2,7 @@
 // After the bell: the angle is the first choice of the post-match segment, made with the result known.
 // Dennis's meeting no longer asks about it; a night saved with a plan agreed backstage still plays it.
 const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
-const {script}=require('./_source.cjs');
+const {script,promoBanks}=require('./_source.cjs');
 const cut=script.indexOf('/* THE OFFICE — interface v3');
 const store=new Map(),root={addEventListener(){}};
 vm.runInNewContext(script.slice(0,cut),{window:root,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},Date,Math,JSON,console});
@@ -214,4 +214,44 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  const s=career(),c=contract(),f=play(c),ready=A.capture(f,{rivalCorner:{fired:true,ok:true,ejected:true,job:'runin'}});
  assert.ok(!A.angleOptions({stage:'angle',c,fin:ready}).some(o=>o.id==='confront_corner'));
  console.log('PASS new graph reactions are deterministic; ejected corners cannot unlock confrontation');
+}
+
+// AB4: two separate character snapshots; only reviewed fragments are reused.
+{
+ const run=()=>{const s=career();n=1100;const c=contract({finish:'lose_clean'}),f=play(c);
+  const w=G.W(c.wid),opp=G.F(c.rid),I=root.OfficePromoIdentity;
+  const banks=promoBanks(I.bankId(w),I.bankId(opp));
+  const ready=A.capture({...f,evidence:{dirty:{w:false,f:false}}});
+  const st=A.begin(c,ready);assert.ok(A.attachDialogue(st,banks));
+  assert.equal(st.dialogue.w.id,w.id);assert.equal(st.dialogue.f.id,opp.id);
+  assert.equal(A.attachDialogue(st,banks),false,'snapshot cannot be replaced');
+  const saved=JSON.parse(JSON.stringify(st));assert.ok(A.choose(saved,'acknowledge'));
+  assert.ok(A.speak(saved,'concede'));
+  const speech=saved.log.filter(l=>l.lineId);
+  assert.equal(speech.length,2,'both participants speak in this graph branch');
+  for(const l of speech){const actor=saved.dialogue[l.side];
+   if(l.source.startsWith('bank:'))assert.ok(actor.fragments.some(r=>r.id===l.lineId&&r.source===l.source));
+   assert.doesNotMatch(l.text,/I will win|I intend to win|I guarantee/);
+  }
+  assert.equal(s.history.find(h=>h.cid===c.id).after.log.filter(l=>l.lineId).length,2);
+  return JSON.stringify(speech);
+ };
+ assert.equal(run(),run(),'dialogue is deterministic after reload');
+ assert.match(ui,/OfficePlanningDialogue\?\.loadPair\(G\.W\(c\.wid\),G\.F\(c\.rid\)\)/);
+ assert.match(ui,/OfficeAfter\.attachDialogue\(n\.after,banks\)/);
+ console.log('PASS character dialogue is saved, attributed and wired to the live result');
+}
+{
+ let total=0,covered=0;
+ for(const worker of D.ALL){
+  const owner=root.OfficePromoIdentity.bankId(worker),banks=promoBanks(owner);
+  if(!banks.length)continue;
+  const identity=root.OfficePlanningDialogue.capture(worker,banks,2);
+  assert.equal(identity.id,worker.id);assert.equal(identity.bankOwner,owner);
+  assert.ok(identity.fragments.every(r=>r.id.startsWith(owner+'.')));
+  total++;if(identity.fragments.length)covered++;
+ }
+ assert.ok(total>=80,'the shipped character banks are exercised');
+ assert.ok(covered>0,'reviewed excerpts are actually available');
+ console.log('AB4 reviewed fragment coverage: '+covered+'/'+total+' bank-backed wrestlers; identity fallback for gaps');
 }
