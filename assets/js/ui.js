@@ -1240,6 +1240,7 @@ function logList(log){return `<ol class="fulllog">${(log||[]).map(l=>`<li class=
 /* ---------- continue ---------- */
 function proceed(){
  const s=S();
+ OfficeTerritory.reconcileOrdinaryTitles();
  if(G.pending().length){inboxFilter='action';openMsg=G.pending()[0].id;go('inbox',phoneLayout()?openMsg:null);toast('Reply to the messages marked in red first.');return}
  if(s.card.length){startNight();return}
  if(!s.roster.length&&s.week===1){go('scouting');toast('Sign a wrestler first.');return}
