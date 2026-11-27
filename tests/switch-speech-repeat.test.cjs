@@ -2,18 +2,18 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const read=name=>fs.readFileSync(path.join(__dirname,'../switch',name),'utf8');
 class Element{
- constructor(){this.children=[];this.dataset={};this.classList={toggle(){}};this.textContent='';}
+ constructor(){this.children=[];this.dataset={};this.style={};this.classList={toggle(){}};this.textContent='';}
  append(...children){this.children.push(...children);}
  replaceChildren(...children){this.children=children;}
  setAttribute(){} removeAttribute(){} scrollIntoView(){} addEventListener(){}
 }
-function harness(ttsEnabled=true){
+function harness(ttsEnabled=true,hub=false){
  const elements=new Map(),events=new Map(),windowEvents=new Map(),spoken=[];
  const get=id=>{if(!elements.has(id))elements.set(id,new Element());return elements.get(id);};
  const listen=(map,k,fn)=>{if(!map.has(k))map.set(k,[]);map.get(k).push(fn);};
  const document={body:new Element(),getElementById:get,createElement:()=>new Element(),addEventListener:(k,fn)=>listen(events,k,fn)};
- let selected=null,suspended=false,items=[],scanOptions,active=null,opens=0,voiceCallbacks=[];
- const scan={open(next){opens++;items=next;selected=null;},setItems(next){items=next;},getState(){return {parked:false,id:selected,suspended};},setSuspended(v){suspended=v;},setInputHeld(){},brakePress(){return false;},step(){},select(){if(!suspended&&selected)scanOptions.onSelect(items.find(x=>x.id===selected));},announceCurrent(){},dispose(){}};
+ let selected=null,suspended=false,items=[],scanOptions,active=null,opens=0,voiceCallbacks=[],helpHold=null,hubRequests=[],nextCalls=0;
+ const scan={open(next,{restoreId=null}={}){opens++;items=next;selected=restoreId;},setItems(next){items=next;},getState(){return {parked:false,id:selected,suspended};},setSuspended(v){suspended=v;},setInputHeld(){},brakePress(){return false;},step(){},select(){if(!suspended&&selected)scanOptions.onSelect(items.find(x=>x.id===selected));},announceCurrent(){},holdForSpeech(ticket){helpHold=ticket;},dispose(){}};
  const settings={ttsEnabled,rate:1,pitch:1};
  const V={
   getSettings:()=>({...settings}),getEnglishVoices:()=>[],getCurrentVoice:()=>null,getVoiceDisplayName:()=> 'Default',
@@ -26,14 +26,17 @@ function harness(ttsEnabled=true){
  };
  const M={getSettings:()=>({autoScan:true}),getScanInterval:()=>2000,isParkingEnabled:()=>false,subscribe(){},resetInputState(){},createChoiceScan(o){scanOptions=o;return scan;}};
  let saveCalls=0;
- const window={OfficeGame:{S:null,hasSave:()=>false,saveStatus:()=>({ok:true}),save(){saveCalls++;}},OfficeData:{},OfficeMatch:{},NarbeScanManager:M,NarbeVoiceManager:V,NarbePlatform:{settings:{hasHubParent:()=>false}},addEventListener:(k,fn)=>listen(windowEvents,k,fn)};
- window.parent=window;
- const context=vm.createContext({window,document,localStorage:{getItem:()=>null},console,setTimeout,clearTimeout});
+ const window={OfficeGame:{S:null,hasSave:()=>false,saveStatus:()=>({ok:true}),save(){saveCalls++;},money:x=>'£'+x,abs:()=>1,P:()=>({name:'Test promotion'})},OfficeData:{SLOTS:{},FINISHES:{}},OfficeMatch:{fmt:t=>String(t),CALLS:{},canCall:()=>false,next(m){nextCalls++;m.t++;return {who:'pbp',text:'The wrestlers lock up.'};}},NarbeScanManager:M,NarbeVoiceManager:V,NarbePlatform:{settings:{hasHubParent:()=>false}},addEventListener:(k,fn)=>listen(windowEvents,k,fn)};
+ window.parent=hub?{location:{origin:'https://example.test'},NarbeCommunicationSpeech:{help(fallback,message){hubRequests.push(message);return V.speak(message,{force:true,hub:true});}}}:window;
+ window.location={origin:'https://example.test'};
+ const context=vm.createContext({window,document,localStorage:{getItem:()=>null,setItem(){}},console,setTimeout,clearTimeout});
  vm.runInContext(read('booth-speech.js'),context);
  vm.runInContext(read('choice-input.js'),context);
  window.OfficeChoiceInput=context.OfficeChoiceInput;
- vm.runInContext(read('app.js'),context);
- return {get,spoken,V,scan,select:id=>{selected=id;scan.select();},key:(type,code)=>{for(const fn of events.get(type)||[])fn({type,code,repeat:false,preventDefault(){},target:{matches:()=>false}});},click:id=>get('choices').children.find(x=>x.dataset.choice===id).onclick(),blur:()=>{for(const fn of windowEvents.get('blur')||[])fn();},opens:()=>opens,saves:()=>saveCalls};
+ // Test-only entry to the real broadcast controller; no production hooks.
+ const app=read('app.js').replace(/mainMenu\(\);\n\}\)\(\);\s*$/,"window.startTestBroadcast=match=>{active={cid:'c',M:match};startBroadcast();};mainMenu();\n})();");
+ vm.runInContext(app,context);
+ return {get,spoken,V,scan,helpHold:()=>helpHold,hubRequests,nextCalls:()=>nextCalls,broadcast:()=>{window.OfficeGame.S={season:1,week:1,cash:2250,rep:0,card:[{id:'c',pid:'p'}]};window.startTestBroadcast({w:{id:'w',name:'W',short:'W'},f:{id:'f',name:'F',short:'F'},wSt:90,fSt:90,t:0,crowd:50,calls:2,mom:0,queue:[],r:{getState:()=>1}});},select:id=>{selected=id;scan.select();},key:(type,code)=>{for(const fn of events.get(type)||[])fn({type,code,repeat:false,preventDefault(){},target:{matches:()=>false}});},click:id=>get('choices').children.find(x=>x.dataset.choice===id).onclick(),blur:()=>{for(const fn of windowEvents.get('blur')||[])fn();},opens:()=>opens,saves:()=>saveCalls};
 }
 const tick=()=>new Promise(setImmediate);
 (async()=>{
@@ -74,5 +77,18 @@ const tick=()=>new Promise(setImmediate);
  assert.equal(silent.spoken.length,0);
  assert.equal(silent.scan.getState().suspended,false);
  assert.ok(!silent.get('choices').children.some(x=>x.dataset.choice===repeat),'no redundant speech-only scan stop with TTS off');
- console.log('S8B: screen speech, release-only interruption, repeat, cancellation and failure recovery passed');
+ assert.ok(silent.get('choices').children.some(x=>x.dataset.choice==='__pause'));
+ silent.select('__pause');assert.equal(silent.get('heading').textContent,'Pause');
+ assert.equal(silent.get('choices').children[1].dataset.choice,'help','help is near the start of Pause');
+ silent.select('help');assert.equal(silent.spoken.at(-1).text,'I need help, please! I need help, please!');
+ assert.equal(silent.spoken.at(-1).options.force,true);assert.equal(silent.helpHold(),silent.spoken.at(-1));
+ silent.spoken.at(-1).settle('end');await tick();assert.match(silent.get('saveNotice').textContent,/Help message spoken/);
+ silent.select('continue');assert.equal(silent.get('heading').textContent,'Main menu');assert.equal(silent.scan.getState().id,'__pause');
+ assert.equal(silent.saves(),0);
+ const hubGame=harness(false,true);hubGame.select('__pause');hubGame.select('help');assert.equal(hubGame.hubRequests.length,1);assert.ok(hubGame.spoken.at(-1).options.hub);hubGame.spoken.at(-1).settle('ended');await tick();
+ const live=harness();live.broadcast();assert.equal(live.get('heading').textContent,'Live broadcast');assert.equal(live.nextCalls(),1);
+ live.key('keydown','Enter');assert.equal(live.get('heading').textContent,'Live broadcast');
+ live.key('keyup','Enter');await tick();assert.equal(live.get('heading').textContent,'Pause');assert.equal(live.nextCalls(),1,'pause never simulates another line');
+ live.click('continue');await tick();assert.equal(live.get('heading').textContent,'At ringside');assert.equal(live.nextCalls(),1,'resume returns to the ringside choices without advancing');
+ console.log('S8B/S8C: interruptible speech, repeat, pause, forced help and broadcast stop passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
