@@ -179,7 +179,7 @@
   const F=facts(L,w,f).map(x=>({...x,text:factText(x,w,f)}));
   const open=openIssues(L).map(c=>({issue:c.issue,cid:c.cid,text:c.reminder||c.evidence||''}));
   return {meetings:L.meetings.length,record:record(L),streak:streak(L),stance:stance(L,w,f),facts:F,open,
-   claims:L.claims.slice(-4).map(c=>({...c})),talks:L.talks.slice(-3).map(t=>({...t})),last:L.meetings.at(-1)||null};
+   claims:L.claims.slice(-4).map(c=>({...c})),talks:L.talks.slice(-3).map(t=>({...t})),last:L.meetings.at(-1)||null,afterStory:L.meetings.at(-1)?.after?.story||null};
  }
  // How many meetings ago a contract was (0 = the last one). Robust to the ledger being trimmed.
  function agoOf(L,cid){const i=L.meetings.findIndex(m=>m.cid===cid);return i<0?99:L.meetings.length-1-i;}
@@ -792,12 +792,14 @@
 
  // The interviewer's opening question, in public words only.
  function introFor(core){
-  const cs=core?.cases;if(!cs?.length||!G.S)return null;
-  const L=ledger(core.w.id,core.f.id),n=L?.meetings.length||0,rec=L?record(L):{w:0,f:0};
+  if(!G.S||!core?.w||!core?.f)return null;
+  const cs=core.cases,L=ledger(core.w.id,core.f.id),n=L?.meetings.length||0,rec=L?record(L):{w:0,f:0};
+  const story=L?.meetings.at(-1)?.after?.story,lead=story?.v===1?story.text+' ':'';
+  if(!cs?.length)return lead?lead.trim():null;
   const top=cs[0];
   const count=n===1?'They have met once before.':n>1?'This is meeting number '+(n+1)+'.'+(/^record/.test(top.issue)?'':' '+core.w.short+' '+rec.w+', '+core.f.short+' '+rec.f+'.'):'';
-  if(top.continuation)return count+' '+top.evidence+' That argument has not been settled. Where does it stand tonight?';
-  return (count+' '+top.evidence+' '+core.w.short+', what do you say to that?').trim();
+  if(top.continuation)return lead+count+' '+top.evidence+' That argument has not been settled. Where does it stand tonight?';
+  return (lead+count+' '+top.evidence+' '+core.w.short+', what do you say to that?').trim();
  }
 
  // ---------------------------------------------------------------------------------------------
@@ -912,7 +914,7 @@
   if(!st?.cid||!st.c)return null;
   const L=ledger(st.c.wid,st.c.rid),m=L?.meetings.find(x=>x.cid===st.cid);
   if(!m)return null;
-  m.after={plan:st.plan,angle:st.angle?{...st.angle}:null,said:st.said||null,
+  m.after={plan:st.plan,...(st.story||m.after?.story?{story:{...(st.story||m.after.story)}}:{}),...(st.intervention?{intervention:{...st.intervention}}:{}),...(st.follow?{follow:{...st.follow}}:{}),angle:st.angle?{...st.angle}:null,said:st.said||null,
    call:st.call?{...st.call}:null,demand:st.demand?{...st.demand}:null};
   if(st.said&&!L.talks.some(x=>x.cid===st.cid&&x.issue==='after')){
    L.talks.push({cid:st.cid,n:m.n,issue:'after',by:'w',slot:'after the bell',
