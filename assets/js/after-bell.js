@@ -724,15 +724,32 @@
    log:st.log.map(x=>({side:x.side,text:x.text,...(x.lineId?{lineId:x.lineId,source:x.source}:{})}))};
   for(const line of fresh)if(!prior.includes(line))h.notes.push('After the bell: '+line);
   root.OfficeRivalry?.recordAfter?.(st);
+  // Keep only the current compulsory response, so a lost night snapshot cannot erase an observed opening.
+  if(st.required){const a=state();if(st.stage==='done'){if(a.autonomous?.cid===st.cid)delete a.autonomous;}else a.autonomous=JSON.parse(JSON.stringify(st));}
  }
- // A selected post-bell scene, never started merely by viewing the result.
+ // Decide the autonomous opening at result settlement, before the manager can leave.
+ // This preview is read-only; routine results do not start an optional segment.
+ function prepareAutonomous(c,fin,plan){
+  if(!c?.id||!G.S?.history?.some(h=>h.cid===c.id))return null;
+  const a=G.S.after;
+  if(a?.autonomous?.cid===c.id)return JSON.parse(JSON.stringify(a.autonomous));
+  if(a?.done?.[c.id])return null;
+  const x=ctxOf(c,fin);if(!x.w||!x.f||!x.p)return null;
+  const turned=!!G.S.bonds?.done?.[c.id+':turn'];
+  if(turned)return begin(c,fin,plan,{required:true,turned:true});
+  if(plan!=null)return null; // Honor a previously signed legacy angle.
+  const assessment=psychology(c,fin),event=selectOpening({cid:c.id,psychology:assessment},x);
+  return event?begin(c,fin,plan,{required:true,assessment,event}):null;
+ }
+ // A selected post-bell scene; only witnessed autonomous openings start at result settlement.
  // With no plan, the segment opens on the angle choice (stage 'angle'). A plan passed in is one
  // agreed backstage in an older save, and it plays straight away as it always did.
- function begin(c,fin,plan){
+ function begin(c,fin,plan,prepared=null){
   const x=ctxOf(c,fin);if(!x.w||!x.f||!x.p)return null;
   const turned=!!G.S?.bonds?.done?.[c.id+':turn'],choosing=plan==null&&!turned;
   const a=state(),st={v:1,cid:c.id,c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{...c.programme}}:{})},fin:{stars:x.stars,crowd:x.crowd,outcome:x.outcome,...(x.context?{context:JSON.parse(JSON.stringify(x.context))}:{})},plan:PLANS[plan]?plan:'none',stage:choosing?'angle':'mic',log:[],cons:[],angle:null,said:null,call:null};
-  if(choosing){const assessment=psychology(c,fin);if(assessment)st.psychology=assessment;}
+  if(prepared?.required)st.required=true;
+  if(choosing){const assessment=prepared?.assessment||psychology(c,fin);if(assessment)st.psychology=assessment;}
   if(st.plan==='celebrate'&&!x.won)st.plan='none';
   st.log.push({side:'stage',who:null,text:x.outcome==='dq'?'The referee is still pointing at '+x.w.short+'. Disqualified.':x.won?'The referee raises '+x.w.short+'’s hand.':x.outcome==='nc'?'Nobody’s hand is raised. The referee waves it off.':'The referee raises '+x.f.short+'’s hand.'});
   if(a.done[c.id]){st.stage='done';return st;}
@@ -740,7 +757,12 @@
   for(const text of contextLines(x))st.log.push({side:'stage',who:null,text});
   // A friend who turned at the bell has already decided what happens after it.
   if(turned&&plan==null)st.log.push({side:'stage',who:null,text:fill('{F} shakes {W}’s hand, then hits them from behind. Whatever came next is out of the window.',x)});
-  if(st.stage==='angle'){startOpening(st,x);G.save();return st;}
+  if(st.stage==='angle'){
+   if(prepared?.event){st.intervention={...prepared.event};st.log.push({side:'stage',who:null,text:st.intervention.line});}
+   else startOpening(st,x);
+   if(st.required)recordEvidence(st);
+   G.save();return st;
+  }
   if(st.plan!=='none')playAngle(st,x);
   recordEvidence(st);
   G.save();return st;
@@ -825,5 +847,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,openingCandidates,selectOpening,attachDialogue,begin,angleOptions,choose,followOptions,continueAngle,view,micOptions,speak,storyReceipt,latestStory,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,openingCandidates,selectOpening,prepareAutonomous,attachDialogue,begin,angleOptions,choose,followOptions,continueAngle,view,micOptions,speak,storyReceipt,latestStory,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);
