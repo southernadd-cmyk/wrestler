@@ -497,7 +497,7 @@
   // v0.3.24 Demands: a title shot, or a better place on the card, asked for in public.
   const dm=demandsFor(st);
   if(dm.title)opts.push({id:'demand:title',label:'Demand a title shot',hint:'Call on '+x.p.voice+' to put the '+dm.title.name+' on the line, in front of everyone. '+x.p.voice+(['traditional','cold'].includes(x.p.personality)?' does not like being put on the spot.':' loves this sort of thing.'),tags:['Gamble','Title match if it lands','Trust ▼ if it flops']});
-  if(dm.slot)opts.push({id:'demand:slot',label:'Demand a bigger spot',hint:'Tell '+x.p.voice+' that '+x.w.short+' belongs higher up the card than '+D.SLOTS[dm.slot].name.toLowerCase()+'.',tags:['Gamble','Up the card if it lands']});
+  if(dm.slot)opts.push({id:'demand:slot',label:'Demand a bigger spot',hint:'Tell '+x.p.voice+' that '+x.w.short+' deserves a better place on '+x.p.name+'’s card ladder. Current standing: '+D.SLOTS[dm.slot].name.toLowerCase()+'.',tags:['Gamble','Up the card if it lands']});
   opts.push({id:'walk',label:'Say nothing',hint:'Hand the microphone back and walk.',tags:['Safe']});
   return opts;
  }

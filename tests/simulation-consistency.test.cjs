@@ -141,7 +141,7 @@ console.log('PASS a no-contest has no misleading loss acknowledgement');
 
 // UI regressions: inspect the exact shipped script rather than a duplicate mock implementation.
 const ui=fs.readFileSync(path.join(__dirname,'../assets/js/ui.js'),'utf8');
-assert.match(ui,/resultOpen=saved\?\.stage==='result'/,'final and intermediate results can be restored');
+assert.match(ui,/resultOpen=saved\.stage==='result'&&!!saved\.resultHTML/,'final and intermediate results can be restored only with saved HTML');
 assert.match(ui,/if\(resultOpen\)\{openTV\(\)/,'restore the result before advancing the week');
 assert.match(ui,/resultHTML:\s*night\.stage==='result'/,'the HTML is saved only while on a result');
 assert.match(ui,/night\.resultHTML=\$\('#tv'\)\.innerHTML/,'the result screen persists after effects are applied');
