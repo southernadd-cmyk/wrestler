@@ -59,7 +59,7 @@ function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,anno
  renderPresentation(title,body,portrait,scene,kicker);
  items=choices.map(x=>{const element=document.createElement('button');element.type='button';element.dataset.choice=x.id;const label=document.createElement('span');label.className='choiceLabel';label.textContent=x.label;element.append(label);if(x.hint){const hint=document.createElement('span');hint.className='choiceHint';hint.textContent=x.hint;element.append(hint);}const item={...x,element};element.onclick=()=>{if(narrationLock){if(narrationLock.continuous&&item.id==='pause')requestBroadcastPause();if(!narrationLock.skippable)return;stopNarration();}input.cancel();choose(item);};return item;});
  $('choices').replaceChildren(...items.map(x=>x.element));if(fresh)scan.open(items,{restoreId,startParked:restoreId===null&&M.isParkingEnabled()});else scan.setItems(items);
- if(announce){const sceneSpeech=!!scene&&['backstage','promo'].includes(scene.stage);const parkedHint=scan.getState().parked?' Parked. Press Enter to start scanning.':'';if(speechParts?.length)narrateMatch([...speechParts,...(parkedHint&&!onSpeechComplete?[{text:parkedHint.trim()}]:[])],onSpeechComplete,{skippable:sceneSpeech});else if(guided()&&sceneSpeech&&V.getSettings().ttsEnabled)narrateMatch([{text:title+'. '+body+parkedHint}],null,{skippable:true});else scan.announceCurrent(title+'. '+body+parkedHint);}
+ if(announce){const sceneSpeech=(!!scene&&['backstage','promo'].includes(scene.stage))||kicker.startsWith('LEARN THE ROPES');const parkedHint=scan.getState().parked?' Parked. Press Enter to start scanning.':'';if(speechParts?.length)narrateMatch([...speechParts,...(parkedHint&&!onSpeechComplete?[{text:parkedHint.trim()}]:[])],onSpeechComplete,{skippable:sceneSpeech});else if(guided()&&sceneSpeech&&V.getSettings().ttsEnabled)narrateMatch([{text:title+'. '+body+parkedHint}],null,{skippable:true});else scan.announceCurrent(title+'. '+body+parkedHint);}
 }
 // Visual information is supplementary; the same text is available to speech.
 function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;}
@@ -127,7 +127,7 @@ function mainMenu(restoreId=null){
  a('help','How to play',()=>help(()=>mainMenu('help'))),a('settings','Settings',()=>settings(()=>mainMenu('settings'))),a('exit','Exit game',()=>exit(()=>mainMenu('exit')))
  ],{restoreId});
 }
-function newIdentity(){identity=G.suggestIdentity();identityScreen();}
+function newIdentity(){introduction(()=>{identity=G.suggestIdentity();identityScreen();},()=>mainMenu('new'));}
 function difficultyName(state=s()){return state?.switchDifficulty==='relaxed'?'Relaxed':'Standard';}
 function startCareer(difficulty){
  active=null;persistMatch();planning=null;planLoadToken++;persistPlanning();G.fresh(identity);
@@ -138,7 +138,46 @@ function identityScreen(){screen('Meet the new boss',identity.manager+' · '+ide
  a('start','Start standard career',()=>startCareer('standard'),'The original challenge. Financial failure can end the career.'),
  a('relaxed','Start relaxed career',()=>startCareer('relaxed'),'No bankruptcy. Weekly support restores the bank to at least £750. All wrestling and other consequences remain.'),
  a('another','Suggest another identity',()=>{identity=G.suggestIdentity();identityScreen();}),back(()=>mainMenu('new'))]);}
-function help(returnTo){screen('How to play','Sign a wrestler, review offers, book matches and choose training. On match night choose a game plan, then advance commentary or give ringside instructions. The simulation waits for each choice. Space advances and Enter selects in two-switch mode. In one-switch mode the highlight moves automatically and Enter selects. Pause and settings are always available at decision screens.',[a('repeat','Repeat instructions',()=>help(returnTo)),back(returnTo)]);}
+// Short, optional onboarding. No save is created or replaced until Start career.
+const INTRO=[
+ {title:'Welcome to The Office',body:'You are a wrestling manager, not a wrestler. Build a team, called a stable. Find paid matches, train your wrestlers and keep them happy. Dennis, your assistant, brings you decisions in Guided management.'},
+ {title:'The matches are scripted',body:'Wrestling is a performance. The promoter usually agrees who should win before the match. Your job is to make the contest exciting, safe and convincing. A planned loss can be a success. Good matches earn stars, improve your reputation and can lead to better offers.'},
+ {title:'Your first week',body:'Sign a wrestler, accept a match offer and agree how it should unfold backstage. A promo is a speech to the fans. At ringside, listen to commentary and give instructions when needed. After the match, review the results and finish the week. Start with Relaxed difficulty if you want to learn without bankruptcy.'}
+];
+const BASICS=[
+ {id:'business',title:'Your job and the money',body:'A stable is your team of wrestlers. A promoter runs wrestling shows; a booker arranges the matches. A booking is a paid appearance. A purse is the payment for a match. Wages and training cost money. Reputation and promoter trust help you get better offers.'},
+ {id:'finishes',title:'Winning, losing and finishes',body:'A finish is the planned ending. A pin means holding the opponent’s shoulders down for a three count. Submission means giving up. A clean win or loss follows the rules; a dirty win uses cheating. A protected loss makes the loser still look strong. DQ means disqualification for breaking rules. No contest means no winner. An agreed ending can go wrong.'},
+ {id:'backstage',title:'Planning and wrestling styles',body:'A layout or structure is the story of the match: how it builds and ends. The dramatic lead shapes that story, not who wins. Technical wrestling uses holds and skill. Brawling uses rough fighting. A spot is a planned memorable move or moment. A spot-fest uses many big moves. A finisher is a wrestler’s signature match-ending move.'},
+ {id:'people',title:'Fans, characters and promos',body:'A face is a hero; a heel is a villain. Heat measures how much attention or reaction a wrestler gets, not their goodness. A pop is a big crowd reaction. A promo is a speech or interview in character. A feud or rivalry is a continuing dispute; a programme is a storyline across several matches.'},
+ {id:'ringside',title:'During and after the match',body:'Stamina is energy left during a match; fatigue is tiredness that carries into future weeks. Momentum shows who has the advantage. A ringside call is an instruction, not direct control: wrestlers may ignore it. A botch is a mistake. Stars measure performance quality, not just who won. The main event is the headline match. A title or belt is a championship.'}
+];
+function learningScreen(title,body,choices,restoreId=null){
+ screen(title,body,choices,{kicker:'LEARN THE ROPES · THE OFFICE',restoreId,speechParts:V.getSettings().ttsEnabled?[{text:title+'. '+body}]:null});
+}
+function introduction(start,ret,page=0,revisit=false){
+ const i=Math.max(0,Math.min(page,INTRO.length-1)),entry=INTRO[i];
+ learningScreen(entry.title,entry.body+'\nIntroduction '+(i+1)+' of '+INTRO.length+'.',[
+  a('next',i===INTRO.length-1?(revisit?'Return to guide':'Choose your career'):'Next',i===INTRO.length-1?start:()=>introduction(start,ret,i+1,revisit)),
+  ...(i>0?[a('previous','Previous',()=>introduction(start,ret,i-1,revisit))]:[]),
+  ...(i<INTRO.length-1?[a('skip','Skip introduction',start)]:[]),back(ret)]);
+}
+function help(returnTo){
+ learningScreen('How to play','You do not need to know wrestling to play. Choose a short guide, or read the introduction again. You can return to the game whenever you are ready.',[
+  a('intro','Read the introduction',()=>introduction(()=>help(returnTo),()=>help(returnTo),0,true)),
+  a('controls','Switch controls',()=>controlHelp(()=>help(returnTo))),
+  a('basics','Wrestling words and concepts',()=>basicsHelp(()=>help(returnTo))),
+  back(returnTo)]);
+}
+function controlHelp(ret){
+ learningScreen('Switch controls','Two switches: Space moves the highlight, Enter selects. One switch: the highlight moves automatically after scanning starts; Enter selects. If scanning is parked, press Enter to start. Release your switch to choose. In Guided mode with speech on, matches play automatically. Press and release Enter to pause after the current line. With speech off, use the next commentary choices. Pause gives access to settings and I Need Help.',[back(ret)]);
+}
+function basicsHelp(ret,page=0,restoreId=null){
+ const i=Math.max(0,Math.min(page,Math.ceil(BASICS.length/3)-1)),rows=BASICS.slice(i*3,i*3+3);
+ learningScreen('Wrestling basics','Choose the topic you want explained. Nothing in your career changes while you read.',[
+  ...rows.map(x=>a(x.id,x.title,()=>learningScreen(x.title,x.body,[back(()=>basicsHelp(ret,i,x.id))]))),
+  ...(i===0?[a('next','More topics',()=>basicsHelp(ret,1))]:[a('previous','Previous topics',()=>basicsHelp(ret,0))]),back(ret)],restoreId);
+}
+
 function exit(returnTo){confirm('Exit game?',window.parent===window?'Return to the main menu? Your career is kept.':'Return to the Hub? Your career is kept.','Exit game',()=>{mainMenu();if(window.parent!==window){input.cancel({resetGuard:true});V.cancel();window.parent.postMessage({action:'focusBackButton'},'*');}},returnTo);}
 function requestHelp(){
  const message='I need help, please! I need help, please!';
@@ -146,7 +185,7 @@ function requestHelp(){
  let ticket;try{ticket=service?.isEnabled?.()?service.speak(message):V.speak(message,{force:true});}catch(_){ticket=V.speak(message,{force:true});}
  if(ticket)scan.holdForSpeech(ticket);
 }
-function pause(returnTo,restoreId=null){returnFromPause=returnTo;screen('Pause','Your game is waiting. No match time passes here.',[a('continue','Continue',returnTo),a('settings','Settings',()=>settings(()=>pause(returnTo,'settings'))),a('mode','Management mode',()=>modeScreen(()=>pause(returnTo,'mode'))),a('help','I Need Help',requestHelp),a('menu','Main menu',()=>mainMenu()),a('exit','Exit game',()=>exit(()=>pause(returnTo,'exit')))],{restoreId});}
+function pause(returnTo,restoreId=null){returnFromPause=returnTo;screen('Pause','Your game is waiting. No match time passes here.',[a('continue','Continue',returnTo),a('settings','Settings',()=>settings(()=>pause(returnTo,'settings'))),a('mode','Management mode',()=>modeScreen(()=>pause(returnTo,'mode'))),a('help','I Need Help',requestHelp),a('learn','How to play / wrestling words',()=>help(()=>pause(returnTo,'learn'))),a('menu','Main menu',()=>mainMenu()),a('exit','Exit game',()=>exit(()=>pause(returnTo,'exit')))],{restoreId});}
 function settings(returnTo,fresh=true,restoreId=null){
  screen('Settings','Access settings are shared with other compatible NARBE games on this origin.',[
  a('tts','Text to speech: '+(V.getSettings().ttsEnabled?'On':'Off'),()=>{V.toggleTTS();settings(returnTo,false);}),
@@ -338,9 +377,10 @@ function trainingReports(){
 }
 function offers(){const rows=s().offers.filter(o=>G.offerCandidates(o).length);paged('Available booking offers',rows,0,offer,()=>desk('','offers'),o=>G.P(o.pid).name+' · versus '+G.F(o.rid).name);}
 function offer(o,returnTo){const candidates=G.offerCandidates(o);paged(G.P(o.pid).name+' — choose your wrestler',candidates,0,(w,ret)=>offerTerms(o,w,ret),returnTo,w=>w.name+' · '+money(o.programme?OfficeProgrammes.totalPurse(o,w):G.purse(o,w)));}
+const FINISH_EXPLANATIONS={win_clean:'Your wrestler is expected to win fairly.',win_dirty:'Your wrestler is expected to win by cheating.',lose_protected:'Your wrestler is expected to lose but still look strong.',lose_clean:'Your wrestler is expected to lose fairly.',win_dq:'Your wrestler is expected to win because the opponent is disqualified.',lose_dq:'Your wrestler is expected to lose by disqualification.'};
 function bookingTerms(o,w,terms=o){
  const x={...o,...terms};
- return D.SLOTS[x.slot].name+' match. '+D.FINISHES[x.finish].name+'. '+(x.stip?OfficeStips.STIPS[x.stip]?.name+'. ':'')+'Purse '+money(o.programme?OfficeProgrammes.totalPurse(o,w):G.purse(x,w))+'.';
+ return D.SLOTS[x.slot].name+' match. '+D.FINISHES[x.finish].name+'. '+(FINISH_EXPLANATIONS[x.finish]||'')+' '+(x.stip?OfficeStips.STIPS[x.stip]?.name+'. ':'')+'Purse (match pay) '+money(o.programme?OfficeProgrammes.totalPurse(o,w):G.purse(x,w))+'.';
 }
 function offerTerms(o,w,returnTo){
  const live=s().offers.find(x=>x.id===o.id),worker=G.W(w.id);
@@ -437,12 +477,12 @@ function prepare(page=0,manual=false){
  const c=s().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank)[0];
  if(!c){endWeek();return;}
  const w=G.W(c.wid),f=G.F(c.rid),choices=[{id:'traditional',label:'Traditional'},...OfficeSheets.STRUCTURES.catalogue()],pages=Math.ceil(choices.length/3);
- if(guided()&&!manual){screen('Dennis: shape the match',w.name+' versus '+f.name+'. '+D.FINISHES[c.finish].name+'. A traditional layout is a straightforward starting point. You still make the backstage decisions.',[a('recommended','Use traditional layout',()=>beginRoom(c,null)),a('custom','Choose another match structure',()=>prepare(0,true)),a('pause','Pause',()=>pause(()=>prepare()))],{portrait:w,scene:matchScene(c,w,f,'backstage')});return;}
+ if(guided()&&!manual){screen('Dennis: shape the match',w.name+' versus '+f.name+'. '+D.FINISHES[c.finish].name+'. The layout is the story of the match, not the winner. A traditional layout is a straightforward starting point. You still make the backstage decisions.',[a('recommended','Use traditional layout',()=>beginRoom(c,null)),a('custom','Choose another match structure',()=>prepare(0,true)),a('pause','Pause',()=>pause(()=>prepare()))],{portrait:w,scene:matchScene(c,w,f,'backstage')});return;}
  screen('Shape the match',w.name+' versus '+f.name+'. '+D.FINISHES[c.finish].name+'. Choose how the match unfolds. This never changes the booked winner. Page '+(page+1)+' of '+pages+'.',choices.slice(page*3,page*3+3).map(x=>a(x.id,x.label+'. '+structureDescriptions[x.id],()=>x.id==='traditional'?beginRoom(c,null):chooseLead(c,x.id,page))).concat(pages>1?[a('next','More structures',()=>prepare((page+1)%pages,true))]:[],back(()=>desk())),{portrait:w,scene:matchScene(c,w,f,'backstage')});
 }
 function chooseLead(c,id,page){
  const w=G.W(c.wid),f=G.F(c.rid);
- screen('Choose the dramatic lead','Who should lead this match structure? This is not a choice of winner.',[a('w',w.name,()=>beginRoom(c,{id,lead:'w'})),a('f',f.name,()=>beginRoom(c,{id,lead:'f'})),back(()=>prepare(page,true))],{portrait:w});
+ screen('Choose the dramatic lead','Who should shape the story and rhythm of the match? This is not a choice of winner.',[a('w',w.name,()=>beginRoom(c,{id,lead:'w'})),a('f',f.name,()=>beginRoom(c,{id,lead:'f'})),back(()=>prepare(page,true))],{portrait:w});
 }
 function beginRoom(c,choice){
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),token=++planLoadToken;
@@ -619,7 +659,7 @@ function preMatch(page=0,section='main',previousCount=null){
     a('custom','More segments / full control',()=>{P.fullPromo=true;persistPlanning();root();}),a('pause','Pause',pauseHere)],{portrait:w,kicker:'PRE-MATCH · '+p.name.toUpperCase()});return;
   }
   if(!P.segment){
-   pick('Choose a microphone segment','Dennis: '+SG.advice(c,w,f),SG.menu(c,w,f,p),x=>{P.segment=x.id;persistPlanning();root();});return;
+   pick('Choose a microphone segment','A promo is a speech or interview to entertain the fans and build interest in the match. Dennis: '+SG.advice(c,w,f),SG.menu(c,w,f,p),x=>{P.segment=x.id;persistPlanning();root();});return;
   }
   if(P.segment!=='duel'){
    if(!P.seg){
