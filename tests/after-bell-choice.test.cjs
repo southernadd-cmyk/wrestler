@@ -116,7 +116,7 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  assert.doesNotMatch(ui,/afterPicker|data-afterplan|d\.afterplan/,'the meeting has no after-the-bell step');
  assert.doesNotMatch(ui,/Decide now\. They need to know/,'Dennis no longer asks about it');
  assert.match(ui,/if\(d\.afterangle\)\{[\s\S]*?OfficeAfter\.choose\(st,d\.afterangle\)/,'the after-bell screen takes the choice');
- assert.match(ui,/pickCards\(v\.options,v\.stage==='angle'\?'afterangle':'aftermic'\)/);
+ assert.match(ui,/pickCards\(v\.options,v\.stage==='angle'\?'afterangle':v\.stage==='follow'\?'afterfollow':'aftermic'\)/);
  assert.match(ui,/if\(night\.plan\?\.after\)c\.afterPlan=night\.plan\.after;/,'an old night’s agreed plan is honoured');
  assert.match(ui,/\.\.\.\(c\.afterPlan\?\{plan:c\.afterPlan\}:\{\}\)/,'a new night proposes the scene with no plan');
  console.log('PASS the meeting no longer decides the angle; the after-bell screen does');
@@ -291,4 +291,29 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  assert.equal(s.history.find(h=>h.cid===c.id).after.intervention.id,'official_space');
  assert.equal(saved.stage,'mic');assert.equal(A.choose(saved,'give_space'),false);
  console.log('PASS spontaneous opening response is gated, saved and remains under manager control');
+}
+
+// AB6: unresolved graph reactions alone can enter a single additional decision.
+{
+ const find=()=>{for(let i=0;i<80;i++){
+  const s=career();n=1300+i;const c=contract({finish:'lose_clean'}),f=play(c);
+  const st=A.begin(c,A.capture({...f,evidence:{dirty:{w:true,f:false},injured:{w:null,f:false}}}));
+  assert.ok(A.choose(st,'apologise'));
+  if(st.stage==='follow')return {s,c,st};
+ }throw Error('No unresolved apology branch');};
+ for(const action of ['disengage','defuse','press','challenge']){
+  const {s,c,st}=find(),saved=JSON.parse(JSON.stringify(st));
+  assert.equal(A.view(saved).options.map(o=>o.id).join(),'disengage,defuse,press,challenge');
+  assert.equal(A.speak(saved,'concede'),false,'cannot skip the pending response');
+  assert.equal(A.continueAngle(saved,'bogus'),false);
+  assert.ok(A.continueAngle(saved,action));assert.equal(saved.stage,'mic');
+  assert.equal(A.continueAngle(saved,action),false,'no repeated effects');
+  const edges=A.graphEdges().map(e=>e.join('|'));
+  for(let i=1;i<saved.angle.path.length;i++)assert.ok(edges.includes(saved.angle.path.slice(i-1,i+1).join('|')));
+  assert.equal(s.history.find(h=>h.cid===c.id).after.follow.choice,action);
+  assert.equal(A.state().calls.length,0,'a challenge is not a booked match');
+  assert.ok(A.speak(saved,'walk'));assert.equal(saved.stage,'done');
+ }
+ assert.match(ui,/OfficeAfter\.continueAngle\(st,d\.afterfollow\)/);
+ console.log('PASS unresolved scenes have four bounded, saved continuation choices');
 }

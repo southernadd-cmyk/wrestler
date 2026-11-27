@@ -165,7 +165,7 @@
  // The post-bell segment remains a real choice. Its opening line acknowledges the continuing arc.
  const after=root.OfficeAfter;
  // It follows whatever happens straight after the bell, so it waits for the angle to be chosen.
- if(after?.begin){const originalAfter=after.begin,originalChoose=after.choose;
+ if(after?.begin){const originalAfter=after.begin,originalChoose=after.choose,originalContinue=after.continueAngle;
   const acknowledge=(st,c)=>{
    const x=locate(c);if(!st||!x||st.stage!=='mic'||st.arcNoted)return;
    const a=arc(x.prog),next=x.prog.beats.findIndex((b,k)=>k>x.step&&!b.done&&!b.missed);
@@ -180,6 +180,9 @@
    const ok=originalChoose.call(this,st,plan);
    if(ok)acknowledge(st,st.c);
    return ok;
+  };
+  if(originalContinue)after.continueAngle=function(st,id){
+   const ok=originalContinue.call(this,st,id);if(ok)acknowledge(st,st.c);return ok;
   };
  }
  root.OfficeProgrammeArcs={STAGES,band,chapter,options,intro,prepare,settle,locate,arc,record};
