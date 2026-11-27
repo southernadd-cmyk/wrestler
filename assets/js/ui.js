@@ -1455,7 +1455,12 @@ function sceneLog(entries,id,w,f,pid){
   const sharp=e.kind==='objection'||e.kind==='fluff'||e.kind==='uneven';
   return `<div class="bub ${pos}${sharp?' sharp':''}${pos==='c'?' aside':''}">${pic?`<span class="pf">${pic}</span>`:''}<div class="say">${e.who&&pos!=='c'&&pos!=='you'?`<small>${esc(e.who)}</small>`:''}<p>${esc(e.text)}${swing}</p></div></div>`;
  };
- return `<div class="scene" id="${id}" tabindex="0" aria-label="Conversation">${entries.map(row).join('')}</div>`;
+ const compact=['roomTalk','micTalk','segTalk'].includes(id);
+ if(!compact)return `<div class="scene" id="${id}" tabindex="0" aria-label="Conversation">${entries.map(row).join('')}</div>`;
+ // The latest exchange is on the desk. Earlier dialogue is available without
+ // taking up a permanent scrolling column or hiding the active decisions.
+ const recent=entries.slice(-2),history=entries.slice(0,-2);
+ return `<div class="scene desk-dialogue" id="${id}" aria-label="Conversation">${history.length?`<details class="dialogue-history"><summary>Earlier conversation (${history.length})</summary><div class="dialogue-history-lines">${history.map(row).join('')}</div></details>`:''}<div class="dialogue-current">${recent.map(row).join('')}</div></div>`;
 }
 function pickCards(options,attr,compact){
  // In the duel there are five options at once, so hints are cut to their first sentence.
@@ -1599,10 +1604,11 @@ function showMeeting(loadedBanks,previousPosition){
  // Choose BEFORE the first backstage decision. The meeting is re-created
  // only while still at its initial plan stage, never after a signed decision.
  const structurePicked=P.structureSelected===true||!!P.structureChoice||v.stage!=='plan';
- const chooser=v.stage==='plan'?'<section class="structure-chooser" aria-label="Shape the match"><h3 class="section-h">Shape the match</h3><p class="dim">Choose how the match story unfolds before discussing the plan with the wrestlers.</p>'+
-  '<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(structurePicked&&x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(structurePicked&&x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small></button>').join('')+'</div>'+
+ const structureCards='<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(structurePicked&&x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(structurePicked&&x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small></button>').join('')+'</div>';
+ const chooser=v.stage==='plan'?'<section class="structure-chooser'+(structurePicked?' structure-picked':'')+'" aria-label="Shape the match">'+
+  (structurePicked?'<details class="structure-change"><summary>Structure: <b>'+esc(variants.find(x=>x.id===selected)?.label||selected)+'</b> · Change</summary>'+structureCards+'</details>':'<h3 class="section-h">Shape the match</h3><p class="dim">Choose the match structure before discussing the plan.</p>'+structureCards)+
   (P.structureChoice?'<div class="structure-lead"><span>Dramatic lead (not the booked winner)</span><div role="group" aria-label="Which wrestler leads the structure?">'+[{id:'w',name:w.short},{id:'f',name:f.short}].map(x=>'<button class="btn'+(P.structureChoice.lead===x.id?' on':'')+'" data-structurelead="'+x.id+'" aria-pressed="'+(P.structureChoice.lead===x.id)+'">'+esc(x.name)+'</button>').join('')+'</div></div>':'')+
-  '<p class="dim structure-help">The promoter’s booked result stays fixed. The structure guides the action; specific moves depend on what happens in the ring.</p></section>':'';
+  (!structurePicked?'<p class="dim structure-help">The promoter’s booked result stays fixed. The structure guides the action; specific moves depend on what happens in the ring.</p>':'')+'</section>':'';
  const decisionWithStructure=chooser?'<div class="decide2">'+chooser+(structurePicked?decide.slice('<div class="decide2">'.length,-6):'<p class="lede" role="status">Pick a structure to start the backstage discussion.</p>')+'</div>':decide;
  const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decisionWithStructure+agreed;
  const signing=window.OfficeSigning?.eligible(c);
