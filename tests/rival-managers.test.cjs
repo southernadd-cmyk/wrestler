@@ -176,3 +176,24 @@ const turn=(s,wk)=>{const reports=[];M.state(s.territory).lastTurn=-1;M.turn(s,s
  assert.ok(Object.values(s.worldV4.agencies).every(a=>Number.isFinite(a.cash)));
  console.log('PASS two seasons of rival managers: contracts consistent, save small');
 }
+
+// INT7: durable individual plans, constrained investment and financial fallback.
+{
+ const s=fresh(),V=root.OfficeWorldV4,week=T.absWeek(s),team=s.territory.teams.find(t=>t.id==='eastbank'),agency=s.worldV4.agencies[team.id];
+ agency.cash=20000;agency.weeklyPayroll=1000;
+ const snap=JSON.stringify(s),q=M.strategy(s,team,week);
+ assert.equal(JSON.stringify(s),snap,'strategy preview is read-only');
+ assert.equal(q.kind,'development');assert.equal(q.mode,'invest');assert.ok(team.roster.includes(q.target));
+ agency.strategy=q;assert.equal(M.strategy(s,team,week+1),q,'strategy persists for its planning window');
+ assert.ok(M.strategicFit(team,{tier:'Rookie',age:22})>M.strategicFit(team,{tier:'Star',age:35}));
+ G.updatePersonnel(s,q.target,{age:24,fatigue:0,injury:0});
+ const worker=G.personnel(s,q.target),plan=V.developmentPlan(s,worker,week,false);
+ assert.ok(plan.coached&&plan.cost===55);
+ const cash=agency.cash,playerCash=s.cash;
+ V.developPersonnel(s,week);
+ assert.equal(agency.cash,cash-55);assert.equal(s.cash,playerCash);
+ agency.cash=500;assert.equal(M.strategy(s,team,week+1).mode,'consolidate');
+ assert.ok(!V.developmentPlan(s,worker,week+1,false)?.coached);
+ assert.match(M.strategyLabel(s,team),/Current priority/);
+ console.log('PASS INT7 distinct durable strategies, targeted training and reserve protection');
+}
