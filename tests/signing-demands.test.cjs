@@ -41,8 +41,8 @@ const contract=(o={})=>({id:'sd-'+(n++),pid:'crown',rid:'silas',wid:'rex',slot:'
   if(r.brawl){brawls++;assert.ok(G.W('rex').flags.pushThrough,'a brawl leaves them sore');}
   if(a.id==='sign'&&b.id==='ignore'&&c.id==='walk'){assert.ok(!r.brawl,'keeping it calm keeps it calm');calm++;}
  }
- assert.equal(paths,36);assert.ok(brawls>9&&brawls<30,'brawls: '+brawls+'/36');
- console.log('PASS all 36 signings read cleanly; '+brawls+' end in a brawl');
+ const total=Sg.ROUNDS.reduce((n,R)=>n*R.options.length,1);assert.equal(paths,total);assert.ok(brawls>total/4&&brawls<total*5/6,'brawls: '+brawls+'/'+total);
+ console.log('PASS all '+paths+' signings read cleanly; '+brawls+' end in a brawl');
 }
 
 // 3. Settled once; the feud and the body pay for a brawl.
