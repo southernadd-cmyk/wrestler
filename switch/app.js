@@ -59,6 +59,7 @@ function settings(returnTo,fresh=true){
  refreshSettings=()=>settings(returnTo,false);
 }
 function desk(note='',restoreId=null){
+ if(s()?.switchAfter||s()?.after?.autonomous){afterScreen();return;}
  if(active){matchScreen(note);return;}
  if(planning&&planning.room&&s().card.some(c=>c.id===planning.cid)){if(planning.onMic)preMatch();else roomScreen();return;}
  if(s().over){screen('Career ended','Your career has ended. You can review the final balance or start again.',[a('new','Main menu',()=>mainMenu()),a('pause','Pause',()=>pause(()=>desk()))]);return;}
@@ -178,6 +179,7 @@ function restorePlanning(){
 }
 const structureDescriptions={traditional:'Start strong, take the pressure, fight back and reach the finish.',classic_american:'Guided opening, pressure, comeback and payoff.',kings_road:'Technical exchanges, escalation, callback and finish build.',chickenshit_heel:'Avoid, get exposed, use a shortcut, then survive.',dominant_ace:'Take control, absorb a challenge and reassert dominance.'};
 function prepare(page=0){
+ if(s()?.switchAfter||s()?.after?.autonomous){afterScreen();return;}
  if(planning?.room&&s().card.some(c=>c.id===planning.cid)){roomScreen();return;}
  const c=s().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank)[0];
  if(!c){endWeek();return;}
@@ -295,6 +297,20 @@ function preMatch(page=0,section='main'){
    catch(e){console.error(e);screen('Microphone unavailable','The conversation could not be prepared. Retry without advancing the match.',[a('retry','Retry',root),a('pause','Pause',pauseHere)]);}
   });
  };
+ const seconds=OfficeRingside.seconds(c,w,f);
+ if(P.corner===undefined){
+  const available=seconds.filter(x=>!x.refuse);
+  if(!available.length){P.corner='none';persistPlanning();}
+  else if(section.startsWith('corner:')){
+   const person=available.find(x=>x.id===section.slice(7));if(!person){root();return;}
+   const jobs=person.jobs.map(id=>({id,label:OfficeRingside.JOBS[id].label,hint:OfficeRingside.JOBS[id].hint,tags:OfficeRingside.JOBS[id].tags}));
+   pick(person.short+' — ringside role',person.note||'Choose what they will try to do at ringside.',jobs,x=>{P.corner=person.id+':'+x.id;persistPlanning();root();},root);return;
+  }else{
+   const rows=[{id:'none',label:'Nobody',hint:w.short+' walks out alone.'},...available.map(x=>({id:x.id,label:x.short,hint:x.note||'Available to accompany '+w.short+'.'}))];
+   const refused=seconds.filter(x=>x.refuse).map(x=>x.refuse).join(' ');
+   pick('Choose a ringside companion','Dennis: Who goes out with '+w.short+'? '+refused,rows,x=>{if(x.id==='none'){P.corner='none';persistPlanning();root();}else preMatch(0,'corner:'+x.id);});return;
+  }
+ }
  const arc=OfficeProgrammeArcs.options(c);
  if(arc&&!P.arcChoice){pick(arc.title,(arc.follow||'')+' '+arc.ask+' Programme chapter '+(arc.step+1)+' of '+arc.total+'.',arc.choices,x=>{P.arcChoice=x.id;persistPlanning();root();});return;}
  let kind,st,api;
@@ -364,7 +380,7 @@ function startMatch(c,P,promoRes=null){
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),prep={...w.prep},focus=D.TRAINING[w.training]?.stat,st=P.room,sh=st.sheet;
  if(!sh?.signed){roomScreen();return;}
  let structureExecution,matchSheet;
- try{matchSheet=OfficeRoom.addVow(sh,promoRes,w,f,c.finish);structureExecution=OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.choice);}
+ try{matchSheet=OfficeRingside.attach(OfficeRoom.addVow(sh,promoRes,w,f,c.finish),c,P.corner);structureExecution=OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.choice);}
  catch(e){console.error(e);screen('Layout not ready','The signed structure could not be verified. Review the backstage conversation.',[back(()=>roomScreen())]);return;}
  if(focus&&!w.injury)prep[focus]=(prep[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);
  const fatigue=w.training==='rest'||w.training==='promo'?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
@@ -383,8 +399,68 @@ function matchScreen(note='',commentary=[]){
 }
 function burst(n){const m=active.M,lines=[];for(let i=0;i<n&&!m.done;i++){if(m.decision&&!m.queue.length)break;const l=X.next(m);if(!l)break;lines.push(l);}persistMatch();matchScreen(lines.map(l=>(D.BOOTH?.[l.who]?.short?D.BOOTH[l.who].short+': ':'')+l.text).join('\n'),lines);}
 function calls(){const m=active.M,list=Object.entries(X.CALLS).filter(([id])=>X.canCall(m,id)).map(([id,v])=>({id,name:v.name,hint:v.hint}));paged('Ringside instructions',list,0,(o,ret)=>{X.call(m,o.id);persistMatch();burst(1);},()=>matchScreen(),o=>o.name);}
-function settleMatch(){const m=active.M,c=s().card.find(x=>x.id===active.cid);if(!c||!m.done)return matchScreen();const fin={...m.final,log:m.log.map(({t,text,kind,big,who,actionId})=>({t,text,kind,big,who,actionId}))};let cons;G.atomicSettlement(()=>{cons=G.applyResult(c,fin);cons.push(...OfficeRingside.settle(c,m),...OfficeRivalCorner.settle(c,m));const h=s().history.find(x=>x.cid===c.id),report=OfficeSheets.report(m),structure=X.structureReport(m);if(report){if(h)h.sheet=report;if(structure){if(h){h.structure=JSON.parse(JSON.stringify(structure));if(fin.structureAssessment)h.structureAssessment=JSON.parse(JSON.stringify(fin.structureAssessment));}const n=structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length;cons.push({text:'Dramatic structure: '+n+' of '+structure.objectives.length+' objectives witnessed in the ring.',tone:0});}else{cons.push({text:'Match layout: '+report.achieved+' performed, '+report.adapted+' adapted, '+report.missed+' missed.',tone:report.missed>2?-1:1});if(report.achieved>=3&&report.missed===0&&fin.stars>=3.5)OfficeMemory.remember(m.w.id,'chemistry',m.w.short+' remembers how well the agreed match with '+m.f.short+' came together.',m.f.id,3,4,c.id+':chemistry');if(report.missed>=3)OfficeMemory.remember(m.w.id,'sheet_changes',m.w.short+' remembers how far the match departed from the agreed match layout against '+m.f.short+'.',m.f.id,-2,0,c.id+':sheet');}}if(m.o.sheet?.situations)s().roomRecent=[...(s().roomRecent||[]),...m.o.sheet.situations].slice(-6);if(h){h.stip=c.stip||null;h.consequences=cons.map(x=>({text:x.text,tone:x.tone??0}));h.notes??=[];for(const effect of h.consequences)if(!h.notes.includes(effect.text))h.notes.push(effect.text);}G.save();});active=null;planning=null;if(G.saveStatus().ok!==false){persistMatch();persistPlanning();}screen('After the bell',m.w.name+' versus '+m.f.name+'. '+fin.stars+' stars.\n'+cons.map(x=>x.text).join('\n'),[a('next',s().card.length?'Prepare next match':'Finish the week',()=>s().card.length?prepare():endWeek()),a('desk','Return to desk',()=>desk()),a('pause','Pause',()=>pause(()=>desk()))]);}
-function endWeek(){if(s().card.length||active||G.pending().length){desk('Finish booked matches and inbox decisions first.');return;}G.atomicSettlement(()=>G.endWeek());desk('A new week begins. Review your inbox and new offers.');}
+function settleMatch(){const m=active.M,c=s().card.find(x=>x.id===active.cid);if(!c||!m.done)return matchScreen();const fin={...m.final,log:m.log.map(({t,text,kind,big,who,actionId})=>({t,text,kind,big,who,actionId}))};let cons;G.atomicSettlement(()=>{cons=G.applyResult(c,fin);cons.push(...OfficeRingside.settle(c,m),...OfficeRivalCorner.settle(c,m));const h=s().history.find(x=>x.cid===c.id),report=OfficeSheets.report(m),structure=X.structureReport(m);if(report){if(h)h.sheet=report;if(structure){if(h){h.structure=JSON.parse(JSON.stringify(structure));if(fin.structureAssessment)h.structureAssessment=JSON.parse(JSON.stringify(fin.structureAssessment));}const n=structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length;cons.push({text:'Dramatic structure: '+n+' of '+structure.objectives.length+' objectives witnessed in the ring.',tone:0});}else{cons.push({text:'Match layout: '+report.achieved+' performed, '+report.adapted+' adapted, '+report.missed+' missed.',tone:report.missed>2?-1:1});if(report.achieved>=3&&report.missed===0&&fin.stars>=3.5)OfficeMemory.remember(m.w.id,'chemistry',m.w.short+' remembers how well the agreed match with '+m.f.short+' came together.',m.f.id,3,4,c.id+':chemistry');if(report.missed>=3)OfficeMemory.remember(m.w.id,'sheet_changes',m.w.short+' remembers how far the match departed from the agreed match layout against '+m.f.short+'.',m.f.id,-2,0,c.id+':sheet');}}if(m.o.sheet?.situations)s().roomRecent=[...(s().roomRecent||[]),...m.o.sheet.situations].slice(-6);if(h){h.stip=c.stip||null;h.consequences=cons.map(x=>({text:x.text,tone:x.tone??0}));h.notes??=[];for(const effect of h.consequences)if(!h.notes.includes(effect.text))h.notes.push(effect.text);}const contract={id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{id:c.programme.id,step:c.programme.step}}:{})};const captured=OfficeAfter.capture(fin,h);const scene=OfficeAfter.prepareAutonomous(contract,captured,c.afterPlan);s().switchAfter={period:G.abs(),c:contract,fin:captured,plan:c.afterPlan??null,scene:scene||null,summary:m.w.name+' versus '+m.f.name+'. '+fin.stars+' stars.\n'+cons.map(x=>x.text).join('\n')};G.save();});active=null;planning=null;if(G.saveStatus().ok!==false){persistMatch();persistPlanning();}afterScreen();}
+// Post-bell state is part of the same career commit as the settled match.
+let afterLoadToken=0;
+function afterRecord(){
+ const st=s().after?.autonomous;
+ if(!s().switchAfter&&st){s().switchAfter={period:G.abs(),c:st.c,fin:st.fin,plan:null,scene:st,summary:'A compulsory post-match incident remains unresolved.'};G.save();}
+ return s().switchAfter;
+}
+function finishAfter(next){
+ const record=afterRecord();
+ if(!record)return desk();
+ if(s().after?.autonomous||(record.scene&&record.scene.stage!=='done')){afterScreen();return;}
+ G.atomicSettlement(()=>{delete s().switchAfter;});
+ if(next&&s().card.length)prepare();else if(next)endWeek();else desk();
+}
+function afterScreen(page=0,section='main'){
+ const record=afterRecord();if(!record){desk();return;}
+ const root=()=>afterScreen(),here=()=>afterScreen(page,section);
+ const nextLabel=s().card.length?'Prepare next match':'Finish the week';
+ if(!record.scene){
+  screen('Match result',record.summary,[a('angle','Choose a post-match segment',()=>openAfterScene(record)),a('next',nextLabel,()=>finishAfter(true)),a('desk','Return to desk',()=>finishAfter(false)),a('pause','Pause',()=>pause(root))],{kicker:'AFTER THE BELL'});return;
+ }
+ const st=record.scene,v=OfficeAfter.view(st),w=G.W(st.c.wid)||D.findWrestler(st.c.wid);
+ if(!st.dialogue&&['angle','mic'].includes(st.stage)&&!record.dialogueAttempted){openAfterScene(record);return;}
+ const log=v.log.map(x=>(x.who?x.who+': ':'')+x.text);
+ if(section==='history'){
+  const pages=Math.max(1,Math.ceil(log.length/3)),i=Math.max(0,Math.min(page,pages-1));
+  screen('Post-match transcript',log.slice(i*3,i*3+3).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>afterScreen((i+1)%pages,'history'))]:[]),back(root)]);return;
+ }
+ if(section==='result'){screen('Match result',record.summary,[back(root)]);return;}
+ if(section==='more'){screen('Post-match options','No match time passes here.',[a('history','Read full transcript',()=>afterScreen(0,'history')),a('result','Review match result',()=>afterScreen(0,'result')),a('pause','Pause / settings',()=>pause(root)),back(root)]);return;}
+ const body=log.slice(-3).join('\n')+'\n'+v.ask+(v.cons.length?'\n'+v.cons.map(x=>x.text).join('\n'):'');
+ if(v.stage==='done'){screen('After the bell — complete',body,[a('next',nextLabel,()=>finishAfter(true)),a('desk','Return to desk',()=>finishAfter(false)),a('more','Review result or transcript',()=>afterScreen(0,'more'))],{portrait:w,kicker:'AFTER THE BELL'});return;}
+ const rows=v.options||[],pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
+ const choices=rows.slice(i*3,i*3+3).map(x=>a(x.id,x.label+(x.hint?'. '+x.hint:'')+(x.tags?.length?' · '+x.tags.join(', '):''),()=>{
+  try{G.atomicSettlement(()=>{
+    const current=s().switchAfter?.scene;if(!current||current.cid!==st.cid||current.stage!==v.stage)throw Error('Stale scene');
+    const action=v.stage==='angle'?OfficeAfter.choose:v.stage==='follow'?OfficeAfter.continueAngle:OfficeAfter.speak;
+    if(!action(current,x.id))throw Error('Choice unavailable');
+   });root();}
+  catch(e){console.error(e);screen('Post-match decision','The response could not be completed. No partial consequences were saved.',[back(root)]);}
+ }));
+ if(pages>1)choices.push(a('next','More responses — page '+((i+1)%pages+1),()=>afterScreen((i+1)%pages)));
+ choices.push(a('more','Conversation / pause',()=>afterScreen(0,'more')));
+ screen(v.title,(st.required?'Required response. ':'')+body+(pages>1?'\nPage '+(i+1)+' of '+pages+'.':''),choices,{portrait:w,kicker:'AFTER THE BELL'});
+}
+function openAfterScene(record){
+ const token=++afterLoadToken,c=record.c,w=G.W(c.wid)||D.findWrestler(c.wid),f=G.F(c.rid)||D.findWrestler(c.rid);
+ screen('After the bell','Preparing the post-match conversation.',[a('pause','Pause',()=>{afterLoadToken++;pause(()=>afterScreen());})],{portrait:w});
+ Promise.resolve().then(()=>OfficePlanningDialogue.loadPair(w,f)).catch(()=>[]).then(banks=>{
+  if(token!==afterLoadToken||s()?.switchAfter!==record||record.period!==G.abs())return;
+  try{
+   G.atomicSettlement(()=>{
+    record.scene??=OfficeAfter.begin(c,record.fin,record.plan);
+    if(!record.scene)throw Error('Scene unavailable');
+    OfficeAfter.attachDialogue(record.scene,banks);record.dialogueAttempted=true;
+   });afterScreen();
+  }catch(e){console.error(e);screen('Post-match segment unavailable','Retry without advancing the week.',[a('retry','Retry',()=>afterScreen()),a('pause','Pause',()=>pause(()=>afterScreen()))]);}
+ });
+}
+
+function endWeek(){if(s()?.switchAfter||s()?.after?.autonomous){afterScreen();return;}if(s().card.length||active||G.pending().length){desk('Finish booked matches and inbox decisions first.');return;}G.atomicSettlement(()=>G.endWeek());desk('A new week begins. Review your inbox and new offers.');}
 function results(){const rows=s().history.slice().reverse().slice(0,20).map((h,i)=>({...h,id:h.cid||String(i)}));paged('Recent results',rows,0,(h,ret)=>screen('Match report',JSON.stringify({rating:h.stars,week:h.week,season:h.season}),[back(ret)]),more,h=>'Week '+h.week+' · '+h.stars+' stars');}
 M.subscribe(()=>{if(refreshSettings)refreshSettings();});
 V.onSettingsChange(()=>{if(refreshSettings)refreshSettings();});
