@@ -15,7 +15,7 @@ class Element{
  }
  setAttribute(){} removeAttribute(){} scrollIntoView(){} addEventListener(){}
 }
-function harness(ttsEnabled=true,hub=false){
+function harness(ttsEnabled=true,hub=false,initialStorage={}){
  const elements=new Map(),events=new Map(),windowEvents=new Map(),spoken=[];
  const get=id=>{if(!elements.has(id))elements.set(id,new Element());return elements.get(id);};
  const listen=(map,k,fn)=>{if(!map.has(k))map.set(k,[]);map.get(k).push(fn);};
@@ -38,7 +38,8 @@ function harness(ttsEnabled=true,hub=false){
  const window={OfficeGame:{S:null,hasSave:()=>false,saveStatus:()=>({ok:saveOK}),save(){saveCalls++;},scoutWatch(w){if(!w.watched){w.watched=true;watchCalls++;}},scoutBand(w,key){return key==='heat'?{lo:55,hi:55,exact:true}:{lo:40,hi:49,exact:false};},signingForecast(id){return {affordable:true,afterFee:1500,weeklyCost:600,afterWeek:900,runway:2,risk:'limited'};},sign(){signCalls++;},money:x=>'£'+x,abs:()=>1,P:()=>({name:'Test promotion'})},OfficeData:{SLOTS:{},FINISHES:{},DIVISIONS:{open:{name:'Open'}},divisionOf:()=> 'open'},OfficeMatch:{fmt:t=>String(t),CALLS:{},canCall:()=>false,next(m){nextCalls++;m.t++;if(m.testTerminal)m.done=true;if(m.testDecision)m.decision={title:'Mandatory decision',body:'Choose the response.',options:[{id:'answer',label:'Answer',hint:'Required'}]};return {who:'pbp',text:'The wrestlers lock up.'};}},NarbeScanManager:M,NarbeVoiceManager:V,NarbePlatform:{settings:{hasHubParent:()=>false}},addEventListener:(k,fn)=>listen(windowEvents,k,fn)};
  window.parent=hub?{location:{origin:'https://example.test'},NarbeCommunicationSpeech:{help(fallback,message){hubRequests.push(message);return V.speak(message,{force:true,hub:true});}}}:window;
  window.location={origin:'https://example.test'};
- const context=vm.createContext({window,document,localStorage:{getItem:()=>null,setItem(){}},console,setTimeout,clearTimeout});
+ const storage=new Map(Object.entries(initialStorage));
+ const context=vm.createContext({window,document,localStorage:{getItem:key=>storage.get(key)??null,setItem(key,value){storage.set(key,value);}},console,setTimeout,clearTimeout});
  vm.runInContext(read('booth-speech.js'),context);
  vm.runInContext(read('choice-input.js'),context);
  window.OfficeChoiceInput=context.OfficeChoiceInput;
@@ -46,7 +47,7 @@ function harness(ttsEnabled=true,hub=false){
  window.testSettlement=()=>{settlements++;};
  const app=read('app.js').replace(/mainMenu\(\);\n\}\)\(\);\s*$/,"window.startTestBroadcast=match=>{active={cid:'c',M:match};if(V.getSettings().ttsEnabled)startBroadcast();else matchScreen();};window.testScout=w=>signProfile(w,mainMenu);window.testPaged=()=>paged('Test list',Array.from({length:7},(_,i)=>({id:'row'+i,name:'Row '+i})),0,(x,ret)=>screen(x.name,'Details',[back(ret)]),()=>mainMenu());settleMatch=()=>{window.testSettlement();screen('Match report','Result available',[back(mainMenu)]);};mainMenu();\n})();");
  vm.runInContext(app,context);
- return {get,spoken,V,scan,announcements,setSaveOK:v=>{saveOK=v;},scout:()=>{const w={id:'test',name:'Test wrestler',style:'Technical',fee:750,wage:100};window.OfficeGame.S={season:1,week:1,cash:2250,rep:3,free:[w],roster:[]};window.testScout(w);},watchCalls:()=>watchCalls,signCalls:()=>signCalls,testPaged:()=>window.testPaged(),helpHold:()=>helpHold,hubRequests,nextCalls:()=>nextCalls,settlements:()=>settlements,broadcast:(flags={})=>{window.OfficeGame.S={season:1,week:1,cash:2250,rep:0,card:[{id:'c',pid:'p'}]};window.startTestBroadcast({w:{id:'w',name:'W',short:'W'},f:{id:'f',name:'F',short:'F'},wSt:90,fSt:90,t:0,crowd:50,calls:2,mom:0,queue:[],r:{getState:()=>1},...flags});},select:id=>{selected=id;scan.select();},key:(type,code)=>{for(const fn of events.get(type)||[])fn({type,code,repeat:false,preventDefault(){},target:{matches:()=>false}});},click:id=>get('choices').children.find(x=>x.dataset.choice===id).onclick(),blur:()=>{for(const fn of windowEvents.get('blur')||[])fn();},opens:()=>opens,saves:()=>saveCalls};
+ return {get,spoken,V,scan,announcements,visual:document.body.dataset,storage,changeStorage(key,value){storage.set(key,value);for(const fn of windowEvents.get('storage')||[])fn({key});},setSaveOK:v=>{saveOK=v;},scout:()=>{const w={id:'test',name:'Test wrestler',style:'Technical',fee:750,wage:100};window.OfficeGame.S={season:1,week:1,cash:2250,rep:3,free:[w],roster:[]};window.testScout(w);},watchCalls:()=>watchCalls,signCalls:()=>signCalls,testPaged:()=>window.testPaged(),helpHold:()=>helpHold,hubRequests,nextCalls:()=>nextCalls,settlements:()=>settlements,broadcast:(flags={})=>{window.OfficeGame.S={season:1,week:1,cash:2250,rep:0,card:[{id:'c',pid:'p'}]};window.startTestBroadcast({w:{id:'w',name:'W',short:'W'},f:{id:'f',name:'F',short:'F'},wSt:90,fSt:90,t:0,crowd:50,calls:2,mom:0,queue:[],r:{getState:()=>1},...flags});},select:id=>{selected=id;scan.select();},key:(type,code)=>{for(const fn of events.get(type)||[])fn({type,code,repeat:false,preventDefault(){},target:{matches:()=>false}});},click:id=>get('choices').children.find(x=>x.dataset.choice===id).onclick(),blur:()=>{for(const fn of windowEvents.get('blur')||[])fn();},opens:()=>opens,saves:()=>saveCalls};
 }
 const tick=()=>new Promise(setImmediate);
 (async()=>{
@@ -146,5 +147,18 @@ const tick=()=>new Promise(setImmediate);
  const textOnly=harness(false);textOnly.broadcast();
  assert.equal(textOnly.get('choices').children[0].dataset.choice,'burst');
  assert.equal(textOnly.get('choices').children[1].dataset.choice,'line');
- console.log('S8B–S8F: speech, help, navigation, scouting, status and guided broadcast transitions passed');
+ const prefs='narbe-hub-settings',local='the-office-switch-appearance-v1';
+ const plain=harness(false);assert.equal(plain.visual.highlightColor,'default');assert.equal(plain.visual.highlightStyle,'full');
+ const inherited=harness(false,true,{[prefs]:JSON.stringify({highlightColor:'blue',highlightStyle:'outline',textColor:'black',bgTheme:'sky',uiSize:'largest'})});
+ assert.equal(inherited.visual.highlightColor,'blue');assert.equal(inherited.visual.highlightStyle,'outline');assert.equal(inherited.visual.textColor,'black');assert.equal(inherited.visual.bgTheme,'sky');assert.equal(inherited.visual.uiSize,'largest');
+ inherited.select('settings');inherited.select('appearance');assert.equal(inherited.get('heading').textContent,'Appearance');
+ inherited.select('highlightColor');assert.equal(inherited.visual.highlightColor,'default');assert.equal(inherited.scan.getState().id,'highlightColor');
+ inherited.select('highlightColor');assert.equal(inherited.visual.highlightColor,'blue');inherited.select('highlightColor');assert.equal(inherited.visual.highlightColor,'green');
+ assert.equal(JSON.parse(inherited.storage.get(prefs)).highlightColor,'blue','local override never writes Hub settings');
+ inherited.changeStorage(prefs,JSON.stringify({highlightColor:'purple',highlightStyle:'full',uiSize:'larger',textColor:'invalid',bgTheme:'cream'}));
+ assert.equal(inherited.visual.highlightColor,'green');assert.equal(inherited.visual.highlightStyle,'full');assert.equal(inherited.visual.uiSize,'larger');assert.equal(inherited.visual.textColor,'default');assert.equal(inherited.scan.getState().id,'highlightColor');
+ inherited.select('back');assert.equal(inherited.get('heading').textContent,'Settings');assert.equal(inherited.scan.getState().id,'appearance');
+ const reloaded=harness(false,false,{[prefs]:inherited.storage.get(prefs),[local]:inherited.storage.get(local)});assert.equal(reloaded.visual.highlightColor,'green');
+ const bad=harness(false,false,{[prefs]:'not JSON',[local]:'null'});assert.equal(bad.visual.uiSize,'default');
+ console.log('S8B–S8G: speech, navigation, match transitions and appearance settings passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
