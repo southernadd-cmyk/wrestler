@@ -86,6 +86,65 @@
   const won=outcome==='double'||(outcome!=='nc'&&outcome!=='dq'&&!!FN.win);
   return {w,f,p,won,outcome,finish:c.finish,stars:+(fin?.stars||0),crowd:+(fin?.crowd||50),dirty:['win_dirty','lose_protected','win_dq'].includes(c.finish)&&outcome!=='dq',clean:c.finish==='win_clean'||c.finish==='lose_clean',context:fin?.context||null};
  }
+ // AB2: a domain model on the existing shared psychology kernel. Scores are
+ // behavioural tendencies, not probabilities, agreement, or changes to career stats.
+ const K=root.OfficePsychology;
+ const family=(output,axis,values,weight)=>['low','medium','high'].map((grade,i)=>({
+  id:output+'_'+axis+'_'+grade,output,value:values[i],weight,when:[axis+'.'+grade]}));
+ const rule=(id,output,value,weight,...when)=>({id,output,value,weight,when});
+ const reactionModel=K?.createModel({curves:{...K.workerCurves,bond:[25,50,75],feudHeat:[20,50,80],
+  stamina:[20,50,80]},outputs:['respect','cooperation','escalation','caution'],rules:[
+  ...family('respect','professionalism',[25,55,85],2),
+  ...family('respect','bond',[10,55,90],2),
+  ...family('respect','ego',[75,55,30],1),
+  rule('respect_cheapshot','respect',10,3,'match.partnerDirty'),
+  rule('respect_interference','respect',15,2,'match.partnerInterference'),
+  rule('respect_ego_loss','respect',15,2,'match.lost','ego.high'),
+  ...family('cooperation','professionalism',[20,55,90],3),
+  ...family('cooperation','bond',[15,55,90],2),
+  ...family('cooperation','ringPsychology',[25,55,80],1),
+  rule('cooperation_cheapshot','cooperation',15,2,'match.partnerDirty'),
+  rule('cooperation_injured','cooperation',10,3,'match.ownInjury'),
+  ...family('escalation','ego',[20,50,85],2),
+  ...family('escalation','bond',[90,50,15],2),
+  ...family('escalation','feudHeat',[20,50,85],1),
+  ...family('escalation','professionalism',[80,50,20],1),
+  rule('escalation_cheapshot','escalation',95,3,'match.partnerDirty'),
+  rule('escalation_interference','escalation',90,2,'match.partnerInterference'),
+  rule('escalation_ego_loss','escalation',90,2,'match.lost','ego.high'),
+  ...family('caution','stamina',[95,55,15],3),
+  ...family('caution','professionalism',[30,55,80],1),
+  ...family('caution','ringPsychology',[30,55,80],1),
+  rule('caution_injury','caution',100,5,'match.ownInjury')
+ ]});
+ function psychology(c,fin){
+  if(!reactionModel||fin?.context?.v!==1)return null;
+  const x=ctxOf(c,fin),e=x.context;if(!x.w||!x.f)return null;
+  const pair=G.S?.bonds?.pairs?.[[x.w.id,x.f.id].sort().join('|')];
+  const feud=G.S?.feuds?.[x.w.id+':'+x.f.id]||G.S?.feuds?.[x.f.id+':'+x.w.id];
+  const assess=(side,actor)=>{
+   const other=side==='w'?'f':'w',corner=side==='w'?e.rivalCorner:e.ringside;
+   const values={...K.workerInputs(actor),bond:K.scale(pair?.score,-100,100),
+    feudHeat:K.scale(feud?.closed?0:feud?.heat,0,100),stamina:K.scale(e.stamina?.[side],0,100)};
+   const cues={};
+   if(e.dirty?.[other]===true)cues['match.partnerDirty']=1;
+   if(corner?.fired&&corner.ok&&!corner.ejected&&['runin','argue','distract','refbump'].includes(corner.job))cues['match.partnerInterference']=1;
+   if(e.injured?.[side]===true||typeof e.injured?.[side]==='string'&&e.injured[side].length)cues['match.ownInjury']=1;
+   if(!['nc','double'].includes(x.outcome)&&((side==='w'&&!x.won)||(side==='f'&&x.won)))cues['match.lost']=1;
+   const inference=reactionModel.evaluate(values,cues);
+   return {id:actor.id,values,cues,scores:inference.scores,fired:inference.fired};
+  };
+  return {v:1,w:assess('w',x.w),f:assess('f',x.f)};
+ }
+ // Bounded adjustment to existing deterministic odds. Preserve the legacy
+ // baseline for older saves and pre-agreed angles. Cooperation is NOT consent.
+ function reactionAdjustment(st,plan){
+  const p=st?.psychology;if(p?.v!==1)return 0;
+  const unit=(side,key)=>Number.isFinite(p[side]?.scores?.[key])?(p[side].scores[key]-50)/100:0;
+  if(plan==='handshake')return between(.34*unit('f','respect')-.18*unit('f','escalation'),-.18,.18);
+  if(plan==='beatdown')return between(.24*unit('f','cooperation')-.16*unit('f','caution')-.12*unit('f','escalation')-.10*unit('w','caution'),-.18,.18);
+  return 0;
+ }
  function feudOf(wid,rid){
   const s=G.S,k=wid+':'+rid;
   return G.feud(wid,rid)||(s.feuds[k]={wid,rid,heat:0,matches:0,closed:false,since:G.abs()});
@@ -106,7 +165,7 @@
   const b=root.OfficeBonds?.score?.(x.w.id,x.f.id)||0;
   if(plan==='handshake'){
    let chance=.58+b/220+(x.clean?.12:-.12)-(x.f.ego-60)/220+(x.stars>=3.5?.1:0)-(x.finish==='win_dirty'?.25:0);
-   chance=between(chance,.08,.94);
+   chance=between(chance+reactionAdjustment(st,plan),.08,.94);
    const ok=hash(id+'|shake')<chance;st.angle={plan,ok,chance:Math.round(chance*100)};
    line('stage','{W} walks across the ring and holds out a hand.');
    if(ok){
@@ -137,7 +196,7 @@
     add('Nobody was invested enough to care. Feud heat '+h+'.',-1);
    }
   }else if(plan==='beatdown'){
-   let chance=x.f.pro/100*.9+(b>-35?.1:-.2)+(x.f.ego>=80?-.1:0);chance=between(chance,.1,.95);
+   let chance=x.f.pro/100*.9+(b>-35?.1:-.2)+(x.f.ego>=80?-.1:0);chance=between(chance+reactionAdjustment(st,plan),.1,.95);
    const worked=hash(id+'|jump')<chance;st.angle={plan,ok:worked,chance:Math.round(chance*100)};
    line('stage','{F} turns to leave. {W} hits them from behind.');
    if(worked){
@@ -357,6 +416,7 @@
   const x=ctxOf(c,fin);if(!x.w||!x.f||!x.p)return null;
   const turned=!!G.S?.bonds?.done?.[c.id+':turn'],choosing=plan==null&&!turned;
   const a=state(),st={v:1,cid:c.id,c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{...c.programme}}:{})},fin:{stars:x.stars,crowd:x.crowd,outcome:x.outcome,...(x.context?{context:JSON.parse(JSON.stringify(x.context))}:{})},plan:PLANS[plan]?plan:'none',stage:choosing?'angle':'mic',log:[],cons:[],angle:null,said:null,call:null};
+  if(choosing){const assessment=psychology(c,fin);if(assessment)st.psychology=assessment;}
   if(st.plan==='celebrate'&&!x.won)st.plan='none';
   st.log.push({side:'stage',who:null,text:x.outcome==='dq'?'The referee is still pointing at '+x.w.short+'. Disqualified.':x.won?'The referee raises '+x.w.short+'’s hand.':x.outcome==='nc'?'Nobody’s hand is raised. The referee waves it off.':'The referee raises '+x.f.short+'’s hand.'});
   if(a.done[c.id]){st.stage='done';return st;}
@@ -440,5 +500,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,capture,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);
