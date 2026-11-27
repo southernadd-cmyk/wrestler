@@ -91,3 +91,66 @@ delete legacy.roster.find(w=>w.id===ownedId).age;
 G.S=legacy;
 assert.equal(G.W(ownedId).age,D.findWrestler(ownedId).age,'legacy age repair remains intact');
 console.log('PASS 227 three-age identities, real season transition, staff progression and save reload');
+
+{
+
+ // Audit the actual lossless pixel cells, not just their mapped coordinates.
+ // Decode with the system WebP library (Ubuntu ships libwebp), or Pillow
+ // if installed. No new npm dependency, workflow or package install.
+ const cp=require('node:child_process');
+ const decoder=String.raw`
+import sys
+try:
+    from PIL import Image
+except ImportError:
+    import ctypes as c
+    import ctypes.util
+    lib=c.CDLL(ctypes.util.find_library("webp") or "libwebp.so.7")
+    lib.WebPDecodeRGBA.argtypes=[c.c_void_p,c.c_size_t,c.POINTER(c.c_int),c.POINTER(c.c_int)]
+    lib.WebPDecodeRGBA.restype=c.c_void_p
+    lib.WebPFree.argtypes=[c.c_void_p]
+    lib.WebPFree.restype=None
+    data=open(sys.argv[1],"rb").read()
+    buf=c.create_string_buffer(data)
+    w,h=c.c_int(),c.c_int()
+    ptr=lib.WebPDecodeRGBA(buf,len(data),c.byref(w),c.byref(h))
+    if not ptr: raise ValueError("Invalid WebP")
+    try:
+        assert (w.value,h.value)==(1296,1440)
+        sys.stdout.buffer.write(c.string_at(ptr,w.value*h.value*4))
+    finally:
+        lib.WebPFree(ptr)
+else:
+    with Image.open(sys.argv[1]) as im:
+        assert im.size==(1296,1440)
+        sys.stdout.buffer.write(im.convert("RGBA").tobytes())
+`;
+ const bin=['python3','python'].find(name=>cp.spawnSync(name,['--version'],{encoding:'utf8'}).status===0);
+ if(!bin){if(process.env.CI)throw new Error('Portrait pixel audit requires Python on CI');console.log('PORTRAIT FRAME AUDIT skipped: Python not installed locally');}
+ else{
+  const W=1296,H=1440,CW=144,CH=180,rows=[];
+  for(let sheet=1;sheet<=10;sheet++){
+   const file=path.join(__dirname,`../assets/portrait-ages/atlas-${String(sheet).padStart(2,'0')}.webp`);
+   const decoded=cp.spawnSync(bin,['-c',decoder,file],{maxBuffer:W*H*4+1024});
+   assert.equal(decoded.status,0,decoded.stderr?.toString());
+   const pixels=decoded.stdout;assert.equal(pixels.length,W*H*4,'exact decoded atlas dimensions');
+   for(const r of manifest.records.filter(x=>x.atlas.endsWith('-'+String(sheet).padStart(2,'0')+'.png'))){
+    let x0=CW,y0=CH,x1=-1,y1=-1,opaque=0,bottom=0,top=0;
+    for(let y=0;y<CH;y++)for(let x=0;x<CW;x++){
+     if(pixels[((r.y+y)*W+r.x+x)*4+3]<128)continue;
+     x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);opaque++;
+     if(y===CH-1)bottom++;if(y===0)top++;
+    }
+    assert.ok(opaque>0,'empty portrait '+r.id+' '+r.age);
+    rows.push({id:r.id,age:r.age,sheet,left:x0,top:y0,right:CW-1-x1,bottom:CH-1-y1,basePixels:bottom,topPixels:top,coverage:Math.round(opaque/(CW*CH)*100)});
+   }
+  }
+  assert.equal(rows.length,manifest.records.length);
+  const flagged=rows.filter(r=>r.bottom>3).sort((a,b)=>b.bottom-a.bottom||a.id.localeCompare(b.id)||a.age.localeCompare(b.age));
+  console.log('PORTRAIT FRAME SUMMARY '+JSON.stringify({total:rows.length,bottomGap:flagged.length,topTouch:rows.filter(r=>r.topPixels>0).length,sideTouch:rows.filter(r=>!r.left||!r.right).length,opaque:rows.filter(r=>r.coverage===100).length}));
+  for(const r of rows.filter(r=>r.id==='magnus'||r.id==='rex'))console.log('PORTRAIT REFERENCE '+JSON.stringify(r));
+  for(const r of flagged)console.log('PORTRAIT FLOATING BASE '+JSON.stringify(r));
+  console.log('PASS all 681 age portrait cells decoded and checked for transparent edge margins');
+ }
+
+}
