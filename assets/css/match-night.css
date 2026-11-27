@@ -727,3 +727,26 @@
 .tv .s-meeting .desk-rail button.complete{font:inherit;color:inherit;background:transparent;border:1px solid currentColor;padding:4px 7px;cursor:pointer}
 .tv .s-meeting .desk-rail button.complete:hover,.tv .s-meeting .desk-rail button.complete:focus-visible{color:var(--gold);outline:1px solid var(--gold)}
 @media(max-width:520px){.tv .s-meeting .structure-option .momentum-shape{height:112px}}
+
+/* Live match desk: commands stay above the reference brief. */
+#tv .s-live{grid-template-columns:minmax(0,1.65fr) minmax(300px,1fr)}
+#tv .s-live .ringside-status{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-bottom:1px solid var(--well-line);padding-bottom:6px}
+#tv .s-live .ringside-status .gauge{min-width:0;margin:0}
+#tv .s-live .ringside-status label{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px}
+#tv .s-live .ringside-command{margin:8px 0}
+#tv .s-live .ringside-command .callsleft{margin-bottom:5px}
+#tv .s-live .ringside-command .calls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+#tv .s-live .ringside-command .call{min-height:38px;white-space:normal}
+#tv .s-live .ringside-command .callhint{min-height:3em;margin:5px 0}
+#tv .s-live .ringside-plan{margin-top:8px;padding:6px}
+#tv .s-live .ringside-plan summary{cursor:pointer;margin:0}
+#tv .s-live .ringside-plan dl{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:6px 0}
+#tv .s-live .ringside-plan p{margin:4px 0}
+#tv .s-live .past{padding:5px 10px;font-size:20px}
+#tv .s-live .past li{gap:8px;border-bottom:1px solid var(--well-line);padding:4px 0}
+@media(max-width:760px){
+ #tv .s-live{grid-template-columns:minmax(0,1fr)}
+ #tv .s-live .ringside-command .calls{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #tv .s-live .ringside-command .call{min-height:44px}
+ #tv .s-live .past{font-size:18px}
+}
