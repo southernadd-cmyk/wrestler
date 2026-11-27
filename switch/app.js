@@ -18,7 +18,7 @@ function restoreMatch(){
 function saveNotice(){return [G.saveStatus().ok===false?'Career could not be saved. Keep this page open.':'',saveError,planSaveError].filter(Boolean).join(' ');}
 function highlight(item,state){
  for(const x of items){x.element.classList.toggle('scan',x.id===item?.id);if(x.id===item?.id)x.element.dataset.braked=String(!!state.braked||!!state.brakePaused);else delete x.element.dataset.braked;}
- $('controls').textContent=M.getSettings().autoScan?'ONE SWITCH · Enter selects · '+M.getScanInterval()/1000+' second scan':'TWO SWITCHES · Space moves · Enter selects';
+ if(!narrationLock)$('controls').textContent=M.getSettings().autoScan?'ONE SWITCH · Enter selects · '+M.getScanInterval()/1000+' second scan':'TWO SWITCHES · Space moves · Enter selects';
  $('scanPosition').textContent=state.suspended?'Listening…':state.parked?'Scan parked':item?'Choice '+(items.indexOf(item)+1)+' of '+items.length:'Ready to scan';
  if(item?.element&&!state.suspended)item.element.scrollIntoView({block:'nearest',inline:'nearest'});
 }
@@ -34,10 +34,10 @@ function stopNarration(){
  if(!narrationLock)return;
  const lock=narrationLock;narrationLock=null;lock.ticket?.cancel();scan.setSuspended(false);
 }
-function narrateMatch(parts,onComplete=null,{skippable=false}={}){
- // Match commentary is not a scan label. Hold BOTH switch modes at the
- // blank start until the complete broadcast has finished, regardless of
- // the player's normal menu wait-for-speech preference.
+function narrateMatch(parts,onComplete=null,{skippable=!onComplete}={}){
+ // Screen narration and commentary are not scan labels. Hold the scan while
+ // they speak; a stationary announcement can always be dismissed on release.
+ // Wait for Speech still controls ordinary highlighted choice labels.
  const lock={ticket:null,continuous:!!onComplete,skippable,held:onComplete?broadcastHeld:new Set()};narrationLock=lock;scan.setSuspended(true);
  $('controls').textContent=onComplete?'Live broadcast · Press and release Enter to pause after this line.':skippable?'Listening to the scene. Press and release your switch to skip narration; then choose.':'Listening to commentary. Choices resume when speech ends.';
  const finish=result=>{
@@ -45,7 +45,7 @@ function narrateMatch(parts,onComplete=null,{skippable=false}={}){
   narrationLock=null;input.cancel();scan.setSuspended(false);
   if(onComplete){onComplete(result);return;}
   if(result?.reason==='timeout'||result?.reason==='error'||result?.reason==='failed-to-start'||result?.reason==='unavailable'){
-   $('saveNotice').textContent=[saveNotice(),'Speech could not finish. The current text remains visible; you can review the conversation or replay commentary where available.'].filter(Boolean).join(' ');
+   $('saveNotice').textContent=[saveNotice(),'Speech could not finish. The current text remains visible; use Repeat information or the available replay controls to try again.'].filter(Boolean).join(' ');
   }
  };
  lock.ticket=boothSpeech.sequence(parts);
@@ -55,11 +55,19 @@ input=window.OfficeChoiceInput.create({scan,manager:M,holdThreshold:600});
 function choose(item){if(narrationLock||!item||!items.some(x=>x===item))return;try{item.run();}catch(e){console.error(e);screen('Office notice','The action could not be completed. Your career remains available.',[a('back','Return to the office',()=>s()?desk():mainMenu())]);}}
 function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,announce=true,kicker='DENNIS · YOUR ASSISTANT',speechParts=null,onSpeechComplete=null,scene=null}={}){
  if(fresh){stopNarration();input.cancel();refreshSettings=null;}
+ const repeat=()=>{if(V.getSettings().ttsEnabled){stopNarration();const parked=scan.getState().parked?[{text:'Parked. Press Enter to start scanning.'}]:[];const parts=speechParts?.length?speechParts:[{text:title+'. '+body}];narrateMatch([...parts,...parked]);}else $('saveNotice').textContent=[saveNotice(),'Text to speech is off. Enable it in Settings to hear this information.'].filter(Boolean).join(' ');};
+ // Repeat reads the displayed snapshot, never re-enters its game action.
+ // Keep dedicated match replay/status controls and do not add a live stop.
+ if(!onSpeechComplete){
+  const existingRepeat=x=>x.id==='repeat'&&['Repeat message','Read page again'].includes(x.label);
+  choices=choices.map(x=>existingRepeat(x)?{...x,run:repeat}:x);
+  if(V.getSettings().ttsEnabled&&!choices.some(x=>existingRepeat(x)||['Replay commentary','Read match status','Replay commentary / status','Repeat match status'].includes(x.label)))choices=[...choices,a('__repeat_information','Repeat information',repeat)];
+ }
  $('heading').textContent=title;$('kicker').textContent=kicker;$('careerStatus').textContent=summary();$('saveNotice').textContent=saveNotice();
  renderPresentation(title,body,portrait,scene,kicker);
  items=choices.map(x=>{const element=document.createElement('button');element.type='button';element.dataset.choice=x.id;const label=document.createElement('span');label.className='choiceLabel';label.textContent=x.label;element.append(label);if(x.hint){const hint=document.createElement('span');hint.className='choiceHint';hint.textContent=x.hint;element.append(hint);}const item={...x,element};element.onclick=()=>{if(narrationLock){if(narrationLock.continuous&&item.id==='pause')requestBroadcastPause();if(!narrationLock.skippable)return;stopNarration();}input.cancel();choose(item);};return item;});
  $('choices').replaceChildren(...items.map(x=>x.element));if(fresh)scan.open(items,{restoreId,startParked:restoreId===null&&M.isParkingEnabled()});else scan.setItems(items);
- if(announce){const sceneSpeech=(!!scene&&['backstage','promo'].includes(scene.stage))||kicker.startsWith('LEARN THE ROPES');const parkedHint=scan.getState().parked?' Parked. Press Enter to start scanning.':'';if(speechParts?.length)narrateMatch([...speechParts,...(parkedHint&&!onSpeechComplete?[{text:parkedHint.trim()}]:[])],onSpeechComplete,{skippable:sceneSpeech});else if(guided()&&sceneSpeech&&V.getSettings().ttsEnabled)narrateMatch([{text:title+'. '+body+parkedHint}],null,{skippable:true});else scan.announceCurrent(title+'. '+body+parkedHint);}
+ if(announce){const parkedHint=scan.getState().parked?' Parked. Press Enter to start scanning.':'';if(speechParts?.length)narrateMatch([...speechParts,...(parkedHint&&!onSpeechComplete?[{text:parkedHint.trim()}]:[])],onSpeechComplete);else if(V.getSettings().ttsEnabled)narrateMatch([{text:title+'. '+body+parkedHint}]);else scan.announceCurrent(title+'. '+body+parkedHint);}
 }
 // Visual information is supplementary; the same text is available to speech.
 function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;}
@@ -171,7 +179,7 @@ function help(returnTo){
   back(returnTo)]);
 }
 function controlHelp(ret){
- learningScreen('Switch controls','Two switches: Space moves the highlight, Enter selects. One switch: the highlight moves automatically after scanning starts; Enter selects. If scanning is parked, press Enter to start. Release your switch to choose. In Guided mode with speech on, matches play automatically. Press and release Enter to pause after the current line. With speech off, use the next commentary choices. Pause gives access to settings and I Need Help.',[back(ret)]);
+ learningScreen('Switch controls','Two switches: Space moves the highlight, Enter selects. One switch: the highlight moves automatically after scanning starts; Enter selects. If scanning is parked, press Enter to start. Release your switch to choose. Press and release either switch to stop a spoken screen description without choosing. Use Repeat information to hear it again. In Guided mode with speech on, matches play automatically. Press and release Enter to pause after the current line. With speech off, use the next commentary choices. Pause gives access to settings and I Need Help.',[back(ret)]);
 }
 function basicsHelp(ret,page=0,restoreId=null){
  const i=Math.max(0,Math.min(page,Math.ceil(BASICS.length/3)-1)),rows=BASICS.slice(i*3,i*3+3);
@@ -1195,6 +1203,6 @@ const duringNarration=(handler)=>e=>{
  }
  handler(e);
 };
-document.addEventListener('keydown',duringNarration(input.down));document.addEventListener('keyup',duringNarration(input.up));document.addEventListener('narbe-input-cancelled',()=>{input.cancel();if(narrationLock){narrationLock.held.clear();scan.setSuspended(true);}});window.addEventListener('blur',()=>{broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});});document.addEventListener('visibilitychange',()=>{if(document.hidden){broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});}});window.addEventListener('pagehide',e=>{broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});V.cancel();if(!e.persisted)scan.dispose();});
+document.addEventListener('keydown',duringNarration(input.down));document.addEventListener('keyup',duringNarration(input.up));document.addEventListener('narbe-input-cancelled',()=>{input.cancel();if(narrationLock){narrationLock.held.clear();scan.setSuspended(true);}});window.addEventListener('blur',()=>{broadcastHeld.clear();boothSpeech.cancel();V.cancel();input.cancel({resetGuard:true});});document.addEventListener('visibilitychange',()=>{if(document.hidden){broadcastHeld.clear();boothSpeech.cancel();V.cancel();input.cancel({resetGuard:true});}});window.addEventListener('pagehide',e=>{broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});V.cancel();if(!e.persisted)scan.dispose();});
 mainMenu();
 })();
