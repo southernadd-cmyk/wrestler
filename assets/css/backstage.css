@@ -277,8 +277,10 @@
 #tv .board-redesign .spots-table th:nth-child(1){width:26%}
 #tv .board-redesign .spots-table th:nth-child(2){width:18%}
 #tv .board-redesign .spots-table th:nth-child(4){width:15%}
-#tv .board-redesign .spot-select summary{cursor:pointer;border:1px solid var(--well-line);padding:3px 6px;color:var(--white)}
-#tv .board-redesign .spot-select[open] summary{color:var(--gold)}
+#tv .board-redesign button.spot-select{cursor:pointer;border:1px solid var(--well-line);padding:3px 6px;color:var(--white);background:var(--deep);font:inherit;text-align:left;max-width:100%;white-space:normal}
+#tv .board-redesign .spot-select[aria-expanded="true"]{color:var(--gold);border-color:var(--gold)}
+#tv .board-redesign .spot-expanded[hidden]{display:none}
+#tv .board-redesign .spot-expanded td{padding:4px 12px;background:var(--deep)}
 #tv .board-redesign .spot-options{display:flex;flex-wrap:wrap;gap:3px;padding:4px 0}
 #tv .board-redesign .spot-options .btn{font-size:13px;white-space:normal;text-align:left;min-height:28px}
 #tv .board-redesign .finish-fixed td{color:var(--dim)}
