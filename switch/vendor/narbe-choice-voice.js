@@ -1,4 +1,4 @@
-/* Vendored NARBE shared modules. Switch Edition extension: optional per-utterance voice override; all other upstream source bodies unchanged.
+/* Vendored NARBE shared modules. Switch Edition extensions: optional per-utterance voice override and accessible standalone scan defaults; otherwise upstream source bodies unchanged.
 Upstream commit: 5b5686d43e7cebd66632d1a3d860f37dd4b9ae2d
 Copyright (c) 2026 NARBE LLC
 
@@ -25,6 +25,14 @@ https://narbehouse.com
 window.NarbePlatform = (function () {
   'use strict';
 
+  // A separately hosted game cannot read Hub storage across origins.
+  // Only a real, same-origin Hub parent owns its initial defaults.
+  function hasHubParent() {
+    try {
+      return window.parent !== window && window.parent.location.origin === window.location.origin &&
+        !!window.parent.NarbeScanManager;
+    } catch (_) { return false; }
+  }
   function peers() {
     const result = Array.from(document.querySelectorAll('iframe'), frame => frame.contentWindow).filter(Boolean);
     if (window.parent && window.parent !== window) result.push(window.parent);
@@ -189,7 +197,7 @@ window.NarbePlatform = (function () {
   }
 
   return {
-    settings: { open: openSettings },
+    settings: { open: openSettings, hasHubParent },
     input: { capture },
     lifecycle: { onActivity, onClose },
     speech: {
@@ -686,6 +694,13 @@ window.NarbeScanManager = (function () {
   };
   function normalize(raw) {
     const next = { ...DEFAULT_SETTINGS };
+    // With no explicit saved control scheme, an external/standalone player
+    // must be able to reach Settings using Enter alone. Do not change a
+    // saved scheme or the Hub's own two-switch default in a Hub frame.
+    if (!valid.autoScan(raw?.autoScan) && !window.NarbePlatform.settings.hasHubParent()) {
+      next.autoScan = true;
+      next.waitForSpeech = true;
+    }
     for (const key of Object.keys(valid)) {
       if (valid[key](raw?.[key])) next[key] = raw[key];
     }
