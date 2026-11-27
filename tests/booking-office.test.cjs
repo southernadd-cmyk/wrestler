@@ -204,3 +204,23 @@ console.log('PASS bookers plan to their own style');
  assert.ok(G.W(id).progress.ring>=0,'fractional development carries into the player stable');
  console.log('PASS INT6 shared development bank, injury/rest gate, pure forecast and transfers');
 }
+
+// INT8: leverage is scoped to a recent recorded booking and the chosen argument.
+{
+ const s=fresh(),N=root.OfficeNegotiationsV2,w={id:'rex'},o={pid:'crown',rid:'other'};
+ const h={cid:'int8-proof',wid:w.id,rid:o.rid,pid:o.pid,season:s.season,week:s.week,contractHonoured:true,promo:{promise:{checked:true,kept:true,sure:false}},after:{story:{v:1,cid:'int8-proof',wid:w.id,rid:o.rid,pid:o.pid,kind:'challenge',text:'A public rematch challenge.'}}};
+ s.history.unshift(h);
+ const before=JSON.stringify(s);
+ assert.equal(N.storyLeverage(s,o,w,'fee','crowd').delta,5);
+ assert.equal(N.storyLeverage(s,o,w,'slot','reliability').delta,4);
+ assert.equal(N.storyLeverage(s,{...o,rid:'different'},w,'fee','crowd').delta,0);
+ assert.equal(N.storyLeverage(s,{...o,pid:'dock'},w,'fee','reliability').delta,0);
+ assert.equal(N.storyLeverage(s,o,w,'stip','crowd').delta,0);
+ assert.equal(JSON.stringify(s),before,'leverage does not mutate the career');
+ h.promo.promise.kept=false;assert.equal(N.storyLeverage(s,o,w,'protect','reliability').delta,-5);
+ h.contractHonoured=false;assert.equal(N.storyLeverage(s,o,w,'fee','reliability').delta,0,'no duplicate contract breach');
+ h.contractHonoured=true;h.promo.promise.sure=true;assert.equal(N.storyLeverage(s,o,w,'fee','reliability').delta,0);
+ s.history.unshift({...h,cid:'int8-new',after:null,promo:null});assert.equal(N.storyLeverage(s,o,w,'fee','crowd').delta,0,'new encounter supersedes old hook');
+ s.history.shift();s.week+=7;assert.equal(N.storyLeverage(s,o,w,'fee','crowd').delta,0,'old events expire');
+ console.log('PASS INT8 bounded recent argument-specific story leverage');
+}
