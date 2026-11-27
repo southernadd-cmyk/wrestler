@@ -79,3 +79,37 @@ assert.ok(quiet,'some cards are quiet');
  console.log('PASS in-match interference and consequences: '+out.map(x=>x.text).join(' | '));
 }
 console.log('PASS rival corner suite');
+
+// INT1: opponent condition is a career fact, not a temporary match object.
+{
+ G.fresh();const s=G.S;s.cash=99999;G.sign('rex');
+ const rid=s.territory.teams.flatMap(t=>t.roster).find(id=>id!=='rex'&&D.divisionOf(id)===D.divisionOf('rex'));
+ assert.ok(rid);
+ const w=G.W('rex'),p=G.P('dock');
+ G.updatePersonnel(s,rid,{fatigue:40,injury:0,morale:50});
+ w.fatigue=40;
+ const args={w,f:G.F(rid),p,slot:'mid',minutes:12,finish:'win_clean',feudHeat:0,plan:{game:'story',leash:'script',talk:'none'},seed:123};
+ const M=MX.create(args);assert.equal(M.wSt,72);assert.equal(M.fSt,72);
+ assert.equal(MX.create({...args,promo:{opponentHurt:10}}).fSt,62);
+ const c={id:'int1-condition',pid:'dock',rid,wid:w.id,slot:'mid',minutes:12,finish:'win_clean',purse:200,eventAbs:G.abs()};s.card.push(c);
+ const fin={stars:3,crowd:60,botches:0,script:.8,adj:{purseMul:1,rep:0,trust:0,heat:0,morale:0},minutes:12,plan:'story',stamina:40,injury:0,outcome:'booked',foeHurt:true,foeInjuryPart:'shoulder',evidence:{stamina:{w:40,f:20},injured:{w:null,f:true},dirty:{w:false,f:false},counters:{w:0,f:0},late:{w:0,f:0},families:{w:[],f:[]},damage:{w:0,f:0}},log:[]};
+ G.applyResult(c,fin);assert.equal(G.F(rid).fatigue,59);assert.equal(G.F(rid).injury,1);assert.equal(G.F(rid).wear.shoulder,1);assert.equal(G.opponentReady(s,rid),false);
+ G.applyResult(c,fin);assert.equal(G.F(rid).fatigue,59);assert.equal(G.F(rid).wear.shoulder,1);
+ G.S=JSON.parse(JSON.stringify(s));assert.equal(G.F(rid).injury,1);assert.equal(G.F(rid).fatigue,59);
+ const world=root.OfficeWorldV4,loaded=G.S;
+ world.recoverPersonnel(loaded,G.abs());assert.equal(G.F(rid).injury,1);
+ world.recoverPersonnel(loaded,G.abs()+1);assert.equal(G.F(rid).injury,0);assert.equal(G.F(rid).fatigue,35);
+ assert.ok(world.releaseAI(loaded,rid));assert.equal(G.F(rid).fatigue,35);
+ G.updatePersonnel(loaded,rid,{morale:41});assert.equal(loaded.free.find(x=>x.id===rid).morale,41);
+ assert.equal(G.sign(rid),null);assert.equal(G.W(rid).fatigue,35);assert.equal(G.W(rid).morale,41);
+ console.log('PASS INT1 shared starting stamina, persistent opponent injury/fatigue, idempotent recovery and transfer');
+}
+{
+ G.fresh();const s=G.S;s.cash=99999;G.sign('rex');
+ const team=s.territory.teams.find(t=>t.roster.length>=2),[rid,second]=team.roster;
+ G.updatePersonnel(s,second,{morale:50});
+ const c={id:'int1-ejected',pid:'dock',wid:'rex',rid};
+ const M={rivalCorner:{job:'runin',fired:true,ejected:true,second:{id:second,short:G.F(second).short}}};
+ RC.settle(c,M);assert.equal(G.F(second).morale,47);RC.settle(c,M);assert.equal(G.F(second).morale,47);
+ console.log('PASS INT1 ejected rival second morale persists once');
+}

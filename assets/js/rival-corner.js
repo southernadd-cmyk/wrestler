@@ -151,7 +151,7 @@
    const fd=G.feud(w.id,f.id);
    if(k.ejected){
     if(w)w.morale=clamp((w.morale||50)+2);
-    if(sid){const x=G.F?.(sid)||D.findWrestler(sid);if(x)x.morale=clamp((x.morale||50)-3);}
+    if(sid){const x=G.F(sid);if(x)G.updatePersonnel(G.S,sid,{morale:clamp((x.morale??50)-3)});}
     add(`${who} was thrown out by the referee. ${w.short} morale +2.`,1);
    }else if(k.job==='call'){
     add(`${k.manager} called the spots for ${f.short} from the barrier. It shows in the match, not on the card.`,-1);
