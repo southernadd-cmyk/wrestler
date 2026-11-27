@@ -234,6 +234,49 @@ function rotationBill(s,t,week,busy){
 }
 // The booking office books about 1.7 times as many circuit matches as the old rotation did.
 const CIRCUIT_SCALE=.6;
+// The booker chooses the result; the two workers determine the performance.
+// Cheap, pure, deterministic, and independent of the career/match RNG.
+function simulateCircuitMatch(s,week,m){
+ const {a,b,pid}=m,p=D.PROMOS.find(x=>x.id===pid)||{},bounds=(n,l,h)=>Math.max(l,Math.min(h,n));
+ const val=(w,k,d=60)=>Number.isFinite(w[k])?w[k]:d;
+ const avg=(k,d)=> (val(a,k,d)+val(b,k,d))/2;
+ const roll=key=>{let h=2166136261;for(const ch of String(s.careerSeed??s.seed??0)+'|'+week+'|'+pid+'|'+[a.id,b.id].sort().join('|')+'|'+key){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0)/4294967296;};
+ const slot=Math.max(D.SLOTS[a.slot]?.rank??1,D.SLOTS[b.slot]?.rank??1);
+ // Main-event rankings alone do not make an ordinary undercard match a 20-minute bout.
+ const minutes=bounds(Math.round((m.title?17:m.story?12:8+slot*2)+roll('minutes')*4),8,20);
+ const plan=a.style===b.style?(D.STYLE_PLAN[a.style]||'story'):'story';
+ const intensity=plan==='spots'?1.12:plan==='brawl'?1.06:1;
+ const bond=s.bonds?.pairs?.[[a.id,b.id].sort().join('|')]?.score||0;
+ const skill=(avg('ring')*.55+avg('psych')*.45-65)/100;
+ const fatigue=avg('fatigue',0),style=a.style===b.style?.10:0;
+ const draw=(avg('heat',50)-50)/250;
+ const styleFit=p.personality==='cold'&&[a.style,b.style].includes('Technical')||p.personality==='showman'&&[a.style,b.style].includes('Spectacle')?.12:0;
+ const performance=skill+style+styleFit+draw+bounds(bond/250,-.25,.25)-fatigue/150+(roll('quality')-.5)*.55;
+ const stars=bounds(Math.round(((m.stars??(m.title?3:2.5))+performance)*4)/4,.5,5);
+ const condition={};
+ for(const [worker,opponent,side] of [[a,b,'w'],[b,a,'f']]){
+  const start=bounds(100-val(worker,'fatigue',0)*.7,15,100);
+  const stamina=Math.round(bounds(start-minutes*2*intensity-(roll('stamina:'+worker.id)-.5)*12,0,100));
+  const fatigueGain=G.matchFatigue(worker,{minutes,plan,evidence:{stamina:{[side]:stamina}}},side);
+  // Rare, modest injuries: unsafe partners, exhaustion and longer bouts increase risk.
+  // This is a coarse weekly estimate, not a fabricated blow-by-blow injury.
+  const risk=bounds(.002+Math.max(0,65-val(opponent,'safe'))*.00012+
+   Math.max(0,55-val(worker,'safe'))*.0001+Math.max(0,25-stamina)*.00014+
+   Math.max(0,minutes-12)*.00025+(plan==='spots'?.0015:0)+(worker.niggle?.003:0),.002,.025);
+  const injured=roll('injury:'+worker.id)<risk;
+  condition[worker.id]={stamina,fatigueGain,fatigue:bounds(val(worker,'fatigue',0)+fatigueGain,0,100),injury:injured?1+Math.min(2,worker.wear?.body||0):0};
+ }
+ return {stars,minutes,plan,condition};
+}
+function settleCircuitCondition(s,week,result){
+ if(!s.worldV4)return;
+ for(const [id,c] of Object.entries(result.condition)){
+  const worker=G.personnel(s,id);if(!worker||s.roster.some(w=>w.id===id))continue;
+  const patch={fatigue:c.fatigue};
+  if(c.injury)Object.assign(patch,{injury:Math.max(worker.injury||0,c.injury),injurySince:week,wear:{...(worker.wear||{}),body:(worker.wear?.body||0)+1},niggle:0,nigglePart:null,relapse:null});
+  G.updatePersonnel(s,id,patch);
+ }
+}
 function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  const week=(s.season-1)*16+s.week;if(t.week===week)return;t.week=week;
  const standings=rank();t.previous=Object.fromEntries(standings.map((w,i)=>[w.id,i]));
@@ -247,8 +290,10 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  for(const {i,j,div,a,b,title:plannedTitle,winner:planned,stars:billed,line,story} of plan?plan.bill:circuitBill(s,t,week)){
   const p=D.PROMOS[i],onTheLine=!!plannedTitle&&titleValid(s,t,{pid:p.id,wid:a.id,rid:b.id,title:{pid:p.id,div}});
   const won=planned?planned===a.id:((week*13+a.ring+b.psych+p.reach+j*37)%100)<(onTheLine?58:52);
-  const winner=won?a:b,loser=won?b:a,stars=billed??(onTheLine?3:2.5);
-  t.lastResults.matches.push({pid:p.id,div,a:a.id,b:b.id,slotA:a.slot,slotB:b.slot,winner:winner.id,title:onTheLine,stars,story:story?.id||null});
+  const winner=won?a:b,loser=won?b:a,sim=simulateCircuitMatch(s,week,{pid:p.id,a,b,title:onTheLine,stars:billed,story}),{stars,minutes,plan:workPlan,condition}=sim;
+  t.lastResults.matches.push({pid:p.id,div,a:a.id,b:b.id,slotA:a.slot,slotB:b.slot,winner:winner.id,title:onTheLine,stars,minutes,plan:workPlan,condition,story:story?.id||null});
+  settleCircuitCondition(s,week,sim);
+  for(const worker of [a,b])if(condition[worker.id].injury)reports.push(p.name+': '+worker.name+' picked up an injury in the match. Expected absence: '+condition[worker.id].injury+' week(s).');
   record(t,p.id,a.id,b.id,a.slot,won,stars,plan?CIRCUIT_SCALE:1);
   t.points[winner.id]=(t.points[winner.id]||0)+4;
   t.points[loser.id]=(t.points[loser.id]||0)-2;
@@ -341,5 +386,5 @@ function startBill(saved,rand=Math.random){
  const head=pick(show.filter(m=>m.title).length?show.filter(m=>m.title):show);
  return {head,under:show.filter(m=>m!==head&&m.pid===head.pid).concat(show.filter(m=>m!==head&&m.pid!==head.pid)).slice(0,2),saved:false};
 }
-root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve,title,titlesOf,titleMatch,titleValid,reconcileOrdinaryTitles,contracted,circuitBill,absWeek,startBill,newCareerWorld,settleRetiredTitles};
+root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve,simulateCircuitMatch,title,titlesOf,titleMatch,titleValid,reconcileOrdinaryTitles,contracted,circuitBill,absWeek,startBill,newCareerWorld,settleRetiredTitles};
 })(typeof window!=='undefined'?window:globalThis);
