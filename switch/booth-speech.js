@@ -65,7 +65,14 @@ function createBoothSpeech(V){
  function cancel(){active?.cancel();}
  // Dennis is a visual speaker label, not part of his dialogue. Keep real
  // references to Dennis intact, and strip labels before utterance splitting.
- const spokenText=text=>String(text||'').replace(/(^|\s)Dennis:\s*/g,'$1');
+ const spokenText=text=>String(text||'').replace(/(^|\s)Dennis:\s*/g,'$1')
+  // The engine displays stars and quarter-star glyphs. Translate only the
+  // rating notation for speech, including historical/replayed commentary.
+  .replace(/(Final rating:\s*)(★+[¼½¾]?|[¼½¾]|DUD)(?![★¼½¾])/gi,(_,label,symbols)=>{
+   const fraction={'¼':.25,'½':.5,'¾':.75}[symbols.slice(-1)]||0;
+   const value=(symbols.match(/★/g)||[]).length+fraction;
+   return label+value+(value===1?' star':' stars')+' out of 5';
+  });
  function speak(text){cancel();return V.speak(spokenText(text));}
  function sequence(parts){
   cancel();
