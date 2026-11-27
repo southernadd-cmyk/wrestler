@@ -11,15 +11,33 @@ const db=new Map(),root={addEventListener(){}};
 const localStorage={getItem:k=>db.get(k)||null,setItem:(k,v)=>db.set(k,String(v)),removeItem:k=>db.delete(k)};
 vm.runInNewContext(script.slice(0,cut),{window:root,localStorage,console,Math,Date,JSON});
 const D=root.OfficeData,G=root.OfficeGame,P=root.OfficeSheets,Promo=root.OfficeStory.Graph,M=root.OfficeMatch,K=root.OfficeGraphKernel;
-// Phase 4 extracted the same signed-sheet hand-off into matchSheet so the
-// structure gate can validate the final vow/ringside-attached document.
-assert.ok(
- script.includes('const matchSheet=P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f)):null;') &&
- script.includes('OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.structureChoice)') &&
- script.includes('sheet:matchSheet,structureExecution,identity:G.normaliseIdentity(S().identity),seed:'),
- 'the final signed sheet, including microphone vow and ringside plan, must be validated and passed to the match engine at the bell'
-);
-assert.ok(script.includes("pickCards(v.options,'mic',true)")&&script.includes('${claim}'),'promo choices and claim appear on screen');
+// The signed-sheet hand-off must reconcile the vow against the booked
+// finish, attach the ringside plan, validate the resulting sheet, and pass
+// both that sheet and its validated execution choice to the engine.
+const bellStart=script.indexOf('\nfunction bell(){');
+const bellEnd=script.indexOf('\nfunction ',bellStart+1);
+assert.ok(bellStart>=0&&bellEnd>bellStart,'bell renderer exists');
+const bell=script.slice(bellStart,bellEnd);
+const handoff='const matchSheet=P.sheet?.signed?(window.OfficeRingside?OfficeRingside.attach(OfficeRoom.addVow(P.sheet,promoRes,w,f,c.finish),c,P.corner):OfficeRoom.addVow(P.sheet,promoRes,w,f,c.finish)):null;';
+const validate='OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.structureChoice)';
+assert.ok(bell.includes(handoff),'signed sheet includes vow reconciliation and ringside plan');
+assert.ok(bell.indexOf(validate)>bell.indexOf(handoff),'validate the completed sheet before starting the match');
+const create=bell.slice(bell.indexOf('night.M=Mx.create('));
+assert.ok(bell.indexOf('night.M=Mx.create(')>bell.indexOf(validate),'engine starts only after validation');
+assert.match(create,/\bsheet:matchSheet\b/);
+assert.match(create,/[,\s]structureExecution[,\s]/);
+assert.match(create,/identity:G\.normaliseIdentity\(S\(\)\.identity\),seed:/);
+// The desktop/mobile promo redesign replaced cards with actionable table
+// rows. Keep checking both the live options and the visible claim.
+const promoStart=script.indexOf('\nfunction showPromos(');
+const promoEnd=script.indexOf('\nfunction ladderFor(',promoStart);
+assert.ok(promoStart>=0&&promoEnd>promoStart);
+const promoUI=script.slice(promoStart,promoEnd);
+assert.ok(promoUI.includes("deskTable(v.options,'mic',w,f,p)")&&promoUI.includes('const claim=v.claim')&&promoUI.includes('+read+cue+open+conversation+claim')&&promoUI.includes('+context+'),'promo choices and claim appear on screen');
+const tableStart=script.indexOf('\nfunction deskTable(');
+const tableEnd=script.indexOf('\nfunction deskTranscript(',tableStart);
+assert.ok(tableStart>=0&&tableEnd>tableStart);
+assert.ok(script.slice(tableStart,tableEnd).includes('data-${attr}="${esc(o.id)}"'),'each displayed choice retains its action id');
 
 const rex=D.TALENT.find(w=>w.id==='rex'),brick=D.TALENT.find(w=>w.id==='brick');
 const rev=D.FOES.find(f=>f.id==='rev'),rush=D.FOES.find(f=>f.id==='silas');
