@@ -1467,8 +1467,9 @@ function deskTable(options,attr,w,f,p,approachOnly=false){
  const riskLabels=['Safe','Steady','Risky','Very risky'];
  const cols=planning?(approachOnly?[]:[w.short,f.short,'Sheet']):promo?['Risk','Crowd','Rivalry','Cred. ',p?.name?.split(' ')[0]||'Promoter','Promise']:seg?['Risk','Details']:['Effects'];
  const sign=t=>/▲|Wins the crowd|Stokes the rivalry|Builds credibility/.test(t)?'up':/▼/.test(t)?'down':'';
- const cell=(a,label)=>`<td class="desk-effect" data-label="${esc(label)}">${a.length?a.map(t=>`<span class="${sign(t)}">${esc(t)}</span>`).join(' · '):'–'}</td>`;
- return `<div class="well desk-table"><table class="grid"><thead><tr><th>#</th><th>${planning?'Response':promo?'Line':'Choice'}</th>${cols.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${options.map((o,i)=>{
+ // A cell is {label, inner, empty}; columns are decided after every row is built.
+ const cell=(a,label)=>({label,inner:a.map(t=>`<span class="${sign(t)}">${esc(t)}</span>`).join(' · '),empty:!a.length});
+ const rows=options.map(o=>{
   let tags=[...(o.tags||[])],cells=[];
   const take=fn=>{const a=tags.filter(fn);tags=tags.filter(t=>!fn(t));return a;};
   if(planning&&!approachOnly){
@@ -1476,7 +1477,7 @@ function deskTable(options,attr,w,f,p,approachOnly=false){
    cells.push(cell(take(t=>/layout|running order|Changes |Keeps |finish|Limits the match|objective|sequence|called spots/i.test(t)),'Sheet'));
   }else if(promo||seg){
    const risk=take(t=>riskLabels.includes(t))[0],r=riskLabels.indexOf(risk);
-   cells.push(`<td class="desk-effect" data-label="Risk">${r<0?'–':`<span class="risk-pips risk-${r}" title="${risk}" aria-label="${risk}">${'●'.repeat(r+1)}${'○'.repeat(3-r)}</span>`}</td>`);
+   cells.push({label:'Risk',inner:r<0?'':`<span class="risk-pips risk-${r}" title="${risk}" aria-label="${risk}">${'●'.repeat(r+1)}${'○'.repeat(3-r)}</span>`,empty:r<0});
    if(promo){
     for(const [label,re] of [['Crowd',/Wins the crowd|Big swing either way|Small gain|Crowd [▲▼]/i],['Rivalry',/Stokes the rivalry|Rivalry [▲▼]/i],['Cred.',/Builds credibility/i],[cols[4],null],['Promise',/Promise|Names the finisher|match strip|booked|Unlikely|Safe bet/i]]){
      const a=take(t=>re?re.test(t):t.startsWith(cols[4]+' ')&&/[▲▼]/.test(t));
@@ -1484,7 +1485,14 @@ function deskTable(options,attr,w,f,p,approachOnly=false){
     }
    }else cells.push(cell(take(()=>true),'Details'));
   }else if(!planning)cells.push(cell(take(()=>true),'Effects'));
-  return `<tr class="pick"><td class="desk-index">${i+1}</td><td class="wrap desk-response"><button class="row-pick decision-option" data-${attr}="${esc(o.id)}"><b>${esc(o.label)}</b>${o.hint?`<small>${esc(o.hint)}</small>`:''}${tags.length?`<small class="desk-extra">${esc(tags.join(' · '))}</small>`:''}</button></td>${cells.join('')}</tr>`;
+  return {o,tags,cells};
+ });
+ // A column earns its place only when most options use it. Columns that are
+ // empty everywhere are dropped; sparse ones fold into the response as a tag.
+ const keep=cols.map((_,c)=>rows.filter(r=>!r.cells[c].empty).length*2>rows.length);
+ return `<div class="well desk-table"><table class="grid"><thead><tr><th>#</th><th>${planning?'Response':promo?'Line':'Choice'}</th>${cols.filter((_,c)=>keep[c]).map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.map(({o,tags,cells},i)=>{
+  const folded=cells.filter((x,c)=>!keep[c]&&!x.empty).map(x=>`<span class="desk-fold"><span class="desk-fold-label">${esc(x.label.trim())}</span> ${x.inner}</span>`);
+  return `<tr class="pick"><td class="desk-index">${i+1}</td><td class="wrap desk-response"><button class="row-pick decision-option" data-${attr}="${esc(o.id)}"><b>${esc(o.label)}</b>${o.hint?`<small>${esc(o.hint)}</small>`:''}${tags.length?`<small class="desk-extra">${esc(tags.join(' · '))}</small>`:''}${folded.length?`<small class="desk-effects">${folded.join(' ')}</small>`:''}</button></td>${cells.filter((_,c)=>keep[c]).map(x=>`<td class="desk-effect" data-label="${esc(x.label)}">${x.empty?'–':x.inner}</td>`).join('')}</tr>`;
  }).join('')}</tbody></table></div>`;
 }
 function deskTranscript(entries,id,w,f){

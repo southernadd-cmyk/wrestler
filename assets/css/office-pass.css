@@ -152,3 +152,9 @@
 #tv .desk-table .grid :is(th:first-child,.desk-index){width:2.4em;white-space:nowrap}
 #tv .desk-table .grid tr>.desk-response:last-child{width:100%}
 #tv .desk-table .grid :is(th:first-child,.desk-index){width:1%}
+
+/* Sparse effects folded into the response cell (see deskTable). */
+#tv .desk-table .desk-effects{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:3px}
+#tv .desk-table .desk-fold-label{color:var(--cyan)}
+#tv .desk-table .desk-fold .up{color:var(--good)}
+#tv .desk-table .desk-fold .down{color:var(--bad)}
