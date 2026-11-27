@@ -35,7 +35,7 @@ function harness(ttsEnabled=true,hub=false,initialStorage={}){
  let autoScan=true;
  const M={getSettings:()=>({autoScan}),getScanInterval:()=>2000,isParkingEnabled:()=>false,subscribe(){},resetInputState(){},setAutoScan(v){autoScan=v;},cycleScanSpeed(){},createChoiceScan(o){scanOptions=o;return scan;}};
  let saveCalls=0,saveOK=true,watchCalls=0,signCalls=0,settlements=0;
- const window={OfficeGame:{S:null,hasSave:()=>false,saveStatus:()=>({ok:saveOK}),save(){saveCalls++;},scoutWatch(w){if(!w.watched){w.watched=true;watchCalls++;}},scoutBand(w,key){return key==='heat'?{lo:55,hi:55,exact:true}:{lo:40,hi:49,exact:false};},signingForecast(id){return {affordable:true,afterFee:1500,weeklyCost:600,afterWeek:900,runway:2,risk:'limited'};},sign(){signCalls++;},money:x=>'£'+x,abs:()=>1,P:()=>({name:'Test promotion'})},OfficeData:{SLOTS:{},FINISHES:{},DIVISIONS:{open:{name:'Open'}},divisionOf:()=> 'open'},OfficeMatch:{fmt:t=>String(t),CALLS:{},canCall:()=>false,next(m){nextCalls++;m.t++;if(m.testTerminal)m.done=true;if(m.testDecision)m.decision={title:'Mandatory decision',body:'Choose the response.',options:[{id:'answer',label:'Answer',hint:'Required'}]};return {who:'pbp',text:'The wrestlers lock up.'};}},NarbeScanManager:M,NarbeVoiceManager:V,NarbePlatform:{settings:{hasHubParent:()=>false}},addEventListener:(k,fn)=>listen(windowEvents,k,fn)};
+ const window={OfficeGame:{S:null,hasSave:()=>false,saveStatus:()=>({ok:saveOK}),save(){saveCalls++;},scoutWatch(w){if(!w.watched){w.watched=true;watchCalls++;}},scoutBand(w,key){return key==='heat'?{lo:55,hi:55,exact:true}:{lo:40,hi:49,exact:false};},signingForecast(id){return {affordable:true,afterFee:1500,weeklyCost:600,afterWeek:900,runway:2,risk:'limited'};},sign(){signCalls++;},money:x=>'£'+x,abs:()=>1,P:()=>({name:'Test promotion'})},OfficeData:{SLOTS:{},FINISHES:{},DIVISIONS:{open:{name:'Open'}},divisionOf:()=> 'open'},OfficeMatch:{fmt:t=>String(t),CALLS:{},canCall:()=>false,next(m){nextCalls++;if(m.testLines){const line=m.testLines.shift();if(!line){m.done=true;return null;}m.t=line.at;if(line.decision)m.decision={title:'Mandatory decision',body:'Choose the response.',options:[{id:'answer',label:'Answer',hint:'Required'}]};return line;}m.t++;if(m.testTerminal)m.done=true;if(m.testDecision)m.decision={title:'Mandatory decision',body:'Choose the response.',options:[{id:'answer',label:'Answer',hint:'Required'}]};return {who:'pbp',text:'The wrestlers lock up.'};}},NarbeScanManager:M,NarbeVoiceManager:V,NarbePlatform:{settings:{hasHubParent:()=>false}},addEventListener:(k,fn)=>listen(windowEvents,k,fn)};
  window.parent=hub?{location:{origin:'https://example.test'},NarbeCommunicationSpeech:{help(fallback,message){hubRequests.push(message);return V.speak(message,{force:true,hub:true});}}}:window;
  window.location={origin:'https://example.test'};
  const storage=new Map(Object.entries(initialStorage));
@@ -168,5 +168,54 @@ const tick=()=>new Promise(setImmediate);
  const againDennis=dennis.spoken.length;dennis.select(repeat);await drain(dennis);
  assert.ok(dennis.spoken.slice(againDennis).map(x=>x.text).join(' ').includes('Keep the plan. Dennis is your assistant.'));
  assert.ok(!dennis.spoken.slice(againDennis).some(x=>x.text.includes('Dennis:')));
- console.log('S8B–S8G: speech, navigation, match transitions, appearance and Dennis speaker labels passed');
+ const lengthKey='the-office-switch-broadcast-length';
+ const pref=harness(false);pref.select('settings');
+ const lengthLabel=()=>pref.get('choices').children.find(x=>x.dataset.choice==='broadcast-length').children[0].textContent;
+ assert.match(lengthLabel(),/Condensed/);
+ pref.select('broadcast-length');assert.match(lengthLabel(),/Highlights/);
+ pref.select('broadcast-length');assert.match(lengthLabel(),/Full/);
+ assert.equal(pref.storage.get(lengthKey),'full');
+ const savedLength=harness(false,false,{[lengthKey]:'full'});savedLength.select('settings');
+ assert.match(savedLength.get('choices').children.find(x=>x.dataset.choice==='broadcast-length').children[0].textContent,/Full/);
+ const events=()=>[
+  {at:0,t:'00:00',kind:'play',who:'pbp',text:'The opening exchange.'},
+  {at:10,t:'00:10',kind:'play',who:'pbp',text:'Routine hold.'},
+  {at:20,t:'00:20',kind:'play',who:'pbp',text:'Another routine exchange.'},
+  {at:22,t:'00:22',kind:'agent',who:'runner',text:'The agreed move has landed.'},
+  {at:24,t:'00:24',kind:'play',who:'pbp',text:'A required choice now follows.',decision:true}
+ ];
+ for(const [mode,calls] of [['condensed',4],['highlights',4],['full',2]]){
+  const h=harness(true,false,{[lengthKey]:mode});h.broadcast({testLines:events()});
+  assert.equal(h.nextCalls(),1);h.spoken.at(-1).settle('end');await tick();
+  assert.equal(h.nextCalls(),calls,mode+' consumes the real stream until the next retained line');
+  assert.match(h.spoken.at(-1).text,mode==='full'?/Routine hold/:/agreed move/);
+  if(mode!=='full'){h.spoken.at(-1).settle('end');await tick();assert.equal(h.nextCalls(),5);h.spoken.at(-1).settle('end');await tick();assert.equal(h.get('heading').textContent,'Mandatory decision');assert.equal(h.nextCalls(),5);}
+ }
+ // Measure commentary words on actual seeded matches without adding another
+ // suite or changing the match engine. Estimates exclude choice/scene speech.
+ const root={addEventListener(){}},storage=new Map();
+ vm.runInNewContext(require('./_source.cjs').core,{window:root,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},console,Date,Math,JSON});
+ const D=root.OfficeData,X=root.OfficeMatch,filter={};
+ vm.runInNewContext(read('booth-speech.js'),{window:filter});
+ const words=t=>String(t).trim().split(/\s+/).filter(Boolean).length;
+ const totals={full:0,condensed:0,highlights:0};
+ for(let i=0;i<8;i++){
+  const slot=['opener','mid','feature','main'][i%4];
+  const m=X.create({w:{...D.TALENT[i],flags:{},fatigue:10},f:D.FOES[i],p:D.PROMOS[i%D.PROMOS.length],slot,minutes:D.SLOTS[slot].mins,finish:['win_clean','lose_clean','win_dirty','lose_protected'][i%4],plan:{game:['story','technical','brawl','spots'][i%4],leash:'script',talk:'calm'},preparation:{},flags:{},seed:4200+i*73});
+  const modes=['full','condensed','highlights'],cursors=Object.fromEntries(modes.map(k=>[k,{}])),count={full:0,condensed:0,highlights:0};
+  for(let j=0;j<5000;j++){
+   if(m.decision&&!m.queue.length){X.resolve(m,(m.decision.options.find(o=>['job','home','cut','protect'].includes(o.id))||m.decision.options[0]).id);}
+   const line=X.next(m);
+   if(!line){if(m.done)break;continue;}
+   const before=m.r.getState();
+   for(const mode of modes){const keep=filter.OfficeBoothSpeech.keepLine(mode,line,m,cursors[mode]);if(keep)count[mode]+=words(line.text);if(['bell','rating','agent','alert','injury','bad','count'].includes(line.kind)||line.big||m.stage==='over')assert.ok(keep,mode+' retains '+line.kind);}
+   assert.equal(m.r.getState(),before,'presentation never draws randomness');
+  }
+  assert.ok(m.done&&m.final,'seeded match completed');assert.ok(count.highlights<=count.condensed&&count.condensed<=count.full);
+  for(const mode of modes)totals[mode]+=count[mode];
+  console.log('BROADCAST SAMPLE '+JSON.stringify({slot,words:count,minutesAt150Wpm:Object.fromEntries(modes.map(k=>[k,Math.round(count[k]/150*10)/10]))}));
+ }
+ assert.ok(totals.condensed<totals.full&&totals.highlights<totals.condensed,'both modes reduce aggregate speech');
+ console.log('BROADCAST TOTAL '+JSON.stringify(totals));
+ console.log('Switch speech, navigation, appearance and broadcast length passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
