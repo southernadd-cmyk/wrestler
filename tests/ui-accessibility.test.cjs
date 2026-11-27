@@ -83,3 +83,7 @@ assert.ok(css.includes('overflow-wrap:anywhere'));
 const mobile=fs.readFileSync(path.join(root,'assets/css/mobile.css'),'utf8');
 assert.ok(mobile.includes('#headerIdentity{grid-row:2;grid-column:1/-1'));
 console.log('PASS Office UI keyboard, status indicators, action labels and modal accessibility');
+
+assert.ok(ui.includes("G.officeBrief()"));
+assert.ok(ui.includes("confirm-start-night"));
+assert.ok(ui.includes("G.offerCandidates(o)"));
