@@ -16,6 +16,12 @@ function restoreMatch(){
  try{const r=JSON.parse(localStorage.getItem(MATCH_KEY)||'null');if(r&&r.careerSeed===s().careerSeed&&r.period===G.abs()&&s().card.some(c=>c.id===r.cid)&&!G.resultRecorded({id:r.cid}))active={cid:r.cid,M:X.restore(r.M)};}catch(e){saveError='Could not restore the unfinished match. The booked match is still on your card.';}
 }
 function saveNotice(){return [G.saveStatus().ok===false?'Career could not be saved. Keep this page open.':'',saveError,planSaveError].filter(Boolean).join(' ');}
+// Queue each new persistent warning once; explicit status replay always includes it.
+let lastSpokenSaveNotice='',screenNotice='';
+function noticeText(){return [saveNotice(),screenNotice].filter(Boolean).join(' ');}
+function showNotice(text){screenNotice=text;$('saveNotice').textContent=noticeText();}
+function saveSpeech(){const warning=saveNotice();if(!warning){lastSpokenSaveNotice='';return [];}if(!V.getSettings().ttsEnabled||warning===lastSpokenSaveNotice)return [];lastSpokenSaveNotice=warning;return [{text:warning}];}
+function statusSpeech(){return [summary(),noticeText()].filter(Boolean).join('. ');}
 function highlight(item,state){
  for(const x of items){x.element.classList.toggle('scan',x.id===item?.id);if(x.id===item?.id)x.element.dataset.braked=String(!!state.braked||!!state.brakePaused);else delete x.element.dataset.braked;}
  if(!narrationLock)$('controls').textContent=M.getSettings().autoScan?'ONE SWITCH · Enter selects · '+M.getScanInterval()/1000+' second scan':'TWO SWITCHES · Space moves · Enter selects';
@@ -46,7 +52,7 @@ function narrateMatch(parts,onComplete=null,{skippable=!onComplete}={}){
   if(onComplete){onComplete(result);return;}
   if(scan.getState().id!==null)scan.announceCurrent();
   if(result?.reason==='timeout'||result?.reason==='error'||result?.reason==='failed-to-start'||result?.reason==='unavailable'){
-   $('saveNotice').textContent=[saveNotice(),'Speech could not finish. The current text remains visible; use Repeat information or the available replay controls to try again.'].filter(Boolean).join(' ');
+   showNotice('Speech could not finish. The current text remains visible; use Repeat information or the available replay controls to try again.');
   }
  };
  lock.ticket=boothSpeech.sequence(parts);
@@ -83,12 +89,12 @@ function restoreNavigation(key,choices,restoreId,fresh){
  return choices.some(x=>x.id===restoreId)?restoreId:null;
 }
 function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,announce=true,kicker='DENNIS · YOUR ASSISTANT',speechParts=null,onSpeechComplete=null,scene=null,pauseMenu=false}={}){
- if(fresh){stopNarration();input.cancel();refreshSettings=null;}
+ if(fresh){stopNarration();input.cancel();refreshSettings=null;screenNotice='';}
  // Page identity and row IDs disambiguate identical titles. Portrait and
  // scene competitors distinguish screens belonging to different wrestlers.
  const page=String(body).match(/\bPage (\d+) of (\d+)/i)?.[0]||'';
  const key=JSON.stringify([title,kicker,portrait?.id||null,scene?.w?.id||null,scene?.f?.id||null,page,choices.map(x=>x.id)]);
- const repeat=()=>{if(V.getSettings().ttsEnabled){stopNarration();const parked=scan.getState().parked?[{text:'Parked. Press Enter to start scanning.'}]:[];const parts=speechParts?.length?speechParts:[{text:title+'. '+body}];narrateMatch([...parts,...parked]);}else $('saveNotice').textContent=[saveNotice(),'Text to speech is off. Enable it in Settings to hear this information.'].filter(Boolean).join(' ');};
+ const repeat=()=>{if(V.getSettings().ttsEnabled){stopNarration();const parked=scan.getState().parked?[{text:'Parked. Press Enter to start scanning.'}]:[];const parts=speechParts?.length?speechParts:[{text:title+'. '+body}];const status=statusSpeech();narrateMatch([...parts,...(status?[{text:status}]:[]),...parked]);}else showNotice('Text to speech is off. Enable it in Settings to hear this information.');};
  // Every stationary choice screen has a tap-only route to communication.
  // Resume redraws the captured choices, never re-runs the action that opened them.
  if(!onSpeechComplete&&!pauseMenu&&title!=='Settings'&&!choices.some(x=>x.id==='pause'||/^Pause(?:\s|$)/i.test(x.label))){
@@ -103,11 +109,12 @@ function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,anno
   if(V.getSettings().ttsEnabled&&!choices.some(x=>existingRepeat(x)||['Replay commentary','Read match status','Replay commentary / status','Repeat match status'].includes(x.label)))choices=[...choices,a('__repeat_information','Repeat information',repeat)];
  }
  restoreId=restoreNavigation(key,choices,restoreId,fresh);
- $('heading').textContent=title;$('kicker').textContent=kicker;$('careerStatus').textContent=summary();$('saveNotice').textContent=saveNotice();
+ $('heading').textContent=title;$('kicker').textContent=kicker;$('careerStatus').textContent=summary();$('saveNotice').textContent=noticeText();
  renderPresentation(title,body,portrait,scene,kicker);
  items=choices.map(x=>{const element=document.createElement('button');element.type='button';element.dataset.choice=x.id;const label=document.createElement('span');label.className='choiceLabel';label.textContent=x.label;element.append(label);if(x.hint){const hint=document.createElement('span');hint.className='choiceHint';hint.textContent=x.hint;element.append(hint);}const item={...x,element};element.onclick=()=>{if(narrationLock){if(narrationLock.continuous&&item.id==='pause')requestBroadcastPause();if(!narrationLock.skippable)return;stopNarration();}input.cancel();choose(item);};return item;});
  $('choices').replaceChildren(...items.map(x=>x.element));if(fresh)scan.open(items,{restoreId,startParked:restoreId===null&&M.isParkingEnabled()});else scan.setItems(items);
- if(announce){const parkedHint=scan.getState().parked?' Parked. Press Enter to start scanning.':'';if(speechParts?.length)narrateMatch([...speechParts,...(parkedHint&&!onSpeechComplete?[{text:parkedHint.trim()}]:[])],onSpeechComplete);else if(V.getSettings().ttsEnabled)narrateMatch([{text:title+'. '+body+parkedHint}]);else scan.announceCurrent(title+'. '+body+parkedHint);}
+ const warnings=saveSpeech();
+ if(announce||warnings.length){const parkedHint=scan.getState().parked?' Parked. Press Enter to start scanning.':'';if(speechParts?.length)narrateMatch([...warnings,...speechParts,...(parkedHint&&!onSpeechComplete?[{text:parkedHint.trim()}]:[])],onSpeechComplete);else if(V.getSettings().ttsEnabled)narrateMatch([...warnings,...(announce?[{text:title+'. '+body+parkedHint}]:[])]);else scan.announceCurrent(title+'. '+body+parkedHint);}
 }
 // Visual information is supplementary; the same text is available to speech.
 function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;}
@@ -239,10 +246,10 @@ function requestHelp(){
  let ticket;
  try{ticket=typeof service?.help==='function'?service.help(fallback,message):service?.isEnabled?.()?service.speak(message):fallback();}catch(_){try{ticket=fallback();}catch(_){}}
  if(!ticket?.finished){try{ticket=fallback();}catch(_){}}
- if(!ticket?.finished){$('saveNotice').textContent=[saveNotice(),'Help could not be spoken. Select I Need Help to try again.'].filter(Boolean).join(' ');return;}
- $('saveNotice').textContent=[saveNotice(),'Calling for help…'].filter(Boolean).join(' ');
+ if(!ticket?.finished){showNotice('Help could not be spoken. Select I Need Help to try again.');return;}
+ showNotice('Calling for help…');
  scan.holdForSpeech(ticket);
- const notice=result=>{if(items!==currentItems||ticket!==helpTicket)return;clearTimeout(helpNoticeTimer);const reason=result?.reason;const text=reason==='end'||reason==='ended'?'Help message spoken.':reason==='cancelled'?'Help message stopped.':'Help could not be confirmed. Select I Need Help to try again.';$('saveNotice').textContent=[saveNotice(),text].filter(Boolean).join(' ');};
+ const notice=result=>{if(items!==currentItems||ticket!==helpTicket)return;clearTimeout(helpNoticeTimer);const reason=result?.reason;const text=reason==='end'||reason==='ended'?'Help message spoken.':reason==='cancelled'?'Help message stopped.':'Help could not be confirmed. Select I Need Help to try again.';showNotice(text);};
  helpTicket=ticket;helpNoticeTimer=setTimeout(()=>notice({reason:'timeout'}),12000);Promise.resolve(ticket.finished).then(notice,()=>notice({reason:'error'}));
 }
 let helpTicket=null,helpNoticeTimer=null;
@@ -507,8 +514,25 @@ function inbox(){const rows=[...s().inbox].sort((x,y)=>Number(y.kind==='decision
 function message(m,returnTo){m.read=true;G.save();screen(m.subject,m.from+'.\n'+(Array.isArray(m.body)?m.body.join('\n'):m.body||'')+(m.outcome?'\nOutcome: '+m.outcome:''),[...(m.kind==='decision'&&!m.answer?(m.options||[]).map(o=>a(o.id,o.label+(o.hint?'. '+o.hint:''),()=>{const result=G.answer(m.id,o.id);if(!m.answer){screen('Response unavailable',String(result),[back(()=>message(m,returnTo))]);return;}screen('Response recorded',m.outcome||'Decision recorded.',[back(returnTo)]);})):[]),a('repeat','Repeat message',()=>message(m,returnTo)),back(returnTo)]);}
 function stable(returnTo=()=>desk('','stable',true)){const here=()=>stable(returnTo),opts=[...(s().roster.length?[a('roster','Your wrestlers',()=>paged('Your wrestlers',s().roster,0,profile,here))]:[]),a('scout','Scout and sign wrestlers',()=>scout(here)),a('coach','Coaching staff',()=>coaches(here)),a('reports','Training reports',()=>trainingReports(here)),back(returnTo)];screen('Your stable',s().roster.length+' of 5 contract places filled.',opts);}
 function scout(returnTo=stable,restoreId=null){screen('Find talent','Choose a division. The shortlist is ordered by signing fee; every affordable free agent is available.',D.DIVISION_ORDER.map(div=>a(div,D.DIVISIONS[div].name+' division',()=>scoutList(div,returnTo))).concat(back(returnTo)),{restoreId});}
-function scoutList(div,returnTo=stable){const rows=s().free.filter(w=>D.divisionOf(w)===div).sort((x,y)=>x.fee-y.fee);paged('Free agents',rows,0,signProfile,()=>scout(returnTo,div),w=>w.name+' · '+money(w.fee));}
-function signProfile(w,returnTo){const f=G.signingForecast(w.id);if(!f){returnTo();return;}const bands=['ring','mic','psych','safe'].map(k=>{const b=G.scoutBand(w,k);return k+': '+(typeof b==='string'?b:Array.isArray(b)?b.join(' to '):b?.label||'estimated');}).join('. ');screen(w.name,w.style+' wrestler. Signing fee '+money(w.fee)+'. Weekly wage '+money(w.wage)+'. Bank after signing '+money(f.afterFee)+'. '+bands,[...(f.affordable?[a('sign','Sign for '+money(w.fee),()=>confirm('Sign '+w.name+'?','Pay '+money(w.fee)+' now and '+money(w.wage)+' each week.','Confirm signing',()=>{const e=G.sign(w.id);if(e){screen('Signing unavailable',e,[back(returnTo)]);return;}desk(w.name+' has joined your stable.');},()=>signProfile(w,returnTo)))]:[]),back(returnTo)],{portrait:w});}
+function scoutList(div,returnTo=stable){const rows=s().free.filter(w=>D.divisionOf(w)===div).sort((x,y)=>x.fee-y.fee);paged('Free agents',rows,0,signProfile,()=>scout(returnTo,div),w=>w.name+' · '+w.style+' · Signing fee '+money(w.fee)+' · Wage '+money(w.wage)+' per week'+(G.signingForecast(w.id)?.affordable?'':' · Cannot sign currently'));}
+function scoutRating(w,key,label){
+ const band=G.scoutBand(w,key);
+ if(!band||!Number.isFinite(band.lo)||!Number.isFinite(band.hi))return label+': unavailable.';
+ return label+': '+(band.exact?band.lo+' out of 99, known':band.lo+' to '+band.hi+' out of 99, estimated')+'.';
+}
+function signProfile(w,returnTo){
+ w=s().free.find(x=>x.id===w.id);const f=w&&G.signingForecast(w.id);
+ if(!f){screen('Signing unavailable','This wrestler is no longer on the free-agent list.',[back(returnTo)]);return;}
+ // Match the regular edition's once-per-week scouting knowledge update.
+ G.scoutWatch(w);
+ const ratings=[['ring','Ring skill'],['mic','Microphone skill'],['psych','Match psychology'],['safe','Safety'],['heat','Draw (fan appeal)']].map(([key,label])=>scoutRating(w,key,label)).join(' ');
+ const unavailable=s().roster.length>=5?'Your stable is full. Release a wrestler before signing another.':f.afterFee<0?'Insufficient funds for the signing fee.':'';
+ const risk={critical:'High risk: less than one week of running costs covered.',tight:'Tight budget: fewer than two weeks of costs covered.',limited:'Limited reserve: fewer than four weeks of costs covered.',buffer:'Four or more weeks of costs covered.'}[f.risk]||'';
+ const budget='Signing fee '+money(w.fee)+'. Weekly wage '+money(w.wage)+'. Bank after signing '+money(f.afterFee)+'. Total weekly costs '+money(f.weeklyCost)+'. Estimated balance after one week without income '+money(f.afterWeek)+'. Full weeks covered: '+f.runway+'. '+(unavailable||risk)+' Wages are due even without bookings.';
+ const identity=[w.tier,w.style,D.DIVISIONS?.[D.divisionOf(w)]?.name].filter(Boolean).join('. ');
+ screen(w.name,[identity,budget,ratings,'Scouting estimates become more precise when you review a wrestler in later weeks.',w.bio,w.finisher?'Finisher: '+w.finisher+'.':''].filter(Boolean).join('\n'),[
+  ...(f.affordable?[a('sign','Sign for '+money(w.fee),()=>confirm('Sign '+w.name+'?','Pay '+money(w.fee)+' now and '+money(w.wage)+' each week. '+risk+' Estimated balance after one week without income '+money(f.afterWeek)+'.','Confirm signing',()=>{const e=G.sign(w.id);if(e){screen('Signing unavailable',e,[back(returnTo)]);return;}desk(w.name+' has joined your stable.');},()=>signProfile(w,returnTo)))]:[]),back(returnTo)],{portrait:w});
+}
 function profile(w,returnTo){
  w=G.W(w.id);if(!w){stable();return;}
  const again=()=>profile(w,returnTo),amb=window.OfficeAmbitions?.view(w.id);
@@ -1008,7 +1032,7 @@ function matchScreen(note='',commentary=[],played=false,readStatus=false){
  const scene=liveScene(m,c);
  const status=ringStatus(m);
  const narration=(tail)=>played?(tail?[{text:tail}]:null):commentary.length?boothSpeech.parts(commentary,tail):null;
- const replay=()=>matchScreen(note,commentary);
+ const replay=()=>narrateMatch(boothSpeech.parts(commentary,[m.decision&&!m.queue.length?m.decision.title+'. '+m.decision.body:'',ringStatus(m),statusSpeech()].filter(Boolean).join('. ')));
  const replayOption=commentary.length?[a('replay','Replay commentary',replay)]:[];
  if(m.done&&(!guided()||!V.getSettings().ttsEnabled||!m.queue.length)){screen('The final bell',status+' '+(note||''),[a('result','Review result',settleMatch),...replayOption,a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))],{scene,speechParts:narration('The final bell. '+status)});return;}
  if(m.decision&&!m.queue.length){const d=m.decision;screen(d.title,(note?note+'\n':'')+d.body+'\n'+status,d.options.map(o=>a(o.id,o.label+'. '+o.hint,()=>{X.resolve(m,o.id);persistMatch();if(guided()&&V.getSettings().ttsEnabled)startBroadcast();else burst(1);})).concat(replayOption,a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))),{scene,speechParts:narration(d.title+'. '+d.body+' '+status)});return;}
@@ -1017,11 +1041,11 @@ function matchScreen(note='',commentary=[],played=false,readStatus=false){
   screen('At ringside',(note?note+'\n\n':'')+status,[
    a('broadcast','Continue live broadcast',startBroadcast),
    ...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',()=>calls(note,commentary))]:[]),
-   a('status','Read match status',()=>matchScreen(note,commentary,true,true)),
+   a('status','Read match status',()=>narrateMatch([{text:ringStatus(m)+'. '+statusSpeech()}])),
    ...replayOption,
    a('pause','Pause / settings',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(readStatus?status:played?'Ringside. Continue listening, give an instruction if available, or pause.':''),announce:true});return;
  }
- screen('At ringside',(note?note+'\n\n':'')+status,[a('line','Hear next commentary',()=>burst(1)),a('burst','Continue — up to five commentary lines',()=>burst(5)),...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',()=>calls(note,commentary))]:[]),a('status',commentary.length?'Replay commentary / status':'Repeat match status',()=>commentary.length?replay():matchScreen()),a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(''),announce:!played});
+ screen('At ringside',(note?note+'\n\n':'')+status,[a('line','Hear next commentary',()=>burst(1)),a('burst','Continue — up to five commentary lines',()=>burst(5)),...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',()=>calls(note,commentary))]:[]),a('status',commentary.length?'Replay commentary / status':'Repeat match status',()=>commentary.length?replay():narrateMatch([{text:ringStatus(m)+'. '+statusSpeech()}])),a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(''),announce:!played});
 }
 // Pull one commentary line at a time. Pause interrupts speech immediately,
 // never simulates the next line, and retains a replay window.
@@ -1043,7 +1067,7 @@ function startBroadcast(){
    if(broadcastStopRequested){finish();return;}
    if(result?.reason!=='end'){
     finish();
-    $('saveNotice').textContent=[saveNotice(),'Speech stopped. Replay commentary or continue.'].filter(Boolean).join(' ');return;
+    showNotice('Speech stopped. Replay commentary or continue.');return;
    }
    if(!m.queue.length&&(m.done||m.decision)){finish();return;}
    const advice=contextualAdvice(m,X.canCall);
