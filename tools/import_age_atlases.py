@@ -92,6 +92,8 @@ def main(pack: Path) -> None:
     academy_js += ",\n".join(json.dumps(person, separators=(",", ":"), ensure_ascii=False) for person in rookies)
     academy_js += "\n]);})(typeof window!=='undefined'?window:globalThis);\n"
     (root / "assets" / "js" / "academy-register.js").write_text(academy_js)
+    from split_age_portraits import split
+    split(target)
     print(f"Imported {len(cells)} identities across {len(atlases)} lossless atlases")
 
 

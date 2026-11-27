@@ -29,7 +29,8 @@ for(const key of keys){
  assert.match(html,/age-portrait/);
  positions.add(html.match(/background-image:url\('([^']+)'\);background-position:([^"]+)/).slice(1).join('@'));
 }
-assert.equal(positions.size,84,'every portrait has its own atlas cell');
+assert.equal(positions.size,84,'every portrait has its own asset');
+for(const entry of positions){const url=entry.split('@')[0];assert.match(url,/^assets\/portrait-ages\/cells\/\d{2}-\d-\d\.webp$/);assert.ok(fs.statSync(path.join(__dirname,'..',url)).size<100000,'individual portrait payload should stay small');}
 const override=P.avatar({key:'wrestler:faye',name:'Faye Calder'},P.getLook({key:'wrestler:faye'}));
 assert.match(override,/^<img [^>]*data:image\/png;base64,portrait/,'appearance overrides still use the renderer');
 const stranger=P.avatar({key:'manager:someone',name:'Someone'});
@@ -64,6 +65,7 @@ for(let i=0;i<16;i++){
  managerPositions.add(image.match(/background-image:url\('([^']+)'\);background-position:([^"]+)/).slice(1).join('@'));
 }
 assert.equal(managerPositions.size,16,'all 16 choices have different artwork cells');
+for(const entry of managerPositions){const url=entry.split('@')[0];assert.match(url,/^assets\/portrait-ages\/cells\//);assert.ok(fs.existsSync(path.join(__dirname,'..',url)));}
 assert.match(P.playerPortrait(0,'A&B <script>'),/A&amp;B &lt;script>/,'manager name safely escaped');
 assert.equal(P.playerPortrait(999,'Fallback'),P.playerPortrait(0,'Fallback'),
  'invalid portrait indexes still fall back safely');
