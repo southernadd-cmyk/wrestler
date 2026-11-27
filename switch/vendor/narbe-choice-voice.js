@@ -1,4 +1,4 @@
-/* Vendored NARBE shared modules, unmodified source bodies.
+/* Vendored NARBE shared modules. Switch Edition extension: optional per-utterance voice override; all other upstream source bodies unchanged.
 Upstream commit: 5b5686d43e7cebd66632d1a3d860f37dd4b9ae2d
 Copyright (c) 2026 NARBE LLC
 
@@ -1018,9 +1018,11 @@ window.NarbeVoiceManager = (function () {
       finish({ reason: 'timeout', started: didStart });
     }, getSpeechTimeout(text, rate));
     try {
+      // Optional per-utterance voice; never changes the player's saved voice.
+      const voice = options.voice || getCurrentVoice();
       nativeTicket = speech.speak(String(text), {
         rate, pitch: options.pitch ?? settings.pitch, volume: options.volume ?? settings.volume,
-        ...(getCurrentVoice() ? { voice: getCurrentVoice() } : {})
+        ...(voice ? { voice } : {})
       });
       nativeTicket.started.then(value => { if (!done) { didStart = value; resolveStart(value); } });
       nativeTicket.finished.then(finish, () => finish({ reason: 'error', started: didStart }));
