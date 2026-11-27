@@ -55,7 +55,8 @@ function play(type,picks,w,o={}){
    for(const t of text)assert.ok(sentence(t),'starts like a sentence: '+t);
   }
  }
- assert.deepEqual(counts,{solo:80,vignette:SG.VIGNETTE_SETTINGS.length*16,ambush:48,grilling:1+3*(1+3*4)});
+ const len=(type,i)=>SG.ENGINES[type].rounds[i].options.length,g=len('grilling',0)-1;// the walk-out ends a grilling early
+ assert.deepEqual(counts,{solo:len('solo',0)*len('solo',1)*len('solo',2),vignette:SG.VIGNETTE_SETTINGS.length*16,ambush:len('ambush',0)*len('ambush',1)*len('ambush',2),grilling:1+g*(1+g*(g+1))});
  console.log('PASS every path reads cleanly in all eight voices: '+JSON.stringify(counts));
 }
 

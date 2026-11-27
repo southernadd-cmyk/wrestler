@@ -1402,18 +1402,18 @@ function showSegment(loadedBanks,previousPosition){
  scrollTalk('segTalk',!choicePosition);restoreDecisionScroll('s-promo',choicePosition);persistNight();
 }
 
-// The vignette's setting step has many options, so it can be narrowed by category and sorted by fit.
-// The view choice lives on the night only; it never changes what an option does.
+// A segment step with many options (the vignette's setting, the solo promo's hook) can be narrowed by
+// category and sorted by fit. The view choice lives on the night only; it never changes what an option does.
 function segmentChoices(v){
- const cats=window.OfficeSegments?.VIGNETTE_CATEGORIES;
- if(!(v.type==='vignette'&&cats&&v.options.some(o=>o.category)))return pickCards(v.options,'seg');
+ const cats=[];for(const o of v.options)if(o.category&&!cats.some(([k])=>k===o.category))cats.push([o.category,o.categoryName||o.category]);
+ if(cats.length<2||v.options.length<8)return pickCards(v.options,'seg');
  const pref={cat:'all',sort:'category',...(night.segView||{})};
  const count=k=>v.options.filter(o=>k==='all'||o.category===k).length;
  if(pref.cat!=='all'&&!count(pref.cat))pref.cat='all';
  let list=v.options.filter(o=>pref.cat==='all'||o.category===pref.cat);
  if(pref.sort==='fit')list=list.map((o,i)=>({o,i})).sort((a,b)=>(b.o.score-a.o.score)||(a.i-b.i)).map(x=>x.o);
  const btn=(attr,val,label,on,n)=>`<button type="button" class="btn sm ${on?'go':''}" data-${attr}="${esc(val)}" aria-pressed="${on}">${esc(label)}${n===undefined?'':` <span class="filter-count">${n}</span>`}</button>`;
- const bar=`<div class="seg-filters" role="toolbar" aria-label="Narrow the settings"><div class="seg-filter-group" role="group" aria-label="Category">${btn('segcat','all','All',pref.cat==='all',count('all'))}${Object.entries(cats).map(([k,name])=>btn('segcat',k,name,pref.cat===k,count(k))).join('')}</div><div class="seg-filter-group" role="group" aria-label="Sort">${btn('segsort','category','By category',pref.sort==='category')}${btn('segsort','fit','Best fit first',pref.sort==='fit')}</div></div>`;
+ const bar=`<div class="seg-filters" role="toolbar" aria-label="Narrow the settings"><div class="seg-filter-group" role="group" aria-label="Category">${btn('segcat','all','All',pref.cat==='all',count('all'))}${cats.map(([k,name])=>btn('segcat',k,name,pref.cat===k,count(k))).join('')}</div><div class="seg-filter-group" role="group" aria-label="Sort">${btn('segsort','category','By category',pref.sort==='category')}${btn('segsort','fit','Best fit first',pref.sort==='fit')}</div></div>`;
  return bar+pickCards(list,'seg');
 }
 
