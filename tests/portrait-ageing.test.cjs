@@ -176,6 +176,41 @@ else:
   for(const r of rows.filter(r=>r.id==='magnus'||r.id==='rex'))console.log('PORTRAIT REFERENCE '+JSON.stringify(r));
   for(const r of flagged)console.log('PORTRAIT FLOATING BASE '+JSON.stringify(r));
   const weak=rows.filter(r=>r.majorBottom>2||(r.solidBottom!==null&&r.solidBottom>5));
+  // Every measured weak base must have a corrected shared frame; every
+  // unaffected variant must retain its original geometry. Check exact CSS
+  // source coordinates, including nonzero atlas rows and all three ages.
+  const expected=new Set(weak.map(r=>r.id+'|'+r.age));
+  let corrected=0;
+  for(const r of rows){
+   const key=r.id.includes(':')||r.id.startsWith('player-manager-')?r.id:'wrestler:'+r.id;
+   // For staff whose real ages cannot select a younger band, exercise the
+   // common mapping with a temporary synthetic actor assigned to its cell.
+   const staff=!key.startsWith('wrestler:');
+   const alias=staff?'audit-'+r.id:r.id;
+   if(staff){
+    // Staff mapping is exercised at the exported geometry level below.
+    const frame=P.portraitFrame(r.id,r.age);
+    verify(frame,r);
+   }else{
+    const age={young:22,middle:36,old:48}[r.age];
+    const frame=P.portraitCell({key:'wrestler:'+alias,age},{roster:[],free:[]});
+    verify(frame,r);
+   }
+   function verify(frame,r){
+    assert.ok(frame,r.id+' '+r.age);
+    const shouldTrim=expected.has(r.id+'|'+r.age);
+    assert.equal(frame.trim>0,shouldTrim,r.id+' '+r.age+' correction scope');
+    if(shouldTrim){corrected++;assert.equal(frame.trim,Math.max(r.majorBottom,r.solidBottom||0),r.id+' '+r.age+' exact usable base');}
+    const [sx,sy]=frame.size.split(' ').map(parseFloat);
+    const [px,py]=frame.position.split(' ').map(parseFloat);
+    const [sheet,col,row]=cells[r.id],column=col+({young:0,middle:1,old:2})[r.age];
+    assert.ok(Math.abs((sx-100)*px/100-column*100)<1e-7,'horizontal cell selection');
+    const visibleHeight=1440*100/sy;
+    assert.ok(Math.abs(visibleHeight*(sy-100)*py/10000-row*180)<1e-7,'vertical cell selection');
+    assert.ok(Math.abs(visibleHeight-(180-frame.trim))<1e-7,'corrected frame height');
+   }
+  }
+  assert.equal(corrected,11,'all measured defective frames and no others corrected');
   console.log('PORTRAIT SILHOUETTE SUMMARY '+JSON.stringify({total:rows.length,weakBase:weak.length,detachedBottom:rows.filter(r=>r.majorBottom>r.bottom).length,solidGap:rows.filter(r=>r.solidBottom!==null&&r.solidBottom>5).length}));
   for(const r of weak)console.log('PORTRAIT WEAK BASE '+JSON.stringify({id:r.id,age:r.age,majorBottom:r.majorBottom,solidBottom:r.solidBottom,detached:r.detached,lower:r.lower}));
   for(const id of ['magnus','rex','cal'])for(const r of rows.filter(r=>r.id===id))console.log('PORTRAIT SILHOUETTE '+JSON.stringify(r));
