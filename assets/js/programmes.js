@@ -30,7 +30,8 @@
  // make the start screen's prediction (taken the week before) disagree with the real week.
  function claims(s,t,week=null){
   const st=t?.programmes,live=[...(st?.live||[]),...(st?.offered||[]).filter(x=>week==null||x.until>=week)];
-  return {belts:new Set(live.filter(x=>x.type==='title').map(x=>x.pid+':'+x.div)),
+  return {belts:new Set([...live.filter(x=>x.type==='title').map(x=>x.pid+':'+x.div),
+   ...[...(s.card||[]),...(s.futureBookings||[])].filter(c=>c.title&&!c.programme&&(week==null||c.eventAbs>=week)&&T.titleValid(s,t,c)).map(c=>c.title.pid+':'+c.title.div)]),
    cast:new Set(live.flatMap(x=>x.beats.filter(b=>!b.done).map(b=>b.rid)))};
  }
 
@@ -127,6 +128,7 @@
   const w=G.W(wid),prog=o.programme;
   if(!w||w.id!==prog.wid)return `This programme is for ${name(prog.wid)}.`;
   if(o.expiresAbs<G.abs())return 'That offer has expired.';
+  if(prog.beats.some(b=>b.title&&!T.titleValid(s,s.territory,{...b,pid:prog.pid,wid})))return 'The championship booking is no longer valid. The booker must issue a new programme.';
   const clash=prog.beats.find(b=>!G.availableAt(w,b.at)||!G.opponentReady(s,b.rid,b.at)||G.bookingConflict(w.id,b.rid,b.at));
   if(clash)return G.bookingConflict(w.id,clash.rid,clash.at)||`${w.short} isn’t free on ${weekLabel(clash.at)}. Every date in a programme has to be clear.`;
   for(const [k,b] of prog.beats.entries()){
@@ -223,8 +225,7 @@
      const occupied=champion&&[...s.card,...s.futureBookings].some(c=>
       c.id!==finalContract.id&&c.eventAbs===final.at&&(c.wid===champion||c.rid===champion));
      const eligible=champion&&champion!==prog.wid&&!G.W(champion)&&
-      D.divisionOf(champion)===final.title.div&&t.cards?.[final.title.pid]?.[champion]&&
-      T.contracted(s,champion)&&!occupied;
+      T.titleValid(s,t,{...finalContract,rid:champion})&&T.contracted(s,champion)&&G.opponentReady(s,champion,final.at)&&!occupied;
      if(!eligible){
       close(s,prog,'cancelled','The championship changed hands and the promoter could not honour the announced title payoff.');
       G.msg({from:`${p.voice}, ${p.name}`,subject:'The title programme is cancelled',kind:'info',

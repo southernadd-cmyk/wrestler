@@ -19,6 +19,7 @@
   G.save();return x;
  };
  const record=(cid)=>ledger().find(x=>x.cid===cid&&x.kind==='signed');
+ function promoterCancelled(cid,reason){const row=record(cid);if(!row||row.status!=='scheduled')return false;row.status='promoter_cancelled';row.settledAt=now();row.reason=reason;G.save();return true;}
  const meaningful=o=>o?.talk?.step&&o.talk.step!=='start';
  const deadlinePassed=o=>Number.isFinite(o?.expiresAbs)&&o.expiresAbs<now()||
   Number.isFinite(o?.eventAbs)&&o.eventAbs<now();
@@ -153,7 +154,7 @@
  // results. No hidden relationship score and no synthetic past bookings.
  const memory=(pid,wid)=>{
   const last=ledger().find(x=>x.pid===pid&&x.wid===wid&&
-   ['fulfilled','broken','cancelled','unfulfilled','expired','unavailable','walked','withdrawn'].includes(x.status));
+   ['fulfilled','broken','cancelled','promoter_cancelled','unfulfilled','expired','unavailable','walked','withdrawn'].includes(x.status));
   if(!last)return null;
   const wrestler=G.W(wid)?.short||'Your wrestler';
   let line='',evidence='';
@@ -170,6 +171,9 @@
   }else if(last.status==='cancelled'){
    line='You cancelled a booking we had signed. I remember the gap on my card.';
    evidence='Signed booking cancelled before the show.';
+  }else if(last.status==='promoter_cancelled'){
+   line='We withdrew that title booking ourselves. That was not your fault.';
+   evidence='Promoter cancelled an invalid title contract without a trust penalty.';
   }else if(last.status==='unfulfilled'){
    line='Our agreed date fell through last time. I need to know you can deliver.';
    evidence='Signed match not completed on its scheduled date.';
@@ -185,5 +189,5 @@
   }
   return {status:last.status,line,evidence,wrestler,at:last.at,mode:last.mode||null};
  };
- root.OfficeNegotiationCareer={active:true,memory,ledger:()=>ledger().map(x=>({...x}))};
+ root.OfficeNegotiationCareer={active:true,memory,promoterCancelled,ledger:()=>ledger().map(x=>({...x}))};
 })(typeof window!=='undefined'?window:globalThis);

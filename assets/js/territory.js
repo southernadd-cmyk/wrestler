@@ -74,8 +74,32 @@ function titlesOf(id){
  const t=ensure();if(!t||!id)return [];
  return D.PROMOS.flatMap(p=>D.DIVISION_ORDER.filter(div=>t.titles[p.id]?.[div]?.holder===id).map(div=>D.belt(p.id,div)));
 }
+// One title contract rule for the player, programmes and the AI.
+function titleValid(s,t,c,wid=c?.wid){
+ if(!c?.title)return true;
+ const {pid,div}=c.title,holder=t?.titles?.[pid]?.[div]?.holder;
+ return pid===c.pid&&wid!==c.rid&&D.divisionOf(wid)===div&&D.divisionOf(c.rid)===div&&
+  !!holder&&holderValid(s,t,pid,div,holder)&&(holder===wid||holder===c.rid)&&
+  (c.tag!=='Title defence'||holder===wid)&&(c.tag!=='Title match'||holder===c.rid);
+}
+// An ordinary stale title deal is a booker's cancellation, not a player withdrawal.
+// Programmes retain their own atomic retarget/cancel policy.
+function reconcileOrdinaryTitles(){
+ const s=G.S,t=s?.territory;if(!t)return 0;
+ let count=0;
+ for(const c of [...s.card,...s.futureBookings]){
+  if(!c.title||c.programme||titleValid(s,t,c))continue;
+  s.card=s.card.filter(x=>x.id!==c.id);s.futureBookings=s.futureBookings.filter(x=>x.id!==c.id);
+  root.OfficeNegotiationCareer?.promoterCancelled?.(c.id,'The championship changed hands or the title booking became invalid.');
+  G.msg({from:'Your road agent',subject:'Title booking cancelled by the promoter',kind:'info',body:[`${G.W(c.wid)?.name||'Your wrestler'} v ${G.F(c.rid)?.name||'the opponent'} is no longer a valid title match at ${G.P(c.pid)?.name||'the promotion'}.`,'The booker has withdrawn the signed match. No promoter trust penalty applies.']});count++;
+ }
+ const old=s.offers.length;s.offers=s.offers.filter(o=>!o.title||o.programme||titleValid(s,t,o));
+ if(count||old!==s.offers.length)G.save();
+ return count;
+}
 function changeTitle(t,pid,div,to,from,how){
  const s=G.S,b=t.titles[pid][div];
+ if(!b||![from,to].includes(b.holder)||!holderValid(s,t,pid,div,b.holder)||!holderValid(s,t,pid,div,to))return false;
  if(b.holder===to){b.defences++;return false;}
  t.titles[pid][div]={holder:to,since:absWeek(s),defences:0};
  t.titleLog.unshift({week:absWeek(s),pid,div,from,to,how});t.titleLog=t.titleLog.slice(0,40);
@@ -220,8 +244,8 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  // The bookers' plan for the week (v0.3.15): commit their storylines and announce anything new.
  const plan=root.OfficeBooking?.decide(s,t,week)||null;
  if(plan){t.booking=plan.state;reports.push(...plan.notes);}
- for(const {i,j,div,a,b,title:onTheLine,winner:planned,stars:billed,line,story} of plan?plan.bill:circuitBill(s,t,week)){
-  const p=D.PROMOS[i];
+ for(const {i,j,div,a,b,title:plannedTitle,winner:planned,stars:billed,line,story} of plan?plan.bill:circuitBill(s,t,week)){
+  const p=D.PROMOS[i],onTheLine=!!plannedTitle&&titleValid(s,t,{pid:p.id,wid:a.id,rid:b.id,title:{pid:p.id,div}});
   const won=planned?planned===a.id:((week*13+a.ring+b.psych+p.reach+j*37)%100)<(onTheLine?58:52);
   const winner=won?a:b,loser=won?b:a,stars=billed??(onTheLine?3:2.5);
   t.lastResults.matches.push({pid:p.id,div,a:a.id,b:b.id,slotA:a.slot,slotB:b.slot,winner:winner.id,title:onTheLine,stars,story:story?.id||null});
@@ -250,7 +274,7 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  t.reports.unshift({week,lines:reports});t.reports=t.reports.slice(0,12);G.save();
 }
 const originalEnd=G.endWeek,originalApply=G.applyResult;
-G.endWeek=function(...args){const x=originalEnd(...args);evolve();return x};
+G.endWeek=function(...args){const x=originalEnd(...args);evolve();reconcileOrdinaryTitles();return x};
 G.applyResult=function(c,fin){
  if(G.resultRecorded(c))return [];
  const x=originalApply(c,fin),t=ensure();
@@ -258,7 +282,10 @@ G.applyResult=function(c,fin){
  const won=resolution.winner===null?null:resolution.winner==='w';
  record(t,c.pid,c.wid,c.rid,c.slot,won,fin.stars);
  if(won!==null)t.points[c.wid]=(t.points[c.wid]||0)+(won?5:-2)+Math.max(0,Math.floor((fin.stars||0)-2));
- if(c.title&&t.titles[c.title.pid]?.[c.title.div]){
+ if(c.title&&!titleValid(G.S,t,c)){
+  const h=G.S.history.find(h=>h.cid===c.id);if(h)h.title=null;
+  x.push({text:'The contracted championship was no longer held by either eligible participant. No title result was recorded.',tone:0});
+ }else if(c.title&&t.titles[c.title.pid]?.[c.title.div]){
   const {pid,div}=c.title,b=D.belt(pid,div),w=G.W(c.wid)||G.F(c.wid),f=G.F(c.rid),held=t.titles[pid][div];
   // Champion's advantage: a DQ or no-contest can win the match, but never transfers the belt.
   if(won===null||!resolution.beltChangeAllowed){if(held.holder===c.wid||held.holder===c.rid)held.defences++;}
@@ -314,5 +341,5 @@ function startBill(saved,rand=Math.random){
  const head=pick(show.filter(m=>m.title).length?show.filter(m=>m.title):show);
  return {head,under:show.filter(m=>m!==head&&m.pid===head.pid).concat(show.filter(m=>m!==head&&m.pid!==head.pid)).slice(0,2),saved:false};
 }
-root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve,title,titlesOf,titleMatch,contracted,circuitBill,absWeek,startBill,newCareerWorld,settleRetiredTitles};
+root.OfficeTerritory={prepare,ensure,rank,promotionRank,opponents,stableFor,canPoach,poach,evolve,title,titlesOf,titleMatch,titleValid,reconcileOrdinaryTitles,contracted,circuitBill,absWeek,startBill,newCareerWorld,settleRetiredTitles};
 })(typeof window!=='undefined'?window:globalThis);

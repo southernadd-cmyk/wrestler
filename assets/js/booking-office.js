@@ -199,7 +199,8 @@
      opp=above[Math.min(above.length-1,k)]||others.sort((x,y)=>y.score-x.score||x.id.localeCompare(y.id))[0];
     }else opp=others.sort((x,y)=>Math.abs(x.score-A.score)-Math.abs(y.score-A.score)||x.id.localeCompare(y.id))[worldHash(story.id+k)<.5?0:1]||others[0];
    }else opp=B;
-   if(busy.has(A.id)||!opp||busy.has(opp.id)||count(p.id,story.div)>=MAX_CARD){
+   if(busy.has(A.id)||!opp||busy.has(opp.id)||count(p.id,story.div)>=MAX_CARD||
+    (story.type==='title'&&beat.kind!=='build'&&claim.belts.has(p.id+':'+story.div))){
     // Somebody is unavailable: the rest of the story moves back a week.
     story.delays++;story.heat=clamp(story.heat-8);
     for(const b of story.beats)if(!b.done)b.at++;
