@@ -55,13 +55,13 @@ input=window.OfficeChoiceInput.create({scan,manager:M,holdThreshold:600});
 function choose(item){if(narrationLock||!item||!items.some(x=>x===item))return;try{item.run();}catch(e){console.error(e);screen('Office notice','The action could not be completed. Your career remains available.',[a('back','Return to the office',()=>s()?desk():mainMenu())]);}}
 function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,announce=true,kicker='DENNIS · YOUR ASSISTANT',speechParts=null,onSpeechComplete=null,scene=null}={}){
  if(fresh){stopNarration();input.cancel();refreshSettings=null;}
- const repeatParts=[{text:title+'. '+body}];
- const repeat=()=>{if(V.getSettings().ttsEnabled){stopNarration();narrateMatch(repeatParts);}else $('saveNotice').textContent=[saveNotice(),'Text to speech is off. Enable it in Settings to hear this information.'].filter(Boolean).join(' ');};
+ const repeat=()=>{if(V.getSettings().ttsEnabled){stopNarration();const parked=scan.getState().parked?[{text:'Parked. Press Enter to start scanning.'}]:[];const parts=speechParts?.length?[{text:title},...speechParts]:[{text:title+'. '+body}];narrateMatch([...parts,...parked]);}else $('saveNotice').textContent=[saveNotice(),'Text to speech is off. Enable it in Settings to hear this information.'].filter(Boolean).join(' ');};
  // Repeat reads the displayed snapshot, never re-enters its game action.
  // Keep dedicated match replay/status controls and do not add a live stop.
  if(!onSpeechComplete){
-  choices=choices.map(x=>x.id==='repeat'?{...x,run:repeat}:x);
-  if(V.getSettings().ttsEnabled&&!choices.some(x=>['repeat','replay','status'].includes(x.id)))choices=[...choices,a('repeat','Repeat information',repeat)];
+  const existingRepeat=x=>x.id==='repeat'&&['Repeat message','Read page again'].includes(x.label);
+  choices=choices.map(x=>existingRepeat(x)?{...x,run:repeat}:x);
+  if(V.getSettings().ttsEnabled&&!choices.some(x=>existingRepeat(x)||['Replay commentary','Read match status','Replay commentary / status','Repeat match status'].includes(x.label)))choices=[...choices,a('__repeat_information','Repeat information',repeat)];
  }
  $('heading').textContent=title;$('kicker').textContent=kicker;$('careerStatus').textContent=summary();$('saveNotice').textContent=saveNotice();
  renderPresentation(title,body,portrait,scene,kicker);
@@ -1203,6 +1203,6 @@ const duringNarration=(handler)=>e=>{
  }
  handler(e);
 };
-document.addEventListener('keydown',duringNarration(input.down));document.addEventListener('keyup',duringNarration(input.up));document.addEventListener('narbe-input-cancelled',()=>{input.cancel();if(narrationLock){narrationLock.held.clear();scan.setSuspended(true);}});window.addEventListener('blur',()=>{broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});});document.addEventListener('visibilitychange',()=>{if(document.hidden){broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});}});window.addEventListener('pagehide',e=>{broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});V.cancel();if(!e.persisted)scan.dispose();});
+document.addEventListener('keydown',duringNarration(input.down));document.addEventListener('keyup',duringNarration(input.up));document.addEventListener('narbe-input-cancelled',()=>{input.cancel();if(narrationLock){narrationLock.held.clear();scan.setSuspended(true);}});window.addEventListener('blur',()=>{broadcastHeld.clear();boothSpeech.cancel();V.cancel();input.cancel({resetGuard:true});});document.addEventListener('visibilitychange',()=>{if(document.hidden){broadcastHeld.clear();boothSpeech.cancel();V.cancel();input.cancel({resetGuard:true});}});window.addEventListener('pagehide',e=>{broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});V.cancel();if(!e.persisted)scan.dispose();});
 mainMenu();
 })();
