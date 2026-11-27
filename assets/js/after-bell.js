@@ -644,17 +644,66 @@
    }
   }
   st.stage='done';
+  settleStory(st);
   const a=state();a.log.unshift({cid,week:G.abs(),wid:x.w.id,rid:x.f.id,plan:st.plan,angle:st.angle?.ok??null,said:id,call:st.call||null,demand:st.demand||null});a.log=a.log.slice(0,30);
   recordEvidence(st);
   G.save();return true;
  }
 
+ // AB7: a compact, public, terminal scene receipt. One source for booking,
+ // rivalry, programme and news readers. Never promote a hypothetical path
+ // or an unfinished scene to a career fact, nor pay the angle effects twice.
+ function storyReceipt(st){
+  if(st?.stage!=='done'||!st.said||!st.c)return null;
+  const x=ctxOf(st.c,st.fin);if(!x.w||!x.f)return null;
+  const W=x.w.short,F=x.f.short,follow=st.follow?.reaction,r=st.angle?.reaction;
+  let kind=null,text=null;
+  const set=(k,t)=>{kind=k;text=t;};
+  if(follow==='interested')set('challenge',W+' and '+F+' signalled interest in another match.');
+  else if(follow==='calmed')set('respect',W+' and '+F+' calmed their post-match dispute.');
+  else if(['heated','unresolved','rebuffed'].includes(follow))set('dispute',W+' and '+F+' left their post-match dispute unresolved.');
+  else if(st.plan==='beatdown'&&st.angle?.ok===false)set('scuffle',W+' and '+F+' had to be separated after the bell.');
+  else if(st.plan==='beatdown'&&st.angle?.ok===true)set('attack',W+' attacked '+F+' after the bell.');
+  else if(st.plan==='handshake'&&st.angle?.ok===false)set('dispute',F+' refused '+W+'’s handshake after the bell.');
+  else if(st.plan==='handshake'&&st.angle?.ok===true)set('respect',W+' and '+F+' shook hands after the bell.');
+  else if(['reciprocate','accept_apology','shared_respect','brief_respect','hear_explanation'].includes(r))set('respect',W+' and '+F+' exchanged a gesture of respect after the bell.');
+  else if(['reject_apology','argue_back','defend_corner','reject_explanation','corner_backed'].includes(r))set('dispute',W+' and '+F+' argued after the bell.');
+  else if(['appreciate','space','officials_attend','quiet_exit'].includes(r))set('care','Officials attended to an injured wrestler after the match.');
+  else if(st.plan==='staredown'&&st.angle?.ok===true)set('dispute',W+' and '+F+' faced off after the bell.');
+  else if(st.said==='credit'||st.said==='concede')set('respect',W+' acknowledged '+F+' on the microphone.');
+  else if(st.intervention?.id==='rival_protest')set('dispute',F+' protested after the bell.');
+  else if(st.intervention?.id==='corner_protest')set('dispute','The rival corner protested after the bell.');
+  if(st.call?.ok===true&&st.call.target===x.f.id)set('challenge',W+' made a successful public call for a rematch with '+F+'.');
+  if(!kind)return null;
+  return {v:1,cid:st.cid,wid:st.c.wid,rid:st.c.rid,pid:st.c.pid,kind,text:cap(text)};
+ }
+ function latestStory(s,wid,rid,pid){
+  // History is newest first; do not resurrect an older angle after a more
+  // recent completed encounter with the same pair/promotion.
+  const h=(s?.history||[]).find(h=>h.wid===wid&&(!rid||h.rid===rid)&&(!pid||h.pid===pid));
+  const story=h?.after?.story;
+  return story?.v===1&&story.cid===h.cid?story:null;
+ }
+ function settleStory(st){
+  const h=G.S?.history?.find(h=>h.cid===st.cid);
+  if(!h||h.after?.story)return;
+  const receipt=storyReceipt(st);if(!receipt)return;
+  st.story=receipt;
+  // Inbox reports only the more significant unresolved or rematch scenes.
+  // The existing callout offer pathway remains the sole source of bookings.
+  if(['scuffle','attack','dispute','challenge'].includes(receipt.kind)&&!G.S.inbox?.some(m=>m.afterStory===st.cid)){
+   const p=G.P(st.c.pid);
+   G.msg({from:p.voice+', '+p.name,subject:'After the bell: '+(receipt.kind==='challenge'?'another chapter?':'unfinished business'),kind:'info',
+    body:[receipt.text,'The recorded match result stands. Any further booking must be agreed through the usual offers.'],afterStory:st.cid});
+  }
+  root.OfficeProgrammeArcs?.recordAfterStory?.(st.c,receipt);
+ }
  // Only performed post-bell scenes become permanent evidence.
  // A player who skips the result-screen option never reaches this mutation.
  function recordEvidence(st){
   const h=G.S?.history?.find(x=>x.cid===st.cid);if(!h)return;
   const fresh=st.cons.map(x=>x.text),prior=h.after?.effects||[];
-  h.after={plan:st.plan,...(st.intervention?{intervention:{...st.intervention}}:{}),...(st.follow?{follow:{...st.follow}}:{}),angle:st.angle?{...st.angle}:null,said:st.said||null,
+  h.after={plan:st.plan,...(st.story||h.after?.story?{story:{...(st.story||h.after.story)}}:{}),...(st.intervention?{intervention:{...st.intervention}}:{}),...(st.follow?{follow:{...st.follow}}:{}),angle:st.angle?{...st.angle}:null,said:st.said||null,
    call:st.call?{...st.call}:null,demand:st.demand?{...st.demand}:null,effects:fresh,
    log:st.log.map(x=>({side:x.side,text:x.text,...(x.lineId?{lineId:x.lineId,source:x.source}:{})}))};
   for(const line of fresh)if(!prior.includes(line))h.notes.push('After the bell: '+line);
@@ -755,5 +804,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,openingCandidates,selectOpening,attachDialogue,begin,angleOptions,choose,followOptions,continueAngle,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,openingCandidates,selectOpening,attachDialogue,begin,angleOptions,choose,followOptions,continueAngle,view,micOptions,speak,storyReceipt,latestStory,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);

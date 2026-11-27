@@ -672,7 +672,8 @@
    a.push(item(' '+fan.name+' SAYS:','green'));
    paragraphs(a,'"'+fan.quote+'"');
    a.push(item(''));
-   paragraphs(a,'The record tells you who won. It cannot say what the audience remembers.','yellow');
+   const story=h.after?.story;
+   paragraphs(a,story?.v===1&&story.cid===h.cid?story.text:'The record tells you who won. It cannot say what the audience remembers.','yellow');
   }else{
    paragraphs(a,'NO BELL HAS RUNG YET','green');
    paragraphs(a,'Will the crowd remember the winner, the underdog or one moment that changes everything?');
