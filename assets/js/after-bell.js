@@ -402,30 +402,84 @@
   if(rematch)need=x.won?54:40;
   return between((score-need+50)/100,.08,.9);
  }
+ // AB4: share the existing character-bank loader and reviewed excerpt
+ // contract. A pre-match claim is not a post-match fact. Only reviewed,
+ // standalone acknowledgements / neutral interjections may cross domains.
+ function attachDialogue(st,banks){
+  if(!st||!['angle','mic'].includes(st.stage)||st.dialogue||!root.OfficePlanningDialogue)return false;
+  const x=ctxOf(st.c,st.fin);
+  if(!x.w||!x.f)return false;
+  const capture=w=>root.OfficePlanningDialogue.capture(w,banks||[],2);
+  st.dialogue={v:1,w:capture(x.w),f:capture(x.f),used:[],
+   recent:(G.S?.history||[]).filter(h=>h.cid!==st.cid).slice(-12).flatMap(h=>(h.after?.log||[]).map(l=>l.lineId).filter(Boolean))};
+  return true;
+ }
+ // Use shared character delivery families when a reviewed bank fragment
+ // is unavailable. Never substitute another worker's bank.
+ const neutralLeads={precise:'Let me be clear.',direct:'Right.',quiet:'One thing.',warm:'I mean this.',theatrical:'Hear me.',energetic:'Right, listen!',wry:'Well, then.'};
+ const micBodies={
+  gloat:x=>'That result is mine. Let everybody remember it.',
+  credit:x=>x.f.short+' deserves credit for that match.',
+  concede:x=>'Tonight was not mine. I accept the result.',
+  excuse:x=>'I have a problem with that finish.',
+  title:x=>x.p.voice+', I want a shot at the title.',
+  slot:x=>x.p.voice+', I want a bigger place on the card.',
+  rematch:x=>'I want another match with '+x.f.short+'.',
+  callout:x=>x.t.short+', I want a match with you.'
+ };
+ function dialogueLine(st,side,key,stance,body){
+  const d=st?.dialogue,actor=d?.[side];
+  if(d?.v!==1||!actor||!body||actor.id!==(side==='w'?st.c.wid:st.c.rid))return null;
+  const used=d.used||[],recent=d.recent||[];
+  const eligible=(actor.fragments||[]).filter(r=>r.stances?.includes(stance)&&
+   (stance==='accept'||r.stances.includes('accept')&&r.stances.includes('counter'))&&
+   !used.includes(r.id)&&!used.includes('prefix:'+r.text));
+  const fresh=eligible.filter(r=>!recent.includes(r.id)),pool=fresh.length?fresh:eligible;
+  const pick=pool.slice().sort((a,b)=>hash(st.cid+'|ab4|'+side+'|'+key+'|'+a.id)-hash(st.cid+'|ab4|'+side+'|'+key+'|'+b.id)||a.id.localeCompare(b.id))[0];
+  const prefix=pick?.text||neutralLeads[actor.family]||neutralLeads.direct;
+  const lineId=pick?.id||'after.family.'+actor.family+'.'+key;
+  d.used=used.concat(lineId,'prefix:'+prefix);
+  return {text:cap('“'+prefix+' '+body+'”'),lineId,source:pick?.source||'identity:'+actor.identitySource};
+ }
+ const reactionSpeech={
+  reciprocate:['accept','Good match.'],dismiss:['counter','I have nothing more to say.'],
+  appreciate:['accept','Thank you.'],accept_apology:['accept','We can leave it there.'],
+  reject_apology:['counter','Not tonight.'],argue_back:['counter','The decision stands.'],
+  defend_corner:['counter','I stand by my corner.'],distance_corner:['counter','I am not defending that.'],
+  accepted:['accept','Respect.'],refused:null
+ };
+ function speakReaction(st,x){
+  const reaction=st.angle?.reaction,entry=reactionSpeech[reaction];
+  if(!entry)return;
+  const l=dialogueLine(st,'f',reaction,entry[0],entry[1]);
+  if(l)st.log.push({side:'f',who:x.f.short,...l});
+ }
  function sayLine(kind,x){return fill(SAY[kind][voice(x.w)]||SAY[kind].stoic,x);}
  function speak(st,id){
   if(st.stage!=='mic'||!micOptions(st).some(o=>o.id===id))return false;
   const x=ctxOf(st.c,st.fin),out=st.cons,log=st.log,cid=st.cid;
   const add=(text,tone=0)=>out.push({text:cap(text),tone});
   const line=(side,text)=>log.push({side,who:side==='w'?x.w.short:side==='f'?x.f.short:null,text:cap(text)});
+  const say=kind=>{const l=dialogueLine(st,'w',kind,['credit','concede'].includes(kind)?'accept':'counter',micBodies[kind]?.(x));
+   if(l)log.push({side:'w',who:x.w.short,...l});else line('w',sayLine(kind,x));};
   const roll=k=>hash(cid+'|mic|'+k);
   const lands=(base)=>roll(id)<between(base+(x.w.mic-60)/120,.1,.95);
   st.said=id;
   if(id==='walk'){line('stage',x.w.short+' hands the microphone back to the ring announcer and walks up the aisle.');}
-  else if(id==='gloat'){line('w',sayLine('gloat',x));
+  else if(id==='gloat'){say('gloat');
    if(lands(.62)){const h=heatFeud(x.w.id,x.f.id,6);x.w.heat=clamp(x.w.heat+3);bond(x.w.id,x.f.id,-6,'gloat','Rubbed it in after the match.',cid+':mic');line('stage','The booing is the loudest it has been all night. That is the point.');add(x.w.short+' rubbed it in: heat +3, feud heat '+h+'.',1);}
    else{line('stage','It falls flat. Somebody laughs, and not with them.');x.w.morale=clamp(x.w.morale-2);add('The gloating fell flat. Morale −2.',-1);}}
-  else if(id==='credit'){line('w',sayLine('credit',x));bond(x.w.id,x.f.id,6,'respect','Gave credit on the microphone.',cid+':mic');
+  else if(id==='credit'){say('credit');bond(x.w.id,x.f.id,6,'respect','Gave credit on the microphone.',cid+':mic');
    const fd=G.feud(x.w.id,x.f.id);if(fd&&!fd.closed)fd.heat=clamp(fd.heat-4);
    if(x.stars>=3){G.S.rep=clamp(G.S.rep+1);add(x.w.short+' gave '+x.f.short+' credit. Bond +6, reputation +1.',1);}else add(x.w.short+' gave '+x.f.short+' credit. Bond +6.',1);}
-  else if(id==='concede'){line('w',sayLine('concede',x));x.w.morale=clamp(x.w.morale+3);bond(x.w.id,x.f.id,4,'respect','Took the loss with grace.',cid+':mic');
+  else if(id==='concede'){say('concede');x.w.morale=clamp(x.w.morale+3);bond(x.w.id,x.f.id,4,'respect','Took the loss with grace.',cid+':mic');
    if(!likesTrouble(x.p)){x.p.trust=clamp(x.p.trust+1);add(x.w.short+' took the loss like a pro. Morale +3, '+x.p.name+' trust +1.',1);}else add(x.w.short+' took the loss like a pro. Morale +3.',1);}
-  else if(id==='excuse'){line('w',sayLine('excuse',x));
+  else if(id==='excuse'){say('excuse');
    if(x.dirty&&lands(.6)){const h=heatFeud(x.w.id,x.f.id,10);x.w.heat=clamp(x.w.heat+2);line('stage','The crowd is with them. They saw it too.');add('The crowd bought it: heat +2, feud heat '+h+'.',1);}
    else{x.w.heat=clamp(x.w.heat-2);line('stage',x.dirty?'Nobody is in the mood to hear it.':'The crowd saw a clean finish. They say so, loudly.');add('Sour grapes. Heat −2.',-1);}}
   else if(id==='demand:title'||id==='demand:slot'){
    const kind=id.slice(7),dm=demandsFor(st),chance=demandChance(st,kind),ok=roll('demand:'+kind)<chance,P=x.p;
-   line('w',sayLine(kind,x));st.demand={kind,ok,chance:Math.round(chance*100)};
+   say(kind);st.demand={kind,ok,chance:Math.round(chance*100)};
    if(kind==='title'){
     if(ok){
      const a=state();a.calls=a.calls.filter(k=>!(k.kind==='title'&&k.wid===x.w.id));
@@ -452,7 +506,7 @@
   }
   else if(id==='rematch'||id.startsWith('call:')){
    const rematch=id==='rematch',tid=rematch?x.f.id:id.slice(5),t=who(tid),tg=rematch?null:targets(st).find(o=>o.id===tid);
-   x.t=t;line('w',rematch?sayLine('rematch',x):sayLine('callout',x));
+   x.t=t;say(rematch?'rematch':'callout');
    const chance=callChance(st,tid,rematch),ok=roll('call:'+tid)<chance;
    st.call={target:tid,ok,chance:Math.round(chance*100),champion:!!tg?.champion};
    if(ok){
@@ -483,7 +537,7 @@
   const fresh=st.cons.map(x=>x.text),prior=h.after?.effects||[];
   h.after={plan:st.plan,angle:st.angle?{...st.angle}:null,said:st.said||null,
    call:st.call?{...st.call}:null,demand:st.demand?{...st.demand}:null,effects:fresh,
-   log:st.log.map(x=>({side:x.side,text:x.text}))};
+   log:st.log.map(x=>({side:x.side,text:x.text,...(x.lineId?{lineId:x.lineId,source:x.source}:{})}))};
   for(const line of fresh)if(!prior.includes(line))h.notes.push('After the bell: '+line);
   root.OfficeRivalry?.recordAfter?.(st);
  }
@@ -520,6 +574,7 @@
   const x=ctxOf(st.c,st.fin);
   st.plan=plan;st.stage='mic';
   performAngle(st,x);
+  speakReaction(st,x);
   recordEvidence(st);
   G.save();return true;
  }
@@ -580,5 +635,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,attachDialogue,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);
