@@ -56,7 +56,7 @@
    const stars=[...res.filter(m=>m.pid===p.id).map(m=>m.stars||2.5),...mine];
    const quality=stars.length?stars.reduce((x,y)=>x+y,0)/stars.length:2.25;
    const heat=(live[p.id]?.live||[]).reduce((x,y)=>Math.max(x,y.heat||0),0);
-   const champs=D.DIVISION_ORDER.map(d=>t.titles?.[p.id]?.[d]?.holder).filter(Boolean).map(id=>(G.W?.(id)||D.findWrestler(id))?.heat||50);
+   const champs=D.DIVISION_ORDER.map(d=>t.titles?.[p.id]?.[d]?.holder).filter(Boolean).map(id=>(s.roster.find(w=>w.id===id)||G.personnel(s,id))?.heat||50);
    const champHeat=champs.length?champs.reduce((x,y)=>x+y,0)/champs.length:50;
    const paid=payoffs[p.id].length,changed=changes.filter(l=>l.pid===p.id).length;
    const circuitNoise=(hash(String(s.careerSeed??s.seed??0)+':'+p.id+':'+wk)-.5)*4;
