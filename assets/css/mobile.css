@@ -1,3 +1,53 @@
+/* Shared responsive layout and office chrome (formerly in match-night.css).
+   Keep these broad breakpoints before the phone-specific refinements. */
+@media (max-width:1100px){
+ .s-profile{grid-template-columns:1fr 1fr;grid-template-areas:"head head" "atts train" "record record";grid-template-rows:auto auto auto;height:auto}
+}
+@media (max-width:900px){
+ #app{height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"top" "nav" "view" "tick"}
+ .top{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;padding:6px 8px}
+ .logo{font-size:clamp(22px,6vw,30px)}
+ .histnav .btn{min-width:32px;min-height:40px;padding:2px 4px}
+ .readouts{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0}
+ .ro{min-width:0;padding:3px 5px}.ro small{font-size:14px}.ro b{font-size:19px}
+ .tbar .note{display:none}
+ #continue{min-width:110px;min-height:44px;padding:4px 8px;font-size:22px}
+ #continue small{font-size:14px}
+ .nav{flex-direction:row;align-items:center;margin:6px 8px 0;padding:3px;overflow-x:auto;gap:4px}
+ .nav h4{display:none}
+ .nav .item{width:auto;min-height:40px;white-space:nowrap;flex:none}
+ #view{overflow:auto;padding:8px;scroll-padding:8px}
+ #view .screen{align-content:start}
+ #view .wbody:has(> .grid),#view .well:has(> .grid){overflow-x:auto}
+ #view .matchup{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+ #view .matchup select{max-width:100%}
+ .screen{height:auto;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:none!important;grid-template-areas:none!important}
+ .screen>*{grid-area:auto!important}
+ .wbody{overflow:visible}
+ .wbody.tight,.wbody.flush{overflow-x:auto}
+ .phead .wbody{grid-template-columns:auto 1fr}
+ .phead .acts{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}
+ .phead .name{font-size:40px}
+ .portrait.x3{width:96px;height:120px}
+ .criteria{grid-template-columns:1fr}
+ .tier{grid-template-columns:1fr}.tier>strong{text-align:left}
+ .tick .keys{display:none}
+ #toast{left:12px;right:12px;bottom:56px}
+}
+@media (max-width:600px){
+ .free-table{display:none}
+ .free-cards{display:grid;gap:8px}
+ .free-sort{display:flex;align-items:end;flex-wrap:wrap;gap:8px}
+ .free-sort .btn{min-height:36px}
+ .free-card{display:grid;gap:8px;padding:8px 10px;border:2px solid var(--ink);background:var(--well);color:var(--white);text-align:left}
+ .free-card[aria-pressed="true"]{border-color:var(--gold);background:var(--well-hover)}
+ .free-card .who b{color:var(--gold)}
+ .free-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;text-align:center}
+ .free-stats>span{padding:2px;background:var(--deep)}
+ .free-stats small,.free-costs small{display:block;font-size:15px;color:var(--dim)}
+ .free-costs{display:flex;gap:18px}
+}
+
 /* Phone interface */
 .phone-only,.phone-tabs,.phone-sections{display:none}
 
@@ -26,15 +76,11 @@
  #headerIdentity .player-identity-text>b{font:700 15px/1.15 'Atkinson Hyperlegible Next',system-ui,sans-serif}
  #headerIdentity .player-identity-text>span{font-size:13px}
  #headerIdentity .btn{min-height:44px;padding:3px 7px;font-size:13px}
+ /* Phone header: keep all four career readouts in one compact row. */
  .top .readouts{
-  grid-row:3;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  grid-row:3;grid-column:1/-1;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;
   background:none;border:none;
  }
- /* Keep all four career readouts present: week, bank, reputation and meetings.
-    Two compact columns cost one extra row but avoid hiding important state. */
- /* Phone header: all four readouts in one compact row, labels above values, so the
-    section and content areas keep most of a 740px-tall screen. */
- .top .readouts{gap:4px;grid-template-columns:repeat(4,minmax(0,1fr))}
  .top .ro{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:0;background:#1a2855;padding:3px 6px}
  .top .ro small{font-size:13px;line-height:1.2}
  .top .ro small::after{content:none}
