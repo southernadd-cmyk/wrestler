@@ -73,7 +73,8 @@
    traditional:"I've written this card carefully. Give me a reason to change it.",
    cold:"Show me what the booking is worth. Sentiment does not pay the bills."
   };
-  return ' '+(lines[p.personality]||lines.traditional)+remembered;
+  const story=root.OfficeAfter?.latestStory?.(G.S,w.id,o.rid,p.id);
+  return ' '+(lines[p.personality]||lines.traditional)+remembered+(story?' '+story.text:'');
  };
  const openingReply=(p,t)=>{
   const topics={fee:'the money',protect:'the finish',slot:'the billing',stip:'the stipulation'};
@@ -110,10 +111,11 @@
  const read=(o,w)=>{
   const p=G.P(o.pid),v=profile(p),past=G.S.history?.find(h=>h.pid===p.id&&h.wid===w.id);
   const realMemory=root.OfficeNegotiationCareer?.memory?.(p.id,w.id);
+  const story=root.OfficeAfter?.latestStory?.(G.S,w.id,o.rid,p.id);
   return {
    name:v.name,priority:v.priority,signal:v.signal,warning:v.warning,
    failureCost:v.failed,hardballCost:v.hardball,feeRaiseCost:v.feeRaiseCost,
-   evidence:realMemory?.evidence||(
+   evidence:story?.text||realMemory?.evidence||(
     past&&Number.isFinite(past.stars)?
      'Past booking: '+w.short+' earned '+past.stars+' stars on '+p.name+'.':
      'No completed booking with this wrestler recorded for '+p.name+'.')
