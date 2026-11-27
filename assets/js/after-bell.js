@@ -254,8 +254,66 @@
   return [
    ...openingIds.flatMap(id=>[[angleGraph.entry,'opening:'+id],...[...normal,...Object.keys(responseOpenings).filter(k=>responseOpenings[k].includes(id))].map(k=>['opening:'+id,k])]),
    ...Object.entries(legacyReactions).flatMap(([id,rs])=>[[angleGraph.entry,id],...rs.flatMap(r=>[[id,id+':'+r],[id+':'+r,angleGraph.exit]])]),
-   ...Object.entries(angleGraph.actions).flatMap(([id,n])=>[...(responseOpenings[id]?[]:[[angleGraph.entry,id]]),...n.reactions.flatMap(r=>[[id,id+':'+r.id],[id+':'+r.id,angleGraph.exit]])])
+   ...Object.entries(angleGraph.actions).flatMap(([id,n])=>[...(responseOpenings[id]?[]:[[angleGraph.entry,id]]),...n.reactions.flatMap(r=>[[id,id+':'+r.id],[id+':'+r.id,angleGraph.exit]])]),
+   ...followEdges()
   ];
+ }
+ // AB6: only unresolved, nonphysical confrontations merit another choice.
+ // A single continuation is the hard pacing limit for this graph version.
+ const unresolved=new Set(['reject_apology','argue_back','defend_corner','reject_explanation','corner_backed']);
+ const followNodes={
+  disengage:{label:'Leave it there',hint:'End the confrontation without conceding the point.',tags:['Safe'],line:'{W} steps away and leaves the argument behind.',reactions:[
+   {id:'ended',line:'The referee ushers both wrestlers apart.'}]},
+  defuse:{label:'Try to calm things down',hint:'Give the opponent an opportunity to let it go.',tags:['Bond','Feud may cool'],line:'{W} lowers their hands and offers to leave the argument there.',speech:'Let us leave it there for tonight.',reactions:[
+   {id:'calmed',drive:'respect',line:'{F} accepts the gesture and backs away.',bond:4,feud:-4,speech:'All right. Leave it there.'},
+   {id:'unresolved',drive:'escalation',line:'{F} refuses to let the matter drop, but the referee separates them.',feud:2,speech:'This is not settled.'}]},
+  press:{label:'Stand your ground',hint:'Insist on your position; risk making the dispute personal.',tags:['Feud heat','Bond risk'],line:'{W} stands their ground and refuses to retract their point.',speech:'I stand by what I said.',reactions:[
+   {id:'backs_off',drive:'caution',line:'{F} backs away rather than prolong the dispute.',feud:3},
+   {id:'heated',drive:'escalation',line:'{F} answers angrily. The referee ends the exchange.',bond:-4,feud:7,trust:-1,speech:'We are not finished.'}]},
+  challenge:{label:'Settle it in another match',hint:'Turn the argument towards a future match. A formal callout still needs the microphone.',tags:['Rematch story'],line:'{W} gestures back towards the ring, proposing another match.',speech:'Let us settle this in another match.',reactions:[
+   {id:'interested',drive:'cooperation',line:'{F} points back at the ring in agreement.',feud:5,speech:'Another match, then.'},
+   {id:'rebuffed',drive:'escalation',line:'{F} dismisses the suggestion and turns away.',bond:-2,feud:2,speech:'Not on your terms.'}]}
+ };
+ function followEligible(st,x){
+  return st.psychology?.v===1&&st.angle?.path?.length>2&&unresolved.has(st.angle.reaction)&&
+   !injured(x.context?.injured?.w)&&!injured(x.context?.injured?.f)&&!st.follow;
+ }
+ function followOptions(st){
+  if(st?.stage!=='follow'||st.follow?.v!==1||st.follow.choice)return [];
+  return Object.entries(followNodes).map(([id,n])=>({id,label:n.label,hint:n.hint,tags:n.tags.slice()}));
+ }
+ function followEdges(){
+  const starts=Object.entries(angleGraph.actions).flatMap(([id,n])=>n.reactions.filter(r=>unresolved.has(r.id)).map(r=>id+':'+r.id));
+  return [...starts.map(s=>[s,'follow']),...Object.entries(followNodes).flatMap(([id,n])=>[['follow','follow:'+id],...n.reactions.flatMap(r=>[['follow:'+id,'follow:'+id+':'+r.id],['follow:'+id+':'+r.id,angleGraph.exit]])])];
+ }
+ function beginFollow(st,x){
+  if(!followEligible(st,x))return;
+  st.follow={v:1,from:st.angle.reaction,choice:null,reaction:null};
+  st.angle.path=[...st.angle.path.slice(0,-1),'follow'];
+  st.stage='follow';
+ }
+ function continueAngle(st,id){
+  if(!followOptions(st).some(o=>o.id===id))return false;
+  const x=ctxOf(st.c,st.fin),n=followNodes[id];if(!x.w||!x.f||!x.p)return false;
+  const scores=st.psychology?.f?.scores||{},weight=r=>Number.isFinite(scores[r.drive])?Math.max(10,scores[r.drive]):50;
+  let roll=hash(st.cid+'|ab6|'+st.follow.from+'|'+id)*n.reactions.reduce((sum,r)=>sum+weight(r),0);
+  const r=n.reactions.find(r=>(roll-=weight(r))<0)||n.reactions[n.reactions.length-1];
+  const line=text=>st.log.push({side:'stage',who:null,text:fill(text,x)});
+  const speech=(side,key,stance,body)=>{
+   if(!body)return;
+   const l=dialogueLine(st,side,key,stance,body);
+   if(l)st.log.push({side,who:side==='w'?x.w.short:x.f.short,...l});
+   else st.log.push({side,who:side==='w'?x.w.short:x.f.short,text:cap('“'+body+'”')});
+  };
+  const add=(text,tone)=>st.cons.push({text:cap(text),tone});
+  st.follow={...st.follow,choice:id,reaction:r.id};
+  st.angle.path=[...st.angle.path,'follow:'+id,'follow:'+id+':'+r.id,angleGraph.exit];
+  line(n.line);speech('w','follow_'+id,id==='defuse'?'accept':'counter',n.speech);
+  line(r.line);speech('f','follow_'+r.id,['calmed','interested'].includes(r.id)?'accept':'counter',r.speech);
+  if(r.bond){bond(x.w.id,x.f.id,r.bond,r.bond>0?'respect':'grudge',fill(r.line,x),st.cid+':after:follow');add('Further bond '+(r.bond>0?'+':'')+r.bond+'.',Math.sign(r.bond));}
+  if(r.feud){const fd=G.feud(x.w.id,x.f.id);if(r.feud>0||fd&&!fd.closed){const h=heatFeud(x.w.id,x.f.id,r.feud);add('Follow-up feud heat '+h+'.',Math.sign(r.feud));}}
+  if(r.trust){x.p.trust=clamp(x.p.trust+r.trust);add(x.p.name+' trust '+r.trust+'.',Math.sign(r.trust));}
+  st.stage='mic';recordEvidence(st);G.save();return true;
  }
  function graphTrace(plan,reaction,st){return [angleGraph.entry,...(st?.intervention?['opening:'+st.intervention.id]:[]),plan,plan+':'+reaction,angleGraph.exit];}
  function playGraph(st,x){
@@ -596,7 +654,7 @@
  function recordEvidence(st){
   const h=G.S?.history?.find(x=>x.cid===st.cid);if(!h)return;
   const fresh=st.cons.map(x=>x.text),prior=h.after?.effects||[];
-  h.after={plan:st.plan,...(st.intervention?{intervention:{...st.intervention}}:{}),angle:st.angle?{...st.angle}:null,said:st.said||null,
+  h.after={plan:st.plan,...(st.intervention?{intervention:{...st.intervention}}:{}),...(st.follow?{follow:{...st.follow}}:{}),angle:st.angle?{...st.angle}:null,said:st.said||null,
    call:st.call?{...st.call}:null,demand:st.demand?{...st.demand}:null,effects:fresh,
    log:st.log.map(x=>({side:x.side,text:x.text,...(x.lineId?{lineId:x.lineId,source:x.source}:{})}))};
   for(const line of fresh)if(!prior.includes(line))h.notes.push('After the bell: '+line);
@@ -636,15 +694,16 @@
   st.plan=plan;st.stage='mic';
   performAngle(st,openingContext(st,x));
   speakReaction(st,x);
+  beginFollow(st,x);
   recordEvidence(st);
   G.save();return true;
  }
  function view(st){
   const x=ctxOf(st.c,st.fin);
   const angle=st.stage==='angle';
-  return {stage:st.stage,plan:st.plan,planLabel:angle?'':PLANS[st.plan]?.label||angleGraph.actions[st.plan]?.label||'',log:st.log.slice(),cons:st.cons.slice(),options:angle?angleOptions(st):micOptions(st),
-   title:angle?'The bell has gone':st.stage==='mic'?x.w.short+' has the microphone':'After the bell',
-   ask:angle?(st.intervention?'What does '+x.w.short+' do in response?':x.won?'The crowd is still on its feet. What does '+x.w.short+' do now?':x.outcome==='nc'?'Nobody won. What does '+x.w.short+' do now?':'The crowd is watching '+x.w.short+'. What happens now?'):st.stage==='mic'?(x.won?'The crowd is still on its feet. What does '+x.w.short+' say?':'The crowd is quietening down. What does '+x.w.short+' say?'):''};
+  return {stage:st.stage,plan:st.plan,planLabel:angle?'':PLANS[st.plan]?.label||angleGraph.actions[st.plan]?.label||'',log:st.log.slice(),cons:st.cons.slice(),options:angle?angleOptions(st):st.stage==='follow'?followOptions(st):micOptions(st),
+   title:angle?'The bell has gone':st.stage==='follow'?'The argument is not over':st.stage==='mic'?x.w.short+' has the microphone':'After the bell',
+   ask:angle?(st.intervention?'What does '+x.w.short+' do in response?':x.won?'The crowd is still on its feet. What does '+x.w.short+' do now?':x.outcome==='nc'?'Nobody won. What does '+x.w.short+' do now?':'The crowd is watching '+x.w.short+'. What happens now?'):st.stage==='follow'?'How does '+x.w.short+' respond?':st.stage==='mic'?(x.won?'The crowd is still on its feet. What does '+x.w.short+' say?':'The crowd is quietening down. What does '+x.w.short+' say?'):''};
  }
 
  // ---------------------------------------------------------------------------------------------
@@ -696,5 +755,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,openingCandidates,selectOpening,attachDialogue,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,openingCandidates,selectOpening,attachDialogue,begin,angleOptions,choose,followOptions,continueAngle,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);
