@@ -1282,7 +1282,7 @@ function resumeNight(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(NIGHT_STORE)||'null')}catch(e){}
  saved=G.recoverNight(saved);
  if(!saved){clearNight();return false;}
- const afterOpen=saved.stage==='after'&&!!saved.after;
+ const afterOpen=saved?.stage==='after'&&!!saved.after;
  const resultOpen=saved.stage==='result'&&!!saved.resultHTML;
  night={...saved,paused:true};
  if(afterOpen){openTV();showAfter();return true}
