@@ -952,14 +952,10 @@
    h.promo={speaker:pr.speaker,opponent:pr.opponent,speech:pr.speech,reply:pr.reply,quality:pr.quality,style:pr.styleName,reaction:pr.reaction,dialogue:pr.dialogue||null,path:pr.path||[],claim:pr.claim||null,tactic:pr.tactic||null,argument:pr.argument||0,promise:pr.promise?{...pr.promise}:null,angle:pr.angle||null,case:pr.case||null};
    // A promise made in a segment (a solo promo's closing vow) is held to the same standard as a duel's.
    if(pr.v===2||(pr.v===3&&pr.promise?.type)){
-    const promise=pr.promise?.type||'none',won=fin.outcome==='double'||(fin.outcome!=='nc'&&c.finish.startsWith('win'));
-    const clean=fin.outcome!=='double'&&fin.outcome!=='nc'&&['win_clean','lose_clean'].includes(c.finish);
-    const finisher=won&&c.finish==='win_clean'&&!!G.W(c.wid)?.finisher
-     &&(fin.log||[]).some(line=>String(line.text||'').includes(G.W(c.wid).finisher));
-    const nocheat=fin.outcome!=='nc'&&c.finish!=='win_dirty'&&c.finish!=='lose_dq'&&!fin.promoSignals?.workerDirty&&!fin.evidence?.dirty?.w;
-    const kept=promise==='win'?won:promise==='clean'?clean:promise==='finisher'?finisher:promise==='counter'?!!fin.promoSignals?.workerCounter:promise==='nocheat'?nocheat:null;
+    const promise=pr.promise?.type||'none';
+    const kept=root.OfficeOutcome.promiseVerdict(c,fin,promise);
     if(kept!==null){
-     const sure=(promise==='win'&&c.finish.startsWith('win'))||(promise==='clean'&&['win_clean','lose_clean'].includes(c.finish));
+     const sure=promise==='win'&&String(fin.bookedFinish||c.finish).startsWith('win')&&root.OfficeOutcome.interpret(c,fin).contractHonoured;
      const line=kept?(sure?'The microphone promise was kept, though the booking never put it in doubt.':'The microphone promise was fulfilled in the ring. Nobody could be sure it would be.'):'The microphone promise fell apart when the bell rang.';
      if(w){w.morale=clamp(w.morale+(kept?(sure?1:3):-3));w.heat=clamp(w.heat+(kept?(sure?1:5):-1))}
      if(fd&&!fd.closed)fd.heat=clamp(fd.heat+(kept?2:5));
@@ -967,7 +963,7 @@
       root.OfficeMemory.remember(w.id,kept?'public_promise_kept':'public_promise_broken',
        w.short+' '+(kept?'delivered':'failed to deliver')+' the public '+promise+' promise against '+G.F(c.rid).short+'.',
        c.rid,kept?(sure?1:3):-3,kept?(sure?1:3):-2,c.id+':promo:'+promise);
-     h.promo.promise.kept=kept;h.promo.promise.checked=true;h.notes.push(line);out.push({text:line,tone:kept?1:-1});
+     h.promo.promise.kept=kept;h.promo.promise.checked=true;h.promo.promise.sure=sure;h.notes.push(line);out.push({text:line,tone:kept?1:-1});
     }
     if(pr.v===2){
     const mood=pr.trustDelta>1?'The promoter appreciated the restraint.':pr.trustDelta<0?'The promoter was unhappy about how personal it became.':'The promoter took note of the exchange.';
