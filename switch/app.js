@@ -27,6 +27,9 @@ let narrationLock=null,broadcastStopRequested=false;
 const MODE_KEY='the-office-switch-management-mode';
 let managementMode='guided';try{if(localStorage.getItem(MODE_KEY)==='full')managementMode='full';}catch(_){}
 const guided=()=>managementMode==='guided';
+const DELEGATION_KEY='the-office-switch-routine-delegation';
+let delegateRoutine=false;try{delegateRoutine=localStorage.getItem(DELEGATION_KEY)==='on';}catch(_){}
+function setDelegation(value,ret){delegateRoutine=value;try{localStorage.setItem(DELEGATION_KEY,value?'on':'off');}catch(_){}ret();}
 const scan=M.createChoiceScan({choice:true,holdThreshold:600,statusHost:$('parkStatus'),getId:x=>x.id,getLabel:x=>x.label+(x.hint?'. '+x.hint:''),getElement:x=>x.element,onHighlight:highlight,onSelect:choose,speak:t=>boothSpeech.speak(t)});
 function stopNarration(){
  if(!narrationLock)return;
@@ -145,7 +148,13 @@ function desk(note='',restoreId=null,full=false){
 function modeScreen(ret){
  screen('Management mode','Guided: Dennis brings you important decisions. Full: choose every task through the office. Both use the same rules, wrestlers and finances.',[
  a('guided','Guided management'+(guided()?' — selected':''),()=>setMode('guided',ret)),
- a('full','Full management'+(!guided()?' — selected':''),()=>setMode('full',ret)),back(ret)]);
+ a('full','Full management'+(!guided()?' — selected':''),()=>setMode('full',ret)),
+ a('delegate','Routine backstage delegation: '+(delegateRoutine?'On':'Off'),()=>delegationSettings(()=>modeScreen(ret))),back(ret)]);
+}
+function delegationSettings(ret){
+ screen('Let Dennis handle the little things?','In guided management only, Dennis can handle missing entrance music, a missing bell and greeting family in the crowd. He will tell you what he did. These choices can still affect the crowd and mood. Spending, safety, promises, finishes and wrestler disputes are never delegated. You can change this setting at any time.',[
+ a('off','Keep every backstage decision'+(!delegateRoutine?' — selected':''),()=>setDelegation(false,ret)),
+ a('on','Delegate these routine choices'+(delegateRoutine?' — selected':''),()=>setDelegation(true,ret)),back(ret)]);
 }
 function setMode(mode,ret){
  managementMode=mode;try{localStorage.setItem(MODE_KEY,mode);}catch(_){}
@@ -428,10 +437,29 @@ function roomReview(v){
  const b=v.structureBrief;
  return [v.finishPlan?.label?'Finish: '+v.finishPlan.label:'',v.finishPlan?.requirement||'',v.finishPlan?.summary||'',b?b.label+'. '+b.lead+' leads. '+b.approach+'. '+b.focus+'. '+b.advice:'',...(v.review||v.board||[]).map(x=>x.name+': '+(x.current||'Called in the ring')),v.story?.verdict||''].filter(Boolean).join('\n');
 }
+function routineChoice(v){
+ if(v.stage!=='scene')return null;
+ const allowed={music:{id:'hum',summary:'The front row will hum the entrance music.'},bell:{id:'shout',summary:'The front row will shout “ding” instead of using a bell.'},family:{id:'wave',summary:'The wrestler will give their family a wave on the way in.'}};
+ const suggestion=Object.prototype.hasOwnProperty.call(allowed,v.situation)?allowed[v.situation]:null;
+ return suggestion&&v.options.some(o=>o.id===suggestion.id)?suggestion:null;
+}
 function roomScreen(page=0,section='main',extra=''){
  if(!planning?.room){prepare();return;}
- const st=planning.room,v=OfficeRoom.view(st),c=s().card.find(x=>x.id===planning.cid);
+ const st=planning.room,c=s().card.find(x=>x.id===planning.cid);
+ let v=OfficeRoom.view(st);
  if(!c){planning=null;persistPlanning();desk('The booked match is no longer available.');return;}
+ // Delegate only named, reviewed, no-cost routine choices. Never infer from generic flavour labels.
+ if(guided()&&delegateRoutine&&!planning.fullRoom&&section==='main'){
+  const updates=[];
+  for(let i=0;i<3;i++){
+   const routine=routineChoice(v);if(!routine)break;
+   try{OfficeRoom.act(st,routine.id);}
+   catch(e){console.error(e);planning.fullRoom=true;persistPlanning();break;}
+   const record={situation:v.situation,choice:routine.id,text:routine.summary};
+   (planning.delegated??=[]).push(record);updates.push(record.text);persistPlanning();v=OfficeRoom.view(st);
+  }
+  if(updates.length)extra=[extra,'Dennis: '+updates.join(' ')].filter(Boolean).join('\n');
+ }
  const scene=matchScene(c,st.w,st.f,'backstage',['Meeting '+v.step+' / '+v.total,st.w.short+': '+v.moods.w.word,st.f.short+': '+v.moods.f.word]);
  const show=(title,body,choices,opts={})=>screen(title,body,choices,{...opts,scene});
  const root=()=>roomScreen(),returnHere=()=>roomScreen(page,section),pauseHere=()=>pause(returnHere);
@@ -451,7 +479,7 @@ function roomScreen(page=0,section='main',extra=''){
   show('Backstage conversation',v.log.slice(i*3,i*3+3).map(x=>x.who+': '+x.text).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>roomScreen((i+1)%pages,'history'))]:[]),back(root)]);return;
  }
  if(section==='more'){
-  show('Backstage options','Your current plan is saved when storage is available. No match time passes here.',[a('history','Read full conversation',()=>roomScreen(0,'history')),a('pause','Pause / settings',pauseHere),back(root)]);return;
+  show('Backstage options','Your current plan is saved when storage is available. No match time passes here.'+(planning.delegated?.length?' Dennis handled: '+planning.delegated.map(x=>x.text).join(' '):''),[a('history','Read full conversation',()=>roomScreen(0,'history')),a('delegation','Routine delegation: '+(delegateRoutine?'On':'Off'),()=>delegationSettings(root)),a('pause','Pause / settings',pauseHere),back(root)]);return;
  }
  const body=(extra?extra+'\n':'')+(guided()&&!planning.fullRoom?v.log.slice(-2).map(x=>x.who+': '+x.text).join('\n')+'\n'+v.ask:roomText(v,st));
  const assisted=guided()&&!planning.fullRoom;
@@ -461,12 +489,12 @@ function roomScreen(page=0,section='main',extra=''){
   const preview=JSON.parse(JSON.stringify(st));
   if(recommended)OfficeRoom.act(preview,recommended.id);
   const proposed=OfficeRoom.view(preview),description=[proposed.finishPlan?.summary,...(proposed.board||[]).map(x=>x.name+': '+(x.current||'called in the ring'))].filter(Boolean).join('. ');
-  show('Dennis: suggested layout',v.ask+' '+(recommended?recommended.label+'. '+recommended.hint:'')+' '+description,[
+  show('Dennis: suggested layout',v.ask+' '+(recommended?recommended.label+'. '+recommended.hint:'')+' '+description+' Routine delegation is '+(delegateRoutine?'on.':'off.'),[
    ...(recommended?[a('approve','Use '+recommended.label+' and Dennis’s running order',()=>{
     OfficeRoom.act(st,recommended.id);
     if(OfficeRoom.view(st).options.some(x=>x.id==='board_ok'))OfficeRoom.act(st,'board_ok');
     persistPlanning();root();
-   })]:[]),a('custom','Plan the details myself',detailed),a('pause','Pause',pauseHere)],{portrait:st.w});return;
+   })]:[]),a('custom','Plan the details myself',detailed),a('delegation','Routine delegation: '+(delegateRoutine?'On':'Off'),()=>delegationSettings(root)),a('pause','Pause',pauseHere)],{portrait:st.w});return;
  }
  if(assisted&&section==='main'&&v.stage==='review'&&v.options.some(x=>x.id==='review_ok')){
   show('Dennis: final agreement',body+'\n'+roomReview(v)+'\nApprove the agreed finish and send them out with a calm reminder to work safely, or adjust it yourself.',[
