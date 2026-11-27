@@ -1129,9 +1129,9 @@ function renderMeeting(oid,wid){
  const pending=!!proposed&&!done;
  const changed=orig.slot!==cur.slot||orig.finish!==cur.finish||orig.fee!==cur.fee||originalStip!==cur.stip;
  const slotN=k=>esc(D.SLOTS[k].name),finN=k=>esc(D.FINISHES[k].name);
- const term=(label,a,b)=>a===b?`<div><dt>${label}</dt><dd>${b}</dd></div>`:`<div class="changed"><dt>${label}</dt><dd><s>${a}</s><b>${b}</b></dd></div>`;
+ const term=(label,a,b)=>`<tr${a===b?'':' class="changed"'}><th scope="row">${label}</th><td>${a}</td><td>${a===b?b:`<b>${b}</b>`}</td></tr>`;
  const chip=pending?['warn','Proposed · unsigned']:!done?['','Original offer']:t.verdict==='agreed'?['good','Accepted terms']:t.verdict==='counter'?['warn','Accepted compromise']:t.verdict==='refused'?['bad','Refused']:['','Original'];
- const deal=`<section class="deal neg-contract${changed?' is-new':''}"><header><small>${pending?'Proposed terms · not yet accepted':'Terms you would sign'}</small><span class="deal-chip ${chip[0]}">${chip[1]}</span></header><dl>${term('Card position',slotN(orig.slot),slotN(cur.slot))}${term('Booked finish',finN(orig.finish),finN(cur.finish))}${originalStip||cur.stip?term('Stipulation',esc(stipName(originalStip)||'None'),esc(stipName(cur.stip)||'None')):''}${term('Appearance fee',money(orig.fee),money(cur.fee))}</dl><p class="neg-contract-note">${pending?'Proposed terms are not accepted yet.':changed?'Accepted changes are highlighted.':'Original invitation.'} Nothing is booked until you sign.</p></section>`;
+ const deal=`<section class="deal neg-contract${changed?' is-new':''}"><header><small>${pending?'Proposed terms · not yet accepted':'Terms you would sign'}</small><span class="deal-chip ${chip[0]}">${chip[1]}</span></header><table class="grid neg-terms-grid"><thead><tr><th>Term</th><th>Original</th><th>Current</th></tr></thead><tbody>${term('Card position',slotN(orig.slot),slotN(cur.slot))}${term('Booked finish',finN(orig.finish),finN(cur.finish))}${originalStip||cur.stip?term('Stipulation',esc(stipName(originalStip)||'None'),esc(stipName(cur.stip)||'None')):''}${term('Appearance fee',money(orig.fee),money(cur.fee))}</tbody></table><p class="neg-contract-note">${pending?'Proposed terms are not accepted yet.':changed?'Accepted changes are highlighted.':'Original invitation.'} Nothing is booked until you sign.</p></section>`;
  const transcript=t.log.map(x=>`<div class="neg-message ${x.who==='You'?'is-you':'is-booker'}">${x.who==='You'?'<span class="neg-avatar-you" aria-hidden="true">YOU</span>':face('booker',p.id,p.voice,'portrait')}<div class="neg-speech"><b>${esc(x.who==='You'?'You':p.voice)}</b><p>${esc(x.text)}</p></div></div>`).join('');
  const ids=`data-oid="${oid}" data-wid="${wid}"`;
  const ask=(id,label,hint)=>`<button class="choice neg-choice" data-talkaction="${id}" ${ids}><b>${label}</b><span>${hint}</span></button>`;
@@ -1171,7 +1171,7 @@ function renderMeeting(oid,wid){
   options=`<section class="neg-verdict ${t.verdict==='refused'?'is-refused':''}"><b>${outcome}</b><p>${esc(t.detail||'')}</p><small>${changed?'Sign the revised offer, sign the original, or leave both unsigned.':'The original offer can still be signed.'}</small></section>`;
  }
  const tradeSummary=t.package?`<section class="neg-trade-summary" aria-label="Negotiated exchange"><b>What you are trading</b><dl><div><dt>You give</dt><dd>${esc(t.package.give)}</dd></div><div><dt>In return</dt><dd>${esc(t.package.get)}</dd></div></dl><small>${pending?'Proposal only — you must accept it before signing.':'Accepted package — sign to book the match.'}</small></section>`:'';
- const response=`<div class="neg-response"><h3>${prompt}</h3>${promoterAdvice}${t.step==='start'?'<p class="neg-tip">Reading or signing the original offer is free. Asking for better terms uses one meeting; failed arguments can reduce promoter trust.</p>':''}<div class="neg-choices">${options}</div></div>`;
+ const response=`<div class="neg-response"><h3>${prompt}</h3>${promoterAdvice}${t.step==='start'?'<p class="neg-tip">Reading or signing the original offer is free. Asking for better terms uses one meeting; failed arguments can reduce promoter trust.</p>':''}<div class="neg-choices"><div class="neg-choice-heading" aria-hidden="true"><span>Response</span><span>Effect / consideration</span></div>${options}</div></div>`;
  const btn=(cls,attrs,label,sub)=>`<button class="btn two ${cls}" ${attrs}><span>${label}</span><small>${sub}</small></button>`;
  const reply=`Reply by ${weekLabel(o.expiresAbs)}`;
  const lastChance=o.expiresAbs===G.abs()?'<p class="neg-deadline-note">Final chance: sign before advancing the week or this invitation and all proposed terms expire.</p>':'';
@@ -1179,17 +1179,17 @@ function renderMeeting(oid,wid){
  const original=done&&changed?btn('',`data-talkbook="${oid}" data-revert="1" ${ids}`,`Sign original · ${money(orig.fee)}`,`${slotN(orig.slot)} · ${finN(orig.finish)}`):'';
  const sign=btn('go',`data-talkbook="${oid}" ${ids}`,done&&changed?'Sign accepted terms':done?'Sign original terms':pending?'Sign original instead':'Sign as offered',`${pending?money(orig.fee):money(cur.fee)} · ${pending?slotN(orig.slot):slotN(cur.slot)} · ${pending?finN(orig.finish):finN(cur.finish)}`);
  d.innerHTML=`<header class="tbar"><h2 id="office-dialog-title">Speaking with ${esc(p.voice)}</h2><span class="note">${esc(p.name)}</span></header>
- <div class="neg-intro"><span><b>${esc(w.name)}</b> versus <b>${esc(f.name)}</b></span><span>${reply}</span></div>
+ <div class="neg-intro"><span><b>${esc(w.name)}</b> versus <b>${esc(f.name)}</b></span><span>Meetings left: ${S().focus} / 2 · ${reply}</span></div>
  ${lastChance}
  <div class="neg-layout">
   <section class="neg-main" aria-label="Conversation with ${esc(p.voice)}">
    <div class="neg-section-header"><b>Conversation</b><span>${esc(p.desc)} · Trust ${p.trust}</span></div>
-   ${promoterPriorities}
    <div class="neg-transcript well" role="log" aria-label="Negotiation history" aria-live="off">${transcript}</div>
    ${response}
   </section>
   <aside class="neg-aside" aria-label="Booking terms">
    <details class="neg-terms"${phoneLayout()?'':' open'}><summary>${pending?'Proposed terms (not agreed)':changed?'Accepted contract terms':'Original contract terms'}</summary>${deal}</details>
+   ${promoterPriorities}<div class="neg-trust"><b>Promoter trust ${p.trust} / 100</b>${bar(p.trust,p.trust<30?'danger':p.trust>=65?'':'warn')}</div>
    ${tradeSummary}
    <p class="neg-meeting-note">${t.step==='start'?'No meeting used yet':`Meeting used · ${S().focus} left this week`}. ${t.cost?`Promoter trust lost here: −${t.cost}. `:''}The promoter decides the winner; this cannot be reversed by negotiation.</p>
   </aside>

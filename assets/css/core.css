@@ -1026,3 +1026,37 @@ dialog.negotiation-dialog[open]{
 .signing-budget .kv dd{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
 .signing-budget p{font-size:14px;margin:6px 0 0}
 .signing-budget .warn{color:var(--bad-ink)}
+
+
+/* Booking desk: original/current terms and compact response rows. */
+@media(min-width:721px){
+ .neg-layout{grid-template-columns:minmax(280px, .95fr) minmax(0,1.65fr);grid-template-areas:"terms discussion"}
+ .neg-main{grid-area:discussion}
+ .neg-aside{grid-area:terms;border-left:0;border-right:2px solid var(--ink)}
+ .neg-response{max-height:65%;padding:7px 9px}
+}
+.neg-terms-grid{width:100%;table-layout:fixed}
+.neg-terms-grid th,.neg-terms-grid td{white-space:normal;overflow-wrap:anywhere;padding:6px}
+.neg-terms-grid tbody th{text-align:left;color:var(--white);background:var(--well)}
+.neg-terms-grid .changed td:last-child{color:var(--gold)}
+.neg-trust{padding:8px 2px;display:grid;gap:5px}
+.neg-aside .neg-profile{padding:7px 0}
+.neg-transcript{gap:2px;padding:5px}
+.neg-message,.neg-message.is-you{flex-direction:row;gap:6px}
+.neg-message .portrait,.neg-avatar-you{width:28px;height:32px}
+.neg-speech{flex:1;max-width:none;padding:4px 7px}
+.neg-choice-heading,.neg-choices .neg-choice{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:8px;align-items:center;text-align:left}
+.neg-choice-heading{background:var(--deep);color:var(--cyan);padding:5px 8px;font-size:13px;font-weight:bold}
+.neg-choices{gap:1px;background:var(--well)}
+.neg-choices .neg-choice{border:0;border-bottom:1px solid var(--well-line);border-radius:0;background:var(--well);color:var(--white);padding:6px 8px;min-height:44px;box-shadow:none}
+.neg-choices .neg-choice:nth-of-type(even){background:var(--well-row)}
+.neg-choices .neg-choice span{color:var(--dim);font-size:14px;line-height:1.2}
+.neg-choices .neg-choice:hover,.neg-choices .neg-choice:focus-visible{background:var(--gold);color:var(--deep)}
+.neg-choices .neg-choice:hover span,.neg-choices .neg-choice:focus-visible span{color:var(--deep)}
+.neg-choices>.neg-tip{background:var(--paper);padding:5px;margin:0}
+@media(max-width:720px){
+ .neg-aside{order:-1}
+ .neg-aside .neg-profile,.neg-trust{padding:4px 0}
+ .neg-choice-heading{display:none}
+ .neg-choices .neg-choice{grid-template-columns:1fr;gap:3px;min-height:48px}
+}
