@@ -1495,6 +1495,8 @@ function momentumShape(id,windows=[],minutes){
  const defaults=id==='traditional'?OfficeSheets.TRADITIONAL_WINDOWS:OfficeSheets.STRUCTURES.create({id,lead:'w'}).objectives;
  const phases=defaults.map((d,i)=>({name:windows[i]?.name||d.name||d.title,window:windows[i]?.window||d.window}));
  const labels=phases.map(r=>r.name+' '+Math.round(r.window[0]*100)+'–'+Math.round(r.window[1]*100)+'%').join('; ');
+ const compact=!!minutes;
+ if(compact)return `<svg class="momentum-shape" viewBox="0 0 240 48" preserveAspectRatio="none" role="img" aria-label="${esc('Planned timing windows: '+labels+' · '+minutes+' minutes')}">${phases.map((r,i)=>`<rect x="${5+230*r.window[0]}" y="${3+i*11}" width="${230*(r.window[1]-r.window[0])}" height="8" fill="var(--gold)"><title>${esc(r.name)}</title></rect>`).join('')}</svg>`;
  return `<svg class="momentum-shape" viewBox="0 0 240 106" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc('Planned timing windows: '+labels+(minutes?' · '+minutes+' minutes':''))}">${[0,.25,.5,.75,1].map(t=>`<path d="M${5+t*230} 2V104" stroke="var(--well-line)" stroke-dasharray="2 3"/>`).join('')}${phases.map((r,i)=>`<text x="5" y="${12+i*25}" fill="var(--white)" font-size="10">${esc(r.name)}</text><rect x="${5+230*r.window[0]}" y="${15+i*25}" width="${230*(r.window[1]-r.window[0])}" height="8" fill="var(--gold)"><title>${esc(r.name)}: ${Math.round(r.window[0]*100)}–${Math.round(r.window[1]*100)}%</title></rect>`).join('')}</svg>`;
 }
 function matchDeskSheet(st,v,c,w,f,p,selected,structurePicked,finishLine){
