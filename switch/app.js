@@ -44,6 +44,7 @@ function narrateMatch(parts,onComplete=null,{skippable=!onComplete}={}){
   if(narrationLock!==lock)return;
   narrationLock=null;input.cancel();scan.setSuspended(false);
   if(onComplete){onComplete(result);return;}
+  if(scan.getState().id!==null)scan.announceCurrent();
   if(result?.reason==='timeout'||result?.reason==='error'||result?.reason==='failed-to-start'||result?.reason==='unavailable'){
    $('saveNotice').textContent=[saveNotice(),'Speech could not finish. The current text remains visible; use Repeat information or the available replay controls to try again.'].filter(Boolean).join(' ');
   }
@@ -52,9 +53,41 @@ function narrateMatch(parts,onComplete=null,{skippable=!onComplete}={}){
  lock.ticket.finished.then(finish,()=>finish({reason:'error'}));
 }
 input=window.OfficeChoiceInput.create({scan,manager:M,holdThreshold:600});
-function choose(item){if(narrationLock||!item||!items.some(x=>x===item))return;try{item.run();}catch(e){console.error(e);screen('Office notice','The action could not be completed. Your career remains available.',[a('back','Return to the office',()=>s()?desk():mainMenu())]);}}
+// Remember only screen identities and selected IDs, never game state or callbacks.
+let navigationTrail=[],currentScreenKey=null,selectionAction=null;
+function choose(item){
+ if(narrationLock||!item||!items.some(x=>x===item))return;
+ const previous=selectionAction;
+ selectionAction={key:currentScreenKey,id:item.id,returning:/^(Back(?:\b|$)|Cancel$|Continue$|Return to (?:guide|office)\b)/i.test(item.label),used:false};
+ try{item.run();}catch(e){console.error(e);navigationTrail=[];screen('Office notice','The action could not be completed. Your career remains available.',[a('back','Return to the office',()=>s()?desk():mainMenu())]);}
+ finally{selectionAction=previous;}
+}
+function restoreNavigation(key,choices,restoreId,fresh){
+ if(!fresh)return restoreId;
+ const action=selectionAction&&!selectionAction.used?selectionAction:null;
+ if(action)action.used=true;
+ if(action?.returning||restoreId!==null){
+  // An explicit callback remains authoritative about the destination. Find
+  // that destination in the visited trail, not an arbitrary previous screen.
+  let i=navigationTrail.length-1;
+  while(i>=0&&navigationTrail[i].key!==key)i--;
+  if(i>=0){
+   if(restoreId===null)restoreId=navigationTrail[i].id;
+   navigationTrail.length=i;
+  }
+ }else if(action&&action.key&&action.key!==key){
+  navigationTrail.push({key:action.key,id:action.id});
+  if(navigationTrail.length>64)navigationTrail.shift();
+ }
+ currentScreenKey=key;
+ return choices.some(x=>x.id===restoreId)?restoreId:null;
+}
 function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,announce=true,kicker='DENNIS · YOUR ASSISTANT',speechParts=null,onSpeechComplete=null,scene=null,pauseMenu=false}={}){
  if(fresh){stopNarration();input.cancel();refreshSettings=null;}
+ // Page identity and row IDs disambiguate identical titles. Portrait and
+ // scene competitors distinguish screens belonging to different wrestlers.
+ const page=String(body).match(/\bPage (\d+) of (\d+)/i)?.[0]||'';
+ const key=JSON.stringify([title,kicker,portrait?.id||null,scene?.w?.id||null,scene?.f?.id||null,page,choices.map(x=>x.id)]);
  const repeat=()=>{if(V.getSettings().ttsEnabled){stopNarration();const parked=scan.getState().parked?[{text:'Parked. Press Enter to start scanning.'}]:[];const parts=speechParts?.length?speechParts:[{text:title+'. '+body}];narrateMatch([...parts,...parked]);}else $('saveNotice').textContent=[saveNotice(),'Text to speech is off. Enable it in Settings to hear this information.'].filter(Boolean).join(' ');};
  // Every stationary choice screen has a tap-only route to communication.
  // Resume redraws the captured choices, never re-runs the action that opened them.
@@ -69,6 +102,7 @@ function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,anno
   choices=choices.map(x=>existingRepeat(x)?{...x,run:repeat}:x);
   if(V.getSettings().ttsEnabled&&!choices.some(x=>existingRepeat(x)||['Replay commentary','Read match status','Replay commentary / status','Repeat match status'].includes(x.label)))choices=[...choices,a('__repeat_information','Repeat information',repeat)];
  }
+ restoreId=restoreNavigation(key,choices,restoreId,fresh);
  $('heading').textContent=title;$('kicker').textContent=kicker;$('careerStatus').textContent=summary();$('saveNotice').textContent=saveNotice();
  renderPresentation(title,body,portrait,scene,kicker);
  items=choices.map(x=>{const element=document.createElement('button');element.type='button';element.dataset.choice=x.id;const label=document.createElement('span');label.className='choiceLabel';label.textContent=x.label;element.append(label);if(x.hint){const hint=document.createElement('span');hint.className='choiceHint';hint.textContent=x.hint;element.append(hint);}const item={...x,element};element.onclick=()=>{if(narrationLock){if(narrationLock.continuous&&item.id==='pause')requestBroadcastPause();if(!narrationLock.skippable)return;stopNarration();}input.cancel();choose(item);};return item;});
@@ -135,6 +169,7 @@ function liveScene(m,c){return {...matchScene(c,m.w,m.f,'ring',[X.fmt(m.t),'Crow
 const back=(fn)=>a('back','Back',fn);
 function confirm(title,body,yes,fn,cancel){screen(title,body,[a('cancel','Cancel',cancel),a('confirm',yes,fn)]);}
 function mainMenu(restoreId=null){
+ if(restoreId===null){navigationTrail=[];}
  const has=G.hasSave();
  screen('Main menu','Run your own wrestling stable. Sign talent, make bookings and manage matches at your own pace. Enter selects the highlighted choice. With two switches, Space moves the highlight. Change controls in Settings.',[
  ...(has?[a('continue','Continue career',()=>{if(G.load()){restoreMatch();restorePlanning();desk();}else screen('Save unavailable','Your saved career could not be opened.',[back(mainMenu)]);})]:[]),
@@ -229,7 +264,7 @@ function desk(note='',restoreId=null,full=false){
  if(s().over){screen('Career ended','Your career has ended. You can review the final balance or start again.',[a('new','Main menu',()=>mainMenu()),a('pause','Pause',()=>pause(()=>desk()))]);return;}
  if(guided()&&!full){guidedDesk(note);return;}
  const n=G.pending().length,b=G.officeBrief();
- const list=[a('inbox',n?'Inbox — '+n+' decisions waiting':'Inbox',()=>inbox()),a('stable',s().roster.length?'Manage your stable':'Sign your first wrestler',()=>stable()),a('offers','Booking offers — '+(b.today.length+b.deadline.length)+' urgent',()=>offers()),a('week',s().card.length?'Prepare for match night':'Advance the week',()=>advance()),a('more','More office options',()=>more())];
+ const list=[a('inbox',n?'Inbox — '+n+' decisions waiting':'Inbox',()=>inbox()),a('stable',s().roster.length?'Manage your stable':'Sign your first wrestler',()=>stable()),a('offers','Booking offers — '+(b.today.length+b.deadline.length)+' urgent',()=>offers()),a('week',s().card.length?'Prepare for match night':'Advance the week',()=>advance()),a('more','More office options',()=>more()),...(guided()?[a('guide','Back to Guided office',()=>guidedDesk())]:[])];
  screen('Your desk',(note?note+'\n\n':'')+s().identity.stable+'. '+s().roster.length+' wrestlers under contract. '+s().card.length+' matches booked. '+n+' messages need a decision. '+money(b.after)+' projected bank balance after signed purses and costs.',list,{restoreId});
 }
 // The guide is a presentation of actual career decisions, not an autoplay manager.
@@ -375,9 +410,9 @@ function guidedDesk(note=''){
    a('skip','Leave offer for now',skip),moreChoice],{portrait:w});return;
  }
  screen(s().card.length?'Dennis: ready for match night':'Dennis: the week is ready',(note?note+'\n':'')+s().card.length+' matches booked. '+money(b.after)+' projected balance after costs. '+(b.today.length+b.deadline.length?'There are still '+(b.today.length+b.deadline.length)+' unsigned urgent invitations. ':'')+'Existing training plans continue. '+guideObjective(s())+' Nothing is automatically signed or spent.',[
- a('continue',s().card.length?'Start match night':'Finish the week',advance),a('stable','Review your stable',stable),a('ringfax','Read Ringfax',()=>ringfaxHome(()=>guidedDesk())),moreChoice]);
+ a('continue',s().card.length?'Start match night':'Finish the week',advance),a('stable','Review your stable',()=>stable(()=>guidedDesk())),a('ringfax','Read Ringfax',()=>ringfaxHome(()=>guidedDesk())),moreChoice]);
 }
-function more(){screen('More office options',summary(),[a('finances','Finances and objectives',finances),a('results','Recent results',()=>results()),a('progress','Career progress',()=>careerProgress()),a('ringfax','Ringfax',()=>ringfaxHome(more)),a('mode','Management mode: '+(guided()?'Guided':'Full'),()=>modeScreen(more)),a('pause','Pause / settings',()=>pause(()=>more())),back(()=>desk('','more'))]);}
+function more(){screen('More office options',summary(),[a('finances','Finances and objectives',finances),a('results','Recent results',()=>results()),a('progress','Career progress',()=>careerProgress()),a('ringfax','Ringfax',()=>ringfaxHome(more)),a('mode','Management mode: '+(guided()?'Guided':'Full'),()=>modeScreen(more)),a('pause','Pause / settings',()=>pause(()=>more())),back(()=>desk('','more',true))]);}
 // Ringfax is read-only; keep the existing editorial generator and quiz rules.
 const RF=window.OfficeRingfax;
 const rfKicker='RINGFAX · REGIONAL WRESTLING TELETEXT';
@@ -421,8 +456,8 @@ function ringfaxRankings(ret,restoreId=null){
  const promos=s().promoters||D.PROMOS;
  screen('Championships and rankings','Choose a promotion. These are the current circuit records, not predictions.',promos.map(p=>a(p.id,p.name,()=>ringfaxDivision(p,ret))).concat(back(()=>ringfaxHome(ret))),{kicker:rfKicker,restoreId});
 }
-function ringfaxDivision(p,ret){
- screen(p.name,'Choose a division.',D.DIVISION_ORDER.map(div=>a(div,D.DIVISIONS[div].name+' division',()=>ringfaxLadder(p,div,ret))).concat(back(()=>ringfaxRankings(ret,p.id))),{kicker:rfKicker});
+function ringfaxDivision(p,ret,restoreId=null){
+ screen(p.name,'Choose a division.',D.DIVISION_ORDER.map(div=>a(div,D.DIVISIONS[div].name+' division',()=>ringfaxLadder(p,div,ret))).concat(back(()=>ringfaxRankings(ret,p.id))),{kicker:rfKicker,restoreId});
 }
 function ringfaxRankData(state,pid,div){
  const rows=window.OfficeTerritory.promotionRank(pid,div,state.territory,state);
@@ -435,7 +470,7 @@ function ringfaxLadder(p,div,ret,page=0){
  const rows=rank.lines.slice(i*5,i*5+5);
  screen(p.name+' — '+D.DIVISIONS[div].name,'Champion: '+rank.champion+'.\n'+(rows.length?rows.join('\n'):'No rankings recorded.')+'\nPage '+(i+1)+' of '+count+'.',[
   ...(i+1<count?[a('next','Next rankings',()=>ringfaxLadder(p,div,ret,i+1))]:[]),
-  ...(i>0?[a('previous','Previous rankings',()=>ringfaxLadder(p,div,ret,i-1))]:[]),back(()=>ringfaxDivision(p,ret))],{kicker:rfKicker});
+  ...(i>0?[a('previous','Previous rankings',()=>ringfaxLadder(p,div,ret,i-1))]:[]),back(()=>ringfaxDivision(p,ret,div))],{kicker:rfKicker});
 }
 const rfColours=['Red','Green','Yellow','Cyan'];
 function ringfaxQuiz(ret){
@@ -468,9 +503,9 @@ function paged(title,rows,page,open,returnTo,describe=x=>x.name,restoreId=null){
  ...(pages>1?[a('next','Next page',()=>paged(title,rows,(page+1)%pages,open,returnTo,describe))]:[]),
  back(returnTo)],{restoreId});
 }
-function inbox(){const rows=[...s().inbox].sort((x,y)=>Number(y.kind==='decision'&&!y.answer)-Number(x.kind==='decision'&&!x.answer));paged('Inbox',rows,0,message,()=>desk('','inbox'),m=>m.subject+(m.kind==='decision'&&!m.answer?' — reply needed':''));}
+function inbox(){const rows=[...s().inbox].sort((x,y)=>Number(y.kind==='decision'&&!y.answer)-Number(x.kind==='decision'&&!x.answer));paged('Inbox',rows,0,message,()=>desk('','inbox',true),m=>m.subject+(m.kind==='decision'&&!m.answer?' — reply needed':''));}
 function message(m,returnTo){m.read=true;G.save();screen(m.subject,m.from+'.\n'+(Array.isArray(m.body)?m.body.join('\n'):m.body||'')+(m.outcome?'\nOutcome: '+m.outcome:''),[...(m.kind==='decision'&&!m.answer?(m.options||[]).map(o=>a(o.id,o.label+(o.hint?'. '+o.hint:''),()=>{const result=G.answer(m.id,o.id);if(!m.answer){screen('Response unavailable',String(result),[back(()=>message(m,returnTo))]);return;}screen('Response recorded',m.outcome||'Decision recorded.',[back(returnTo)]);})):[]),a('repeat','Repeat message',()=>message(m,returnTo)),back(returnTo)]);}
-function stable(){const opts=[...(s().roster.length?[a('roster','Your wrestlers',()=>paged('Your wrestlers',s().roster,0,profile,stable))]:[]),a('scout','Scout and sign wrestlers',scout),a('coach','Coaching staff',coaches),a('reports','Training reports',trainingReports),back(()=>desk('','stable'))];screen('Your stable',s().roster.length+' of 5 contract places filled.',opts);}
+function stable(returnTo=()=>desk('','stable',true)){const here=()=>stable(returnTo),opts=[...(s().roster.length?[a('roster','Your wrestlers',()=>paged('Your wrestlers',s().roster,0,profile,here))]:[]),a('scout','Scout and sign wrestlers',()=>scout(here)),a('coach','Coaching staff',()=>coaches(here)),a('reports','Training reports',()=>trainingReports(here)),back(returnTo)];screen('Your stable',s().roster.length+' of 5 contract places filled.',opts);}
 function scout(returnTo=stable,restoreId=null){screen('Find talent','Choose a division. The shortlist is ordered by signing fee; every affordable free agent is available.',D.DIVISION_ORDER.map(div=>a(div,D.DIVISIONS[div].name+' division',()=>scoutList(div,returnTo))).concat(back(returnTo)),{restoreId});}
 function scoutList(div,returnTo=stable){const rows=s().free.filter(w=>D.divisionOf(w)===div).sort((x,y)=>x.fee-y.fee);paged('Free agents',rows,0,signProfile,()=>scout(returnTo,div),w=>w.name+' · '+money(w.fee));}
 function signProfile(w,returnTo){const f=G.signingForecast(w.id);if(!f){returnTo();return;}const bands=['ring','mic','psych','safe'].map(k=>{const b=G.scoutBand(w,k);return k+': '+(typeof b==='string'?b:Array.isArray(b)?b.join(' to '):b?.label||'estimated');}).join('. ');screen(w.name,w.style+' wrestler. Signing fee '+money(w.fee)+'. Weekly wage '+money(w.wage)+'. Bank after signing '+money(f.afterFee)+'. '+bands,[...(f.affordable?[a('sign','Sign for '+money(w.fee),()=>confirm('Sign '+w.name+'?','Pay '+money(w.fee)+' now and '+money(w.wage)+' each week.','Confirm signing',()=>{const e=G.sign(w.id);if(e){screen('Signing unavailable',e,[back(returnTo)]);return;}desk(w.name+' has joined your stable.');},()=>signProfile(w,returnTo)))]:[]),back(returnTo)],{portrait:w});}
@@ -544,23 +579,23 @@ function workerContract(w,ret){
  ...(raise&&!raise.error?[a('raise','Increase weekly wage by £40',()=>confirm('Permanent wage increase?',money(w.wage)+' becomes '+money(w.wage+40)+' every week. No one-off payment. Another raise is unavailable for four weeks.','Confirm raise',()=>{const r=OfficeAmbitions.giveRaise(w.id);screen(r.error?'Raise unavailable':'Wage increased',r.error||r.text,[back(here)]);},here))]:[]),
  a('release','Release wrestler',()=>confirm('Release '+w.name+'?','They leave today. No refund. Their bookings are cancelled.','Confirm release',()=>{G.release(w.id);stable();},here)),back(ret)],{portrait:w});
 }
-function coaches(){
- const c=s().coach&&G.COACHES[s().coach];
- if(c){screen('Coaching staff',c.name+'. '+c.stat+' training boost '+Math.round(c.boost*100)+' percent. '+money(c.wage)+' every week, even if nobody trains that skill.',[a('fire','End coaching contract',()=>confirm('Release coach?','Future wages stop. Hiring fee is not refunded.','End contract',()=>{const e=G.fireCoach();screen('Coaching staff',e||'Contract ended.',[back(coaches)]);},coaches)),back(stable)]);return;}
+function coaches(returnTo=stable){
+ const here=()=>coaches(returnTo),c=s().coach&&G.COACHES[s().coach];
+ if(c){screen('Coaching staff',c.name+'. '+c.stat+' training boost '+Math.round(c.boost*100)+' percent. '+money(c.wage)+' every week, even if nobody trains that skill.',[a('fire','End coaching contract',()=>confirm('Release coach?','Future wages stop. Hiring fee is not refunded.','End contract',()=>{const e=G.fireCoach();screen('Coaching staff',e||'Contract ended.',[back(here)]);},here)),back(returnTo)]);return;}
  const rows=Object.entries(G.COACHES).map(([id,x])=>({id,...x}));
  paged('Specialist coaches',rows,0,(x,ret)=>screen(x.name,x.stat+' training boost '+Math.round(x.boost*100)+' percent. '+money(x.fee)+' to hire, '+money(x.wage)+' per week. Bank '+money(s().cash)+'.',[
- ...(s().cash>=x.fee?[a('hire','Hire specialist',()=>confirm('Hire '+x.name+'?',money(x.fee)+' now and '+money(x.wage)+' every week.','Confirm hire',()=>{const e=G.hireCoach(x.id);screen('Coaching staff',e||'Specialist hired.',[back(coaches)]);},ret))]:[]),back(ret)]),stable,x=>x.name+' — '+money(x.fee)+' upfront');
+ ...(s().cash>=x.fee?[a('hire','Hire specialist',()=>confirm('Hire '+x.name+'?',money(x.fee)+' now and '+money(x.wage)+' every week.','Confirm hire',()=>{const e=G.hireCoach(x.id);screen('Coaching staff',e||'Specialist hired.',[back(here)]);},ret))]:[]),back(ret)]),returnTo,x=>x.name+' — '+money(x.fee)+' upfront');
 }
-function trainingReports(){
+function trainingReports(returnTo=stable){
  const rows=(s().trainingReviews||[]).slice().reverse().map(r=>({...r,id:String(r.a),name:'Season '+Math.ceil(r.a/16)+', week '+((r.a-1)%16+1)}));
  paged('Completed training reports',rows,0,(r,ret)=>{
   const entries=(r.entries||[]).map(e=>({...e,id:e.id,name:e.name||e.id}));
   const detail=()=>paged('Wrestler training results',entries,0,(e,backTo)=>screen(e.name,['ring','mic','psych','safe'].map(k=>k+' '+((e.delta?.[k]||0)>=0?'+':'')+(e.delta?.[k]||0)).join('. ')+'. Fatigue change '+(e.delta?.fatigue||0)+'. Cost '+money(e.cost||0)+'. '+(e.notes||[]).join(' '),[back(backTo)]),()=>showReport());
   const showReport=()=>screen(r.name,'Training and promo costs '+money(r.trainingCost||0)+'. Coach wages '+money(r.coachCost||0)+'. These are completed results, not forecasts.',[a('detail','Individual wrestler results',detail),back(ret)]);
   showReport();
- },stable);
+ },returnTo);
 }
-function offers(){const rows=s().offers.filter(o=>G.offerCandidates(o).length);paged('Available booking offers',rows,0,offer,()=>desk('','offers'),o=>G.P(o.pid).name+' · versus '+G.F(o.rid).name);}
+function offers(){const rows=s().offers.filter(o=>G.offerCandidates(o).length);paged('Available booking offers',rows,0,offer,()=>desk('','offers',true),o=>G.P(o.pid).name+' · versus '+G.F(o.rid).name);}
 function offer(o,returnTo){const candidates=G.offerCandidates(o);paged(G.P(o.pid).name+' — choose your wrestler',candidates,0,(w,ret)=>offerTerms(o,w,ret),returnTo,w=>w.name+' · '+money(o.programme?OfficeProgrammes.totalPurse(o,w):G.purse(o,w)));}
 const FINISH_EXPLANATIONS={win_clean:'Your wrestler is expected to win fairly.',win_dirty:'Your wrestler is expected to win by cheating.',lose_protected:'Your wrestler is expected to lose but still look strong.',lose_clean:'Your wrestler is expected to lose fairly.',win_dq:'Your wrestler is expected to win because the opponent is disqualified.',lose_dq:'Your wrestler is expected to lose by disqualification.'};
 function bookingTerms(o,w,terms=o){
@@ -656,18 +691,18 @@ function restorePlanning(){
  }catch(e){planSaveError='The saved backstage conversation could not be restored.';}
 }
 const structureDescriptions={traditional:'Start strong, take the pressure, fight back and reach the finish.',classic_american:'Guided opening, pressure, comeback and payoff.',kings_road:'Technical exchanges, escalation, callback and finish build.',chickenshit_heel:'Avoid, get exposed, use a shortcut, then survive.',dominant_ace:'Take control, absorb a challenge and reassert dominance.'};
-function prepare(page=0,manual=false){
+function prepare(page=0,manual=false,restoreId=null){
  if(s()?.switchAfter||s()?.after?.autonomous){afterScreen();return;}
  if(planning?.room&&s().card.some(c=>c.id===planning.cid)){roomScreen();return;}
  const c=s().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank)[0];
  if(!c){endWeek();return;}
  const w=G.W(c.wid),f=G.F(c.rid),choices=[{id:'traditional',label:'Traditional'},...OfficeSheets.STRUCTURES.catalogue()],pages=Math.ceil(choices.length/3);
  if(guided()&&!manual){screen('Dennis: shape the match',w.name+' versus '+f.name+'. '+D.FINISHES[c.finish].name+'. The layout is the story of the match, not the winner. A traditional layout is a straightforward starting point. You still make the backstage decisions.',[a('recommended','Use traditional layout',()=>beginRoom(c,null)),a('custom','Choose another match structure',()=>prepare(0,true)),a('pause','Pause',()=>pause(()=>prepare()))],{portrait:w,scene:matchScene(c,w,f,'backstage')});return;}
- screen('Shape the match',w.name+' versus '+f.name+'. '+D.FINISHES[c.finish].name+'. Choose how the match unfolds. This never changes the booked winner. Page '+(page+1)+' of '+pages+'.',choices.slice(page*3,page*3+3).map(x=>a(x.id,x.label+'. '+structureDescriptions[x.id],()=>x.id==='traditional'?beginRoom(c,null):chooseLead(c,x.id,page))).concat(pages>1?[a('next','More structures',()=>prepare((page+1)%pages,true))]:[],back(()=>desk())),{portrait:w,scene:matchScene(c,w,f,'backstage')});
+ screen('Shape the match',w.name+' versus '+f.name+'. '+D.FINISHES[c.finish].name+'. Choose how the match unfolds. This never changes the booked winner. Page '+(page+1)+' of '+pages+'.',choices.slice(page*3,page*3+3).map(x=>a(x.id,x.label+'. '+structureDescriptions[x.id],()=>x.id==='traditional'?beginRoom(c,null):chooseLead(c,x.id,page))).concat(pages>1?[a('next','More structures',()=>prepare((page+1)%pages,true))]:[],back(()=>desk())),{portrait:w,scene:matchScene(c,w,f,'backstage'),restoreId});
 }
 function chooseLead(c,id,page){
  const w=G.W(c.wid),f=G.F(c.rid);
- screen('Choose the dramatic lead','Who should shape the story and rhythm of the match? This is not a choice of winner.',[a('w',w.name,()=>beginRoom(c,{id,lead:'w'})),a('f',f.name,()=>beginRoom(c,{id,lead:'f'})),back(()=>prepare(page,true))],{portrait:w});
+ screen('Choose the dramatic lead','Who should shape the story and rhythm of the match? This is not a choice of winner.',[a('w',w.name,()=>beginRoom(c,{id,lead:'w'})),a('f',f.name,()=>beginRoom(c,{id,lead:'f'})),back(()=>prepare(page,true,id))],{portrait:w});
 }
 function beginRoom(c,choice){
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),token=++planLoadToken;
@@ -1214,7 +1249,7 @@ const duringNarration=(handler)=>e=>{
   if(e.type==='keydown'&&!e.repeat)lock.held.add(k);
   if(e.type==='keyup'&&lock.held.delete(k)){
    if(lock.continuous&&k==='Enter')requestBroadcastPause();
-   else if(lock.skippable){stopNarration();input.cancel();}
+   else if(lock.skippable){stopNarration();input.cancel();if(scan.getState().id!==null)scan.announceCurrent();}
   }
   return;
  }
