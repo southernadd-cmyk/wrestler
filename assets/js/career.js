@@ -1266,13 +1266,25 @@ let resultPipeline=applyResult;
 function registerResultStage(id,factory){
  if(!RESULT_STAGE_ORDER.includes(id)||typeof factory!=='function'||resultStageFactories.has(id))
   throw new Error('Invalid or duplicate match settlement stage: '+id);
- resultStageFactories.set(id,factory);
- resultPipeline=RESULT_STAGE_ORDER.reduce((next,key)=>{
-  const registered=resultStageFactories.get(key);
-  return registered?registered(next):next;
+ // Publish a new pipeline only if every registered factory returns a function.
+ // A broken registration must not poison the previously valid pipeline.
+ const pending=new Map(resultStageFactories);
+ pending.set(id,factory);
+ const pipeline=RESULT_STAGE_ORDER.reduce((next,key)=>{
+  const registered=pending.get(key);
+  if(!registered)return next;
+  const handler=registered(next);
+  if(typeof handler!=='function')throw new Error('Invalid match settlement handler: '+key);
+  return handler;
  },applyResult);
+ resultStageFactories.set(id,factory);
+ resultPipeline=pipeline;
 }
 function resultStageOrder(){return RESULT_STAGE_ORDER.filter(id=>resultStageFactories.has(id));}
-function applyRegisteredResult(c,fin){return resultPipeline.apply(this,arguments);}
+function applyRegisteredResult(c,fin){
+ const missing=RESULT_STAGE_ORDER.filter(id=>!resultStageFactories.has(id));
+ if(missing.length)throw new Error('Incomplete match settlement pipeline: '+missing.join(', '));
+ return resultPipeline.apply(this,arguments);
+}
 root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,atomicSettlement,reportError,systemErrors,resultRecorded,importCareer,recoverNight,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult:applyRegisteredResult,registerResultStage,resultStageOrder,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,trainingWeekPlan,ageWorker,opponentReady,offerCandidates,officeBrief};
 })(typeof window!=='undefined'?window:globalThis);
