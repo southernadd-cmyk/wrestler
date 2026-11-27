@@ -60,7 +60,7 @@ function settings(returnTo,fresh=true){
 }
 function desk(note='',restoreId=null){
  if(active){matchScreen(note);return;}
- if(planning&&planning.room&&s().card.some(c=>c.id===planning.cid)){roomScreen();return;}
+ if(planning&&planning.room&&s().card.some(c=>c.id===planning.cid)){if(planning.onMic)preMatch();else roomScreen();return;}
  if(s().over){screen('Career ended','Your career has ended. You can review the final balance or start again.',[a('new','Main menu',()=>mainMenu()),a('pause','Pause',()=>pause(()=>desk()))]);return;}
  const n=G.pending().length,b=G.officeBrief();
  const list=[a('inbox',n?'Inbox — '+n+' decisions waiting':'Inbox',()=>inbox()),a('stable',s().roster.length?'Manage your stable':'Sign your first wrestler',()=>stable()),a('offers','Booking offers — '+(b.today.length+b.deadline.length)+' urgent',()=>offers()),a('week',s().card.length?'Prepare for match night':'Advance the week',()=>advance()),a('more','More office options',()=>more())];
@@ -235,7 +235,7 @@ function roomScreen(page=0,section='main',extra=''){
  const body=(extra?extra+'\n':'')+roomText(v,st);
  if(v.stage==='done'){
   const sh=st.sheet;
-  screen('Match layout signed',body+'\n'+(sh?.premise||'')+'\n'+v.agreed.join('. ')+'. '+(sh?.skipPromo?'No promo tonight.':'Pre-match promos will be added to the Switch Edition in the next stage.'),[a('ring','Go to ringside',()=>startMatch(c,planning)),a('history','Review conversation',()=>roomScreen(0,'history')),a('pause','Pause',pauseHere)],{portrait:st.w});return;
+  screen('Match layout signed',body+'\n'+(sh?.premise||'')+'\n'+v.agreed.join('. ')+'. '+(OfficeSigning.eligible(c)?'A public contract signing is next.':sh?.skipPromo?'No promo tonight.':'Choose the microphone segment next.'),[a('ring',OfficeSigning.eligible(c)?'To the contract signing':sh?.skipPromo?'Go to ringside':'To the microphone',()=>{planning.onMic=true;persistPlanning();preMatch();}),a('history','Review conversation',()=>roomScreen(0,'history')),a('pause','Pause',pauseHere)],{portrait:st.w});return;
  }
  if(v.stage==='board'){
   if(section==='finish'){
@@ -271,15 +271,105 @@ function switchLadder(c){
  return {size:r.length,w:at(c.wid),f:at(c.rid),champ:holder===c.wid?'w':holder===c.rid?'f':null,champName:G.P(c.pid)?.name+' '+D.DIVISIONS[div].name+' Champion',belt:c.title?D.belt(c.title.pid,c.title.div)?.name:null};
  }catch(e){return null;}
 }
-function startMatch(c,P){
+// The existing pre-match scene engines remain the authority for choices and effects.
+function preMatch(page=0,section='main'){
+ const P=planning,c=P&&s().card.find(x=>x.id===P.cid);
+ if(!c||!P.room?.sheet?.signed){roomScreen();return;}
+ const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),SG=OfficeSegments,MP=OfficeMouthpiece;
+ const root=()=>preMatch(),here=()=>preMatch(page,section);
+ const pauseHere=()=>pause(here);
+ const label=x=>x.label+(x.hint?'. '+x.hint:'')+(x.tags?.length?' · '+x.tags.join(', '):'')+(x.risk?'. '+x.risk:'');
+ const pick=(title,body,rows,select,backFn=null)=>{
+  const pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
+  const list=rows.slice(i*3,i*3+3).map(x=>a(x.id,label(x),()=>select(x)));
+  if(pages>1)list.push(a('next','More choices — page '+((i+1)%pages+1),()=>preMatch((i+1)%pages,section)));
+  list.push(a('more',backFn?'Back':'Pause / settings',backFn||pauseHere));
+  screen(title,body+(pages>1?'\nPage '+(i+1)+' of '+pages+'.':''),list,{portrait:w,kicker:'PRE-MATCH · '+p.name.toUpperCase()});
+ };
+ const load=(ids,create)=>{
+  const token=++planLoadToken;
+  screen('Preparing the microphone','Loading the wrestlers’ dialogue.',[a('pause','Pause',()=>{planLoadToken++;pause(root);})],{portrait:w});
+  Promise.resolve().then(()=>OfficePromoBanks.load(ids.filter(Boolean))).catch(()=>[]).then(banks=>{
+   if(token!==planLoadToken||planning!==P||active||!s().card.some(x=>x.id===c.id))return;
+   try{create(banks);persistPlanning();root();}
+   catch(e){console.error(e);screen('Microphone unavailable','The conversation could not be prepared. Retry without advancing the match.',[a('retry','Retry',root),a('pause','Pause',pauseHere)]);}
+  });
+ };
+ const arc=OfficeProgrammeArcs.options(c);
+ if(arc&&!P.arcChoice){pick(arc.title,(arc.follow||'')+' '+arc.ask+' Programme chapter '+(arc.step+1)+' of '+arc.total+'.',arc.choices,x=>{P.arcChoice=x.id;persistPlanning();root();});return;}
+ let kind,st,api;
+ if(OfficeSigning.eligible(c)){
+  if(!P.signing){P.signing=OfficeSigning.begin(c,w,f,p);persistPlanning();}
+  kind='signing';st=P.signing;api=OfficeSigning;
+ }else if(P.room.sheet.skipPromo){startMatch(c,P,null);return;}
+ else{
+  if(!P.segment){
+   pick('Choose a microphone segment','Dennis: '+SG.advice(c,w,f),SG.menu(c,w,f,p),x=>{P.segment=x.id;persistPlanning();root();});return;
+  }
+  if(P.segment!=='duel'){
+   if(!P.seg){
+    if(SG.BANKED.has(P.segment)){load([OfficePromoIdentity.bankId(w)||w.id],banks=>{P.seg=SG.begin(P.segment,c,w,f,p,{banks});});return;}
+    P.seg=SG.begin(P.segment,c,w,f,p,{banks:[]});persistPlanning();
+   }
+   kind='segment';st=P.seg;api=SG;
+  }else{
+   const talkers=!P.promo?MP.candidates(c,w):[];
+   if(talkers.length&&!P.mouth){
+    const rows=[{id:'none',label:w.short+' speaks for themselves',hint:'Own voice, microphone skill '+w.mic+'.'},...talkers.filter(x=>!x.refuse).map(x=>({id:x.id,label:x.short+' does the talking',hint:'Microphone skill '+x.mic+'. '+(x.note||'')+' '+(x.ego||'')}))];
+    pick('Who has the microphone?','A mouthpiece speaks, but '+w.short+' is held to the words.',rows,x=>{P.mouth=x.id;persistPlanning();root();});return;
+   }
+   const mouth=P.mouth&&P.mouth!=='none'?MP.pick(c,w,P.mouth):null;
+   const bid=x=>OfficePromoIdentity.bankId(x)||x.id;
+   if(!P.promo){
+    load([bid(mouth||w),bid(f)],banks=>{
+     const arcIntro=OfficeProgrammeArcs.intro(c,P.arcChoice);
+     P.promo=OfficeMic.begin(c,w,f,G.feud(w.id,f.id),P.room.sheet,p,{mouth,mouthProfile:mouth?G.W(mouth.id):null,arc:arcIntro,directed:true,formats:true,dialogue:true,authored:true,banks,composition:true,semantic:true,fuzzy:true,fuzzyEmotion:true,fuzzyPacing:true,fuzzyAudience:true,fuzzyBalance:true});
+     const intro=window.OfficeRivalry?.introFor(P.promo.core);
+     if(intro&&P.promo.openingQuestion){P.promo.log[0].line=intro;P.promo.openingQuestion={...P.promo.openingQuestion,kind:'record',prompt:intro};}
+     else if(intro)P.promo.log[0].line=P.promo.director?.format?P.promo.log[0].line+' '+intro:arcIntro?arcIntro.prompt+' '+intro:intro;
+    });return;
+   }
+   if(P.promo.authoredDialogue&&!Array.isArray(P.promo.authoredDialogue.banks)&&P.promo.stage!=='done'){
+    load([bid(P.promo.speaker||w),bid(f)],banks=>{P.promo.authoredDialogue.banks=banks;});return;
+   }
+   kind='duel';st=P.promo;api=OfficeMic;
+  }
+ }
+ const v=api.view(st),entries=v.log.map(e=>({who:e.speaker||e.who||'Stage',text:e.line||e.text||''})),done=v.stage==='done';
+ const renderEntries=rows=>rows.map(e=>e.who+': '+e.text).join('\n');
+ if(section==='history'){
+  const pages=Math.max(1,Math.ceil(entries.length/3)),i=Math.max(0,Math.min(page,pages-1));
+  screen('Microphone transcript',renderEntries(entries.slice(i*3,i*3+3))+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>preMatch((i+1)%pages,'history'))]:[]),back(root)]);return;
+ }
+ if(section==='more'){
+  screen('Microphone options','Your conversation is saved. No match time passes here.',[a('history','Read the full conversation',()=>preMatch(0,'history')),a('pause','Pause / settings',()=>pause(root)),back(root)]);return;
+ }
+ const result=done?api.result(st):null;
+ const mood=kind==='duel'?'Crowd: '+v.meterWord+'.':kind==='signing'?'Tension: '+v.tensionWord+'.':v.meter.label+': '+v.meter.word+'.';
+ const context=[...(v.read||[]),v.cue,v.unresolved,v.conversation?.subject?'Subject: '+v.conversation.subject:null,v.conversation?.latestPoint,v.claim?.thesis?'Your argument: '+v.claim.thesis:null,v.claim?.evidence,...(v.record||[])].filter(Boolean).join('\n');
+ const reconciliation=result?OfficeRoom.promoReconciliation(P.room.sheet,result,w,f,c.finish):null;
+ const body=renderEntries(entries.slice(-3))+'\n'+mood+'\n'+(done?[result?.reaction,result?.hook,result?.tactic?.stake,reconciliation?'Dennis: '+reconciliation.reason:null].filter(Boolean).join('\n'):[v.help,context].filter(Boolean).join('\n'));
+ const title=kind==='signing'?'Contract signing — '+v.name:kind==='duel'?(v.conversation?.formatName||'Promo duel')+' — '+v.name:v.name+' — '+v.heading;
+ if(done){screen(title,body,[a('ring','Ring the bell',()=>startMatch(c,P,result)),a('history','Review conversation',()=>preMatch(0,'history')),a('pause','Pause',pauseHere)],{portrait:w,kicker:'PRE-MATCH · '+p.name.toUpperCase()});return;}
+ const rows=v.options||[],pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
+ const buttons=rows.slice(i*3,i*3+3).map(x=>a(x.id,label(x),()=>{
+  try{api.choose(st,x.id);persistPlanning();root();}
+  catch(e){console.error(e);screen('Microphone decision','That response could not be completed. Review the conversation and retry.',[back(root)]);}
+ }));
+ if(pages>1)buttons.push(a('next','More responses — page '+((i+1)%pages+1),()=>preMatch((i+1)%pages)));
+ buttons.push(a('more','Conversation / pause',()=>preMatch(0,'more')));
+ screen(title,body+(pages>1?'\nPage '+(i+1)+' of '+pages+'.':''),buttons,{portrait:w,kicker:'PRE-MATCH · '+p.name.toUpperCase()});
+}
+function startMatch(c,P,promoRes=null){
  const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),prep={...w.prep},focus=D.TRAINING[w.training]?.stat,st=P.room,sh=st.sheet;
  if(!sh?.signed){roomScreen();return;}
- let structureExecution;
- try{structureExecution=OfficeSheets.STRUCTURES.executionChoice(sh,P.choice);}
+ let structureExecution,matchSheet;
+ try{matchSheet=OfficeRoom.addVow(sh,promoRes,w,f,c.finish);structureExecution=OfficeSheets.STRUCTURES.executionChoice(matchSheet,P.choice);}
  catch(e){console.error(e);screen('Layout not ready','The signed structure could not be verified. Review the backstage conversation.',[back(()=>roomScreen())]);return;}
  if(focus&&!w.injury)prep[focus]=(prep[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);
  const fatigue=w.training==='rest'||w.training==='promo'?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
- const match=X.create({w:{...w,fatigue:G.clamp(w.fatigue+fatigue)},f,p,ladder:switchLadder(c),slot:c.slot,minutes:sh.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,plan:{game:sh.game,leash:sh.leash||(w.psych>=75&&w.ego<75?'free':'script'),talk:sh.talk||'none'},preparation:prep,flags:{...w.flags,...sh.flags},memory:OfficeMemory.context(w.id,f.id),sheet:sh,livePsychologyVersion:structureExecution?1:undefined,sequenceTimingVersion:structureExecution?1:undefined,sequenceDependencyVersion:structureExecution?1:undefined,sequenceHandoverVersion:structureExecution?1:undefined,sequenceRecoveryProjectionVersion:structureExecution?1:undefined,sequenceRecoveryPacingVersion:structureExecution?1:undefined,sequenceAlternativeReadinessVersion:structureExecution?1:undefined,bigSpotArbitrationVersion:3,structureExecution,identity:G.normaliseIdentity(s().identity),seed:Math.floor(Math.random()*2**31)});
+ OfficeProgrammeArcs.prepare(c,P.arcChoice,promoRes);G.save();
+ const match=X.create({w:{...w,fatigue:G.clamp(w.fatigue+fatigue)},f,p,ladder:switchLadder(c),slot:c.slot,minutes:sh.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:sh.game,leash:sh.leash||(w.psych>=75&&w.ego<75?'free':'script'),talk:sh.talk||'none'},preparation:prep,flags:{...w.flags,...sh.flags},memory:OfficeMemory.context(w.id,f.id),sheet:matchSheet,livePsychologyVersion:structureExecution?1:undefined,sequenceTimingVersion:structureExecution?1:undefined,sequenceDependencyVersion:structureExecution?1:undefined,sequenceHandoverVersion:structureExecution?1:undefined,sequenceRecoveryProjectionVersion:structureExecution?1:undefined,sequenceRecoveryPacingVersion:structureExecution?1:undefined,sequenceAlternativeReadinessVersion:structureExecution?1:undefined,bigSpotArbitrationVersion:3,structureExecution,identity:G.normaliseIdentity(s().identity),seed:Math.floor(Math.random()*2**31)});
  OfficeRivalCorner.attach(match,c);active={cid:c.id,M:match};const saved=persistMatch();if(saved){planning=null;persistPlanning();}matchScreen('The bell is about to ring.');
 }
 function matchScreen(note='',commentary=[]){
