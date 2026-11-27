@@ -1315,7 +1315,7 @@ function prep(){
  // v3.6: match night opens backstage. The game plan is the first thing Dennis asks about.
  const c=current();if(!c)return endNight();
  const w=G.W(c.wid);
- night.plan=night.plan&&night.plan.cid===c.id?night.plan:{cid:c.id,game:D.STYLE_PLAN[w.style],leash:w.psych>=75&&w.ego<75?'free':'script',talk:'none'};
+ night.plan=night.plan&&night.plan.cid===c.id?night.plan:{cid:c.id,game:D.STYLE_PLAN[w.style],leash:w.psych>=75&&w.ego<75?'free':'script',talk:'none',structureSelected:false};
  return showMeeting();
 }
 
@@ -1574,16 +1574,15 @@ function showMeeting(loadedBanks){
   chickenshit_heel:'Avoid, get exposed, use a shortcut, then survive.',
   dominant_ace:'Take control, absorb a challenge and reassert dominance.'};
  const selected=P.structureChoice?.id||'traditional';
- const variants=[{id:'traditional',label:'Traditional (current)'},...OfficeSheets.STRUCTURES.catalogue()];
+ const variants=[{id:'traditional',label:'Traditional'},...OfficeSheets.STRUCTURES.catalogue()];
  // Choose BEFORE the first backstage decision. The meeting is re-created
  // only while still at its initial plan stage, never after a signed decision.
- const chooser=v.stage==='plan'?'<details class="structure-chooser" aria-label="Advanced match structure"'+(P.structureChoice?' open':'')+'><summary>Advanced: shape the match <small>(optional)</small></summary><p class="dim">This sets the order of the story, not the wrestling style or the booked winner.</p>'+ 
-  '<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small></button>').join('')+'</div>'+
+ const structurePicked=P.structureSelected===true||!!P.structureChoice||v.stage!=='plan';
+ const chooser=v.stage==='plan'?'<section class="structure-chooser" aria-label="Shape the match"><h3 class="section-h">Shape the match</h3><p class="dim">Choose how the match story unfolds before discussing the plan with the wrestlers.</p>'+
+  '<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(structurePicked&&x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(structurePicked&&x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small></button>').join('')+'</div>'+
   (P.structureChoice?'<div class="structure-lead"><span>Dramatic lead (not the booked winner)</span><div role="group" aria-label="Which wrestler leads the structure?">'+[{id:'w',name:w.short},{id:'f',name:f.short}].map(x=>'<button class="btn'+(P.structureChoice.lead===x.id?' on':'')+'" data-structurelead="'+x.id+'" aria-pressed="'+(P.structureChoice.lead===x.id)+'">'+esc(x.name)+'</button>').join('')+'</div></div>':'')+
-  '<p class="dim structure-help">The promoter\'s booked result is unchanged. This guides the action, but cannot guarantee particular moves.</p></details>':'';
- // Put structure selection INSIDE the scrolling decision panel. An extra
- // flex child above the conversation could clip mobile plan buttons.
- const decisionWithStructure=chooser?decide.replace('<div class="decide2">','<div class="decide2">'+chooser):decide;
+  '<p class="dim structure-help">The promoter’s booked result stays fixed. The structure guides the action; specific moves depend on what happens in the ring.</p></section>':'';
+ const decisionWithStructure=chooser?'<div class="decide2">'+chooser+(structurePicked?decide.slice('<div class="decide2">'.length,-6):'<p class="lede" role="status">Pick a structure to start the backstage discussion.</p>')+'</div>':decide;
  const body=matchupBar(c,w,f,middle,wNote,fNote)+sceneLog(v.log,'roomTalk',w,f,p.id)+decisionWithStructure+agreed;
  const signing=window.OfficeSigning?.eligible(c);
  const nextBtn=v.stage!=='done'?`<span class="dim">${esc(v.title)}</span>`:signing?'<button class="btn go" data-tv="signing">To the contract signing</button>':st.sheet.skipPromo?'<button class="btn go" data-tv="bell">Ring the bell</button>':'<button class="btn go" data-tv="promos">To the microphone</button>';
@@ -2080,7 +2079,7 @@ document.addEventListener('click',e=>{
   if(d.structure){
    const ids=OfficeSheets.STRUCTURES.catalogue().map(x=>x.id);
    if(d.structure!=='traditional'&&!ids.includes(d.structure))return;
-   P.structureChoice=d.structure==='traditional'?null:{id:d.structure,lead:P.structureChoice?.lead||'w'};
+   P.structureChoice=d.structure==='traditional'?null:{id:d.structure,lead:P.structureChoice?.lead||'w'};P.structureSelected=true;
   }else{
    if(!P.structureChoice||!['w','f'].includes(d.structurelead))return;
    P.structureChoice={...P.structureChoice,lead:d.structurelead};
@@ -2090,7 +2089,7 @@ document.addEventListener('click',e=>{
  }
  if(d.sheetmode){if(!OfficeSheets.MODE[d.sheetmode])return;night.plan.method=d.sheetmode;night.plan.sheet=null;night.plan.confirmed=false;return showMeeting()}
  if(d.room){const st=night?.plan?.room;if(night?.stage!=='meeting'||!st||st.stage==='done')return;
-  if(!OfficeRoom.options(st).some(o=>o.id===d.room))return;OfficeRoom.act(st,d.room);return showMeeting()}
+  if(st.stage==='plan'&&night.plan.structureSelected!==true&&!night.plan.structureChoice)return toast('Choose a match structure first.');if(!OfficeRoom.options(st).some(o=>o.id===d.room))return;OfficeRoom.act(st,d.room);return showMeeting()}
  if(d.cornerwho){if(night?.stage!=='meeting'||!night.plan)return;night.plan.cornerWho=d.cornerwho;night.plan.corner=null;return showMeeting()}
  if(d.cornerjob){if(night?.stage!=='meeting'||!night.plan)return;const x=OfficeRingside.parse(d.cornerjob);if(!x)return;night.plan.cornerWho=x.id;night.plan.corner=night.plan.corner===d.cornerjob?null:d.cornerjob;return showMeeting()}
  if(d.arcchoice){if(night?.stage!=='meeting'||night.plan?.room?.stage!=='done')return;const v=window.OfficeProgrammeArcs?.options(current());if(!v?.choices.some(x=>x.id===d.arcchoice))return;night.plan.arcChoice=d.arcchoice;return showMeeting()}
