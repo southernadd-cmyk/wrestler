@@ -105,3 +105,14 @@ body[data-broadcast=true] #story > :last-child{border-left:4px solid var(--gold)
 body[data-broadcast=true] #story > :last-child .speaker{color:var(--gold)}
 body[data-broadcast=true] #choices button[data-choice=pause] .choiceLabel{color:var(--gold)}
 body[data-broadcast=true] #choices button[data-choice=pause].scan .choiceLabel,body[data-broadcast=true] #choices button[data-choice=pause]:focus-visible .choiceLabel{color:var(--ink)}
+
+/* Ringfax retains the teletext identity without fixed-width 40-column text. */
+body[data-ringfax=true] .sceneHeader{background:#000080;box-shadow:none}
+body[data-ringfax=true] .sceneHeader h2{color:#ffff00;text-shadow:none}
+body[data-ringfax=true] .sceneHeader .eyebrow{color:#00ffff}
+body[data-ringfax=true] #story{background:#080808;color:#fff;padding:12px;border:2px solid #000080}
+body[data-ringfax=true] #story .storyLine{line-height:1.45}
+body[data-ringfax=true] #choices button[data-choice=quiz-0]{border-left:7px solid #ff5252}
+body[data-ringfax=true] #choices button[data-choice=quiz-1]{border-left:7px solid #60ff60}
+body[data-ringfax=true] #choices button[data-choice=quiz-2]{border-left:7px solid #ffff00}
+body[data-ringfax=true] #choices button[data-choice=quiz-3]{border-left:7px solid #00ffff}

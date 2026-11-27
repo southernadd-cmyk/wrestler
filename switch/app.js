@@ -71,6 +71,7 @@ function renderPresentation(title,body,portrait,scene,kicker){
  const stage=scene?.stage||(kicker.startsWith('LIVE')?'ring':kicker.startsWith('AFTER')?'after':'office');
  document.body.dataset.stage=stage;
  document.body.dataset.broadcast=String(title==='Live broadcast');
+ document.body.dataset.ringfax=String(kicker.startsWith('RINGFAX'));
  $('modeLabel').textContent=(guided()?'GUIDED':'FULL')+' MANAGEMENT';
  const journey=$('showJourney'),steps=['office','backstage','promo','ring','after'];
  journey.hidden=!s();Array.from(journey.children).forEach((el,i)=>{el.classList.toggle('current',steps[i]===stage);el.classList.toggle('past',steps.indexOf(stage)>i);if(steps[i]===stage)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');});
@@ -130,7 +131,7 @@ function mainMenu(restoreId=null){
 function newIdentity(){identity=G.suggestIdentity();identityScreen();}
 function difficultyName(state=s()){return state?.switchDifficulty==='relaxed'?'Relaxed':'Standard';}
 function startCareer(difficulty){
- active=null;persistMatch();planning=null;planLoadToken++;persistPlanning();G.fresh(identity);
+ active=null;persistMatch();planning=null;planLoadToken++;persistPlanning();G.fresh(identity);window.OfficeRingfax.reset();
  if(difficulty==='relaxed'){s().switchDifficulty='relaxed';G.save();}
  desk('The keys are yours. You have £2,250 and an empty stable. '+difficultyName()+' career. Sign your first wrestler.');
 }
@@ -233,9 +234,91 @@ function guidedDesk(note=''){
    a('skip','Leave offer for now',skip),moreChoice],{portrait:w});return;
  }
  screen(s().card.length?'Dennis: ready for match night':'Dennis: the week is ready',(note?note+'\n':'')+s().card.length+' matches booked. '+money(b.after)+' projected balance after costs. '+(b.today.length+b.deadline.length?'There are still '+(b.today.length+b.deadline.length)+' unsigned urgent invitations. ':'')+'Existing training plans continue. Nothing is automatically signed or spent.',[
- a('continue',s().card.length?'Start match night':'Finish the week',advance),a('stable','Review your stable',stable),moreChoice]);
+ a('continue',s().card.length?'Start match night':'Finish the week',advance),a('stable','Review your stable',stable),a('ringfax','Read Ringfax',()=>ringfaxHome(()=>guidedDesk())),moreChoice]);
 }
-function more(){screen('More office options',summary(),[a('finances','Finances and objectives',finances),a('results','Recent results',()=>results()),a('progress','Career progress',()=>careerProgress()),a('mode','Management mode: '+(guided()?'Guided':'Full'),()=>modeScreen(more)),a('pause','Pause / settings',()=>pause(()=>more())),back(()=>desk('','more'))]);}
+function more(){screen('More office options',summary(),[a('finances','Finances and objectives',finances),a('results','Recent results',()=>results()),a('progress','Career progress',()=>careerProgress()),a('ringfax','Ringfax',()=>ringfaxHome(more)),a('mode','Management mode: '+(guided()?'Guided':'Full'),()=>modeScreen(more)),a('pause','Pause / settings',()=>pause(()=>more())),back(()=>desk('','more'))]);}
+// Ringfax is read-only; keep the existing editorial generator and quiz rules.
+const RF=window.OfficeRingfax;
+const rfKicker='RINGFAX · REGIONAL WRESTLING TELETEXT';
+function ringfaxHome(ret){
+ screen('Ringfax — page 100','Season '+s().season+', week '+s().week+'. News, opinions and the weekly wrestling quiz. The career waits while you read.',[
+  a('news','News and results',()=>ringfaxDirectory('News and results',[101,102,103,104,200,201],ret)),
+  a('features','Features and fan letters',()=>ringfaxDirectory('Features and fan letters',[300,301,302,500,501],ret)),
+  a('rankings','Championships and rankings',()=>ringfaxRankings(ret)),
+  a('quiz','Weekly wrestling quiz',()=>ringfaxQuiz(ret)),a('pause','Pause / settings',()=>pause(()=>ringfaxHome(ret))),back(ret)],{kicker:rfKicker});
+}
+function ringfaxDirectory(title,numbers,ret,page=0,restoreId=null){
+ const pages=RF.build(s()),count=Math.ceil(numbers.length/3),i=Math.max(0,Math.min(page,count-1));
+ const rows=numbers.slice(i*3,i*3+3).filter(n=>pages[n]).map(n=>a('rf'+n,pages[n].title,()=>ringfaxArticle(n,()=>ringfaxDirectory(title,numbers,ret,i,'rf'+n))));
+ screen(title,'Ringfax index. Page '+(i+1)+' of '+count+'.',[
+  ...rows,...(i+1<count?[a('next','More articles',()=>ringfaxDirectory(title,numbers,ret,i+1))]:[]),
+  ...(i>0?[a('previous','Previous articles',()=>ringfaxDirectory(title,numbers,ret,i-1))]:[]),back(()=>ringfaxHome(ret))],{kicker:rfKicker,restoreId});
+}
+function ringfaxParagraphs(rows){
+ const lines=[];let text='',colour=null;
+ const flush=()=>{if(text)lines.push(text);text='';colour=null;};
+ for(const row of rows){
+  const value=String(row.text||'').trim();
+  if(!value||/^[-=]+$/.test(value)){flush();continue;}
+  if(colour!==row.colour)flush();
+  text+=(text?' ':'')+value;colour=row.colour;
+ }
+ flush();return lines;
+}
+function ringfaxArticle(number,ret,page=0){
+ const article=RF.build(s())[number];if(!article){ret();return;}
+ // Retain authored subpage boundaries; ordinary articles use the same
+ // 17-row partition as Ringfax. Pages never advance while being read.
+ const rows=article.lines||[],chunks=article.subpages||Array.from({length:Math.max(1,Math.ceil(rows.length/17))},(_,i)=>rows.slice(i*17,i*17+17));
+ const i=Math.max(0,Math.min(page,chunks.length-1)),body=ringfaxParagraphs(chunks[i]).join('\n');
+ screen(article.title,body+(chunks.length>1?'\nPage '+(i+1)+' of '+chunks.length+'.':''),[
+  ...(i+1<chunks.length?[a('next','Next page',()=>ringfaxArticle(number,ret,i+1))]:[]),
+  ...(i>0?[a('previous','Previous page',()=>ringfaxArticle(number,ret,i-1))]:[]),
+  a('repeat','Read page again',()=>ringfaxArticle(number,ret,i)),back(ret)],{kicker:rfKicker+' · '+number});
+}
+function ringfaxRankings(ret,restoreId=null){
+ const promos=s().promoters||D.PROMOS;
+ screen('Championships and rankings','Choose a promotion. These are the current circuit records, not predictions.',promos.map(p=>a(p.id,p.name,()=>ringfaxDivision(p,ret))).concat(back(()=>ringfaxHome(ret))),{kicker:rfKicker,restoreId});
+}
+function ringfaxDivision(p,ret){
+ screen(p.name,'Choose a division.',D.DIVISION_ORDER.map(div=>a(div,D.DIVISIONS[div].name+' division',()=>ringfaxLadder(p,div,ret))).concat(back(()=>ringfaxRankings(ret,p.id))),{kicker:rfKicker});
+}
+function ringfaxRankData(state,pid,div){
+ const rows=window.OfficeTerritory.promotionRank(pid,div,state.territory,state);
+ const holder=state.territory?.titles?.[pid]?.[div]?.holder;
+ const name=holder?(rows.find(w=>w.id===holder)?.name||D.findWrestler?.(holder)?.name||holder):'Vacant';
+ return {champion:name,lines:rows.map((w,i)=>(i+1)+'. '+w.name+(w.owned?' — your stable':'')+(w.champion?' — champion':''))};
+}
+function ringfaxLadder(p,div,ret,page=0){
+ const rank=ringfaxRankData(s(),p.id,div),count=Math.max(1,Math.ceil(rank.lines.length/5)),i=Math.max(0,Math.min(page,count-1));
+ const rows=rank.lines.slice(i*5,i*5+5);
+ screen(p.name+' — '+D.DIVISIONS[div].name,'Champion: '+rank.champion+'.\n'+(rows.length?rows.join('\n'):'No rankings recorded.')+'\nPage '+(i+1)+' of '+count+'.',[
+  ...(i+1<count?[a('next','Next rankings',()=>ringfaxLadder(p,div,ret,i+1))]:[]),
+  ...(i>0?[a('previous','Previous rankings',()=>ringfaxLadder(p,div,ret,i-1))]:[]),back(()=>ringfaxDivision(p,ret))],{kicker:rfKicker});
+}
+const rfColours=['Red','Green','Yellow','Cyan'];
+function ringfaxQuiz(ret){
+ // Use the actual quiz API. Reopening page 777 in the same week does not
+ // reset an attempt; the shared module rotates questions on week changes.
+ RF.press('go',777,s());
+ const info=RF.quizInfo(),q=RF.quizQuestions[info.index],again=()=>ringfaxQuiz(ret);
+ const act=(action,value)=>()=>{if(RF.press(action,value,s()))again();};
+ let title='Ringfax weekly quiz',body='Twelve wrestling questions. Checkpoints after questions four and eight. No effect on your career.',choices=[];
+ if(info.stage==='question'){
+  title='Question '+(info.index+1)+' of '+info.total;body=q.q;
+  choices=q.a.map((label,i)=>a('quiz-'+i,rfColours[i]+': '+label,act('quiz-answer',i)));
+ }else if(info.stage==='wrong'){
+  title='You have been bodyslammed!';body='Correct answer: '+q.a[q.correct]+'. Retry from question '+(info.checkpoint+1)+'.'+(info.reveal?' '+q.fact:'');
+  choices=[a('retry','Try again',act('quiz-retry')),a('reveal',info.reveal?'Hide trivia':'Reveal trivia',act('quiz-reveal'))];
+ }else if(info.stage==='won'){
+  title='You are the Quiz Champion!';body='All '+info.total+' questions answered. Wrong turns: '+info.misses+'. A main-event performance!';
+  choices=[a('again','Play again',act('quiz-start')),a('rules','Rules',act('quiz-rules'))];
+ }else if(info.stage==='rules'){
+  title='Quiz rules';body='Select one answer. An incorrect answer sends you back to the last checkpoint when you retry. Reveal the trivia fact if you like. No timer, no money at stake.';
+  choices=[a('start','Start quiz',act('quiz-start')),a('intro','Back to quiz introduction',act('quiz-back'))];
+ }else choices=[a('start','Start quiz',act('quiz-start')),a('rules','How to play',act('quiz-rules'))];
+ screen(title,body,[...choices,back(()=>ringfaxHome(ret))],{kicker:rfKicker+' · 777'});
+}
 function finances(){screen('Finances and objectives','Bank '+money(s().cash)+'. Weekly wages '+money(G.wages())+'. Overheads '+money(G.overhead())+'. Training '+money(G.trainingBill())+'.\n'+G.goalList().map(x=>(x.done?'Complete: ':'Open: ')+x.text).join('\n'),[back(more),a('pause','Pause',()=>pause(finances))]);}
 function paged(title,rows,page,open,returnTo,describe=x=>x.name,restoreId=null){
  const count=3,pages=Math.max(1,Math.ceil(rows.length/count));page=Math.max(0,Math.min(pages-1,page));
