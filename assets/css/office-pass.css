@@ -184,3 +184,8 @@
  #tv .desk-table:not(:has(td.desk-effect)) .desk-index{display:none}
  #tv .desk-table:not(:has(td.desk-effect)) .desk-response{padding-left:6px}
 }
+/* Match-sheet beats: order is shown by position; no numbers. The list stays
+   an <ol> so screen readers still hear the order. */
+#tv .desk-objectives{list-style:none;padding-left:0}
+#tv .desk-objectives li{padding:4px 7px;border-bottom:1px solid var(--stone-lo)}
+#tv .desk-objectives li:last-child{border-bottom:0}
