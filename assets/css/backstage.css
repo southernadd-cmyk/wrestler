@@ -70,7 +70,7 @@
 #tv .s-meeting .structure-picked:has(.structure-change[open]){display:block}
 #tv .s-meeting .structure-lead{margin:0;gap:6px}
 #tv .s-meeting .structure-lead .btn{padding:3px 8px;min-height:32px}
-#tv .s-meeting .structure-help{margin:4px 0 0!important}
+#tv .s-meeting .structure-help{margin:4px 0 0}
 #tv .s-meeting .rorder{gap:4px;margin-top:4px}
 #tv .s-meeting .rorder-heading{margin:4px 0}
 #tv .s-meeting .finish-choice{margin:0 0 5px;padding:5px 7px}
