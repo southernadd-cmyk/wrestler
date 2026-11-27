@@ -81,3 +81,49 @@ for(const seed of seeds){
 }
 for(const r of rows)console.log('OPENING FINANCES '+JSON.stringify(r));
 console.log('PASS opening financial forecast and prudent four-week paths, four seeds');
+
+// INT10 diagnostic: no injected cash, no free transfers, no artificially successful
+// matches. Compare viable lean and expansion policies against a risky star signing.
+// The fixed three-star result isolates the financial/booking system from match skill.
+for(const seed of [13,41,91]){
+ for(const policy of ['lean','expand','star']){
+  const {root}=engine(seed),G=root.OfficeGame;G.fresh();
+  const affordable=G.S.free.map(w=>({w,f:G.signingForecast(w.id)})).filter(x=>x.f.affordable&&x.f.runway>=4).sort((a,b)=>a.f.weeklyCost-b.f.weeklyCost||a.w.id.localeCompare(b.w.id));
+  const starter=policy==='star'?'val':affordable[0]?.w.id;
+  assert.ok(starter);assert.equal(G.sign(starter),null);
+  const row={seed,policy,starter,startBank:G.S.cash,weeks:0,booked:0,available:0,missed:0,noIncome:0,fees:0,purses:0,operatingCost:0,minCash:G.S.cash,peakCash:G.S.cash,at8:null,at16:null,at24:null,over:null,staffPeak:1,unavailableWeeks:0,decisions:0,offerWeeks:0};
+  for(let k=0;k<24&&!G.S.over;k++){
+   const s=G.S;
+   for(let i=0;i<20;i++){
+    const m=G.pending()[0];if(!m)break;
+    const opts=Array.from(m.options||[]).sort((a,b)=>Number(/pay|bonus|raise|money|accept/i.test(a.id))-Number(/pay|bonus|raise|money|accept/i.test(b.id)));
+    for(const o of opts){G.answer(m.id,o.id);if(m.answer)break;}
+    if(!m.answer)break;row.decisions++;
+   }
+   if((policy==='expand'&&s.roster.length<2&&k>=4)||!s.roster.length){
+    const next=s.free.map(w=>({w,f:G.signingForecast(w.id)})).filter(x=>x.f.affordable&&x.f.runway>=4&&!x.w.injury).sort((a,b)=>a.f.weeklyCost-b.f.weeklyCost||a.w.id.localeCompare(b.w.id))[0];
+    if(next&&G.sign(next.w.id)===null)row.fees+=next.f.fee;
+   }
+   row.staffPeak=Math.max(row.staffPeak,s.roster.length);
+   let earned=0;
+   if(s.offers.some(o=>o.eventAbs===G.abs()))row.offerWeeks++;
+   for(const w of [...s.roster]){
+    if(!G.available(w)){row.unavailableWeeks++;continue;}
+    row.available++;
+    const c=bookBest(root,w.id);
+    if(!c){row.missed++;continue;}
+    const before=s.cash;
+    G.applyResult(c,neutralResult(c));
+    earned+=s.cash-before;row.booked++;
+   }
+   row.purses+=earned;if(!earned)row.noIncome++;
+   row.operatingCost+=G.wages()+G.overhead()+G.trainingBill();
+   G.endWeek();row.weeks++;row.minCash=Math.min(row.minCash,s.cash);row.peakCash=Math.max(row.peakCash,s.cash);
+   if([8,16,24].includes(row.weeks))row['at'+row.weeks]=s.cash;
+  }
+  row.endCash=G.S.cash;row.rep=G.S.rep;row.over=G.S.over?.reason||null;row.staff=G.S.roster.length;
+  row.agencies=Object.values(G.S.worldV4.agencies).map(a=>({cash:a.cash,payroll:a.weeklyPayroll,income:a.weeklyIncome}));
+  row.promotions=Object.entries(G.S.territory.business||{}).filter(([id,p])=>Number.isFinite(p?.money)).map(([id,p])=>({id,cash:p.money,net:p.lastFinance?.net}));
+  assert.ok(Number.isFinite(row.endCash));console.log('INT10 ECONOMY '+JSON.stringify(row));
+ }
+}
