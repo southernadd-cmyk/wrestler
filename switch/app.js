@@ -402,6 +402,25 @@ function roomScreen(page=0,section='main',extra=''){
   screen('Backstage options','Your current plan is saved when storage is available. No match time passes here.',[a('history','Read full conversation',()=>roomScreen(0,'history')),a('pause','Pause / settings',pauseHere),back(root)]);return;
  }
  const body=(extra?extra+'\n':'')+roomText(v,st);
+ const assisted=guided()&&!planning.fullRoom;
+ const detailed=()=>{planning.fullRoom=true;persistPlanning();root();};
+ if(assisted&&section==='main'&&v.stage==='plan'){
+  const candidates=v.options||[],preferred=D.STYLE_PLAN[st.w.style],recommended=candidates.find(x=>x.id==='plan_'+preferred)||candidates.find(x=>x.id==='plan_'+st.promoter.likes)||candidates[0];
+  const preview=JSON.parse(JSON.stringify(st));
+  if(recommended)OfficeRoom.act(preview,recommended.id);
+  const proposed=OfficeRoom.view(preview),description=[proposed.finishPlan?.summary,...(proposed.board||[]).map(x=>x.name+': '+(x.current||'called in the ring'))].filter(Boolean).join('. ');
+  screen('Dennis: suggested layout',v.ask+' '+(recommended?recommended.label+'. '+recommended.hint:'')+' '+description,[
+   ...(recommended?[a('approve','Use '+recommended.label+' and Dennis’s running order',()=>{
+    OfficeRoom.act(st,recommended.id);
+    if(OfficeRoom.view(st).options.some(x=>x.id==='board_ok'))OfficeRoom.act(st,'board_ok');
+    persistPlanning();root();
+   })]:[]),a('custom','Plan the details myself',detailed),a('pause','Pause',pauseHere)],{portrait:st.w});return;
+ }
+ if(assisted&&section==='main'&&v.stage==='review'&&v.options.some(x=>x.id==='review_ok')){
+  screen('Dennis: final agreement',body+'\n'+roomReview(v)+'\nApprove the agreed finish and send them out with a calm reminder to work safely, or adjust it yourself.',[
+   a('approve','Approve layout and calm reminder',()=>{OfficeRoom.act(st,'review_ok');if(OfficeRoom.view(st).options.some(x=>x.id==='talk_calm'))OfficeRoom.act(st,'talk_calm');persistPlanning();root();}),
+   a('custom','Review or change the details',detailed),a('pause','Pause',pauseHere)],{portrait:st.w});return;
+ }
  if(v.stage==='done'){
   const sh=st.sheet;
   screen('Match layout signed',body+'\n'+(sh?.premise||'')+'\n'+v.agreed.join('. ')+'. '+(OfficeSigning.eligible(c)?'A public contract signing is next.':sh?.skipPromo?'No promo tonight.':'Choose the microphone segment next.'),[a('ring',OfficeSigning.eligible(c)?'To the contract signing':sh?.skipPromo?'Go to ringside':'To the microphone',()=>{planning.onMic=true;persistPlanning();preMatch();}),a('history','Review conversation',()=>roomScreen(0,'history')),a('pause','Pause',pauseHere)],{portrait:st.w});return;
@@ -486,6 +505,16 @@ function preMatch(page=0,section='main'){
   kind='signing';st=P.signing;api=OfficeSigning;
  }else if(P.room.sheet.skipPromo){startMatch(c,P,null);return;}
  else{
+  if(!P.segment&&guided()&&!P.fullPromo){
+   const presets=[
+    {id:'crowd',type:'solo',picks:['crowd','story','walk'],label:'Win over the crowd',hint:'Tell a true story and finish without making a promise.'},
+    {id:'rival',type:'solo',picks:['rival','threat','walk'],label:'Stoke the rivalry',hint:'Address the opponent and make a threat. Feud heat may rise.'},
+    {id:'tape',type:'vignette',picks:['road','intense','tight'],label:'Run a short recorded promo',hint:'A focused, lower-risk pre-taped segment; less potential impact than a live promo.'}
+   ];
+   screen('Dennis: what is the message?',SG.advice(c,w,f)+' Choose the direction and let '+w.short+' deliver it. You can still direct each individual line.',[
+    ...presets.map(x=>a(x.id,x.label+'. '+x.hint,()=>{P.quickPromo={...x,at:0};P.segment=x.type;persistPlanning();root();})),
+    a('custom','Direct the full segment myself',()=>{P.fullPromo=true;persistPlanning();root();}),a('pause','Pause',pauseHere)],{portrait:w,kicker:'PRE-MATCH · '+p.name.toUpperCase()});return;
+  }
   if(!P.segment){
    pick('Choose a microphone segment','Dennis: '+SG.advice(c,w,f),SG.menu(c,w,f,p),x=>{P.segment=x.id;persistPlanning();root();});return;
   }
@@ -518,6 +547,16 @@ function preMatch(page=0,section='main'){
    kind='duel';st=P.promo;api=OfficeMic;
   }
  }
+ if(kind==='segment'&&P.quickPromo&&st.stage!=='done'){
+  const q=P.quickPromo;
+  try{
+   while(st.stage!=='done'&&q.at<q.picks.length){
+    const id=q.picks[q.at];
+    if(!api.view(st).options.some(x=>x.id===id)||!api.choose(st,id))throw Error('Preset response unavailable');
+    q.at++;persistPlanning();
+   }
+  }catch(e){console.error(e);P.quickPromo=null;P.fullPromo=true;persistPlanning();root();return;}
+ }
  const v=api.view(st),entries=v.log.map(e=>({who:e.speaker||e.who||'Stage',text:e.line||e.text||''})),done=v.stage==='done';
  const renderEntries=rows=>rows.map(e=>e.who+': '+e.text).join('\n');
  if(section==='history'){
@@ -533,7 +572,7 @@ function preMatch(page=0,section='main'){
  const reconciliation=result?OfficeRoom.promoReconciliation(P.room.sheet,result,w,f,c.finish):null;
  const body=renderEntries(entries.slice(-3))+'\n'+mood+'\n'+(done?[result?.reaction,result?.hook,result?.tactic?.stake,reconciliation?'Dennis: '+reconciliation.reason:null].filter(Boolean).join('\n'):[v.help,context].filter(Boolean).join('\n'));
  const title=kind==='signing'?'Contract signing — '+v.name:kind==='duel'?(v.conversation?.formatName||'Promo duel')+' — '+v.name:v.name+' — '+v.heading;
- if(done){screen(title,body,[a('ring','Ring the bell',()=>startMatch(c,P,result)),a('history','Review conversation',()=>preMatch(0,'history')),a('pause','Pause',pauseHere)],{portrait:w,kicker:'PRE-MATCH · '+p.name.toUpperCase()});return;}
+ if(done){const parts=P.quickPromo?[...entries.filter(e=>e.text).map(e=>({text:e.text})),{text:[result?.reaction,result?.hook,reconciliation?'Dennis: '+reconciliation.reason:null].filter(Boolean).join(' ')}]:null;screen(title,body,[a('ring','Ring the bell',()=>startMatch(c,P,result)),a('history','Review conversation',()=>preMatch(0,'history')),a('pause','Pause',pauseHere)],{portrait:w,kicker:'PRE-MATCH · '+p.name.toUpperCase(),speechParts:parts});return;}
  const rows=v.options||[],pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
  const buttons=rows.slice(i*3,i*3+3).map(x=>a(x.id,label(x),()=>{
   try{api.choose(st,x.id);persistPlanning();root();}
@@ -553,7 +592,7 @@ function startMatch(c,P,promoRes=null){
  const fatigue=w.training==='rest'||w.training==='promo'?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
  OfficeProgrammeArcs.prepare(c,P.arcChoice,promoRes);G.save();
  const match=X.create({w:{...w,fatigue:G.clamp(w.fatigue+fatigue)},f,p,ladder:switchLadder(c),slot:c.slot,minutes:sh.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:sh.game,leash:sh.leash||(w.psych>=75&&w.ego<75?'free':'script'),talk:sh.talk||'none'},preparation:prep,flags:{...w.flags,...sh.flags},memory:OfficeMemory.context(w.id,f.id),sheet:matchSheet,livePsychologyVersion:structureExecution?1:undefined,sequenceTimingVersion:structureExecution?1:undefined,sequenceDependencyVersion:structureExecution?1:undefined,sequenceHandoverVersion:structureExecution?1:undefined,sequenceRecoveryProjectionVersion:structureExecution?1:undefined,sequenceRecoveryPacingVersion:structureExecution?1:undefined,sequenceAlternativeReadinessVersion:structureExecution?1:undefined,bigSpotArbitrationVersion:3,structureExecution,identity:G.normaliseIdentity(s().identity),seed:Math.floor(Math.random()*2**31)});
- OfficeRivalCorner.attach(match,c);active={cid:c.id,M:match};const saved=persistMatch();if(saved){planning=null;persistPlanning();}matchScreen('The bell is about to ring.');
+ OfficeRivalCorner.attach(match,c);active={cid:c.id,M:match};const saved=persistMatch();if(saved){planning=null;persistPlanning();}if(guided()&&V.getSettings().ttsEnabled)startBroadcast();else matchScreen('The bell is about to ring.');
 }
 function matchScreen(note='',commentary=[],played=false){
  const m=active.M,c=s().card.find(x=>x.id===active.cid);
