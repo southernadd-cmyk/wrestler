@@ -87,12 +87,14 @@ async function coldWarm(browser,viewport){
   await assertBankOwners(page,['rex','silas']);
   if(viewport.width>=901){
    const geometry=await page.evaluate(()=>{
-    const pane=document.querySelector('.s-promo .promo-conversation'),decision=document.querySelector('.s-promo .decide2');
-    const r=decision.getBoundingClientRect(),buttons=[...decision.querySelectorAll('[data-mic]')];
-    return {conversation:pane.clientWidth,decision:decision.clientWidth,buttons:buttons.length,
-     allVisible:buttons.every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=r.bottom+2}),horizontal:decision.scrollWidth-decision.clientWidth};
+    const stage=document.querySelector('.s-promo'),decision=stage.querySelector('.decide2'),win=stage.querySelector('.win');
+    const r=stage.getBoundingClientRect(),buttons=[...decision.querySelectorAll('[data-mic]')];
+    const nested=[...stage.querySelectorAll('.win,.wbody,.scene,.promo-context,.decide2,.sheetline')].filter(el=>/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollHeight>el.clientHeight+2);
+    return {win:win.clientWidth,decision:decision.clientWidth,buttons:buttons.length,nested:nested.length,
+     allVisible:buttons.every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=Math.min(r.bottom,innerHeight)+2}),horizontal:decision.scrollWidth-decision.clientWidth};
    });
-   assert.ok(geometry.decision>geometry.conversation,'choices must have priority '+JSON.stringify(geometry));
+   assert.ok(geometry.decision>=geometry.win*.95,'choices must use the full desk '+JSON.stringify(geometry));
+   assert.equal(geometry.nested,0,'no independently scrolling promo panes');
    assert.ok(geometry.buttons>0&&geometry.allVisible,'initial promo choices should fit without scrolling '+JSON.stringify(geometry));
    assert.ok(geometry.horizontal<=2,'decision pane must not overflow horizontally '+JSON.stringify(geometry));
   }
@@ -104,6 +106,8 @@ async function coldWarm(browser,viewport){
   assert.equal(after.steps.length,1);
   const first=after.log.find(e=>e.side==='w');assert.ok(first.answersQuestion,'first spoken line must explicitly answer the host');
   assert.equal(first.answersQuestion.prompt,after.log[0].line);
+  const history=page.locator('#micTalk .dialogue-history');
+  if(await history.count())await history.locator('summary').click();
   if(first.answersQuestion.direct){
    assert.equal(first.answersQuestion.lead,'');
    assert.ok(first.line.length>0);
@@ -112,6 +116,7 @@ async function coldWarm(browser,viewport){
    assert.ok(first.line.startsWith(first.answersQuestion.lead+' '));
    assert.ok((await page.locator('#tv #micTalk').innerText()).includes(first.answersQuestion.lead),'answer must appear on screen');
   }
+  if(await history.count())await history.locator('summary').click();
   const persisted=await page.evaluate(store=>JSON.parse(localStorage.getItem(store)),STORE);
   assert.equal(persisted.promo.steps.length,1);assert.equal(persisted.promoLoading,undefined);
   assert.deepEqual(persisted.promo,after);
@@ -194,7 +199,18 @@ async function compactPlanning(browser,viewport){
   if(viewport.width>=901){assert.ok(g.pane>=g.win*.95,'structure choices need full width '+JSON.stringify(g));assert.ok(g.visible,'all five structures must fit '+JSON.stringify(g));}
   assert.ok(g.horizontal<=2,'structure choices must not overflow '+JSON.stringify(g));
   await page.locator('#tv [data-structure="traditional"]').click();
-  const choice=page.locator('#tv [data-room]').first();await choice.waitFor();await choice.click();
+  const choice=page.locator('#tv [data-room]').first();await choice.waitFor();
+  assert.equal(await page.locator('#tv .structure-change').getAttribute('open'),null,'selected structure is collapsed');
+  if(viewport.width>=901){
+   const g=await page.evaluate(()=>{
+    const stage=document.querySelector('.s-meeting'),r=stage.getBoundingClientRect(),buttons=[...stage.querySelectorAll('[data-room]')];
+    const nested=[...stage.querySelectorAll('.win,.wbody,.scene,.decide2,.sheetline')].filter(el=>/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollHeight>el.clientHeight+2);
+    return {nested:nested.length,visible:buttons.every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=Math.min(r.bottom,innerHeight)+2})};
+   });
+   assert.equal(g.nested,0,'no independently scrolling planning panes');
+   assert.ok(g.visible,'actual planning options fit in the viewport '+JSON.stringify(g));
+  }
+  await choice.click();
   await page.locator('#tv .runorder').waitFor();
   if(viewport.width>=901){
    const board=await page.evaluate(()=>({pane:document.querySelector('.s-meeting .runorder').clientWidth,win:document.querySelector('.s-meeting>.win').clientWidth}));
@@ -285,7 +301,7 @@ async function doubleClick(browser){
   await page.locator('#tv [data-mic="'+first+'"]').dblclick();
   await delay(300);
   assert.equal((await state(page)).steps.length,1,'double-click must record one decision');
-  await page.setViewportSize({width:1024,height:480});
+  await page.setViewportSize({width:1024,height:360});
   await clickPreservingScroll(page,mic(page).last(),'s-promo','short laptop promo');
   assert.equal((await state(page)).steps.length,2,'a later single click still records a decision');
   console.log('PASS promo double-click: one decision per double-click.');
