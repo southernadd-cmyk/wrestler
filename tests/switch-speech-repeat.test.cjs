@@ -45,9 +45,9 @@ function harness(ttsEnabled=true,hub=false,initialStorage={}){
  window.OfficeChoiceInput=context.OfficeChoiceInput;
  // Test-only entry to the real broadcast controller and a settlement spy; no production hooks.
  window.testSettlement=()=>{settlements++;};
- const app=read('app.js').replace(/mainMenu\(\);\n\}\)\(\);\s*$/,"window.startTestBroadcast=match=>{active={cid:'c',M:match};if(V.getSettings().ttsEnabled)startBroadcast();else matchScreen();};window.testDennis=()=>screen('Dennis: ready','Dennis: We can start.\\nDennis: Keep the plan. Dennis is your assistant.',[back(mainMenu)]);window.testScout=w=>signProfile(w,mainMenu);window.testPaged=()=>paged('Test list',Array.from({length:7},(_,i)=>({id:'row'+i,name:'Row '+i})),0,(x,ret)=>screen(x.name,'Details',[back(ret)]),()=>mainMenu());settleMatch=()=>{window.testSettlement();screen('Match report','Result available',[back(mainMenu)]);};mainMenu();\n})();");
+ const app=read('app.js').replace(/mainMenu\(\);\n\}\)\(\);\s*$/,"window.startTestBroadcast=match=>{active={cid:'c',M:match};if(V.getSettings().ttsEnabled)startBroadcast();else matchScreen();};window.testDennis=()=>screen('Dennis: ready','Dennis: We can start.\\nDennis: Keep the plan. Dennis is your assistant.',[back(mainMenu)]);window.testRating=rating=>screen('Match commentary','Final rating: '+rating,[back(mainMenu)]);window.testScout=w=>signProfile(w,mainMenu);window.testPaged=()=>paged('Test list',Array.from({length:7},(_,i)=>({id:'row'+i,name:'Row '+i})),0,(x,ret)=>screen(x.name,'Details',[back(ret)]),()=>mainMenu());settleMatch=()=>{window.testSettlement();screen('Match report','Result available',[back(mainMenu)]);};mainMenu();\n})();");
  vm.runInContext(app,context);
- return {get,spoken,V,scan,announcements,testDennis:()=>window.testDennis(),visual:document.body.dataset,storage,changeStorage(key,value){storage.set(key,value);for(const fn of windowEvents.get('storage')||[])fn({key});},setSaveOK:v=>{saveOK=v;},scout:()=>{const w={id:'test',name:'Test wrestler',style:'Technical',fee:750,wage:100};window.OfficeGame.S={season:1,week:1,cash:2250,rep:3,free:[w],roster:[]};window.testScout(w);},watchCalls:()=>watchCalls,signCalls:()=>signCalls,testPaged:()=>window.testPaged(),helpHold:()=>helpHold,hubRequests,nextCalls:()=>nextCalls,settlements:()=>settlements,broadcast:(flags={})=>{window.OfficeGame.S={season:1,week:1,cash:2250,rep:0,card:[{id:'c',pid:'p'}]};window.startTestBroadcast({w:{id:'w',name:'W',short:'W'},f:{id:'f',name:'F',short:'F'},wSt:90,fSt:90,t:0,crowd:50,calls:2,mom:0,queue:[],r:{getState:()=>1},...flags});},select:id=>{selected=id;scan.select();},key:(type,code)=>{for(const fn of events.get(type)||[])fn({type,code,repeat:false,preventDefault(){},target:{matches:()=>false}});},click:id=>get('choices').children.find(x=>x.dataset.choice===id).onclick(),blur:()=>{for(const fn of windowEvents.get('blur')||[])fn();},opens:()=>opens,saves:()=>saveCalls};
+ return {get,spoken,V,scan,announcements,testDennis:()=>window.testDennis(),testRating:rating=>window.testRating(rating),visual:document.body.dataset,storage,changeStorage(key,value){storage.set(key,value);for(const fn of windowEvents.get('storage')||[])fn({key});},setSaveOK:v=>{saveOK=v;},scout:()=>{const w={id:'test',name:'Test wrestler',style:'Technical',fee:750,wage:100};window.OfficeGame.S={season:1,week:1,cash:2250,rep:3,free:[w],roster:[]};window.testScout(w);},watchCalls:()=>watchCalls,signCalls:()=>signCalls,testPaged:()=>window.testPaged(),helpHold:()=>helpHold,hubRequests,nextCalls:()=>nextCalls,settlements:()=>settlements,broadcast:(flags={})=>{window.OfficeGame.S={season:1,week:1,cash:2250,rep:0,card:[{id:'c',pid:'p'}]};window.startTestBroadcast({w:{id:'w',name:'W',short:'W'},f:{id:'f',name:'F',short:'F'},wSt:90,fSt:90,t:0,crowd:50,calls:2,mom:0,queue:[],r:{getState:()=>1},...flags});},select:id=>{selected=id;scan.select();},key:(type,code)=>{for(const fn of events.get(type)||[])fn({type,code,repeat:false,preventDefault(){},target:{matches:()=>false}});},click:id=>get('choices').children.find(x=>x.dataset.choice===id).onclick(),blur:()=>{for(const fn of windowEvents.get('blur')||[])fn();},opens:()=>opens,saves:()=>saveCalls};
 }
 const tick=()=>new Promise(setImmediate);
 (async()=>{
@@ -197,6 +197,23 @@ const tick=()=>new Promise(setImmediate);
  vm.runInNewContext(require('./_source.cjs').core,{window:root,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},console,Date,Math,JSON});
  const D=root.OfficeData,X=root.OfficeMatch,filter={};
  vm.runInNewContext(read('booth-speech.js'),{window:filter});
+ const ratings=harness();
+ for(let quarters=0;quarters<=20;quarters++){
+  const n=quarters/4,raw=X.starText(n),expected='Final rating: '+n+(n===1?' star':' stars')+' out of 5';
+  const start=ratings.spoken.length;
+  ratings.testRating(raw);await drain(ratings);
+  assert.ok(ratings.spoken.slice(start).map(x=>x.text).join(' ').includes(expected),'read rating '+raw);
+  const replayStart=ratings.spoken.length;
+  ratings.select(repeat);await drain(ratings);
+  assert.ok(ratings.spoken.slice(replayStart).map(x=>x.text).join(' ').includes(expected),'repeat rating '+raw);
+ }
+ for(const mode of ['condensed','highlights','full']){
+  const rating=harness(true,false,{[lengthKey]:mode});
+  rating.broadcast({testLines:[{at:600,t:'10:00',kind:'rating',big:true,who:'pbp',text:'Final rating: '+X.starText(3.75)}]});
+  assert.equal(rating.spoken.at(-1).text,'Final rating: 3.75 stars out of 5');
+  rating.key('keydown','Enter');rating.key('keyup','Enter');await tick();
+ }
+ console.log('PASS: all 21 quarter-star ratings spoken on review and repeat; live rating in all three modes');
  const words=t=>String(t).trim().split(/\s+/).filter(Boolean).length;
  const totals={full:0,condensed:0,highlights:0};
  for(let i=0;i<8;i++){
