@@ -173,6 +173,7 @@
    job:k.job,fired:!!k.fired,ok:!!k.ok,ejected:!!k.ejected};
   st.log.unshift(event);st.log=st.log.slice(0,30);
   const h=G.S.history?.find(h=>h.cid===c.id);if(h)h.rivalCorner={...event};
+  root.OfficeRivalry?.recordRivalCorner?.(c,event);
   G.save();return out;
  }
 
