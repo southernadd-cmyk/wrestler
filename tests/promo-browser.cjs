@@ -145,6 +145,35 @@ async function coldWarm(browser,viewport){
  });
 }
 // Restore a genuine initial meeting and use its real controls at laptop/phone sizes.
+// Check the real scroll positions immediately before the delegated click and
+// after the next round has laid out. No artificial spacers or mock UI.
+async function clickPreservingScroll(page,button,stage,label){
+ await button.evaluate((el,stage)=>{
+  const sample=()=>{
+   const tv=document.querySelector('#tv'),screen=tv.querySelector('.'+stage),panel=screen.querySelector('.decide2');
+   const nodes={tv,stage:screen,win:panel.closest('.win'),body:panel.closest('.wbody'),panel};
+   return Object.fromEntries(Object.entries(nodes).map(([k,n])=>[k,{top:n.scrollTop,max:Math.max(0,n.scrollHeight-n.clientHeight)}]));
+  };
+  window.__decisionScrollProbe={sample};
+  el.addEventListener('click',()=>{window.__decisionScrollProbe.before=sample()},{capture:true,once:true});
+  el.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+ },stage);
+ await button.click();
+ const measured=await page.evaluate(async()=>{
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  const probe=window.__decisionScrollProbe;delete window.__decisionScrollProbe;
+  return {before:probe.before,after:probe.sample()};
+ });
+ assert.ok(measured.before,label+': actual click was captured');
+ let retained=false;
+ for(const [k,old] of Object.entries(measured.before)){
+  const next=measured.after[k],expected=Math.min(old.top,next.max);
+  if(expected>8)retained=true;
+  assert.ok(Math.abs(next.top-expected)<=2,label+' '+k+' must retain scroll: '+JSON.stringify(measured));
+ }
+ assert.ok(retained,label+' must exercise a non-zero scroll position that remains available: '+JSON.stringify(measured));
+ console.log('PASS '+label+' scroll: '+JSON.stringify(measured));
+}
 async function compactPlanning(browser,viewport){
  const ctx=await browser.newContext({viewport}),page=await ctx.newPage();
  try{
@@ -172,6 +201,10 @@ async function compactPlanning(browser,viewport){
    assert.ok(board.pane>=board.win*.95,'running order must use full width '+JSON.stringify(board));
   }
   assert.equal(await page.locator('#tv [data-room="board_ok"]').count(),1);
+  // Short laptop and phone use different scroll containers from the full desktop.
+  await page.setViewportSize({width:viewport.width>=901?1024:390,height:480});
+  await clickPreservingScroll(page,page.locator('#tv .rorder-pick[aria-pressed="false"]').last(),'s-meeting','planning '+viewport.width);
+  await page.locator('#tv .runorder').waitFor();
   assert.equal(await page.evaluate(()=>window.OfficeGame.S.card[0].finish),'win_clean');
   console.log('PASS compact planning '+viewport.width+'px: structure options, board width and booked finish');
  }finally{await ctx.close();}
@@ -197,7 +230,9 @@ async function failures(browser){
   await openMic(page);await assertBankOwners(page,[]);
   assert.equal(requests.filter(x=>x==='rex').length,1,'bad immutable payload is not retried');
   assert.equal(requests.filter(x=>x==='silas').length,2,'transport failure retried once');
-  await pick(page,'proof');await pick(page,'turn');
+  await page.setViewportSize({width:390,height:480});
+  await clickPreservingScroll(page,mic(page).last(),'s-promo','phone promo');
+  await pick(page,'turn');
   assert.ok((await state(page)).steps.length>=2);
   console.log('PASS promo corrupt/transport failure: scene stays playable without any bank.');
  });
@@ -250,7 +285,8 @@ async function doubleClick(browser){
   await page.locator('#tv [data-mic="'+first+'"]').dblclick();
   await delay(300);
   assert.equal((await state(page)).steps.length,1,'double-click must record one decision');
-  await pick(page,'turn');
+  await page.setViewportSize({width:1024,height:480});
+  await clickPreservingScroll(page,mic(page).last(),'s-promo','short laptop promo');
   assert.equal((await state(page)).steps.length,2,'a later single click still records a decision');
   console.log('PASS promo double-click: one decision per double-click.');
  });
