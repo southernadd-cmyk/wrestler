@@ -85,6 +85,17 @@ async function coldWarm(browser,viewport){
  },async({page,saved,requests})=>{
   const start=Date.now();await openMic(page);const coldMs=Date.now()-start;
   await assertBankOwners(page,['rex','silas']);
+  if(viewport.width>=901){
+   const geometry=await page.evaluate(()=>{
+    const pane=document.querySelector('.s-promo .promo-conversation'),decision=document.querySelector('.s-promo .decide2');
+    const r=decision.getBoundingClientRect(),buttons=[...decision.querySelectorAll('[data-mic]')];
+    return {conversation:pane.clientWidth,decision:decision.clientWidth,buttons:buttons.length,
+     allVisible:buttons.every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=r.bottom+2}),horizontal:decision.scrollWidth-decision.clientWidth};
+   });
+   assert.ok(geometry.decision>geometry.conversation,'choices must have priority '+JSON.stringify(geometry));
+   assert.ok(geometry.buttons>0&&geometry.allVisible,'initial promo choices should fit without scrolling '+JSON.stringify(geometry));
+   assert.ok(geometry.horizontal<=2,'decision pane must not overflow horizontally '+JSON.stringify(geometry));
+  }
   assert.deepEqual([...requests].sort(),['rex','silas']);
   assert.ok(bytes.rex>0&&bytes.silas>0);
   assert.ok(bytes.rex+bytes.silas<15000);
@@ -132,6 +143,38 @@ async function coldWarm(browser,viewport){
   assert.ok(layout.scroll<=layout.width+2,'page horizontal overflow '+JSON.stringify(layout));
   console.log('PASS promo cold/warm '+viewport.width+'px: '+(bytes.rex+bytes.silas)+' actual raw JSON bytes; cold '+coldMs+'ms, warm '+warmMs+'ms; 2 requests total, pinned resume and deterministic next choice.');
  });
+}
+// Restore a genuine initial meeting and use its real controls at laptop/phone sizes.
+async function compactPlanning(browser,viewport){
+ const ctx=await browser.newContext({viewport}),page=await ctx.newPage();
+ try{
+  await fixture(page);
+  await page.evaluate(store=>{
+   const G=window.OfficeGame,s=G.S,c=s.card[0],saved=JSON.parse(localStorage.getItem(store));
+   const room=window.OfficeRoom.begin(c,G.W(c.wid),G.F(c.rid),G.P(c.pid),{recent:[],threads:[],heat:0});
+   saved.plan={cid:c.id,room,sheet:null,confirmed:false};saved.stage='meeting';
+   localStorage.setItem(store,JSON.stringify(saved));
+  },STORE);
+  await resume(page);
+  const structures=page.locator('#tv .structure-option');
+  await structures.first().waitFor();assert.equal(await structures.count(),5);
+  const g=await page.evaluate(()=>{
+   const pane=document.querySelector('.s-meeting .decide2'),win=document.querySelector('.s-meeting>.win'),r=pane.getBoundingClientRect();
+   return {pane:pane.clientWidth,win:win.clientWidth,visible:[...pane.querySelectorAll('.structure-option')].every(b=>{const x=b.getBoundingClientRect();return x.top>=r.top-2&&x.bottom<=r.bottom+2&&x.right<=r.right+2}),horizontal:pane.scrollWidth-pane.clientWidth};
+  });
+  if(viewport.width>=901){assert.ok(g.pane>=g.win*.95,'structure choices need full width '+JSON.stringify(g));assert.ok(g.visible,'all five structures must fit '+JSON.stringify(g));}
+  assert.ok(g.horizontal<=2,'structure choices must not overflow '+JSON.stringify(g));
+  await page.locator('#tv [data-structure="traditional"]').click();
+  const choice=page.locator('#tv [data-room]').first();await choice.waitFor();await choice.click();
+  await page.locator('#tv .runorder').waitFor();
+  if(viewport.width>=901){
+   const board=await page.evaluate(()=>({pane:document.querySelector('.s-meeting .runorder').clientWidth,win:document.querySelector('.s-meeting>.win').clientWidth}));
+   assert.ok(board.pane>=board.win*.95,'running order must use full width '+JSON.stringify(board));
+  }
+  assert.equal(await page.locator('#tv [data-room="board_ok"]').count(),1);
+  assert.equal(await page.evaluate(()=>window.OfficeGame.S.card[0].finish),'win_clean');
+  console.log('PASS compact planning '+viewport.width+'px: structure options, board width and booked finish');
+ }finally{await ctx.close();}
 }
 async function failures(browser){
  const counts={};
@@ -215,6 +258,8 @@ async function doubleClick(browser){
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
+  await compactPlanning(browser,{width:1366,height:768});
+  await compactPlanning(browser,{width:390,height:844});
   await coldWarm(browser,{width:1366,height:768});
   await coldWarm(browser,{width:390,height:844});
   await failures(browser);

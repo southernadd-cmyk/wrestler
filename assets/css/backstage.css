@@ -29,3 +29,77 @@
 
 .arc-signing{padding:8px 12px;border-left:3px solid var(--blood,#982b32);margin:7px 12px;font-size:14px}
 .arc-signing span{display:block;margin-top:3px;color:var(--ink-2)}
+
+/* Compact management screens. Keep the other backstage screens unchanged.
+   Choices get priority over history; every original control stays in the DOM. */
+#tv :is(.s-promo,.s-meeting) .decide2{padding:8px 10px;min-width:0}
+#tv :is(.s-promo,.s-meeting) .decide2 .lede{max-width:none;margin:0 0 5px}
+#tv :is(.s-promo,.s-meeting) .picks{gap:4px}
+#tv :is(.s-promo,.s-meeting) .decision-option{min-width:0;gap:2px;padding:5px 8px;line-height:1.15;overflow-wrap:anywhere}
+#tv :is(.s-promo,.s-meeting) .decision-option>span:not(.tags){font-size:16px;line-height:1.2}
+#tv :is(.s-promo,.s-meeting) .tags{gap:3px;margin-top:1px}
+#tv :is(.s-promo,.s-meeting) .tags i{font-size:14px;padding:1px 4px;white-space:normal}
+#tv .s-promo .promo-conversation{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
+#tv .s-promo .promo-context{flex:0 1 auto;min-height:0;max-height:44%;overflow:auto;overscroll-behavior:contain;padding:5px 8px;border-top:2px solid var(--ink);background:var(--stone-2);font-size:15px;line-height:1.2}
+#tv .s-promo .promo-context p{margin:0 0 4px}
+#tv .s-promo .promo-context .claim span{display:block}
+#tv .s-promo .promo-context :is(.mic-read,.mic-cue,.mic-open){margin:0 0 4px;padding:4px 6px}
+#tv .s-meeting .structure-chooser{margin:0 0 6px;padding:6px 8px}
+#tv .s-meeting .structure-chooser>p{margin:3px 0 5px}
+#tv .s-meeting .structure-option{padding:6px 8px}
+#tv .s-meeting .rorder{gap:4px;margin-top:4px}
+#tv .s-meeting .rorder-heading{margin:4px 0}
+#tv .s-meeting .finish-choice{margin:0 0 5px;padding:5px 7px}
+#tv .s-meeting .finish-options{gap:4px}
+#tv .s-meeting .rorder-slot{padding:3px 6px}
+#tv .s-meeting .rorder-picks{gap:4px}
+#tv .s-meeting .structure-review{margin:5px 0;padding:5px 8px}
+#tv .s-meeting .rorder-foot,#tv .s-meeting .review-actions{margin-top:5px;padding:5px 0;background:var(--stone-2)}
+/* Existing mobile rules hid useful positive tags on the running-order board.
+   Keep them available on these two screens. */
+#tv .s-meeting :is(.rorder-pick,.finish-option) .tags i{display:inline-block}
+@media (min-width:901px) and (min-height:600px){
+ #tv :is(.s-promo,.s-meeting)>.win{max-width:1520px;height:100%;min-height:0}
+ #tv :is(.s-promo,.s-meeting) .wbody{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;padding:0;gap:0}
+ #tv :is(.s-promo,.s-meeting) .match-night-matchup{grid-column:1/-1;grid-row:1;padding:5px 10px}
+ #tv :is(.s-promo,.s-meeting) .match-night-matchup .portrait.x2{width:44px;height:55px}
+ #tv :is(.s-promo,.s-meeting) .match-night-matchup .mu b{font-size:23px}
+ #tv :is(.s-promo,.s-meeting) .scene{min-height:0;max-height:none;height:auto;overflow:auto;overscroll-behavior:contain;padding:7px 9px}
+ #tv :is(.s-promo,.s-meeting) .wbody>.scene,#tv .s-promo .promo-conversation{grid-column:1;grid-row:2}
+ #tv :is(.s-promo,.s-meeting) .decide2{grid-column:2;grid-row:2;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain;border-top:0;border-left:2px solid var(--ink)}
+ #tv .s-promo .picks.five{grid-template-columns:minmax(0,1fr)}
+ #tv .s-promo .picks.five .decision-option{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:start;column-gap:8px}
+ #tv .s-promo .picks.five .decision-option .tags{grid-column:1/-1}
+ #tv :is(.s-promo,.s-meeting) .sheetline{grid-column:1/-1;grid-row:3;max-height:48px;overflow:auto;padding:3px 8px;font-size:15px}
+ /* The segment/mouthpiece menu needs no empty transcript column. */
+ #tv .s-promo .wbody:not(:has(.scene)){grid-template-columns:minmax(0,1fr)}
+ #tv .s-promo .wbody:not(:has(.scene)) .decide2{grid-column:1/-1;border-left:0}
+ #tv .s-promo .wbody:not(:has(.scene)) .picks{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+ /* Planning boards and reviews are full-width workspaces. The conversation
+    remains readable and independently scrollable above the board. */
+ #tv .s-meeting .wbody:has(.structure-chooser,.runorder,.structure-review){grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(62px,12vh) minmax(0,1fr) auto}
+ #tv .s-meeting .wbody:has(.structure-chooser,.runorder,.structure-review)>.scene{grid-column:1/-1;grid-row:2}
+ #tv .s-meeting .wbody:has(.structure-chooser,.runorder,.structure-review)>.decide2{grid-column:1/-1;grid-row:3;border-left:0;border-top:2px solid var(--ink)}
+ #tv .s-meeting .wbody:has(.structure-chooser,.runorder,.structure-review)>.sheetline{grid-row:4}
+ #tv .s-meeting .structure-options{grid-template-columns:repeat(5,minmax(0,1fr))}
+ #tv .s-meeting .rorder-row{grid-template-columns:minmax(140px,18%) minmax(0,1fr);gap:5px}
+ #tv .s-meeting .rorder-picks{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}
+ #tv .s-meeting .structure-review dl{grid-template-columns:repeat(4,minmax(0,1fr))}
+ #tv .s-meeting .rorder-foot,#tv .s-meeting .review-actions{position:sticky;bottom:-8px;z-index:1;border-top:1px solid var(--stone-lo)}
+}
+@media (max-width:900px), (max-height:599px){
+ #tv :is(.s-promo,.s-meeting) .scene{min-height:75px;max-height:min(150px,20dvh);padding:6px 8px}
+ #tv .s-promo .promo-conversation{flex:none;overflow:visible}
+ #tv .s-promo .promo-context{max-height:min(125px,18dvh)}
+ #tv .s-meeting .sheetline{max-height:60px;overflow:auto}
+ #tv :is(.s-promo,.s-meeting) .decision-option{min-height:44px}
+ #tv :is(.s-promo,.s-meeting) .decision-option>span:not(.tags){font-size:14px}
+ #tv :is(.s-promo,.s-meeting) .tags i{font-size:13px}
+ #tv .s-meeting .structure-option{min-height:44px}
+}
+@media (max-width:720px){
+ #tv :is(.s-promo,.s-meeting) .section-h{font-size:22px}
+ #tv .s-meeting .rorder-picks{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+ #tv .s-meeting .rorder-slot{flex-wrap:wrap}
+ #tv :is(.s-promo,.s-meeting) .decision-option{min-height:48px}
+}
