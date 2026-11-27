@@ -3,7 +3,8 @@
 'use strict';
 const G=window.OfficeGame,D=window.OfficeData,X=window.OfficeMatch,M=window.NarbeScanManager,V=window.NarbeVoiceManager;
 const $=id=>document.getElementById(id),a=(id,label,run)=>({id,label,run}),money=G.money;
-const MATCH_KEY='the-office-switch-match-v1';
+const MATCH_KEY='the-office-switch-match-v1', PLAN_KEY='the-office-switch-planning-v1';
+let planning=null,planLoadToken=0,planSaveError='';
 let items=[],input,active=null,identity=null,saveError='',refreshSettings=null,returnFromPause=null;
 const s=()=>G.S;
 const summary=()=>s()?'Season '+s().season+' · Week '+s().week+' · '+money(s().cash)+' · Reputation '+s().rep:'';
@@ -14,7 +15,7 @@ function restoreMatch(){
  active=null;
  try{const r=JSON.parse(localStorage.getItem(MATCH_KEY)||'null');if(r&&r.careerSeed===s().careerSeed&&r.period===G.abs()&&s().card.some(c=>c.id===r.cid)&&!G.resultRecorded({id:r.cid}))active={cid:r.cid,M:X.restore(r.M)};}catch(e){saveError='Could not restore the unfinished match. The booked match is still on your card.';}
 }
-function saveNotice(){return [G.saveStatus().ok===false?'Career could not be saved. Keep this page open.':'',saveError].filter(Boolean).join(' ');}
+function saveNotice(){return [G.saveStatus().ok===false?'Career could not be saved. Keep this page open.':'',saveError,planSaveError].filter(Boolean).join(' ');}
 function highlight(item,state){
  for(const x of items){x.element.classList.toggle('scan',x.id===item?.id);if(x.id===item?.id)x.element.dataset.braked=String(!!state.braked||!!state.brakePaused);else delete x.element.dataset.braked;}
  $('controls').textContent=M.getSettings().autoScan?'ONE SWITCH · Enter selects · '+M.getScanInterval()/1000+' second scan':'TWO SWITCHES · Space moves · Enter selects';
@@ -38,13 +39,13 @@ function confirm(title,body,yes,fn,cancel){screen(title,body,[a('cancel','Cancel
 function mainMenu(restoreId=null){
  const has=G.hasSave();
  screen('Main menu','Run your own wrestling stable. Sign talent, make bookings and manage matches at your own pace.',[
- ...(has?[a('continue','Continue career',()=>{if(G.load()){restoreMatch();desk();}else screen('Save unavailable','Your saved career could not be opened.',[back(mainMenu)]);})]:[]),
+ ...(has?[a('continue','Continue career',()=>{if(G.load()){restoreMatch();restorePlanning();desk();}else screen('Save unavailable','Your saved career could not be opened.',[back(mainMenu)]);})]:[]),
  a('new','New career',()=>has?confirm('New career?','This replaces only your Switch Edition career. The regular game is unaffected.','Start new career',newIdentity,()=>mainMenu('new')):newIdentity()),
  a('help','How to play',()=>help(()=>mainMenu('help'))),a('settings','Settings',()=>settings(()=>mainMenu('settings'))),a('exit','Exit game',()=>exit(()=>mainMenu('exit')))
  ],{restoreId});
 }
 function newIdentity(){identity=G.suggestIdentity();identityScreen();}
-function identityScreen(){screen('Meet the new boss',identity.manager+' · '+identity.stable+'. You can choose another identity or begin with this one.',[a('start','Start career',()=>{active=null;persistMatch();G.fresh(identity);desk('The keys are yours. You have £2,250 and an empty stable. Sign your first wrestler.');}),a('another','Suggest another identity',()=>{identity=G.suggestIdentity();identityScreen();}),back(()=>mainMenu('new'))]);}
+function identityScreen(){screen('Meet the new boss',identity.manager+' · '+identity.stable+'. You can choose another identity or begin with this one.',[a('start','Start career',()=>{active=null;persistMatch();planning=null;planLoadToken++;persistPlanning();G.fresh(identity);desk('The keys are yours. You have £2,250 and an empty stable. Sign your first wrestler.');}),a('another','Suggest another identity',()=>{identity=G.suggestIdentity();identityScreen();}),back(()=>mainMenu('new'))]);}
 function help(returnTo){screen('How to play','Sign a wrestler, review offers, book matches and choose training. On match night choose a game plan, then advance commentary or give ringside instructions. The simulation waits for each choice. Space advances and Enter selects in two-switch mode. In one-switch mode the highlight moves automatically and Enter selects. Pause and settings are always available at decision screens.',[a('repeat','Repeat instructions',()=>help(returnTo)),back(returnTo)]);}
 function exit(returnTo){confirm('Exit game?',window.parent===window?'Return to the main menu? Your career is kept.':'Return to the Hub? Your career is kept.','Exit game',()=>{mainMenu();if(window.parent!==window){input.cancel({resetGuard:true});V.cancel();window.parent.postMessage({action:'focusBackButton'},'*');}},returnTo);}
 function pause(returnTo){returnFromPause=returnTo;screen('Pause','Your game is waiting. No match time passes here.',[a('continue','Continue',returnTo),a('settings','Settings',()=>settings(()=>pause(returnTo))),a('help','Help',()=>help(()=>pause(returnTo))),a('menu','Main menu',()=>mainMenu()),a('exit','Exit game',()=>exit(()=>pause(returnTo)))]);}
@@ -59,6 +60,7 @@ function settings(returnTo,fresh=true){
 }
 function desk(note='',restoreId=null){
  if(active){matchScreen(note);return;}
+ if(planning&&planning.room&&s().card.some(c=>c.id===planning.cid)){roomScreen();return;}
  if(s().over){screen('Career ended','Your career has ended. You can review the final balance or start again.',[a('new','Main menu',()=>mainMenu()),a('pause','Pause',()=>pause(()=>desk()))]);return;}
  const n=G.pending().length,b=G.officeBrief();
  const list=[a('inbox',n?'Inbox — '+n+' decisions waiting':'Inbox',()=>inbox()),a('stable',s().roster.length?'Manage your stable':'Sign your first wrestler',()=>stable()),a('offers','Booking offers — '+(b.today.length+b.deadline.length)+' urgent',()=>offers()),a('week',s().card.length?'Prepare for match night':'Advance the week',()=>advance()),a('more','More office options',()=>more())];
@@ -164,13 +166,121 @@ function advance(){
  const b=G.officeBrief();
  confirm(s().card.length?'Start match night?':'Advance without a match?',s().card.length+' booked matches. '+b.today.length+' bookable offers this week and '+b.deadline.length+' future offers expiring. Projected bank after costs '+money(b.after)+'.',s().card.length?'Start match night':'Advance week',()=>s().card.length?prepare():endWeek(),()=>desk());
 }
-function prepare(){const c=s().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank)[0];if(!c){endWeek();return;}const w=G.W(c.wid),f=G.F(c.rid);const plans=Object.entries(D.PLANS).map(([id,p])=>({id,name:p.name,blurb:p.blurb}));paged('Match plan — '+w.name+' versus '+f.name,plans,0,(p,ret)=>screen('Match plan',p.name+'. '+p.blurb+' The promoter has booked: '+D.FINISHES[c.finish].name+'.',[a('start','Go to ringside',()=>startMatch(c,p.id)),back(ret),a('pause','Pause',()=>pause(()=>prepare()))],{portrait:w}),()=>desk(),p=>p.name);}
-function startMatch(c,game){
- const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),prep={...w.prep},focus=D.TRAINING[w.training]?.stat;
+function persistPlanning(){
+ try{if(planning)localStorage.setItem(PLAN_KEY,JSON.stringify({careerSeed:s().careerSeed,period:G.abs(),plan:planning}));else localStorage.removeItem(PLAN_KEY);planSaveError='';return true;}
+ catch(e){planSaveError='Backstage progress could not be saved. Keep this page open.';return false;}
+}
+function restorePlanning(){
+ planning=null;planLoadToken++;
+ try{const v=JSON.parse(localStorage.getItem(PLAN_KEY)||'null');
+  if(!active&&v&&v.careerSeed===s().careerSeed&&v.period===G.abs()&&s().card.some(c=>c.id===v.plan?.cid)&&v.plan.room?.v===3&&!G.resultRecorded({id:v.plan.cid}))planning=v.plan;
+ }catch(e){planSaveError='The saved backstage conversation could not be restored.';}
+}
+const structureDescriptions={traditional:'Start strong, take the pressure, fight back and reach the finish.',classic_american:'Guided opening, pressure, comeback and payoff.',kings_road:'Technical exchanges, escalation, callback and finish build.',chickenshit_heel:'Avoid, get exposed, use a shortcut, then survive.',dominant_ace:'Take control, absorb a challenge and reassert dominance.'};
+function prepare(page=0){
+ if(planning?.room&&s().card.some(c=>c.id===planning.cid)){roomScreen();return;}
+ const c=s().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank)[0];
+ if(!c){endWeek();return;}
+ const w=G.W(c.wid),f=G.F(c.rid),choices=[{id:'traditional',label:'Traditional'},...OfficeSheets.STRUCTURES.catalogue()],pages=Math.ceil(choices.length/3);
+ screen('Shape the match',w.name+' versus '+f.name+'. '+D.FINISHES[c.finish].name+'. Choose how the match unfolds. This never changes the booked winner. Page '+(page+1)+' of '+pages+'.',choices.slice(page*3,page*3+3).map(x=>a(x.id,x.label+'. '+structureDescriptions[x.id],()=>x.id==='traditional'?beginRoom(c,null):chooseLead(c,x.id,page))).concat(pages>1?[a('next','More structures',()=>prepare((page+1)%pages))]:[],back(()=>desk())),{portrait:w});
+}
+function chooseLead(c,id,page){
+ const w=G.W(c.wid),f=G.F(c.rid);
+ screen('Choose the dramatic lead','Who should lead this match structure? This is not a choice of winner.',[a('w',w.name,()=>beginRoom(c,{id,lead:'w'})),a('f',f.name,()=>beginRoom(c,{id,lead:'f'})),back(()=>prepare(page))],{portrait:w});
+}
+function beginRoom(c,choice){
+ const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),token=++planLoadToken;
+ const begin=banks=>{
+  if(token!==planLoadToken||active||!s().card.some(x=>x.id===c.id))return;
+  const opts={recent:s().roomRecent||[],threads:OfficeRoom.liveThreads(s().roomThreads,c.eventAbs??G.abs()),heat:G.feud(w.id,f.id)?.heat||0,rehearsed:G.rehearsed(w)};
+  if(choice)Object.assign(opts,{structure:choice,structurePlanning:true,planningCareer:s(),planningInitiative:true,planningProposal:true,planningDialogue:true,planningBargaining:true,planningSequences:true,planningSequencePolicy:3,planningAdaptiveEntries:true,planningContinuationVersion:1,planningSequenceSigning:true,planningBanks:banks});
+  try{planning={cid:c.id,choice,room:OfficeRoom.begin(c,w,f,p,opts)};persistPlanning();roomScreen();}
+  catch(e){console.error(e);planning=null;screen('Backstage unavailable','Could not prepare the conversation. Choose a structure to retry.',[back(()=>prepare())]);}
+ };
+ if(!choice){begin([]);return;}
+ screen('Backstage','Preparing the wrestlers’ conversation.',[a('cancel','Cancel',()=>{planLoadToken++;prepare();})],{portrait:w});
+ Promise.resolve(OfficePlanningDialogue.loadPair(w,f)).catch(()=>[]).then(begin);
+}
+function roomText(v,st){
+ const latest=v.log.slice(-3).map(x=>x.who+': '+x.text).join('\n');
+ const moods=st.w.short+' is '+v.moods.w.word+'. '+st.f.short+' is '+v.moods.f.word+'.';
+ return latest+'\n'+v.ask+'\n'+moods;
+}
+function roomReview(v){
+ const b=v.structureBrief;
+ return [v.finishPlan?.label?'Finish: '+v.finishPlan.label:'',v.finishPlan?.requirement||'',v.finishPlan?.summary||'',b?b.label+'. '+b.lead+' leads. '+b.approach+'. '+b.focus+'. '+b.advice:'',...(v.review||v.board||[]).map(x=>x.name+': '+(x.current||'Called in the ring')),v.story?.verdict||''].filter(Boolean).join('\n');
+}
+function roomScreen(page=0,section='main',extra=''){
+ if(!planning?.room){prepare();return;}
+ const st=planning.room,v=OfficeRoom.view(st),c=s().card.find(x=>x.id===planning.cid);
+ if(!c){planning=null;persistPlanning();desk('The booked match is no longer available.');return;}
+ const root=()=>roomScreen(),returnHere=()=>roomScreen(page,section),pauseHere=()=>pause(returnHere);
+ const act=(id,stay=false)=>{
+  try{OfficeRoom.act(st,id);persistPlanning();}
+  catch(e){console.error(e);screen('Backstage decision','Dennis could not agree that choice. Review the plan before trying again.',[back(returnHere)]);return;}
+  roomScreen(0,stay&&st.stage==='board'?section:'main');
+ };
+ const fmt=o=>o.label+(o.selected?' — selected':'')+(o.hint?'. '+o.hint:'')+(o.tags?.length?' · '+o.tags.join(', '):'');
+ const pageChoices=(rows,fn,backFn)=>{
+  const pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
+  return rows.slice(i*3,i*3+3).map(o=>a(o.id,fmt(o),()=>fn(o))).concat(pages>1?[a('next','More options — page '+((i+1)%pages+1),()=>roomScreen((i+1)%pages,section))]:[],[back(backFn)]);
+ };
+ if(section==='history'){
+  const pages=Math.max(1,Math.ceil(v.log.length/3)),i=Math.max(0,Math.min(page,pages-1));
+  screen('Backstage conversation',v.log.slice(i*3,i*3+3).map(x=>x.who+': '+x.text).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>roomScreen((i+1)%pages,'history'))]:[]),back(root)]);return;
+ }
+ if(section==='more'){
+  screen('Backstage options','Your current plan is saved when storage is available. No match time passes here.',[a('history','Read full conversation',()=>roomScreen(0,'history')),a('pause','Pause / settings',pauseHere),back(root)]);return;
+ }
+ const body=(extra?extra+'\n':'')+roomText(v,st);
+ if(v.stage==='done'){
+  const sh=st.sheet;
+  screen('Match layout signed',body+'\n'+(sh?.premise||'')+'\n'+v.agreed.join('. ')+'. '+(sh?.skipPromo?'No promo tonight.':'Pre-match promos will be added to the Switch Edition in the next stage.'),[a('ring','Go to ringside',()=>startMatch(c,planning)),a('history','Review conversation',()=>roomScreen(0,'history')),a('pause','Pause',pauseHere)],{portrait:st.w});return;
+ }
+ if(v.stage==='board'){
+  if(section==='finish'){
+   screen('Choose the finishing route',body+'\n'+(v.finishPlan?.summary||''),pageChoices(v.finishes||[],o=>act(o.id,true),root),{portrait:st.w});return;
+  }
+  if(section==='objectives'){
+   const rows=v.board.map(r=>({id:r.slot,label:r.name,hint:r.current||'Called in the ring'}));
+   screen(st.structurePlanning?'Dramatic objectives':'Called spots','Choose an objective to edit.\n'+rows.map(r=>r.label+': '+r.hint).join('\n'),pageChoices(rows,o=>roomScreen(0,'objective:'+o.id),root));return;
+  }
+  if(section.startsWith('objective:')){
+   const row=v.board.find(r=>r.slot===section.slice(10));
+   if(!row){root();return;}
+   const rows=row.cards.map(o=>({...o,hint:o.who+'’s idea'}));
+   screen(row.name,row.ask+'\nCurrently: '+(row.current||'Called in the ring')+'.\n'+v.log.slice(-2).map(x=>x.who+': '+x.text).join('\n'),pageChoices(rows,o=>act(o.id,true),()=>roomScreen(0,'objectives')));return;
+  }
+  screen(v.title,body+'\n'+roomReview(v),[
+   ...(v.finishes?.length?[a('finish','Choose finishing route',()=>roomScreen(0,'finish'))]:[]),
+   a('objectives',st.structurePlanning?'Edit dramatic objectives':'Edit called spots',()=>roomScreen(0,'objectives')),
+   a('agree','Agree finish and running order',()=>act('board_ok')),
+   a('more','Conversation / pause',()=>roomScreen(0,'more'))
+  ],{portrait:st.w});return;
+ }
+ const text=v.stage==='review'?body+'\n'+roomReview(v):body;
+ const rows=v.options||[],pages=Math.max(1,Math.ceil(rows.length/3)),i=Math.max(0,Math.min(page,pages-1));
+ const choices=rows.slice(i*3,i*3+3).map(o=>a(o.id,fmt(o),()=>act(o.id)));
+ if(pages>1)choices.push(a('next','More responses — page '+((i+1)%pages+1),()=>roomScreen((i+1)%pages)));
+ choices.push(a('more','Conversation / pause',()=>roomScreen(0,'more')));
+ screen(v.title,text+(pages>1?'\nPage '+(i+1)+' of '+pages+'.':''),choices,{portrait:st.w});
+}
+function switchLadder(c){
+ try{const div=D.divisionOf(c.rid),r=OfficeTerritory.promotionRank(c.pid,div),holder=OfficeTerritory.title(c.pid,div)?.holder;
+ const at=id=>{const i=r.findIndex(x=>x.id===id);return i<0?null:{rank:i+1,slot:r[i].slot,stable:r[i].stable||null};};
+ return {size:r.length,w:at(c.wid),f:at(c.rid),champ:holder===c.wid?'w':holder===c.rid?'f':null,champName:G.P(c.pid)?.name+' '+D.DIVISIONS[div].name+' Champion',belt:c.title?D.belt(c.title.pid,c.title.div)?.name:null};
+ }catch(e){return null;}
+}
+function startMatch(c,P){
+ const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid),prep={...w.prep},focus=D.TRAINING[w.training]?.stat,st=P.room,sh=st.sheet;
+ if(!sh?.signed){roomScreen();return;}
+ let structureExecution;
+ try{structureExecution=OfficeSheets.STRUCTURES.executionChoice(sh,P.choice);}
+ catch(e){console.error(e);screen('Layout not ready','The signed structure could not be verified. Review the backstage conversation.',[back(()=>roomScreen())]);return;}
  if(focus&&!w.injury)prep[focus]=(prep[focus]||0)+(w.intensity==='hard'?2:w.intensity==='standard'?1.5:.6);
  const fatigue=w.training==='rest'||w.training==='promo'?0:w.program?.type==='camp'?8:w.intensity==='hard'?15:w.intensity==='standard'?5:0;
- const match=X.create({w:{...w,fatigue:G.clamp(w.fatigue+fatigue)},f,p,slot:c.slot,minutes:c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,plan:{game,leash:w.psych>=75&&w.ego<75?'free':'script',talk:'none'},preparation:prep,flags:{...w.flags},memory:OfficeMemory.context(w.id,f.id),identity:G.normaliseIdentity(s().identity),seed:Math.floor(Math.random()*2**31)});
- OfficeRivalCorner.attach(match,c);active={cid:c.id,M:match};persistMatch();matchScreen('The bell is about to ring.');
+ const match=X.create({w:{...w,fatigue:G.clamp(w.fatigue+fatigue)},f,p,ladder:switchLadder(c),slot:c.slot,minutes:sh.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,plan:{game:sh.game,leash:sh.leash||(w.psych>=75&&w.ego<75?'free':'script'),talk:sh.talk||'none'},preparation:prep,flags:{...w.flags,...sh.flags},memory:OfficeMemory.context(w.id,f.id),sheet:sh,livePsychologyVersion:structureExecution?1:undefined,sequenceTimingVersion:structureExecution?1:undefined,sequenceDependencyVersion:structureExecution?1:undefined,sequenceHandoverVersion:structureExecution?1:undefined,sequenceRecoveryProjectionVersion:structureExecution?1:undefined,sequenceRecoveryPacingVersion:structureExecution?1:undefined,sequenceAlternativeReadinessVersion:structureExecution?1:undefined,bigSpotArbitrationVersion:3,structureExecution,identity:G.normaliseIdentity(s().identity),seed:Math.floor(Math.random()*2**31)});
+ OfficeRivalCorner.attach(match,c);active={cid:c.id,M:match};const saved=persistMatch();if(saved){planning=null;persistPlanning();}matchScreen('The bell is about to ring.');
 }
 function matchScreen(note='',commentary=[]){
  const m=active.M,c=s().card.find(x=>x.id===active.cid);
@@ -183,7 +293,7 @@ function matchScreen(note='',commentary=[]){
 }
 function burst(n){const m=active.M,lines=[];for(let i=0;i<n&&!m.done;i++){if(m.decision&&!m.queue.length)break;const l=X.next(m);if(!l)break;lines.push(l);}persistMatch();matchScreen(lines.map(l=>(D.BOOTH?.[l.who]?.short?D.BOOTH[l.who].short+': ':'')+l.text).join('\n'),lines);}
 function calls(){const m=active.M,list=Object.entries(X.CALLS).filter(([id])=>X.canCall(m,id)).map(([id,v])=>({id,name:v.name,hint:v.hint}));paged('Ringside instructions',list,0,(o,ret)=>{X.call(m,o.id);persistMatch();burst(1);},()=>matchScreen(),o=>o.name);}
-function settleMatch(){const m=active.M,c=s().card.find(x=>x.id===active.cid);if(!c||!m.done)return matchScreen();const fin={...m.final,log:m.log.map(({t,text,kind,big,who,actionId})=>({t,text,kind,big,who,actionId}))};let cons;G.atomicSettlement(()=>{cons=G.applyResult(c,fin);cons.push(...OfficeRingside.settle(c,m),...OfficeRivalCorner.settle(c,m));G.save();});active=null;if(G.saveStatus().ok!==false)persistMatch();screen('After the bell',m.w.name+' versus '+m.f.name+'. '+fin.stars+' stars.\n'+cons.map(x=>x.text).join('\n'),[a('next',s().card.length?'Prepare next match':'Finish the week',()=>s().card.length?prepare():endWeek()),a('desk','Return to desk',()=>desk()),a('pause','Pause',()=>pause(()=>desk()))]);}
+function settleMatch(){const m=active.M,c=s().card.find(x=>x.id===active.cid);if(!c||!m.done)return matchScreen();const fin={...m.final,log:m.log.map(({t,text,kind,big,who,actionId})=>({t,text,kind,big,who,actionId}))};let cons;G.atomicSettlement(()=>{cons=G.applyResult(c,fin);cons.push(...OfficeRingside.settle(c,m),...OfficeRivalCorner.settle(c,m));const h=s().history.find(x=>x.cid===c.id),report=OfficeSheets.report(m),structure=X.structureReport(m);if(report){if(h)h.sheet=report;if(structure){if(h){h.structure=JSON.parse(JSON.stringify(structure));if(fin.structureAssessment)h.structureAssessment=JSON.parse(JSON.stringify(fin.structureAssessment));}const n=structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length;cons.push({text:'Dramatic structure: '+n+' of '+structure.objectives.length+' objectives witnessed in the ring.',tone:0});}else{cons.push({text:'Match layout: '+report.achieved+' performed, '+report.adapted+' adapted, '+report.missed+' missed.',tone:report.missed>2?-1:1});if(report.achieved>=3&&report.missed===0&&fin.stars>=3.5)OfficeMemory.remember(m.w.id,'chemistry',m.w.short+' remembers how well the agreed match with '+m.f.short+' came together.',m.f.id,3,4,c.id+':chemistry');if(report.missed>=3)OfficeMemory.remember(m.w.id,'sheet_changes',m.w.short+' remembers how far the match departed from the agreed match layout against '+m.f.short+'.',m.f.id,-2,0,c.id+':sheet');}}if(m.o.sheet?.situations)s().roomRecent=[...(s().roomRecent||[]),...m.o.sheet.situations].slice(-6);if(h){h.stip=c.stip||null;h.consequences=cons.map(x=>({text:x.text,tone:x.tone??0}));h.notes??=[];for(const effect of h.consequences)if(!h.notes.includes(effect.text))h.notes.push(effect.text);}G.save();});active=null;planning=null;if(G.saveStatus().ok!==false){persistMatch();persistPlanning();}screen('After the bell',m.w.name+' versus '+m.f.name+'. '+fin.stars+' stars.\n'+cons.map(x=>x.text).join('\n'),[a('next',s().card.length?'Prepare next match':'Finish the week',()=>s().card.length?prepare():endWeek()),a('desk','Return to desk',()=>desk()),a('pause','Pause',()=>pause(()=>desk()))]);}
 function endWeek(){if(s().card.length||active||G.pending().length){desk('Finish booked matches and inbox decisions first.');return;}G.atomicSettlement(()=>G.endWeek());desk('A new week begins. Review your inbox and new offers.');}
 function results(){const rows=s().history.slice().reverse().slice(0,20).map((h,i)=>({...h,id:h.cid||String(i)}));paged('Recent results',rows,0,(h,ret)=>screen('Match report',JSON.stringify({rating:h.stars,week:h.week,season:h.season}),[back(ret)]),more,h=>'Week '+h.week+' · '+h.stars+' stars');}
 M.subscribe(()=>{if(refreshSettings)refreshSettings();});
