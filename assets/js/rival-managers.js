@@ -23,6 +23,40 @@
  };
  const DEFAULT={push:.5,poach:.4,thrift:.5,tiers:null,home:'crown',blurb:'looks after their wrestlers.'};
  const profile=id=>MANAGERS[id]||DEFAULT;
+ // Four-week priorities sit on the existing agency record, not a parallel world.
+ const STRATEGIES={iron:{kind:'reliability',label:'Build dependable earners',skill:'safe'},
+  coastal:{kind:'television',label:'Build a television attraction',skill:'mic'},
+  northern:{kind:'technical',label:'Build a technical contender',skill:'ring'},
+  eastbank:{kind:'development',label:'Develop a young prospect',skill:'ring'},
+  meridian:{kind:'showcase',label:'Create a headline attraction',skill:'mic'},
+  redwood:{kind:'championship',label:'Build a championship contender',skill:'psych'}};
+ function strategicFit(team,w){
+  const kind=STRATEGIES[team.id]?.kind;
+  if(kind==='reliability')return (w.safe||60)*.35+(w.pro||60)*.2;
+  if(kind==='television')return (w.mic||60)*.45;
+  if(kind==='technical')return (w.ring||60)*.3+(w.psych||60)*.25;
+  if(kind==='development')return (['Rookie','Prospect'].includes(w.tier)?28:0)+Math.max(0,32-(w.age||30))*.8;
+  if(kind==='showcase')return (w.heat||50)*.3+(w.style==='Spectacle'?16:0);
+  if(kind==='championship')return (w.heat||50)*.22+(w.ring||60)*.18+(w.tier==='Star'?12:0);
+  return 0;
+ }
+ function strategy(s,team,week){
+  const agency=s.worldV4?.agencies?.[team.id];if(!agency)return null;
+  const spec=STRATEGIES[team.id]||{kind:'reliability',label:'Build dependable earners',skill:'safe'};
+  const current=agency.strategy;
+  const valid=current&&current.until>=week&&(!current.target||team.roster.includes(current.target));
+  const reserve=Math.max(0,agency.weeklyPayroll||0)*(2+profile(team.id).thrift);
+  const mode=agency.cash<reserve?'consolidate':'invest';
+  if(valid&&current.mode===mode)return current;
+  const candidates=team.roster.filter(id=>s.worldV4.contracts[id]?.owner==='ai').map(id=>G.personnel(s,id)).filter(Boolean);
+  const score=w=>strategicFit(team,w)+(w.style===team.style?8:0)-(w.injury?25:0)-(w.fatigue||0)*.12+(s.ambitions?.w?.[w.id]?.sat<35?4:0);
+  const target=candidates.sort((a,b)=>score(b)-score(a)||a.id.localeCompare(b.id))[0]?.id||null;
+  return {kind:spec.kind,mode,target,skill:spec.skill,since:week,until:week+3};
+ }
+ function strategyLabel(s,team){
+  const q=s.worldV4?.agencies?.[team.id]?.strategy;if(!q)return '';
+  return q.mode==='consolidate'?'Current priority: protect cash and retain the stable.':'Current priority: '+(STRATEGIES[team.id]?.label||'Develop the stable')+(q.target?' — '+name(q.target):'')+'.';
+ }
  const BID_GAP=6,BONUS=400,POACH_GAP=2,LOBBY_COST=50,MAX_DIV=24;
 
  function state(t=G.S?.territory){
@@ -98,12 +132,14 @@
   const lobby={};
   for(const team of teams){
    const prof=profile(team.id),agency=w.agencies[team.id];
+   const q=agency.strategy=strategy(s,team,week);
    if(agency.cash<agency.weeklyPayroll*(1+prof.thrift))continue;
    const picks=team.roster.filter(id=>w.contracts[id]?.owner==='ai')
-    .map(id=>({id,v:pressure(s,id)*prof.push+(info(id).style===team.style?8:0)+(prof.tiers?.includes(info(id).tier)?15:0)+(info(id).heat||50)*.1+hash(team.id+id+week)*5}))
-    .sort((x,y)=>y.v-x.v||x.id.localeCompare(y.id)).slice(0,prof.push>=.8?2:1);
+    .map(id=>({id,v:pressure(s,id)*prof.push+(info(id).style===team.style?8:0)+(prof.tiers?.includes(info(id).tier)?15:0)+(info(id).heat||50)*.1+(q?.mode==='invest'&&q.target===id?18:0)+hash(team.id+id+week)*5}))
+    .sort((x,y)=>y.v-x.v||x.id.localeCompare(y.id)).slice(0,prof.push>=.8&&q?.mode!=='consolidate'?2:1);
    let moved=false;
    for(const {id} of picks){
+    if(agency.cash-LOBBY_COST<agency.weeklyPayroll*(1+prof.thrift))break;
     const p=targetPromo(s,t,id,team);if(!p)continue;
     const div=D.divisionOf(id),card=t.cards[p.id]??={};
     if(!card[id]){
@@ -145,7 +181,7 @@
     const target=t.teams.filter(x=>x!==team&&x.roster.length>3).flatMap(x=>x.roster.map(id=>({id,from:x})))
      .filter(x=>w.contracts[x.id]?.owner==='ai'&&!titled.has(x.id)&&(ambition(s,x.id)?.sat??50)<35)
      .filter(x=>agency.cash>=(info(x.id).fee||1000)+agency.weeklyPayroll*3)
-     .map(x=>({...x,v:((info(x.id).ring||60)+(info(x.id).heat||50))/2+(info(x.id).style===team.style?10:0)+(prof.tiers?.includes(info(x.id).tier)?12:0)}))
+     .map(x=>({...x,v:((info(x.id).ring||60)+(info(x.id).heat||50))/2+(info(x.id).style===team.style?10:0)+(prof.tiers?.includes(info(x.id).tier)?12:0)+strategicFit(team,info(x.id))*.35}))
      .sort((x,y)=>y.v-x.v||x.id.localeCompare(y.id))[0];
     if(!target)continue;
     // A full stable makes room by letting its weakest wrestler go, but only for somebody clearly better.
@@ -295,7 +331,7 @@
  }
  function wantedBy(id,s=G.S){const t=s?.territory,team=t?.agents?.wanted?.[id];return team?t.teams.find(x=>x.id===team)||null:null;}
  function standing(pid,teamId,s=G.S){return Math.round(rel(state(s?.territory)||{rel:{}},pid,teamId));}
- function blurb(team){return `${team.manager} ${profile(team.id).blurb}`;}
+ function blurb(team){return `${team.manager} ${profile(team.id).blurb} ${strategyLabel(G.S,team)}`.trim();}
 
- root.OfficeManagers={MANAGERS,profile,state,lobbyWeight,lobbyAt,wantedBy,standing,blurb,turn,takeSpot};
+ root.OfficeManagers={MANAGERS,profile,STRATEGIES,strategicFit,strategy,strategyLabel,state,lobbyWeight,lobbyAt,wantedBy,standing,blurb,turn,takeSpot};
 })(typeof window!=='undefined'?window:globalThis);
