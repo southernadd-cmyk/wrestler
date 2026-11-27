@@ -333,7 +333,7 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  A.recordEvidence(st);assert.equal(s.inbox.filter(m=>m.afterStory===c.id).length,1);
  assert.match(root.OfficeRivalry.introFor({w:G.W(c.wid),f:G.F(c.rid),cases:[]}),/faced off after the bell/);
  const o={pid:c.pid,rid:c.rid};assert.equal(root.OfficeNegotiationsV2.read(o,G.W(c.wid)).evidence,story.text);
- const pages=root.OfficeRingfax.build(s);assert.match(pages[200].lines.map(l=>l.text).join(' '),/faced off after the bell/i);
+ const pages=root.OfficeRingfax.build(s);assert.match(pages[200].lines.map(l=>l.text.trim()).join(' ').replace(/\s+/g,' '),/faced off after the bell/i);
  assert.equal(A.latestStory(s,c.wid,'unrelated',c.pid),null);
  s.history.unshift({...h,cid:'newer',after:null});assert.equal(A.latestStory(s,c.wid,c.rid,c.pid),null);
  console.log('PASS terminal after-bell receipt reaches rivalry, booking, inbox and Ringfax without duplicate effects');
