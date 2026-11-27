@@ -45,14 +45,13 @@
  const MATCH_BOND={breakthrough:[14,'The match of their lives together.'],hurt:[-18,'A bad landing that one of them has not forgiven.'],
   humiliation:[-12,'A clean loss that still rankles.'],protected:[5,'A loss that was handled with care.'],rebellion:[-30,'A finish broken in front of everyone.'],
   discipline:[10,'Refused to go into business against the other.'],chemistry:[8,'An agreed match that came together beautifully.']};
- const originalApply=G.applyResult;
- G.applyResult=function(c,fin){
+ G.registerResultStage('relationships',originalApply=>function(c,fin){
   // v0.3.12 Once per contract: a result applied again (a reload, a replay) must not move a bond twice.
   const seen=!!(c&&G.S?.history?.some(h=>h.cid===c.id));
   const out=originalApply(c,fin);
   try{if(!seen&&c&&fin&&G.S)afterMatch(c,fin,out);}catch(e){G.reportError('relationships/match',e)}
   return out;
- };
+ });
  function afterMatch(c,fin,out){
   const w=G.W(c.wid),f=G.F(c.rid);if(!w||!f)return;
   // v0.3.12 An agreed match that came together is remembered here, before the bond is read, so the
