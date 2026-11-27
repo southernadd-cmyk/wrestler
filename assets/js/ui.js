@@ -1489,7 +1489,8 @@ function deskTable(options,attr,w,f,p,approachOnly=false){
  });
  // A column earns its place only when most options use it. Columns that are
  // empty everywhere are dropped; sparse ones fold into the response as a tag.
- const keep=cols.map((_,c)=>rows.filter(r=>!r.cells[c].empty).length*2>rows.length);
+ // Planning responses always read as tiles: every effect is a tag on its option.
+ const keep=cols.map((_,c)=>!planning&&rows.filter(r=>!r.cells[c].empty).length*2>rows.length);
  return `<div class="well desk-table"><table class="grid"><thead><tr><th>#</th><th>${planning?'Response':promo?'Line':'Choice'}</th>${cols.filter((_,c)=>keep[c]).map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.map(({o,tags,cells},i)=>{
   const folded=cells.filter((x,c)=>!keep[c]&&!x.empty).map(x=>`<span class="desk-fold"><span class="desk-fold-label">${esc(x.label.trim())}</span> ${x.inner}</span>`);
   return `<tr class="pick"><td class="desk-index">${i+1}</td><td class="wrap desk-response"><button class="row-pick decision-option" data-${attr}="${esc(o.id)}"><b>${esc(o.label)}</b>${o.hint?`<small>${esc(o.hint)}</small>`:''}${tags.length?`<small class="desk-extra">${tags.map(t=>`<span class="${sign(t)}">${esc(t)}</span>`).join(' · ')}</small>`:''}${folded.length?`<small class="desk-effects">${folded.join(' ')}</small>`:''}</button></td>${cells.filter((_,c)=>keep[c]).map(x=>`<td class="desk-effect" data-label="${esc(x.label)}">${x.empty?'–':x.inner}</td>`).join('')}</tr>`;
