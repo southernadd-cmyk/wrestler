@@ -1174,6 +1174,13 @@ function endWeek(){
  // Pre-signed bookings move onto the live card when their date arrives.
  const due=S.futureBookings.filter(c=>c.eventAbs===abs());S.futureBookings=S.futureBookings.filter(c=>c.eventAbs>abs());
  for(const c of due){const w=W(c.wid);if(!opponentReady(S,c.rid)){msg({from:'Your road agent',subject:'Opponent unavailable',kind:'info',body:[`${F(c.rid)?.name||'The opponent'} cannot work the scheduled match. The booking has been cancelled without a trust penalty.`]});continue;}if(!w||w.injury||inCamp(w)){const p=P(c.pid);if(p)p.trust=clamp(p.trust-4);msg({from:'Your road agent',subject:'Booking lost to unavailability',kind:'info',body:[`${w?.name||'A wrestler'} cannot fulfil the ${P(c.pid)?.name||'promoter'} booking this week. Trust −4. Plan around injuries and training commitments.`]});}else S.card.push(c)}
+ // Optional Switch Edition safety net, after ordinary costs and objectives.
+ // The regular game and existing standard careers never enter this branch.
+ if(switchEdition&&S.switchDifficulty==='relaxed'&&S.cash<750){
+  const support=750-S.cash;S.cash+=support;
+  const entry=S.books.at(-1);if(entry)entry.switchSupport=support;
+  lines.push(`Relaxed career support: ${money(support)}. Bank restored to ${money(S.cash)}.`);
+ }
  if(S.cash<-500){S.over={reason:'bankrupt'};save();return}
  msg({from:'The accountant',subject:`Week ${S.week===1?16:S.week-1} accounts`,kind:'info',body:[...lines,`Balance: ${money(S.cash)}.`]});
  makeDilemmas();makeOffers();save();
