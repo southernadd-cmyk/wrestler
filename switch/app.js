@@ -24,6 +24,8 @@ function highlight(item,state){
 }
 const boothSpeech=window.OfficeBoothSpeech.create(V);
 let narrationLock=null,broadcastStopRequested=false;
+const broadcastHeld=new Set();
+function requestBroadcastPause(){broadcastStopRequested=true;$('controls').textContent='Pause requested — after the current commentary line.';}
 const MODE_KEY='the-office-switch-management-mode';
 let managementMode='guided';try{if(localStorage.getItem(MODE_KEY)==='full')managementMode='full';}catch(_){}
 const guided=()=>managementMode==='guided';
@@ -36,8 +38,8 @@ function narrateMatch(parts,onComplete=null,{skippable=false}={}){
  // Match commentary is not a scan label. Hold BOTH switch modes at the
  // blank start until the complete broadcast has finished, regardless of
  // the player's normal menu wait-for-speech preference.
- const lock={ticket:null,continuous:!!onComplete,skippable,held:new Set()};narrationLock=lock;scan.setSuspended(true);
- $('controls').textContent=onComplete?'Live broadcast · Enter requests a pause after this batch.':skippable?'Listening to the scene. Press and release your switch to skip narration; then choose.':'Listening to commentary. Choices resume when speech ends.';
+ const lock={ticket:null,continuous:!!onComplete,skippable,held:onComplete?broadcastHeld:new Set()};narrationLock=lock;scan.setSuspended(true);
+ $('controls').textContent=onComplete?'Live broadcast · Press and release Enter to pause after this line.':skippable?'Listening to the scene. Press and release your switch to skip narration; then choose.':'Listening to commentary. Choices resume when speech ends.';
  const finish=result=>{
   if(narrationLock!==lock)return;
   narrationLock=null;input.cancel();scan.setSuspended(false);
@@ -55,7 +57,7 @@ function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,anno
  if(fresh){stopNarration();input.cancel();refreshSettings=null;}
  $('heading').textContent=title;$('kicker').textContent=kicker;$('careerStatus').textContent=summary();$('saveNotice').textContent=saveNotice();
  renderPresentation(title,body,portrait,scene,kicker);
- items=choices.map(x=>{const element=document.createElement('button');element.type='button';element.dataset.choice=x.id;const label=document.createElement('span');label.className='choiceLabel';label.textContent=x.label;element.append(label);if(x.hint){const hint=document.createElement('span');hint.className='choiceHint';hint.textContent=x.hint;element.append(hint);}const item={...x,element};element.onclick=()=>{if(narrationLock){if(narrationLock.continuous&&item.id==='pause')broadcastStopRequested=true;if(!narrationLock.skippable)return;stopNarration();}input.cancel();choose(item);};return item;});
+ items=choices.map(x=>{const element=document.createElement('button');element.type='button';element.dataset.choice=x.id;const label=document.createElement('span');label.className='choiceLabel';label.textContent=x.label;element.append(label);if(x.hint){const hint=document.createElement('span');hint.className='choiceHint';hint.textContent=x.hint;element.append(hint);}const item={...x,element};element.onclick=()=>{if(narrationLock){if(narrationLock.continuous&&item.id==='pause')requestBroadcastPause();if(!narrationLock.skippable)return;stopNarration();}input.cancel();choose(item);};return item;});
  $('choices').replaceChildren(...items.map(x=>x.element));if(fresh)scan.open(items,{restoreId,startParked:restoreId===null&&M.isParkingEnabled()});else scan.setItems(items);
  if(announce){const sceneSpeech=!!scene&&['backstage','promo'].includes(scene.stage);const parkedHint=scan.getState().parked?' Parked. Press Enter to start scanning.':'';if(speechParts?.length)narrateMatch([...speechParts,...(parkedHint&&!onSpeechComplete?[{text:parkedHint.trim()}]:[])],onSpeechComplete,{skippable:sceneSpeech});else if(guided()&&sceneSpeech&&V.getSettings().ttsEnabled)narrateMatch([{text:title+'. '+body+parkedHint}],null,{skippable:true});else scan.announceCurrent(title+'. '+body+parkedHint);}
 }
@@ -64,15 +66,21 @@ function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.class
 function faceUrl(w){
  return window.OfficePortraits?.portraitCell({key:'wrestler:'+w.id,name:w.name},s())?.fileUrl||'assets/portraits/'+w.id+'.png';
 }
+let liveCard=null;
 function renderPresentation(title,body,portrait,scene,kicker){
  const stage=scene?.stage||(kicker.startsWith('LIVE')?'ring':kicker.startsWith('AFTER')?'after':'office');
  document.body.dataset.stage=stage;
+ document.body.dataset.broadcast=String(title==='Live broadcast');
  $('modeLabel').textContent=(guided()?'GUIDED':'FULL')+' MANAGEMENT';
  const journey=$('showJourney'),steps=['office','backstage','promo','ring','after'];
  journey.hidden=!s();Array.from(journey.children).forEach((el,i)=>{el.classList.toggle('current',steps[i]===stage);el.classList.toggle('past',steps.indexOf(stage)>i);if(steps[i]===stage)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');});
- const card=$('matchCard'),read=$('sceneRead'),story=$('story');card.replaceChildren();read.replaceChildren();story.replaceChildren();
+ const card=$('matchCard'),read=$('sceneRead'),story=$('story');read.replaceChildren();story.replaceChildren();
  card.hidden=!(scene?.w&&scene?.f);
- if(!card.hidden){
+ const reuse=stage==='ring'&&!card.hidden&&liveCard?.w===scene.w.id&&liveCard?.f===scene.f.id&&liveCard?.venue===scene.venue&&liveCard?.fact===scene.fact&&liveCard?.wSt===Number.isFinite(scene.wSt)&&liveCard?.fSt===Number.isFinite(scene.fSt);
+ const condition=(box,value)=>{if(!Number.isFinite(value))return;value=Math.max(0,Math.min(100,Math.round(value)));box.querySelector('.conditionText').textContent='Stamina '+value+'%';box.querySelector('.conditionFill').style.width=value+'%';};
+ if(reuse){condition(card.querySelector('.competitor.home'),scene.wSt);condition(card.querySelector('.competitor.away'),scene.fSt);}
+ else{card.replaceChildren();liveCard=null;}
+ if(!card.hidden&&!reuse){
   const mast=node('div','matchMast',scene.venue||'MATCH NIGHT');card.append(mast);
   const pair=node('div','matchPair');
   const person=(w,condition,side)=>{
@@ -85,6 +93,7 @@ function renderPresentation(title,body,portrait,scene,kicker){
   };
   pair.append(person(scene.w,scene.wSt,'home'),node('div','versus','VS'),person(scene.f,scene.fSt,'away'));card.append(pair);
   if(scene.fact)card.append(node('div','matchFact',scene.fact));
+  if(stage==='ring')liveCard={w:scene.w.id,f:scene.f.id,venue:scene.venue,fact:scene.fact,wSt:Number.isFinite(scene.wSt),fSt:Number.isFinite(scene.fSt)};
  }
  $('portrait').hidden=!portrait||!card.hidden;
  if(!$('portrait').hidden){$('face').hidden=false;$('face').src=portrait.id==='dennis'?'assets/portraits/dennis.png':faceUrl(portrait);$('face').alt=portrait.name;}
@@ -106,7 +115,8 @@ function renderPresentation(title,body,portrait,scene,kicker){
 function matchScene(c,w,f,stage,read=[]){
  const p=G.P(c.pid);return {stage,w,f,venue:p?.name||'MATCH NIGHT',fact:(D.SLOTS[c.slot]?.name||'Match')+' · '+(D.FINISHES[c.finish]?.name||'Booked result'),read};
 }
-function liveScene(m,c){return {...matchScene(c,m.w,m.f,'ring',[X.fmt(m.t),'Crowd '+Math.round(m.crowd),'Calls left '+m.calls]),wSt:m.wSt,fSt:m.fSt,fact:'LIVE FROM RINGSIDE'};}
+function momentumText(m){return !Number.isFinite(m.mom)?'Momentum not available':m.mom>=25?'Momentum: '+m.w.short:m.mom<=-25?'Momentum: '+m.f.short:'Momentum: even';}
+function liveScene(m,c){return {...matchScene(c,m.w,m.f,'ring',[X.fmt(m.t),'Crowd '+Math.round(m.crowd)+' / 100',momentumText(m),'Calls left '+m.calls]),wSt:m.wSt,fSt:m.fSt,fact:'LIVE FROM RINGSIDE'};}
 const back=(fn)=>a('back','Back',fn);
 function confirm(title,body,yes,fn,cancel){screen(title,body,[a('cancel','Cancel',cancel),a('confirm',yes,fn)]);}
 function mainMenu(restoreId=null){
@@ -710,59 +720,69 @@ function adviceScreen(q,note='',commentary=[],replay=false){
  const speech='Dennis. '+q.title+'. '+q.body+' '+status;
  screen('Dennis: '+q.title,q.body+' '+status+(note?'\n\n'+note:''),choices,{scene:liveScene(m,c),kicker:'LIVE FROM RINGSIDE · DENNIS',speechParts:replay?boothSpeech.parts(commentary,speech):[{text:speech}]});
 }
-function matchScreen(note='',commentary=[],played=false){
+function ringStatus(m){return X.fmt(m.t)+' · '+m.w.name+' stamina '+Math.round(m.wSt)+' percent. '+m.f.name+' stamina '+Math.round(m.fSt)+' percent. Crowd '+Math.round(m.crowd)+' out of 100. '+momentumText(m)+'. Calls left '+m.calls+'.';}
+function matchScreen(note='',commentary=[],played=false,readStatus=false){
  const m=active.M,c=s().card.find(x=>x.id===active.cid);
  if(!c){active=null;persistMatch();desk('The match is no longer on the card.');return;}
  const scene=liveScene(m,c);
- const status=X.fmt(m.t)+' · '+m.w.name+' stamina '+Math.round(m.wSt)+' percent. '+m.f.name+' stamina '+Math.round(m.fSt)+' percent. Crowd '+Math.round(m.crowd)+'. Calls left '+m.calls+'.';
+ const status=ringStatus(m);
  const narration=(tail)=>played?(tail?[{text:tail}]:null):commentary.length?boothSpeech.parts(commentary,tail):null;
  const replay=()=>matchScreen(note,commentary);
  const replayOption=commentary.length?[a('replay','Replay commentary',replay)]:[];
- if(m.done&&(!guided()||!V.getSettings().ttsEnabled||!m.queue.length)){screen('The final bell',status+' '+(note||''),[a('result','Review result',settleMatch),...replayOption,a('pause','Pause',()=>pause(()=>matchScreen()))],{scene,speechParts:narration('The final bell. '+status)});return;}
- if(m.decision&&!m.queue.length){const d=m.decision;screen(d.title,(note?note+'\n':'')+d.body+'\n'+status,d.options.map(o=>a(o.id,o.label+'. '+o.hint,()=>{X.resolve(m,o.id);persistMatch();if(guided()&&V.getSettings().ttsEnabled)startBroadcast();else burst(1);})).concat(replayOption,a('pause','Pause',()=>pause(()=>matchScreen()))),{scene,speechParts:narration(d.title+'. '+d.body+' '+status)});return;}
+ if(m.done&&(!guided()||!V.getSettings().ttsEnabled||!m.queue.length)){screen('The final bell',status+' '+(note||''),[a('result','Review result',settleMatch),...replayOption,a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))],{scene,speechParts:narration('The final bell. '+status)});return;}
+ if(m.decision&&!m.queue.length){const d=m.decision;screen(d.title,(note?note+'\n':'')+d.body+'\n'+status,d.options.map(o=>a(o.id,o.label+'. '+o.hint,()=>{X.resolve(m,o.id);persistMatch();if(guided()&&V.getSettings().ttsEnabled)startBroadcast();else burst(1);})).concat(replayOption,a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))),{scene,speechParts:narration(d.title+'. '+d.body+' '+status)});return;}
  if(guided()&&V.getSettings().ttsEnabled&&m.switchAdvice?.pending){adviceScreen(m.switchAdvice.pending,note,commentary);return;}
  if(guided()&&V.getSettings().ttsEnabled){
   screen('At ringside',(note?note+'\n\n':'')+status,[
    a('broadcast','Continue live broadcast',startBroadcast),
-   ...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',calls)]:[]),
-   a('replay',commentary.length?'Replay commentary':'Read match status',commentary.length?replay:()=>matchScreen()),
-   a('pause','Pause / settings',()=>pause(()=>matchScreen()))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(played?'Ringside. Continue listening, give an instruction if available, or pause.':''),announce:true});return;
+   ...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',()=>calls(note,commentary))]:[]),
+   a('status','Read match status',()=>matchScreen(note,commentary,true,true)),
+   ...replayOption,
+   a('pause','Pause / settings',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(readStatus?status:played?'Ringside. Continue listening, give an instruction if available, or pause.':''),announce:true});return;
  }
- screen('At ringside',(note?note+'\n\n':'')+status,[a('line','Hear next commentary',()=>burst(1)),a('burst','Continue — up to five commentary lines',()=>burst(5)),...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',calls)]:[]),a('status',commentary.length?'Replay commentary / status':'Repeat match status',()=>commentary.length?replay():matchScreen()),a('pause','Pause',()=>pause(()=>matchScreen()))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(''),announce:!played});
+ screen('At ringside',(note?note+'\n\n':'')+status,[a('line','Hear next commentary',()=>burst(1)),a('burst','Continue — up to five commentary lines',()=>burst(5)),...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',()=>calls(note,commentary))]:[]),a('status',commentary.length?'Replay commentary / status':'Repeat match status',()=>commentary.length?replay():matchScreen()),a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(''),announce:!played});
 }
-// Advance the actual match only after the last spoken batch completes.
- // Guided commentary stops at genuine engine decisions, relevant advice,
- // the final bell or a requested pause. No decision expires in real time.
+// Pull just one commentary line from the real engine at a time. A pause
+// finishes that line, never simulates the next one, and retains a replay window.
 function startBroadcast(){
  if(!active)return;
- broadcastStopRequested=false;
+ broadcastStopRequested=false;broadcastHeld.clear();
  const run=active,m=run.M;let recent=[];
  if(m.switchAdvice?.pending){delete m.switchAdvice.pending;persistMatch();}
  const display=lines=>lines.map(l=>(D.BOOTH?.[l.who]?.short?D.BOOTH[l.who].short+': ':'')+l.text).join('\n');
- const batch=()=>{
+ const finish=()=>{broadcastHeld.clear();matchScreen(display(recent),recent,true);};
+ const nextLine=()=>{
   if(active!==run)return;
-  const lines=[];
-  while(lines.length<3&&(!m.done||m.queue.length)&&(!m.decision||m.queue.length)){
-   const line=X.next(m);if(!line)break;lines.push(line);
-  }
-  if(!lines.length){matchScreen(display(recent),recent,true);return;}
-  recent=lines;persistMatch();
-  screen('Live broadcast',display(lines),[a('pause','Pause at next break',()=>{})],{portrait:m.w,kicker:'LIVE FROM RINGSIDE',scene:liveScene(m,s().card.find(x=>x.id===run.cid)),speechParts:boothSpeech.parts(lines),onSpeechComplete:result=>{
+  if(broadcastStopRequested||(!m.queue.length&&(m.done||m.decision))){finish();return;}
+  const line=X.next(m);
+  if(!line){finish();return;}
+  recent=[...recent,line].slice(-3);persistMatch();
+  screen('Live broadcast',display(recent),[a('pause','Pause after this line',requestBroadcastPause)],{portrait:m.w,kicker:'LIVE FROM RINGSIDE',scene:liveScene(m,s().card.find(x=>x.id===run.cid)),speechParts:boothSpeech.parts([line]),onSpeechComplete:result=>{
    if(active!==run)return;
    if(result?.reason!=='end'){
-    matchScreen(display(lines),lines,true);
+    finish();
     $('saveNotice').textContent=[saveNotice(),'Speech stopped. Replay commentary or continue.'].filter(Boolean).join(' ');return;
    }
-   if(broadcastStopRequested||(!m.queue.length&&(m.done||m.decision))){matchScreen(display(lines),lines,true);return;}
+   if(broadcastStopRequested||(!m.queue.length&&(m.done||m.decision))){finish();return;}
    const advice=contextualAdvice(m,X.canCall);
-   if(advice){recordAdvice(m,advice);adviceScreen(advice,display(lines),lines);return;}
-   batch();
+   if(advice){broadcastHeld.clear();recordAdvice(m,advice);adviceScreen(advice,display(recent),recent);return;}
+   nextLine();
   }});
  };
- batch();
+ nextLine();
 }
 function burst(n){const m=active.M,lines=[];for(let i=0;i<n&&(!m.done||m.queue.length);i++){if(m.decision&&!m.queue.length)break;const l=X.next(m);if(!l)break;lines.push(l);}persistMatch();matchScreen(lines.map(l=>(D.BOOTH?.[l.who]?.short?D.BOOTH[l.who].short+': ':'')+l.text).join('\n'),lines);}
-function calls(){const m=active.M,list=Object.entries(X.CALLS).filter(([id])=>X.canCall(m,id)).map(([id,v])=>({id,name:v.name,hint:v.hint}));paged('Ringside instructions',list,0,(o,ret)=>{X.call(m,o.id);persistMatch();if(guided()&&V.getSettings().ttsEnabled)startBroadcast();else burst(1);},()=>matchScreen(),o=>o.name);}
+function calls(note='',commentary=[],page=0){
+ const m=active.M,c=s().card.find(x=>x.id===active.cid),list=Object.entries(X.CALLS).filter(([id])=>X.canCall(m,id));
+ const pages=Math.max(1,Math.ceil(list.length/3)),i=Math.min(Math.max(0,page),pages-1);
+ const rows=list.slice(i*3,i*3+3).map(([id,v])=>a(id,v.name,()=>{
+  if(!X.canCall(m,id)){matchScreen('That instruction is no longer available.',commentary,true);return;}
+  X.call(m,id);persistMatch();if(guided()&&V.getSettings().ttsEnabled)startBroadcast();else burst(1);
+ },v.hint));
+ if(pages>1)rows.push(a('next','More instructions — page '+((i+1)%pages+1),()=>calls(note,commentary,(i+1)%pages)));
+ rows.push(back(()=>matchScreen(note,commentary,true)));
+ screen('Ringside instructions',ringStatus(m)+' '+(list.length?'Choose an instruction. A wrestler may ignore you.':'No instructions currently available.'),rows,{scene:liveScene(m,c),kicker:'LIVE FROM RINGSIDE'});
+}
 function settleMatch(){const m=active.M,c=s().card.find(x=>x.id===active.cid);if(!c||!m.done)return matchScreen();const fin={...m.final,log:m.log.map(({t,text,kind,big,who,actionId})=>({t,text,kind,big,who,actionId}))};let cons;G.atomicSettlement(()=>{cons=G.applyResult(c,fin);cons.push(...OfficeRingside.settle(c,m),...OfficeRivalCorner.settle(c,m));const h=s().history.find(x=>x.cid===c.id),report=OfficeSheets.report(m),structure=X.structureReport(m);if(report){if(h)h.sheet=report;if(structure){if(h){h.structure=JSON.parse(JSON.stringify(structure));if(fin.structureAssessment)h.structureAssessment=JSON.parse(JSON.stringify(fin.structureAssessment));}const n=structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length;cons.push({text:'Dramatic structure: '+n+' of '+structure.objectives.length+' objectives witnessed in the ring.',tone:0});}else{cons.push({text:'Match layout: '+report.achieved+' performed, '+report.adapted+' adapted, '+report.missed+' missed.',tone:report.missed>2?-1:1});if(report.achieved>=3&&report.missed===0&&fin.stars>=3.5)OfficeMemory.remember(m.w.id,'chemistry',m.w.short+' remembers how well the agreed match with '+m.f.short+' came together.',m.f.id,3,4,c.id+':chemistry');if(report.missed>=3)OfficeMemory.remember(m.w.id,'sheet_changes',m.w.short+' remembers how far the match departed from the agreed match layout against '+m.f.short+'.',m.f.id,-2,0,c.id+':sheet');}}if(m.o.sheet?.situations)s().roomRecent=[...(s().roomRecent||[]),...m.o.sheet.situations].slice(-6);if(h){h.stip=c.stip||null;h.consequences=cons.map(x=>({text:x.text,tone:x.tone??0}));h.notes??=[];for(const effect of h.consequences)if(!h.notes.includes(effect.text))h.notes.push(effect.text);}const contract={id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{id:c.programme.id,step:c.programme.step}}:{})};const captured=OfficeAfter.capture(fin,h);const scene=OfficeAfter.prepareAutonomous(contract,captured,c.afterPlan);s().switchAfter={period:G.abs(),c:contract,fin:captured,plan:c.afterPlan??null,scene:scene||null,summary:m.w.name+' versus '+m.f.name+'. '+fin.stars+' stars.\n'+cons.map(x=>x.text).join('\n')};G.save();});active=null;planning=null;if(G.saveStatus().ok!==false){persistMatch();persistPlanning();}afterScreen();}
 // Post-bell state is part of the same career commit as the settled match.
 let afterLoadToken=0;
@@ -834,13 +854,13 @@ const duringNarration=(handler)=>e=>{
   e.preventDefault();
   if(e.type==='keydown'&&!e.repeat)lock.held.add(k);
   if(e.type==='keyup'&&lock.held.delete(k)){
-   if(lock.continuous&&k==='Enter')broadcastStopRequested=true;
+   if(lock.continuous&&k==='Enter')requestBroadcastPause();
    else if(lock.skippable){stopNarration();input.cancel();}
   }
   return;
  }
  handler(e);
 };
-document.addEventListener('keydown',duringNarration(input.down));document.addEventListener('keyup',duringNarration(input.up));document.addEventListener('narbe-input-cancelled',()=>{input.cancel();if(narrationLock){narrationLock.held.clear();scan.setSuspended(true);}});window.addEventListener('blur',()=>{boothSpeech.cancel();input.cancel({resetGuard:true});});document.addEventListener('visibilitychange',()=>{if(document.hidden){boothSpeech.cancel();input.cancel({resetGuard:true});}});window.addEventListener('pagehide',e=>{boothSpeech.cancel();input.cancel({resetGuard:true});V.cancel();if(!e.persisted)scan.dispose();});
+document.addEventListener('keydown',duringNarration(input.down));document.addEventListener('keyup',duringNarration(input.up));document.addEventListener('narbe-input-cancelled',()=>{input.cancel();if(narrationLock){narrationLock.held.clear();scan.setSuspended(true);}});window.addEventListener('blur',()=>{broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});});document.addEventListener('visibilitychange',()=>{if(document.hidden){broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});}});window.addEventListener('pagehide',e=>{broadcastHeld.clear();boothSpeech.cancel();input.cancel({resetGuard:true});V.cancel();if(!e.persisted)scan.dispose();});
 mainMenu();
 })();
