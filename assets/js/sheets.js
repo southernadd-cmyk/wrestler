@@ -462,6 +462,7 @@
    rally:st.return[0],payoff,motive:goals[0],
    concern:goals.slice(1).join('; ')||'keep the timing natural',preferred:p?.preferred||[]};
  }
+ const TRADITIONAL_WINDOWS=Object.freeze([['The shine',.03,.32],['The heat',.20,.65],['The comeback',.43,.85],['The big spot',.62,.96]].map(([name,start,end])=>Object.freeze({name,window:Object.freeze([start,end])})));
  function build(c,w,f,game,method='landmarks',decision=null,focus='authentic'){
   if(!focusOptions(c,w,f,game).some(o=>o.id===focus))focus='authentic';
   if(!MODE[method])method='landmarks';
@@ -479,10 +480,10 @@
   const payoff=safetyRevision?(lead===b?fop.return[1]:wop.return[1]):lead===b?b.payoff:a.payoff;
   // Each commitment names an intended performer, a real legal graph event,
   // an alternative and a causal predecessor. The booked finish is immutable.
-  const first={id:'opening',owner:'w',title:w.short+' establishes the opening',actions:[a.opening],backup:[wop.open[1]],window:[.03,.32],requires:[]};
-  const second={id:'pressure',owner:'f',title:f.short+' takes control',actions:[pressure],backup:[fop.pressure[0],fop.pressure[1]].filter(x=>x!==pressure),window:[.20,.65],requires:['opening']};
-  const third={id:'reversal',owner:'w',title:w.short+' fights for a comeback',actions:[a.rally],backup:[wop.return[1]],window:[.43,.85],requires:['pressure']};
-  const fourth={id:'payoff',owner:lead===b?'f':'w',title:(lead===b?f.short:w.short)+' attempts a signature turning point',actions:[payoff],backup:[lead===b?fop.spectacle[1]:wop.spectacle[1],'special_spot','scheduled_nearfall'],window:[.62,.96],requires:['reversal']};
+  const first={id:'opening',owner:'w',title:w.short+' establishes the opening',actions:[a.opening],backup:[wop.open[1]],window:TRADITIONAL_WINDOWS[0].window.slice(),requires:[]};
+  const second={id:'pressure',owner:'f',title:f.short+' takes control',actions:[pressure],backup:[fop.pressure[0],fop.pressure[1]].filter(x=>x!==pressure),window:TRADITIONAL_WINDOWS[1].window.slice(),requires:['opening']};
+  const third={id:'reversal',owner:'w',title:w.short+' fights for a comeback',actions:[a.rally],backup:[wop.return[1]],window:TRADITIONAL_WINDOWS[2].window.slice(),requires:['pressure']};
+  const fourth={id:'payoff',owner:lead===b?'f':'w',title:(lead===b?f.short:w.short)+' attempts a signature turning point',actions:[payoff],backup:[lead===b?fop.spectacle[1]:wop.spectacle[1],'special_spot','scheduled_nearfall'],window:TRADITIONAL_WINDOWS[3].window.slice(),requires:['reversal']};
   const final={id:'finish',owner:'either',title:'Deliver the contracted '+(c.finish.startsWith('win')?'victory':'defeat'),actions:['outcome_'+c.finish],backup:['outcome_double','outcome_nc'],window:[.89,1.2],requires:['payoff']};
   applyFocus([first,second,third,fourth,final],focus,w,f,h);
   const nodes=method==='detailed'?[first,second,third,fourth,final]:
@@ -1292,5 +1293,5 @@
   }
   return {active,init,current,observe,advance,finalize,bias,offers,arcBias,report,compatibleCall,dependencyFocus,dependencyPreference,sequenceOffer,openingReadiness,projectedSequenceEnergy,sequenceRecoveryFocus,sequenceRecoveryPreference,observeSequence,deliveryDebrief};
  })();
- root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
+ root.OfficeGraphKernel=K;root.OfficeSheets={MODE,STRUCTURES,DIRECTOR,TRADITIONAL_WINDOWS,build,focusOptions,revise,observe,boost,advance,intervention,finalize,report,proposal,strip,STRIP_NAME,settleVow,closeVows};
 })(typeof window!=='undefined'?window:globalThis);
