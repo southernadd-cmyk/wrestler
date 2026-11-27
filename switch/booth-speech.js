@@ -15,13 +15,12 @@ function keepLine(mode,line,m,cursor){
    m.sheet?.nodes?.some(n=>n.actual===line.actionId&&n.at===at&&['achieved','adapted'].includes(n.status))))||
   /^(structure-|causal-finish-runway)/.test(line.textureId||'')||
   /\b(?:injur(?:y|ed|ies)|doctor|medical|botch(?:ed)?|disqualif\w*|near.?fall|kick(?:s|ed)? out|finisher|taps|rope break)\b/i.test(line.text||'');
- const gap=mode==='highlights'?75:30;
- // Opening and sampled exchanges provide continuity; only routine lines
- // are skipped. Sampling is based on simulated time, not the speaker.
- const keep=important||cursor.lastAt===undefined||at-cursor.lastAt>=gap||
-  (mode==='condensed'&&line.kind==='story'&&!line.textureId);
- if(keep)cursor.lastAt=at;
- return !!keep;
+ // Nested time buckets give each mode an actual sample of the match,
+ // and ensure Highlights is a subset of Condensed for the same stream.
+ const gap=mode==='highlights'?90:30,bucket=Math.floor(at/gap);
+ const sample=cursor.mode!==mode||cursor.bucket!==bucket;
+ cursor.mode=mode;cursor.bucket=bucket;
+ return !!(important||sample||(mode==='condensed'&&line.kind==='story'&&!line.textureId));
 }
 function createBoothSpeech(V){
  const profiles={
