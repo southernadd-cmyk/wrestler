@@ -1244,6 +1244,7 @@ function logList(log){return `<ol class="fulllog">${(log||[]).map(l=>`<li class=
 /* ---------- continue ---------- */
 function proceed(){
  const s=S();
+ if(s.after?.autonomous&&resumeNight())return;
  OfficeTerritory.reconcileOrdinaryTitles();
  if(G.pending().length){inboxFilter='action';openMsg=G.pending()[0].id;go('inbox',phoneLayout()?openMsg:null);toast('Reply to the messages marked in red first.');return}
  if(s.card.length){
@@ -1270,7 +1271,7 @@ const NIGHT_STORE='the-office-v23-match'; // same key: preserve existing mid-mat
 function persistNight(){
  if(!night?.queue)return;
  try{const m=night.M?{...night.M,rState:night.M.r?.getState?.()}:null;
- localStorage.setItem(NIGHT_STORE,JSON.stringify({queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,resultHTML:night.stage==='result'?night.resultHTML||null:null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,segment:night.segment||null,seg:night.seg||null,signing:night.signing||null,after:night.after||null,afterReady:night.afterReady||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
+ localStorage.setItem(NIGHT_STORE,JSON.stringify({careerSeed:S().careerSeed,queue:night.queue,i:night.i,speed:night.speed,results:night.results,before:night.before||null,resultHTML:night.stage==='result'?night.resultHTML||null:null,plan:night.plan,promo:night.promo,mouth:night.mouth||null,segment:night.segment||null,seg:night.seg||null,signing:night.signing||null,after:night.after||null,afterReady:night.afterReady||null,stage:night.stage||'prep',M:m,past:night.past||[]}));
  }catch(e){console.warn('Match autosave failed',e)}
 }
 function clearNight(){try{localStorage.removeItem(NIGHT_STORE)}catch(e){}}
@@ -1279,10 +1280,10 @@ function openTV(){tvPreviousFocus=document.activeElement;clearToast();$('#tv').h
 function closeTVFocus(){$('#app').inert=false;$('#tv').removeAttribute('tabindex');if(tvPreviousFocus?.isConnected)tvPreviousFocus.focus();tvPreviousFocus=null}
 function resumeNight(){
  let saved=null;try{saved=JSON.parse(localStorage.getItem(NIGHT_STORE)||'null')}catch(e){}
- // After the last match the card is empty, but a post-match segment still waiting for its last word comes back.
- const afterOpen=saved?.stage==='after'&&!!saved.after; // Both live and completed post-bell screens must resume, even when the card is empty.
- const resultOpen=saved?.stage==='result'&&!!saved.resultHTML;
- if(!saved||!Array.isArray(saved.queue)||(!S()?.card?.length&&!afterOpen&&!resultOpen))return false;
+ saved=G.recoverNight(saved);
+ if(!saved){clearNight();return false;}
+ const afterOpen=saved?.stage==='after'&&!!saved.after;
+ const resultOpen=saved.stage==='result'&&!!saved.resultHTML;
  night={...saved,paused:true};
  if(afterOpen){openTV();showAfter();return true}
  if(resultOpen){openTV();$('#tv').innerHTML=saved.resultHTML;
@@ -1291,7 +1292,7 @@ function resumeNight(){
   if(!night.after&&ready)night.after=OfficeAfter.prepareAutonomous(ready.c,ready.fin,ready.plan);
   if(night.after?.required&&night.after.stage!=='done')return showAfter(),true;
   return true}
- if(night.i>=night.queue.length){endNight();return true}
+ if(night.stage==='recovered-result'||night.i>=night.queue.length){openTV();$('#tv').innerHTML='<div class="strip"><b>Show recovered</b></div><div class="stage"><p>The completed matches are already recorded in your career. No match will be paid or played twice.</p></div><div class="tv-foot"><button class="btn go" data-tv="done">Finish show</button></div>';return true;}
  openTV();
  if(saved.stage==='live'&&saved.M){
   const restored=Mx.restore(saved.M);
@@ -1303,6 +1304,7 @@ function resumeNight(){
 }
 const SPEED={slow:{line:2600,pause:1100},normal:{line:1500,pause:750},fast:{line:520,pause:260},skip:{line:0,pause:0}};
 function startNight(){
+ if(S().after?.autonomous&&resumeNight())return;
  night={queue:S().card.slice().sort((a,b)=>D.SLOTS[a.slot].rank-D.SLOTS[b.slot].rank).map(c=>c.id),i:0,speed:night?.speed||'normal',results:[],before:OfficeNightReport.capture(S())};
  openTV();night.stage='prep';prep();persistNight();
 }
@@ -1907,11 +1909,11 @@ function syncAfterEvidence(){
 }
 function endNight(){
  clearTimeout(night?.timer);$('#tv').hidden=true;$('#tv').innerHTML='';document.body.style.overflow='';closeTVFocus();
- const res=night?.results||[],before=night?.before||null,speed=night?.speed||'normal';clearNight();night={speed};
+ const res=night?.results||[],before=night?.before||null,speed=night?.speed||'normal';
  // Finish all weekly systems first; the report then reads their settled state.
  G.endWeek();
  if(res.length)G.msg(OfficeNightReport.build(before,S(),res.map(r=>({...r,label:starsText(r.stars)||'DUD'}))));
- G.save();
+ if(G.save())clearNight();night={speed};
  if(S().over){render();return gameOver()}
  openMsg=null;past=[];ahead=[];route={s:'desk',id:null};render(true);toast(`Week ${S().week}. ${S().offers.length} ${plural(S().offers.length,'offer')} on the table.`);
 }
@@ -2025,7 +2027,7 @@ document.addEventListener('click',e=>{
  if(d.talkbook){const o=S().offers.find(o=>o.id===d.talkbook);const when=o?.eventAbs;if(d.revert){const res=G.talkMove(d.talkbook,d.wid,'revert');if(res.error)return toast(res.error)}const err=G.book(d.talkbook,d.wid);if(err)return toast(err);$('#modal').close();refreshList('offers');toast(when>G.abs()?`Future booking confirmed for ${weekLabel(when)}.`:`Contract signed for ${money(G.purse(o,G.W(d.wid)))}.`);return}
  if(d.replay){const x=S().history[+d.replay];dialog(`${x.name} v ${x.foe}`,`${x.promo?`<p><b>Microphone time — ${esc(x.promo.style)}</b></p>${x.promo.dialogue?.length?x.promo.dialogue.map(z=>`<p><b>${esc(z.speaker)}:</b> ${esc(z.line)}</p>`).join(''):`<p>${x.promo.speech.map(z=>'“'+esc(z)+'”').join(' ')}</p><p><b>${esc(x.promo.opponent)}:</b> “${esc(x.promo.reply)}”</p>`}${x.promo.promise?.kept===true?'<p><b>Promise kept in the match.</b></p>':x.promo.promise?.kept===false?'<p><b>Promise broken in the match.</b></p>':''}`:''}<p class="dim">${esc(x.promoter)}, season ${x.season} week ${x.week}. <span class="stars">${starsText(x.stars)||'DUD'}</span></p>${historyDetails(x)}${(x.notes||[]).map(n=>`<p>${esc(n)}</p>`).join('')}<div class="well">${logList(x.log||[])}</div>`);return}
  if(d.act==='export'){const blob=new Blob([JSON.stringify(S())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`the-office-s${S().season}w${S().week}.json`;a.click();return}
- if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(![20,21,22].includes(x.v))throw 0;G.S=x;if(!G.S)throw 0;G.save();startApp('desk');toast('Save loaded.')}catch(err){toast('That file isn’t a valid save from v2 to v2.3.')}})};i.click();return}
+ if(d.act==='import'){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(!G.importCareer(x))throw 0;clearNight();night=null;G.save();startApp('desk');if(!resumeNight())toast('Save loaded.')}catch(err){toast('That file isn’t a valid save from v2 to v2.3.')}})};i.click();return}
  if(d.act==='profile'){identitySetup('edit');return}
  if(d.act==='newgame'){dialog('Start a new career?','<p>Your current career will be overwritten.</p>',[['Cancel','close'],['Start again','newgame','red']]);return}
  if(d.dlg==='identity-save'){

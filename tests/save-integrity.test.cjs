@@ -53,3 +53,33 @@ assert.ok(G.S.seasonResults.every(x=>!('log' in x)&&!('notes' in x)),'summary do
 assert.ok(G.S.seasonResults.every(x=>x.name&&x.foe),'the chart retains names and opponents for every rating');
 assert.match(ui,/\(s\.seasonResults\|\|s\.history\)\.filter/,'chart uses the complete lightweight ledger');
 console.log('PASS season ratings persist after detailed match reports roll off');
+
+// INT12A: old/malformed snapshots cannot silently advance or replay a career.
+G.fresh();assert.equal(G.sign('kit'),null);
+{
+ const s=G.S,now=G.abs(),c={id:'recover-match',pid:'dock',wid:'kit',rid:'silas',slot:'mid',finish:'win_clean',purse:100,eventAbs:now};
+ s.card=[c];
+ const saved={queue:[c.id],i:0,stage:'live',careerSeed:s.careerSeed,before:{abs:now},M:{test:true}};
+ assert.equal(G.recoverNight(saved).stage,'live');
+ assert.equal(G.recoverNight({...saved,careerSeed:s.careerSeed+1}),null);
+ assert.equal(G.recoverNight({...saved,before:{abs:now-1}}),null);
+ assert.equal(G.recoverNight({...saved,queue:['foreign']}),null);
+ G.applyResult(c,fin());
+ const recovered=G.recoverNight(saved);
+ assert.equal(recovered.stage,'recovered-result');assert.equal(recovered.M,null);
+ assert.equal(recovered.i,1);
+ s.after??={};s.after.autonomous={required:true,cid:c.id,stage:'angle'};
+ assert.equal(G.recoverNight(null).after.cid,c.id,'career-only save retains compulsory response');
+ delete s.after.autonomous;
+ const before=JSON.stringify(s);
+ assert.equal(G.importCareer({v:22,roster:[],offers:[]}),false);
+ assert.equal(JSON.stringify(G.S),before);
+ assert.equal(G.importCareer(JSON.parse(before)),true);
+}
+G.msg({kind:'decision',subject:'Important pending reply',body:[]});
+for(let i=0;i<75;i++)G.msg({kind:'info',subject:'Routine report '+i,body:[]});
+assert.ok(G.pending().some(m=>m.subject==='Important pending reply'));
+assert.equal(G.S.inbox.length,60);
+assert.match(ui,/G\.importCareer\(x\)/);
+assert.match(ui,/G\.recoverNight\(saved\)/);
+console.log('PASS INT12A recovery validation, settled match guard, protected decisions and import safety');
