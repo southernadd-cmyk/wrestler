@@ -154,13 +154,102 @@
   }
  }
 
- /* ---------- pre-taped vignette ---------- */
+ /* ---------- pre-taped vignette ----------
+    The setting is a real decision. Each one belongs to a category (the tone it is built for) and is
+    weighed against this fixture: the wrestler's style and voice, how well the crowd knows them, the
+    rivalry's heat, and the promoter's taste. What it does is computed once (settingEffect) and the
+    same numbers are both applied and shown as the option's tags, so a tag never promises more than
+    the setting delivers. Effects stay inside the segment economy: production quality and the room
+    reach the match through crowdShift, feud heat through heatDelta, trust and morale are applied
+    once when the scene ends, and the setting's angle colours the commentary through the result style.
+    Taped, so the wrestler's microphone skill is never rolled. */
+ const VIG_CATS={intense:'Intense',heartfelt:'Heartfelt',comedy:'Comedy',menace:'Menace',mystery:'Mystery',flexible:'Flexible'};
+ const TONE_WORD={intense:'intense',heartfelt:'heartfelt',comedy:'funny',menace:'menacing'};
+ const STYLE_WORD={Brawl:'brawling',Technical:'technical',Story:'storytelling',Spectacle:'high-flying'};
+ const LIKES_WORD={brawl:'a fight',spots:'a spectacle',story:'a story',technical:'serious wrestling'};
+ // q: production; room: the crowd; heat: feud heat; morale: the wrestler's; styles/voices: who it suits (+4/+3
+ // production); likes: promoter taste (+1 trust); persona: promoter personality (± trust); hot: feud heat if the
+ // rivalry is already personal (40+), a backfire if not; known: crowd change when the wrestler is well known
+ // (heat 60+); unknown: crowd change when they are not (heat under 50); mystery: pays off a cliffhanger edit;
+ // style: how the commentary remembers it in the match.
+ const SETTINGS=[
+  {id:'gym',cat:'intense',label:'A gym before dawn',hint:'Sweat, breath and a single bulb.',fits:['intense','heartfelt'],styles:['Technical','Brawl'],likes:['technical'],q:2,style:'respect',
+   shot:'The screen fades up on {W} in an empty gym before sunrise, wrapping their wrists under a single bulb.'},
+  {id:'tape',cat:'intense',label:'Watching tape of {F}',hint:'A dark room, a remote, and {F}’s last six matches on rewind.',fits:['intense','menace'],styles:['Technical','Story'],likes:['technical','story'],hot:2,q:2,style:'challenge',
+   shot:'The screen fades up on a television in a dark room. {F} is on it, and {W} is pressing rewind.'},
+  {id:'boxing',cat:'intense',label:'Sparring at a boxing club',hint:'Pads, headguards and a coach who never stops shouting.',fits:['intense','menace'],styles:['Brawl'],likes:['brawl'],persona:{aggressive:1},q:2,room:1,style:'challenge',
+   shot:'The screen fades up on a boxing club above a garage. {W} is taking shots on the pads and giving them back harder.'},
+  {id:'home',cat:'heartfelt',label:'Where they grew up',hint:'The street, the school gates, the old ring.',fits:['heartfelt','comedy'],voices:['earnest','eager','gruff'],known:3,morale:2,q:2,style:'rally',
+   shot:'The screen fades up on a terraced street. {W} walks past the house where they grew up.'},
+  {id:'school',cat:'heartfelt',label:'The school that trained them',hint:'The draughty hall where they took their first bump.',fits:['heartfelt','intense'],styles:['Story','Technical'],likes:['story'],persona:{traditional:1},morale:1,q:2,style:'respect',
+   shot:'The screen fades up on a church hall with a ring in it. {W} runs a hand along the bottom rope.'},
+  {id:'family',cat:'heartfelt',label:'At the kitchen table',hint:'Tea, biscuits and a parent who has seen every match.',fits:['heartfelt','comedy'],voices:['earnest','eager','stoic'],persona:{cold:-1},morale:2,room:2,q:1,style:'rally',
+   shot:'The screen fades up on a kitchen table. A parent pours the tea and tells {W} to sit up straight.'},
+  {id:'shop',cat:'comedy',label:'Doing the weekly shop',hint:'A trolley, a list, and selfies in the cereal aisle.',fits:['comedy','heartfelt'],voices:['grand','slippery','eager'],styles:['Spectacle'],persona:{showman:1,traditional:-1},room:2,q:1,style:'rally',
+   shot:'The screen fades up on a supermarket aisle. {W} is pushing a trolley with one wonky wheel.'},
+  {id:'karaoke',cat:'comedy',label:'Karaoke at the local',hint:'One song, a sticky microphone and a pub that knows them.',fits:['comedy'],voices:['grand','slippery','eager','sermon'],styles:['Spectacle'],persona:{showman:1,cold:-1},known:2,room:2,q:0,
+   shot:'The screen fades up on a pub on karaoke night. {W} is next on the list.'},
+  {id:'kids',cat:'comedy',label:'Coaching at a kids’ open day',hint:'Twenty children, crash mats and no plan at all.',fits:['comedy','heartfelt'],voices:['earnest','eager','gruff'],persona:{traditional:1},morale:1,room:2,q:1,style:'rally',
+   shot:'The screen fades up on a sports hall full of children. {W} is outnumbered.'},
+  {id:'dark',cat:'menace',label:'An empty, dark building',hint:'Shadows and a flickering light.',fits:['menace','intense'],voices:['sermon','stoic','precise'],heat:1,q:2,style:'mindgames',
+   shot:'The screen fades up on darkness. A light flickers on, and {W} is already sitting in the middle of the room.'},
+  {id:'outside',cat:'menace',label:'Parked outside {F}’s gym',hint:'Engine off, watching the door. Only works if this is already personal.',fits:['menace'],hot:4,persona:{aggressive:1,traditional:-1,cold:-1},q:1,style:'mindgames',
+   shot:'The screen fades up on a car with its engine off, across the road from {F}’s gym. {W} is in the driver’s seat, watching the door.'},
+  {id:'scrapyard',cat:'menace',label:'A scrapyard at night',hint:'Crushed cars, rain, and a crowbar nobody mentions.',fits:['menace','intense'],styles:['Brawl'],likes:['brawl'],persona:{aggressive:1,traditional:-1},heat:2,q:2,style:'challenge',
+   shot:'The screen fades up on a scrapyard in the rain. {W} is sitting on the bonnet of a crushed car.'},
+  {id:'chapel',cat:'mystery',label:'An abandoned chapel',hint:'Candles, dust and a sermon to nobody.',fits:['menace','intense'],voices:['sermon','stoic','grand'],heat:1,q:2,mystery:true,style:'mindgames',
+   shot:'The screen fades up on a ruined chapel lit by candles. {W} stands where the altar used to be.'},
+  {id:'static',cat:'mystery',label:'Static and a voice',hint:'No face, no name: a distorted voice and a date. Best for someone the crowd does not know yet.',fits:['menace','intense','heartfelt'],unknown:4,known:-2,persona:{showman:1},q:0,mystery:true,
+   shot:'The screen fills with static. A distorted voice speaks over it, and for a moment a figure that might be {W} appears.'},
+  {id:'symbols',cat:'mystery',label:'A wall of strange symbols',hint:'Chalk markings across a cellar wall, and {W} adding one more.',fits:['menace','comedy'],styles:['Spectacle'],likes:['spots'],persona:{showman:1,cold:-1},q:1,mystery:true,style:'mindgames',
+   shot:'The screen fades up on a cellar wall covered in chalk symbols. {W} is drawing another one.'},
+  {id:'road',cat:'flexible',label:'On the road between shows',hint:'Motorway services at two in the morning.',fits:['intense','heartfelt','comedy','menace'],q:1,
+   shot:'The screen fades up on motorway services at two in the morning. {W} is eating chips out of the paper.'},
+  {id:'arena',cat:'flexible',label:'The empty hall the morning after',hint:'{V} with the chairs stacked and a cleaner with a mop.',fits:['intense','heartfelt','menace'],likes:['story'],q:2,
+   shot:'The screen fades up on {V} the morning after a show. The chairs are stacked, and {W} sits alone on the apron.'}
+ ];
+ const SETTING=Object.fromEntries(SETTINGS.map(s=>[s.id,s]));
+ const wStyle=st=>st.w.style??G?.W?.(st.w.id)?.style??null;
+ const pLikes=st=>st.p.likes??G?.P?.(st.p.id)?.likes??null;
+ // What a setting does for this fixture. Pure: read by the tags and by the step that applies it.
+ function settingEffect(st,s){
+  const vw=voice(st.w),style=wStyle(st),likes=pLikes(st),pers=st.p.personality;
+  const e={quality:s.q||0,room:s.room||0,heat:s.heat||0,trust:0,morale:s.morale||0,why:[],cold:false};
+  if(s.styles?.includes(style)){e.quality+=4;e.why.push('It suits {W}’s '+(STYLE_WORD[style]||'own')+' style.');}
+  if(s.voices?.includes(vw)){e.quality+=3;e.why.push('{W} comes across well on this kind of tape.');}
+  if(likes&&s.likes?.includes(likes)){e.trust+=1;e.why.push('{P} wants '+LIKES_WORD[likes]+', and this is one.');}
+  const pt=s.persona?.[pers]||0;
+  if(pt){e.trust+=pt;e.why.push(pt>0?'{P} will like the nerve of it.':'{P} will not like it.');}
+  if(s.hot){
+   if(st.heat0>=40){e.heat+=s.hot;e.room+=1;e.why.push('The rivalry is hot enough to carry it.');}
+   else{e.room-=3;e.quality-=3;e.cold=true;e.why.push('The rivalry is not personal yet, so it will look strange.');}
+  }
+  if(s.known&&st.w.heat>=60){e.room+=s.known;e.why.push(s.known>0?'The crowd already knows {W}, and this plays to it.':'Everyone will recognise {W}, which spoils the mystery.');}
+  if(s.unknown&&st.w.heat<50){e.room+=s.unknown;e.why.push('Nobody knows much about {W} yet, which helps.');}
+  e.trust=Math.max(-2,Math.min(2,e.trust));
+  e.score=e.quality+e.room+e.heat+e.trust*2+e.morale;
+  return e;
+ }
+ const arrows=(n,a,b)=>n>=b?' ▲▲':n>=a?' ▲':n<0?' ▼':'';
+ function settingTags(s,e){
+  const t=[VIG_CATS[s.cat]];
+  const q=arrows(e.quality,3,6);if(q)t.push('Production'+q);
+  if(e.room)t.push('Crowd'+arrows(e.room,1,4));
+  if(e.heat)t.push('Feud heat'+arrows(e.heat,1,3));
+  if(e.trust)t.push('Promoter'+arrows(e.trust,1,2));
+  if(e.morale)t.push('Morale'+arrows(e.morale,1,2));
+  if(e.cold)t.push('Risk: feud too cold');
+  if(s.mystery)t.push('Pays off a cliffhanger');
+  if(t.length===1)t.push('Safe');
+  return t;
+ }
+ const fitsWord=s=>s.fits.length>=4?'Works with any tone.':'Works with '+(/^[aeiou]/.test(TONE_WORD[s.fits[0]])?'an ':'a ')+s.fits.map(x=>TONE_WORD[x]).join(' or ')+' tone.';
+ function settingOption(st,s){
+  const e=settingEffect(st,s);
+  return {id:s.id,label:fill(s.label,st),hint:fill([s.hint,fitsWord(s),...e.why].join(' '),st),tags:settingTags(s,e).map(t=>fill(t,st)),category:s.cat,categoryName:VIG_CATS[s.cat],score:e.score};
+ }
  const VIGNETTE=[
-  {id:'setting',name:'The setting',help:'The crew has a day with {W}. Where do they shoot it?',options:[
-   {id:'gym',label:'A gym before dawn',hint:'Sweat, breath and a single bulb. Suits intensity and sincerity.',tags:['Intense','Heartfelt']},
-   {id:'home',label:'Where they grew up',hint:'The street, the school gates, the old ring. Suits warmth and humour.',tags:['Heartfelt','Comedy']},
-   {id:'dark',label:'An empty, dark building',hint:'Shadows and a flickering light. Suits menace and mystery.',tags:['Menace','Mystery']},
-   {id:'road',label:'On the road between shows',hint:'Motorway services at two in the morning. Suits almost anything.',tags:['Flexible']}]},
+  {id:'setting',name:'The setting',help:'The crew has a day with {W}. Where do they shoot it?',options:SETTINGS.map(s=>({id:s.id,label:s.label,hint:s.hint,tags:[VIG_CATS[s.cat]]}))},
   {id:'tone',name:'The tone',help:'What should people feel when the screen goes dark?',options:[
    {id:'intense',label:'Intense',hint:'Focus, pain and preparation. Works best for a serious, quiet type.',tags:['Gruff','Precise','Stoic']},
    {id:'heartfelt',label:'Heartfelt',hint:'Why this matters to them. Works best for someone the crowd can believe.',tags:['Earnest','Eager']},
@@ -172,12 +261,21 @@
    {id:'message',label:'End on a message to {F}',hint:'Straight down the lens, one line for the opponent.',tags:['Feud heat ▲']},
    {id:'tease',label:'End on a cliffhanger',hint:'Something unexplained in the final frame. People will talk about it all week.',tags:['Crowd ▲','Intrigue']}]}
  ];
- const FIT={gym:['intense','heartfelt'],home:['heartfelt','comedy'],dark:['menace','intense'],road:['intense','heartfelt','comedy','menace']};
  const TONE_VOICE={intense:['gruff','precise','stoic'],heartfelt:['earnest','eager','gruff'],comedy:['grand','slippery','eager'],menace:['sermon','stoic','gruff','precise']};
- const SHOT={gym:'The screen fades up on {W} in an empty gym before sunrise, wrapping their wrists under a single bulb.',
-  home:'The screen fades up on a terraced street. {W} walks past the house where they grew up.',
-  dark:'The screen fades up on darkness. A light flickers on, and {W} is already sitting in the middle of the room.',
-  road:'The screen fades up on motorway services at two in the morning. {W} is eating chips out of the paper.'};
+ // The tone and edit tags say what they will do with the setting already chosen.
+ function vignetteTags(st,R,o){
+  const s=SETTING[st.flags.setting];
+  if(R.id==='tone'){
+   const fit=!!s?.fits.includes(o.id),suits=TONE_VOICE[o.id].includes(voice(st.w));
+   return [fit?'Fits the setting ▲':'Clashes with the setting ▼',suits?'Suits {W} ▲':o.id==='comedy'?'Gamble: not a natural clown ▼':'Not {W}’s voice ▼',...(o.id==='menace'?['Feud heat ▲']:[])];
+  }
+  if(R.id==='edit'){
+   if(o.id==='long')return [st.flags.good?'Strong footage ▲▲':'Weak footage ▼','Gamble'];
+   if(o.id==='tease'&&s?.mystery)return ['Crowd ▲▲','Pays off the mystery'];
+   if(o.id==='message'&&s?.cat==='menace')return ['Feud heat ▲▲'];
+  }
+  return o.tags;
+ }
  const VIG_SAY={
   intense:{grand:'“Every morning, while the world sleeps, I am becoming a legend.”',gruff:'“Nobody sees this bit. This is the only bit that counts.”',eager:'“Five more. Five more. Five more. I always say five more.”',stoic:'{W} says nothing for the whole minute. The skipping rope does the talking.',precise:'“Six-forty a.m. Set seven of nine. On schedule.”',earnest:'“I’m tired. I’m always tired. I’m still here.”',sermon:'“The body is a temple. I am rebuilding mine for war.”',slippery:'“Honestly, I hate the gym. But it’s where they keep the free towels.”'},
   heartfelt:{grand:'“They said a kid from here would never be a star. Look at me now, street.”',gruff:'“Didn’t have much growing up. Still don’t. Got this, though.”',eager:'“I used to practise my entrance in that garden! The neighbours HATED it!”',stoic:'“My grandfather wrestled. I never saw it. I carry it anyway.”',precise:'“I can tell you the exact day I decided to do this. It was a Tuesday.”',earnest:'“I just want to make the people here proud. That’s all it’s ever been.”',sermon:'“This is where I was born, and this is where I was born again.”',slippery:'“Lovely little house. I’d show you inside, but there’s a court order.”'},
@@ -186,17 +284,28 @@
  };
  function vignette(st,R,o){
   const vw=voice(st.w);
-  if(R.id==='setting'){st.flags.setting=o.id;line(st,'stage',SHOT[o.id]);st.quality+=o.id==='road'?1:2;}
+  if(R.id==='setting'){
+   const s=SETTING[o.id],e=settingEffect(st,s);
+   st.flags.setting=o.id;line(st,'stage',s.shot);
+   if(e.cold)line(st,'crowd','People in the hall look at each other. What has {F} done to deserve this?');
+   st.quality+=e.quality;st.room+=e.room;st.heat+=e.heat;st.trust+=e.trust;st.morale+=e.morale;
+   if(s.style)st.flags.style=s.style;
+  }
   else if(R.id==='tone'){
-   st.flags.tone=o.id;const fit=FIT[st.flags.setting]?.includes(o.id),suits=TONE_VOICE[o.id].includes(vw);
+   st.flags.tone=o.id;const fit=!!SETTING[st.flags.setting]?.fits.includes(o.id),suits=TONE_VOICE[o.id].includes(vw);
    line(st,o.id==='comedy'||/^\{W\} /.test(VIG_SAY[o.id][vw])?'stage':'w',VIG_SAY[o.id][vw]);
    st.quality+=(fit?5:-3)+(suits?6:o.id==='comedy'?-6:-2);st.flags.good=fit&&suits;
    if(o.id==='menace')st.heat+=2;
   }else{
    if(o.id==='tight'){line(st,'stage','Sixty seconds, sharp cuts, out on {W}’s name. The hall applauds the screen.');st.quality+=3;}
    else if(o.id==='long'){line(st,'stage',st.flags.good?'The package plays for three minutes, and the hall watches every second in silence.':'Three minutes is a long time. By the end, people are looking at their phones.');st.quality+=st.flags.good?7:-5;}
-   else if(o.id==='message'){line(st,'w','“{F}. You have seen what I do to get ready. Now come and see the rest.”');st.heat+=3;st.quality+=2;}
-   else{line(st,'stage','In the final frame, something is written on the wall behind {W}. The screen cuts out before anyone can read it.');st.quality+=2;st.heat+=1;st.flags.tease=true;}
+   else if(o.id==='message'){line(st,'w','“{F}. You have seen what I do to get ready. Now come and see the rest.”');st.heat+=SETTING[st.flags.setting]?.cat==='menace'?4:3;st.quality+=2;}
+   else{
+    const mystery=!!SETTING[st.flags.setting]?.mystery;
+    line(st,'stage','In the final frame, something is written on the wall behind {W}. The screen cuts out before anyone can read it.');
+    if(mystery)line(st,'crowd','The hall has been waiting for this all package. People are already arguing about what it said.');
+    st.quality+=mystery?4:2;st.room+=mystery?3:0;st.heat+=1;st.flags.tease=true;
+   }
   }
  }
 
@@ -336,9 +445,9 @@
   if(!ENGINES[type])return null;
   const heat0=Math.max(c.feudHeat||0,G?.feud?.(w.id,f.id)?.heat||0);
   const st={v:1,type,cid:c.id,round:0,stage:'live',
-   w:{id:w.id,short:w.short,name:w.name,mic:w.mic||50,ego:w.ego||50,heat:w.heat||40,morale:w.morale??60,fatigue:w.fatigue||0,injury:w.injury||null},
+   w:{id:w.id,short:w.short,name:w.name,style:w.style||null,mic:w.mic||50,ego:w.ego||50,heat:w.heat||40,morale:w.morale??60,fatigue:w.fatigue||0,injury:w.injury||null},
    f:{id:f.id,short:f.short,name:f.name,mic:f.mic||55,ego:f.ego||60},
-   p:{id:p.id,voice:p.voice,name:p.name,venue:p.venue||'the hall',tv:!!p.tv,personality:p.personality||null},
+   p:{id:p.id,voice:p.voice,name:p.name,venue:p.venue||'the hall',tv:!!p.tv,personality:p.personality||null,likes:p.likes||null},
    heat0,quality:type==='vignette'?48+(p.tv?5:0):clamp(36+(w.mic||50)*.3),room:0,heat:0,hurt:0,back:0,trust:0,morale:0,log:[],picks:[],flags:{},questions:null,promise:null};
   // The wrestler's own bank goes into the save with the scene, so choices never need the network.
   const D=Dialogue();
@@ -359,7 +468,9 @@
  function rounds(st){return ENGINES[st.type].rounds;}
  function options(st){
   if(st?.stage!=='live')return [];
-  return rounds(st)[st.round].options.map(o=>({id:o.id,label:fill(o.label,st),hint:fill(o.hint,st),tags:o.tags.map(t=>fill(t,st))}));
+  const R=rounds(st)[st.round];
+  if(st.type==='vignette'&&R.id==='setting')return SETTINGS.map(s=>settingOption(st,s));
+  return R.options.map(o=>({id:o.id,label:fill(o.label,st),hint:fill(o.hint,st),tags:(st.type==='vignette'?vignetteTags(st,R,o):o.tags).map(t=>fill(t,st))}));
  }
  function choose(st,id){
   if(st?.stage!=='live')return false;
@@ -390,7 +501,7 @@
   const energy=st.type==='solo'&&st.flags.cheap?Math.abs(st.room)*.25:st.room*.25;
   const crowdShift=Math.max(-6,Math.min(13,Math.round((q-50)/6+energy+(st.type==='ambush'?st.flags.vis:0)+(st.flags.tease?2:0))));
   const heatDelta=clamp(st.heat,0,16);
-  const style=st.type==='solo'&&st.picks[0]==='crowd'?'rally':st.type==='solo'&&st.picks[1]==='threat'?'challenge':null;
+  const style=st.type==='solo'&&st.picks[0]==='crowd'?'rally':st.type==='solo'&&st.picks[1]==='threat'?'challenge':st.type==='vignette'?st.flags.style||null:null;
   const hook=cap(st.type==='solo'&&st.promise?(st.promise.type==='win'?`${st.w.short} promised the crowd a win tonight. Now they have to deliver it.`:`${st.w.short} promised a clean finish in front of everyone.`):st.type==='solo'?(st.flags.cheap?`${st.w.short} insulted ${st.p.venue} before the match. The crowd wants blood.`:q>=65?`${st.w.short} had the room in the palm of their hand before the bell.`:`${st.w.short} spoke alone before the match. Now they have to back it up.`):
    st.type==='vignette'?(st.flags.tease?`Nobody has worked out what was on the wall in ${st.w.short}’s video.`:q>=65?`That video package has the crowd ready for ${st.w.short}.`:`The video package is over. The real thing is next.`):
    st.type==='ambush'?(st.flags.mind?`${st.w.short} got in ${st.f.short}’s face backstage and did not throw a punch. ${st.f.short} looks rattled.`:st.flags.fought?`${st.w.short} jumped ${st.f.short} backstage, but ${st.f.short} hit back. Both of them are marked.`:`${st.w.short} jumped ${st.f.short} backstage. ${st.f.short} is still holding their ribs.`):
@@ -413,5 +524,5 @@
     {label:'Room',value:st.room,word:st.room>=8?'With them':st.room>=3?'Warming':st.room>-3?'Listening':st.room>-8?'Cooling':'Against them'},
    result:result(st)};
  }
- root.OfficeSegments={TYPES,ENGINES,BANKED,menu,advice,begin,options,choose,view,result,grillQuestions};
+ root.OfficeSegments={TYPES,ENGINES,BANKED,VIGNETTE_CATEGORIES:VIG_CATS,VIGNETTE_SETTINGS:SETTINGS,menu,advice,begin,options,choose,view,result,grillQuestions};
 })(typeof window!=='undefined'?window:globalThis);

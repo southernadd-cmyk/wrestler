@@ -55,7 +55,7 @@ function play(type,picks,w,o={}){
    for(const t of text)assert.ok(sentence(t),'starts like a sentence: '+t);
   }
  }
- assert.deepEqual(counts,{solo:80,vignette:64,ambush:48,grilling:1+3*(1+3*4)});
+ assert.deepEqual(counts,{solo:80,vignette:SG.VIGNETTE_SETTINGS.length*16,ambush:48,grilling:1+3*(1+3*4)});
  console.log('PASS every path reads cleanly in all eight voices: '+JSON.stringify(counts));
 }
 

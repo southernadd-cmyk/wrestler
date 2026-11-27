@@ -1396,10 +1396,25 @@ function showSegment(loadedBanks,previousPosition){
  const middle=`<b class="fin">${esc(v.name)}</b><span class="${tone}">${esc(m.label)}: ${esc(m.word)}</span>`;
  const reconciliation=v.stage==='done'&&v.result.promise?OfficeRoom.promoReconciliation(night.plan?.sheet,v.result,w,f,c.finish):null;
  const decide=v.stage==='done'?`<div class="decide2"><h3 class="section-h">${esc(v.heading)}</h3><p class="lede"><b>${esc(v.result.reaction)}</b> ${esc(v.result.hook)}</p>${reconciliation?`<p class="dim"><b>${esc(OfficeRoom.AGENT)} — ${esc(reconciliation.status)}:</b> ${esc(reconciliation.reason)}</p>`:''}</div>`:
-  `<div class="decide2"><h3 class="section-h">${esc(v.heading)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${pickCards(v.options,'seg')}</div>`;
+  `<div class="decide2"><h3 class="section-h">${esc(v.heading)} <small>${v.round+1} of ${v.total}</small></h3><p class="lede">${esc(v.help)}</p>${segmentChoices(v)}</div>`;
  $('#tv').innerHTML=strip(c,'microphone time')+'<div class="stage screen s-back s-promo">'+win(v.name+': '+w.short+(v.type==='ambush'?' and ':' before facing ')+f.short,matchupBar(c,w,f,middle)+sceneLog(entries,'segTalk',w,f,p.id)+decide,{h:'h3',body:'tight'})+'</div>'+
   `<div class="tv-foot"><span class="dim">${esc(v.stage==='done'?'That is the segment.':'Every choice says what it risks.')}</span>${v.stage==='done'?'<button class="btn go" data-tv="bell">Ring the bell</button>':`<span class="dim">${esc(v.heading)}</span>`}</div>`;
  scrollTalk('segTalk',!choicePosition);restoreDecisionScroll('s-promo',choicePosition);persistNight();
+}
+
+// The vignette's setting step has many options, so it can be narrowed by category and sorted by fit.
+// The view choice lives on the night only; it never changes what an option does.
+function segmentChoices(v){
+ const cats=window.OfficeSegments?.VIGNETTE_CATEGORIES;
+ if(!(v.type==='vignette'&&cats&&v.options.some(o=>o.category)))return pickCards(v.options,'seg');
+ const pref={cat:'all',sort:'category',...(night.segView||{})};
+ const count=k=>v.options.filter(o=>k==='all'||o.category===k).length;
+ if(pref.cat!=='all'&&!count(pref.cat))pref.cat='all';
+ let list=v.options.filter(o=>pref.cat==='all'||o.category===pref.cat);
+ if(pref.sort==='fit')list=list.map((o,i)=>({o,i})).sort((a,b)=>(b.o.score-a.o.score)||(a.i-b.i)).map(x=>x.o);
+ const btn=(attr,val,label,on,n)=>`<button type="button" class="btn sm ${on?'go':''}" data-${attr}="${esc(val)}" aria-pressed="${on}">${esc(label)}${n===undefined?'':` <span class="filter-count">${n}</span>`}</button>`;
+ const bar=`<div class="seg-filters" role="toolbar" aria-label="Narrow the settings"><div class="seg-filter-group" role="group" aria-label="Category">${btn('segcat','all','All',pref.cat==='all',count('all'))}${Object.entries(cats).map(([k,name])=>btn('segcat',k,name,pref.cat===k,count(k))).join('')}</div><div class="seg-filter-group" role="group" aria-label="Sort">${btn('segsort','category','By category',pref.sort==='category')}${btn('segsort','fit','Best fit first',pref.sort==='fit')}</div></div>`;
+ return bar+pickCards(list,'seg');
 }
 
 /* ---------- the mouthpiece (v0.3.25) ---------- */
@@ -2224,7 +2239,9 @@ document.addEventListener('click',e=>{
  }
  if(d.mouth){if(night?.stage!=='mouth')return;const c=current();if(!c)return;night.mouth={cid:c.id,id:d.mouth};return showPromos()}
  if(d.segment){if(e.detail>1||night?.stage!=='segpick')return;const c=current();if(!c||!window.OfficeSegments?.TYPES[d.segment])return;
-  night.segment={cid:c.id,type:d.segment};night.seg=null;night.mouth=null;return showPromos()}
+  night.segment={cid:c.id,type:d.segment};night.seg=null;night.mouth=null;night.segView=null;return showPromos()}
+ if(d.segcat||d.segsort){if(night?.stage!=='segment'||night.seg?.stage!=='live')return;
+  night.segView={cat:'all',sort:'category',...(night.segView||{}),...(d.segcat?{cat:d.segcat}:{}),...(d.segsort?{sort:d.segsort}:{})};return showSegment()}
  if(d.seg){if(e.detail>1||night?.segLoading)return;const st=night?.seg;if(night?.stage!=='segment'||!st||st.stage!=='live'||current()?.id!==st.cid)return;OfficeSegments.choose(st,d.seg);return showSegment()}
  if(d.contract){const st=night?.signing;if(night?.stage!=='signing'||!st||st.stage!=='live')return;OfficeSigning.choose(st,d.contract);return showSigning()}
  if(d.tv==='signing'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showSigning();}

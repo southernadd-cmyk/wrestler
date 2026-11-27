@@ -190,3 +190,10 @@
 #tv .desk-objectives li{padding:4px 0;border-bottom:1px solid var(--stone-lo)}
 #tv .desk-objectives li.active{padding-left:6px;padding-right:6px}
 #tv .desk-objectives li:last-child{border-bottom:0}
+
+/* ---------- Vignette settings: category filter and sort above the tiles ----------
+   Many settings, so the player can narrow them by category or sort by fit.
+   Layout only; the buttons reuse the inbox filter look (.btn.sm, .go when active). */
+#tv .seg-filters{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 14px;margin:0 0 8px}
+#tv .seg-filter-group{display:flex;flex-wrap:wrap;gap:4px}
+@media (max-width:720px){#tv .seg-filters{justify-content:flex-start}}
