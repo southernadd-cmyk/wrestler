@@ -35,6 +35,28 @@ function requestBroadcastPause(){broadcastStopRequested=true;$('controls').textC
 const MODE_KEY='the-office-switch-management-mode';
 let managementMode='guided';try{if(localStorage.getItem(MODE_KEY)==='full')managementMode='full';}catch(_){}
 const guided=()=>managementMode==='guided';
+const BROADCAST_KEY='the-office-switch-broadcast-length',BROADCAST_MODES=['condensed','highlights','full'];
+let broadcastLength='condensed';try{const saved=localStorage.getItem(BROADCAST_KEY);if(BROADCAST_MODES.includes(saved))broadcastLength=saved;}catch(_){}
+const broadcastName=()=>broadcastLength[0].toUpperCase()+broadcastLength.slice(1);
+function cycleBroadcastLength(){
+ broadcastLength=BROADCAST_MODES[(BROADCAST_MODES.indexOf(broadcastLength)+1)%BROADCAST_MODES.length];
+ try{localStorage.setItem(BROADCAST_KEY,broadcastLength);}catch(_){}
+}
+function broadcastCursor(run){return run.broadcastCursor??={};}
+// Each call consumes the real engine stream in order. Bounded batches keep
+// the UI responsive and never pass a decision or an available guided prompt.
+function nextPresented(run,withAdvice=false){
+ const m=run.M,cursor=broadcastCursor(run);
+ for(let i=0;i<40;i++){
+  if(!m.queue.length&&(m.done||m.decision))return null;
+  const line=X.next(m);
+  if(!line)return null;
+  const keep=window.OfficeBoothSpeech.keepLine(broadcastLength,line,m,cursor);
+  const boundary=!m.queue.length&&(m.done||m.decision);
+  if(keep||boundary||(withAdvice&&contextualAdvice(m,X.canCall))||i===39)return line;
+ }
+ return null;
+}
 const scan=M.createChoiceScan({choice:true,holdThreshold:600,statusHost:$('parkStatus'),getId:x=>x.id,getLabel:x=>x.label+(x.hint?'. '+x.hint:''),getElement:x=>x.element,onHighlight:highlight,onSelect:choose,speak:t=>boothSpeech.speak(t)});
 function stopNarration(){
  if(!narrationLock)return;
@@ -292,6 +314,7 @@ function settings(returnTo,fresh=true,restoreId=null){
  a('voice','Voice: '+V.getVoiceDisplayName(V.getCurrentVoice()),()=>{V.cycleVoice();settings(returnTo,false);}),
  a('auto','Auto scan: '+(M.getSettings().autoScan?'On — One switch':'Off — Two switches'),()=>{if(M.getSettings().autoScan)confirm('Use two switches?','You need Space to move the highlight and Enter to select. Cancel if you only use one switch.','Use two switches',()=>{M.setAutoScan(false);settings(returnTo,true,'auto');},()=>settings(returnTo,true,'auto'));else{M.setAutoScan(true);settings(returnTo,false);}}),
  a('speed','Scan speed: '+M.getScanInterval()/1000+' seconds',()=>{M.cycleScanSpeed();settings(returnTo,false);}),
+ a('broadcast-length','Broadcast length: '+broadcastName(),()=>{cycleBroadcastLength();settings(returnTo,false);},'Condensed or Highlights shortens the commentary, not the match. Full plays every line.'),
  a('appearance','Appearance',()=>appearance(()=>settings(returnTo,true,'appearance'))),
  back(returnTo)],{fresh,announce:fresh,restoreId});
  refreshSettings=()=>settings(returnTo,false);
@@ -1072,13 +1095,13 @@ function matchScreen(note='',commentary=[],played=false,readStatus=false){
  if(guided()&&V.getSettings().ttsEnabled&&m.switchAdvice?.pending){adviceScreen(m.switchAdvice.pending,note,commentary);return;}
  if(guided()&&V.getSettings().ttsEnabled){
   screen('At ringside',(note?note+'\n\n':'')+status,[
-   a('broadcast','Continue live broadcast',startBroadcast),
+   a('broadcast','Continue live broadcast — '+broadcastName(),startBroadcast),
    ...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',()=>calls(note,commentary))]:[]),
    a('status','Read match status',()=>narrateMatch([{text:ringStatus(m)+'. '+statusSpeech()}])),
    ...replayOption,
    a('pause','Pause / settings',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(readStatus?status:played?'Ringside. Continue listening, give an instruction if available, or pause.':''),announce:true});return;
  }
- const single=a('line','Hear next commentary',()=>burst(1)),batch=a('burst','Continue — up to five commentary lines',()=>burst(5));
+ const single=a('line',broadcastLength==='full'?'Hear next commentary':'Hear next '+(broadcastLength==='highlights'?'highlight':'key moment'),()=>burst(1)),batch=a('burst',broadcastLength==='full'?'Continue — up to five commentary lines':'Continue — up to five '+(broadcastLength==='highlights'?'highlights':'key moments'),()=>burst(5));
  screen('At ringside',(note?note+'\n\n':'')+status,[...(guided()?[batch,single]:[single,batch]),...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',()=>calls(note,commentary))]:[]),a('status',commentary.length?'Replay commentary / status':'Repeat match status',()=>commentary.length?replay():narrateMatch([{text:ringStatus(m)+'. '+statusSpeech()}])),a('pause','Pause',()=>pause(()=>matchScreen(note,commentary,true)))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(''),announce:!played});
 }
 // Pull one commentary line at a time. Pause interrupts speech immediately,
@@ -1093,8 +1116,8 @@ function startBroadcast(){
  const nextLine=()=>{
   if(active!==run)return;
   if(broadcastStopRequested||(!m.queue.length&&(m.done||m.decision))){finish();return;}
-  const line=X.next(m);
-  if(!line){finish();return;}
+  const line=nextPresented(run,true);
+  if(!line){persistMatch();finish();return;}
   recent=[...recent,line].slice(-3);persistMatch();
   screen('Live broadcast',display(recent),[a('pause','Pause / help',requestBroadcastPause)],{portrait:m.w,kicker:'LIVE FROM RINGSIDE',scene:liveScene(m,s().card.find(x=>x.id===run.cid)),speechParts:boothSpeech.parts([line]),onSpeechComplete:result=>{
    if(active!==run)return;
@@ -1115,7 +1138,7 @@ function startBroadcast(){
  };
  nextLine();
 }
-function burst(n){const m=active.M,lines=[];for(let i=0;i<n&&(!m.done||m.queue.length);i++){if(m.decision&&!m.queue.length)break;const l=X.next(m);if(!l)break;lines.push(l);}persistMatch();matchScreen(lines.map(l=>(D.BOOTH?.[l.who]?.short?D.BOOTH[l.who].short+': ':'')+l.text).join('\n'),lines);}
+function burst(n){const run=active,m=run.M,lines=[];for(let i=0;i<n&&(!m.done||m.queue.length);i++){if(m.decision&&!m.queue.length)break;const l=nextPresented(run);if(!l)break;lines.push(l);}persistMatch();matchScreen(lines.map(l=>(D.BOOTH?.[l.who]?.short?D.BOOTH[l.who].short+': ':'')+l.text).join('\n'),lines);}
 function calls(note='',commentary=[],page=0){
  const m=active.M,c=s().card.find(x=>x.id===active.cid),list=Object.entries(X.CALLS).filter(([id])=>X.canCall(m,id));
  const pages=Math.max(1,Math.ceil(list.length/3)),i=Math.min(Math.max(0,page),pages-1);

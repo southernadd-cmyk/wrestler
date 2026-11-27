@@ -1,5 +1,27 @@
 /* Switch-only commentary casting; all speech remains owned by NARBE VoiceManager. */
 (function(root){'use strict';
+// Select actual lines, never generate new wrestling events or touch the RNG.
+function keepLine(mode,line,m,cursor){
+ if(mode==='full')return true;
+ const [min,sec]=String(line.t||'').split(':').map(Number);
+ const at=Number.isFinite(min)&&Number.isFinite(sec)?min*60+sec:(m.t||0);
+ // Keep the complete actual finish, mandatory alerts, safety incidents,
+ // agent messages, big moves, counts and explicit planned-move evidence.
+ const important=m.done||m.stage==='finish'||m.stage==='over'||
+  ['bell','rating','alert','bad','injury','agent','count'].includes(line.kind)||line.big||
+  (line.who==='runner'&&line.kind==='story')||
+  (line.actionId&&(
+   m.graph?.events?.some(e=>e.id===line.actionId&&e.t===at&&e.scriptedSpot)||
+   m.sheet?.nodes?.some(n=>n.actual===line.actionId&&n.at===at&&['achieved','adapted'].includes(n.status))))||
+  /^(structure-|causal-finish-runway)/.test(line.textureId||'')||
+  /\b(?:injur(?:y|ed|ies)|doctor|medical|botch(?:ed)?|disqualif\w*|near.?fall|kick(?:s|ed)? out|finisher|taps|rope break)\b/i.test(line.text||'');
+ // Nested time buckets give each mode an actual sample of the match,
+ // and ensure Highlights is a subset of Condensed for the same stream.
+ const gap=mode==='highlights'?90:30,bucket=Math.floor(at/gap);
+ const sample=cursor.mode!==mode||cursor.bucket!==bucket;
+ cursor.mode=mode;cursor.bucket=bucket;
+ return !!(important||sample||(mode==='condensed'&&line.kind==='story'&&!line.textureId));
+}
 function createBoothSpeech(V){
  const profiles={
   pbp:{gender:'female',pitch:1.15,rate:1.06},
@@ -78,5 +100,5 @@ function createBoothSpeech(V){
  }
  return {cast,speak,parts,sequence,cancel};
 }
-root.OfficeBoothSpeech={create:createBoothSpeech};
+root.OfficeBoothSpeech={create:createBoothSpeech,keepLine};
 })(typeof window!=='undefined'?window:globalThis);
