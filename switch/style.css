@@ -116,3 +116,84 @@ body[data-ringfax=true] #choices button[data-choice=quiz-0]{border-left:7px soli
 body[data-ringfax=true] #choices button[data-choice=quiz-1]{border-left:7px solid #60ff60}
 body[data-ringfax=true] #choices button[data-choice=quiz-2]{border-left:7px solid #ffff00}
 body[data-ringfax=true] #choices button[data-choice=quiz-3]{border-left:7px solid #00ffff}
+
+/* S8G: accessible appearance overrides retain the Office's default chrome.
+   Hub preference names are validated before being assigned to data attributes. */
+body{--scan-fill:var(--gold);--scan-edge:var(--gold-hi);--scan-ink:#101010;--scan-outline:var(--gold);--ui-scale:1}
+body[data-highlight-color=blue]{--scan-fill:#5bb0ff;--scan-edge:#d1ebff;--scan-outline:#5bb0ff}
+body[data-highlight-color=green]{--scan-fill:#00ff88;--scan-edge:#b7ffdc;--scan-outline:#00ff88}
+body[data-highlight-color=purple]{--scan-fill:#cf9aff;--scan-edge:#efdbff;--scan-outline:#cf9aff}
+body[data-highlight-color=red]{--scan-fill:#ff648c;--scan-edge:#ffd3df;--scan-outline:#ff648c}
+body[data-highlight-color=yellow]{--scan-fill:#ffff00;--scan-edge:#ffffc0;--scan-outline:#ffff00}
+body[data-highlight-color=white]{--scan-fill:#fff;--scan-edge:#d6d6d6;--scan-outline:#fff}
+#choices button.scan,#choices button:focus-visible{background:var(--scan-fill);color:var(--scan-ink);outline:3px solid var(--scan-ink);outline-offset:-3px;box-shadow:inset 0 0 0 6px var(--scan-edge)}
+#choices button.scan :is(.choiceLabel,.choiceHint),#choices button:focus-visible :is(.choiceLabel,.choiceHint),#choices button.scan::after,#choices button:focus-visible::after,
+body[data-broadcast=true] #choices button[data-choice=pause].scan .choiceLabel,body[data-broadcast=true] #choices button[data-choice=pause]:focus-visible .choiceLabel{color:var(--scan-ink)}
+body[data-highlight-style=outline] #choices button:is(.scan,:focus-visible){background:var(--well);color:var(--white);outline:4px solid var(--scan-outline);outline-offset:-5px;box-shadow:inset 0 0 0 2px #000}
+body[data-highlight-style=outline] #choices button:is(.scan,:focus-visible) :is(.choiceLabel,.choiceHint),
+body[data-highlight-style=outline] #choices button:is(.scan,:focus-visible)::after,
+body[data-highlight-style=outline][data-broadcast=true] #choices button[data-choice=pause]:is(.scan,:focus-visible) .choiceLabel{color:var(--white)}
+#choices button.scan[data-braked=true],body[data-highlight-style=outline] #choices button.scan[data-braked=true]{outline-style:dotted}
+/* Keep the arrow and a thick focus perimeter in both styles, including forced-colour mode. */
+@media(forced-colors:active){
+ #choices button:is(.scan,:focus-visible),body[data-highlight-style=outline] #choices button:is(.scan,:focus-visible){outline:4px solid Highlight;outline-offset:-5px;box-shadow:none}
+ #choices button.scan[data-braked=true]{outline-style:dotted}
+}
+body[data-bg-theme=ocean]{--desk:#001a2e;--desk-dot:#00253b}
+body[data-bg-theme=forest]{--desk:#0a1f0a;--desk-dot:#163216}
+body[data-bg-theme=sunset]{--desk:#1a0f0a;--desk-dot:#392117}
+body[data-bg-theme=midnight]{--desk:#0a0515;--desk-dot:#21152e}
+body[data-bg-theme=rose]{--desk:#1a0a14;--desk-dot:#32172a}
+body[data-bg-theme=sky]{--desk:#e0f2ff;--desk-dot:#d1e8f9}
+body[data-bg-theme=cream]{--desk:#fff8e7;--desk-dot:#f4e8ca}
+body[data-bg-theme=mint]{--desk:#e8fff0;--desk-dot:#d5f1df}
+body[data-bg-theme=lavender]{--desk:#f2eaff;--desk-dot:#e2d8f3}
+body[data-bg-theme=peach]{--desk:#fff0e5;--desk-dot:#f5decc}
+/* Explicit text colours use a compatible reading surface, not illegible
+   foreground-only overrides on both the dark wells and pale paper. */
+body[data-text-color=green]{--reading-ink:#8cff9c;--reading-bg:#101814;--reading-alt:#17241c}
+body[data-text-color=purple]{--reading-ink:#e1bbff;--reading-bg:#17101d;--reading-alt:#21182b}
+body[data-text-color=red]{--reading-ink:#ff9ca4;--reading-bg:#210e14;--reading-alt:#301820}
+body[data-text-color=gold]{--reading-ink:#ffe184;--reading-bg:#1b160b;--reading-alt:#292114}
+body[data-text-color=black]{--reading-ink:#111;--reading-bg:#fff;--reading-alt:#f0f0f0}
+body[data-text-color=white]{--reading-ink:#fff;--reading-bg:#111;--reading-alt:#202020}
+body:not([data-text-color=default])[data-text-color] :is(.sceneBody,#story,.dialogueLine,#parkStatus,#controls,#scanPosition,#careerStatus,#sceneRead,.sceneMetric,#matchCard,.competitor,.matchFact){
+ background:var(--reading-bg);color:var(--reading-ink)
+}
+body:not([data-text-color=default])[data-text-color] :is(.speaker,.castName,.castDetail,.conditionText,#saveNotice,.versus){color:var(--reading-ink)}
+body:not([data-text-color=default])[data-text-color] #choices button:not(.scan):not(:focus-visible){background:var(--reading-bg);color:var(--reading-ink)}
+body:not([data-text-color=default])[data-text-color] #choices button:nth-child(even):not(.scan):not(:focus-visible){background:var(--reading-alt)}
+body:not([data-text-color=default])[data-text-color] #choices button:not(.scan):not(:focus-visible) :is(.choiceLabel,.choiceHint),
+body:not([data-text-color=default])[data-text-color] #choices button:not(.scan):not(:focus-visible)::after{color:var(--reading-ink)}
+body:not([data-text-color=default])[data-text-color][data-highlight-style=outline] #choices button:is(.scan,:focus-visible){background:var(--reading-bg);color:var(--reading-ink);outline-color:var(--scan-outline);box-shadow:inset 0 0 0 2px #000,inset 0 0 0 8px var(--scan-outline)}
+body:not([data-text-color=default])[data-text-color][data-highlight-style=outline] #choices button:is(.scan,:focus-visible) :is(.choiceLabel,.choiceHint),
+body:not([data-text-color=default])[data-text-color][data-highlight-style=outline] #choices button:is(.scan,:focus-visible)::after{color:var(--reading-ink)}
+/* A white or yellow highlight on a white surface needs a dark outer edge. */
+body[data-text-color=black][data-highlight-style=outline] #choices button:is(.scan,:focus-visible){outline-color:#000;box-shadow:inset 0 0 0 8px var(--scan-outline)}
+body[data-ui-size=large]{--ui-scale:1.15}
+body[data-ui-size=larger]{--ui-scale:1.3}
+body[data-ui-size=largest]{--ui-scale:1.5}
+body{font-size:calc(clamp(17px,1.45vw,21px) * var(--ui-scale))}
+#careerStatus{font-size:calc(clamp(17px,1.65vw,22px) * var(--ui-scale))}
+.sceneHeader h2,.decisionHeader h2{font-size:calc(clamp(27px,2.7vw,36px) * var(--ui-scale))}
+#parkStatus,#controls,#scanPosition,.matchFact{font-size:calc(16px * var(--ui-scale))}
+.castDetail,.conditionText,.sceneMetric{font-size:calc(clamp(16px,1.4vw,20px) * var(--ui-scale))}
+.castName{font-size:calc(clamp(22px,2.15vw,30px) * var(--ui-scale))}
+#choices button{min-height:calc(64px * var(--ui-scale));padding-block:calc(9px * var(--ui-scale))}
+.choiceHint{font-size:.9em}
+body:is([data-ui-size=larger],[data-ui-size=largest]) .desk{grid-template-columns:minmax(0,1fr)}
+body:is([data-ui-size=larger],[data-ui-size=largest]) #showJourney{grid-template-columns:repeat(auto-fit,minmax(min(100%,145px),1fr))}
+@media(max-width:480px){
+ main{padding:6px}
+ #choices button{padding-inline:9px 28px}
+ #choices button::after{right:7px}
+ .matchPair{grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr)}
+ .castFace{width:56px;height:70px}
+ .choiceTableHead{font-size:16px}
+ .switchTicker{font-size:18px}
+}
+@media(max-width:340px){
+ .matchPair{grid-template-columns:minmax(0,1fr)}
+ .versus{font-size:20px}
+ #showJourney{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
