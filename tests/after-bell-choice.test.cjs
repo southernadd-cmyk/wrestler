@@ -317,3 +317,24 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  assert.match(ui,/OfficeAfter\.continueAngle\(st,d\.afterfollow\)/);
  console.log('PASS unresolved scenes have four bounded, saved continuation choices');
 }
+
+// AB7: one terminal public receipt is shared by downstream readers, no extra booking.
+{
+ const s=career(),c=contract({finish:'win_clean'}),f=play(c);
+ const st=A.begin(c,f,'staredown');
+ assert.equal(A.storyReceipt(st),null,'no unfinished scene receipt');
+ assert.ok(A.speak(st,'walk'));
+ const h=s.history.find(h=>h.cid===c.id),story=h.after.story;
+ assert.equal(story.kind,'dispute');assert.equal(story.cid,c.id);
+ assert.equal(A.latestStory(s,c.wid,c.rid,c.pid).text,story.text);
+ assert.equal(root.OfficeRivalry.profile(c.wid,c.rid).afterStory.text,story.text);
+ assert.equal(s.inbox.filter(m=>m.afterStory===c.id).length,1);
+ assert.equal(A.state().calls.length,0);
+ A.recordEvidence(st);assert.equal(s.inbox.filter(m=>m.afterStory===c.id).length,1);
+ assert.match(root.OfficeRivalry.introFor({w:G.W(c.wid),f:G.F(c.rid),cases:[]}),/faced off after the bell/);
+ const o={pid:c.pid,rid:c.rid};assert.equal(root.OfficeNegotiationsV2.read(o,G.W(c.wid)).evidence,story.text);
+ const pages=root.OfficeRingfax.build(s);assert.match(pages[200].lines.map(l=>l.text).join(' '),/faced off after the bell/i);
+ assert.equal(A.latestStory(s,c.wid,'unrelated',c.pid),null);
+ s.history.unshift({...h,cid:'newer',after:null});assert.equal(A.latestStory(s,c.wid,c.rid,c.pid),null);
+ console.log('PASS terminal after-bell receipt reaches rivalry, booking, inbox and Ringfax without duplicate effects');
+}
