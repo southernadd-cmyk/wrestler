@@ -2040,7 +2040,7 @@
    const cur=st.structureBoard?.[obj.id];
    const cards=structureCards(st,obj).map((c,i)=>({
     id:'objective_'+obj.id+'_'+i,label:c.label,by:c.by,
-    who:c.by==='agent'?AGENT:nameOf(st,c.by),risk:!!c.risk,
+    who:c.by==='agent'?AGENT:nameOf(st,c.by),risk:!!c.risk,contribution:finishContribution(st,st.board.finish?.route,c),
     selected:!!cur&&cur.action===c.action&&cur.owner===c.owner,
     tags:[...(c.by==='agent'?['Dennis’s suggestion']:['Wrestler’s suggestion']),
      ...(c.risk?['High risk']:[]),...(supportsFinish(st,st.board.finish?.route,c)?['May support the finish']:[])]
@@ -2052,7 +2052,7 @@
     tags:['Remove sequence only']});
    const owned=obj.actor==='either'?'Both wrestlers may contribute':nameOf(st,obj.actor)+' leads';
    return {slot:obj.id,name:obj.title,ask:owned+'. Agree a real move if you want, or leave it open.',
-    cards,current:cur?.sequence?(cur.label+' · '+(agreedSequence(st,obj)?cur.sequence.actions.map(name).join(' → '):'setup requires revision')):cur?.label||null,actor:obj.actor,intent:obj.intent,window:obj.window.slice()};
+    cards,current:cur?.sequence?(cur.label+' · '+(agreedSequence(st,obj)?cur.sequence.actions.map(name).join(' → '):'setup requires revision')):cur?.label||null,actor:cur?.owner||obj.actor,contribution:finishContribution(st,st.board.finish?.route,cur),intent:obj.intent,window:obj.window.slice()};
   });
  }
  function structureReconcile(st){
@@ -2172,6 +2172,17 @@
   if(route==='strike_knockout')return c.owner==='w'&&n.family==='strike';
   return false;
  }
+ function finishContribution(st,route,c){
+  if(!supportsFinish(st,route,c))return 0;
+  if(['limb_finish','submission_defeat','injury_gives'].includes(route))return A[c.action].focus||0;
+  if(['reversal_finisher','finisher_reversed'].includes(route))return 1;
+  return 0;
+ }
+ function finishMetric(route){
+  if(['limb_finish','submission_defeat','injury_gives'].includes(route))return {unit:'focused damage',required:route==='injury_gives'?3:4};
+  if(['reversal_finisher','finisher_reversed'].includes(route))return {unit:'reversals',required:3};
+  return null;
+ }
  function finishPlan(st){
   const route=st.lockRoute||st.board.finish?.route;
   if(!route)return null;
@@ -2196,7 +2207,9 @@
   if(route==='exhausted_cover')summary='Your wrestler must actually become exhausted; the written running order cannot guarantee it.';
   if(impossible.length)summary+=' Warning: '+impossible.join(' and ')+' contains an impossible or prohibited spot.';
   if(!available)summary='This method is no longer eligible for the wrestlers or feud. '+summary;
-  return {route,label:ROUTE_NAME[route]||route,requirement,summary,supported,available,blocked:impossible.length,
+  const metric=finishMetric(route);
+  const preparation=metric?{...metric,planned:slots.reduce((n,S)=>n+finishContribution(st,route,chosen[S.id]),0)}:null;
+  return {route,label:ROUTE_NAME[route]||route,requirement,summary,supported,available,blocked:impossible.length,preparation,
    kind:!available||impossible.length?'warning':requirement?'conditional':'direct'};
  }
  function seedBoard(st,{refresh=false}={}){
@@ -2209,7 +2222,7 @@
   if(st.structurePlanning){structureSeed(st,{refresh});return;}
   const route=st.board.finish?.route,win=winSideOf(st);
   for(const S of SPINE){
-   if(refresh&&st.board[S.id]?.chosen)continue;
+   if(refresh&&(st.board[S.id]?.chosen||st.boardOpen?.[S.id]))continue;
    const cards=cardsFor(st,S.id).filter(c=>!c.impossible&&!banned(st,c.action));
    const set=cards.filter(c=>supportsFinish(st,route,c));
    const original=S.id==='payoff'?(cards.find(k=>k.by===win&&!k.risk)||cards.find(k=>k.by==='agent')):(cards.find(k=>k.by==='agent')||cards[0]);
@@ -2234,8 +2247,9 @@
   return SPINE.map(S=>{
    const cur=st.board[S.id];
    const cards=cardsFor(st,S.id).map((c,i)=>({id:'slot_'+S.id+'_'+i,label:c.label,by:c.by,who:c.by==='agent'?AGENT:nameOf(st,c.by),
-    selected:!!cur&&cur.action===c.action,risk:!!c.risk,impossible:!!c.impossible,tags:slotTags(st,S,c)}));
-   return {slot:S.id,name:S.name,ask:fmt(st,S.ask.replace(/\{O\}/g,S.owner==='f'?'{F}':'{W}')),cards,current:cur?.label||null};
+    selected:!!cur&&cur.action===c.action,risk:!!c.risk,impossible:!!c.impossible,contribution:finishContribution(st,st.board.finish?.route,c),tags:slotTags(st,S,c)}));
+   cards.push({id:'slot_'+S.id+'_open',label:'Leave open',who:AGENT,selected:!cur?.action,tags:[]});
+   return {slot:S.id,name:S.name,ask:fmt(st,S.ask.replace(/\{O\}/g,S.owner==='f'?'{F}':'{W}')),cards,current:cur?.label||null,actor:cur?.owner||S.owner,contribution:finishContribution(st,st.board.finish?.route,cur),window:st.base?.nodes?.find(n=>n.id===S.id)?.window};
   });
  }
  // Some decisions wreck a beat that was already agreed. Dennis swaps in the nearest thing that still works.
@@ -2380,7 +2394,7 @@
    return {id:'plan_'+id,label:pl.name,hint:(PLAN_HINT[id]||pl.blurb||'')+(reading?' '+reading.advice:''),tags};});
   if(st.stage==='board'){
    const out=st.lockRoute?[]:finishCards(st).map((c,i)=>({id:'route_'+i,label:c.label,
-    hint:(ROUTE_CONDITION[c.route]||'No extra in-ring prerequisite.')+' The booked result does not change.',
+    hint:(ROUTE_CONDITION[c.route]||'No extra in-ring prerequisite.')+' The booked result does not change.',requirement:ROUTE_CONDITION[c.route]||null,
     tags:[...(ROUTE_CONDITION[c.route]?['Conditional finish']:[]),...c.hate.map(side=>nameOf(st,side)+' objects')],
     route:c.route,selected:st.board.finish?.route===c.route}));
    for(const r of boardView(st))for(const c of r.cards)out.push({id:c.id,label:c.label,hint:r.name+': '+c.who+'’s idea.',tags:c.tags,slot:r.slot,selected:c.selected});
@@ -2450,8 +2464,9 @@
     if(st.board.finish?.route===c.route)return st;
     st.board.finish={by:c.by,owner:'either',route:c.route,label:c.label};
     seedBoard(st,{refresh:true});
-    log(st,'you','“The finish: '+c.label.toLowerCase()+'.”');
-    log(st,'agent','Right. I’ve adjusted my pencil marks for that finish. Any spot you chose yourself stays put.');
+    st.log=st.log.filter(entry=>!entry.finishAdjustment);
+    log(st,'you','“The finish: '+c.label.toLowerCase()+'.”');st.log[st.log.length-1].finishAdjustment=true;
+    log(st,'agent','Right. I’ve adjusted my pencil marks for that finish. Any spot you chose yourself stays put.');st.log[st.log.length-1].finishAdjustment=true;
     st.decided.push({stage:'board',situation:'finish',id,label:c.label,tags:o.tags});
     return st;
    }
@@ -2494,7 +2509,13 @@
     else log(st,'agent','Noted. The objective is distinct from a guaranteed landed move.');
     return st;
    }
-   const m=id.match(/^slot_(\w+)_(\d+)$/),S=SPINE.find(x=>x.id===m[1]),c=cardsFor(st,S.id)[+m[2]];
+   const m=id.match(/^slot_(\w+)_(\d+|open)$/),S=SPINE.find(x=>x.id===m[1]);
+   if(m[2]==='open'){
+    delete st.board[S.id];(st.boardOpen??={})[S.id]=true;
+    log(st,'you','“'+S.name+': call it in the ring.”');log(st,'agent','Noted. Leave that one to the wrestlers.');
+    st.decided.push({stage:'board',situation:S.id,id,label:o.label,tags:o.tags});return st;
+   }
+   const c=cardsFor(st,S.id)[+m[2]];if(st.boardOpen)delete st.boardOpen[S.id];
    if(st.board[S.id]?.action===c.action)return st;
    log(st,'you','“'+S.name+': the '+c.label+'.”');
    st.decided.push({stage:'board',situation:S.id,id,label:c.label,tags:o.tags});
