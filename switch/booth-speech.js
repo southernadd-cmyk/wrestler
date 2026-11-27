@@ -2,20 +2,34 @@
 (function(root){'use strict';
 function createBoothSpeech(V){
  const profiles={
-  pbp:{names:/\b(susan|serena|sonia|libby|kate|hazel|martha|emily|samantha|zira|aria|female)\b/i,pitch:1.15,rate:1.06},
-  colour:{names:/\b(ryan|daniel|george|arthur|oliver|male|david|mark|guy)\b/i,pitch:.85,rate:.91},
-  runner:{names:/\b(ravi|rishi|prabhat|raveena|heera|aditya|neerja)\b/i,pitch:1.04,rate:1.01}
+  pbp:{gender:'female',pitch:1.15,rate:1.06},
+  runner:{gender:'male',pitch:.97,rate:1.01},
+  colour:{gender:'male',pitch:.85,rate:.91}
  };
+ // Web Speech exposes names and locales, not a reliable gender field.
+ const female=/\b(female|susan|serena|sonia|libby|kate|hazel|martha|emily|samantha|zira|aria|raveena|heera|neerja|aashi|asha|priya|moira|karen|tessa|veena|catherine|jenny|michelle|ana|emma|ava|allison|joanna|amy|nicole|natasha|salli|ivy|olivia)\b/i;
+ const male=/\b(male|ryan|daniel|george|arthur|oliver|david|mark|guy|ravi|rishi|prabhat|aditya|mohan|arjun|ajit|amit|rahul|sanjay|ramesh|madhur|james|thomas|aaron|alex|fred|lee|gordon|brian|neil|eric|roger|andrew|christopher|liam|william)\b/i;
+ const indianMale=/\b(ravi|rishi|prabhat|aditya|mohan|arjun|ajit|amit|rahul|sanjay|ramesh|madhur)\b/i;
+ const gender=v=>female.test(v.name||'')?'female':male.test(v.name||'')?'male':null;
  let active=null;
  const key=v=>v.voiceURI||v.name+'|'+v.lang;
  function cast(){
   const voices=V.getEnglishVoices().filter(v=>v&&v.lang?.toLowerCase().startsWith('en'));
-  const pool=[...new Map(voices.map(v=>[key(v),v])).values()];
+  const current=V.getCurrentVoice(),unique=new Map();
+  for(const v of voices){
+   const prior=unique.get(key(v));
+   if(!prior||(!gender(prior)&&gender(v)))unique.set(key(v),v);
+  }
+  const pool=[...unique.values()];
+  if(!pool.length&&current)pool.push(current);
   const used=new Set(),result={};
+  // Gloria first, Ravi second, Vic third. Prefer a compatible voice to
+  // an unused incompatible one. Locale alone does not indicate gender.
   for(const [role,p] of Object.entries(profiles)){
-   const score=v=>(p.names.test(v.name)?100:0)+(role==='runner'&&/^en-in/i.test(v.lang)?30:0)+(/^en-gb/i.test(v.lang)?10:0)+(v.localService?2:0);
-   const ranked=pool.slice().sort((a,b)=>score(b)-score(a)||key(a).localeCompare(key(b)));
-   const voice=ranked.find(v=>!used.has(key(v)))||ranked[0]||V.getCurrentVoice();
+   const score=v=>(gender(v)===p.gender?1000:gender(v)===null?0:-1000)+
+    (role==='runner'?(indianMale.test(v.name||'')?80:0)+(/^en-in/i.test(v.lang)?30:0):0)+
+    (/^en-gb/i.test(v.lang)?10:0)+(v.localService?2:0)-(used.has(key(v))?150:0);
+   const voice=pool.slice().sort((a,b)=>score(b)-score(a)||key(a).localeCompare(key(b)))[0]||null;
    if(voice)used.add(key(voice));result[role]=voice;
   }
   return result;
