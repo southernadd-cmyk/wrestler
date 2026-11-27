@@ -656,6 +656,49 @@ function startMatch(c,P,promoRes=null){
  const match=X.create({w:{...w,fatigue:G.clamp(w.fatigue+fatigue)},f,p,ladder:switchLadder(c),slot:c.slot,minutes:sh.minutes||c.minutes,finish:c.finish,stip:c.stip||null,feudHeat:Math.max(c.feudHeat||0,G.feud(w.id,f.id)?.heat||0),blowoff:c.blowoff,promo:promoRes,plan:{game:sh.game,leash:sh.leash||(w.psych>=75&&w.ego<75?'free':'script'),talk:sh.talk||'none'},preparation:prep,flags:{...w.flags,...sh.flags},memory:OfficeMemory.context(w.id,f.id),sheet:matchSheet,livePsychologyVersion:structureExecution?1:undefined,sequenceTimingVersion:structureExecution?1:undefined,sequenceDependencyVersion:structureExecution?1:undefined,sequenceHandoverVersion:structureExecution?1:undefined,sequenceRecoveryProjectionVersion:structureExecution?1:undefined,sequenceRecoveryPacingVersion:structureExecution?1:undefined,sequenceAlternativeReadinessVersion:structureExecution?1:undefined,bigSpotArbitrationVersion:3,structureExecution,identity:G.normaliseIdentity(s().identity),seed:Math.floor(Math.random()*2**31)});
  OfficeRivalCorner.attach(match,c);active={cid:c.id,M:match};const saved=persistMatch();if(saved){planning=null;persistPlanning();}if(guided()&&V.getSettings().ttsEnabled)startBroadcast();else matchScreen('The bell is about to ring.');
 }
+function contextualAdvice(m,canCall){
+ if(m.stage!=='live'||m.done||m.decision||m.queue.length||m.calls<=0||m.t<45)return null;
+ const st=m.switchAdvice||{},last=st.lastAt??-Infinity,remaining=m.len-m.t;
+ if((st.count||0)>=4||m.t-last<65||remaining<=20)return null;
+ const seen=st.seen||{},worker=m.w.short||m.w.name,crowd=Math.round(m.crowd),energy=Math.round(m.wSt);
+ const propose=(id,title,body,calls)=>{
+  if(seen[id]!==undefined)return null;
+  const legal=calls.filter(x=>canCall(m,x)).slice(0,2);
+  return legal.length?{id,title,body,calls:legal}:null;
+ };
+ const candidates=[];
+ if(m.offScript)candidates.push(()=>propose('layout','They have gone off the layout',worker+' is '+(m.offScript==='showboat'?'playing to the crowd instead of following the plan.':'calling audibles rather than sticking to the agreement.')+' Do we trust their judgement or pull them back?', ['sheet']));
+ if(energy<=35||m.workingHurt)candidates.push(()=>propose('tired','Your wrestler is struggling',worker+' has '+energy+' percent stamina'+(m.workingHurt?' and is working hurt.':'.')+' We can ease the pace'+(remaining>45?' or ask them to bring it home.':'.'),['slow','home']));
+ if(crowd<=35||m.crowdPeak-crowd>=12)candidates.push(()=>propose('crowd','The crowd is cooling', 'Crowd reaction is '+crowd+' out of 100'+(m.crowdPeak-crowd>=12?', down from '+Math.round(m.crowdPeak):'')+'. Do we work the audience or change the pace?', ['crowd',...(energy>=50?['pickup']:['slow'])]));
+ if(m.mom<=-32&&energy>=40&&remaining>65)candidates.push(()=>propose('pressure',worker+' is under pressure','The opponent has the momentum. Do we ask for a quicker exchange or let the wrestlers find their own comeback?', ['pickup']));
+ if(m.mom>=28&&energy>=55&&remaining>65&&!m.bigSpotRequest)candidates.push(()=>propose('opening','There may be an opening for a big moment',worker+' has the momentum and '+energy+' percent stamina. A big move is possible, not guaranteed.', ['big','crowd']));
+ if(remaining<=Math.max(75,m.len*.25)&&remaining>45&&energy<55)candidates.push(()=>propose('finish','The finish is approaching',worker+' has '+energy+' percent stamina. Ask them to finish sooner, or protect their energy and let the agreed finish play out.', ['home','slow']));
+ for(const candidate of candidates){const q=candidate();if(q)return q;}
+ return null;
+}
+function recordAdvice(m,q){
+ const st=m.switchAdvice??={seen:{},count:0};
+ st.seen??={};st.seen[q.id]=m.t;st.count=(st.count||0)+1;st.lastAt=m.t;st.pending=q;persistMatch();
+}
+function adviceScreen(q,note='',commentary=[],replay=false){
+ const m=active?.M,c=m&&s().card.find(x=>x.id===active.cid);
+ if(!c)return desk();
+ if(m.done||m.decision||!guided()||!V.getSettings().ttsEnabled){if(m.switchAdvice)delete m.switchAdvice.pending;persistMatch();matchScreen(note,commentary,true);return;}
+ const legal=q.calls.filter(id=>X.canCall(m,id));
+ if(!legal.length){delete m.switchAdvice.pending;persistMatch();startBroadcast();return;}
+ const resume=id=>{
+  if(id&&!X.canCall(m,id)){matchScreen('That instruction is no longer available.');return;}
+  delete m.switchAdvice.pending;
+  if(id)X.call(m,id);
+  persistMatch();startBroadcast();
+ };
+ const choices=[a('broadcast','Let them wrestle',()=>resume(null),'Keep your remaining calls for later.'),
+  ...legal.map(id=>a(id,X.CALLS[id].name,()=>resume(id),X.CALLS[id].hint)),
+  a('pause','Pause / settings',()=>pause(()=>adviceScreen(q,note,commentary)))];
+ const status='Calls left: '+m.calls+'.';
+ const speech='Dennis. '+q.title+'. '+q.body+' '+status;
+ screen('Dennis: '+q.title,q.body+' '+status+(note?'\n\n'+note:''),choices,{scene:liveScene(m,c),kicker:'LIVE FROM RINGSIDE · DENNIS',speechParts:replay?boothSpeech.parts(commentary,speech):[{text:speech}]});
+}
 function matchScreen(note='',commentary=[],played=false){
  const m=active.M,c=s().card.find(x=>x.id===active.cid);
  if(!c){active=null;persistMatch();desk('The match is no longer on the card.');return;}
@@ -666,6 +709,7 @@ function matchScreen(note='',commentary=[],played=false){
  const replayOption=commentary.length?[a('replay','Replay commentary',replay)]:[];
  if(m.done&&(!guided()||!V.getSettings().ttsEnabled||!m.queue.length)){screen('The final bell',status+' '+(note||''),[a('result','Review result',settleMatch),...replayOption,a('pause','Pause',()=>pause(()=>matchScreen()))],{scene,speechParts:narration('The final bell. '+status)});return;}
  if(m.decision&&!m.queue.length){const d=m.decision;screen(d.title,(note?note+'\n':'')+d.body+'\n'+status,d.options.map(o=>a(o.id,o.label+'. '+o.hint,()=>{X.resolve(m,o.id);persistMatch();if(guided()&&V.getSettings().ttsEnabled)startBroadcast();else burst(1);})).concat(replayOption,a('pause','Pause',()=>pause(()=>matchScreen()))),{scene,speechParts:narration(d.title+'. '+d.body+' '+status)});return;}
+ if(guided()&&V.getSettings().ttsEnabled&&m.switchAdvice?.pending){adviceScreen(m.switchAdvice.pending,note,commentary);return;}
  if(guided()&&V.getSettings().ttsEnabled){
   screen('At ringside',(note?note+'\n\n':'')+status,[
    a('broadcast','Continue live broadcast',startBroadcast),
@@ -676,12 +720,13 @@ function matchScreen(note='',commentary=[],played=false){
  screen('At ringside',(note?note+'\n\n':'')+status,[a('line','Hear next commentary',()=>burst(1)),a('burst','Continue — up to five commentary lines',()=>burst(5)),...(Object.keys(X.CALLS).some(id=>X.canCall(m,id))?[a('calls','Give a ringside instruction',calls)]:[]),a('status',commentary.length?'Replay commentary / status':'Repeat match status',()=>commentary.length?replay():matchScreen()),a('pause','Pause',()=>pause(()=>matchScreen()))],{kicker:'LIVE FROM RINGSIDE',portrait:m.w,scene,speechParts:narration(''),announce:!played});
 }
 // Advance the actual match only after the last spoken batch completes.
- // Deliberately stop at genuine engine decisions, final bell or a bounded
- // ringside checkpoint; no decision ever expires in real time.
+ // Guided commentary stops at genuine engine decisions, relevant advice,
+ // the final bell or a requested pause. No decision expires in real time.
 function startBroadcast(){
  if(!active)return;
  broadcastStopRequested=false;
- const run=active,m=run.M,from=m.t;let count=0,recent=[];
+ const run=active,m=run.M;let recent=[];
+ if(m.switchAdvice?.pending){delete m.switchAdvice.pending;persistMatch();}
  const display=lines=>lines.map(l=>(D.BOOTH?.[l.who]?.short?D.BOOTH[l.who].short+': ':'')+l.text).join('\n');
  const batch=()=>{
   if(active!==run)return;
@@ -690,14 +735,16 @@ function startBroadcast(){
    const line=X.next(m);if(!line)break;lines.push(line);
   }
   if(!lines.length){matchScreen(display(recent),recent,true);return;}
-  count+=lines.length;recent=lines;persistMatch();
+  recent=lines;persistMatch();
   screen('Live broadcast',display(lines),[a('pause','Pause at next break',()=>{})],{portrait:m.w,kicker:'LIVE FROM RINGSIDE',scene:liveScene(m,s().card.find(x=>x.id===run.cid)),speechParts:boothSpeech.parts(lines),onSpeechComplete:result=>{
    if(active!==run)return;
    if(result?.reason!=='end'){
     matchScreen(display(lines),lines,true);
     $('saveNotice').textContent=[saveNotice(),'Speech stopped. Replay commentary or continue.'].filter(Boolean).join(' ');return;
    }
-   if(broadcastStopRequested||(!m.queue.length&&(m.done||m.decision))||count>=12||m.t-from>=90){matchScreen(display(lines),lines,true);return;}
+   if(broadcastStopRequested||(!m.queue.length&&(m.done||m.decision))){matchScreen(display(lines),lines,true);return;}
+   const advice=contextualAdvice(m,X.canCall);
+   if(advice){recordAdvice(m,advice);adviceScreen(advice,display(lines),lines);return;}
    batch();
   }});
  };
