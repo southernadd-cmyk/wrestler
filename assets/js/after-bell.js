@@ -170,7 +170,7 @@
    acknowledge:{label:'Applaud the opponent',hint:'Recognise a good match without demanding a handshake.',tags:['Respect','Bond'],guard:x=>x.stars>=3&&x.outcome==='booked'&&x.context.dirty?.w!==true,
     line:'{W} steps back and applauds {F}.',reactions:[
      {id:'reciprocate',drive:'respect',line:'{F} nods and applauds in return.',bond:7,morale:2},
-     {id:'dismiss',drive:'escalation',line:'{F} turns away without acknowledging it.',bond:-2,feud:3}]},
+     {id:'dismiss',drive:'escalation',line:'{F} turns away without applauding.',bond:-2,feud:3}]},
    check_injury:{label:'Check on the injured opponent',hint:'Call the officials over and give the opponent space.',tags:['Care','No contact'],guard:x=>injured(x.context.injured?.f),
     line:'{W} asks the referee to check on {F} and takes a step back.',reactions:[
      {id:'appreciate',drive:'respect',line:'{F} acknowledges the gesture as the officials attend to them.',bond:8,trust:1},
