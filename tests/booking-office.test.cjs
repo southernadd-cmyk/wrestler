@@ -183,3 +183,24 @@ console.log('PASS bookers plan to their own style');
  const snapshot=JSON.stringify(G.S.worldV4.personnel);T.evolve();assert.equal(JSON.stringify(G.S.worldV4.personnel),snapshot,'week settles once');
  console.log('PASS INT5 deterministic performance, quality/condition sensitivity, shared fatigue, persistent circuit condition');
 }
+
+// INT6: development uses the same weekly skill bank as player training.
+{
+ const s=fresh(),V=root.OfficeWorldV4,week=T.absWeek(s),id=Object.keys(s.worldV4.contracts).find(id=>s.worldV4.contracts[id].owner==='ai');
+ G.updatePersonnel(s,id,{ring:40,mic:75,psych:75,safe:75,age:24,fatigue:0,injury:0,progress:{ring:.9}});
+ const worker=G.personnel(s,id),plan=V.developmentPlan(s,worker,week,false);
+ assert.equal(plan.stat,'ring');assert.ok(plan.gain>=1);
+ const copy=V.previewLifecycle(s,week+1);
+ assert.equal(G.personnel(s,id).ring,40,'forecast cannot mutate the career');
+ V.developPersonnel(s,week);V.recoverPersonnel(s,week);
+ assert.equal(G.personnel(s,id).ring,plan.skillAfter);
+ assert.equal(G.personnel(copy,id).ring,G.personnel(s,id).ring,'preview agrees with settlement');
+ const snap=JSON.stringify(s.worldV4.personnel);V.developPersonnel(s,week);
+ assert.equal(JSON.stringify(s.worldV4.personnel),snap,'development settles once per week');
+ assert.equal(V.developmentPlan(s,{...worker,injury:2},week+1),null);
+ assert.equal(V.developmentPlan(s,{...worker,fatigue:65},week+1),null);
+ assert.ok(V.releaseAI(s,id));assert.equal(s.free.find(w=>w.id===id).ring,plan.skillAfter);
+ assert.equal(G.sign(id),null);assert.equal(G.W(id).ring,plan.skillAfter);
+ assert.ok(G.W(id).progress.ring>=0,'fractional development carries into the player stable');
+ console.log('PASS INT6 shared development bank, injury/rest gate, pure forecast and transfers');
+}
