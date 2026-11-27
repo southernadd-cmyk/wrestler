@@ -30,8 +30,8 @@
 .arc-signing{padding:8px 12px;border-left:3px solid var(--blood,#982b32);margin:7px 12px;font-size:14px}
 .arc-signing span{display:block;margin-top:3px;color:var(--ink-2)}
 
-/* Planning and promos use a single desk, not nested scrolling panes.
-   The full width is for active choices. History opens only on request. */
+/* Planning and promos share one scrollable desk, without nested panes.
+   History opens only on request; desktop uses the vertical split below. */
 #tv:has(:is(.s-meeting,.s-promo)){overflow:hidden}
 #tv :is(.s-meeting,.s-promo){display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto;align-content:start;overflow:auto;padding:5px 8px;gap:0}
 #tv :is(.s-meeting,.s-promo)>.win{max-width:none;width:100%;height:auto;min-height:0;overflow:visible;align-self:start}
@@ -82,17 +82,30 @@
 #tv :is(.s-meeting,.s-promo) .sheetline{max-height:none;overflow:visible;padding:3px 8px;font-size:14px}
 #tv:has(.s-meeting) .match-brief>div{padding:3px 9px}
 #tv:has(:is(.s-meeting,.s-promo)) .tv-foot{padding:4px 10px}
+/* Vertical split on desktop: dialogue on the left, decisions on the right.
+   The enclosing stage remains the only scroll owner when content overflows. */
 @media(min-width:901px){
- #tv .s-meeting .structure-options{grid-template-columns:repeat(5,minmax(0,1fr))}
- #tv .s-meeting .rorder-row{grid-template-columns:minmax(130px,16%) minmax(0,1fr);gap:5px}
- #tv .s-meeting .rorder-picks{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
- #tv .s-meeting .structure-review dl{grid-template-columns:repeat(4,minmax(0,1fr))}
+ #tv :is(.s-meeting,.s-promo) .wbody{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);grid-template-rows:auto auto auto;align-items:start;gap:0;overflow:visible}
+ #tv :is(.s-meeting,.s-promo) .match-night-matchup{grid-column:1/-1;grid-row:1}
+ #tv :is(.s-meeting,.s-promo) .wbody>.scene,#tv .s-promo .wbody>.promo-conversation{grid-column:1;grid-row:2;min-width:0;align-self:start}
+ #tv :is(.s-meeting,.s-promo) .wbody>.decide2{grid-column:2;grid-row:2;align-self:stretch;border-top:0;border-left:2px solid var(--ink)}
+ #tv :is(.s-meeting,.s-promo) .sheetline{grid-column:1/-1;grid-row:3}
+ #tv :is(.s-meeting,.s-promo) .dialogue-current .bub{min-width:0}
+ #tv .s-promo .promo-conversation:has(.promo-context){grid-template-columns:minmax(0,1fr)}
+ #tv .s-promo .promo-context{border-left:0;border-top:1px solid var(--ink)}
+ #tv :is(.s-meeting,.s-promo) .picks{grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))}
+ #tv .s-meeting .structure-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #tv .s-meeting .rorder-row{grid-template-columns:minmax(100px,20%) minmax(0,1fr);gap:5px}
+ #tv .s-meeting .rorder-picks{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+ #tv .s-meeting .structure-review dl{grid-template-columns:repeat(2,minmax(0,1fr))}
+ /* Segment and mouthpiece selectors have no dialogue yet. */
+ #tv .s-promo .wbody:not(:has(.scene)){grid-template-columns:minmax(0,1fr)}
+ #tv .s-promo .wbody:not(:has(.scene))>.decide2{grid-column:1/-1;border-left:0}
 }
 @media(min-width:1200px){
- #tv :is(.s-meeting,.s-promo) .dialogue-current{flex-direction:row;align-items:start}
- #tv :is(.s-meeting,.s-promo) .dialogue-current .bub{flex:1;min-width:0}
- #tv .s-promo .promo-conversation:has(.promo-context) .dialogue-current{flex-direction:column}
- #tv .s-promo .picks.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+ #tv .s-meeting .structure-options{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #tv .s-promo .picks.five{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #tv .s-meeting .rorder-picks{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
 }
 @media(max-width:900px){
  #tv:has(:is(.s-meeting,.s-promo)){overflow:auto}
