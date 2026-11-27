@@ -2195,7 +2195,7 @@
   const requirement=ROUTE_CONDITION[route]||null;
   const slots=st.structurePlanning?structureSlots(st).map(o=>({id:o.id,name:o.title})):SPINE;
   const chosen=st.structurePlanning?st.structureBoard||{}:st.board;
-  const supported=slots.filter(S=>supportsFinish(st,route,chosen[S.id])).map(S=>S.name.toLowerCase());
+  const supported=slots.filter(S=>finishMetric(route)?finishContribution(st,route,chosen[S.id])>0:supportsFinish(st,route,chosen[S.id])).map(S=>S.name.toLowerCase());
   const available=!ROUTE_STATIC[route]||ROUTE_STATIC[route](st.w,st.f,st);
   const impossible=st.structurePlanning?structureWarnings(st).map(x=>x.toLowerCase()):slots.filter(S=>chosen[S.id]?.action&&(chosen[S.id].impossible||banned(st,chosen[S.id].action))).map(S=>S.name.toLowerCase());
   let summary=requirement?(supported.length?
