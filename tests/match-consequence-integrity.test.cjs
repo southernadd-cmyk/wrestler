@@ -13,6 +13,51 @@ assert.deepEqual(Array.from(G.resultStageOrder()),[
  'programmes','disqualify','stipulations','mouthpiece','programme-arcs','negotiation-career'
 ]);
 assert.throws(()=>G.registerResultStage('territory',next=>next),/duplicate match settlement stage/);
+
+// Exercise a genuinely missing module in an isolated production engine.
+// The failure must precede all match mutation, including cash and history.
+{
+ const {root:partial}=engine(71029,source=>{
+  const from="G.registerResultStage('territory',";
+  assert.equal(source.split(from).length,2);
+  return source.replace(from,"((id,factory)=>{})('territory',");
+ });
+ const game=partial.OfficeGame;
+ game.fresh();game.S.cash=99999;assert.equal(game.sign('rex'),null);
+ const c={id:'missing-stage',wid:'rex',rid:'silas',pid:'crown',
+  eventAbs:game.abs(),slot:'main',minutes:16,finish:'win_clean',purse:300};
+ game.S.card.push(c);
+ const snapshot=JSON.stringify(game.S);
+ assert.throws(()=>game.applyResult(c,{}),/Incomplete match settlement pipeline: territory/);
+ assert.equal(JSON.stringify(game.S),snapshot,'missing handler must not mutate a career');
+ assert.throws(()=>game.registerResultStage('territory',()=>null),/Invalid match settlement handler: territory/);
+ assert.ok(!game.resultStageOrder().includes('territory'),'invalid registration is not published');
+}
+// Trace actual dispatch through all 13 real handler bodies, not merely the
+// registry's advertised order. The inner chain must run once per normal result.
+{
+ const expected=Array.from(G.resultStageOrder()).reverse();
+ const {root:traced}=engine(71029,source=>{
+  const from='const handler=registered(next);';
+  assert.equal(source.split(from).length,2);
+  return source.replace(from,`const inner=registered(next);
+  const handler=typeof inner==='function'?function(...args){
+   (root.settlementTrace??=[]).push(key);return inner.apply(this,args);
+  }:inner;`);
+ });
+ const game=traced.OfficeGame;
+ game.fresh();game.S.cash=99999;assert.equal(game.sign('rex'),null);
+ const c={id:'trace-result',wid:'rex',rid:'silas',pid:'crown',
+  eventAbs:game.abs(),slot:'main',minutes:16,finish:'win_clean',purse:300};
+ game.S.card.push(c);
+ const fin={stars:3.5,crowd:60,crowdPeak:66,outcome:'booked',finishRoute:'finisher',
+  botches:0,script:.9,adj:{purseMul:1,rep:0,trust:0,heat:0,morale:0},
+  minutes:16,plan:'story',stamina:65,injury:0,ignored:0,callsUsed:[],log:[]};
+ game.applyResult(c,fin);
+ assert.deepEqual(Array.from(traced.settlementTrace),expected,'actual outer-to-inner invocation order');
+ assert.ok(game.resultRecorded(c));
+}
+
 let nextId=1;
 function reset(){
  G.fresh();const s=G.S;s.cash=99999;s.rep=60;
