@@ -52,9 +52,41 @@ function narrateMatch(parts,onComplete=null,{skippable=!onComplete}={}){
  lock.ticket.finished.then(finish,()=>finish({reason:'error'}));
 }
 input=window.OfficeChoiceInput.create({scan,manager:M,holdThreshold:600});
-function choose(item){if(narrationLock||!item||!items.some(x=>x===item))return;try{item.run();}catch(e){console.error(e);screen('Office notice','The action could not be completed. Your career remains available.',[a('back','Return to the office',()=>s()?desk():mainMenu())]);}}
+// Remember only screen identities and selected IDs, never game state or callbacks.
+let navigationTrail=[],currentScreenKey=null,selectionAction=null;
+function choose(item){
+ if(narrationLock||!item||!items.some(x=>x===item))return;
+ const previous=selectionAction;
+ selectionAction={key:currentScreenKey,id:item.id,returning:/^(Back(?:\b|$)|Cancel$|Continue$|Return to (?:guide|office)\b)/i.test(item.label),used:false};
+ try{item.run();}catch(e){console.error(e);navigationTrail=[];screen('Office notice','The action could not be completed. Your career remains available.',[a('back','Return to the office',()=>s()?desk():mainMenu())]);}
+ finally{selectionAction=previous;}
+}
+function restoreNavigation(key,choices,restoreId,fresh){
+ if(!fresh)return restoreId;
+ const action=selectionAction&&!selectionAction.used?selectionAction:null;
+ if(action)action.used=true;
+ if(action?.returning||restoreId!==null){
+  // An explicit callback remains authoritative about the destination. Find
+  // that destination in the visited trail, not an arbitrary previous screen.
+  let i=navigationTrail.length-1;
+  while(i>=0&&navigationTrail[i].key!==key)i--;
+  if(i>=0){
+   if(restoreId===null)restoreId=navigationTrail[i].id;
+   navigationTrail.length=i;
+  }
+ }else if(action&&action.key&&action.key!==key){
+  navigationTrail.push({key:action.key,id:action.id});
+  if(navigationTrail.length>64)navigationTrail.shift();
+ }
+ currentScreenKey=key;
+ return choices.some(x=>x.id===restoreId)?restoreId:null;
+}
 function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,announce=true,kicker='DENNIS · YOUR ASSISTANT',speechParts=null,onSpeechComplete=null,scene=null,pauseMenu=false}={}){
  if(fresh){stopNarration();input.cancel();refreshSettings=null;}
+ // Page identity and row IDs disambiguate identical titles. Portrait and
+ // scene competitors distinguish screens belonging to different wrestlers.
+ const page=String(body).match(/\bPage (\d+) of (\d+)/i)?.[0]||'';
+ const key=JSON.stringify([title,kicker,portrait?.id||null,scene?.w?.id||null,scene?.f?.id||null,page,choices.map(x=>x.id)]);
  const repeat=()=>{if(V.getSettings().ttsEnabled){stopNarration();const parked=scan.getState().parked?[{text:'Parked. Press Enter to start scanning.'}]:[];const parts=speechParts?.length?speechParts:[{text:title+'. '+body}];narrateMatch([...parts,...parked]);}else $('saveNotice').textContent=[saveNotice(),'Text to speech is off. Enable it in Settings to hear this information.'].filter(Boolean).join(' ');};
  // Every stationary choice screen has a tap-only route to communication.
  // Resume redraws the captured choices, never re-runs the action that opened them.
@@ -69,6 +101,7 @@ function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,anno
   choices=choices.map(x=>existingRepeat(x)?{...x,run:repeat}:x);
   if(V.getSettings().ttsEnabled&&!choices.some(x=>existingRepeat(x)||['Replay commentary','Read match status','Replay commentary / status','Repeat match status'].includes(x.label)))choices=[...choices,a('__repeat_information','Repeat information',repeat)];
  }
+ restoreId=restoreNavigation(key,choices,restoreId,fresh);
  $('heading').textContent=title;$('kicker').textContent=kicker;$('careerStatus').textContent=summary();$('saveNotice').textContent=saveNotice();
  renderPresentation(title,body,portrait,scene,kicker);
  items=choices.map(x=>{const element=document.createElement('button');element.type='button';element.dataset.choice=x.id;const label=document.createElement('span');label.className='choiceLabel';label.textContent=x.label;element.append(label);if(x.hint){const hint=document.createElement('span');hint.className='choiceHint';hint.textContent=x.hint;element.append(hint);}const item={...x,element};element.onclick=()=>{if(narrationLock){if(narrationLock.continuous&&item.id==='pause')requestBroadcastPause();if(!narrationLock.skippable)return;stopNarration();}input.cancel();choose(item);};return item;});
@@ -135,6 +168,7 @@ function liveScene(m,c){return {...matchScene(c,m.w,m.f,'ring',[X.fmt(m.t),'Crow
 const back=(fn)=>a('back','Back',fn);
 function confirm(title,body,yes,fn,cancel){screen(title,body,[a('cancel','Cancel',cancel),a('confirm',yes,fn)]);}
 function mainMenu(restoreId=null){
+ if(restoreId===null){navigationTrail=[];}
  const has=G.hasSave();
  screen('Main menu','Run your own wrestling stable. Sign talent, make bookings and manage matches at your own pace. Enter selects the highlighted choice. With two switches, Space moves the highlight. Change controls in Settings.',[
  ...(has?[a('continue','Continue career',()=>{if(G.load()){restoreMatch();restorePlanning();desk();}else screen('Save unavailable','Your saved career could not be opened.',[back(mainMenu)]);})]:[]),
@@ -377,7 +411,7 @@ function guidedDesk(note=''){
  screen(s().card.length?'Dennis: ready for match night':'Dennis: the week is ready',(note?note+'\n':'')+s().card.length+' matches booked. '+money(b.after)+' projected balance after costs. '+(b.today.length+b.deadline.length?'There are still '+(b.today.length+b.deadline.length)+' unsigned urgent invitations. ':'')+'Existing training plans continue. '+guideObjective(s())+' Nothing is automatically signed or spent.',[
  a('continue',s().card.length?'Start match night':'Finish the week',advance),a('stable','Review your stable',stable),a('ringfax','Read Ringfax',()=>ringfaxHome(()=>guidedDesk())),moreChoice]);
 }
-function more(){screen('More office options',summary(),[a('finances','Finances and objectives',finances),a('results','Recent results',()=>results()),a('progress','Career progress',()=>careerProgress()),a('ringfax','Ringfax',()=>ringfaxHome(more)),a('mode','Management mode: '+(guided()?'Guided':'Full'),()=>modeScreen(more)),a('pause','Pause / settings',()=>pause(()=>more())),back(()=>desk('','more'))]);}
+function more(){screen('More office options',summary(),[a('finances','Finances and objectives',finances),a('results','Recent results',()=>results()),a('progress','Career progress',()=>careerProgress()),a('ringfax','Ringfax',()=>ringfaxHome(more)),a('mode','Management mode: '+(guided()?'Guided':'Full'),()=>modeScreen(more)),a('pause','Pause / settings',()=>pause(()=>more())),back(()=>desk('','more',true))]);}
 // Ringfax is read-only; keep the existing editorial generator and quiz rules.
 const RF=window.OfficeRingfax;
 const rfKicker='RINGFAX · REGIONAL WRESTLING TELETEXT';
@@ -468,7 +502,7 @@ function paged(title,rows,page,open,returnTo,describe=x=>x.name,restoreId=null){
  ...(pages>1?[a('next','Next page',()=>paged(title,rows,(page+1)%pages,open,returnTo,describe))]:[]),
  back(returnTo)],{restoreId});
 }
-function inbox(){const rows=[...s().inbox].sort((x,y)=>Number(y.kind==='decision'&&!y.answer)-Number(x.kind==='decision'&&!x.answer));paged('Inbox',rows,0,message,()=>desk('','inbox'),m=>m.subject+(m.kind==='decision'&&!m.answer?' — reply needed':''));}
+function inbox(){const rows=[...s().inbox].sort((x,y)=>Number(y.kind==='decision'&&!y.answer)-Number(x.kind==='decision'&&!x.answer));paged('Inbox',rows,0,message,()=>desk('','inbox',true),m=>m.subject+(m.kind==='decision'&&!m.answer?' — reply needed':''));}
 function message(m,returnTo){m.read=true;G.save();screen(m.subject,m.from+'.\n'+(Array.isArray(m.body)?m.body.join('\n'):m.body||'')+(m.outcome?'\nOutcome: '+m.outcome:''),[...(m.kind==='decision'&&!m.answer?(m.options||[]).map(o=>a(o.id,o.label+(o.hint?'. '+o.hint:''),()=>{const result=G.answer(m.id,o.id);if(!m.answer){screen('Response unavailable',String(result),[back(()=>message(m,returnTo))]);return;}screen('Response recorded',m.outcome||'Decision recorded.',[back(returnTo)]);})):[]),a('repeat','Repeat message',()=>message(m,returnTo)),back(returnTo)]);}
 function stable(){const opts=[...(s().roster.length?[a('roster','Your wrestlers',()=>paged('Your wrestlers',s().roster,0,profile,stable))]:[]),a('scout','Scout and sign wrestlers',scout),a('coach','Coaching staff',coaches),a('reports','Training reports',trainingReports),back(()=>desk('','stable'))];screen('Your stable',s().roster.length+' of 5 contract places filled.',opts);}
 function scout(returnTo=stable,restoreId=null){screen('Find talent','Choose a division. The shortlist is ordered by signing fee; every affordable free agent is available.',D.DIVISION_ORDER.map(div=>a(div,D.DIVISIONS[div].name+' division',()=>scoutList(div,returnTo))).concat(back(returnTo)),{restoreId});}
@@ -560,7 +594,7 @@ function trainingReports(){
   showReport();
  },stable);
 }
-function offers(){const rows=s().offers.filter(o=>G.offerCandidates(o).length);paged('Available booking offers',rows,0,offer,()=>desk('','offers'),o=>G.P(o.pid).name+' · versus '+G.F(o.rid).name);}
+function offers(){const rows=s().offers.filter(o=>G.offerCandidates(o).length);paged('Available booking offers',rows,0,offer,()=>desk('','offers',true),o=>G.P(o.pid).name+' · versus '+G.F(o.rid).name);}
 function offer(o,returnTo){const candidates=G.offerCandidates(o);paged(G.P(o.pid).name+' — choose your wrestler',candidates,0,(w,ret)=>offerTerms(o,w,ret),returnTo,w=>w.name+' · '+money(o.programme?OfficeProgrammes.totalPurse(o,w):G.purse(o,w)));}
 const FINISH_EXPLANATIONS={win_clean:'Your wrestler is expected to win fairly.',win_dirty:'Your wrestler is expected to win by cheating.',lose_protected:'Your wrestler is expected to lose but still look strong.',lose_clean:'Your wrestler is expected to lose fairly.',win_dq:'Your wrestler is expected to win because the opponent is disqualified.',lose_dq:'Your wrestler is expected to lose by disqualification.'};
 function bookingTerms(o,w,terms=o){
