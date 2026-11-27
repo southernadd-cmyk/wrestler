@@ -343,13 +343,15 @@ function trialBlock(){
  return `<p class="lede">Deliver a 3★ match <b>and</b> meet two of the other three by the end of week 4. Pass, and your backer invests £450.</p><div class="criteria">${trials.map(x=>`<div class="crit ${x[2]?'met':''}"><i>${x[2]?'✓':'○'}</i><span><b>${esc(x[0])}</b><small>${esc(x[1])}</small></span></div>`).join('')}</div><div class="countdown"><b>${left} ${plural(left,'week')}</b><span class="dim">until the backer reviews the stable.</span></div>`;
 }
 function trayItems(){
- const s=S(),out=[],need=G.pending();
+ const s=S(),out=[],need=G.pending(),week=G.officeBrief();
  const errors=G.systemErrors();if(errors.length)out.push({k:'urgent',ic:'!',t:errors.length+' system alert'+(errors.length===1?'':'s'),d:'A simulation extension reported an error. Export your career and review details in Save and load.',go:'game',b:'Review'});
  if(need.length)out.push({k:'urgent',ic:'!',t:`${need.length} ${plural(need.length,'message needs','messages need')} a reply`,d:'You can’t continue until you answer.',go:'inbox',b:'Read'});
  else{const u=s.inbox.filter(m=>!m.read).length;if(u)out.push({k:'',ic:'▸',t:`${u} unread ${plural(u,'message')}`,d:'Reports, results and news from the circuit.',go:'inbox',b:'Read'})}
  if(!s.roster.length)out.push({k:'urgent',ic:'!',t:'Nobody under contract',d:'Sign a headliner, or two cheaper wrestlers.',go:'scouting',b:'Free agents'});
  if(s.card.length)out.push({k:'ok',ic:'✓',t:`${s.card.length} ${plural(s.card.length,'match')} on this week’s card`,d:'Continue takes you to ringside.',go:'fixtures',b:'Fixtures'});
- else if(s.roster.length&&s.offers.length)out.push({k:'',ic:'▸',t:`${s.offers.length} ${plural(s.offers.length,'offer')} on the table, nothing booked`,d:'An unbooked week earns nothing but still costs wages.',go:'offers',b:'Offers'});
+ if(week.today.length)out.push({k:'urgent',ic:'!',t:`${week.today.length} bookable ${plural(week.today.length,'offer')} this week`,d:`${week.unbooked.length} free ${plural(week.unbooked.length,'wrestler')} could work. Offers may compete for the same wrestler.`,go:'offers',b:'Review'});
+ if(week.deadline.length)out.push({k:'urgent',ic:'!',t:`${week.deadline.length} future ${plural(week.deadline.length,'offer')} expire this week`,d:'Decide before the deadline passes.',go:'offers',b:'Review'});
+ if(week.after<0)out.push({k:'urgent',ic:'!',t:'Projected overdraft',d:'After booked purses and weekly costs: '+money(week.after)+'.',go:'offers',b:'Review'});
  for(const w of s.roster){
   if(w.injury)out.push({k:'urgent',ic:'+',t:`${w.short} is injured`,d:`Out for ${w.injury} ${plural(w.injury,'week')}.`,go:'profile',id:w.id,b:'Profile'});
   else if(w.fatigue>=45)out.push({k:'urgent',ic:'!',t:`${w.short} is tired`,d:`Fatigue ${w.fatigue}. Consider rest this week.`,go:'training',b:'Training'});
@@ -362,15 +364,17 @@ function trayItems(){
 }
 function renderDesk(){
  const s=S(),stakes=s.season===1&&s.week<=4;
- const pending=G.pending().length;
+ const pending=G.pending().length,week=G.officeBrief();
  const brief=pending?
   {heading:pending+' '+plural(pending,'decision')+' awaiting reply',why:'Reply before you can advance the week.',go:'inbox',cta:'Review decisions'}:
   !s.roster.length?
   {heading:'Build '+G.normaliseIdentity(s.identity).stable,why:'Sign your first wrestler before accepting bookings.',go:'scouting',cta:'Find talent'}:
+  week.today.length?
+  {heading:week.today.length+' bookable '+plural(week.today.length,'offer')+' this week',why:week.unbooked.length+' available '+plural(week.unbooked.length,'wrestler')+' could earn a purse. Review before the show.',go:'offers',cta:'Review offers'}:
+  week.deadline.length?
+  {heading:week.deadline.length+' future '+plural(week.deadline.length,'offer')+' expire this week',why:'Review the terms before the deadline.',go:'offers',cta:'Review offers'}:
   s.card.length?
   {heading:s.card.length+' '+plural(s.card.length,'match')+' booked',why:'Check the card and prepare for match night.',go:'fixtures',cta:'Review card'}:
-  s.offers.length?
-  {heading:s.offers.length+' '+plural(s.offers.length,'offer')+' available',why:'Consider the terms before advancing the week.',go:'offers',cta:'Review offers'}:
   {heading:'Ready to advance',why:'Use Continue to reach next week and receive new offers.',go:null,cta:null};
  const briefing=`<div class="desk-brief"><div><small>NEXT ACTION</small><b>${esc(brief.heading)}</b><span>${esc(brief.why)}</span></div>${brief.go?`<button class="btn sm" data-go="${brief.go}">${esc(brief.cta)}</button>`:''}</div>`;
  let mission='';
@@ -887,7 +891,7 @@ function fitNotes(o,w){
 function offerPick(o){
  const s=S(),p=G.P(o.pid);
  const div=D.divisionOf(o.rid);
- const options=s.roster.filter(w=>(!o.wid||o.wid===w.id)&&D.divisionOf(w)===div&&G.availableAt(w,o.eventAbs)&&!G.bookingConflict(w.id,o.rid,o.eventAbs)&&(!o.programme||o.programme.beats.every(b=>G.availableAt(w,b.at)&&!G.bookingConflict(w.id,b.rid,b.at))));
+ const options=G.offerCandidates(o);
  const sel=options.find(w=>w.id===o.talk?.wid)||options.find(w=>w.id===pick[o.id])||options.slice().sort((a,b)=>(D.STYLE_PLAN[b.style]===p.likes)-(D.STYLE_PLAN[a.style]===p.likes)||a.fatigue-b.fatigue)[0];
  if(sel)pick[o.id]=sel.id;
  return {options,sel};
@@ -1242,12 +1246,18 @@ function proceed(){
  const s=S();
  OfficeTerritory.reconcileOrdinaryTitles();
  if(G.pending().length){inboxFilter='action';openMsg=G.pending()[0].id;go('inbox',phoneLayout()?openMsg:null);toast('Reply to the messages marked in red first.');return}
- if(s.card.length){startNight();return}
+ if(s.card.length){
+  const week=G.officeBrief();
+  if(week.today.length||week.deadline.length){
+   dialog('Start match night?',`<p>${s.card.length} ${plural(s.card.length,'match')} booked. This show will advance the week when finished.</p><p>${week.today.length} additional bookable current-week ${plural(week.today.length,'offer')} and ${week.deadline.length} future ${plural(week.deadline.length,'offer')} expiring this week remain.</p><p>Projected bank after signed purses and costs: <b>${money(week.after)}</b>.</p>`,[['Review offers','review-week-offers'],['Start match night','confirm-start-night','go']]);return;
+  }
+  startNight();return;
+ }
  if(!s.roster.length&&s.week===1){go('scouting');toast('Sign a wrestler first.');return}
  // An empty week costs real money and an opportunity. Show the consequences before advancing.
  const cost=G.wages()+G.overhead()+G.trainingBill();
- const outstanding=s.offers.filter(o=>o.eventAbs===G.abs()).length;
- dialog('Advance without a booking?',`<p>No matches are booked this week. You will earn <b>£0 in match purses</b> and pay an estimated <b>${money(cost)}</b> in wages, overheads and training.</p><p>Your bank is projected to move from <b>${money(s.cash)}</b> to <b>${money(s.cash-cost)}</b>.</p><p>${outstanding?outstanding+' current-week '+plural(outstanding,'offer')+' may expire. ':''}Advancing uses up this week of the season and any active sponsor trial.</p>`,[['Review offers','review-week-offers'],['Advance anyway','confirm-empty-week','red']]);
+ const week=G.officeBrief(),outstanding=week.today.length+week.deadline.length;
+ dialog('Advance without a booking?',`<p>No matches are booked this week. You will earn <b>£0 in match purses</b> and pay an estimated <b>${money(cost)}</b> in wages, overheads and training.</p><p>Your bank is projected to move from <b>${money(s.cash)}</b> to <b>${money(s.cash-cost)}</b>.</p><p>${outstanding?outstanding+' bookable '+plural(outstanding,'offer')+' will be lost or expire. ':''}Advancing uses up this week of the season and any active sponsor trial.</p>`,[['Review offers','review-week-offers'],['Advance anyway','confirm-empty-week','red']]);
  return;
  toast(`Week ${s.week}. ${s.offers.length} ${plural(s.offers.length,'offer')} on the table.`);
 }
@@ -2035,6 +2045,7 @@ document.addEventListener('click',e=>{
  }
  if(d.dlg==='newgame'){$('#modal').close();newCareerApproved=true;identitySetup('new');return}
  if(d.dlg==='review-week-offers'){$('#modal').close();return go('offers')}
+ if(d.dlg==='confirm-start-night'){$('#modal').close();if(G.pending().length||!S().card.length)return proceed();return startNight();}
  if(d.dlg==='confirm-empty-week'){
   $('#modal').close();
   if(S().card.length||G.pending().length)return proceed();
