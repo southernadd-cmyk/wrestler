@@ -187,5 +187,6 @@
 /* Match-sheet beats: order is shown by position; no numbers. The list stays
    an <ol> so screen readers still hear the order. */
 #tv .desk-objectives{list-style:none;padding-left:0}
-#tv .desk-objectives li{padding:4px 7px;border-bottom:1px solid var(--stone-lo)}
+#tv .desk-objectives li{padding:4px 0;border-bottom:1px solid var(--stone-lo)}
+#tv .desk-objectives li.active{padding-left:6px;padding-right:6px}
 #tv .desk-objectives li:last-child{border-bottom:0}
