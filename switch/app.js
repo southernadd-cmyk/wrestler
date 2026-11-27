@@ -535,7 +535,6 @@ function ringfaxLadder(p,div,ret,page=0){
   ...(i+1<count?[a('next','Next rankings',()=>ringfaxLadder(p,div,ret,i+1))]:[]),
   ...(i>0?[a('previous','Previous rankings',()=>ringfaxLadder(p,div,ret,i-1))]:[]),back(()=>ringfaxDivision(p,ret,div))],{kicker:rfKicker});
 }
-const rfColours=['Red','Green','Yellow','Cyan'];
 function ringfaxQuiz(ret){
  // Use the actual quiz API. Reopening page 777 in the same week does not
  // reset an attempt; the shared module rotates questions on week changes.
@@ -545,7 +544,7 @@ function ringfaxQuiz(ret){
  let title='Ringfax weekly quiz',body='Twelve wrestling questions. Checkpoints after questions four and eight. No effect on your career.',choices=[];
  if(info.stage==='question'){
   title='Question '+(info.index+1)+' of '+info.total;body=q.q;
-  choices=q.a.map((label,i)=>a('quiz-'+i,rfColours[i]+': '+label,act('quiz-answer',i)));
+  choices=q.a.map((label,i)=>a('quiz-'+i,label,act('quiz-answer',i)));
  }else if(info.stage==='wrong'){
   title='You have been bodyslammed!';body='Correct answer: '+q.a[q.correct]+'. Retry from question '+(info.checkpoint+1)+'.'+(info.reveal?' '+q.fact:'');
   choices=[a('retry','Try again',act('quiz-retry')),a('reveal',info.reveal?'Hide trivia':'Reveal trivia',act('quiz-reveal'))];
