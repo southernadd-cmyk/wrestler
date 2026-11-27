@@ -122,7 +122,7 @@ const back=(fn)=>a('back','Back',fn);
 function confirm(title,body,yes,fn,cancel){screen(title,body,[a('cancel','Cancel',cancel),a('confirm',yes,fn)]);}
 function mainMenu(restoreId=null){
  const has=G.hasSave();
- screen('Main menu','Run your own wrestling stable. Sign talent, make bookings and manage matches at your own pace. '+(M.getSettings().autoScan?'One switch: Enter selects.':'Two switches: Space moves, Enter selects.')+' Change controls in Settings.',[
+ screen('Main menu','Run your own wrestling stable. Sign talent, make bookings and manage matches at your own pace. Enter selects the highlighted choice. With two switches, Space moves the highlight. Change controls in Settings.',[
  ...(has?[a('continue','Continue career',()=>{if(G.load()){restoreMatch();restorePlanning();desk();}else screen('Save unavailable','Your saved career could not be opened.',[back(mainMenu)]);})]:[]),
  a('new','New career',()=>has?confirm('New career?','This replaces only your Switch Edition career. The regular game is unaffected.','Start new career',newIdentity,()=>mainMenu('new')):newIdentity()),
  a('help','How to play',()=>help(()=>mainMenu('help'))),a('settings','Settings',()=>settings(()=>mainMenu('settings'))),a('exit','Exit game',()=>exit(()=>mainMenu('exit')))
