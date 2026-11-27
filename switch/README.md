@@ -25,3 +25,6 @@ Choose an eligible stablemate and their actual ringside assignment using the exi
 
 ## Stable management and development
 Wrestler profiles expose condition, skills, loyalty, wages and ambitions. Development includes weekly focus/intensity, injury-aware forecasts, fixed blocks/camps, Dennis's limited sessions (rehearsal, move learning, microphone practice), actionable training advice, specialist coaches and completed-week reports. Private meetings use the shared management-meeting allowance, with reassurance, featured-match promises and bonuses; permanent wage increases and releases require cancel-first confirmation. All actions use existing career APIs. No changes to the regular interface or engine. Browser and physical switch testing remain outstanding.
+
+### Commentary playback
+Commentary speaks only the actual line, retaining role-specific voices; commentator names remain visual labels. A complete spoken batch owns the scanner until it finishes in both switch modes, independent of the menu wait-for-speech preference. Long utterances are split at word boundaries, use a separate completion deadline, and stop on speech-engine failure rather than cutting into the next speaker. The last batch can be replayed. Normal menu scan timing is unchanged.

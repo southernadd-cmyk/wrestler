@@ -25,11 +25,15 @@ function createBoothSpeech(V){
   const s=V.getSettings(),rate=Math.min(10,Math.max(.1,(s.rate||1)*p.rate)),pitch=Math.min(2,Math.max(0,(s.pitch??1)*p.pitch));
   return {voice:voices[role],rate,pitch};
  }
+ function parts(lines,tail=''){return [...lines.filter(l=>l?.text).map(l=>({who:l.who,text:l.text})),...(tail?[{text:tail}]:[])];}
  function cancel(){active?.cancel();}
  function speak(text){cancel();return V.speak(text);}
  function sequence(parts){
   cancel();
   const voices=cast();
+  // Keep native utterances short enough for browser engines, especially at
+  // slower speech rates. Split on whitespace, retaining each role's voice.
+  const queue=parts.flatMap(part=>{const rate=options(part.who,voices).rate||V.getSettings().rate||1,limit=Math.max(24,Math.floor(125*Math.min(1,rate)));const words=String(part.text||'').trim().split(/\s+/),chunks=[];let current='';for(const word of words){if(current&&current.length+1+word.length>limit){chunks.push(current);current='';}current+=(current?' ':'')+word;}if(current)chunks.push(current);return chunks.map(text=>({who:part.who,text}));});
   let resolveStart,resolveFinish,current=null,done=false,didStart=false,index=0;
   const started=new Promise(r=>resolveStart=r),finished=new Promise(r=>resolveFinish=r);
   function end(reason){
@@ -40,22 +44,22 @@ function createBoothSpeech(V){
   function next(){
    if(done)return;
    if(!V.getSettings().ttsEnabled){end('disabled');return;}
-   if(index>=parts.length){end('end');return;}
-   const part=parts[index++];if(!part.text){next();return;}
+   if(index>=queue.length){end('end');return;}
+   const part=queue[index++];if(!part.text){next();return;}
    try{
-    current=V.speak(part.text,options(part.who,voices));
+    current=V.speak(part.text,{...options(part.who,voices),completeUtterance:true});
     current.started.then(value=>{if(!done&&value){didStart=true;resolveStart(true);}},()=>{});
     current.finished.then(result=>{
      if(done)return;
      if(result?.started){didStart=true;resolveStart(true);}
-     if(result?.reason==='cancelled'||result?.reason==='disabled'){end(result.reason);return;}
+     if(result?.reason!=='end'){end(result?.reason||'error');return;}
      next();
-    },()=>next());
-   }catch(_){next();}
+    },()=>end('error'));
+   }catch(_){end('error');}
   }
   next();return ticket;
  }
- return {cast,speak,sequence,cancel};
+ return {cast,speak,parts,sequence,cancel};
 }
 root.OfficeBoothSpeech={create:createBoothSpeech};
 })(typeof window!=='undefined'?window:globalThis);
