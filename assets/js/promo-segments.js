@@ -76,10 +76,22 @@
   ambush:{name:'Backstage ambush',hint:'No talking. {W} jumps {F} before the match. {F} starts the match hurt; the promoter may not like it.',tags:['Feud heat ▲▲','Opponent hurt','Trust risk']},
   grilling:{name:'Interview grilling',hint:'The interviewer asks the hard questions and {F} is not there. {W} handles it alone, or walks out.',tags:['Mic ▲','Can walk out']}
  };
+ // Freshness: the crowd tires of the same trick. Of the wrestler's last few segments, how many were this kind?
+ // Read from match history (no new save data). Each repeat costs quality, crowd and feud heat in the result.
+ const FRESH_WINDOW=3;
+ function staleness(type,w){
+  const name=ENGINES[type]?.name;if(!name||!w)return 0;
+  return (G?.S?.history||[]).filter(x=>x.wid===w.id&&x.promo).slice(0,FRESH_WINDOW).filter(x=>x.promo.style===name).length;
+ }
+ const staleTag=n=>n>=2?'Seen it lately ▼▼':n===1?'Seen it lately ▼':null;
  function menu(c,w,f,p){
   const st={w,f,p:{voice:p?.voice||'The promoter',venue:p?.venue||'the hall'}};
-  return Object.entries(TYPES).map(([id,t])=>({id,label:t.name,hint:fill(t.hint,st),
-   tags:id==='vignette'?[...t.tags,p?.tv?'TV production':'House production']:t.tags.slice()}));
+  return Object.entries(TYPES).map(([id,t])=>{
+   const stale=staleness(id,w),tags=id==='vignette'?[...t.tags,p?.tv?'TV production':'House production',...((w?.mic||50)<50?['Hides a weak mic ▲']:[])]:t.tags.slice();
+   if(staleTag(stale))tags.push(staleTag(stale));
+   const hint=fill(t.hint,st)+(stale?` The crowd has seen ${w.short} do this ${stale===1?'once':stale+' times'} in their last ${FRESH_WINDOW} segments, so it will land softer.`:'');
+   return {id,label:t.name,hint,tags};
+  });
  }
  // The road agent's read: who should be trusted with a live microphone tonight.
  function advice(c,w,f){
@@ -103,7 +115,7 @@
  function gamble(st,e,key,bonus,win,lose){e.gamble={key,bonus,p:chance(st,bonus),win,lose};}
  function fxOf(st,o){
   const e={quality:0,room:0,heat:0,trust:0,morale:0,hurt:0,back:0,...(o.base||{}),why:[],tags:[],gamble:null};
-  if(o.vis){e.heat+=o.vis+1;e.quality+=o.vis*3;}
+  if(o.vis){e.heat+=o.vis;e.quality+=Math.min(6,o.vis*3);}
   o.fx?.(st,e);
   const g=e.gamble,avg=k=>(e[k]||0)+(g?((g.win[k]||0)*g.p+(g.lose[k]||0)*(1-g.p)):0);
   e.score=Math.round(avg('quality')+(e.hideRoom?0:avg('room'))+avg('heat')+avg('trust')*2+avg('morale')+avg('hurt')*.5);
@@ -146,7 +158,7 @@
   e.tags.push(kept?'Booked finish keeps it':'Risk: booked finish breaks it');
   e.why.push(kept?'The booked finish keeps this promise, if the match goes to plan.':'The booked finish would break this promise, and the crowd will remember it.');
  }
- const ambitionTrust=p=>likesTrouble(p)?2:p?.personality==='traditional'?-1:0;
+ const ambitionTrust=p=>likesTrouble(p)?1:p?.personality==='traditional'?-1:0;
  const trustFor=(st,e,good,bad,likeWhy,dislikeWhy)=>{const t=good.includes(st.p.personality)?1:bad.includes(st.p.personality)?-1:0;if(t){e.trust+=t;e.why.push(t>0?likeWhy:dislikeWhy);}};
 
  /* ---------- solo promo ---------- */
@@ -184,8 +196,8 @@
    {id:'history',cat:'rivalry',label:'Bring up their last meeting',hint:'Blow by blow, the last time {W} and {F} crossed paths.',
     fx:(st,e)=>{if(st.heat0>=30){e.heat+=4;e.room+=2;e.quality+=3;e.why.push('There is history here to call back to.');}
      else{e.quality-=2;e.room-=1;e.tags.push('Risk: not much history yet');e.why.push('There is not much history to call back to yet.');}}},
-   {id:'town',cat:'ego',label:'Insult the town',hint:'Cheap heat. The room turns on {W}, and they will pay to watch them lose.',base:{room:-12,heat:5,quality:5},
-    fx:(st,e)=>{e.hideRoom=true;e.tags.push('Crowd turns, hall heats up');trustFor(st,e,['aggressive','showman'],['traditional'],'{P} loves cheap heat.','{P} thinks it is beneath the show.');}},
+   {id:'town',cat:'ego',label:'Insult the town',hint:'Cheap heat. The room turns on {W}, and they will pay to watch them lose.',base:{room:-12,heat:4,quality:3},
+    fx:(st,e)=>{e.hideRoom=true;e.tags.push('Crowd turns, hall heats up');trustFor(st,e,['aggressive','showman'],['traditional','cold'],'{P} loves cheap heat.','{P} thinks it is beneath the show.');}},
    {id:'belt',cat:'ego',label:'Point at the title picture',hint:'Claim a place in the title picture, live.',base:{heat:1,quality:3},
     fx:(st,e)=>{if(st.w.heat>=65){e.room+=2;e.why.push('The crowd can see {W} as a contender.');}else{e.room-=2;e.why.push('From {W}, it sounds premature.');}
      trustFor(st,e,['aggressive','showman'],['traditional'],'{P} likes ambition.','{P} thinks {W} should wait their turn.');}}]},
@@ -406,7 +418,9 @@
  }
 
  /* ---------- backstage ambush ---------- */
- const visTag=v=>'Crowd '+'▲'.repeat(v);
+ // How much the hall sees of it: the live screen is worth more than tape, but not three times more.
+ const visCrowd=v=>v>=3?2:v>=1?1:0;
+ const visTag=v=>'Crowd '+'▲'.repeat(visCrowd(v));
  const brawler=(st,e)=>{if(wStyle(st)==='Brawl'){e.hurt+=2;e.why.push('{W} is a brawler and hits harder.');}};
  const egoBack=(st,e)=>{if(st.f.ego>=75&&e.back>0)e.why.push('{F} has the ego to hit back.');};
  // The chance that the opponent hits back, given everything chosen so far plus this option.
@@ -416,17 +430,17 @@
    {id:'car',label:'The car park as {F} arrives',hint:'Nobody sees it live. A camera crew catches the end of it for the screen.',vis:1,
     fx:(st,e)=>{e.tags.push(visTag(1),'Seen on tape');}},
    {id:'catering',label:'Catering, in front of everyone',hint:'The whole locker room sees it. Some of them will remember.',vis:2,
-    fx:(st,e)=>{e.tags.push(visTag(2),'Locker room notices');}},
+    fx:(st,e)=>{e.tags.push(visTag(2));if(!likesTrouble(st.p)){e.trust-=1;e.why.push('The whole locker room saw it, and {P} hears about it.');}}},
    {id:'interview',label:'During {F}’s live interview',hint:'Live on the screen in the hall. The biggest reaction, and the promoter is watching.',vis:3,
-    fx:(st,e)=>{e.tags.push(visTag(3));const t=likesTrouble(st.p)?2:-1;e.trust+=t;e.why.push(t>0?'{P} loves it live on the screen.':'{P} does not want this on the screen.');}},
+    fx:(st,e)=>{e.tags.push(visTag(3));const t=likesTrouble(st.p)?1:-1;e.trust+=t;e.why.push(t>0?'{P} loves it live on the screen.':'{P} does not want this on the screen.');}},
    {id:'locker',label:'{F}’s dressing room, door shut',hint:'No cameras inside and nobody to pull {W} off.',vis:1,base:{hurt:2},
     fx:(st,e)=>{e.tags.push(visTag(1));e.why.push('With the door shut, {F} takes more of it.');trustFor(st,e,[],['traditional','cold'],'','{P} will hear about it, and will not like it.');}}]},
   {id:'how',name:'The attack',help:'{W} has {F} where they want them. How far do they take it?',options:[
    {id:'quick',label:'A few shots, then gone',hint:'In and out before anyone can react.',base:{hurt:6,heat:3,quality:4,back:.12},fx:(st,e)=>{brawler(st,e);egoBack(st,e);}},
-   {id:'ground',label:'Take them down and keep them there',hint:'More damage, but it gives {F} time to fight back.',base:{hurt:10,heat:4,quality:4,back:.3},
+   {id:'ground',label:'Take them down and keep them there',hint:'More damage, but it gives {F} time to fight back.',base:{hurt:10,heat:3,quality:4,back:.3},
     fx:(st,e)=>{brawler(st,e);e.tags.push('Risk: gives {F} time to fight back');egoBack(st,e);}},
-   {id:'chair',label:'Bring a chair',hint:'The most damage. The promoter will have something to say about it.',base:{hurt:14,heat:5,quality:6,back:.08},
-    fx:(st,e)=>{brawler(st,e);egoBack(st,e);if(!likesTrouble(st.p)){e.trust-=3;e.why.push('{P} does not want chairs used backstage.');}else e.why.push('{P} does not mind a chair.');}},
+   {id:'chair',label:'Bring a chair',hint:'The most damage. The promoter will have something to say about it.',base:{hurt:12,heat:4,quality:6,back:.08},selfRisk:.2,
+    fx:(st,e)=>{brawler(st,e);egoBack(st,e);selfRisk(st,e,.2);if(!likesTrouble(st.p)){e.trust-=3;e.why.push('{P} does not want chairs used backstage.');}else e.why.push('{P} does not mind a chair.');}},
    {id:'hold',label:'Lock on a hold on the concrete',hint:'Wrench a limb and do not let go until the referees arrive.',base:{hurt:8,heat:3,quality:4,back:.05},
     fx:(st,e)=>{if(wStyle(st)==='Technical'){e.hurt+=3;e.quality+=3;e.why.push('{W} knows exactly where it hurts.');}egoBack(st,e);}},
    {id:'dive',label:'Dive off the equipment cases',hint:'Climb the road cases and come off the top. It costs {W} something too.',base:{hurt:7,heat:3,quality:6,back:.1},
@@ -438,10 +452,12 @@
    {id:'line',label:'One line to the camera',hint:'A few words while {F} is still on the floor. Only as good as {W}’s microphone.',
     fx:(st,e)=>{gamble(st,e,'line',0,{quality:5},{quality:-2});risk(st,e);}},
    {id:'leave',label:'Walk off calmly',hint:'As if nothing happened. Colder than any speech.',base:{quality:3},fx:(st,e)=>risk(st,e)},
-   {id:'more',label:'Go back for more',hint:'Fight through the security. More damage, more trouble.',base:{heat:3,quality:3,back:.3},
-    fx:(st,e)=>{e.hurt+=st.flags.how==='stare'?4:5;if(!likesTrouble(st.p)){e.trust-=2;e.why.push('{P} will not want security fighting the talent.');}risk(st,e);}}]}
+   {id:'more',label:'Go back for more',hint:'Fight through the security. More damage, more trouble.',base:{heat:2,quality:3,back:.3},selfRisk:.3,
+    fx:(st,e)=>{e.hurt+=st.flags.how==='stare'?3:4;selfRisk(st,e,.3);if(!likesTrouble(st.p)){e.trust-=2;e.why.push('{P} will not want security fighting the talent.');}risk(st,e);}}]}
  ];
  // The opponent fighting back is decided by the last step; every option there says how likely it is.
+ // Swinging chairs and fighting security can cost your own wrestler: they start the match tired.
+ function selfRisk(st,e,p){e.tags.push('Risk: {W} gets hurt ('+(p>=.4?'likely':p>=.2?'possible':'unlikely')+')');e.why.push('{W} could come away hurt and start the match tired.');}
  function risk(st,e){
   const p=backChance(st,e.back);
   if(p>=.15){e.tags.push('Risk: {F} may hit back ('+(p>=.4?'likely':'possible')+')');e.why.push('If {F} hits back, they shake some of it off and {W} starts the match tired.');}
@@ -453,6 +469,7 @@
  };
  function ambush(st,R,o){
   const ok=resolveFx(st,o);
+  if(o.selfRisk&&!st.flags.selfHurt&&hash(st.cid+'|ambush|self|'+o.id)<o.selfRisk){st.flags.selfHurt=true;line(st,'stage','{W} comes away holding a wrist. That cost them something too.');}
   if(R.id==='where'){st.flags.vis=o.vis;line(st,'stage',AMB_SAY[o.id]||AMB_SAY_MORE[o.id]);}
   else if(R.id==='how'){
    st.flags.how=o.id;line(st,'stage',AMB_SAY[o.id]||AMB_SAY_MORE[o.id]);
@@ -500,12 +517,14 @@
   after:[['close','clean','cl_middle'],['close','vow','vo_hard']]};
  // The answers are weighed against the question actually asked, and the room it is asked in.
  const qOf=st=>st.questions?.[st.round];
+ const GRILL_BASE=4;
  const GRILL_OPTS=[
   {id:'straight',label:'Answer it straight',hint:'Honest and direct. People respect it.',base:{quality:4,room:2,morale:1},
    fx:(st,e)=>{const q=qOf(st);
-    if(q==='hurt'){e.room+=2;e.why.push('Honesty about the injury earns sympathy.');}
-    else if(q==='flat'){e.morale+=1;e.why.push('Saying it out loud helps {W}.');}
-    else if(q==='unknown'){e.room+=1;e.why.push('A chance to tell people who {W} is.');}}},
+    if(q==='hurt'){e.room+=3;e.morale+=1;e.why.push('Honesty about the injury earns sympathy, and it helps {W} to say it.');}
+    else if(q==='flat'){e.morale+=2;e.why.push('Saying it out loud helps {W}.');}
+    else if(q==='unknown'){e.room+=3;e.why.push('A chance to tell people who {W} is.');}
+    else if(q==='promoter'){e.trust+=1;e.why.push('{P} likes hearing {W} back the decision.');}}},
   {id:'joke',label:'Laugh it off',hint:'Deflect with a joke. Charming if it lands; evasive if it does not.',
    fx:(st,e)=>{const q=qOf(st),b=['hurt','personal'].includes(q)?-.15:q==='league'?.1:0;
     gamble(st,e,'joke'+st.round,b,{quality:6,room:4},{quality:-3,room:-3});
@@ -596,7 +615,7 @@
    w:{id:w.id,short:w.short,name:w.name,style:w.style||null,mic:w.mic||50,ego:w.ego||50,heat:w.heat||40,morale:w.morale??60,fatigue:w.fatigue||0,injury:w.injury||null},
    f:{id:f.id,short:f.short,name:f.name,mic:f.mic||55,ego:f.ego||60},
    p:{id:p.id,voice:p.voice,name:p.name,venue:p.venue||'the hall',tv:!!p.tv,personality:p.personality||null,likes:p.likes||null},
-   finish:c.finish||null,heat0,quality:type==='vignette'?48+(p.tv?5:0):clamp(36+(w.mic||50)*.3),room:0,heat:0,hurt:0,back:0,trust:0,morale:0,log:[],picks:[],flags:{},questions:null,promise:null};
+   finish:c.finish||null,stale:staleness(type,w),heat0,quality:type==='vignette'?48+(p.tv?5:0)+((w.mic||50)<50?4:0):clamp(36+(w.mic||50)*.3)+(type==='grilling'?GRILL_BASE:0),room:0,heat:0,hurt:0,back:0,trust:0,morale:0,log:[],picks:[],flags:{},questions:null,promise:null};
   // The wrestler's own bank goes into the save with the scene, so choices never need the network.
   const D=Dialogue();
   if(BANKED.has(type)&&D&&Array.isArray(opts.banks)){
@@ -641,16 +660,18 @@
   if(p&&st.trust)p.trust=clamp(p.trust+st.trust);
   if(w&&st.morale)w.morale=clamp(w.morale+st.morale);
   if(w&&st.flags.dove)w.fatigue=clamp(w.fatigue+4);
+  if(w&&st.flags.selfHurt)w.fatigue=clamp(w.fatigue+6);
   if(w&&st.flags.fought){w.fatigue=clamp(w.fatigue+5);w.flags={...(w.flags||{}),pushThrough:true};}
   G?.save?.();
  }
  function result(st){
   if(st?.stage!=='done')return null;
   const E=ENGINES[st.type],cap95=st.type==='vignette'?82:95;
-  const q=clamp(st.quality+st.room*.4+(st.type==='ambush'?st.hurt*.4:0),12,cap95);
+  const stale=st.stale||0;
+  const q=clamp(st.quality+st.room*.4+(st.type==='ambush'?st.hurt*.25:0)-4*stale,12,cap95);
   const energy=st.type==='solo'&&st.flags.cheap?Math.abs(st.room)*.25:st.room*.25;
-  const crowdShift=Math.max(-6,Math.min(13,Math.round((q-50)/6+energy+(st.type==='ambush'?st.flags.vis:0)+(st.flags.tease?2:0))));
-  const heatDelta=clamp(st.heat,0,16);
+  const crowdShift=Math.max(-6,Math.min(13,Math.round((q-50)/6+energy+(st.type==='ambush'?visCrowd(st.flags.vis):0)+(st.flags.tease?2:0))-stale));
+  const heatDelta=clamp(st.heat*(1-.25*stale),0,16);
   const style=st.type==='solo'&&st.picks[0]==='crowd'?'rally':st.type==='solo'&&['threat','history'].includes(st.picks[1])?'challenge':st.type==='grilling'&&st.picks.includes('credit')&&!st.flags.walked?'respect':st.type==='vignette'?st.flags.style||null:null;
   const hook=cap(st.type==='solo'&&st.promise?(st.promise.type==='win'?`${st.w.short} promised the crowd a win tonight. Now they have to deliver it.`:`${st.w.short} promised a clean finish in front of everyone.`):st.type==='solo'?(st.flags.cheap?`${st.w.short} insulted ${st.p.venue} before the match. The crowd wants blood.`:q>=65?`${st.w.short} had the room in the palm of their hand before the bell.`:`${st.w.short} spoke alone before the match. Now they have to back it up.`):
    st.type==='vignette'?(st.flags.tease?`Nobody has worked out what was on the wall in ${st.w.short}’s video.`:q>=65?`That video package has the crowd ready for ${st.w.short}.`:`The video package is over. The real thing is next.`):

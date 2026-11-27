@@ -39,7 +39,7 @@
    {id:'pen',label:'Sign and throw the pen at them',hint:'A small insult with a big reaction.',tags:['Heat ▲','Tension ▲'],t:2,q:5},
    {id:'walk',label:'Sign and walk away',hint:'Leave them sitting there. The match is where it counts.',tags:['Tension ▼'],t:-1,q:2},
    {id:'tear',label:'Tear up {F}’s copy',hint:'Sign your own and rip theirs in half in front of them.',tags:[],t:3,q:6,promoter:{aggressive:1,traditional:-1}},
-   {id:'flip',label:'Flip the table',hint:'It always ends this way on the television. A brawl, a hot crowd, and a wrestler who starts the match sore.',tags:['Brawl','Crowd ▲▲','Fatigue ▲'],t:9,q:9}]}
+   {id:'flip',label:'Flip the table',hint:'It always ends this way on the television. A brawl, a hot crowd, and a wrestler who starts the match sore.',tags:['Brawl','Crowd ▲▲','Fatigue ▲'],t:9,q:6}]}
  ];
  const SAY={
   sign:{grand:'“A signature is a promise, and mine is worth framing.”',gruff:'“Pen.”',eager:'“Done! Do I get a copy? Can I keep the pen?”',stoic:'“Signed.”',precise:'“Signed, dated, initialled on every page.”',earnest:'“I’m honoured to sign this. Genuinely.”',sermon:'“It is written. Now it is signed.”',slippery:'“Signed. Mostly in my own name.”'},
@@ -50,7 +50,7 @@
  };
  /* What each option does, for this fixture. The step applies these numbers and the tags are built from
     them: the tension it leads to, the real odds of the mic gamble and of a brawl, the promoter's view. */
- const BOIL=.6,cheapChance=t=>.5+t/20,micChance=st=>Math.max(.15,Math.min(.92,(st.w.mic-25)/60));
+ const BRAWL_FATIGUE=10,BOIL=.6,cheapChance=t=>.5+t/20,micChance=st=>Math.max(.15,Math.min(.92,(st.w.mic-25)/60));
  const tensionWord=t=>t>=6?'Boiling over':t>=4?'Hot':t>=2?'Tense':'Calm';
  const odds=p=>p>=.65?'likely':p>=.4?'even chance':'long shot';
  const brawlWord=p=>p>=.5?'likely':p>=.2?'possible':'unlikely';
@@ -150,7 +150,7 @@
   if(st.brawl)st.trust=(st.trust||0)+brawlTrust(pers);
   if(st.shake==='shook'&&pers==='traditional')st.trust=(st.trust||0)+1;
   if(p&&st.trust)p.trust=clamp(p.trust+st.trust);
-  if(st.brawl&&w){w.fatigue=clamp(w.fatigue+6);w.flags={...(w.flags||{}),pushThrough:true};}
+  if(st.brawl&&w){w.fatigue=clamp(w.fatigue+BRAWL_FATIGUE);w.flags={...(w.flags||{}),pushThrough:true};}
   // The signing has already happened before the bell. Its heat enters the feud NOW,
   // not a second time through the promo/result wrapper.
   st.heatApplied=Math.max(0,st.tension)+(st.brawl?6:0);
@@ -160,7 +160,7 @@
  function result(st){
   if(st?.stage!=='done')return null;
   const q=clamp(st.quality+(st.brawl?8:0),15,95);
-  const crowdShift=Math.max(-6,Math.min(13,Math.round((q-50)/6)+(st.brawl?5:0)));
+  const crowdShift=Math.max(-6,Math.min(13,Math.round((q-50)/6)+(st.brawl?3:0)));
   const reaction=st.brawl?'The signing ended in a brawl. The building is buzzing.':st.shake==='shook'?'They shook hands. Somehow that makes it bigger.':q>=65?'The crowd bought every second of it.':'Signed, and not much more.';
   return {v:3,live:true,format:'signing',speaker:st.w.short,opponent:st.f.short,styleName:'Contract signing',quality:q,crowdShift,heatDelta:0,signingHeat:st.heatApplied??(Math.max(0,st.tension)+(st.brawl?6:0)),moraleDelta:0,trustDelta:st.trust||0,repDelta:0,
    hook:cap(st.brawl?`They had to be pulled apart at the contract signing. ${st.f.short} has not forgotten.`:st.shake==='shook'?`They shook hands at the contract signing. Tonight, that is forgotten.`:`The contract is signed. Now it has to be won.`),

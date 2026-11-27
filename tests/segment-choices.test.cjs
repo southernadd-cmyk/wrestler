@@ -34,7 +34,7 @@ function play(type,picks,o={}){const st=begin(type,o);for(const id of picks)asse
    const d=k=>st[k]-b[k],sign=v=>Math.sign(v);
    for(const [k,name] of [['room','Crowd'],['heat','Feud heat'],['trust','Promoter'],['morale','Morale']]){
     if(k==='room'&&o.id==='town')continue;// cheap heat says the crowd turns
-    if(k==='room'&&type==='ambush'&&step===0){assert.ok(shown.tags.includes('Crowd '+'▲'.repeat(st.flags.vis)),'visibility is the crowd');continue;}
+    if(k==='room'&&type==='ambush'&&step===0){assert.ok(shown.tags.includes('Crowd '+'▲'.repeat(st.flags.vis>=3?2:1)),'visibility is the crowd');continue;}
     assert.ok(sides(shown.tags,name).includes(sign(d(k))),`${type} ${o.id} ${name}: ${d(k)} v ${shown.tags}`);
    }
    if(!st.flags.fought)assert.equal(d('hurt')>0,shown.tags.some(t=>t.startsWith('Opponent hurt')),type+' '+o.id+' hurt');
@@ -97,7 +97,7 @@ function play(type,picks,o={}){const st=begin(type,o);for(const id of picks)asse
  assert.ok(opt(sore,'turn').tags.some(t=>t==='Crowd ▼'),'dodging an injury question costs the room');
  const vow=play('grilling',['vow','straight','straight'],{finish:'lose_clean'}),r=vow.r;
  assert.equal(r.promise.type,'win');assert.match(r.hook,/promised a win/);
- const cr=play('grilling',['credit','straight','straight']).r;assert.equal(cr.style,'respect');assert.equal(cr.trustDelta,1,'a traditional promoter likes manners');
+ const cr=play('grilling',['credit','turn','turn']).r;assert.equal(cr.style,'respect');assert.equal(cr.trustDelta,1,'a traditional promoter likes manners');
  const again=begin('grilling');SG.choose(again,'vow');assert.ok(opt(again,'vow').tags.includes('Already promised'));
  // A promise made in an interview is held to account after the match.
  const s=career();const k=contract({id:'g-vow',finish:'win_clean'});s.card.push(k);

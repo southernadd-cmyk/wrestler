@@ -50,7 +50,7 @@ const contract=(o={})=>({id:'sd-'+(n++),pid:'crown',rid:'silas',wid:'rex',slot:'
  const s=career();const k=contract({title:{pid:'crown',div:'men'}});s.feuds['rex:silas']={wid:'rex',rid:'silas',heat:30,matches:1,closed:false,since:1};
  const fat=G.W('rex').fatigue,st=Sg.begin(k,G.W('rex'),G.F('silas'),G.P('crown'));
  Sg.choose(st,'late');Sg.choose(st,'face');Sg.choose(st,'flip');
- assert.equal(G.W('rex').fatigue,fat+6);assert.ok(s.feuds['rex:silas'].heat>30+6);
+ assert.equal(G.W('rex').fatigue,fat+10,'a brawl at the table costs ten fatigue');assert.ok(s.feuds['rex:silas'].heat>30+6);
  const h=s.feuds['rex:silas'].heat;st.settled=true;Sg.choose(st,'flip');assert.equal(s.feuds['rex:silas'].heat,h,'once');
  console.log('PASS a brawl costs fatigue and heats the feud, once');
 }
