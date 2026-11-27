@@ -925,8 +925,7 @@
   variants:Object.values(VARIANTS).reduce((n,x)=>n+Object.values(x).reduce((m,l)=>m+l.length,0),0)});
  return {STAGES,NODES,VARIANTS,variantFor,context,size,begin,choose:chooseStep,choices:opts,result,caseOption};
 })();
- const before=G.applyResult;
- G.applyResult=function(c,fin){
+ G.registerResultStage('story',before=>function(c,fin){
   const s=G.S;
   if(s?.history?.some(h=>h.cid===c.id))return [];
   const out=before(c,fin);
@@ -974,6 +973,6 @@
    h.notes.push(msg);out.push({text:msg,tone:pr.quality>=55?1:0});
   }
   G.save();return out;
- };
+ });
  root.OfficeStory={STYLES,create,Graph:PromoGraph};
 })(typeof window!=='undefined'?window:globalThis);
