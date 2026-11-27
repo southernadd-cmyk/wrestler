@@ -953,6 +953,89 @@ const DILEMMAS={
   resolve:(m,w,o)=>{if(o==='decline')return `${w.short} heads home instead.`;
    w.loyal=clamp(w.loyal+4);w.fatigue=clamp(w.fatigue+4);return `${w.short} stays to help the rookie.`}}
 };
+// Distinct decisions, not extra event rolls. Each entry takes an existing
+// dilemma slot and has its own premise, available responses and saved effects.
+const EXTRA_EVENTS=[
+ {id:'boots',subject:'The boots are splitting',body:'{W} needs a new pair of boots before the next show.',when:w=>!w.injury,
+  choices:[['replace','Buy proper boots (£90)','£90; safety +1, morale +3.',{cash:-90,safe:1,morale:3},'{W} gets a proper pair of boots.'],['patch','Patch them for now','No cost; morale −2.',{morale:-2},'{W} patches the old boots.']]},
+ {id:'physio',subject:'An appointment with the physio',body:'{W} has been offered a treatment slot after a hard run of shows.',when:w=>w.fatigue>=30&&!w.injury,
+  choices:[['book','Pay for treatment (£80)','£80; fatigue −14.',{cash:-80,fatigue:-14},'{W} returns from the physio less sore.'],['wait','Let the soreness settle','No cost; fatigue −3.',{fatigue:-3},'{W} takes it gently for now.']]},
+ {id:'new_finish',subject:'A different finishing sequence',body:'{W} wants time to rehearse the last thirty seconds of a match.',when:w=>w.matches>=2&&!w.injury,
+  choices:[['rehearse','Work through it with Dennis','Psychology +1; fatigue +4.',{psych:1,fatigue:4},'{W} stays to rehearse the finish.'],['later','Keep the current preparation','No change.',{},'{W} leaves the idea for another week.']]},
+ {id:'entrance',subject:'The entrance needs work',body:'{W} thinks their entrance loses the room before they reach the ring.',when:w=>w.heat<85&&!w.injury,
+  choices:[['practice','Rehearse the entrance','Heat +3; fatigue +3.',{heat:3,fatigue:3},'{W} finds a stronger entrance.'],['keep','Keep it understated','Morale −2.',{morale:-2},'{W} keeps the old entrance.']]},
+ {id:'mat_session',subject:'A session on the mat',body:'{W} asks for an extra grappling session with Dennis.',when:w=>w.ring<90&&!w.injury,
+  choices:[['train','Make time for the session','Ring +1; fatigue +5.',{ring:1,fatigue:5},'{W} gets the extra mat time.'],['skip','Stay with the current schedule','No change.',{},'{W} keeps the regular training schedule.']]},
+ {id:'mic_work',subject:'Finding the right words',body:'{W} asks for a quiet microphone rehearsal away from the crowd.',when:w=>w.mic<90&&!w.injury,
+  choices:[['practice','Rehearse with Dennis','Mic +1; fatigue +3.',{mic:1,fatigue:3},'{W} spends the afternoon practising.'],['pass','Save it for the next show','No change.',{},'{W} puts the microphone away.']]},
+ {id:'safe_landing',subject:'That landing on the tape',body:'Dennis has spotted a landing {W} could make safer before it becomes a habit.',when:w=>w.matches>=2&&w.safe<90&&!w.injury,
+  choices:[['drill','Drill the landing','Safety +1; fatigue +4.',{safe:1,fatigue:4},'{W} works on the landing.'],['leave','Leave the session alone','No change.',{},'{W} watches the tape and moves on.']]},
+ {id:'cardio',subject:'Running out of breath',body:'{W} wants an extra conditioning session after tiring late in a match.',when:w=>w.matches>=2&&w.fatigue<85&&!w.injury,
+  choices:[['train','Run the conditioning session','Ring +1; fatigue +7.',{ring:1,fatigue:7},'{W} finishes the conditioning session.'],['rest','Recover instead','Fatigue −5.',{fatigue:-5},'{W} takes a recovery day.']]},
+ {id:'film_study',subject:'Studying the opponent',body:'{W} has notes on the last opponent and wants Dennis to go through them.',when:w=>w.matches>=2&&w.psych<90&&!w.injury,
+  choices:[['review','Go through the notes','Psychology +1; fatigue +2.',{psych:1,fatigue:2},'{W} and Dennis compare their notes.'],['skip','Leave the notes for later','No change.',{},'{W} puts the notes away.']]},
+ {id:'local_paper',subject:'The local paper called',body:'The sports page wants a short interview with {W} about life on the circuit.',when:w=>w.mic>=35&&!w.injury,
+  choices:[['talk','Take the interview','Heat +3; fatigue +2.',{heat:3,fatigue:2},'{W} gives the paper an interview.'],['decline','Keep the week quiet','No change.',{},'{W} passes on the interview.']]},
+ {id:'merch_photo',subject:'Photographs for the stall',body:'A photographer will take fresh pictures of {W} for the merchandise table.',when:w=>w.heat>=35&&!w.injury,
+  choices:[['sit','Do the photo session (£50)','£50; heat +4.',{cash:-50,heat:4},'{W} has new pictures for the stall.'],['reuse','Use the old pictures','No change.',{},'{W} keeps the existing photographs.']]},
+ {id:'fan_letters',subject:'A bag of letters',body:'{W} has been getting letters from fans and wants to answer them properly.',when:w=>w.heat>=40&&!w.injury,
+  choices:[['answer','Give them time to reply','Morale +4; fatigue +2.',{morale:4,fatigue:2},'{W} writes back to the fans.'],['later','Leave it until after the show','Morale −2.',{morale:-2},'{W} leaves the letters in the bag.']]},
+ {id:'family_day',subject:'A day at home',body:'{W} asks to make room for a family commitment this week.',when:w=>!w.injury,
+  choices:[['allow','Give them the day','Morale +6; training set to rest.',{morale:6,training:'rest'},'{W} makes the family commitment.'],['refuse','Keep the training appointment','Morale −6.',{morale:-6},'{W} misses the day at home.']]},
+ {id:'early_train',subject:'The first train home',body:'{W} can catch an early train if the office wraps up promptly.',when:w=>w.fatigue>=20&&!w.injury,
+  choices:[['go','Let them leave early','Fatigue −7; morale +2.',{fatigue:-7,morale:2},'{W} makes the early train.'],['stay','Ask them to stay','Fatigue +3; morale −2.',{fatigue:3,morale:-2},'{W} misses the train.']]},
+ {id:'old_partner',subject:'A call from an old tag partner',body:'{W} has been invited to a reunion training session with an old partner.',when:w=>w.matches>=2&&!w.injury,
+  choices:[['go','Let them attend','Loyalty +3; fatigue +4.',{loyal:3,fatigue:4},'{W} goes to the reunion session.'],['decline','Keep the week free','Morale −2.',{morale:-2},'{W} calls to decline.']]},
+ {id:'locker_advice',subject:'Someone asked for advice',body:'A younger wrestler has asked {W} for advice after the show.',when:w=>w.pro>=55&&w.matches>=3&&!w.injury,
+  choices:[['help','Let them stay and help','Loyalty +3; fatigue +3.',{loyal:3,fatigue:3},'{W} stays to offer advice.'],['home','Send them home','Fatigue −2.',{fatigue:-2},'{W} heads home.']]},
+ {id:'bad_review',subject:'A harsh review',body:'{W} has read a harsh review of their last match and wants to talk about it.',when:w=>w.matches>=2&&w.morale<85,
+  choices:[['listen','Talk it through','Morale +4; psychology +1.',{morale:4,psych:1},'{W} listens and takes the useful criticism.'],['brush','Tell them to ignore it','Morale −3.',{morale:-3},'{W} is left to stew on the review.']]},
+ {id:'ring_crew',subject:'Helping set up the ring',body:'The ring crew are short-handed; {W} offers to help before doors open.',when:w=>w.pro>=50&&!w.injury,
+  choices:[['help','Let them help','Loyalty +3; fatigue +5.',{loyal:3,fatigue:5},'{W} helps the crew set up.'],['save','Keep them fresh','Fatigue −2.',{fatigue:-2},'{W} stays off the ring crew.']]},
+ {id:'late_rehearsal',subject:'One more rehearsal',body:'{W} asks to run through tomorrow’s match preparation one more time.',when:w=>w.fatigue>=20&&!w.injury,
+  choices:[['run','Stay for rehearsal','Psychology +1; fatigue +5.',{psych:1,fatigue:5},'{W} runs through it again.'],['home','Send them home to rest','Fatigue −6.',{fatigue:-6},'{W} gets a proper night off.']]},
+ {id:'new_town',subject:'A first visit to town',body:'{W} wants to meet the locals before the next show in a new town.',when:w=>w.heat<80&&!w.injury,
+  choices:[['visit','Make the visit','Heat +3; fatigue +3.',{heat:3,fatigue:3},'{W} spends time meeting the local crowd.'],['pass','Conserve their energy','Fatigue −3.',{fatigue:-3},'{W} stays in the hotel.']]},
+ {id:'food_stop',subject:'A proper meal on the road',body:'{W} asks to stop for a proper meal instead of another motorway sandwich.',when:w=>w.fatigue>=20&&!w.injury,
+  choices:[['stop','Buy the meal (£30)','£30; morale +3, fatigue −4.',{cash:-30,morale:3,fatigue:-4},'{W} gets a proper meal.'],['drive','Keep driving','Fatigue +2; morale −2.',{fatigue:2,morale:-2},'{W} eats on the road again.']]},
+ {id:'promo_tape',subject:'Watching the old promos',body:'{W} has found old television promos they want to study with Dennis.',when:w=>w.mic<90&&!w.injury,
+  choices:[['watch','Study the promos','Mic +1; fatigue +2.',{mic:1,fatigue:2},'{W} studies the tapes.'],['skip','Stick to regular training','No change.',{},'{W} leaves the tapes for later.']]},
+ {id:'physio_followup',subject:'Follow-up on an old knock',body:'{W} wants a check-up before another small knock becomes an injury.',when:w=>Object.values(w.wear||{}).some(n=>n>0)&&!w.injury,
+  choices:[['check','Pay for a check-up (£60)','£60; safety +1, fatigue −4.',{cash:-60,safe:1,fatigue:-4},'{W} gets the knock checked.'],['wait','Wait and see','No change.',{},'{W} keeps an eye on it.']]},
+ {id:'training_partner',subject:'A different training partner',body:'{W} asks to work with somebody outside the stable for one session.',when:w=>w.matches>=2&&!w.injury,
+  choices:[['arrange','Arrange the session','Ring +1; fatigue +5.',{ring:1,fatigue:5},'{W} works with the visiting partner.'],['decline','Keep the existing routine','No change.',{},'{W} keeps the normal training routine.']]},
+ {id:'flyers',promoter:true,subject:'The handbills are late',body:'{P} needs help distributing the show handbills before doors open.',when:p=>eligible(p),
+  choices:[['pay','Help with printing (£60)','£60; promoter trust +4.',{cash:-60,trust:4},'{P} gets the handbills out.'],['leave','Leave it to the promotion','Promoter trust −2.',{trust:-2},'{P} handles the handbills alone.']]},
+ {id:'venue_crew',promoter:true,subject:'The venue is short-staffed',body:'{P} asks whether your stable can cover a small share of the venue crew cost.',when:p=>eligible(p)&&p.trust>=30,
+  choices:[['contribute','Contribute £75','£75; promoter trust +5.',{cash:-75,trust:5},'{P} thanks you for covering the gap.'],['decline','Decline the expense','Promoter trust −3.',{trust:-3},'{P} finds another solution.']]},
+ {id:'programme_ad',promoter:true,subject:'Space in the programme',body:'{P} offers your stable a paid advert in the printed show programme.',when:p=>eligible(p),
+  choices:[['buy','Buy the advert (£100)','£100; reputation +2.',{cash:-100,rep:2},'The stable appears in the show programme.'],['pass','Pass on the advert','No change.',{},'The programme goes to print without the advert.']]},
+ {id:'press_call',promoter:true,subject:'An interview before doors',body:'{P} has arranged a short press call and wants your stable represented.',when:p=>eligible(p)&&S.roster.length>0,
+  choices:[['send','Send someone to speak','Promoter trust +3; reputation +1.',{trust:3,rep:1},'{P} gets a representative from your stable.'],['decline','Decline the press call','Promoter trust −2.',{trust:-2},'{P} conducts the press call alone.']]},
+ {id:'sponsor_visit',promoter:true,subject:'The sponsor is visiting',body:'{P} asks your stable to greet a local sponsor at the venue.',when:p=>eligible(p)&&p.trust>=35,
+  choices:[['attend','Make the introduction','Promoter trust +4; reputation +1.',{trust:4,rep:1},'{P} introduces the stable to the sponsor.'],['skip','Keep to the dressing room','Promoter trust −3.',{trust:-3},'{P} handles the visitor alone.']]},
+ {id:'merch_table',promoter:true,subject:'A table by the exit',body:'{P} offers your stable a paid place for merchandise by the venue exit.',when:p=>eligible(p),
+  choices:[['rent','Rent the table (£80)','£80; reputation +2.',{cash:-80,rep:2},'Your stable takes the table by the exit.'],['pass','Leave the space free','No change.',{},'{P} offers the table to someone else.']]},
+ {id:'sound_check',promoter:true,subject:'The microphone is playing up',body:'{P} asks for help paying to repair the venue microphone before the show.',when:p=>eligible(p),
+  choices:[['help','Contribute £50','£50; promoter trust +4.',{cash:-50,trust:4},'{P} gets the microphone repaired.'],['decline','Leave it to the venue','Promoter trust −2.',{trust:-2},'{P} deals with the venue directly.']]},
+ {id:'community_visit',promoter:true,subject:'A visit to the local club',body:'{P} asks your stable to join a short community visit before the show.',when:p=>eligible(p)&&S.roster.length>0,
+  choices:[['attend','Send a representative','Promoter trust +3; reputation +1.',{trust:3,rep:1},'Your stable visits the local club.'],['pass','Decline the visit','Promoter trust −2.',{trust:-2},'{P} makes the visit without you.']]}
+];
+for(const e of EXTRA_EVENTS){
+ DILEMMAS[e.id]={promoter:!!e.promoter,when:e.when,
+  make:person=>{const name=e.promoter?person.name:person.short;
+   const fill=s=>s.replaceAll('{W}',name).replaceAll('{P}',person.name);
+   return {from:e.promoter?`${person.voice}, ${person.name}`:person.name,subject:fill(e.subject),body:[fill(e.body)],
+    options:e.choices.map(([id,label,hint])=>({id,label,hint}))}},
+  resolve:(m,person,id)=>{const choice=e.choices.find(o=>o[0]===id);if(!choice)return 'Choose one of the available responses.';
+   const effect=choice[3];if(effect.cash)S.cash+=effect.cash;
+   if(effect.rep)S.rep=clamp(S.rep+effect.rep);
+   if(effect.training)person.training=effect.training;
+   for(const stat of ['fatigue','morale','heat','loyal','ring','mic','psych','safe','trust'])
+    if(effect[stat])person[stat]=clamp(person[stat]+effect[stat]);
+   return choice[4].replaceAll('{W}',person.short).replaceAll('{P}',person.voice||person.name)}
+ };
+}
 function leave(w,fee){if(!w||!W(w.id))return;w=W(w.id);reconcileOwnership(w.id,{outgoing:true,reason:'The wrestler left your stable'});S.cash+=fee;S.roster=S.roster.filter(x=>x.id!==w.id);returnToMarket(w);}
 function makeDilemmas(){
  let made=0;const recent=S.recentTypes;
@@ -960,7 +1043,7 @@ function makeDilemmas(){
  const roster=S.roster.slice().sort(()=>rand()-.5);
  // The original generator decides WHEN a situation occurs. On some of those
  // existing slots, draw a different scene without creating another decision.
- const pool=['poster','late','travel','interview','kit','footage','charity','second','apprentice'];
+ const pool=['poster','late','travel','interview','kit','footage','charity','second','apprentice',...EXTRA_EVENTS.map(e=>e.id)];
  const tryMake=(type,args,make)=>{
   let chosen={type,args,make};
   if(type!=='unhappy'&&identityHash(S.careerSeed+'|'+abs()+'|'+type+'|'+args.join(':'))%100<75){
@@ -991,6 +1074,8 @@ function answer(mid,opt){
  if(m.dtype==='poach'&&opt==='bonus'&&S.cash<400)return 'Not enough cash for the £400 bonus. Choose another response.';
  if(m.dtype==='unhappy'&&opt==='pay'&&S.cash<250)return 'Not enough cash for a £250 bonus. Choose another response.';
  if(m.dtype==='kit'&&opt==='buy'&&S.cash<120)return 'Not enough cash for the £120 gear. Choose another response.';
+ const extra=EXTRA_EVENTS.find(e=>e.id===m.dtype),choice=extra?.choices.find(o=>o[0]===opt);
+ if(choice?.[3]?.cash<0&&S.cash< -choice[3].cash)return `Not enough cash for ${choice[1]}. Choose another response.`;
  const d=DILEMMAS[m.dtype];let text='';
  if(d.promoter){const p=P(m.args[0]);text=p?d.resolve(m,p,opt):'That promoter has moved on.'}
  else if(m.dtype==='clash'){const a=W(m.args[0]),b=W(m.args[1]);text=a&&b?d.resolve(m,a,opt,b):'They’ve both moved on.'}
