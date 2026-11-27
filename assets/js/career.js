@@ -834,6 +834,12 @@ function unbook(cid){const c=[...S.card,...S.futureBookings].find(x=>x.id===cid)
 
 /* ---------- dilemmas ---------- */
 const INJURY_SETBACK=.3,INJURY_FLARE=.15;
+function eventScene(type,scenes){
+ // The same situation may return, but its letter should acknowledge another week
+ // in the territory. Stored counts make save/reload preserve the sequence.
+ const seen=S.eventScenes??={};const index=seen[type]||0;seen[type]=index+1;
+ return scenes[index%scenes.length];
+}
 const DILEMMAS={
  raise:{when:w=>w.heat>=60&&w.ego>=65&&abs()-w.lastRaise>=6,
   make:w=>({from:w.name,subject:'About my money',body:[`“I’m the reason people buy tickets to these shows. I want that reflected in my pay. Another £50 a week.”`],
@@ -852,11 +858,19 @@ const DILEMMAS={
    if(!team)return `${w.short} has left, but the deal collapsed. No fee was paid and ${w.short} is now a free agent.`;
    S.cash+=fee;return `${w.short} joined ${team}. ${money(fee)} is in the account.`;}},
  dive:{when:w=>(w.style==='Spectacle'||w.ego>=70)&&!w.injury&&!w.flags.dive,
-  make:w=>({from:w.name,subject:'The balcony',body:[`“Next match, I want to dive off the balcony. Nobody on this circuit has done it. People will be talking about it for years.”`],
+  make:w=>({from:w.name,...eventScene('dive',[
+   {subject:'The balcony',body:[`“Next match, I want to dive off the balcony. People will be talking about it for years.”`]},
+   {subject:'A spot above the aisle',body:[`“I walked the venue. There is a balcony above the aisle. Let me make the jump in my next match.”`]},
+   {subject:'The balcony again',body:[`“The venue has a balcony above the aisle. If it fits the next match, I want to make the jump.”`]},
+   {subject:'One more balcony pitch',body:[`“There is a way to make that balcony spot the moment people remember. Will you let me try it?”`]}]),
    options:[{id:'yes',label:'Do it',hint:'A guaranteed huge moment in the next match. If it goes wrong, it goes very wrong.'},{id:'no',label:'Absolutely not',hint:'Morale −6.'}]}),
   resolve:(m,w,o)=>{if(o==='yes'){w.flags.dive=true;return `${w.short} grins. The balcony it is.`}w.morale=clamp(w.morale-6);return `${w.short} sulks off.`}},
  hurt:{when:w=>w.fatigue>=55&&!w.injury,
-  make:w=>({from:w.name,subject:'My back’s gone',body:[`“I can barely get out of the car. I’ll work if you need me, but I’m not right.”`],
+  make:w=>({from:w.name,...eventScene('hurt',[
+   {subject:'My back’s gone',body:[`“I can barely get out of the car. I’ll work if you need me, but I’m not right.”`]},
+   {subject:'The miles are catching up',body:[`“I was stiff all the way home. I could use a week to recover, unless you need me on the card.”`]},
+   {subject:'Not moving right',body:[`“I can still wrestle, but I am tired enough to make mistakes. Can we take a week?”`]},
+   {subject:'A quiet week, please',body:[`“Another long drive and another match. I need a breather before something gives.”`]}]),
    options:[{id:'rest',label:'Rest this week',hint:'Training set to rest, fatigue −15 now. Any booking this week is pulled (booker trust −6).'},{id:'work',label:'You’re working',hint:'Morale +2. Their next match carries a much higher injury risk.'}]}),
   resolve:(m,w,o)=>{if(o==='rest'){w.training='rest';w.fatigue=clamp(w.fatigue-15);const c=S.card.find(x=>x.wid===w.id);if(c){P(c.pid).trust=clamp(P(c.pid).trust-6);S.card=S.card.filter(x=>x!==c)}return `${w.short} is resting this week.`}
    w.flags.pushThrough=true;w.morale=clamp(w.morale+2);return `${w.short} nods. “Your call.”`}},
@@ -876,7 +890,11 @@ const DILEMMAS={
    options:[{id:'a',label:`Back ${a.short}`,hint:`${a.short} morale +6, ${b.short} morale −8.`},{id:'b',label:`Back ${b.short}`,hint:`${b.short} morale +6, ${a.short} morale −8.`},{id:'fine',label:'Fine them both £50',hint:'Both lose morale. £100 into the account.'}]}),
   resolve:(m,a,o,b)=>{if(o==='a'){a.morale=clamp(a.morale+6);b.morale=clamp(b.morale-8)}else if(o==='b'){b.morale=clamp(b.morale+6);a.morale=clamp(a.morale-8)}else{a.morale=clamp(a.morale-4);b.morale=clamp(b.morale-4);S.cash+=100}return 'The locker room goes quiet.'}},
  favour:{promoter:true,when:p=>eligible(p)&&p.trust>=40,
-  make:(p,f)=>({from:`${p.voice}, ${p.name}`,subject:'I need a favour',body:[`“One of my wrestlers needs a win over someone credible this week. Lend me one of yours to lose clean in the opener. I’ll pay well and I won’t forget it.”`],
+  make:p=>({from:`${p.voice}, ${p.name}`,...eventScene('favour',[
+   {subject:'I need a favour',body:[`“One of my wrestlers needs a win over someone credible this week. Lend me one of yours to lose clean in the opener. I’ll pay well and I won’t forget it.”`]},
+   {subject:`A slot on the ${p.name} card`,body:[`“I have an opener to fill. Your lowest-heat available wrestler could give my prospect a clean win. The fee is good.”`]},
+   {subject:`Can you lend ${p.name} a hand?`,body:[`“One of mine needs a straightforward win. Send a credible opponent for the opener and I will remember it.”`]},
+   {subject:'The opening match needs somebody',body:[`“I need one of yours to put my wrestler over clean in the opener. There is a proper purse in it.”`]}]),
    options:[{id:'yes',label:'Send someone',hint:'Your lowest-heat fit wrestler loses clean in the opener. Good money, trust +6 after.'},{id:'no',label:'Not this week',hint:`${p.name} trust −4.`}]}),
   resolve:(m,p,o)=>{if(o==='no'){p.trust=clamp(p.trust-4);return `${p.voice} hangs up.`}
    const w=S.roster.filter(available).sort((a,b)=>a.heat-b.heat)[0];if(!w){p.trust=clamp(p.trust-2);return 'Nobody was free. They understood, mostly.'}
@@ -885,28 +903,96 @@ const DILEMMAS={
    if(!target){p.trust=clamp(p.trust-2);return 'The promoter could not secure an eligible opponent for the favour. No match was booked.';}
    const rid=target.id,o2={id:'fav',pid:p.id,rid,slot:'opener',finish:'lose_clean',boost:1.15};
    S.card.push({id:uid('c'),pid:p.id,rid,wid:w.id,slot:'opener',minutes:8,finish:'lose_clean',purse:purse(o2,w),tag:'Favour',feudHeat:0,blowoff:false,eventAbs:abs()});
-   return `${w.short} is on the card: opener, losing clean to ${F(rid).name}.`}}
+   return `${w.short} is on the card: opener, losing clean to ${F(rid).name}.`}},
+ poster:{promoter:true,when:p=>eligible(p)&&p.trust>=35&&S.roster.some(w=>w.heat>=40),
+  make:p=>({from:`${p.voice}, ${p.name}`,subject:`${p.name} wants a poster face`,body:[`“We can put one of your lot on the next poster. I need someone willing to do the publicity, though.”`],
+   options:[{id:'send',label:'Send your hottest wrestler',hint:'Their heat +5, promoter trust +2, fatigue +4.'},{id:'decline',label:'Leave the poster to someone else',hint:'Promoter trust −2.'}]}),
+  resolve:(m,p,o)=>{if(o==='decline'){p.trust=clamp(p.trust-2);return `${p.voice} finds another face for the poster.`}
+   const w=S.roster.slice().sort((a,b)=>b.heat-a.heat)[0];if(!w)return 'The stable has nobody available for publicity.';
+   w.heat=clamp(w.heat+5);w.fatigue=clamp(w.fatigue+4);p.trust=clamp(p.trust+2);return `${w.short} does the publicity for ${p.name}.`}},
+ late:{promoter:true,when:p=>eligible(p)&&p.trust>=25&&S.roster.some(w=>w.fatigue>=20),
+  make:p=>({from:`${p.voice}, ${p.name}`,subject:`An extra hand at ${p.name}`,body:[`“We are short of hands packing up after the show. Could one of your lot stay back to help?”`],
+   options:[{id:'stay',label:'Stay and help',hint:'Promoter trust +4. Your most tired wrestler gains 6 fatigue.'},{id:'leave',label:'Keep the original travel plan',hint:'Promoter trust −3. Nobody takes extra fatigue.'}]}),
+  resolve:(m,p,o)=>{if(o==='leave'){p.trust=clamp(p.trust-3);return `${p.voice} finds someone else to help pack up.`}
+   const w=S.roster.slice().sort((a,b)=>b.fatigue-a.fatigue)[0];if(!w)return 'Nobody is on the road for your stable now.';
+   w.fatigue=clamp(w.fatigue+6);p.trust=clamp(p.trust+4);return `${w.short} stays late. ${p.voice} remembers the favour.`}},
+ travel:{when:w=>!w.injury&&w.fatigue>=15,
+  make:w=>({from:w.name,subject:`The drive home, ${w.short}`,body:[`“I can make the next booking, but the travelling is catching up with me. Give me a lighter week?”`],
+   options:[{id:'light',label:'Give them a lighter week',hint:'Training set to rest; fatigue −10, morale +3.'},{id:'push',label:'Keep the schedule',hint:'Heat +2 from the extra visibility; fatigue +5, morale −3.'}]}),
+  resolve:(m,w,o)=>{if(o==='light'){w.training='rest';w.fatigue=clamp(w.fatigue-10);w.morale=clamp(w.morale+3);return `${w.short} gets a quieter week.`}
+   w.heat=clamp(w.heat+2);w.fatigue=clamp(w.fatigue+5);w.morale=clamp(w.morale-3);return `${w.short} takes the booking, but the miles add up.`}},
+ interview:{when:w=>!w.injury&&w.mic<80,
+  make:w=>({from:w.name,subject:`The local radio slot: ${w.short}`,body:[`“The station wants me on air. We could practise the interview first, or I can just go in cold.”`],
+   options:[{id:'rehearse',label:'Rehearse with Dennis',hint:'Mic +1, fatigue +3.'},{id:'live',label:'Let them speak freely',hint:'Heat +3, but morale −2 if they are a poor talker.'},{id:'pass',label:'Turn down the interview',hint:'No change.'}]}),
+  resolve:(m,w,o)=>{if(o==='pass')return `${w.short} leaves the station to find another guest.`;
+   if(o==='rehearse'){w.mic=clamp(w.mic+1);w.fatigue=clamp(w.fatigue+3);return `Dennis runs lines with ${w.short} before the interview.`}
+   w.heat=clamp(w.heat+3);if(w.mic<45)w.morale=clamp(w.morale-2);return `${w.short} handles the interview without a script.`}},
+ kit:{when:w=>!w.injury&&w.heat>=30,
+  make:w=>({from:w.name,subject:`New gear for ${w.short}`,body:[`“The old gear is falling apart. I could put something together myself, or we could pay for a proper replacement.”`],
+   options:[{id:'buy',label:'Buy new gear (£120)',hint:'Costs £120. Heat +4 and morale +4.'},{id:'mend',label:'Mend what they have',hint:'No cost. Morale −2.'}]}),
+  resolve:(m,w,o)=>{if(o==='buy'){S.cash-=120;w.heat=clamp(w.heat+4);w.morale=clamp(w.morale+4);return `${w.short} walks out in new gear.`}
+   w.morale=clamp(w.morale-2);return `${w.short} gets the sewing kit out.`}},
+ footage:{when:w=>!w.injury&&w.matches>=2,
+  make:w=>({from:'Your road agent',subject:`The tape on ${w.short}`,body:[`“I watched the last few bouts back with ${w.short}. We could spend a session studying the mistakes, or keep the current training plan.”`],
+   options:[{id:'study',label:'Study the tape',hint:'Psychology +1, fatigue +3.'},{id:'keep',label:'Keep the training plan',hint:'No change.'}]}),
+  resolve:(m,w,o)=>{if(o==='keep')return `Dennis leaves ${w.short}’s training plan in place.`;
+   w.psych=clamp(w.psych+1);w.fatigue=clamp(w.fatigue+3);return `${w.short} stays to study the tape with Dennis.`}},
+ charity:{when:w=>!w.injury&&w.morale>=35,
+  make:w=>({from:w.name,subject:`A community show for ${w.short}`,body:[`“The local youth club asked me to appear at their fundraiser. It is unpaid, but it matters to me.”`],
+   options:[{id:'go',label:'Let them do the fundraiser',hint:'Morale +5, heat +2, fatigue +4.'},{id:'no',label:'Keep them at the office',hint:'Morale −5.'}]}),
+  resolve:(m,w,o)=>{if(o==='no'){w.morale=clamp(w.morale-5);return `${w.short} lets the youth club know they cannot make it.`}
+   w.morale=clamp(w.morale+5);w.heat=clamp(w.heat+2);w.fatigue=clamp(w.fatigue+4);return `${w.short} spends the evening at the fundraiser.`}},
+ second:{when:w=>!w.injury&&w.pro>=50&&w.fatigue>=15,
+  make:w=>({from:w.name,subject:`Working two shows: ${w.short}`,body:[`“I have another date on my own time. I can work both, but I will be tired when I get back.”`],
+   options:[{id:'allow',label:'Let them take the date',hint:'Morale +5, fatigue +10.'},{id:'refuse',label:'Ask them to stay fresh',hint:'Fatigue −3, morale −4.'}]}),
+  resolve:(m,w,o)=>{if(o==='refuse'){w.fatigue=clamp(w.fatigue-3);w.morale=clamp(w.morale-4);return `${w.short} cancels the other date.`}
+   w.fatigue=clamp(w.fatigue+10);w.morale=clamp(w.morale+5);return `${w.short} works the extra show.`}},
+ apprentice:{when:w=>!w.injury&&w.ring>=55&&w.matches>=3,
+  make:w=>({from:'Your road agent',subject:`A rookie wants ${w.short}’s time`,body:[`“A young wrestler asked ${w.short} for a lesson after the show. It will take time, but people notice who helps.”`],
+   options:[{id:'teach',label:'Let them teach',hint:'Loyalty +4, fatigue +4.'},{id:'decline',label:'Keep them focused',hint:'No change.'}]}),
+  resolve:(m,w,o)=>{if(o==='decline')return `${w.short} heads home instead.`;
+   w.loyal=clamp(w.loyal+4);w.fatigue=clamp(w.fatigue+4);return `${w.short} stays to help the rookie.`}}
 };
 function leave(w,fee){if(!w||!W(w.id))return;w=W(w.id);reconcileOwnership(w.id,{outgoing:true,reason:'The wrestler left your stable'});S.cash+=fee;S.roster=S.roster.filter(x=>x.id!==w.id);returnToMarket(w);}
 function makeDilemmas(){
  let made=0;const recent=S.recentTypes;
  const ok=t=>!recent[t]||abs()-recent[t]>=4;
  const roster=S.roster.slice().sort(()=>rand()-.5);
- const tryMake=(type,args,m)=>{msg({...m,kind:'decision',dtype:type,args});recent[type]=abs();made++};
+ // The original generator decides WHEN a situation occurs. On some of those
+ // existing slots, draw a different scene without creating another decision.
+ const pool=['poster','late','travel','interview','kit','footage','charity','second','apprentice'];
+ const tryMake=(type,args,make)=>{
+  let chosen={type,args,make};
+  if(type!=='unhappy'&&identityHash(S.careerSeed+'|'+abs()+'|'+type+'|'+args.join(':'))%100<75){
+   const candidates=[];
+   for(const next of pool){const d=DILEMMAS[next];if(!ok(next))continue;
+    const people=d.promoter?S.promoters.filter(p=>d.when(p)):
+     roster.filter(w=>d.when(w)&&!S.inbox.some(m=>m.kind==='decision'&&!m.answer&&m.args?.[0]===w.id));
+    if(people.length)candidates.push({type:next,people});
+   }
+   if(candidates.length){const base=identityHash(S.careerSeed+'|'+abs()+'|'+type+'|'+args.join(':')+'|pool');
+    const candidate=candidates[base%candidates.length],person=candidate.people[(base>>>8)%candidate.people.length];
+    chosen={type:candidate.type,args:[person.id],make:()=>DILEMMAS[candidate.type].make(person)};
+    recent[chosen.type]=abs();
+   }
+  }
+  msg({...chosen.make(),kind:'decision',dtype:chosen.type,args:chosen.args});recent[type]=abs();made++;
+ };
  for(const w of roster){if(made>=2)break;
   // Approaches for your wrestlers now come from the rival managers themselves (rival-managers.js).
   // The old North Circuit scene is no longer raised; its resolver stays so a pending one in a save can be answered.
-  for(const type of ['unhappy','hurt','raise','dive']){const d=DILEMMAS[type];if(ok(type)&&d.when(w)&&rand()<({unhappy:.8,hurt:.65,raise:.45,dive:.3}[type])){tryMake(type,[w.id],d.make(w));break}}
+  for(const type of ['unhappy','hurt','raise','dive']){const d=DILEMMAS[type];if(ok(type)&&d.when(w)&&rand()<({unhappy:.8,hurt:.65,raise:.45,dive:.3}[type])){tryMake(type,[w.id],()=>d.make(w));break}}
  }
- if(made<2&&ok('clash')&&roster.length>=2&&rand()<.25){const [a,b]=roster;if(DILEMMAS.clash.when(a,b))tryMake('clash',[a.id,b.id],DILEMMAS.clash.make(a,b))}
- if(made<2&&ok('favour')&&S.roster.length&&rand()<.3){const p=one(S.promoters.filter(x=>DILEMMAS.favour.when(x)));if(p)tryMake('favour',[p.id],DILEMMAS.favour.make(p))}
+ if(made<2&&ok('clash')&&roster.length>=2&&rand()<.25){const [a,b]=roster;if(DILEMMAS.clash.when(a,b))tryMake('clash',[a.id,b.id],()=>DILEMMAS.clash.make(a,b))}
+ if(made<2&&ok('favour')&&S.roster.length&&rand()<.3){const p=one(S.promoters.filter(x=>DILEMMAS.favour.when(x)));if(p)tryMake('favour',[p.id],()=>DILEMMAS.favour.make(p))}
 }
 function answer(mid,opt){
  const m=S.inbox.find(x=>x.id===mid);if(!m||m.answer)return null;
  if(m.dtype==='poach'&&opt==='bonus'&&S.cash<400)return 'Not enough cash for the £400 bonus. Choose another response.';
  if(m.dtype==='unhappy'&&opt==='pay'&&S.cash<250)return 'Not enough cash for a £250 bonus. Choose another response.';
+ if(m.dtype==='kit'&&opt==='buy'&&S.cash<120)return 'Not enough cash for the £120 gear. Choose another response.';
  const d=DILEMMAS[m.dtype];let text='';
- if(m.dtype==='favour'){const p=P(m.args[0]);text=d.resolve(m,p,opt)}
+ if(d.promoter){const p=P(m.args[0]);text=p?d.resolve(m,p,opt):'That promoter has moved on.'}
  else if(m.dtype==='clash'){const a=W(m.args[0]),b=W(m.args[1]);text=a&&b?d.resolve(m,a,opt,b):'They’ve both moved on.'}
  else{const w=W(m.args[0]);text=w?d.resolve(m,w,opt):'That situation has resolved itself.'}
  m.answer=opt;m.outcome=text;m.read=true;save();return text;

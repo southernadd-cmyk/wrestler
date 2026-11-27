@@ -288,11 +288,12 @@
    .sort((x,y)=>x.e.sat-y.e.sat||x.w.id.localeCompare(y.w.id))[0];
   if(!w)return;
   const {w:x,e}=w,k=KINDS[e.kind];
+  const followedUp=e.lastAsk>=0;
   e.lastAsk=now();a.lastAsk=now();
   const first=e.kind==='money'
    ?{id:'raise',label:'Give them £40 a week more',hint:'Wage +£40 a week, from now on. That settles it.'}
    :{id:'promise',label:k.promise,hint:`Satisfaction up now. Deliver within ${promiseWeeks(e.kind)} weeks and loyalty rises; miss it and it falls hard.`};
-  G.msg({from:x.name,subject:k.name,kind:'decision',dtype:'amb_ask',args:[x.id],body:[k.ask,`Road agent: ${x.short} is ${mood(e.sat).toLowerCase()}. ${progressText(x.id,e)}`],
+  G.msg({from:x.name,subject:followedUp?`Still waiting: ${k.name}`:k.name,kind:'decision',dtype:'amb_ask',args:[x.id],body:[followedUp?`“I asked about ${k.name.toLowerCase()} before. I need an answer I can believe this time.”`:k.ask,`Road agent: ${x.short} is ${mood(e.sat).toLowerCase()}. ${progressText(x.id,e)}`],
    options:[first,
     {id:'honest',label:'Be straight with them',hint:'Tell them where they stand. A professional takes it well; others less so.'},
     {id:'dismiss',label:'Tell them to earn it',hint:'Costs nothing now. A proud wrestler will not forget it.'}]});
