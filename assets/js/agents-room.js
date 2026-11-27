@@ -2040,7 +2040,7 @@
    const cur=st.structureBoard?.[obj.id];
    const cards=structureCards(st,obj).map((c,i)=>({
     id:'objective_'+obj.id+'_'+i,label:c.label,by:c.by,
-    who:c.by==='agent'?AGENT:nameOf(st,c.by),risk:!!c.risk,contribution:finishContribution(st,st.board.finish?.route,c),
+    who:c.by==='agent'?AGENT:nameOf(st,c.by),risk:!!c.risk,contribution:finishContribution(st,st.lockRoute||st.board.finish?.route,c),
     selected:!!cur&&cur.action===c.action&&cur.owner===c.owner,
     tags:[...(c.by==='agent'?['Dennis’s suggestion']:['Wrestler’s suggestion']),
      ...(c.risk?['High risk']:[]),...(supportsFinish(st,st.board.finish?.route,c)?['May support the finish']:[])]
@@ -2052,7 +2052,7 @@
     tags:['Remove sequence only']});
    const owned=obj.actor==='either'?'Both wrestlers may contribute':nameOf(st,obj.actor)+' leads';
    return {slot:obj.id,name:obj.title,ask:owned+'. Agree a real move if you want, or leave it open.',
-    cards,current:cur?.sequence?(cur.label+' · '+(agreedSequence(st,obj)?cur.sequence.actions.map(name).join(' → '):'setup requires revision')):cur?.label||null,actor:cur?.owner||obj.actor,contribution:finishContribution(st,st.board.finish?.route,cur),intent:obj.intent,window:obj.window.slice()};
+    cards,current:cur?.sequence?(cur.label+' · '+(agreedSequence(st,obj)?cur.sequence.actions.map(name).join(' → '):'setup requires revision')):cur?.label||null,actor:cur?.owner||obj.actor,contribution:finishContribution(st,st.lockRoute||st.board.finish?.route,cur),intent:obj.intent,window:obj.window.slice()};
   });
  }
  function structureReconcile(st){
@@ -2163,7 +2163,7 @@
  // A compatible spot can help the build but cannot guarantee the physical condition.
  function supportsFinish(st,route,c){
   const n=c?.action&&A[c.action];
-  if(!n||c.impossible||banned(st,c.action))return false;
+  if(!n||c.impossible||c.conflict||banned(st,c.action))return false;
   if(route==='limb_finish')return c.owner==='w'&&n.focus>0&&!n.reverse;
   if(route==='submission_defeat'||route==='injury_gives')return c.owner==='f'&&n.focus>0&&!n.reverse;
   if(route==='reversal_finisher')return c.owner==='w'&&!!n.reverse;
@@ -2174,7 +2174,13 @@
  }
  function finishContribution(st,route,c){
   if(!supportsFinish(st,route,c))return 0;
-  if(['limb_finish','submission_defeat','injury_gives'].includes(route))return A[c.action].focus||0;
+  if(['limb_finish','submission_defeat','injury_gives'].includes(route)){
+   const n=A[c.action];
+   // The opponent's target is deterministic in match-graph.js. Do not count off-target work.
+   const target=st.w.style==='Technical'?'arm':st.w.style==='Spectacle'?'leg':st.w.style==='Brawl'?'ribs':'back';
+   if(route==='limb_finish'&&n.part&&n.part!==target)return 0;
+   return n.focus||0;
+  }
   if(['reversal_finisher','finisher_reversed'].includes(route))return 1;
   return 0;
  }
@@ -2189,9 +2195,9 @@
   const requirement=ROUTE_CONDITION[route]||null;
   const slots=st.structurePlanning?structureSlots(st).map(o=>({id:o.id,name:o.title})):SPINE;
   const chosen=st.structurePlanning?st.structureBoard||{}:st.board;
-  const supported=slots.filter(S=>supportsFinish(st,route,chosen[S.id])).map(S=>S.name.toLowerCase());
+  const supported=slots.filter(S=>finishMetric(route)?finishContribution(st,route,chosen[S.id])>0:supportsFinish(st,route,chosen[S.id])).map(S=>S.name.toLowerCase());
   const available=!ROUTE_STATIC[route]||ROUTE_STATIC[route](st.w,st.f,st);
-  const impossible=slots.filter(S=>chosen[S.id]?.action&&(chosen[S.id].impossible||banned(st,chosen[S.id].action))).map(S=>S.name.toLowerCase());
+  const impossible=st.structurePlanning?structureWarnings(st).map(x=>x.toLowerCase()):slots.filter(S=>chosen[S.id]?.action&&(chosen[S.id].impossible||banned(st,chosen[S.id].action))).map(S=>S.name.toLowerCase());
   let summary=requirement?(supported.length?
    supported.join(' and ')+' could help set it up, but the required in-ring events must still happen.':
    'No selected called spot specifically prepares this condition; it must still be earned in the match.'):
@@ -2208,7 +2214,18 @@
   if(impossible.length)summary+=' Warning: '+impossible.join(' and ')+' contains an impossible or prohibited spot.';
   if(!available)summary='This method is no longer eligible for the wrestlers or feud. '+summary;
   const metric=finishMetric(route);
-  const preparation=metric?{...metric,planned:slots.reduce((n,S)=>n+finishContribution(st,route,chosen[S.id]),0)}:null;
+  let preparation=null;
+  if(metric){
+   const entries=slots.map(S=>chosen[S.id]).filter(c=>finishContribution(st,route,c)>0);
+   if(metric.unit==='focused damage'){
+    const generic=entries.filter(c=>!A[c.action].part).reduce((n,c)=>n+finishContribution(st,route,c),0);
+    const byPart={};
+    for(const c of entries){const part=A[c.action].part;if(part)byPart[part]=(byPart[part]||0)+finishContribution(st,route,c);}
+    const parts=Object.entries(byPart).sort((a,b)=>b[1]-a[1]);
+    const target=route==='limb_finish'?(st.w.style==='Technical'?'arm':st.w.style==='Spectacle'?'leg':st.w.style==='Brawl'?'ribs':'back'):null;
+    preparation={...metric,planned:generic+(target?(byPart[target]||0):(parts[0]?.[1]||0)),target:target||parts[0]?.[0]||null,estimated:!target,mixed:parts.length>1};
+   }else preparation={...metric,planned:entries.length};
+  }
   return {route,label:ROUTE_NAME[route]||route,requirement,summary,supported,available,blocked:impossible.length,preparation,
    kind:!available||impossible.length?'warning':requirement?'conditional':'direct'};
  }
@@ -2247,9 +2264,9 @@
   return SPINE.map(S=>{
    const cur=st.board[S.id];
    const cards=cardsFor(st,S.id).map((c,i)=>({id:'slot_'+S.id+'_'+i,label:c.label,by:c.by,who:c.by==='agent'?AGENT:nameOf(st,c.by),
-    selected:!!cur&&cur.action===c.action,risk:!!c.risk,impossible:!!c.impossible,contribution:finishContribution(st,st.board.finish?.route,c),tags:slotTags(st,S,c)}));
+    selected:!!cur&&cur.action===c.action&&cur.owner===c.owner,risk:!!c.risk,impossible:!!c.impossible,contribution:finishContribution(st,st.lockRoute||st.board.finish?.route,c),tags:slotTags(st,S,c)}));
    cards.push({id:'slot_'+S.id+'_open',label:'Leave open',who:AGENT,selected:!cur?.action,tags:[]});
-   return {slot:S.id,name:S.name,ask:fmt(st,S.ask.replace(/\{O\}/g,S.owner==='f'?'{F}':'{W}')),cards,current:cur?.label||null,actor:cur?.owner||S.owner,contribution:finishContribution(st,st.board.finish?.route,cur),window:st.base?.nodes?.find(n=>n.id===S.id)?.window};
+   return {slot:S.id,name:S.name,ask:fmt(st,S.ask.replace(/\{O\}/g,S.owner==='f'?'{F}':'{W}')),cards,current:cur?.label||null,actor:cur?.owner||S.owner,contribution:finishContribution(st,st.lockRoute||st.board.finish?.route,cur),window:st.base?.nodes?.find(n=>n.id===S.id)?.window};
   });
  }
  // Some decisions wreck a beat that was already agreed. Dennis swaps in the nearest thing that still works.
@@ -2516,7 +2533,10 @@
     st.decided.push({stage:'board',situation:S.id,id,label:o.label,tags:o.tags});return st;
    }
    const c=cardsFor(st,S.id)[+m[2]];if(st.boardOpen)delete st.boardOpen[S.id];
-   if(st.board[S.id]?.action===c.action)return st;
+   const current=st.board[S.id];
+   if(current?.action===c.action&&current.owner===c.owner&&current.by===c.by){
+    current.chosen=true;return st;
+   }
    log(st,'you','“'+S.name+': the '+c.label+'.”');
    st.decided.push({stage:'board',situation:S.id,id,label:c.label,tags:o.tags});
    st.board[S.id]={by:c.by,owner:c.owner,action:c.action,label:c.label,impossible:!!c.impossible,chosen:true};
