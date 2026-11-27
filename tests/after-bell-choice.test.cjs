@@ -175,3 +175,43 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  assert.ok(saved.angle.chance>=8&&saved.angle.chance<=94);
  console.log('PASS shared fuzzy reaction tendencies and bounded, saved angle odds');
 }
+
+// AB3: graph actions are gated by witnessed circumstances, not by commentary text.
+{
+ const s=career(),c=contract({finish:'lose_clean'}),f=play(c),h=s.history.find(h=>h.cid===c.id);
+ const plain=A.capture({...f,stars:2,evidence:{dirty:{w:false,f:false},injured:{w:null,f:false}}},h);
+ const ids=ready=>A.angleOptions({stage:'angle',c,fin:ready}).map(o=>o.id);
+ assert.equal(ids(plain).join(),'none,handshake,staredown,beatdown');
+ const ready=A.capture({...f,evidence:{dirty:{w:true,f:true},injured:{w:null,f:true}}},{rivalCorner:{fired:true,ok:true,job:'runin'}});
+ const st=A.begin(c,ready),available=ids(ready);
+ for(const id of ['check_injury','apologise','protest','confront_corner'])assert.ok(available.includes(id),id);
+ assert.ok(!available.includes('beatdown'),'injury prevents a new attack option');
+ assert.ok(!available.includes('acknowledge'),'do not offer sporting applause after own cheap shot');
+ assert.equal(A.choose(st,'beatdown'),false);
+ assert.ok(A.choose(st,'check_injury'));
+ assert.equal(st.stage,'mic');assert.ok(st.angle.reaction);
+ const edges=A.graphEdges().map(e=>e.join('|'));
+ for(let i=1;i<st.angle.path.length;i++)assert.ok(edges.includes(st.angle.path.slice(i-1,i+1).join('|')),'legal graph edge');
+ assert.equal(s.history.find(h=>h.cid===c.id).after.angle.reaction,st.angle.reaction);
+ assert.equal(A.choose(st,'apologise'),false,'one angle only');
+ assert.ok(A.speak(st,'walk'));
+ console.log('PASS contextual graph gates, legal transition and persisted reaction');
+}
+{
+ for(const [action,extra,evidence] of [
+  ['acknowledge',{}, {dirty:{w:false,f:false}}],
+  ['apologise',{}, {dirty:{w:true}}],
+  ['protest',{}, {dirty:{f:true}}],
+  ['confront_corner',{rivalCorner:{fired:true,ok:true,job:'distract'}},{}]
+ ]){
+  const run=()=>{const s=career();n=950;const c=contract({finish:'lose_clean'}),f=play(c);
+   const st=A.begin(c,A.capture({...f,evidence},extra));
+   assert.ok(A.choose(st,action),action);assert.ok(st.angle.path.includes(action));
+   assert.equal(A.view(st).planLabel,A.angleGraph.actions[action].label);
+   return JSON.stringify([st.angle,st.log,st.cons]);};
+  assert.equal(run(),run(),'deterministic '+action);
+ }
+ const s=career(),c=contract(),f=play(c),ready=A.capture(f,{rivalCorner:{fired:true,ok:true,ejected:true,job:'runin'}});
+ assert.ok(!A.angleOptions({stage:'angle',c,fin:ready}).some(o=>o.id==='confront_corner'));
+ console.log('PASS new graph reactions are deterministic; ejected corners cannot unlock confrontation');
+}

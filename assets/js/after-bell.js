@@ -157,6 +157,84 @@
  const fill=(t,x)=>cap(String(t).replace(/\{W\}/g,x.w?.short||'').replace(/\{F\}/g,x.f?.short||'').replace(/\{T\}/g,x.t?.short||'').replace(/\{P\}/g,x.p?.voice||''));
  const likesTrouble=p=>['aggressive','showman'].includes(p?.personality);
 
+ // AB3: directed action -> reaction -> microphone graph. The graph describes
+ // performed scenes, not hypothetical events. Only witnessed facts unlock new actions.
+ // AB5/6 can add autonomous entry points and interactive continuation edges.
+ const interference=k=>!!(k?.fired&&k.ok&&!k.ejected&&['runin','argue','distract','refbump'].includes(k.job));
+ const injured=v=>v===true||typeof v==='string'&&v.length>0;
+ const legacyReactions={none:['pass'],handshake:['accepted','refused'],staredown:['engaged','flat'],
+  beatdown:['worked','scuffle'],celebrate:['cheered','flat']};
+ const angleGraph=Object.freeze({
+  version:1,entry:'bell',exit:'mic',
+  actions:Object.freeze({
+   acknowledge:{label:'Applaud the opponent',hint:'Recognise a good match without demanding a handshake.',tags:['Respect','Bond'],guard:x=>x.stars>=3&&x.outcome==='booked'&&x.context.dirty?.w!==true,
+    line:'{W} steps back and applauds {F}.',reactions:[
+     {id:'reciprocate',drive:'respect',line:'{F} nods and applauds in return.',bond:7,morale:2},
+     {id:'dismiss',drive:'escalation',line:'{F} turns away without acknowledging it.',bond:-2,feud:3}]},
+   check_injury:{label:'Check on the injured opponent',hint:'Call the officials over and give the opponent space.',tags:['Care','No contact'],guard:x=>injured(x.context.injured?.f),
+    line:'{W} asks the referee to check on {F} and takes a step back.',reactions:[
+     {id:'appreciate',drive:'respect',line:'{F} acknowledges the gesture as the officials attend to them.',bond:8,trust:1},
+     {id:'space',drive:'caution',line:'{F} signals for space. The officials take over.',bond:2}]},
+   apologise:{label:'Apologise for the cheap shot',hint:'Own what happened rather than trying to justify it.',tags:['Respect','Feud may cool'],guard:x=>x.context.dirty?.w===true,
+    line:'{W} gestures an apology for the cheap shot.',reactions:[
+     {id:'accept_apology',drive:'respect',line:'{F} accepts the gesture and backs away.',bond:8,feud:-5},
+     {id:'reject_apology',drive:'escalation',line:'{F} shakes their head. An apology is not enough tonight.',bond:-3,feud:5}]},
+   protest:{label:'Ask the referee to explain the finish',hint:'Challenge the circumstances without changing the recorded result.',tags:['Public protest','Risk'],guard:x=>['dq','nc','double'].includes(x.outcome)||x.context.dirty?.f===true||interference(x.context.rivalCorner),
+    line:'{W} asks the referee to explain the decision.',reactions:[
+     {id:'disengage',drive:'caution',line:'{F} leaves the discussion to the referee. The decision stands.',morale:1},
+     {id:'argue_back',drive:'escalation',line:'{F} argues their side of it. The referee refuses to reopen the match.',feud:7,bond:-3}]},
+   confront_corner:{label:'Call out the interference',hint:'Point out the rival corner’s actions without starting another fight.',tags:['Rivalry','No contact'],guard:x=>interference(x.context.rivalCorner),
+    line:'{W} points towards the aisle, protesting the rival corner’s interference.',reactions:[
+     {id:'defend_corner',drive:'cooperation',line:'{F} gestures towards their corner in defence of what happened.',feud:8,bond:-4},
+     {id:'distance_corner',drive:'respect',line:'{F} waves away the argument and refuses to defend the interference.',bond:3,feud:2}]}
+  })
+ });
+ function graphOptions(x){
+  if(x.context?.v!==1)return [];
+  return Object.entries(angleGraph.actions).filter(([,n])=>n.guard(x)).map(([id,n])=>({id,label:n.label,hint:n.hint,tags:n.tags.slice()}));
+ }
+ function graphEdges(){
+  return [
+   ...Object.entries(legacyReactions).flatMap(([id,rs])=>[[angleGraph.entry,id],...rs.flatMap(r=>[[id,id+':'+r],[id+':'+r,angleGraph.exit]])]),
+   ...Object.entries(angleGraph.actions).flatMap(([id,n])=>[[angleGraph.entry,id],...n.reactions.flatMap(r=>[[id,id+':'+r.id],[id+':'+r.id,angleGraph.exit]])])
+  ];
+ }
+ function graphTrace(plan,reaction){return [angleGraph.entry,plan,plan+':'+reaction,angleGraph.exit];}
+ function playGraph(st,x){
+  const node=Object.prototype.hasOwnProperty.call(angleGraph.actions,st.plan)?angleGraph.actions[st.plan]:null;
+  if(!node||x.context?.v!==1||!node.guard(x))return false;
+  const scores=st.psychology?.f?.scores||{};
+  const weight=r=>Number.isFinite(scores[r.drive])?Math.max(10,scores[r.drive]):50;
+  const total=node.reactions.reduce((n,r)=>n+weight(r),0);
+  let roll=hash(st.cid+'|ab3|'+st.plan)*total;
+  const reaction=node.reactions.find(r=>(roll-=weight(r))<0)||node.reactions[node.reactions.length-1];
+  st.angle={plan:st.plan,ok:reaction.bond>=0||(reaction.bond==null&&reaction.feud==null),reaction:reaction.id,path:graphTrace(st.plan,reaction.id)};
+  for(const text of [node.line,reaction.line])st.log.push({side:'stage',who:null,text:fill(text,x)});
+  const add=(text,tone=0)=>st.cons.push({text:cap(text),tone});
+  const source=st.cid+':after';
+  if(reaction.bond){
+   bond(x.w.id,x.f.id,reaction.bond,reaction.bond>0?'respect':'grudge',fill(reaction.line,x),source);
+   add('Bond '+(reaction.bond>0?'+':'')+reaction.bond+'.',Math.sign(reaction.bond));
+  }
+  if(reaction.feud){
+   const fd=G.feud(x.w.id,x.f.id);
+   if(reaction.feud>0||fd&&!fd.closed){const heat=heatFeud(x.w.id,x.f.id,reaction.feud);add('Feud heat '+heat+'.',0);}
+  }
+  if(reaction.morale){x.w.morale=clamp(x.w.morale+reaction.morale);add(x.w.short+' morale +'+reaction.morale+'.',1);}
+  if(reaction.trust){x.p.trust=clamp(x.p.trust+reaction.trust);add(x.p.name+' trust +'+reaction.trust+'.',1);}
+  return true;
+ }
+ // Older angles retain their original resolver; record their actual branch in
+ // the same graph when a new scene uses them.
+ function performAngle(st,x){
+  if(playGraph(st,x))return;
+  if(st.plan!=='none')playAngle(st,x);
+  if(x.context?.v!==1)return;
+  const rs=legacyReactions[st.plan];if(!rs)return;
+  const reaction=st.plan==='none'?'pass':rs[st.angle?.ok?0:1];
+  if(st.angle){st.angle.reaction=reaction;st.angle.path=graphTrace(st.plan,reaction);}
+ }
+
  // What the angle does. Each returns the lines it plays and the consequences, and changes the save once.
  function playAngle(st,x){
   const plan=st.plan,id=st.cid,out=st.cons,log=st.log;
@@ -432,21 +510,23 @@
  function angleOptions(st){
   if(st?.stage!=='angle')return [];
   const x=ctxOf(st.c,st.fin);if(!x.w||!x.f)return [];
-  return plans(st.c,x.w,x.f,x.won);
+  const base=plans(st.c,x.w,x.f,x.won);
+  if(x.context?.v!==1)return base;
+  return [...base.filter(o=>o.id!=='beatdown'||!injured(x.context.injured?.w)&&!injured(x.context.injured?.f)),...graphOptions(x)];
  }
  // The first call of the segment: what happens now the bell has gone. Final once made.
  function choose(st,plan){
   if(st?.stage!=='angle'||!angleOptions(st).some(o=>o.id===plan))return false;
   const x=ctxOf(st.c,st.fin);
   st.plan=plan;st.stage='mic';
-  if(plan!=='none')playAngle(st,x);
+  performAngle(st,x);
   recordEvidence(st);
   G.save();return true;
  }
  function view(st){
   const x=ctxOf(st.c,st.fin);
   const angle=st.stage==='angle';
-  return {stage:st.stage,plan:st.plan,planLabel:angle?'':PLANS[st.plan]?.label||'',log:st.log.slice(),cons:st.cons.slice(),options:angle?angleOptions(st):micOptions(st),
+  return {stage:st.stage,plan:st.plan,planLabel:angle?'':PLANS[st.plan]?.label||angleGraph.actions[st.plan]?.label||'',log:st.log.slice(),cons:st.cons.slice(),options:angle?angleOptions(st):micOptions(st),
    title:angle?'The bell has gone':st.stage==='mic'?x.w.short+' has the microphone':'After the bell',
    ask:angle?(x.won?'The crowd is still on its feet. What does '+x.w.short+' do now?':x.outcome==='nc'?'Nobody won. What does '+x.w.short+' do now?':'The crowd is watching '+x.w.short+'. What happens now?'):st.stage==='mic'?(x.won?'The crowd is still on its feet. What does '+x.w.short+' say?':'The crowd is quietening down. What does '+x.w.short+' say?'):''};
  }
@@ -500,5 +580,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);
