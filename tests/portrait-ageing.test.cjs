@@ -142,7 +142,32 @@ else:
      if(y===CH-1)bottom++;if(y===0)top++;
     }
     assert.ok(opaque>0,'empty portrait '+r.id+' '+r.age);
-    rows.push({id:r.id,age:r.age,sheet,left:x0,top:y0,right:CW-1-x1,bottom:CH-1-y1,basePixels:bottom,topPixels:top,coverage:Math.round(opaque/(CW*CH)*100)});
+    // Analyze the dominant connected silhouette, excluding disconnected atlas
+    // remnants; record each lower row so a sparse tail cannot hide a cut-off.
+    const mask=new Uint8Array(CW*CH),seen=new Uint8Array(CW*CH),counts=new Uint16Array(CH),components=[];
+    for(let y=0;y<CH;y++)for(let x=0;x<CW;x++)mask[y*CW+x]=pixels[((r.y+y)*W+r.x+x)*4+3]>=128?1:0;
+    for(let start=0;start<mask.length;start++){
+     if(!mask[start]||seen[start])continue;
+     const queue=[start];seen[start]=1;let left=CW,right=-1,top=CH,base=-1;
+     for(let q=0;q<queue.length;q++){
+      const p=queue[q],x=p%CW,y=Math.floor(p/CW);left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);base=Math.max(base,y);
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+       if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<0||nx>=CW||ny<0||ny>=CH)continue;
+       const j=ny*CW+nx;if(mask[j]&&!seen[j]){seen[j]=1;queue.push(j);}
+      }
+     }
+     components.push({size:queue.length,left,right,top,base,queue});
+    }
+    components.sort((a,b)=>b.size-a.size);
+    const major=components[0];
+    for(const p of major.queue)counts[Math.floor(p/CW)]++;
+    // A credible torso occupies at least half a cell's width. Hair or narrow
+    // remnants on lower rows are separately reported, not treated as a torso.
+    let solidBase=-1;for(let y=0;y<CH;y++)if(counts[y]>=CW/2)solidBase=y;
+    const lower=Array.from(counts.slice(-24));
+    rows.push({id:r.id,age:r.age,sheet,left:x0,top:y0,right:CW-1-x1,bottom:CH-1-y1,basePixels:bottom,topPixels:top,coverage:Math.round(opaque/(CW*CH)*100),
+     majorTop:major.top,majorBottom:CH-1-major.base,solidBottom:solidBase<0?null:CH-1-solidBase,
+     lower,detached:opaque-major.size,components:components.slice(0,4).map(({queue,...c})=>c)});
    }
   }
   assert.equal(rows.length,manifest.records.length);
@@ -150,6 +175,10 @@ else:
   console.log('PORTRAIT FRAME SUMMARY '+JSON.stringify({total:rows.length,bottomGap:flagged.length,topTouch:rows.filter(r=>r.topPixels>0).length,sideTouch:rows.filter(r=>!r.left||!r.right).length,opaque:rows.filter(r=>r.coverage===100).length}));
   for(const r of rows.filter(r=>r.id==='magnus'||r.id==='rex'))console.log('PORTRAIT REFERENCE '+JSON.stringify(r));
   for(const r of flagged)console.log('PORTRAIT FLOATING BASE '+JSON.stringify(r));
+  const weak=rows.filter(r=>r.majorBottom>2||(r.solidBottom!==null&&r.solidBottom>5));
+  console.log('PORTRAIT SILHOUETTE SUMMARY '+JSON.stringify({total:rows.length,weakBase:weak.length,detachedBottom:rows.filter(r=>r.majorBottom>r.bottom).length,solidGap:rows.filter(r=>r.solidBottom!==null&&r.solidBottom>5).length}));
+  for(const r of weak)console.log('PORTRAIT WEAK BASE '+JSON.stringify({id:r.id,age:r.age,majorBottom:r.majorBottom,solidBottom:r.solidBottom,detached:r.detached,lower:r.lower}));
+  for(const id of ['magnus','rex','cal'])for(const r of rows.filter(r=>r.id===id))console.log('PORTRAIT SILHOUETTE '+JSON.stringify(r));
   console.log('PASS all 681 age portrait cells decoded and checked for transparent edge margins');
  }
 
