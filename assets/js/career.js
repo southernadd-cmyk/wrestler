@@ -653,6 +653,7 @@ function book(oid,wid){
  const o=S.offers.find(x=>x.id===oid),w=W(wid);
  if(!o||!w)return 'Choose a wrestler.';if(!opponentReady(S,o.rid,o.eventAbs))return 'The opponent is unavailable.';if(!availableAt(w,o.eventAbs))return `${w.name} isn’t available on the offered date.`;if(o.expiresAbs<abs())return 'That offer has expired.';
  if(o.wid&&o.wid!==wid)return 'This offer is for a specific wrestler.';const conflict=bookingConflict(wid,o.rid,o.eventAbs);if(conflict)return conflict;if(D.divisionOf(w)!==D.divisionOf(o.rid))return `This is a ${D.DIVISIONS[D.divisionOf(o.rid)].name.toLowerCase()} match.`;if(o.talk&&o.talk.wid!==wid)return 'These terms were negotiated for a different wrestler.';
+ if(o.title&&!root.OfficeTerritory.titleValid(S,S.territory,o,wid))return 'The championship booking is no longer valid. The booker must issue a new offer.';
  const fd=feud(wid,o.rid);
  if(o.talk?.step==='done')S.business.negotiated+=purse(o,w)-(o.talk.original?.fee||purse(o,w));
  const contract={id:uid('c'),pid:o.pid,rid:o.rid,wid,slot:o.slot,minutes:D.SLOTS[o.slot].mins+(o.tag==='Blow-off'?5:0),finish:o.finish,purse:purse(o,w),tag:o.tag,feudHeat:fd&&!fd.closed?fd.heat:0,blowoff:o.tag==='Blow-off',eventAbs:o.eventAbs,...(o.title?{title:{...o.title}}:{})};if(o.eventAbs===abs())S.card.push(contract);else S.futureBookings.push(contract);
