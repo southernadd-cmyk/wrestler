@@ -47,11 +47,44 @@
 
  // ---------------------------------------------------------------------------------------------
  // The night itself.
+ // AB1: capture witnessed evidence once, after result settlement. No RNG or new game effects.
+ // Old saves may lack these fields; unknown facts are left unknown rather than invented.
+ function capture(fin,h){
+  const e=fin?.evidence||{},copy=v=>v==null?null:JSON.parse(JSON.stringify(v));
+  const corner=k=>k?{second:k.second??null,secondName:k.secondName??null,job:k.job??null,
+   fired:!!k.fired,ok:!!k.ok,ejected:!!k.ejected,hurtRef:!!k.hurtRef,dq:!!k.dq}:null;
+  return {stars:fin?.stars,crowd:fin?.crowd,outcome:fin?.outcome,context:{
+   v:1,route:fin?.finishRoute||e.route||null,dirty:copy(e.dirty),injured:copy(e.injured),
+   stamina:copy(e.stamina),counters:copy(e.counters),lateCounters:copy(e.late),
+   botches:fin?.botches??null,stiff:fin?.stiff??null,refused:fin?.refused??null,
+   shortened:fin?.shortened??null,timeDefied:fin?.timeDefied??null,
+   ringside:corner(h?.ringside),rivalCorner:corner(h?.rivalCorner),
+   nearfalls:fin?.nearfalls??null,crowdStart:fin?.crowdStart??null,crowdPeak:fin?.crowdPeak??null,
+   ignored:fin?.ignored??null
+  }};
+ }
+ // Brief the player only on salient, verified events.
+ function contextLines(x){
+  const e=x.context;if(!e)return [];
+  const out=[],r=e.rivalCorner,k=e.ringside;
+  if(r?.fired&&r.ejected)out.push((r.secondName||'The rival corner')+' was ejected by the referee during the match.');
+  else if(r?.fired&&r.ok&&['runin','argue','distract'].includes(r.job))
+   out.push((r.secondName||'The rival corner')+(r.job==='runin'?' ran in during the match.':' interfered from ringside.'));
+  if(k?.fired&&k.dq)out.push((k.secondName||'Your corner')+' was involved in the disqualification.');
+  else if(k?.fired&&k.hurtRef)out.push('The referee was hurt during the match.');
+  else if(k?.fired&&k.ejected)out.push((k.secondName||'Your corner')+' was ejected by the referee.');
+  else if(k?.fired&&k.ok&&k.job!=='support')out.push((k.secondName||'Your corner')+' carried out the agreed ringside action.');
+  if(e.injured?.w)out.push(x.w.short+' picked up an injury during the match.');
+  if(e.injured?.f)out.push(x.f.short+' was hurt during the match.');
+  if(e.dirty?.w||e.dirty?.f)out.push(e.dirty.w&&e.dirty.f?'Both wrestlers used cheap shots.':(e.dirty.w?x.w.short:x.f.short)+' used a cheap shot during the match.');
+  if(e.refused)out.push('There was a refusal during the match.');
+  return out.slice(0,3);
+ }
  function ctxOf(c,fin){
   const w=G.W(c.wid),f=G.F(c.rid),p=G.P(c.pid);
   const outcome=fin?.outcome||'booked',FN=D.FINISHES[c.finish]||{};
   const won=outcome==='double'||(outcome!=='nc'&&outcome!=='dq'&&!!FN.win);
-  return {w,f,p,won,outcome,finish:c.finish,stars:+(fin?.stars||0),crowd:+(fin?.crowd||50),dirty:['win_dirty','lose_protected','win_dq'].includes(c.finish)&&outcome!=='dq',clean:c.finish==='win_clean'||c.finish==='lose_clean'};
+  return {w,f,p,won,outcome,finish:c.finish,stars:+(fin?.stars||0),crowd:+(fin?.crowd||50),dirty:['win_dirty','lose_protected','win_dq'].includes(c.finish)&&outcome!=='dq',clean:c.finish==='win_clean'||c.finish==='lose_clean',context:fin?.context||null};
  }
  function feudOf(wid,rid){
   const s=G.S,k=wid+':'+rid;
@@ -323,11 +356,12 @@
  function begin(c,fin,plan){
   const x=ctxOf(c,fin);if(!x.w||!x.f||!x.p)return null;
   const turned=!!G.S?.bonds?.done?.[c.id+':turn'],choosing=plan==null&&!turned;
-  const a=state(),st={v:1,cid:c.id,c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{...c.programme}}:{})},fin:{stars:x.stars,crowd:x.crowd,outcome:x.outcome},plan:PLANS[plan]?plan:'none',stage:choosing?'angle':'mic',log:[],cons:[],angle:null,said:null,call:null};
+  const a=state(),st={v:1,cid:c.id,c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{...c.programme}}:{})},fin:{stars:x.stars,crowd:x.crowd,outcome:x.outcome,...(x.context?{context:JSON.parse(JSON.stringify(x.context))}:{})},plan:PLANS[plan]?plan:'none',stage:choosing?'angle':'mic',log:[],cons:[],angle:null,said:null,call:null};
   if(st.plan==='celebrate'&&!x.won)st.plan='none';
   st.log.push({side:'stage',who:null,text:x.outcome==='dq'?'The referee is still pointing at '+x.w.short+'. Disqualified.':x.won?'The referee raises '+x.w.short+'’s hand.':x.outcome==='nc'?'Nobody’s hand is raised. The referee waves it off.':'The referee raises '+x.f.short+'’s hand.'});
   if(a.done[c.id]){st.stage='done';return st;}
   a.done[c.id]=1;
+  for(const text of contextLines(x))st.log.push({side:'stage',who:null,text});
   // A friend who turned at the bell has already decided what happens after it.
   if(turned&&plan==null)st.log.push({side:'stage',who:null,text:fill('{F} shakes {W}’s hand, then hits them from behind. Whatever came next is out of the window.',x)});
   if(st.stage==='angle'){G.save();return st;}
@@ -406,5 +440,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={state,PLANS,plans,capture,begin,angleOptions,choose,view,micOptions,speak,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);
