@@ -710,3 +710,12 @@
  .tv .s-meeting .picks.five,.tv .s-promo .picks.five{grid-template-columns:minmax(0,1fr)}
  .tv .s-meeting .decision-option,.tv .s-promo .decision-option{min-height:48px}
 }
+
+/* Structure is the first planning decision, with all five options visible. */
+.tv .s-meeting .structure-chooser{margin:0 0 12px;padding:10px;background:var(--well);color:var(--white)}
+.tv .s-meeting .structure-chooser .section-h{color:var(--gold);margin:0 0 5px}
+.tv .s-meeting .structure-chooser .dim{color:var(--dim);margin:0 0 9px}
+.tv .s-meeting .structure-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tv .s-meeting .structure-option{min-height:62px}
+.tv .s-meeting .structure-help{margin:8px 0 0!important}
+@media (max-width:520px){.tv .s-meeting .structure-options{grid-template-columns:minmax(0,1fr)}}
