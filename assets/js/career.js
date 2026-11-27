@@ -195,7 +195,21 @@ function personnel(s,id){
  if(!base)return undefined;
  return {...base,...(s?.worldV4?.personnel?.[id]||{}),...(s?.free?.find(w=>w.id===id)||{})};
 }
-const F=id=>personnel(S,id);
+// Update the authoritative personnel record, not a detached lookup object.
+ // Only personal fields survive a contract change; never overwrite contract terms.
+ function updatePersonnel(s,id,patch){
+  if(!s||!id||!patch)return null;
+  const owned=s.roster.find(w=>w.id===id),worker=owned||personnel(s,id);
+  if(!worker||s.worldV4?.contracts[id]?.owner==='retired')return null;
+  const record=personalRecord(patch);
+  if(owned){Object.assign(owned,record);return owned;}
+  const world=s.worldV4;if(!world)return null;
+  const merged=personalRecord({...worker,...record});
+  world.personnel??={};world.personnel[id]=merged;
+  const free=s.free.find(w=>w.id===id);if(free)Object.assign(free,personalRecord(merged));
+  return personnel(s,id);
+ }
+ const F=id=>personnel(S,id);
 const P=id=>S.promoters.find(p=>p.id===id);
 const feudKey=(wid,rid)=>wid+':'+rid;
 const feud=(wid,rid)=>S.feuds[feudKey(wid,rid)];
@@ -650,7 +664,27 @@ function unbook(cid){const c=[...S.card,...S.futureBookings].find(x=>x.id===cid)
  msg({from:p.voice+', '+p.name,subject:'Pulled from the card',kind:'info',body:[`“You’ve left me with a hole on the card. I’ll remember it.”`,`${p.name} trust −6.`]});save()}
 
 /* ---------- results ---------- */
-function applyResult(c,fin){
+// Shared physical cost of working a bout, with side-specific finishing stamina.
+ function matchFatigue(worker,fin,side='w'){
+  const stamina=fin.evidence?.stamina?.[side]??(side==='w'?fin.stamina:null);
+  const minutes=Number.isFinite(fin.minutes)?fin.minutes:0;
+  return Math.max(0,Math.round(minutes*1.15+(fin.plan==='spots'?6:fin.plan==='brawl'?4:fin.plan==='safe'?-3:0)+(Number.isFinite(stamina)&&stamina<25?5:0)+(worker.niggle>0?10:0)));
+ }
+ function settleOpponentCondition(f,fin){
+  if(!f||!S.worldV4||W(f.id))return null;
+  const fatigue=clamp((f.fatigue||0)+matchFatigue(f,fin,'f')),patch={fatigue};
+  // The current engine records opponent hurt as a boolean, not a duration.
+  // A witnessed injury merits one week of rest; repeated injuries use the
+  // existing wear mechanism. Never invent an anatomical location.
+  const evidence=fin.evidence?.injured?.f;
+  if(fin.foeHurt===true||evidence===true||typeof evidence==='string'&&evidence.length){
+   const part=fin.foeInjuryPart||(typeof evidence==='string'?evidence:'body'),wear={...(f.wear||{})};
+   const full=1+Math.min(2,wear[part]||0);wear[part]=(wear[part]||0)+1;
+   Object.assign(patch,{injury:Math.max(f.injury||0,full),injurySince:abs(),wear,niggle:0,nigglePart:null,relapse:null});
+  }
+  return updatePersonnel(S,f.id,patch);
+ }
+ function applyResult(c,fin){
  if(resultRecorded(c))return [];
  {const rw=S.roster.find(x=>x.id===c.wid);if(rw&&fin?.rehearsed)useRehearsal(rw);}
  const w=W(c.wid),p=P(c.pid),f=F(c.rid),FN=D.FINISHES[c.finish],out=[];const add=(text,tone=0)=>out.push({text,tone});
@@ -681,8 +715,13 @@ function applyResult(c,fin){
  if(double){w.loyal=clamp(w.loyal+10);add(`${w.short} will never forget you backed them.`,1)}
  if(fin.refused)add(`${w.short} refused to break the finish. Pros don’t.`,0);
  // body
- const tired=Math.round(fin.minutes*1.15+(fin.plan==='spots'?6:fin.plan==='brawl'?4:fin.plan==='safe'?-3:0)+(fin.stamina<25?5:0)+(w.niggle>0?10:0));
+ const tired=matchFatigue(w,fin);
  w.fatigue=clamp(w.fatigue+tired);
+ const opponent=settleOpponentCondition(f,fin);
+ if(opponent&&(fin.foeHurt===true||fin.evidence?.injured?.f)){
+  const part=fin.foeInjuryPart||(typeof fin.evidence?.injured?.f==='string'?fin.evidence.injured.f:null);
+  add(`${f.short} was injured${part?' ('+part+')':''}: unavailable for ${opponent.injury} week${opponent.injury===1?'':'s'}.`,0);
+ }
  if(fin.injury){
   const part=fin.injuryPart||'body',base=fin.injury+(fin.workingHurt?1:0);
   w.wear??={};const prior=w.wear[part]||0;w.wear[part]=prior+1;
@@ -953,5 +992,5 @@ function ageRoster(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,ageWorker,opponentReady};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,ageWorker,opponentReady};
 })(typeof window!=='undefined'?window:globalThis);
