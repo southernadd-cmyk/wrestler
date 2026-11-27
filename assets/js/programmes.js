@@ -174,8 +174,7 @@
  }
 
  // A programme match is played: mark it, and finish the programme on the last one.
- const originalApply=G.applyResult;
- G.applyResult=function(c,fin){
+ G.registerResultStage('programmes',originalApply=>function(c,fin){
   const out=originalApply(c,fin);
   try{
    const s=G.S,prog=c?.programme&&state(s.territory).live.find(x=>x.id===c.programme.id);
@@ -206,7 +205,7 @@
    }
   }catch(e){G.reportError('programmes/match',e)}
   return out;
- };
+ });
 
  // ---------------------------------------------------------------------------------------------
  // The week: missed dates, a booker's change of heart, and new programme offers.
