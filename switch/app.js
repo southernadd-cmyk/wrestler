@@ -151,6 +151,7 @@ function desk(note='',restoreId=null,full=false){
  if(s()?.switchAfter||s()?.after?.autonomous){afterScreen();return;}
  if(active){matchScreen(note);return;}
  if(planning&&planning.room&&s().card.some(c=>c.id===planning.cid)){if(planning.onMic)preMatch();else roomScreen();return;}
+ if(s().switchWeekReview?.pending){weeklyReview();return;}
  if(s().over){screen('Career ended','Your career has ended. You can review the final balance or start again.',[a('new','Main menu',()=>mainMenu()),a('pause','Pause',()=>pause(()=>desk()))]);return;}
  if(guided()&&!full){guidedDesk(note);return;}
  const n=G.pending().length,b=G.officeBrief();
@@ -214,7 +215,7 @@ function guidedDesk(note=''){
  screen(s().card.length?'Dennis: ready for match night':'Dennis: the week is ready',(note?note+'\n':'')+s().card.length+' matches booked. '+money(b.after)+' projected balance after costs. '+(b.today.length+b.deadline.length?'There are still '+(b.today.length+b.deadline.length)+' unsigned urgent invitations. ':'')+'Existing training plans continue. Nothing is automatically signed or spent.',[
  a('continue',s().card.length?'Start match night':'Finish the week',advance),a('stable','Review your stable',stable),moreChoice]);
 }
-function more(){screen('More office options',summary(),[a('finances','Finances and objectives',finances),a('results','Recent results',()=>results()),a('mode','Management mode: '+(guided()?'Guided':'Full'),()=>modeScreen(more)),a('pause','Pause / settings',()=>pause(()=>more())),back(()=>desk('','more'))]);}
+function more(){screen('More office options',summary(),[a('finances','Finances and objectives',finances),a('results','Recent results',()=>results()),a('progress','Career progress',()=>careerProgress()),a('mode','Management mode: '+(guided()?'Guided':'Full'),()=>modeScreen(more)),a('pause','Pause / settings',()=>pause(()=>more())),back(()=>desk('','more'))]);}
 function finances(){screen('Finances and objectives','Bank '+money(s().cash)+'. Weekly wages '+money(G.wages())+'. Overheads '+money(G.overhead())+'. Training '+money(G.trainingBill())+'.\n'+G.goalList().map(x=>(x.done?'Complete: ':'Open: ')+x.text).join('\n'),[back(more),a('pause','Pause',()=>pause(finances))]);}
 function paged(title,rows,page,open,returnTo,describe=x=>x.name,restoreId=null){
  const count=3,pages=Math.max(1,Math.ceil(rows.length/count));page=Math.max(0,Math.min(pages-1,page));
@@ -783,7 +784,7 @@ function calls(note='',commentary=[],page=0){
  rows.push(back(()=>matchScreen(note,commentary,true)));
  screen('Ringside instructions',ringStatus(m)+' '+(list.length?'Choose an instruction. A wrestler may ignore you.':'No instructions currently available.'),rows,{scene:liveScene(m,c),kicker:'LIVE FROM RINGSIDE'});
 }
-function settleMatch(){const m=active.M,c=s().card.find(x=>x.id===active.cid);if(!c||!m.done)return matchScreen();const fin={...m.final,log:m.log.map(({t,text,kind,big,who,actionId})=>({t,text,kind,big,who,actionId}))};let cons;G.atomicSettlement(()=>{cons=G.applyResult(c,fin);cons.push(...OfficeRingside.settle(c,m),...OfficeRivalCorner.settle(c,m));const h=s().history.find(x=>x.cid===c.id),report=OfficeSheets.report(m),structure=X.structureReport(m);if(report){if(h)h.sheet=report;if(structure){if(h){h.structure=JSON.parse(JSON.stringify(structure));if(fin.structureAssessment)h.structureAssessment=JSON.parse(JSON.stringify(fin.structureAssessment));}const n=structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length;cons.push({text:'Dramatic structure: '+n+' of '+structure.objectives.length+' objectives witnessed in the ring.',tone:0});}else{cons.push({text:'Match layout: '+report.achieved+' performed, '+report.adapted+' adapted, '+report.missed+' missed.',tone:report.missed>2?-1:1});if(report.achieved>=3&&report.missed===0&&fin.stars>=3.5)OfficeMemory.remember(m.w.id,'chemistry',m.w.short+' remembers how well the agreed match with '+m.f.short+' came together.',m.f.id,3,4,c.id+':chemistry');if(report.missed>=3)OfficeMemory.remember(m.w.id,'sheet_changes',m.w.short+' remembers how far the match departed from the agreed match layout against '+m.f.short+'.',m.f.id,-2,0,c.id+':sheet');}}if(m.o.sheet?.situations)s().roomRecent=[...(s().roomRecent||[]),...m.o.sheet.situations].slice(-6);if(h){h.stip=c.stip||null;h.consequences=cons.map(x=>({text:x.text,tone:x.tone??0}));h.notes??=[];for(const effect of h.consequences)if(!h.notes.includes(effect.text))h.notes.push(effect.text);}const contract={id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{id:c.programme.id,step:c.programme.step}}:{})};const captured=OfficeAfter.capture(fin,h);const scene=OfficeAfter.prepareAutonomous(contract,captured,c.afterPlan);s().switchAfter={period:G.abs(),c:contract,fin:captured,plan:c.afterPlan??null,scene:scene||null,summary:m.w.name+' versus '+m.f.name+'. '+fin.stars+' stars.\n'+cons.map(x=>x.text).join('\n')};G.save();});active=null;planning=null;if(G.saveStatus().ok!==false){persistMatch();persistPlanning();}afterScreen();}
+function settleMatch(){const m=active.M,c=s().card.find(x=>x.id===active.cid);if(!c||!m.done)return matchScreen();const fin={...m.final,log:m.log.map(({t,text,kind,big,who,actionId})=>({t,text,kind,big,who,actionId}))};let cons;G.atomicSettlement(()=>{cons=G.applyResult(c,fin);cons.push(...OfficeRingside.settle(c,m),...OfficeRivalCorner.settle(c,m));const h=s().history.find(x=>x.cid===c.id),report=OfficeSheets.report(m),structure=X.structureReport(m);if(report){if(h)h.sheet=report;if(structure){if(h){h.structure=JSON.parse(JSON.stringify(structure));if(fin.structureAssessment)h.structureAssessment=JSON.parse(JSON.stringify(fin.structureAssessment));}const n=structure.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length;cons.push({text:'Dramatic structure: '+n+' of '+structure.objectives.length+' objectives witnessed in the ring.',tone:0});}else{cons.push({text:'Match layout: '+report.achieved+' performed, '+report.adapted+' adapted, '+report.missed+' missed.',tone:report.missed>2?-1:1});if(report.achieved>=3&&report.missed===0&&fin.stars>=3.5)OfficeMemory.remember(m.w.id,'chemistry',m.w.short+' remembers how well the agreed match with '+m.f.short+' came together.',m.f.id,3,4,c.id+':chemistry');if(report.missed>=3)OfficeMemory.remember(m.w.id,'sheet_changes',m.w.short+' remembers how far the match departed from the agreed match layout against '+m.f.short+'.',m.f.id,-2,0,c.id+':sheet');}}if(m.o.sheet?.situations)s().roomRecent=[...(s().roomRecent||[]),...m.o.sheet.situations].slice(-6);if(h){h.stip=c.stip||null;h.consequences=cons.map(x=>({text:x.text,tone:x.tone??0}));h.notes??=[];for(const effect of h.consequences)if(!h.notes.includes(effect.text))h.notes.push(effect.text);}const contract={id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{id:c.programme.id,step:c.programme.step}}:{})};const captured=OfficeAfter.capture(fin,h);const scene=OfficeAfter.prepareAutonomous(contract,captured,c.afterPlan);s().switchAfter={period:G.abs(),c:contract,fin:captured,plan:c.afterPlan??null,scene:scene||null,reviewPending:!!scene,summary:m.w.name+' versus '+m.f.name+'. '+fin.stars+' stars.\n'+cons.map(x=>x.text).join('\n')};G.save();});active=null;planning=null;if(G.saveStatus().ok!==false){persistMatch();persistPlanning();}afterScreen();}
 // Post-bell state is part of the same career commit as the settled match.
 let afterLoadToken=0;
 function afterRecord(){
@@ -802,8 +803,13 @@ function afterScreen(page=0,section='main'){
  const record=afterRecord();if(!record){desk();return;}
  const root=()=>afterScreen(),here=()=>afterScreen(page,section);
  const nextLabel=s().card.length?'Prepare next match':'Finish the week';
- if(!record.scene){
-  screen('Match result',record.summary,[a('angle','Choose a post-match segment',()=>openAfterScene(record)),a('next',nextLabel,()=>finishAfter(true)),a('desk','Return to desk',()=>finishAfter(false)),a('pause','Pause',()=>pause(root))],{kicker:'AFTER THE BELL'});return;
+ if(section==='result'){const h=s().history.find(x=>x.cid===record.c?.id);if(h)matchReport(h,root);else screen('Match result',record.summary,[back(root)]);return;}
+ if(!record.scene||record.reviewPending){
+  const h=s().history.find(x=>x.cid===record.c?.id),review=h?matchOverview(h,s()):null;
+  const details=h?[a('details','Full match report',()=>matchReport(h,root))]:[];
+  const next=a('next',nextLabel,()=>finishAfter(true)),angle=a('angle','Choose a post-match segment',()=>openAfterScene(record));
+  const options=record.scene?[a('continue','Continue to post-match incident',()=>{record.reviewPending=false;G.save();root();}),...details]:[...(guided()?[next,angle]:[angle,next]),...details,a('desk','Return to desk',()=>finishAfter(false))];
+  screen(review?.title||'Match result',review?.lines.join('\n')||record.summary,options.concat(a('pause','Pause',()=>pause(root))),{kicker:'AFTER THE BELL'});return;
  }
  const st=record.scene,v=OfficeAfter.view(st),w=G.W(st.c.wid)||D.findWrestler(st.c.wid);
  if(!st.dialogue&&['angle','mic'].includes(st.stage)&&!record.dialogueAttempted){openAfterScene(record);return;}
@@ -812,7 +818,6 @@ function afterScreen(page=0,section='main'){
   const pages=Math.max(1,Math.ceil(log.length/3)),i=Math.max(0,Math.min(page,pages-1));
   screen('Post-match transcript',log.slice(i*3,i*3+3).join('\n')+'\nPage '+(i+1)+' of '+pages,[...(pages>1?[a('next','Next page',()=>afterScreen((i+1)%pages,'history'))]:[]),back(root)]);return;
  }
- if(section==='result'){screen('Match result',record.summary,[back(root)]);return;}
  if(section==='more'){screen('Post-match options','No match time passes here.',[a('history','Read full transcript',()=>afterScreen(0,'history')),a('result','Review match result',()=>afterScreen(0,'result')),a('pause','Pause / settings',()=>pause(root)),back(root)]);return;}
  const body=log.slice(-3).join('\n')+'\n'+v.ask+(v.cons.length?'\n'+v.cons.map(x=>x.text).join('\n'):'');
  if(v.stage==='done'){screen('After the bell — complete',body,[a('next',nextLabel,()=>finishAfter(true)),a('desk','Return to desk',()=>finishAfter(false)),a('more','Review result or transcript',()=>afterScreen(0,'more'))],{portrait:w,kicker:'AFTER THE BELL'});return;}
@@ -844,8 +849,114 @@ function openAfterScene(record){
  });
 }
 
-function endWeek(){if(s()?.switchAfter||s()?.after?.autonomous){afterScreen();return;}if(s().card.length||active||G.pending().length){desk('Finish booked matches and inbox decisions first.');return;}G.atomicSettlement(()=>G.endWeek());desk('A new week begins. Review your inbox and new offers.');}
-function results(){const rows=s().history.slice().reverse().slice(0,20).map((h,i)=>({...h,id:h.cid||String(i)}));paged('Recent results',rows,0,(h,ret)=>screen('Match report',JSON.stringify({rating:h.stars,week:h.week,season:h.season}),[back(ret)]),more,h=>'Week '+h.week+' · '+h.stars+' stars');}
+// Reports are presentation only. The engine's settled records are the authority.
+function ratingText(n){return Number.isFinite(n)?n.toFixed(2).replace(/0+$/,'').replace(/\.$/,'')+' stars':'Rating unavailable';}
+function resultText(h){
+ const actual=h.outcome||'booked';
+ if(actual==='nc')return 'No contest.';
+ if(actual==='double')return h.name+' won against the agreed finish.';
+ if(actual==='dq')return h.name+' was disqualified; '+h.foe+' won.';
+ if(actual!=='booked'||!D.FINISHES[h.finish])return 'Finish not recorded.';
+ const winner=D.FINISHES[h.finish].win?h.name:h.foe;
+ return winner+' won'+(/_dq$/.test(h.finish)?' by disqualification':'')+'.';
+}
+function matchTitleChanges(h,state){
+ const period=(h.season-1)*16+h.week;
+ return (state.territory?.titleLog||[]).filter(x=>x.week===period&&x.how==='match'&&x.pid===h.pid&&h.wid&&h.rid&&((x.from===h.rid&&x.to===h.wid)||(x.from===h.wid&&x.to===h.rid))).map(x=>(x.to===h.wid?h.name:h.foe)+' won '+(D.belt?.(x.pid,x.div)?.name||'the championship')+'.');
+}
+function matchOverview(h,state){
+ const ratings=(state.seasonResults||[]).filter(x=>x.season===h.season&&Number.isFinite(x.stars));
+ const index=ratings.findIndex(x=>x.cid&&x.cid===h.cid);
+ const bestBefore=index>0?Math.max(...ratings.slice(0,index).map(x=>x.stars)):null;
+ const seasonBest=index>0&&Number.isFinite(h.stars)&&h.stars>bestBefore;
+ const titles=matchTitleChanges(h,state);
+ const title=titles.length?'Championship changed hands':h.stars>=4?'Four-star performance!':seasonBest?'New season best!':h.stars>=3?'A solid performance':'Match result';
+ const lines=[h.name+' versus '+h.foe+(h.promoter?' at '+h.promoter:'')+'.',ratingText(h.stars)+'. '+resultText(h)];
+ if(typeof h.contractHonoured==='boolean')lines.push(h.contractHonoured?'The agreed finish was delivered.':'The agreed finish was not delivered.');
+ if(Number.isFinite(h.purse))lines.push('Purse received: '+money(h.purse)+'.');
+ if(Number.isFinite(h.crowd))lines.push('Final crowd reaction: '+Math.round(h.crowd)+' out of 100.');
+ if(seasonBest)lines.push('New best match of the season so far, improving on '+ratingText(bestBefore)+'.');
+ lines.push(...titles);
+ return {title,lines};
+}
+function matchReport(h,ret){
+ const review=matchOverview(h,s()),notes=[...new Set([...(h.notes||[]),...(h.consequences||[]).map(x=>x.text)].filter(Boolean))];
+ const details=[];
+ if(h.sheet&&['achieved','adapted','missed'].every(k=>Number.isFinite(h.sheet[k])))details.push('Agreed layout: '+h.sheet.achieved+' performed, '+h.sheet.adapted+' adapted, '+h.sheet.missed+' missed.');
+ if(h.structure?.objectives?.length)details.push(...h.structure.objectives.map(x=>(x.label||x.name||'Dramatic objective')+': '+x.status+'.'));
+ if(h.bookedFinish&&D.FINISHES[h.bookedFinish])details.push('Booked finish: '+D.FINISHES[h.bookedFinish].name+'.');
+ const lines=[...new Set([...details,...notes])];
+ const show=()=>screen(review.title,review.lines.join('\n'),[
+  ...(lines.length?[a('details','What changed after the match',()=>reportPages('Match consequences',lines,show))]:[]),
+  ...(h.log?.length?[a('history','Review commentary',()=>reportPages('Match commentary',h.log.map(x=>(D.BOOTH?.[x.who]?.short?D.BOOTH[x.who].short+': ':'')+x.text),show))]:[]),back(ret)],{kicker:'AFTER THE BELL'});
+ show();
+}
+function reportPages(title,lines,ret,page=0){
+ const pages=Math.max(1,Math.ceil(lines.length/3)),i=Math.max(0,Math.min(page,pages-1));
+ screen(title,lines.slice(i*3,i*3+3).join('\n')+(pages>1?'\nPage '+(i+1)+' of '+pages+'.':''),[
+  ...(i+1<pages?[a('next','Next page',()=>reportPages(title,lines,ret,i+1))]:[]),
+  ...(i>0?[a('previous','Previous page',()=>reportPages(title,lines,ret,i-1))]:[]),back(ret)]);
+}
+function buildWeekReview(state,period,season,week,preCash,preRep){
+ const matches=(state.history||[]).filter(h=>h.season===season&&h.week===week);
+ const best=matches.filter(h=>Number.isFinite(h.stars)).reduce((a,b)=>!a||b.stars>a.stars?b:a,null);
+ const ledger=(state.books||[]).find(b=>b.a===period),training=(state.trainingReviews||[]).find(r=>r.a===period);
+ const summary=[matches.length?matches.length+' match'+(matches.length===1?'':'es')+' completed.':'No matches this week.'];
+ if(best)summary.push('Best match: '+best.name+' versus '+best.foe+', '+ratingText(best.stars)+'.');
+ if(matches.length&&matches.every(h=>Number.isFinite(h.purse)))summary.push('Match purses received: '+money(matches.reduce((n,h)=>n+h.purse,0))+'.');
+ summary.push('Bank balance: '+money(state.cash)+'. Reputation: '+state.rep+'.');
+ const detail=[];
+ if(ledger)detail.push('Weekly wages: '+money(ledger.wages)+'. Other weekly costs: '+money(ledger.other)+'.');
+ if(Number.isFinite(preCash)&&Number.isFinite(state.cash))detail.push('Bank before weekly settlement: '+money(preCash)+'. After settlement: '+money(state.cash)+'.');
+ if(Number.isFinite(preRep)&&Number.isFinite(state.rep)&&preRep!==state.rep)detail.push('Reputation changed from '+preRep+' to '+state.rep+' during weekly settlement.');
+ for(const e of training?.entries||[]){
+  const gains=['ring','mic','psych','safe'].filter(k=>e.delta?.[k]>0).map(k=>({ring:'ring skill',mic:'microphone',psych:'psychology',safe:'safety'}[k])+' +'+e.delta[k]);
+  if(gains.length)detail.push(e.name+' improved: '+gains.join(', ')+'.');
+  if(e.injuryBefore>0&&e.injuryAfter===0)detail.push(e.name+' recovered from injury during training settlement.');
+  if(e.injuryAfter>e.injuryBefore)detail.push(e.name+' has an injury: '+e.injuryAfter+' weeks remaining after training settlement.');
+ }
+ const titleLines=[...new Set(matches.flatMap(h=>matchTitleChanges(h,state)))];
+ const highlights=[...titleLines];
+ if(best?.stars>=4)highlights.push('Four-star performance this week!');
+ if(season===1&&week===4&&state.monthReview)highlights.push(state.monthReview.passed?'First-month target achieved. The backer invested £450.':'First-month target not achieved. No investment this time; the campaign continues.');
+ const seasonLetter=(state.inbox||[]).find(m=>m.subject==='Season '+season+' review'&&m.season===season);
+ if(week===16&&seasonLetter)highlights.push(...(Array.isArray(seasonLetter.body)?seasonLetter.body:[seasonLetter.body]).filter(Boolean));
+ const injuries=(state.roster||[]).filter(w=>w.injury>0).map(w=>w.name+' is currently unavailable for '+w.injury+' week'+(w.injury===1?'':'s')+'.');
+ detail.push(...injuries);
+ const pending=(state.inbox||[]).filter(m=>m.kind==='decision'&&!m.answer).length;
+ if(pending)detail.push(pending+' inbox decision'+(pending===1?' needs':'s need')+' a reply.');
+ if(state.over)summary.push('The career has ended. Review the final accounts before returning to the main menu.');
+ return {period,season,week,summary,highlights,detail,pending:true};
+}
+function weeklyReview(ret=null){
+ const r=s().switchWeekReview;
+ if(!r){if(ret)ret();else desk();return;}
+ const show=()=>weeklyReview(ret);
+ const proceed=()=>{if(r.pending){r.pending=false;G.save();}if(ret)ret();else desk();};
+ screen('Week '+r.week+' complete — Season '+r.season,[...r.summary,...r.highlights].join('\n'),[
+  a('continue',ret?'Back':s().over?'Review career end':'Continue to the office',proceed),
+  ...(r.detail.length?[a('details','Accounts and wrestler development',()=>reportPages('Weekly review details',r.detail,show))]:[]),
+  a('results','This week’s match reports',()=>results(show,{season:r.season,week:r.week})),a('pause','Pause',()=>pause(show))]);
+}
+function careerProgress(){
+ const state=s(),goals=G.goalList(),achieved=goals.filter(g=>g.done&&g.id!=='solvent').length;
+ const ratings=(state.seasonResults||[]).filter(h=>h.season===state.season&&Number.isFinite(h.stars));
+ const best=ratings.length?Math.max(...ratings.map(h=>h.stars)):null;
+ const lines=['Season '+state.season+', week '+state.week+'. '+state.roster.length+' wrestlers under contract.',ratings.length+' recorded matches this season.'+(best!==null?' Best: '+ratingText(best)+'.':''),achieved+' of '+goals.filter(g=>g.id!=='solvent').length+' performance objectives currently met.',...goals.map(g=>g.id==='solvent'?'Financial objective: '+g.text+'. Current balance '+money(state.cash)+'.':(g.done?'Achieved: ':'Still to achieve: ')+g.text+'.')];
+ if(state.monthReview)lines.push(state.monthReview.passed?'First-month investment secured.':'First-month investment was not secured.');
+ screen('Career progress',lines.join('\n'),[...(state.switchWeekReview?[a('review','Latest weekly review',()=>weeklyReview(careerProgress))]:[]),a('results','Recent match reports',()=>results(careerProgress)),back(more)]);
+}
+function endWeek(){
+ if(s()?.switchAfter||s()?.after?.autonomous){afterScreen();return;}
+ if(s().card.length||active||G.pending().length){desk('Finish booked matches and inbox decisions first.');return;}
+ const period=G.abs(),season=s().season,week=s().week,preCash=s().cash,preRep=s().rep;
+ G.atomicSettlement(()=>{G.endWeek();s().switchWeekReview=buildWeekReview(s(),period,season,week,preCash,preRep);});
+ weeklyReview();
+}
+function results(returnTo=more,filter=null){
+ const rows=s().history.filter(h=>!filter||(h.season===filter.season&&h.week===filter.week)).slice(0,20).map((h,i)=>({...h,id:h.cid||String(i)}));
+ paged(filter?'This week’s match reports':'Recent results',rows,0,matchReport,returnTo,h=>h.name+' v '+h.foe+' — '+ratingText(h.stars));
+}
 M.subscribe(()=>{if(refreshSettings)refreshSettings();});
 V.onSettingsChange(()=>{if(refreshSettings)refreshSettings();});
 const duringNarration=(handler)=>e=>{
