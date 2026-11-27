@@ -37,11 +37,12 @@
 
 /* ---------- Booking sheets: two newspaper columns instead of one long strip ---------- */
 @media (min-width:1100px){
- #view .wbody[data-keep="sheets"]{columns:2 460px;column-gap:18px;column-rule:1px solid var(--stone-lo)}
- #view .wbody[data-keep="sheets"]>.row{column-span:all}
- #view .wbody[data-keep="sheets"] .section-h{break-after:avoid}
- #view .wbody[data-keep="sheets"] :is(li,.cons,.well,.board,table,p){break-inside:avoid}
- #view .wbody[data-keep="sheets"] .section-h:first-of-type{margin-top:0}
+ /* The columns live on an inner wrapper with its natural height. On the scrolling panel itself, a fixed
+    height made extra columns spill sideways into a horizontal scrollbar once the board filled up. */
+ #view .wbody[data-keep="sheets"] .sheet-columns{columns:2 460px;column-gap:18px;column-rule:1px solid var(--stone-lo)}
+ #view .wbody[data-keep="sheets"] .sheet-columns .section-h{break-after:avoid}
+ #view .wbody[data-keep="sheets"] .sheet-columns :is(li,.cons,.well,.board,table,p){break-inside:avoid}
+ #view .wbody[data-keep="sheets"] .sheet-columns>.section-h:first-child{margin-top:0}
 }
 
 /* ---------- Thin explanatory paragraphs: keep a readable measure ---------- */
