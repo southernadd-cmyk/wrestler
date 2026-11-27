@@ -1328,8 +1328,8 @@ function showAfter(){
  const cons=v.stage==='done'&&v.cons.length?`<section class="after-consequences" aria-label="Consequences"><h3 class="section-h">Consequences</h3><ul class="cons">${v.cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul></section>`:'';
  // The first call is the angle, made with the result known; then the microphone.
  const decide=['angle','follow','mic'].includes(v.stage)?`<div class="decide2"><h3 class="section-h">${esc(v.title)}</h3><p class="lede">${esc(v.ask)}</p>${pickCards(v.options,v.stage==='angle'?'afterangle':v.stage==='follow'?'afterfollow':'aftermic')}</div>`:'';
- const middle=`<b class="fin">${esc(v.stage==='angle'?'Your call':v.plan==='none'?'Straight to the microphone':v.planLabel)}</b><span>${esc(p?.venue||'')}</span>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p?.name||'')}: after the bell</b><span>${esc(w?.name||'')} v ${esc(f?.name||'')}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-back s-after${v.stage==='done'?' is-done':''}">${win('After the bell',matchupBar({},w,f,middle)+sceneLog(entries,'afterTalk',w,f,p?.id)+decide+cons,{h:'h3',body:'tight'})}</div><div class="tv-foot"><span class="dim">${esc(v.stage==='angle'?'The bell has gone. Nobody has left the ring.':v.stage==='follow'?'The situation is unresolved.':v.stage==='mic'?'The microphone is live.':'The crowd starts filing out.')}</span>${v.stage==='done'?afterNext():''}</div>`;
+ const middle=`<b class="fin">${esc(v.stepLabel)}</b><span>${esc(v.stage==='angle'?(p?.venue||''):v.plan==='none'?'No further action':v.planLabel)}</span>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p?.name||'')}: after the bell</b><span>${esc(w?.name||'')} v ${esc(f?.name||'')}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-back s-after${v.stage==='done'?' is-done':''}">${win('After the bell',matchupBar({},w,f,middle)+sceneLog(entries,'afterTalk',w,f,p?.id)+decide+cons,{h:'h3',body:'tight'})}</div><div class="tv-foot"><span class="dim">${esc(v.stage==='angle'?'The bell has gone. Nobody has left the ring.':v.stage==='follow'?'The situation is unresolved.':v.stage==='mic'?'The microphone is live.':'The crowd starts filing out.')}</span>${v.stage==='done'?afterNext():v.cons.length?`<span class="dim" role="status">${esc(v.cons.at(-1).text)}</span>`:''}</div>`;
  scrollTalk('afterTalk');persistNight();
 }
 
@@ -2060,9 +2060,9 @@ document.addEventListener('click',e=>{
  if(d.cornerwho){if(night?.stage!=='meeting'||!night.plan)return;night.plan.cornerWho=d.cornerwho;night.plan.corner=null;return showMeeting()}
  if(d.cornerjob){if(night?.stage!=='meeting'||!night.plan)return;const x=OfficeRingside.parse(d.cornerjob);if(!x)return;night.plan.cornerWho=x.id;night.plan.corner=night.plan.corner===d.cornerjob?null:d.cornerjob;return showMeeting()}
  if(d.arcchoice){if(night?.stage!=='meeting'||night.plan?.room?.stage!=='done')return;const v=window.OfficeProgrammeArcs?.options(current());if(!v?.choices.some(x=>x.id===d.arcchoice))return;night.plan.arcChoice=d.arcchoice;return showMeeting()}
- if(d.afterangle){const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='angle')return;OfficeAfter.choose(st,d.afterangle);syncAfterEvidence();return showAfter()}
+ if(d.afterangle){if(e.detail>1)return;const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='angle')return;OfficeAfter.choose(st,d.afterangle);syncAfterEvidence();return showAfter()}
  if(d.afterfollow){if(e.detail>1)return;const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='follow')return;OfficeAfter.continueAngle(st,d.afterfollow);syncAfterEvidence();return showAfter()}
- if(d.aftermic){const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='mic')return;OfficeAfter.speak(st,d.aftermic);syncAfterEvidence();return showAfter()}
+ if(d.aftermic){if(e.detail>1)return;const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='mic')return;OfficeAfter.speak(st,d.aftermic);syncAfterEvidence();return showAfter()}
  if(d.tv==='after'){
   if(!night||!['result','after'].includes(night.stage))return;
   if(!night.after&&night.afterReady){

@@ -338,3 +338,23 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  s.history.unshift({...h,cid:'newer',after:null});assert.equal(A.latestStory(s,c.wid,c.rid,c.pid),null);
  console.log('PASS terminal after-bell receipt reaches rivalry, booking, inbox and Ringfax without duplicate effects');
 }
+
+// AB8: lightweight, seeded scenario diagnostic rather than another full sim.
+{
+ career();const c=contract(),w=G.W(c.wid),f=G.F(c.rid),scores={respect:80,escalation:80,caution:80};
+ const base={w,f,won:true,stars:4,outcome:'booked',context:{v:1,dirty:{w:false,f:false},injured:{w:null,f:null}}};
+ const scenarios={routine:{...base,won:false,stars:2},clean:base,dirty:{...base,context:{...base.context,dirty:{w:true,f:false}}},injury:{...base,context:{...base.context,injured:{w:true,f:false}}},corner:{...base,context:{...base.context,rivalCorner:{fired:true,ok:true,job:'runin',second:'second',secondName:'Second'}}}};
+ const results={};for(const [name,x] of Object.entries(scenarios)){
+  const counts={none:0};for(let i=0;i<400;i++){
+   const st={cid:'ab8-'+name+'-'+i,psychology:{v:1,w:{scores},f:{scores}}};const event=A.selectOpening(st,x),id=event?.id||'none';counts[id]=(counts[id]||0)+1;
+  }
+  assert.ok(counts.none>=200,name+' must not routinely intervene');results[name]=counts;
+ }
+ assert.equal(results.routine.none,400);assert.ok(results.clean.respect_offer>0);assert.ok(results.dirty.rival_protest>0);assert.ok(results.injury.own_assistance>0);assert.ok(!results.injury.rival_protest);assert.ok(results.corner.corner_protest>0);
+ console.log('AB8 synthetic opening diagnostic (400 per scenario): '+JSON.stringify(results));
+ const st={stage:'angle',c,fin:A.capture(fin({evidence:{injured:{w:false,f:true}}})),intervention:{id:'official_space'}};
+ const opts=A.angleOptions(st);assert.equal(opts[0].id,'give_space');assert.ok(opts.some(o=>o.id==='none'));assert.ok(!opts.some(o=>['beatdown','staredown'].includes(o.id)));
+ assert.equal(A.view({...st,log:[],cons:[]}).stepLabel,'Choose an action');
+ assert.match(ui,/if\(d\.afterangle\)\{if\(e\.detail>1\)return/);
+ console.log('PASS contextual choices first, injury safety, decision stage and double-click protection');
+}
