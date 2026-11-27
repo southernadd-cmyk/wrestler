@@ -255,3 +255,40 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  assert.ok(covered>0,'reviewed excerpts are actually available');
  console.log('AB4 reviewed fragment coverage: '+covered+'/'+total+' bank-backed wrestlers; identity fallback for gaps');
 }
+
+// AB5: candidate generation is evidence-gated, deterministic and bounded.
+{
+ const s=career(),c=contract(),f=play(c),w=G.W(c.wid),opp=G.F(c.rid);
+ const scores={respect:90,escalation:90,caution:90};
+ const sample={cid:c.id,psychology:{v:1,w:{scores},f:{scores}}};
+ const x={w,f:opp,won:true,stars:4,outcome:'booked',context:{v:1,dirty:{w:true,f:false},injured:{w:null,f:false},rivalCorner:{fired:true,ok:true,job:'runin',second:'second1',secondName:'Rival second'}}};
+ const candidates=A.openingCandidates(sample,x);
+ assert.equal(candidates.map(o=>o.id).join(),'rival_protest,corner_protest');
+ const none={...x,context:{...x.context,dirty:{w:false,f:false},rivalCorner:{...x.context.rivalCorner,ejected:true}}};
+ assert.ok(!A.openingCandidates(sample,none).some(o=>o.id==='corner_protest'));
+ assert.equal(A.openingCandidates(sample,{...x,context:null}).length,0);
+ let hits=0,seen=new Set();for(let i=0;i<400;i++){
+  const st={...sample,cid:'ab5-sample-'+i},event=A.selectOpening(st,x);
+  assert.equal(JSON.stringify(event),JSON.stringify(A.selectOpening(st,x)));
+  if(event){hits++;seen.add(event.id);assert.ok(event.actorId);}
+ }
+ assert.ok(hits>0&&hits<200,'bounded optional openings: '+hits+'/400');assert.equal(seen.size,2);
+ console.log('AB5 optional opening sample '+hits+'/400; '+[...seen].join(', '));
+}
+{
+ const s=career(),c=contract(),f=play(c);
+ const st=A.begin(c,A.capture({...f,evidence:{injured:{w:null,f:true}}}));
+ // Exercise the response gate regardless of the deterministic opening roll.
+ st.intervention={v:1,id:'official_space',side:'official',actorId:null,line:'Officials request space.'};
+ const saved=JSON.parse(JSON.stringify(st));
+ assert.ok(A.angleOptions(saved).some(o=>o.id==='give_space'));
+ assert.ok(A.angleOptions(saved).some(o=>o.id==='none'),'manager can still leave');
+ assert.ok(!A.angleOptions(saved).some(o=>o.id==='answer_protest'));
+ assert.equal(A.choose(saved,'answer_protest'),false);
+ assert.ok(A.choose(saved,'give_space'));
+ const edges=A.graphEdges().map(e=>e.join('|'));
+ for(let i=1;i<saved.angle.path.length;i++)assert.ok(edges.includes(saved.angle.path.slice(i-1,i+1).join('|')));
+ assert.equal(s.history.find(h=>h.cid===c.id).after.intervention.id,'official_space');
+ assert.equal(saved.stage,'mic');assert.equal(A.choose(saved,'give_space'),false);
+ console.log('PASS spontaneous opening response is gated, saved and remains under manager control');
+}
