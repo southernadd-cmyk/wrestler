@@ -8,6 +8,7 @@ const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const r10=n=>Math.round(n/10)*10;
 const money=n=>(n<0?'−':'')+'£'+Math.abs(Math.round(n)).toLocaleString('en-GB');
 let S=null;
+let settlementDepth=0;
 let storageState={ok:null,lastSaved:null};
 function saveStatus(){return {...storageState};}
 function resultRecorded(c){
@@ -31,7 +32,7 @@ function reportError(source,error){
   save();
  }
  if(typeof console!=='undefined')console.error('[The Office] '+source+': '+message,error);
- if(root.OFFICE_STRICT)throw error instanceof Error?error:new Error(message);
+ if(root.OFFICE_STRICT||settlementDepth)throw error instanceof Error?error:new Error(message);
 }
 function systemErrors(){return (S?.systemErrors||[]).slice();}
 
@@ -173,9 +174,15 @@ function recoverNight(saved){
  if(!S)return null;
  const now=abs(),card=S.card.filter(c=>c.eventAbs===now&&!resultRecorded(c)),ids=card.map(c=>c.id);
  const pending=S.after?.autonomous;
+ const resultsFor=(queue,previous=[])=>queue.map(cid=>{
+  const h=S.history.find(x=>x.cid===cid&&(x.season-1)*16+x.week===now);
+  if(!h)return null;
+  const old=previous.find(x=>x.cid===cid),baseConsequences=h.consequences?.map(x=>x.text)||h.notes||[];
+  return {...old,name:h.name,foe:h.foe,stars:h.stars,cid:h.cid,wid:h.wid,rid:h.rid,pid:h.pid,season:h.season,week:h.week,actualOutcome:h.outcome,bookedFinish:h.finish,baseConsequences,consequences:[...new Set([...baseConsequences,...(h.after?.effects||[])])]};
+ }).filter(Boolean);
  const required=pending?.required&&pending.stage!=='done'&&S.history.some(h=>h.cid===pending.cid&&(h.season-1)*16+h.week===now);
  const valid=!!saved&&Array.isArray(saved.queue)&&saved.queue.length>0&&new Set(saved.queue).size===saved.queue.length&&
-  Number.isInteger(saved.i)&&saved.i>=0&&saved.i<=saved.queue.length&&saved.before?.abs===now&&
+  Number.isInteger(saved.i)&&saved.i>=0&&saved.i<=saved.queue.length&&(saved.period??saved.before?.abs)===now&&
   (saved.careerSeed==null||saved.careerSeed===S.careerSeed)&&
   saved.queue.every(id=>ids.includes(id)||S.history.some(h=>h.cid===id&&(h.season-1)*16+h.week===now));
  if(required){
@@ -183,19 +190,19 @@ function recoverNight(saved){
   if(!prefix.includes(pending.cid))prefix.push(pending.cid);
   const queue=[...prefix,...(valid?saved.queue.filter(id=>ids.includes(id)):ids),...ids.filter(id=>!valid||!saved.queue.includes(id))];
   return {...(valid?saved:{}),queue:[...new Set(queue)],i:prefix.length,stage:'after',after:JSON.parse(JSON.stringify(pending)),afterReady:null,M:null,
-   results:valid?saved.results||[]:[],speed:valid?saved.speed||'normal':'normal',careerSeed:S.careerSeed};
+   results:resultsFor(prefix,valid?saved.results||[]:[]),speed:valid?saved.speed||'normal':'normal',careerSeed:S.careerSeed,period:now};
  }
  if(!valid)return null;
  const current=saved.queue[saved.i];
  const completed=saved.stage==='result'||saved.stage==='after';
  if(completed&&saved.i>0&&resultRecorded({id:saved.queue[saved.i-1]})&&
-  (saved.stage==='result'?typeof saved.resultHTML==='string':saved.after?.cid===saved.queue[saved.i-1]&&saved.after.stage==='done'))return saved;
+  (saved.stage==='result'?typeof saved.resultHTML==='string':saved.after?.cid===saved.queue[saved.i-1]&&['angle','follow','mic','done'].includes(saved.after.stage)))return {...saved,results:resultsFor(saved.queue.slice(0,saved.i),saved.results||[])};
  if(ids.includes(current)&&saved.stage!=='result'&&saved.stage!=='after'&&saved.queue.slice(0,saved.i).every(id=>resultRecorded({id})))return saved;
  // A refresh between settling a match and saving its presentation must not
  // restore that match engine. Resume the remaining card or a safe show summary.
  const done=saved.queue.filter(id=>resultRecorded({id}));
  const remaining=[...saved.queue.filter(id=>ids.includes(id)),...ids.filter(id=>!saved.queue.includes(id))];
- return {...saved,queue:[...done,...remaining],i:done.length,stage:remaining.length?'prep':'recovered-result',M:null,plan:null,promo:null,after:null,afterReady:null,signing:null,segment:null,seg:null,resultHTML:null};
+ return {...saved,queue:[...done,...remaining],i:done.length,results:resultsFor(done,saved.results||[]),stage:remaining.length?'prep':'recovered-result',M:null,plan:null,promo:null,after:null,afterReady:null,signing:null,segment:null,seg:null,resultHTML:null};
 }
 function load(){
  for(const key of [STORE,PRIOR_STORE,LEGACY_STORE]){
@@ -203,7 +210,25 @@ function load(){
  }
  return null;
 }
+// Synchronous settlements are persisted as a single complete career image.
+// Nested saves (including the core's lexical save()) must never publish a
+// half-applied match or week. A thrown error restores the previous state;
+// a storage error leaves the complete in-memory career available for export.
+function atomicSettlement(work){
+ if(settlementDepth)return work();
+ const previous=JSON.stringify(S);
+ settlementDepth=1;
+ let value;
+ try{value=work();}
+ catch(error){
+  S=JSON.parse(previous);
+  root.OfficeAcademy?.restore(S);
+  throw error;
+ }finally{settlementDepth=0;}
+ save();return value;
+}
 function save(){
+ if(settlementDepth)return true;
  try{
   localStorage.setItem(STORE,JSON.stringify(S));
   storageState={ok:true,lastSaved:Date.now()};
@@ -1052,5 +1077,5 @@ function officeBrief(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,importCareer,recoverNight,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,trainingWeekPlan,ageWorker,opponentReady,offerCandidates,officeBrief};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,atomicSettlement,reportError,systemErrors,resultRecorded,importCareer,recoverNight,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,trainingWeekPlan,ageWorker,opponentReady,offerCandidates,officeBrief};
 })(typeof window!=='undefined'?window:globalThis);
