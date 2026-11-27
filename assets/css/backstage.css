@@ -322,3 +322,27 @@
  #tv .s-meeting.sheet-redesign .match-attributes>.match-stat{font-size:11px}
  #tv .s-meeting.sheet-redesign .match-attributes>.match-stat>b{font-size:14px}
 }
+
+/* The planning desk is a column of full-width rows, not the old split wbody. */
+@media(min-width:901px){
+ #tv .s-meeting.sheet-redesign>.win>.wbody{display:flex;flex-direction:column;align-items:stretch;min-width:0;grid-template:none}
+ #tv .s-meeting.sheet-redesign .match-desk{grid-template-columns:clamp(220px,23%,340px) minmax(0,1fr);min-width:0}
+}
+/* Desktop/tablet matchup: keep names, attributes and mood compact. */
+@media(min-width:721px){
+ #tv .s-meeting.sheet-redesign:not(.board-redesign) .match-night-matchup{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mu>div{min-width:0}
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mu .match-attributes{display:grid;width:max-content;max-width:100%;grid-template-columns:repeat(2,max-content);gap:3px 12px;margin:3px 0;white-space:normal;text-align:left}
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mu.them .match-attributes{margin-left:auto}
+ #tv .s-meeting.sheet-redesign .match-attributes>.match-stat{display:flex;align-items:baseline;gap:4px;margin:0;font-size:14px;white-space:nowrap}
+ #tv .s-meeting.sheet-redesign .match-attributes>.match-stat>b{display:inline;font-size:18px;line-height:1}
+ #tv .s-meeting.sheet-redesign .match-attributes>.match-stat-separator{display:none}
+}
+@media(min-width:1200px){
+ #tv .s-meeting.sheet-redesign .match-night-matchup .mu .match-attributes{grid-template-columns:repeat(4,max-content)}
+ #tv .s-meeting.sheet-redesign .structure-options{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(min-width:1450px){
+ #tv .s-meeting.sheet-redesign .structure-options{grid-template-columns:repeat(5,minmax(0,1fr))}
+ #tv .s-meeting.sheet-redesign:not(.board-redesign) #roomTalk.desk-transcript{height:112px;min-height:112px;max-height:112px;flex-basis:112px}
+}
