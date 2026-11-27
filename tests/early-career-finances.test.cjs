@@ -108,14 +108,25 @@ for(const seed of [13,41,91]){
    let earned=0;
    if(s.offers.some(o=>o.eventAbs===G.abs()))row.offerWeeks++;
    for(const w of [...s.roster]){
-    if(!G.available(w)){row.unavailableWeeks++;continue;}
+    // A signed date makes available() false by design. Work it before shopping
+    // for another offer. Distinguish genuine incapacity from a scheduled match.
+    const due=s.card.find(c=>c.wid===w.id&&c.eventAbs===G.abs());
+    if(w.injury||w.program?.type==='camp'){row.unavailableWeeks++;continue;}
+    if(!due&&!G.available(w)){row.blockedByCard=(row.blockedByCard||0)+1;continue;}
     row.available++;
-    const c=bookBest(root,w.id);
+    if(w.fatigue>=35&&!w.program&&w.training!=='rest')G.setTraining(w.id,'rest');
+    const c=due||bookBest(root,w.id);
     if(!c){row.missed++;continue;}
     const before=s.cash;
     G.applyResult(c,neutralResult(c));
+    assert.ok(G.resultRecorded(c),'scheduled bout must actually settle');
+    assert.ok(!s.card.some(x=>x.id===c.id),'settled contract leaves the card');
     earned+=s.cash-before;row.booked++;
+    if(due)row.preSigned=(row.preSigned||0)+1;
    }
+   const stale=s.card.filter(c=>c.eventAbs<G.abs());
+   if(stale.length)row.staleCardWeeks=(row.staleCardWeeks||0)+1;
+   if(s.card.some(c=>c.eventAbs===G.abs()))row.unplayedCardWeeks=(row.unplayedCardWeeks||0)+1;
    row.purses+=earned;if(!earned)row.noIncome++;
    row.operatingCost+=G.wages()+G.overhead()+G.trainingBill();
    G.endWeek();row.weeks++;row.minCash=Math.min(row.minCash,s.cash);row.peakCash=Math.max(row.peakCash,s.cash);
