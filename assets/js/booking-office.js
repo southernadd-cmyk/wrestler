@@ -99,7 +99,8 @@
 
   // 1. Storylines whose people are gone, or whose belt has moved, are dropped.
   for(const p of D.PROMOS)for(const story of st.promos[p.id].live.slice()){
-   const ok=row(p.id,story.div,story.a)&&row(p.id,story.div,story.b)&&(story.type!=='title'||t.titles?.[p.id]?.[story.div]?.holder===story.b);
+   const onCircuit=id=>!!t.cards?.[p.id]?.[id]&&D.divisionOf(id)===story.div&&T.contracted(s,id)&&!s.roster.some(w=>w.id===id);
+   const ok=onCircuit(story.a)&&onCircuit(story.b)&&(story.type!=='title'||t.titles?.[p.id]?.[story.div]?.holder===story.b);
    if(!ok){finish(story,'dropped',`${p.voice} dropped the plans for ${name(story.a)} and ${name(story.b)}.`);notes.push(`${p.name}: plans for ${name(story.a)} and ${name(story.b)} have been dropped.`);}
   }
 
@@ -189,7 +190,7 @@
    const cfg=cfgFor(p),pool=pools[p.id][story.div],k=story.beats.indexOf(beat);
    const A=row(p.id,story.div,story.a),B=row(p.id,story.div,story.b);
    let opp=null;
-   if(beat.kind==='build'){
+   if(A&&B&&beat.kind==='build'){
     // Somebody new each time where possible: a build-up against the same opponent twice is no build-up.
     const used=new Set(story.beats.map(b=>b.opp).filter(Boolean));
     const avail=pool.filter(w=>!busy.has(w.id)&&!cast.has(w.id)&&w.id!==story.a&&w.id!==story.b&&(!A.stable||w.stable!==A.stable));
@@ -199,7 +200,7 @@
      opp=above[Math.min(above.length-1,k)]||others.sort((x,y)=>y.score-x.score||x.id.localeCompare(y.id))[0];
     }else opp=others.sort((x,y)=>Math.abs(x.score-A.score)-Math.abs(y.score-A.score)||x.id.localeCompare(y.id))[worldHash(story.id+k)<.5?0:1]||others[0];
    }else opp=B;
-   if(busy.has(A.id)||!opp||busy.has(opp.id)||count(p.id,story.div)>=MAX_CARD||
+   if(!A||!B||busy.has(A.id)||!opp||busy.has(opp.id)||count(p.id,story.div)>=MAX_CARD||
     (story.type==='title'&&beat.kind!=='build'&&claim.belts.has(p.id+':'+story.div))){
     // Somebody is unavailable: the rest of the story moves back a week.
     story.delays++;story.heat=clamp(story.heat-8);
