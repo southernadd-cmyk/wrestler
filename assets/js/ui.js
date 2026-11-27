@@ -1502,7 +1502,7 @@ function matchDeskSheet(st,v,c,w,f,p,selected,structurePicked,finishLine){
  const structure=selected==='traditional'?'Traditional':OfficeSheets.STRUCTURES.catalogue().find(x=>x.id===selected)?.label||selected;
  const details=v.agreed.filter(x=>!x.startsWith('Structure: ')&&!x.startsWith('Finish: ')&&!rows.some(r=>x.startsWith(r.name+': '))&&x!==approach);
  const rail=['Structure','Approach','Finish & spots','Backstage','Sign'],index=!structurePicked?0:st.stage==='plan'?1:st.stage==='board'?2:st.stage==='scene'?3:4;
- return {rail:`<nav class="desk-rail" aria-label="Planning stage">${rail.map((x,i)=>`<span ${i===index?'aria-current="step"':''} class="${i<index?'complete':i===index?'active':''}">${i+1} ${x}${i<index?' ✓':''}</span>`).join('')}</nav>`,
+ return {rail:`<nav class="desk-rail" aria-label="Planning stage">${rail.map((x,i)=>i<index&&st.stage!=='done'&&(i===0||night.plan.roomCheckpoints?.[i])?`<button type="button" class="complete" data-planback="${i}" title="Return to ${esc(x)}">${i+1} ${x} ↶</button>`:`<span ${i===index?'aria-current="step"':''} class="${i<index?'complete':i===index?'active':''}">${i+1} ${x}${i<index?' ✓':''}</span>`).join('')}</nav>`,
  sheet:`<aside class="paper match-desk-sheet"><h3 class="desk-title">Match sheet</h3><details class="sheet-mobile"><summary>${named} of ${rows.length} named · ${st.stage==='done'?'Signed':st.stage==='review'?'Ready to review':esc(rail[index])}</summary><div class="sheet-mobile-body"></div></details><div class="sheet-body"><small>Booked by ${esc(p.name)} (locked)</small><h3>${esc(finishLine||D.FINISHES[c.finish]?.name||c.finish)}</h3><p>${esc(D.SLOTS[c.slot].name)} · ${minutes} minutes${c.stip?' · '+esc(stipName(c.stip)):''}</p><b>${structurePicked?esc(structure):'Choose a structure'}${v.structureBrief?' · '+esc(v.structureBrief.lead)+' leads':''}</b><p>${esc(approach)}</p>${structurePicked?momentumShape(selected,rows,minutes):''}<ol class="desk-objectives">${rows.map(r=>`<li class="${st.structureTalk?.objective===r.slot&&st.stage==='scene'?'active':''}"><b>${esc(r.name)}</b><span>${esc(r.current||'Not agreed')}${r.actor==='w'?' · '+esc(w.short):r.actor==='f'?' · '+esc(f.short):''}</span></li>`).join('')}</ol><p class="desk-finish"><b>Finish:</b> ${esc(route)}</p>${details.length?`<p class="desk-notes">${details.map(esc).join(' · ')}</p>`:''}${v.structureBrief?.discussion?`<p>${esc(v.structureBrief.discussion)}</p>`:''}</div></aside>`};
 }
 function crowdBroadcast(v,w,f){
@@ -1641,7 +1641,7 @@ function showMeeting(loadedBanks,previousPosition){
  // Choose BEFORE the first backstage decision. The meeting is re-created
  // only while still at its initial plan stage, never after a signed decision.
  const structurePicked=P.structureSelected===true||!!P.structureChoice||v.stage!=='plan';
- const structureCards='<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(structurePicked&&x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(structurePicked&&x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small>'+momentumShape(x.id)+'</button>').join('')+'</div>';
+ const structureCards='<div class="structure-options" role="group" aria-label="Choose match structure">'+variants.map(x=>'<button class="structure-option'+(structurePicked&&x.id===selected?' on':'')+'" data-structure="'+esc(x.id)+'" aria-pressed="'+(structurePicked&&x.id===selected)+'"><b>'+esc(x.label)+'</b><small>'+esc(descriptions[x.id])+'</small>'+momentumShape(x.id)+'<span class="shape-axis">Opening <span>Finish</span></span></button>').join('')+'</div>';
  const chooser=v.stage==='plan'?'<section class="structure-chooser'+(structurePicked?' structure-picked':'')+'" aria-label="Shape the match">'+
   (structurePicked?'<details class="structure-change"><summary>Structure: <b>'+esc(variants.find(x=>x.id===selected)?.label||selected)+'</b> · Change</summary>'+structureCards+'</details>':'<h3 class="section-h">Shape the match</h3><p class="dim">Choose the match structure before discussing the plan.</p>'+structureCards)+
   (P.structureChoice?'<div class="structure-lead"><span>Dramatic lead (not the booked winner)</span><div role="group" aria-label="Which wrestler leads the structure?">'+[{id:'w',name:w.short},{id:'f',name:f.short}].map(x=>'<button class="btn'+(P.structureChoice.lead===x.id?' on':'')+'" data-structurelead="'+x.id+'" aria-pressed="'+(P.structureChoice.lead===x.id)+'">'+esc(x.name)+'</button>').join('')+'</div></div>':'')+
@@ -2154,12 +2154,21 @@ document.addEventListener('click',e=>{
    if(!P.structureChoice||!['w','f'].includes(d.structurelead))return;
    P.structureChoice={...P.structureChoice,lead:d.structurelead};
   }
-  P.room=null;P.sheet=null;P.confirmed=false;
+  P.roomCheckpoints={};P.room=null;P.sheet=null;P.confirmed=false;
   return showMeeting();
  }
  if(d.sheetmode){if(!OfficeSheets.MODE[d.sheetmode])return;night.plan.method=d.sheetmode;night.plan.sheet=null;night.plan.confirmed=false;return showMeeting()}
+ if(d.planback!==undefined){
+  const P=night?.plan,st=P?.room,i=Number(d.planback);
+  if(night?.stage!=='meeting'||!st||st.stage==='done'||!Number.isInteger(i)||i<0||i>3)return;
+  if(i!==0&&!P.roomCheckpoints?.[i])return;
+  if(!window.confirm('Return to this planning stage? Decisions made after it will be discarded.'))return;
+  if(i===0){P.structureSelected=false;P.structureChoice=null;P.room=null;P.roomCheckpoints={};}
+  else{P.room=JSON.parse(JSON.stringify(P.roomCheckpoints[i]));for(const k of Object.keys(P.roomCheckpoints))if(Number(k)>=i)delete P.roomCheckpoints[k];}
+  P.sheet=null;P.confirmed=false;return showMeeting(undefined,null);
+ }
  if(d.room){const st=night?.plan?.room;if(night?.stage!=='meeting'||!st||st.stage==='done')return;
-  if(st.stage==='plan'&&night.plan.structureSelected!==true&&!night.plan.structureChoice)return toast('Choose a match structure first.');if(!OfficeRoom.options(st).some(o=>o.id===d.room))return;OfficeRoom.act(st,d.room);return showMeeting()}
+  if(st.stage==='plan'&&night.plan.structureSelected!==true&&!night.plan.structureChoice)return toast('Choose a match structure first.');if(!OfficeRoom.options(st).some(o=>o.id===d.room))return;const stageIndex={plan:1,board:2,scene:3}[st.stage];if(stageIndex){const checkpoints=night.plan.roomCheckpoints||(night.plan.roomCheckpoints={});if(!checkpoints[stageIndex])checkpoints[stageIndex]=JSON.parse(JSON.stringify(st));}OfficeRoom.act(st,d.room);return showMeeting()}
  if(d.cornerwho){if(night?.stage!=='meeting'||!night.plan)return;night.plan.cornerWho=d.cornerwho;night.plan.corner=null;return showMeeting()}
  if(d.cornerjob){if(night?.stage!=='meeting'||!night.plan)return;const x=OfficeRingside.parse(d.cornerjob);if(!x)return;night.plan.cornerWho=x.id;night.plan.corner=night.plan.corner===d.cornerjob?null:d.cornerjob;return showMeeting()}
  if(d.arcchoice){if(night?.stage!=='meeting'||night.plan?.room?.stage!=='done')return;const v=window.OfficeProgrammeArcs?.options(current());if(!v?.choices.some(x=>x.id===d.arcchoice))return;night.plan.arcChoice=d.arcchoice;return showMeeting()}

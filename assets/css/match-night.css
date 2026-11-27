@@ -719,3 +719,11 @@
 .tv .s-meeting .structure-option{min-height:62px}
 .tv .s-meeting .structure-help{margin:8px 0 0!important}
 @media (max-width:520px){.tv .s-meeting .structure-options{grid-template-columns:minmax(0,1fr)}}
+
+/* Match planning: keep decisions stationary as dialogue accumulates. */
+.tv .s-meeting #roomTalk{height:clamp(110px,19dvh,180px);min-height:clamp(110px,19dvh,180px);max-height:clamp(110px,19dvh,180px);flex:0 0 auto;overflow-y:auto;overscroll-behavior:contain}
+.tv .s-meeting .structure-option .momentum-shape{display:block;width:100%;height:104px;max-height:none;background:var(--well);margin-top:6px}
+.tv .s-meeting .shape-axis{display:flex;justify-content:space-between;font-size:12px}
+.tv .s-meeting .desk-rail button.complete{font:inherit;color:inherit;background:transparent;border:1px solid currentColor;padding:4px 7px;cursor:pointer}
+.tv .s-meeting .desk-rail button.complete:hover,.tv .s-meeting .desk-rail button.complete:focus-visible{color:var(--gold);outline:1px solid var(--gold)}
+@media(max-width:520px){.tv .s-meeting .structure-option .momentum-shape{height:112px}}
