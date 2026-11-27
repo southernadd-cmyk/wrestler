@@ -197,3 +197,12 @@
 #tv .seg-filters{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 14px;margin:0 0 8px}
 #tv .seg-filter-group{display:flex;flex-wrap:wrap;gap:4px}
 @media (max-width:720px){#tv .seg-filters{justify-content:flex-start}}
+
+/* ---------- After the bell: give the choices the room ----------
+   The generic backstage split (dialogue 1.65 : choices 1) left six post-bell actions in a narrow,
+   scrolling column beside a nearly empty log. While a decision is open, use the promo split
+   (dialogue 2 : choices 3) and lay the options out three across so they fit without scrolling. */
+@media (min-width:1181px) and (min-height:600px){
+ #tv .s-after:not(.is-done) .wbody{grid-template-columns:minmax(0,2fr) minmax(0,3fr)}
+ #tv .s-after:not(.is-done) .decide2 .picks{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
