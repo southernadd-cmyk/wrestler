@@ -173,7 +173,7 @@
   const hurtW=injured(e.injured?.w),hurtF=injured(e.injured?.f);
   if(!hurtW&&!hurtF&&x.stars>=3.5&&x.outcome==='booked'&&e.dirty?.w===false&&e.dirty?.f===false)
    add('respect_offer','f',x.f.id,.18*score('f','respect'),'{F} gestures for {W} to join them in acknowledging the crowd.');
-  if(!hurtF&&(e.dirty?.w===true||x.won&&x.outcome==='booked'&&score('f','escalation')>.65))
+  if(!hurtW&&!hurtF&&(e.dirty?.w===true||x.won&&x.outcome==='booked'&&score('f','escalation')>.65))
    add('rival_protest','f',x.f.id,.24*score('f','escalation'),'{F} points at {W} and demands an explanation before leaving.');
   if(hurtW)
    add('own_assistance','w',x.w.id,.25*score('w','caution'),'{W} signals to the referee that they need assistance.');
@@ -532,7 +532,7 @@
  }
  // Use shared character delivery families when a reviewed bank fragment
  // is unavailable. Never substitute another worker's bank.
- const neutralLeads={precise:'Let me be clear.',direct:'Right.',quiet:'One thing.',warm:'I mean this.',theatrical:'Hear me.',energetic:'Right, listen!',wry:'Well, then.'};
+ const neutralLeads={precise:['Let me be clear.','For the record.','One point.'],direct:['Right.','Listen.','Here it is.'],quiet:['One thing.','Just this.','A few words.'],warm:['I mean this.','From me to you.','Let me say this.'],theatrical:['Hear me.','Take note.','Ladies and gentlemen.'],energetic:['Right, listen!','Come on!','Hear this!'],wry:['Well, then.','So there it is.','Funny, that.']};
  const micBodies={
   gloat:x=>'That result is mine. Let everybody remember it.',
   credit:x=>x.f.short+' deserves credit for that match.',
@@ -552,10 +552,13 @@
    !used.includes(r.id)&&!used.includes('prefix:'+r.text));
   const fresh=eligible.filter(r=>!recent.includes(r.id)),pool=fresh.length?fresh:eligible;
   const pick=pool.slice().sort((a,b)=>hash(st.cid+'|ab4|'+side+'|'+key+'|'+a.id)-hash(st.cid+'|ab4|'+side+'|'+key+'|'+b.id)||a.id.localeCompare(b.id))[0];
-  const prefix=pick?.text||neutralLeads[actor.family]||neutralLeads.direct;
-  const lineId=pick?.id||'after.family.'+actor.family+'.'+key;
-  d.used=used.concat(lineId,'prefix:'+prefix);
-  return {text:cap('“'+prefix+' '+body+'”'),lineId,source:pick?.source||'identity:'+actor.identitySource};
+  const leads=neutralLeads[actor.family]||neutralLeads.direct;
+  const variants=leads.map((text,i)=>({text,id:'after.family.'+actor.family+'.'+i})).filter(l=>!used.includes('prefix:'+l.text));
+  const newLeads=variants.filter(l=>!recent.includes(l.id)),fallback=(newLeads.length?newLeads:variants).slice().sort((a,b)=>hash(st.cid+'|ab8|'+side+'|'+key+'|'+a.id)-hash(st.cid+'|ab8|'+side+'|'+key+'|'+b.id))[0];
+  const prefix=pick?.text||fallback?.text||'';
+  const lineId=pick?.id||fallback?.id||'after.body.'+actor.id+'.'+key;
+  d.used=used.concat(lineId,...(prefix?['prefix:'+prefix]:[]));
+  return {text:cap('“'+(prefix?prefix+' ':'')+body+'”'),lineId,source:pick?.source||'identity:'+actor.identitySource};
  }
  const reactionSpeech={
   reciprocate:['accept','Good match.'],dismiss:['counter','I have nothing more to say.'],
@@ -661,6 +664,7 @@
   const set=(k,t)=>{kind=k;text=t;};
   if(follow==='interested')set('challenge',W+' and '+F+' signalled interest in another match.');
   else if(follow==='calmed')set('respect',W+' and '+F+' calmed their post-match dispute.');
+  else if(follow==='ended'||follow==='backs_off')set('resolved',W+' and '+F+' ended their post-match argument without further escalation.');
   else if(['heated','unresolved','rebuffed'].includes(follow))set('dispute',W+' and '+F+' left their post-match dispute unresolved.');
   else if(st.plan==='beatdown'&&st.angle?.ok===false)set('scuffle',W+' and '+F+' had to be separated after the bell.');
   else if(st.plan==='beatdown'&&st.angle?.ok===true)set('attack',W+' attacked '+F+' after the bell.');
@@ -734,7 +738,12 @@
   const x=ctxOf(st.c,st.fin);if(!x.w||!x.f)return [];
   const base=plans(st.c,x.w,x.f,x.won);
   if(x.context?.v!==1)return base;
-  return [...base.filter(o=>o.id!=='beatdown'||!injured(x.context.injured?.w)&&!injured(x.context.injured?.f)),...graphOptions(openingContext(st,x))];
+  const hurt=injured(x.context.injured?.w)||injured(x.context.injured?.f);
+  const ordinary=base.filter(o=>!hurt||!['beatdown','staredown'].includes(o.id));
+  const contextual=graphOptions(openingContext(st,x));
+  // Witnessed situation-specific responses first; the safe exit is always
+  // available. A chosen action is still validated against the same list.
+  return [...contextual,...ordinary.map(o=>o.id==='none'?{...o,label:'No further action',hint:'Move on to the microphone decision.'}:o)];
  }
  // The first call of the segment: what happens now the bell has gone. Final once made.
  function choose(st,plan){
@@ -750,7 +759,7 @@
  function view(st){
   const x=ctxOf(st.c,st.fin);
   const angle=st.stage==='angle';
-  return {stage:st.stage,plan:st.plan,planLabel:angle?'':PLANS[st.plan]?.label||angleGraph.actions[st.plan]?.label||'',log:st.log.slice(),cons:st.cons.slice(),options:angle?angleOptions(st):st.stage==='follow'?followOptions(st):micOptions(st),
+  return {stage:st.stage,stepLabel:{angle:'Choose an action',follow:'Respond',mic:'Microphone',done:'Complete'}[st.stage]||'',plan:st.plan,planLabel:angle?'':PLANS[st.plan]?.label||angleGraph.actions[st.plan]?.label||'',log:st.log.slice(),cons:st.cons.slice(),options:angle?angleOptions(st):st.stage==='follow'?followOptions(st):micOptions(st),
    title:angle?'The bell has gone':st.stage==='follow'?'The argument is not over':st.stage==='mic'?x.w.short+' has the microphone':'After the bell',
    ask:angle?(st.intervention?'What does '+x.w.short+' do in response?':x.won?'The crowd is still on its feet. What does '+x.w.short+' do now?':x.outcome==='nc'?'Nobody won. What does '+x.w.short+' do now?':'The crowd is watching '+x.w.short+'. What happens now?'):st.stage==='follow'?'How does '+x.w.short+' respond?':st.stage==='mic'?(x.won?'The crowd is still on its feet. What does '+x.w.short+' say?':'The crowd is quietening down. What does '+x.w.short+' say?'):''};
  }
