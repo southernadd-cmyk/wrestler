@@ -1829,7 +1829,7 @@ function result(){
  night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,actualOutcome:fin.outcome,bookedFinish:c.finish,baseConsequences,consequences:baseConsequences.slice()});
  // No angle or microphone mutations occur while the result screen is merely open.
  night.after=null;
- night.afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{id:c.programme.id,step:c.programme.step}}:{})},fin:{stars:fin.stars,crowd:fin.crowd,outcome:fin.outcome},...(c.afterPlan?{plan:c.afterPlan}:{})}:null;
+ night.afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{id:c.programme.id,step:c.programme.step}}:{})},fin:OfficeAfter.capture(fin,S().history.find(h=>h.cid===c.id)),...(c.afterPlan?{plan:c.afterPlan}:{})}:null;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=structureReport?structureReport.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structureReport.objectives.length+' objectives':sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  const actualFinish={booked:'Booked finish delivered',dq:'Unplanned disqualification',nc:'No contest',double:'Finish broken'}[fin.outcome]||

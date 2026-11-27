@@ -121,3 +121,30 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  assert.match(ui,/\.\.\.\(c\.afterPlan\?\{plan:c\.afterPlan\}:\{\}\)/,'a new night proposes the scene with no plan');
  console.log('PASS the meeting no longer decides the angle; the after-bell screen does');
 }
+
+// AB1: the result carries a detached, serialisable snapshot of witnessed match events.
+{
+ const s=career(),c=contract(),f=play(c);
+ f.evidence={dirty:{w:false,f:true},injured:{w:null,f:false},stamina:{w:27,f:42},counters:{w:2,f:3}};
+ const h=s.history.find(h=>h.cid===c.id);
+ h.rivalCorner={secondName:'Rival second',job:'runin',fired:true,ok:true};
+ const ready=JSON.parse(JSON.stringify(A.capture(f,h)));
+ f.evidence.dirty.f=false;h.rivalCorner.fired=false;
+ const st=A.begin(c,ready),v=A.view(st),text=v.log.map(x=>x.text).join(' ');
+ assert.equal(st.fin.context.dirty.f,true);
+ assert.equal(st.fin.context.stamina.w,27);
+ assert.match(text,/Rival second ran in/);
+ assert.match(text,/used a cheap shot/);
+ assert.doesNotMatch(text,/picked up an injury/);
+ assert.equal(st.cons.length,0);
+ assert.equal(JSON.parse(JSON.stringify(st)).fin.context.rivalCorner.fired,true);
+ assert.match(ui,/fin:OfficeAfter\.capture\(fin,S\(\)\.history\.find/);
+ console.log('PASS the post-bell scene opens with witnessed match evidence');
+}
+{
+ career();const c=contract(),f=play(c),ready=A.capture(f,{ringside:{secondName:'Uninvolved second',job:'runin',fired:false,ok:false}});
+ const st=A.begin(c,ready);
+ assert.doesNotMatch(st.log.map(x=>x.text).join(' '),/Uninvolved second/);
+ assert.equal(st.fin.context.dirty,null);
+ console.log('PASS unknown or unwitnessed events are not invented');
+}
