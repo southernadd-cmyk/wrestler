@@ -119,8 +119,7 @@
 
  // ---------------------------------------------------------------------------------------------
  // Your matches are logged as they finish, for both wrestlers in the ring.
- const originalApply=G.applyResult;
- G.applyResult=function(c,fin){
+ G.registerResultStage('ambitions',originalApply=>function(c,fin){
   const out=originalApply(c,fin);
   try{
    const a=state();
@@ -135,7 +134,7 @@
    }
   }catch(e){G.reportError('ambitions/match',e)}
   return out;
- };
+ });
  // Everything one wrestler did in the week just played: your stable's shows and the circuit's.
  function weekMatches(id,wk,s=G.S){
   const a=state(s),mine=a.log.filter(m=>m.a===wk&&m.id===id);

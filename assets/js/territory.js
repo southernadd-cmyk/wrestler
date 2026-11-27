@@ -318,9 +318,9 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
  }
  t.reports.unshift({week,lines:reports});t.reports=t.reports.slice(0,12);G.save();
 }
-const originalEnd=G.endWeek,originalApply=G.applyResult;
+const originalEnd=G.endWeek;
 G.endWeek=function(...args){const x=originalEnd(...args);evolve();reconcileOrdinaryTitles();return x};
-G.applyResult=function(c,fin){
+G.registerResultStage('territory',originalApply=>function(c,fin){
  if(G.resultRecorded(c))return [];
  const x=originalApply(c,fin),t=ensure();
  const resolution=root.OfficeOutcome.interpret(c,fin);
@@ -340,7 +340,7 @@ G.applyResult=function(c,fin){
   }
  }
  G.save();return x;
-};
+});
 // The title match a promoter would offer the player for one belt, if any.
 function titleMatch(pid,div){
  const s=G.S,t=ensure();if(!s||!t)return null;

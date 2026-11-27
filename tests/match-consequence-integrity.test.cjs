@@ -6,6 +6,13 @@ const {engine}=require('./_world.cjs');
 const {root}=engine(71029);
 const {OfficeData:D,OfficeGame:G,OfficeSigning:Sg,OfficeAfter:A,
  OfficeRivalry:Riv,OfficeBonds:B,OfficeOutcome:O}=root;
+// All settlement stages must be present in their historical order. The
+// dispatch order is now explicit and independent of module registration order.
+assert.deepEqual(Array.from(G.resultStageOrder()),[
+ 'territory','story','memory','agents-room','relationships','rivalry','ambitions',
+ 'programmes','disqualify','stipulations','mouthpiece','programme-arcs','negotiation-career'
+]);
+assert.throws(()=>G.registerResultStage('territory',next=>next),/duplicate match settlement stage/);
 let nextId=1;
 function reset(){
  G.fresh();const s=G.S;s.cash=99999;s.rep=60;

@@ -2864,8 +2864,8 @@
   return M;
  };
  // After the bell: the promoter's note is checked and any bonus promised in the room is paid.
- const G=root.OfficeGame,applied=G.applyResult;
- G.applyResult=function(c,fin){
+ const G=root.OfficeGame;
+ G.registerResultStage('agents-room',applied=>function(c,fin){
   const seen=G.S?.history?.some(h=>h.cid===c.id),out=applied(c,fin);
   if(seen)return out;
   const h=G.S?.history?.[0],add=(text,tone)=>{out.push({text,tone});h?.notes?.push(text);};
@@ -2893,6 +2893,6 @@
    add('The scout in row F '+(good?'wrote something down and underlined it':'put the notebook away early')+'.'+(d?' Reputation '+(d>0?'+':'−')+Math.abs(d)+'.':''),Math.sign(d));
   }
   G.save();return out;
- };
+ });
  root.OfficeRoom={agreedSequence,readSequenceOffer,sequenceCandidates,sequenceEvidence,proposalEvidence,negotiationFor,negotiable,DAFT_OWN,DAFT_MORE,daftFor,keepThreads,liveThreads,THREAD_WEEKS,learnable,promoReconciliation,addVow,begin,act,view,options,pitches,sheet,consent,legal,wants,feed,target,bias,verify,agreed,tagsOf,story,boardView,reconcile,banned,SPINE,SITUATIONS,SLOTS,NOTES,VOICE,LINES,DAFT,ROUTE_NAME,AGENT,voice};
 })(typeof window!=='undefined'?window:globalThis);

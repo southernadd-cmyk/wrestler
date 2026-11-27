@@ -95,8 +95,7 @@
   }
   return outcome;
  };
- const originalApply=G.applyResult;
- G.applyResult=function(c,fin){
+ G.registerResultStage('negotiation-career',originalApply=>function(c,fin){
   const r=originalApply.call(this,c,fin);
   const row=c?.id&&record(c.id);
   if(!row||row.status!=='scheduled')return r;
@@ -117,7 +116,7 @@
      ' remembers the negotiated contract was not honoured. Trust −3.'),tone:Math.sign(delta)});
   }
   G.save();return r;
- };
+ });
  const originalEndWeek=G.endWeek;
  G.endWeek=function(...args){
   const week=now(),outstanding=(G.S?.offers||[])

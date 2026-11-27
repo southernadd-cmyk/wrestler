@@ -89,7 +89,6 @@
   rows.unshift(entry);rows.sort((a,b)=>b.abs-a.abs);memory.professionalPairs[key]=rows.slice(0,12);
   return {...entry};
  }
- const originalApply=G.applyResult;
  function incident(c,fin,w,f){
   if(fin.injury)return {kind:'hurt',text:w.short+' remembers the painful landing against '+f.short+' and the fear of being asked to work hurt again.',shift:-2,rivalShift:-3,prompt:true};
   if(fin.outcome==='double')return {kind:'rebellion',text:w.short+' remembers breaking the agreed finish against '+f.short+'. The promoter has not forgotten either.',shift:8,rivalShift:-8,prompt:true};
@@ -216,7 +215,7 @@
  const originalLoad=G.load;
  G.load=function(...args){const loaded=originalLoad(...args);if(loaded)refreshDebriefs();return loaded;};
  refreshDebriefs();
- G.applyResult=function(c,fin){
+ G.registerResultStage('memory',originalApply=>function(c,fin){
   const result=originalApply(c,fin);
   if(!c||!fin||!G.S)return result;
   const m=state();if(m.processed[c.id])return result;
@@ -241,7 +240,7 @@
    }
   }
   G.save();return result;
- };
+ });
  const originalAnswer=G.answer;
  G.answer=function(mid,opt){
   const s=G.S,m=s?.inbox.find(x=>x.id===mid);if(!m||m.dtype!=='office_debrief')return originalAnswer(mid,opt);

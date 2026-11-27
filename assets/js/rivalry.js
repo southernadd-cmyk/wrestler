@@ -893,13 +893,12 @@
   if(L.meetings.length>=2)notes.push('Rivalry record: '+w.short+' '+rec.w+', '+f.short+' '+rec.f+'. '+w.short+' is '+st.w+'; '+f.short+' is '+st.f+'.');
   for(const t of notes){out?.push?.({text:t,tone:0});h?.notes?.push(t);}
  }
- const applied=G.applyResult;
- G.applyResult=function(c,fin){
+ G.registerResultStage('rivalry',applied=>function(c,fin){
   const seen=!!(c&&G.S?.rivalries?.[keyOf(c.wid,c.rid)]?.done?.[c.id]);
   const out=applied(c,fin);
   if(!seen&&c&&fin&&G.S){try{recordMatch(c,fin,out);}catch(e){G.reportError('rivalry/match',e)}G.save?.();}
   return out;
- };
+ });
 
  // ---------------------------------------------------------------------------------------------
  // BACKSTAGE. A real reason for one wrestler to propose a change to the running order, from the

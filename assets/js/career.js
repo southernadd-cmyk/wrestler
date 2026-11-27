@@ -1253,5 +1253,26 @@ function officeBrief(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,atomicSettlement,reportError,systemErrors,resultRecorded,importCareer,recoverNight,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,trainingWeekPlan,ageWorker,opponentReady,offerCandidates,officeBrief};
+// Match settlement stages are declared in their historical inner-to-outer
+// order. Registration no longer makes the chain depend on script order.
+// Factories receive the previous stage so existing pre/post logic, argument
+// substitution, return values and early exits can be preserved exactly.
+const RESULT_STAGE_ORDER=Object.freeze([
+ 'territory','story','memory','agents-room','relationships','rivalry','ambitions',
+ 'programmes','disqualify','stipulations','mouthpiece','programme-arcs','negotiation-career'
+]);
+const resultStageFactories=new Map();
+let resultPipeline=applyResult;
+function registerResultStage(id,factory){
+ if(!RESULT_STAGE_ORDER.includes(id)||typeof factory!=='function'||resultStageFactories.has(id))
+  throw new Error('Invalid or duplicate match settlement stage: '+id);
+ resultStageFactories.set(id,factory);
+ resultPipeline=RESULT_STAGE_ORDER.reduce((next,key)=>{
+  const registered=resultStageFactories.get(key);
+  return registered?registered(next):next;
+ },applyResult);
+}
+function resultStageOrder(){return RESULT_STAGE_ORDER.filter(id=>resultStageFactories.has(id));}
+function applyRegisteredResult(c,fin){return resultPipeline.apply(this,arguments);}
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,atomicSettlement,reportError,systemErrors,resultRecorded,importCareer,recoverNight,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult:applyRegisteredResult,registerResultStage,resultStageOrder,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,trainingWeekPlan,ageWorker,opponentReady,offerCandidates,officeBrief};
 })(typeof window!=='undefined'?window:globalThis);
