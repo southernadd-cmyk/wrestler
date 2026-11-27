@@ -103,3 +103,7 @@
  #tv .s-meeting .rorder-slot{flex-wrap:wrap}
  #tv :is(.s-promo,.s-meeting) .decision-option{min-height:48px}
 }
+
+/* The decision renderer restores these offsets explicitly. Do not let browser
+   scroll anchoring move them again after the conversation DOM is replaced. */
+#tv:has(.s-meeting,.s-promo),#tv :is(.s-meeting,.s-promo) :is(.win,.wbody,.decide2,.promo-context),#tv :is(.s-meeting,.s-promo){overflow-anchor:none}
