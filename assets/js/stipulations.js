@@ -234,8 +234,7 @@
 
  // ---------------------------------------------------------------------------------------------
  // Afterwards: the body pays, and the feud remembers.
- const originalApply=G.applyResult;
- G.applyResult=function(c,fin){
+ G.registerResultStage('stipulations',originalApply=>function(c,fin){
   const seen=!!(c&&G.S?.history?.some(h=>h.cid===c.id));
   const out=originalApply.apply(this,arguments);
   try{
@@ -249,7 +248,7 @@
    }
   }catch(e){G.reportError('stipulations/match-result',e)}
   return out;
- };
+ });
 
  root.OfficeStips={STIPS,tasteOf,favourite,name,chance,FINISH};
 })(typeof window!=='undefined'?window:globalThis);
