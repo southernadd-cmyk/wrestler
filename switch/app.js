@@ -1073,7 +1073,7 @@ function startBroadcast(){
    // A normal, fully delivered final line can go directly to the existing
    // result review. Pause, interrupted speech and mandatory decisions keep
    // their normal ringside screens. No extra engine events are generated.
-   if(!m.queue.length&&m.done&&!m.decision){broadcastHeld.clear();settleMatch();return;}
+   if(!m.queue.length&&m.done&&!m.decision){broadcastHeld.clear();try{settleMatch();}catch(e){console.error(e);screen('Match result unavailable','The match result could not be recorded. Return to the office to review or retry.',[back(()=>desk())]);}return;}
    if(!m.queue.length&&(m.done||m.decision)){finish();return;}
    const advice=contextualAdvice(m,X.canCall);
    if(advice){broadcastHeld.clear();recordAdvice(m,advice);adviceScreen(advice,display(recent),recent);return;}
