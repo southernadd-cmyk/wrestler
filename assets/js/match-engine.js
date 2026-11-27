@@ -355,7 +355,12 @@ function liveObedienceDelta(M,id){
   id==='pickup'||id==='big'?-Math.max(0,condition):0;
  return Math.max(-12,Math.min(12,Math.round((s.obedience-50)*.18-(s.frustration-50)*.12+context)));
 }
-function create(o){
+// The same physical baseline and fatigue deduction apply to both workers.
+ // Manager preparation and a witnessed ambush remain side-specific.
+ function startingStamina(worker,adjust=0){
+  return clamp(100-(Number.isFinite(worker?.fatigue)?worker.fatigue:0)*.7+adjust);
+ }
+ function create(o){
  const r=mulberry(o.seed||Date.now());
  const w=o.w,f=o.f,p=o.p,plan=D.PLANS[o.plan.game]||D.PLANS.story,slot=D.SLOTS[o.slot]||D.SLOTS.mid;
  const ego=w.ego,talk=o.plan.talk||'none',leash=o.plan.leash||'script',prep=o.preparation||{};
@@ -375,10 +380,10 @@ function create(o){
  const reactions=talkReaction(w,talk);
  const M={v:1,r,w,f,p,o,plan,planId:o.plan.game,leash,talk,len:minutes*60,minutes,t:0,stage:'entrance',phase:null,
   crowd:clamp(Math.round(crowd),5,88),crowdStart:0,crowdPeak:0,crowdSum:0,lastCrowdBand:null,
-  wSt:clamp(100-w.fatigue*.7+(talk==='calm'?6:0)),fSt:clamp(92-(o.promo?.opponentHurt||0)),mom:0,comply,listen:clamp(comply+(leash==='free'?10:0),15,97),resent:leash==='script'&&ego>=75&&(o.memory?.trust??60)<78,
+  wSt:startingStamina(w,talk==='calm'?6:0),fSt:startingStamina(f,-(o.promo?.opponentHurt||0)),mom:0,comply,listen:clamp(comply+(leash==='free'?10:0),15,97),resent:leash==='script'&&ego>=75&&(o.memory?.trust??60)<78,
   fit,riskMul,mode:null,calls:3,callsUsed:[],ignored:0,offScript:null,scriptChecks:0,scriptHits:0,
   qSum:0,qN:0,bonus:0,spots:0,spotHits:0,botches:0,nearfalls:0,nearfallAt,
-  injury:0,injuryPart:null,workingHurt:false,foeHurt:false,stiff:false,shortened:false,
+  injury:0,injuryPart:null,workingHurt:false,foeHurt:false,foeInjuryPart:null,stiff:false,shortened:false,
   offered:{},decision:null,outcome:'booked',refused:false,
   adj:{trust:0,heat:0,morale:0,rep:0,purseMul:1,otherTrust:0,loyal:0},
   queue:[],log:[],done:false,hints:{},reaction:reactions,prep:prep};
@@ -932,7 +937,7 @@ function spot(M,big,forced){
   const injP=(.1+(100-A.safe)/350)*(big?1.4:1);
   if(M.r()<injP){
    if(hurtYours&&!M.injury){M.injury=1+(M.r()<.4?1:0)+(big&&M.r()<.4?1:0);M.injuryPart=rnd(M,PARTS);decide(M,'injury');}
-   else if(!hurtYours&&!M.foeHurt){M.foeHurt=true;say(M,`${M.f.short} is holding the ${rnd(M,PARTS)}. The referee leans in.`,'agent',{who:'pbp'});M.fSt=clamp(M.fSt-25);}
+   else if(!hurtYours&&!M.foeHurt){M.foeHurt=true;M.foeInjuryPart=rnd(M,PARTS);say(M,`${M.f.short} is holding the ${M.foeInjuryPart}. The referee leans in.`,'agent',{who:'pbp'});M.fSt=clamp(M.fSt-25);}
   }
   // A botch is an attempted manoeuvre, not a false landed action.
   Psy.spotAfter(M,A,Df,outside,true);Graph.resetPhysical(M,outside?'floor':'ring');g.node=null;
@@ -1218,7 +1223,7 @@ function resolve(M,choice){
  if(d.id==='stiff'){
   if(choice==='protect'){M.stiff='protect';M.mode={type:'slow',ticks:3};M.wSt=clamp(M.wSt-8);say(M,`${w.short} covers up and rides out the storm.`)}
   if(choice==='fire'){M.stiff='fire';lift(M,9);M.bonus+=10;M.adj.trust-=4;M.adj.morale+=4;say(M,`${w.short} fires back for real! This is a fight now!`,'crowd',{big:true});
-   if(M.r()<stiffInjuryRisk(M)){if(M.r()<.5&&!M.injury){M.injury=1;M.injuryPart='jaw';say(M,`${w.short} took one flush on the jaw. Wobbly.`,'bad')}else{M.foeHurt=true;say(M,`${f.short} is bleeding from the nose. That was not planned.`,'bad')}}}
+   if(M.r()<stiffInjuryRisk(M)){if(M.r()<.5&&!M.injury){M.injury=1;M.injuryPart='jaw';say(M,`${w.short} took one flush on the jaw. Wobbly.`,'bad')}else{M.foeHurt=true;M.foeInjuryPart??='nose';say(M,`${f.short} is bleeding from the nose. That was not planned.`,'bad')}}}
   if(choice==='ref'){M.stiff='ref';lift(M,-4);say(M,`The referee has a word with ${f.short}. Things settle down.`)}
  }
  if(d.id==='time'){
@@ -1507,7 +1512,7 @@ function summary(M){
   {...e,missedObjectives:(M.structureDirector?.objectives||[]).filter(o=>o.status==='missed').map(o=>o.id)}:{...e});
  return {stars:s,crowd:Math.round(M.crowd),crowdPeak:Math.round(M.crowdPeak),crowdStart:M.crowdStart,botches:M.botches,spots:M.spots,spotHits:M.spotHits,nearfalls:M.nearfalls,
   script:M.scriptChecks?M.scriptHits/M.scriptChecks:null,callsUsed:M.callsUsed.slice(),ignored:M.ignored,...(ringsideEvidence.length?{ringsideEvidence}:{}),injury:M.injury,injuryPart:M.injuryPart,
-  outcome:M.outcome,finishRoute:M.finishRoute||null,crowdTrace:[...(M.crowdTrace||[]),[M.t,Math.round(M.crowd)]],flow:(M.flow||[]).slice(),marks:(M.marks||[]).slice(),starParts:starParts(M).map(([k,label,v])=>[k,label,Math.round(v*100)/100]),len:M.len,rehearsed:!!M.o.sheet?.rehearsed,roomNote:root.OfficeRoom?.verify(M)||null,roomBonus:M.o.sheet?.bonus||0,roomFx:M.o.sheet?.fx||null,roomThreads:M.o.sheet?.threads||null,roomThreadUsed:M.o.sheet?.threadUsed||null,roomRepStake:M.o.sheet?.repStake||0,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,workingHurt:M.workingHurt,
+  outcome:M.outcome,finishRoute:M.finishRoute||null,crowdTrace:[...(M.crowdTrace||[]),[M.t,Math.round(M.crowd)]],flow:(M.flow||[]).slice(),marks:(M.marks||[]).slice(),starParts:starParts(M).map(([k,label,v])=>[k,label,Math.round(v*100)/100]),len:M.len,rehearsed:!!M.o.sheet?.rehearsed,roomNote:root.OfficeRoom?.verify(M)||null,roomBonus:M.o.sheet?.bonus||0,roomFx:M.o.sheet?.fx||null,roomThreads:M.o.sheet?.threads||null,roomThreadUsed:M.o.sheet?.threadUsed||null,roomRepStake:M.o.sheet?.repStake||0,refused:M.refused,shortened:M.shortened,timeDefied:!!M.timeDefied,stiff:M.stiff,foeHurt:M.foeHurt,foeInjuryPart:M.foeInjuryPart||null,workingHurt:M.workingHurt,
   resent:M.resent,promo:M.o.promo||null,
   promoSignals:{
    workerCounter:!!M.graph?.promoCounterPaid,
