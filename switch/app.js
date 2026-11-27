@@ -78,12 +78,96 @@ function paged(title,rows,page,open,returnTo,describe=x=>x.name){
 }
 function inbox(){const rows=[...s().inbox].sort((x,y)=>Number(y.kind==='decision'&&!y.answer)-Number(x.kind==='decision'&&!x.answer));paged('Inbox',rows,0,message,()=>desk('','inbox'),m=>m.subject+(m.kind==='decision'&&!m.answer?' — reply needed':''));}
 function message(m,returnTo){m.read=true;G.save();screen(m.subject,m.from+'.\n'+(Array.isArray(m.body)?m.body.join('\n'):m.body||'')+(m.outcome?'\nOutcome: '+m.outcome:''),[...(m.kind==='decision'&&!m.answer?(m.options||[]).map(o=>a(o.id,o.label+(o.hint?'. '+o.hint:''),()=>{const result=G.answer(m.id,o.id);if(!m.answer){screen('Response unavailable',String(result),[back(()=>message(m,returnTo))]);return;}screen('Response recorded',m.outcome||'Decision recorded.',[back(returnTo)]);})):[]),a('repeat','Repeat message',()=>message(m,returnTo)),back(returnTo)]);}
-function stable(){const opts=[...(s().roster.length?[a('roster','Your wrestlers',()=>paged('Your wrestlers',s().roster,0,profile,stable))]:[]),a('scout','Scout and sign wrestlers',scout),back(()=>desk('','stable'))];screen('Your stable',s().roster.length+' of 5 contract places filled.',opts);}
+function stable(){const opts=[...(s().roster.length?[a('roster','Your wrestlers',()=>paged('Your wrestlers',s().roster,0,profile,stable))]:[]),a('scout','Scout and sign wrestlers',scout),a('coach','Coaching staff',coaches),a('reports','Training reports',trainingReports),back(()=>desk('','stable'))];screen('Your stable',s().roster.length+' of 5 contract places filled.',opts);}
 function scout(){screen('Find talent','Choose a division. The shortlist is ordered by signing fee; every affordable free agent is available.',D.DIVISION_ORDER.map(div=>a(div,D.DIVISIONS[div].name+' division',()=>scoutList(div))).concat(back(stable)));}
 function scoutList(div){const rows=s().free.filter(w=>D.divisionOf(w)===div).sort((x,y)=>x.fee-y.fee);paged('Free agents',rows,0,signProfile,scout,w=>w.name+' · '+money(w.fee));}
 function signProfile(w,returnTo){const f=G.signingForecast(w.id);if(!f){scout();return;}const bands=['ring','mic','psych','safe'].map(k=>{const b=G.scoutBand(w,k);return k+': '+(typeof b==='string'?b:Array.isArray(b)?b.join(' to '):b?.label||'estimated');}).join('. ');screen(w.name,w.style+' wrestler. Signing fee '+money(w.fee)+'. Weekly wage '+money(w.wage)+'. Bank after signing '+money(f.afterFee)+'. '+bands,[...(f.affordable?[a('sign','Sign for '+money(w.fee),()=>confirm('Sign '+w.name+'?','Pay '+money(w.fee)+' now and '+money(w.wage)+' each week.','Confirm signing',()=>{const e=G.sign(w.id);if(e){screen('Signing unavailable',e,[back(returnTo)]);return;}desk(w.name+' has joined your stable.');},()=>signProfile(w,returnTo)))]:[]),back(returnTo)],{portrait:w});}
-function profile(w,returnTo){screen(w.name,w.style+'. Morale '+w.morale+', fatigue '+w.fatigue+', ring skill '+w.ring+', psychology '+w.psych+'. '+(w.injury?'Injured for '+w.injury+' weeks.':'Available for work.'),[a('train','Choose training',()=>training(w,returnTo)),a('rest','Set rest for the week',()=>{const e=G.setTraining(w.id,'rest');screen('Training',e||w.name+' will rest.',[back(()=>profile(w,returnTo))]);}),back(returnTo)],{portrait:w});}
-function training(w,returnTo){const list=Object.entries(D.TRAINING).filter(([k])=>k!=='rest').map(([k,t])=>({id:k,name:t.name}));paged('Training focus',list,0,(t,ret)=>confirm('Train '+w.name+'?',t.name+' training carries the usual weekly cost.','Set '+t.name,()=>{const e=G.setTraining(w.id,t.id);screen('Training',e||'Training set to '+t.name,[back(()=>profile(w,returnTo))]);},ret),()=>profile(w,returnTo));}
+function profile(w,returnTo){
+ w=G.W(w.id);if(!w){stable();return;}
+ const again=()=>profile(w,returnTo),amb=window.OfficeAmbitions?.view(w.id);
+ screen(w.name,w.style+'. '+(w.bio||'')+'\nMorale '+w.morale+', loyalty '+w.loyal+', fatigue '+w.fatigue+'. Ring '+w.ring+', psychology '+w.psych+', safety '+w.safe+', microphone '+w.mic+'. Weekly wage '+money(w.wage)+'. '+(w.injury?'Injured for '+w.injury+' weeks.':'Available for work.')+(amb?'\nWants: '+amb.name+'. '+amb.mood+'. '+amb.progress:'')+(w.promise?.status==='open'?'\nFeatured-match promise due by career week '+w.promise.deadline+'.':''),[
+ a('train','Wrestler development',()=>training(w,returnTo)),a('meeting','Private meeting',()=>privateMeeting(w,again)),a('contract','Contract and wages',()=>workerContract(w,again)),back(returnTo)],{portrait:w});
+}
+function developmentAction(w,method,value,message,returnTo){
+ const error=method(w.id,value);
+ screen(error?'Not available':'Development updated',error||message,[back(returnTo)],{portrait:G.W(w.id)});
+}
+function training(w,returnTo){
+ w=G.W(w.id);if(!w){stable();return;}
+ const again=()=>training(w,returnTo),forecast=G.trainingForecast(w);
+ const outlook=forecast?.kind==='skill'?'Projected gain '+forecast.gain+' '+forecast.stat+' points; '+forecast.progress+' percent towards the next point. Fatigue '+forecast.fatigue+'. Injury chance '+forecast.riskPct.toFixed(1)+' percent.':forecast?.kind==='rest'?'Projected fatigue '+forecast.fatigue+'.':forecast?.kind==='promo'?'Projected heat gain '+forecast.heat+'. Fatigue '+forecast.fatigue+'.':'';
+ const session=G.sessionOptions(w).find(o=>o.value===w.session);
+ screen('Development — '+w.short,'Current focus: '+(D.TRAINING[w.training]?.name||w.training)+'. '+(G.INTENSITY[w.intensity]?.name||'Light drills')+'. '+money(G.trainingCost(w))+' this week. '+outlook+' Further matches may change the forecast.\n'+(w.program?'Active '+w.program.type+', '+w.program.left+' weeks left. ':'')+'Dennis session: '+(session?.label||'none')+'.',[
+ a('weekly','Weekly focus and intensity',()=>weeklyTraining(w,again)),
+ a('programme','Development programme',()=>developmentProgramme(w,again)),
+ a('session','Sessions with Dennis',()=>dennisSessions(w,again)),
+ a('advice','Dennis’s assessment',()=>trainingAssessment(w,again)),
+ back(()=>profile(w,returnTo))],{portrait:w});
+}
+function weeklyTraining(w,ret){
+ w=G.W(w.id);if(!w){stable();return;}
+ const here=()=>weeklyTraining(w,ret);
+ const focus=Object.entries(D.TRAINING).map(([id,t])=>({id,name:t.name,blurb:t.blurb||t.desc||''}));
+ screen('Weekly training',w.short+': '+(D.TRAINING[w.training]?.name||w.training)+', '+(G.INTENSITY[w.intensity]?.name||'Light drills')+'. '+money(G.trainingCost(w))+' a week. '+(w.program?'The programme locks these settings.':w.injury?'Recovery takes priority while injured.':'Choose a focus or intensity.'),[
+ ...(!w.program&&!w.injury?[a('focus','Choose training focus',()=>paged('Training focus',focus,0,(t,r)=>confirm('Change training?',t.name+'. '+t.blurb,'Set '+t.name,()=>developmentAction(w,G.setTraining,t.id,'Focus set to '+t.name+'.',here),r),here,t=>t.name+(t.id===w.training?' — current':''))),
+ a('intensity','Choose intensity',()=>paged('Training intensity',Object.entries(G.INTENSITY).map(([id,t])=>({id,...t})),0,(t,r)=>confirm('Change intensity?',t.hint,'Set '+t.name,()=>developmentAction(w,G.setIntensity,t.id,'Intensity set to '+t.name+'.',here),r),here,t=>t.name+' — '+t.hint+(t.id===w.intensity?' — current':'')))]:[]),back(ret)],{portrait:w});
+}
+function developmentProgramme(w,ret){
+ w=G.W(w.id);if(!w){stable();return;}
+ const here=()=>developmentProgramme(w,ret);
+ if(w.program){screen('Active programme',w.short+' has '+w.program.left+' of '+w.program.total+' weeks remaining. '+w.program.gains+' points gained. '+money(G.trainingCost(w))+' per week.',[a('cancel','End programme early',()=>confirm('End development programme?','Previous costs are not refunded. Ending a camp early costs 3 morale and adds 5 fatigue.','End programme',()=>developmentAction(w,G.cancelProgram,undefined,'Programme ended.',here),here)),back(ret)],{portrait:w});return;}
+ const ready=!w.injury&&!['rest','promo'].includes(w.training);
+ const rows=[{id:'block3',label:'Three-week block',cost:G.trainingCost(w),weeks:3},{id:'block6',label:'Six-week block',cost:G.trainingCost(w),weeks:6},{id:'camp',label:'Residential camp',cost:185,weeks:3}];
+ screen('Development programme',ready?'Commit the current skill focus. Blocks lock focus and intensity; residential camps make the wrestler unavailable for bookings for three weeks.':'Choose a skill focus and wait until the wrestler is fit before starting a programme.',[
+ ...(ready?rows.map(x=>a(x.id,x.label+' — '+money(x.cost)+' per week',()=>confirm('Commit '+x.label.toLowerCase()+'?',x.weeks+' weeks, '+money(x.cost)+' per week. '+(x.id==='camp'?'Cannot take bookings during camp.':'Focus and intensity are locked.'),'Confirm programme',()=>developmentAction(w,G.startProgram,x.id,'Programme committed.',here),here))):[]),back(ret)],{portrait:w});
+}
+function dennisSessions(w,ret){
+ w=G.W(w.id);if(!w){stable();return;}
+ const used=s().roster.filter(x=>x.session).length,all=G.sessionOptions(w),current=all.find(x=>x.value===w.session);
+ const here=()=>dennisSessions(w,ret);
+ const select=kind=>{
+  const rows=all.filter(x=>!x.disabled&&(kind==='learn'?x.value.startsWith('learn:'):kind==='mic'?x.value.startsWith('mic:'):x.value==='none'||x.value==='rehearse')).map(x=>({...x,id:x.value}));
+  paged('Sessions with Dennis',rows,0,(x,r)=>confirm('Set session?',x.label+'. '+x.hint+(x.why?' Dennis: '+x.why:''),'Confirm session',()=>developmentAction(w,G.setSession,x.value,'Session: '+x.label+'.',here),r),here,x=>x.label+(x.value===w.session?' — current':'')+(x.suggested?' — recommended':'')+'. '+x.hint);
+ };
+ screen('Sessions with Dennis',used+' of '+G.SESSION_CAP+' weekly sessions assigned. '+w.short+': '+(current?.label||'no session')+'. '+(!w.session&&used>=G.SESSION_CAP?'All sessions are booked. Free one up first.':'Sessions are additional to normal training.'),[
+ a('rehearse','Rehearsal or cancel session',()=>select('rehearse')),a('learn','Learn wrestling moves',()=>select('learn')),a('mic','Microphone practice',()=>select('mic')),back(ret)],{portrait:w});
+}
+function trainingAssessment(w,ret){
+ w=G.W(w.id);if(!w){stable();return;}
+ const rows=G.trainingAdvice(w),here=()=>trainingAssessment(w,ret);
+ const methods={focus:G.setTraining,intensity:G.setIntensity,session:G.setSession};
+ screen('Dennis’s assessment',rows.map(x=>x.title+'. '+x.why).join('\n'),rows.filter(x=>methods[x.kind]).map(x=>a(x.kind+':'+x.value,'Apply: '+x.title,()=>confirm('Apply recommendation?',x.why,'Apply',()=>developmentAction(w,methods[x.kind],x.value,'Recommendation applied.',here),here))).concat(back(ret)),{portrait:w});
+}
+function privateMeeting(w,ret){
+ w=G.W(w.id);if(!w){stable();return;}
+ const here=()=>privateMeeting(w,ret);
+ const rows=[{id:'listen',label:'Listen and reassure',hint:'Morale +5, loyalty +4. No promise.'},{id:'promise',label:'Promise a featured match',hint:'Morale +8 now. Deliver a feature or main event within two weeks, or lose 14 morale and 12 loyalty.',disabled:w.promise?.status==='open'},{id:'bonus',label:'Pay £120 loyalty bonus',hint:'Morale +6, loyalty +9. Costs £120 now.',disabled:s().cash<120}];
+ screen('Private meeting — '+w.short,'Morale '+w.morale+'. Loyalty '+w.loyal+'. '+s().focus+' management meetings left this week. A private conversation uses one, leaving fewer for promoter negotiations. '+(w.promise?.status==='open'?'A featured-match promise is already open.':''),[
+ ...(s().focus>0?rows.filter(x=>!x.disabled).map(x=>a(x.id,x.label+'. '+x.hint,()=>confirm('Private conversation?',x.hint+' Uses one management meeting.',x.label,()=>{const r=G.checkIn(w.id,x.id);screen(r.error?'Meeting unavailable':'Private conversation',r.error||r.text,[back(ret)],{portrait:G.W(w.id)});},here))):[]),back(ret)],{portrait:w});
+}
+function workerContract(w,ret){
+ w=G.W(w.id);if(!w){stable();return;}
+ const amb=window.OfficeAmbitions?.view(w.id),raise=window.OfficeAmbitions?.raiseAvailable(w.id),here=()=>workerContract(w,ret);
+ screen('Contract — '+w.short,'Weekly wage '+money(w.wage)+'. '+(amb?amb.name+'. '+amb.counts+' '+amb.progress+' '+(amb.words||''):'')+' '+(raise?.error||''),[
+ ...(raise&&!raise.error?[a('raise','Increase weekly wage by £40',()=>confirm('Permanent wage increase?',money(w.wage)+' becomes '+money(w.wage+40)+' every week. No one-off payment. Another raise is unavailable for four weeks.','Confirm raise',()=>{const r=OfficeAmbitions.giveRaise(w.id);screen(r.error?'Raise unavailable':'Wage increased',r.error||r.text,[back(here)]);},here))]:[]),
+ a('release','Release wrestler',()=>confirm('Release '+w.name+'?','They leave today. No refund. Their bookings are cancelled.','Confirm release',()=>{G.release(w.id);stable();},here)),back(ret)],{portrait:w});
+}
+function coaches(){
+ const c=s().coach&&G.COACHES[s().coach];
+ if(c){screen('Coaching staff',c.name+'. '+c.stat+' training boost '+Math.round(c.boost*100)+' percent. '+money(c.wage)+' every week, even if nobody trains that skill.',[a('fire','End coaching contract',()=>confirm('Release coach?','Future wages stop. Hiring fee is not refunded.','End contract',()=>{const e=G.fireCoach();screen('Coaching staff',e||'Contract ended.',[back(coaches)]);},coaches)),back(stable)]);return;}
+ const rows=Object.entries(G.COACHES).map(([id,x])=>({id,...x}));
+ paged('Specialist coaches',rows,0,(x,ret)=>screen(x.name,x.stat+' training boost '+Math.round(x.boost*100)+' percent. '+money(x.fee)+' to hire, '+money(x.wage)+' per week. Bank '+money(s().cash)+'.',[
+ ...(s().cash>=x.fee?[a('hire','Hire specialist',()=>confirm('Hire '+x.name+'?',money(x.fee)+' now and '+money(x.wage)+' every week.','Confirm hire',()=>{const e=G.hireCoach(x.id);screen('Coaching staff',e||'Specialist hired.',[back(coaches)]);},ret))]:[]),back(ret)]),stable,x=>x.name+' — '+money(x.fee)+' upfront');
+}
+function trainingReports(){
+ const rows=(s().trainingReviews||[]).slice().reverse().map(r=>({...r,id:String(r.a),name:'Season '+Math.ceil(r.a/16)+', week '+((r.a-1)%16+1)}));
+ paged('Completed training reports',rows,0,(r,ret)=>{
+  const entries=(r.entries||[]).map(e=>({...e,id:e.id,name:e.name||e.id}));
+  const detail=()=>paged('Wrestler training results',entries,0,(e,backTo)=>screen(e.name,['ring','mic','psych','safe'].map(k=>k+' '+((e.delta?.[k]||0)>=0?'+':'')+(e.delta?.[k]||0)).join('. ')+'. Fatigue change '+(e.delta?.fatigue||0)+'. Cost '+money(e.cost||0)+'. '+(e.notes||[]).join(' '),[back(backTo)]),()=>showReport());
+  const showReport=()=>screen(r.name,'Training and promo costs '+money(r.trainingCost||0)+'. Coach wages '+money(r.coachCost||0)+'. These are completed results, not forecasts.',[a('detail','Individual wrestler results',detail),back(ret)]);
+  showReport();
+ },stable);
+}
 function offers(){const rows=s().offers.filter(o=>G.offerCandidates(o).length);paged('Available booking offers',rows,0,offer,()=>desk('','offers'),o=>G.P(o.pid).name+' · versus '+G.F(o.rid).name);}
 function offer(o,returnTo){const candidates=G.offerCandidates(o);paged(G.P(o.pid).name+' — choose your wrestler',candidates,0,(w,ret)=>offerTerms(o,w,ret),returnTo,w=>w.name+' · '+money(o.programme?OfficeProgrammes.totalPurse(o,w):G.purse(o,w)));}
 function bookingTerms(o,w,terms=o){
