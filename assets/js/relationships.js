@@ -68,11 +68,11 @@
   const feud=G.feud?.(w.id,f.id);if(feud&&!feud.closed&&feud.heat>=50)shift(w.id,f.id,-6,'feud','The feud has stopped being business.',c.id+':feud');
   for(const e of mem){const m=MATCH_BOND[e.kind];if(m)shift(w.id,f.id,m[0],e.kind==='rebellion'?'betrayal':e.kind,m[1],c.id+':'+e.kind);}
   // Betrayal from the other side: a friend with an ego, beaten clean, turns after the bell.
-  const was=score(w.id,f.id),wonClean=c.finish==='win_clean'&&fin.outcome!=='nc'&&fin.outcome!=='double';
+  const was=score(w.id,f.id),wonClean=c.finish==='win_clean'&&root.OfficeOutcome.promiseVerdict(c,fin,'win')&&root.OfficeOutcome.promiseVerdict(c,fin,'clean');
   // A post-bell angle agreed before the match (older saves only) has first call on the scene;
   // do not also invent a betrayal that could contradict it. Otherwise the turn happens at the bell,
   // and the after-bell segment opens on it rather than offering an angle.
-  if(wonClean&&was>=35&&(f.ego||50)>=72&&!(c.afterPlan&&c.afterPlan!=='none')&&
+  if(wonClean&&!fin.injury&&!fin.foeHurt&&!fin.evidence?.injured?.w&&!fin.evidence?.injured?.f&&was>=35&&(f.ego||50)>=72&&!(c.afterPlan&&c.afterPlan!=='none')&&
     !G.S.bonds.done[c.id+':turn']){
    G.S.bonds.done[c.id+':turn']=1;
    shift(w.id,f.id,-45,'betrayal',f.short+' turned on '+w.short+' after losing clean.',c.id+':turned');

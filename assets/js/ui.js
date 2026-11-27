@@ -1275,7 +1275,12 @@ function resumeNight(){
  if(!saved||!Array.isArray(saved.queue)||(!S()?.card?.length&&!afterOpen&&!resultOpen))return false;
  night={...saved,paused:true};
  if(afterOpen){openTV();showAfter();return true}
- if(resultOpen){openTV();$('#tv').innerHTML=saved.resultHTML;return true}
+ if(resultOpen){openTV();$('#tv').innerHTML=saved.resultHTML;
+  // Old result snapshots may not yet have resolved the autonomous opening.
+  const ready=night.afterReady;
+  if(!night.after&&ready)night.after=OfficeAfter.prepareAutonomous(ready.c,ready.fin,ready.plan);
+  if(night.after?.required&&night.after.stage!=='done')return showAfter(),true;
+  return true}
  if(night.i>=night.queue.length){endNight();return true}
  openTV();
  if(saved.stage==='live'&&saved.M){
@@ -1828,9 +1833,11 @@ function result(){
   G.save();
  }
  night.results.push({name:w.name,foe:f.name,stars:fin.stars,cid:c.id,wid:w.id,rid:f.id,pid:p.id,season:S().season,week:S().week,actualOutcome:fin.outcome,bookedFinish:c.finish,baseConsequences,consequences:baseConsequences.slice()});
- // No angle or microphone mutations occur while the result screen is merely open.
+ // Select any autonomous event now. A routine result still has an optional segment.
  night.after=null;
  night.afterReady=window.OfficeAfter?{c:{id:c.id,wid:c.wid,rid:c.rid,pid:c.pid,slot:c.slot,finish:c.finish,...(c.programme?{programme:{id:c.programme.id,step:c.programme.step}}:{})},fin:OfficeAfter.capture(fin,S().history.find(h=>h.cid===c.id)),...(c.afterPlan?{plan:c.afterPlan}:{})}:null;
+ if(night.afterReady){const {c,fin,plan}=night.afterReady;night.after=OfficeAfter.prepareAutonomous(c,fin,plan);}
+ const requiredAfter=!!night.after?.required;
  const verdict=fin.stars>=4.5?'An all-timer.':fin.stars>=4?'People will talk about that one.':fin.stars>=3?'A good night’s work.':fin.stars>=2?'Solid enough.':fin.stars>=1?'Forgettable.':'A disaster.';
  const pct=structureReport?structureReport.objectives.filter(o=>['achieved','adapted'].includes(o.status)).length+'/'+structureReport.objectives.length+' objectives':sheetReport?(sheetReport.achieved+sheetReport.adapted)+'/'+sheetReport.total+' beats':fin.script===null?'Called live':Math.round(fin.script*100)+'%';
  const actualFinish={booked:'Booked finish delivered',dq:'Unplanned disqualification',nc:'No contest',double:'Finish broken'}[fin.outcome]||
@@ -1880,7 +1887,7 @@ function result(){
   ' · Ringside changes: '+sheetReport.calls.length+' · Renegotiated beats: '+sheetReport.revisions.length+'</p>'+(finalStrip?'<div class="plan-strip final">'+stripInner(finalStrip)+'</div>':'')+'<div class="well"><ol style="padding-left:1.3em">'+sheetReport.beats.map(b=>'<li style="margin:4px 0"><b>'+esc(b.title.charAt(0).toUpperCase()+b.title.slice(1))+'</b> · '+esc(b.status)+'<span class="dim" style="display:block">'+esc(b.actual?beatLabel(b.actual):b.reason)+'</span>'+((b.status==='adapted'||b.rebuiltAfter?.length)&&b.actual&&b.reason?'<span class="dim" style="display:block">'+esc(b.reason)+'</span>':'')+'</li>').join('')+'</ol></div>':'';
  const story=flowReport(fin,w,f);
  const facts=`<div class="facts three"><div><small>Crowd at the bell</small><b>${fin.crowd}</b></div><div><small>Loudest</small><b>${fin.crowdPeak}</b></div><div><small>Big spots landed</small><b>${fin.spotHits}/${fin.spots}</b></div><div><small>Near falls</small><b>${fin.nearfalls}</b></div><div><small>Followed the layout</small><b>${pct}</b></div><div><small>Calls heard</small><b>${fin.callsUsed.length-fin.ignored}/${fin.callsUsed.length}</b></div></div>`;
- $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div>${matchSummary}</div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What changed',`<h3 class="section-h">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul><h3 class="section-h">Match statistics</h3>${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}`,{h:'h3'})}${win('Full commentary',`<details class="result-log"><summary>Read full commentary (${fin.log.length} entries)</summary><div class="well">${logList(fin.log)}</div></details>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${night.afterReady?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Next match':'Finish show'}</button><button class="btn go" data-tv="after" title="Decide what happens after the bell, then take the microphone">After the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
+ $('#tv').innerHTML=`<div class="strip"><b>${esc(p.name)}: full time</b><span>${esc(w.name)} v ${esc(f.name)}</span><span class="r">Match ${night.i} of ${night.queue.length}</span></div><div class="stage screen s-result"><div class="final"><div class="bigstars">${starsText(fin.stars)||'DUD'}</div><div class="verdict">${esc(verdict)}</div>${matchSummary}</div>${story?win('How the match went',story,{h:'h3',cls:'mf-win',note:`Crowd ${fin.crowdStart} at the bell · loudest ${fin.crowdPeak} · ${fin.crowd} at the finish`}):''}${win('What changed',`<h3 class="section-h">Consequences</h3><ul class="cons">${cons.map(x=>`<li class="${x.tone>0?'up':x.tone<0?'down':''}">${esc(x.text)}</li>`).join('')}</ul><h3 class="section-h">Match statistics</h3>${facts}${!story&&fin.crowdTrace?.length>2?`<h3 class="section-h" style="margin-top:12px">The crowd</h3>${crowdChart(fin.crowdTrace,M.len,finalStrip)}`:''}${sheetHtml}`,{h:'h3'})}${win('Full commentary',`<details class="result-log"><summary>Read full commentary (${fin.log.length} entries)</summary><div class="well">${logList(fin.log)}</div></details>`,{h:'h3',cls:'quiet',body:'tight'})}</div><div class="tv-foot"><span class="dim">${more?`Next up: ${esc(G.W(S().card.find(x=>x.id===night.queue[night.i])?.wid)?.name||'')}`:'That’s the night.'}</span>${requiredAfter?`<span class="foot-btns"><span class="dim">${esc(night.after.intervention?.line||'A wrestler has acted after the bell.')}</span><button class="btn go" data-tv="after">Respond after the bell</button></span>`:night.afterReady?`<span class="foot-btns"><button class="btn" data-tv="${more?'next':'done'}">${more?'Next match':'Finish show'}</button><button class="btn go" data-tv="after" title="Decide what happens after the bell, then take the microphone">After the bell</button></span>`:`<button class="btn go" data-tv="${more?'next':'done'}">${more?'Next match':'Back to the office'}</button>`}</div>`;
  night.M=null;night.plan=null;night.promo=null;night.stage='result';night.resultHTML=$('#tv').innerHTML;persistNight();
 }
 function syncAfterEvidence(){
@@ -2066,7 +2073,7 @@ document.addEventListener('click',e=>{
  if(d.aftermic){if(e.detail>1)return;const st=night?.after;if(night?.stage!=='after'||!st||st.stage!=='mic')return;OfficeAfter.speak(st,d.aftermic);syncAfterEvidence();return showAfter()}
  if(d.tv==='after'){
   if(!night||!['result','after'].includes(night.stage))return;
-  if(!night.after&&night.afterReady){
+  if(night.afterReady&&(!night.after||!night.after.dialogue)&&night.stage==='result'){
    if(night.afterLoading)return;
    const n=night,ready=n.afterReady,{c,fin,plan}=ready,token={};
    n.afterLoading=token;
@@ -2075,8 +2082,8 @@ document.addEventListener('click',e=>{
    Promise.resolve(window.OfficePlanningDialogue?.loadPair(G.W(c.wid),G.F(c.rid))||[]).catch(()=>[]).then(banks=>{
     if(n.afterLoading!==token)return;
     delete n.afterLoading;
-    if(night!==n||n.stage!=='result'||n.afterReady!==ready||n.after)return;
-    n.after=OfficeAfter.begin(c,fin,plan);
+    if(night!==n||n.stage!=='result'||n.afterReady!==ready)return;
+    n.after??=OfficeAfter.begin(c,fin,plan);
     OfficeAfter.attachDialogue(n.after,banks);
     syncAfterEvidence();
     if(n.after)showAfter();
@@ -2099,6 +2106,7 @@ document.addEventListener('click',e=>{
  if(d.tv==='meeting')return showMeeting();
  if(d.tv==='promos'){if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return showPromos();}
  if(d.tv==='bell'){if(window.OfficeSigning?.eligible(current())&&night?.signing?.stage!=='done')return;if(night?.segment?.cid===current()?.id&&night.segment.type!=='duel'&&night.seg?.stage!=='done')return;if(!night?.plan?.sheet?.skipPromo&&!night?.signing&&night?.promo?.v>=4&&night.promo.stage!=='done')return;if(night?.stage==='meeting'&&night.plan?.room?.stage!=='done')return;return bell();}
+ if(['next','done'].includes(d.tv)&&night?.after?.required&&night.after.stage!=='done')return;
  if(d.tv==='next'){night.after=null;night.afterReady=null;night.signing=null;night.segment=null;night.seg=null;prep();return}
  if(d.tv==='done'){night.afterReady=null;return endNight();}
  if(d.call)return doCall(d.call);

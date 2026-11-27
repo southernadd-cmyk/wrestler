@@ -365,3 +365,30 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  assert.match(ui,/if\(d\.afterangle\)\{if\(e\.detail>1\)return/);
  console.log('PASS contextual choices first, injury safety, decision stage and double-click protection');
 }
+
+// INT4: the result decides whether a response is required, not the player's click.
+{
+ let found=false,quiet=false;
+ for(let i=0;i<80&&(!found||!quiet);i++){
+  const s=career(),c=contract({id:'int4-autonomous-'+i}),f=play(c,fin({stars:4}));
+  const captured=A.capture({...f,evidence:{dirty:{w:false,f:false},injured:{w:null,f:true}}});
+  const before=JSON.stringify(s),st=A.prepareAutonomous(c,captured);
+  if(!st){quiet=true;assert.equal(JSON.stringify(s),before,'routine result is untouched');continue;}
+  found=true;assert.ok(st.required);assert.equal(st.intervention.id,'official_space');
+  const h=s.history.find(h=>h.cid===c.id);assert.equal(h.after.intervention.id,'official_space');
+  assert.equal(h.after.angle,null,'opening recorded before any player choice');
+  const snap=JSON.stringify(s);
+  assert.equal(JSON.stringify(A.prepareAutonomous(c,captured)),JSON.stringify(st));
+  assert.equal(JSON.stringify(s),snap,'reopening does not repeat the event');
+  G.S=JSON.parse(snap);
+  const resumed=A.prepareAutonomous(c,captured);assert.equal(resumed.intervention.id,'official_space');
+  assert.ok(A.choose(resumed,'none'));assert.ok(A.speak(resumed,'walk'));
+  assert.equal(A.prepareAutonomous(c,captured),null,'completed response cannot reopen');
+  assert.equal(G.S.after.autonomous,undefined);
+ }
+ assert.ok(found&&quiet);
+ assert.match(ui,/OfficeAfter\.prepareAutonomous\(c,fin,plan\)/);
+ assert.match(ui,/Respond after the bell/);
+ assert.match(ui,/night\?\.after\?\.required&&night\.after\.stage!=='done'/);
+ console.log('PASS INT4 autonomous opening recorded at settlement, routine skip, reload and once-only response');
+}
