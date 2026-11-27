@@ -158,6 +158,45 @@ function hydrate(x){
  root.OfficeWorldV4?.activate(x);
  return x;
 }
+// Import is transactional with respect to the active career reference. Reject
+// malformed saves before they can replace it. Legacy version numbers remain valid.
+function importCareer(x){
+ if(!x||![20,21,22].includes(x.v)||!Number.isFinite(x.cash)||!Number.isInteger(x.season)||x.season<1||
+  !Number.isInteger(x.week)||x.week<1||x.week>16||
+  !['roster','offers','card','inbox','history','promoters'].every(k=>Array.isArray(x[k])))return false;
+ try{const candidate=hydrate(JSON.parse(JSON.stringify(x)));if(!candidate)return false;S=candidate;return true;}
+ catch(e){root.OfficeAcademy?.restore(S);return false;}
+}
+// Match snapshots are subordinate to the career ledger. A settled bout can
+// never be replayed and a previous week's result cannot advance the current one.
+function recoverNight(saved){
+ if(!S)return null;
+ const now=abs(),card=S.card.filter(c=>c.eventAbs===now&&!resultRecorded(c)),ids=card.map(c=>c.id);
+ const pending=S.after?.autonomous;
+ const required=pending?.required&&pending.stage!=='done'&&S.history.some(h=>h.cid===pending.cid&&(h.season-1)*16+h.week===now);
+ const valid=!!saved&&Array.isArray(saved.queue)&&saved.queue.length>0&&new Set(saved.queue).size===saved.queue.length&&
+  Number.isInteger(saved.i)&&saved.i>=0&&saved.i<=saved.queue.length&&saved.before?.abs===now&&
+  (saved.careerSeed==null||saved.careerSeed===S.careerSeed)&&
+  saved.queue.every(id=>ids.includes(id)||S.history.some(h=>h.cid===id&&(h.season-1)*16+h.week===now));
+ if(required){
+  const prefix=valid?saved.queue.filter(id=>resultRecorded({id})): [pending.cid];
+  if(!prefix.includes(pending.cid))prefix.push(pending.cid);
+  const queue=[...prefix,...(valid?saved.queue.filter(id=>ids.includes(id)):ids),...ids.filter(id=>!valid||!saved.queue.includes(id))];
+  return {...(valid?saved:{}),queue:[...new Set(queue)],i:prefix.length,stage:'after',after:JSON.parse(JSON.stringify(pending)),afterReady:null,M:null,
+   results:valid?saved.results||[]:[],speed:valid?saved.speed||'normal':'normal',careerSeed:S.careerSeed};
+ }
+ if(!valid)return null;
+ const current=saved.queue[saved.i];
+ const completed=saved.stage==='result'||saved.stage==='after';
+ if(completed&&saved.i>0&&resultRecorded({id:saved.queue[saved.i-1]})&&
+  (saved.stage==='result'?typeof saved.resultHTML==='string':saved.after?.cid===saved.queue[saved.i-1]&&saved.after.stage==='done'))return saved;
+ if(ids.includes(current)&&saved.stage!=='result'&&saved.stage!=='after'&&saved.queue.slice(0,saved.i).every(id=>resultRecorded({id})))return saved;
+ // A refresh between settling a match and saving its presentation must not
+ // restore that match engine. Resume the remaining card or a safe show summary.
+ const done=saved.queue.filter(id=>resultRecorded({id}));
+ const remaining=[...saved.queue.filter(id=>ids.includes(id)),...ids.filter(id=>!saved.queue.includes(id))];
+ return {...saved,queue:[...done,...remaining],i:done.length,stage:remaining.length?'prep':'recovered-result',M:null,plan:null,promo:null,after:null,afterReady:null,signing:null,segment:null,seg:null,resultHTML:null};
+}
 function load(){
  for(const key of [STORE,PRIOR_STORE,LEGACY_STORE]){
   try{const x=hydrate(JSON.parse(localStorage.getItem(key)));if(x){S=x;save();return S}}catch(e){}
@@ -235,7 +274,7 @@ function wages(){return S.roster.reduce((t,w)=>t+w.wage,0)}
 const OVERHEAD=100;function overhead(count=S.roster.length){return 60+count*25}
 
 /* ---------- inbox ---------- */
-function msg(m){S.inbox.unshift({id:'m'+Math.floor(Math.random()*1e9).toString(36),week:S.week,season:S.season,read:false,answer:null,...m});S.inbox=S.inbox.slice(0,60)}
+function msg(m){S.inbox.unshift({id:'m'+Math.floor(Math.random()*1e9).toString(36),week:S.week,season:S.season,read:false,answer:null,...m});{const mandatory=S.inbox.filter(m=>m.kind==='decision'&&!m.answer);const keep=new Set(mandatory);const recent=S.inbox.filter(m=>!keep.has(m)).slice(0,Math.max(0,60-mandatory.length));S.inbox=S.inbox.filter(m=>keep.has(m)||recent.includes(m));}}
 function pending(){return S.inbox.filter(m=>m.kind==='decision'&&!m.answer)}
 
 /* ---------- contract ownership and booked opponents ----------
@@ -1013,5 +1052,5 @@ function officeBrief(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,trainingWeekPlan,ageWorker,opponentReady,offerCandidates,officeBrief};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,importCareer,recoverNight,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,trainingWeekPlan,ageWorker,opponentReady,offerCandidates,officeBrief};
 })(typeof window!=='undefined'?window:globalThis);
