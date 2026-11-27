@@ -179,3 +179,8 @@
 /* Folded effects: each one is its own small chip with clear separation. */
 #tv .desk-table .row-pick .desk-effects{display:flex;flex-wrap:wrap;gap:5px 8px;margin-top:5px}
 #tv .desk-table .row-pick .desk-fold{display:inline-flex;align-items:baseline;gap:5px;padding:1px 7px;background:var(--deep);border:1px solid var(--well-line);white-space:nowrap}
+/* Tiles don't need row numbers; they aren't shortcuts. */
+@media (min-width:901px){
+ #tv .desk-table:not(:has(td.desk-effect)) .desk-index{display:none}
+ #tv .desk-table:not(:has(td.desk-effect)) .desk-response{padding-left:6px}
+}
