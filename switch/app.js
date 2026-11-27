@@ -234,6 +234,76 @@ function guideState(){
  return s().switchGuide;
 }
 function guideMark(id){const g=guideState();if(!g.reviewed.includes(id))g.reviewed.push(id);G.save();}
+// Dennis ranks genuine opportunities; recommendations never spend money or
+// commit a wrestler. Scouting scores use only the available estimated bands.
+function guideRecruitOptions(state,initial=false){
+ const reserve=initial?250:750;
+ const estimate=(w,k)=>{const b=G.scoutBand(w,k);return (b.lo+b.hi)/2;};
+ const entries=state.free.map(w=>({w,f:G.signingForecast(w.id)})).filter(x=>x.f?.affordable);
+ const safe=entries.filter(({f})=>f.afterWeek>=Math.max(reserve,initial?0:f.weeklyCost));
+ const pool=initial&&!safe.length?entries:safe;
+ return pool.map(({w,f})=>({w,f,score:estimate(w,'ring')+estimate(w,'psych')+estimate(w,'safe')-w.fee/10-w.wage/2+(state.roster.length&&!state.roster.some(x=>D.divisionOf(x)===D.divisionOf(w))?12:0)}))
+  .sort((a,b)=>b.score-a.score||a.w.fee-b.w.fee||a.w.id.localeCompare(b.w.id));
+}
+function guideExpansion(state,seen){
+ if(!state.roster.length||state.roster.length>=5||seen.has('expansion'))return null;
+ // Do not rely on projected purses or future Relaxed support to pay fees.
+ const target=state.cash>=4000?5:state.cash>=2500?4:state.cash>=1500?3:2;
+ if(state.roster.length>=target)return null;
+ return guideRecruitOptions(state)[0]||null;
+}
+function guideTrainingAdvice(w){
+ const existing=G.trainingAdvice(w).filter(x=>x.priority==='urgent');
+ if(w.injury||w.program)return existing;
+ if(w.training!=='rest'&&w.fatigue>=45){
+  return [{priority:'urgent',kind:'focus',value:'rest',title:'Give them a rest',why:w.short+' has '+w.fatigue+' fatigue. Rest this week helps protect future performances; training while tired can make recovery harder.'}];
+ }
+ if(w.training==='rest'&&w.fatigue<=25){
+  if(w.intensity==='hard')return [{priority:'urgent',kind:'intensity',value:'light',title:'Reduce the next training load',why:w.short+' has recovered. Switch to light drills before restarting skill training.'}];
+  const focus=w.style==='Spectacle'&&w.safe<65?'safe':w.psych<65?'psych':'ring';
+  return [{priority:'urgent',kind:'focus',value:focus,title:'Resume skill training',why:w.short+' has recovered to '+w.fatigue+' fatigue. Resume '+D.TRAINING[focus].name.toLowerCase()+' training to develop their skills.'}];
+ }
+ return existing;
+}
+function guideOffer(state,brief,seen,now){
+ const urgent=new Set([...brief.today,...brief.deadline].map(x=>x.id));
+ const special=new Set(['Regional Showcase','Television Audition','Season Finale','Title match','Title defence']);
+ const rows=state.offers.filter(o=>!seen.has('offer:'+o.id)&&(urgent.has(o.id)||(o.eventAbs>now&&o.eventAbs<=now+2&&(special.has(o.tag)||o.title||o.pid==='union'))));
+ const score=({o,w,p,pay})=>pay-w.fatigue*4+(D.STYLE_PLAN[w.style]===p.likes?80:0)+(o.pid==='union'&&!state.goals?.union?150:0)+(o.title?100:0);
+ const candidates=rows.flatMap(o=>{
+  const p=G.P(o.pid);if(!p)return [];
+  return G.offerCandidates(o).map(w=>{
+   // Programmes advertise the combined purse; compare a per-match average.
+   const n=o.programme?.beats?.length||1,pay=o.programme?OfficeProgrammes.totalPurse(o,w)/n:G.purse(o,w);
+   const today=o.eventAbs===now||o.programme?.beats?.some(b=>b.at===now);
+   return {o,w,p,pay,today,fit:D.STYLE_PLAN[w.style]===p.likes};
+  });
+ });
+ return candidates.sort((a,b)=>Number(!!b.today)-Number(!!a.today)||score(b)-score(a)||a.o.id.localeCompare(b.o.id)||a.w.id.localeCompare(b.w.id))[0]||null;
+}
+function guideObjective(state){
+ const goals=G.goalList(),goal=id=>goals.find(g=>g.id===id);
+ if(state.season===1&&state.week<=4&&!state.monthReview){
+  const m=G.monthStatus(),need=[];
+  if(!m.okMatch)need.push('a three-star match');
+  if(!m.passed){if(!m.cash)need.push('£750 in the bank');if(!m.rep)need.push('reputation 30');if(!m.developed)need.push('two skill points for one wrestler');}
+  if(m.passed)return 'The first-month targets are currently met. Keep enough cash for weekly costs.';
+  return 'First-month review: a three-star match plus two of cash £750, reputation 30 and two skill points for one wrestler. '+(need.length?'Still to work on: '+need.join(', ')+'.':'');
+ }
+ if(!goal('union')?.done){
+  const p=G.P('union');
+  if(p&&state.rep<p.minRep)return 'Next step towards Grand Union: reputation '+state.rep+' of '+p.minRep+' needed to qualify for offers. Good matches build reputation.';
+  return 'Next objective: secure a Grand Union booking when an eligible offer appears.';
+ }
+ if(!goal('four')?.done)return 'Next objective: produce a four-star match. Choose a style that suits the wrestlers and keep them fit.';
+ if(!goal('rep')?.done)return 'Next objective: '+goal('rep').text+'.';
+ if(!goal('solvent')?.done)return 'Next objective: restore a positive bank balance.';
+ return 'Season objectives are currently met. Keep the stable healthy and profitable.';
+}
+function guidePlan(w,p,options){
+ const preferred=D.STYLE_PLAN[w.style],id=(w.fatigue>=78||w.injury)?'safe':preferred||p.likes||'story';
+ return options.find(x=>x.id==='plan_'+id)||options.find(x=>x.id==='plan_'+p.likes)||options[0];
+}
 function guidedDesk(note=''){
  const g=guideState(),seen=new Set(g.reviewed),b=G.officeBrief();
  const office=()=>desk('','',true),moreChoice=a('office','Full office / settings',office);
@@ -249,11 +319,11 @@ function guidedDesk(note=''){
   screen(pending.subject,(note?note+'\n':'')+pending.from+'. '+body,rows.concat(moreChoice));return;
  }
  if(!s().roster.length){
-  const choices=s().free.filter(w=>G.signingForecast(w.id)?.affordable).sort((x,y)=>x.fee-y.fee||y.ring-x.ring).slice(0,3);
-  screen('Dennis: build your stable',(note?note+'\n':'')+'We need wrestlers before we can book a show. Here are three affordable recruits. Review any of them or browse all free agents.',[
-   ...choices.map(w=>a(w.id,w.name+' — '+w.style+', '+money(w.fee),()=>signProfile(w,()=>guidedDesk()))),a('scout','Browse all free agents',()=>scout(()=>guidedDesk())),moreChoice]);return;
+  const choices=guideRecruitOptions(s(),true).slice(0,3);
+  screen('Dennis: build your stable',(note?note+'\n':'')+'We need wrestlers before we can book a show. I have compared estimated skills, signing fees and wages. '+(choices.length?'Review a suggested recruit or browse all free agents.':'No affordable recruits are available right now.'),[
+   ...choices.map(({w,f})=>a(w.id,w.name+' — '+w.style+', '+money(w.fee),()=>signProfile(w,()=>guidedDesk()),money(w.wage)+' weekly wage. '+money(f.afterWeek)+' left after estimated weekly costs.')),a('scout','Browse all free agents',()=>scout(()=>guidedDesk())),moreChoice]);return;
  }
- const urgent=s().roster.flatMap(w=>G.trainingAdvice(w).filter(x=>x.priority==='urgent'&&!seen.has('training:'+w.id+':'+x.title)).map(x=>({w,x})))[0];
+ const urgent=s().roster.flatMap(w=>guideTrainingAdvice(w).filter(x=>x.priority==='urgent'&&!seen.has('training:'+w.id+':'+x.title)).map(x=>({w,x})))[0];
  if(urgent){
   const {w,x}=urgent,id='training:'+w.id+':'+x.title,methods={focus:G.setTraining,intensity:G.setIntensity,session:G.setSession};
   const go=()=>{guideMark(id);guidedDesk();};
@@ -262,18 +332,25 @@ function guidedDesk(note=''){
   choices.push(a('keep','Keep current arrangements',go),a('review','Review wrestler development',()=>{guideMark(id);training(w,()=>guidedDesk());}),moreChoice);
   screen('Dennis: '+x.title,(note?note+'\n':'')+x.why,choices,{portrait:w});return;
  }
- const row=[...b.today,...b.deadline].find(x=>!seen.has('offer:'+x.id)&&s().offers.some(o=>o.id===x.id&&G.offerCandidates(o).length));
- if(row){
-  const o=s().offers.find(x=>x.id===row.id),p=G.P(o.pid),f=G.F(o.rid);
-  const candidates=G.offerCandidates(o).slice().sort((x,y)=>x.fatigue-y.fatigue||y.morale-x.morale);
-  const w=candidates[0],id='offer:'+o.id,skip=()=>{guideMark(id);guidedDesk();};
-  screen('Dennis: booking opportunity',(note?note+'\n':'')+p.name+' has an invitation against '+f.name+'. I suggest '+w.name+' because they are among the least fatigued eligible wrestlers. '+bookingTerms(o,w)+' '+(o.eventAbs===G.abs()?'This week.':'Future booking.')+' Fatigue '+w.fatigue+'.',[
+ const expansion=guideExpansion(s(),seen);
+ if(expansion){
+  const {w,f}=expansion,skip=()=>{guideMark('expansion');guidedDesk();};
+  screen('Dennis: grow your stable',(note?note+'\n':'')+'A larger team can take more bookings and let tired wrestlers rest. '+w.name+' is a promising recruit for '+money(w.fee)+', with wages of '+money(w.wage)+' a week. Estimated cash after signing and weekly costs: '+money(f.afterWeek)+', before any match income. Keep a reserve for quiet weeks.',[
+   a('review','Review '+w.name+' for signing',()=>{guideMark('expansion');signProfile(w,()=>guidedDesk());}),
+   a('skip','Keep the current stable this week',skip),moreChoice],{portrait:w});return;
+ }
+ const recommended=guideOffer(s(),b,seen,G.abs());
+ if(recommended){
+  const {o,w,p,fit,pay}=recommended,f=G.F(o.rid),id='offer:'+o.id,skip=()=>{guideMark(id);guidedDesk();};
+  const candidates=G.offerCandidates(o);
+  const reasons=[o.programme?'Average match pay '+money(pay)+'.':'',fit?'Their style suits this promoter.':'',o.pid==='union'&&!s().goals?.union?'This helps meet the Grand Union objective.':'',o.title?'This is a championship opportunity.':'',w.fatigue>=65?'Fatigue is high; consider leaving this offer or choosing another wrestler.':''].filter(Boolean).join(' ');
+  screen('Dennis: booking opportunity',(note?note+'\n':'')+p.name+' has an invitation against '+(f?.name||'an opponent')+'. I suggest '+w.name+' based on match pay, condition and promoter fit. '+bookingTerms(o,w)+' '+(recommended.today?'This week.':'Future booking; condition can change.')+' Fatigue '+w.fatigue+'. '+reasons,[
    ...(!o.talk||['start','done'].includes(o.talk.step)?[a('accept','Accept offered terms',()=>signBooking(o,w,()=>guidedDesk()))]:[]),
    a('review','Review / negotiate offer',()=>offerTerms(o,w,()=>guidedDesk())),
    ...(candidates.length>1?[a('other','Choose another wrestler',()=>offer(o,()=>guidedDesk()))]:[]),
    a('skip','Leave offer for now',skip),moreChoice],{portrait:w});return;
  }
- screen(s().card.length?'Dennis: ready for match night':'Dennis: the week is ready',(note?note+'\n':'')+s().card.length+' matches booked. '+money(b.after)+' projected balance after costs. '+(b.today.length+b.deadline.length?'There are still '+(b.today.length+b.deadline.length)+' unsigned urgent invitations. ':'')+'Existing training plans continue. Nothing is automatically signed or spent.',[
+ screen(s().card.length?'Dennis: ready for match night':'Dennis: the week is ready',(note?note+'\n':'')+s().card.length+' matches booked. '+money(b.after)+' projected balance after costs. '+(b.today.length+b.deadline.length?'There are still '+(b.today.length+b.deadline.length)+' unsigned urgent invitations. ':'')+'Existing training plans continue. '+guideObjective(s())+' Nothing is automatically signed or spent.',[
  a('continue',s().card.length?'Start match night':'Finish the week',advance),a('stable','Review your stable',stable),a('ringfax','Read Ringfax',()=>ringfaxHome(()=>guidedDesk())),moreChoice]);
 }
 function more(){screen('More office options',summary(),[a('finances','Finances and objectives',finances),a('results','Recent results',()=>results()),a('progress','Career progress',()=>careerProgress()),a('ringfax','Ringfax',()=>ringfaxHome(more)),a('mode','Management mode: '+(guided()?'Guided':'Full'),()=>modeScreen(more)),a('pause','Pause / settings',()=>pause(()=>more())),back(()=>desk('','more'))]);}
@@ -623,11 +700,11 @@ function roomScreen(page=0,section='main',extra='',previousCount=null){
  const assisted=guided()&&!planning.fullRoom;
  const detailed=()=>{planning.fullRoom=true;persistPlanning();root();};
  if(assisted&&section==='main'&&v.stage==='plan'){
-  const candidates=v.options||[],preferred=D.STYLE_PLAN[st.w.style],recommended=candidates.find(x=>x.id==='plan_'+preferred)||candidates.find(x=>x.id==='plan_'+st.promoter.likes)||candidates[0];
+  const candidates=v.options||[],recommended=guidePlan(st.w,st.promoter,candidates);
   const preview=JSON.parse(JSON.stringify(st));
   if(recommended)OfficeRoom.act(preview,recommended.id);
   const proposed=OfficeRoom.view(preview),description=[proposed.finishPlan?.summary,...(proposed.board||[]).map(x=>x.name+': '+(x.current||'called in the ring'))].filter(Boolean).join('. ');
-  show('Dennis: suggested layout',v.ask+' '+(recommended?recommended.label+'. '+recommended.hint:'')+' '+description,[
+  show('Dennis: suggested layout',v.ask+' '+(st.w.fatigue>=78||st.w.injury?'Condition is poor, so protect the wrestler with a safer match if possible. ':'')+(recommended?recommended.label+'. '+recommended.hint:'')+' '+description,[
    ...(recommended?[a('approve','Use '+recommended.label+' and Dennis’s running order',()=>{
     OfficeRoom.act(st,recommended.id);
     if(OfficeRoom.view(st).options.some(x=>x.id==='board_ok'))OfficeRoom.act(st,'board_ok');
