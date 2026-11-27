@@ -171,10 +171,22 @@
   const e=x.context,score=(side,key)=>Number.isFinite(st.psychology[side]?.scores?.[key])?st.psychology[side].scores[key]/100:0;
   const choices=[],add=(id,side,actorId,weight,line)=>{if(weight>0)choices.push({id,side,actorId,weight,line});};
   const hurtW=injured(e.injured?.w),hurtF=injured(e.injured?.f);
-  if(!hurtW&&!hurtF&&x.stars>=3.5&&x.outcome==='booked'&&e.dirty?.w===false&&e.dirty?.f===false)
+  const foulCorner=interference(e.ringside)||interference(e.rivalCorner);
+  // A sporting gesture should not casually excuse witnessed interference.
+  if(!hurtW&&!hurtF&&!foulCorner&&x.stars>=3.5&&x.outcome==='booked'&&e.dirty?.w===false&&e.dirty?.f===false)
    add('respect_offer','f',x.f.id,.18*score('f','respect'),'{F} gestures for {W} to join them in acknowledging the crowd.');
-  if(!hurtW&&!hurtF&&(e.dirty?.w===true||x.won&&x.outcome==='booked'&&score('f','escalation')>.65))
-   add('rival_protest','f',x.f.id,.24*score('f','escalation'),'{F} points at {W} and demands an explanation before leaving.');
+  const v=st.psychology.f?.values||{},known=(k,test)=>Number.isFinite(v[k])&&test(v[k]);
+  // Bond is already scaled 0..100 by psychology: 30 means a signed bond of -40.
+  // High escalation alone is not a grievance after a normal loss.
+  const hostility=known('bond',n=>n<=30)||known('feudHeat',n=>n>=65)||
+   known('ego',n=>n>=85)&&(known('bond',n=>n<=40)||known('feudHeat',n=>n>=40));
+  if(!hurtW&&!hurtF){
+   const grievance=e.dirty?.w===true||interference(e.ringside);
+   const bitterLoss=x.won&&x.outcome==='booked'&&hostility&&score('f','escalation')>.65;
+   if(grievance||bitterLoss)
+    add('rival_protest','f',x.f.id,(grievance?.24:.10)*score('f','escalation'),grievance?
+     '{F} points at {W} and demands an explanation before leaving.':'{F} refuses to acknowledge the result and gestures angrily towards {W}.');
+  }
   if(hurtW)
    add('own_assistance','w',x.w.id,.25*score('w','caution'),'{W} signals to the referee that they need assistance.');
   const corner=e.rivalCorner;
