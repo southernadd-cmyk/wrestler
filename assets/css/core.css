@@ -1060,3 +1060,29 @@ dialog.negotiation-dialog[open]{
  .neg-choice-heading{display:none}
  .neg-choices .neg-choice{grid-template-columns:1fr;gap:3px;min-height:48px}
 }
+
+/* Stable training desk: dense roster and paired development sections. */
+.s-train .train-grid{width:100%;table-layout:auto}
+.s-train .train-grid td,.s-train .train-grid th{padding:5px;white-space:normal;overflow-wrap:anywhere}
+.s-train .train-grid .row-pick{display:flex;align-items:center;gap:5px;text-align:left;width:100%}
+.s-train .train-grid .portrait{width:26px;height:32px;flex:none}
+.s-train .train-grid tr[data-selected="true"]{background:var(--gold);color:var(--deep)}
+.s-train .train-overview{gap:2px;margin-bottom:5px}
+.s-train .train-overview>div{padding:5px}
+.s-train .train-attributes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px}
+.s-train .train-attribute{display:flex;flex-direction:column;align-items:flex-start;padding:5px;gap:2px;min-width:0}
+.s-train .train-workbench{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px}
+.s-train .train-workbench>section{min-width:0}
+.s-train .train-workbench .train-settings{grid-template-columns:1fr;gap:4px}
+.s-train .train-workbench select{max-width:100%;min-width:0}
+.s-train .train-workbench .section-h{margin:5px 0}
+.s-train .train-wrestler-head{margin:5px 0}
+@media(max-width:900px){
+ .s-train .train-workbench{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+ .s-train .train-grid .portrait{display:none}
+ .s-train .train-grid td,.s-train .train-grid th{font-size:13px;padding:4px}
+ .s-train .train-grid .row-pick{min-height:44px}
+ .s-train .train-attributes{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
