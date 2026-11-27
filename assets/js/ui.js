@@ -2065,9 +2065,21 @@ document.addEventListener('click',e=>{
  if(d.tv==='after'){
   if(!night||!['result','after'].includes(night.stage))return;
   if(!night.after&&night.afterReady){
-   const {c,fin,plan}=night.afterReady;
-   night.after=OfficeAfter.begin(c,fin,plan);
-   syncAfterEvidence();
+   if(night.afterLoading)return;
+   const n=night,ready=n.afterReady,{c,fin,plan}=ready,token={};
+   n.afterLoading=token;
+   const button=t.closest('[data-tv="after"]');
+   if(button){button.disabled=true;button.textContent='Preparing dialogue…';}
+   Promise.resolve(window.OfficePlanningDialogue?.loadPair(G.W(c.wid),G.F(c.rid))||[]).catch(()=>[]).then(banks=>{
+    if(n.afterLoading!==token)return;
+    delete n.afterLoading;
+    if(night!==n||n.stage!=='result'||n.afterReady!==ready||n.after)return;
+    n.after=OfficeAfter.begin(c,fin,plan);
+    OfficeAfter.attachDialogue(n.after,banks);
+    syncAfterEvidence();
+    if(n.after)showAfter();
+   });
+   return;
   }
   if(night.after)return showAfter();
   return;
