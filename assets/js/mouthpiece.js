@@ -25,8 +25,7 @@
  function pick(c,w,id){const x=candidates(c,w).find(m=>m.id===id);return x&&!x.refuse?x:null;}
 
  // Afterwards, once per contract.
- const originalApply=G.applyResult;
- G.applyResult=function(c,fin){
+ G.registerResultStage('mouthpiece',originalApply=>function(c,fin){
   const s=G.S,seen=!!(c&&s?.history?.some(h=>h.cid===c.id));
   const out=originalApply.apply(this,arguments);
   try{
@@ -46,6 +45,6 @@
    }
   }catch(e){}
   return out;
- };
+ });
  root.OfficeMouthpiece={candidates,pick,MIN_GAP};
 })(typeof window!=='undefined'?window:globalThis);
