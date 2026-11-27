@@ -99,3 +99,9 @@ body[data-stage=ring] .speaker{color:var(--cyan);font-family:var(--tt);font-size
  #showJourney{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+/* Live booth: the newest line is the one currently being spoken. */
+body[data-broadcast=true] #story > :last-child{border-left:4px solid var(--gold);background:var(--well-row);padding:6px 8px;margin-bottom:0}
+body[data-broadcast=true] #story > :last-child .speaker{color:var(--gold)}
+body[data-broadcast=true] #choices button[data-choice=pause] .choiceLabel{color:var(--gold)}
+body[data-broadcast=true] #choices button[data-choice=pause].scan .choiceLabel,body[data-broadcast=true] #choices button[data-choice=pause]:focus-visible .choiceLabel{color:var(--ink)}
