@@ -508,6 +508,29 @@
     'Give us one moment we will talk about tomorrow.'}
   ];
  }
+ // Editorial selection is derived from the supplied save, not the live global
+ // career, and does not expose a booker's private planned winners.
+ function circuitDesk(s){
+  const absolute=((s?.season||1)-1)*16+(s?.week||1),territory=s?.territory||{},world=s?.worldV4||{};
+  const matches=(territory.lastResults?.week===absolute?territory.lastResults.matches||[]:[])
+   .filter(m=>m?.pid&&m?.a&&m?.b&&[m.a,m.b].includes(m.winner)&&Number.isFinite(m.stars))
+   .slice().sort((a,b)=>b.stars-a.stars||a.pid.localeCompare(b.pid)||a.a.localeCompare(b.a));
+  const best=matches[0]||null;
+  const injuries=matches.flatMap(m=>[m.a,m.b].filter(id=>m.condition?.[id]?.injury>0).map(id=>({id,pid:m.pid,weeks:m.condition[id].injury})));
+  const events=(world.events||[]).filter(e=>e.week===absolute&&typeof e.text==='string').slice(0,3);
+  const rumours=Object.entries(territory.agents?.wanted||{}).filter(([id])=>world.contracts?.[id]?.owner==='market')
+   .map(([id,teamId])=>({id,team:territory.teams?.find(t=>t.id===teamId)})).filter(x=>x.team);
+  const strategies=(territory.teams||[]).map(team=>({team,plan:world.agencies?.[team.id]?.strategy}))
+   .filter(x=>x.plan?.target&&x.plan.until>=absolute&&x.team.roster.includes(x.plan.target));
+  const prospects=Object.entries(world.personnel||{}).filter(([id,w])=>['ai','independent','market'].includes(world.contracts?.[id]?.owner)&&
+   ['Rookie','Prospect'].includes(person(id)?.tier)&&w.startSkills)
+   .map(([id,w])=>({id,gain:['ring','mic','psych','safe'].reduce((n,k)=>n+Math.max(0,(w[k]||0)-(w.startSkills[k]||0)),0),best:w.best||0}))
+   .filter(x=>x.gain>=2).sort((a,b)=>b.gain-a.gain||b.best-a.best||a.id.localeCompare(b.id));
+  const stories=Object.values(territory.booking?.promos||{}).flatMap(p=>p.live||[])
+   .filter(x=>x?.a&&x?.b&&x.beats?.some(b=>b.done)&&['title','grudge','rise'].includes(x.type))
+   .slice().sort((a,b)=>b.heat-a.heat||a.id.localeCompare(b.id));
+  return {best,injuries,events,rumours,strategies,prospects,stories};
+ }
  function build(s){
   syncQuizWeek(s);
   const h=latest(s),recent=recents(s),P={};
@@ -525,7 +548,9 @@
   const promos=s?.promoters?.length?s.promoters:(D?.PROMOS||[]);
   const circuitTitles=s?.territory?.titles||{};
   const bookings=scheduled(s);
-  const openingWeek=(s?.week||1)===1;
+  const openingWeek=(s?.week||1)===1&&(s?.season||1)===1;
+  const desk=circuitDesk(s);
+  const circuitLead=desk.best&&(desk.best.stars>=(h?.stars||0)||!h||((h.season-1)*16+h.week)<((s.season-1)*16+s.week)-1);
   // A source-grounded brief fills available room, never creates an orphan
   // second subpage. The article's repeated title is stripped by add().
   const addOpeningNote=(title,lines,heading,copy,colour='white')=>{
@@ -555,8 +580,15 @@
   ];
   add(100,'RINGFAX INDEX',a);
 
-  a=[item(h?'THE EDITORIAL LEAD':'WELCOME TO THE CIRCUIT','yellow'),item('')];
-  if(h){
+  a=[item(h||circuitLead?'THE EDITORIAL LEAD':'WELCOME TO THE CIRCUIT','yellow'),item('')];
+  if(circuitLead){
+   const m=desk.best,loser=m.winner===m.a?m.b:m.a;
+   paragraphs(a,'THE CIRCUIT HAS ITS SAY','cyan');
+   paragraphs(a,wrestlerName(m.winner)+' defeated '+wrestlerName(loser)+' at '+promotionName(m.pid)+'.');
+   a.push(item(''));
+   paragraphs(a,'Rated '+m.stars.toFixed(2)+' stars'+(m.minutes?' over '+m.minutes+' minutes':'')+'. The next crowd will expect an answer.','green');
+   a.push(item(''),item(' CIRCUIT NEWS: PAGE 102','cyan'));
+  }else if(h){
    paragraphs(a,'THE BELL HAS RUNG','cyan');
    paragraphs(a,h.name+' met '+h.foe+' at '+(h.promoter||promotionName(h.pid)||'the circuit')+'.');
    a.push(item(''));
@@ -615,8 +647,8 @@
    }
    a.push(item(' THIS WEEK IN THE RING','cyan'));
    if(verified.length){
-    const match=verified[0],loser=match.winner===match.a?match.b:match.a;
-    paragraphs(a,wrestlerName(match.winner)+' got past '+wrestlerName(loser)+'. What happens next?');
+    const match=desk.best||verified[0],loser=match.winner===match.a?match.b:match.a;
+    paragraphs(a,wrestlerName(match.winner)+' beat '+wrestlerName(loser)+(Number.isFinite(match.stars)?' ('+match.stars.toFixed(2)+' stars).':'.'));
    }else paragraphs(a,'No new verified circuit results. The next stories remain unwritten.');
    a.push(item(''));
    const buzz=promos.filter(p=>Number.isFinite(territory.business?.[p.id]?.buzz))
@@ -627,11 +659,27 @@
     paragraphs(a,buzz[0].name+' is attracting attention, but the next show still has to deliver.','white');
    }
    a.push(item(''),item(' THE ARGUMENT CONTINUES ON P500','yellow'));
-   add(102,'CIRCUIT NEWS',a);
+   const newsPages=[a];
+   if(desk.injuries.length||desk.events.length){
+    const extra=[item('CIRCUIT BULLETIN','yellow'),item('')];
+    for(const injury of desk.injuries.slice(0,2))paragraphs(extra,wrestlerName(injury.id)+' injured at '+promotionName(injury.pid)+'. Estimated absence: '+injury.weeks+' week(s).','cyan');
+    for(const e of desk.events){const rows=[];paragraphs(rows,e.text);if(extra.length+rows.length+1<=17)extra.push(item(''),...rows);}
+    newsPages.push(extra);
+   }
+   add(102,'CIRCUIT NEWS',newsPages.flat(),newsPages.length>1?newsPages:null);
   }
   // The Offers screen owns contracts. Ringfax covers opinion, not transactions.
   a=[item('THE GRAPEVINE','yellow'),item(' NOT A CONFIRMED FIXTURE LIST','cyan'),item('')];
-  if(bookings.length){
+  if(desk.rumours.length){
+   paragraphs(a,'TRANSFER TALK','green');
+   for(const x of desk.rumours.slice(0,2)){paragraphs(a,x.team.manager+' is reportedly interested in '+wrestlerName(x.id)+'.');a.push(item(''));}
+   paragraphs(a,'Interest only. No signing confirmed.','yellow');
+  }else if(desk.strategies.length){
+   const x=desk.strategies.find(x=>x.plan.mode==='invest')||desk.strategies[0];
+   paragraphs(a,'AGENCY WATCH','green');
+   paragraphs(a,x.team.manager+(x.plan.mode==='consolidate'?' is concentrating on keeping costs down.':' is focusing on '+wrestlerName(x.plan.target)+'.'));
+   a.push(item(''));paragraphs(a,'A priority is not a promise of a booking.');
+  }else if(bookings.length){
    const lead=bookings[0];
    paragraphs(a,'WORD AROUND THE HALLS','green');
    paragraphs(a,promotionName(lead.pid)+' has an active booking conversation this week.');
@@ -650,6 +698,8 @@
   if(!h&&promos[0]&&promos.at(-1))addOpeningNote('THE GRAPEVINE',a,
    'THE SCOUTS ARGUE',promos[0].voice+' looks for '+promos[0].desc.toLowerCase()+
    '; '+promos.at(-1).voice+' prizes '+promos.at(-1).desc.toLowerCase()+'.','green');
+  // Keep the lead and navigation together within a single teletext page.
+  if(a.length>17)a=[...a.slice(0,15),item(''),item(' OPINION, NOT A CONTRACT','yellow')];
   add(103,'THE GRAPEVINE',a);
   a=[item('FROM THE ROAD','yellow'),item(' THE CIRCUIT HAS MANY FACES','cyan'),item('')];
   const roadShows=[promos[0],promos.at(-1)].filter(Boolean);
@@ -725,13 +775,14 @@
    return {name:wrestlerName(id),style,angle};
   };
   a=[item('ONES TO WATCH','yellow'),item(' EDITORS PICKS / NOT RANKINGS','cyan'),item('')];
-  for(const [i,entry] of picks.slice(0,2).entries()){
+  const subjects=desk.prospects.length?desk.prospects.slice(0,2).map(x=>[x.id,x]):picks.slice(0,2);
+  for(const [i,entry] of subjects.entries()){
    const subject=makeSpotlight(entry[0]);
    a.push(item(' '+subject.name.toUpperCase(),'yellow'));
-   paragraphs(a,subject.style+': '+subject.angle);
+   paragraphs(a,entry[1]?.gain?('Development watch: '+entry[1].gain+' skill points gained'+(entry[1].best?' / best '+entry[1].best.toFixed(2)+' stars':'')+'.'):subject.style+': '+subject.angle);
    if(i===0)a.push(item(''));
   }
-  if(!picks.length)paragraphs(a,'The first names to break through must show us something in the ring.');
+  if(!subjects.length)paragraphs(a,'The first names to break through must show us something in the ring.');
   a.push(item(''),item(' WHO WOULD YOU PICK? PAGE 501','green'));
   if(picks.length)addOpeningNote('ONES TO WATCH',a,'WHAT TO WATCH',
    'These names are in the frame, but their next crowd will decide what the headlines are.','green');
@@ -739,7 +790,12 @@
   a=[item('THE LONG VIEW','yellow'),item(' STORYLINES / READER THEORIES','cyan'),item('')];
   const ongoing=Object.values(s?.feuds||{}).filter(f=>f&&f.heat>0&&!f.closed)
    .sort((x,y)=>y.heat-x.heat);
-  if(ongoing.length){
+  if(desk.stories.length){
+   const f=desk.stories[0],p=promotionName(f.pid);
+   paragraphs(a,wrestlerName(f.a)+' and '+wrestlerName(f.b)+' at '+p+'.','yellow');a.push(item(''));
+   paragraphs(a,f.type==='title'?'The title chase has begun.':f.type==='rise'?'A new contender is finding their feet.':'The rivalry has already spilled into the ring.');
+   paragraphs(a,'The next chapter is not yet written.','green');
+  }else if(ongoing.length){
    const f=ongoing[0];
    paragraphs(a,wrestlerName(f.wid)+' and '+wrestlerName(f.rid)+' have unfinished business.','yellow');
    a.push(item(''));
@@ -1295,7 +1351,7 @@
    if(n>1){C.sub=(C.sub+1)%n;root.document.dispatchEvent(new root.Event('ringfax-page-rotated'));}
   },8000);
  }
- root.OfficeRingfax={build,screen,view,fit,press,key,voices,quizInfo,
+ root.OfficeRingfax={build,circuitDesk,screen,view,fit,press,key,voices,quizInfo,
   get quizQuestions(){return QUIZ_QUESTIONS.map(q=>({...q,a:q.a.slice()}));},
   reset:()=>{C.page=100;C.sub=0;C.entry='';C.hold=false;quizReset();}};
 })(typeof window!=='undefined'?window:globalThis);
