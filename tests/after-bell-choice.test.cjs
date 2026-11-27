@@ -148,3 +148,30 @@ const snap=s=>JSON.stringify({bonds:s.bonds.pairs||s.bonds,feuds:s.feuds,cash:s.
  assert.equal(st.fin.context.dirty,null);
  console.log('PASS unknown or unwitnessed events are not invented');
 }
+
+// AB2: shared fuzzy tendencies reflect witnessed events without creating career facts.
+{
+ const s=career(),c=contract({finish:'lose_clean'}),f=play(c),h=s.history.find(h=>h.cid===c.id);
+ const w=G.W(c.wid),opp=G.F(c.rid);opp.ego=60;opp.pro=65;
+ B.shift(w.id,opp.id,30,'respect','Prior respect.',c.id+':ab2');
+ const clean=A.capture({...f,evidence:{dirty:{w:false,f:false},stamina:{w:80,f:80},injured:{w:null,f:false}}},h);
+ const dirty=A.capture({...f,evidence:{dirty:{w:true,f:false},stamina:{w:80,f:80},injured:{w:null,f:false}}},h);
+ const hurt=A.capture({...f,evidence:{dirty:{w:false,f:false},stamina:{w:80,f:15},injured:{w:null,f:true}}},h);
+ const before=JSON.stringify(s);
+ const base=A.psychology(c,clean),angry=A.psychology(c,dirty),tired=A.psychology(c,hurt);
+ assert.equal(JSON.stringify(s),before,'inference never mutates career');
+ assert.ok(angry.f.scores.respect<base.f.scores.respect,'witnessed cheap shot reduces opponent respect');
+ assert.ok(angry.f.scores.escalation>base.f.scores.escalation);
+ assert.ok(tired.f.scores.caution>base.f.scores.caution);
+ assert.ok(A.reactionAdjustment({psychology:angry},'handshake')<A.reactionAdjustment({psychology:base},'handshake'));
+ assert.ok(A.reactionAdjustment({psychology:tired},'beatdown')<A.reactionAdjustment({psychology:base},'beatdown'));
+ for(const p of [base,angry,tired])for(const plan of ['handshake','beatdown'])assert.ok(Math.abs(A.reactionAdjustment({psychology:p},plan))<=.18);
+ assert.equal(A.reactionAdjustment({},'handshake'),0);
+ assert.equal(A.psychology(c,f),null,'old saves retain legacy resolution');
+ const st=A.begin(c,dirty),saved=JSON.parse(JSON.stringify(st));
+ assert.deepEqual(saved.psychology,JSON.parse(JSON.stringify(angry)));
+ assert.equal(A.reactionAdjustment(st,'handshake'),A.reactionAdjustment(saved,'handshake'));
+ assert.ok(A.choose(saved,'handshake'));
+ assert.ok(saved.angle.chance>=8&&saved.angle.chance<=94);
+ console.log('PASS shared fuzzy reaction tendencies and bounded, saved angle odds');
+}
