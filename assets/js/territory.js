@@ -268,11 +268,11 @@ function simulateCircuitMatch(s,week,m){
  }
  return {stars,minutes,plan,condition};
 }
-function settleCircuitCondition(s,week,result){
+function settleCircuitCondition(s,week,result,winner){
  if(!s.worldV4)return;
  for(const [id,c] of Object.entries(result.condition)){
   const worker=G.personnel(s,id);if(!worker||s.roster.some(w=>w.id===id))continue;
-  const patch={fatigue:c.fatigue};
+  const patch={fatigue:c.fatigue,matches:(worker.matches||0)+1,wins:(worker.wins||0)+(winner===id?1:0),starSum:(worker.starSum||0)+result.stars,best:Math.max(worker.best||0,result.stars)};
   if(c.injury)Object.assign(patch,{injury:Math.max(worker.injury||0,c.injury),injurySince:week,wear:{...(worker.wear||{}),body:(worker.wear?.body||0)+1},niggle:0,nigglePart:null,relapse:null});
   G.updatePersonnel(s,id,patch);
  }
@@ -292,7 +292,7 @@ function evolve(){const s=G.S,t=ensure();if(!s||!t)return;
   const won=planned?planned===a.id:((week*13+a.ring+b.psych+p.reach+j*37)%100)<(onTheLine?58:52);
   const winner=won?a:b,loser=won?b:a,sim=simulateCircuitMatch(s,week,{pid:p.id,a,b,title:onTheLine,stars:billed,story}),{stars,minutes,plan:workPlan,condition}=sim;
   t.lastResults.matches.push({pid:p.id,div,a:a.id,b:b.id,slotA:a.slot,slotB:b.slot,winner:winner.id,title:onTheLine,stars,minutes,plan:workPlan,condition,story:story?.id||null});
-  settleCircuitCondition(s,week,sim);
+  settleCircuitCondition(s,week,sim,winner.id);
   for(const worker of [a,b])if(condition[worker.id].injury)reports.push(p.name+': '+worker.name+' picked up an injury in the match. Expected absence: '+condition[worker.id].injury+' week(s).');
   record(t,p.id,a.id,b.id,a.slot,won,stars,plan?CIRCUIT_SCALE:1);
   t.points[winner.id]=(t.points[winner.id]||0)+4;

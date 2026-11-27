@@ -155,7 +155,7 @@
    case 'title':{
     const shot=ms.find(m=>m.title);
     if(holds(id)){d+=4;met='Won a championship.';}
-    else if(shot){d+=8;met=shot.won?'Won a championship.':'Got a title match.';}
+    else if(shot){d+=8;met='Got a title match.';}
     else d+=(map[id]?.rank??0)>=3?1:-2*imp;
     if(!worked)d-=.5*imp;
     break;}
@@ -169,7 +169,7 @@
     break;}
    case 'body':{
     if(w.injury||ms.some(m=>m.injured))d-=5;
-    if(mine&&(w.fatigue||0)>=65)d-=3;
+    if((w.fatigue||0)>=65)d-=3;
     if(!worked)d+=2;else d+=ms.some(m=>m.minutes>15)?-1.5:.5;
     e.good=(e.good||0)+(d>0?1:d<0?-e.good:0);
     if(e.good>=4){met='Feels fit and fresh again.';}
@@ -183,15 +183,9 @@
     if(n>=3)met='Had their rivalry out over three matches.';
     break;}
    case 'respect':{
-    if(mine||ms.some(m=>!m.circuit)){
-     const top=Math.max(0,...ms.filter(m=>!m.circuit).map(m=>m.stars));
-     if(top>=4){d+=12;met='Had a four-star match.';}
-     else if(top>=3.5)d+=6;else if(worked&&top<2.5)d-=3;else if(!worked)d-=1*imp;
-    }else{
-     const big=ms.filter(m=>m.won&&rankOf(m.slot)>=2).length;
-     e.count+=big;d+=big?3:-.5*imp;
-     if(e.count>=3)met='Won three big matches on the circuit.';
-    }
+    const top=Math.max(0,...ms.map(m=>m.stars||0));
+    if(top>=4){d+=12;met='Had a four-star match.';}
+    else if(top>=3.5)d+=6;else if(worked&&top<2.5)d-=3;else if(!worked)d-=1*imp;
     break;}
    case 'stage':{
     const tv=ms.filter(m=>TV.has(m.pid));
@@ -199,7 +193,7 @@
     else if(tv.length)d+=4;else d-=1.5*imp;
     break;}
    case 'mentor':{
-    const kids=ms.filter(m=>['Rookie','Prospect'].includes(who(m.opp)?.tier)&&(m.circuit||m.stars>=3));
+    const kids=ms.filter(m=>['Rookie','Prospect'].includes(who(m.opp)?.tier)&&m.stars>=3);
     e.count+=kids.length;d+=kids.length?4:-.5;
     if(e.count>=3)met='Brought three younger wrestlers through good matches.';
     break;}
@@ -409,7 +403,7 @@
     if(e.target)return `Wants ${nameOf(e.target)}: ${e.met[e.target]||0} of 3 matches so far.`;
     const best=Object.entries(e.met).sort((x,y)=>y[1]-x[1])[0];
     return best?`Closest: ${best[1]} of 3 matches with ${shortOf(best[0])}.`:'No regular opponent yet.';}
-   case 'respect':return G.W(id)?`Best match so far: ${Math.max(0,...(G.S.history||[]).filter(h=>h.wid===id).map(h=>h.stars))} stars.`:`${e.count} of 3 big wins.`;
+   case 'respect':return G.W(id)?`Best match so far: ${Math.max(0,...(G.S.history||[]).filter(h=>h.wid===id).map(h=>h.stars))} stars.` :`Best recorded match: ${who(id)?.best||0} stars.`;
    case 'stage':return onTV(id)?'Already on a television card. Needs a bigger spot there.':'Not on a television card yet.';
    case 'mentor':return `${e.count} of 3 good matches with younger wrestlers.`;
   }

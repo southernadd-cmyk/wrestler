@@ -153,9 +153,9 @@ function recruitmentAllowed(s,team,p){
 }
 function marketTarget(s,team,taken=new Set()){
  const w=activeWorld(s);if(!w)return null;
- const offers=[...s.free,...all.filter(p=>w.contracts[p.id]?.owner==='independent')];
+ const offers=[...s.free,...all.filter(p=>w.contracts[p.id]?.owner==='independent').map(p=>G.personnel(s,p.id)||p)];
  return offers.filter(p=>!taken.has(p.id)&&recruitmentAllowed(s,team,p)&&canAfford(s,team.id,p.id))
-  .map(p=>({p,fit:(p.style===team.style?30:0)+p.pro*.35+p.ring*.22-p.fee/180-(p.ego>85?5:0)}))
+  .map(p=>({p,fit:(p.style===team.style?30:0)+p.pro*.35+p.ring*.22-p.fee/180-(p.ego>85?5:0)-(p.injury?12:0)-(p.fatigue||0)*.08}))
   .sort((a,b)=>b.fit-a.fit||a.p.id.localeCompare(b.p.id))[0]?.p||null;
 }
 function evolve(s,t,week,reports){
@@ -169,7 +169,7 @@ function evolve(s,t,week,reports){
   agency.weeklyIncome=780+Math.round(team.rep*18)+Math.min(team.wins*8,420);
   agency.cash+=agency.weeklyIncome-payroll;
   for(const id of [...team.roster]){
-   const c=w.contracts[id],worker=D.findWrestler(id);
+   const c=w.contracts[id],worker=G.personnel(s,id);
    if(c.owner!=='ai'||c.expiresWeek===null||week<c.expiresWeek)continue;
    const keep=agency.cash>payroll*2 && worker.pro>=65 && worker.loyal>=45;
    if(keep){c.signedWeek=week;c.expiresWeek=week+16;event(w,week,worker.name+' renewed with '+team.name+'.');}
@@ -211,6 +211,48 @@ function markRetired(s,worker,week=baseWeek(s)){
  world.contracts[worker.id]={...createContract('retired',worker.id,null,week),retiredWeek:week};
  s.free=s.free.filter(w=>w.id!==worker.id);
  for(const team of s.territory.teams)team.roster=team.roster.filter(id=>id!==worker.id);
+}
+// Development happens before recovery and booking; the same pure forecast
+// runs on a cloned save. No agency borrows the player's coach or budget.
+function developmentPlan(s,worker,week,worked=false){
+ if(worker.injury||(worker.fatigue||0)>=40)return null;
+ const owner=s.worldV4?.contracts[worker.id]?.owner;
+ if(!['market','ai','independent'].includes(owner))return null;
+ // Market workers train less regularly; older workers conserve energy.
+ if(owner==='market'&&lifecycleRoll(s,worker.id,week,'market-drill')>=.5)return null;
+ if(worker.age>=38&&lifecycleRoll(s,worker.id,week,'veteran-drill')>=.55)return null;
+ const ceiling=worker.ceiling??G.clamp(Math.max(worker.ring,worker.mic,worker.psych)+12,0,95);
+ const ambition=s.ambitions?.w?.[worker.id]?.kind;
+ const target={ring:72,mic:65,psych:72,safe:75};
+ if(ambition==='body')target.safe+=12;
+ if(ambition==='respect')target.ring+=8;
+ if(ambition==='push'||ambition==='stage')target.mic+=8;
+ if(worker.tier==='Rookie'||worker.tier==='Prospect'){target.ring+=6;target.psych+=5;}
+ if(worker.age>=35)target.psych+=8;
+ const score=key=>target[key]-(worker[key]??60)+(lifecycleRoll(s,worker.id,week,'focus:'+key)-.5)*18;
+ const focus=Object.keys(target).sort((a,b)=>score(b)-score(a)||a.localeCompare(b))[0];
+ const plan=G.trainingWeekPlan({...worker,ceiling,fatigue:worker.fatigue||0,training:focus,intensity:'light',program:null},{worked,independent:true});
+ return plan?.kind==='skill'?{...plan,focus,ceiling}:null;
+}
+function developPersonnel(s,week,{preview=false}={}){
+ const world=activeWorld(s);if(!world||world.lastDevelopmentWeek>=week)return [];
+ world.lastDevelopmentWeek=week;
+ const worked=new Set();
+ if(s.territory?.lastResults?.week===week)for(const m of s.territory.lastResults.matches){worked.add(m.a);worked.add(m.b);}
+ for(const h of s.history||[])if((h.season-1)*16+h.week===week)worked.add(h.rid);
+ const gains=[];
+ for(const [id,c] of Object.entries(world.contracts)){
+  if(!['market','ai','independent'].includes(c.owner))continue;
+  const worker=G.personnel(s,id);if(!worker)continue;
+  const plan=developmentPlan(s,worker,week,worked.has(id));if(!plan)continue;
+  const startSkills=worker.startSkills||Object.fromEntries(['ring','mic','psych','safe'].map(k=>[k,worker[k]]));
+  const progress={...(worker.progress||{}),[plan.stat]:plan.progressBank};
+  const patch={ceiling:plan.ceiling,startSkills,progress,[plan.stat]:plan.skillAfter,fatigue:plan.fatigue};
+  G.updatePersonnel(s,id,patch);
+  if(plan.gain)gains.push({id,stat:plan.stat,gain:plan.gain});
+ }
+ // Individual skill increments are kept in personal records, not a news flood.
+ return gains;
 }
 function recoverPersonnel(s,week){
  const world=activeWorld(s);if(!world||world.lastRecoveryWeek>=week)return;
@@ -263,10 +305,11 @@ function previewLifecycle(s,week){
  const current=baseWeek(s);
  if(!activeWorld(s)||week!==current+1)return s;
  const copy=JSON.parse(JSON.stringify(s));
+ developPersonnel(copy,current,{preview:true});
  recoverPersonnel(copy,current);
  if(s.week===16)agePersonnel(copy,s.season,{preview:true});
  return copy;
 }
 function ownership(s,id){return activeWorld(s)?.contracts[id]||null}
-root.OfficeWorldV4={activate,reconcile,markPlayer,markMarket,canAfford,hire,releaseAI,evolve,ownership,activeWorld,marketTarget,recruitmentAllowed,MARKET_RESERVE,INDEPENDENT_RESERVE,ROUTINE_CAP,markRetired,recoverPersonnel,agePersonnel,previewLifecycle};
+root.OfficeWorldV4={activate,reconcile,markPlayer,markMarket,canAfford,hire,releaseAI,evolve,ownership,activeWorld,marketTarget,recruitmentAllowed,MARKET_RESERVE,INDEPENDENT_RESERVE,ROUTINE_CAP,markRetired,developmentPlan,developPersonnel,recoverPersonnel,agePersonnel,previewLifecycle};
 })(typeof window!=='undefined'?window:globalThis);

@@ -378,9 +378,9 @@ function sessionTip(w){
 
 /* Pure weekly training plan shared by the forecast and settlement.
    No mutations or RNG draws here; only endWeek rolls injury risk. */
-function trainingWeekPlan(w){
+function trainingWeekPlan(w,context=null){
  if(!w)return null;
- const worked=S.history.some(h=>h.wid===w.id&&h.season===S.season&&h.week===S.week);
+ const worked=context?.worked??S.history.some(h=>h.wid===w.id&&h.season===S.season&&h.week===S.week);
  const cost=trainingCost(w);
  if(w.injury||w.training==='rest'){
   return {kind:'rest',cost,worked,fatigue:clamp(w.fatigue-(worked?6:24)),detail:w.injury?'Injured: no skill training until recovered.':'Resting reduces fatigue.'};
@@ -390,7 +390,7 @@ function trainingWeekPlan(w){
  }
  const stat=D.TRAINING[w.training]?.stat,intensity=INTENSITY[w.intensity||'light']||INTENSITY.light;
  if(!stat)return {kind:'other',cost,worked};
- const cur=w[stat],camp=w.program?.type==='camp',specialist=S.coach&&COACHES[S.coach].stat===stat?COACHES[S.coach].boost:0;
+ const cur=w[stat],camp=w.program?.type==='camp',specialist=!context?.independent&&S.coach&&COACHES[S.coach].stat===stat?COACHES[S.coach].boost:0;
  const rookie=w.tier==='Rookie'&&cur<68?1.4:1;
  const growth=(camp?1.9:intensity.gain)*(1+specialist)*rookie*(cur>=88?.24:cur>=80?.5:1)*ceilingRoom(w,cur)*(w.fatigue>=70?.6:1);
  const bank=(w.progress?.[stat]||0)+growth;
@@ -671,9 +671,9 @@ function unbook(cid){const c=[...S.card,...S.futureBookings].find(x=>x.id===cid)
   const minutes=Number.isFinite(fin.minutes)?fin.minutes:0;
   return Math.max(0,Math.round(minutes*1.15+(fin.plan==='spots'?6:fin.plan==='brawl'?4:fin.plan==='safe'?-3:0)+(Number.isFinite(stamina)&&stamina<25?5:0)+(worker.niggle>0?10:0)));
  }
- function settleOpponentCondition(f,fin){
+ function settleOpponentCondition(f,fin,c){
   if(!f||!S.worldV4||W(f.id))return null;
-  const fatigue=clamp((f.fatigue||0)+matchFatigue(f,fin,'f')),patch={fatigue};
+  const fatigue=clamp((f.fatigue||0)+matchFatigue(f,fin,'f')),patch={fatigue,matches:(f.matches||0)+1,wins:(f.wins||0)+(root.OfficeOutcome.interpret(c,fin).winner==='f'?1:0),starSum:(f.starSum||0)+(fin.stars||0),best:Math.max(f.best||0,fin.stars||0)};
   // The current engine records opponent hurt as a boolean, not a duration.
   // A witnessed injury merits one week of rest; repeated injuries use the
   // existing wear mechanism. Never invent an anatomical location.
@@ -718,7 +718,7 @@ function unbook(cid){const c=[...S.card,...S.futureBookings].find(x=>x.id===cid)
  // body
  const tired=matchFatigue(w,fin);
  w.fatigue=clamp(w.fatigue+tired);
- const opponent=settleOpponentCondition(f,fin);
+ const opponent=settleOpponentCondition(f,fin,c);
  if(opponent&&(fin.foeHurt===true||fin.evidence?.injured?.f)){
   const part=fin.foeInjuryPart||(typeof fin.evidence?.injured?.f==='string'?fin.evidence.injured.f:null);
   add(`${f.short} was injured${part?' ('+part+')':''}: unavailable for ${opponent.injury} week${opponent.injury===1?'':'s'}.`,0);
@@ -927,6 +927,7 @@ function endWeek(){
  S.books=[...(S.books||[]),{a:abs(),cash:S.cash,wages:pay,other:oh+cw+trained}].slice(-48);
  for(const w of S.roster)snapshot(w);
  S.focus=2;
+ root.OfficeWorldV4?.developPersonnel(S,abs());
  root.OfficeWorldV4?.recoverPersonnel(S,abs());
  S.week++;
  if(S.week>16){seasonEnd();}
@@ -993,5 +994,5 @@ function ageRoster(){
 }
 function projected(){return S.card.reduce((t,c)=>t+c.purse,0)-wages()-overhead()-trainingBill()}
 
-root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,ageWorker,opponentReady};
+root.OfficeGame={get S(){return S},set S(x){S=hydrate(x)},msg,fresh,normaliseIdentity,suggestIdentity,IDENTITY_ARCHIVE,setIdentity,load,save,saveStatus,reportError,systemErrors,resultRecorded,hasSave,wipe,sign,signingForecast,release,setTraining,setIntensity,setSession,sessionOptions,sessionTip,trainingForecast,trainingAdvice,trainingReview,rehearsed,micLevel,MIC_STYLES,SESSION_CAP,startProgram,cancelProgram,COACHES,hireCoach,fireCoach,coachWage,checkIn,INTENSITY,trainingCost,trainingBill,monthStatus,circuitStatus,CIRCUIT_TARGETS,meeting,talkMove,makeOffers,purse,book,unbook,applyResult,answer,pending,endWeek,goalList,W,F,P,feud,leave,available,availableAt,bookingConflict,reconcileOwnership,inCamp,booked,bookedAt,wages,OVERHEAD,money,projected,overhead,abs,eligible,clamp,ageRoster,retireChance,scoutBand,scoutWatch,personalRecord,personnel,updatePersonnel,matchFatigue,trainingWeekPlan,ageWorker,opponentReady};
 })(typeof window!=='undefined'?window:globalThis);
