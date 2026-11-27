@@ -277,6 +277,15 @@ window.NarbeChoiceScan = (function () {
     let suspended = false, inactive = false, inputHeld = false, timer = null, generation = 0;
     let due = Infinity, waiting = false, ownSpeech = null, inputSpeech = null;
     let pauseGeneration = 0, pauseSpeech = null, parkingSpeech = null;
+    // Office: an intentional help message holds only the auto clock.
+    let helpWait = null;
+    function clearHelp(cancel=false){const h=helpWait;if(!h)return;helpWait=null;clearTimeout(h.timer);if(cancel)h.ticket.cancel?.();}
+    function holdForSpeech(ticket){
+      clearHelp(true);if(!ticket?.finished)return;
+      stopClock();const h={ticket,timer:null};helpWait=h;
+      const finish=()=>{if(helpWait!==h)return;clearHelp();schedule(null);};
+      h.timer=setTimeout(finish,12000);Promise.resolve(ticket.finished).then(finish,finish);
+    }
     let prefs = manager.getSettings();
     function validate(next) {
       const ids = next.map(identify);
@@ -310,7 +319,7 @@ window.NarbeChoiceScan = (function () {
     }
     function eligible() {
       return !disposed && !suspended && !inactive && prefs.autoScan &&
-        !parked && !braked && !held?.braking && !held?.waitForRelease && !inputHeld && items.length > 0;
+        !parked && !braked && !held?.braking && !held?.waitForRelease && !inputHeld && !helpWait && items.length > 0;
     }
     function readyToAdvance() { return eligible() && !waiting && Date.now() >= due; }
     function arm(delay) {
@@ -365,6 +374,7 @@ window.NarbeChoiceScan = (function () {
     }
     function currentLabel() {
       // The recurring blank is silent in Step and while Parking is Off.
+      if (!items.length) return null;
       if (index < 0) return prefs.autoScan && prefs.parking !== 'off' ? (parked ? 'parked' : 'park') : null;
       return label(items[index]);
     }
@@ -378,6 +388,7 @@ window.NarbeChoiceScan = (function () {
       return ticket;
     }
     function land(next, announceLabel = true) {
+      clearHelp(true);
       clearPauseAnnouncement();
       stopClock();
       index = next;
@@ -503,8 +514,9 @@ window.NarbeChoiceScan = (function () {
         schedule(null);
       } else if (!timer && !waiting && eligible()) schedule(null);
     }
-    function open(next, { restoreId = null } = {}) {
+    function open(next, { restoreId = null, startParked = false } = {}) {
       if (disposed) return;
+      clearHelp(true);
       stopClock();
       ownSpeech?.cancel?.();
       items = validate(next);
@@ -517,7 +529,9 @@ window.NarbeChoiceScan = (function () {
       loops = 0;
       fullLoop = index === 0;
       loopDirection = 1;
-      land(index);
+      if(startParked && restoreId===null && items.length && manager.isParkingEnabled()){
+        parked=true;ownSpeech=null;parkingSpeech=null;draw();
+      }else land(index);
     }
     function enterGroup(next, {restoreId=null, wrap=false} = {}) {
       if (disposed || index < 0) return false;
@@ -549,6 +563,7 @@ window.NarbeChoiceScan = (function () {
     function activity(active) {
       if (inactive === !active) return;
       inactive = !active;
+      clearHelp(true);
       clearPauseAnnouncement();
       stopClock();
       // Lost focus must never leave a half-held key stranded.
@@ -601,7 +616,7 @@ window.NarbeChoiceScan = (function () {
     const stopActivity = window.NarbePlatform.lifecycle.onActivity(activity);
     const api = {
       getState: state, readyToAdvance, step, select, park, resume, brakePress, brakeRelease, announceCurrent,
-      setItems: replaceItems, open, enterGroup, back,
+      setItems: replaceItems, open, enterGroup, back, holdForSpeech,
       rememberFocus: () => state().id,
       // Freeze only the automatic clock while a native selection/backward key
       // is down. Manual navigation still works; this is not the Space brake.
@@ -617,6 +632,7 @@ window.NarbeChoiceScan = (function () {
         }
       },
       setSuspended(value) {
+        if(value)clearHelp(true);
         clearPauseAnnouncement();
         suspended = !!value;
         stopClock();
@@ -629,6 +645,7 @@ window.NarbeChoiceScan = (function () {
       dispose() {
         if (disposed) return;
         disposed = true;
+        clearHelp(true);
         clearPauseAnnouncement();
         stopClock();
         ownSpeech?.cancel?.();

@@ -32,12 +32,12 @@ function stopNarration(){
  if(!narrationLock)return;
  const lock=narrationLock;narrationLock=null;lock.ticket?.cancel();scan.setSuspended(false);
 }
-function narrateMatch(parts,onComplete=null){
+function narrateMatch(parts,onComplete=null,{skippable=false}={}){
  // Match commentary is not a scan label. Hold BOTH switch modes at the
  // blank start until the complete broadcast has finished, regardless of
  // the player's normal menu wait-for-speech preference.
- const lock={ticket:null,continuous:!!onComplete};narrationLock=lock;scan.setSuspended(true);
- $('controls').textContent=onComplete?'Live broadcast · Enter requests a pause after this batch.':'Listening to commentary. Choices resume when speech ends.';
+ const lock={ticket:null,continuous:!!onComplete,skippable,held:new Set()};narrationLock=lock;scan.setSuspended(true);
+ $('controls').textContent=onComplete?'Live broadcast · Enter requests a pause after this batch.':skippable?'Listening to the scene. Press and release your switch to skip narration; then choose.':'Listening to commentary. Choices resume when speech ends.';
  const finish=result=>{
   if(narrationLock!==lock)return;
   narrationLock=null;input.cancel();
@@ -55,9 +55,9 @@ function screen(title,body,choices,{restoreId=null,fresh=true,portrait=null,anno
  if(fresh){stopNarration();input.cancel();refreshSettings=null;}
  $('heading').textContent=title;$('kicker').textContent=kicker;$('careerStatus').textContent=summary();$('saveNotice').textContent=saveNotice();
  renderPresentation(title,body,portrait,scene,kicker);
- items=choices.map(x=>{const element=document.createElement('button');element.type='button';element.dataset.choice=x.id;const label=document.createElement('span');label.className='choiceLabel';label.textContent=x.label;element.append(label);if(x.hint){const hint=document.createElement('span');hint.className='choiceHint';hint.textContent=x.hint;element.append(hint);}const item={...x,element};element.onclick=()=>{if(narrationLock){if(narrationLock.continuous&&item.id==='pause')broadcastStopRequested=true;return;}input.cancel();choose(item);};return item;});
- $('choices').replaceChildren(...items.map(x=>x.element));if(fresh)scan.open(items,{restoreId});else scan.setItems(items);
- if(announce){if(speechParts?.length)narrateMatch(speechParts,onSpeechComplete);else if(guided()&&scene&&['backstage','promo'].includes(scene.stage)&&V.getSettings().ttsEnabled)narrateMatch([{text:title+'. '+body}]);else scan.announceCurrent(title+'. '+body);}
+ items=choices.map(x=>{const element=document.createElement('button');element.type='button';element.dataset.choice=x.id;const label=document.createElement('span');label.className='choiceLabel';label.textContent=x.label;element.append(label);if(x.hint){const hint=document.createElement('span');hint.className='choiceHint';hint.textContent=x.hint;element.append(hint);}const item={...x,element};element.onclick=()=>{if(narrationLock){if(narrationLock.continuous&&item.id==='pause')broadcastStopRequested=true;if(!narrationLock.skippable)return;stopNarration();}input.cancel();choose(item);};return item;});
+ $('choices').replaceChildren(...items.map(x=>x.element));if(fresh)scan.open(items,{restoreId,startParked:restoreId===null&&M.isParkingEnabled()});else scan.setItems(items);
+ if(announce){const sceneSpeech=!!scene&&['backstage','promo'].includes(scene.stage);const parkedHint=scan.getState().parked?' Parked. Press Enter to start scanning.':'';if(speechParts?.length)narrateMatch([...speechParts,...(parkedHint&&!onSpeechComplete?[{text:parkedHint.trim()}]:[])],onSpeechComplete,{skippable:sceneSpeech});else if(guided()&&sceneSpeech&&V.getSettings().ttsEnabled)narrateMatch([{text:title+'. '+body+parkedHint}],null,{skippable:true});else scan.announceCurrent(title+'. '+body+parkedHint);}
 }
 // Visual information is supplementary; the same text is available to speech.
 function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;}
@@ -121,14 +121,20 @@ function newIdentity(){identity=G.suggestIdentity();identityScreen();}
 function identityScreen(){screen('Meet the new boss',identity.manager+' · '+identity.stable+'. You can choose another identity or begin with this one.',[a('start','Start career',()=>{active=null;persistMatch();planning=null;planLoadToken++;persistPlanning();G.fresh(identity);desk('The keys are yours. You have £2,250 and an empty stable. Sign your first wrestler.');}),a('another','Suggest another identity',()=>{identity=G.suggestIdentity();identityScreen();}),back(()=>mainMenu('new'))]);}
 function help(returnTo){screen('How to play','Sign a wrestler, review offers, book matches and choose training. On match night choose a game plan, then advance commentary or give ringside instructions. The simulation waits for each choice. Space advances and Enter selects in two-switch mode. In one-switch mode the highlight moves automatically and Enter selects. Pause and settings are always available at decision screens.',[a('repeat','Repeat instructions',()=>help(returnTo)),back(returnTo)]);}
 function exit(returnTo){confirm('Exit game?',window.parent===window?'Return to the main menu? Your career is kept.':'Return to the Hub? Your career is kept.','Exit game',()=>{mainMenu();if(window.parent!==window){input.cancel({resetGuard:true});V.cancel();window.parent.postMessage({action:'focusBackButton'},'*');}},returnTo);}
-function pause(returnTo){returnFromPause=returnTo;screen('Pause','Your game is waiting. No match time passes here.',[a('continue','Continue',returnTo),a('settings','Settings',()=>settings(()=>pause(returnTo))),a('mode','Management mode',()=>modeScreen(()=>pause(returnTo))),a('menu','Main menu',()=>mainMenu()),a('exit','Exit game',()=>exit(()=>pause(returnTo)))]);}
-function settings(returnTo,fresh=true){
+function requestHelp(){
+ const message='I need help, please! I need help, please!';
+ let service;try{if(window.parent!==window&&window.parent.location.origin===window.location.origin)service=window.parent.NarbeCommunicationSpeech;}catch(_){}
+ let ticket;try{ticket=service?.isEnabled?.()?service.speak(message):V.speak(message,{force:true});}catch(_){ticket=V.speak(message,{force:true});}
+ if(ticket)scan.holdForSpeech(ticket);
+}
+function pause(returnTo,restoreId=null){returnFromPause=returnTo;screen('Pause','Your game is waiting. No match time passes here.',[a('continue','Continue',returnTo),a('settings','Settings',()=>settings(()=>pause(returnTo,'settings'))),a('mode','Management mode',()=>modeScreen(()=>pause(returnTo,'mode'))),a('help','I Need Help',requestHelp),a('menu','Main menu',()=>mainMenu()),a('exit','Exit game',()=>exit(()=>pause(returnTo,'exit')))],{restoreId});}
+function settings(returnTo,fresh=true,restoreId=null){
  screen('Settings','Access settings are shared with other compatible NARBE games on this origin.',[
  a('tts','Text to speech: '+(V.getSettings().ttsEnabled?'On':'Off'),()=>{V.toggleTTS();settings(returnTo,false);}),
  a('voice','Voice: '+V.getVoiceDisplayName(V.getCurrentVoice()),()=>{V.cycleVoice();settings(returnTo,false);}),
- a('auto','Auto scan: '+(M.getSettings().autoScan?'On — One switch':'Off — Two switches'),()=>{if(M.getSettings().autoScan)confirm('Use two switches?','You need Space to move the highlight and Enter to select. Cancel if you only use one switch.','Use two switches',()=>{M.setAutoScan(false);settings(returnTo);},()=>settings(returnTo));else{M.setAutoScan(true);settings(returnTo,false);}}),
+ a('auto','Auto scan: '+(M.getSettings().autoScan?'On — One switch':'Off — Two switches'),()=>{if(M.getSettings().autoScan)confirm('Use two switches?','You need Space to move the highlight and Enter to select. Cancel if you only use one switch.','Use two switches',()=>{M.setAutoScan(false);settings(returnTo,true,'auto');},()=>settings(returnTo,true,'auto'));else{M.setAutoScan(true);settings(returnTo,false);}}),
  a('speed','Scan speed: '+M.getScanInterval()/1000+' seconds',()=>{M.cycleScanSpeed();settings(returnTo,false);}),
- back(returnTo)],{fresh,announce:fresh});
+ back(returnTo)],{fresh,announce:fresh,restoreId});
  refreshSettings=()=>settings(returnTo,false);
 }
 function desk(note='',restoreId=null,full=false){
@@ -200,12 +206,12 @@ function guidedDesk(note=''){
 }
 function more(){screen('More office options',summary(),[a('finances','Finances and objectives',finances),a('results','Recent results',()=>results()),a('mode','Management mode: '+(guided()?'Guided':'Full'),()=>modeScreen(more)),a('pause','Pause / settings',()=>pause(()=>more())),back(()=>desk('','more'))]);}
 function finances(){screen('Finances and objectives','Bank '+money(s().cash)+'. Weekly wages '+money(G.wages())+'. Overheads '+money(G.overhead())+'. Training '+money(G.trainingBill())+'.\n'+G.goalList().map(x=>(x.done?'Complete: ':'Open: ')+x.text).join('\n'),[back(more),a('pause','Pause',()=>pause(finances))]);}
-function paged(title,rows,page,open,returnTo,describe=x=>x.name){
+function paged(title,rows,page,open,returnTo,describe=x=>x.name,restoreId=null){
  const count=3,pages=Math.max(1,Math.ceil(rows.length/count));page=Math.max(0,Math.min(pages-1,page));
  screen(title,rows.length?rows.length+' entries. Page '+(page+1)+' of '+pages+'.':'Nothing to review.',[
- ...rows.slice(page*count,page*count+count).map(x=>a(x.id,describe(x),()=>open(x,()=>paged(title,rows,page,open,returnTo,describe)))),
+ ...rows.slice(page*count,page*count+count).map(x=>a(x.id,describe(x),()=>open(x,()=>paged(title,rows,page,open,returnTo,describe,x.id)))),
  ...(pages>1?[a('next','Next page',()=>paged(title,rows,(page+1)%pages,open,returnTo,describe))]:[]),
- back(returnTo)],{});
+ back(returnTo)],{restoreId});
 }
 function inbox(){const rows=[...s().inbox].sort((x,y)=>Number(y.kind==='decision'&&!y.answer)-Number(x.kind==='decision'&&!x.answer));paged('Inbox',rows,0,message,()=>desk('','inbox'),m=>m.subject+(m.kind==='decision'&&!m.answer?' — reply needed':''));}
 function message(m,returnTo){m.read=true;G.save();screen(m.subject,m.from+'.\n'+(Array.isArray(m.body)?m.body.join('\n'):m.body||'')+(m.outcome?'\nOutcome: '+m.outcome:''),[...(m.kind==='decision'&&!m.answer?(m.options||[]).map(o=>a(o.id,o.label+(o.hint?'. '+o.hint:''),()=>{const result=G.answer(m.id,o.id);if(!m.answer){screen('Response unavailable',String(result),[back(()=>message(m,returnTo))]);return;}screen('Response recorded',m.outcome||'Decision recorded.',[back(returnTo)]);})):[]),a('repeat','Repeat message',()=>message(m,returnTo)),back(returnTo)]);}
@@ -817,7 +823,19 @@ function endWeek(){if(s()?.switchAfter||s()?.after?.autonomous){afterScreen();re
 function results(){const rows=s().history.slice().reverse().slice(0,20).map((h,i)=>({...h,id:h.cid||String(i)}));paged('Recent results',rows,0,(h,ret)=>screen('Match report',JSON.stringify({rating:h.stars,week:h.week,season:h.season}),[back(ret)]),more,h=>'Week '+h.week+' · '+h.stars+' stars');}
 M.subscribe(()=>{if(refreshSettings)refreshSettings();});
 V.onSettingsChange(()=>{if(refreshSettings)refreshSettings();});
-const duringNarration=(handler)=>e=>{if(narrationLock&&['Space','Enter','NumpadEnter'].includes(e.code)){e.preventDefault();if(narrationLock.continuous&&e.type==='keyup'&&(e.code==='Enter'||e.code==='NumpadEnter'))broadcastStopRequested=true;return;}handler(e);};
-document.addEventListener('keydown',duringNarration(input.down));document.addEventListener('keyup',duringNarration(input.up));document.addEventListener('narbe-input-cancelled',()=>{input.cancel();if(narrationLock)scan.setSuspended(true);});window.addEventListener('blur',()=>{boothSpeech.cancel();input.cancel({resetGuard:true});});document.addEventListener('visibilitychange',()=>{if(document.hidden){boothSpeech.cancel();input.cancel({resetGuard:true});}});window.addEventListener('pagehide',e=>{boothSpeech.cancel();input.cancel({resetGuard:true});V.cancel();if(!e.persisted)scan.dispose();});
+const duringNarration=(handler)=>e=>{
+ const lock=narrationLock,k=e.code==='NumpadEnter'?'Enter':e.code;
+ if(lock&&['Space','Enter'].includes(k)){
+  e.preventDefault();
+  if(e.type==='keydown'&&!e.repeat)lock.held.add(k);
+  if(e.type==='keyup'&&lock.held.delete(k)){
+   if(lock.continuous&&k==='Enter')broadcastStopRequested=true;
+   else if(lock.skippable){stopNarration();input.cancel();}
+  }
+  return;
+ }
+ handler(e);
+};
+document.addEventListener('keydown',duringNarration(input.down));document.addEventListener('keyup',duringNarration(input.up));document.addEventListener('narbe-input-cancelled',()=>{input.cancel();if(narrationLock){narrationLock.held.clear();scan.setSuspended(true);}});window.addEventListener('blur',()=>{boothSpeech.cancel();input.cancel({resetGuard:true});});document.addEventListener('visibilitychange',()=>{if(document.hidden){boothSpeech.cancel();input.cancel({resetGuard:true});}});window.addEventListener('pagehide',e=>{boothSpeech.cancel();input.cancel({resetGuard:true});V.cancel();if(!e.persisted)scan.dispose();});
 mainMenu();
 })();
