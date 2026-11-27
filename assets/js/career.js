@@ -982,7 +982,7 @@ const EXTRA_EVENTS=[
   choices:[['sit','Do the photo session (£50)','£50; heat +4.',{cash:-50,heat:4},'{W} has new pictures for the stall.'],['reuse','Use the old pictures','No change.',{},'{W} keeps the existing photographs.']]},
  {id:'fan_letters',subject:'A bag of letters',body:'{W} has been getting letters from fans and wants to answer them properly.',when:w=>w.heat>=40&&!w.injury,
   choices:[['answer','Give them time to reply','Morale +4; fatigue +2.',{morale:4,fatigue:2},'{W} writes back to the fans.'],['later','Leave it until after the show','Morale −2.',{morale:-2},'{W} leaves the letters in the bag.']]},
- {id:'family_day',subject:'A day at home',body:'{W} asks to make room for a family commitment this week.',when:w=>!w.injury,
+ {id:'family_day',subject:'A day at home',body:'{W} asks to make room for a family commitment this week.',when:w=>!w.injury&&!w.program,
   choices:[['allow','Give them the day','Morale +6; training set to rest.',{morale:6,training:'rest'},'{W} makes the family commitment.'],['refuse','Keep the training appointment','Morale −6.',{morale:-6},'{W} misses the day at home.']]},
  {id:'early_train',subject:'The first train home',body:'{W} can catch an early train if the office wraps up promptly.',when:w=>w.fatigue>=20&&!w.injury,
   choices:[['go','Let them leave early','Fatigue −7; morale +2.',{fatigue:-7,morale:2},'{W} makes the early train.'],['stay','Ask them to stay','Fatigue +3; morale −2.',{fatigue:3,morale:-2},'{W} misses the train.']]},
@@ -1032,10 +1032,11 @@ for(const e of EXTRA_EVENTS){
   resolve:(m,person,id)=>{const choice=e.choices.find(o=>o[0]===id);if(!choice)return 'Choose one of the available responses.';
    const effect=choice[3];if(effect.cash)S.cash+=effect.cash;
    if(effect.rep)S.rep=clamp(S.rep+effect.rep);
-   if(effect.training)person.training=effect.training;
+   const trainingLocked=!!(effect.training&&person.program);
+   if(effect.training&&!trainingLocked)person.training=effect.training;
    for(const stat of ['fatigue','morale','heat','loyal','ring','mic','psych','safe','trust'])
     if(effect[stat])person[stat]=clamp(person[stat]+effect[stat]);
-   return choice[4].replaceAll('{W}',person.short).replaceAll('{P}',person.voice||person.name)}
+   return choice[4].replaceAll('{W}',person.short).replaceAll('{P}',person.voice||person.name)+(trainingLocked?' Their active development programme remains unchanged.':'')}
  };
 }
 function leave(w,fee){if(!w||!W(w.id))return;w=W(w.id);reconcileOwnership(w.id,{outgoing:true,reason:'The wrestler left your stable'});S.cash+=fee;S.roster=S.roster.filter(x=>x.id!==w.id);returnToMarket(w);}
@@ -1048,7 +1049,9 @@ function makeDilemmas(){
  const pool=['poster','late','travel','interview','kit','footage','charity','second','apprentice',...EXTRA_EVENTS.map(e=>e.id)];
  const tryMake=(type,args,make)=>{
   let chosen={type,args,make};
-  if(type!=='unhappy'&&identityHash(S.careerSeed+'|'+abs()+'|'+type+'|'+args.join(':'))%100<75){
+  // Only discretionary spectacle/relationship slots may become variety events.
+  // Morale, safety, wage demands and promoter requests retain their original trigger and consequence.
+  if(['dive','clash'].includes(type)&&identityHash(S.careerSeed+'|'+abs()+'|'+type+'|'+args.join(':'))%100<75){
    const candidates=[];
    for(const next of pool){const d=DILEMMAS[next];if(!ok(next))continue;
     const people=d.promoter?S.promoters.filter(p=>d.when(p)):
