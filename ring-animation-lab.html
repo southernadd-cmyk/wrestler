@@ -21,7 +21,7 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 .arena{background:#080e1e;padding:4px;display:flex;justify-content:center;align-items:center;border-bottom:1px solid #4b5f87}
 .arena canvas{width:100%;max-width:400px;aspect-ratio:480/272;height:auto;image-rendering:pixelated;display:block}
 .ringbar{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;font-size:10px;font-weight:bold;letter-spacing:1px;background:#0b1631;color:#e5c17a}.ringbar span:last-child{color:#a9c7dc;letter-spacing:0}
-.info{padding:7px 9px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:0 0 6px}.stats div{padding:4px 3px;background:#101d40;min-width:0}.stats b{font-size:15px;overflow-wrap:anywhere}.stats small{font-size:10px}.status{font-size:11px}
+.info{padding:7px 9px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:3px;margin:0 0 6px}.stats div{padding:4px 3px;background:#101d40;min-width:0}.stats b{font-size:15px;overflow-wrap:anywhere}.stats small{font-size:10px}.status{font-size:11px}
 .transport{padding:7px;gap:5px}.transport button,.transport select{font-size:12px;padding:5px 7px}.transport label{font-size:11px}
 .decision{padding:7px}.decision button{font-size:13px;padding:6px}.note{font-size:11px;margin-top:7px}
 @media(max-width:700px){main{padding:5px}.layout{grid-template-columns:minmax(0,1fr);gap:5px}.strap{grid-row:1}.ringside{grid-column:1;grid-row:2}.commentary{grid-column:1;grid-row:3}.arena canvas{max-width:340px}.log{height:180px;max-height:none}.action{min-height:70px}.worker b{font-size:13px}.worker img{width:32px;height:39px}.clock strong{font-size:18px}.clock small{font-size:10px}.controls select{max-width:145px}}
@@ -53,14 +53,14 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 <div class="controls">
 <label>Your wrestler<select id="worker"></select></label><label>Opponent<select id="opponent"></select></label><label>Promotion<select id="promotion"></select></label>
 <label>Layout<select id="plan"></select></label><label>Booked finish<select id="finish"><option value="win_clean">Your wrestler wins</option><option value="lose_clean">Opponent wins</option></select></label>
-<label>Seed<input id="seed" type="number" min="1" max="4294967295" step="1" value="2718"></label><label>Minutes<select id="minutes"><option>5</option><option selected>8</option><option>12</option><option>18</option></select></label>
+<label>Card position<select id="slot"><option value="opener">Opener</option><option value="mid" selected>Mid-card</option><option value="feature">Featured bout</option><option value="main">Main event</option></select></label><label>Rivalry heat<input id="feudHeat" type="number" min="0" max="100" step="1" value="0"></label><label>Seed<input id="seed" type="number" min="1" max="4294967295" step="1" value="2718"></label><label>Minutes<select id="minutes"><option>5</option><option selected>8</option><option>12</option><option>18</option></select></label>
 <label>Entrance incident (lab preview)<select id="entranceIncident"><option value="normal">Normal</option><option value="disco">Wrong CD — disco</option><option value="slow">Wrong CD — slow dance</option><option value="hum">Wrong CD — crowd hums</option><option value="silence">Wrong CD — silence</option><option value="march">Wedding March (preview)</option><option value="choir">Community choir</option><option value="choirBad">Choir in three keys</option><option value="shanty">Choir — sea shanty</option><option value="jingle">Wrong jingle</option></select></label><button id="start" class="primary" disabled>Run match</button><label class="switch"><input type="checkbox" id="auto" checked> Auto decisions</label>
 </div>
 <div id="error" class="error" role="alert" hidden></div>
 <div class="layout">
 <div class="strap"><div class="worker"><img id="wPortrait" alt=""><div><b id="wName">Your wrestler</b><small id="wStyle">—</small><div class="meter"><span id="wEnergy"></span></div></div></div><div class="clock"><strong id="clock">00:00</strong><small id="phase">Waiting</small></div><div class="worker"><img id="fPortrait" alt=""><div><b id="fName">Opponent</b><small id="fStyle">—</small><div class="meter"><span id="fEnergy"></span></div></div></div></div>
 <section class="panel commentary"><h2>Live commentary</h2><div class="action"><span class="status" id="venue">THE ARENA</span><strong id="action">Ready for the entrances</strong><span id="detail" class="muted">Select a bout and run the real engine.</span></div><h2>Commentary archive / engine trace</h2><div class="log" id="log" tabindex="0" aria-label="Match event log"></div></section>
-<aside class="panel ringside"><h2>Ringside · ring view</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Retro pixel-art view of the ring, wrestlers, referee, ringside and entrance aisle"></canvas></div><div class="ringbar"><span>RINGSIDE CAM</span><label class="sfx-toggle" title="Entrance music, recorded crowd and ring bell sound effects"><input id="sfx" type="checkbox" role="switch" aria-label="Sound effects" checked> SFX <span id="sfxState" aria-live="polite">On</span></label></div><div class="info"><div class="stats"><div><small>Crowd</small><b id="crowd">—</b></div><div><small>Rating</small><b id="rating">—</b></div><div><small>Graph actions</small><b id="count">0</b></div><div><small>Control</small><b id="control">—</b></div></div><div class="status" id="physical">Location: —</div></div><div class="transport"><button id="pause" disabled>Pause</button><button id="step" disabled>Step</button><label>Playback <select id="speed"><option value=".5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div><div id="decision" class="decision" hidden></div></aside></div>
+<aside class="panel ringside"><h2>Ringside · ring view</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Retro pixel-art view of the ring, wrestlers, referee, ringside and entrance aisle"></canvas></div><div class="ringbar"><span>RINGSIDE CAM</span><label class="sfx-toggle" title="Entrance music, recorded crowd and ring bell sound effects"><input id="sfx" type="checkbox" role="switch" aria-label="Sound effects" checked> SFX <span id="sfxState" aria-live="polite">On</span></label></div><div class="info"><div class="stats"><div><small>Crowd reaction</small><b id="crowd">—</b></div><div><small>Visible attendance</small><b id="attendance" title="Estimated occupied seats in this camera view">—</b></div><div><small>Rating</small><b id="rating">—</b></div><div><small>Graph actions</small><b id="count">0</b></div><div><small>Control</small><b id="control">—</b></div></div><div class="status" id="physical">Location: —</div></div><div class="transport"><button id="pause" disabled>Pause</button><button id="step" disabled>Step</button><label>Playback <select id="speed"><option value=".5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div><div id="decision" class="decision" hidden></div></aside></div>
 <p class="note">Live engine: the existing match graph, commentary, decisions and after-the-bell resolver run in an opaque-origin sandbox. The engine provides zones, control, grips and grounded states, not precise coordinates or full-body animation. The articulated rig visualises known graph events, including the final physical locations; special events and entrances/exits retain presentation poses. Exact move choreography and contact still require review. The graph animation laboratory is available from the navigation above. No main game UI, saves or navigation are used. Ring bell effects are original procedural audio. Recorded crowd ambience: <a href="https://commons.wikimedia.org/wiki/File:211146_unfa_another-crowd.flac" target="_blank" rel="noopener">unfa</a>; applause: <a href="https://commons.wikimedia.org/wiki/File:Sound_Effects_-_Applause_after_a_concert.ogg" target="_blank" rel="noopener">Amada44</a>. Both CC0; clips are source-hosted for this prototype. Entrance themes: <a href="https://tallbeard.itch.io/music-loop-bundle" target="_blank" rel="noopener">Abstraction / Tallbeard Studios</a>, CC0 1.0, 200 fixed, distinct 12-second local MP3 excerpts, stored with the lab; source catalogue and checksums are recorded in the asset manifest.</p>
 </main></template>
 <script>
@@ -99,7 +99,7 @@ if(params.get('frame')!=='1'){
   if(!cache.has(d.path))cache.set(d.path,new Promise(resolve=>{const img=new Image();img.onload=()=>{try{resolve(samplePortrait(img))}catch(_){resolve(null)}};img.onerror=()=>resolve(null);img.src=d.path;}));
   cache.get(d.path).then(skin=>e.source.postMessage({type:'ring-skin-result',token:d.token,skin},'*'));
  });
- frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=616';return
+ frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=618';return
 }
 $('lab').hidden=false;
 if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
@@ -107,10 +107,26 @@ const files=live?["ring-entrance-music","ring-entrance-incidents","portrait-age-
 const fail=e=>{const el=$('error');el.hidden=false;el.textContent=String(e?.stack||e)};
 function load(n){return new Promise((ok,no)=>{const s=document.createElement('script');s.src='assets/js/'+n+'.js';s.async=false;s.onload=ok;s.onerror=()=>no(Error('Failed to load '+n));document.head.append(s)})}
 (async()=>{for(const n of files)await load(n);boot()})().catch(fail);
+// A fixed seating plan per show; attendance is a presentation estimate, not
+// the engine's changing crowd enthusiasm or a simulated financial gate.
+const seats=[];
+for(let row=0;row<3;row++){for(let x=9;x<182;x+=15)seats.push({x,y:12+row*17,row,priority:2-row});for(let x=299;x<480;x+=15)seats.push({x,y:12+row*17,row,priority:2-row});}
+for(let row=0;row<10;row++){for(let x=6;x<62;x+=14)seats.push({x,y:66+row*17,priority:(48-x)/16});for(let x=423;x<480;x+=14)seats.push({x,y:66+row*17,priority:(x-430)/16});}
+for(let x=70;x<415;x+=14)seats.push({x,y:260,priority:-.8});
+function seating(M){
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),reach=clamp(Number(M?.p?.reach??57),0,100),
+  popularity=clamp(((M?.w?.heat??50)+(M?.f?.heat??50))/2,0,100),
+  feud=clamp(Number(M?.o?.feudHeat??0),0,100),slot=M?.o?.slot||'mid',seed=Number(M?.o?.seed||2718);
+ const rand=i=>{let v=(seed^Math.imul(i+1,0x9e3779b9))>>>0;v=Math.imul(v^(v>>>16),0x85ebca6b);return ((v^(v>>>13))>>>0)/4294967296;};
+ const occupancy=clamp(.10+.0065*reach+.0028*popularity+.0012*feud+({opener:-.04,mid:0,feature:.045,main:.075}[slot]||0)+(M?.o?.blowoff ? .025 : 0)+(rand(999)-.5)*.05,.16,1);
+ const count=Math.round(seats.length*occupancy);
+ const occupied=new Set(seats.map((s,i)=>({i,score:rand(i)*2+s.priority*.42})).sort((a,b)=>a.score-b.score||a.i-b.i).slice(0,count).map(s=>s.i));
+ return {count,capacity:seats.length,occupied};
+}
 function boot(){
 if(live){$('lab').replaceChildren($('matchTemplate').content.cloneNode(true));$('lab').className='match-mode';}
 const E=window.OfficeMatch,G=E.GRAPH,A=G.A,nodes=Object.values(A),canvas=$('arena'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
-let M={p:{id:'crown',name:'North Crown'},crowd:55};
+let M={p:{id:'crown',name:'North Crown',reach:57},crowd:55},audience=seating(M);
 const W=480,H=272;
 const palettes={dock:{mat:'#a9b3b0',matHi:'#c2c9c2',skirt:'#37444a',rope:'#d7d3c1',curtain:'#68443f',floor:'#35383b'},pulse:{mat:'#aaaec6',matHi:'#c1c5d9',skirt:'#503e75',rope:'#ded7ed',curtain:'#4d3767',floor:'#282e3d'},crown:{mat:'#b8b4a4',matHi:'#d2ccba',skirt:'#243f67',rope:'#e8e1ce',curtain:'#6d2939',floor:'#363b46'},union:{mat:'#aabcc4',matHi:'#c8d7d9',skirt:'#263c57',rope:'#e8edf1',curtain:'#334e70',floor:'#303747'}};
 function pal(){return palettes[M?.p?.id]||palettes.crown;}
@@ -151,9 +167,8 @@ function backdrop(now){
  faceRect(410,50,560,142,'#59515a');worldLine(410,50,410,142,'#939099',2);worldLine(560,50,560,142,'#939099',2);
  label(M?.p?.name?.toUpperCase()||'NORTH CROWN',240,44,'#d9bd89',8);
  // Seating arranged around a clear ringside aisle.
- let i=0;for(let row=0;row<3;row++){rect(0,10+row*17,185,12,'#222a38');rect(295,10+row*17,185,12,'#222a38');for(let x=9;x<182;x+=15)crowdPerson(x,12+row*17,i++,now);for(let x=299;x<480;x+=15)crowdPerson(x,12+row*17,i++,now);}
- for(let row=0;row<10;row++){for(let x=6;x<62;x+=14)crowdPerson(x,66+row*17,i++,now);for(let x=423;x<480;x+=14)crowdPerson(x,66+row*17,i++,now);}
- for(let x=70;x<415;x+=14)crowdPerson(x,260,i++,now);
+ for(let row=0;row<3;row++){rect(0,10+row*17,185,12,'#222a38');rect(295,10+row*17,185,12,'#222a38');}
+ seats.forEach(({x,y},i)=>{if(audience.occupied.has(i))crowdPerson(x,y,i,now);else{rect(x-5,y-2,10,8,'#252d39');rect(x-4,y-3,8,2,'#48505a');rect(x-4,y+6,8,2,'#1b222c');}});
  // Safety barrier: rail, uprights, lower rail.
  for(const x of [181,798]){worldLine(x,135,x,480,'#161d29',4);worldLine(x,135,x,480,'#939aa0',2,3);for(let y=140;y<480;y+=40){const t=point(x,y);rect(t[0]-1,t[1]-5,3,7,'#6e7781');}}
  worldLine(181,480,798,480,'#161d29',4);worldLine(181,480,798,480,'#939aa0',2,3);
@@ -202,6 +217,7 @@ const P={
  chop:[12,-35,-60,110,5,-22,28,26,-25],
  elbow:[18,-45,-50,110,-105,-18,25,22,-27],
  kick:[-23,-45,40,55,40,-8,8,94,-4],
+ doublekick:[-18,-35,-35,35,35,82,4,94,-5],
  knee:[-13,-48,-42,48,42,-16,18,93,-115],
  headbutt:[42,-40,-60,40,60,-18,25,20,-25],
  run:[18,-55,-50,35,65,-46,70,35,-65],
@@ -233,6 +249,37 @@ add('early_cover cover','cover','leg',1200);add('near_kickout','kickout','',950)
 add('outside_toss os_ropes_backdrop','throwout','upper-body',1300);add('roll_inside','rollin','',1050);add('corner_whip','whip','wrist',1200);add('corner_push','cornerpush','upper-body',1000);add('dramatic_sell','sell','',1000);add('catch_breath','breath','',1000);
 // Family composition is explicit and inspectable, not silently counted as
 // individual art. Special outcomes are distinct from completed attacks.
+add('rn_spear','spear','',1250);
+add('rn_crossbody rn_flying_shoulder','runningCrossbody','',1150);
+add('rn_dropkick st_standing_dropkick','standingDropkick','',1100);
+add('rn_thesz','thesz','',1300);
+add('pw_spinebuster_running power_spinebuster','spinebuster','body-clinch',1500);
+add('pw_backbreaker','backbreaker','upper-body',1450);
+add('pw_samoan_drop','samoan','upper-body',1550);
+add('pw_fallaway','fallaway','upper-body',1550);
+add('pw_sitout','sitoutBomb','leg',1550);
+add('nk_tombstone','tombstone','rear-waist',1550);
+add('nk_stunner','stunner','head',1150);
+add('nk_bulldog','bulldog','head',1250);
+add('nk_swinging_neckbreaker nk_rolling_neckbreaker','neckbreaker','head',1350);
+add('nk_inverted_ddt','reverseDDT','head',1300);
+add('sx_brainbuster','brainbuster','front-facelock',1500);
+add('sx_deadlift_bridge','bridgingSuplex','rear-waist',1600);
+add('gd_leg_drop','legdrop','',1100);
+add('gd_running_senton rn_seated_senton','runningSenton','',1150);
+add('gd_stomp gd_knee_stomp gd_arm_stomp gd_rib_stomp','stomp','',900);
+add('gd_knee_drop','kneedrop','',1050);
+add('gd_standing_moonsault','standingMoon','',1250);
+add('st_uppercut','uppercut','',850);
+add('st_spinning_backfist st_discus','backfist','',950);
+add('st_roundhouse st_spin_kick','roundkick','',1000);
+add('lc_hurricanrana lc_rana_pin','hurricanrana','leg',1500);
+add('pn_schoolboy','schoolboy','leg',1250);
+add('pn_sunset','sunset','leg',1400);
+add('sm_triangle','triangle','arm',1450);
+add('sm_crossface','crossface','head',1400);
+add('sm_surfboard','surfboard','leg',1600);
+add('sm_camel','camel','head',1450);
 const familyMap={suplex:'vertical',power:'slam',neck:'ddt',strike:'jab',corner:'cornerpush',aerial:'frog',superplex:'vertical',springboard:'dropkick',dive:'dive',submission:'armbar',ground:'groundstrike',chain:'armdrag',pin:'cradle',outside:'floorstrike',heel:'heel',fire:'rally',rest:'rest',lucha:'rana',rope:'ropes',running:'lariat'};
 const misc={
  probe_strike:'jab',strike_trade:'trade',counter_strike:'jab',cheap_shot:'bodyshot',corner_strikes:'chop',corner_charge:'lariat',corner_escape:'escape',mat_hold:'rest',target_hold:'armbar',target_strike:'groundstrike',mat_scramble:'scramble',hope_elbows:'elbow',hope_cutoff:'jab',aerial_attack:'frog',aerial_counter:'block',floor_brawl:'floorstrike',floor_counter:'escape',apron_stand:'apron',ramp_approach:'ramp',counter_rollup:'cradle',submission_set:'armbar',submission_roll:'escape',finish_tease:'lock',finish_counter:'escape',grapple_trip:'takedown',power_spinebuster:'slam',springboard_rise:'climb',springboard_strike:'dropkick',springboard_evaded:'block',collar_snap:'headlock',ankle_pick:'takedown',leg_wrench:'ankle',grapevine:'figure4',leveraged_bridge:'bridge',armbar_roll:'armbar',grounded_switch:'scramble',body_shot:'bodyshot',rolling_elbow:'elbow',short_arm_lariat:'lariat',rib_knee:'knee',gutbuster:'slam',heavy_slam:'slam',corner_knee:'knee',springboard_feint:'taunt',running_headscissors:'rana',rebound_counter:'escape',missile_dropkick:'dropkick',high_crossbody:'dive',top_rope_hesitation:'taunt',handstand_escape:'escape',false_handshake:'heel',opponent_study:'circle',last_second_counter:'escape',dramatic_rally:'rally',baited_charge:'lariat',quiet_reversal:'escape',floor_regroup:'floorstrike',hope_elbows_standing:'elbow',knee_strike_block:'block'};
@@ -280,6 +327,37 @@ function core(clip,grip){
   return[gripFrame,F(type==='delayed'?.36:.44,R(-10,0,0,'crouch'),R(4,1,4,'tuck',-1),g,'Load'),F(type==='delayed'?.63:.56,a,d,g,'Lift / rotation'),F(.79,R(rear?5:-12,4,0,bomb||type==='fisherman'?'seated':ddt||rear||vertical?'bridge':'kneel'),R(rear?-25:23,8,0,'flat',-1),'','Landing')];
  };
  switch(clip){
+ case'spear':return[F(.22,R(-82,0,0,'run'),f.d,'','Sprint'),F(.50,R(-12,2,4,'pin',1),R(2,3,3,'fall',-1),'body','Shoulder drives into waist'),F(.76,R(6,6,0,'pin'),R(20,7,0,'flat',-1),'','Drive to mat')];
+ case'runningCrossbody':return[F(.22,R(-76,0,0,'run'),f.d,'','Run-up'),F(.48,R(-10,2,19,'flat'),R(10,3,0,'guard',-1),'','Horizontal leap'),F(.67,R(9,5,6,'flat'),R(16,6,3,'fall',-1),'body','Body collision'),F(.84,R(9,6,0,'pin'),flat,'','Landing')];
+ case'standingDropkick':return[F(.23,R(-38,0,0,'crouch'),f.d,'','Plant feet'),F(.48,R(-6,0,20,'doublekick',1,-70),R(12,3,0,'sell',-1),'strike','Both boots up'),F(.76,R(-13,6,0,'flat'),flat,'','Both land')];
+ case'thesz':return[F(.24,R(-62,0,0,'run'),f.d,'','Charge'),F(.48,R(0,0,19,'seated'),R(8,3,1,'fall',-1),'body','Leap onto opponent'),F(.76,R(15,7,0,'kneel'),flat,'','Mounted landing')];
+ case'spinebuster':return[F(.23,R(-19,0,0,'crouch'),R(12,2,0,'run',-1),'','Catch the runner'),F(.48,R(-6,0,0,'lift'),R(4,1,26,'fall',-1),'body','Lift across waist'),F(.73,R(9,6,0,'kneel'),R(18,7,0,'flat',-1),'','Drive down')];
+ case'backbreaker':return[gripFrame,F(.46,R(-7,0,0,'carry'),R(5,2,21,'flat',-1),'upper-body','Across chest'),F(.68,R(-5,5,0,'kneel'),R(9,4,9,'bridge',-1),'body','Back across knee'),F(.84,R(-10,5,0,'kneel'),flat,'','Release')];
+ case'samoan':return[gripFrame,F(.44,R(-5,0,0,'crouch'),R(3,2,12,'tuck',-1),'upper-body','Load shoulders'),F(.61,R(-5,0,0,'carry'),R(-1,2,31,'flat',-1),'upper-body','Fireman carry'),F(.79,R(-9,6,0,'flat'),R(10,8,0,'flat',-1),'','Fall backward')];
+ case'fallaway':return[gripFrame,F(.45,R(-6,0,0,'carry'),R(5,2,23,'flat',-1),'upper-body','Cradle across chest'),F(.65,R(-12,4,0,'bridge'),R(-25,2,24,'fall',-1,150),'','Throw overhead'),F(.83,R(-10,6,0,'flat'),R(-42,8,0,'flat',-1),'','Separate landing')];
+ case'sitoutBomb':return[gripFrame,F(.37,R(-7,0,0,'crouch'),R(1,2,7,'inverted',-1),'front-facelock','Load'),F(.58,R(-6,0,0,'overhead'),R(1,2,29,'seated',-1),'leg','Shoulder height'),F(.78,R(0,6,0,'seated'),R(9,7,0,'flat',-1),'leg','Sit out between legs')];
+ case'tombstone':return[gripFrame,F(.45,R(-6,0,0,'carry'),R(4,2,26,'inverted',1),'rear-waist','Invert against torso'),F(.68,R(-4,4,0,'kneel'),R(3,3,12,'inverted',1),'rear-waist','Drop to both knees'),F(.85,R(-6,5,0,'kneel'),flat,'','Lay opponent flat')];
+ case'stunner':return[F(.24,R(-11,0,0,'headlock',-1),R(8,2,0,'crouch',-1),'head','Jaw over shoulder'),F(.52,R(-7,4,0,'seated',-1),R(5,3,0,'sell',-1),'head','Sit-out jaw impact'),F(.79,R(-10,5,0,'seated'),flat,'','Recoil')];
+ case'bulldog':return[F(.25,R(-8,0,0,'headlock'),R(8,2,0,'guard',1),'head','Side headlock'),F(.49,R(18,0,9,'run'),R(28,2,6,'fall',1),'head','Running leap'),F(.76,R(35,5,0,'seated'),R(45,7,0,'flat',1),'','Face-first landing')];
+ case'neckbreaker':return[F(.22,R(-11,0,0,'headlock'),R(8,2,0,'guard',-1),'head','Hook neck'),F(.49,R(0,1,0,'grab',-1,35),R(6,2,4,'fall',1,-50),'head','Rotate back-to-back'),F(.77,R(-4,6,0,'flat',-1),R(13,7,0,'flat',1),'','Neckbreaker landing')];
+ case'reverseDDT':return[F(.24,R(8,0,0,'headlock',-1),R(-6,2,0,'bridge',-1),'head','Reverse facelock'),F(.53,R(6,3,0,'kneel'),R(-3,3,5,'bridge',-1),'head','Pull backwards'),F(.8,R(8,5,0,'seated'),R(-13,7,0,'flat',-1),'','Back-first landing')];
+ case'brainbuster':return[gripFrame,F(.40,R(-8,0,0,'crouch'),R(4,1,7,'tuck',-1),'front-facelock','Load'),F(.60,R(-8,0,0,'lift'),R(3,1,34,'inverted',-1),'front-facelock','Vertical lift'),F(.77,R(-9,4,0,'seated'),R(6,6,4,'inverted',-1),'','Steep descent'),F(.89,R(-11,6,0,'seated'),flat,'','Release')];
+ case'bridgingSuplex':return[F(.22,R(11,0,0,'waist',-1),R(-4,2,0,'guard',-1),'rear-waist','Rear waistlock'),F(.49,R(9,0,0,'lift',-1),R(-2,2,25,'inverted',-1),'rear-waist','Lift overhead'),F(.76,R(0,6,0,'bridge',-1),R(-22,7,0,'flat',-1),'rear-waist','Hold bridge')];
+ case'legdrop':return[F(.24,R(-32,1,0,'run'),flat,'','Step in'),F(.48,R(4,5,19,'seated'),flat,'','Extend leg'),F(.71,R(10,5,0,'seated'),flat,'','Leg across chest')];
+ case'runningSenton':return[F(.23,R(-65,1,0,'run'),flat,'','Run'),F(.49,R(0,5,17,'tuck',1,130),flat,'','Forward roll'),F(.73,R(14,6,0,'flat',1,180),flat,'','Back-first impact')];
+ case'stomp':return[F(.28,R(-4,3,0,'guard'),flat,'','Stand over opponent'),F(.48,R(2,3,0,'knee'),flat,'','Lift boot'),F(.63,R(9,4,0,'guard'),flat,'','Stomp'),F(.82,R(-6,3,0,'guard'),flat,'','Step back')];
+ case'kneedrop':return[F(.25,R(-9,3,0,'guard'),flat,'','Set'),F(.49,R(7,4,14,'kneel'),flat,'','Drop knee'),F(.72,R(10,6,0,'kneel'),flat,'','Knee lands')];
+ case'standingMoon':return[F(.23,R(15,0,0,'crouch',-1),flat,'','Plant feet'),F(.46,R(18,3,28,'tuck',-1,-160),flat,'','Backflip'),F(.69,R(20,6,7,'flat',-1,-360),flat,'','Chest-first descent'),F(.84,R(15,6,0,'pin'),flat,'','Landing')];
+ case'uppercut':return[F(.22,R(-19,0,0,'crouch'),f.d,'','Dip'),F(.49,R(-8,0,0,'lift'),R(8,3,0,'sell',-1),'strike','Upward punch'),F(.78,R(-18,0,0,'guard'),R(27,5,0,'sell',-1),'','Recoil')];
+ case'backfist':return[F(.25,R(-21,0,0,'chop',-1,-45),f.d,'','Turn away'),F(.54,R(-9,0,0,'chop',1,35),R(8,3,0,'sell',-1),'strike','Spinning backfist'),F(.79,R(-17,0,0,'guard'),R(26,6,0,'sell',-1),'','Recover')];
+ case'roundkick':return[F(.24,R(-24,0,0,'guard',-1),f.d,'','Pivot'),F(.52,R(-10,0,0,'kick',1,22),R(10,3,0,'sell',-1),'strike','Sweep kick across'),F(.8,R(-21,0,0,'guard'),R(26,6,0,'sell',-1),'','Replant')];
+ case'hurricanrana':return[F(.23,R(-39,0,0,'run'),f.d,'','Approach'),F(.47,R(2,1,30,'seated'),R(6,3,0,'guard',-1),'','Legs around head'),F(.65,R(2,3,13,'tuck',1,150),R(12,4,12,'fall',-1,100),'','Pull through flip'),F(.82,R(-8,6,0,'kneel'),flat,'','Mat landing')];
+ case'schoolboy':return[F(.26,R(12,3,0,'crouch',-1),R(-4,1,0,'guard',-1),'','Slip behind knees'),F(.5,R(10,5,0,'kneel',-1),R(1,4,4,'tuck',-1),'leg','Pull backward'),F(.78,R(4,6,0,'pin',-1),R(-5,7,0,'tuck',-1),'leg','Shoulders down')];
+ case'sunset':return[F(.24,R(-25,0,0,'run'),f.d,'','Approach'),F(.47,R(3,1,17,'tuck',1,150),R(7,2,0,'crouch',-1),'','Flip over waist'),F(.76,R(22,6,0,'seated',-1),R(9,7,0,'tuck',-1),'leg','Pull into pin')];
+ case'triangle':return[F(.25,R(-4,4,0,'seated'),R(6,3,0,'kneel',-1),'arm','Secure arm'),F(.58,R(0,6,0,'flat'),R(7,5,0,'crouch',-1),'','Legs close around shoulder'),F(.84,R(0,6,0,'tuck'),R(8,5,0,'kneel',-1),'arm','Hold')];
+ case'crossface':return[F(.24,R(-9,4,0,'kneel'),flat,'arm','Trap arm'),F(.54,R(5,5,0,'seated'),R(15,7,0,'flat',-1),'head','Pull across face'),F(.84,R(5,5,0,'bridge'),R(15,7,0,'flat',-1),'head','Maintain hold')];
+ case'surfboard':return[F(.24,R(-4,4,0,'kneel'),flat,'leg','Hook legs'),F(.48,R(0,5,0,'flat'),R(2,3,12,'bridge',-1),'arm','Roll underneath'),F(.74,R(1,5,0,'flat'),R(2,3,26,'bridge',-1),'arm','Elevated stretch')];
+ case'camel':return[F(.24,R(-7,5,0,'kneel'),flat,'','Straddle back'),F(.56,R(10,5,0,'seated'),R(15,7,0,'bridge',-1),'head','Pull chin upward'),F(.84,R(10,5,0,'seated'),R(15,7,0,'bridge',-1),'head','Maintain stretch')];
  case'circle':return[F(.35,R(-26,-10,0,'guard'),R(27,10,0,'guard',-1),'','Circle'),F(.68,R(-23,9,0,'guard'),R(23,-7,0,'guard',-1),'','Close distance')];
  case'taunt':case'rally':case'breath':case'sell':return[F(.45,R(-24,0,0,clip==='sell'?'sell':clip==='breath'?'crouch':'celebrate'),f.d,'','Reaction')];
  case'lock':case'headlock':case'wrist':case'wringer':case'hammer':case'waist':return[gripFrame,F(.63,R(-9,0,0,clip==='headlock'?'headlock':clip==='waist'||clip==='hammer'?'waist':clip==='wrist'||clip==='wringer'?'wrist':'grab'),R(9,2,0,clip==='headlock'?'crouch':'grab',clip==='waist'||clip==='hammer'?1:-1),grip||g,'Control')];
@@ -348,8 +426,8 @@ function solveArm(arm,target){
 }
 function contactPoints(a,d,type,clip=''){
  if(type==='strike'){
-  const high=/kick|headbutt|elbow|lariat/.test(clip),target=clip==='bodyshot'||clip==='knee'?d.hip:high?d.head:d.shoulder;
-  const limbs=/kick/.test(clip)?feet(a):clip==='knee'?a.legs.map(l=>l[1]):clip==='headbutt'?[a.head]:clip==='elbow'?a.arms.map(l=>l[1]):a.arms.map(l=>l[2]);
+  const high=/kick|headbutt|elbow|lariat/i.test(clip),target=clip==='bodyshot'||clip==='knee'?d.hip:high?d.head:d.shoulder;
+  const limbs=/kick/i.test(clip)?feet(a):clip==='knee'?a.legs.map(l=>l[1]):clip==='headbutt'?[a.head]:clip==='elbow'?a.arms.map(l=>l[1]):a.arms.map(l=>l[2]);
   const end=limbs.reduce((p,q)=>Math.hypot(p.x-target.x,p.y-target.y)<=Math.hypot(q.x-target.x,q.y-target.y)?p:q);
   return{target,end,strike:true};
  }
@@ -447,7 +525,7 @@ const ring={l:280,r:690,t:151,b:413};
 const curtain={x:484,y:21};
 let rigAnim=null,rigStart=0,rigPrevious=null,rigLead='w',rigDuration=1,rigHeld=null,rigPausedAt=null;let M=null,c=null,after=null,afterSeen=0,seq=0,buffer=[],timer=0,paused=false,active=false,waiting=false,mode='idle',entered=0,seenEvent=null,totalEvents=0,gen=0,banks=[],speech=null,impact=null,refPose='stand',lastMove='',lastEvent=null,afterChoice=null;
 let world={w:makeActor('w'),f:makeActor('f'),ref:makeActor('ref')};
-let skinToken=0;const skinRequests=new Map();
+let audience=seating(null);let skinToken=0;const skinRequests=new Map();
 if(typeof window.addEventListener==='function')window.addEventListener('message',e=>{
  if(e.source!==window.parent||e.data?.type!=='ring-skin-result')return;
  const p=skinRequests.get(e.data.token);if(!p)return;skinRequests.delete(e.data.token);
@@ -538,7 +616,7 @@ function createSfx(){
   cheer=new window.Audio(sources.cheer);cheer.preload='metadata';cheer.volume=.32;
   for(const a of [ambient,cheer])a.addEventListener('error',()=>{clipError=true;report()});
   // Fade only the short selected excerpt of the applause recording.
-  cheer.addEventListener('timeupdate',()=>{if(cheer.currentTime>=3.6)cheer.volume=Math.max(0,.32*(4.6-cheer.currentTime));if(cheer.currentTime>=4.6)stopPop()});
+  cheer.addEventListener('timeupdate',()=>{if(cheer.currentTime>=3.6)cheer.volume=Math.max(0,.32*(.45+.55*audience.count/audience.capacity)*(4.6-cheer.currentTime));if(cheer.currentTime>=4.6)stopPop()});
  }
  function tryPlay(a){
   if(!a)return;try{Promise.resolve(a.play()).catch(()=>{if(enabled&&running){clipBlocked=true;report()}})}catch(_){clipBlocked=true;report()}
@@ -547,11 +625,11 @@ function createSfx(){
  function reset(){stopTheme();quiet=false;lastPop=-Infinity;stopPop();if(ambient){ambient.pause();try{ambient.currentTime=0}catch(_){}}}
  function pop(){
   if(!enabled||!running||quiet||!cheer||performance.now()-lastPop<3400)return;
-  lastPop=performance.now();stopPop();cheer.volume=.32;tryPlay(cheer);
+  lastPop=performance.now();stopPop();cheer.volume=.32*(.45+.55*audience.count/audience.capacity);tryPlay(cheer);
   // Stop even if timeupdate is throttled, or a browser doesn't report the seek.
   popTimer=setTimeout(stopPop,5000);
  }
- function crowd(value){if(ambient)ambient.volume=.018+Math.max(0,Math.min(100,Number(value)||0))*.00022;}
+ function crowd(value){if(ambient)ambient.volume=(.018+Math.max(0,Math.min(100,Number(value)||0))*.00022)*(.35+.65*audience.count/audience.capacity);}
  function setup(){
   if(ac)return true;const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return false;
   ac=new Audio();ac.onstatechange=()=>report();master=ac.createGain();master.gain.value=0;master.connect(ac.destination);return true;
@@ -597,7 +675,7 @@ addOptions($('plan'),Object.entries(D.PLANS).map(([id,p])=>[id,p.name||p.label||
 function setStatus(action,detail){$('action').textContent=action;$('detail').textContent=detail||'';}
 function log(t,text,kind=''){const p=document.createElement('p');p.className=kind;const time=document.createElement('time');time.textContent=t;p.append(time,document.createTextNode(text));const el=$('log');const near=el.scrollHeight-el.scrollTop-el.clientHeight<70;el.append(p);if(near)el.scrollTop=el.scrollHeight;}
 function stamp(n){return E.fmt(n);}
-function stats(t){if(!M)return;sfx.crowd(M.crowd);$('clock').textContent=t||stamp(M.t);$('crowd').textContent=Math.round(M.crowd)+'%';$('rating').textContent=(M.final?.stars??E.liveStars(M)).toFixed(2)+' / 5';$('wEnergy').style.width=Math.max(0,Math.min(100,M.wSt))+'%';$('fEnergy').style.width=Math.max(0,Math.min(100,M.fSt))+'%';$('count').textContent=String(totalEvents);}
+function stats(t){if(!M)return;sfx.crowd(M.crowd);$('attendance').textContent=audience.count+' / '+audience.capacity;$('clock').textContent=t||stamp(M.t);$('crowd').textContent=Math.round(M.crowd)+'%';$('rating').textContent=(M.final?.stars??E.liveStars(M)).toFixed(2)+' / 5';$('wEnergy').style.width=Math.max(0,Math.min(100,M.wSt))+'%';$('fEnergy').style.width=Math.max(0,Math.min(100,M.fSt))+'%';$('count').textContent=String(totalEvents);}
 function phase(s){$('phase').textContent=s;}
 function place(side,zone,baseX,baseY,area){if(zone==='top')return [side==='w'?ring.l+16:ring.r-16,ring.t+16];if(zone==='apron')return [side==='w'?ring.l-18:ring.r+18,ring.b-50];if(zone==='floor'){if(area==='ramp')return [side==='w'?450:518,104];return [side==='w'?ring.l-70:ring.r+70,ring.b-48];}return [baseX,baseY];}
 function snapshot(e){
@@ -714,9 +792,11 @@ function start(){
  const f=G.F($('opponent').value),p=G.P($('promotion').value);
  if(!w.id||!f||!p)throw Error('Invalid match selection');
  const seed=Number($('seed').value);if(!Number.isInteger(seed)||seed<1||seed>4294967295)throw Error('Seed must be a whole number from 1 to 4294967295');
- c={id:'ringlab-'+seed+'-'+w.id+'-'+f.id,wid:w.id,rid:f.id,pid:p.id,slot:'mid',finish:$('finish').value};
- M=E.create({w,f,p,seed,slot:c.slot,finish:c.finish,minutes:Number($('minutes').value),plan:{game:$('plan').value,leash:'script',talk:'none'},identity:{manager:'Ring Lab',stable:'Test Stable'}});
+ const feudHeat=Number($('feudHeat').value);if(!Number.isFinite(feudHeat)||feudHeat<0||feudHeat>100)throw Error('Rivalry heat must be between 0 and 100');
+ c={id:'ringlab-'+seed+'-'+w.id+'-'+f.id,wid:w.id,rid:f.id,pid:p.id,slot:$('slot').value,feudHeat,finish:$('finish').value};
+ M=E.create({w,f,p,seed,slot:c.slot,feudHeat:c.feudHeat,finish:c.finish,minutes:Number($('minutes').value),plan:{game:$('plan').value,leash:'script',talk:'none'},identity:{manager:'Ring Lab',stable:'Test Stable'}});
  const incident=window.OfficeRingEntranceIncidents,preview=incident.preview($('entranceIncident').value,c,w,f,p);
+ audience=seating(M);
  const entranceSheet={entrance:[...(M.o.sheet?.entrance||[]),...preview]};entranceCues=incident.resolve(entranceSheet,w,f);
  for(const line of preview)E.note(M,line);
  sfx.prepareThemes(w,f,entranceCues);skinRequests.clear();for(const [side,actor] of [['w',w],['f',f]]){assignLook(side,actor);$(side+'Name').textContent=actor.name;$(side+'Style').textContent=actor.style;}
@@ -771,9 +851,8 @@ function backdrop(now){
  faceRect(410,50,560,142,'#59515a');worldLine(410,50,410,142,'#939099',2);worldLine(560,50,560,142,'#939099',2);
  label(M?.p?.name?.toUpperCase()||'NORTH CROWN',240,44,'#d9bd89',8);
  // Seating arranged around a clear ringside aisle.
- let i=0;for(let row=0;row<3;row++){rect(0,10+row*17,185,12,'#222a38');rect(295,10+row*17,185,12,'#222a38');for(let x=9;x<182;x+=15)crowdPerson(x,12+row*17,i++,now);for(let x=299;x<480;x+=15)crowdPerson(x,12+row*17,i++,now);}
- for(let row=0;row<10;row++){for(let x=6;x<62;x+=14)crowdPerson(x,66+row*17,i++,now);for(let x=423;x<480;x+=14)crowdPerson(x,66+row*17,i++,now);}
- for(let x=70;x<415;x+=14)crowdPerson(x,260,i++,now);
+ for(let row=0;row<3;row++){rect(0,10+row*17,185,12,'#222a38');rect(295,10+row*17,185,12,'#222a38');}
+ seats.forEach(({x,y},i)=>{if(audience.occupied.has(i))crowdPerson(x,y,i,now);else{rect(x-5,y-2,10,8,'#252d39');rect(x-4,y-3,8,2,'#48505a');rect(x-4,y+6,8,2,'#1b222c');}});
  // Safety barrier: rail, uprights, lower rail.
  for(const x of [181,798]){worldLine(x,135,x,480,'#161d29',4);worldLine(x,135,x,480,'#939aa0',2,3);for(let y=140;y<480;y+=40){const t=point(x,y);rect(t[0]-1,t[1]-5,3,7,'#6e7781');}}
  worldLine(181,480,798,480,'#161d29',4);worldLine(181,480,798,480,'#939aa0',2,3);
