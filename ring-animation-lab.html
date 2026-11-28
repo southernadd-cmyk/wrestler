@@ -21,7 +21,7 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 .arena{background:#080e1e;padding:4px;display:flex;justify-content:center;align-items:center;border-bottom:1px solid #4b5f87}
 .arena canvas{width:100%;max-width:400px;aspect-ratio:480/272;height:auto;image-rendering:pixelated;display:block}
 .ringbar{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;font-size:10px;font-weight:bold;letter-spacing:1px;background:#0b1631;color:#e5c17a}.ringbar span:last-child{color:#a9c7dc;letter-spacing:0}
-.info{padding:7px 9px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:0 0 6px}.stats div{padding:4px 3px;background:#101d40;min-width:0}.stats b{font-size:15px;overflow-wrap:anywhere}.stats small{font-size:10px}.status{font-size:11px}
+.info{padding:7px 9px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:3px;margin:0 0 6px}.stats div{padding:4px 3px;background:#101d40;min-width:0}.stats b{font-size:15px;overflow-wrap:anywhere}.stats small{font-size:10px}.status{font-size:11px}
 .transport{padding:7px;gap:5px}.transport button,.transport select{font-size:12px;padding:5px 7px}.transport label{font-size:11px}
 .decision{padding:7px}.decision button{font-size:13px;padding:6px}.note{font-size:11px;margin-top:7px}
 @media(max-width:700px){main{padding:5px}.layout{grid-template-columns:minmax(0,1fr);gap:5px}.strap{grid-row:1}.ringside{grid-column:1;grid-row:2}.commentary{grid-column:1;grid-row:3}.arena canvas{max-width:340px}.log{height:180px;max-height:none}.action{min-height:70px}.worker b{font-size:13px}.worker img{width:32px;height:39px}.clock strong{font-size:18px}.clock small{font-size:10px}.controls select{max-width:145px}}
@@ -53,7 +53,7 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 <div class="controls">
 <label>Your wrestler<select id="worker"></select></label><label>Opponent<select id="opponent"></select></label><label>Promotion<select id="promotion"></select></label>
 <label>Layout<select id="plan"></select></label><label>Booked finish<select id="finish"><option value="win_clean">Your wrestler wins</option><option value="lose_clean">Opponent wins</option></select></label>
-<label>Seed<input id="seed" type="number" min="1" max="4294967295" step="1" value="2718"></label><label>Minutes<select id="minutes"><option>5</option><option selected>8</option><option>12</option><option>18</option></select></label>
+<label>Card position<select id="slot"><option value="opener">Opener</option><option value="mid" selected>Mid-card</option><option value="feature">Featured bout</option><option value="main">Main event</option></select></label><label>Rivalry heat<input id="feudHeat" type="number" min="0" max="100" step="1" value="0"></label><label>Seed<input id="seed" type="number" min="1" max="4294967295" step="1" value="2718"></label><label>Minutes<select id="minutes"><option>5</option><option selected>8</option><option>12</option><option>18</option></select></label>
 <label>Entrance incident (lab preview)<select id="entranceIncident"><option value="normal">Normal</option><option value="disco">Wrong CD — disco</option><option value="slow">Wrong CD — slow dance</option><option value="hum">Wrong CD — crowd hums</option><option value="silence">Wrong CD — silence</option><option value="march">Wedding March (preview)</option><option value="choir">Community choir</option><option value="choirBad">Choir in three keys</option><option value="shanty">Choir — sea shanty</option><option value="jingle">Wrong jingle</option></select></label><button id="start" class="primary" disabled>Run match</button><label class="switch"><input type="checkbox" id="auto" checked> Auto decisions</label>
 </div>
 <div id="error" class="error" role="alert" hidden></div>
@@ -118,7 +118,7 @@ function seating(M){
   popularity=clamp(((M?.w?.heat??50)+(M?.f?.heat??50))/2,0,100),
   feud=clamp(Number(M?.o?.feudHeat??0),0,100),slot=M?.o?.slot||'mid',seed=Number(M?.o?.seed||2718);
  const rand=i=>{let v=(seed^Math.imul(i+1,0x9e3779b9))>>>0;v=Math.imul(v^(v>>>16),0x85ebca6b);return ((v^(v>>>13))>>>0)/4294967296;};
- const occupancy=clamp(.10+.0065*reach+.0028*popularity+.0012*feud+({opener:-.04,mid:0,feature:.045,main:.075}[slot]||0)+(M?.o?.blowoff?.025:0)+(rand(999)-.5)*.05,.16,1);
+ const occupancy=clamp(.10+.0065*reach+.0028*popularity+.0012*feud+({opener:-.04,mid:0,feature:.045,main:.075}[slot]||0)+(M?.o?.blowoff ? .025 : 0)+(rand(999)-.5)*.05,.16,1);
  const count=Math.round(seats.length*occupancy);
  const occupied=new Set(seats.map((s,i)=>({i,score:rand(i)*2+s.priority*.42})).sort((a,b)=>a.score-b.score||a.i-b.i).slice(0,count).map(s=>s.i));
  return {count,capacity:seats.length,occupied};
@@ -217,6 +217,7 @@ const P={
  chop:[12,-35,-60,110,5,-22,28,26,-25],
  elbow:[18,-45,-50,110,-105,-18,25,22,-27],
  kick:[-23,-45,40,55,40,-8,8,94,-4],
+ doublekick:[-18,-35,-35,35,35,82,4,94,-5],
  knee:[-13,-48,-42,48,42,-16,18,93,-115],
  headbutt:[42,-40,-60,40,60,-18,25,20,-25],
  run:[18,-55,-50,35,65,-46,70,35,-65],
@@ -328,7 +329,7 @@ function core(clip,grip){
  switch(clip){
  case'spear':return[F(.22,R(-82,0,0,'run'),f.d,'','Sprint'),F(.50,R(-12,2,4,'pin',1),R(2,3,3,'fall',-1),'body','Shoulder drives into waist'),F(.76,R(6,6,0,'pin'),R(20,7,0,'flat',-1),'','Drive to mat')];
  case'runningCrossbody':return[F(.22,R(-76,0,0,'run'),f.d,'','Run-up'),F(.48,R(-10,2,19,'flat'),R(10,3,0,'guard',-1),'','Horizontal leap'),F(.67,R(9,5,6,'flat'),R(16,6,3,'fall',-1),'body','Body collision'),F(.84,R(9,6,0,'pin'),flat,'','Landing')];
- case'standingDropkick':return[F(.23,R(-38,0,0,'crouch'),f.d,'','Plant feet'),F(.48,R(-6,0,20,'kick',1,-70),R(12,3,0,'sell',-1),'strike','Both boots up'),F(.76,R(-13,6,0,'flat'),flat,'','Both land')];
+ case'standingDropkick':return[F(.23,R(-38,0,0,'crouch'),f.d,'','Plant feet'),F(.48,R(-6,0,20,'doublekick',1,-70),R(12,3,0,'sell',-1),'strike','Both boots up'),F(.76,R(-13,6,0,'flat'),flat,'','Both land')];
  case'thesz':return[F(.24,R(-62,0,0,'run'),f.d,'','Charge'),F(.48,R(0,0,19,'seated'),R(8,3,1,'fall',-1),'body','Leap onto opponent'),F(.76,R(15,7,0,'kneel'),flat,'','Mounted landing')];
  case'spinebuster':return[F(.23,R(-19,0,0,'crouch'),R(12,2,0,'run',-1),'','Catch the runner'),F(.48,R(-6,0,0,'lift'),R(4,1,26,'fall',-1),'body','Lift across waist'),F(.73,R(9,6,0,'kneel'),R(18,7,0,'flat',-1),'','Drive down')];
  case'backbreaker':return[gripFrame,F(.46,R(-7,0,0,'carry'),R(5,2,21,'flat',-1),'upper-body','Across chest'),F(.68,R(-5,5,0,'kneel'),R(9,4,9,'bridge',-1),'body','Back across knee'),F(.84,R(-10,5,0,'kneel'),flat,'','Release')];
@@ -425,8 +426,8 @@ function solveArm(arm,target){
 }
 function contactPoints(a,d,type,clip=''){
  if(type==='strike'){
-  const high=/kick|headbutt|elbow|lariat/.test(clip),target=clip==='bodyshot'||clip==='knee'?d.hip:high?d.head:d.shoulder;
-  const limbs=/kick/.test(clip)?feet(a):clip==='knee'?a.legs.map(l=>l[1]):clip==='headbutt'?[a.head]:clip==='elbow'?a.arms.map(l=>l[1]):a.arms.map(l=>l[2]);
+  const high=/kick|headbutt|elbow|lariat/i.test(clip),target=clip==='bodyshot'||clip==='knee'?d.hip:high?d.head:d.shoulder;
+  const limbs=/kick/i.test(clip)?feet(a):clip==='knee'?a.legs.map(l=>l[1]):clip==='headbutt'?[a.head]:clip==='elbow'?a.arms.map(l=>l[1]):a.arms.map(l=>l[2]);
   const end=limbs.reduce((p,q)=>Math.hypot(p.x-target.x,p.y-target.y)<=Math.hypot(q.x-target.x,q.y-target.y)?p:q);
   return{target,end,strike:true};
  }
@@ -791,8 +792,9 @@ function start(){
  const f=G.F($('opponent').value),p=G.P($('promotion').value);
  if(!w.id||!f||!p)throw Error('Invalid match selection');
  const seed=Number($('seed').value);if(!Number.isInteger(seed)||seed<1||seed>4294967295)throw Error('Seed must be a whole number from 1 to 4294967295');
- c={id:'ringlab-'+seed+'-'+w.id+'-'+f.id,wid:w.id,rid:f.id,pid:p.id,slot:'mid',finish:$('finish').value};
- M=E.create({w,f,p,seed,slot:c.slot,finish:c.finish,minutes:Number($('minutes').value),plan:{game:$('plan').value,leash:'script',talk:'none'},identity:{manager:'Ring Lab',stable:'Test Stable'}});
+ const feudHeat=Number($('feudHeat').value);if(!Number.isFinite(feudHeat)||feudHeat<0||feudHeat>100)throw Error('Rivalry heat must be between 0 and 100');
+ c={id:'ringlab-'+seed+'-'+w.id+'-'+f.id,wid:w.id,rid:f.id,pid:p.id,slot:$('slot').value,feudHeat,finish:$('finish').value};
+ M=E.create({w,f,p,seed,slot:c.slot,feudHeat:c.feudHeat,finish:c.finish,minutes:Number($('minutes').value),plan:{game:$('plan').value,leash:'script',talk:'none'},identity:{manager:'Ring Lab',stable:'Test Stable'}});
  const incident=window.OfficeRingEntranceIncidents,preview=incident.preview($('entranceIncident').value,c,w,f,p);
  audience=seating(M);
  const entranceSheet={entrance:[...(M.o.sheet?.entrance||[]),...preview]};entranceCues=incident.resolve(entranceSheet,w,f);
