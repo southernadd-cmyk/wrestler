@@ -115,7 +115,7 @@ if(params.get('frame')!=='1'){
   if(!cache.has(d.path))cache.set(d.path,new Promise(resolve=>{const img=new Image();img.onload=()=>{try{resolve(samplePortrait(img))}catch(_){resolve(null)}};img.onerror=()=>resolve(null);img.src=d.path;}));
   cache.get(d.path).then(skin=>{if(!skin)cache.delete(d.path);e.source.postMessage({type:'ring-skin-result',token:d.token,skin},'*');});
  });
- frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=625';return
+ frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=626';return
 }
 $('lab').hidden=false;
 if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
@@ -527,6 +527,30 @@ function core(clip,grip){
 // Normalize source/destination to the incoming attacker, swapping roles
 // after a reversal exactly as graph.apply does. Source attacker is the
 // post-control holder; the next event may be driven by either side.
+// The graph says whether a cover succeeds, escapes or merely begins.
+// A pin counter that only *almost* becomes a pin never receives a count.
+function pinKind(n){
+ if(!n)return '';
+ if(n.id==='cover')return 'cover';
+ if(n.id==='early_cover')return 'early';
+ if(n.id==='near_kickout'||n.id==='counter_rollup'||n.nearfall&&!n.blockOf&&!n.counterOf)return 'escape';
+ return '';
+}
+function pinFrames(pinner,victim,kind='hold',contact='leg'){
+ const dir=pinner.x<=victim.x?1:-1,vy=victim.y, vx=victim.x;
+ const holdA=R(vx-dir*9,vy-2,0,'pin',dir),holdD=R(vx,vy,0,'flat',-dir);
+ // Bend the hooked leg while keeping the shoulder line on the mat.
+ holdD.angles[5]=-75;holdD.angles[6]=75;
+ const liftA=R(vx-dir*15,vy-3,3,'fall',dir,-dir*14);
+ const liftD=R(vx+dir*3,vy,0,'flat',-dir,-dir*20);
+ liftD.angles[1]=-120;liftD.angles[5]=-35;liftD.angles[6]=85;
+ const outA=R(vx-dir*27,vy-3,0,'kneel',dir),outD=R(vx+dir*14,vy+1,0,'flat',-dir,-dir*13);
+ outD.angles[5]=-62;outD.angles[6]=48;
+ if(kind==='escape')return [
+ F(.24,holdA,holdD,contact,'Cover held'),F(.48,holdA,holdD,contact,'Shoulders down'),
+ F(.72,liftA,liftD,'','Shoulder up — kick-out'),F(1,outA,outD,'','Cover broken')];
+ return [F(.52,holdA,holdD,contact,'Hook the leg'),F(1,holdA,holdD,contact,'Hold shoulders down')];
+}
 function build(from,to,lead='w'){
  const desc=descriptor(to),src=state(from),end=state(to),reversed=!!to.reverse;
  let frames=desc&&core(desc.clip,desc.grip);
@@ -534,9 +558,28 @@ function build(from,to,lead='w'){
  if(frames&&reversed)frames=frames.map(f=>({...f,owner:f.stage==='Attempt begins'?'a':'d'}));
  if(!frames)return null;
  if(reversed){const tmp=end.a;end.a=end.d;end.d=tmp;}
+ const pin=pinKind(to);
+ if(pin){
+  // Keep the individual entry choreography (schoolboy, crucifix, etc.).
+  // Its last meaningful cover becomes the held count before separation.
+  const owner=reversed?'d':'a',hold=frames.at(-1),pa=reversed?hold.d:hold.a,pd=reversed?hold.a:hold.d;
+  const setup=frames.filter(f=>f.t<.8).map(f=>({...f,t:f.t*.43}));
+  let phases;
+  if(to.id==='near_kickout'||to.id==='counter_rollup'||pin==='cover'||pin==='early'){
+   const pair=pinFrames(pa,pd,pin==='cover'?'hold':'escape');
+   phases=pair.map(f=>({...f,t:.4+f.t*.6,a:reversed?f.d:f.a,d:reversed?f.a:f.d,owner}));
+  }else{
+   // Preserve the distinct roll-up posture while the referee counts.
+   const contact=hold.contact||'leg',tail=pinFrames(hold.a,hold.d,'escape',contact);
+   phases=[{...hold,t:.43,owner,stage:'Shoulders down'}, {...hold,t:.68,owner,stage:'Cover held'},
+    {...tail[2],t:.84,owner},{...tail[3],t:1,owner}];
+  }
+  const seq=[F(0,src.a,src.d,G.GRIP_ENTRY[from?.id]||'','Previous state'),...setup,...phases];
+  return {from,to,lead,reversed,desc,seq,duration:pin==='cover'?1450:2250,
+   officiating:{kind:'pin',owner,counts:pin==='cover'?0:pin==='early'?1:2,begin:.43,end:.7,escape:pin!=='cover'}};
+ }
  // Runtime block outcomes never display a landed version of the attempted move.
  const seq=[F(0,src.a,src.d,G.GRIP_ENTRY[from?.id]||'','Previous state'),...frames,{...F(1,end.a,end.d,G.GRIP_ENTRY[to.id]||'','Destination state'),owner:reversed?'d':'a'}];
- // All endpoints come from the same state resolver as the next clip start.
  return {from,to,lead,reversed,desc,seq,duration:desc.duration};
 }
 function interp(a,b,t){return{x:mix(a.x,b.x,t),y:mix(a.y,b.y,t),z:mix(a.z,b.z,t),rot:mix(a.rot,b.rot,t),face:t<.5?a.face:b.face,angles:a.angles.map((v,i)=>mix(v,b.angles[i],t))}}
@@ -779,7 +822,7 @@ function audit(){
  $('coverageText').textContent=custom+' custom-node mappings, '+shared+' shared-node mappings. '+covered+' of '+edges+' authored edges compose a clip. '+invalid+' non-finite sampled poses. '+contactReview+' of '+contactSamples+' sampled contact poses exceed 2 px after bounded correction (before correction: '+rawReview+'; '+contactEdges+' edges need review). '+(missing.length?'Unmapped nodes: '+missing.join(', '):'No unmapped graph nodes.')+' Visual quality is not assessed by this check.';
  return{nodes:nodes.length,edges,custom,shared,covered,invalid,contactSamples,contactReview,rawReview,contactEdges,maxShift,missing};
 }
-window.RingAnimationLab={descriptor,build,at,audit,skeleton,contactSolve,resolveFrame,wrestler,presentationFrame,bridgePose,handoverStart,R,neutral};
+window.RingAnimationLab={descriptor,build,at,audit,skeleton,contactSolve,resolveFrame,wrestler,presentationFrame,bridgePose,handoverStart,pinKind,pinFrames,R,neutral};
 function draw(now){
  if(playing&&anim){if(last)progress+=Math.min(80,now-last)*Number($('speed').value)/anim.duration;last=now;if(progress>=1){if($('loop').checked)progress=0;else{progress=1;playing=false;$('pause').textContent='Resume'}}}
  backdrop(now);const f=anim?at(anim,progress):neutral(),resolved=resolveFrame(f,anim?.desc.clip),{a,d,residual:err}=resolved;
@@ -799,6 +842,7 @@ const canvas=$('arena'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=fa
 const col={w:'#f1ce76',f:'#d1e9f4',ref:'#e3e5e9'};
 const ring={l:280,r:690,t:151,b:413};
 const curtain={x:484,y:21};
+let officialPin=null,refSignal=null,refTrack=null;
 let rigAnim=null,rigStart=0,rigPrevious=null,rigLead='w',rigDuration=1,rigHeld=null,rigPausedAt=null;let M=null,c=null,after=null,afterSeen=0,seq=0,buffer=[],timer=0,paused=false,active=false,waiting=false,mode='idle',entered=0,seenEvent=null,totalEvents=0,gen=0,banks=[],speech=null,impact=null,refPose='stand',lastMove='',lastEvent=null,afterChoice=null;
 let world={w:makeActor('w'),f:makeActor('f'),ref:makeActor('ref')};
 let audience=seating(null);let skinToken=0;const skinRequests=new Map();
@@ -947,7 +991,7 @@ const sfx=createSfx(),sfxToggle=$('sfx');
 sfxToggle.onchange=()=>{const on=sfx.enable(sfxToggle.checked);sfxToggle.checked=on;if(on)sfx.run(active&&!paused);};
 if(typeof window.addEventListener==='function')window.addEventListener('pagehide',()=>sfx.run(false));
 function makeActor(side){return {side,x:curtain.x,y:curtain.y,tx:curtain.x,ty:curtain.y,angle:0,pose:'stand',visible:side==='ref',walk:false,fromX:curtain.x,fromY:curtain.y,start:0,duration:1,face:1,travel:0,path:null,lastPose:null,handoff:null};}
-function resetWorld(){world={w:makeActor('w'),f:makeActor('f'),ref:makeActor('ref')};Object.assign(world.ref,{x:475,y:214,tx:475,ty:214,fromX:475,fromY:214});speech=null;impact=null;refPose='stand';}
+function resetWorld(){world={w:makeActor('w'),f:makeActor('f'),ref:makeActor('ref')};Object.assign(world.ref,{x:475,y:214,tx:475,ty:214,fromX:475,fromY:214});speech=null;impact=null;refPose='stand';officialPin=null;refSignal=null;refTrack=null;}
 resetWorld();
 function move(side,x,y,pose='stand',duration=450,waypoints=[]){
  const a=world[side],now=paused?(rigPausedAt??performance.now()):performance.now();
@@ -995,7 +1039,7 @@ function snapshot(e){
  $('physical').textContent='Zones: '+(p.locations?.w||e.position||'unknown')+' / '+(p.locations?.f||e.position||'unknown')+(p.grip?' • '+p.grip:'')+(e.down?' • '+(e.down==='w'?M.w.short:M.f.short)+' down':'');
  $('control').textContent=s==='w'?M.w.short:s==='f'?M.f.short:'Neutral';
 }
-function fitEndpoint(anim,e,lead){const end=anim.seq.at(-1);for(const [key,side] of [['a',lead],['d',lead==='w'?'f':'w']]){const zone=e.physical?.locations?.[side],p=end[key];if(zone==='floor'){p.x=side===lead?153:184;p.y=e.physical?.area==='ramp'?-65:30;p.z=0;}else if(zone==='apron'){p.x=side===lead?116:137;p.y=26;p.z=0;}else if(zone==='top'){p.x=side===lead?82:94;p.y=-39;p.z=20;}else if(zone==='ring'&&p.x>108){p.x=side===lead?-22:22;p.y=4;p.z=0;}if(e.down===side&&zone!=='top'){p.angles=rig.R(0,0,0,'flat').angles;p.z=0;}}if(e.physical&&'grip' in e.physical)end.contact=e.physical.grip||'';}
+function fitEndpoint(anim,e,lead){const end=anim.seq.at(-1);for(const [key,side] of [['a',lead],['d',lead==='w'?'f':'w']]){const zone=e.physical?.locations?.[side],p=end[key];if(zone==='floor'){p.x=side===lead?153:184;p.y=e.physical?.area==='ramp'?-65:30;p.z=0;}else if(zone==='apron'){p.x=side===lead?116:137;p.y=26;p.z=0;}else if(zone==='top'){p.x=side===lead?82:94;p.y=-39;p.z=20;}else if(zone==='ring'&&p.x>108){p.x=side===lead?-22:22;p.y=4;p.z=0;}if(e.down===side&&zone!=='top'&&!anim.officiating){p.angles=rig.R(0,0,0,'flat').angles;p.z=0;}}if(e.physical&&'grip' in e.physical&&!anim.officiating)end.contact=e.physical.grip||'';}
 function rigFrameAt(now){
  return rig.at(rigAnim,Math.max(0,Math.min(1,((rigPausedAt??now)-rigStart)/rigDuration)));
 }
@@ -1016,6 +1060,14 @@ function releaseRig(now=performance.now()){
  rigAnim=null;rigHeld=null;
 }
 function eventFrame(e){
+ // Scheduled covers have their own narrated count lines. Keep the last
+ // landed pose until the explicit cover, not a reset to hidden actors.
+ if(e.id==='scheduled_nearfall'){
+  totalEvents++;lastEvent=e;lastMove='Near fall';officialPin=null;refSignal=null;
+  if(e.sourceSide==='w'||e.sourceSide==='f')officialPin={side:e.sourceSide,pending:true,count:0};
+  phase('Wrestling');snapshot(e);log(stamp(e.t),'GRAPH · Near fall','event');return;
+ }
+ officialPin=null;refSignal=null;
  totalEvents++;const n=E.GRAPH.A[e.id];
  if(e.scriptedBig||n?.nearfall||e.id==='scheduled_nearfall'||e.id==='scheduled_submission_escape')sfx.pop();
  const lead=e.preControl==='w'||e.preControl==='f'?e.preControl:e.control==='f'?'f':'w',now=paused?(rigPausedAt??performance.now()):performance.now();
@@ -1031,14 +1083,71 @@ function eventFrame(e){
  }else{releaseRig(now);rigPrevious=null;}
  lastEvent=e;lastMove=n?.name||e.id.replaceAll('_',' ');phase('Wrestling');snapshot(e);setStatus(lastMove,(e.preControl==='w'?M.w.short:e.preControl==='f'?M.f.short:'Exchange')+' • '+(e.arc||'match').replaceAll('_',' '));log(stamp(e.t),'GRAPH · '+lastMove,'event');stats(stamp(e.t));
 }
+const otherSide=side=>side==='w'?'f':'w';
+function pinLine(text){
+ const t=String(text||'').trim(),counts=[...t.matchAll(/\b(ONE|TWO|THREE)!/g)].map(m=>({ONE:1,TWO:2,THREE:3})[m[1]]);
+ const escape=/shoulder up|kick(?:s|ed)?[ -]?out|kicks? free|breaks the count|escapes? (?:the cover|at the last moment)|survives the cover|two and a half|hand almost hit three|last-second escape|survives!|has escaped/i.test(t);
+ const rope=/foot (?:is )?on the rope|rope break|reaches? the rope/i.test(t);
+ const tap=/\bTAPS!/.test(t);
+ return {counts,escape,rope,tap,cover:/\bcover[.!]?$|hooks? (?:the |a )?(?:far )?leg|referee drops into position|drapes an arm|rolls .+ up/i.test(t)};
+}
+function pinSide(l,final=false){
+ if(final){const v=M.graph?.outcome?.winner;if(v==='w'||v==='f')return v;}
+ if(officialPin?.side)return officialPin.side;
+ if(lastEvent?.down==='w'||lastEvent?.down==='f')return otherSide(lastEvent.down);
+ const t=l.text||'',w=M.w.short,f=M.f.short;
+ if(t.startsWith(w+' '))return 'w';if(t.startsWith(f+' '))return 'f';
+ return lastEvent?.control==='f'?'f':'w';
+}
+function officialClip(side,kind,now){
+ const previous=rigAnim?rigFrameAt(now):{a:capturePresentation(side,now),d:capturePresentation(otherSide(side),now),contact:'',strength:0,owner:'a'};
+ const swap=!!rigAnim&&rigLead!==side,pr=swap?previous.d:previous.a,vr=swap?previous.a:previous.d;
+ const seq=[{t:0,a:pr,d:vr,contact:'',stage:'Current position'},...rig.pinFrames(pr,vr,kind)];
+ const next={desc:{clip:'officialPin'},seq,duration:kind==='escape'?680:480};
+ rig.handoverStart(next,previous,swap);
+ rigAnim=next;rigLead=side;rigStart=now;rigDuration=next.duration/Number($('speed').value);rigHeld=rig.at(next,1);
+ if(paused)rigPausedAt=now;
+}
+function officiateLine(l,now){
+ const info=pinLine(l.text),n=l.actionId&&E.GRAPH.A[l.actionId];
+ // The authored graph clip already depicts its own count and kick-out.
+ if(n&&rig.pinKind(n))return 0;
+ const explicit=l.kind==='count',final=info.counts.includes(3);
+ if(info.tap&&explicit){
+  officialPin=null;refSignal={kind:'tap',at:now,span:650/Number($('speed').value)};
+  phase('Submission');return 700;
+ }
+ if(explicit&&(info.cover||info.counts.length)){
+  const side=pinSide(l,final);
+  if(!officialPin||officialPin.pending||officialPin.side!==side||officialPin.finished){
+   officialClip(side,'hold',now);officialPin={side,count:0};
+  }
+  if(info.counts.length){
+   officialPin.count=info.counts.at(-1);
+   const duration=Math.max(600,info.counts.length*430);
+   refSignal={kind:'count',counts:info.counts,at:now,span:duration/Number($('speed').value)};
+   if(final)officialPin.finished=true;
+   if(info.escape&&!final){
+    officialClip(side,'escape',now);officialPin=null;refSignal={kind:'escape',at:now,span:680/Number($('speed').value)};
+   }
+   phase(final?'The finish':'Pin attempt');return duration+100;
+  }
+  phase('Pin attempt');return 600;
+ }
+ if(officialPin&&!officialPin.pending&&!officialPin.finished&&(info.escape||info.rope)&&['crowd','play','count'].includes(l.kind)){
+  officialClip(officialPin.side,'escape',now);officialPin=null;refSignal={kind:info.rope?'break':'escape',at:now,span:680/Number($('speed').value)};
+  phase(info.rope?'Rope break':'Kick-out');return 800;
+ }
+ return 0;
+}
 function lineFrame(l){
  const t=l.t||stamp(M.t);
  const side=entranceSide(l);
  if(side){entered++;enterRing(side);phase('Entrances');const cue=entranceCues[side],title=sfx.themeTitle(side,cue);if(title&&sfx.enabled)log(t,'Entrance audio · '+title,'event');}
  if((l.kind==='crowd'&&l.big)||/\b(?:big pop|roof comes off|crowd (?:erupts|roars|explodes)|front rows erupt)\b/i.test(l.text))sfx.pop();
  if(mode==='entrance'&&l.kind==='bell'){sfx.endEntrance();sfx.bell(false);mode='live';move('w',427,290,'guard');move('f',541,290,'guard');phase('Wrestling');}
- if(l.kind==='count'){if(M.stage==='over')releaseRig();refPose='kneel';world.ref.pose='kneel';if(M.stage==='over'&&/cover|\bONE!|\bTWO!|\bTHREE!|TAPS!/i.test(l.text)){const win=winner();if(win){const lose=win==='w'?'f':'w';move(lose,482,292,'down');move(win,win==='w'?458:507,290,'kneel');move('ref',528,247,'kneel');phase(/TAPS!/i.test(l.text)?'Submission':'The finish');}}}
- else if(l.kind==='bell'){refPose='stand';world.ref.pose='stand';}
+ const officialDelay=mode==='live'?officiateLine(l,paused?(rigPausedAt??performance.now()):performance.now()):0;
+ if(l.kind==='bell'){refPose='stand';world.ref.pose='stand';officialPin=null;refSignal=null;}
  if(M.stage==='over'&&l.kind==='bell'&&mode!=='result'){
   sfx.bell(true);sfx.pop();releaseRig();mode='result';phase('The bell');
   // The graph's actual outcome takes precedence over the booked finish.
@@ -1055,7 +1164,7 @@ function lineFrame(l){
  log(t,(voices[l.who]?voices[l.who]+' · ':'')+l.text,l.kind==='rating'?'speech':'');
  if(mode==='result'||l.kind==='count'||l.kind==='bell'||mode==='entrance')setStatus(l.text,l.kind==='rating'?'Official rating':'Engine commentary');
  else $('detail').textContent=l.text;
- stats(t);
+ stats(t);return officialDelay;
 }
 function enqueueEngine(){
  const previous=seenEvent;const l=E.next(M);const events=M.graph?.events||[];const idx=previous?events.lastIndexOf(previous):-1;
@@ -1107,7 +1216,7 @@ function process(){
  const frame=buffer.shift();if(!frame)return 100;
  switch(frame.kind){
  case 'event':eventFrame(frame.e);return rigAnim?rigAnim.duration:690;
- case 'line':{const entrance=entranceSide(frame.l);lineFrame(frame.l);return entrance?entranceMs():mode==='entrance'?650:frame.l.kind==='bell'?1000:550+Math.min(1000,(frame.l.pause||0)*250);}
+ case 'line':{const entrance=entranceSide(frame.l),officialDelay=lineFrame(frame.l);return entrance?entranceMs():mode==='entrance'?650:frame.l.kind==='bell'?1000:Math.max(officialDelay,550+Math.min(1000,(frame.l.pause||0)*250));}
  case 'decision':choice(M.decision.prompt||M.decision.title||'Ringside decision',M.decision.options,id=>E.resolve(M,id),['home','protect','cut','job','stop']);return 700;
  case 'afterStart':afterStart();return 900;
  case 'afterLine':afterLine(frame.l);return frame.l.who?2300:1500;
@@ -1143,7 +1252,7 @@ function start(){
  Promise.all(skinReady).then(()=>{if(gen!==current)return;active=true;sfx.run(true);$('pause').textContent='Pause';$('pause').disabled=false;$('step').disabled=false;schedule(50);});
 }
 $('start').onclick=()=>{try{start();}catch(e){active=false;sfx.run(false);$('start').disabled=false;fail(e);}};
-$('pause').onclick=()=>{if(!active)return;paused=!paused;sfx.run(!paused);$('pause').textContent=paused?'Resume':'Pause';if(paused){clearTimeout(timer);rigPausedAt=performance.now();}else{if(rigPausedAt!==null){const delta=performance.now()-rigPausedAt;rigStart+=delta;for(const a of Object.values(world)){a.start+=Math.max(0,performance.now()-Math.max(a.start,rigPausedAt));if(a.handoff)a.handoff.at+=Math.max(0,performance.now()-Math.max(a.handoff.at,rigPausedAt));}rigPausedAt=null;schedule(Math.max(50,rigAnim?rigDuration-(performance.now()-rigStart):50));}else schedule(50);}};
+$('pause').onclick=()=>{if(!active)return;paused=!paused;sfx.run(!paused);$('pause').textContent=paused?'Resume':'Pause';if(paused){clearTimeout(timer);rigPausedAt=performance.now();}else{if(rigPausedAt!==null){const delta=performance.now()-rigPausedAt;rigStart+=delta;for(const a of Object.values(world)){a.start+=Math.max(0,performance.now()-Math.max(a.start,rigPausedAt));if(a.handoff)a.handoff.at+=Math.max(0,performance.now()-Math.max(a.handoff.at,rigPausedAt));}if(refSignal)refSignal.at+=delta;if(refTrack)refTrack.last+=delta;rigPausedAt=null;schedule(Math.max(50,rigAnim?rigDuration-(performance.now()-rigStart):50));}else schedule(50);}};
 $('step').onclick=()=>{if(!active||waiting)return;paused=true;sfx.run(false);rigPausedAt=performance.now();$('pause').textContent='Resume';clearTimeout(timer);try{process();if(rigAnim){rigPausedAt=rigStart+rigDuration;}}catch(e){active=false;sfx.run(false);$('start').disabled=false;fail(e);}};
 $('start').disabled=false;
 // The match engine remains in world coordinates. This low-resolution camera
@@ -1233,6 +1342,78 @@ function presentationPose(a,now){
  }
  a.lastPose=sk.r;return sk;
 }
+// Choose a real position beside the visible shoulder line. Prefer a
+// near-side clear angle, not a fixed corner unrelated to the action.
+function refereeTarget(a,d,check,outside=false){
+ const center=check?d.shoulder:{x:(a.hip.x+d.hip.x)/2,y:(a.ground.y+d.ground.y)/2};
+ const pts=[a.hip,a.shoulder,a.head,...a.legs.flat(),d.hip,d.shoulder,d.head,...d.legs.flat()];
+ const radius=check?29:48;
+ const minX=outside?390:117,maxX=outside?445:363,minY=outside?40:94,maxY=outside?220:184;
+ let best=null;
+ for(const [dx,dy] of [[0,1],[1,.55],[-1,.55],[1,-.55],[-1,-.55],[0,-1],[1,0],[-1,0]]){
+  const x=Math.max(minX,Math.min(maxX,center.x+dx*radius)),y=Math.max(minY,Math.min(maxY,center.y+dy*radius));
+  const clearance=Math.min(...pts.map(p=>Math.hypot(p.x-x,p.y-y)));
+  const score=Math.min(clearance,check?20:36)*3-Math.abs(Math.hypot(x-center.x,y-center.y)-radius)+(dy>0?3:0);
+  if(!best||score>best.score)best={x,y,score,clearance};
+ }
+ return best;
+}
+function officialView(now,frame,resolved){
+ let kind='watch',count=0,slap=0,side=rigLead;
+ const p=Math.max(0,Math.min(1,((rigPausedAt??now)-rigStart)/rigDuration)),o=rigAnim?.officiating;
+ if(o&&p>=o.begin-.09&&(!o.escape||p<=.86)){
+  kind='pin';side=o.owner==='d'?otherSide(rigLead):rigLead;
+  if(o.counts&&p>=o.begin&&p<=o.end){
+   const t=Math.min(.999999,(p-o.begin)/(o.end-o.begin))*o.counts;
+   count=Math.floor(t)+1;slap=t%1;
+  }else if(o.escape&&p>o.end){kind='escape';count=o.counts;}
+ }else if(officialPin&&!officialPin.pending){kind='pin';side=officialPin.side;count=officialPin.count||0;}
+ else if(lastEvent&&E.GRAPH.A[lastEvent.id]?.family==='submission'&&!E.GRAPH.A[lastEvent.id]?.blockOf){kind='submission';side=lastEvent.control==='f'?'f':'w';}
+ if(refSignal){
+  const t=Math.max(0,(now-refSignal.at)/refSignal.span);
+  if(refSignal.kind==='count'&&t<=1){
+   kind='pin';const q=Math.min(.999999,t)*refSignal.counts.length;
+   count=refSignal.counts[Math.floor(q)];slap=q%1;
+  }else if(t<=1&&refSignal.kind!=='count'){kind=refSignal.kind;count=kind==='escape'?officialPin?.count||0:0;}
+ }
+ const a=side===rigLead?resolved.a:resolved.d,d=side===rigLead?resolved.d:resolved.a;
+ const check=['pin','submission','tap','escape','break'].includes(kind);
+ const outside=check&&d.ground.x>380&&M?.o?.stip==='anywhere';
+ const target=refereeTarget(a,d,check,outside);
+ if(!refTrack){const p=point(world.ref.x,world.ref.y);refTrack={x:p[0],y:p[1],last:now};}
+ const dt=Math.max(0,Math.min(100,now-refTrack.last)),dist=Math.hypot(target.x-refTrack.x,target.y-refTrack.y),step=Math.min(1,dt*(check?.26:.15)/Math.max(dist,.001));
+ refTrack.x+=(target.x-refTrack.x)*step;refTrack.y+=(target.y-refTrack.y)*step;refTrack.last=now;
+ const pos=unproject(refTrack.x,refTrack.y);Object.assign(world.ref,{x:pos[0],y:pos[1],pose:check?'kneel':'stand'});
+ return {x:refTrack.x,y:refTrack.y,face:d.shoulder.x>=refTrack.x?1:-1,kind,count,slap,check,outside};
+}
+function drawOfficial(v){
+ const {x,y,face,kind,count,slap,check}=v,skin='#c9a07c',edge='#222631',shirt='#d7d8d5',pants='#242b37';
+ const hip=check?-7:-13,shoulder=check?-16:-26,lean=check?5:0,headY=shoulder-10;
+ ellipse(x,y+1,check?11:7,3,'rgba(10,14,24,.38)');
+ ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(face,1);
+ if(check){
+  limb(-2,hip,-9,-3,pants,5);limb(-9,-3,-15,-1,pants,4);
+  limb(3,hip,9,-2,pants,5);limb(9,-2,2,-1,pants,4);
+  rect(-17,-2,7,3,edge);rect(0,-2,7,3,edge);
+ }else{
+  limb(-3,hip,-5,-1,pants,5);limb(3,hip,5,-1,pants,5);rect(-8,-2,7,3,edge);rect(2,-2,7,3,edge);
+ }
+ poly([[-6+lean,shoulder-1],[6+lean,shoulder-1],[5,hip],[-5,hip]],edge);
+ poly([[-5+lean,shoulder],[5+lean,shoulder],[4,hip-1],[-4,hip-1]],shirt);
+ for(const n of [-3,1,5])limb(n+lean,shoulder,n-1,hip-2,'#343944',2);
+ limb(-4+lean,shoulder+2,check?-9:-8,hip-2,skin,4);
+ let ex=lean+9,ey=hip-2,hx=lean+12,hy=hip-1;
+ if(kind==='pin'&&count){
+  // Raise, swing down, strike the canvas, then lift for the next count.
+  const swing=slap<.55?slap/.55:Math.max(0,1-(slap-.55)/.45);
+  ex=lean+8;ey=shoulder-6+Math.round(13*swing);hx=lean+14;hy=Math.round(-22+21*swing);
+ }else if(kind==='submission'||kind==='tap'){ex=lean+9;ey=shoulder+3;hx=lean+15;hy=kind==='tap'?-23:-8;}
+ else if(kind==='escape'||kind==='break'){ex=lean+9;ey=shoulder-5;hx=lean+14;hy=shoulder-13;}
+ limb(4+lean,shoulder+2,ex,ey,skin,4);limb(ex,ey,hx,hy,skin,4);rect(hx-2,hy-2,4,4,skin);
+ rect(lean-5,headY,10,11,edge);rect(lean-4,headY+1,8,9,skin);rect(lean-5,headY-1,10,3,'#42382e');rect(lean+2,headY+4,2,1,edge);
+ ctx.restore();
+ if(kind==='pin'&&count){rect(x-10,y-43,20,11,'#14223c');label(String(count),x,y-35,'#f1ce76',9);}
+}
 function actor(a,now){
  if(!a.visible)return;
  const [x,y]=point(a.x,a.y),k=Math.max(0,Math.min(1,(now-a.start)/a.duration)),other=world[a.side==='w'?'f':'w'];
@@ -1302,8 +1483,10 @@ function draw(now){
  if(!(mode==='live'&&rigAnim))for(const a of arr.filter(behind))actor(a,clock);
  if(mode==='live'&&rigAnim){
  const frame=rigFrameAt(clock),resolved=rig.resolveFrame(frame,rigAnim.desc.clip),items=[{s:resolved.a,side:rigLead},{s:resolved.d,side:rigLead==='w'?'f':'w'}].sort((a,b)=>a.s.ground.y-b.s.ground.y);
- actor(world.ref,clock);for(const q of items.filter(q=>q.s.ground.x>=100&&q.s.ground.x<=380&&q.s.ground.y<=196))rig.wrestler(q.s,q.side,world[q.side].look,M[q.side].short);
- frontRopes();for(const q of items.filter(q=>q.s.ground.x<100||q.s.ground.x>380||q.s.ground.y>196))rig.wrestler(q.s,q.side,world[q.side].look,M[q.side].short);
+ const ref=officialView(clock,frame,resolved),paint=q=>q.ref?drawOfficial(q.ref):rig.wrestler(q.s,q.side,world[q.side].look,M[q.side].short);
+ items.push({ref,s:{ground:{x:ref.x,y:ref.y}}});items.sort((a,b)=>a.s.ground.y-b.s.ground.y);
+ const inRing=q=>q.ref?!q.ref.outside:q.s.ground.x>=100&&q.s.ground.x<=380&&q.s.ground.y<=196;
+ for(const q of items.filter(inRing))paint(q);frontRopes();for(const q of items.filter(q=>!inRing(q)))paint(q);
  }else{for(const a of arr.filter(inside))actor(a,clock);frontRopes();for(const a of arr.filter(a=>!behind(a)&&!inside(a)))actor(a,clock);}
  if(impact&&now<impact.until){const p=point(impact.x,impact.y);const d=Math.round((impact.until-now)*.012)+5;line(p[0]-d,p[1],p[0]-d-4,p[1]-3,'#fff0ad',2);line(p[0]+d,p[1],p[0]+d+4,p[1]-3,'#fff0ad',2);}
  if(speech&&world[speech.side].visible&&!world[speech.side].leaving){const a=world[speech.side],p=point(a.x,a.y);const x=Math.max(78,Math.min(298,p[0]-52)),y=Math.max(50,p[1]-59);rect(x,y,104,14,'#14223c');rect(x,y,104,1,'#f1ce76');label(M[speech.side].short+' SPEAKS',x+52,y+10,'#f1ce76',8);}
