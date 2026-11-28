@@ -520,11 +520,11 @@ const assignments=Object.freeze({
   "style": "Story"
  },
  "academy-058": {
-  "title": "Distant Skyline SIDEWALK STRUT",
-  "file": "week-18---distant-skyline-sidewalk-strut.ogg",
+  "title": "Dani Maccari Asset Pack - Shadow Lurking",
+  "file": "dani-maccari-asset-pack---shadow-lurking.ogg",
   "source": "tallbeard",
-  "duration": 12.15,
-  "sha256": "2075e159cc37b140880f56cf09eae769826dc08078dd5d5a05d2aeb17bfce2bf",
+  "duration": 25.26,
+  "sha256": "4799b8f1aff544b87c6856c0658aedd80d9a4ce16c83c868f1b8d1c9c4c41872",
   "offset": 0,
   "style": "Story"
  },
@@ -853,11 +853,11 @@ const assignments=Object.freeze({
   "style": "Brawl"
  },
  "academy-095": {
-  "title": "Mischief ZOOMIES",
-  "file": "week-10---mischief-zoomies.ogg",
+  "title": "Sketchbook 2024-02-21_01",
+  "file": "sketchbook-2024-02-21_01.ogg",
   "source": "tallbeard",
-  "duration": 8.35,
-  "sha256": "9b37942aae591ab909ffd5b638621ffe76824f38376de493196523a6419fd964",
+  "duration": 72,
+  "sha256": "32710d7c7bb3efe9f65e645c3a413d6d31d628259bacf67203af9b05b8f440bb",
   "offset": 0,
   "style": "Technical"
  },
@@ -907,11 +907,11 @@ const assignments=Object.freeze({
   "style": "Story"
  },
  "academy-101": {
-  "title": "VGMA Challenge 31",
-  "file": "vgma-challenge-31.ogg",
+  "title": "Sketchbook 2024-05-08",
+  "file": "sketchbook-2024-05-08.ogg",
   "source": "tallbeard",
-  "duration": 10.67,
-  "sha256": "2e6efbdb8563f8a2527c2c997c8e9dd8b28ebcefb48fb2778290ed6487904f8d",
+  "duration": 51,
+  "sha256": "3abadfdf8925a5f8549b621be90dfe398dacdbf85fce9a8a16ad063ab1ded9ea",
   "offset": 0,
   "style": "Technical"
  },
@@ -1177,11 +1177,11 @@ const assignments=Object.freeze({
   "style": "Brawl"
  },
  "bronte": {
-  "title": "Mischief MELODY 2",
-  "file": "week-10---mischief-melody-2.ogg",
+  "title": "Sketchbook 2024-05-01_01",
+  "file": "sketchbook-2024-05-01_01.ogg",
   "source": "tallbeard",
-  "duration": 8.35,
-  "sha256": "3990ef17abdafa83ff96a93cae632c3b16988009d0d1d5e2b5a2472564b3b15e",
+  "duration": 67.76,
+  "sha256": "817bb9d0bbfacb23ff0b6680985199f87b42835e023ac01aad2f10f1393b0fc0",
   "offset": 0,
   "style": "Brawl"
  },
@@ -1438,20 +1438,20 @@ const assignments=Object.freeze({
   "style": "Spectacle"
  },
  "leandro": {
-  "title": "Mischief GROOVE",
-  "file": "week-10---mischief-groove.ogg",
+  "title": "Sketchbook 2024-06-12",
+  "file": "sketchbook-2024-06-12.ogg",
   "source": "tallbeard",
-  "duration": 8.35,
-  "sha256": "a743204861dbc06d83cc03916113a6060b4d51536bd0dc092a0efe0cb25b2bc5",
+  "duration": 48,
+  "sha256": "0dd8f1eeb24adb6baf477231f083bdf06d5f85c78ff4686cdee6280f0e850f6c",
   "offset": 0,
   "style": "Spectacle"
  },
  "liya": {
-  "title": "Mischief MELODY",
-  "file": "week-10---mischief-melody.ogg",
+  "title": "Sketchbook 2024-07-03",
+  "file": "sketchbook-2024-07-03.ogg",
   "source": "tallbeard",
-  "duration": 8.35,
-  "sha256": "ba5a2554bf94b3150f4fddfbe39b1eae29a9e8b1c1f7428c6e9d4a8aa9a2ab5b",
+  "duration": 60.92,
+  "sha256": "a764b9f8485763b4386fea73097e926ff1fdadbf3e15c4d17fd1fbb4c976000e",
   "offset": 0,
   "style": "Spectacle"
  },
@@ -1780,11 +1780,11 @@ const assignments=Object.freeze({
   "style": "Technical"
  },
  "winnie": {
-  "title": "Sunburn SPF 3000",
-  "file": "week-15---sunburn-spf-3000.ogg",
+  "title": "Sketchbook 2024-08-13",
+  "file": "sketchbook-2024-08-13.ogg",
   "source": "tallbeard",
-  "duration": 10.91,
-  "sha256": "9b4ed0ff61bec535bbc303055c0902db868ba5f0e48ceb42627788d8b1ea9615",
+  "duration": 88.94,
+  "sha256": "e1336b94a7a0343924dd1d2ec568d829e1b73ccea161607b289afcb460a72bc3",
   "offset": 0,
   "style": "Technical"
  },
