@@ -563,11 +563,12 @@ function build(from,to,lead='w'){
   // Keep the individual entry choreography (schoolboy, crucifix, etc.).
   // Its last meaningful cover becomes the held count before separation.
   const owner=reversed?'d':'a',hold=frames.at(-1),pa=reversed?hold.d:hold.a,pd=reversed?hold.a:hold.d;
-  const setup=frames.filter(f=>f.t<.8).map(f=>({...f,t:f.t*.43}));
+  const setup=to.id==='near_kickout'?[]:frames.filter(f=>f.t<.8).map(f=>({...f,t:f.t*.43}));
   let phases;
   if(to.id==='near_kickout'||to.id==='counter_rollup'||pin==='cover'||pin==='early'){
    const pair=pinFrames(pa,pd,pin==='cover'?'hold':'escape');
-   phases=pair.map(f=>({...f,t:.4+f.t*.6,a:reversed?f.d:f.a,d:reversed?f.a:f.d,owner}));
+   const begin=to.id==='near_kickout'?0:.36;
+   phases=pair.map(f=>({...f,t:begin+f.t*(1-begin),a:reversed?f.d:f.a,d:reversed?f.a:f.d,owner}));
   }else{
    // Preserve the distinct roll-up posture while the referee counts.
    const contact=hold.contact||'leg',tail=pinFrames(hold.a,hold.d,'escape',contact);
@@ -576,7 +577,7 @@ function build(from,to,lead='w'){
   }
   const seq=[F(0,src.a,src.d,G.GRIP_ENTRY[from?.id]||'','Previous state'),...setup,...phases];
   return {from,to,lead,reversed,desc,seq,duration:pin==='cover'?1450:2250,
-   officiating:{kind:'pin',owner,counts:pin==='cover'?0:pin==='early'?1:2,begin:.43,end:.7,escape:pin!=='cover'}};
+   officiating:{kind:'pin',owner,counts:pin==='cover'?0:pin==='early'?1:2,begin:to.id==='near_kickout'?.18:.46,end:to.id==='near_kickout'?.48:.72,escape:pin!=='cover'}};
  }
  // Runtime block outcomes never display a landed version of the attempted move.
  const seq=[F(0,src.a,src.d,G.GRIP_ENTRY[from?.id]||'','Previous state'),...frames,{...F(1,end.a,end.d,G.GRIP_ENTRY[to.id]||'','Destination state'),owner:reversed?'d':'a'}];
@@ -1099,11 +1100,17 @@ function pinSide(l,final=false){
  if(t.startsWith(w+' '))return 'w';if(t.startsWith(f+' '))return 'f';
  return lastEvent?.control==='f'?'f':'w';
 }
-function officialClip(side,kind,now){
+function officialClip(side,kind,now,countDuration=0){
  const previous=rigAnim?rigFrameAt(now):{a:capturePresentation(side,now),d:capturePresentation(otherSide(side),now),contact:'',strength:0,owner:'a'};
  const swap=!!rigAnim&&rigLead!==side,pr=swap?previous.d:previous.a,vr=swap?previous.a:previous.d;
- const seq=[{t:0,a:pr,d:vr,contact:'',stage:'Current position'},...rig.pinFrames(pr,vr,kind)];
- const next={desc:{clip:'officialPin'},seq,duration:kind==='escape'?680:480};
+ let tail=rig.pinFrames(pr,vr,kind==='hold'?'hold':'escape'),duration=kind==='hold'?480:680;
+ if(countDuration){
+  duration=countDuration+680;
+  const coverEnd=countDuration/duration;
+  tail=[{...tail[0],t:Math.min(.18,coverEnd*.45)},{...tail[1],t:coverEnd},{...tail[2],t:coverEnd+(1-coverEnd)*.5},{...tail[3],t:1}];
+ }
+ const seq=[{t:0,a:pr,d:vr,contact:'',stage:'Current position'},...tail];
+ const next={desc:{clip:'officialPin'},seq,duration};
  rig.handoverStart(next,previous,swap);
  rigAnim=next;rigLead=side;rigStart=now;rigDuration=next.duration/Number($('speed').value);rigHeld=rig.at(next,1);
  if(paused)rigPausedAt=now;
@@ -1128,7 +1135,9 @@ function officiateLine(l,now){
    refSignal={kind:'count',counts:info.counts,at:now,span:duration/Number($('speed').value)};
    if(final)officialPin.finished=true;
    if(info.escape&&!final){
-    officialClip(side,'escape',now);officialPin=null;refSignal={kind:'escape',at:now,span:680/Number($('speed').value)};
+    officialClip(side,'escape',now,duration);officialPin={side,count:officialPin.count,finished:true};
+    refSignal={kind:'countEscape',counts:info.counts,at:now,span:duration/Number($('speed').value),escapeSpan:680/Number($('speed').value)};
+    phase('Kick-out');return duration+780;
    }
    phase(final?'The finish':'Pin attempt');return duration+100;
   }
@@ -1371,10 +1380,12 @@ function officialView(now,frame,resolved){
  else if(lastEvent&&E.GRAPH.A[lastEvent.id]?.family==='submission'&&!E.GRAPH.A[lastEvent.id]?.blockOf){kind='submission';side=lastEvent.control==='f'?'f':'w';}
  if(refSignal){
   const t=Math.max(0,(now-refSignal.at)/refSignal.span);
-  if(refSignal.kind==='count'&&t<=1){
+  if((refSignal.kind==='count'||refSignal.kind==='countEscape')&&t<=1){
    kind='pin';const q=Math.min(.999999,t)*refSignal.counts.length;
    count=refSignal.counts[Math.floor(q)];slap=q%1;
-  }else if(t<=1&&refSignal.kind!=='count'){kind=refSignal.kind;count=kind==='escape'?officialPin?.count||0:0;}
+  }else if(refSignal.kind==='countEscape'&&now-refSignal.at<=refSignal.span+refSignal.escapeSpan){kind='escape';count=refSignal.counts.at(-1);}
+  else if(refSignal.kind==='countEscape'){kind='watch';count=0;}
+  else if(t<=1&&refSignal.kind!=='count'){kind=refSignal.kind;count=kind==='escape'?officialPin?.count||0:0;}
  }
  const a=side===rigLead?resolved.a:resolved.d,d=side===rigLead?resolved.d:resolved.a;
  const check=['pin','submission','tap','escape','break'].includes(kind);
