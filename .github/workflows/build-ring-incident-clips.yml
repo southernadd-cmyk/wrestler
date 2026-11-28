@@ -1,0 +1,38 @@
+name: Build entrance incident clips (one-off)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'tools/build-ring-incident-clips.py'
+      - '.github/workflows/build-ring-incident-clips.yml'
+permissions:
+  contents: write
+concurrency:
+  group: ring-incident-import-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  import:
+    if: github.head_ref == 'lab/v3-entrance-incidents' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Import and verify incident audio
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          python3 tools/build-ring-incident-clips.py
+      - name: Commit complete local incident bank
+        run: |
+          test "$(find assets/audio/entrance-incidents -name '*.mp3' | wc -l)" -eq 6
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/audio/entrance-incidents/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Add six verified local entrance incident clips"
+          git push origin HEAD:refs/heads/lab/v3-entrance-incidents

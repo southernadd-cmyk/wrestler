@@ -1,0 +1,58 @@
+{
+  "slow": {
+    "url": "https://github.com/todd-apptivity/video-background-music/releases/download/v1/interior-birdecorator-menu_loop.ogg",
+    "credit": "Abstraction / Tallbeard Studios \u2014 Interior Birdecorator Menu_LOOP",
+    "source": "https://tallbeard.itch.io/music-loop-bundle",
+    "license": "CC0-1.0",
+    "sha256": "28a3f62eddcea1e30817c04cd934df191d71ea9ca970b252b6834e5d564d84e3",
+    "duration": 12.042449,
+    "bytes": 144867,
+    "outputSha256": "87170dacba037d01320ca57dd3d98c1029de9d70633afcfa3f90e69df0382c7c"
+  },
+  "hum": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Woman_humming_a_nondescript_tune.wav",
+    "credit": "PSsoundproject \u2014 Woman humming a nondescript tune",
+    "source": "https://commons.wikimedia.org/wiki/File:Woman_humming_a_nondescript_tune.wav",
+    "license": "CC0-1.0",
+    "duration": 12.042449,
+    "bytes": 144867,
+    "outputSha256": "ea9b0adcaf9a070fb5fdde6b042309314ca62ffd3ab4f01500ec789c7c6aa593"
+  },
+  "choir": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Woman_humming_a_nondescript_tune.wav",
+    "credit": "PSsoundproject \u2014 Woman humming a nondescript tune",
+    "source": "https://commons.wikimedia.org/wiki/File:Woman_humming_a_nondescript_tune.wav",
+    "license": "CC0-1.0",
+    "duration": 12.042449,
+    "bytes": 144867,
+    "outputSha256": "cd36d50b0c8282c67d84e6e1420630c7f3e4d86cab9c17b5d993aa05cc93ef08"
+  },
+  "choirBad": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Woman_humming_a_nondescript_tune.wav",
+    "credit": "PSsoundproject \u2014 Woman humming a nondescript tune",
+    "source": "https://commons.wikimedia.org/wiki/File:Woman_humming_a_nondescript_tune.wav",
+    "license": "CC0-1.0",
+    "duration": 12.042449,
+    "bytes": 144867,
+    "outputSha256": "e3f4db628eca6b2422a1bb3a7889172e0b0b18a6ad4c6f47f6299f359106c47d"
+  },
+  "march": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/c/cb/A_Midsummer_Night%27s_Dream_Op._61_Wedding_March_%28Mendelssohn%29_European_Archive.ogg",
+    "credit": "Felix Mendelssohn \u2014 Wedding March, European Archive recording via Musopen",
+    "source": "https://commons.wikimedia.org/wiki/File:A_Midsummer_Night%27s_Dream_Op._61_Wedding_March_(Mendelssohn)_European_Archive.ogg",
+    "license": "CC0 / public domain (see source)",
+    "sha1": "1fc5f898efd2fa13a0fcb11e328a8b69145b2f01",
+    "duration": 12.042449,
+    "bytes": 144867,
+    "outputSha256": "40320fbd91153b3bad2ef3af03c226d58b2a86e1ae2498f265511b65b9675d71"
+  },
+  "shanty": {
+    "url": "https://opengameart.org/sites/default/files/oga_jam_menu_music_loopable_0.ogg",
+    "credit": "Thimras \u2014 A sailor's chant",
+    "source": "https://opengameart.org/content/a-sailors-chant",
+    "license": "CC0-1.0",
+    "duration": 12.042449,
+    "bytes": 144867,
+    "outputSha256": "d05870c1d7573df3bfb33c2625e5fa0f9df147469b80801a776e9f03b8d30030"
+  }
+}
