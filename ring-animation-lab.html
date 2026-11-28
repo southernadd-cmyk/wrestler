@@ -29,7 +29,12 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 
 
 *{box-sizing:border-box}body{margin:0;background:#131e42;color:#e8e9e3;font:14px Arial,sans-serif}header{background:#741f2c;border-bottom:2px solid #0c1229;padding:9px 14px;color:#f2cb79;font-weight:bold;letter-spacing:1px}header small{color:#f6d9d6;margin-left:10px}main{max-width:1160px;padding:10px;margin:auto}.layout{display:grid;grid-template-columns:minmax(300px,1fr) minmax(0,410px);gap:8px}.panel{background:#17254d;border:2px solid #09122a;min-width:0}h2{font-size:12px;letter-spacing:1px;text-transform:uppercase;background:#203568;color:#9ed9ea;padding:8px 10px;margin:0}section .pad{padding:10px}label{display:block;font-size:12px;color:#a9c7dc;margin:6px 0}select,input,button{font:inherit;background:#24355a;color:#f4f5fa;border:1px solid #536e9d;border-radius:1px;padding:6px;max-width:100%}select,input[type=search]{width:100%}button{cursor:pointer;font-weight:bold}button.primary{background:#ebc06c;color:#141d31}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #f4cd73;outline-offset:2px}button:disabled{opacity:.45}p{line-height:1.45;margin:7px 0}small,.muted{color:#a9bdd4}.gold{color:#f1ce76}.cyan{color:#a5d8e4}.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.audit{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:6px 0 10px}.audit>div{background:#101d40;padding:7px;min-width:0}.audit b{display:block;color:#f1ce76;font-size:21px}.audit small{font-size:11px}canvas{display:block;width:100%;max-width:400px;height:auto;aspect-ratio:480/272;image-rendering:pixelated;margin:auto}.arena{background:#080e1e;padding:3px}.bar{padding:6px 9px;background:#101b37;display:flex;justify-content:space-between;gap:8px;font-size:12px}.buttons{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:8px 0}.buttons select{width:auto}.scrub{width:100%;accent-color:#ebc06c}.inspect{padding:8px 10px;line-height:1.5;background:#101b37;border-top:1px solid #435a85;min-height:110px}.trace{font:12px/1.5 monospace;white-space:pre-wrap;overflow-wrap:anywhere}.err{color:#ffc2a9}iframe{display:block;border:0;width:100%;height:100dvh}[hidden]{display:none!important}@media(max-width:720px){.layout{grid-template-columns:1fr}.view{grid-row:1}.audit b{font-size:18px}main{padding:5px}}
-</style></head><body><div id="shell" hidden><iframe id="frame" title="Isolated animation laboratory" sandbox="allow-scripts"></iframe></div><div id="lab" hidden><header>THE OFFICE <small>ANIMATION LAB / V3</small> <a href="ring-animation-lab.html?view=match" target="_top" style="color:#e6d9b8;margin-left:auto;font-size:12px">Full live match →</a></header><main>
+
+.match-mode .layout{grid-template-columns:minmax(0,1fr) minmax(300px,400px);align-items:start}
+.match-mode .controls label{margin:0}.match-mode .controls select,.match-mode .controls input{width:auto}.match-mode .controls input[type=number]{width:90px}
+.match-mode .strap{grid-column:1/-1}.match-mode .commentary{grid-column:1;grid-row:2}.match-mode .ringside{grid-column:2;grid-row:2}
+@media(max-width:700px){.match-mode .layout{grid-template-columns:minmax(0,1fr)}.match-mode .ringside{grid-column:1;grid-row:2}.match-mode .commentary{grid-column:1;grid-row:3}}
+</style></head><body><div id="shell" hidden><nav style="display:flex;gap:8px;align-items:center;background:#101b37;padding:6px 12px"><a style="color:#f1ce76" href="ring-animation-lab.html">Transition inspector</a><span aria-hidden="true">|</span><a style="color:#f1ce76" href="ring-animation-lab.html?view=match">Full live match</a></nav><iframe id="frame" style="height:calc(100dvh - 34px)" title="Isolated animation laboratory" sandbox="allow-scripts"></iframe></div><div id="lab" hidden><header>THE OFFICE <small>ANIMATION LAB / V3</small></header><main>
 <div id="error" class="err" role="alert"></div><div class="layout"><section class="panel"><h2>Graph transition inspector</h2><div class="pad">
 <div class="audit" id="audit"><div><small>Graph nodes</small><b id="nodeCount">—</b></div><div><small>Authored edges</small><b id="edgeCount">—</b></div><div><small>Custom clip nodes</small><b id="customCount">—</b></div><div><small>Shared clip nodes</small><b id="sharedCount">—</b></div><div><small>Composed edges</small><b id="coveredCount">—</b></div><div><small>Unmapped edges</small><b id="missingCount">—</b></div></div>
 <label>Find a move or node<input id="filter" type="search" placeholder="e.g. German, wristlock, kick-out"></label>
@@ -65,11 +70,11 @@ if(params.get('frame')!=='1'){$('shell').hidden=false;$('frame').src='ring-anima
 $('lab').hidden=false;
 if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
 const files=live?["portrait-age-map","portraits","data","roster-registry","promo-identity","psychology-fuzzy","planning-fuzzy","promo-fuzzy","promo-director","promo-dialogue","promo-semantics","promo-rookie-claims","promo-bank-manifest","promo-bank-loader","planning-dialogue","academy-register","academy","technique-registry","technique-backgrounds","match-catalog","graph-narration","match-graph","match-commentary","match-engine","career","territory","living-world","story","memory","sheets","agents-room","promo-duel","relationships","rivalry","ambitions","booking-office","rival-managers","promotion-business","programmes","approaches","after-bell","ringside","rival-corner","disqualify","stipulations","negotiation-v2","signing","promo-segments","mouthpiece","programme-arcs","outcome","night-report","negotiation-career","ringfax"]:["portraits","data","roster-registry","promo-identity","psychology-fuzzy","promo-dialogue","planning-dialogue","technique-registry","technique-backgrounds","match-catalog","graph-narration","match-graph","match-commentary","match-engine"];
-const fail=e=>$('error').textContent=String(e?.stack||e);
+const fail=e=>{const el=$('error');el.hidden=false;el.textContent=String(e?.stack||e)};
 function load(n){return new Promise((ok,no)=>{const s=document.createElement('script');s.src='assets/js/'+n+'.js';s.async=false;s.onload=ok;s.onerror=()=>no(Error('Failed to load '+n));document.head.append(s)})}
 (async()=>{for(const n of files)await load(n);boot()})().catch(fail);
 function boot(){
-if(live){$('lab').replaceChildren($('matchTemplate').content.cloneNode(true));const back=document.createElement('a');back.href='ring-animation-lab.html';back.target='_top';back.textContent='← Transition inspector';back.style.color='#e6d9b8';$('lab').querySelector('header').append(back);}
+if(live){$('lab').replaceChildren($('matchTemplate').content.cloneNode(true));$('lab').className='match-mode';}
 const E=window.OfficeMatch,G=E.GRAPH,A=G.A,nodes=Object.values(A),canvas=$('arena'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
 let M={p:{id:'crown',name:'North Crown'},crowd:55};
 const W=480,H=272;
@@ -280,7 +285,7 @@ function build(from,to,lead='w'){
  const desc=descriptor(to),src=state(from),end=state(to),reversed=!!to.reverse;
  let frames=desc&&core(desc.clip,desc.grip);
  if(desc?.attempt){const attempted=core(desc.attempt,desc.grip)||[];const setup=attempted.find(f=>f.t<=.34);if(setup&&frames){frames=[{...setup,t:.22,stage:'Attempt begins'},...frames.filter(f=>f.t>.23)];}}
- if(frames&&reversed)frames=frames.map(f=>({...f,owner:'d'}));
+ if(frames&&reversed)frames=frames.map(f=>({...f,owner:f.stage==='Attempt begins'?'a':'d'}));
  if(!frames)return null;
  if(reversed){const tmp=end.a;end.a=end.d;end.d=tmp;}
  // Runtime block outcomes never display a landed version of the attempted move.
@@ -310,7 +315,7 @@ function solveArm(arm,target){
 function contactPoints(a,d,type,clip=''){
  if(type==='strike'){
   const high=/kick|headbutt|elbow|lariat/.test(clip),target=clip==='bodyshot'||clip==='knee'?d.hip:high?d.head:d.shoulder;
-  const limbs=/kick/.test(clip)?dummylegs(a):clip==='knee'?a.legs.map(l=>l[1]):clip==='headbutt'?[a.head]:clip==='elbow'?a.arms.map(l=>l[1]):a.arms.map(l=>l[2]);
+  const limbs=/kick/.test(clip)?feet(a):clip==='knee'?a.legs.map(l=>l[1]):clip==='headbutt'?[a.head]:clip==='elbow'?a.arms.map(l=>l[1]):a.arms.map(l=>l[2]);
   const end=limbs.reduce((p,q)=>Math.hypot(p.x-target.x,p.y-target.y)<=Math.hypot(q.x-target.x,q.y-target.y)?p:q);
   return{target,end,strike:true};
  }
@@ -322,7 +327,7 @@ function contactPoints(a,d,type,clip=''){
  else target=d.shoulder;
  const arm=nearestHand(a,target);return{target,end:arm[0],arm,strike:false};
 }
-function dummylegs(a){return a.legs.map(l=>l[2])}
+function feet(a){return a.legs.map(l=>l[2])}
 function contactSolve(a,d,type,clip=''){
  if(!type)return null;const p=contactPoints(a,d,type,clip);
  if(p.strike)return Math.hypot(p.end.x-p.target.x,p.end.y-p.target.y);
