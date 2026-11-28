@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>The Office | Animation Lab V3</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#131e42;color:#e8e9e3;font:14px Arial,sans-serif}header{background:#741f2c;border-bottom:2px solid #0c1229;padding:9px 14px;color:#f2cb79;font-weight:bold;letter-spacing:1px}header small{color:#f6d9d6;margin-left:10px}main{max-width:1160px;padding:10px;margin:auto}.layout{display:grid;grid-template-columns:minmax(300px,1fr) minmax(0,410px);gap:8px}.panel{background:#17254d;border:2px solid #09122a;min-width:0}h2{font-size:12px;letter-spacing:1px;text-transform:uppercase;background:#203568;color:#9ed9ea;padding:8px 10px;margin:0}section .pad{padding:10px}label{display:block;font-size:12px;color:#a9c7dc;margin:6px 0}select,input,button{font:inherit;background:#24355a;color:#f4f5fa;border:1px solid #536e9d;border-radius:1px;padding:6px;max-width:100%}select,input[type=search]{width:100%}button{cursor:pointer;font-weight:bold}button.primary{background:#ebc06c;color:#141d31}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #f4cd73;outline-offset:2px}button:disabled{opacity:.45}p{line-height:1.45;margin:7px 0}small,.muted{color:#a9bdd4}.gold{color:#f1ce76}.cyan{color:#a5d8e4}.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.audit{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:6px 0 10px}.audit>div{background:#101d40;padding:7px;min-width:0}.audit b{display:block;color:#f1ce76;font-size:21px}.audit small{font-size:11px}canvas{display:block;width:100%;max-width:400px;height:auto;aspect-ratio:480/272;image-rendering:pixelated;margin:auto}.arena{background:#080e1e;padding:3px}.bar{padding:6px 9px;background:#101b37;display:flex;justify-content:space-between;gap:8px;font-size:12px}.buttons{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:8px 0}.buttons select{width:auto}.scrub{width:100%;accent-color:#ebc06c}.inspect{padding:8px 10px;line-height:1.5;background:#101b37;border-top:1px solid #435a85;min-height:110px}.trace{font:12px/1.5 monospace;white-space:pre-wrap;overflow-wrap:anywhere}.err{color:#ffc2a9}iframe{display:block;border:0;width:100%;height:100dvh}[hidden]{display:none!important}@media(max-width:720px){.layout{grid-template-columns:1fr}.view{grid-row:1}.audit b{font-size:18px}main{padding:5px}}
+</style></head><body><div id="shell" hidden><iframe id="frame" title="Isolated animation laboratory" sandbox="allow-scripts"></iframe></div><div id="lab" hidden><header>THE OFFICE <small>ANIMATION LAB / V3</small></header><main>
+<div id="error" class="err" role="alert"></div><div class="layout"><section class="panel"><h2>Graph transition inspector</h2><div class="pad">
+<div class="audit" id="audit"><div><small>Graph nodes</small><b id="nodeCount">—</b></div><div><small>Authored edges</small><b id="edgeCount">—</b></div><div><small>Custom clip nodes</small><b id="customCount">—</b></div><div><small>Shared clip nodes</small><b id="sharedCount">—</b></div><div><small>Composed edges</small><b id="coveredCount">—</b></div><div><small>Unmapped edges</small><b id="missingCount">—</b></div></div>
+<label>Find a move or node<input id="filter" type="search" placeholder="e.g. German, wristlock, kick-out"></label>
+<label>Preview mode<select id="mode"><option value="edge">Authored outgoing edge</option><option value="node">Any individual node</option></select></label>
+<label>Previous node<select id="from"></select></label><label>Next node<select id="to"></select></label>
+<div class="grid"><label>Incoming control<select id="lead"><option value="w">Gold wrestler</option><option value="f">Blue wrestler</option></select></label><label>Playback speed<select id="speed"><option value=".25">¼×</option><option value=".5">½×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label></div>
+<div class="buttons"><button id="play" class="primary">Play transition</button><button id="pause">Pause</button><button id="prev">Previous edge</button><button id="next">Next edge</button><label><input id="loop" type="checkbox"> Loop</label></div>
+<p class="muted">An authored adjacency is not necessarily legal in every live match: physical grips, stamina, timing and other runtime guards still apply. Preview state is reconstructed from graph metadata, not a match simulation.</p>
+<h2>Coverage and quality</h2><p id="coverageText" class="muted">Loading graph…</p><p class="muted">Custom clips have explicitly selected poses and timings. Shared clips are procedural candidates for review, not finished unique move animations. No generic fallback is used for unmapped families. Coverage does not certify anatomical realism.</p>
+</div></section>
+<section class="panel view"><h2>Ringside camera · 400px max</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Two articulated wrestlers previewing the chosen transition"></canvas></div><div class="bar"><span id="clipName">Loading…</span><span id="stage" class="gold">—</span></div><div class="pad"><input class="scrub" id="scrub" type="range" min="0" max="1000" value="0" aria-label="Animation timeline"><div class="bar"><span id="elapsed">0.00 s</span><span id="duration">—</span></div><p id="line" class="gold"></p></div><div class="inspect"><div id="kind" class="cyan"></div><div id="state" class="trace"></div><div id="contact" class="muted"></div></div></section></div>
+<p class="muted">Isolated lab; no save data, no engine changes. Gold and blue are temporary test wrestlers. Exact contact, bespoke move choreography and live playback integration still require review.</p></main></div>
+<script>
+(function(){'use strict';
+const $=id=>document.getElementById(id);
+if(new URL(location.href).searchParams.get('frame')!=='1'){$('shell').hidden=false;$('frame').src='ring-animation-lab.html?frame=1';return}
+$('lab').hidden=false;
+if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
+const files=["portraits","data","roster-registry","promo-identity","psychology-fuzzy","promo-dialogue","planning-dialogue","technique-registry","technique-backgrounds","match-catalog","graph-narration","match-graph","match-commentary","match-engine"];
+const fail=e=>$('error').textContent=String(e?.stack||e);
+function load(n){return new Promise((ok,no)=>{const s=document.createElement('script');s.src='assets/js/'+n+'.js';s.async=false;s.onload=ok;s.onerror=()=>no(Error('Failed to load '+n));document.head.append(s)})}
+(async()=>{for(const n of files)await load(n);boot()})().catch(fail);
+function boot(){
+const E=window.OfficeMatch,G=E.GRAPH,A=G.A,nodes=Object.values(A),canvas=$('arena'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
+let M={p:{id:'crown',name:'North Crown'},crowd:55};
+const W=480,H=272;
+const palettes={dock:{mat:'#a9b3b0',matHi:'#c2c9c2',skirt:'#37444a',rope:'#d7d3c1',curtain:'#68443f',floor:'#35383b'},pulse:{mat:'#aaaec6',matHi:'#c1c5d9',skirt:'#503e75',rope:'#ded7ed',curtain:'#4d3767',floor:'#282e3d'},crown:{mat:'#b8b4a4',matHi:'#d2ccba',skirt:'#243f67',rope:'#e8e1ce',curtain:'#6d2939',floor:'#363b46'},union:{mat:'#aabcc4',matHi:'#c8d7d9',skirt:'#263c57',rope:'#e8edf1',curtain:'#334e70',floor:'#303747'}};
+function pal(){return palettes[M?.p?.id]||palettes.crown;}
+function rect(x,y,w,h,fill){ctx.fillStyle=fill;ctx.fillRect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h));}
+function poly(points,c){ctx.fillStyle=c;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(Math.round(x),Math.round(y)):ctx.moveTo(Math.round(x),Math.round(y)));ctx.closePath();ctx.fill();}
+function line(x1,y1,x2,y2,c,width=1){ctx.strokeStyle=c;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(Math.round(x1)+.5,Math.round(y1)+.5);ctx.lineTo(Math.round(x2)+.5,Math.round(y2)+.5);ctx.stroke();}
+function ellipse(x,y,rx,ry,c){ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(Math.round(x),Math.round(y),rx,ry,0,0,Math.PI*2);ctx.fill();}
+function label(s,x,y,c='#e4e9f1',size=9,align='center'){ctx.font='bold '+size+'px monospace';ctx.textAlign=align;ctx.fillStyle=c;ctx.fillText(s,Math.round(x),Math.round(y));}
+function proj(x,y){const dx=x-485,abs=Math.abs(dx),sx=Math.sign(dx)*(Math.min(abs,205)*.63+Math.max(0,abs-205)*.33);return [240+sx*(.85+y*.00055),11+y*.45];}
+function point(x,y,z=0){const p=proj(x,y);return [p[0],p[1]-z];}
+function worldLine(x1,y1,x2,y2,c,width=1,z=0){const a=point(x1,y1,z),b=point(x2,y2,z);line(...a,...b,c,width);}
+function faceRect(x1,y1,x2,y2,c,z=0){poly([point(x1,y1,z),point(x2,y1,z),point(x2,y2,z),point(x1,y2,z)],c);}
+function shade(hex,d){const n=parseInt(hex.slice(1),16);return '#'+[n>>16,(n>>8)&255,n&255].map(v=>Math.max(0,Math.min(255,v+d)).toString(16).padStart(2,'0')).join('');}
+function makeLook(worker,side){
+ const portraits=window.OfficePortraits;let look=null;
+ try{look=portraits?.getLook({key:'wrestler:'+worker.id,...worker});}catch(_){}
+ const get=(key,fallback)=>portraits?.OPTIONS?.[key]?.find(([id])=>id===look?.[key])?.[1]||fallback;
+ const base=get('gearColor',side==='w'?'#b89955':'#82505c'),skin=get('complexion','#c99273'),hair=get('hairColor','#3c2b29');
+ let kg=75;try{kg=E.scout(M?.w||worker,M?.f||worker,'story',0)?.[side==='w'?'you':'opponent']?.kg||75;}catch(_){}
+ return {base,skin,hair,hairStyle:look?.hair||'crop',beard:look?.beard,mask:look?.headwear==='mask',presentation:look?.presentation,build:Math.max(.83,Math.min(1.25,kg/82))};
+}
+function crowdPerson(x,y,i,now){
+ const shirts=['#535767','#705251','#495a63','#756e5b','#4e5450','#67617a','#59677a','#886b55'];
+ const shirt=shirts[(i*7+Math.floor(i/9))%shirts.length],skin=['#c69976','#8f654e','#d6b28d','#674b42'][i%4],up=M&&M.crowd>65&&i%6===0&&Math.sin(now/300+i)>-.3;
+ rect(x-6,y+3,12,11,'#141927');rect(x-5,y+1,10,8,shirt);rect(x-3,y-5,6,7,skin);rect(x-3,y-6,6,2,i%3?'#28262a':'#9a7659');rect(x-2,y-2,1,1,'#272128');
+ if(up){line(x-4,y+4,x-8,y-4,shirt,3);line(x+4,y+4,x+8,y-4,shirt,3);rect(x-9,y-5,2,3,skin);rect(x+7,y-5,2,3,skin);}
+}
+function backdrop(now){
+ const p=pal();rect(0,0,W,H,'#111827');
+ // A dark, compact regional hall rather than a huge stadium.
+ rect(0,0,W,55,'#171e2d');rect(0,55,W,H-55,p.floor);
+ for(let y=62;y<272;y+=13)line(0,y,W,y,shade(p.floor,-5));
+ for(let x=0;x<480;x+=29)line(x,55,x,272,shade(p.floor,-5));
+ // Entrance stage with theatre curtain and small overhead sign.
+ const a=proj(386,0),b=proj(584,0);rect(a[0]-4,0,b[0]-a[0]+8,33,'#0c1120');rect(a[0],2,b[0]-a[0],28,p.curtain);
+ for(let x=a[0];x<b[0];x+=5)rect(x,2,2,27,shade(p.curtain,-18));
+ rect(233,2,14,28,'#0a0c12');rect(a[0]-4,30,b[0]-a[0]+8,4,'#a68c66');
+ faceRect(410,50,560,142,'#59515a');worldLine(410,50,410,142,'#939099',2);worldLine(560,50,560,142,'#939099',2);
+ label(M?.p?.name?.toUpperCase()||'NORTH CROWN',240,44,'#d9bd89',8);
+ // Seating arranged around a clear ringside aisle.
+ let i=0;for(let row=0;row<3;row++){rect(0,10+row*17,185,12,'#222a38');rect(295,10+row*17,185,12,'#222a38');for(let x=9;x<182;x+=15)crowdPerson(x,12+row*17,i++,now);for(let x=299;x<480;x+=15)crowdPerson(x,12+row*17,i++,now);}
+ for(let row=0;row<10;row++){for(let x=6;x<62;x+=14)crowdPerson(x,66+row*17,i++,now);for(let x=423;x<480;x+=14)crowdPerson(x,66+row*17,i++,now);}
+ for(let x=70;x<415;x+=14)crowdPerson(x,260,i++,now);
+ // Safety barrier: rail, uprights, lower rail.
+ for(const x of [181,798]){worldLine(x,135,x,480,'#161d29',4);worldLine(x,135,x,480,'#939aa0',2,3);for(let y=140;y<480;y+=40){const t=point(x,y);rect(t[0]-1,t[1]-5,3,7,'#6e7781');}}
+ worldLine(181,480,798,480,'#161d29',4);worldLine(181,480,798,480,'#939aa0',2,3);
+ for(let x=195;x<800;x+=38){const t=point(x,480);rect(t[0]-1,t[1]-5,3,7,'#6e7781');}
+ // Commentary desk and timekeeper, on opposite sides of the ring.
+ faceRect(203,219,262,319,'#131c2d');faceRect(204,219,258,311,'#625a50',4);
+ let desk=point(232,260,5);rect(desk[0]-12,desk[1]-12,10,8,'#222b37');rect(desk[0]+2,desk[1]+4,10,8,'#252d36');label('COMMS',desk[0],desk[1]+20,'#e1cda6',7);
+ faceRect(707,232,768,284,'#181c28');faceRect(708,233,768,278,'#514b45',3);const bell=point(738,253,4);rect(bell[0]-4,bell[1]-2,8,4,'#d0a85e');rect(bell[0]-2,bell[1]-5,4,4,'#ead399');
+ // Elevated platform and shaded apron.
+ faceRect(266,141,704,438,'#141b27');
+ const tl=point(280,151),tr=point(690,151),br=point(690,413),bl=point(280,413);
+ poly([tl,tr,[tr[0],tr[1]+13],[tl[0],tl[1]+13]],shade(p.skirt,-14));
+ poly([tr,br,[br[0],br[1]+15],[tr[0],tr[1]+13]],shade(p.skirt,-20));
+ poly([bl,br,[br[0],br[1]+16],[bl[0],bl[1]+16]],p.skirt);
+ faceRect(280,151,690,413,p.mat);faceRect(289,160,681,404,p.matHi);
+ // Fine fabric seams and a subtle ring centre mark.
+ for(let y=177;y<402;y+=29)worldLine(294,y,677,y,shade(p.matHi,-9));
+ const center=point(485,284);label('THE OFFICE',center[0],center[1]+3,shade(p.matHi,-35),15);
+ label('WRESTLING',center[0],center[1]+13,shade(p.matHi,-28),7);
+ label('THE OFFICE',240,bl[1]+12,'#e1d6c1',10);
+ for(let x=bl[0]+6;x<br[0]-5;x+=12)line(x,bl[1]+3,x,bl[1]+15,shade(p.skirt,-8));
+ // Steps actually align with the existing engine's entrance route.
+ for(let z=0;z<3;z++)faceRect(248+z*8,390,279,428-z*8,['#65707e','#89949b','#acb4b6'][z],z*3);
+ // Back and side ropes. Front ropes are layered over the athletes.
+ for(let z=5;z<=21;z+=8){worldLine(280,151,690,151,'#574c46',2,z-1);worldLine(280,151,690,151,p.rope,1,z);worldLine(280,151,280,413,p.rope,1,z);worldLine(690,151,690,413,p.rope,1,z);}
+ for(const x of [280,690])post(x,151);
+}
+function post(x,y){const p=point(x,y),c=x===280?'#395c8e':'#8d4145';rect(p[0]-3,p[1]-25,6,28,'#171c26');rect(p[0]-2,p[1]-25,4,26,c);rect(p[0]-1,p[1]-25,1,26,shade(c,35));for(let z=5;z<=21;z+=8){rect(p[0]-4,p[1]-z-2,8,4,'#191e29');rect(p[0]-3,p[1]-z-2,6,3,shade(c,15));}}
+function frontRopes(){const p=pal();for(let z=5;z<=21;z+=8){worldLine(280,413,690,413,'#514b48',2,z-1);worldLine(280,413,690,413,p.rope,1,z);}post(280,413);post(690,413);}
+
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),mix=(a,b,t)=>a+(b-a)*t,ease=t=>t*t*(3-2*t);
+const title=n=>n.name||n.id.replaceAll('_',' ').replace(/^./,s=>s.toUpperCase());
+const other=s=>s==='w'?'f':'w';
+const sides=['w','f'];
+// All angles are degrees relative to vertical; independent shoulder/elbow,
+// hip/knee rotations. Root is pelvis. z is height above mat.
+const P={
+ guard:[0,-55,-70,55,70,-12,18,12,-18],
+ neutral:[0,-17,-10,17,10,-8,8,8,-8],
+ grab:[8,-70,-45,70,45,-18,22,18,-22],
+ wrist:[8,-83,-15,60,50,-10,10,10,-10],
+ headlock:[18,-95,75,40,65,-22,25,18,-20],
+ waist:[12,-78,-25,78,25,-17,22,17,-22],
+ crouch:[25,-35,-65,35,65,-42,74,42,-74],
+ punch:[-9,-104,-15,35,55,-18,20,28,-26],
+ chop:[-18,-123,3,72,-25,-22,28,26,-25],
+ elbow:[18,-94,115,45,60,-18,25,22,-27],
+ kick:[-23,-45,40,55,40,-88,3,8,-8],
+ knee:[-13,-48,-42,48,42,-82,110,16,-18],
+ headbutt:[42,-40,-60,40,60,-18,25,20,-25],
+ run:[18,-55,-50,35,65,-46,70,35,-65],
+ lift:[-12,-155,-5,155,5,-28,35,28,-35],
+ overhead:[-8,-172,-5,172,5,-12,12,12,-12],
+ carry:[-12,-125,-40,125,40,-15,15,15,-15],
+ inverted:[180,-25,-40,25,40,-7,7,7,-7],
+ fall:[75,-45,-20,45,20,-14,20,14,-20],
+ flat:[90,-18,-20,18,20,0,4,0,-4],
+ seated:[-10,-32,-60,32,60,-85,75,85,-75],
+ kneel:[12,-55,-50,55,50,-65,115,65,-115],
+ bridge:[-75,-45,-35,45,35,-55,85,55,-85],
+ pin:[68,-65,-30,65,30,-50,75,45,-65],
+ tuck:[45,-68,-40,68,40,-85,105,85,-105],
+ spread:[0,-135,0,135,0,-40,15,40,-15],
+ celebrate:[0,-165,10,165,-10,-12,10,12,-10],
+ sell:[30,-22,-90,22,90,-20,28,20,-28]
+};
+const defs=Object.create(null);
+function add(ids,clip,grip='',duration=1000){for(const id of ids.split(' '))defs[id]={clip,grip,duration,custom:true}}
+add('circle','circle','',1100);add('taunt crowd_pose','taunt','',1000);add('lockup','lock','upper-body',1050);add('headlock','headlock','head',1100);add('wristlock','wrist','wrist',950);add('arm_wringer','wringer','wrist',1100);add('hammerlock','hammer','wrist',1100);add('waistlock go_behind','waist','rear-waist',1100);add('front_facelock','headlock','front-facelock',950);
+add('headlock_escape wrist_escape waist_escape elbow_escape','escape','',1050);add('clean_break rope_break corner_break','break','',850);add('headlock_takeover arm_drag ch_deep_arm_drag ch_japanese_arm_drag','armdrag','wrist',1150);add('mat_takedown ch_single_leg','takedown','leg',1150);add('ch_double_leg','takedown','leg',1250);add('hip_toss ch_hip_toss_chain','hipthrow','upper-body',1200);
+add('rope_run rope_rebound shove_ropes','ropes','',1300);add('duck_rebound','duck','',1000);add('shoulder_tackle clothesline','lariat','',950);
+add('st_jab','jab','',700);add('st_chop','chop','',850);add('st_forearm st_elbow_smash stiff_forearm','elbow','',900);add('st_superkick st_big_boot','kick','',950);add('st_kneelift','knee','',900);add('st_headbutt','headbutt','',850);add('st_gut_punch','bodyshot','',850);
+add('snap_suplex sx_vertical','vertical','front-facelock',1450);add('sx_delayed','delayed','front-facelock',1800);add('sx_german sx_german_release','german','rear-waist',1450);add('sx_belly_belly','belly','upper-body',1450);add('sx_fisherman','fisherman','front-facelock',1550);
+add('pw_body_slam','slam','upper-body',1350);add('pw_powerbomb pw_sitout','bomb','front-facelock',1550);add('pw_chokeslam','chokeslam','head',1350);add('pw_military_press pw_gorilla_press','press','upper-body',1500);add('nk_ddt nk_snap_ddt','ddt','front-facelock',1200);add('nk_piledriver nk_tombstone','piledriver','upper-body',1500);add('nk_cutter','cutter','head',1100);
+add('top_climb top_follow','climb','',1100);add('ar_frog','frog','',1400);add('ar_moonsault','moon','',1450);add('ar_450','flip450','',1500);add('ar_elbow_point','divingelbow','',1300);add('ar_senton','senton','',1300);add('sb_dropkick','dropkick','',1200);add('dv_suicide','dive','',1450);add('sp_superplex','vertical','front-facelock',1650);
+add('early_cover cover','cover','leg',1200);add('near_kickout','kickout','',950);add('pn_small_package','cradle','leg',1300);add('pn_backslide','backslide','arm',1300);add('sm_armbar sm_cross_armbreaker','armbar','arm',1400);add('sm_ankle_lock','ankle','leg',1350);add('sm_boston sm_single_crab','crab','leg',1400);add('sm_sleeper','sleeper','head',1250);add('sm_figure_four','figure4','leg',1500);add('submission_ropes rope_crawl','crawl','',1100);add('stand_reset','rise','',850);
+add('outside_toss os_ropes_backdrop','throwout','upper-body',1300);add('roll_inside','rollin','',1050);add('corner_whip','whip','wrist',1200);add('corner_push','cornerpush','upper-body',1000);add('dramatic_sell','sell','',1000);add('catch_breath','breath','',1000);
+// Family composition is explicit and inspectable, not silently counted as
+// individual art. Special outcomes are distinct from completed attacks.
+const familyMap={suplex:'vertical',power:'slam',neck:'ddt',strike:'jab',corner:'cornerpush',aerial:'frog',superplex:'vertical',springboard:'dropkick',dive:'dive',submission:'armbar',ground:'groundstrike',chain:'armdrag',pin:'cradle',outside:'floorstrike',heel:'heel',fire:'rally',rest:'rest',lucha:'rana',rope:'ropes',running:'lariat'};
+const misc={
+ probe_strike:'jab',strike_trade:'trade',counter_strike:'jab',cheap_shot:'bodyshot',corner_strikes:'chop',corner_charge:'lariat',corner_escape:'escape',mat_hold:'rest',target_hold:'armbar',target_strike:'groundstrike',mat_scramble:'scramble',hope_elbows:'elbow',hope_cutoff:'jab',aerial_attack:'frog',aerial_counter:'block',floor_brawl:'floorstrike',floor_counter:'escape',apron_stand:'apron',ramp_approach:'ramp',counter_rollup:'cradle',submission_set:'armbar',submission_roll:'escape',finish_tease:'lock',finish_counter:'escape',grapple_trip:'takedown',power_spinebuster:'slam',springboard_rise:'climb',springboard_strike:'dropkick',springboard_evaded:'block',collar_snap:'headlock',ankle_pick:'takedown',leg_wrench:'ankle',grapevine:'figure4',leveraged_bridge:'bridge',armbar_roll:'armbar',grounded_switch:'scramble',body_shot:'bodyshot',rolling_elbow:'elbow',short_arm_lariat:'lariat',rib_knee:'knee',gutbuster:'slam',heavy_slam:'slam',corner_knee:'knee',springboard_feint:'taunt',running_headscissors:'rana',rebound_counter:'escape',missile_dropkick:'dropkick',high_crossbody:'dive',top_rope_hesitation:'taunt',handstand_escape:'escape',false_handshake:'heel',opponent_study:'circle',last_second_counter:'escape',dramatic_rally:'rally',baited_charge:'lariat',quiet_reversal:'escape',floor_regroup:'floorstrike',hope_elbows_standing:'elbow',knee_strike_block:'block'};
+function descriptor(n){
+ if(defs[n.id])return defs[n.id];
+ const original=A[n.counterOf||n.blockOf],base=original||n,f=base.family,id=base.id;
+ if(n.blockOf)return{clip:'block',grip:G.PHYSICAL_GRIP_MOVES[base.id]||'',duration:1000,custom:false,attempt:descriptor(base)?.clip};
+ if(n.counterOf||n.reverse)return{clip:'escape',grip:G.PHYSICAL_GRIP_MOVES[base.id]||'',duration:1100,custom:false,attempt:original?descriptor(base)?.clip:undefined};
+ let clip=misc[id]||familyMap[f];if(!clip)return null;
+ if(f==='strike'||f==='ground'||f==='running'||f==='corner'){if(/kick|boot|enzuigiri/.test(id))clip='kick';else if(/knee/.test(id))clip='knee';else if(/elbow|forearm/.test(id))clip='elbow';else if(/chop|slap/.test(id))clip='chop';else if(/headbutt/.test(id))clip='headbutt';else if(/lariat|spear|tackle/.test(id))clip='lariat';}
+ if(f==='suplex'){if(/german|belly_back|dragon|tiger|saito|half_nelson/.test(id))clip='german';else if(/belly_belly|exploder|overhead|side|tbone/.test(id))clip='belly';else if(/cradle|fisherman/.test(id))clip='fisherman';else if(/ddt/.test(id))clip='ddt';}
+ if(f==='power'){if(/bomb|sitout|alabama/.test(id))clip='bomb';else if(/press/.test(id))clip='press';else if(/choke/.test(id))clip='chokeslam';else if(/rack|argentine|bearhug/.test(id))clip='carry';}
+ if(f==='neck'){if(/piledriver|tombstone/.test(id))clip='piledriver';else if(/cutter|stunner|bulldog/.test(id))clip='cutter';}
+ if(f==='submission'||f==='rest'){if(/ankle|heel|toe|kneebar|leg_lace/.test(id))clip='ankle';else if(/crab|cloverleaf|sharpshooter/.test(id))clip='crab';else if(/figure_four|deathlock/.test(id))clip='figure4';else if(/sleeper|choke|chinlock|headlock|chancery/.test(id))clip='sleeper';}
+ if(['aerial','springboard','dive'].includes(f)){if(/moon|shooting_star/.test(id))clip='moon';else if(/450|corkscrew|somersault/.test(id))clip='flip450';else if(/senton|swanton/.test(id))clip='senton';else if(/elbow/.test(id))clip='divingelbow';else if(/kick/.test(id))clip='dropkick';}
+ return{clip,grip:G.PHYSICAL_GRIP_MOVES[id]||G.GRIP_ENTRY[id]||'',duration:/vertical|german|bomb|moon|frog|dive|flip|slam/.test(clip)?1400:1050,custom:false};
+}
+const R=(x=0,y=0,z=0,pose='guard',face=1,rot=0)=>({x,y,z,angles:P[pose].slice(),face,rot});
+const copy=r=>({...r,angles:r.angles.slice()});
+const pair=(a,d)=>({a,d});
+const neutral=()=>pair(R(-25,0,0,'guard',1),R(25,3,0,'guard',-1));
+const close=()=>pair(R(-13,0,0,'grab',1),R(13,2,0,'grab',-1));
+function state(n){if(!n)return neutral();const f=neutral(),a=f.a,d=f.d;
+ if(n.zone==='mat'){if(n.down==='d')Object.assign(d,R(20,8,0,'flat',-1));else if(n.down==='a')Object.assign(a,R(-20,8,0,'flat',1));else {Object.assign(a,R(-18,2,0,'kneel',1));Object.assign(d,R(18,5,0,'seated',-1));}}
+ if(n.zone==='top'){Object.assign(a,R(83,-39,20,'crouch',-1));Object.assign(d,R(32,3,0,'guard',1));}
+ if(n.zone==='corner'){Object.assign(a,R(58,-20,0,'guard',1));Object.assign(d,R(90,-32,0,'sell',-1));}
+ if(n.zone==='outside'){Object.assign(a,R(155,28,0,n.down==='a'?'flat':'guard',1));Object.assign(d,R(184,35,0,n.down==='d'?'flat':'guard',-1));}
+ const grip=G.GRIP_ENTRY[n.id];if(grip&&n.zone==='standing'){return pair(R(-12,0,0,grip==='wrist'?'wrist':grip==='head'?'headlock':grip==='rear-waist'?'waist':'grab',1),R(12,2,0,'grab',grip==='rear-waist'?1:-1))}
+ return f;
+}
+// Intermediate choreography: root trajectories, individual pose vectors, and
+// optional physical contact. Endpoint is always the actual destination metadata.
+const F=(t,a,d,contact='',stage='Action')=>({t,a,d,contact,stage});
+function core(clip,grip){
+ const c=close(),f=neutral(),flat=R(21,7,0,'flat',-1),g=grip||'upper-body';
+ const gripFrame=F(.23,c.a,c.d,g,'Establish contact');
+ const hit=(pose)=>[F(.22,R(-27,0,0,'crouch'),R(25,3,0,'guard',-1),'','Wind up'),F(.52,R(-12,0,0,pose),R(9,3,0,'sell',-1),'strike','Contact'),F(.76,R(-20,0,0,'guard'),R(28,7,0,'sell',-1),'','Reaction')];
+ const throws=(type)=>{
+  const rear=type==='german',vertical=['vertical','delayed','fisherman','piledriver'].includes(type),bomb=type==='bomb',press=type==='press',ddt=type==='ddt',belly=type==='belly',a=R(-10,0,0,'lift'),d=R(1,1,vertical?29:24,vertical?'inverted':'fall',rear?1:-1);
+  if(rear){a.x=10;a.face=-1;d.x=-2;d.face=-1;d.rot=-30;}
+  if(bomb){a.angles=P.overhead.slice();d.z=27;d.angles=P.seated.slice();d.face=-1;}
+  if(press){a.angles=P.overhead.slice();d.z=39;d.angles=P.flat.slice();}
+  if(ddt){a.angles=P.headlock.slice();d.z=5;d.angles=P.crouch.slice();}
+  if(belly){a.angles=P.grab.slice();d.rot=55;d.z=20;}
+  return[gripFrame,F(type==='delayed'?.36:.44,R(-10,0,0,'crouch'),R(4,1,4,'tuck',-1),g,'Load'),F(type==='delayed'?.63:.56,a,d,g,'Lift / rotation'),F(.79,R(rear?5:-12,4,0,bomb||type==='fisherman'?'seated':ddt||rear||vertical?'bridge':'kneel'),R(rear?-25:23,8,0,'flat',-1),'','Landing')];
+ };
+ switch(clip){
+ case'circle':return[F(.35,R(-26,-10,0,'guard'),R(27,10,0,'guard',-1),'','Circle'),F(.68,R(-23,9,0,'guard'),R(23,-7,0,'guard',-1),'','Close distance')];
+ case'taunt':case'rally':case'breath':case'sell':return[F(.45,R(-24,0,0,clip==='sell'?'sell':clip==='breath'?'crouch':'celebrate'),f.d,'','Reaction')];
+ case'lock':case'headlock':case'wrist':case'wringer':case'hammer':case'waist':return[gripFrame,F(.63,R(-9,0,0,clip==='headlock'?'headlock':clip==='waist'||clip==='hammer'?'waist':clip==='wrist'||clip==='wringer'?'wrist':'grab'),R(9,2,0,clip==='headlock'?'crouch':'grab',clip==='waist'||clip==='hammer'?1:-1),grip||g,'Control')];
+ case'break':case'escape':case'block':return[gripFrame,F(.48,R(-9,0,0,clip==='block'?'guard':'crouch'),R(7,3,0,clip==='block'?'guard':'tuck',-1),'wrist','Interrupt / escape'),F(.75,R(-29,-1,0,'sell'),R(24,5,0,'guard',-1),'','Release')];
+ case'jab':case'bodyshot':return hit('punch');
+ case'chop':return hit('chop');case'elbow':return hit('elbow');case'kick':return hit('kick');case'knee':return hit('knee');case'headbutt':return hit('headbutt');case'trade':return [...hit('punch').slice(0,2),F(.78,R(-12,0,0,'sell'),R(10,3,0,'punch',-1),'strike','Return strike')];
+ case'lariat':return[F(.25,R(-76,0,0,'run'),f.d,'','Run-up'),F(.55,R(-7,0,0,'chop'),R(6,3,0,'fall',-1),'strike','Collision'),F(.8,R(12,1,0,'guard'),flat,'','Landing')];
+ case'armdrag':case'hipthrow':case'takedown':case'rana':return[gripFrame,F(.5,R(-8,1,0,clip==='rana'?'tuck':'crouch'),R(5,2,clip==='takedown'?5:15,'fall',-1,clip==='rana'?100:30),g,'Off balance'),F(.78,R(-13,5,0,'kneel'),flat,'','Mat landing')];
+ case'vertical':case'delayed':case'german':case'belly':case'fisherman':case'bomb':case'press':case'piledriver':case'ddt':case'cutter':case'slam':case'chokeslam':case'carry':return throws(clip);
+ case'frog':case'moon':case'flip450':case'divingelbow':case'senton':case'dropkick':case'dive':{
+ const outside=clip==='dive',x=outside?156:25,dy=outside?30:6,spin=clip==='moon'?-360:clip==='flip450'?450:clip==='senton'?180:0;
+ return[F(.2,R(85,-38,22,'crouch',-1),R(x,dy,0,'flat',-1),'','Launch'),F(.45,R(58,-18,45,clip==='frog'?'spread':'tuck',-1,spin*.52),R(x,dy,0,'flat',-1),'','Flight'),F(.7,R(x,dy,12,clip==='dropkick'?'kick':clip==='divingelbow'?'elbow':'pin',-1,spin),'','Descent'),F(.84,R(x-8,dy,0,'kneel',-1),R(x+10,dy,0,'flat',-1),'body','Impact')].map(q=>({...q,d:q.d||flat}));}
+ case'cover':case'cradle':case'backslide':case'bridge':return[F(.28,R(-10,3,0,'kneel'),flat,'leg','Cover setup'),F(.58,R(10,6,0,clip==='bridge'?'bridge':'pin'),R(18,7,0,clip==='cradle'?'tuck':'flat',-1),'leg','Hook leg'),F(.82,R(10,6,0,'pin'),flat,'leg','Hold shoulders')];
+ case'kickout':return[F(.24,R(9,5,0,'pin'),R(16,7,0,'flat',-1),'leg','Cover'),F(.48,R(-4,4,7,'fall'),R(17,6,0,'bridge',-1),'','Shoulder up'),F(.76,R(-24,5,0,'kneel'),R(24,7,0,'seated',-1),'','Separate')];
+ case'armbar':case'ankle':case'crab':case'figure4':case'sleeper':case'rest':return[F(.26,R(-10,3,0,'kneel'),flat,g,'Secure hold'),F(.58,R(clip==='ankle'||clip==='crab'?38:-4,5,0,clip==='crab'?'crouch':clip==='sleeper'?'kneel':'seated'),R(12,7,0,clip==='sleeper'?'seated':'flat',-1),clip==='ankle'||clip==='crab'||clip==='figure4'?'leg':clip==='sleeper'?'head':'arm','Apply pressure'),F(.84,R(clip==='ankle'?38:-5,5,0,'seated'),flat,g,'Hold')];
+ case'groundstrike':return[F(.25,R(-8,5,0,'kneel'),flat,'','Set base'),F(.57,R(0,6,7,'elbow'),flat,'strike','Ground contact'),F(.78,R(-11,5,0,'kneel'),flat,'','Recover')];
+ case'ropes':case'duck':return[F(.24,R(-86,0,0,'run',-1),f.d,'','Run to ropes'),F(.48,R(-96,0,0,'spread',1),f.d,'','Rebound'),F(.77,R(-5,0,0,'run',1),R(27,3,0,clip==='duck'?'crouch':'guard',-1),'','Return')];
+ case'climb':case'apron':case'ramp':case'rollin':case'throwout':case'whip':case'cornerpush':case'floorstrike':case'crawl':case'rise':case'scramble':case'heel':{
+ const at={climb:[83,-39,20,'crouch'],apron:[132,28,0,'guard'],ramp:[0,-92,0,'run'],rollin:[90,20,0,'tuck'],throwout:[78,12,0,'grab'],whip:[56,-20,0,'grab'],cornerpush:[72,-25,0,'grab'],floorstrike:[155,28,0,'punch'],crawl:[72,20,0,'kneel'],rise:[-18,3,0,'kneel'],scramble:[-12,5,0,'tuck'],heel:[-12,0,0,'punch']}[clip];
+ const dest=clip==='throwout'?R(163,28,10,'fall',-1):clip==='whip'||clip==='cornerpush'?R(92,-32,0,'sell',-1):clip==='floorstrike'?R(182,34,0,'sell',-1):f.d;
+ return[F(.34,R(at[0]*.55,at[1]*.55,at[2]*.4,'crouch'),f.d,'','Prepare'),F(.65,R(...at),dest,clip==='throwout'||clip==='whip'||clip==='cornerpush'?g:'','Move through space')];}
+ default:return null;
+ }
+}
+// Normalize source/destination to the incoming attacker, swapping roles
+// after a reversal exactly as graph.apply does. Source attacker is the
+// post-control holder; the next event may be driven by either side.
+function build(from,to,lead='w'){
+ const desc=descriptor(to),src=state(from),end=state(to),reversed=!!to.reverse;
+ const frames=desc&&core(desc.clip,desc.grip);
+ if(!frames)return null;
+ if(reversed){const tmp=end.a;end.a=end.d;end.d=tmp;}
+ // Runtime block outcomes never display a landed version of the attempted move.
+ const seq=[F(0,src.a,src.d,G.GRIP_ENTRY[from?.id]||'','Previous state'),...frames,F(1,end.a,end.d,G.GRIP_ENTRY[to.id]||'','Destination state')];
+ // All endpoints come from the same state resolver as the next clip start.
+ return {from,to,lead,reversed,desc,seq,duration:desc.duration};
+}
+function interp(a,b,t){return{x:mix(a.x,b.x,t),y:mix(a.y,b.y,t),z:mix(a.z,b.z,t),rot:mix(a.rot,b.rot,t),face:t<.5?a.face:b.face,angles:a.angles.map((v,i)=>mix(v,b.angles[i],t))}}
+function at(anim,t){let i=1;while(i<anim.seq.length-1&&t>anim.seq[i].t)i++;const a=anim.seq[i-1],b=anim.seq[i],p=ease(clamp((t-a.t)/(b.t-a.t)));return {a:interp(a.a,b.a,p),d:interp(a.d,b.d,p),contact:p<.5?a.contact:b.contact,stage:p<.5?a.stage:b.stage}}
+const deg=Math.PI/180;
+const V=(x,y)=>({x,y});const addV=(a,b)=>V(a.x+b.x,a.y+b.y);
+const seg=(angle,len,up=false)=>V(Math.sin(angle*deg)*len,Math.cos(angle*deg)*len*(up?-1:1));
+function skeleton(r){
+ const [torso,ls,le,rs,re,lh,lk,rh,rk]=r.angles;const pelvicHeight=clamp(13*Math.abs(Math.cos(torso*deg))*(1-.55*Math.min(1,(Math.abs(lh)+Math.abs(rh))/140)),3,13);const o=V(240+r.x,146+r.y-r.z-pelvicHeight);
+ const trans=p=>{let x=p.x*r.face,y=p.y;const t=r.rot*deg;return V(o.x+x*Math.cos(t)-y*Math.sin(t),o.y+x*Math.sin(t)+y*Math.cos(t))};
+ const hip=V(0,0),shoulder=seg(torso,13,true),head=addV(shoulder,seg(torso,8,true));
+ const arm=(sign,s,e)=>{const start=addV(shoulder,V(sign*5,0)),elbow=addV(start,seg(s,8)),hand=addV(elbow,seg(s+e,7));return [start,elbow,hand].map(trans)};
+ const leg=(sign,h,k)=>{const start=V(sign*3,0),knee=addV(start,seg(h,8)),foot=addV(knee,seg(h+k,8));return [start,knee,foot].map(trans)};
+ return{hip:trans(hip),shoulder:trans(shoulder),head:trans(head),arms:[arm(-1,ls,le),arm(1,rs,re)],legs:[leg(-1,lh,lk),leg(1,rh,rk)],ground:V(240+r.x,146+r.y),r};
+}
+function nearestHand(s,target){return s.arms.reduce((a,b)=>Math.hypot(a[2].x-target.x,a[2].y-target.y)<Math.hypot(b[2].x-target.x,b[2].y-target.y)?a:b)}
+function solveArm(arm,target){
+ const a=arm[0],dx=target.x-a.x,dy=target.y-a.y,raw=Math.hypot(dx,dy)||.001,d=clamp(raw,1,14.8),ux=dx/raw,uy=dy/raw,along=(64-49+d*d)/(2*d),height=Math.sqrt(Math.max(0,64-along*along));
+ const end=V(a.x+ux*d,a.y+uy*d),bend=(arm[1].x-a.x)*(-uy)+(arm[1].y-a.y)*ux>=0?1:-1;
+ arm[1]=V(a.x+ux*along-uy*height*bend,a.y+uy*along+ux*height*bend);arm[2]=end;return Math.hypot(end.x-target.x,end.y-target.y);
+}
+function contactSolve(a,d,type){
+ if(!type)return null;let target;
+ if(type==='strike'){const target=d.shoulder,ends=[...a.arms.map(x=>x[2]),...a.legs.map(x=>x[2]),a.head];return Math.min(...ends.map(e=>Math.hypot(e.x-target.x,e.y-target.y)));}
+ if(type==='wrist'||type==='arm'||type==='ground-arm')target=nearestHand(d,a.shoulder)[2];
+ else if(type==='head'||type==='front-facelock'||type==='ground-head')target=d.head;
+ else if(type==='leg'||type==='ground-leg')target=d.legs[0][1];
+ else if(type==='rear-waist'||type==='body-clinch'||type==='ground-back'||type==='body')target=d.hip;
+ else target=d.shoulder;
+ return solveArm(nearestHand(a,target),target);
+}
+function drawLimb(pts,color,width){for(let i=1;i<pts.length;i++){line(pts[i-1].x,pts[i-1].y,pts[i].x,pts[i].y,'#24222a',width+2);line(pts[i-1].x,pts[i-1].y,pts[i].x,pts[i].y,color,width);}}
+function wrestler(s,side){
+ const gear=side==='w'?'#b99447':'#4f769e',skin=side==='w'?'#c99976':'#b47c5c',hair=side==='w'?'#443026':'#27242a';
+ ellipse(s.ground.x,s.ground.y+3,10,3,'rgba(12,17,28,.4)');
+ drawLimb(s.legs[0],shade(skin,-22),5);drawLimb(s.arms[0],shade(skin,-22),4);
+ line(s.hip.x,s.hip.y,s.shoulder.x,s.shoulder.y,'#25242a',13);line(s.hip.x,s.hip.y,s.shoulder.x,s.shoulder.y,skin,10);line(s.hip.x,s.hip.y,s.hip.x+(s.shoulder.x-s.hip.x)*.25,s.hip.y+(s.shoulder.y-s.hip.y)*.25,gear,10);
+ drawLimb(s.legs[1],skin,5);for(const l of s.legs)line(l[1].x,l[1].y,l[2].x,l[2].y,shade(gear,-25),5);
+ drawLimb(s.arms[1],skin,4);
+ line(s.shoulder.x,s.shoulder.y,s.head.x,s.head.y,skin,5);ellipse(s.head.x,s.head.y,5.5,6.5,'#24222a');ellipse(s.head.x,s.head.y,4.5,5.5,skin);rect(s.head.x-4,s.head.y-5,8,2,hair);rect(s.head.x+2*s.r.face,s.head.y-1,1,1,'#1d2028');
+ label(side==='w'?'GOLD':'BLUE',s.ground.x,s.ground.y+14,side==='w'?'#ffe39d':'#e0efff',8);
+}
+let anim=null,progress=0,playing=false,last=0;
+function fillSelect(el,values,preferred){el.replaceChildren();for(const n of values){const o=document.createElement('option');o.value=n.id;o.textContent=title(n)+' · '+n.id;el.append(o)}if(values.some(n=>n.id===preferred))el.value=preferred}
+function match(n,q){return (n.id+' '+title(n)).toLowerCase().includes(q)}
+function refreshSources(){const q=$('filter').value.trim().toLowerCase(),edge=$('mode').value==='edge',old=$('from').value;let list=edge?nodes.filter(n=>n.next.length&&(!q||match(n,q)||n.next.some(([id])=>match(A[id],q)))):nodes;fillSelect($('from'),list,old||'lockup');$('from').disabled=!edge;refreshTargets()}
+function refreshTargets(){const q=$('filter').value.trim().toLowerCase(),edge=$('mode').value==='edge',from=A[$('from').value],old=$('to').value;let list=edge?(from?.next||[]).map(([id])=>A[id]):nodes;if(q){const filtered=list.filter(n=>match(n,q));if(filtered.length||!edge)list=filtered}fillSelect($('to'),list,old||'sx_vertical');select()}
+function select(){const edge=$('mode').value==='edge',from=edge?A[$('from').value]:null,to=A[$('to').value];playing=false;progress=0;last=0;
+ anim=to&&(!edge||from?.next.some(([id])=>id===to.id))?build(from,to,$('lead').value):null;$('pause').textContent='Pause';$('play').disabled=!anim;$('pause').disabled=!anim;$('scrub').disabled=!anim;
+ if(!to){$('clipName').textContent='No matching nodes';$('kind').textContent='Change the filter';$('state').textContent='';$('line').textContent='';return}
+ $('clipName').textContent=(from?title(from)+' → ':'')+title(to);
+ const lead=$('lead').value==='w'?'Gold':'Blue',defender=lead==='Gold'?'Blue':'Gold';$('line').textContent=to.lines[0].replaceAll('{A}',lead).replaceAll('{D}',defender).replaceAll('{W}','Gold').replaceAll('{F}','Blue');
+ $('kind').textContent=anim?(anim.desc.custom?'CUSTOM CLIP':'SHARED PROCEDURAL CLIP')+' · '+anim.desc.clip+(anim.desc.attempt?' · attempted '+anim.desc.attempt:''):'UNMAPPED — no animation';
+ $('state').textContent=(from?'Source: '+from.id+' / '+from.zone+'\n':'Neutral preview\n')+'Destination: '+to.id+' / '+to.zone+'\nControl '+(to.reverse?'reverses':'retained')+' · down: '+(to.down||'none')+(to.blockOf?' · block of '+to.blockOf:to.counterOf?' · counter of '+to.counterOf:'');
+ $('duration').textContent=anim?(anim.duration/1000).toFixed(2)+' s':'—';$('scrub').value='0';
+}
+function advance(d){const el=$('to');if(!el.options.length)return;el.selectedIndex=(el.selectedIndex+d+el.options.length)%el.options.length;select()}
+$('filter').oninput=refreshSources;$('mode').onchange=refreshSources;$('from').onchange=refreshTargets;$('to').onchange=select;$('lead').onchange=select;$('prev').onclick=()=>advance(-1);$('next').onclick=()=>advance(1);
+$('play').onclick=()=>{if(anim){progress=0;playing=true;last=0;$('pause').textContent='Pause'}};$('pause').onclick=()=>{if(!anim)return;if(!playing&&progress>=1)progress=0;playing=!playing;last=0;$('pause').textContent=playing?'Pause':'Resume'};$('scrub').oninput=()=>{playing=false;progress=Number($('scrub').value)/1000;last=0};
+function audit(){
+ let custom=0,shared=0,edges=0,covered=0,invalid=0,contactSamples=0,contactReview=0,contactEdges=0,missing=[];
+ for(const n of nodes){const d=descriptor(n),clip=build(null,n);if(clip){if(d.custom)custom++;else shared++;}else missing.push(n.id);for(const [id] of n.next){edges++;const b=build(n,A[id]);if(!b)continue;covered++;let edgeReview=false;for(const t of [0,.25,.5,.75,1]){const f=at(b,t);if([f.a,f.d].some(r=>![r.x,r.y,r.z,r.rot,...r.angles].every(Number.isFinite)))invalid++;if(f.contact){const err=contactSolve(skeleton(f.a),skeleton(f.d),f.contact);contactSamples++;if(err>2){contactReview++;edgeReview=true;}}}if(edgeReview)contactEdges++;}}
+ $('nodeCount').textContent=nodes.length;$('edgeCount').textContent=edges;$('customCount').textContent=custom;$('sharedCount').textContent=shared;$('coveredCount').textContent=covered;$('missingCount').textContent=edges-covered;
+ $('coverageText').textContent=custom+' custom-node mappings, '+shared+' shared-node mappings. '+covered+' of '+edges+' authored edges compose a clip. '+invalid+' non-finite sampled poses. '+contactReview+' of '+contactSamples+' sampled contact poses exceed 2 px ('+contactEdges+' edges need contact review). '+(missing.length?'Unmapped nodes: '+missing.join(', '):'No unmapped graph nodes.')+' Visual quality is not assessed by this check.';
+ return{nodes:nodes.length,edges,custom,shared,covered,invalid,contactSamples,contactReview,contactEdges,missing};
+}
+window.RingAnimationLab={descriptor,build,at,audit,skeleton,contactSolve};
+function draw(now){
+ if(playing&&anim){if(last)progress+=Math.min(80,now-last)*Number($('speed').value)/anim.duration;last=now;if(progress>=1){if($('loop').checked)progress=0;else{progress=1;playing=false;$('pause').textContent='Resume'}}}
+ backdrop(now);const f=anim?at(anim,progress):neutral(),a=skeleton(f.a),d=skeleton(f.d),err=contactSolve(a,d,f.contact);
+ const lead=anim?.lead||'w';const arr=[{s:a,side:lead},{s:d,side:other(lead)}].sort((a,b)=>a.s.ground.y-b.s.ground.y);
+ const inside=q=>q.s.ground.x>=100&&q.s.ground.x<=380&&q.s.ground.y<=196;
+ for(const q of arr.filter(inside))wrestler(q.s,q.side);frontRopes();for(const q of arr.filter(q=>!inside(q)))wrestler(q.s,q.side);
+ if(anim){$('stage').textContent=f.stage;$('elapsed').textContent=(anim.duration*progress/1000).toFixed(2)+' s';$('scrub').value=String(Math.round(progress*1000));$('contact').textContent=f.contact?'Contact target: '+f.contact+' · '+(f.contact==='strike'?'nearest limb distance ':'reach residual ')+err.toFixed(1)+' px'+(err>2?' (review)':''):'No active contact constraint';}
+ requestAnimationFrame(draw);
+}
+audit();refreshSources();requestAnimationFrame(draw);
+}
+})();
+</script></body></html>
