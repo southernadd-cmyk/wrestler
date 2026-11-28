@@ -99,7 +99,7 @@ if(params.get('frame')!=='1'){
   if(!cache.has(d.path))cache.set(d.path,new Promise(resolve=>{const img=new Image();img.onload=()=>{try{resolve(samplePortrait(img))}catch(_){resolve(null)}};img.onerror=()=>resolve(null);img.src=d.path;}));
   cache.get(d.path).then(skin=>e.source.postMessage({type:'ring-skin-result',token:d.token,skin},'*'));
  });
- frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=620';return
+ frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=621';return
 }
 $('lab').hidden=false;
 if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
@@ -375,7 +375,7 @@ function core(clip,grip){
   const id=clip.slice(6),[wind,hitPose,hold,reaction,z,spin]=floorSpecs[id],apron=id.includes('apron')||id==='os_ropes_choke',ramp=id==='os_ramp_suplex',x=apron?127:ramp?12:161,y=ramp?-65:30,dx=apron?10:15,face=1;
   const d=R(x+dx,y+4,0,'guard',-1),toss=/ddt|piledriver|suplex|slam|spear/.test(id),exit=id==='os_count_tease';
   return[F(.20,R(x-14,y,0,wind,face),d,'','Ringside setup'),
-   F(.49,R(x,y,0,wind,face),R(x+dx-6,y+2,z,reaction,-1,spin),hold,'Ringside contact'),
+   F(.49,R(x,y,0,hold==='strike'?hitPose:wind,face),R(x+dx-6,y+2,z,reaction,-1,spin),hold,'Ringside contact'),
    F(.78,R(exit?91:x-4,exit?12:y+3,0,hitPose,face),R(x+dx,y+5,0,toss?'flat':reaction,-1),'','Ringside reaction')];
  }
  switch(clip){
@@ -414,8 +414,8 @@ function core(clip,grip){
  case'taunt':case'rally':case'breath':case'sell':return[F(.45,R(-24,0,0,clip==='sell'?'sell':clip==='breath'?'crouch':'celebrate'),f.d,'','Reaction')];
  case'lock':case'headlock':case'wrist':case'wringer':case'hammer':case'waist':return[gripFrame,F(.63,R(-9,0,0,clip==='headlock'?'headlock':clip==='waist'||clip==='hammer'?'waist':clip==='wrist'||clip==='wringer'?'wrist':'grab'),R(9,2,0,clip==='headlock'?'crouch':'grab',clip==='waist'||clip==='hammer'?1:-1),grip||g,'Control')];
  case'break':case'escape':case'block':return[gripFrame,F(.48,R(-9,0,0,clip==='block'?'crouch':'sell'),R(7,3,0,clip==='block'?'grab':'elbow',-1),'wrist','Interrupt / escape'),F(.75,R(-29,-1,0,'sell'),R(24,5,0,'guard',-1),'','Release')];
- case'jab':return hit('punch');case'bodyshot':return hit('punch').map((f,i)=>i===1?{...f,a:R(-8,1,0,'crouch'),d:R(9,3,0,'sell',-1)}:f);
- case'chop':return hit('chop');case'elbow':return hit('elbow');case'kick':return hit('kick');case'knee':return hit('knee');case'headbutt':return hit('headbutt');case'trade':return [...hit('punch').slice(0,2),F(.78,R(-12,0,0,'sell'),R(10,3,0,'punch',-1),'strike','Return strike')];
+ case'jab':return hit('punch');case'bodyshot':return hit('punch').map((f,i)=>i===1?{...f,a:R(-8,1,0,'punch'),d:R(9,3,0,'sell',-1)}:f);
+ case'chop':return hit('chop');case'elbow':return hit('elbow');case'kick':return hit('kick');case'knee':return hit('knee');case'headbutt':return hit('headbutt');case'trade':return [...hit('punch').slice(0,2),{...F(.78,R(-12,0,0,'sell'),R(10,3,0,'punch',-1),'strike','Return strike'),owner:'d'}];
  case'lariat':return[F(.25,R(-76,0,0,'run'),f.d,'','Run-up'),F(.55,R(-7,0,0,'chop'),R(6,3,0,'fall',-1),'strike','Collision'),F(.8,R(12,1,0,'guard'),flat,'','Landing')];
  case'armdrag':case'hipthrow':case'takedown':case'rana':return[gripFrame,F(.5,R(-8,1,0,clip==='rana'?'tuck':'crouch'),R(5,2,clip==='takedown'?5:15,'fall',-1,clip==='rana'?100:30),g,'Off balance'),F(.78,R(-13,5,0,'kneel'),flat,'','Mat landing')];
  case'vertical':case'delayed':case'german':case'belly':case'fisherman':return throws(clip);
@@ -478,8 +478,15 @@ function solveArm(arm,target){
 }
 function contactPoints(a,d,type,clip=''){
  if(type==='strike'){
-  const high=/kick|headbutt|elbow|lariat|clothesline|forearm|missile/i.test(clip),target=clip==='bodyshot'||clip==='knee'?d.hip:high?d.head:d.shoulder;
-  const limbs=/kick|missile/i.test(clip)?feet(a):clip==='knee'?a.legs.map(l=>l[1]):clip==='headbutt'?[a.head]:clip==='elbow'?a.arms.map(l=>l[1]):a.arms.map(l=>l[2]);
+  const move=clip.toLowerCase().split(':').at(-1);
+  // Namespaced choreography must use the same anatomical contact as the
+  // original clips. Select the striking joint, never an arbitrary hand.
+  const knee=/knee/.test(move),headbutt=/headbutt/.test(move),elbow=/elbow|forearm|groundstrike/.test(move),
+    foot=/kick|missile|stomp|boot/.test(move)&&!knee,
+    low=/bodyshot|gut|rib|shoulders/.test(move)||knee,
+    high=/headbutt|elbow|forearm|lariat|clothesline|missile|uppercut|kick|boot/.test(move);
+  const target=low?d.hip:high?d.head:d.shoulder;
+  const limbs=knee?a.legs.map(l=>l[1]):headbutt?[a.head]:elbow?a.arms.map(l=>l[1]):foot?feet(a):a.arms.map(l=>l[2]);
   const end=limbs.reduce((p,q)=>Math.hypot(p.x-target.x,p.y-target.y)<=Math.hypot(q.x-target.x,q.y-target.y)?p:q);
   return{target,end,strike:true};
  }
@@ -519,20 +526,53 @@ function resolveFrame(f,clip=''){
  const residual=contactSolve(actor,victim,f.contact,clip);
  return{a,d,raw,residual,shift:Math.max(Math.hypot(ar.x-before[0],ar.y-before[1]),Math.hypot(dr.x-before[2],dr.y-before[3]))};
 }
-function drawLimb(pts,color,width){for(let i=1;i<pts.length;i++){line(pts[i-1].x,pts[i-1].y,pts[i].x,pts[i].y,'#24222a',width+2);line(pts[i-1].x,pts[i-1].y,pts[i].x,pts[i].y,color,width);}}
+function drawLimb(pts,color,width){
+ for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];
+  line(a.x,a.y,b.x,b.y,'#24222a',width+2);line(a.x,a.y,b.x,b.y,color,width);
+  if(width>=4)line(a.x-.8,a.y-.5,b.x-.8,b.y-.5,shade(color,15),1);
+ }
+ ellipse(pts[1].x,pts[1].y,width*.36,width*.36,color);
+}
+function torsoPanel(a,b,aw,bw,color){
+ const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len;
+ poly([[a.x+nx*aw/2,a.y+ny*aw/2],[b.x+nx*bw/2,b.y+ny*bw/2],[b.x-nx*bw/2,b.y-ny*bw/2],[a.x-nx*aw/2,a.y-ny*aw/2]],color);
+}
 function wrestler(s,side,look=null,name=null,options={}){
  const gear=look?.base||(side==='w'?'#b99447':'#4f769e'),skin=look?.skin||(side==='w'?'#c99976':'#b47c5c'),hair=look?.hair||(side==='w'?'#443026':'#27242a'),edge='#24222a';
  const build=clamp(look?.build||1,.83,1.25),width=Math.round(11*build),leg=Math.round(5*build),arm=Math.round(4*build),full=look?.presentation==='female'||look?.covered===true||build>1.12;
  const between=(a,b,t)=>V(mix(a.x,b.x,t),mix(a.y,b.y,t));
  const torso=(a,b,c,w)=>line(a.x,a.y,b.x,b.y,c,w);
  ellipse(s.ground.x,s.ground.y+3,Math.round(10*build),3,'rgba(12,17,28,.4)');
- drawLimb(s.legs[0],shade(skin,-22),leg);drawLimb(s.arms[0],shade(skin,-22),arm);
- torso(s.hip,s.shoulder,edge,width+3);torso(s.hip,s.shoulder,skin,width);
- const waist=between(s.hip,s.shoulder,.33),chest=between(s.hip,s.shoulder,.55);
- torso(s.hip,waist,gear,width);torso(waist,between(s.hip,s.shoulder,.38),shade(gear,22),width);
- if(full){torso(chest,s.shoulder,gear,width);torso(between(s.hip,s.shoulder,.88),s.shoulder,shade(gear,22),width);}
- drawLimb(s.legs[1],skin,leg);for(const l of s.legs){torso(l[1],l[2],shade(gear,-25),leg);torso(between(l[1],l[2],.8),l[2],edge,leg+1);}
- drawLimb(s.arms[1],skin,arm);
+ const waist=between(s.hip,s.shoulder,.33),chest=between(s.hip,s.shoulder,.55),shoulderWidth=width+2,waistWidth=width-1;
+ const drawLeg=(l,far)=>{
+  const tone=far?shade(skin,-22):skin,boot=shade(gear,far?-38:-22),knee=l[1],foot=l[2];
+  drawLimb(l,tone,leg);ellipse(knee.x,knee.y,leg*.56,leg*.57,edge);ellipse(knee.x,knee.y,leg*.4,leg*.4,shade(gear,far?-30:-10));
+  const cuff=between(knee,foot,.33);torso(cuff,foot,edge,leg+2);torso(cuff,foot,boot,leg);
+  torso(cuff,between(knee,foot,.5),shade(gear,12),leg);
+  // The sole follows the animated shin, including inverted and aerial poses.
+  const dx=foot.x-knee.x,dy=foot.y-knee.y,len=Math.hypot(dx,dy)||1,nx=-dy/len*s.r.face,ny=dx/len*s.r.face;
+  torso(V(foot.x-nx*1.5,foot.y-ny*1.5),V(foot.x+nx*3,foot.y+ny*3),edge,leg+1);
+  torso(V(foot.x,foot.y),V(foot.x+nx*2,foot.y+ny*2),boot,Math.max(2,leg-1));
+ };
+ const drawArm=(a,far)=>{
+  const tone=far?shade(skin,-22):skin;
+  drawLimb(a,tone,arm);const hand=a[2],wrist=between(a[1],hand,.68);
+  torso(wrist,hand,far?shade(gear,-25):shade(gear,10),arm);
+  ellipse(hand.x,hand.y,arm*.57,arm*.57,edge);ellipse(hand.x,hand.y,arm*.39,arm*.39,tone);
+ };
+ drawLeg(s.legs[0],true);drawArm(s.arms[0],true);
+ // Tapered shoulders and waist, not a single cylindrical body stroke.
+ torsoPanel(s.hip,s.shoulder,width+2,shoulderWidth+3,edge);
+ torsoPanel(s.hip,s.shoulder,width,shoulderWidth,skin);
+ torsoPanel(s.hip,waist,width,waistWidth,gear);
+ torsoPanel(waist,between(s.hip,s.shoulder,.41),waistWidth,waistWidth,shade(gear,22));
+ if(full){
+  torsoPanel(chest,s.shoulder,width,shoulderWidth,gear);
+  torsoPanel(between(s.hip,s.shoulder,.85),s.shoulder,shoulderWidth-1,shoulderWidth,shade(gear,22));
+ }else{
+  torsoPanel(chest,between(s.hip,s.shoulder,.83),width-3,shoulderWidth-3,shade(skin,14));
+ }
+ drawLeg(s.legs[1],false);drawArm(s.arms[1],false);
  torso(s.shoulder,s.head,skin,5);
  // Draw face, hair and mask in the head's local coordinate system, so
  // these features rotate with the wrestler rather than the camera.
