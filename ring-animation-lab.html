@@ -240,7 +240,7 @@ const deg=Math.PI/180;
 const V=(x,y)=>({x,y});const addV=(a,b)=>V(a.x+b.x,a.y+b.y);
 const seg=(angle,len,up=false)=>V(Math.sin(angle*deg)*len,Math.cos(angle*deg)*len*(up?-1:1));
 function skeleton(r){
- const [torso,ls,le,rs,re,lh,lk,rh,rk]=r.angles;const o=V(240+r.x,146+r.y-r.z-13);
+ const [torso,ls,le,rs,re,lh,lk,rh,rk]=r.angles;const pelvicHeight=clamp(13*Math.abs(Math.cos(torso*deg))*(1-.55*Math.min(1,(Math.abs(lh)+Math.abs(rh))/140)),3,13);const o=V(240+r.x,146+r.y-r.z-pelvicHeight);
  const trans=p=>{let x=p.x*r.face,y=p.y;const t=r.rot*deg;return V(o.x+x*Math.cos(t)-y*Math.sin(t),o.y+x*Math.sin(t)+y*Math.cos(t))};
  const hip=V(0,0),shoulder=seg(torso,13,true),head=addV(shoulder,seg(torso,8,true));
  const arm=(sign,s,e)=>{const start=addV(shoulder,V(sign*5,0)),elbow=addV(start,seg(s,8)),hand=addV(elbow,seg(s+e,7));return [start,elbow,hand].map(trans)};
@@ -255,6 +255,7 @@ function solveArm(arm,target){
 }
 function contactSolve(a,d,type){
  if(!type)return null;let target;
+ if(type==='strike'){const target=d.shoulder,ends=[...a.arms.map(x=>x[2]),...a.legs.map(x=>x[2]),a.head];return Math.min(...ends.map(e=>Math.hypot(e.x-target.x,e.y-target.y)));}
  if(type==='wrist'||type==='arm'||type==='ground-arm')target=nearestHand(d,a.shoulder)[2];
  else if(type==='head'||type==='front-facelock'||type==='ground-head')target=d.head;
  else if(type==='leg'||type==='ground-leg')target=d.legs[0][1];
@@ -279,32 +280,32 @@ function match(n,q){return (n.id+' '+title(n)).toLowerCase().includes(q)}
 function refreshSources(){const q=$('filter').value.trim().toLowerCase(),edge=$('mode').value==='edge',old=$('from').value;let list=edge?nodes.filter(n=>n.next.length&&(!q||match(n,q)||n.next.some(([id])=>match(A[id],q)))):nodes;fillSelect($('from'),list,old||'lockup');$('from').disabled=!edge;refreshTargets()}
 function refreshTargets(){const q=$('filter').value.trim().toLowerCase(),edge=$('mode').value==='edge',from=A[$('from').value],old=$('to').value;let list=edge?(from?.next||[]).map(([id])=>A[id]):nodes;if(q){const filtered=list.filter(n=>match(n,q));if(filtered.length||!edge)list=filtered}fillSelect($('to'),list,old||'sx_vertical');select()}
 function select(){const edge=$('mode').value==='edge',from=edge?A[$('from').value]:null,to=A[$('to').value];playing=false;progress=0;last=0;
- anim=to?build(from,to,$('lead').value):null;$('play').disabled=!anim;$('pause').disabled=!anim;$('scrub').disabled=!anim;
+ anim=to&&(!edge||from?.next.some(([id])=>id===to.id))?build(from,to,$('lead').value):null;$('pause').textContent='Pause';$('play').disabled=!anim;$('pause').disabled=!anim;$('scrub').disabled=!anim;
  if(!to){$('clipName').textContent='No matching nodes';$('kind').textContent='Change the filter';$('state').textContent='';$('line').textContent='';return}
  $('clipName').textContent=(from?title(from)+' → ':'')+title(to);
- $('line').textContent=to.lines[0].replaceAll('{A}','Gold').replaceAll('{D}','Blue').replaceAll('{W}','Gold').replaceAll('{F}','Blue');
+ const lead=$('lead').value==='w'?'Gold':'Blue',defender=lead==='Gold'?'Blue':'Gold';$('line').textContent=to.lines[0].replaceAll('{A}',lead).replaceAll('{D}',defender).replaceAll('{W}','Gold').replaceAll('{F}','Blue');
  $('kind').textContent=anim?(anim.desc.custom?'CUSTOM CLIP':'SHARED PROCEDURAL CLIP')+' · '+anim.desc.clip+(anim.desc.attempt?' · attempted '+anim.desc.attempt:''):'UNMAPPED — no animation';
  $('state').textContent=(from?'Source: '+from.id+' / '+from.zone+'\n':'Neutral preview\n')+'Destination: '+to.id+' / '+to.zone+'\nControl '+(to.reverse?'reverses':'retained')+' · down: '+(to.down||'none')+(to.blockOf?' · block of '+to.blockOf:to.counterOf?' · counter of '+to.counterOf:'');
  $('duration').textContent=anim?(anim.duration/1000).toFixed(2)+' s':'—';$('scrub').value='0';
 }
 function advance(d){const el=$('to');if(!el.options.length)return;el.selectedIndex=(el.selectedIndex+d+el.options.length)%el.options.length;select()}
 $('filter').oninput=refreshSources;$('mode').onchange=refreshSources;$('from').onchange=refreshTargets;$('to').onchange=select;$('lead').onchange=select;$('prev').onclick=()=>advance(-1);$('next').onclick=()=>advance(1);
-$('play').onclick=()=>{if(anim){progress=0;playing=true;last=0}};$('pause').onclick=()=>{playing=!playing;last=0;$('pause').textContent=playing?'Pause':'Resume'};$('scrub').oninput=()=>{playing=false;progress=Number($('scrub').value)/1000;last=0};
+$('play').onclick=()=>{if(anim){progress=0;playing=true;last=0;$('pause').textContent='Pause'}};$('pause').onclick=()=>{if(!anim)return;if(!playing&&progress>=1)progress=0;playing=!playing;last=0;$('pause').textContent=playing?'Pause':'Resume'};$('scrub').oninput=()=>{playing=false;progress=Number($('scrub').value)/1000;last=0};
 function audit(){
- let custom=0,shared=0,edges=0,covered=0,invalid=0,missing=[];
- for(const n of nodes){const d=descriptor(n),clip=build(null,n);if(clip){if(d.custom)custom++;else shared++;}else missing.push(n.id);for(const [id] of n.next){edges++;const b=build(n,A[id]);if(!b)continue;covered++;for(const t of [0,.25,.5,.75,1]){const f=at(b,t);if([f.a,f.d].some(r=>![r.x,r.y,r.z,r.rot,...r.angles].every(Number.isFinite)))invalid++;}}}
+ let custom=0,shared=0,edges=0,covered=0,invalid=0,contactSamples=0,contactReview=0,contactEdges=0,missing=[];
+ for(const n of nodes){const d=descriptor(n),clip=build(null,n);if(clip){if(d.custom)custom++;else shared++;}else missing.push(n.id);for(const [id] of n.next){edges++;const b=build(n,A[id]);if(!b)continue;covered++;let edgeReview=false;for(const t of [0,.25,.5,.75,1]){const f=at(b,t);if([f.a,f.d].some(r=>![r.x,r.y,r.z,r.rot,...r.angles].every(Number.isFinite)))invalid++;if(f.contact){const err=contactSolve(skeleton(f.a),skeleton(f.d),f.contact);contactSamples++;if(err>2){contactReview++;edgeReview=true;}}}if(edgeReview)contactEdges++;}}
  $('nodeCount').textContent=nodes.length;$('edgeCount').textContent=edges;$('customCount').textContent=custom;$('sharedCount').textContent=shared;$('coveredCount').textContent=covered;$('missingCount').textContent=edges-covered;
- $('coverageText').textContent=custom+' custom-node mappings, '+shared+' shared-node mappings. '+covered+' of '+edges+' authored edges compose a clip. '+invalid+' non-finite sampled poses. '+(missing.length?'Unmapped nodes: '+missing.join(', '):'No unmapped graph nodes.')+' Visual quality is not assessed by this check.';
- return{nodes:nodes.length,edges,custom,shared,covered,invalid,missing};
+ $('coverageText').textContent=custom+' custom-node mappings, '+shared+' shared-node mappings. '+covered+' of '+edges+' authored edges compose a clip. '+invalid+' non-finite sampled poses. '+contactReview+' of '+contactSamples+' sampled contact poses exceed 2 px ('+contactEdges+' edges need contact review). '+(missing.length?'Unmapped nodes: '+missing.join(', '):'No unmapped graph nodes.')+' Visual quality is not assessed by this check.';
+ return{nodes:nodes.length,edges,custom,shared,covered,invalid,contactSamples,contactReview,contactEdges,missing};
 }
 window.RingAnimationLab={descriptor,build,at,audit,skeleton,contactSolve};
 function draw(now){
- if(playing&&anim){if(last)progress+=Math.min(80,now-last)*Number($('speed').value)/anim.duration;last=now;if(progress>=1){if($('loop').checked)progress=0;else{progress=1;playing=false}}}
+ if(playing&&anim){if(last)progress+=Math.min(80,now-last)*Number($('speed').value)/anim.duration;last=now;if(progress>=1){if($('loop').checked)progress=0;else{progress=1;playing=false;$('pause').textContent='Resume'}}}
  backdrop(now);const f=anim?at(anim,progress):neutral(),a=skeleton(f.a),d=skeleton(f.d),err=contactSolve(a,d,f.contact);
  const lead=anim?.lead||'w';const arr=[{s:a,side:lead},{s:d,side:other(lead)}].sort((a,b)=>a.s.ground.y-b.s.ground.y);
  const inside=q=>q.s.ground.x>=100&&q.s.ground.x<=380&&q.s.ground.y<=196;
  for(const q of arr.filter(inside))wrestler(q.s,q.side);frontRopes();for(const q of arr.filter(q=>!inside(q)))wrestler(q.s,q.side);
- if(anim){$('stage').textContent=f.stage;$('elapsed').textContent=(anim.duration*progress/1000).toFixed(2)+' s';$('scrub').value=String(Math.round(progress*1000));$('contact').textContent=f.contact?'Contact target: '+f.contact+' · reach residual '+err.toFixed(1)+' px'+(err>2?' (review)':''):'No active contact constraint';}
+ if(anim){$('stage').textContent=f.stage;$('elapsed').textContent=(anim.duration*progress/1000).toFixed(2)+' s';$('scrub').value=String(Math.round(progress*1000));$('contact').textContent=f.contact?'Contact target: '+f.contact+' · '+(f.contact==='strike'?'nearest limb distance ':'reach residual ')+err.toFixed(1)+' px'+(err>2?' (review)':''):'No active contact constraint';}
  requestAnimationFrame(draw);
 }
 audit();refreshSources();requestAnimationFrame(draw);
