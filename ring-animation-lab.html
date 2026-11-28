@@ -46,7 +46,7 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 <h2>Coverage and quality</h2><p id="coverageText" class="muted">Loading graph…</p><p class="muted">Custom clips have explicitly selected poses and timings. Shared clips are procedural candidates for review, not finished unique move animations. No generic fallback is used for unmapped families. Coverage does not certify anatomical realism.</p>
 </div></section>
 <section class="panel view"><h2>Ringside camera · 400px max</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Two articulated wrestlers previewing the chosen transition"></canvas></div><div class="bar"><span id="clipName">Loading…</span><span id="stage" class="gold">—</span></div><div class="pad"><input class="scrub" id="scrub" type="range" min="0" max="1000" value="0" aria-label="Animation timeline"><div class="bar"><span id="elapsed">0.00 s</span><span id="duration">—</span></div><p id="line" class="gold"></p></div><div class="inspect"><div id="kind" class="cyan"></div><div id="state" class="trace"></div><div id="contact" class="muted"></div></div></section></div>
-<p class="muted">Isolated lab; no save data, no engine changes. Gold and blue are temporary test wrestlers. Exact contact, bespoke move choreography and live playback integration still require review.</p></main></div>
+<p class="muted">Isolated lab; no save data, no engine changes. Gold and blue are temporary test wrestlers in the inspector; full match playback uses the chosen roster. Exact contact and bespoke move choreography still require review.</p></main></div>
 <template id="matchTemplate"><header><h1>THE OFFICE <small>RING ANIMATION LAB / LIVE MATCH</small></h1><small>V3 • FULL MATCH PLAYBACK</small></header>
 <main>
 <div class="controls">
@@ -60,7 +60,7 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 <div class="strap"><div class="worker"><img id="wPortrait" alt=""><div><b id="wName">Your wrestler</b><small id="wStyle">—</small><div class="meter"><span id="wEnergy"></span></div></div></div><div class="clock"><strong id="clock">00:00</strong><small id="phase">Waiting</small></div><div class="worker"><img id="fPortrait" alt=""><div><b id="fName">Opponent</b><small id="fStyle">—</small><div class="meter"><span id="fEnergy"></span></div></div></div></div>
 <section class="panel commentary"><h2>Live commentary</h2><div class="action"><span class="status" id="venue">THE ARENA</span><strong id="action">Ready for the entrances</strong><span id="detail" class="muted">Select a bout and run the real engine.</span></div><h2>Commentary archive / engine trace</h2><div class="log" id="log" tabindex="0" aria-label="Match event log"></div></section>
 <aside class="panel ringside"><h2>Ringside · ring view</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Retro pixel-art view of the ring, wrestlers, referee, ringside and entrance aisle"></canvas></div><div class="ringbar"><span>RINGSIDE CAM</span><span>400 × 227 px max</span></div><div class="info"><div class="stats"><div><small>Crowd</small><b id="crowd">—</b></div><div><small>Rating</small><b id="rating">—</b></div><div><small>Graph actions</small><b id="count">0</b></div><div><small>Control</small><b id="control">—</b></div></div><div class="status" id="physical">Location: —</div></div><div class="transport"><button id="pause" disabled>Pause</button><button id="step" disabled>Step</button><label>Playback <select id="speed"><option value=".5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div><div id="decision" class="decision" hidden></div></aside></div>
-<p class="note">Live engine: the existing match graph, commentary, decisions and after-the-bell resolver run in an opaque-origin sandbox. The engine provides zones, control, grips and grounded states, not precise coordinates or full-body animation. The arena uses visual approximations of those states, including the character silhouettes, walking routes and move-family animations. The graph animation laboratory is available from the navigation above. No main game UI, saves or navigation are used.</p>
+<p class="note">Live engine: the existing match graph, commentary, decisions and after-the-bell resolver run in an opaque-origin sandbox. The engine provides zones, control, grips and grounded states, not precise coordinates or full-body animation. The articulated rig visualises known graph events, including the final physical locations; special events and entrances/exits retain presentation poses. Exact move choreography and contact still require review. The graph animation laboratory is available from the navigation above. No main game UI, saves or navigation are used.</p>
 </main></template>
 <script>
 (function(){'use strict';
@@ -411,7 +411,7 @@ const canvas=$('arena'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=fa
 const col={w:'#f1ce76',f:'#d1e9f4',ref:'#e3e5e9'};
 const ring={l:280,r:690,t:151,b:413};
 const curtain={x:484,y:21};
-let rigAnim=null,rigStart=0,rigPrevious=null,rigLead='w',rigDuration=1,rigHeld=null;let M=null,c=null,after=null,afterSeen=0,seq=0,buffer=[],timer=0,paused=false,active=false,waiting=false,mode='idle',entered=0,seenEvent=null,totalEvents=0,gen=0,banks=[],speech=null,impact=null,refPose='stand',lastMove='',lastEvent=null,afterChoice=null;
+let rigAnim=null,rigStart=0,rigPrevious=null,rigLead='w',rigDuration=1,rigHeld=null,rigPausedAt=null;let M=null,c=null,after=null,afterSeen=0,seq=0,buffer=[],timer=0,paused=false,active=false,waiting=false,mode='idle',entered=0,seenEvent=null,totalEvents=0,gen=0,banks=[],speech=null,impact=null,refPose='stand',lastMove='',lastEvent=null,afterChoice=null;
 let world={w:makeActor('w'),f:makeActor('f'),ref:makeActor('ref')};
 function makeActor(side){return {side,x:curtain.x,y:curtain.y,tx:curtain.x,ty:curtain.y,angle:0,pose:'stand',visible:side==='ref',walk:false,fromX:curtain.x,fromY:curtain.y,start:0,duration:1};}
 function resetWorld(){world={w:makeActor('w'),f:makeActor('f'),ref:makeActor('ref')};Object.assign(world.ref,{x:475,y:214,tx:475,ty:214,fromX:475,fromY:214});speech=null;impact=null;refPose='stand';}
@@ -453,7 +453,8 @@ function snapshot(e){
  $('physical').textContent='Zones: '+(p.locations?.w||e.position||'unknown')+' / '+(p.locations?.f||e.position||'unknown')+(p.grip?' • '+p.grip:'')+(e.down?' • '+(e.down==='w'?M.w.short:M.f.short)+' down':'');
  $('control').textContent=s==='w'?M.w.short:s==='f'?M.f.short:'Neutral';
 }
-function eventFrame(e){totalEvents++;const n=E.GRAPH.A[e.id];const lead=e.preControl==='w'||e.preControl==='f'?e.preControl:e.control==='f'?'f':'w';if(n){rigAnim=rig.build(rigPrevious,n,lead);if(rigAnim){if(rigHeld){const start=rigAnim.seq[0],swap=rigLead!==lead;start.a=swap?rigHeld.d:rigHeld.a;start.d=swap?rigHeld.a:rigHeld.d;}rigStart=performance.now();rigDuration=rigAnim.duration/Number($('speed').value);rigLead=lead;rigHeld=rig.at(rigAnim,1);}rigPrevious=n;}else{rigAnim=null;rigHeld=null;rigPrevious=null;}lastEvent=e;lastMove=E.GRAPH.A[e.id]?.name||e.id.replaceAll('_',' ');phase('Wrestling');snapshot(e);setStatus(lastMove,(e.preControl==='w'?M.w.short:e.preControl==='f'?M.f.short:'Exchange')+' • '+(e.arc||'match').replaceAll('_',' '));log(stamp(e.t),'GRAPH · '+lastMove,'event');stats(stamp(e.t));}
+function fitEndpoint(anim,e,lead){const end=anim.seq.at(-1);for(const [key,side] of [['a',lead],['d',lead==='w'?'f':'w']]){const zone=e.physical?.locations?.[side],p=end[key];if(zone==='floor'){p.x=side===lead?153:184;p.y=e.physical?.area==='ramp'?-65:30;p.z=0;}else if(zone==='apron'){p.x=side===lead?116:137;p.y=26;p.z=0;}else if(zone==='top'){p.x=side===lead?82:94;p.y=-39;p.z=20;}else if(zone==='ring'&&p.x>108){p.x=side===lead?-22:22;p.y=4;p.z=0;}if(e.down===side&&zone!=='top'){p.angles=rig.R(0,0,0,'flat').angles;p.z=0;}}if(e.physical&&'grip' in e.physical)end.contact=e.physical.grip||'';}
+function eventFrame(e){totalEvents++;const n=E.GRAPH.A[e.id];const lead=e.preControl==='w'||e.preControl==='f'?e.preControl:e.control==='f'?'f':'w';if(n){rigAnim=rig.build(rigPrevious,n,lead);if(rigAnim){if(rigHeld){const start=rigAnim.seq[0],swap=rigLead!==lead;start.a=swap?rigHeld.d:rigHeld.a;start.d=swap?rigHeld.a:rigHeld.d;}rigStart=performance.now();rigPausedAt=paused?rigStart:null;rigDuration=rigAnim.duration/Number($('speed').value);rigLead=lead;fitEndpoint(rigAnim,e,lead);rigHeld=rig.at(rigAnim,1);}rigPrevious=n;}else{rigAnim=null;rigHeld=null;rigPrevious=null;}lastEvent=e;lastMove=E.GRAPH.A[e.id]?.name||e.id.replaceAll('_',' ');phase('Wrestling');snapshot(e);setStatus(lastMove,(e.preControl==='w'?M.w.short:e.preControl==='f'?M.f.short:'Exchange')+' • '+(e.arc||'match').replaceAll('_',' '));log(stamp(e.t),'GRAPH · '+lastMove,'event');stats(stamp(e.t));}
 function lineFrame(l){
  const t=l.t||stamp(M.t);
  if(mode==='entrance'&&entered<2){const side=entered++===0?'f':'w';enterRing(side);phase('Entrances');}
@@ -530,7 +531,7 @@ function process(){
 }
 function schedule(delay){clearTimeout(timer);if(!active||paused||waiting)return;timer=setTimeout(()=>{try{const d=process();if(d)schedule(d/Number($('speed').value));}catch(e){active=false;$('start').disabled=false;fail(e);}},Math.max(30,delay));}
 function start(){
- rigAnim=null;rigHeld=null;rigPrevious=null;clearTimeout(timer);gen++;const current=gen;active=false;clearDecision();$('error').hidden=true;$('log').replaceChildren();resetWorld();M=null;after=null;buffer=[];totalEvents=0;seenEvent=null;entered=0;lastEvent=null;lastMove='';afterChoice=null;banks=[];paused=false;mode='entrance';
+ rigAnim=null;rigHeld=null;rigPrevious=null;rigPausedAt=null;clearTimeout(timer);gen++;const current=gen;active=false;clearDecision();$('error').hidden=true;$('log').replaceChildren();resetWorld();M=null;after=null;buffer=[];totalEvents=0;seenEvent=null;entered=0;lastEvent=null;lastMove='';afterChoice=null;banks=[];paused=false;mode='entrance';
  G.fresh({manager:'Ring Lab',stable:'Test Stable'});
  const w={...D.TALENT.find(x=>x.id===$('worker').value)};G.S.roster.push(w);
  const f=G.F($('opponent').value),p=G.P($('promotion').value);
@@ -545,8 +546,8 @@ function start(){
  active=true;$('pause').textContent='Pause';$('pause').disabled=false;$('step').disabled=false;$('start').disabled=true;schedule(50);
 }
 $('start').onclick=()=>{try{start();}catch(e){active=false;$('start').disabled=false;fail(e);}};
-$('pause').onclick=()=>{if(!active)return;paused=!paused;$('pause').textContent=paused?'Resume':'Pause';if(paused)clearTimeout(timer);else schedule(50);};
-$('step').onclick=()=>{if(!active||waiting)return;paused=true;$('pause').textContent='Resume';clearTimeout(timer);try{process();}catch(e){active=false;$('start').disabled=false;fail(e);}};
+$('pause').onclick=()=>{if(!active)return;paused=!paused;$('pause').textContent=paused?'Resume':'Pause';if(paused){clearTimeout(timer);rigPausedAt=performance.now();}else{if(rigPausedAt!==null){const delta=performance.now()-rigPausedAt;rigStart+=delta;rigPausedAt=null;schedule(Math.max(50,rigAnim?rigDuration-(performance.now()-rigStart):50));}else schedule(50);}};
+$('step').onclick=()=>{if(!active||waiting)return;paused=true;rigPausedAt=performance.now();$('pause').textContent='Resume';clearTimeout(timer);try{process();if(rigAnim){rigPausedAt=rigStart+rigDuration;}}catch(e){active=false;$('start').disabled=false;fail(e);}};
 $('start').disabled=false;
 // The match engine remains in world coordinates. This low-resolution camera
 // compresses the peripheral seating and renders a perspective ring on a 480px canvas.
@@ -672,7 +673,7 @@ function draw(now){
  const behind=a=>a.y<ring.t,inside=a=>a.y>=ring.t&&a.y<=ring.b+4&&a.x>=ring.l-8&&a.x<=ring.r+8;
  if(!(mode==='live'&&rigAnim))for(const a of arr.filter(behind))actor(a,now);
  if(mode==='live'&&rigAnim){
- const p=Math.max(0,Math.min(1,(now-rigStart)/rigDuration)),frame=rig.at(rigAnim,p),resolved=rig.resolveFrame(frame,rigAnim.desc.clip),items=[{s:resolved.a,side:rigLead},{s:resolved.d,side:rigLead==='w'?'f':'w'}].sort((a,b)=>a.s.ground.y-b.s.ground.y);
+ const p=Math.max(0,Math.min(1,((rigPausedAt??now)-rigStart)/rigDuration)),frame=rig.at(rigAnim,p),resolved=rig.resolveFrame(frame,rigAnim.desc.clip),items=[{s:resolved.a,side:rigLead},{s:resolved.d,side:rigLead==='w'?'f':'w'}].sort((a,b)=>a.s.ground.y-b.s.ground.y);
  actor(world.ref,now);for(const q of items.filter(q=>q.s.ground.x>=100&&q.s.ground.x<=380&&q.s.ground.y<=196))rig.wrestler(q.s,q.side,world[q.side].look,M[q.side].short);
  frontRopes();for(const q of items.filter(q=>q.s.ground.x<100||q.s.ground.x>380||q.s.ground.y>196))rig.wrestler(q.s,q.side,world[q.side].look,M[q.side].short);
  }else{for(const a of arr.filter(inside))actor(a,now);frontRopes();for(const a of arr.filter(a=>!behind(a)&&!inside(a)))actor(a,now);}
