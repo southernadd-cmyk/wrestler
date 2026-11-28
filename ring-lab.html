@@ -42,8 +42,8 @@ if(window.parent===window||window.origin!=='null'){
 }
 const scripts=["assets/js/portrait-age-map.js","assets/js/portraits.js","assets/js/data.js","assets/js/roster-registry.js","assets/js/promo-identity.js","assets/js/psychology-fuzzy.js","assets/js/planning-fuzzy.js","assets/js/promo-fuzzy.js","assets/js/promo-director.js","assets/js/promo-dialogue.js","assets/js/promo-semantics.js","assets/js/promo-rookie-claims.js","assets/js/promo-bank-manifest.js","assets/js/promo-bank-loader.js","assets/js/planning-dialogue.js","assets/js/academy-register.js","assets/js/academy.js","assets/js/technique-registry.js","assets/js/technique-backgrounds.js","assets/js/match-catalog.js","assets/js/graph-narration.js","assets/js/match-graph.js","assets/js/match-commentary.js","assets/js/match-engine.js","assets/js/career.js","assets/js/territory.js","assets/js/living-world.js","assets/js/story.js","assets/js/memory.js","assets/js/sheets.js","assets/js/agents-room.js","assets/js/promo-duel.js","assets/js/relationships.js","assets/js/rivalry.js","assets/js/ambitions.js","assets/js/booking-office.js","assets/js/rival-managers.js","assets/js/promotion-business.js","assets/js/programmes.js","assets/js/approaches.js","assets/js/after-bell.js","assets/js/ringside.js","assets/js/rival-corner.js","assets/js/disqualify.js","assets/js/stipulations.js","assets/js/negotiation-v2.js","assets/js/signing.js","assets/js/promo-segments.js","assets/js/mouthpiece.js","assets/js/programme-arcs.js","assets/js/outcome.js","assets/js/night-report.js","assets/js/negotiation-career.js","assets/js/ringfax.js"];
 const fail=e=>{$('error').hidden=false;$('error').textContent='Ring lab error: '+(e?.message||String(e));$('pause').disabled=true;$('step').disabled=true;};
-function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error('Could not load '+src));document.head.append(s);});}
-(async()=>{for(const src of scripts)await loadScript(src);boot();})().catch(fail);
+function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.async=false;s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error('Could not load '+src));document.head.append(s);});}
+(async()=>{await Promise.all(scripts.map(loadScript));boot();})().catch(fail);
 function boot(){
 const D=window.OfficeData,E=window.OfficeMatch,G=window.OfficeGame,A=window.OfficeAfter;
 if(!D||!E||!G||!A)throw Error('Production engine did not initialise');
@@ -56,9 +56,12 @@ let world={w:makeActor('w'),f:makeActor('f'),ref:makeActor('ref')};
 function makeActor(side){return {side,x:curtain.x,y:curtain.y,tx:curtain.x,ty:curtain.y,angle:0,pose:'stand',visible:side==='ref',walk:false,fromX:curtain.x,fromY:curtain.y,start:0,duration:1};}
 function resetWorld(){world={w:makeActor('w'),f:makeActor('f'),ref:makeActor('ref')};Object.assign(world.ref,{x:475,y:214,tx:475,ty:214,fromX:475,fromY:214});speech=null;impact=null;refPose='stand';}
 resetWorld();
-function move(side,x,y,pose='stand',duration=450){
- const a=world[side];a.visible=true;a.fromX=a.x;a.fromY=a.y;a.tx=x;a.ty=y;a.start=performance.now();a.duration=duration/Number($('speed').value);a.walk=Math.hypot(a.x-x,a.y-y)>12;a.pose=pose;
+function move(side,x,y,pose='stand',duration=450,waypoints=[]){
+ const a=world[side];a.visible=true;a.fromX=a.x;a.fromY=a.y;a.tx=x;a.ty=y;a.start=performance.now();a.duration=duration/Number($('speed').value);a.path=[[a.x,a.y],...waypoints,[x,y]];a.lengths=a.path.slice(1).map((p,i)=>Math.hypot(p[0]-a.path[i][0],p[1]-a.path[i][1]));a.distance=a.lengths.reduce((sum,n)=>sum+n,0);a.walk=a.distance>12;a.pose=pose;
 }
+function enterRing(side){const a=world[side];Object.assign(a,{x:484,y:29,tx:484,ty:29});move(side,side==='w'?356:613,side==='w'?345:220,'stand',2600,[[484,113],[250,113],[250,405],[302,388]]);}
+function exitRing(side){const a=world[side];if(!a.visible||a.leaving)return;a.leaving=true;move(side,484,28,'stand',2200,[[302,388],[250,405],[250,113],[484,113]]);}
+function winner(){const actual=M.graph?.outcome?.winner;if(actual==='w'||actual==='f')return actual;if(M.outcome==='nc')return null;if(M.outcome==='double')return 'w';if(M.outcome==='dq')return 'f';return D.FINISHES[c.finish]?.win?'w':'f';}
 function addOptions(el,items,selected){
  el.replaceChildren();for(const [id,label] of items){const o=document.createElement('option');o.value=id;o.textContent=label;el.append(o);}if(selected)el.value=selected;
 }
@@ -93,10 +96,10 @@ function snapshot(e){
 function eventFrame(e){totalEvents++;lastEvent=e;lastMove=E.GRAPH.A[e.id]?.name||e.id.replaceAll('_',' ');phase('Wrestling');snapshot(e);setStatus(lastMove,(e.preControl==='w'?M.w.short:e.preControl==='f'?M.f.short:'Exchange')+' • '+(e.arc||'match').replaceAll('_',' '));log(stamp(e.t),'GRAPH · '+lastMove,'event');stats(stamp(e.t));}
 function lineFrame(l){
  const t=l.t||stamp(M.t);
- if(mode==='entrance'&&entered<2){const side=entered++===0?'f':'w';const a=world[side];Object.assign(a,{x:484,y:29,tx:484,ty:29});move(side,side==='w'?356:613,side==='w'?345:220,'stand',1800);phase('Entrances');}
+ if(mode==='entrance'&&entered<2){const side=entered++===0?'f':'w';enterRing(side);phase('Entrances');}
  if(mode==='entrance'&&l.kind==='bell'){mode='live';move('w',427,290,'guard');move('f',541,290,'guard');phase('Wrestling');}
- if(l.kind==='count'){refPose='kneel';world.ref.pose='kneel';}
- else if(l.kind==='bell')refPose='stand';
+ if(l.kind==='count'){refPose='kneel';world.ref.pose='kneel';if(M.stage==='over'&&/cover|\bONE!|\bTWO!|\bTHREE!|TAPS!/i.test(l.text)){const win=winner();if(win){const lose=win==='w'?'f':'w';move(lose,482,292,'down');move(win,win==='w'?458:507,290,'kneel');move('ref',528,247,'kneel');phase(/TAPS!/i.test(l.text)?'Submission':'The finish');}}}
+ else if(l.kind==='bell'){refPose='stand';world.ref.pose='stand';}
  if(M.stage==='over'&&l.kind==='bell'){mode='result';phase('The bell');}
  const voices={pbp:'Gloria',colour:'Vic',runner:'Backstage'};
  log(t,(voices[l.who]?voices[l.who]+' · ':'')+l.text,l.kind==='rating'?'speech':'');
@@ -116,14 +119,14 @@ function clearDecision(){waiting=false;$('decision').hidden=true;$('decision').r
 function choice(title,options,choose,preferred){
  const el=$('decision');el.hidden=false;el.replaceChildren();const h=document.createElement('strong');h.textContent=title;el.append(h);waiting=true;
  for(const o of options){const b=document.createElement('button');b.textContent=o.label||o.id;b.onclick=()=>{if(!waiting)return;clearDecision();choose(o.id);if(active&&!paused)schedule(50);};el.append(b);}
- if($('auto').checked&&options.length){const o=options.find(x=>preferred.includes(x.id))||options[0];clearDecision();choose(o.id);}
+ if($('auto').checked&&options.length){const o=preferred.map(id=>options.find(x=>x.id===id)).find(Boolean)||options[0];clearDecision();choose(o.id);}
 }
 function afterStart(){
- mode='after';phase('After the bell');const win=M.graph?.outcome?.winner||M.finishReceipt?.finisher||(M.outcome==='booked'?(D.FINISHES[c.finish]?.win?'w':'f'):null);
+ mode='after';phase('After the bell');const win=winner();
  move('w',431,290,win==='w'?'celebrate':'stand');move('f',537,290,win==='f'?'celebrate':'stand');move('ref',484,235,'stand');
  $('rating').textContent=M.final.stars.toFixed(2)+' / 5';setStatus('After the bell','The real post-match resolver now takes over.');
  after=A.begin(c,A.capture(M.final,{}),null);if(!after)throw Error('After-the-bell engine could not initialise');
- if(banks.length)A.attachDialogue(after,banks);
+ A.attachDialogue(after,banks);
  afterSeen=0;enqueueAfter();
 }
 function enqueueAfter(){
@@ -134,9 +137,18 @@ function enqueueAfter(){
  else buffer.push({kind:'afterDecision'});
 }
 function afterLine(l){
- const t=stamp(M.t);log(t,(l.who?l.who+' · ':'')+l.text,l.who?'speech':'');setStatus(l.who?l.who+' has the microphone':'After the bell',l.text);
- if(l.side==='w'||l.side==='f'){speech={side:l.side,text:l.text};move(l.side,l.side==='w'?429:539,285,'talk');}
- else{speech=null;if(afterChoice==='staredown'){move('w',459,286,'guard');move('f',509,286,'guard');}else if(afterChoice==='handshake'){move('w',455,290,'grapple');move('f',513,290,'grapple');}}
+ const t=stamp(M.t),spoken=(l.side==='w'||l.side==='f')&&(/^[“"]/.test(l.text)||!!l.lineId);
+ log(t,(l.who?l.who+' · ':'')+l.text,spoken?'speech':'');setStatus(spoken?l.who+' speaks':'After the bell',l.text);
+ if(spoken){speech={side:l.side,text:l.text};if(!world[l.side].leaving)move(l.side,l.side==='w'?429:539,285,'talk');}
+ else{speech=null;
+  if(l.side==='w'||l.side==='f'){
+   if(/\b(?:walks|heads|slides|climbs|leaves|rolls)\b.*(?:out|aisle|curtain|backstage)/i.test(l.text)){exitRing(l.side);}
+   else if(!world[l.side].leaving)move(l.side,l.side==='w'?439:529,289,'stand');
+  }else{
+   if(afterChoice==='staredown'){if(!world.w.leaving)move('w',459,286,'guard');if(!world.f.leaving)move('f',509,286,'guard');}
+   else if(afterChoice==='handshake'){if(!world.w.leaving)move('w',455,290,'grapple');if(!world.f.leaving)move('f',513,290,'grapple');}
+  }
+ }
 }
 function finishRun(){active=false;paused=false;mode='complete';speech=null;world.w.visible=false;world.f.visible=false;phase('Complete');setStatus('Both wrestlers have left the arena','Match complete • '+M.final.stars.toFixed(2)+' / 5 • '+(M.final.finishRoute||M.final.outcome));$('pause').disabled=true;$('step').disabled=true;$('start').disabled=false;clearDecision();}
 function process(){
@@ -145,13 +157,13 @@ function process(){
  const frame=buffer.shift();if(!frame)return 100;
  switch(frame.kind){
  case 'event':eventFrame(frame.e);return 690;
- case 'line':lineFrame(frame.l);return mode==='entrance'?1700:frame.l.kind==='bell'?1000:550+Math.min(1000,(frame.l.pause||0)*250);
+ case 'line':lineFrame(frame.l);return mode==='entrance'?(entered<=2&&frame.l.t==='00:00'&&/comes out first|Here comes/.test(frame.l.text)?2800:650):frame.l.kind==='bell'?1000:550+Math.min(1000,(frame.l.pause||0)*250);
  case 'decision':choice(M.decision.prompt||M.decision.title||'Ringside decision',M.decision.options,id=>E.resolve(M,id),['home','protect','cut','job','stop']);return 700;
  case 'afterStart':afterStart();return 900;
  case 'afterLine':afterLine(frame.l);return frame.l.who?2300:1500;
  case 'afterDecision':{const v=A.view(after);choice(v.ask||v.title,v.options,id=>{if(v.stage==='angle'){afterChoice=id;A.choose(after,id);}else if(v.stage==='follow')A.continueAngle(after,id);else A.speak(after,id);enqueueAfter();},v.stage==='angle'?['staredown','handshake']:v.stage==='follow'?['defuse']:['credit','concede','rematch']);return 700;}
- case 'exitF':speech=null;phase('Exits');setStatus(M.f.name+' leaves the ring','Presentation: return to the curtain');move('f',484,28,'stand',2100);return 2400;
- case 'exitW':world.f.visible=false;setStatus(M.w.name+' leaves the ring','Presentation: return to the curtain');move('w',484,28,'stand',2100);return 2400;
+ case 'exitF':speech=null;phase('Exits');setStatus(M.f.name+' leaves the ring','Presentation: return to the curtain');exitRing('f');return 2400;
+ case 'exitW':world.f.visible=false;setStatus(M.w.name+' leaves the ring','Presentation: return to the curtain');exitRing('w');return 2400;
  case 'complete':finishRun();return 0;
  default:return 100;
  }
@@ -209,7 +221,7 @@ function backdrop(){
  }
 function actor(a,now){
  if(!a.visible)return;
- const k=Math.min(1,Math.max(0,(now-a.start)/a.duration)),e=k*k*(3-2*k);a.x=a.fromX+(a.tx-a.fromX)*e;a.y=a.fromY+(a.ty-a.fromY)*e;
+ const k=Math.min(1,Math.max(0,(now-a.start)/a.duration));
  const other=world[a.side==='w'?'f':'w'];const facing=other.x>=a.x?1:-1;
  const walking=a.walk&&k<1,foot=walking?Math.sin(now/85)*5:0;
  const isRef=a.side==='ref',color=col[a.side],skin=isRef?'#c8a184':a.side==='w'?'#b88967':'#cda17f';
@@ -225,15 +237,17 @@ function actor(a,now){
  ctx.restore();
  if(!isRef){label(M?.[a.side]?.short||a.side,a.x,a.y+25,'#152337',13);label(M?.[a.side]?.short||a.side,a.x,a.y+24,color,12);}
 }
+function updateActor(a,now){if(!a.visible)return;const k=Math.min(1,Math.max(0,(now-a.start)/a.duration));const e=k*k*(3-2*k);if(a.path&&a.distance>0){let d=a.distance*e,i=0;while(i<a.lengths.length-1&&d>a.lengths[i]){d-=a.lengths[i];i++;}const p=a.path[i],q=a.path[i+1],t=a.lengths[i]?Math.min(1,d/a.lengths[i]):1;a.x=p[0]+(q[0]-p[0])*t;a.y=p[1]+(q[1]-p[1])*t;}else{a.x=a.fromX+(a.tx-a.fromX)*e;a.y=a.fromY+(a.ty-a.fromY)*e;}if(a.leaving&&k>=1)a.visible=false;}
 function draw(now){
  backdrop();
+ for(const a of Object.values(world))updateActor(a,now);
  const arr=Object.values(world).sort((a,b)=>a.y-b.y);
  const inside=a=>a.y>=ring.t-12&&a.y<=ring.b+4&&a.x>=ring.l-8&&a.x<=ring.r+8;
  for(const a of arr.filter(inside))actor(a,now);
  for(let z=0;z<3;z++)line(ring.l,ring.b-9+z*5,ring.r,ring.b-9+z*5,'#e8ecee',2);
  for(const a of arr.filter(a=>!inside(a)))actor(a,now);
  if(impact&&now<impact.until){ctx.strokeStyle='#fff0a1';ctx.lineWidth=2;ctx.beginPath();ctx.arc(impact.x,impact.y,13+(impact.until-now)*.015,0,Math.PI*2);ctx.stroke();}
- if(speech&&world[speech.side].visible){const a=world[speech.side];const x=Math.max(190,Math.min(585,a.x-95)),y=Math.max(85,a.y-100),width=210;rect(x,y,width,46,'#101a2e');ctx.strokeStyle='#e8c780';ctx.strokeRect(x,y,width,46);label(M[speech.side].short+' SPEAKING',x+width/2,y+17,'#edce89',12);label('MICROPHONE',x+width/2,y+34,'#e4e8ed',10);}
+ if(speech&&world[speech.side].visible&&!world[speech.side].leaving){const a=world[speech.side];const x=Math.max(190,Math.min(585,a.x-95)),y=Math.max(85,a.y-100),width=210;rect(x,y,width,46,'#101a2e');ctx.strokeStyle='#e8c780';ctx.strokeRect(x,y,width,46);label(M[speech.side].short+' SPEAKING',x+width/2,y+17,'#edce89',12);label('MICROPHONE',x+width/2,y+34,'#e4e8ed',10);}
  requestAnimationFrame(draw);
 }
 requestAnimationFrame(draw);
