@@ -115,7 +115,7 @@ if(params.get('frame')!=='1'){
   if(!cache.has(d.path))cache.set(d.path,new Promise(resolve=>{const img=new Image();img.onload=()=>{try{resolve(samplePortrait(img))}catch(_){resolve(null)}};img.onerror=()=>resolve(null);img.src=d.path;}));
   cache.get(d.path).then(skin=>{if(!skin)cache.delete(d.path);e.source.postMessage({type:'ring-skin-result',token:d.token,skin},'*');});
  });
- frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=623';return
+ frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=624';return
 }
 $('lab').hidden=false;
 if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
@@ -311,10 +311,72 @@ const superSpecs={
 const floorSpecs={
  os_barricade:['grab','chop','upper-body','sell',0,0],os_post:['headlock','grab','head','sell',0,0],os_post_leg:['crouch','grab','leg','seated',0,0],os_apron_knee:['guard','knee','strike','sell',0,0],os_apron_ddt:['headlock','flat','front-facelock','fall',6,0],os_floor_piledriver:['carry','seated','rear-waist','inverted',20,0],os_ramp_suplex:['lift','bridge','front-facelock','inverted',25,0],os_barricade_spear:['run','pin','body','fall',5,0],os_floor_chop:['guard','chop','strike','sell',0,0],os_steps:['grab','chop','upper-body','fall',0,0],os_apron_slam:['carry','kneel','upper-body','flat',22,0],os_crowd_brawl:['guard','punch','strike','sell',0,0],os_headbutt:['crouch','headbutt','strike','sell',0,0],os_apron_forearm:['guard','elbow','strike','sell',0,0],os_ropes_choke:['grab','headlock','head','crouch',0,0],os_apron_kick:['guard','kick','strike','sell',0,0],os_count_tease:['run','guard','','guard',0,0]
 };
+// Each authored sequence below uses move-specific setup, action and
+// recovery poses rather than the broad family fallback. Coordinates are
+// in the existing rig's camera space; grapples retain named contact points.
+const individualMoves={
+ ch_fireman:[[-12,0,0,'crouch',1,0,5,2,8,'crouch',-1,0,'upper-body','Duck under'],[-9,0,0,'carry',1,0,-3,1,22,'flat',-1,15,'upper-body','Across shoulders'],[-12,5,0,'kneel',1,0,16,6,0,'flat',-1,0,'','Turn over shoulder']],
+ ch_snapmare:[[-10,0,0,'headlock',-1,0,7,2,0,'guard',-1,0,'head','Catch the head'],[-7,3,0,'kneel',-1,0,2,2,15,'tuck',-1,90,'head','Flip over shoulder'],[-9,6,0,'kneel',-1,0,-22,7,0,'seated',-1,0,'','Seated landing']],
+ ch_deep_arm_drag:[[-13,1,0,'wrist',1,0,10,2,0,'grab',-1,0,'wrist','Deep arm grip'],[-4,6,0,'kneel',1,0,-1,2,18,'fall',-1,100,'wrist','Drop under arm'],[-8,7,0,'kneel',1,0,-28,8,0,'flat',-1,0,'','Throw past hip']],
+ ch_japanese_arm_drag:[[-12,0,0,'wrist',1,0,10,2,0,'grab',-1,0,'wrist','Catch wrist'],[-4,3,10,'tuck',1,90,5,2,8,'fall',-1,45,'wrist','Leap and pivot'],[12,7,0,'kneel',1,0,-18,7,0,'flat',-1,0,'','Rolling landing']],
+ ch_drop_toehold:[[-17,1,0,'crouch',1,0,8,2,0,'run',-1,0,'','Drop behind feet'],[4,7,0,'flat',1,0,9,3,0,'fall',-1,15,'ground-leg','Trap ankle'],[0,7,0,'seated',1,0,24,8,0,'flat',-1,0,'ground-leg','Face-down fall']],
+ standing_switch:[[-11,0,0,'waist',1,0,4,1,0,'guard',1,0,'rear-waist','Rear hold'],[0,-9,0,'crouch',-1,0,5,2,0,'guard',1,0,'','Circle behind'],[16,0,0,'waist',-1,0,3,1,0,'grab',-1,0,'rear-waist','Switch waist control']],
+ knuckle_lock:[[-18,0,0,'grab',1,0,18,0,0,'grab',-1,0,'wrist','Interlock hands'],[-12,0,0,'lift',1,0,12,0,0,'lift',-1,0,'wrist','Raise linked arms'],[-10,0,0,'grab',1,0,10,0,0,'crouch',-1,0,'wrist','Press down']],
+ knuckle_break:[[-12,0,0,'grab',1,0,12,0,0,'grab',-1,0,'wrist','Linked hands'],[-10,1,0,'bridge',1,0,8,2,0,'grab',-1,0,'wrist','Bridge back'],[-25,0,0,'guard',1,0,22,0,0,'guard',-1,0,'','Release']],
+ ch_top_wristlock:[[-14,0,0,'wrist',1,0,9,2,0,'grab',-1,0,'wrist','Take wrist'],[-9,0,0,'lift',1,0,8,2,0,'sell',-1,0,'wrist','Raise and turn arm'],[-9,1,0,'grab',1,0,10,2,0,'crouch',-1,0,'wrist','Maintain wrist pressure']],
+ ch_drop_down:[[-55,0,0,'run',1,0,12,2,0,'guard',-1,0,'','Run in'],[-2,3,0,'flat',1,0,0,2,16,'spread',-1,0,'','Drop and leapfrog'],[35,0,0,'run',1,0,-25,2,0,'run',-1,0,'','Pass and turn']],
+ ch_headlock_takedown:[[-10,0,0,'headlock',1,0,6,2,0,'crouch',1,0,'head','Side headlock'],[-7,5,0,'kneel',1,0,4,3,9,'fall',1,35,'head','Turn over hip'],[-4,6,0,'seated',1,0,13,7,0,'flat',1,0,'ground-head','Hold on mat']],
+ ch_leg_trip:[[-12,0,0,'grab',1,0,8,2,0,'guard',-1,0,'upper-body','Upper-body control'],[-9,1,0,'kick',1,0,8,2,0,'fall',-1,10,'','Sweep supporting leg'],[-10,4,0,'guard',1,0,23,7,0,'flat',-1,0,'','Fall backwards']],
+ ch_cravate:[[-13,0,0,'grab',1,0,9,2,0,'guard',-1,0,'head','Take neck'],[-8,0,0,'headlock',1,0,7,1,0,'crouch',-1,0,'head','Twist head to side'],[-9,0,0,'headlock',1,0,9,3,0,'sell',-1,0,'head','Keep standing control']],
+ ch_dragon_screw:[[-13,2,0,'grab',1,0,6,2,0,'kick',-1,0,'leg','Catch raised leg'],[-4,5,0,'tuck',1,120,7,2,5,'fall',-1,80,'ground-leg','Turn across knee'],[-9,7,0,'seated',1,0,19,7,0,'flat',-1,0,'ground-leg','Retain leg']],
+ ch_kip_up:[[-17,7,0,'flat',1,0,24,3,0,'guard',-1,0,'','On back'],[-17,5,5,'tuck',1,-140,24,3,0,'guard',-1,0,'','Rock and kick up'],[-17,0,0,'guard',1,0,24,3,0,'sell',-1,0,'','Land upright']],
+ ch_headlock_escape:[[-8,4,0,'seated',1,0,6,7,0,'flat',-1,0,'ground-head','Caught low'],[-7,3,0,'bridge',1,0,8,6,4,'tuck',-1,90,'','Roll through legs'],[-24,0,0,'guard',1,0,23,3,0,'guard',-1,0,'','Free of hold']],
+ ch_rollthrough:[[-12,3,0,'crouch',1,0,14,2,0,'grab',-1,0,'wrist','Caught arm'],[-5,6,0,'tuck',1,180,12,3,0,'crouch',-1,0,'wrist','Forward roll'],[16,0,0,'guard',-1,0,-8,1,0,'guard',1,0,'','Stand on opposite side']],
+ sm_cross_armbreaker:[[-8,4,0,'kneel',1,0,8,6,0,'flat',-1,0,'ground-arm','Capture arm'],[3,6,0,'seated',1,0,10,7,0,'flat',-1,0,'ground-arm','Sit across shoulder'],[3,7,0,'bridge',1,0,12,7,0,'flat',-1,0,'ground-arm','Extend arm']],
+ sm_kimura:[[-10,4,0,'kneel',1,0,9,6,0,'flat',-1,0,'ground-arm','Secure bent arm'],[-2,6,0,'headlock',1,0,11,7,0,'flat',-1,0,'ground-arm','Figure-four grip'],[-4,6,0,'kneel',1,0,12,7,0,'sell',-1,0,'ground-arm','Rotate shoulder']],
+ sm_keylock:[[-7,4,0,'kneel',1,0,9,7,0,'flat',-1,0,'ground-arm','Pin wrist'],[4,5,0,'pin',1,0,9,7,0,'flat',-1,0,'ground-arm','Press arm to mat'],[3,5,0,'crouch',1,0,12,7,0,'flat',-1,0,'ground-arm','Lift elbow']],
+ sm_fujiwara:[[-10,4,0,'kneel',1,0,9,7,0,'flat',-1,0,'ground-arm','Isolate arm'],[0,7,0,'flat',1,0,13,7,0,'flat',-1,0,'ground-arm','Lie beside shoulder'],[-2,6,0,'bridge',1,0,13,7,0,'flat',-1,0,'ground-arm','Pull arm back']],
+ sm_rear_naked:[[-10,3,0,'kneel',1,0,3,4,0,'seated',1,0,'ground-head','Slide behind'],[-7,6,0,'seated',1,0,3,5,0,'seated',1,0,'ground-head','Wrap around neck'],[-8,7,0,'seated',1,0,4,6,0,'sell',1,0,'ground-head','Hold from behind']],
+ sm_stf:[[27,5,0,'kneel',-1,0,10,7,0,'flat',1,0,'ground-leg','Trap leg'],[9,5,0,'pin',-1,0,13,7,0,'flat',1,0,'ground-head','Reach across chin'],[8,5,0,'bridge',-1,0,13,7,0,'flat',1,0,'ground-head','Leg trapped, neck pulled']],
+ sm_abdominal:[[-12,0,0,'grab',1,0,5,2,0,'guard',1,0,'upper-body','Step beside body'],[-8,1,0,'wrist',1,0,4,2,0,'sell',1,0,'upper-body','Hook arm and leg'],[-8,1,0,'grab',1,0,6,3,0,'crouch',1,0,'upper-body','Standing stretch']],
+ sm_bow_arrow:[[-9,5,0,'kneel',1,0,9,7,0,'flat',-1,0,'ground-leg','Catch leg'],[0,7,0,'flat',1,0,5,3,15,'bridge',-1,0,'ground-back','Roll onto back'],[1,7,0,'flat',1,0,7,3,20,'bridge',-1,0,'ground-back','Elevate curved body']],
+ sm_octopus:[[-12,0,0,'grab',1,0,5,2,0,'guard',-1,0,'upper-body','Step around shoulder'],[-2,0,7,'tuck',1,0,7,3,0,'crouch',-1,0,'ground-arm','Hook leg high'],[-3,0,3,'wrist',1,0,8,2,0,'sell',-1,0,'ground-arm','Standing arm stretch']],
+ sm_lion_tamer:[[27,5,0,'kneel',-1,0,10,7,0,'flat',1,0,'ground-leg','Collect legs'],[25,3,0,'lift',-1,0,12,6,7,'bridge',1,0,'ground-leg','Raise legs high'],[22,5,0,'crouch',-1,0,10,7,0,'bridge',1,0,'ground-leg','Elevated crab']],
+ sm_muffler:[[25,5,0,'kneel',-1,0,7,7,0,'flat',1,0,'ground-leg','Catch single leg'],[21,1,0,'carry',-1,0,8,4,12,'bridge',1,0,'ground-leg','Leg over shoulder'],[19,2,0,'crouch',-1,0,8,7,0,'bridge',1,0,'ground-leg','Stretch elevated leg']],
+ sm_arm_triangle:[[-8,5,0,'kneel',1,0,8,7,0,'flat',-1,0,'ground-arm','Trap arm by head'],[0,7,0,'pin',1,0,8,7,0,'flat',-1,0,'ground-head','Side pressure'],[-1,7,0,'flat',1,0,9,7,0,'flat',-1,0,'ground-head','Maintain choke']],
+ sm_short_arm_scissors:[[-9,5,0,'seated',1,0,8,7,0,'flat',-1,0,'ground-arm','Catch bent arm'],[0,6,0,'tuck',1,0,9,7,0,'flat',-1,0,'ground-arm','Legs close over arm'],[0,7,0,'seated',1,0,11,7,0,'flat',-1,0,'ground-arm','Hold arm between legs']],
+ fr_punch_flurry:[[-19,0,0,'punch',1,0,9,2,0,'sell',-1,0,'strike','First punch'],[-15,0,0,'guard',1,0,11,2,0,'sell',-1,0,'','Reload'],[-8,0,0,'punch',1,0,12,3,0,'sell',-1,0,'strike','Second punch']],
+ fr_ten_punches:[[78,-26,0,'grab',1,0,92,-32,0,'guard',-1,0,'','Climb corner'],[80,-28,15,'punch',1,0,92,-32,0,'sell',-1,0,'strike','Mounted punch'],[80,-28,15,'lift',1,0,92,-32,0,'sell',-1,0,'','Reload above corner']],
+ fr_atomic_drop:[[-9,0,0,'waist',1,0,6,2,0,'guard',1,0,'rear-waist','Rear lift'],[-7,0,0,'lift',1,0,5,2,21,'seated',1,0,'rear-waist','Lift above knee'],[-7,3,0,'knee',1,0,8,3,0,'sell',1,0,'body','Drop onto knee']],
+ fr_inverted_atomic:[[-10,0,0,'grab',1,0,7,2,0,'guard',-1,0,'upper-body','Front lift'],[-7,0,0,'lift',1,0,4,2,20,'spread',-1,0,'upper-body','Face-to-face lift'],[-7,3,0,'knee',1,0,8,3,0,'sell',-1,0,'body','Inverted drop']],
+ fr_back_body_drop:[[-12,0,0,'crouch',1,0,32,2,0,'run',-1,0,'','Duck incoming charge'],[-6,0,0,'lift',1,0,-1,1,32,'tuck',-1,120,'','Lift over back'],[-8,0,0,'guard',1,0,-40,7,0,'flat',-1,0,'','Land behind']],
+ fr_flying_forearm:[[-65,0,0,'run',1,0,20,3,0,'guard',-1,0,'','Charge'],[-5,1,16,'elbow',1,15,12,3,0,'sell',-1,0,'strike','Flying forearm'],[9,6,0,'kneel',1,0,24,7,0,'flat',-1,0,'','Both descend']],
+ fr_hulk_kick:[[-70,0,0,'run',1,0,20,3,0,'guard',-1,0,'','Run in'],[-4,1,2,'kick',1,0,12,3,0,'fall',-1,0,'strike','Running boot'],[11,3,0,'guard',1,0,26,7,0,'flat',-1,0,'','Opponent down']],
+ fr_mounted_comeback:[[-11,5,0,'kneel',1,0,10,7,0,'flat',-1,0,'','Mount downed rival'],[6,6,0,'kneel',1,0,10,7,0,'flat',-1,0,'','Raise fist'],[6,6,0,'punch',1,0,10,7,0,'flat',-1,0,'strike','Mounted punch']],
+ fr_fight_on_knees:[[-11,5,0,'kneel',1,0,11,6,0,'kneel',-1,0,'','Both kneel'],[-8,5,0,'elbow',1,0,10,6,0,'sell',-1,0,'strike','Strike from knees'],[-12,5,0,'kneel',1,0,13,6,0,'kneel',-1,0,'','Reset on knees']],
+ fr_shake_ropes:[[-62,0,0,'run',-1,0,26,3,0,'guard',-1,0,'','Go to ropes'],[-100,0,0,'grab',-1,0,26,3,0,'guard',-1,0,'','Grip ropes'],[-99,2,0,'celebrate',-1,0,26,3,0,'guard',-1,0,'','Shake ropes']],
+ fr_second_wind:[[-21,5,0,'kneel',1,0,24,3,0,'guard',-1,0,'','Recover on knee'],[-19,1,0,'crouch',1,0,24,3,0,'guard',-1,0,'','Rise'],[-18,0,0,'celebrate',1,0,24,3,0,'guard',-1,0,'','Renewed energy']],
+ fr_crowd_clap:[[-28,0,0,'neutral',1,0,26,3,0,'guard',-1,0,'','Turn to crowd'],[-28,0,0,'overhead',1,0,26,3,0,'guard',-1,0,'','Clap overhead'],[-26,0,0,'spread',1,0,26,3,0,'guard',-1,0,'','Encourage crowd']],
+ nk_jawbreaker:[[-10,0,0,'headlock',-1,0,7,2,0,'crouch',-1,0,'head','Jaw on head'],[-8,5,0,'kneel',-1,0,6,2,0,'sell',-1,0,'head','Drop to knee'],[-16,2,0,'guard',1,0,20,3,0,'sell',-1,0,'','Recoil upright']],
+ nk_russian_sweep:[[-10,0,0,'grab',1,0,5,2,0,'guard',1,0,'upper-body','Stand side by side'],[-7,3,0,'fall',1,-40,6,3,2,'fall',1,-35,'upper-body','Sweep leg and fall'],[-8,7,0,'flat',1,0,15,7,0,'flat',1,0,'','Both land']],
+ nk_sto:[[-10,0,0,'grab',1,0,7,2,0,'guard',-1,0,'upper-body','Hook upper body'],[-4,3,0,'kneel',1,0,10,2,3,'fall',-1,35,'upper-body','Drive through leg sweep'],[-2,6,0,'kneel',1,0,19,7,0,'flat',-1,0,'','Drive to mat']],
+ nk_tornado_ddt:[[83,-39,14,'headlock',-1,0,70,-28,0,'guard',1,0,'head','Corner facelock'],[50,-15,20,'headlock',-1,120,50,-10,4,'crouch',1,45,'front-facelock','Swing around opponent'],[25,6,0,'flat',-1,0,38,7,0,'flat',1,0,'','DDT landing']],
+ nk_facebuster:[[-10,0,0,'headlock',1,0,7,2,0,'crouch',-1,0,'front-facelock','Secure head'],[-6,4,8,'seated',1,0,8,2,4,'fall',-1,30,'front-facelock','Drop face first'],[-8,6,0,'seated',1,0,16,7,0,'flat',-1,0,'','Release']],
+ nk_implant:[[-10,0,0,'headlock',1,0,7,2,0,'crouch',-1,0,'front-facelock','Facelock'],[-5,2,0,'lift',1,0,4,2,23,'inverted',-1,0,'front-facelock','Lift feet off mat'],[-9,6,0,'flat',1,0,13,7,0,'flat',-1,0,'','Implant landing']],
+ pw_bearhug:[[-12,0,0,'grab',1,0,8,2,0,'guard',-1,0,'body-clinch','Wrap waist'],[-7,0,0,'lift',1,0,5,2,8,'sell',-1,0,'body-clinch','Lift into bearhug'],[-8,1,0,'grab',1,0,6,2,5,'sell',-1,0,'body-clinch','Maintain squeeze']],
+ pw_torture_rack:[[-10,0,0,'crouch',1,0,6,2,8,'tuck',-1,0,'upper-body','Load across shoulders'],[-7,0,0,'overhead',1,0,-2,2,33,'bridge',-1,0,'upper-body','Rack across shoulders'],[-7,0,0,'carry',1,0,-2,2,30,'bridge',-1,0,'upper-body','Hold standing']],
+ pw_alabama:[[-10,0,0,'grab',1,0,6,2,0,'crouch',-1,0,'leg','Catch legs'],[-5,0,0,'carry',1,0,-4,1,25,'inverted',1,0,'leg','Load across back'],[8,5,0,'crouch',1,0,24,7,0,'flat',-1,0,'','Swing forward to mat']],
+ pn_crucifix:[[-12,0,0,'grab',1,0,6,2,0,'guard',-1,0,'arm','Hook arm'],[0,4,11,'spread',1,90,5,3,4,'fall',-1,45,'arm','Wrap across shoulders'],[1,7,0,'flat',1,0,8,7,0,'tuck',-1,0,'arm','Crucifix cover']],
+ pn_victory_roll:[[-12,0,0,'run',1,0,8,2,0,'guard',1,0,'','Approach behind'],[2,2,25,'seated',1,0,7,3,0,'guard',1,0,'leg','Sit on shoulders'],[16,7,0,'seated',1,0,8,7,0,'tuck',-1,0,'leg','Roll into cover']],
+ pn_jackknife:[[-10,5,0,'kneel',1,0,8,7,0,'flat',-1,0,'','Approach feet'],[10,5,0,'crouch',-1,0,8,7,0,'tuck',-1,0,'leg','Fold legs over'],[9,6,0,'bridge',-1,0,8,7,0,'tuck',-1,0,'leg','Bridge over folded rival']],
+ pn_magistral:[[-10,4,0,'wrist',1,0,7,5,0,'kneel',-1,0,'wrist','Thread arm'],[1,5,0,'tuck',1,170,8,5,0,'fall',-1,0,'ground-arm','Roll across back'],[2,7,0,'seated',-1,0,10,7,0,'tuck',-1,0,'ground-arm','Trap shoulders']],
+ pn_bridge_rollup:[[-10,3,0,'waist',1,0,6,4,0,'crouch',1,0,'rear-waist','Rear hold'],[-5,5,0,'bridge',1,0,3,5,4,'tuck',1,120,'leg','Roll through'],[-6,7,0,'bridge',1,0,8,7,0,'flat',-1,0,'leg','Bridge pin']]
+};
 const familyMap={suplex:'vertical',power:'slam',neck:'ddt',strike:'jab',corner:'cornerpush',aerial:'frog',superplex:'vertical',springboard:'dropkick',dive:'dive',submission:'armbar',ground:'groundstrike',chain:'armdrag',pin:'cradle',outside:'floorstrike',heel:'heel',fire:'rally',rest:'rest',lucha:'rana',rope:'ropes',running:'lariat'};
 const misc={
  probe_strike:'jab',strike_trade:'trade',counter_strike:'jab',cheap_shot:'bodyshot',corner_strikes:'chop',corner_charge:'lariat',corner_escape:'escape',mat_hold:'rest',target_hold:'armbar',target_strike:'groundstrike',mat_scramble:'scramble',hope_elbows:'elbow',hope_cutoff:'jab',aerial_attack:'frog',aerial_counter:'block',floor_brawl:'floorstrike',floor_counter:'escape',apron_stand:'apron',ramp_approach:'ramp',counter_rollup:'cradle',submission_set:'armbar',submission_roll:'escape',finish_tease:'lock',finish_counter:'escape',grapple_trip:'takedown',power_spinebuster:'slam',springboard_rise:'climb',springboard_strike:'dropkick',springboard_evaded:'block',collar_snap:'headlock',ankle_pick:'takedown',leg_wrench:'ankle',grapevine:'figure4',leveraged_bridge:'bridge',armbar_roll:'armbar',grounded_switch:'scramble',body_shot:'bodyshot',rolling_elbow:'elbow',short_arm_lariat:'lariat',rib_knee:'knee',gutbuster:'slam',heavy_slam:'slam',corner_knee:'knee',springboard_feint:'taunt',running_headscissors:'rana',rebound_counter:'escape',missile_dropkick:'dropkick',high_crossbody:'dive',top_rope_hesitation:'taunt',handstand_escape:'escape',false_handshake:'heel',opponent_study:'circle',last_second_counter:'escape',dramatic_rally:'rally',baited_charge:'lariat',quiet_reversal:'escape',floor_regroup:'floorstrike',hope_elbows_standing:'elbow',knee_strike_block:'block'};
 function descriptor(n){
+ if(individualMoves[n.id])return {clip:'individual:'+n.id,grip:G.PHYSICAL_GRIP_MOVES[n.id]||'',duration:1450,custom:true};
  if(flightSpecs[n.id])return {clip:'flight:'+n.id,grip:'',duration:n.family==='dive'?1500:1400,custom:true};
  if(cornerSpecs[n.id])return {clip:'corner:'+n.id,grip:G.PHYSICAL_GRIP_MOVES[n.id]||'',duration:1250,custom:true};
  if(superSpecs[n.id])return {clip:'super:'+n.id,grip:superSpecs[n.id][4],duration:1750,custom:true};
@@ -351,6 +413,10 @@ const F=(t,a,d,contact='',stage='Action')=>({t,a,d,contact,stage});
 function core(clip,grip){
  const c=close(),f=neutral(),flat=R(21,7,0,'flat',-1),g=grip||'upper-body';
  const gripFrame=F(.23,c.a,c.d,g,'Establish contact');
+ if(clip.startsWith('individual:')){
+  const id=clip.slice(11),spec=individualMoves[id];
+  return spec.map((v,i)=>F([.22,.52,.81][i],R(...v.slice(0,6)),R(...v.slice(6,12)),v[12],v[13]));
+ }
  const hit=(pose)=>[F(.22,R(-27,0,0,'crouch'),R(25,3,0,'guard',-1),'','Wind up'),F(.52,R(-12,0,0,pose),R(9,3,0,'sell',-1),'strike','Contact'),F(.76,R(-20,0,0,'guard'),R(28,7,0,'sell',-1),'','Reaction')];
  const throws=(type)=>{
   const rear=type==='german',vertical=['vertical','delayed','fisherman','piledriver'].includes(type),bomb=type==='bomb',press=type==='press',ddt=type==='ddt',belly=type==='belly',a=R(-10,0,0,'lift'),d=R(1,1,vertical?29:24,vertical?'inverted':'fall',rear?1:-1);
