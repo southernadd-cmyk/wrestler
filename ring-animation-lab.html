@@ -35,7 +35,7 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 .match-mode .strap{grid-column:1/-1}.match-mode .commentary{grid-column:1;grid-row:2}.match-mode .ringside{grid-column:2;grid-row:2}
 @media(max-width:700px){.match-mode .layout{grid-template-columns:minmax(0,1fr)}.match-mode .ringside{grid-column:1;grid-row:2}.match-mode .commentary{grid-column:1;grid-row:3}}
 .sfx-toggle{display:inline-flex!important;align-items:center;gap:5px;margin:0!important;font-size:11px;color:#d9e6f0;cursor:pointer}.sfx-toggle input{appearance:none;width:25px!important;height:13px;margin:0;border-radius:8px;background:#364363;border:1px solid #8495af;padding:0!important;position:relative;cursor:pointer}.sfx-toggle input:before{content:"";position:absolute;left:2px;top:2px;width:7px;height:7px;border-radius:50%;background:#c2cfdd}.sfx-toggle input:checked{background:#306b65}.sfx-toggle input:checked:before{left:14px;background:#f4da90}.sfx-toggle input:focus-visible{outline:2px solid #f4cd73;outline-offset:2px}
-</style></head><body><div id="shell" hidden><nav style="display:flex;gap:8px;align-items:center;background:#101b37;padding:6px 12px"><a style="color:#f1ce76" href="ring-animation-lab.html">Transition inspector</a><span aria-hidden="true">|</span><a style="color:#f1ce76" href="ring-animation-lab.html?view=match">Full live match</a></nav><iframe id="frame" style="height:calc(100dvh - 34px)" title="Isolated animation laboratory" sandbox="allow-scripts"></iframe></div><div id="lab" hidden><header>THE OFFICE <small>ANIMATION LAB / V3</small></header><main>
+</style></head><body><div id="shell" hidden><nav style="display:flex;gap:8px;align-items:center;background:#101b37;padding:6px 12px"><a style="color:#f1ce76" href="ring-animation-lab.html">Transition inspector</a><span aria-hidden="true">|</span><a style="color:#f1ce76" href="ring-animation-lab.html?view=match">Full live match</a></nav><iframe id="frame" style="height:calc(100dvh - 34px)" title="Isolated animation laboratory" sandbox="allow-scripts" allow="autoplay"></iframe></div><div id="lab" hidden><header>THE OFFICE <small>ANIMATION LAB / V3</small></header><main>
 <div id="error" class="err" role="alert"></div><div class="layout"><section class="panel"><h2>Graph transition inspector</h2><div class="pad">
 <div class="audit" id="audit"><div><small>Graph nodes</small><b id="nodeCount">—</b></div><div><small>Authored edges</small><b id="edgeCount">—</b></div><div><small>Custom clip nodes</small><b id="customCount">—</b></div><div><small>Shared clip nodes</small><b id="sharedCount">—</b></div><div><small>Composed edges</small><b id="coveredCount">—</b></div><div><small>Unmapped edges</small><b id="missingCount">—</b></div></div>
 <label>Find a move or node<input id="filter" type="search" placeholder="e.g. German, wristlock, kick-out"></label>
@@ -60,7 +60,7 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 <div class="layout">
 <div class="strap"><div class="worker"><img id="wPortrait" alt=""><div><b id="wName">Your wrestler</b><small id="wStyle">—</small><div class="meter"><span id="wEnergy"></span></div></div></div><div class="clock"><strong id="clock">00:00</strong><small id="phase">Waiting</small></div><div class="worker"><img id="fPortrait" alt=""><div><b id="fName">Opponent</b><small id="fStyle">—</small><div class="meter"><span id="fEnergy"></span></div></div></div></div>
 <section class="panel commentary"><h2>Live commentary</h2><div class="action"><span class="status" id="venue">THE ARENA</span><strong id="action">Ready for the entrances</strong><span id="detail" class="muted">Select a bout and run the real engine.</span></div><h2>Commentary archive / engine trace</h2><div class="log" id="log" tabindex="0" aria-label="Match event log"></div></section>
-<aside class="panel ringside"><h2>Ringside · ring view</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Retro pixel-art view of the ring, wrestlers, referee, ringside and entrance aisle"></canvas></div><div class="ringbar"><span>RINGSIDE CAM</span><label class="sfx-toggle" title="Crowd and ring bell sound effects"><input id="sfx" type="checkbox" role="switch" aria-label="Sound effects"> SFX <span id="sfxState">Off</span></label></div><div class="info"><div class="stats"><div><small>Crowd</small><b id="crowd">—</b></div><div><small>Rating</small><b id="rating">—</b></div><div><small>Graph actions</small><b id="count">0</b></div><div><small>Control</small><b id="control">—</b></div></div><div class="status" id="physical">Location: —</div></div><div class="transport"><button id="pause" disabled>Pause</button><button id="step" disabled>Step</button><label>Playback <select id="speed"><option value=".5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div><div id="decision" class="decision" hidden></div></aside></div>
+<aside class="panel ringside"><h2>Ringside · ring view</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Retro pixel-art view of the ring, wrestlers, referee, ringside and entrance aisle"></canvas></div><div class="ringbar"><span>RINGSIDE CAM</span><label class="sfx-toggle" title="Crowd and ring bell sound effects"><input id="sfx" type="checkbox" role="switch" aria-label="Sound effects" checked> SFX <span id="sfxState" aria-live="polite">On</span></label></div><div class="info"><div class="stats"><div><small>Crowd</small><b id="crowd">—</b></div><div><small>Rating</small><b id="rating">—</b></div><div><small>Graph actions</small><b id="count">0</b></div><div><small>Control</small><b id="control">—</b></div></div><div class="status" id="physical">Location: —</div></div><div class="transport"><button id="pause" disabled>Pause</button><button id="step" disabled>Step</button><label>Playback <select id="speed"><option value=".5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div><div id="decision" class="decision" hidden></div></aside></div>
 <p class="note">Live engine: the existing match graph, commentary, decisions and after-the-bell resolver run in an opaque-origin sandbox. The engine provides zones, control, grips and grounded states, not precise coordinates or full-body animation. The articulated rig visualises known graph events, including the final physical locations; special events and entrances/exits retain presentation poses. Exact move choreography and contact still require review. The graph animation laboratory is available from the navigation above. No main game UI, saves or navigation are used. Crowd and bell effects are original procedural audio, <a style="color:#a9d8e8" href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0</a>.</p>
 </main></template>
 <script>
@@ -72,17 +72,21 @@ const params=new URL(location.href).searchParams,live=params.get('view')==='matc
 function samplePortrait(img){
  const c=document.createElement('canvas');c.width=72;c.height=90;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0,72,90);
  const data=g.getImageData(0,0,72,90).data,bins=new Map();let count=0;
- for(let y=15;y<69;y++)for(let x=18;x<54;x++){
+ for(let y=18;y<62;y++)for(let x=26;x<46;x++){
   const i=(y*72+x)*4,[r,g,b,a]=data.subarray(i,i+4);
   // Warm, non-neutral pixels; reject transparent, very dark and strongly
   // saturated clothing. The central face/neck region excludes most gear.
   const max=Math.max(r,g,b),min=Math.min(r,g,b),sat=(max-min)/(max||1);
   if(a<210||r<48||r<g*1.045||g<b*.98||r-b<9||sat<.09||sat>.65||r-g>80||g-b>68)continue;
-  const weight=(x>=25&&x<47?1.4:1)*(y>=26&&y<55?1.5:1),key=[r,g,b].map(v=>Math.round(v/18)).join(',');
+  const weight=(x>=30&&x<42?2:1)*(y>=27&&y<52?2:1),key=[r,g,b].map(v=>Math.round(v/18)).join(',');
   const v=bins.get(key)||{w:0,r:0,g:0,b:0,n:0};v.w+=weight;v.r+=r*weight;v.g+=g*weight;v.b+=b*weight;v.n++;bins.set(key,v);count++;
  }
  if(count<45)return null;
- const ranked=[...bins.values()].sort((a,b)=>b.w-a.w),best=ranked[0];if(!best||best.n<12)return null;
+ const ranked=[...bins.values()].filter(v=>v.n>=8).sort((a,b)=>b.w-a.w);if(!ranked.length)return null;
+ // Use a coherent face midtone rather than the dominant hair/shadow bin.
+ const brightness=v=>(.299*v.r+.587*v.g+.114*v.b)/v.w;
+ const plausible=ranked.filter(v=>v.w>=ranked[0].w*.24).sort((a,b)=>brightness(a)-brightness(b));
+ const total=plausible.reduce((s,v)=>s+v.w,0);let cumulative=0;const best=plausible.find(v=>(cumulative+=v.w)>=total*.65)||ranked[0];
  // Use the dominant colour cluster and close neighbours, not the
  // brightest pixel or a whole-image average (which can include hair).
  const centre=[best.r/best.w,best.g/best.w,best.b/best.w],near=ranked.filter(v=>Math.hypot(v.r/v.w-centre[0],v.g/v.w-centre[1],v.b/v.w-centre[2])<35);
@@ -95,7 +99,7 @@ if(params.get('frame')!=='1'){
   if(!cache.has(d.path))cache.set(d.path,new Promise(resolve=>{const img=new Image();img.onload=()=>{try{resolve(samplePortrait(img))}catch(_){resolve(null)}};img.onerror=()=>resolve(null);img.src=d.path;}));
   cache.get(d.path).then(skin=>e.source.postMessage({type:'ring-skin-result',token:d.token,skin},'*'));
  });
- frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'');return
+ frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=612';return
 }
 $('lab').hidden=false;
 if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
@@ -393,7 +397,7 @@ function wrestler(s,side,look=null,name=null){
  line(s.hip.x,s.hip.y,s.shoulder.x,s.shoulder.y,'#25242a',13);line(s.hip.x,s.hip.y,s.shoulder.x,s.shoulder.y,skin,10);line(s.hip.x,s.hip.y,s.hip.x+(s.shoulder.x-s.hip.x)*.25,s.hip.y+(s.shoulder.y-s.hip.y)*.25,gear,10);
  drawLimb(s.legs[1],skin,5);for(const l of s.legs)line(l[1].x,l[1].y,l[2].x,l[2].y,shade(gear,-25),5);
  drawLimb(s.arms[1],skin,4);
- line(s.shoulder.x,s.shoulder.y,s.head.x,s.head.y,skin,5);ellipse(s.head.x,s.head.y,5.5,6.5,'#24222a');ellipse(s.head.x,s.head.y,4.5,5.5,skin);if(look?.hairStyle!=='bald')rect(s.head.x-4,s.head.y-5,8,2,hair);if(look?.mask)rect(s.head.x-4,s.head.y-3,8,5,gear);rect(s.head.x+2*s.r.face,s.head.y-1,1,1,'#1d2028');
+ line(s.shoulder.x,s.shoulder.y,s.head.x,s.head.y,skin,5);ellipse(s.head.x,s.head.y,5.5,6.5,'#24222a');ellipse(s.head.x,s.head.y,4.5,5.5,skin);if(look?.hairStyle!=='bald'){rect(s.head.x-4,s.head.y-5,8,2,hair);if(['long','waves','braids','ponytail'].includes(look?.hairStyle)){rect(s.head.x-5*s.r.face-1,s.head.y-3,3,10,hair);}}if(look?.mask)rect(s.head.x-4,s.head.y-3,8,5,gear);rect(s.head.x+2*s.r.face,s.head.y-1,1,1,'#1d2028');
  label(name||(side==='w'?'GOLD':'BLUE'),s.ground.x,s.ground.y+14,side==='w'?'#ffe39d':'#e0efff',8);
 }
 let anim=null,progress=0,playing=false,last=0;
@@ -453,12 +457,15 @@ if(typeof window.addEventListener==='function')window.addEventListener('message'
 function assignLook(side,worker){
  const a=world[side],portraits=window.OfficePortraits,model={...worker,key:'wrestler:'+worker.id,type:'wrestler'};
  a.look=makeLook(worker,side);const img=$(side+'Portrait'),aged=portraits?.portraitCell(model,G.S);
- img.hidden=false;img.title='Ring skin colour from appearance palette';
+ // Silas's displayed portrait has a warm copper midtone, not the old
+ // generated complexion. Explicit reference swatch from the actual face.
+ const verified=!worker.appearance&&worker.id==='silas';if(verified){Object.assign(a.look,{skin:'#ef9275',skinSource:'verified portrait swatch',hair:'#30242b',hairStyle:'long',mask:false});}
+ img.hidden=false;img.title=verified?'Ring skin colour matched to Silas’s portrait':'Ring skin colour from appearance palette';
  img.onerror=()=>{img.onerror=()=>{img.hidden=true};try{img.src=portraits.asData(model)}catch(_){img.hidden=true}};
  if(aged?.fileUrl){
   img.src=aged.fileUrl;
   // A mask may cover the skin completely; retain explicit appearance metadata.
-  if(!a.look.mask&&!worker.appearance){const token=++skinToken;skinRequests.set(token,{side,actor:a});window.parent?.postMessage?.({type:'ring-skin-request',token,path:aged.fileUrl},'*');}
+  if(!verified&&!a.look.mask&&!worker.appearance){const token=++skinToken;skinRequests.set(token,{side,actor:a});window.parent?.postMessage?.({type:'ring-skin-request',token,path:aged.fileUrl},'*');}
  }else try{img.src=portraits.asData(model)}catch(_){img.hidden=true}
 }
 
@@ -470,26 +477,27 @@ function createSfx(){
  const voices=new Set();
  function setup(){
   if(ac)return true;const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return false;
-  ac=new Audio();master=ac.createGain();master.gain.value=0;master.connect(ac.destination);
+  ac=new Audio();ac.onstatechange=()=>report();master=ac.createGain();master.gain.value=0;master.connect(ac.destination);
   // A long, seamless crowd bed: many overlapping filtered, modulated noise
   // voices in a short reflective hall. Separate gain follows the engine crowd.
-  const seconds=8,n=ac.sampleRate*seconds;noise=ac.createBuffer(1,n,ac.sampleRate);const out=noise.getChannelData(0);
+  const seconds=4,n=ac.sampleRate*seconds;noise=ac.createBuffer(1,n,ac.sampleRate);const out=noise.getChannelData(0);
   let seed=0x61ecbf,low=0,mid=0;
   const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
-  const phases=Array.from({length:26},()=>rand()*Math.PI*2);
+  const phases=Array.from({length:12},()=>rand()*Math.PI*2);
   for(let i=0;i<n;i++){const t=i/ac.sampleRate,u=rand()*2-1;low=low*.972+u*.028;mid=mid*.79+u*.21;let voices=0;
-   for(let j=0;j<26;j++){const pitch=90+j*8.6,env=.32+.30*Math.sin(2*Math.PI*(Math.round((.65+j*.095)*seconds)/seconds)*t+phases[j]);voices+=env*(Math.sin(2*Math.PI*Math.round(pitch*seconds)/seconds*t+phases[j])+.35*Math.sin(2*Math.PI*Math.round((pitch*2.17)*seconds)/seconds*t+phases[j]*2));}
-   const fade=Math.min(1,i/1800,(n-1-i)/1800);out[i]=fade*(low*.65+mid*.27+voices*.007);
+   for(let j=0;j<12;j++){const pitch=90+j*8.6,env=.32+.30*Math.sin(2*Math.PI*(Math.round((.65+j*.095)*seconds)/seconds)*t+phases[j]);voices+=env*(Math.sin(2*Math.PI*Math.round(pitch*seconds)/seconds*t+phases[j])+.35*Math.sin(2*Math.PI*Math.round((pitch*2.17)*seconds)/seconds*t+phases[j]*2));}
+   const fade=Math.min(1,i/1800,(n-1-i)/1800);out[i]=fade*(low*.8+mid*.48+voices*.016);
   }
   return true;
  }
  function stopBed(){if(bed){try{bed.stop()}catch(_){}bed.disconnect();bed=null;}if(bedGain){bedGain.disconnect();bedGain=null;}}
- function sync(){if(!ac)return;const t=ac.currentTime;master.gain.cancelScheduledValues(t);master.gain.setTargetAtTime(enabled&&running?.65:0,t,.025);
+ function sync(){if(!ac)return;const t=ac.currentTime;master.gain.cancelScheduledValues(t);master.gain.setTargetAtTime(enabled&&running?.85:0,t,.025);
   if(enabled&&running&&!bed){bed=ac.createBufferSource();bed.buffer=noise;bed.loop=true;const filter=ac.createBiquadFilter();filter.type='lowpass';filter.frequency.value=2500;bedGain=ac.createGain();bedGain.gain.value=0;bed.connect(filter);filter.connect(bedGain);bedGain.connect(master);bed.start();bed.onended=()=>filter.disconnect();}
-  if(bedGain){bedGain.gain.cancelScheduledValues(t);bedGain.gain.setTargetAtTime(.10+level*.36,t,.28);}
+  if(bedGain){bedGain.gain.cancelScheduledValues(t);bedGain.gain.setTargetAtTime(.34+level*.50,t,.28);}
   if(!enabled||!running){stopBed();for(const voice of voices){try{voice.stop()}catch(_){} }voices.clear();}
  }
- function enable(v){enabled=!!v;if(enabled){try{if(!setup()){enabled=false;return false}ac.resume().catch(()=>{});}catch(_){enabled=false;return false}}sync();return enabled;}
+ function report(){if(!enabled){$('sfxState').textContent='Off';return;}const blocked=ac&&ac.state!=='running';$('sfxState').textContent=blocked?'Blocked — retry':'On';$('sfxState').title=blocked?'Click the SFX switch off and on to enable browser audio':'';}
+ function enable(v){enabled=!!v;if(enabled){try{if(!setup()){enabled=false;report();return false}Promise.resolve(ac.resume()).then(()=>{sync();report()}).catch(()=>report());}catch(_){enabled=false;report();return false}}sync();report();return enabled;}
  function bell(final=false){if(!enabled||!running||!ac)return;const start=ac.currentTime+.012;
   // Inharmonic metal modes, short strike and natural decay. Start: one
   // strike; finish: three strikes, always at actual engine bell events.
@@ -497,10 +505,10 @@ function createSfx(){
    const t=start+hit*.24,o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(amp,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+decay);o.connect(g);g.connect(master);voices.add(o);o.onended=()=>{voices.delete(o);o.disconnect();g.disconnect()};o.start(t);o.stop(t+decay+.015);
   }
  }
- return{enable,bell,run(v){running=!!v;sync()},crowd(v){level=Math.max(0,Math.min(1,(Number(v)||0)/100));if(bedGain){const t=ac.currentTime;bedGain.gain.setTargetAtTime(.10+level*.36,t,.28);}},get enabled(){return enabled}};
+ return{enable,bell,run(v){running=!!v;sync()},crowd(v){level=Math.max(0,Math.min(1,(Number(v)||0)/100));if(bedGain){const t=ac.currentTime;bedGain.gain.setTargetAtTime(.34+level*.50,t,.28);}},get enabled(){return enabled}};
 }
 const sfx=createSfx(),sfxToggle=$('sfx');
-sfxToggle.onchange=()=>{const on=sfx.enable(sfxToggle.checked);sfxToggle.checked=on;$('sfxState').textContent=on?'On':'Off';if(on)sfx.run(active&&!paused);};
+sfxToggle.onchange=()=>{const on=sfx.enable(sfxToggle.checked);sfxToggle.checked=on;if(on)sfx.run(active&&!paused);};
 if(typeof window.addEventListener==='function')window.addEventListener('pagehide',()=>sfx.run(false));
 function makeActor(side){return {side,x:curtain.x,y:curtain.y,tx:curtain.x,ty:curtain.y,angle:0,pose:'stand',visible:side==='ref',walk:false,fromX:curtain.x,fromY:curtain.y,start:0,duration:1};}
 function resetWorld(){world={w:makeActor('w'),f:makeActor('f'),ref:makeActor('ref')};Object.assign(world.ref,{x:475,y:214,tx:475,ty:214,fromX:475,fromY:214});speech=null;impact=null;refPose='stand';}
@@ -620,7 +628,7 @@ function process(){
 }
 function schedule(delay){clearTimeout(timer);if(!active||paused||waiting)return;timer=setTimeout(()=>{try{const d=process();if(d)schedule(d/Number($('speed').value));}catch(e){active=false;sfx.run(false);$('start').disabled=false;fail(e);}},Math.max(30,delay));}
 function start(){
- sfx.run(false);if(sfxToggle.checked)sfx.enable(true);rigAnim=null;rigHeld=null;rigPrevious=null;rigPausedAt=null;clearTimeout(timer);gen++;const current=gen;active=false;clearDecision();$('error').hidden=true;$('log').replaceChildren();resetWorld();M=null;after=null;buffer=[];totalEvents=0;seenEvent=null;entered=0;lastEvent=null;lastMove='';afterChoice=null;banks=[];paused=false;mode='entrance';
+ sfx.run(false);if(sfxToggle.checked){sfxToggle.checked=sfx.enable(true);}rigAnim=null;rigHeld=null;rigPrevious=null;rigPausedAt=null;clearTimeout(timer);gen++;const current=gen;active=false;clearDecision();$('error').hidden=true;$('log').replaceChildren();resetWorld();M=null;after=null;buffer=[];totalEvents=0;seenEvent=null;entered=0;lastEvent=null;lastMove='';afterChoice=null;banks=[];paused=false;mode='entrance';
  G.fresh({manager:'Ring Lab',stable:'Test Stable'});
  const w={...D.TALENT.find(x=>x.id===$('worker').value)};G.S.roster.push(w);
  const f=G.F($('opponent').value),p=G.P($('promotion').value);
