@@ -99,7 +99,7 @@ if(params.get('frame')!=='1'){
   if(!cache.has(d.path))cache.set(d.path,new Promise(resolve=>{const img=new Image();img.onload=()=>{try{resolve(samplePortrait(img))}catch(_){resolve(null)}};img.onerror=()=>resolve(null);img.src=d.path;}));
   cache.get(d.path).then(skin=>e.source.postMessage({type:'ring-skin-result',token:d.token,skin},'*'));
  });
- frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=614';return
+ frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=615';return
 }
 $('lab').hidden=false;
 if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
@@ -615,7 +615,18 @@ function lineFrame(l){
  if(mode==='entrance'&&l.kind==='bell'){sfx.stopTheme();sfx.bell(false);mode='live';move('w',427,290,'guard');move('f',541,290,'guard');phase('Wrestling');}
  if(l.kind==='count'){if(M.stage==='over')rigAnim=null;refPose='kneel';world.ref.pose='kneel';if(M.stage==='over'&&/cover|\bONE!|\bTWO!|\bTHREE!|TAPS!/i.test(l.text)){const win=winner();if(win){const lose=win==='w'?'f':'w';move(lose,482,292,'down');move(win,win==='w'?458:507,290,'kneel');move('ref',528,247,'kneel');phase(/TAPS!/i.test(l.text)?'Submission':'The finish');}}}
  else if(l.kind==='bell'){refPose='stand';world.ref.pose='stand';}
- if(M.stage==='over'&&l.kind==='bell'&&mode!=='result'){sfx.bell(true);sfx.pop();rigAnim=null;mode='result';phase('The bell');}
+ if(M.stage==='over'&&l.kind==='bell'&&mode!=='result'){
+  sfx.bell(true);sfx.pop();rigAnim=null;mode='result';phase('The bell');
+  // The graph's actual outcome takes precedence over the booked finish.
+  // "double" is an off-script win in this engine, not a draw.
+  const victor=M.graph?.outcome?.winner;
+  sfx.stopTheme();
+  if((victor==='w'||victor==='f')&&sfx.enabled){
+   sfx.entrance(victor,12000);
+   const title=sfx.themeTitle(victor);
+   if(title)log(t,'Winner music · '+(victor==='w'?M.w.name:M.f.name)+' · '+title+' (Abstraction)','event');
+  }
+ }
  const voices={pbp:'Gloria',colour:'Vic',runner:'Backstage'};
  log(t,(voices[l.who]?voices[l.who]+' · ':'')+l.text,l.kind==='rating'?'speech':'');
  if(mode==='result'||l.kind==='count'||l.kind==='bell'||mode==='entrance')setStatus(l.text,l.kind==='rating'?'Official rating':'Engine commentary');
