@@ -145,6 +145,29 @@
   if(plan==='beatdown')return between(.24*unit('f','cooperation')-.16*unit('f','caution')-.12*unit('f','escalation')-.10*unit('w','caution'),-.18,.18);
   return 0;
  }
+ // One source for the odds: the resolvers below and the option tags both read these.
+ function handshakeChance(st,x){
+  const b=root.OfficeBonds?.score?.(x.w.id,x.f.id)||0;
+  const c=.58+b/220+(x.clean?.12:-.12)-(x.f.ego-60)/220+(x.stars>=3.5?.1:0)-(x.finish==='win_dirty'?.25:0);
+  return between(c+reactionAdjustment(st,'handshake'),.08,.94);
+ }
+ function beatdownChance(st,x){
+  const b=root.OfficeBonds?.score?.(x.w.id,x.f.id)||0;
+  const c=x.f.pro/100*.9+(b>-35?.1:-.2)+(x.f.ego>=80?-.1:0);
+  return between(c+reactionAdjustment(st,'beatdown'),.1,.95);
+ }
+ const landChance=(x,base)=>between(base+(x.w.mic-60)/120,.1,.95);
+ // How the opponent's psychology weights each possible reaction (AB3/AB6).
+ function reactionWeight(st,r){const scores=st.psychology?.f?.scores||{};return Number.isFinite(scores[r.drive])?Math.max(10,scores[r.drive]):50;}
+ // Freshness: the crowd tires of the same trick. Of this wrestler's last few post-bell scenes, how many
+ // used it? Each repeat takes a quarter off what it builds (feud heat, heat, morale). Read from the
+ // existing after-the-bell log, so there is no new save data.
+ const FRESH_WINDOW=3;
+ function repeats(st,kind,id){
+  const log=G.S?.after?.log||[];
+  return log.filter(e=>e.wid===st.c.wid&&e.cid!==st.cid).slice(0,FRESH_WINDOW).filter(e=>kind==='plan'?e.plan===id:e.said===id).length;
+ }
+ const freshMul=n=>1-.25*n;
  function feudOf(wid,rid){
   const s=G.S,k=wid+':'+rid;
   return G.feud(wid,rid)||(s.feuds[k]={wid,rid,heat:0,matches:0,closed:false,since:G.abs()});
@@ -292,7 +315,7 @@
  }
  function followOptions(st){
   if(st?.stage!=='follow'||st.follow?.v!==1||st.follow.choice)return [];
-  return Object.entries(followNodes).map(([id,n])=>({id,label:n.label,hint:n.hint,tags:n.tags.slice()}));
+  return Object.entries(followNodes).map(([id,n])=>withOutcomes(st,'follow',{id,label:n.label,hint:n.hint,tags:n.tags.slice()}));
  }
  function followEdges(){
   const starts=Object.entries(angleGraph.actions).flatMap(([id,n])=>n.reactions.filter(r=>unresolved.has(r.id)).map(r=>id+':'+r.id));
@@ -307,7 +330,7 @@
  function continueAngle(st,id){
   if(!followOptions(st).some(o=>o.id===id))return false;
   const x=ctxOf(st.c,st.fin),n=followNodes[id];if(!x.w||!x.f||!x.p)return false;
-  const scores=st.psychology?.f?.scores||{},weight=r=>Number.isFinite(scores[r.drive])?Math.max(10,scores[r.drive]):50;
+  const weight=r=>reactionWeight(st,r);
   let roll=hash(st.cid+'|ab6|'+st.follow.from+'|'+id)*n.reactions.reduce((sum,r)=>sum+weight(r),0);
   const r=n.reactions.find(r=>(roll-=weight(r))<0)||n.reactions[n.reactions.length-1];
   const line=text=>st.log.push({side:'stage',who:null,text:fill(text,x)});
@@ -331,8 +354,7 @@
  function playGraph(st,x){
   const node=Object.prototype.hasOwnProperty.call(angleGraph.actions,st.plan)?angleGraph.actions[st.plan]:null;
   if(!node||x.context?.v!==1||!node.guard(x))return false;
-  const scores=st.psychology?.f?.scores||{};
-  const weight=r=>Number.isFinite(scores[r.drive])?Math.max(10,scores[r.drive]):50;
+  const weight=r=>reactionWeight(st,r);
   const total=node.reactions.reduce((n,r)=>n+weight(r),0);
   let roll=hash(st.cid+'|ab3|'+st.plan)*total;
   const reaction=node.reactions.find(r=>(roll-=weight(r))<0)||node.reactions[node.reactions.length-1];
@@ -370,8 +392,7 @@
   const line=(side,text)=>log.push({side,who:side==='w'?x.w.short:side==='f'?x.f.short:null,text:fill(text,x)});
   const b=root.OfficeBonds?.score?.(x.w.id,x.f.id)||0;
   if(plan==='handshake'){
-   let chance=.58+b/220+(x.clean?.12:-.12)-(x.f.ego-60)/220+(x.stars>=3.5?.1:0)-(x.finish==='win_dirty'?.25:0);
-   chance=between(chance+reactionAdjustment(st,plan),.08,.94);
+   const chance=handshakeChance(st,x);
    const ok=hash(id+'|shake')<chance;st.angle={plan,ok,chance:Math.round(chance*100)};
    line('stage','{W} walks across the ring and holds out a hand.');
    if(ok){
@@ -390,26 +411,27 @@
     remember(x.w.id,'snub',x.w.short+' remembers '+x.f.short+' leaving them standing there with a hand out.',x.f.id,-1,id+':after');
    }
   }else if(plan==='staredown'){
+   const m=freshMul(repeats(st,'plan','staredown'));
    st.angle={plan,ok:x.stars>=2};
    line('stage','The bell has gone, and neither of them moves. {W} and {F} stand nose to nose while the referee pleads with them.');
    if(x.stars>=2){
-    const h=heatFeud(x.w.id,x.f.id,12);x.w.heat=clamp(x.w.heat+1);
+    const h=heatFeud(x.w.id,x.f.id,Math.round(12*m));x.w.heat=clamp(x.w.heat+Math.round(m));
     line('stage','Security comes down the aisle. Nobody in the building is sitting down.');
     add('The stare-down says it is not finished. Feud heat '+h+'; a rematch offer is likelier.',1);
    }else{
-    const h=heatFeud(x.w.id,x.f.id,4);
+    const h=heatFeud(x.w.id,x.f.id,Math.round(4*m));
     line('stage','Somebody in the front row checks their watch. The match did not earn this.');
     add('Nobody was invested enough to care. Feud heat '+h+'.',-1);
    }
   }else if(plan==='beatdown'){
-   let chance=x.f.pro/100*.9+(b>-35?.1:-.2)+(x.f.ego>=80?-.1:0);chance=between(chance+reactionAdjustment(st,plan),.1,.95);
+   const chance=beatdownChance(st,x),m=freshMul(repeats(st,'plan','beatdown'));
    const worked=hash(id+'|jump')<chance;st.angle={plan,ok:worked,chance:Math.round(chance*100)};
    line('stage','{F} turns to leave. {W} hits them from behind.');
    if(worked){
     line('stage','It looks horrible and nobody is hurt. {F} sells it all the way to the back, clutching the ribs. The booing goes on for a minute.');
-    const h=heatFeud(x.w.id,x.f.id,20);x.w.heat=clamp(x.w.heat+4);
+    const dh=Math.round(3*m),h=heatFeud(x.w.id,x.f.id,Math.round(12*m));x.w.heat=clamp(x.w.heat+dh);
     bond(x.w.id,x.f.id,-6,'angle','An attack after the bell, worked well.',id+':after');
-    add('The attack after the bell got real heat: '+x.w.short+' heat +4, feud heat '+h+'.',1);
+    add('The attack after the bell got real heat: '+x.w.short+' heat +'+dh+', feud heat '+h+'.',1);
     const dt=likesTrouble(x.p)?3:-4;x.p.trust=clamp(x.p.trust+dt);
     add(dt>0?x.p.voice+' loved it. '+x.p.name+' trust +3.':x.p.voice+' does not want that on the show. '+x.p.name+' trust −4.',Math.sign(dt));
    }else{
@@ -422,9 +444,9 @@
     remember(x.w.id,'grievance',x.w.short+' remembers the fight with '+x.f.short+' that was not part of the show.',x.f.id,-3,id+':after');
    }
   }else if(plan==='celebrate'){
-   const hot=x.stars>=3&&x.crowd>=55;st.angle={plan,ok:hot};
+   const hot=x.stars>=3&&x.crowd>=55,m=freshMul(repeats(st,'plan','celebrate'));st.angle={plan,ok:hot};
    line('stage','{W} goes round the barrier, slapping every hand they can reach.');
-   if(hot){x.w.heat=clamp(x.w.heat+3);x.w.morale=clamp(x.w.morale+4);line('stage','The crowd will not let them go. Somebody hands over a scarf.');add(x.w.short+' soaked it up: heat +3, morale +4.',1);}
+   if(hot){const dh=Math.round(3*m),dm=Math.round(4*m);x.w.heat=clamp(x.w.heat+dh);x.w.morale=clamp(x.w.morale+dm);line('stage','The crowd will not let them go. Somebody hands over a scarf.');add(x.w.short+' soaked it up: heat +'+dh+', morale +'+dm+'.',1);}
    else{x.w.morale=clamp(x.w.morale+1);line('stage','About half the hall is already queuing at the bar.');add('A lap of honour to a half-empty hall. Morale +1.',0);}
   }
  }
@@ -484,7 +506,7 @@
   const x=ctxOf(st.c,st.fin),opts=[];
   if(x.won){
    opts.push({id:'gloat',label:'Rub it in',hint:'Loud, cocky, and a little cruel. The crowd will love or loathe it.',tags:['Heat ▲','Feud heat ▲','Bond ▼']});
-   opts.push({id:'credit',label:'Give '+x.f.short+' credit',hint:'Gracious in victory. Promoters like it.',tags:['Builds a bond','Cools the feud']});
+   opts.push({id:'credit',label:'Give '+x.f.short+' credit',hint:'Gracious in victory. Old-school promoters like it.',tags:['Builds a bond','Cools the feud']});
   }else if(x.outcome!=='nc'){
    opts.push({id:'concede',label:'Take the loss like a pro',hint:'No excuses. It softens the blow.',tags:['Morale ▲','Builds a bond']});
    opts.push({id:'excuse',label:'Blame the finish',hint:x.dirty?'They have a point: it was not clean.':'It was clean. The crowd saw it was clean.',tags:x.dirty?['Feud heat ▲','Heat ▲']:['Unlikely','Heat ▼ if it fails']});
@@ -499,7 +521,7 @@
   if(dm.title)opts.push({id:'demand:title',label:'Demand a title shot',hint:'Call on '+x.p.voice+' to put the '+dm.title.name+' on the line, in front of everyone. '+x.p.voice+(['traditional','cold'].includes(x.p.personality)?' does not like being put on the spot.':' loves this sort of thing.'),tags:['Gamble','Title match if it lands','Trust ▼ if it flops']});
   if(dm.slot)opts.push({id:'demand:slot',label:'Demand a bigger spot',hint:'Tell '+x.p.voice+' that '+x.w.short+' deserves a better place on '+x.p.name+'’s card ladder. Current standing: '+D.SLOTS[dm.slot].name.toLowerCase()+'.',tags:['Gamble','Up the card if it lands']});
   opts.push({id:'walk',label:'Say nothing',hint:'Hand the microphone back and walk.',tags:['Safe']});
-  return opts;
+  return opts.map(o=>withOutcomes(st,'mic',o));
  }
  // What this wrestler could demand at this promotion tonight.
  function demandsFor(st){
@@ -597,17 +619,23 @@
   const say=kind=>{const l=dialogueLine(st,'w',kind,['credit','concede'].includes(kind)?'accept':'counter',micBodies[kind]?.(x));
    if(l)log.push({side:'w',who:x.w.short,...l});else line('w',sayLine(kind,x));};
   const roll=k=>hash(cid+'|mic|'+k);
-  const lands=(base)=>roll(id)<between(base+(x.w.mic-60)/120,.1,.95);
+  const lands=(base)=>roll(id)<landChance(x,base);
   st.said=id;
   if(id==='walk'){line('stage',x.w.short+' hands the microphone back to the ring announcer and walks up the aisle.');}
   else if(id==='gloat'){say('gloat');
-   if(lands(.62)){const h=heatFeud(x.w.id,x.f.id,6);x.w.heat=clamp(x.w.heat+3);bond(x.w.id,x.f.id,-6,'gloat','Rubbed it in after the match.',cid+':mic');line('stage','The booing is the loudest it has been all night. That is the point.');add(x.w.short+' rubbed it in: heat +3, feud heat '+h+'.',1);}
+   const m=freshMul(repeats(st,'said','gloat'));
+   if(lands(.62)){const h=heatFeud(x.w.id,x.f.id,Math.round(6*m));x.w.heat=clamp(x.w.heat+Math.round(3*m));bond(x.w.id,x.f.id,-6,'gloat','Rubbed it in after the match.',cid+':mic');line('stage','The booing is the loudest it has been all night. That is the point.');add(x.w.short+' rubbed it in: heat +'+Math.round(3*m)+', feud heat '+h+'.',1);}
    else{line('stage','It falls flat. Somebody laughs, and not with them.');x.w.morale=clamp(x.w.morale-2);add('The gloating fell flat. Morale −2.',-1);}}
   else if(id==='credit'){say('credit');bond(x.w.id,x.f.id,6,'respect','Gave credit on the microphone.',cid+':mic');
    const fd=G.feud(x.w.id,x.f.id);if(fd&&!fd.closed)fd.heat=clamp(fd.heat-4);
-   if(x.stars>=3){G.S.rep=clamp(G.S.rep+1);add(x.w.short+' gave '+x.f.short+' credit. Bond +6, reputation +1.',1);}else add(x.w.short+' gave '+x.f.short+' credit. Bond +6.',1);}
-  else if(id==='concede'){say('concede');x.w.morale=clamp(x.w.morale+3);bond(x.w.id,x.f.id,4,'respect','Took the loss with grace.',cid+':mic');
-   if(!likesTrouble(x.p)){x.p.trust=clamp(x.p.trust+1);add(x.w.short+' took the loss like a pro. Morale +3, '+x.p.name+' trust +1.',1);}else add(x.w.short+' took the loss like a pro. Morale +3.',1);}
+   // Gracious in victory: the wrestler feels it, and promoters who value professionalism notice.
+   x.w.morale=clamp(x.w.morale+1);
+   const dt=['traditional','cold'].includes(x.p.personality)?1:0;if(dt)x.p.trust=clamp(x.p.trust+dt);
+   if(x.stars>=3)G.S.rep=clamp(G.S.rep+1);
+   add(x.w.short+' gave '+x.f.short+' credit. Bond +6, morale +1'+(dt?', '+x.p.name+' trust +1':'')+(x.stars>=3?', reputation +1':'')+'.',1);}
+  else if(id==='concede'){say('concede');x.w.morale=clamp(x.w.morale+3);x.w.heat=clamp(x.w.heat-1);bond(x.w.id,x.f.id,4,'respect','Took the loss with grace.',cid+':mic');
+   // Gracious, but the crowd sees somebody who accepts being beaten.
+   if(!likesTrouble(x.p)){x.p.trust=clamp(x.p.trust+1);add(x.w.short+' took the loss like a pro. Morale +3, heat −1, '+x.p.name+' trust +1.',1);}else add(x.w.short+' took the loss like a pro. Morale +3, heat −1.',1);}
   else if(id==='excuse'){say('excuse');
    if(x.dirty&&lands(.6)){const h=heatFeud(x.w.id,x.f.id,10);x.w.heat=clamp(x.w.heat+2);line('stage','The crowd is with them. They saw it too.');add('The crowd bought it: heat +2, feud heat '+h+'.',1);}
    else{x.w.heat=clamp(x.w.heat-2);line('stage',x.dirty?'Nobody is in the mood to hear it.':'The crowd saw a clean finish. They say so, loudly.');add('Sour grapes. Heat −2.',-1);}}
@@ -644,7 +672,7 @@
    const chance=callChance(st,tid,rematch),ok=roll('call:'+tid)<chance;
    st.call={target:tid,ok,chance:Math.round(chance*100),champion:!!tg?.champion};
    if(ok){
-    const h=heatFeud(x.w.id,tid,rematch?8:15);
+    const h=heatFeud(x.w.id,tid,rematch?8:10);
     const a=state();a.calls=a.calls.filter(k=>!(k.wid===x.w.id&&k.rid===tid));
     a.calls.push({wid:x.w.id,rid:tid,pid:x.p.id,slot:st.c.slot,champion:!!tg?.champion,from:cid,made:G.abs(),due:G.abs()+1,until:G.abs()+CALL_WEEKS});
     line('stage',rematch?'The crowd starts chanting for it. Somewhere backstage, '+x.p.voice+' picks up a pencil.':'The crowd turns to look at the curtain. '+t.short+' does not come out, but everybody wants them to.');
@@ -767,17 +795,78 @@
   recordEvidence(st);
   G.save();return st;
  }
+ // ---------------------------------------------------------------------------------------------
+ // What each option can lead to, for this scene: every outcome with its chance and its effects, from the
+ // same chances and numbers the resolvers apply. The option tags are built from this, so they show the real
+ // odds and what each outcome does, instead of a fixed label.
+ function outcomes(st,stage,id){
+  const x=ctxOf(st.c,st.fin);if(!x.w||!x.f||!x.p)return {outs:[{p:1,fx:{}}]};
+  const fd=G.feud(x.w.id,x.f.id),open=!!fd&&!fd.closed,calm=!likesTrouble(x.p);
+  const one=fx=>({outs:[{p:1,fx}]}),two=(p,ok,bad,label)=>({label,outs:[{p,fx:ok},{p:1-p,fx:bad}]});
+  const fromReactions=(rs,label)=>{
+   const ws=rs.map(r=>reactionWeight(st,r)),t=ws.reduce((a,b)=>a+b,0);
+   const outs=rs.map((r,i)=>({p:ws[i]/t,bond:r.bond||0,fx:{bond:r.bond||0,feud:r.feud&&(r.feud>0||open)?r.feud:0,morale:r.morale||0,trust:r.trust||0}}));
+   outs.sort((a,b)=>b.bond-a.bond);return {label,outs};
+  };
+  if(stage==='angle'){
+   const n=angleGraph.actions[id];
+   if(n&&x.context?.v===1)return fromReactions(n.reactions,'of a friendly reply');
+   const rp=['staredown','beatdown','celebrate'].includes(id)?repeats(st,'plan',id):0,m=freshMul(rp),r=v=>Math.round(v*m);
+   const res=
+    id==='handshake'?two(handshakeChance(st,x),{bond:12,morale:3,feud:open?-8:0,trust:calm?2:0,rep:x.stars>=3?1:0},{bond:-6,feud:10,heat:2},'they shake'):
+    id==='staredown'?one(x.stars>=2?{feud:r(12),heat:r(1)}:{feud:r(4)}):
+    id==='beatdown'?two(beatdownChance(st,x),{feud:r(12),heat:r(3),bond:-6,trust:calm?-4:3},{feud:25,bond:-25,trust:-6,cash:-100,morale:-3},'they were told'):
+    id==='celebrate'?one(x.stars>=3&&x.crowd>=55?{heat:r(3),morale:r(4)}:{morale:1}):one({});
+   return {...res,repeats:rp};
+  }
+  if(stage==='follow'){const n=followNodes[id];return n?fromReactions(n.reactions,'of a calm reply'):one({});}
+  // The microphone.
+  if(id==='walk')return one({});
+  if(id==='gloat'){const rp=repeats(st,'said','gloat'),m=freshMul(rp);return {...two(landChance(x,.62),{feud:Math.round(6*m),heat:Math.round(3*m),bond:-6},{morale:-2},'it lands'),repeats:rp};}
+  if(id==='credit')return one({bond:6,feud:open?-4:0,morale:1,trust:['traditional','cold'].includes(x.p.personality)?1:0,rep:x.stars>=3?1:0});
+  if(id==='concede')return one({morale:3,heat:-1,bond:4,trust:calm?1:0});
+  if(id==='excuse')return x.dirty?two(landChance(x,.6),{feud:10,heat:2},{heat:-2},'the crowd buys it'):one({heat:-2});
+  if(id==='rematch'||id.startsWith('call:')){
+   const rematch=id==='rematch',tid=rematch?x.f.id:id.slice(5),tg=rematch?null:targets(st).find(o=>o.id===tid);
+   return two(callChance(st,tid,rematch),{feud:rematch?8:10,offer:tg?.champion?'title':'match'},{heat:-2,morale:-2,trust:tg?.champion?-2:0},'it lands');
+  }
+  if(id==='demand:title')return two(demandChance(st,'title'),{offer:'title'},{trust:-(x.p.personality==='cold'?6:x.p.personality==='traditional'?4:3),heat:-2,morale:-3},'it lands');
+  if(id==='demand:slot')return two(demandChance(st,'slot'),{offer:'card',trust:likesTrouble(x.p)?1:0},{trust:x.p.personality==='cold'?-4:-2,morale:-2},'it lands');
+  return one({});
+ }
+ const FX_TAGS=[['feud','Feud heat',5,10],['heat','Heat',2,4],['bond','Bond',5,15],['morale','Morale',2,4],['trust','Promoter',2,4],['rep','Reputation',1,2]];
+ const arrows=(n,a,b)=>n>=b?'▲▲':n>0?'▲':n<=-b?'▼▼':n<0?'▼':'–';
+ const oddsWord=p=>p>=.65?'likely':p>=.4?'even chance':'long shot';
+ const OFFER_TAG={match:'Match offer next week if it lands',title:'Title match offer if it lands',card:'Up the card if it lands'};
+ function outcomeTags(o){
+  const live=o.outs.filter(x=>x.p>0),t=[];
+  if(live.length>1&&o.label)t.push('Odds '+o.label+': '+oddsWord(live[0].p));
+  for(const [k,name,a,b] of FX_TAGS){
+   const vals=live.map(x=>x.fx[k]||0);
+   if(vals.every(v=>!v))continue;
+   t.push(name+' '+[...new Set(vals.map(v=>arrows(v,a,b)))].join(' or '));
+  }
+  if(live.some(x=>(x.fx.cash||0)<0))t.push('Risk: £'+Math.abs(Math.min(...live.map(x=>x.fx.cash||0)))+' fine');
+  const offer=live.find(x=>x.fx.offer)?.fx.offer;if(offer)t.push(OFFER_TAG[offer]);
+  if(o.repeats)t.push('Seen it lately '+(o.repeats>=2?'▼▼':'▼'));
+  return t.length?t:['Safe'];
+ }
+ function withOutcomes(st,stage,opt){
+  const o=outcomes(st,stage,opt.id),x=ctxOf(st.c,st.fin);
+  const fresh=o.repeats?` ${x.w.short} has done this ${o.repeats===1?'once':o.repeats+' times'} in their last ${FRESH_WINDOW} nights, so it builds less.`:'';
+  return {...opt,hint:(opt.hint||'')+fresh,tags:outcomeTags(o)};
+ }
  function angleOptions(st){
   if(st?.stage!=='angle')return [];
   const x=ctxOf(st.c,st.fin);if(!x.w||!x.f)return [];
   const base=plans(st.c,x.w,x.f,x.won);
-  if(x.context?.v!==1)return base;
+  if(x.context?.v!==1)return base.map(o=>withOutcomes(st,'angle',o));
   const hurt=injured(x.context.injured?.w)||injured(x.context.injured?.f);
   const ordinary=base.filter(o=>!hurt||!['beatdown','staredown'].includes(o.id));
   const contextual=graphOptions(openingContext(st,x));
   // Witnessed situation-specific responses first; the safe exit is always
   // available. A chosen action is still validated against the same list.
-  return [...contextual,...ordinary.map(o=>o.id==='none'?{...o,label:'No further action',hint:'Move on to the microphone decision.'}:o)];
+  return [...contextual,...ordinary.map(o=>o.id==='none'?{...o,label:'No further action',hint:'Move on to the microphone decision.'}:o)].map(o=>withOutcomes(st,'angle',o));
  }
  // The first call of the segment: what happens now the bell has gone. Final once made.
  function choose(st,plan){
@@ -847,5 +936,5 @@
   return true;
  }
 
- root.OfficeAfter={state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,openingCandidates,selectOpening,prepareAutonomous,attachDialogue,begin,angleOptions,choose,followOptions,continueAngle,view,micOptions,speak,storyReceipt,latestStory,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
+ root.OfficeAfter={outcomes,outcomeTags,FRESH_WINDOW,state,PLANS,plans,capture,psychology,reactionAdjustment,angleGraph,graphEdges,openingCandidates,selectOpening,prepareAutonomous,attachDialogue,begin,angleOptions,choose,followOptions,continueAngle,view,micOptions,speak,storyReceipt,latestStory,recordEvidence,targets,callChance,deliverCalls,demandsFor,demandChance};
 })(typeof window!=='undefined'?window:globalThis);
