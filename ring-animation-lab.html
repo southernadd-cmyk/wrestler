@@ -60,8 +60,8 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 <div class="layout">
 <div class="strap"><div class="worker"><img id="wPortrait" alt=""><div><b id="wName">Your wrestler</b><small id="wStyle">—</small><div class="meter"><span id="wEnergy"></span></div></div></div><div class="clock"><strong id="clock">00:00</strong><small id="phase">Waiting</small></div><div class="worker"><img id="fPortrait" alt=""><div><b id="fName">Opponent</b><small id="fStyle">—</small><div class="meter"><span id="fEnergy"></span></div></div></div></div>
 <section class="panel commentary"><h2>Live commentary</h2><div class="action"><span class="status" id="venue">THE ARENA</span><strong id="action">Ready for the entrances</strong><span id="detail" class="muted">Select a bout and run the real engine.</span></div><h2>Commentary archive / engine trace</h2><div class="log" id="log" tabindex="0" aria-label="Match event log"></div></section>
-<aside class="panel ringside"><h2>Ringside · ring view</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Retro pixel-art view of the ring, wrestlers, referee, ringside and entrance aisle"></canvas></div><div class="ringbar"><span>RINGSIDE CAM</span><label class="sfx-toggle" title="Crowd and ring bell sound effects"><input id="sfx" type="checkbox" role="switch" aria-label="Sound effects" checked> SFX <span id="sfxState" aria-live="polite">On</span></label></div><div class="info"><div class="stats"><div><small>Crowd</small><b id="crowd">—</b></div><div><small>Rating</small><b id="rating">—</b></div><div><small>Graph actions</small><b id="count">0</b></div><div><small>Control</small><b id="control">—</b></div></div><div class="status" id="physical">Location: —</div></div><div class="transport"><button id="pause" disabled>Pause</button><button id="step" disabled>Step</button><label>Playback <select id="speed"><option value=".5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div><div id="decision" class="decision" hidden></div></aside></div>
-<p class="note">Live engine: the existing match graph, commentary, decisions and after-the-bell resolver run in an opaque-origin sandbox. The engine provides zones, control, grips and grounded states, not precise coordinates or full-body animation. The articulated rig visualises known graph events, including the final physical locations; special events and entrances/exits retain presentation poses. Exact move choreography and contact still require review. The graph animation laboratory is available from the navigation above. No main game UI, saves or navigation are used. Crowd and bell effects are original procedural audio, <a style="color:#a9d8e8" href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0</a>.</p>
+<aside class="panel ringside"><h2>Ringside · ring view</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Retro pixel-art view of the ring, wrestlers, referee, ringside and entrance aisle"></canvas></div><div class="ringbar"><span>RINGSIDE CAM</span><label class="sfx-toggle" title="Ring bell sound effects"><input id="sfx" type="checkbox" role="switch" aria-label="Sound effects" checked> SFX <span id="sfxState" aria-live="polite">On</span></label></div><div class="info"><div class="stats"><div><small>Crowd</small><b id="crowd">—</b></div><div><small>Rating</small><b id="rating">—</b></div><div><small>Graph actions</small><b id="count">0</b></div><div><small>Control</small><b id="control">—</b></div></div><div class="status" id="physical">Location: —</div></div><div class="transport"><button id="pause" disabled>Pause</button><button id="step" disabled>Step</button><label>Playback <select id="speed"><option value=".5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div><div id="decision" class="decision" hidden></div></aside></div>
+<p class="note">Live engine: the existing match graph, commentary, decisions and after-the-bell resolver run in an opaque-origin sandbox. The engine provides zones, control, grips and grounded states, not precise coordinates or full-body animation. The articulated rig visualises known graph events, including the final physical locations; special events and entrances/exits retain presentation poses. Exact move choreography and contact still require review. The graph animation laboratory is available from the navigation above. No main game UI, saves or navigation are used. Ring bell effects are original procedural audio, <a style="color:#a9d8e8" href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0</a>.</p>
 </main></template>
 <script>
 (function(){'use strict';
@@ -473,28 +473,15 @@ function assignLook(side,worker){
 // CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
 // No recordings, third-party samples, network requests or match RNG calls.
 function createSfx(){
- let ac=null,master=null,bed=null,bedGain=null,noise=null,enabled=false,running=false,level=0;
+ let ac=null,master=null,enabled=false,running=false;
  const voices=new Set();
  function setup(){
   if(ac)return true;const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return false;
-  ac=new Audio();ac.onstatechange=()=>report();master=ac.createGain();master.gain.value=0;master.connect(ac.destination);
-  // A long, seamless crowd bed: many overlapping filtered, modulated noise
-  // voices in a short reflective hall. Separate gain follows the engine crowd.
-  const seconds=4,n=ac.sampleRate*seconds;noise=ac.createBuffer(1,n,ac.sampleRate);const out=noise.getChannelData(0);
-  let seed=0x61ecbf,low=0,mid=0;
-  const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
-  const phases=Array.from({length:12},()=>rand()*Math.PI*2);
-  for(let i=0;i<n;i++){const t=i/ac.sampleRate,u=rand()*2-1;low=low*.972+u*.028;mid=mid*.79+u*.21;let voices=0;
-   for(let j=0;j<12;j++){const pitch=90+j*8.6,env=.32+.30*Math.sin(2*Math.PI*(Math.round((.65+j*.095)*seconds)/seconds)*t+phases[j]);voices+=env*(Math.sin(2*Math.PI*Math.round(pitch*seconds)/seconds*t+phases[j])+.35*Math.sin(2*Math.PI*Math.round((pitch*2.17)*seconds)/seconds*t+phases[j]*2));}
-   const fade=Math.min(1,i/1800,(n-1-i)/1800);out[i]=fade*(low*.8+mid*.48+voices*.016);
-  }
-  return true;
+  ac=new Audio();ac.onstatechange=()=>report();master=ac.createGain();master.gain.value=0;master.connect(ac.destination);return true;
  }
- function stopBed(){if(bed){try{bed.stop()}catch(_){}bed.disconnect();bed=null;}if(bedGain){bedGain.disconnect();bedGain=null;}}
- function sync(){if(!ac)return;const t=ac.currentTime;master.gain.cancelScheduledValues(t);master.gain.setTargetAtTime(enabled&&running?.85:0,t,.025);
-  if(enabled&&running&&!bed){bed=ac.createBufferSource();bed.buffer=noise;bed.loop=true;const filter=ac.createBiquadFilter();filter.type='lowpass';filter.frequency.value=2500;bedGain=ac.createGain();bedGain.gain.value=0;bed.connect(filter);filter.connect(bedGain);bedGain.connect(master);bed.start();bed.onended=()=>filter.disconnect();}
-  if(bedGain){bedGain.gain.cancelScheduledValues(t);bedGain.gain.setTargetAtTime(.34+level*.50,t,.28);}
-  if(!enabled||!running){stopBed();for(const voice of voices){try{voice.stop()}catch(_){} }voices.clear();}
+ function sync(){
+  if(!ac)return;const t=ac.currentTime;master.gain.cancelScheduledValues(t);master.gain.setTargetAtTime(enabled&&running?.85:0,t,.025);
+  if(!enabled||!running){for(const voice of voices){try{voice.stop()}catch(_){} }voices.clear();}
  }
  function report(){if(!enabled){$('sfxState').textContent='Off';return;}const blocked=ac&&ac.state!=='running';$('sfxState').textContent=blocked?'Blocked — retry':'On';$('sfxState').title=blocked?'Click the SFX switch off and on to enable browser audio':'';}
  function enable(v){enabled=!!v;if(enabled){try{if(!setup()){enabled=false;report();return false}Promise.resolve(ac.resume()).then(()=>{sync();report()}).catch(()=>report());}catch(_){enabled=false;report();return false}}sync();report();return enabled;}
@@ -505,7 +492,7 @@ function createSfx(){
    const t=start+hit*.24,o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(amp,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+decay);o.connect(g);g.connect(master);voices.add(o);o.onended=()=>{voices.delete(o);o.disconnect();g.disconnect()};o.start(t);o.stop(t+decay+.015);
   }
  }
- return{enable,bell,run(v){running=!!v;sync()},crowd(v){level=Math.max(0,Math.min(1,(Number(v)||0)/100));if(bedGain){const t=ac.currentTime;bedGain.gain.setTargetAtTime(.34+level*.50,t,.28);}},get enabled(){return enabled}};
+ return{enable,bell,run(v){running=!!v;sync()},get enabled(){return enabled}};
 }
 const sfx=createSfx(),sfxToggle=$('sfx');
 sfxToggle.onchange=()=>{const on=sfx.enable(sfxToggle.checked);sfxToggle.checked=on;if(on)sfx.run(active&&!paused);};
@@ -530,7 +517,7 @@ addOptions($('plan'),Object.entries(D.PLANS).map(([id,p])=>[id,p.name||p.label||
 function setStatus(action,detail){$('action').textContent=action;$('detail').textContent=detail||'';}
 function log(t,text,kind=''){const p=document.createElement('p');p.className=kind;const time=document.createElement('time');time.textContent=t;p.append(time,document.createTextNode(text));const el=$('log');const near=el.scrollHeight-el.scrollTop-el.clientHeight<70;el.append(p);if(near)el.scrollTop=el.scrollHeight;}
 function stamp(n){return E.fmt(n);}
-function stats(t){if(!M)return;sfx.crowd(M.crowd);$('clock').textContent=t||stamp(M.t);$('crowd').textContent=Math.round(M.crowd)+'%';$('rating').textContent=(M.final?.stars??E.liveStars(M)).toFixed(2)+' / 5';$('wEnergy').style.width=Math.max(0,Math.min(100,M.wSt))+'%';$('fEnergy').style.width=Math.max(0,Math.min(100,M.fSt))+'%';$('count').textContent=String(totalEvents);}
+function stats(t){if(!M)return;$('clock').textContent=t||stamp(M.t);$('crowd').textContent=Math.round(M.crowd)+'%';$('rating').textContent=(M.final?.stars??E.liveStars(M)).toFixed(2)+' / 5';$('wEnergy').style.width=Math.max(0,Math.min(100,M.wSt))+'%';$('fEnergy').style.width=Math.max(0,Math.min(100,M.fSt))+'%';$('count').textContent=String(totalEvents);}
 function phase(s){$('phase').textContent=s;}
 function place(side,zone,baseX,baseY,area){if(zone==='top')return [side==='w'?ring.l+16:ring.r-16,ring.t+16];if(zone==='apron')return [side==='w'?ring.l-18:ring.r+18,ring.b-50];if(zone==='floor'){if(area==='ramp')return [side==='w'?450:518,104];return [side==='w'?ring.l-70:ring.r+70,ring.b-48];}return [baseX,baseY];}
 function snapshot(e){
