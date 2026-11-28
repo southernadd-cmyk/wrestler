@@ -20,10 +20,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-      - name: Check tools
+      - name: Install audio tools
         run: |
-          ffmpeg -version | head -n 1
-          ffprobe -version | head -n 1
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          command -v ffmpeg
+          command -v ffprobe
+          ffmpeg -version
+          ffprobe -version
       - name: Import and verify clips
         run: python3 tools/build-ring-entrance-clips.py
       - name: Commit completed local bank to development branch
