@@ -546,6 +546,7 @@ function pinFrames(pinner,victim,kind='hold',contact='leg'){
  liftD.angles[1]=-120;liftD.angles[5]=-35;liftD.angles[6]=85;
  const outA=R(vx-dir*27,vy-3,0,'kneel',dir),outD=R(vx+dir*14,vy+1,0,'flat',-dir,-dir*13);
  outD.angles[5]=-62;outD.angles[6]=48;
+ if(kind==='release')return [F(.45,holdA,holdD,contact,'Release on the ropes'),F(1,outA,holdD,'','Break the hold')];
  if(kind==='escape')return [
  F(.24,holdA,holdD,contact,'Cover held'),F(.48,holdA,holdD,contact,'Shoulders down'),
  F(.72,liftA,liftD,'','Shoulder up — kick-out'),F(1,outA,outD,'','Cover broken')];
@@ -1087,7 +1088,7 @@ function eventFrame(e){
 const otherSide=side=>side==='w'?'f':'w';
 function pinLine(text){
  const t=String(text||'').trim(),counts=[...t.matchAll(/\b(ONE|TWO|THREE)!/g)].map(m=>({ONE:1,TWO:2,THREE:3})[m[1]]);
- const escape=/shoulder up|kick(?:s|ed)?[ -]?out|kicks? free|breaks the count|escapes? (?:the cover|at the last moment)|survives the cover|two and a half|hand almost hit three|last-second escape|survives!|has escaped/i.test(t);
+ const escape=/shoulder up|kick(?:s|ed)?[ -]?out|kicks? free|breaks the count|escapes? (?:the cover|at the last moment)|survives the cover|two and a half|hand almost hit three|last-second escape|survives!|survived (?:the|a)|has escaped/i.test(t);
  const rope=/foot (?:is )?on the rope|rope break|reaches? the rope/i.test(t);
  const tap=/\bTAPS!/.test(t);
  return {counts,escape,rope,tap,cover:/\bcover[.!]?$|hooks? (?:the |a )?(?:far )?leg|referee drops into position|drapes an arm|rolls .+ up/i.test(t)};
@@ -1103,7 +1104,7 @@ function pinSide(l,final=false){
 function officialClip(side,kind,now,countDuration=0){
  const previous=rigAnim?rigFrameAt(now):{a:capturePresentation(side,now),d:capturePresentation(otherSide(side),now),contact:'',strength:0,owner:'a'};
  const swap=!!rigAnim&&rigLead!==side,pr=swap?previous.d:previous.a,vr=swap?previous.a:previous.d;
- let tail=rig.pinFrames(pr,vr,kind==='hold'?'hold':'escape'),duration=kind==='hold'?480:680;
+ let tail=rig.pinFrames(pr,vr,kind),duration=kind==='hold'?480:680;
  if(countDuration){
   duration=countDuration+680;
   const coverEnd=countDuration/duration;
@@ -1121,6 +1122,7 @@ function officiateLine(l,now){
  if(n&&rig.pinKind(n))return 0;
  const explicit=l.kind==='count',final=info.counts.includes(3);
  if(info.tap&&explicit){
+  if(!rigAnim){const side=pinSide(l,true),nowA=capturePresentation(side,now),nowD=capturePresentation(otherSide(side),now),dir=nowA.x<=nowD.x?1:-1;const a=rig.R(nowD.x-dir*12,nowD.y-2,0,'kneel',dir),d=rig.R(nowD.x,nowD.y,0,'flat',-dir);rigAnim={desc:{clip:'submissionCheck'},seq:[{t:0,a:nowA,d:nowD,contact:'',stage:'Current position'},{t:1,a,d,contact:'ground-head',stage:'Submission'}],duration:350};rigLead=side;rigStart=now;rigDuration=350/Number($('speed').value);}
   officialPin=null;refSignal={kind:'tap',at:now,span:650/Number($('speed').value)};
   phase('Submission');return 700;
  }
@@ -1144,7 +1146,7 @@ function officiateLine(l,now){
   phase('Pin attempt');return 600;
  }
  if(officialPin&&!officialPin.pending&&!officialPin.finished&&(info.escape||info.rope)&&['crowd','play','count'].includes(l.kind)){
-  officialClip(officialPin.side,'escape',now);officialPin=null;refSignal={kind:info.rope?'break':'escape',at:now,span:680/Number($('speed').value)};
+  officialClip(officialPin.side,info.rope?'release':'escape',now);officialPin=null;refSignal={kind:info.rope?'break':'escape',at:now,span:680/Number($('speed').value)};
   phase(info.rope?'Rope break':'Kick-out');return 800;
  }
  return 0;
@@ -1387,6 +1389,7 @@ function officialView(now,frame,resolved){
   else if(refSignal.kind==='countEscape'){kind='watch';count=0;}
   else if(t<=1&&refSignal.kind!=='count'){kind=refSignal.kind;count=kind==='escape'?officialPin?.count||0:0;}
  }
+ if(kind==='tap'){const v=M.graph?.outcome?.winner;if(v==='w'||v==='f')side=v;}
  const a=side===rigLead?resolved.a:resolved.d,d=side===rigLead?resolved.d:resolved.a;
  const check=['pin','submission','tap','escape','break'].includes(kind);
  const outside=check&&d.ground.x>380&&M?.o?.stip==='anywhere';
