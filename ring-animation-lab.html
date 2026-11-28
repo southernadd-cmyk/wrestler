@@ -115,7 +115,7 @@ if(params.get('frame')!=='1'){
   if(!cache.has(d.path))cache.set(d.path,new Promise(resolve=>{const img=new Image();img.onload=()=>{try{resolve(samplePortrait(img))}catch(_){resolve(null)}};img.onerror=()=>resolve(null);img.src=d.path;}));
   cache.get(d.path).then(skin=>{if(!skin)cache.delete(d.path);e.source.postMessage({type:'ring-skin-result',token:d.token,skin},'*');});
  });
- frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=622';return
+ frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=623';return
 }
 $('lab').hidden=false;
 if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
@@ -242,7 +242,7 @@ const P={
  carry:[-12,-125,-40,125,40,-15,15,15,-15],
  inverted:[180,-25,-40,25,40,-7,7,7,-7],
  fall:[75,-45,-20,45,20,-14,20,14,-20],
- flat:[90,-18,-20,18,20,0,4,0,-4],
+ flat:[90,-55,-20,-95,12,-86,-4,-94,4],
  seated:[-10,-32,-60,32,60,-85,75,85,-75],
  kneel:[12,-55,-50,55,50,-65,115,65,-115],
  bridge:[-75,-45,-35,45,35,-55,85,55,-85],
@@ -479,16 +479,28 @@ const deg=Math.PI/180;
 const V=(x,y)=>({x,y});const addV=(a,b)=>V(a.x+b.x,a.y+b.y);
 const seg=(angle,len,up=false)=>V(Math.sin(angle*deg)*len,Math.cos(angle*deg)*len*(up?-1:1));
 function skeleton(r){
- const [torso,ls,le,rs,re,lh,lk,rh,rk]=r.angles;const pelvicHeight=clamp(13*Math.abs(Math.cos(torso*deg))*(1-.55*Math.min(1,(Math.abs(lh)+Math.abs(rh))/140)),3,13);const o=V(240+r.x,146+r.y-r.z-pelvicHeight);
+ const [torso,ls,le,rs,re,lh,lk,rh,rk]=r.angles;const o=V(240+r.x,146+r.y-Math.max(0,r.z));
  const trans=p=>{let x=p.x*r.face,y=p.y;const t=r.rot*deg;return V(o.x+x*Math.cos(t)-y*Math.sin(t),o.y+x*Math.sin(t)+y*Math.cos(t))};
  const hip=V(0,0),shoulder=seg(torso,13,true),head=addV(shoulder,seg(torso,8,true));
  const arm=(sign,s,e)=>{const start=addV(shoulder,V(sign*5,0)),elbow=addV(start,seg(s,8)),hand=addV(elbow,seg(s+e,7));return [start,elbow,hand].map(trans)};
  const leg=(sign,h,k)=>{const start=V(sign*3,0),knee=addV(start,seg(h,8)),foot=addV(knee,seg(h+k,8));return [start,knee,foot].map(trans)};
- return{hip:trans(hip),shoulder:trans(shoulder),head:trans(head),arms:[arm(-1,ls,le),arm(1,rs,re)],legs:[leg(-1,lh,lk),leg(1,rh,rk)],ground:V(240+r.x,146+r.y),r};
+ const s={hip:trans(hip),shoulder:trans(shoulder),head:trans(head),arms:[arm(-1,ls,le),arm(1,rs,re)],legs:[leg(-1,lh,lk),leg(1,rh,rk)],ground:V(240+r.x,146+r.y),r};
+ // The authored z is clearance above the local support plane. Anchor the
+ // lowest part of the articulated body rather than guessing pelvis height.
+ // This works for standing, kneeling, bridging, prone and inverted poses.
+ const delta=s.ground.y-Math.max(0,r.z)-supportBottom(s);
+ for(const p of [s.hip,s.shoulder,s.head,...s.arms.flat(),...s.legs.flat()])p.y+=delta;
+ return s;
+}
+function supportBottom(s){
+ return Math.max(s.head.y+6.5,s.shoulder.y+7,s.hip.y+6,
+  ...s.arms.flat().map(p=>p.y+2.5),...s.legs.flat().map(p=>p.y+3));
 }
 function nearestHand(s,target){return s.arms.reduce((a,b)=>Math.hypot(a[0].x-target.x,a[0].y-target.y)<Math.hypot(b[0].x-target.x,b[0].y-target.y)?a:b)}
 function solveArm(arm,target){
- const a=arm[0],dx=target.x-a.x,dy=target.y-a.y,raw=Math.hypot(dx,dy)||.001,d=clamp(raw,1,14.8),ux=dx/raw,uy=dy/raw,along=(64-49+d*d)/(2*d),height=Math.sqrt(Math.max(0,64-along*along));
+ const a=arm[0],dx=target.x-a.x,dy=target.y-a.y,raw=Math.hypot(dx,dy),fallback=Math.hypot(arm[1].x-a.x,arm[1].y-a.y)||1,d=clamp(raw,1,15),
+  ux=raw>1e-6?dx/raw:(arm[1].x-a.x)/fallback,uy=raw>1e-6?dy/raw:(arm[1].y-a.y)/fallback,
+  along=(64-49+d*d)/(2*d),height=Math.sqrt(Math.max(0,64-along*along));
  const end=V(a.x+ux*d,a.y+uy*d),bend=(arm[1].x-a.x)*(-uy)+(arm[1].y-a.y)*ux>=0?1:-1;
  arm[1]=V(a.x+ux*along-uy*height*bend,a.y+uy*along+ux*height*bend);arm[2]=end;return Math.hypot(end.x-target.x,end.y-target.y);
 }
@@ -515,32 +527,63 @@ function contactPoints(a,d,type,clip=''){
  const arm=nearestHand(a,target);return{target,end:arm[0],arm,strike:false};
 }
 function feet(a){return a.legs.map(l=>l[2])}
-function contactSolve(a,d,type,clip=''){
+function contactSolve(a,d,type,clip='',weight=1){
  if(!type)return null;const p=contactPoints(a,d,type,clip);
  if(p.strike)return Math.hypot(p.end.x-p.target.x,p.end.y-p.target.y);
- return solveArm(p.arm,p.target);
+ const old=p.arm.map(q=>({...q}));solveArm(p.arm,p.target);
+ // Release and acquire grips progressively, preserving the two bone
+ // lengths by blending the actual joint angles instead of joint positions.
+ if(weight<1){
+  const angle=(a,b)=>Math.atan2(b.y-a.y,b.x-a.x);
+  const blend=(a,b)=>a+Math.atan2(Math.sin(b-a),Math.cos(b-a))*weight;
+  const first=blend(angle(old[0],old[1]),angle(p.arm[0],p.arm[1])),second=blend(angle(old[1],old[2]),angle(p.arm[1],p.arm[2]));
+  p.arm[1]=V(old[0].x+8*Math.cos(first),old[0].y+8*Math.sin(first));
+  p.arm[2]=V(p.arm[1].x+7*Math.cos(second),p.arm[1].y+7*Math.sin(second));
+ }
+ // For two-handed clinches, add the other hand only when it can reach
+ // without moving either wrestler or forcing an arm across a body.
+ if(weight>.85&&['upper-body','body-clinch','rear-waist'].includes(type)){
+  const free=a.arms.find(q=>q!==p.arm),target=V(p.target.x+(free[0].x<p.target.x?-4:4),p.target.y+2);
+  const dist=Math.hypot(free[0].x-target.x,free[0].y-target.y);
+  if(dist>=2&&dist<=14)solveArm(free,target);
+ }
+ return Math.hypot(p.arm[2].x-p.target.x,p.arm[2].y-p.target.y);
 }
-// Use bounded root correction before IK. Never stretch the bones or snap
-// a wrestler across the ring to make the coverage metric pass.
+function uprightPair(a,d){
+ return a.r.z<2&&d.r.z<2&&a.hip.y-a.shoulder.y>9&&d.hip.y-d.shoulder.y>9&&Math.abs(a.hip.y-d.hip.y)<9;
+}
+function bodyGap(a,d){return Math.abs(a.hip.x-d.hip.x);}
+function limitRoot(r,original,dx,dy){
+ const z=original.x>143?'outside':original.x>108?'apron':'ring',lo=z==='outside'?144:z==='apron'?109:-105,hi=z==='outside'?198:z==='apron'?143:108;
+ // Keep the authored zone, including pre-existing edge coordinates.
+ r.x=clamp(original.x+dx,Math.min(lo,original.x),Math.max(hi,original.x));r.y=clamp(original.y+dy,Math.min(-90,original.y),Math.max(43,original.y));
+}
 function resolveFrame(f,clip=''){
  let ar=copy(f.a),dr=copy(f.d),a=skeleton(ar),d=skeleton(dr);
- if(!f.contact)return {a,d,raw:null,residual:null,shift:0};
- let actor=f.owner==='d'?d:a,victim=f.owner==='d'?a:d;
- const raw=contactSolve(skeleton(actor.r),skeleton(victim.r),f.contact,clip);
- const p=contactPoints(actor,victim,f.contact,clip),dx=p.target.x-p.end.x,dy=p.target.y-p.end.y,len=Math.hypot(dx,dy);
- const need=Math.max(0,len-(p.strike?1:13.5));
- // Split the movement between the performers; no vertical levitation.
- // Keep the correction smaller at pose boundaries and near ropes.
- const weight=f.strength??1,cap=p.strike?12:15;
- const x=clamp(dx/(len||1)*need,-cap*2,cap*2)*weight;
- const y=clamp(dy/(len||1)*need,-8,8)*weight;
- const u=f.owner==='d'?dr:ar,v=f.owner==='d'?ar:dr;
- const zone=r=>r.x>143?'outside':r.x>108?'apron':'ring';
- const limit=(r,x,y)=>{const z=zone(r),lo=z==='outside'?144:z==='apron'?109:-105,hi=z==='outside'?198:z==='apron'?143:108;const nx=clamp(r.x+x,lo,hi),ny=clamp(r.y+y,-90,43);r.x=nx;r.y=ny;};
- const before=[ar.x,ar.y,dr.x,dr.y];limit(u,x*.65,y*.65);limit(v,-x*.35,-y*.35);
- a=skeleton(ar);d=skeleton(dr);actor=f.owner==='d'?d:a;victim=f.owner==='d'?a:d;
- const residual=contactSolve(actor,victim,f.contact,clip);
- return{a,d,raw,residual,shift:Math.max(Math.hypot(ar.x-before[0],ar.y-before[1]),Math.hypot(dr.x-before[2],dr.y-before[3]))};
+ const weight=f.strength??1,reverse=f.owner==='d',actor=()=>reverse?d:a,victim=()=>reverse?a:d;
+ const raw=f.contact?contactSolve(skeleton(actor().r),skeleton(victim().r),f.contact,clip):null;
+ const u=reverse?dr:ar,v=reverse?ar:dr,ou=reverse?f.d:f.a,ov=reverse?f.a:f.d;
+ // Bounded separation only for upright grounded bodies at the same depth.
+ // Do not force space between legitimate mat holds, lifts or airborne moves.
+ const separate=(min)=>{
+  if(!uprightPair(a,d)||bodyGap(a,d)>=min)return;
+  const dir=a.hip.x===d.hip.x?(ar.face===1?-1:1):Math.sign(a.hip.x-d.hip.x),need=(min-bodyGap(a,d))/2;
+  limitRoot(ar,f.a,clamp(ar.x-f.a.x+dir*need,-12,12),ar.y-f.a.y);
+  limitRoot(dr,f.d,clamp(dr.x-f.d.x-dir*need,-12,12),dr.y-f.d.y);
+  a=skeleton(ar);d=skeleton(dr);
+ };
+ if(!f.contact){separate(12);return{a,d,raw:null,residual:null,shift:Math.max(Math.hypot(ar.x-f.a.x,ar.y-f.a.y),Math.hypot(dr.x-f.d.x,dr.y-f.d.y))};}
+ const p=contactPoints(actor(),victim(),f.contact,clip),dx=p.target.x-p.end.x,dy=p.target.y-p.end.y,len=Math.hypot(dx,dy);
+ const need=Math.max(0,len-(p.strike?1:14.5));
+ const cap=p.strike?12:15;
+ const x=clamp(dx/(len||1)*need,-cap*2,cap*2)*weight,y=clamp(dy/(len||1)*need,-12,12)*weight;
+ // More balanced root adjustment than pulling one performer the entire
+ // distance. Vertical correction changes depth, never aerial clearance.
+ limitRoot(u,ou,x*.55,y*.55);limitRoot(v,ov,-x*.45,-y*.45);
+ a=skeleton(ar);d=skeleton(dr);
+ separate(10);
+ const residual=contactSolve(actor(),victim(),f.contact,clip,weight);
+ return{a,d,raw,residual,shift:Math.max(Math.hypot(ar.x-f.a.x,ar.y-f.a.y),Math.hypot(dr.x-f.d.x,dr.y-f.d.y))};
 }
 function drawLimb(pts,color,width){
  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];
