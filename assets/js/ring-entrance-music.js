@@ -3,9 +3,8 @@
    https://tallbeard.itch.io/music-loop-bundle
    Catalogue / pinned mirror: https://github.com/todd-apptivity/video-background-music
    Each identity receives a distinct recording, selected from catalogue tags.
-   Offset 0 is provisional until auditioned; no live career or RNG changes. */
+   Locally hosted 12-second MP3 excerpts; no live career or RNG changes. */
 (function(root){'use strict';
-const release="https://github.com/todd-apptivity/video-background-music/releases/download/v1/";
 const assignments=Object.freeze({
  "academy-001": {
   "title": "Sketchbook 2024-08-01_EXTENDED",
@@ -1808,5 +1807,5 @@ const assignments=Object.freeze({
   "style": "Spectacle"
  }
 });
-root.OfficeRingEntranceMusic=Object.freeze({assignments,resolve(id){const t=assignments[id];return t?{...t,url:release+encodeURIComponent(t.file),license:'CC0-1.0'}:null;}});
+root.OfficeRingEntranceMusic=Object.freeze({assignments,resolve(id){const t=assignments[id];return t?{...t,duration:12,offset:0,url:'assets/audio/entrances/'+encodeURIComponent(id)+'.mp3',license:'CC0-1.0'}:null;}});
 })(typeof window!=='undefined'?window:globalThis);
