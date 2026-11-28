@@ -345,7 +345,9 @@ label.field,.letter .meta,.kv dt{color:var(--ink-2)}
 .msglist button{display:grid;grid-template-columns:12px 1fr auto;gap:0 8px;width:100%;padding:7px 10px;border:0;border-bottom:1px solid var(--well-line);background:none;color:var(--white);text-align:left}
 .msglist li:nth-child(even) button{background:var(--well-row)}
 .msglist button:hover{background:var(--well-hover)}
-.msglist button[aria-current="true"]{background:var(--gold);color:var(--ink)}
+/* The selected message is always the gold bar: listed as li button so it outranks the even-row stripe
+   and the hover tint (otherwise a selected even row kept the stripe with dark text and was hard to read). */
+.msglist li button[aria-current="true"],.msglist li button[aria-current="true"]:hover{background:var(--gold);color:var(--ink)}
 /* Unread and needs-reply: a coloured edge plus a bigger pip, and read mail steps back.
    (The pixel font has one weight, so bold alone shows nothing.) */
 .msglist button{border-left:4px solid transparent}
