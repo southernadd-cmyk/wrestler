@@ -1,13 +1,15 @@
 {
   "slow": {
-    "url": "https://github.com/todd-apptivity/video-background-music/releases/download/v1/interior-birdecorator-menu_loop.ogg",
-    "credit": "Abstraction / Tallbeard Studios \u2014 Interior Birdecorator Menu_LOOP",
-    "source": "https://tallbeard.itch.io/music-loop-bundle",
+    "url": "https://github.com/btahir/open-lofi/releases/download/v1.0.0/openlofi.zip",
+    "source": "https://github.com/btahir/open-lofi",
+    "credit": "btahir / Open Lo-Fi \u2014 Slow Dance in the Living Room",
     "license": "CC0-1.0",
-    "sha256": "28a3f62eddcea1e30817c04cd934df191d71ea9ca970b252b6834e5d564d84e3",
+    "archiveMember": "slow-dance-in-the-living-room.mp3",
+    "offset": 24,
+    "sourceSha256": "d888ec5d8360bd4cbeb96fcc59d4b972e5044c3b6c306e254c8ab3b8be2465c6",
     "duration": 12.042449,
     "bytes": 144867,
-    "outputSha256": "87170dacba037d01320ca57dd3d98c1029de9d70633afcfa3f90e69df0382c7c"
+    "outputSha256": "f0ed622ab92fbcee781411616305371b231ee761c61535b0e6200a01234a3c88"
   },
   "hum": {
     "url": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Woman_humming_a_nondescript_tune.wav",
@@ -54,5 +56,16 @@
     "duration": 12.042449,
     "bytes": 144867,
     "outputSha256": "d05870c1d7573df3bfb33c2625e5fa0f9df147469b80801a776e9f03b8d30030"
+  },
+  "disco": {
+    "url": "https://opengameart.org/sites/default/files/funkydiscobeatstoboogieslashwoogieto_0.ogg",
+    "source": "https://opengameart.org/content/funky-disco-beats-to-boogiewoogie-to",
+    "credit": "Fupi \u2014 Funky Disco Beats to Boogie/Woogie to",
+    "license": "CC0-1.0",
+    "offset": 16,
+    "sourceSha256": "89f796ee542f3cfd0fa587a07b4c5bc8856c076e6c836c44b95a78176f9eded6",
+    "duration": 12.042449,
+    "bytes": 144867,
+    "outputSha256": "e8bf08b368503307dbfd9b4ed2231eeda6e40101f1b91f4a94eacd6cd8e9dcb9"
   }
 }

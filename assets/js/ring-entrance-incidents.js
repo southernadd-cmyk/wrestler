@@ -27,13 +27,13 @@ function resolve(sheet,w,f){
 }
 function track(cue,w,f){
  if(cue==='normal'||cue==='silence')return null;
- if(cue==='disco'||cue==='jingle'){
-  const ids=cue==='disco'?['academy-031','academy-028','academy-080']:['academy-018','academy-024','academy-009'];
+ if(cue==='jingle'){
+  const ids=['academy-018','academy-024','academy-009'];
   const id=ids.find(x=>x!==w?.id&&x!==f?.id);
   const t=root.OfficeRingEntranceMusic?.resolve(id);return t?{...t,title:LABELS[cue]+' · '+t.title}:null;
  }
- if(!['slow','hum','choir','choirBad','shanty','march'].includes(cue))return null;
- return {title:LABELS[cue],url:'assets/audio/entrance-incidents/'+cue+'.mp3',offset:0,duration:12};
+ if(!['disco','slow','hum','choir','choirBad','shanty','march'].includes(cue))return null;
+ return {title:LABELS[cue],url:'assets/audio/entrance-incidents/'+cue+'.mp3'+(['disco','slow'].includes(cue)?'?v=2':''),offset:0,duration:12};
 }
 function preview(cue,c,w,f,p){
  if(cue==='normal')return [];

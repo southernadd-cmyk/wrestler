@@ -1,9 +1,9 @@
-name: Build entrance incident clips (one-off)
+name: Replace wedding CD clips (one-off)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - 'tools/build-ring-incident-clips.py'
+      - 'tools/replace-wedding-cd-clips.py'
       - '.github/workflows/build-ring-incident-clips.yml'
 permissions:
   contents: write
@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   import:
-    if: github.head_ref == 'lab/v3-entrance-incidents' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.head_ref == 'lab/v3-wedding-audio-replacement' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -26,13 +26,13 @@ jobs:
             sudo apt-get update -qq
             sudo apt-get install -y --no-install-recommends ffmpeg
           fi
-          python3 tools/build-ring-incident-clips.py
+          python3 tools/replace-wedding-cd-clips.py
       - name: Commit complete local incident bank
         run: |
-          test "$(find assets/audio/entrance-incidents -name '*.mp3' | wc -l)" -eq 6
+          test "$(find assets/audio/entrance-incidents -name '*.mp3' | wc -l)" -eq 7
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/audio/entrance-incidents/
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Add six verified local entrance incident clips"
-          git push origin HEAD:refs/heads/lab/v3-entrance-incidents
+          git commit -m "Replace two wedding CD recordings with verified local clips"
+          git push origin HEAD:refs/heads/lab/v3-wedding-audio-replacement
