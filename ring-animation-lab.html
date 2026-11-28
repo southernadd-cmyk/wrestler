@@ -60,8 +60,8 @@ h2{background:#203568;color:#9ed9ea;padding:7px 9px;font-size:12px;letter-spacin
 <div class="layout">
 <div class="strap"><div class="worker"><img id="wPortrait" alt=""><div><b id="wName">Your wrestler</b><small id="wStyle">—</small><div class="meter"><span id="wEnergy"></span></div></div></div><div class="clock"><strong id="clock">00:00</strong><small id="phase">Waiting</small></div><div class="worker"><img id="fPortrait" alt=""><div><b id="fName">Opponent</b><small id="fStyle">—</small><div class="meter"><span id="fEnergy"></span></div></div></div></div>
 <section class="panel commentary"><h2>Live commentary</h2><div class="action"><span class="status" id="venue">THE ARENA</span><strong id="action">Ready for the entrances</strong><span id="detail" class="muted">Select a bout and run the real engine.</span></div><h2>Commentary archive / engine trace</h2><div class="log" id="log" tabindex="0" aria-label="Match event log"></div></section>
-<aside class="panel ringside"><h2>Ringside · ring view</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Retro pixel-art view of the ring, wrestlers, referee, ringside and entrance aisle"></canvas></div><div class="ringbar"><span>RINGSIDE CAM</span><label class="sfx-toggle" title="Recorded crowd and ring bell sound effects"><input id="sfx" type="checkbox" role="switch" aria-label="Sound effects" checked> SFX <span id="sfxState" aria-live="polite">On</span></label></div><div class="info"><div class="stats"><div><small>Crowd</small><b id="crowd">—</b></div><div><small>Rating</small><b id="rating">—</b></div><div><small>Graph actions</small><b id="count">0</b></div><div><small>Control</small><b id="control">—</b></div></div><div class="status" id="physical">Location: —</div></div><div class="transport"><button id="pause" disabled>Pause</button><button id="step" disabled>Step</button><label>Playback <select id="speed"><option value=".5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div><div id="decision" class="decision" hidden></div></aside></div>
-<p class="note">Live engine: the existing match graph, commentary, decisions and after-the-bell resolver run in an opaque-origin sandbox. The engine provides zones, control, grips and grounded states, not precise coordinates or full-body animation. The articulated rig visualises known graph events, including the final physical locations; special events and entrances/exits retain presentation poses. Exact move choreography and contact still require review. The graph animation laboratory is available from the navigation above. No main game UI, saves or navigation are used. Ring bell effects are original procedural audio. Recorded crowd ambience: <a href="https://commons.wikimedia.org/wiki/File:211146_unfa_another-crowd.flac" target="_blank" rel="noopener">unfa</a>; applause: <a href="https://commons.wikimedia.org/wiki/File:Sound_Effects_-_Applause_after_a_concert.ogg" target="_blank" rel="noopener">Amada44</a>. Both CC0; clips are source-hosted for this prototype.</p>
+<aside class="panel ringside"><h2>Ringside · ring view</h2><div class="arena"><canvas id="arena" width="480" height="272" role="img" aria-label="Retro pixel-art view of the ring, wrestlers, referee, ringside and entrance aisle"></canvas></div><div class="ringbar"><span>RINGSIDE CAM</span><label class="sfx-toggle" title="Entrance music, recorded crowd and ring bell sound effects"><input id="sfx" type="checkbox" role="switch" aria-label="Sound effects" checked> SFX <span id="sfxState" aria-live="polite">On</span></label></div><div class="info"><div class="stats"><div><small>Crowd</small><b id="crowd">—</b></div><div><small>Rating</small><b id="rating">—</b></div><div><small>Graph actions</small><b id="count">0</b></div><div><small>Control</small><b id="control">—</b></div></div><div class="status" id="physical">Location: —</div></div><div class="transport"><button id="pause" disabled>Pause</button><button id="step" disabled>Step</button><label>Playback <select id="speed"><option value=".5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div><div id="decision" class="decision" hidden></div></aside></div>
+<p class="note">Live engine: the existing match graph, commentary, decisions and after-the-bell resolver run in an opaque-origin sandbox. The engine provides zones, control, grips and grounded states, not precise coordinates or full-body animation. The articulated rig visualises known graph events, including the final physical locations; special events and entrances/exits retain presentation poses. Exact move choreography and contact still require review. The graph animation laboratory is available from the navigation above. No main game UI, saves or navigation are used. Ring bell effects are original procedural audio. Recorded crowd ambience: <a href="https://commons.wikimedia.org/wiki/File:211146_unfa_another-crowd.flac" target="_blank" rel="noopener">unfa</a>; applause: <a href="https://commons.wikimedia.org/wiki/File:Sound_Effects_-_Applause_after_a_concert.ogg" target="_blank" rel="noopener">Amada44</a>. Both CC0; clips are source-hosted for this prototype. Entrance themes: <a href="https://tallbeard.itch.io/music-loop-bundle" target="_blank" rel="noopener">Abstraction / Tallbeard Studios</a>, CC0 1.0, 200 fixed, distinct 12-second local MP3 excerpts, stored with the lab; source catalogue and checksums are recorded in the asset manifest.</p>
 </main></template>
 <script>
 (function(){'use strict';
@@ -99,11 +99,11 @@ if(params.get('frame')!=='1'){
   if(!cache.has(d.path))cache.set(d.path,new Promise(resolve=>{const img=new Image();img.onload=()=>{try{resolve(samplePortrait(img))}catch(_){resolve(null)}};img.onerror=()=>resolve(null);img.src=d.path;}));
   cache.get(d.path).then(skin=>e.source.postMessage({type:'ring-skin-result',token:d.token,skin},'*'));
  });
- frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=613';return
+ frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=614';return
 }
 $('lab').hidden=false;
 if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
-const files=live?["portrait-age-map","portraits","data","roster-registry","promo-identity","psychology-fuzzy","planning-fuzzy","promo-fuzzy","promo-director","promo-dialogue","promo-semantics","promo-rookie-claims","promo-bank-manifest","promo-bank-loader","planning-dialogue","academy-register","academy","technique-registry","technique-backgrounds","match-catalog","graph-narration","match-graph","match-commentary","match-engine","career","territory","living-world","story","memory","sheets","agents-room","promo-duel","relationships","rivalry","ambitions","booking-office","rival-managers","promotion-business","programmes","approaches","after-bell","ringside","rival-corner","disqualify","stipulations","negotiation-v2","signing","promo-segments","mouthpiece","programme-arcs","outcome","night-report","negotiation-career","ringfax"]:["portraits","data","roster-registry","promo-identity","psychology-fuzzy","promo-dialogue","planning-dialogue","technique-registry","technique-backgrounds","match-catalog","graph-narration","match-graph","match-commentary","match-engine"];
+const files=live?["ring-entrance-music","portrait-age-map","portraits","data","roster-registry","promo-identity","psychology-fuzzy","planning-fuzzy","promo-fuzzy","promo-director","promo-dialogue","promo-semantics","promo-rookie-claims","promo-bank-manifest","promo-bank-loader","planning-dialogue","academy-register","academy","technique-registry","technique-backgrounds","match-catalog","graph-narration","match-graph","match-commentary","match-engine","career","territory","living-world","story","memory","sheets","agents-room","promo-duel","relationships","rivalry","ambitions","booking-office","rival-managers","promotion-business","programmes","approaches","after-bell","ringside","rival-corner","disqualify","stipulations","negotiation-v2","signing","promo-segments","mouthpiece","programme-arcs","outcome","night-report","negotiation-career","ringfax"]:["portraits","data","roster-registry","promo-identity","psychology-fuzzy","promo-dialogue","planning-dialogue","technique-registry","technique-backgrounds","match-catalog","graph-narration","match-graph","match-commentary","match-engine"];
 const fail=e=>{const el=$('error');el.hidden=false;el.textContent=String(e?.stack||e)};
 function load(n){return new Promise((ok,no)=>{const s=document.createElement('script');s.src='assets/js/'+n+'.js';s.async=false;s.onload=ok;s.onerror=()=>no(Error('Failed to load '+n));document.head.append(s)})}
 (async()=>{for(const n of files)await load(n);boot()})().catch(fail);
@@ -475,6 +475,45 @@ function assignLook(side,worker){
 function createSfx(){
  let ac=null,master=null,enabled=false,running=false;
  let ambient=null,cheer=null,clipError=false,clipBlocked=false,lastPop=-Infinity,popTimer=null;
+ const entranceClips=new Map();let theme=null,themeSide=null,themeLength=0,themeError=false,themeTimer=null,themeEnded=false;
+ function stopTheme(clear=true){
+  if(themeTimer!==null){clearTimeout(themeTimer);themeTimer=null;}
+  if(theme){theme.audio.pause();if(clear){try{theme.audio.currentTime=theme.track.offset}catch(_){}theme=null;themeSide=null;themeEnded=false;}}
+ }
+ function prepareThemes(w,f){
+  stopTheme();for(const item of entranceClips.values()){item.audio.pause();item.audio.removeAttribute('src');item.audio.load();}
+  entranceClips.clear();themeError=false;
+  if(!enabled||!window.Audio)return;
+  for(const [side,p] of [['w',w],['f',f]]){
+   const track=window.OfficeRingEntranceMusic?.resolve(p.id);if(!track)continue;
+   const audio=new window.Audio();audio.preload='auto';audio.volume=.36;
+   const item={audio,track};entranceClips.set(side,item);
+   audio.addEventListener('error',()=>{if(entranceClips.get(side)===item){themeError=true;report()}});
+   audio.addEventListener('timeupdate',()=>{if(theme!==item||themeEnded)return;const elapsed=audio.currentTime-track.offset;
+    audio.volume=.36*Math.max(0,Math.min(1,(themeLength-elapsed)/.65));
+    if(elapsed>=themeLength){themeEnded=true;stopTheme(false)}});
+   audio.src=track.url;audio.load();
+  }
+ }
+ function playTheme(){
+  if(!enabled||!running||!theme||themeEnded)return;
+  const item=theme,a=item.audio;
+  try{Promise.resolve(a.play()).then(()=>{
+    if(theme!==item||!running||!enabled||themeEnded){a.pause();return}
+    if(themeTimer!==null)clearTimeout(themeTimer);
+    themeTimer=setTimeout(()=>{if(theme===item){themeEnded=true;stopTheme(false)}},Math.max(0,themeLength-(a.currentTime-item.track.offset))*1000+150);
+   }).catch(()=>{if(theme===item&&enabled&&running){themeError=true;report()}})}catch(_){themeError=true;report()}
+ }
+ function entrance(side,duration){
+  if(!enabled||!running)return;
+  if(!entranceClips.has(side)&&M)prepareThemes(M.w,M.f);
+  if(themeSide===side)return;
+  stopTheme();const item=entranceClips.get(side);if(!item)return;
+  theme=item;themeSide=side;themeLength=Math.min(12,Math.max(.5,duration/1000),item.track.duration-item.track.offset);themeEnded=false;
+  try{item.audio.currentTime=item.track.offset}catch(_){}
+  item.audio.volume=.36;playTheme();
+ }
+ function themeTitle(side){return entranceClips.get(side)?.track.title||window.OfficeRingEntranceMusic?.resolve((side==='w'?M?.w:M?.f)?.id)?.title||'';}
  // Real recordings, both released under CC0 by their authors.
  // Source pages: Wikimedia Commons "211146 unfa another-crowd.flac"
  // and "Sound Effects - Applause after a concert.ogg" (Amada44).
@@ -496,7 +535,7 @@ function createSfx(){
   if(!a)return;try{Promise.resolve(a.play()).catch(()=>{if(enabled&&running){clipBlocked=true;report()}})}catch(_){clipBlocked=true;report()}
  }
  function stopPop(){if(popTimer!==null){clearTimeout(popTimer);popTimer=null;}if(cheer){cheer.pause();try{cheer.currentTime=0}catch(_){}}}
- function reset(){lastPop=-Infinity;stopPop();if(ambient){ambient.pause();try{ambient.currentTime=0}catch(_){}}}
+ function reset(){stopTheme();lastPop=-Infinity;stopPop();if(ambient){ambient.pause();try{ambient.currentTime=0}catch(_){}}}
  function pop(){
   if(!enabled||!running||!cheer||performance.now()-lastPop<3400)return;
   lastPop=performance.now();stopPop();cheer.volume=.32;tryPlay(cheer);
@@ -510,9 +549,9 @@ function createSfx(){
  }
  function sync(){
   if(!ac)return;const t=ac.currentTime;master.gain.cancelScheduledValues(t);master.gain.setTargetAtTime(enabled&&running?.85:0,t,.025);
-  if(enabled&&running){if(ambient?.paused)tryPlay(ambient);}else{ambient?.pause();stopPop();for(const voice of voices){try{voice.stop()}catch(_){} }voices.clear();}
+  if(enabled&&running){if(ambient?.paused)tryPlay(ambient);if(theme&&!themeEnded&&theme.audio.paused)playTheme();}else{ambient?.pause();stopTheme(false);stopPop();for(const voice of voices){try{voice.stop()}catch(_){} }voices.clear();}
  }
- function report(){if(!enabled){$('sfxState').textContent='Off';return;}const blocked=ac&&ac.state!=='running';$('sfxState').textContent=blocked?'Blocked — retry':clipError?'On · crowd unavailable':clipBlocked?'On · crowd blocked':'On';$('sfxState').title=blocked||clipBlocked?'Click the SFX switch off and on to enable browser audio':clipError?'A recorded crowd clip failed to load; bell remains available':'';}
+ function report(){if(!enabled){$('sfxState').textContent='Off';return;}const blocked=ac&&ac.state!=='running';$('sfxState').textContent=blocked?'Blocked — retry':themeError?'On · music unavailable':clipError?'On · crowd unavailable':clipBlocked?'On · crowd blocked':'On';$('sfxState').title=blocked||clipBlocked?'Click the SFX switch off and on to enable browser audio':themeError?'Entrance recording failed to play; match continues without it':clipError?'A recorded crowd clip failed to load; bell remains available':'';}
  function enable(v){enabled=!!v;if(enabled){try{if(!setup()){enabled=false;report();return false}clipBlocked=false;prepareClips();Promise.resolve(ac.resume()).then(()=>{sync();report()}).catch(()=>report());}catch(_){enabled=false;report();return false}}sync();report();return enabled;}
  function bell(final=false){if(!enabled||!running||!ac)return;const start=ac.currentTime+.012;
   // Inharmonic metal modes, short strike and natural decay. Start: one
@@ -521,7 +560,7 @@ function createSfx(){
    const t=start+hit*.24,o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(amp,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+decay);o.connect(g);g.connect(master);voices.add(o);o.onended=()=>{voices.delete(o);o.disconnect();g.disconnect()};o.start(t);o.stop(t+decay+.015);
   }
  }
- return{enable,bell,pop,crowd,reset,run(v){running=!!v;sync()},get enabled(){return enabled}};
+ return{enable,bell,pop,crowd,reset,prepareThemes,entrance,stopTheme,themeTitle,run(v){running=!!v;sync()},get enabled(){return enabled}};
 }
 const sfx=createSfx(),sfxToggle=$('sfx');
 sfxToggle.onchange=()=>{const on=sfx.enable(sfxToggle.checked);sfxToggle.checked=on;if(on)sfx.run(active&&!paused);};
@@ -532,7 +571,8 @@ resetWorld();
 function move(side,x,y,pose='stand',duration=450,waypoints=[]){
  const a=world[side];a.visible=true;a.fromX=a.x;a.fromY=a.y;a.tx=x;a.ty=y;a.start=performance.now();a.duration=duration/Number($('speed').value);a.path=[[a.x,a.y],...waypoints,[x,y]];a.lengths=a.path.slice(1).map((p,i)=>Math.hypot(p[0]-a.path[i][0],p[1]-a.path[i][1]));a.distance=a.lengths.reduce((sum,n)=>sum+n,0);a.walk=a.distance>12;a.pose=pose;
 }
-function enterRing(side){const a=world[side];Object.assign(a,{x:484,y:29,tx:484,ty:29});move(side,side==='w'?356:613,side==='w'?345:220,'stand',2600,[[484,113],[250,113],[250,405],[302,388]]);}
+function entranceMs(){return sfx.enabled?12000:2800;}
+function enterRing(side){sfx.entrance(side,entranceMs()/Number($('speed').value));const a=world[side];Object.assign(a,{x:484,y:29,tx:484,ty:29});move(side,side==='w'?356:613,side==='w'?345:220,'stand',entranceMs()-200,[[484,113],[250,113],[250,405],[302,388]]);}
 function exitRing(side){const a=world[side];if(!a.visible||a.leaving)return;a.leaving=true;move(side,484,28,'stand',2200,[[302,388],[250,405],[250,113],[484,113]]);}
 function winner(){const actual=M.graph?.outcome?.winner;if(actual==='w'||actual==='f')return actual;if(M.outcome==='nc')return null;if(M.outcome==='double')return 'w';if(M.outcome==='dq')return 'f';return D.FINISHES[c.finish]?.win?'w':'f';}
 function addOptions(el,items,selected){
@@ -571,8 +611,8 @@ function eventFrame(e){totalEvents++;const n=E.GRAPH.A[e.id];if(e.scriptedBig||n
 function lineFrame(l){
  const t=l.t||stamp(M.t);
  if((l.kind==='crowd'&&l.big)||/\b(?:big pop|roof comes off|crowd (?:erupts|roars|explodes)|front rows erupt)\b/i.test(l.text))sfx.pop();
- if(mode==='entrance'&&entered<2){const side=entered++===0?'f':'w';enterRing(side);phase('Entrances');}
- if(mode==='entrance'&&l.kind==='bell'){sfx.bell(false);mode='live';move('w',427,290,'guard');move('f',541,290,'guard');phase('Wrestling');}
+ if(mode==='entrance'&&entered<2){const side=entered++===0?'f':'w';enterRing(side);phase('Entrances');const title=sfx.themeTitle(side);if(title&&sfx.enabled)log(t,'Entrance music · '+title+' (Abstraction)','event');}
+ if(mode==='entrance'&&l.kind==='bell'){sfx.stopTheme();sfx.bell(false);mode='live';move('w',427,290,'guard');move('f',541,290,'guard');phase('Wrestling');}
  if(l.kind==='count'){if(M.stage==='over')rigAnim=null;refPose='kneel';world.ref.pose='kneel';if(M.stage==='over'&&/cover|\bONE!|\bTWO!|\bTHREE!|TAPS!/i.test(l.text)){const win=winner();if(win){const lose=win==='w'?'f':'w';move(lose,482,292,'down');move(win,win==='w'?458:507,290,'kneel');move('ref',528,247,'kneel');phase(/TAPS!/i.test(l.text)?'Submission':'The finish');}}}
  else if(l.kind==='bell'){refPose='stand';world.ref.pose='stand';}
  if(M.stage==='over'&&l.kind==='bell'&&mode!=='result'){sfx.bell(true);sfx.pop();rigAnim=null;mode='result';phase('The bell');}
@@ -625,14 +665,14 @@ function afterLine(l){
   }
  }
 }
-function finishRun(){sfx.run(false);active=false;paused=false;mode='complete';speech=null;world.w.visible=false;world.f.visible=false;phase('Complete');setStatus('Both wrestlers have left the arena','Match complete • '+M.final.stars.toFixed(2)+' / 5 • '+(M.final.finishRoute||M.final.outcome));$('pause').disabled=true;$('step').disabled=true;$('start').disabled=false;clearDecision();}
+function finishRun(){sfx.stopTheme();sfx.run(false);active=false;paused=false;mode='complete';speech=null;world.w.visible=false;world.f.visible=false;phase('Complete');setStatus('Both wrestlers have left the arena','Match complete • '+M.final.stars.toFixed(2)+' / 5 • '+(M.final.finishRoute||M.final.outcome));$('pause').disabled=true;$('step').disabled=true;$('start').disabled=false;clearDecision();}
 function process(){
  if(!active||waiting)return 0;
  if(!buffer.length){if(mode==='after')enqueueAfter();else enqueueEngine();}
  const frame=buffer.shift();if(!frame)return 100;
  switch(frame.kind){
  case 'event':eventFrame(frame.e);return rigAnim?rigAnim.duration:690;
- case 'line':lineFrame(frame.l);return mode==='entrance'?(entered<=2&&frame.l.t==='00:00'&&/comes out first|Here comes/.test(frame.l.text)?2800:650):frame.l.kind==='bell'?1000:550+Math.min(1000,(frame.l.pause||0)*250);
+ case 'line':lineFrame(frame.l);return mode==='entrance'?(entered<=2&&frame.l.t==='00:00'&&/comes out first|Here comes/.test(frame.l.text)?entranceMs():650):frame.l.kind==='bell'?1000:550+Math.min(1000,(frame.l.pause||0)*250);
  case 'decision':choice(M.decision.prompt||M.decision.title||'Ringside decision',M.decision.options,id=>E.resolve(M,id),['home','protect','cut','job','stop']);return 700;
  case 'afterStart':afterStart();return 900;
  case 'afterLine':afterLine(frame.l);return frame.l.who?2300:1500;
@@ -653,11 +693,11 @@ function start(){
  const seed=Number($('seed').value);if(!Number.isInteger(seed)||seed<1||seed>4294967295)throw Error('Seed must be a whole number from 1 to 4294967295');
  c={id:'ringlab-'+seed+'-'+w.id+'-'+f.id,wid:w.id,rid:f.id,pid:p.id,slot:'mid',finish:$('finish').value};
  M=E.create({w,f,p,seed,slot:c.slot,finish:c.finish,minutes:Number($('minutes').value),plan:{game:$('plan').value,leash:'script',talk:'none'},identity:{manager:'Ring Lab',stable:'Test Stable'}});
- skinRequests.clear();for(const [side,actor] of [['w',w],['f',f]]){assignLook(side,actor);$(side+'Name').textContent=actor.name;$(side+'Style').textContent=actor.style;}
+ sfx.prepareThemes(w,f);skinRequests.clear();for(const [side,actor] of [['w',w],['f',f]]){assignLook(side,actor);$(side+'Name').textContent=actor.name;$(side+'Style').textContent=actor.style;}
  $('venue').textContent=p.name+' • '+p.venue;$('control').textContent='Neutral';$('physical').textContent='Zones: entrance / entrance';phase('Entrances');setStatus('Making their way to the ring','Production match engine • seed '+seed);stats('00:00');
  const ids=[w,f].map(x=>window.OfficePromoIdentity?.bankId?.(x)||x.id);
  Promise.resolve(window.OfficePromoBanks?.load(ids)||[]).then(b=>{if(gen===current&&Array.isArray(b))banks=b;}).catch(()=>{});
- active=true;sfx.run(true);$('pause').textContent='Pause';$('pause').disabled=false;$('step').disabled=false;$('start').disabled=true;schedule(50);
+ active=true;sfx.run(true);sfx.entrance('f',entranceMs()/Number($('speed').value));$('pause').textContent='Pause';$('pause').disabled=false;$('step').disabled=false;$('start').disabled=true;schedule(50);
 }
 $('start').onclick=()=>{try{start();}catch(e){active=false;sfx.run(false);$('start').disabled=false;fail(e);}};
 $('pause').onclick=()=>{if(!active)return;paused=!paused;sfx.run(!paused);$('pause').textContent=paused?'Resume':'Pause';if(paused){clearTimeout(timer);rigPausedAt=performance.now();}else{if(rigPausedAt!==null){const delta=performance.now()-rigPausedAt;rigStart+=delta;rigPausedAt=null;schedule(Math.max(50,rigAnim?rigDuration-(performance.now()-rigStart):50));}else schedule(50);}};

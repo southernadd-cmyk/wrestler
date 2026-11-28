@@ -1,0 +1,44 @@
+name: Build local entrance clips (one-off)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'assets/audio/entrance-sources.json'
+      - 'tools/build-ring-entrance-clips.py'
+      - '.github/workflows/build-ring-entrance-clips.yml'
+permissions:
+  contents: write
+concurrency:
+  group: entrance-clip-import-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  import:
+    if: github.head_ref == 'lab/v3-entrance-music' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Install audio tools
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          command -v ffmpeg
+          command -v ffprobe
+          ffmpeg -version
+          ffprobe -version
+      - name: Import and verify clips
+        run: python3 tools/build-ring-entrance-clips.py
+      - name: Commit completed local bank to development branch
+        run: |
+          test "$(find assets/audio/entrances -name '*.mp3' | wc -l)" -eq 200
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/audio/entrances/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Add verified 12-second entrance music bank"
+          git push origin HEAD:refs/heads/lab/v3-entrance-music
