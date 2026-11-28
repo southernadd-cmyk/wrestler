@@ -99,7 +99,7 @@ if(params.get('frame')!=='1'){
   if(!cache.has(d.path))cache.set(d.path,new Promise(resolve=>{const img=new Image();img.onload=()=>{try{resolve(samplePortrait(img))}catch(_){resolve(null)}};img.onerror=()=>resolve(null);img.src=d.path;}));
   cache.get(d.path).then(skin=>e.source.postMessage({type:'ring-skin-result',token:d.token,skin},'*'));
  });
- frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=618';return
+ frame.src='ring-animation-lab.html?frame=1'+(live?'&view=match':'')+'&rev=619';return
 }
 $('lab').hidden=false;
 if(window.parent===window||window.origin!=='null'){$('error').textContent='Open the lab without the frame parameter.';return}
@@ -468,15 +468,48 @@ function resolveFrame(f,clip=''){
  return{a,d,raw,residual,shift:Math.max(Math.hypot(ar.x-before[0],ar.y-before[1]),Math.hypot(dr.x-before[2],dr.y-before[3]))};
 }
 function drawLimb(pts,color,width){for(let i=1;i<pts.length;i++){line(pts[i-1].x,pts[i-1].y,pts[i].x,pts[i].y,'#24222a',width+2);line(pts[i-1].x,pts[i-1].y,pts[i].x,pts[i].y,color,width);}}
-function wrestler(s,side,look=null,name=null){
- const gear=look?.base||(side==='w'?'#b99447':'#4f769e'),skin=look?.skin||(side==='w'?'#c99976':'#b47c5c'),hair=look?.hair||(side==='w'?'#443026':'#27242a');
- ellipse(s.ground.x,s.ground.y+3,10,3,'rgba(12,17,28,.4)');
- drawLimb(s.legs[0],shade(skin,-22),5);drawLimb(s.arms[0],shade(skin,-22),4);
- line(s.hip.x,s.hip.y,s.shoulder.x,s.shoulder.y,'#25242a',13);line(s.hip.x,s.hip.y,s.shoulder.x,s.shoulder.y,skin,10);line(s.hip.x,s.hip.y,s.hip.x+(s.shoulder.x-s.hip.x)*.25,s.hip.y+(s.shoulder.y-s.hip.y)*.25,gear,10);
- drawLimb(s.legs[1],skin,5);for(const l of s.legs)line(l[1].x,l[1].y,l[2].x,l[2].y,shade(gear,-25),5);
- drawLimb(s.arms[1],skin,4);
- line(s.shoulder.x,s.shoulder.y,s.head.x,s.head.y,skin,5);ellipse(s.head.x,s.head.y,5.5,6.5,'#24222a');ellipse(s.head.x,s.head.y,4.5,5.5,skin);if(look?.hairStyle!=='bald'){rect(s.head.x-4,s.head.y-5,8,2,hair);if(['long','waves','braids','ponytail'].includes(look?.hairStyle)){rect(s.head.x-5*s.r.face-1,s.head.y-3,3,10,hair);}}if(look?.mask)rect(s.head.x-4,s.head.y-3,8,5,gear);rect(s.head.x+2*s.r.face,s.head.y-1,1,1,'#1d2028');
- label(name||(side==='w'?'GOLD':'BLUE'),s.ground.x,s.ground.y+14,side==='w'?'#ffe39d':'#e0efff',8);
+function wrestler(s,side,look=null,name=null,options={}){
+ const gear=look?.base||(side==='w'?'#b99447':'#4f769e'),skin=look?.skin||(side==='w'?'#c99976':'#b47c5c'),hair=look?.hair||(side==='w'?'#443026':'#27242a'),edge='#24222a';
+ const build=clamp(look?.build||1,.83,1.25),width=Math.round(11*build),leg=Math.round(5*build),arm=Math.round(4*build),full=look?.presentation==='female'||look?.covered===true||build>1.12;
+ const between=(a,b,t)=>V(mix(a.x,b.x,t),mix(a.y,b.y,t));
+ const torso=(a,b,c,w)=>line(a.x,a.y,b.x,b.y,c,w);
+ ellipse(s.ground.x,s.ground.y+3,Math.round(10*build),3,'rgba(12,17,28,.4)');
+ drawLimb(s.legs[0],shade(skin,-22),leg);drawLimb(s.arms[0],shade(skin,-22),arm);
+ torso(s.hip,s.shoulder,edge,width+3);torso(s.hip,s.shoulder,skin,width);
+ const waist=between(s.hip,s.shoulder,.33),chest=between(s.hip,s.shoulder,.55);
+ torso(s.hip,waist,gear,width);torso(waist,between(s.hip,s.shoulder,.38),shade(gear,22),width);
+ if(full){torso(chest,s.shoulder,gear,width);torso(between(s.hip,s.shoulder,.88),s.shoulder,shade(gear,22),width);}
+ drawLimb(s.legs[1],skin,leg);for(const l of s.legs){torso(l[1],l[2],shade(gear,-25),leg);torso(between(l[1],l[2],.8),l[2],edge,leg+1);}
+ drawLimb(s.arms[1],skin,arm);
+ torso(s.shoulder,s.head,skin,5);
+ // Draw face, hair and mask in the head's local coordinate system, so
+ // these features rotate with the wrestler rather than the camera.
+ const theta=Math.atan2(s.head.x-s.shoulder.x,-(s.head.y-s.shoulder.y));
+ ctx.save();ctx.translate(Math.round(s.head.x),Math.round(s.head.y));ctx.rotate(theta);ctx.scale(s.r.face,1);
+ const style=look?.hairStyle||'crop';
+ if(['long','waves','braids','ponytail'].includes(style)){
+  rect(-6,-4,3,12,hair);if(style==='long'||style==='waves')rect(3,-4,3,10,hair);
+ }
+ ellipse(0,0,5.5,6.5,edge);ellipse(0,0,4.5,5.5,skin);rect(-3,-4,4,2,shade(skin,18));
+ if(style!=='bald'){
+  rect(-4,-5,8,style==='buzz'?1:3,hair);rect(-5,-3,2,4,hair);
+  if(['mohawk','topknot','spikes'].includes(style))rect(style==='topknot'?-4:-1,-9,3,5,hair);
+  if(['afro','curly'].includes(style)){ellipse(-1,-5,5.5,3.5,hair);rect(-6,-3,2,5,hair);}
+  if(style==='swept')rect(-5,-7,7,3,hair);
+ }
+ if(look?.mask){rect(-4,-3,8,6,gear);rect(1,-2,3,1,'#e5e2d5');}
+ else{rect(2,-1,1,1,edge);if(look?.beard&&look.beard!=='none'){const b=look.beard;rect(b==='goatee'?-1:-3,b==='moustache'?2:3,b==='goatee'?3:6,b==='full'?3:1,b==='shadow'?shade(skin,-30):hair);}}
+ ctx.restore();
+ if(options.talk){const hand=s.arms[1][2];rect(hand.x-1,hand.y-6,2,7,'#171b23');rect(hand.x-2,hand.y-7,4,3,'#c3c5c5');}
+ const tag=name||(side==='w'?'GOLD':'BLUE'),tagWidth=Math.min(82,tag.length*6+10),accent=side==='w'?'#f1ce76':'#d1e9f4';
+ rect(s.ground.x-tagWidth/2,s.ground.y+4,tagWidth,12,'#132038');rect(s.ground.x-tagWidth/2,s.ground.y+4,2,12,accent);label(tag,s.ground.x+1,s.ground.y+13,accent,9);
+}
+function presentationFrame(x,y,pose,face,step=0,z=0){
+ const names={stand:'neutral',guard:'guard',grapple:'grab',strike:'punch',kick:'kick',lift:'lift',celebrate:'celebrate',talk:'neutral',aerial:'spread',top:'crouch',down:'flat',kneel:'kneel',run:'run'};
+ const r=R(x-240,y-146,z,names[pose]||'neutral',face);
+ if(step){r.angles[5]=step*9;r.angles[6]=Math.max(0,-step)*9;r.angles[7]=-step*9;r.angles[8]=-Math.max(0,step)*9;r.angles[1]=-17-step*7;r.angles[3]=17-step*7;}
+ if(pose==='talk'){r.angles[3]=122;r.angles[4]=-25;}
+ return skeleton(r);
 }
 let anim=null,progress=0,playing=false,last=0;
 function fillSelect(el,values,preferred){el.replaceChildren();for(const n of values){const o=document.createElement('option');o.value=n.id;o.textContent=title(n)+' · '+n.id;el.append(o)}if(values.some(n=>n.id===preferred))el.value=preferred}
@@ -503,7 +536,7 @@ function audit(){
  $('coverageText').textContent=custom+' custom-node mappings, '+shared+' shared-node mappings. '+covered+' of '+edges+' authored edges compose a clip. '+invalid+' non-finite sampled poses. '+contactReview+' of '+contactSamples+' sampled contact poses exceed 2 px after bounded correction (before correction: '+rawReview+'; '+contactEdges+' edges need review). '+(missing.length?'Unmapped nodes: '+missing.join(', '):'No unmapped graph nodes.')+' Visual quality is not assessed by this check.';
  return{nodes:nodes.length,edges,custom,shared,covered,invalid,contactSamples,contactReview,rawReview,contactEdges,maxShift,missing};
 }
-window.RingAnimationLab={descriptor,build,at,audit,skeleton,contactSolve,resolveFrame,wrestler,R,neutral};
+window.RingAnimationLab={descriptor,build,at,audit,skeleton,contactSolve,resolveFrame,wrestler,presentationFrame,R,neutral};
 function draw(now){
  if(playing&&anim){if(last)progress+=Math.min(80,now-last)*Number($('speed').value)/anim.duration;last=now;if(progress>=1){if($('loop').checked)progress=0;else{progress=1;playing=false;$('pause').textContent='Resume'}}}
  backdrop(now);const f=anim?at(anim,progress):neutral(),resolved=resolveFrame(f,anim?.desc.clip),{a,d,residual:err}=resolved;
@@ -826,11 +859,11 @@ function faceRect(x1,y1,x2,y2,c,z=0){poly([point(x1,y1,z),point(x2,y1,z),point(x
 function shade(hex,d){const n=parseInt(hex.slice(1),16);return '#'+[n>>16,(n>>8)&255,n&255].map(v=>Math.max(0,Math.min(255,v+d)).toString(16).padStart(2,'0')).join('');}
 function makeLook(worker,side){
  const portraits=window.OfficePortraits;let look=null;
- try{look=portraits?.getLook({key:'wrestler:'+worker.id,...worker});}catch(_){}
+ try{look=portraits?.getLook({...worker,key:'wrestler:'+worker.id,type:'wrestler'});}catch(_){}
  const get=(key,fallback)=>portraits?.OPTIONS?.[key]?.find(([id])=>id===look?.[key])?.[1]||fallback;
  const base=get('gearColor',side==='w'?'#b89955':'#82505c'),skin=get('complexion','#c99273'),hair=get('hairColor','#3c2b29');
  let kg=75;try{kg=E.scout(M?.w||worker,M?.f||worker,'story',0)?.[side==='w'?'you':'opponent']?.kg||75;}catch(_){}
- return {base,skin,hair,hairStyle:look?.hair||'crop',beard:look?.beard,mask:look?.headwear==='mask',presentation:look?.presentation,build:Math.max(.83,Math.min(1.25,kg/82))};
+ return {base,skin,hair,hairStyle:look?.hair||'crop',beard:look?.beard,mask:look?.headwear==='mask',presentation:look?.presentation,covered:D.divisionOf(worker.id)==='women',build:Math.max(.83,Math.min(1.25,kg/82))};
 }
 function crowdPerson(x,y,i,now){
  const shirts=['#535767','#705251','#495a63','#756e5b','#4e5450','#67617a','#59677a','#886b55'];
@@ -891,6 +924,13 @@ function actor(a,now){
  const facing=(a.walk&&k<1? a.tx>=a.x:other.x>=a.x)?1:-1;
  const walking=a.walk&&k<1,step=walking?Math.round(Math.sin(now/(a.pose==='run'?48:75))*4):0;
  const hit=Math.sin(Math.PI*k),down=a.pose==='down',kneel=a.pose==='kneel',top=a.pose==='top',air=a.pose==='aerial';
+ // Wrestlers use the very same articulated sprite on the aisle, in the
+ // ring, during celebrations and when leaving. Only the referee retains
+ // the separate uniform painter below.
+ if(!ref){
+  const frame=rig.presentationFrame(x,y,a.pose,facing,step,top?19:air?Math.round(hit*14):0);
+  rig.wrestler(frame,a.side,look,M?.[a.side]?.short||a.side,{talk:a.pose==='talk'});return;
+ }
  ellipse(x,y+2,down?14:8,down?4:3,'rgba(10,14,24,.38)');
  ctx.save();ctx.translate(Math.round(x),Math.round(y-(top?19:air?Math.round(hit*14):0)));ctx.scale(facing,1);
  if(down){ctx.translate(-10,0);ctx.rotate(-Math.PI/2);ctx.translate(0,6);}else if(kneel)ctx.translate(0,5);
